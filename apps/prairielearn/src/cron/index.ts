@@ -72,11 +72,6 @@ export async function init() {
       intervalSec: 'daily',
     },
     {
-      name: 'sendExternalGraderDeadLetters',
-      module: await import('./sendExternalGraderDeadLetters.js'),
-      intervalSec: 'daily',
-    },
-    {
       name: 'serverLoad',
       module: await import('./serverLoad.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalServerLoadSec,
@@ -328,7 +323,7 @@ async function tryJobWithLock(job: CronJob, cronUuid: string) {
   const lockName = 'cron:' + job.name;
   const didLock = await namedLocks.doWithLock(
     lockName,
-    { onNotAcquired: () => false },
+    { onNotAcquired: () => false, autoRenew: true },
     async () => {
       debug(`tryJobWithLock(): ${job.name}: acquired lock`);
       logger.verbose('cron: ' + job.name + ' acquired lock', { cronUuid });

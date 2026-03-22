@@ -58,6 +58,7 @@ function SyncErrorsAndWarningsForContext({
         />
       );
     }
+    case 'students':
     case 'instance_admin': {
       const { course_instance: courseInstance, course } = resLocals;
       if (!courseInstance || !course) return null;
@@ -115,7 +116,12 @@ function LegacyPublishingBannerComponent({
   resLocals: UntypedResLocals;
 }) {
   if (navContext.type !== 'instructor') return null;
-  if (navContext.page !== 'instance_admin' || navContext.subPage !== 'students') return null;
+  if (
+    navContext.page !== 'students' &&
+    !(navContext.page === 'instance_admin' && navContext.subPage === 'students')
+  ) {
+    return null;
+  }
 
   const { course_instance: courseInstance } = resLocals;
 
@@ -131,6 +137,8 @@ function LegacyPublishingBannerComponent({
       <a
         href="https://docs.prairielearn.com/courseInstance/#migrating-from-allowaccess"
         className="alert-link"
+        target="_blank"
+        rel="noreferrer"
       >
         Migrate to publishing
       </a>{' '}
@@ -148,7 +156,7 @@ function UnpublishedBannerComponent({
 }) {
   if (navContext.type !== 'instructor') return null;
   if (!navContext.page) return null;
-  if (!['instance_admin', 'assessment'].includes(navContext.page)) return null;
+  if (!['instance_admin', 'assessment', 'students'].includes(navContext.page)) return null;
   if (navContext.page === 'instance_admin' && navContext.subPage === 'publishing') return null;
 
   const { course_instance: courseInstance, urlPrefix } = resLocals;
@@ -357,7 +365,6 @@ export function PageLayout({
                   navPage: navContext.page,
                   navSubPage: navContext.subPage,
                   navbarType: navContext.type,
-                  isInPageLayout: true,
                   sideNavEnabled,
                 })}
               </div>`

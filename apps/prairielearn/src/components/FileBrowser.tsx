@@ -94,7 +94,7 @@ interface FileRenameInfo {
   dir: string;
 }
 
-export async function browseDirectory({
+async function browseDirectory({
   paths,
 }: {
   paths: InstructorFilePaths;
@@ -154,7 +154,7 @@ export async function browseDirectory({
   };
 }
 
-export async function browseFile({ paths }: { paths: InstructorFilePaths }): Promise<FileInfo> {
+async function browseFile({ paths }: { paths: InstructorFilePaths }): Promise<FileInfo> {
   const filepath = paths.workingPath;
   const movable = !paths.cannotMove.includes(filepath);
   const file: FileInfo = {
@@ -258,7 +258,7 @@ export async function createFileBrowser({
   }
 }
 
-export function FileBrowser({
+function FileBrowser({
   resLocals,
   paths,
   isFile,
@@ -740,6 +740,8 @@ function FileRenameForm({
   csrfToken: string;
   isViewingFile: boolean;
 }) {
+  const FILE_NAME_PATTERN =
+    /(?:[A-Za-z0-9_-]+|\.\.)(?:\/(?:[A-Za-z0-9_-]+|\.\.))*(?:\.[A-Za-z0-9_-]+)?/;
   return html`
     <form
       name="instructor-file-rename-form-${file.id}"
@@ -768,7 +770,7 @@ function FileRenameForm({
           value="${file.name}"
           data-original-value="${file.name}"
           size="${1.5 * file.name.length}"
-          pattern="(?:[\\-A-Za-z0-9_]+|\\.\\.)(?:\\/(?:[\\-A-Za-z0-9_]+|\\.\\.))*(?:\\.[\\-A-Za-z0-9_]+)?"
+          pattern="${FILE_NAME_PATTERN.source}"
           required
         />
       </div>

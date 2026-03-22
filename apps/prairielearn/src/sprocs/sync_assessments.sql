@@ -335,6 +335,7 @@ BEGIN
                 max_points,
                 number_choose,
                 best_questions,
+                lockpoint,
                 advance_score_perc,
                 json_allow_real_time_grading,
                 json_grade_rate_minutes,
@@ -349,6 +350,7 @@ BEGIN
                 (zone->>'max_points')::double precision,
                 (zone->>'number_choose')::integer,
                 (zone->>'best_questions')::integer,
+                (zone->>'lockpoint')::boolean,
                 (zone->>'advance_score_perc')::double precision,
                 (zone->>'allow_real_time_grading')::boolean,
                 (zone->>'grade_rate_minutes')::double precision,
@@ -362,6 +364,7 @@ BEGIN
                 max_points = EXCLUDED.max_points,
                 number_choose = EXCLUDED.number_choose,
                 best_questions = EXCLUDED.best_questions,
+                lockpoint = EXCLUDED.lockpoint,
                 advance_score_perc = EXCLUDED.advance_score_perc,
                 json_allow_real_time_grading = EXCLUDED.json_allow_real_time_grading,
                 json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
@@ -490,7 +493,8 @@ BEGIN
                         json_max_points,
                         json_max_auto_points,
                         json_force_max_points,
-                        json_tries_per_variant
+                        json_tries_per_variant,
+                        preferences
                     ) VALUES (
                         (assessment_question->>'number')::integer,
                         COALESCE(computed_manual_points, 0) + COALESCE(computed_max_auto_points, 0),
@@ -518,7 +522,8 @@ BEGIN
                         (assessment_question->>'json_max_points')::double precision,
                         (assessment_question->>'json_max_auto_points')::double precision,
                         (assessment_question->>'json_force_max_points')::boolean,
-                        (assessment_question->>'json_tries_per_variant')::integer
+                        (assessment_question->>'json_tries_per_variant')::integer,
+                        (assessment_question->'preferences')
                     )                     ON CONFLICT (question_id, assessment_id) DO UPDATE
                     SET
                         number = EXCLUDED.number,
@@ -546,7 +551,8 @@ BEGIN
                         json_max_points = EXCLUDED.json_max_points,
                         json_max_auto_points = EXCLUDED.json_max_auto_points,
                         json_force_max_points = EXCLUDED.json_force_max_points,
-                        json_tries_per_variant = EXCLUDED.json_tries_per_variant
+                        json_tries_per_variant = EXCLUDED.json_tries_per_variant,
+                        preferences = EXCLUDED.preferences
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
 

@@ -19,6 +19,7 @@ import {
   loadSqlEquiv,
   queryRow,
   queryRows,
+  queryScalar,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -50,7 +51,7 @@ import { type CounterClockwiseRotationDegrees, RotationCorrectionOutputSchema } 
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export const SubmissionVariantSchema = z.object({
+const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
   submission: SubmissionSchema,
 });
@@ -59,7 +60,7 @@ export const SubmissionVariantSchema = z.object({
  * Models supporting system messages after the first user message.
  * As of November 2025,
  * - OpenAI GPT 5-mini and GPT 5.1 support this.
- * - Google Gemini 2.5-flash and Gemini 3 Pro Preview do not support this.
+ * - Google Gemini 2.5-flash and Gemini 3.1 Pro Preview do not support this.
  * - Anthropic Claude Haiku 4.5, Claude Sonnet 4.5, and Claude Opus 4.5 do not support this.
  */
 const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>([
@@ -70,6 +71,7 @@ const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>([
 export async function generatePrompt({
   questionPrompt,
   questionAnswer,
+  rotationCorrected = false,
   submission_text,
   submitted_answer,
   rubric_items,
@@ -80,6 +82,8 @@ export async function generatePrompt({
 }: {
   questionPrompt: string;
   questionAnswer: string;
+  /** If true, the prompt will include that rotation correction was applied prior to grading. */
+  rotationCorrected?: boolean;
   submission_text: string;
   submitted_answer: Record<string, any> | null;
   rubric_items: RubricItem[];
@@ -188,6 +192,16 @@ export async function generatePrompt({
     );
   }
 
+  if (rotationCorrected) {
+    input.push({
+      role: systemRoleAfterUserMessage,
+      content: formatPrompt([
+        'One or more images were uploaded in a rotated state by the student (this was an error by the student). The system corrected their rotation.',
+        'If there are rubric items associated with image rotation, then please note that one or more images were rotated incorrectly.',
+      ]),
+    });
+  }
+
   input.push(
     {
       role: systemRoleAfterUserMessage,
@@ -238,10 +252,10 @@ export function generateSubmissionMessage({
         return segment;
       case 'image':
         if (segment.fileData) {
-          // fileData does not contain the MIME type header, so we add it.
           return {
             type: 'image',
-            image: `data:image/jpeg;base64,${segment.fileData}`,
+            image: segment.fileData,
+            mediaType: 'image/jpeg',
             providerOptions: {
               openai: {
                 imageDetail: 'auto',
@@ -475,20 +489,25 @@ export async function insertAiGradingJob({
   response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   course_id: string;
   course_instance_id?: string;
-}): Promise<void> {
-  await execute(sql.insert_ai_grading_job, {
-    grading_job_id,
-    job_sequence_id,
-    prompt: JSON.stringify(prompt),
-    completion: response,
-    rotation_correction_degrees: null,
-    model: model_id,
-    prompt_tokens: response.usage.inputTokens ?? 0,
-    completion_tokens: response.usage.outputTokens ?? 0,
-    cost: calculateResponseCost({ model: model_id, usage: response.usage }),
-    course_id,
-    course_instance_id,
-  });
+}): Promise<string> {
+  const result = await queryScalar(
+    sql.insert_ai_grading_job,
+    {
+      grading_job_id,
+      job_sequence_id,
+      prompt: JSON.stringify(prompt),
+      completion: response,
+      rotation_correction_degrees: null,
+      model: model_id,
+      prompt_tokens: response.usage.inputTokens ?? 0,
+      completion_tokens: response.usage.outputTokens ?? 0,
+      cost: calculateResponseCost({ model: model_id, usage: response.usage }),
+      course_id,
+      course_instance_id,
+    },
+    IdSchema,
+  );
+  return result;
 }
 
 /**
@@ -532,7 +551,7 @@ export async function insertAiGradingJobWithRotationCorrection({
   gradingResponseWithRotationCorrection: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   course_id: string;
   course_instance_id?: string;
-}): Promise<void> {
+}): Promise<string> {
   let prompt_tokens =
     (gradingResponseWithRotationIssue.usage.inputTokens ?? 0) +
     (gradingResponseWithRotationCorrection.usage.inputTokens ?? 0);
@@ -557,19 +576,24 @@ export async function insertAiGradingJobWithRotationCorrection({
     rotationCorrectionDegrees[filename] = degreesRotated;
   }
 
-  await execute(sql.insert_ai_grading_job, {
-    grading_job_id,
-    job_sequence_id,
-    prompt: JSON.stringify(prompt),
-    completion: gradingResponseWithRotationCorrection,
-    rotation_correction_degrees: rotationCorrectionDegrees,
-    model: model_id,
-    prompt_tokens,
-    completion_tokens,
-    cost,
-    course_id,
-    course_instance_id,
-  });
+  const result = await queryScalar(
+    sql.insert_ai_grading_job,
+    {
+      grading_job_id,
+      job_sequence_id,
+      prompt: JSON.stringify(prompt),
+      completion: gradingResponseWithRotationCorrection,
+      rotation_correction_degrees: rotationCorrectionDegrees,
+      model: model_id,
+      prompt_tokens,
+      completion_tokens,
+      cost,
+      course_id,
+      course_instance_id,
+    },
+    IdSchema,
+  );
+  return result;
 }
 
 export async function selectLastVariantAndSubmission(
@@ -583,7 +607,7 @@ export async function selectLastVariantAndSubmission(
 }
 
 export async function selectLastSubmissionId(instance_question_id: string): Promise<string> {
-  return await queryRow(sql.select_last_submission_id, { instance_question_id }, IdSchema);
+  return await queryScalar(sql.select_last_submission_id, { instance_question_id }, IdSchema);
 }
 
 export async function deleteAiGradingJobs({
@@ -783,7 +807,8 @@ async function correctImageOrientation({
         },
         {
           type: 'image',
-          image: `data:image/jpeg;base64,${images[i - 1]}`,
+          image: images[i - 1],
+          mediaType: 'image/jpeg',
           providerOptions: {
             openai: {
               imageDetail: 'auto',

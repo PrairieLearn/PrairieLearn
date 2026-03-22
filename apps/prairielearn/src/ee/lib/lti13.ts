@@ -29,12 +29,9 @@ import {
   Lti13InstanceSchema,
   UserSchema,
 } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
-
-import { getInstitutionAuthenticationProviders } from './institution.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -52,7 +49,7 @@ export const Lti13CombinedInstanceSchema = z.object({
 });
 export type Lti13CombinedInstance = z.infer<typeof Lti13CombinedInstanceSchema>;
 
-export const LineitemSchema = z.object({
+const LineitemSchema = z.object({
   id: z.string(),
   label: z.string(),
   scoreMaximum: z.number(),
@@ -69,14 +66,14 @@ export const LineitemSchema = z.object({
     })
     .optional(),
 });
-export type Lineitem = z.infer<typeof LineitemSchema>;
+type Lineitem = z.infer<typeof LineitemSchema>;
 
 export const LineitemsSchema = z.array(LineitemSchema);
 export type Lineitems = z.infer<typeof LineitemsSchema>;
 
 // Validate LTI 1.3
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
-export const Lti13ClaimBaseSchema = z.object({
+const Lti13ClaimBaseSchema = z.object({
   'https://purl.imsglobal.org/spec/lti/claim/version': z.literal('1.3.0'),
   'https://purl.imsglobal.org/spec/lti/claim/deployment_id': z.string(),
   'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': z.string(),
@@ -158,7 +155,7 @@ export const Lti13ClaimBaseSchema = z.object({
 });
 
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
-export const Lti13ResourceLinkRequestSchema = Lti13ClaimBaseSchema.merge(
+const Lti13ResourceLinkRequestSchema = Lti13ClaimBaseSchema.merge(
   z.object({
     'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
     'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
@@ -170,7 +167,7 @@ export const Lti13ResourceLinkRequestSchema = Lti13ClaimBaseSchema.merge(
 );
 
 // https://www.imsglobal.org/spec/lti-dl/v2p0#message-claims
-export const Lti13DeepLinkingRequestSchema = Lti13ClaimBaseSchema.merge(
+const Lti13DeepLinkingRequestSchema = Lti13ClaimBaseSchema.merge(
   z.object({
     'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiDeepLinkingRequest'),
     'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings': z.object({
@@ -192,7 +189,7 @@ export const Lti13ClaimSchema = z.discriminatedUnion(
   'https://purl.imsglobal.org/spec/lti/claim/message_type',
   [Lti13ResourceLinkRequestSchema, Lti13DeepLinkingRequestSchema],
 );
-export type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
+type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
 
 export const STUDENT_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner';
 
@@ -374,21 +371,6 @@ export class Lti13Claim {
   }
 }
 
-export async function validateLti13CourseInstance(resLocals: UntypedResLocals): Promise<boolean> {
-  const hasLti13CourseInstance = await queryRow(
-    sql.select_ci_validation,
-    { course_instance_id: resLocals.course_instance.id },
-    z.boolean(),
-  );
-
-  if (!hasLti13CourseInstance) {
-    return false;
-  }
-
-  const instAuthProviders = await getInstitutionAuthenticationProviders(resLocals.institution.id);
-  return instAuthProviders.some((a) => a.name === 'LTI 1.3');
-}
-
 export async function getAccessToken(lti13_instance_id: string) {
   const lti13_instance = await selectLti13Instance(lti13_instance_id);
 
@@ -464,7 +446,7 @@ export async function getLineitems(instance: Lti13CombinedInstance) {
   return lineitems.flat();
 }
 
-export async function getLineitem(instance: Lti13CombinedInstance, lineitem_id_url: string) {
+async function getLineitem(instance: Lti13CombinedInstance, lineitem_id_url: string) {
   const token = await getAccessToken(instance.lti13_instance.id);
   const fetchRes = await fetchRetry(lineitem_id_url, {
     method: 'GET',
@@ -572,7 +554,7 @@ export async function unlinkAssessment(
   });
 }
 
-export async function linkAssessment(
+async function linkAssessment(
   lti13_course_instance_id: string,
   unsafe_assessment_id: string | number,
   lineitem: Lineitem,
@@ -727,7 +709,8 @@ export async function fetchRetryPaginated(
 }
 
 // https://www.imsglobal.org/spec/lti-ags/v2p0#score-publish-service
-export const Lti13ScoreSchema = z.object({
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const Lti13ScoreSchema = z.object({
   scoreGiven: z.number(),
   scoreMaximum: z.number(),
   userId: z.string(),
@@ -743,7 +726,7 @@ export const Lti13ScoreSchema = z.object({
     .optional(),
   comment: z.string().optional(),
 });
-export type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
+type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
 
 const UserWithLti13SubSchema = UserSchema.extend({
   lti13_sub: z.string().nullable(),

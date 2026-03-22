@@ -139,28 +139,41 @@ const user = await callRow('select_user', ['1'], User);
 const maybeUser = await callOptionalRow('select_user', ['1'], User);
 ```
 
-These functions have some behaviors that can make them more convenient to work with:
+Passing an object or array with parameters is optional.
 
-- Passing an object or array with parameters is optional.
+The schema passed to these functions must be a `z.object(...)` schema. Each row from the query result will be validated against the schema.
 
-- If the query returns a single column, that column is validated and returned directly. For example, consider the following query:
+### Scalar queries
 
-  ```sql
-  -- BLOCK select_user_names
-  SELECT
-    name
-  FROM
-    users;
-  ```
+For queries that return a single column, you can use the scalar variants. These accept any Zod schema (not just `z.object(...)`) and validate the individual column value.
 
-  If we then use that query with `queryRows`, the returned Promise resolves to an array of strings:
+```ts
+import { z } from 'zod';
+import {
+  queryScalar,
+  queryScalars,
+  queryOptionalScalar,
+  callScalar,
+  callScalars,
+  callOptionalScalar,
+} from '@prairielearn/postgres';
 
-  ```ts
-  const userNames = await queryRows(sql.select_user_names, z.string());
+// Get all user IDs. Returns an array of strings.
+const userIds = await queryScalars(sql.select_user_ids, z.string());
 
-  // Prints something like `["Alice", "Bob"]`.
-  console.log(userNames);
-  ```
+// Get one user's name. Returns a string.
+const name = await queryScalar(sql.select_user_name, { user_id: '1' }, z.string());
+
+// Get a count that might be null. Returns a number or null.
+const count = await queryOptionalScalar(sql.select_count, z.coerce.number());
+
+// Equivalent sproc variants.
+const ids = await callScalars('get_all_ids', z.string());
+const id = await callScalar('get_id', [1], z.string());
+const maybeId = await callOptionalScalar('get_id', [1], z.string());
+```
+
+These functions will throw an error at runtime if the query returns more than one column.
 
 ### Transactions
 

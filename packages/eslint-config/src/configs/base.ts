@@ -47,7 +47,7 @@ export function baseConfig(): TSESLint.FlatConfig.ConfigArray {
         'max-depth': 'off',
         'max-lines': 'off',
         'max-lines-per-function': 'off',
-        'max-params': 'off',
+        'max-params': ['error', { max: 6 }],
         'max-statements': 'off',
         'new-cap': 'off',
         'no-await-in-loop': 'off',
@@ -102,7 +102,7 @@ export function baseConfig(): TSESLint.FlatConfig.ConfigArray {
         'prefer-named-capture-group': 'off',
         'prefer-object-has-own': 'off',
         'prefer-template': 'off',
-        radix: ['error', 'as-needed'],
+        radix: ['off'], // We should never rely on this for parsing non-decimal numbers.
         'require-atomic-updates': 'off',
         'require-await': 'off',
         'require-unicode-regexp': 'off',

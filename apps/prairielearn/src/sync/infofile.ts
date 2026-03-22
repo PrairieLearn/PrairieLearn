@@ -9,10 +9,6 @@ export interface InfoFile<T> {
   data?: T;
 }
 
-export function hasUuid<T>(infoFile: InfoFile<T>): boolean {
-  return !!infoFile.uuid;
-}
-
 export function hasErrors<T>(infoFile: InfoFile<T>): boolean {
   return infoFile.errors.length > 0;
 }
@@ -59,6 +55,7 @@ export function makeError<T>(error: string): InfoFile<T> {
   return { errors: [error], warnings: [] };
 }
 
+/** @knipignore */
 export function makeWarning<T>(warning: string): InfoFile<T> {
   return { warnings: [warning], errors: [] };
 }

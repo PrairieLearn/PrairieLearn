@@ -33,8 +33,10 @@ export default [
       allowDbTypes: [
         // This is innocuous, it's just a string enum.
         'SprocUsersGetDisplayedRoleSchema',
-        // This is also just an enum.
+        // The following are just enums.
         'EnumAiQuestionGenerationMessageStatus',
+        'EnumAiGradingProviderSchema',
+        'EnumAiGradingProvider',
       ],
     },
     tsconfigRootDir: path.join(import.meta.dirname, 'apps', 'prairielearn'),
@@ -187,6 +189,7 @@ export default [
     languageOptions: {
       parser: htmlParser,
       parserOptions: {
+        rawContentTags: ['markdown'],
         templateEngineSyntax: htmlParser.TEMPLATE_ENGINE_SYNTAX.HANDLEBAR,
       },
     },
@@ -218,7 +221,7 @@ export default [
     'docs/*',
     'node_modules/*',
     'testCourse',
-    'exampleCourse/**/*.{js,html}',
+    'exampleCourse/**/*.js',
     'coverage/*',
     'out/*',
     'workspaces/*',

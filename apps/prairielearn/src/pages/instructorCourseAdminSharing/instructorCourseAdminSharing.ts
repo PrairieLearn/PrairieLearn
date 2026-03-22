@@ -21,7 +21,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 async function selectCanChooseSharingName(course: Course) {
   return (
     course.sharing_name === null ||
-    !(await sqldb.queryOptionalRow(
+    !(await sqldb.queryOptionalScalar(
       sql.select_shared_question_exists,
       { course_id: course.id },
       z.boolean().nullable(),
@@ -84,7 +84,7 @@ router.post(
         throw new error.HttpStatusError(400, 'Failed to regenerate sharing token.');
       }
     } else if (req.body.__action === 'course_sharing_set_add') {
-      const consuming_course_id = await sqldb.queryOptionalRow(
+      const consuming_course_id = await sqldb.queryOptionalScalar(
         sql.course_sharing_set_add,
         {
           sharing_course_id: res.locals.course.id,

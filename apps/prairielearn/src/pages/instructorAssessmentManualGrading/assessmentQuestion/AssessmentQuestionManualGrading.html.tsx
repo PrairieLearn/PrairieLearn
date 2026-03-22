@@ -13,6 +13,7 @@ import type {
   StaffUser,
 } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
+import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
@@ -27,7 +28,7 @@ import { createManualGradingTrpcClient } from './utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
 
-export interface AssessmentQuestionManualGradingProps {
+interface AssessmentQuestionManualGradingProps {
   hasCourseInstancePermissionEdit: boolean;
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];
@@ -51,6 +52,7 @@ export interface AssessmentQuestionManualGradingProps {
   isDevMode: boolean;
   questionTitle: string;
   questionNumber: number;
+  availableAiGradingProviders: EnumAiGradingProvider[];
 }
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
@@ -79,6 +81,7 @@ function AssessmentQuestionManualGradingInner({
   numOpenInstances,
   questionTitle,
   questionNumber,
+  availableAiGradingProviders,
 }: AssessmentQuestionManualGradingInnerProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -169,6 +172,7 @@ function AssessmentQuestionManualGradingInner({
         aiGradingStats={aiGradingStats}
         mutations={mutations}
         initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
+        availableAiGradingProviders={availableAiGradingProviders}
         onSetGroupInfoModalState={setGroupInfoModalState}
         onSetConflictModalState={setConflictModalState}
       />

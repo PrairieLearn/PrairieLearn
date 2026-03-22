@@ -43,7 +43,7 @@ describe('assessment instance group synchronization test', function () {
   afterAll(helperServer.after);
   describe('1. database initialization', function () {
     it('get group-based homework assessment id', async () => {
-      const assessment_ids = await sqldb.queryRows(sql.select_group_work_assessment, IdSchema);
+      const assessment_ids = await sqldb.queryScalars(sql.select_group_work_assessment, IdSchema);
       assert.notEqual(assessment_ids.length, 0);
       locals.assessment_id = assessment_ids[0];
       locals.assessmentUrl = locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id;

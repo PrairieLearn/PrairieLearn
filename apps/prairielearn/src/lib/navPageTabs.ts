@@ -3,10 +3,6 @@ import type { NavPage, TabInfo } from '../components/Navbar.types.js';
 
 import { encodeSearchString } from './uri-util.shared.js';
 
-/**
- * Retrieves horizontal navigation tab info for ContextNavigation.
- * @returns Navigation page tabs and their configurations
- */
 export function getNavPageTabs() {
   const navPagesTabs = {
     public_question: [
@@ -38,7 +34,13 @@ export function getNavPageTabs() {
         iconClasses: 'far fa-calendar-alt',
         tabLabel: 'Publishing',
       },
-
+      {
+        activeSubPage: 'ai_grading',
+        urlSuffix: '/instance_admin/ai_grading',
+        iconClasses: 'bi bi-stars',
+        tabLabel: 'AI grading',
+        renderCondition: (resLocals) => resLocals.ai_grading_enabled,
+      },
       {
         activeSubPage: 'lti',
         urlSuffix: '/instance_admin/lti',
@@ -47,13 +49,26 @@ export function getNavPageTabs() {
         renderCondition: (resLocals) =>
           resLocals.lti11_enabled && resLocals.authz_data.has_course_permission_edit,
       },
-
       {
         activeSubPage: 'billing',
         urlSuffix: '/instance_admin/billing',
         iconClasses: 'fas fa-credit-card',
         tabLabel: 'Billing',
         renderCondition: (resLocals) => resLocals.billing_enabled,
+      },
+    ],
+    students: [
+      {
+        activeSubPage: ['overview', 'detail'],
+        urlSuffix: '/instance_admin/students',
+        iconClasses: 'bi bi-people-fill',
+        tabLabel: 'Students',
+      },
+      {
+        activeSubPage: 'student_labels',
+        urlSuffix: '/instance_admin/students/labels',
+        iconClasses: 'bi bi-person-badge',
+        tabLabel: 'Student labels',
       },
     ],
     course_admin: [
@@ -243,12 +258,6 @@ export function getNavPageTabs() {
         urlSuffix: '/administrator/courses',
         iconClasses: 'fa fa-chalkboard',
         tabLabel: 'Courses',
-      },
-      {
-        activeSubPage: 'networks',
-        urlSuffix: '/administrator/networks',
-        iconClasses: 'fas fa-network-wired',
-        tabLabel: 'Exam networks',
       },
       {
         activeSubPage: 'queries',

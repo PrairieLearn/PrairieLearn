@@ -30,11 +30,12 @@ import {
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
+import { deduplicateByName } from './deduplicate.js';
 import * as infofile from './infofile.js';
 import { isDraftQid } from './question.js';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
-const ajv = new Ajv({ allErrors: true });
+const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
 
 const DEFAULT_ASSESSMENT_SETS: AssessmentSetJson[] = [
   {
@@ -514,7 +515,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
   }
 }
 
-export async function loadCourseInfo({
+async function loadCourseInfo({
   courseId,
   coursePath,
   assessmentSetsInUse,
@@ -555,50 +556,24 @@ export async function loadCourseInfo({
     );
   }
 
-  /**
-   * Used to retrieve fields such as "assessmentSets" and "topics".
-   * Adds a warning when syncing if duplicates are found.
-   * If defaults are provided, the entries from defaults not present in the resulting list are merged.
-   *
-   * Each entry must have a `name` property.
-   *
-   * @param fieldName The member of `info` to inspect
-   */
   function getFieldWithoutDuplicates<
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
   >(fieldName: K, defaults?: CourseJson[K]): CourseJson[K] {
     type Entry = NonNullable<CourseJson[K]>[number];
-    const known = new Map<string, Entry>();
-    const duplicateEntryIds = new Set<string>();
+    const result = deduplicateByName<Entry>(
+      (info![fieldName] ?? []) as Entry[],
+      defaults as Entry[] | undefined,
+    );
 
-    (info![fieldName] ?? []).forEach((entry) => {
-      const entryId = entry.name;
-      if (known.has(entryId)) {
-        duplicateEntryIds.add(entryId);
-      }
-      known.set(entryId, entry);
-    });
-
-    if (duplicateEntryIds.size > 0) {
-      const duplicateIdsString = [...duplicateEntryIds.values()]
-        .map((name) => `"${name}"`)
-        .join(', ');
-      const warning = `Found duplicates in '${fieldName}': ${duplicateIdsString}. Only the last of each duplicate will be synced.`;
-      infofile.addWarning(loadedData, warning);
+    if (result.duplicates.size > 0) {
+      const duplicateIdsString = [...result.duplicates].map((name) => `"${name}"`).join(', ');
+      infofile.addWarning(
+        loadedData,
+        `Found duplicates in '${fieldName}': ${duplicateIdsString}. Only the last of each duplicate will be synced.`,
+      );
     }
 
-    if (defaults) {
-      defaults.forEach((defaultEntry) => {
-        const defaultEntryId = defaultEntry.name;
-        if (!known.has(defaultEntryId)) {
-          known.set(defaultEntryId, defaultEntry);
-        }
-      });
-    }
-
-    // Turn the map back into a list; the JS spec ensures that Maps remember
-    // insertion order, so the order is preserved.
-    return [...known.values()] as CourseJson[K];
+    return result.entries as CourseJson[K];
   }
 
   // Assessment sets in DEFAULT_ASSESSMENT_SETS may be in use but not present in the
@@ -1070,12 +1045,42 @@ function validateQuestion({
     }
   }
 
+  if (question.gradingMethod === 'External' && !question.externalGradingOptions) {
+    errors.push('"externalGradingOptions" is required when "gradingMethod" is "External"');
+  }
+
   if (question.externalGradingOptions?.timeout) {
     if (question.externalGradingOptions.timeout > config.externalGradingMaximumTimeout) {
       warnings.push(
         `External grading timeout value of ${question.externalGradingOptions.timeout} seconds exceeds the maximum value and has been limited to ${config.externalGradingMaximumTimeout} seconds.`,
       );
       question.externalGradingOptions.timeout = config.externalGradingMaximumTimeout;
+    }
+  }
+
+  if (question.preferences) {
+    for (const [key, field] of Object.entries(question.preferences)) {
+      if (typeof field.default !== field.type) {
+        errors.push(
+          `preferences.${key}: default value must be of type "${field.type}", got ${typeof field.default}`,
+        );
+      }
+      if (field.enum) {
+        if (field.type === 'boolean') {
+          errors.push(`preferences.${key}: boolean preferences cannot have enum values`);
+        } else {
+          for (const [i, val] of field.enum.entries()) {
+            if (typeof val !== field.type) {
+              errors.push(
+                `preferences.${key}.enum[${i}]: enum values must be of type "${field.type}", got ${typeof val}`,
+              );
+            }
+          }
+          if (!field.enum.includes(field.default as string | number)) {
+            errors.push(`preferences.${key}: default value must be present in the enum options`);
+          }
+        }
+      }
     }
   }
 
@@ -1261,6 +1266,9 @@ function validateAssessment({
       if (rule.examUuid && rule.mode === 'Public') {
         warnings.push('Invalid allowAccess rule: examUuid cannot be used with "mode": "Public"');
       }
+      if (!rule.examUuid && rule.mode === 'Exam') {
+        warnings.push('Invalid allowAccess rule: examUuid is required with "mode": "Exam"');
+      }
     });
   }
 
@@ -1297,7 +1305,13 @@ function validateAssessment({
       let alternatives: (QuestionPointsJson & { allowRealTimeGrading: boolean })[] = [];
       if (zoneQuestion.alternatives && zoneQuestion.id) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
-      } else if (zoneQuestion.alternatives) {
+      }
+      if (zoneQuestion.alternatives && zoneQuestion.preferences) {
+        errors.push(
+          'Cannot specify "preferences" on an alternative group. Set "preferences" on each alternative instead.',
+        );
+      }
+      if (zoneQuestion.alternatives) {
         zoneQuestion.alternatives.forEach((alternative) => checkAndRecordQid(alternative.id));
         alternatives = zoneQuestion.alternatives.map((alternative) => {
           return {
@@ -1532,6 +1546,19 @@ function validateAssessment({
     });
   }
 
+  if (assessment.zones[0]?.lockpoint) {
+    errors.push('The first zone cannot have lockpoint: true');
+  }
+
+  assessment.zones.forEach((zone) => {
+    // A lockpoint zone with no questions would create a pointless barrier -
+    // the student would have to cross a lockpoint with nothing to work on
+    // in the zone, which is almost certainly a configuration mistake.
+    if (zone.lockpoint && zone.numberChoose === 0) {
+      errors.push('A lockpoint zone must include at least one selectable question');
+    }
+  });
+
   return { warnings, errors };
 }
 
@@ -1666,6 +1693,34 @@ function validateCourseInstance({
     }
   }
 
+  if (courseInstance.studentLabels) {
+    const result = deduplicateByName(courseInstance.studentLabels);
+    if (result.duplicates.size > 0) {
+      const duplicateNamesString = [...result.duplicates].map((name) => `"${name}"`).join(', ');
+      warnings.push(
+        `Found duplicates in 'studentLabels': ${duplicateNamesString}. Only the last of each duplicate will be synced.`,
+      );
+      courseInstance.studentLabels = result.entries;
+    }
+
+    const uuidCounts = new Map<string, string[]>();
+    for (const label of courseInstance.studentLabels) {
+      const names = uuidCounts.get(label.uuid);
+      if (names) {
+        names.push(label.name);
+      } else {
+        uuidCounts.set(label.uuid, [label.name]);
+      }
+    }
+    for (const [uuid, names] of uuidCounts) {
+      if (names.length > 1) {
+        errors.push(
+          `Found duplicate UUID "${uuid}" in 'studentLabels' for labels: ${names.map((n) => `"${n}"`).join(', ')}.`,
+        );
+      }
+    }
+  }
+
   return { warnings, errors };
 }
 
@@ -1707,7 +1762,7 @@ export async function loadQuestions({
 /**
  * Loads all course instances in a course directory.
  */
-export async function loadCourseInstances({
+async function loadCourseInstances({
   coursePath,
   sharingEnabled,
 }: {
@@ -1734,7 +1789,7 @@ export async function loadCourseInstances({
 /**
  * Loads all assessments in a course instance.
  */
-export async function loadAssessments({
+async function loadAssessments({
   coursePath,
   courseInstanceDirectory,
   courseInstanceExpired,

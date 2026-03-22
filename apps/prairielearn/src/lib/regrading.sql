@@ -1,12 +1,12 @@
 -- BLOCK select_regrade_assessment_instance_info
 SELECT
-  assessment_instance_label (ai, a, aset),
-  a.id AS assessment_id,
-  u.uid AS user_uid,
-  g.id AS group_id,
-  g.name AS group_name,
-  ci.id AS course_instance_id,
-  c.id AS course_id
+  to_jsonb(ai) AS assessment_instance,
+  to_jsonb(a) AS assessment,
+  to_jsonb(aset) AS assessment_set,
+  to_jsonb(u) AS instance_user,
+  to_jsonb(g) AS instance_group,
+  to_jsonb(ci) AS course_instance,
+  to_jsonb(c) AS course
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
@@ -21,10 +21,11 @@ WHERE
 
 -- BLOCK select_regrade_assessment_instances
 SELECT
-  ai.id AS assessment_instance_id,
-  assessment_instance_label (ai, a, aset),
-  u.uid AS user_uid,
-  g.name AS group_name
+  to_jsonb(ai) AS assessment_instance,
+  to_jsonb(a) AS assessment,
+  to_jsonb(aset) AS assessment_set,
+  to_jsonb(u) AS instance_user,
+  to_jsonb(g) AS instance_group
 FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)

@@ -6,36 +6,25 @@ import { config } from '../lib/config.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import type { Override } from '../middlewares/authzCourseOrInstance.js';
 
-import { IssueBadgeHtml } from './IssueBadge.js';
 import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
-import { ContextNavigation } from './NavbarContext.js';
-import { ProgressCircle } from './ProgressCircle.js';
 
 export function Navbar({
   resLocals,
   navPage,
   navSubPage,
   navbarType,
-  marginBottom = true,
-  isInPageLayout = false,
   sideNavEnabled = false,
 }: {
   resLocals: UntypedResLocals;
   navPage?: NavPage;
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
-  marginBottom?: boolean;
-  /**
-   * Indicates if the Navbar component is used within the PageLayout component.
-   * Used to ensure that enhanced navigation features are only present on pages that use PageLayout.
-   */
-  isInPageLayout?: boolean;
   /**
    * Indicates if the side nav is enabled for the current page.
    */
   sideNavEnabled?: boolean;
 }) {
-  const { __csrf_token, course, urlPrefix } = resLocals;
+  const { __csrf_token, course } = resLocals;
   navPage ??= resLocals.navPage;
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
@@ -61,6 +50,8 @@ export function Navbar({
       <a
         href="https://docs.prairielearn.com/student-guide/accessibility/"
         class="d-inline-flex p-2 m-2 text-white"
+        target="_blank"
+        rel="noreferrer"
       >
         Accessibility guide
       </a>
@@ -114,9 +105,7 @@ export function Navbar({
             ${NavbarByType({
               resLocals,
               navPage,
-              navSubPage,
               navbarType,
-              isInPageLayout,
             })}
           </ul>
 
@@ -125,7 +114,7 @@ export function Navbar({
                 <a
                   id="navbar-load-from-disk"
                   class="btn btn-success btn-sm"
-                  href="${urlPrefix}/loadFromDisk"
+                  href="/pl/loadFromDisk"
                 >
                   Load from disk
                 </a>
@@ -143,50 +132,29 @@ export function Navbar({
           </div>
         `
       : ''}
-    ${isInPageLayout
-      ? FlashMessages()
-      : html`
-          <div class="${marginBottom ? 'mb-3' : ''}">
-            ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
-          </div>
-        `}
+    ${FlashMessages()}
   `;
 }
 
 function NavbarByType({
   resLocals,
   navPage,
-  navSubPage,
   navbarType,
-  isInPageLayout,
 }: {
   resLocals: UntypedResLocals;
   navPage: NavPage;
-  navSubPage: NavSubPage;
   navbarType: NavbarType;
-  isInPageLayout?: boolean;
 }) {
-  // Student and public navbars remain unchanged
-  // when enhanced navigation is enabled.
   if (navbarType === 'student') {
     return NavbarStudent({ resLocals, navPage });
   } else if (navbarType === 'public') {
     return NavbarPublic({ resLocals });
   } else {
-    if (isInPageLayout) {
-      return NavbarButtons({
-        resLocals,
-        navPage,
-        navbarType,
-      });
-    } else if (navbarType === 'instructor') {
-      // TODO: Remove this once `instructorAiGenerateDraftEditor.html.tsx` uses PageLayout.
-      return NavbarInstructor({ resLocals, navPage, navSubPage });
-    } else {
-      // The only page that isn't in a PageLayout and hit by other checks
-      // is `instructorAiGenerateDraftEditor.html.tsx`, which has navbarType `instructor`.
-      throw new Error(`Invalid navbar type: ${navbarType}`);
-    }
+    return NavbarButtons({
+      resLocals,
+      navPage,
+      navbarType,
+    });
   }
 }
 
@@ -768,194 +736,6 @@ function NavbarStudent({ resLocals, navPage }: { resLocals: UntypedResLocals; na
           </li>
         `
       : ''}
-  `;
-}
-
-function NavbarInstructor({
-  resLocals,
-  navPage,
-  navSubPage,
-}: {
-  resLocals: UntypedResLocals;
-  navPage: NavPage;
-  navSubPage?: NavSubPage;
-}) {
-  const {
-    course,
-    course_instance,
-    navbarOpenIssueCount,
-    navbarCompleteGettingStartedTasksCount,
-    navbarTotalGettingStartedTasksCount,
-    authz_data,
-    urlPrefix,
-  } = resLocals;
-  return html`
-    <li class="nav-item btn-group" id="navbar-course-switcher">
-      <a
-        class="nav-link ${navPage === 'course_admin' &&
-        !(navSubPage === 'issues' || navSubPage === 'questions' || navSubPage === 'syncs')
-          ? 'active'
-          : ''} ${!authz_data.has_course_permission_view ? 'disabled' : ''}"
-        href="${urlPrefix}/course_admin"
-      >
-        ${course.short_name}
-      </a>
-      <a
-        class="nav-link dropdown-toggle dropdown-toggle-split"
-        id="navbarDropdownMenuCourseAdminLink"
-        href="#"
-        role="button"
-        data-bs-toggle="dropdown"
-        aria-label="Change course"
-        aria-haspopup="true"
-        aria-expanded="false"
-        hx-get="/pl/navbar/course/${course.id}/switcher"
-        hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
-        hx-target="#navbarDropdownMenuCourseAdmin"
-      ></a>
-      <div
-        class="dropdown-menu"
-        aria-labelledby="navbarDropdownMenuCourseAdminLink"
-        id="navbarDropdownMenuCourseAdmin"
-      >
-        <div class="d-flex justify-content-center">
-          <div class="spinner-border spinner-border-sm" role="status">
-            <span class="visually-hidden">Loading courses...</span>
-          </div>
-        </div>
-      </div>
-    </li>
-
-    ${authz_data.has_course_permission_edit && course.show_getting_started
-      ? html`
-          <li class="nav-item d-flex align-items-center">
-            <a
-              style="display: inline-flex; align-items: center;"
-              class="nav-link pe-0"
-              href="${urlPrefix}/course_admin/getting_started"
-            >
-              Getting Started
-              ${ProgressCircle({
-                value: navbarCompleteGettingStartedTasksCount,
-                maxValue: navbarTotalGettingStartedTasksCount,
-                className: 'mx-1',
-              })}
-            </a>
-          </li>
-        `
-      : ''}
-
-    <li class="nav-item ${navPage === 'course_admin' && navSubPage === 'issues' ? 'active' : ''}">
-      <a class="nav-link" href="${urlPrefix}/course_admin/issues">
-        Issues ${IssueBadgeHtml({ count: navbarOpenIssueCount, suppressLink: true })}
-      </a>
-    </li>
-    ${authz_data.has_course_permission_preview
-      ? html`
-          <li
-            class="nav-item ${navPage === 'course_admin' && navSubPage === 'questions'
-              ? 'active'
-              : ''}"
-          >
-            <a class="nav-link" href="${urlPrefix}/course_admin/questions">Questions</a>
-          </li>
-        `
-      : ''}
-    ${authz_data.has_course_permission_edit
-      ? html`
-          <li
-            class="nav-item ${navPage === 'course_admin' && navSubPage === 'syncs' ? 'active' : ''}"
-          >
-            <a class="nav-link" href="${urlPrefix}/course_admin/syncs">Sync</a>
-          </li>
-        `
-      : ''}
-    ${course_instance
-      ? html`
-          <li class="navbar-text mx-2 no-select">/</li>
-          <li class="nav-item btn-group" id="navbar-course-instance-switcher">
-            <a
-              class="nav-link ${navPage === 'instance_admin' &&
-              !(navSubPage === 'assessments' || navSubPage === 'gradebook')
-                ? 'active'
-                : ''}"
-              href="/pl/course_instance/${course_instance.id}/instructor/instance_admin"
-            >
-              ${course_instance.short_name}
-            </a>
-            <a
-              class="nav-link dropdown-toggle dropdown-toggle-split"
-              id="navbarDropdownMenuInstanceAdminLink"
-              href="#"
-              role="button"
-              data-bs-toggle="dropdown"
-              aria-label="Change course instance"
-              aria-haspopup="true"
-              aria-expanded="false"
-              hx-get="/pl/navbar/course/${course.id}/course_instance_switcher/${course_instance.id}"
-              hx-trigger="show.bs.dropdown once delay:200ms"
-              hx-target="#navbarDropdownMenuInstanceAdmin"
-            ></a>
-            <div
-              class="dropdown-menu"
-              aria-labelledby="navbarDropdownMenuInstanceAdminLink"
-              id="navbarDropdownMenuInstanceAdmin"
-            >
-              <div class="d-flex justify-content-center">
-                <div class="spinner-border spinner-border-sm" role="status">
-                  <span class="visually-hidden">Loading course instances...</span>
-                </div>
-              </div>
-            </div>
-          </li>
-
-          <li
-            class="nav-item ${navPage === 'instance_admin' && navSubPage === 'assessments'
-              ? 'active'
-              : ''}"
-          >
-            <a class="nav-link" href="${urlPrefix}/instance_admin/assessments">Assessments</a>
-          </li>
-
-          <li
-            class="nav-item ${navPage === 'instance_admin' && navSubPage === 'gradebook'
-              ? 'active'
-              : ''}"
-          >
-            <a class="nav-link" href="${urlPrefix}/instance_admin/gradebook">Gradebook</a>
-          </li>
-        `
-      : html`
-          <li class="navbar-text mx-2 no-select">/</li>
-
-          <li class="nav-item dropdown" id="navbar-course-instance-switcher">
-            <a
-              class="nav-link dropdown-toggle"
-              id="navbarDropdownMenuInstanceChooseLink"
-              href="#"
-              role="button"
-              data-bs-toggle="dropdown"
-              aria-haspopup="true"
-              aria-expanded="false"
-              hx-get="/pl/navbar/course/${course.id}/course_instance_switcher"
-              hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
-              hx-target="#navbarDropdownMenuInstanceChoose"
-            >
-              Choose course instance...
-            </a>
-            <div
-              class="dropdown-menu"
-              aria-labelledby="navbarDropdownMenuInstanceChooseLink"
-              id="navbarDropdownMenuInstanceChoose"
-            >
-              <div class="d-flex justify-content-center">
-                <div class="spinner-border spinner-border-sm" role="status">
-                  <span class="visually-hidden">Loading course instances...</span>
-                </div>
-              </div>
-            </div>
-          </li>
-        `}
   `;
 }
 

@@ -93,10 +93,16 @@ async function checkPage(url: string) {
       // instead of colspan). HTML is case-insensitive, so we accept both.
       'attr-case': ['error', { style: ['lowercase', 'camelcase'] }],
       'bootstrap4-construct': 'error',
+      // The assessment password page uses autocomplete="off" because the input
+      // is for a proctor-provided password, not a user account password.
+      'autocomplete-password': 'off',
       'attribute-boolean-style': 'off',
       'attribute-empty-style': 'off',
       deprecated: ['error', { exclude: ['tt'] }],
       'doctype-style': 'off',
+      // Multiple form controls with the same name is valid HTML for array submission.
+      // This is used by multi-select comboboxes to submit arrays of values.
+      'form-dup-name': 'off',
       // This rule is mostly relevant for SEO, which doesn't matter since our
       // pages aren't ever crawled by search engines.
       'long-title': 'off',
@@ -400,19 +406,19 @@ describe('accessibility', () => {
     endpoints = expressListEndpoints(app);
     endpoints.sort((a, b) => a.path.localeCompare(b.path));
 
-    const assessment_id = await sqldb.queryRow(
+    const assessment_id = await sqldb.queryScalar(
       'SELECT id FROM assessments WHERE tid = $tid',
       { tid: 'hw1-automaticTestSuite' },
       IdSchema,
     );
 
-    const question_id = await sqldb.queryRow(
+    const question_id = await sqldb.queryScalar(
       'SELECT id FROM questions WHERE qid = $qid',
       { qid: 'downloadFile' },
       IdSchema,
     );
 
-    const user_id = await sqldb.queryRow(
+    const user_id = await sqldb.queryScalar(
       'SELECT id FROM users WHERE uid = $uid',
       { uid: 'dev@example.com' },
       IdSchema,
@@ -430,6 +436,7 @@ describe('accessibility', () => {
     assert.isNotNull(enrollment);
 
     await features.enable('question-sharing');
+    await features.enable('ai-grading');
 
     routeParams = {
       ...STATIC_ROUTE_PARAMS,
@@ -454,7 +461,7 @@ describe('accessibility', () => {
       { course_instance_id: routeParams.course_instance_id },
     );
 
-    const course_id = await sqldb.queryRow(
+    const course_id = await sqldb.queryScalar(
       'SELECT course_id FROM course_instances WHERE id = $course_instance_id',
       { course_instance_id: routeParams.course_instance_id },
       IdSchema,

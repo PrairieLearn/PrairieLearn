@@ -70,49 +70,6 @@ export const endTransactionAsync = defaultPool.endTransactionAsync.bind(defaultP
  */
 export const runInTransactionAsync = defaultPool.runInTransactionAsync.bind(defaultPool);
 /**
- * Executes a query with the specified parameters.
- *
- * @deprecated Use {@link execute} instead.
- *
- * Using the return value of this function directly is not recommended. Instead, use
- * {@link queryRows}, {@link queryRow}, or {@link queryOptionalRow}.
- */
-export const queryAsync = defaultPool.queryAsync.bind(defaultPool);
-/**
- * Executes a query with the specified parameters. Errors if the query does
- * not return exactly one row.
- *
- * @deprecated Use {@link executeRow} or {@link queryRow} instead.
- */
-export const queryOneRowAsync = defaultPool.queryOneRowAsync.bind(defaultPool);
-/**
- * Executes a query with the specified parameters. Errors if the query
- * returns more than one row.
- *
- * @deprecated Use {@link queryOptionalRow} instead.
- */
-export const queryZeroOrOneRowAsync = defaultPool.queryZeroOrOneRowAsync.bind(defaultPool);
-/**
- * Calls the given sproc with the specified parameters.
- *
- * @deprecated Use {@link callRows} instead.
- */
-export const callAsync = defaultPool.callAsync.bind(defaultPool);
-/**
- * Calls the given sproc with the specified parameters. Errors if the
- * sproc does not return exactly one row.
- *
- * @deprecated Use {@link callRow} instead.
- */
-export const callOneRowAsync = defaultPool.callOneRowAsync.bind(defaultPool);
-/**
- * Calls the given sproc with the specified parameters. Errors if the
- * sproc returns more than one row.
- *
- * @deprecated Use {@link callOptionalRow} instead.
- */
-export const callZeroOrOneRowAsync = defaultPool.callZeroOrOneRowAsync.bind(defaultPool);
-/**
  * Calls a sproc with the specified parameters using a specific client.
  */
 export const callWithClientAsync = defaultPool.callWithClientAsync.bind(defaultPool);
@@ -130,21 +87,15 @@ export const callWithClientZeroOrOneRowAsync =
 /**
  * Executes a query with the specified parameters. Returns an array of rows
  * that conform to the given Zod schema.
- *
- * If the query returns a single column, the return value will be a list of column values.
  */
 export const queryRows = defaultPool.queryRows.bind(defaultPool);
 /**
  * Executes a query with the specified parameters. Returns exactly one row that conforms to the given Zod schema.
- *
- * If the query returns a single column, the return value will be the column value itself.
  */
 export const queryRow = defaultPool.queryRow.bind(defaultPool);
 /**
  * Executes a query with the specified parameters. Returns either null or a
  * single row that conforms to the given Zod schema, and errors otherwise.
- *
- * If the query returns a single column, the return value will be the column value itself.
  */
 export const queryOptionalRow = defaultPool.queryOptionalRow.bind(defaultPool);
 /**
@@ -162,6 +113,40 @@ export const callRow = defaultPool.callRow.bind(defaultPool);
  * or a single row that conforms to the given Zod schema.
  */
 export const callOptionalRow = defaultPool.callOptionalRow.bind(defaultPool);
+/**
+ * Executes a query and returns all values from a single column, validated
+ * against the given Zod schema. Errors if the query returns more than one column.
+ */
+export const queryScalars = defaultPool.queryScalars.bind(defaultPool);
+/**
+ * Executes a query and returns a single value from a single column, validated
+ * against the given Zod schema. Errors if the query does not return exactly
+ * one row or returns more than one column.
+ */
+export const queryScalar = defaultPool.queryScalar.bind(defaultPool);
+/**
+ * Executes a query and returns a single value from a single column, or null
+ * if no rows are returned. Validated against the given Zod schema. Errors if
+ * the query returns more than one row or more than one column.
+ */
+export const queryOptionalScalar = defaultPool.queryOptionalScalar.bind(defaultPool);
+/**
+ * Calls the given sproc and returns all values from a single column, validated
+ * against the given Zod schema. Errors if the sproc returns more than one column.
+ */
+export const callScalars = defaultPool.callScalars.bind(defaultPool);
+/**
+ * Calls the given sproc and returns a single value from a single column, validated
+ * against the given Zod schema. Errors if the sproc does not return exactly
+ * one row or returns more than one column.
+ */
+export const callScalar = defaultPool.callScalar.bind(defaultPool);
+/**
+ * Calls the given sproc and returns a single value from a single column, or
+ * null if no rows are returned. Validated against the given Zod schema.
+ * Errors if the sproc returns more than one row or more than one column.
+ */
+export const callOptionalScalar = defaultPool.callOptionalScalar.bind(defaultPool);
 
 /**
  * Executes a query with the specified parameters. Returns the number of rows affected.

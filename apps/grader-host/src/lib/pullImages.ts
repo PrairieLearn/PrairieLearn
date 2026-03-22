@@ -26,7 +26,7 @@ export default async function pullImages() {
   }
 
   logger.info('Querying for recent images');
-  const images = await sqldb.queryRows(sql.select_recent_images, z.string());
+  const images = await sqldb.queryScalars(sql.select_recent_images, z.string());
 
   logger.info(`Need to pull ${images.length} images`);
   await async.eachLimit(images, config.parallelInitPulls, async (image) => {

@@ -11,7 +11,7 @@
   display: grid;
   grid-template-areas: 'preview-tabs chat' 'preview chat';
   grid-template-rows: min-content 1fr;
-  grid-template-columns: 1fr var(--chat-width, 500px);
+  grid-template-columns: 1fr auto;
 }
 
 .app-chat-container {
@@ -40,6 +40,48 @@
 
 .app-preview-tabs {
   grid-area: preview-tabs;
+  min-width: 0;
+}
+
+.question-title-bar > * {
+  /* Allow flex children to truncate inside the wrapped flex container */
+  min-width: 0;
+}
+
+.inline-editable-display {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  overflow: hidden;
+  /* Match the height of form-control-sm so the bar doesn't shift between display/edit modes. */
+  min-height: calc(1.5em + 0.5rem + 2px);
+}
+
+.inline-editable-edit {
+  /* Match the display mode height so the bar doesn't shift when toggling edit mode. */
+  min-height: calc(1.5em + 0.5rem + 2px);
+}
+
+.inline-editable-display:disabled {
+  cursor: default;
+}
+
+.inline-editable-display:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.inline-editable-display .bi-pencil {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.inline-editable-display:hover:not(:disabled) .bi-pencil,
+.inline-editable-display:focus-visible .bi-pencil {
+  opacity: 1;
 }
 
 .app-preview {
@@ -61,6 +103,14 @@
 
 .app-chat-resizer:hover {
   background: rgba(0, 0, 0, 0.05);
+}
+
+.app-chat-resizer:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  background-color: var(--bs-primary-bg-subtle);
+  /* Elevate above adjacent grid areas (e.g. preview-tabs with z-1)
+     so the focus ring is not obscured. */
+  z-index: 2;
 }
 
 .question-wrapper {

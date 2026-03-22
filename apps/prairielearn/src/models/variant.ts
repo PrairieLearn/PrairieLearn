@@ -4,19 +4,19 @@ import { z } from 'zod';
 
 import { AugmentedError } from '@prairielearn/error';
 import {
-  callRow,
   execute,
   loadSqlEquiv,
   queryOptionalRow,
-  queryRow,
+  queryOptionalScalar,
   queryRows,
+  queryScalar,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { calculateCourseInstanceRolePermissions } from '../lib/authz-data-lib.js';
+import { selectCourseInstanceRole } from '../lib/authz-data.js';
 import {
   type Course,
-  EnumCourseInstanceRoleSchema,
   SubmissionSchema,
   type User,
   type Variant,
@@ -94,14 +94,14 @@ export async function selectVariantsByInstanceQuestion({
  * - For non-group work, a user is considered to own a variant if they are the
  *   user that created the variant, as tracked in `variants.user_id`.
  */
-export async function selectUserOwnsVariant({
+async function selectUserOwnsVariant({
   user_id,
   variant_id,
 }: {
   user_id: string;
   variant_id: string;
 }): Promise<boolean> {
-  return await queryRow(sql.select_user_owns_variant, { user_id, variant_id }, z.boolean());
+  return await queryScalar(sql.select_user_owns_variant, { user_id, variant_id }, z.boolean());
 }
 
 export async function selectAndAuthzVariant(options: {
@@ -224,24 +224,25 @@ export async function selectAndAuthzVariant(options: {
       course_instance_id == null ||
       !idsEqual(course_instance_id, variant.course_instance_id)
     ) {
-      const authnUserPermissions = await callRow(
-        'authz_course_instance',
-        [authn_user.id, variant.course_instance_id, new Date()],
-        z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
-      );
+      const authnUserCourseInstanceRole = await selectCourseInstanceRole({
+        userId: authn_user.id,
+        courseInstanceId: variant.course_instance_id,
+      });
 
-      const userPermissions = await callRow(
-        'authz_course_instance',
-        [user.id, variant.course_instance_id, new Date()],
-        z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
-      );
+      const userCourseInstanceRole = idsEqual(authn_user.id, user.id)
+        ? authnUserCourseInstanceRole
+        : await selectCourseInstanceRole({
+            userId: user.id,
+            courseInstanceId: variant.course_instance_id,
+          });
 
       authnHasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
-        authnUserPermissions.course_instance_role,
+        authnUserCourseInstanceRole,
       ).has_course_instance_permission_view;
-      hasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
-        userPermissions.course_instance_role,
-      ).has_course_instance_permission_view;
+      hasCourseInstancePermissionView =
+        calculateCourseInstanceRolePermissions(
+          userCourseInstanceRole,
+        ).has_course_instance_permission_view;
     }
 
     // We'll only permit access if both the authenticated user and the
@@ -263,7 +264,7 @@ export async function selectAndAuthzVariant(options: {
  * Assumes that the caller is already within a transaction.
  */
 export async function lockVariant({ variant_id }: { variant_id: string }) {
-  const locked = await queryOptionalRow(
+  const locked = await queryOptionalScalar(
     sql.select_and_lock_assessment_instance_or_variant,
     { variant_id },
     z.boolean(),

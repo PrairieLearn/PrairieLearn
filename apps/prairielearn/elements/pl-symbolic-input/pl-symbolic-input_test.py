@@ -1,5 +1,6 @@
 import importlib
 import string
+from pathlib import Path
 from typing import Any
 
 import prairielearn.sympy_utils as psu
@@ -143,3 +144,134 @@ def test_parse_without_variables_attribute_with_assumptions() -> None:
     # The submitted answer should be a valid SympyJson dict
     assert isinstance(data["submitted_answers"]["test"], dict)
     assert data["submitted_answers"]["test"]["_type"] == "sympy"
+
+
+@pytest.mark.parametrize("a_sub", ["sqrt(-2)", "sqrt(-1)", "(-2)^(1/2)"])
+def test_implicit_complex_rejected_with_no_simplify(a_sub: str) -> None:
+    """Submitting an implicitly complex expression like sqrt(-2) must produce a
+    format error during parse, even when display-simplified-expression is false.
+    """
+    correct_answer = psu.sympy_to_json(sympy.Integer(42))
+
+    element_html = """
+    <pl-symbolic-input
+        answers-name="test"
+        variables="x"
+        display-simplified-expression="false"
+    ></pl-symbolic-input>
+    """
+
+    data: dict[str, Any] = {
+        "submitted_answers": {"test": a_sub},
+        "raw_submitted_answers": {"test": a_sub},
+        "correct_answers": {"test": correct_answer},
+        "format_errors": {},
+        "partial_scores": {},
+    }
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" in data["format_errors"]
+    assert "complex number" in data["format_errors"]["test"]
+
+
+@pytest.mark.parametrize("a_sub", ["log(-x^2)", "sqrt(-x^2)"])
+def test_complex_from_real_assumptions_produces_format_error(a_sub: str) -> None:
+    """When a correct answer has real variable assumptions, submitting an
+    expression that becomes complex (e.g. log(-x^2)) should produce a format
+    error, not an unhandled exception.
+
+    Regression test for https://github.com/PrairieLearn/PrairieLearn/issues/14442
+    """
+    x = sympy.Symbol("x", real=True)
+    correct_answer = psu.sympy_to_json(x ** (-1) - 1)
+
+    element_html = """
+    <pl-symbolic-input
+        answers-name="test"
+        variables="x"
+    ></pl-symbolic-input>
+    """
+
+    data: dict[str, Any] = {
+        "submitted_answers": {"test": a_sub},
+        "raw_submitted_answers": {"test": a_sub},
+        "correct_answers": {"test": correct_answer},
+        "format_errors": {},
+        "partial_scores": {},
+    }
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" in data["format_errors"]
+    assert "complex number" in data["format_errors"]["test"]
+
+
+@pytest.mark.parametrize(
+    "a_sub",
+    [
+        "sec(0)",
+        "(16-9*(sec(0)^2))/3",
+        "csc(1)",
+    ],
+)
+def test_trig_no_crash_with_no_simplify(a_sub: str) -> None:
+    """Submitting expressions with sec/csc must not crash when
+    display-simplified-expression is false. Regression test for a sympy
+    bug where is_extended_real on unevaluated sec(0) raises AttributeError.
+    """
+    correct_answer = psu.sympy_to_json(sympy.Integer(2))
+
+    element_html = """
+    <pl-symbolic-input
+        answers-name="test"
+        variables="x"
+        display-simplified-expression="false"
+    ></pl-symbolic-input>
+    """
+
+    data: dict[str, Any] = {
+        "submitted_answers": {"test": a_sub},
+        "raw_submitted_answers": {"test": a_sub},
+        "correct_answers": {"test": correct_answer},
+        "format_errors": {},
+        "partial_scores": {},
+    }
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"], (
+        f"Unexpected format error: {data['format_errors'].get('test')}"
+    )
+    assert data["submitted_answers"]["test"] is not None
+
+
+def test_formula_editor_initial_value_respects_display_log_as_ln(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    element_html = """
+    <pl-symbolic-input
+        answers-name="test"
+        variables="x"
+        formula-editor="true"
+        display-log-as-ln="true"
+        initial-value="log(x)"
+    ></pl-symbolic-input>
+    """
+    data: dict[str, Any] = {
+        "submitted_answers": {},
+        "raw_submitted_answers": {},
+        "correct_answers": {},
+        "answers_names": {},
+        "format_errors": {},
+        "partial_scores": {},
+        "panel": "question",
+        "editable": True,
+    }
+
+    symbolic_input.prepare(element_html, data)
+    rendered = symbolic_input.render(element_html, data)
+
+    assert "\\ln{\\left(x \\right)}" in rendered
+    assert "\\log{\\left(x \\right)}" not in rendered

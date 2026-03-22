@@ -89,7 +89,7 @@ export async function getGroupConfig(assessmentId: string): Promise<GroupConfig>
  * Used in checking whether the user is in a group or not.
  */
 export async function getGroupId(assessmentId: string, userId: string): Promise<string | null> {
-  return await sqldb.queryOptionalRow(
+  return await sqldb.queryOptionalScalar(
     sql.get_group_id,
     { assessment_id: assessmentId, user_id: userId },
     IdSchema,
@@ -215,7 +215,7 @@ async function selectUserInCourseInstance({
   // To be part of a group, the user needs to either be enrolled in the course
   // instance, or be an instructor
   if (
-    (await sqldb.callRow(
+    (await sqldb.callScalar(
       'users_is_instructor_in_course_instance',
       [user.id, courseInstance.id],
       z.boolean(),
@@ -296,7 +296,7 @@ export async function addUserToGroup({
 
     // Find a group role. If none of the roles can be assigned, assign no role.
     const groupRoleId = group.has_roles
-      ? await sqldb.queryOptionalRow(
+      ? await sqldb.queryOptionalScalar(
           sql.select_suitable_group_role,
           { assessment_id: assessment.id, group_id: group.id, cur_size: group.cur_size },
           IdSchema,
@@ -715,7 +715,7 @@ export async function updateGroupRoles(
 }
 
 export async function deleteGroup(assessment_id: string, group_id: string, authn_user_id: string) {
-  const deleted_group_id = await sqldb.queryOptionalRow(
+  const deleted_group_id = await sqldb.queryOptionalScalar(
     sql.delete_group,
     { assessment_id, group_id, authn_user_id },
     IdSchema,

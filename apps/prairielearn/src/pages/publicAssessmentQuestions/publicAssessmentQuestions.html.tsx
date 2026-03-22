@@ -9,7 +9,7 @@ import {
 import { PageLayout } from '../../components/PageLayout.js';
 import { TagBadgeList } from '../../components/TagBadge.js';
 import { TopicBadgeHtml } from '../../components/TopicBadge.js';
-import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.js';
+import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.shared.js';
 import { type Assessment, type AssessmentSet, type Course } from '../../lib/db-types.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
@@ -87,11 +87,13 @@ function AssessmentQuestionsTable({
                   <a href="/pl/public/course/${course_id}/question/${question.question.id}/preview">
                     ${renderHtml(
                       <AssessmentQuestionNumber
-                        alternativeGroupSize={question.alternative_group_size}
-                        alternativeGroupNumber={question.alternative_group.number ?? 1}
-                        numberInAlternativeGroup={
-                          question.assessment_question.number_in_alternative_group
+                        questionNumber={question.alternative_group.number}
+                        alternativeNumber={
+                          question.alternative_group_size > 1
+                            ? question.assessment_question.number_in_alternative_group
+                            : undefined
                         }
+                        className="me-2"
                       />,
                     )}${question.question.title}
                   </a>

@@ -6,7 +6,12 @@ import path from 'node:path';
 import { test as base } from '@playwright/test';
 import * as tmp from 'tmp-promise';
 
+import type { CourseInstance } from '../../lib/db-types.js';
+import { type FeatureName, features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
+import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
+import { selectCourseByShortName } from '../../models/course.js';
+import { syncCourse } from '../helperCourse.js';
 
 import { setupWorkerServer } from './serverUtils.js';
 
@@ -15,12 +20,16 @@ export { expect } from '@playwright/test';
 interface TestFixtures {
   /** Override baseURL to be the worker-specific URL */
   baseURL: string;
+  /** Enables a feature flag for the duration of the test, disabling it in teardown if it wasn't already enabled. */
+  enableFeatureFlag: (name: FeatureName) => Promise<void>;
 }
 
 interface WorkerFixtures {
   workerPort: number;
   /** Path to the temporary writable copy of testCourse */
   testCoursePath: string;
+  /** The default QA 101 / Sp15 course instance */
+  courseInstance: CourseInstance;
 }
 
 /**
@@ -68,6 +77,38 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     },
     { scope: 'worker' },
   ],
+
+  courseInstance: [
+    async ({ testCoursePath, workerPort: _workerPort }, use) => {
+      await syncCourse(testCoursePath);
+
+      const course = await selectCourseByShortName('QA 101');
+      const courseInstance = await selectCourseInstanceByShortName({
+        course,
+        shortName: 'Sp15',
+      });
+
+      await use(courseInstance);
+    },
+    { scope: 'worker' },
+  ],
+
+  // eslint-disable-next-line no-empty-pattern
+  enableFeatureFlag: async ({}, use) => {
+    const flagsToDisable: FeatureName[] = [];
+
+    await use(async (name: FeatureName) => {
+      const wasEnabled = await features.enabled(name);
+      await features.enable(name);
+      if (!wasEnabled) {
+        flagsToDisable.push(name);
+      }
+    });
+
+    for (const name of flagsToDisable) {
+      await features.disable(name);
+    }
+  },
 
   // Override baseURL to use the worker-specific port
   baseURL: async ({ workerPort }, use) => {

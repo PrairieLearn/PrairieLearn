@@ -1,8 +1,11 @@
 import { EncodedData } from '@prairielearn/browser-utils';
-import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
+import { type HtmlValue, escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import type { InstanceQuestionAIGradingInfo } from '../ee/lib/ai-grading/types.js';
+import type {
+  CounterClockwiseRotationDegrees,
+  InstanceQuestionAIGradingInfo,
+} from '../ee/lib/ai-grading/types.js';
 import { ansiToHtml } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { type CopyTarget } from '../lib/copy-content.js';
@@ -113,6 +116,7 @@ export function QuestionContainer({
       ${['instructor', 'manual_grading'].includes(questionContext) && aiGradingInfo
         ? AIGradingExplanation({
             explanation: aiGradingInfo.explanation,
+            hasImage: aiGradingInfo.hasImage,
             rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
           })
         : ''}
@@ -200,11 +204,16 @@ function AIGradingPrompt({ prompt }: { prompt: string }) {
 
 function AIGradingExplanation({
   explanation,
+  hasImage,
   rotationCorrectionDegrees,
 }: {
   explanation: string | null;
-  rotationCorrectionDegrees: string | null;
+  hasImage: boolean;
+  rotationCorrectionDegrees: Record<string, CounterClockwiseRotationDegrees> | null;
 }) {
+  const rotationCorrectionApplied =
+    rotationCorrectionDegrees && Object.keys(rotationCorrectionDegrees).length > 0;
+
   return html`
     <div class="card mb-3 grading-block">
       <div
@@ -227,6 +236,38 @@ function AIGradingExplanation({
         id="ai-grading-explanation-body"
       >
         <div class="card-body">
+          ${hasImage
+            ? rotationCorrectionApplied
+              ? html`<div class="alert alert-warning mb-3" role="alert">
+                  <p>
+                    One or more images were uploaded in a rotated state by the student (this was an
+                    error by the student). The system corrected their rotation prior to AI grading.
+                  </p>
+                  <div class="card table-responsive mb-0" style="max-width: 800px;">
+                    <table class="table table-sm mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th class="text-nowrap">Filename</th>
+                          <th class="text-nowrap">Correction (counterclockwise)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${Object.entries(rotationCorrectionDegrees).map(
+                          ([filename, degrees]) => html`
+                            <tr>
+                              <td class="text-nowrap"><code>${filename}</code></td>
+                              <td>${degrees}&deg;</td>
+                            </tr>
+                          `,
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>`
+              : html`<div class="alert alert-info mb-3" role="alert">
+                  None of the submitted images required rotation correction.
+                </div>`
+            : ''}
           ${explanation
             ? html`
                 <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
@@ -234,25 +275,13 @@ ${explanation}
 </pre>
               `
             : ''}
-          ${rotationCorrectionDegrees
-            ? html`
-                <br />
-                <pre>
-Not all images were upright
-Counterclockwise rotation corrections, in degrees: ${rotationCorrectionDegrees}
-</pre>
-              `
-            : html`
-                <br />
-                <pre>All images were upright</pre>
-              `}
         </div>
       </div>
     </div>
   `;
 }
 
-export function IssuePanel({
+function IssuePanel({
   issue,
   course_instance,
   authz_data,
@@ -411,13 +440,17 @@ export function QuestionTitle({
   questionContext: QuestionContext;
   question: Question;
   questionNumber: string;
-}) {
+}): HtmlValue {
+  const hasTitle = !!question.title?.trim();
+
   if (questionContext === 'student_homework') {
-    return `${questionNumber}. ${question.title}`;
+    return hasTitle ? `${questionNumber}. ${question.title}` : questionNumber;
   } else if (questionContext === 'student_exam') {
-    return `Question ${questionNumber}: ${question.title}`;
+    return hasTitle
+      ? `Question ${questionNumber}: ${question.title}`
+      : `Question ${questionNumber}`;
   } else {
-    return question.title;
+    return hasTitle ? question.title : html`<span class="font-monospace">${question.qid}</span>`;
   }
 }
 
@@ -435,10 +468,11 @@ interface QuestionFooterResLocals {
   tryAgainUrl: string;
   question: Question;
   variant: Variant;
-  instance_question: (InstanceQuestion & { allow_grade_left_ms?: number }) | null;
+  instance_question: InstanceQuestion | null;
   assessment_question: AssessmentQuestion | null;
   instance_question_info: Record<string, any>;
   authz_result: Record<string, any> | null;
+  allowGradeLeftMs: number;
   group_config: GroupConfig | null;
   group_info: GroupInfo | null;
   group_role_permissions: {
@@ -510,6 +544,7 @@ export function QuestionFooterContent({
     assessment_question,
     instance_question_info,
     authz_result,
+    allowGradeLeftMs,
     group_config,
     group_info,
     group_role_permissions,
@@ -657,9 +692,8 @@ export function QuestionFooterContent({
       ${SubmitRateFooter({
         questionContext,
         showGradeButton,
-        disableGradeButton,
         assessment_question,
-        allowGradeLeftMs: instance_question?.allow_grade_left_ms ?? 0,
+        allowGradeLeftMs,
       })}
     `;
   });
@@ -670,13 +704,11 @@ export function QuestionFooterContent({
 function SubmitRateFooter({
   questionContext,
   showGradeButton,
-  disableGradeButton,
   assessment_question,
   allowGradeLeftMs,
 }: {
   questionContext: QuestionContext;
   showGradeButton: boolean;
-  disableGradeButton: boolean;
   assessment_question: AssessmentQuestion | null;
   allowGradeLeftMs: number;
 }) {
@@ -699,7 +731,7 @@ function SubmitRateFooter({
     <div class="row">
       <div class="col d-flex justify-content-between">
         <span class="d-flex">
-          ${disableGradeButton
+          ${allowGradeLeftMs > 0
             ? html`
                 <small class="fst-italic ms-2 mt-1 submission-suspended-msg">
                   Grading possible in <span id="submission-suspended-display"></span>

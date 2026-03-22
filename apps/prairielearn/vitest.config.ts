@@ -30,6 +30,10 @@ export default defineConfig(({ mode }) => {
     throw new Error('Cannot run docker-smoke-tests tests on dist files.');
   }
 
+  // The executor-smoke-test mode runs inside the executor Docker container,
+  // which has no Postgres. Skip globalSetup/setupFiles that require a DB.
+  const isExecutorSmokeTest = mode === 'executor-smoke-test';
+
   return mergeConfig(
     sharedConfig,
     defineConfig({
@@ -37,13 +41,17 @@ export default defineConfig(({ mode }) => {
         name: '@prairielearn/prairielearn',
         dir: isRunningOnDist ? `${import.meta.dirname}/dist` : `${import.meta.dirname}/src`,
         include: mode === 'docker-smoke-tests' ? dockerSmokeTests : undefined,
-        exclude: ['**/e2e/**'],
-        globalSetup: isRunningOnDist
-          ? join(import.meta.dirname, './dist/tests/vitest.globalSetup.js')
-          : join(import.meta.dirname, './src/tests/vitest.globalSetup.ts'),
-        setupFiles: isRunningOnDist
-          ? [join(import.meta.dirname, './dist/tests/vitest.testSetup.js')]
-          : [join(import.meta.dirname, './src/tests/vitest.testSetup.ts')],
+        exclude: isExecutorSmokeTest ? ['**/e2e/**'] : ['**/e2e/**', '**/executor.test.*'],
+        globalSetup: isExecutorSmokeTest
+          ? []
+          : isRunningOnDist
+            ? join(import.meta.dirname, './dist/tests/vitest.globalSetup.js')
+            : join(import.meta.dirname, './src/tests/vitest.globalSetup.ts'),
+        setupFiles: isExecutorSmokeTest
+          ? []
+          : isRunningOnDist
+            ? [join(import.meta.dirname, './dist/tests/vitest.testSetup.js')]
+            : [join(import.meta.dirname, './src/tests/vitest.testSetup.ts')],
         passWithNoTests: true,
         hookTimeout: 20_000,
         testTimeout: 10_000,

@@ -39,7 +39,7 @@ export function init() {
   namespace.on('connection', connection);
 }
 
-export function connection(socket: Socket) {
+function connection(socket: Socket) {
   socket.on('joinServerJobProgress', async (msg: ClientConnectMessage, callback) => {
     if (
       !ensureProps({

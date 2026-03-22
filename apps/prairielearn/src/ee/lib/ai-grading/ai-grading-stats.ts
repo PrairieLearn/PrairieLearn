@@ -2,7 +2,7 @@ import assert from 'node:assert';
 
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalScalar, queryRows } from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
@@ -59,7 +59,7 @@ export async function fillInstanceQuestionColumnEntries<
   rows: T[],
   assessment_question: AssessmentQuestion,
 ): Promise<FillInstanceQuestionColumnEntriesResultType<T>[]> {
-  const rubric_modify_time = await queryOptionalRow(
+  const rubric_modify_time = await queryOptionalScalar(
     sql.select_rubric_time,
     { rubric_id: assessment_question.manual_rubric_id },
     DateFromISOString,
@@ -244,7 +244,7 @@ function rubricListIncludes(items: RubricItem[], itemToCheck: RubricItem): boole
   return items.some((item) => item.id === itemToCheck.id);
 }
 
-export function rubricItemDisagreementCount(
+function rubricItemDisagreementCount(
   testRubricResults: {
     reference_items: Set<string>;
     ai_items: Set<string>;
@@ -263,7 +263,7 @@ export function rubricItemDisagreementCount(
   return disagreement;
 }
 
-export function meanError(actual: number[], predicted: number[]): number {
+function meanError(actual: number[], predicted: number[]): number {
   if (actual.length !== predicted.length || actual.length === 0) {
     throw new Error('Both arrays must have the same nonzero length.');
   }

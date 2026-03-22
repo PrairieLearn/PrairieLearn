@@ -8,6 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
 import { IdSchema } from '@prairielearn/zod';
 
+import { selectPreferencesForInstanceQuestion } from '../models/assessment-question.js';
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
 import * as questionServers from '../question-servers/index.js';
@@ -16,11 +17,13 @@ import {
   type Course,
   type CourseInstance,
   type Question,
+  type QuestionPreferenceValuesSchema,
   type Variant,
   VariantSchema,
 } from './db-types.js';
 import { idsEqual } from './id.js';
 import { writeCourseIssues } from './issues.js';
+import { extractDefaultPreferences } from './question-preferences.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -28,6 +31,8 @@ const VariantWithFormattedDateSchema = VariantSchema.extend({
   formatted_date: z.string(),
 });
 type VariantWithFormattedDate = z.infer<typeof VariantWithFormattedDateSchema>;
+
+type QuestionPreferenceValues = z.infer<typeof QuestionPreferenceValuesSchema>;
 
 const InstanceQuestionDataSchema = z.object({
   question_id: IdSchema,
@@ -44,39 +49,48 @@ interface VariantCreationData {
   params: Record<string, any>;
   true_answer: Record<string, any>;
   options: Record<string, any>;
+  preferences: QuestionPreferenceValues;
   broken: boolean;
 }
 
 /**
  * Internal function, do not call directly. Create a variant object, do not write to DB.
- * @param question - The question for the variant.
- * @param course - The course for the question.
- * @param options - Options controlling the creation.
- * @param options.variant_seed - The seed for the variant.
  */
-export async function makeVariant(
-  question: Question,
-  course: Course,
-  options: { variant_seed?: string | null },
-): Promise<{
+export async function makeVariant({
+  question,
+  course,
+  variant_seed: variant_seed_option,
+  preferences = {},
+}: {
+  question: Question;
+  course: Course;
+  variant_seed?: string | null;
+  preferences?: Record<string, string | number | boolean>;
+}): Promise<{
   courseIssues: (Error & { fatal?: boolean; data?: any })[];
   variant: VariantCreationData;
 }> {
   let variant_seed: string;
-  if (options.variant_seed != null) {
-    variant_seed = options.variant_seed;
+  if (variant_seed_option != null) {
+    variant_seed = variant_seed_option;
   } else {
     variant_seed = Math.floor(Math.random() * 2 ** 32).toString(36);
   }
 
   const questionModule = questionServers.getModule(question.type);
-  const { courseIssues, data } = await questionModule.generate(question, course, variant_seed);
+  const { courseIssues, data } = await questionModule.generate(
+    question,
+    course,
+    variant_seed,
+    preferences,
+  );
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
   let variant: VariantCreationData = {
     variant_seed,
     params: data.params || {},
     true_answer: data.true_answer || {},
     options: data.options || {},
+    preferences,
     broken: hasFatalIssue,
   };
 
@@ -107,6 +121,7 @@ export async function makeVariant(
       true_answer: data.true_answer,
       options: data.options || {},
       broken: hasFatalIssue,
+      preferences,
     };
   }
 
@@ -177,7 +192,7 @@ async function selectQuestion(
 async function lockAssessmentInstanceForInstanceQuestion(
   instance_question_id: string,
 ): Promise<void> {
-  const assessment_instance_id = await sqldb.queryOptionalRow(
+  const assessment_instance_id = await sqldb.queryOptionalScalar(
     sql.select_and_lock_assessment_instance_for_instance_question,
     { instance_question_id },
     IdSchema,
@@ -200,36 +215,60 @@ async function selectVariantForInstanceQuestion(
 
 /**
  * Internal function, do not call directly. Create a variant object, and write it to the DB.
- * @param question_id - The question for the new variant. Can be null if instance_question_id is provided.
- * @param instance_question_id - The instance question for the new variant, or null for a floating variant.
- * @param user_id - The user for the new variant.
- * @param authn_user_id - The current authenticated user.
- * @param course_instance - The course instance for this variant. Can be null for instructor questions.
- * @param variant_course - The course for the variant.
- * @param question_course - The course for the question.
- * @param options - Options controlling the creation.
- * @param options.variant_seed - The seed for the variant.
- * @param require_open - If true, only use an existing variant if it is open.
- * @param client_fingerprint_id - The client fingerprint for this variant.
+ * @param params
+ * @param params.question_id - The question for the new variant. Can be null if instance_question_id is provided.
+ * @param params.instance_question_id - The instance question for the new variant, or null for a floating variant.
+ * @param params.user_id - The user for the new variant.
+ * @param params.authn_user_id - The current authenticated user.
+ * @param params.course_instance - The course instance for this variant. Can be null for instructor questions.
+ * @param params.variant_course - The course for the variant.
+ * @param params.question_course - The course for the question.
+ * @param params.options - Options controlling the creation.
+ * @param params.options.variant_seed - The seed for the variant.
+ * @param params.require_open - If true, only use an existing variant if it is open.
+ * @param params.client_fingerprint_id - The client fingerprint for this variant.
  */
-async function makeAndInsertVariant(
-  question_id: string | null,
-  instance_question_id: string | null,
-  user_id: string,
-  authn_user_id: string,
-  course_instance: CourseInstance | null,
-  variant_course: Course,
-  question_course: Course,
-  options: { variant_seed?: string | null },
-  require_open: boolean,
-  client_fingerprint_id: string | null,
-): Promise<VariantWithFormattedDate> {
+async function makeAndInsertVariant({
+  question_id,
+  instance_question_id,
+  user_id,
+  authn_user_id,
+  course_instance,
+  variant_course,
+  question_course,
+  options,
+  require_open,
+  client_fingerprint_id,
+}: {
+  question_id: string | null;
+  instance_question_id: string | null;
+  user_id: string;
+  authn_user_id: string;
+  course_instance: CourseInstance | null;
+  variant_course: Course;
+  question_course: Course;
+  options: { variant_seed?: string | null };
+  require_open: boolean;
+  client_fingerprint_id: string | null;
+}): Promise<VariantWithFormattedDate> {
   const question = await selectQuestion(question_id, instance_question_id);
-  const { courseIssues, variant: variantData } = await makeVariant(
-    question,
-    question_course,
-    options,
+
+  // Look up preferences for this question instance
+  let preferences: QuestionPreferenceValues = extractDefaultPreferences(
+    question.preferences_schema,
   );
+
+  if (instance_question_id) {
+    const result = await selectPreferencesForInstanceQuestion(instance_question_id);
+    preferences = result ? { ...preferences, ...result } : preferences;
+  }
+
+  const { courseIssues, variant: variantData } = await makeVariant({
+    question,
+    course: question_course,
+    variant_seed: options.variant_seed,
+    preferences,
+  });
 
   const variant = await sqldb.runInTransactionAsync(async () => {
     let real_user_id: string | null = user_id;
@@ -274,7 +313,7 @@ async function makeAndInsertVariant(
       real_user_id = instance_question.user_id;
       real_group_id = instance_question.team_id;
 
-      new_number = await sqldb.queryOptionalRow(
+      new_number = await sqldb.queryOptionalScalar(
         sql.next_variant_number,
         { instance_question_id },
         z.number().nullable(),
@@ -294,7 +333,7 @@ async function makeAndInsertVariant(
     const question = await selectQuestionById(question_id);
     let workspace_id: string | null = null;
     if (question.workspace_image !== null) {
-      workspace_id = await sqldb.queryOptionalRow(sql.insert_workspace, IdSchema);
+      workspace_id = await sqldb.queryOptionalScalar(sql.insert_workspace, IdSchema);
     }
 
     return await sqldb.queryRow(
@@ -332,30 +371,42 @@ async function makeAndInsertVariant(
 /**
  * Ensure that there is a variant for the given instance question.
  *
- * @param question_id - The question for the new variant. Can be null if instance_question_id is provided.
- * @param instance_question_id - The instance question for the new variant, or null for a floating variant.
- * @param user_id - The user for the new variant.
- * @param authn_user_id - The current authenticated user.
- * @param course_instance - The course instance for this variant. Can be null for instructor questions.
- * @param variant_course - The course for the variant.
- * @param question_course - The course for the question.
- * @param options - Options controlling the creation.
- * @param options.variant_seed - The seed for the variant.
- * @param require_open - If true, only use an existing variant if it is open.
- * @param client_fingerprint_id - The client fingerprint for this variant. Can be null.
+ * @param params
+ * @param params.question_id - The question for the new variant. Can be null if instance_question_id is provided.
+ * @param params.instance_question_id - The instance question for the new variant, or null for a floating variant.
+ * @param params.user_id - The user for the new variant.
+ * @param params.authn_user_id - The current authenticated user.
+ * @param params.course_instance - The course instance for this variant. Can be null for instructor questions.
+ * @param params.variant_course - The course for the variant.
+ * @param params.question_course - The course for the question.
+ * @param params.options - Options controlling the creation.
+ * @param params.options.variant_seed - The seed for the variant.
+ * @param params.require_open - If true, only use an existing variant if it is open.
+ * @param params.client_fingerprint_id - The client fingerprint for this variant. Can be null.
  */
-export async function ensureVariant(
-  question_id: string | null,
-  instance_question_id: string | null,
-  user_id: string,
-  authn_user_id: string,
-  course_instance: CourseInstance | null,
-  variant_course: Course,
-  question_course: Course,
-  options: { variant_seed?: string | null },
-  require_open: boolean,
-  client_fingerprint_id: string | null,
-): Promise<VariantWithFormattedDate> {
+export async function ensureVariant({
+  question_id,
+  instance_question_id,
+  user_id,
+  authn_user_id,
+  course_instance,
+  variant_course,
+  question_course,
+  options,
+  require_open,
+  client_fingerprint_id,
+}: {
+  question_id: string | null;
+  instance_question_id: string | null;
+  user_id: string;
+  authn_user_id: string;
+  course_instance: CourseInstance | null;
+  variant_course: Course;
+  question_course: Course;
+  options: { variant_seed?: string | null };
+  require_open: boolean;
+  client_fingerprint_id: string | null;
+}): Promise<VariantWithFormattedDate> {
   if (instance_question_id != null) {
     // See if we have a useable existing variant, otherwise make a new one. This
     // test is also performed in makeAndInsertVariant inside a transaction to
@@ -367,7 +418,7 @@ export async function ensureVariant(
     }
   }
   // if we don't have instance_question_id or if it's not open, just make a new variant
-  return await makeAndInsertVariant(
+  return await makeAndInsertVariant({
     question_id,
     instance_question_id,
     user_id,
@@ -378,7 +429,7 @@ export async function ensureVariant(
     options,
     require_open,
     client_fingerprint_id,
-  );
+  });
 }
 
 /**

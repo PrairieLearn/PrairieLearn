@@ -13,6 +13,7 @@ import { Modal } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import { run } from '@prairielearn/run';
+import { useResizeHandle } from '@prairielearn/ui';
 import { assertNever } from '@prairielearn/utils';
 
 import type {
@@ -495,6 +496,7 @@ export function AiQuestionGenerationChat({
   onGenerationComplete,
   hasUnsavedChanges,
   discardUnsavedChanges,
+  isQuestionEmpty,
 }: {
   chatCsrfToken: string;
   initialMessages: QuestionGenerationUIMessage[];
@@ -506,6 +508,7 @@ export function AiQuestionGenerationChat({
   onGenerationComplete?: () => void;
   hasUnsavedChanges: boolean;
   discardUnsavedChanges: () => void;
+  isQuestionEmpty: boolean;
 }) {
   const [refreshQuestionPreviewAfterChanges, setRefreshQuestionPreviewAfterChanges] =
     useState(true);
@@ -609,7 +612,6 @@ export function AiQuestionGenerationChat({
   const showSpinner = useShowSpinner({ status, messages });
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const resizerRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useStickToBottom({
     initial: 'smooth',
     // The experience with animated collapsible sections is currently janky.
@@ -618,54 +620,17 @@ export function AiQuestionGenerationChat({
     resize: 'smooth',
   });
 
-  // Chat width resizing
-  useEffect(() => {
-    const container = containerRef.current?.closest<HTMLElement>('.app-container');
-    const resizer = resizerRef.current;
-
-    if (!container || !resizer) return;
-
-    const minWidth = 260;
-    const maxWidth = 800;
-    let startX = 0;
-    let startWidth = 0;
-
-    const onMouseMove = (e: MouseEvent) => {
-      const dx = e.clientX - startX;
-      const newWidth = Math.min(maxWidth, Math.max(minWidth, startWidth - dx));
-      container.style.setProperty('--chat-width', `${newWidth}px`);
-    };
-
-    const onMouseUp = () => {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-      document.body.classList.remove('user-select-none');
-    };
-
-    const onMouseDown = (e: MouseEvent) => {
-      startX = e.clientX;
-      const styles = getComputedStyle(container);
-      const current = styles.getPropertyValue('--chat-width').trim() || '500px';
-      startWidth =
-        Number.parseInt(current) || containerRef.current?.getBoundingClientRect().width || 500;
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-      document.body.classList.add('user-select-none');
-    };
-
-    resizer.addEventListener('mousedown', onMouseDown);
-
-    return () => {
-      resizer.removeEventListener('mousedown', onMouseDown);
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-    };
-  }, []);
+  const { width: chatWidth, separatorProps: resizerProps } = useResizeHandle({
+    initialWidth: 500,
+    minWidth: 260,
+    maxWidth: 800,
+    ariaLabel: 'Resize chat',
+  });
 
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="app-chat-container">
+    <div className="app-chat-container" style={{ width: chatWidth }}>
       <div ref={containerRef} className="app-chat px-2 pb-2 bg-light border-start">
         <div
           className={clsx('app-chat-history', {
@@ -684,9 +649,16 @@ export function AiQuestionGenerationChat({
               </div>
             </div>
           ) : (
-            // If this is an old draft question that was using `ai_question_generation_prompts`,
-            // we won't have any messages to display. That's fine, just warn the user.
-            <div className="text-muted my-5">Message history unavailable.</div>
+            <div
+              className="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary bg-opacity-10"
+              style={{ width: '3rem', height: '3rem' }}
+            >
+              <i
+                className="bi bi-stars text-primary"
+                style={{ fontSize: '1.1rem' }}
+                aria-hidden="true"
+              />
+            </div>
           )}
 
           <ScrollToBottomButton
@@ -712,6 +684,9 @@ export function AiQuestionGenerationChat({
             isGenerating={isGenerating}
             refreshQuestionPreviewAfterChanges={refreshQuestionPreviewAfterChanges}
             setRefreshQuestionPreviewAfterChanges={setRefreshQuestionPreviewAfterChanges}
+            placeholder={
+              isQuestionEmpty ? 'Describe the question you want to create...' : 'Ask anything...'
+            }
             onChange={setPromptInput}
             onSubmit={(text) => {
               if (hasUnsavedChanges) {
@@ -730,12 +705,7 @@ export function AiQuestionGenerationChat({
             }}
           />
         </div>
-        <div
-          ref={resizerRef}
-          className="app-chat-resizer"
-          aria-label="Resize chat"
-          role="separator"
-        />
+        <div className="app-chat-resizer" {...resizerProps} />
       </div>
 
       <Modal show={showUnsavedChangesModal} onHide={() => setShowUnsavedChangesModal(false)}>

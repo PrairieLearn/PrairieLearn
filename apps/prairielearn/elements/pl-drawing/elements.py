@@ -2516,6 +2516,7 @@ class DrawingElement(UnplaceableBaseElement):
         return [
             "gradable",
             "answers-name",
+            "weight",
             "aria-label",
             "aria-description",
             "width",
@@ -2528,7 +2529,9 @@ class DrawingElement(UnplaceableBaseElement):
             "show-tolerance-hint",
             "tolerance-hint",
             "disregard-extra-elements",
+            "allow-blank",
             "hide-answer-panel",
+            "show-score",
         ]
 
 

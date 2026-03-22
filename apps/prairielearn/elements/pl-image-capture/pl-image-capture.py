@@ -17,6 +17,7 @@ from PIL import Image
 
 MOBILE_CAPTURE_ENABLED_DEFAULT = True
 MANUAL_UPLOAD_ENABLED_DEFAULT = False
+ALLOW_BLANK_DEFAULT = False
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -25,7 +26,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.check_attribs(
         element,
         required_attribs=["file-name"],
-        optional_attribs=["mobile-capture-enabled", "manual-upload-enabled"],
+        optional_attribs=[
+            "mobile-capture-enabled",
+            "manual-upload-enabled",
+            "allow-blank",
+        ],
     )
 
     file_name = pl.get_string_attrib(element, "file-name")
@@ -113,6 +118,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, "file-name")
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
 
     # On submission, the captured image is stored directly in submitted_answers.
     # Later, we will move the image to submitted_answers["_files"], and pop
@@ -120,7 +126,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     submitted_file_content = data["submitted_answers"].get(file_name)
 
     if not submitted_file_content:
-        pl.add_files_format_error(data, f"No image was submitted for {file_name}.")
+        if not allow_blank:
+            pl.add_files_format_error(data, f"No image was submitted for {file_name}.")
+        data["submitted_answers"].pop(file_name, None)
         return
 
     if not submitted_file_content.startswith("data:"):
@@ -173,9 +181,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 def test(element_html: str, data: pl.ElementTestData) -> None:
     result = data["test_type"]
 
-    file_name = pl.get_string_attrib(
-        lxml.html.fragment_fromstring(element_html), "file-name"
-    )
+    element = lxml.html.fragment_fromstring(element_html)
+    file_name = pl.get_string_attrib(element, "file-name")
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
 
     if result in ["correct", "incorrect"]:
         # Create a 1x1 white RGB image to simulate a valid JPEG image.
@@ -195,9 +203,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     elif result == "invalid":
         data["raw_submitted_answers"][file_name] = ""
 
-        if "_files" not in data["format_errors"]:
-            data["format_errors"]["_files"] = []
+        if not allow_blank:
+            if "_files" not in data["format_errors"]:
+                data["format_errors"]["_files"] = []
 
-        data["format_errors"]["_files"].append(
-            f"No image was submitted for {file_name}."
-        )
+            data["format_errors"]["_files"].append(
+                f"No image was submitted for {file_name}."
+            )

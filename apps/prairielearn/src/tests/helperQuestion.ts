@@ -22,7 +22,7 @@ import { selectQuestionByQid } from '../models/question.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export function waitForJobSequence(locals: Record<string, any>) {
+function waitForJobSequence(locals: Record<string, any>) {
   describe('The job sequence', function () {
     it('should have an id', async function () {
       const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
@@ -261,7 +261,7 @@ export function postInstanceQuestion(locals: Record<string, any>) {
     });
     it('should select the assessment_instance duration from the DB if student page', async function () {
       if (locals.isStudentPage) {
-        locals.assessment_instance_duration = await sqldb.queryRow(
+        locals.assessment_instance_duration = await sqldb.queryScalar(
           sql.select_assessment_instance_durations,
           z.number(),
         );
@@ -467,7 +467,7 @@ export function checkAssessmentScore(locals: Record<string, any>) {
 export function checkQuestionFeedback(locals: Record<string, any>) {
   describe('check question feedback', function () {
     it('should still have question feedback', async function () {
-      locals.question_feedback = await sqldb.queryRow(
+      locals.question_feedback = await sqldb.queryScalar(
         sql.select_question_feedback,
         {
           assessment_instance_id: locals.assessment_instance.id,

@@ -45,6 +45,7 @@ WITH
         params,
         true_answer,
         options,
+        preferences,
         broken,
         broken_at,
         authn_user_id,
@@ -64,6 +65,7 @@ WITH
         $params,
         $true_answer,
         $options,
+        $preferences,
         $broken,
         CASE
           WHEN $broken THEN NOW()
@@ -101,13 +103,8 @@ FOR NO KEY UPDATE OF
 
 -- BLOCK select_variant_for_instance_question
 SELECT
-  jsonb_set(
-    to_jsonb(v.*),
-    '{formatted_date}',
-    to_jsonb(
-      format_date_full_compact (v.date, ci.display_timezone)
-    )
-  )
+  v.*,
+  format_date_full_compact (v.date, ci.display_timezone) AS formatted_date
 FROM
   variants AS v
   JOIN course_instances AS ci ON (ci.id = v.course_instance_id)

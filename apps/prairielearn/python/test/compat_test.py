@@ -90,6 +90,9 @@ def test_external_exports():
             LocalsForEval,
             SympyJson,
             SympyMapT,
+            SympyParseFailure,
+            SympyParseResult,
+            SympyParseSuccess,
             _Constants,
             ast_check_str,
             convert_string_to_sympy,
@@ -103,6 +106,7 @@ def test_external_exports():
             point_to_error,
             sympy_check,
             sympy_to_json,
+            try_parse_string_as_sympy,
             validate_string_as_sympy,
         )
         from to_precision import eng_notation, sci_notation, std_notation, to_precision

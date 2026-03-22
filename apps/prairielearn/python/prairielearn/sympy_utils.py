@@ -14,7 +14,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from tokenize import TokenError
 from types import CodeType
-from typing import Any, Literal, TypedDict, TypeGuard, cast
+from typing import Any, Literal, TypeAlias, TypedDict, TypeGuard, cast
 
 import sympy
 from sympy.parsing.sympy_parser import (
@@ -50,6 +50,19 @@ class SympyJson(TypedDict):
     _variables: list[str]
     _assumptions: NotRequired[AssumptionsDictT]
     _custom_functions: NotRequired[list[str]]
+
+
+@dataclass(frozen=True, slots=True)
+class SympyParseSuccess:
+    expr: sympy.Expr
+
+
+@dataclass(frozen=True, slots=True)
+class SympyParseFailure:
+    error: str
+
+
+SympyParseResult: TypeAlias = SympyParseSuccess | SympyParseFailure
 
 
 def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
@@ -351,21 +364,7 @@ def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
     """Check the AST of the expression for security, whitelisting only certain nodes.
 
     This prevents the user from executing arbitrary code through `eval_expr`.
-
-    Raises:
-        HasEscapeError: If the expression contains an escape character.
-        HasCommentError: If the expression contains a comment character.
     """
-    # Disallow escape character
-    ind = expr.find("\\")
-    if ind != -1:
-        raise HasEscapeError(ind)
-
-    # Disallow comment character
-    ind = expr.find("#")
-    if ind != -1:
-        raise HasCommentError(ind)
-
     # Disallow AST nodes that are not in whitelist
     #
     # Be very careful about adding to the list below. In particular,
@@ -418,8 +417,25 @@ def sympy_check(
             raise HasInvalidSymbolError(str_item)
         if isinstance(item, sympy.Float):
             raise HasFloatError(float(str_item))
-        if not allow_complex and item == sympy.I:
-            raise HasComplexError("complex values not allowed")
+        # Detect complex numbers both in simplified form (sympy.I) and in
+        # unevaluated form (e.g. sqrt(-2) kept as Pow(-2, 1/2) by evaluateFalse).
+        # The is_finite guard excludes zoo (complex infinity from 1/0) and similar
+        # non-finite values, which aren't complex in the student-input sense.
+        #
+        # The is_extended_real query can trigger internal sympy bugs on certain
+        # unevaluated expressions (e.g. sec(0) with evaluateFalse), so we catch
+        # AttributeError and skip the check for those items.
+        if not allow_complex:
+            if item is sympy.I:
+                raise HasComplexError("complex values not allowed")
+            try:
+                is_complex = (
+                    item.is_extended_real is False and item.is_finite is not False
+                )
+            except AttributeError:
+                is_complex = False
+            if is_complex:
+                raise HasComplexError("complex values not allowed")
 
         work_stack.extend(item.args)
 
@@ -435,6 +451,22 @@ def evaluate(
     return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)[0]
 
 
+def _normalize_expr(expr: str) -> str:
+    """Normalize a symbolic expression by converting Greek unicode and transliterating to ASCII."""
+    return full_unidecode(greek_unicode_transform(expr))
+
+
+def _normalize_expr_and_map_offsets(expr: str) -> tuple[str, list[int]]:
+    """Normalize expr and build a mapping from normalized indices to original indices."""
+    parts: list[str] = []
+    offsets: list[int] = []
+    for ind, char in enumerate(expr):
+        normalized_char = _normalize_expr(char)
+        parts.append(normalized_char)
+        offsets.extend([ind] * len(normalized_char))
+    return "".join(parts), offsets
+
+
 def evaluate_with_source(
     expr: str,
     locals_for_eval: LocalsForEval,
@@ -448,12 +480,26 @@ def evaluate_with_source(
         A tuple of the SymPy expression and the code that was used to generate it.
 
     Raises:
+        HasEscapeError: If the expression contains an escape character.
+        HasCommentError: If the expression contains a comment character.
         HasParseError: If the expression cannot be parsed.
         BaseSympyError: If the expression cannot be evaluated.
     """
+    normalized_expr, normalized_offsets = _normalize_expr_and_map_offsets(expr)
+
+    # Check for escape and comment characters after normalization, since some
+    # unicode characters normalize to "#" or "\\". The offset map translates
+    # back to the original string position in all cases.
+    ind = normalized_expr.find("\\")
+    if ind != -1:
+        raise HasEscapeError(normalized_offsets[ind])
+    ind = normalized_expr.find("#")
+    if ind != -1:
+        raise HasCommentError(normalized_offsets[ind])
+
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
-    expr = full_unidecode(greek_unicode_transform(expr)).replace("^", "**")
+    expr = normalized_expr.replace("^", "**")
 
     # Prevent Python from interpreting patterns like "2e+3" or "2e-3" as scientific
     # notation floats. When users write "2e+3", they likely mean "2*e + 3" (2 times
@@ -676,15 +722,31 @@ def convert_string_to_sympy_with_source(
 
 
 def point_to_error(expr: str, ind: int, w: int = 5) -> str:
-    """Generate a string with a pointer to error in expr with index ind
+    """Generate a string with a pointer to error in expr with index ind.
+
+    If ind is -1, returns the full expression without a caret pointer.
 
     Returns:
         A string with the error location in the expression.
     """
+    if ind == -1:
+        return html.escape(expr)
+
     w_left: str = " " * (ind - max(0, ind - w))
     w_right: str = " " * (min(ind + w, len(expr)) - ind)
     initial: str = html.escape(expr[ind - len(w_left) : ind + len(w_right)])
     return f"{initial}\n{w_left}^{w_right}"
+
+
+def find_symbol_offset(expr: str, symbol: str) -> int:
+    """Return an approximate offset for symbol in expr for caret rendering."""
+    pattern = re.compile(rf"(?<!\w){re.escape(symbol)}(?!\w)")
+    ind = -1
+    for match in pattern.finditer(expr):
+        ind = match.start()
+    if ind != -1:
+        return ind
+    return expr.rfind(symbol)
 
 
 def sympy_to_json(
@@ -777,7 +839,7 @@ def json_to_sympy(
     )
 
 
-def validate_string_as_sympy(
+def try_parse_string_as_sympy(
     expr: str,
     variables: Iterable[str] | None,
     *,
@@ -787,11 +849,20 @@ def validate_string_as_sympy(
     custom_functions: list[str] | None = None,
     imaginary_unit: str | None = None,
     simplify_expression: bool = True,
-) -> str | None:
-    """Try to parse expr as a SymPy expression. If it fails, return a string with an appropriate error message for display on the frontend.
+    assumptions: AssumptionsDictT | None = None,
+) -> SympyParseResult:
+    """Try to parse expr as a SymPy expression.
 
     Returns:
-        `None` if the expression is valid, and an error message otherwise.
+        A parsed SymPy expression on success, or a formatted error message on failure.
+
+    Example::
+
+        result = try_parse_string_as_sympy("x + 1", ["x"])
+        if isinstance(result, SympyParseFailure):
+            print(result.error)
+        else:
+            print(result.expr)
     """
     try:
         expr_parsed = convert_string_to_sympy(
@@ -802,9 +873,10 @@ def validate_string_as_sympy(
             allow_trig_functions=allow_trig_functions,
             custom_functions=custom_functions,
             simplify_expression=simplify_expression,
+            assumptions=assumptions,
         )
     except HasFloatError as exc:
-        return (
+        return SympyParseFailure(
             f"Your answer contains the floating-point number {exc.n}. "
             f"All numbers must be expressed as integers (or ratios of integers)."
         )
@@ -820,79 +892,83 @@ def validate_string_as_sympy(
                 "of an integer with the imaginary unit <code>i</code> or <code>j</code>."
             )
 
-        return "".join(err_string)
+        return SympyParseFailure("".join(err_string))
     except HasInvalidExpressionError as exc:
-        return (
+        return SympyParseFailure(
             f"Your answer has an invalid expression. "
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasInvalidFunctionError as exc:
-        return (
+        return SympyParseFailure(
             f'Your answer calls an invalid function "{exc.text}". '
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasInvalidVariableError as exc:
-        return (
+        return SympyParseFailure(
             f'Your answer refers to an invalid variable "{exc.text}". '
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except FunctionNameWithoutArgumentsError as exc:
-        return (
+        return SympyParseFailure(
             f'Your answer mentions the function "{exc.text}" without '
             "applying it to anything. "
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasInvalidSymbolError as exc:
-        return (
+        return SympyParseFailure(
             f'Your answer refers to an invalid symbol "{exc.symbol}". '
-            f"<br><br><pre>{point_to_error(expr, -1)}</pre>"
+            f"<br><br><pre>{point_to_error(expr, find_symbol_offset(expr, exc.symbol))}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasParseError as exc:
         # Special case where there is no error offset to point at. In practice, this is almost always a missing closing
         # parenthesis that SymPy only catches at the end of parsing, so try to give a slightly more helpful error message.
         if exc.offset == -1:
-            return (
+            return SympyParseFailure(
                 "Your answer has a syntax error. "
                 "This issue might be caused by mismatched parentheses or some other misplaced symbol."
             )
-        return (
+        return SympyParseFailure(
             f"Your answer has a syntax error. "
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasEscapeError as exc:
-        return (
+        return SympyParseFailure(
             f'Your answer must not contain the character "\\". '
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasCommentError as exc:
-        return (
+        return SympyParseFailure(
             f'Your answer must not contain the character "#". '
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasConflictingVariableError as exc:
-        return (
+        return SympyParseFailure(
             f"Question configuration error: {exc}. "
             "The variable list contains a name that conflicts with a built-in constant. "
             "Please contact the course staff."
         )
     except HasConflictingFunctionError as exc:
-        return (
+        return SympyParseFailure(
             f"Question configuration error: {exc}. "
             "The custom function list contains a name that conflicts with a built-in function. "
             "Please contact the course staff."
         )
     except HasInvalidAssumptionError as exc:
-        return f"Question configuration error: {exc}. Please contact the course staff."
+        return SympyParseFailure(
+            f"Question configuration error: {exc}. Please contact the course staff."
+        )
     except Exception as exc:
-        return f"Unexpected error: {exc}. Please contact the course staff."
+        return SympyParseFailure(
+            f"Unexpected error: {exc}. Please contact the course staff."
+        )
 
     # If complex numbers are not allowed, raise error if expression has the imaginary unit
     if (
@@ -901,10 +977,45 @@ def validate_string_as_sympy(
         and (expr_parsed.has(sympy.I))
     ):
         expr_parsed = expr_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
-        return (
-            "Your answer was simplified to this, which contains a complex number"
+        return SympyParseFailure(
+            "Your answer was simplified to this, which contains a complex number "
             f"(denoted ${imaginary_unit}$): $${sympy.latex(expr_parsed)}$$"
         )
+
+    return SympyParseSuccess(expr_parsed)
+
+
+def validate_string_as_sympy(
+    expr: str,
+    variables: Iterable[str] | None,
+    *,
+    allow_hidden: bool = False,
+    allow_complex: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: list[str] | None = None,
+    imaginary_unit: str | None = None,
+    simplify_expression: bool = True,
+    assumptions: AssumptionsDictT | None = None,
+) -> str | None:
+    """Try to parse expr as a SymPy expression.
+
+    Returns:
+        `None` if the expression is valid, and an error message otherwise.
+    """
+    result = try_parse_string_as_sympy(
+        expr,
+        variables,
+        allow_hidden=allow_hidden,
+        allow_complex=allow_complex,
+        allow_trig_functions=allow_trig_functions,
+        custom_functions=custom_functions,
+        imaginary_unit=imaginary_unit,
+        simplify_expression=simplify_expression,
+        assumptions=assumptions,
+    )
+
+    if isinstance(result, SympyParseFailure):
+        return result.error
 
     return None
 

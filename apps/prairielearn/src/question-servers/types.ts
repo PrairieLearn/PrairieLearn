@@ -65,7 +65,7 @@ export interface TestResultData {
 
 export type PrepareVariant = Pick<
   Variant,
-  'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken'
+  'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken' | 'preferences'
 >;
 
 export type ParseSubmission = Pick<
@@ -78,21 +78,22 @@ export interface QuestionServer {
     question: Question,
     course: Course,
     variant_seed: string,
+    preferences?: Record<string, string | number | boolean>,
   ) => QuestionServerReturnValue<Partial<GenerateResultData>>;
   prepare: (
     question: Question,
     course: Course,
     variant: PrepareVariant,
   ) => QuestionServerReturnValue<PrepareResultData>;
-  render: (
-    renderSelection: RenderSelection,
-    variant: Variant,
-    question: Question,
-    submission: Submission | null,
-    submissions: Submission[],
-    course: Course,
-    locals: UntypedResLocals,
-  ) => QuestionServerReturnValue<RenderResultData>;
+  render: (params: {
+    renderSelection: RenderSelection;
+    variant: Variant;
+    question: Question;
+    submission: Submission | null;
+    submissions: Submission[];
+    course: Course;
+    locals: UntypedResLocals;
+  }) => QuestionServerReturnValue<RenderResultData>;
   parse: (
     submission: ParseSubmission,
     variant: Variant,
@@ -137,6 +138,7 @@ export interface ExecutionData {
     server_files_course_path: string;
     course_extensions_path: string;
   };
+  preferences: Record<string, string | number | boolean>;
   answers_names?: Record<string, string>;
   submitted_answers?: Record<string, unknown>;
   format_errors?: Record<string, unknown>;

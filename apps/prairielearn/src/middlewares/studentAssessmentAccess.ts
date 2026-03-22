@@ -6,7 +6,8 @@ import { flash } from '@prairielearn/flash';
 import { logger } from '@prairielearn/logger';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 
-import { canDeleteAssessmentInstance, deleteAssessmentInstance } from '../lib/assessment.js';
+import { deleteAssessmentInstance } from '../lib/assessment.js';
+import { canDeleteAssessmentInstance } from '../lib/assessment.shared.js';
 import { config } from '../lib/config.js';
 import { setCookie } from '../lib/cookie.js';
 

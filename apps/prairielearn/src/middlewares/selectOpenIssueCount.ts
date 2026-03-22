@@ -10,7 +10,7 @@ export interface ResLocalsCourseIssueCount {
 }
 
 export default asyncHandler(async (req, res, next) => {
-  res.locals.navbarOpenIssueCount = await sqldb.queryRow(
+  res.locals.navbarOpenIssueCount = await sqldb.queryScalar(
     sql.select_open_issue_count,
     { course_id: res.locals.course.id },
     z.number(),

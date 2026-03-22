@@ -4,7 +4,7 @@ import fetch from 'node-fetch';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows, queryScalars } from '@prairielearn/postgres';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 
 import { makeAwsClientConfig } from '../lib/aws.js';
@@ -60,7 +60,7 @@ async function checkDBConsistency() {
   }
 
   const nonTerminatedHosts = new Set(
-    await queryRows(sql.select_nonterminated_workspace_hosts, z.string()),
+    await queryScalars(sql.select_nonterminated_workspace_hosts, z.string()),
   );
 
   // Kill off any host that is running but not in the db

@@ -613,7 +613,7 @@ function ImageCapturePreview() {
  * requires adding a corresponding entry here.
  */
 const BASIC_QUESTION_MAP: Partial<
-  Record<string, { label: string; description: string; Preview: () => React.JSX.Element }>
+  Record<string, { label: string; description: string; Preview: () => React.ReactNode }>
 > = {
   'template/multiple-choice/fixed': {
     label: 'Multiple choice',
