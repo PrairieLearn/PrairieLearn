@@ -182,6 +182,30 @@ const TOOL_STATUS_MESSAGES: Record<
     done: 'Swapped rubric items',
     error: 'Error swapping rubric items',
   },
+  'tool-editRubricSettings': {
+    streaming: 'Updating rubric settings...',
+    pending: 'Updating rubric settings...',
+    done: 'Updated rubric settings',
+    error: 'Error updating rubric settings',
+  },
+  'tool-getAssessmentQuestionPoints': {
+    streaming: 'Reading question points...',
+    pending: 'Reading question points...',
+    done: 'Read question points',
+    error: 'Error reading question points',
+  },
+  'tool-getQuestionContent': {
+    streaming: 'Reading question content...',
+    pending: 'Reading question content...',
+    done: 'Read question content',
+    error: 'Error reading question content',
+  },
+  'tool-getSampleSubmissions': {
+    streaming: 'Reading sample submissions...',
+    pending: 'Reading sample submissions...',
+    done: 'Read sample submissions',
+    error: 'Error reading sample submissions',
+  },
   'tool-startAiGrading': {
     streaming: 'Running AI grading...',
     pending: 'Running AI grading...',

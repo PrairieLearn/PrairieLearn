@@ -9,17 +9,6 @@ ORDER BY
   created_at ASC,
   id ASC;
 
--- BLOCK select_ai_grading_messages_by_workflow_run
-SELECT
-  *
-FROM
-  ai_grading_messages
-WHERE
-  workflow_run_id = $workflow_run_id
-ORDER BY
-  created_at ASC,
-  id ASC;
-
 -- BLOCK delete_ai_grading_messages
 DELETE FROM ai_grading_messages
 WHERE

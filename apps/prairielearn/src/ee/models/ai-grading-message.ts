@@ -12,14 +12,6 @@ export async function selectAiGradingMessages(assessmentQuestionId: string) {
   );
 }
 
-export async function selectAiGradingMessagesByWorkflowRun(workflowRunId: string) {
-  return await queryRows(
-    sql.select_ai_grading_messages_by_workflow_run,
-    { workflow_run_id: workflowRunId },
-    AiGradingMessageSchema,
-  );
-}
-
 export async function deleteAiGradingMessages(assessmentQuestionId: string) {
   await execute(sql.delete_ai_grading_messages, {
     assessment_question_id: assessmentQuestionId,

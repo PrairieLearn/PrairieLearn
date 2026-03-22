@@ -2,14 +2,10 @@ import assert from 'node:assert';
 
 import { createOpenAI } from '@ai-sdk/openai';
 import {
-  type InferUITools,
   type LanguageModel,
   type ModelMessage,
   ToolLoopAgent,
   type ToolSet,
-  type ToolUIPart,
-  type UIDataTypes,
-  type UIMessage,
   generateObject,
   stepCountIs,
   tool,
@@ -49,7 +45,7 @@ const AGENTIC_AI_GRADING_MODEL: AiGradingModelId = 'gpt-5.4';
 // Model
 // ---------------------------------------------------------------------------
 
-export function getAgenticGradingModel(): { model: LanguageModel; modelId: string } {
+function getAgenticGradingModel(): { model: LanguageModel; modelId: string } {
   assert(config.aiGradingOpenAiApiKey, 'AI grading OpenAI API key is not configured');
   const openai = createOpenAI({
     apiKey: config.aiGradingOpenAiApiKey,
@@ -77,7 +73,110 @@ const RubricOutputSchema = z.object({
   replace_auto_points: z.boolean(),
   min_points: z.coerce.number(),
   max_extra_points: z.coerce.number(),
+  grader_guidelines: z.string().nullable(),
 });
+
+// ---------------------------------------------------------------------------
+// Rubric point validation
+// ---------------------------------------------------------------------------
+
+interface RubricPointValidation {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+  computed: {
+    raw_min: number;
+    raw_max: number;
+    expected_min: number;
+    expected_max: number;
+    positive_item_sum: number;
+    negative_item_sum: number;
+  };
+}
+
+/**
+ * Validate that rubric point values are logically consistent with the
+ * assessment question's point allocation.
+ *
+ * Uses raw (unclamped) values: starting_points + all positive items must
+ * equal the expected max, and starting_points + all negative items must
+ * equal the expected min. This prevents rubrics where items overshoot or
+ * undershoot the question's point range even if clamping would hide it.
+ */
+function validateRubricPoints({
+  rubricItems,
+  startingPoints,
+  minPoints,
+  maxExtraPoints,
+  questionMaxPoints,
+}: {
+  rubricItems: { points: number }[];
+  startingPoints: number;
+  minPoints: number;
+  maxExtraPoints: number;
+  questionMaxPoints: number;
+}): RubricPointValidation {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const positiveSum = rubricItems.reduce((sum, item) => sum + Math.max(0, item.points), 0);
+  const negativeSum = rubricItems.reduce((sum, item) => sum + Math.min(0, item.points), 0);
+
+  // Raw scores before clamping — these must match exactly
+  const rawMin = startingPoints + negativeSum;
+  const rawMax = startingPoints + positiveSum;
+
+  const expectedMin = minPoints;
+  const expectedMax = questionMaxPoints + maxExtraPoints;
+
+  if (rawMin !== expectedMin) {
+    errors.push(
+      `Minimum raw score (starting_points ${startingPoints} + negative items ${negativeSum} = ${rawMin}) ` +
+        `does not equal min_points (${expectedMin}). ` +
+        'Adjust rubric items, starting_points, or min_points so they match.',
+    );
+  }
+
+  if (rawMax !== expectedMax) {
+    errors.push(
+      `Maximum raw score (starting_points ${startingPoints} + positive items ${positiveSum} = ${rawMax}) ` +
+        `does not equal expected maximum (question max ${questionMaxPoints} + max extra credit ${maxExtraPoints} = ${expectedMax}). ` +
+        'Adjust rubric items, starting_points, or max_extra_points so they match.',
+    );
+  }
+
+  if (minPoints < 0) {
+    warnings.push('min_points is negative — students can receive negative scores.');
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings,
+    computed: {
+      raw_min: rawMin,
+      raw_max: rawMax,
+      expected_min: expectedMin,
+      expected_max: expectedMax,
+      positive_item_sum: positiveSum,
+      negative_item_sum: negativeSum,
+    },
+  };
+}
+
+/**
+ * Get the effective maximum points for the question that the rubric covers.
+ * If replace_auto_points is true, the rubric covers the full max_points.
+ * Otherwise it only covers max_manual_points.
+ */
+function getQuestionMaxPoints(
+  assessmentQuestion: AssessmentQuestion,
+  replaceAutoPoints: boolean,
+): number {
+  return replaceAutoPoints
+    ? (assessmentQuestion.max_points ?? 0)
+    : (assessmentQuestion.max_manual_points ?? 0);
+}
 
 // ---------------------------------------------------------------------------
 // Tool schemas (separated from execute so types can be inferred for the UI)
@@ -149,6 +248,49 @@ const AI_GRADING_TOOLS = {
     }),
     outputSchema: z.string(),
   }),
+  editRubricSettings: tool({
+    description:
+      'Edit rubric-level settings. Only provided fields are changed. grader_guidelines are high-level instructions for graders (not specific to any rubric item). replace_auto_points controls whether the rubric replaces the full question score (true) or only the manual portion (false). Returns the updated rubric state. You CANNOT change the assessment question point values — those are fixed by the instructor.',
+    inputSchema: z.object({
+      grader_guidelines: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('High-level instructions for graders'),
+      replace_auto_points: z
+        .boolean()
+        .optional()
+        .describe('Whether the rubric replaces the full question score'),
+      starting_points: z
+        .number()
+        .optional()
+        .describe('Starting points before rubric items are applied'),
+      min_points: z.number().optional().describe('Minimum possible score (floor)'),
+      max_extra_points: z
+        .number()
+        .optional()
+        .describe('Maximum extra credit beyond the question max'),
+    }),
+    outputSchema: z.string(),
+  }),
+  getAssessmentQuestionPoints: tool({
+    description:
+      'Get the assessment question point values. These are fixed by the instructor and cannot be changed. Use this to understand the point range your rubric should cover.',
+    inputSchema: z.object({}),
+    outputSchema: z.string(),
+  }),
+  getQuestionContent: tool({
+    description:
+      'Get the rendered question prompt and solution/answer HTML. Use this to understand what the question asks and what the correct answer looks like when creating or refining rubric items.',
+    inputSchema: z.object({}),
+    outputSchema: z.string(),
+  }),
+  getSampleSubmissions: tool({
+    description:
+      'Get a batch of sample student submissions (up to 5). Use this to see how students actually answered the question, which helps inform rubric item creation.',
+    inputSchema: z.object({}),
+    outputSchema: z.string(),
+  }),
   startAiGrading: tool({
     description:
       'Start AI grading of student submissions using the current rubric. This triggers the grading workflow.',
@@ -157,29 +299,11 @@ const AI_GRADING_TOOLS = {
   }),
 } satisfies ToolSet;
 
-export type AiGradingUIMessageTools = InferUITools<typeof AI_GRADING_TOOLS>;
-
-export type AiGradingUIMessage = UIMessage<
-  AiGradingUIMessageMetadata,
-  UIDataTypes,
-  AiGradingUIMessageTools
->;
-
-export type AiGradingToolUIPart = ToolUIPart<AiGradingUIMessageTools>;
-
-interface AiGradingUIMessageMetadata {
-  job_sequence_id?: string;
-  status?: 'streaming' | 'completed' | 'errored';
-  phase?: 'generate' | 'edit';
-  rubric_modified?: boolean;
-  workflow_run_id?: string | null;
-}
-
 // ---------------------------------------------------------------------------
 // System prompts
 // ---------------------------------------------------------------------------
 
-export const RUBRIC_GENERATION_SYSTEM_PROMPT = [
+const RUBRIC_GENERATION_SYSTEM_PROMPT = [
   'You are a rubric creation assistant for a course.',
   'Given a batch of student submissions, generate a cohesive rubric based on them.',
   'Questions students received were programmatically generated and randomized. Avoid hardcoding randomized quantities and final solutions.',
@@ -193,9 +317,15 @@ const RUBRIC_GENERATION_AGENT_SYSTEM_PROMPT = [
   'You have access to tools to generate and refine rubrics.',
   'Start by calling the generateRubric tool to create an initial rubric from sample submissions.',
   'After generation, you may optionally refine the rubric using surgical editing tools (addRubricItem, editRubricItem, deleteRubricItem, swapRubricItems).',
-  'Use getRubric to see the current state of the rubric at any time.',
+  'You can also use editRubricSettings to set grader_guidelines (high-level instructions for graders), starting_points, min_points, max_extra_points, and replace_auto_points.',
+  'Use getRubric to see the current state of the rubric at any time. Use getAssessmentQuestionPoints to see the fixed point values.',
+  'Use getQuestionContent to see the question prompt and solution. Use getSampleSubmissions to see how students answered.',
   'When referring to rubric items, use the rubric_item_id (database ID) from getRubric, not display indices.',
   'Users may refer to items by their display number (1-based), so map those to the correct rubric_item_id.',
+  'IMPORTANT: Rubric point values must be logically consistent. The response from getRubric includes a point_validation section.',
+  'For positive grading: min_points should match the minimum attainable score, and question_max_points + max_extra_points should match the maximum attainable score.',
+  'For negative grading: starting_points is near the max, items subtract points down to min_points.',
+  'You cannot change the assessment question point values — those are fixed by the instructor.',
   'After generating and optionally refining the rubric, summarize what was created.',
 ].join(' ');
 
@@ -204,12 +334,18 @@ const RUBRIC_EDITING_AGENT_SYSTEM_PROMPT = [
   'You help instructors modify rubrics using surgical editing tools.',
   'IMPORTANT: You MUST always start by calling getRubric to see the current rubric state before making any changes.',
   'Use addRubricItem, editRubricItem, deleteRubricItem, and swapRubricItems to make targeted changes.',
+  'Use editRubricSettings to change grader_guidelines (high-level instructions for graders — NOT specific to any item; use rubric item grader_note for item-specific instructions), starting_points, min_points, max_extra_points, or replace_auto_points.',
+  'Use getAssessmentQuestionPoints to see the fixed point values set by the instructor.',
+  'Use getQuestionContent to see the question prompt and solution. Use getSampleSubmissions to see how students answered.',
   'When the user asks to change multiple items (e.g. "remove all explanations"), call editRubricItem for EACH affected item.',
   'When referring to rubric items, use the rubric_item_id (database ID) from getRubric, not display indices.',
   'Users may refer to items by their display number (1-based), so map those to the correct rubric_item_id.',
   'If the user asks to start AI grading, call the startAiGrading tool.',
+  'IMPORTANT: After making changes, check the point_validation in the getRubric response. If there are errors, fix them immediately by adjusting items or settings.',
+  'You may temporarily go outside valid point ranges during multi-step edits, but you must correct any validation errors before finishing.',
   'Rubric items are binary: full credit or no credit. Account for nuances by creating separate items.',
   'Questions students received were programmatically generated and randomized. Avoid hardcoding randomized quantities and final solutions.',
+  'You cannot change the assessment question point values — those are fixed by the instructor.',
   'After making changes, respond conversationally to explain what you did.',
 ].join(' ');
 
@@ -217,7 +353,7 @@ const RUBRIC_EDITING_AGENT_SYSTEM_PROMPT = [
 // Types
 // ---------------------------------------------------------------------------
 
-export interface AiGradingAgentContext {
+interface AiGradingAgentContext {
   assessment: Assessment;
   assessmentQuestion: AssessmentQuestion;
   course: Course;
@@ -320,6 +456,7 @@ async function saveRubricItems(
 /**
  * Fetch the current rubric from DB and format it as a JSON string with
  * display_index (1-based, in display order) for the LLM to consume.
+ * Includes point validation status.
  */
 async function formatCurrentRubricState(context: AiGradingAgentContext): Promise<string> {
   const rubricData = await getCurrentRubricItems(context);
@@ -335,13 +472,32 @@ async function formatCurrentRubricState(context: AiGradingAgentContext): Promise
     grader_note: i.rubric_item.grader_note,
     always_show_to_students: i.rubric_item.always_show_to_students,
   }));
+
+  const questionMaxPoints = getQuestionMaxPoints(
+    context.assessmentQuestion,
+    rubricData.rubric.replace_auto_points,
+  );
+
+  const validation = validateRubricPoints({
+    rubricItems: rubricData.rubric_items.map((i) => ({ points: i.rubric_item.points })),
+    startingPoints: rubricData.rubric.starting_points,
+    minPoints: rubricData.rubric.min_points,
+    maxExtraPoints: rubricData.rubric.max_extra_points,
+    questionMaxPoints,
+  });
+
   return JSON.stringify(
     {
-      starting_points: rubricData.rubric.starting_points,
-      replace_auto_points: rubricData.rubric.replace_auto_points,
-      min_points: rubricData.rubric.min_points,
-      max_extra_points: rubricData.rubric.max_extra_points,
+      settings: {
+        starting_points: rubricData.rubric.starting_points,
+        replace_auto_points: rubricData.rubric.replace_auto_points,
+        min_points: rubricData.rubric.min_points,
+        max_extra_points: rubricData.rubric.max_extra_points,
+        grader_guidelines: rubricData.rubric.grader_guidelines,
+      },
+      question_max_points: questionMaxPoints,
       rubric_items: items,
+      point_validation: validation,
     },
     null,
     2,
@@ -349,74 +505,87 @@ async function formatCurrentRubricState(context: AiGradingAgentContext): Promise
 }
 
 // ---------------------------------------------------------------------------
-// Context gathering (reused from original)
+// Context gathering helpers
 // ---------------------------------------------------------------------------
 
-async function getInitializationContext({
-  assessmentQuestion,
-  course,
-  question,
-  urlPrefix,
-}: Pick<
-  AiGradingAgentContext,
-  'assessmentQuestion' | 'course' | 'question' | 'urlPrefix'
->): Promise<{
-  question_html: string;
-  answer_html: string;
-  sample_submissions: RenderedSampleSubmission[];
-  current_rubric: unknown;
-}> {
+/**
+ * Render the question prompt and answer HTML for a single variant.
+ * Returns the first successfully rendered result.
+ */
+async function renderQuestionAndAnswer(
+  context: Pick<AiGradingAgentContext, 'assessmentQuestion' | 'course' | 'question' | 'urlPrefix'>,
+): Promise<{ question_html: string; answer_html: string }> {
   const instanceQuestions = await selectInstanceQuestionsForAssessmentQuestion({
-    assessment_question_id: assessmentQuestion.id,
+    assessment_question_id: context.assessmentQuestion.id,
   });
-  const sampledInstanceQuestions = [...instanceQuestions]
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 5);
 
-  const questionCourse = await getQuestionCourse(question, course);
-  const questionModule = questionServers.getModule(question.type);
+  const questionCourse = await getQuestionCourse(context.question, context.course);
+  const questionModule = questionServers.getModule(context.question.type);
 
-  const sampleSubmissions: RenderedSampleSubmission[] = [];
-  let questionHtml = '';
-  let answerHtml = '';
-
-  for (const instanceQuestion of sampledInstanceQuestions) {
+  for (const instanceQuestion of instanceQuestions) {
     try {
-      const { variant, submission } = await selectLastVariantAndSubmission(instanceQuestion.id);
-
+      const { variant } = await selectLastVariantAndSubmission(instanceQuestion.id);
       const locals = {
-        ...buildQuestionUrls(urlPrefix, variant, question, instanceQuestion),
+        ...buildQuestionUrls(context.urlPrefix, variant, context.question, instanceQuestion),
         questionRenderContext: 'ai_grading' as const,
       };
+      const result = await questionModule.render({
+        renderSelection: { question: true, submissions: false, answer: true },
+        variant,
+        question: context.question,
+        submission: null,
+        submissions: [],
+        course: questionCourse,
+        locals,
+      });
+      return {
+        question_html: result.data.questionHtml,
+        answer_html: result.data.answerHtml,
+      };
+    } catch {
+      continue;
+    }
+  }
 
-      if (questionHtml === '' && answerHtml === '') {
-        const renderQuestionResult = await questionModule.render({
-          renderSelection: { question: true, submissions: false, answer: true },
-          variant,
-          question,
-          submission: null,
-          submissions: [],
-          course: questionCourse,
-          locals,
-        });
-        questionHtml = renderQuestionResult.data.questionHtml;
-        answerHtml = renderQuestionResult.data.answerHtml;
-      }
+  return { question_html: '', answer_html: '' };
+}
 
-      const renderSubmissionResult = await questionModule.render({
+/**
+ * Render up to `count` sample student submissions as ModelMessages.
+ */
+async function renderSampleSubmissions(
+  context: Pick<AiGradingAgentContext, 'assessmentQuestion' | 'course' | 'question' | 'urlPrefix'>,
+  count = 5,
+): Promise<RenderedSampleSubmission[]> {
+  const instanceQuestions = await selectInstanceQuestionsForAssessmentQuestion({
+    assessment_question_id: context.assessmentQuestion.id,
+  });
+  const sampled = [...instanceQuestions].sort(() => Math.random() - 0.5).slice(0, count);
+
+  const questionCourse = await getQuestionCourse(context.question, context.course);
+  const questionModule = questionServers.getModule(context.question.type);
+
+  const submissions: RenderedSampleSubmission[] = [];
+  for (const instanceQuestion of sampled) {
+    try {
+      const { variant, submission } = await selectLastVariantAndSubmission(instanceQuestion.id);
+      const locals = {
+        ...buildQuestionUrls(context.urlPrefix, variant, context.question, instanceQuestion),
+        questionRenderContext: 'ai_grading' as const,
+      };
+      const result = await questionModule.render({
         renderSelection: { question: false, submissions: true, answer: false },
         variant,
-        question,
+        question: context.question,
         submission,
         submissions: [submission],
         course: questionCourse,
         locals,
       });
-
-      sampleSubmissions.push({
+      submissions.push({
         instance_question_id: instanceQuestion.id,
         submission_message: generateSubmissionMessage({
-          submission_text: renderSubmissionResult.data.submissionHtmls[0] ?? '',
+          submission_text: result.data.submissionHtmls[0] ?? '',
           submitted_answer: submission.submitted_answer,
         }),
       });
@@ -424,15 +593,31 @@ async function getInitializationContext({
       continue;
     }
   }
+  return submissions;
+}
+
+/**
+ * Gather all initialization context for the inner rubric generation LLM.
+ */
+async function getInitializationContext(
+  context: Pick<AiGradingAgentContext, 'assessmentQuestion' | 'course' | 'question' | 'urlPrefix'>,
+): Promise<{
+  question_html: string;
+  answer_html: string;
+  sample_submissions: RenderedSampleSubmission[];
+  current_rubric: unknown;
+}> {
+  const { question_html, answer_html } = await renderQuestionAndAnswer(context);
+  const sample_submissions = await renderSampleSubmissions(context);
 
   const rubricData = await manualGrading.selectRubricData({
-    assessment_question: assessmentQuestion,
+    assessment_question: context.assessmentQuestion,
   });
 
   return {
-    question_html: questionHtml,
-    answer_html: answerHtml,
-    sample_submissions: sampleSubmissions,
+    question_html,
+    answer_html,
+    sample_submissions,
     current_rubric: rubricData,
   };
 }
@@ -441,7 +626,7 @@ async function getInitializationContext({
 // Message persistence helpers
 // ---------------------------------------------------------------------------
 
-export async function insertUserMessage({
+async function insertUserMessage({
   assessmentQuestionId,
   authnUserId,
   phase,
@@ -463,7 +648,7 @@ export async function insertUserMessage({
   });
 }
 
-export async function insertInitialAssistantMessage({
+async function insertInitialAssistantMessage({
   assessmentQuestionId,
   jobSequenceId,
   phase,
@@ -563,8 +748,28 @@ function buildRubricToolsWithExecute({
 
           const initContext = await getInitializationContext(context);
 
+          const freshAq = await selectAssessmentQuestionById(context.assessmentQuestion.id);
+          const maxManual = freshAq.max_manual_points ?? 0;
+          const maxTotal = freshAq.max_points ?? 0;
+
           const messages: ModelMessage[] = [
             { role: 'system', content: RUBRIC_GENERATION_SYSTEM_PROMPT },
+            {
+              role: 'user',
+              content: [
+                'Assessment question point values (fixed, cannot be changed):',
+                `  max_points: ${maxTotal}`,
+                `  max_manual_points: ${maxManual}`,
+                `  max_auto_points: ${freshAq.max_auto_points ?? 0}`,
+                '',
+                "IMPORTANT: Your rubric's point values must be logically consistent:",
+                '- For positive grading (starting_points=0): sum of all positive items should equal the question max points, min_points should be 0.',
+                '- For negative grading (starting_points=max): sum of all negative items should bring the score down to min_points (usually 0).',
+                `- If replace_auto_points is true, the rubric covers max_points (${maxTotal}). If false, it covers only max_manual_points (${maxManual}).`,
+                '- The minimum attainable score must equal min_points.',
+                '- The maximum attainable score must equal question max + max_extra_points.',
+              ].join('\n'),
+            },
             { role: 'user', content: `Question HTML:\n${initContext.question_html}` },
             { role: 'user', content: `Answer HTML:\n${initContext.answer_html}` },
           ];
@@ -588,6 +793,29 @@ function buildRubricToolsWithExecute({
 
           job.info('Inner LLM generated rubric: ' + JSON.stringify(result.object, null, 2));
 
+          // Validate generated rubric before saving
+          const questionMaxPoints = getQuestionMaxPoints(
+            context.assessmentQuestion,
+            result.object.replace_auto_points,
+          );
+          const validation = validateRubricPoints({
+            rubricItems: result.object.rubric_items,
+            startingPoints: result.object.starting_points,
+            minPoints: result.object.min_points,
+            maxExtraPoints: result.object.max_extra_points,
+            questionMaxPoints,
+          });
+
+          if (!validation.valid) {
+            job.error(`generateRubric — validation failed: ${JSON.stringify(validation.errors)}`);
+            return JSON.stringify({
+              error: 'Generated rubric has invalid point values. Please adjust and try again.',
+              validation_errors: validation.errors,
+              generated_rubric: result.object,
+              question_max_points: questionMaxPoints,
+            });
+          }
+
           await manualGrading.updateAssessmentQuestionRubric({
             assessment: context.assessment,
             assessment_question_id: context.assessmentQuestion.id,
@@ -605,7 +833,7 @@ function buildRubricToolsWithExecute({
               always_show_to_students: item.always_show_to_students,
             })),
             tag_for_manual_grading: false,
-            grader_guidelines: null,
+            grader_guidelines: result.object.grader_guidelines,
             authn_user_id: context.authnUserId,
           });
 
@@ -819,6 +1047,107 @@ function buildRubricToolsWithExecute({
         }),
     }),
 
+    editRubricSettings: tool({
+      ...AI_GRADING_TOOLS.editRubricSettings,
+      execute: async (input) =>
+        rubricMutex.run(async () => {
+          job.info(`Tool: editRubricSettings — input: ${JSON.stringify(input)}`);
+          const rubricData = await getCurrentRubricItems(context);
+          if (!rubricData) {
+            return JSON.stringify({ error: 'No rubric exists.' });
+          }
+
+          const items = rubricDataToItems(rubricData);
+
+          const newReplaceAutoPoints =
+            input.replace_auto_points ?? rubricData.rubric.replace_auto_points;
+          const newStartingPoints = input.starting_points ?? rubricData.rubric.starting_points;
+          const newMinPoints = input.min_points ?? rubricData.rubric.min_points;
+          const newMaxExtraPoints = input.max_extra_points ?? rubricData.rubric.max_extra_points;
+          const newGraderGuidelines =
+            input.grader_guidelines !== undefined
+              ? input.grader_guidelines
+              : rubricData.rubric.grader_guidelines;
+
+          await manualGrading.updateAssessmentQuestionRubric({
+            assessment: context.assessment,
+            assessment_question_id: context.assessmentQuestion.id,
+            use_rubric: true,
+            replace_auto_points: newReplaceAutoPoints,
+            starting_points: newStartingPoints,
+            min_points: newMinPoints,
+            max_extra_points: newMaxExtraPoints,
+            rubric_items: items.map((item, idx) => ({
+              id: item.id,
+              order: idx,
+              points: item.points,
+              description: item.description,
+              explanation: item.explanation ?? '',
+              grader_note: item.grader_note ?? '',
+              always_show_to_students: item.always_show_to_students,
+            })),
+            tag_for_manual_grading: false,
+            grader_guidelines: newGraderGuidelines,
+            authn_user_id: context.authnUserId,
+          });
+
+          const savedState = await formatCurrentRubricState(context);
+          job.info(`editRubricSettings SAVED STATE: ${savedState}`);
+          return savedState;
+        }),
+    }),
+
+    getAssessmentQuestionPoints: tool({
+      ...AI_GRADING_TOOLS.getAssessmentQuestionPoints,
+      execute: async () => {
+        const freshAq = await selectAssessmentQuestionById(context.assessmentQuestion.id);
+        const result = JSON.stringify(
+          {
+            max_points: freshAq.max_points,
+            max_manual_points: freshAq.max_manual_points,
+            max_auto_points: freshAq.max_auto_points,
+            points_list: freshAq.points_list,
+            note: 'These values are fixed by the instructor and cannot be changed. If replace_auto_points is true, the rubric covers max_points. If false, it covers max_manual_points.',
+          },
+          null,
+          2,
+        );
+        job.info(`Tool: getAssessmentQuestionPoints — output: ${result}`);
+        return result;
+      },
+    }),
+
+    getQuestionContent: tool({
+      ...AI_GRADING_TOOLS.getQuestionContent,
+      execute: async () => {
+        job.info('Tool: getQuestionContent — rendering question and answer');
+        const { question_html, answer_html } = await renderQuestionAndAnswer(context);
+        const result = JSON.stringify({ question_html, answer_html }, null, 2);
+        job.info(`Tool: getQuestionContent — output length: ${result.length}`);
+        return result;
+      },
+    }),
+
+    getSampleSubmissions: tool({
+      ...AI_GRADING_TOOLS.getSampleSubmissions,
+      execute: async () => {
+        job.info('Tool: getSampleSubmissions — rendering sample submissions');
+        const submissions = await renderSampleSubmissions(context);
+        const result = JSON.stringify(
+          submissions.map((s) => ({
+            instance_question_id: s.instance_question_id,
+            submission_content: s.submission_message.content,
+          })),
+          null,
+          2,
+        );
+        job.info(
+          `Tool: getSampleSubmissions — ${submissions.length} submissions, output length: ${result.length}`,
+        );
+        return result;
+      },
+    }),
+
     startAiGrading: tool({
       ...AI_GRADING_TOOLS.startAiGrading,
       execute: async () => {
@@ -870,6 +1199,10 @@ export function createRubricAgent({
             'editRubricItem',
             'deleteRubricItem',
             'swapRubricItems',
+            'editRubricSettings',
+            'getAssessmentQuestionPoints',
+            'getQuestionContent',
+            'getSampleSubmissions',
           ] as const,
         };
       } else {
@@ -881,6 +1214,10 @@ export function createRubricAgent({
             'editRubricItem',
             'deleteRubricItem',
             'swapRubricItems',
+            'editRubricSettings',
+            'getAssessmentQuestionPoints',
+            'getQuestionContent',
+            'getSampleSubmissions',
             'startAiGrading',
           ] as const,
         };
