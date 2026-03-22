@@ -41,10 +41,20 @@ export async function getAiGradingCreditCheckoutSessionByStripeObjectId(
   );
 }
 
-export async function markAiGradingCreditCheckoutSessionCompleted(stripe_object_id: string) {
-  await execute(sql.mark_ai_grading_credit_checkout_session_completed, {
-    stripe_object_id,
-  });
+/**
+ * Atomically marks a checkout session as completed. Returns `true` if the
+ * session was marked (i.e. it had not been completed yet), `false` otherwise.
+ * Callers should only credit the pool when this returns `true`.
+ */
+export async function markAiGradingCreditCheckoutSessionCompleted(
+  stripe_object_id: string,
+): Promise<boolean> {
+  const result = await queryOptionalRow(
+    sql.mark_ai_grading_credit_checkout_session_completed,
+    { stripe_object_id },
+    AiGradingCreditCheckoutSessionSchema,
+  );
+  return result !== null;
 }
 
 export async function updateAiGradingCreditCheckoutSessionData({

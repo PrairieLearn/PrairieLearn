@@ -84,7 +84,7 @@ router.get(
     // serves as a backup but may arrive later or not at all in local dev).
     let checkoutStatus: 'success' | 'cancelled' | null = null;
     let checkoutAmountCents: number | null = null;
-    if (req.query.checkout === 'success' && req.query.session_id) {
+    if (canEdit && req.query.checkout === 'success' && req.query.session_id) {
       const stripeSessionId = z.string().parse(req.query.session_id);
       const localSession = await getAiGradingCreditCheckoutSessionByStripeObjectId(stripeSessionId);
 
@@ -92,7 +92,10 @@ router.get(
         checkoutAmountCents = localSession.amount_cents;
 
         if (!localSession.credits_added) {
-          if (localSession.course_instance_id !== courseInstance.id) {
+          if (
+            localSession.course_instance_id !== courseInstance.id ||
+            localSession.agent_user_id !== authn_user.id
+          ) {
             throw new error.HttpStatusError(400, 'Invalid session');
           }
 
@@ -102,6 +105,11 @@ router.get(
           if (session.payment_status === 'paid') {
             const deltaMilliDollars = localSession.amount_cents * 10;
             await runInTransactionAsync(async () => {
+              // Atomically claim this session to prevent double-crediting
+              // if the webhook fires concurrently.
+              const claimed = await markAiGradingCreditCheckoutSessionCompleted(stripeSessionId);
+              if (!claimed) return;
+
               await adjustCreditPool({
                 course_instance_id: localSession.course_instance_id,
                 delta_milli_dollars: deltaMilliDollars,
@@ -113,13 +121,15 @@ router.get(
                 stripe_object_id: stripeSessionId,
                 data: session,
               });
-              await markAiGradingCreditCheckoutSessionCompleted(stripeSessionId);
             });
           }
         }
       }
-      checkoutStatus = 'success';
-    } else if (req.query.checkout === 'cancelled') {
+      // Re-read to get the latest credits_added state after our transaction.
+      const updatedSession =
+        await getAiGradingCreditCheckoutSessionByStripeObjectId(stripeSessionId);
+      checkoutStatus = updatedSession?.credits_added ? 'success' : null;
+    } else if (canEdit && req.query.checkout === 'cancelled') {
       checkoutStatus = 'cancelled';
     }
 

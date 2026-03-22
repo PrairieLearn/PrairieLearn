@@ -30,7 +30,10 @@ SET
   completed_at = NOW(),
   credits_added = TRUE
 WHERE
-  stripe_object_id = $stripe_object_id;
+  stripe_object_id = $stripe_object_id
+  AND credits_added = FALSE
+RETURNING
+  *;
 
 -- BLOCK update_ai_grading_credit_checkout_session_data
 UPDATE ai_grading_credit_checkout_sessions

@@ -571,7 +571,7 @@ function PurchaseCreditsModal({
             }}
           >
             <div className="card-body py-3 px-4">
-              <div className="d-none d-md-flex align-items-center gap-3">
+              <div className="d-flex flex-column flex-md-row align-items-md-center gap-2 gap-md-3">
                 {/* eslint-disable-next-line jsx-a11y-x/click-events-have-key-events, jsx-a11y-x/no-static-element-interactions */}
                 <div
                   className="input-group"
@@ -612,59 +612,7 @@ function PurchaseCreditsModal({
                     }}
                   />
                 </div>
-                <div className="text-muted me-auto">Enter your own amount</div>
-                <div>
-                  {customEstimate != null ? (
-                    <span>
-                      Grades <strong>{formatSubmissionCount(customEstimate)}</strong> submissions
-                    </span>
-                  ) : (
-                    <span className="text-muted">Enter amount for estimate</span>
-                  )}
-                </div>
-              </div>
-              <div className="d-md-none">
-                {/* eslint-disable-next-line jsx-a11y-x/click-events-have-key-events, jsx-a11y-x/no-static-element-interactions */}
-                <div
-                  className="input-group mb-2"
-                  style={{ width: '120px' }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <span className="input-group-text">$</span>
-                  <input
-                    type="number"
-                    className="form-control"
-                    step="1"
-                    min="1"
-                    max="10000"
-                    defaultValue="50"
-                    onFocus={() => setSelected({ type: 'custom' })}
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      if (raw === '') {
-                        setCustomAmount('');
-                        return;
-                      }
-                      const num = Number.parseInt(raw, 10);
-                      if (!Number.isFinite(num) || num < 0) {
-                        e.target.value = customAmount;
-                        return;
-                      }
-                      if (num > 10000) {
-                        e.target.value = '10000';
-                        setCustomAmount('10000');
-                        return;
-                      }
-                      setCustomAmount(raw);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === '.' || e.key === '-' || e.key === 'e') {
-                        e.preventDefault();
-                      }
-                    }}
-                  />
-                </div>
-                <div className="text-muted">Enter your own amount</div>
+                <div className="text-muted me-md-auto">Enter your own amount</div>
                 <div>
                   {customEstimate != null ? (
                     <span>
@@ -707,7 +655,13 @@ function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-function CreditPoolEmptyState({ onPurchase }: { onPurchase: () => void }) {
+function CreditPoolEmptyState({
+  canPurchase,
+  onPurchase,
+}: {
+  canPurchase: boolean;
+  onPurchase?: () => void;
+}) {
   return (
     <div className="text-center py-5">
       <i
@@ -717,14 +671,16 @@ function CreditPoolEmptyState({ onPurchase }: { onPurchase: () => void }) {
       />
       <h3 className="h5 mb-2">Get started with AI grading</h3>
       <p className="text-muted mb-3">Buy credits to start grading submissions with AI.</p>
-      <button
-        type="button"
-        className="btn btn-primary d-inline-flex align-items-center gap-2"
-        onClick={onPurchase}
-      >
-        <i className="bi bi-cart-plus" aria-hidden="true" />
-        Purchase credits
-      </button>
+      {canPurchase && onPurchase && (
+        <button
+          type="button"
+          className="btn btn-primary d-inline-flex align-items-center gap-2"
+          onClick={onPurchase}
+        >
+          <i className="bi bi-cart-plus" aria-hidden="true" />
+          Purchase credits
+        </button>
+      )}
     </div>
   );
 }
@@ -762,11 +718,10 @@ function CreditPoolSection({
       {checkoutStatus === 'success' && (
         <Alert variant="success" dismissible onClose={() => setCheckoutStatus(null)}>
           <i className="bi bi-check-circle-fill me-2" aria-hidden="true" />
-          Payment successful!{' '}
           {initialCheckoutAmountCents != null
-            ? `${formatCents(initialCheckoutAmountCents)} in credits has`
-            : 'Credits have'}{' '}
-          been added to your pool.
+            ? `${formatCents(initialCheckoutAmountCents)} in credits were`
+            : 'Credits have been'}{' '}
+          added to your course instance.
         </Alert>
       )}
       {checkoutStatus === 'cancelled' && (
@@ -779,8 +734,11 @@ function CreditPoolSection({
         balanceContext="instructor"
         dimmed={useCustomApiKeys}
         emptyState={
-          stripePurchasingEnabled && canEdit ? (
-            <CreditPoolEmptyState onPurchase={() => purchaseModalState.showWithData(null)} />
+          stripePurchasingEnabled ? (
+            <CreditPoolEmptyState
+              canPurchase={canEdit}
+              onPurchase={canEdit ? () => purchaseModalState.showWithData(null) : undefined}
+            />
           ) : undefined
         }
         header={({ isEmpty: isPoolEmpty }) => (

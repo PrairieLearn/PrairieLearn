@@ -71,6 +71,11 @@ async function handleAiGradingCreditSessionUpdate(session: Stripe.Checkout.Sessi
   const deltaMilliDollars = localSession.amount_cents * 10;
 
   await runInTransactionAsync(async () => {
+    // Atomically claim this session. If another handler already completed it,
+    // this returns false and we skip crediting to prevent double-deposit.
+    const claimed = await markAiGradingCreditCheckoutSessionCompleted(session.id);
+    if (!claimed) return;
+
     await adjustCreditPool({
       course_instance_id: localSession.course_instance_id,
       delta_milli_dollars: deltaMilliDollars,
@@ -83,7 +88,6 @@ async function handleAiGradingCreditSessionUpdate(session: Stripe.Checkout.Sessi
       stripe_object_id: session.id,
       data: session,
     });
-    await markAiGradingCreditCheckoutSessionCompleted(session.id);
   });
 }
 

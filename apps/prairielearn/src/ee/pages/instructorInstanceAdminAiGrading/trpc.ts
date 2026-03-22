@@ -175,6 +175,13 @@ const createCreditCheckoutSessionMutation = t.procedure
       amount_cents: amountCents,
     });
 
+    if (!session.url) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to create checkout session. Please try again.',
+      });
+    }
+
     return { checkoutUrl: session.url };
   });
 
