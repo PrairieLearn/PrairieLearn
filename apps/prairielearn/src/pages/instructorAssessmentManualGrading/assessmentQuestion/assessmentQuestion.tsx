@@ -1,4 +1,5 @@
 import * as trpcExpress from '@trpc/server/adapters/express';
+import { createUIMessageStream, pipeUIMessageStreamToResponse } from 'ai';
 import { Router } from 'express';
 import z from 'zod';
 
@@ -9,6 +10,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
+import { editRubric, generateRubric } from '../../../ee/lib/ai-grading/ai-grading-agent.js';
 import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
 import {
   calculateAiGradingStats,
@@ -18,8 +20,13 @@ import {
   selectAssessmentQuestionHasInstanceQuestionGroups,
   selectInstanceQuestionGroups,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
+import {
+  deleteAiGradingMessages,
+  selectAiGradingMessages,
+} from '../../../ee/models/ai-grading-message.js';
 import { extractPageContext } from '../../../lib/client/page-context.js';
 import {
+  StaffAiGradingMessageSchema,
   StaffInstanceQuestionGroupSchema,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
@@ -28,7 +35,7 @@ import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import { getJobSequenceIds } from '../../../lib/server-jobs.js';
+import { createServerJob, getJobSequenceIds } from '../../../lib/server-jobs.js';
 import { handleTrpcError } from '../../../lib/trpc.js';
 import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
@@ -129,8 +136,22 @@ router.get(
       config.secretKey,
     );
 
+    const chatCsrfToken = generatePrefixCsrfToken(
+      {
+        url: req.originalUrl.split('?')[0] + '/chat',
+        authn_user_id: res.locals.authn_user.id,
+      },
+      config.secretKey,
+    );
+
     const availableAiGradingProviders = aiGradingEnabled
       ? await getAvailableAiGradingProviders(course_instance)
+      : [];
+
+    const initialChatMessages = aiGradingEnabled
+      ? z
+          .array(StaffAiGradingMessageSchema)
+          .parse(await selectAiGradingMessages(assessment_question.id))
       : [];
 
     res.send(
@@ -188,6 +209,8 @@ router.get(
                 questionTitle={question.title ?? ''}
                 questionNumber={Number(number_in_alternative_group)}
                 availableAiGradingProviders={availableAiGradingProviders}
+                chatCsrfToken={chatCsrfToken}
+                initialChatMessages={initialChatMessages}
               />
             </Hydrate>
           </>
@@ -238,6 +261,174 @@ router.get(
         use_instance_question_groups,
       }),
     );
+  }),
+);
+
+router.post(
+  '/chat',
+  typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
+
+    const { assessment, assessment_question, question, urlPrefix, authz_data } = extractPageContext(
+      res.locals,
+      {
+        pageType: 'assessmentQuestion',
+        accessType: 'instructor',
+      },
+    );
+
+    const phase = req.body.phase as 'generate' | 'edit' | undefined;
+    if (!phase || !['generate', 'edit'].includes(phase)) {
+      throw new error.HttpStatusError(400, 'Invalid or missing phase');
+    }
+
+    const userMessage = typeof req.body.message === 'string' ? req.body.message.trim() : '';
+    if (phase === 'edit' && userMessage.length === 0) {
+      throw new error.HttpStatusError(400, 'No message provided');
+    }
+
+    const serverJob = await createServerJob({
+      courseId: res.locals.course.id,
+      courseInstanceId: res.locals.course_instance.id,
+      assessmentId: assessment.id,
+      assessmentQuestionId: assessment_question.id,
+      userId: res.locals.user.id,
+      authnUserId: res.locals.authn_user.id,
+      type: 'ai_grading',
+      description: phase === 'generate' ? 'Generate rubric with AI' : 'Edit rubric with AI',
+      reportErrorsToSentry: true,
+    });
+
+    const stream = createUIMessageStream({
+      async execute({ writer }) {
+        await serverJob.execute(async (job) => {
+          const agentContext = {
+            assessment,
+            assessmentQuestion: assessment_question,
+            course: res.locals.course,
+            question,
+            urlPrefix,
+            authnUserId: res.locals.authn_user.id,
+            hasCourseInstancePermissionEdit:
+              authz_data.has_course_instance_permission_edit ?? false,
+          };
+
+          job.info(`AI grading chat request — phase: ${phase}`);
+
+          const textPartId = 'summary';
+
+          try {
+            if (phase === 'generate') {
+              const result = await generateRubric(agentContext, job, serverJob.jobSequenceId);
+              writer.write({
+                type: 'start',
+                messageMetadata: {
+                  job_sequence_id: serverJob.jobSequenceId,
+                  status: 'completed',
+                  phase: 'generate',
+                },
+              });
+              writer.write({ type: 'start-step' });
+              writer.write({ type: 'text-start', id: textPartId });
+              writer.write({ type: 'text-delta', id: textPartId, delta: result.summary });
+              writer.write({ type: 'text-end', id: textPartId });
+              writer.write({ type: 'finish-step' });
+              writer.write({ type: 'finish' });
+            } else {
+              // Load persisted conversation history from the database
+              const persistedMessages = await selectAiGradingMessages(assessment_question.id);
+
+              job.info('Instruction: ' + userMessage);
+
+              const result = await editRubric(
+                agentContext,
+                userMessage,
+                persistedMessages,
+                job,
+                serverJob.jobSequenceId,
+              );
+              writer.write({
+                type: 'start',
+                messageMetadata: {
+                  job_sequence_id: serverJob.jobSequenceId,
+                  status: 'completed',
+                  phase: 'edit',
+                  rubric_modified: result.rubricModified,
+                },
+              });
+              writer.write({ type: 'start-step' });
+              writer.write({ type: 'text-start', id: textPartId });
+              writer.write({ type: 'text-delta', id: textPartId, delta: result.summary });
+              writer.write({ type: 'text-end', id: textPartId });
+              writer.write({ type: 'finish-step' });
+              writer.write({ type: 'finish' });
+            }
+          } catch (err) {
+            job.error(String(err));
+            writer.write({
+              type: 'start',
+              messageMetadata: {
+                job_sequence_id: serverJob.jobSequenceId,
+                status: 'errored',
+                phase,
+              },
+            });
+            writer.write({ type: 'start-step' });
+            writer.write({ type: 'error', errorText: String(err) });
+            writer.write({ type: 'finish-step' });
+            writer.write({ type: 'finish' });
+          }
+        });
+      },
+    });
+
+    pipeUIMessageStreamToResponse({ response: res, stream });
+  }),
+);
+
+router.post(
+  '/chat/clear',
+  typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
+    }
+
+    const { assessment_question } = extractPageContext(res.locals, {
+      pageType: 'assessmentQuestion',
+      accessType: 'instructor',
+    });
+
+    await deleteAiGradingMessages(assessment_question.id);
+    res.sendStatus(200);
+  }),
+);
+
+router.get(
+  '/chat/rubric_data',
+  typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
+
+    const { assessment_question } = extractPageContext(res.locals, {
+      pageType: 'assessmentQuestion',
+      accessType: 'instructor',
+    });
+
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    const rubric_data = await manualGrading.selectRubricData({
+      assessment_question,
+    });
+
+    res.json({
+      rubric_data,
+      aiGradingStats:
+        aiGradingEnabled && assessment_question.ai_grading_mode
+          ? await calculateAiGradingStats(assessment_question)
+          : null,
+    });
   }),
 );
 
