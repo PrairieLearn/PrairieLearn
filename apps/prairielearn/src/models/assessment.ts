@@ -134,6 +134,18 @@ export async function selectZoneToolOverrides({ assessment_id }: { assessment_id
   );
 }
 
+export async function selectAssessmentToolDefaults({
+  assessment_id,
+}: {
+  assessment_id: string;
+}) {
+  return queryRows(
+    sql.select_assessment_tools,
+    { assessment_id, zone_id: null },
+    AssessmentToolSchema,
+  );
+}
+
 export async function selectAssessments({
   course_instance_id,
 }: {

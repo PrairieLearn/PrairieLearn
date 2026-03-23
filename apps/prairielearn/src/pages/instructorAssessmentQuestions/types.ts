@@ -10,6 +10,7 @@ import type {
   Topic,
 } from '../../lib/db-types.js';
 import type {
+  EnumAssessmentTool,
   QuestionAlternativeJsonInput,
   ZoneAssessmentJsonInput,
   ZoneQuestionBlockJsonInput,
@@ -327,6 +328,7 @@ export interface DetailState {
   assessmentType: EnumAssessmentType;
   constantQuestionValue: boolean;
   assessmentDefaults: AssessmentAdvancedDefaults;
+  assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
   courseInstanceId: string;
   courseId: string;
   hasCoursePermissionPreview: boolean;

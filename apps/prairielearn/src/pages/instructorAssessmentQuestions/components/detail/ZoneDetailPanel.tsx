@@ -1,10 +1,11 @@
 import clsx from 'clsx';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { EnumAssessmentToolSchema } from '../../../../schemas/infoAssessment.js';
 import type { DetailState, ZoneAssessmentForm } from '../../types.js';
 import {
+  coerceToBoolean,
   coerceToNumber,
   coerceToOptionalString,
   commentToString,
@@ -22,6 +23,7 @@ import { useAutoSave } from '../../utils/useAutoSave.js';
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
 import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
+import { InheritableCheckboxField } from './InheritableCheckboxField.js';
 
 interface ZoneFormData {
   title: string;
@@ -33,7 +35,7 @@ interface ZoneFormData {
   advanceScorePerc?: number;
   gradeRateMinutes?: number;
   allowRealTimeGrading?: boolean;
-  [toolField: `tool_${string}`]: string;
+  [toolField: `tool_${string}`]: boolean | undefined;
 }
 
 export function ZoneDetailPanel({
@@ -51,7 +53,7 @@ export function ZoneDetailPanel({
   onUpdate: (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => void;
   onFormValidChange: (isValid: boolean) => void;
 }) {
-  const { editMode, assessmentType, assessmentDefaults } = state;
+  const { editMode, assessmentType, assessmentDefaults, assessmentToolDefaults } = state;
   const formValues: ZoneFormData = {
     title: zone.title ?? '',
     maxPoints: zone.maxPoints ?? undefined,
@@ -66,7 +68,7 @@ export function ZoneDetailPanel({
     ...Object.fromEntries(
       EnumAssessmentToolSchema.options.map((tool) => [
         `tool_${tool}` as const,
-        zone.tools?.[tool] == null ? 'inherit' : zone.tools[tool].enabled ? 'enabled' : 'disabled',
+        zone.tools?.[tool] != null ? zone.tools[tool].enabled : undefined,
       ]),
     ),
   };
@@ -104,12 +106,11 @@ export function ZoneDetailPanel({
   const handleSave = useCallback(
     (data: ZoneFormData) => {
       const tools: Record<string, { enabled: boolean }> = {};
-      // Only include tools that have been explicitly overridden
       let hasToolOverride = false;
       for (const tool of EnumAssessmentToolSchema.options) {
         const value = data[`tool_${tool}`];
-        if (value === 'enabled' || value === 'disabled') {
-          tools[tool] = { enabled: value === 'enabled' };
+        if (value != null) {
+          tools[tool] = { enabled: value };
           hasToolOverride = true;
         }
       }
@@ -157,6 +158,10 @@ export function ZoneDetailPanel({
   };
 
   const Wrapper = editMode ? 'div' : 'dl';
+
+  const [overriddenTools, setOverriddenTools] = useState(
+    () => new Set(EnumAssessmentToolSchema.options.filter((tool) => zone.tools?.[tool] != null)),
+  );
 
   const zonePointsMismatch = getZonePointsMismatch(zone, assessmentType);
   const zoneChooseExceeds = hasZoneChooseExceedsCount(zone);
@@ -296,34 +301,35 @@ export function ZoneDetailPanel({
         {EnumAssessmentToolSchema.options.map((tool) => {
           const toolLabel = tool[0].toUpperCase() + tool.slice(1);
           const fieldName = `tool_${tool}` as const;
-          const currentValue = zone.tools?.[tool];
-          const viewValue =
-            currentValue == null
-              ? 'Inherit from assessment'
-              : currentValue.enabled
-                ? 'Enabled'
-                : 'Disabled';
+          const inheritedValue = assessmentToolDefaults[tool] ?? false;
+          const isInherited = !overriddenTools.has(tool);
+          const watchedValue = watch(fieldName);
           return (
-            <FormField
+            <InheritableCheckboxField
               key={tool}
-              editMode={editMode}
               id={`${idPrefix}-tool-${tool}`}
               label={toolLabel}
-              viewValue={viewValue}
               helpText={`Override the assessment-level ${toolLabel.toLowerCase()} setting for this zone.`}
-            >
-              {(aria) => (
-                <select
-                  className="form-select form-select-sm"
-                  {...aria.inputProps}
-                  {...register(fieldName)}
-                >
-                  <option value="inherit">Inherit from assessment</option>
-                  <option value="enabled">Enabled</option>
-                  <option value="disabled">Disabled</option>
-                </select>
-              )}
-            </FormField>
+              editMode={editMode}
+              isInherited={isInherited}
+              inheritedValue={inheritedValue}
+              inheritedFromLabel="assessment"
+              viewValue={!isInherited ? !!watchedValue : undefined}
+              registerProps={register(fieldName, { setValueAs: coerceToBoolean })}
+              showResetButton={!isInherited}
+              onOverride={() => {
+                setOverriddenTools((prev) => new Set(prev).add(tool));
+                setValue(fieldName, inheritedValue, { shouldDirty: true });
+              }}
+              onReset={() => {
+                setOverriddenTools((prev) => {
+                  const next = new Set(prev);
+                  next.delete(tool);
+                  return next;
+                });
+                resetAndSave(fieldName);
+              }}
+            />
           );
         })}
       </Wrapper>
