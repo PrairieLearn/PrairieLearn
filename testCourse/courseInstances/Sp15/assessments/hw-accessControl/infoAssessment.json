@@ -6,19 +6,14 @@
   "number": "14",
   "accessControl": [
     {
-      "enabled": true,
-
       "listBeforeRelease": true,
       "dateControl": {
         "enabled": true,
         "afterLastDeadline": { "allowSubmissions": true, "credit": 52 }
       },
-      "integrations": { "prairieTest": { "enabled": false } },
       "afterComplete": { "hideQuestions": false, "hideScore": false }
     },
     {
-      "enabled": true,
-
       "listBeforeRelease": true,
       "labels": ["Section A"],
       "dateControl": { "dueDate": "2026-01-28T18:14" }

@@ -55,7 +55,9 @@ type BaseRuleRow = z.infer<typeof AccessControlRuleBaseSchema> & {
 function dbBaseRowToAccessControlJson(row: BaseRuleRow): AccessControlJson & { id: string } {
   const dateControl: AccessControlJson['dateControl'] = {};
 
-  if (row.date_control_overridden) {
+  // Only include dateControl.enabled on the main rule (number 0).
+  // For overrides, date_control_overridden just means "this override has date fields".
+  if (row.number === 0 && row.date_control_overridden) {
     dateControl.enabled = true;
   }
 

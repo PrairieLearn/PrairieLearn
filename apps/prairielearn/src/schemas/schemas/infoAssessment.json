@@ -727,6 +727,7 @@
     },
     "AccessControlJsonSchema": {
       "type": "object",
+      "additionalProperties": false,
       "properties": {
         "name": {
           "description": "Name for AccessControl rule",
@@ -759,6 +760,7 @@
         },
         "dateControl": {
           "type": "object",
+          "additionalProperties": false,
           "properties": {
             "enabled": {
               "description": "Whether dateControl is enabled or not",
@@ -819,6 +821,7 @@
               "anyOf": [
                 {
                   "type": "object",
+                  "additionalProperties": false,
                   "properties": {
                     "allowSubmissions": {
                       "type": "boolean"
@@ -853,15 +856,18 @@
         },
         "integrations": {
           "type": "object",
+          "additionalProperties": false,
           "properties": {
             "prairieTest": {
               "type": "object",
+              "additionalProperties": false,
               "properties": {
                 "exams": {
                   "description": "Array of associated PrairieTest exam configs",
                   "type": "array",
                   "items": {
                     "type": "object",
+                    "additionalProperties": false,
                     "required": ["examUuid"],
                     "properties": {
                       "examUuid": {
@@ -882,6 +888,7 @@
         },
         "afterComplete": {
           "type": "object",
+          "additionalProperties": false,
           "properties": {
             "hideQuestions": {
               "description": "Whether to enable settings controlling question visibility after assessment completion",
@@ -913,6 +920,7 @@
     },
     "DeadlineEntryJsonSchema": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["date", "credit"],
       "properties": {
         "date": {

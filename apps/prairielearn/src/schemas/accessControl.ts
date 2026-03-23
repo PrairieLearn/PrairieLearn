@@ -2,15 +2,19 @@ import { z } from 'zod';
 
 import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 
-export const DeadlineEntryJsonSchema = z.object({
-  date: DatetimeLocalStringSchema.describe('Date as ISO String for additional deadline'),
-  credit: z.number().describe('Amount of credit as a percent to allow'),
-});
+export const DeadlineEntryJsonSchema = z
+  .object({
+    date: DatetimeLocalStringSchema.describe('Date as ISO String for additional deadline'),
+    credit: z.number().describe('Amount of credit as a percent to allow'),
+  })
+  .strict();
 
-const AfterLastDeadlineJsonSchema = z.object({
-  allowSubmissions: z.boolean().optional(),
-  credit: z.number().optional(),
-});
+const AfterLastDeadlineJsonSchema = z
+  .object({
+    allowSubmissions: z.boolean().optional(),
+    credit: z.number().optional(),
+  })
+  .strict();
 
 const DateControlJsonSchema = z
   .object({
@@ -41,18 +45,21 @@ const DateControlJsonSchema = z
       .describe('Desired duration limit for assessment'),
     password: z.string().nullable().optional().describe('Password for assessment'),
   })
+  .strict()
   .optional();
 
-const ExamJsonSchema = z.object({
-  examUuid: z
-    .string()
-    .regex(
-      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
-      'Invalid UUID format',
-    )
-    .describe('UUID of associated PrairieTest exam'),
-  readOnly: z.boolean().optional().describe('Whether the exam is read-only for students'),
-});
+const ExamJsonSchema = z
+  .object({
+    examUuid: z
+      .string()
+      .regex(
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+        'Invalid UUID format',
+      )
+      .describe('UUID of associated PrairieTest exam'),
+    readOnly: z.boolean().optional().describe('Whether the exam is read-only for students'),
+  })
+  .strict();
 
 const PrairieTestJsonSchema = z
   .object({
@@ -61,12 +68,14 @@ const PrairieTestJsonSchema = z
       .optional()
       .describe('Array of associated PrairieTest exam configs'),
   })
+  .strict()
   .optional();
 
 const IntegrationsJsonSchema = z
   .object({
     prairieTest: PrairieTestJsonSchema,
   })
+  .strict()
   .optional();
 
 const AfterCompleteJsonSchema = z
@@ -93,23 +102,29 @@ const AfterCompleteJsonSchema = z
       'Date as ISO String for when to reveal hidden scores after assessment completion',
     ),
   })
+  .strict()
   .optional();
 
-export const AccessControlJsonSchema = z.object({
-  name: z.string().optional().describe('Name for AccessControl rule'),
-  labels: z.array(z.string()).optional().describe('Array of student label names this set targets'),
-  listBeforeRelease: z
-    .boolean()
-    .optional()
-    .nullable()
-    .describe(
-      'Whether students can see the assessment title before the release date. Defaults to false.',
-    ),
+export const AccessControlJsonSchema = z
+  .object({
+    name: z.string().optional().describe('Name for AccessControl rule'),
+    labels: z
+      .array(z.string())
+      .optional()
+      .describe('Array of student label names this set targets'),
+    listBeforeRelease: z
+      .boolean()
+      .optional()
+      .nullable()
+      .describe(
+        'Whether students can see the assessment title before the release date. Defaults to false.',
+      ),
 
-  dateControl: DateControlJsonSchema,
-  integrations: IntegrationsJsonSchema,
-  afterComplete: AfterCompleteJsonSchema,
-});
+    dateControl: DateControlJsonSchema,
+    integrations: IntegrationsJsonSchema,
+    afterComplete: AfterCompleteJsonSchema,
+  })
+  .strict();
 
 export type AccessControlJson = z.infer<typeof AccessControlJsonSchema>;
 export type AccessControlJsonInput = z.input<typeof AccessControlJsonSchema>;
