@@ -206,6 +206,12 @@ const TOOL_STATUS_MESSAGES: Record<
     done: 'Read sample submissions',
     error: 'Error reading sample submissions',
   },
+  'tool-revertRubric': {
+    streaming: 'Reverting rubric...',
+    pending: 'Reverting rubric...',
+    done: 'Reverted rubric',
+    error: 'Error reverting rubric',
+  },
   'tool-startAiGrading': {
     streaming: 'Running AI grading...',
     pending: 'Running AI grading...',
@@ -259,6 +265,7 @@ const MUTATION_TOOL_TYPES = new Set([
   'tool-deleteRubricItem',
   'tool-swapRubricItems',
   'tool-editRubricSettings',
+  'tool-revertRubric',
 ]);
 
 function displayValue(value: unknown): string {
@@ -588,9 +595,12 @@ function MasterRubricDiff({
 
     for (const part of mutationParts) {
       try {
-        const output = part.output as string | undefined;
-        if (!output) continue;
-        const parsed = JSON.parse(output) as { before?: DiffRubricState; after?: DiffRubricState };
+        const raw = part.output;
+        if (!raw) continue;
+        const parsed = (typeof raw === 'string' ? JSON.parse(raw) : raw) as {
+          before?: DiffRubricState;
+          after?: DiffRubricState;
+        };
         if (parsed.before && !firstBefore) {
           firstBefore = parsed.before;
         }
@@ -656,6 +666,62 @@ function triggerOpenRubricEditor() {
   }
 
   scrollToRubricEditor();
+}
+
+function hasMutations(parts: UIMessage['parts']): boolean {
+  return parts.some(
+    (p) => isToolPart(p) && MUTATION_TOOL_TYPES.has(p.type) && p.state === 'output-available',
+  );
+}
+
+/**
+ * Given a snapshot ID prefix (e.g. "abc12345"), find the matching message
+ * and extract the `before` snapshot from its first mutation tool output.
+ * This is used to inject snapshot data when the user asks to revert.
+ */
+function findSnapshotForRevert(
+  allMessages: RubricChatMessage[],
+  messageText: string,
+): { snapshotJson: string; snapshotId: string } | null {
+  // Match patterns like "snapshot abc12345" or "revert abc12345" (case-insensitive)
+  const match = messageText.match(
+    /(?:snapshot|revert\s+(?:to\s+)?(?:snapshot\s+)?)([a-f0-9]{6,})/i,
+  );
+  if (!match) return null;
+  const prefix = match[1];
+
+  // Find the message whose ID starts with the given prefix
+  const targetMessage = allMessages.find(
+    (m) => m.role === 'assistant' && m.id.startsWith(prefix) && hasMutations(m.parts),
+  );
+  if (!targetMessage) return null;
+
+  // Extract the after snapshot from the last mutation tool output
+  for (const part of [...targetMessage.parts].reverse()) {
+    if (
+      !isToolPart(part) ||
+      !MUTATION_TOOL_TYPES.has(part.type) ||
+      part.state !== 'output-available'
+    ) {
+      continue;
+    }
+    try {
+      const raw = (part as ToolUIPart & { output?: unknown }).output;
+      if (!raw) continue;
+      const parsed = (typeof raw === 'string' ? JSON.parse(raw) : raw) as {
+        after?: DiffRubricState;
+      };
+      if (parsed.after) {
+        return {
+          snapshotJson: JSON.stringify(parsed.after),
+          snapshotId: targetMessage.id.slice(0, 8),
+        };
+      }
+    } catch {
+      continue;
+    }
+  }
+  return null;
 }
 
 function persistedMessagesToInitialMessages(
@@ -759,13 +825,22 @@ function AssessmentQuestionManualGradingInner({
       headers: { 'X-CSRF-Token': chatCsrfToken },
       prepareSendMessagesRequest: ({ messages: chatMsgs, headers, body }) => {
         const lastMessage = chatMsgs[chatMsgs.length - 1];
-        const messageText =
+        let messageText =
           lastMessage.role === 'user'
             ? (lastMessage.parts as { type: string; text?: string }[])
                 .map((p) => (p.type === 'text' ? (p.text ?? '') : ''))
                 .filter(Boolean)
                 .join('\n\n')
             : '';
+
+        // If the user references a snapshot ID, inject the snapshot data
+        // so the agent can call revertRubric with the full state.
+        const snapshotMatch = findSnapshotForRevert(messages, messageText);
+        if (snapshotMatch) {
+          messageText += `\n\n[Revert to snapshot ${snapshotMatch.snapshotId}]\nSnapshot data:\n${snapshotMatch.snapshotJson}`;
+          currentPhaseRef.current = 'edit';
+        }
+
         return {
           headers,
           body: {
@@ -974,13 +1049,44 @@ function AssessmentQuestionManualGradingInner({
                 .filter(Boolean)
                 .join('\n\n');
               if (!textContent) return null;
+
+              // Check if this is a revert message containing a JSON snapshot
+              const revertMatch = textContent.match(/^\[revert:([a-f0-9]+)\]/);
+
               return (
                 <div key={message.id} className="d-flex flex-row-reverse mb-3">
                   <div
                     className="d-flex flex-column gap-2 p-3 rounded bg-secondary-subtle"
                     style={{ maxWidth: '90%', whiteSpace: 'pre-wrap' }}
                   >
-                    {textContent}
+                    {revertMatch ? (
+                      <>
+                        <span>Revert rubric to a previous state</span>
+                        <div
+                          className="d-flex align-items-center gap-2 rounded border px-2 py-1"
+                          style={{
+                            background: 'rgba(13, 110, 253, 0.06)',
+                            borderColor: 'rgba(13, 110, 253, 0.25)',
+                            fontSize: '0.8rem',
+                            color: '#495057',
+                          }}
+                        >
+                          <i
+                            className="bi bi-bookmark-fill"
+                            style={{ color: '#0d6efd', fontSize: '0.7rem' }}
+                            aria-hidden="true"
+                          />
+                          <span>
+                            Rubric from message{' '}
+                            <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                              {revertMatch[1]}
+                            </span>
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      textContent
+                    )}
                   </div>
                 </div>
               );
@@ -995,6 +1101,61 @@ function AssessmentQuestionManualGradingInner({
               <div key={message.id} className="d-flex flex-column gap-1 mb-3">
                 <MessageParts parts={message.parts} />
                 <MasterRubricDiff parts={message.parts} isComplete={isMessageComplete} />
+                {isMessageComplete && hasMutations(message.parts) && (
+                  <div className="d-flex align-items-center gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-link btn-sm p-0 text-muted"
+                      disabled={isGenerating}
+                      title="Restore rubric to the state after this message"
+                      onClick={() => {
+                        // Extract the after snapshot from the last mutation tool output.
+                        // This restores the rubric to the state after this message completed.
+                        // The output may be a JSON string or an already-parsed object
+                        // depending on whether it came from a live stream or persisted data.
+                        let afterSnapshot: DiffRubricState | null = null;
+                        for (const part of [...message.parts].reverse()) {
+                          if (
+                            !isToolPart(part) ||
+                            !MUTATION_TOOL_TYPES.has(part.type) ||
+                            part.state !== 'output-available'
+                          ) {
+                            continue;
+                          }
+                          try {
+                            const raw = (part as ToolUIPart & { output?: unknown }).output;
+                            if (!raw) continue;
+                            const parsed = (typeof raw === 'string' ? JSON.parse(raw) : raw) as {
+                              after?: DiffRubricState;
+                            };
+                            if (parsed.after) {
+                              afterSnapshot = parsed.after;
+                              break;
+                            }
+                          } catch {
+                            continue;
+                          }
+                        }
+                        if (!afterSnapshot) return;
+
+                        currentPhaseRef.current = 'edit';
+                        const snapshotId = message.id.slice(0, 8);
+                        void sendMessage({
+                          text: `[revert:${snapshotId}] Revert the rubric to this snapshot:\n${JSON.stringify(afterSnapshot)}`,
+                        });
+                      }}
+                    >
+                      <i className="bi bi-arrow-counterclockwise me-1" />
+                      Revert
+                    </button>
+                    <span
+                      className="text-muted user-select-all"
+                      style={{ fontSize: '0.6rem', fontFamily: 'monospace', opacity: 0.5 }}
+                    >
+                      {message.id.slice(0, 8)}
+                    </span>
+                  </div>
+                )}
                 {jobSequenceId && (
                   <a
                     className="small"

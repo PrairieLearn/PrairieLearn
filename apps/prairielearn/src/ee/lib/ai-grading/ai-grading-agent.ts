@@ -291,6 +291,18 @@ const AI_GRADING_TOOLS = {
     inputSchema: z.object({}),
     outputSchema: z.string(),
   }),
+  revertRubric: tool({
+    description:
+      'Deterministically revert the rubric to a previous state. Use this when the user clicks "Revert" on a message. The snapshot JSON is provided in the user message — pass it as the snapshot parameter exactly as given.',
+    inputSchema: z.object({
+      snapshot: z
+        .string()
+        .describe(
+          'The full rubric snapshot JSON to restore (settings + rubric_items). This is provided in the user revert message.',
+        ),
+    }),
+    outputSchema: z.string(),
+  }),
   startAiGrading: tool({
     description:
       'Start AI grading of student submissions using the current rubric. This triggers the grading workflow.',
@@ -310,6 +322,7 @@ const RUBRIC_GENERATION_SYSTEM_PROMPT = [
   'This rubric should work for any random variant of the question.',
   'Rubric items are binary: full credit or no credit. Account for nuances by creating separate items.',
   'Create comprehensive rubric items that cover the key aspects of the assignment.',
+  'IMPORTANT: All rubric text (descriptions, explanations, grader notes) MUST be written entirely in English. Do not use any non-English characters, including Chinese, Japanese, or other non-Latin scripts.',
 ].join(' ');
 
 const RUBRIC_GENERATION_AGENT_SYSTEM_PROMPT = [
@@ -328,6 +341,7 @@ const RUBRIC_GENERATION_AGENT_SYSTEM_PROMPT = [
   'You cannot change the assessment question point values — those are fixed by the instructor.',
   'After generating and optionally refining the rubric, briefly summarize your reasoning.',
   'A detailed diff of all rubric changes will be automatically shown to the user after your message, so do NOT list individual item changes — focus on your rationale and any important decisions.',
+  'IMPORTANT: All rubric text (descriptions, explanations, grader notes, guidelines) MUST be written entirely in English. Do not use any non-English characters, including Chinese, Japanese, or other non-Latin scripts.',
 ].join(' ');
 
 const RUBRIC_EDITING_AGENT_SYSTEM_PROMPT = [
@@ -341,6 +355,7 @@ const RUBRIC_EDITING_AGENT_SYSTEM_PROMPT = [
   'When the user asks to change multiple items (e.g. "remove all explanations"), call editRubricItem for EACH affected item.',
   'When referring to rubric items, use the rubric_item_id (database ID) from getRubric, not display indices.',
   'Users may refer to items by their display number (1-based), so map those to the correct rubric_item_id.',
+  'If the user asks to revert, their message will contain a JSON snapshot. Call the revertRubric tool with that snapshot string exactly as provided.',
   'If the user asks to start AI grading, call the startAiGrading tool.',
   'IMPORTANT: After making changes, check the point_validation in the getRubric response. If there are errors, fix them immediately by adjusting items or settings.',
   'You may temporarily go outside valid point ranges during multi-step edits, but you must correct any validation errors before finishing.',
@@ -349,11 +364,17 @@ const RUBRIC_EDITING_AGENT_SYSTEM_PROMPT = [
   'You cannot change the assessment question point values — those are fixed by the instructor.',
   'After making changes, respond briefly to explain your reasoning.',
   'A detailed diff of all rubric changes will be automatically shown to the user after your message, so do NOT list individual item changes — focus on your rationale and any important decisions.',
+  'IMPORTANT: All rubric text (descriptions, explanations, grader notes, guidelines) MUST be written entirely in English. Do not use any non-English characters, including Chinese, Japanese, or other non-Latin scripts.',
 ].join(' ');
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+export interface DiffRubricState {
+  settings: Record<string, unknown> | null;
+  rubric_items: Record<string, unknown>[];
+}
 
 interface AiGradingAgentContext {
   assessment: Assessment;
@@ -539,7 +560,7 @@ async function getRubricSnapshot(
 
 /**
  * Build the mutation tool result: includes the full after-state for the LLM
- * plus a `before` snapshot so the UI can compute diffs.
+ * plus `before`/`after` snapshots so the UI can compute diffs.
  */
 async function formatMutationResult(
   context: AiGradingAgentContext,
@@ -1188,6 +1209,44 @@ function buildRubricToolsWithExecute({
       },
     }),
 
+    revertRubric: tool({
+      ...AI_GRADING_TOOLS.revertRubric,
+      execute: async ({ snapshot: snapshotJson }) =>
+        rubricMutex.run(async () => {
+          job.info(`Tool: revertRubric — input snapshot: ${snapshotJson}`);
+
+          const beforeState = await formatCurrentRubricState(context);
+
+          let snapshot: DiffRubricState;
+          try {
+            snapshot = JSON.parse(snapshotJson) as DiffRubricState;
+          } catch {
+            return JSON.stringify({ error: 'Invalid snapshot JSON.' });
+          }
+
+          if (!snapshot.settings) {
+            return JSON.stringify({
+              error: 'Snapshot has no settings — cannot restore.',
+            });
+          }
+
+          await restoreRubricFromSnapshot({
+            assessment: context.assessment,
+            assessmentQuestion: context.assessmentQuestion,
+            authnUserId: context.authnUserId,
+            snapshot,
+          });
+
+          const afterState = await formatCurrentRubricState(context);
+          job.info(`revertRubric SAVED STATE: ${afterState}`);
+
+          return JSON.stringify({
+            before: JSON.parse(beforeState),
+            after: JSON.parse(afterState),
+          });
+        }),
+    }),
+
     startAiGrading: tool({
       ...AI_GRADING_TOOLS.startAiGrading,
       execute: async () => {
@@ -1258,6 +1317,7 @@ export function createRubricAgent({
             'getAssessmentQuestionPoints',
             'getQuestionContent',
             'getSampleSubmissions',
+            'revertRubric',
             'startAiGrading',
           ] as const,
         };
@@ -1272,6 +1332,50 @@ export function createRubricAgent({
 // ---------------------------------------------------------------------------
 // Public API — called by route handler
 // ---------------------------------------------------------------------------
+
+/**
+ * Restore the rubric to a previous snapshot state. Used by the "Revert"
+ * button in the chat UI to deterministically restore the rubric to the
+ * state before a particular message's changes.
+ */
+export async function restoreRubricFromSnapshot({
+  assessment,
+  assessmentQuestion,
+  authnUserId,
+  snapshot,
+}: {
+  assessment: Assessment;
+  assessmentQuestion: AssessmentQuestion;
+  authnUserId: string;
+  snapshot: DiffRubricState;
+}): Promise<void> {
+  if (!snapshot.settings) {
+    throw new Error(
+      'Cannot restore: snapshot has no settings (rubric did not exist at that point)',
+    );
+  }
+  const settings = snapshot.settings;
+  await manualGrading.updateAssessmentQuestionRubric({
+    assessment,
+    assessment_question_id: assessmentQuestion.id,
+    use_rubric: true,
+    replace_auto_points: settings.replace_auto_points as boolean,
+    starting_points: settings.starting_points as number,
+    min_points: settings.min_points as number,
+    max_extra_points: settings.max_extra_points as number,
+    rubric_items: snapshot.rubric_items.map((item, idx) => ({
+      order: idx,
+      points: item.points as number,
+      description: item.description as string,
+      explanation: (item.explanation as string | null) ?? '',
+      grader_note: (item.grader_note as string | null) ?? '',
+      always_show_to_students: item.always_show_to_students as boolean,
+    })),
+    tag_for_manual_grading: false,
+    grader_guidelines: (settings.grader_guidelines as string | null) ?? null,
+    authn_user_id: authnUserId,
+  });
+}
 
 export async function generateRubric(
   context: AiGradingAgentContext,

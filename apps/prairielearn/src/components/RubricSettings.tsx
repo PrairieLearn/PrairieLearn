@@ -1084,7 +1084,7 @@ function RubricRow({
         onDragOver();
       }}
     >
-      <td className="text-nowrap align-middle">
+      <td className="text-nowrap align-top">
         {hasCourseInstancePermissionEdit && (
           <>
             <button
@@ -1154,7 +1154,7 @@ function RubricRow({
         )}
       </td>
 
-      <td className="align-middle text-center">
+      <td className="align-top text-center">
         <span
           className="badge rounded-pill bg-light text-dark border"
           style={{ minWidth: '1.5rem', fontSize: '0.75rem' }}
@@ -1163,7 +1163,7 @@ function RubricRow({
         </span>
       </td>
 
-      <td className="align-middle">
+      <td className="align-top">
         <input
           type="number"
           className="form-control"
@@ -1181,7 +1181,7 @@ function RubricRow({
         />
       </td>
 
-      <td className="align-middle">
+      <td className="align-top">
         <input
           type="text"
           className="form-control"
@@ -1195,31 +1195,53 @@ function RubricRow({
         />
       </td>
 
-      <td className="align-middle">
+      <td className="align-top">
         <textarea
+          ref={(el) => {
+            if (el) {
+              el.style.height = 'auto';
+              el.style.height = `${el.scrollHeight}px`;
+            }
+          }}
           className="form-control"
           value={item.rubric_item.explanation ?? ''}
           maxLength={10000}
-          style={{ minWidth: '15rem' }}
+          style={{ minWidth: '15rem', overflow: 'hidden', resize: 'vertical' }}
+          rows={1}
           aria-label="Explanation"
           disabled={!hasCourseInstancePermissionEdit}
-          onInput={(e) => updateRubricItem({ explanation: e.currentTarget.value })}
+          onInput={(e) => {
+            updateRubricItem({ explanation: e.currentTarget.value });
+            e.currentTarget.style.height = 'auto';
+            e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+          }}
         />
       </td>
 
-      <td className="align-middle">
+      <td className="align-top">
         <textarea
+          ref={(el) => {
+            if (el) {
+              el.style.height = 'auto';
+              el.style.height = `${el.scrollHeight}px`;
+            }
+          }}
           className="form-control"
           value={item.rubric_item.grader_note ?? ''}
           maxLength={10000}
-          style={{ minWidth: '15rem' }}
+          style={{ minWidth: '15rem', overflow: 'hidden', resize: 'vertical' }}
+          rows={1}
           aria-label="Grader note"
           disabled={!hasCourseInstancePermissionEdit}
-          onInput={(e) => updateRubricItem({ grader_note: e.currentTarget.value })}
+          onInput={(e) => {
+            updateRubricItem({ grader_note: e.currentTarget.value });
+            e.currentTarget.style.height = 'auto';
+            e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+          }}
         />
       </td>
 
-      <td className="align-middle">
+      <td className="align-top">
         <div className="form-check form-check-inline">
           <label className="form-check-label text-nowrap">
             <input
@@ -1247,7 +1269,7 @@ function RubricRow({
       </td>
 
       {showAiGradingStats ? (
-        <td className="align-middle">
+        <td className="align-top">
           {submissionCount === 0 ? (
             <span>&mdash;</span>
           ) : item.disagreement_count == null ? (
@@ -1267,7 +1289,7 @@ function RubricRow({
           )}
         </td>
       ) : (
-        <td className="text-nowrap align-middle">
+        <td className="text-nowrap align-top">
           {item.num_submissions == null
             ? 'New'
             : item.num_submissions === 0
