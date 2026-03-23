@@ -712,6 +712,31 @@ describe('Question Sharing', function () {
       }
     });
 
+    test.sequential(
+      'Successfully access publicly shared assessment page when the course instance is not publicly shared',
+      async () => {
+        sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = false;
+
+        await fs.writeJSON(
+          path.join(courseRepo.courseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
+          sharingCourseData.courseInstances['Fa19'].courseInstance,
+        );
+
+        const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
+        assert.equal(syncResult.status, 'complete');
+
+        const sharedAssessmentId = await sqldb.queryScalar(
+          sql.select_assessment,
+          { tid: 'test', course_instance_id: sharingCourseInstanceId },
+          IdSchema,
+        );
+
+        const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessment/${sharedAssessmentId}/questions`;
+        const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
+        assert(sharedAssessmentPage.ok);
+      },
+    );
+
     test.sequential('Successfully sync a shared course instance', async () => {
       sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
       await fs.writeJSON(
