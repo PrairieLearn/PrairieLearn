@@ -68,13 +68,6 @@ export default typedAsyncHandler<'public-course' | 'public-course-instance'>(
       throw new HttpStatusError(404, 'Not Found');
     }
 
-    const isAssessmentRoute =
-      req.originalUrl.includes('/pl/public/course_instance/') &&
-      req.originalUrl.includes('/assessment/');
-    if (!isAssessmentRoute && course_instance && !course_instance.share_source_publicly) {
-      throw new HttpStatusError(404, 'Not Found');
-    }
-
     res.locals.course = course;
     if (course_instance) res.locals.course_instance = course_instance;
 
