@@ -9,7 +9,6 @@ import {
 
 const defaultMainRule: MainRuleData = {
   trackingId: 'main-1',
-  enabled: true,
   listBeforeRelease: true,
   dateControlEnabled: true,
   releaseDate: '2025-03-01T00:00:00Z',
@@ -27,7 +26,6 @@ const defaultMainRule: MainRuleData = {
 
 const baseOverride: OverrideData = {
   trackingId: 'o-base',
-  enabled: true,
   appliesTo: {
     targetType: 'individual',
     individuals: [{ uid: 'a@b.com', name: 'A' }],

@@ -445,7 +445,7 @@ describe('resolveAccessControl', () => {
       expect(result.creditDateString).toContain('Jun 30');
     });
 
-    it('skips disabled overrides', () => {
+    it('applies all matching overrides', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -454,7 +454,7 @@ describe('resolveAccessControl', () => {
           }),
           makeOverrideRule(
             1,
-            { enabled: false, dateControl: { dueDate: '2025-06-01T00:00:00Z' } },
+            { dateControl: { dueDate: '2025-06-01T00:00:00Z' } },
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
           makeOverrideRule(
@@ -465,7 +465,7 @@ describe('resolveAccessControl', () => {
         ],
         student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       });
-      // First override is disabled, so second override (due July 1 UTC = Jun 30 CDT) should apply
+      // Second override (due July 1 UTC = Jun 30 CDT) wins via cascade
       expect(result.creditDateString).toContain('Jun 30');
     });
   });
@@ -593,36 +593,6 @@ describe('resolveAccessControl', () => {
       expect(result.password).toBe('override-pw');
       // Due date from student_label override (June 1 UTC = May 31 CDT) should carry through
       expect(result.creditDateString).toContain('May 31');
-    });
-  });
-
-  describe('disabled/blocking main with override', () => {
-    it('authorizes when main is disabled but matched override has no enabled field', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [
-          makeMainRule({ enabled: false }),
-          makeOverrideRule(
-            1,
-            { dateControl: { dueDate: '2025-05-01T00:00:00Z' } },
-            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
-          ),
-        ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
-      });
-      expect(result.authorized).toBe(true);
-    });
-
-    it('denies when main is disabled and no override matches', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [
-          makeMainRule({ enabled: false }),
-          makeOverrideRule(1, {}, { targetType: 'enrollment', enrollmentIds: ['enroll-other'] }),
-        ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
-      });
-      expect(result.authorized).toBe(false);
     });
   });
 
@@ -1120,17 +1090,6 @@ describe('resolveAccessControl', () => {
     });
   });
 
-  describe('enabled on main rule', () => {
-    it('returns unauthorized when main rule enabled is false', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [makeMainRule({ enabled: false })],
-      });
-      expect(result.authorized).toBe(false);
-      expect(result.credit).toBe(0);
-    });
-  });
-
   describe('afterComplete visibility edge cases', () => {
     const cases: {
       label: string;
@@ -1214,13 +1173,8 @@ describe('resolveAccessControl', () => {
 
 describe('mergeRules', () => {
   it('returns main rule when override is null', () => {
-    const main: AccessControlJson = { enabled: true };
+    const main: AccessControlJson = { listBeforeRelease: true };
     expect(mergeRules(main, null)).toEqual(main);
-  });
-
-  it('overrides enabled field', () => {
-    const result = mergeRules({ enabled: true }, { enabled: false });
-    expect(result.enabled).toBe(false);
   });
 
   it('preserves main dateControl fields not in override', () => {
@@ -1260,10 +1214,9 @@ describe('mergeRules', () => {
   });
 
   it.each<{ field: keyof AccessControlJson; main: AccessControlJson }>([
-    { field: 'enabled', main: { enabled: false } },
     { field: 'name', main: { name: 'Main Rule' } },
     { field: 'labels', main: { labels: ['group-a'] } },
-    { field: 'integrations', main: { integrations: { prairieTest: { enabled: true } } } },
+    { field: 'integrations', main: { integrations: { prairieTest: { exams: [] } } } },
   ])('does not inherit $field from main', ({ field, main }) => {
     const result = mergeRules(main, {});
     expect(result[field]).toBeUndefined();
@@ -1324,11 +1277,6 @@ describe('cascadeOverrides', () => {
     );
     expect(result.afterComplete?.hideQuestions).toBe(false);
     expect(result.afterComplete?.hideScore).toBe(true);
-  });
-
-  it('does not inherit enabled from base', () => {
-    const result = cascadeOverrides({ enabled: false }, {});
-    expect(result.enabled).toBeUndefined();
   });
 
   it('preserves listBeforeRelease from base when next does not set it', () => {

@@ -76,7 +76,6 @@ export const AppliesToSchema = z.object({
 export const MainRuleSchema = z.object({
   id: z.string().optional(),
   trackingId: z.string(),
-  enabled: z.boolean(),
   listBeforeRelease: z.boolean(),
   dateControlEnabled: z.boolean(),
   releaseDate: z.string().nullable(),
@@ -99,7 +98,6 @@ export const MainRuleSchema = z.object({
 export const OverrideSchema = z.object({
   id: z.string().optional(),
   trackingId: z.string(),
-  enabled: z.boolean(),
   appliesTo: AppliesToSchema,
   overriddenFields: z.array(z.string()),
   releaseDate: z.string().nullable(),
@@ -163,7 +161,6 @@ export function jsonToMainRuleFormData(json: AccessControlJsonWithId): MainRuleD
   return {
     id: json.id,
     trackingId: json.id ?? crypto.randomUUID(),
-    enabled: json.enabled ?? true,
     listBeforeRelease: json.listBeforeRelease ?? true,
     dateControlEnabled: dc?.enabled ?? false,
     releaseDate: toLocalDatetimeValue(dc?.releaseDate) ?? null,
@@ -179,7 +176,7 @@ export function jsonToMainRuleFormData(json: AccessControlJsonWithId): MainRuleD
     afterLastDeadline: dc?.afterLastDeadline ?? null,
     durationMinutes: dc?.durationMinutes ?? null,
     password: dc?.password ?? null,
-    prairieTestEnabled: json.integrations?.prairieTest?.enabled ?? false,
+    prairieTestEnabled: (json.integrations?.prairieTest?.exams?.length ?? 0) > 0,
     prairieTestExams: json.integrations?.prairieTest?.exams ?? [],
     questionVisibility: {
       hideQuestions: ac?.hideQuestions ?? false,
@@ -288,7 +285,6 @@ export function jsonToOverrideFormData(json: AccessControlJsonWithId): OverrideD
   return {
     id: json.id,
     trackingId: json.id ?? crypto.randomUUID(),
-    enabled: json.enabled ?? true,
     appliesTo,
     overriddenFields,
     releaseDate,
@@ -306,7 +302,6 @@ export function jsonToOverrideFormData(json: AccessControlJsonWithId): OverrideD
 function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   const output: AccessControlJsonWithId = {
     id: rule.id,
-    enabled: rule.enabled,
     listBeforeRelease: rule.listBeforeRelease,
   };
 
@@ -323,14 +318,12 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
     output.dateControl = { enabled: false };
   }
 
-  output.integrations = {};
-  if (rule.prairieTestEnabled) {
-    output.integrations.prairieTest = {
-      enabled: true,
-      exams: rule.prairieTestExams,
+  if (rule.prairieTestEnabled && rule.prairieTestExams.length > 0) {
+    output.integrations = {
+      prairieTest: {
+        exams: rule.prairieTestExams,
+      },
     };
-  } else {
-    output.integrations.prairieTest = { enabled: false };
   }
 
   output.afterComplete = {
@@ -358,7 +351,6 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
 
   const output: AccessControlJsonWithId = {
     id: rule.id,
-    enabled: rule.enabled,
     labels,
   };
 
@@ -415,7 +407,6 @@ export function formDataToJson(formData: AccessControlFormData): AccessControlJs
 export function createDefaultOverrideFormData(): OverrideData {
   return {
     trackingId: crypto.randomUUID(),
-    enabled: true,
     appliesTo: {
       targetType: 'individual',
       individuals: [],

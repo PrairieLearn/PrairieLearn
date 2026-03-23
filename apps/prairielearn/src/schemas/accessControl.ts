@@ -56,7 +56,6 @@ const ExamJsonSchema = z.object({
 
 const PrairieTestJsonSchema = z
   .object({
-    enabled: z.boolean().optional().describe('Whether PrairieTest integration is enabled'),
     exams: z
       .array(ExamJsonSchema)
       .optional()
@@ -99,12 +98,6 @@ const AfterCompleteJsonSchema = z
 export const AccessControlJsonSchema = z.object({
   name: z.string().optional().describe('Name for AccessControl rule'),
   labels: z.array(z.string()).optional().describe('Array of student label names this set targets'),
-  enabled: z
-    .boolean()
-    .optional()
-    .describe(
-      'Whether this rule is enabled. Defaults to true for the main rule. Not inherited by overrides.',
-    ),
   listBeforeRelease: z
     .boolean()
     .optional()

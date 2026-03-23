@@ -152,9 +152,6 @@ export function mergeRules(
     merged.listBeforeRelease = override.listBeforeRelease;
   }
 
-  // Per-rule fields: only from override, never inherited from main.
-  if (override.enabled !== undefined) merged.enabled = override.enabled;
-
   merged.dateControl = mergeDateControl(main.dateControl, override.dateControl, true);
   merged.afterComplete = mergeAfterComplete(main.afterComplete, override.afterComplete);
 
@@ -173,9 +170,6 @@ export function cascadeOverrides(
   // listBeforeRelease cascades.
   if (base.listBeforeRelease !== undefined) merged.listBeforeRelease = base.listBeforeRelease;
   if (next.listBeforeRelease !== undefined) merged.listBeforeRelease = next.listBeforeRelease;
-
-  // enabled is per-rule, doesn't cascade.
-  if (next.enabled !== undefined) merged.enabled = next.enabled;
 
   merged.dateControl = mergeDateControl(base.dateControl, next.dateControl, false);
   merged.afterComplete = mergeAfterComplete(base.afterComplete, next.afterComplete);
@@ -445,8 +439,6 @@ export function resolveAccessControl(
   // Collect all matching overrides.
   const matchedOverrides: AccessControlRuleInput[] = [];
   for (const rule of overrides) {
-    if (rule.rule.enabled === false) continue;
-
     if (rule.targetType === 'enrollment') {
       if (student.enrollmentId && rule.enrollmentIds.includes(student.enrollmentId)) {
         matchedOverrides.push(rule);
@@ -519,24 +511,12 @@ export function resolveAccessControl(
     return { ...UNAUTHORIZED_RESULT };
   }
 
-  // Derive authorized from enabled flag.
-  // enabled: false means the assessment is disabled — no access.
-  const authorized = effectiveRule.enabled !== false;
-
   const creditDateString = formatCreditDateString(
     creditResult.credit,
     creditResult.active,
     creditResult.nextDeadlineDate,
     displayTimezone,
   );
-
-  if (!authorized) {
-    return {
-      ...UNAUTHORIZED_RESULT,
-      showClosedAssessment,
-      showClosedAssessmentScore,
-    };
-  }
 
   return {
     authorized: true,

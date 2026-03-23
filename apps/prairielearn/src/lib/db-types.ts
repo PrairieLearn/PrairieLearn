@@ -239,7 +239,6 @@ export const AssessmentAccessControlRuleSchema = z.object({
   date_control_release_date: DateFromISOString.nullable(),
   date_control_release_date_overridden: z.boolean(),
 
-  enabled: z.boolean().nullable(),
   id: IdSchema,
   list_before_release: z.boolean().nullable(),
   number: z.number(),

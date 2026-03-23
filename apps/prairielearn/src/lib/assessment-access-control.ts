@@ -119,7 +119,6 @@ function dbBaseRowToAccessControlJson(row: BaseRuleRow): AccessControlJson & { i
 
   return {
     id: row.id,
-    enabled: row.enabled ?? undefined,
     listBeforeRelease: row.list_before_release,
     dateControl: Object.keys(dateControl).length > 0 ? dateControl : undefined,
     afterComplete: Object.keys(afterComplete).length > 0 ? afterComplete : undefined,
@@ -133,7 +132,6 @@ function dbRowToAccessControlJson(row: JsonRuleRow): AccessControlJson & { id: s
   const integrations: AccessControlJson['integrations'] = {};
   if (row.integrations_prairietest_overridden && row.prairietest_exams) {
     integrations.prairieTest = {
-      enabled: true,
       exams: row.prairietest_exams.map((e) => ({
         examUuid: e.uuid,
         readOnly: e.read_only,

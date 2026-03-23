@@ -172,7 +172,6 @@ function buildAfterComplete(
 function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRuleInput {
   const rule: AccessControlJson = {};
 
-  if (row.enabled != null) rule.enabled = row.enabled;
   if (row.list_before_release != null) rule.listBeforeRelease = row.list_before_release;
 
   const dateControl = buildDateControl(row);
@@ -185,7 +184,6 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
   if (!isOverride(row) && row.prairietest_exam_uuids.length > 0) {
     rule.integrations = {
       prairieTest: {
-        enabled: true,
         exams: row.prairietest_exam_uuids.map((uuid) => ({ examUuid: uuid })),
       },
     };

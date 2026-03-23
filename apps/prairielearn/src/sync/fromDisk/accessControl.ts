@@ -116,7 +116,6 @@ function prepareRuleRow(
   const afterComplete = rule.afterComplete ?? {};
   const afterLastDeadline = dateControl.afterLastDeadline ?? {};
 
-  const enabled = mapField(rule.enabled);
   const listBeforeRelease = mapField(rule.listBeforeRelease);
   const releaseDateField = mapField(dateControl.releaseDate);
   const dueDateField = mapField(dateControl.dueDate);
@@ -155,7 +154,6 @@ function prepareRuleRow(
   const ruleRow = JSON.stringify({
     assessment_id: assessmentId,
     number: ruleNumber,
-    enabled: enabled.value,
     list_before_release: listBeforeRelease.value ?? false,
     target_type: targetType,
     date_control_overridden: dateControlOverridden,

@@ -230,7 +230,6 @@ describe('migrateAllowAccess', () => {
       { startDate: '2024-01-01', active: false },
     ];
     const { result } = migrateAllowAccess('prairietest-exam', rules);
-    expect(result.integrations?.prairieTest?.enabled).toBe(true);
     expect(result.integrations?.prairieTest?.exams).toEqual([{ examUuid: 'exam-uuid-1' }]);
     expect(result.dateControl?.releaseDate).toBe('2024-01-01');
   });
@@ -254,7 +253,7 @@ describe('migrateAllowAccess', () => {
   it('migrates hidden', () => {
     const rules: AssessmentAccessRuleJson[] = [{ active: false }];
     const { result } = migrateAllowAccess('hidden', rules);
-    expect(result.enabled).toBe(false);
+    expect(result.dateControl?.enabled).toBe(false);
   });
 
   it('migrates no-op', () => {

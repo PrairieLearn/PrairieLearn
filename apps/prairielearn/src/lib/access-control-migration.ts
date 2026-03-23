@@ -5,47 +5,11 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
+import type { AccessControlJsonInput } from '../schemas/accessControl.js';
 import type { AssessmentAccessRuleJson } from '../schemas/infoAssessment.js';
 
 import { formatJsonWithPrettier } from './prettier.js';
 
-interface DeadlineEntry {
-  date: string;
-  credit: number;
-}
-
-interface NewAccessControl {
-  name?: string;
-  labels?: string[];
-  enabled?: boolean;
-  listBeforeRelease?: boolean | null;
-  dateControl?: {
-    enabled?: boolean;
-    releaseDate?: string;
-    dueDate?: string | null;
-    earlyDeadlines?: DeadlineEntry[] | null;
-    lateDeadlines?: DeadlineEntry[] | null;
-    afterLastDeadline?: {
-      allowSubmissions?: boolean;
-      credit?: number;
-    };
-    durationMinutes?: number;
-    password?: string | null;
-  };
-  integrations?: {
-    prairieTest?: {
-      enabled?: boolean;
-      exams?: { examUuid: string; readOnly?: boolean }[];
-    };
-  };
-  afterComplete?: {
-    hideQuestions?: boolean;
-    showQuestionsAgainDate?: string;
-    hideQuestionsAgainDate?: string;
-    hideScore?: boolean;
-    showScoreAgainDate?: string;
-  };
-}
 
 export interface AssessmentMigrationAnalysis {
   tid: string;
@@ -105,12 +69,12 @@ function anyHidesClosedScore(rules: AssessmentAccessRuleJson[]): boolean {
 
 function buildAfterComplete(
   rules: AssessmentAccessRuleJson[],
-): NewAccessControl['afterComplete'] | undefined {
+): AccessControlJsonInput['afterComplete'] | undefined {
   const hidesAssessment = anyHidesClosedAssessment(rules);
   const hidesScore = anyHidesClosedScore(rules);
   if (!hidesAssessment && !hidesScore) return undefined;
 
-  const result: NewAccessControl['afterComplete'] = {};
+  const result: AccessControlJsonInput['afterComplete'] = {};
   if (hidesAssessment) result.hideQuestions = true;
   if (hidesScore) result.hideScore = true;
   return result;
@@ -245,7 +209,7 @@ export function classifyArchetype(rules: AssessmentAccessRuleJson[]): string {
 // ---------------------------------------------------------------------------
 
 function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
-  result: NewAccessControl;
+  result: AccessControlJsonInput;
   warnings: string[];
 } {
   const warnings: string[] = [];
@@ -257,7 +221,7 @@ function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
     return { result: {}, warnings };
   }
 
-  const result: NewAccessControl = {};
+  const result: AccessControlJsonInput = {};
 
   const releaseDate = findReleaseDate(rules);
   if (creditRule.startDate || creditRule.endDate || releaseDate) {
@@ -274,7 +238,7 @@ function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
 }
 
 function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
-  result: NewAccessControl;
+  result: AccessControlJsonInput;
   warnings: string[];
 } {
   const warnings: string[] = [];
@@ -297,7 +261,7 @@ function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
 
   const releaseDate = findReleaseDate(rules);
 
-  const result: NewAccessControl = {
+  const result: AccessControlJsonInput = {
     dateControl: {
       enabled: true,
     },
@@ -325,7 +289,7 @@ function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
 }
 
 function migratePrairieTestExam(rules: AssessmentAccessRuleJson[]): {
-  result: NewAccessControl;
+  result: AccessControlJsonInput;
   warnings: string[];
 } {
   const warnings: string[] = [];
@@ -338,10 +302,9 @@ function migratePrairieTestExam(rules: AssessmentAccessRuleJson[]): {
 
   const exams = examRules.map((r) => ({ examUuid: r.examUuid! }));
 
-  const result: NewAccessControl = {
+  const result: AccessControlJsonInput = {
     integrations: {
       prairieTest: {
-        enabled: true,
         exams,
       },
     },
@@ -363,14 +326,14 @@ function migratePrairieTestExam(rules: AssessmentAccessRuleJson[]): {
 }
 
 function migrateViewOnly(rules: AssessmentAccessRuleJson[]): {
-  result: NewAccessControl;
+  result: AccessControlJsonInput;
   warnings: string[];
 } {
   const warnings: string[] = [];
   const allDates = rules.map((r) => r.startDate).filter(Boolean) as string[];
   const releaseDate = allDates.sort()[0];
 
-  const result: NewAccessControl = {
+  const result: AccessControlJsonInput = {
     dateControl: {
       enabled: true,
       dueDate: null,
@@ -382,7 +345,7 @@ function migrateViewOnly(rules: AssessmentAccessRuleJson[]): {
 }
 
 function migrateMultiDeadline(rules: AssessmentAccessRuleJson[]): {
-  result: NewAccessControl;
+  result: AccessControlJsonInput;
   warnings: string[];
 } {
   const warnings: string[] = [];
@@ -410,7 +373,7 @@ function migrateMultiDeadline(rules: AssessmentAccessRuleJson[]): {
     );
   }
 
-  const result: NewAccessControl = {
+  const result: AccessControlJsonInput = {
     dateControl: {
       enabled: true,
     },
@@ -425,7 +388,7 @@ function migrateMultiDeadline(rules: AssessmentAccessRuleJson[]): {
 }
 
 function migratePasswordGated(rules: AssessmentAccessRuleJson[]): {
-  result: NewAccessControl;
+  result: AccessControlJsonInput;
   warnings: string[];
 } {
   const warnings: string[] = [];
@@ -436,7 +399,7 @@ function migratePasswordGated(rules: AssessmentAccessRuleJson[]): {
     return { result: {}, warnings };
   }
 
-  const result: NewAccessControl = {
+  const result: AccessControlJsonInput = {
     dateControl: {
       enabled: true,
       password: passwordRule.password!,
@@ -452,17 +415,17 @@ function migratePasswordGated(rules: AssessmentAccessRuleJson[]): {
 }
 
 function migrateHidden(_rules: AssessmentAccessRuleJson[]): {
-  result: NewAccessControl;
+  result: AccessControlJsonInput;
   warnings: string[];
 } {
   return {
-    result: { enabled: false },
+    result: { dateControl: { enabled: false } },
     warnings: [],
   };
 }
 
 function migrateNoOp(_rules: AssessmentAccessRuleJson[]): {
-  result: NewAccessControl;
+  result: AccessControlJsonInput;
   warnings: string[];
 } {
   return {
@@ -478,7 +441,7 @@ function migrateNoOp(_rules: AssessmentAccessRuleJson[]): {
 export function migrateAllowAccess(
   archetype: string,
   rules: AssessmentAccessRuleJson[],
-): { result: NewAccessControl; warnings: string[] } {
+): { result: AccessControlJsonInput; warnings: string[] } {
   rules = rules.filter((r) => !r.uids);
   const base = archetype.replace(/\s*\(.*\)$/, '');
 

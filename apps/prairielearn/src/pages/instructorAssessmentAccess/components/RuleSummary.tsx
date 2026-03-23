@@ -188,11 +188,6 @@ export function generateRuleSummary(
 ): string[] {
   const lines: string[] = [];
 
-  if (!rule.enabled) {
-    lines.push('Rule is disabled');
-    return lines;
-  }
-
   if (isOverrideFieldActive(rule, 'durationMinutes')) {
     const durationMinutes = rule.durationMinutes;
     if (durationMinutes !== null) {
@@ -328,7 +323,6 @@ export function RuleSummaryCard({
             </Badge>
           )}
           <strong>{title}</strong>
-          {!rule.enabled && <Badge bg="secondary">Disabled</Badge>}
         </div>
         <div className="d-flex gap-2 flex-shrink-0">
           {onEditStudentLabels && (

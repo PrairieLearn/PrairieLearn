@@ -23,7 +23,6 @@ BEGIN
     IF existing_rule_id IS NOT NULL THEN
         -- Update existing enrollment rule
         UPDATE assessment_access_control_rules SET
-            enabled = (rule_data ->> 'enabled')::boolean,
             list_before_release = (rule_data ->> 'list_before_release')::boolean,
             date_control_overridden = (rule_data ->> 'date_control_overridden')::boolean,
             date_control_release_date_overridden = (rule_data ->> 'date_control_release_date_overridden')::boolean,
@@ -80,7 +79,6 @@ BEGIN
             assessment_id,
             number,
             target_type,
-            enabled,
             list_before_release,
             date_control_overridden,
             date_control_release_date_overridden,
@@ -109,7 +107,6 @@ BEGIN
             syncing_assessment_id,
             next_number,
             'enrollment',
-            (rule_data ->> 'enabled')::boolean,
             (rule_data ->> 'list_before_release')::boolean,
             (rule_data ->> 'date_control_overridden')::boolean,
             (rule_data ->> 'date_control_release_date_overridden')::boolean,

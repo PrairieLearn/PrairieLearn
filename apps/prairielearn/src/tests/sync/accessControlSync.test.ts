@@ -1458,7 +1458,7 @@ describe('Access control syncing', () => {
       assert.isUndefined(override.rule.dateControl?.enabled);
     });
 
-    it('main rule defaults enabled to undefined and listBeforeRelease to false', async () => {
+    it('main rule defaults listBeforeRelease to false', async () => {
       const courseData = util.getCourseData();
       const mainRule: AccessControlJsonInput = {
         dateControl: {
@@ -1476,8 +1476,6 @@ describe('Access control syncing', () => {
       const rules = await selectAccessControlRulesForAssessment(assessment);
       const main = rules.find((r) => r.number === 0);
       assert.isOk(main);
-      // enabled: omitted in JSON → null in DB → undefined in rule (treated as enabled)
-      assert.isUndefined(main.rule.enabled);
       // listBeforeRelease: omitted in JSON → false in DB → false in rule
       assert.equal(main.rule.listBeforeRelease, false);
     });

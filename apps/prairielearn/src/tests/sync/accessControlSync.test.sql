@@ -23,7 +23,6 @@ RETURNING
 INSERT INTO
   assessment_access_control_rules (
     assessment_id,
-    enabled,
     list_before_release,
     number,
     target_type,
@@ -33,7 +32,6 @@ INSERT INTO
 VALUES
   (
     $assessment_id,
-    true,
     true,
     $number,
     'enrollment',

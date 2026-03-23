@@ -42,7 +42,6 @@ Below is a complete skeleton showing all available fields. All fields are option
   "accessControl": [
     {
       "name": "Main rule",
-      "enabled": true,
       "listBeforeRelease": false,
       "dateControl": {
         "enabled": true,
@@ -59,7 +58,6 @@ Below is a complete skeleton showing all available fields. All fields are option
       },
       "integrations": {
         "prairieTest": {
-          "enabled": true,
           "exams": [{ "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871" }]
         }
       },
@@ -89,16 +87,16 @@ Below is a complete skeleton showing all available fields. All fields are option
 
 Controls when the assessment is available and how credit is computed over time.
 
-| Field               | Type    | Description                                                                                                         |
-| ------------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
-| `enabled`           | boolean | Master toggle. If `false` or absent, no date restrictions apply and the assessment is always open with 100% credit. |
-| `releaseDate`       | string  | ISO datetime. The assessment is not visible to students before this date.                                           |
-| `dueDate`           | string  | ISO datetime. The primary deadline. Students receive 100% credit before this date.                                  |
-| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines _before_ the due date offering bonus credit (e.g., 110%).              |
-| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines _after_ the due date offering reduced credit (e.g., 80%).              |
-| `afterLastDeadline` | object  | Controls behavior after all deadlines have passed. See below.                                                       |
-| `durationMinutes`   | integer | Time limit in minutes for timed assessments.                                                                        |
-| `password`          | string  | Proctor password required to start the assessment.                                                                  |
+| Field               | Type    | Description                                                                                                                                             |
+| ------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`           | boolean | Master toggle. If `true`, date restrictions are active and credit is computed from the timeline below. If `false` or absent, the rule grants 0% credit. |
+| `releaseDate`       | string  | ISO datetime. The assessment is not visible to students before this date.                                                                               |
+| `dueDate`           | string  | ISO datetime. The primary deadline. Students receive 100% credit before this date.                                                                      |
+| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines _before_ the due date offering bonus credit (e.g., 110%).                                                  |
+| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines _after_ the due date offering reduced credit (e.g., 80%).                                                  |
+| `afterLastDeadline` | object  | Controls behavior after all deadlines have passed. See below.                                                                                           |
+| `durationMinutes`   | integer | Time limit in minutes for timed assessments.                                                                                                            |
+| `password`          | string  | Proctor password required to start the assessment.                                                                                                      |
 
 #### `afterLastDeadline`
 
@@ -124,7 +122,7 @@ earlyDeadline (110%)    dueDate (100%)    lateDeadline (80%)
 - **Between `releaseDate` and the first deadline**: Credit is the first entry's value (the highest credit in the timeline).
 - **Between each pair of deadlines**: Credit is the later deadline's value.
 - **After the last deadline**: Credit is `afterLastDeadline.credit` (default 0%).
-- **No `dateControl` or `enabled: false`**: 100% credit, always open.
+- **No `dateControl` or `enabled: false`**: 0% credit, not active.
 
 ### `integrations`
 
@@ -132,7 +130,6 @@ earlyDeadline (110%)    dueDate (100%)    lateDeadline (80%)
 
 | Field                          | Type    | Description                                 |
 | ------------------------------ | ------- | ------------------------------------------- |
-| `prairieTest.enabled`          | boolean | Whether PrairieTest integration is active.  |
 | `prairieTest.exams`            | array   | Array of exam objects.                      |
 | `prairieTest.exams[].examUuid` | string  | UUID of the associated PrairieTest exam.    |
 | `prairieTest.exams[].readOnly` | boolean | Whether the exam is read-only for students. |
@@ -161,11 +158,10 @@ The same logic applies to `hideScore` / `showScoreAgainDate` (there is no "hide 
 
 ### Other fields
 
-| Field               | Type    | Default | Description                                                                                                                                                                                                         |
-| ------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`              | string  |         | A descriptive name for the rule (for display in the UI).                                                                                                                                                            |
-| `enabled`           | boolean | `true`  | If `false`, the rule is skipped entirely. Useful for temporarily disabling an override without deleting it. On overrides, omitting this field means the override does not affect whether the assessment is enabled. |
-| `listBeforeRelease` | boolean | `false` | If `true`, the assessment title is shown on the Assessments page before the release date, but students cannot open it.                                                                                              |
+| Field               | Type    | Default | Description                                                                                                            |
+| ------------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `name`              | string  |         | A descriptive name for the rule (for display in the UI).                                                               |
+| `listBeforeRelease` | boolean | `false` | If `true`, the assessment title is shown on the Assessments page before the release date, but students cannot open it. |
 
 ## Student labels and overrides
 
@@ -185,7 +181,6 @@ When a student accesses an assessment, the system resolves which rule applies us
 2. **Find all matching overrides** for this student:
    - A label-based override matches if the student has _any_ of the listed labels.
    - An enrollment-based override matches if the student is specifically listed.
-   - Disabled overrides (`enabled: false`) are skipped.
 3. **Sort matching overrides**: label-based overrides first, then enrollment-based overrides. Within the same type, overrides are processed in array order.
 4. **Cascade matching overrides together**: Process the matching overrides in order. Each subsequent override's explicitly-set fields replace the previous ones. Fields not set by a later override are kept from earlier ones.
 5. **Merge the cascaded result onto the main rule**: The cascaded override's fields replace the main rule's fields where set. Unset fields fall through to the main rule's values.
@@ -203,7 +198,6 @@ Not all fields behave the same way during cascading:
 | `dateControl.*` sub-fields   | Override replaces individual sub-fields; unset sub-fields inherit from main | Later override replaces; unset fields kept from earlier     |
 | `afterComplete.*` sub-fields | Same as `dateControl`                                                       | Same as `dateControl`                                       |
 | `listBeforeRelease`          | Inherits from main; override can replace                                    | Cascades (carries from earlier override; later can replace) |
-| `enabled`                    | Per-rule only — does NOT inherit from main                                  | Per-rule only — does NOT cascade                            |
 
 ### Override examples
 
@@ -230,7 +224,7 @@ Not all fields behave the same way during cascading:
 ```
 
 - **All students**: due Feb 15.
-- **Students with "Extended time" label**: due Feb 22. The override replaces `dueDate` but inherits `releaseDate` and `enabled` from the main rule.
+- **Students with "Extended time" label**: due Feb 22. The override replaces `dueDate` but inherits `releaseDate` from the main rule.
 
 #### Example 2: Two label overrides stacking
 
@@ -357,7 +351,6 @@ If a student starts close enough to the due date that less than 90 minutes remai
     {
       "integrations": {
         "prairieTest": {
-          "enabled": true,
           "exams": [{ "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871" }]
         }
       },
@@ -694,7 +687,7 @@ Below are common legacy patterns and their modern equivalents.
     }
     ```
 
-    With no `dateControl` (or `dateControl.enabled: false`), the assessment is always open with 100% credit.
+    With no `dateControl` (or `dateControl.enabled: false`), the assessment grants 0% credit. To make an assessment always open with 100% credit, set `dateControl.enabled: true` with a `dueDate` far in the future.
 
 ### View-only after close
 

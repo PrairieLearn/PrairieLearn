@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import { useState } from 'react';
-import { Alert, Button, Form } from 'react-bootstrap';
+import { Alert, Form } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
 import { OverlayTrigger, useModalState } from '@prairielearn/ui';
@@ -96,7 +96,7 @@ export function AccessControlForm({
 
   const mainRule = initialData[0]
     ? jsonToMainRuleFormData(initialData[0])
-    : jsonToMainRuleFormData({ enabled: true, listBeforeRelease: true });
+    : jsonToMainRuleFormData({ listBeforeRelease: true });
   const overrides = initialData.slice(1).map(jsonToOverrideFormData);
 
   const methods = useForm<AccessControlFormData>({
@@ -112,7 +112,6 @@ export function AccessControlForm({
     handleSubmit,
     watch,
     reset,
-    setValue,
     formState: { isDirty, isValid, errors },
   } = methods;
 
@@ -210,46 +209,6 @@ export function AccessControlForm({
     </button>
   );
 
-  const enabledToggle =
-    selectedRule?.type === 'main' ? (
-      <Button
-        variant={watchedData.mainRule.enabled ? 'success' : 'outline-secondary'}
-        size="sm"
-        aria-pressed={watchedData.mainRule.enabled}
-        onClick={() =>
-          setValue('mainRule.enabled', !watchedData.mainRule.enabled, { shouldDirty: true })
-        }
-      >
-        <i
-          className={`bi bi-${watchedData.mainRule.enabled ? 'check-lg' : 'x-lg'} me-1`}
-          aria-hidden="true"
-        />
-        {watchedData.mainRule.enabled ? 'Enabled' : 'Disabled'}
-      </Button>
-    ) : selectedRule?.type === 'override' ? (
-      (() => {
-        const overrideEnabled = watchedData.overrides[selectedRule.index]?.enabled;
-        return (
-          <Button
-            variant={overrideEnabled ? 'success' : 'outline-secondary'}
-            size="sm"
-            aria-pressed={overrideEnabled}
-            onClick={() =>
-              setValue(`overrides.${selectedRule.index}.enabled`, !overrideEnabled, {
-                shouldDirty: true,
-              })
-            }
-          >
-            <i
-              className={`bi bi-${overrideEnabled ? 'check-lg' : 'x-lg'} me-1`}
-              aria-hidden="true"
-            />
-            {overrideEnabled ? 'Enabled' : 'Disabled'}
-          </Button>
-        );
-      })()
-    ) : null;
-
   const rightTitle =
     selectedRule?.type === 'main'
       ? 'Main rule'
@@ -258,17 +217,14 @@ export function AccessControlForm({
         : undefined;
 
   const rightHeaderAction = selectedRule ? (
-    <div className="d-flex align-items-center gap-2">
-      {enabledToggle}
-      <button
-        type="button"
-        className="btn btn-sm btn-outline-secondary"
-        aria-label="Close detail panel"
-        onClick={() => setSelectedRule(null)}
-      >
-        <i className="bi bi-x-lg" aria-hidden="true" />
-      </button>
-    </div>
+    <button
+      type="button"
+      className="btn btn-sm btn-outline-secondary"
+      aria-label="Close detail panel"
+      onClick={() => setSelectedRule(null)}
+    >
+      <i className="bi bi-x-lg" aria-hidden="true" />
+    </button>
   ) : undefined;
 
   const rightPanel =

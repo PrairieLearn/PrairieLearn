@@ -15,10 +15,6 @@ interface MainRuleFormProps {
 export function MainRuleForm({ courseInstance: _courseInstance }: MainRuleFormProps) {
   const { register } = useFormContext<AccessControlFormData>();
 
-  const ruleEnabled = useWatch<AccessControlFormData, 'mainRule.enabled'>({
-    name: 'mainRule.enabled',
-  });
-
   const releaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
   });
@@ -34,29 +30,25 @@ export function MainRuleForm({ courseInstance: _courseInstance }: MainRuleFormPr
 
   return (
     <>
-      {ruleEnabled && (
-        <>
-          {(hasDateRelease || hasPrairieTestRelease) && (
-            <Form.Group className="mb-3">
-              <Form.Check
-                type="checkbox"
-                id="mainRule-list-before-release"
-                label="List before release"
-                {...register('mainRule.listBeforeRelease')}
-                aria-describedby="mainRule-list-before-release-help"
-              />
-              <Form.Text id="mainRule-list-before-release-help" className="text-muted">
-                Students can see the title and click into assessment before release
-              </Form.Text>
-            </Form.Group>
-          )}
-
-          <MainDateControlForm />
-          <IntegrationsSection />
-
-          <MainAfterCompleteForm />
-        </>
+      {(hasDateRelease || hasPrairieTestRelease) && (
+        <Form.Group className="mb-3">
+          <Form.Check
+            type="checkbox"
+            id="mainRule-list-before-release"
+            label="List before release"
+            {...register('mainRule.listBeforeRelease')}
+            aria-describedby="mainRule-list-before-release-help"
+          />
+          <Form.Text id="mainRule-list-before-release-help" className="text-muted">
+            Students can see the title and click into assessment before release
+          </Form.Text>
+        </Form.Group>
       )}
+
+      <MainDateControlForm />
+      <IntegrationsSection />
+
+      <MainAfterCompleteForm />
     </>
   );
 }

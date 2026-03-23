@@ -88,8 +88,8 @@ test.describe.serial('Student access control', () => {
     await enableFeatureFlag('enhanced-access-control');
     await writeAssessmentConfig(testCoursePath, [
       {
-        enabled: false,
         dateControl: {
+          enabled: false,
           releaseDate: '2020-01-01T00:00:00',
           dueDate: '2099-01-01T00:00:00',
         },
@@ -169,49 +169,6 @@ test.describe.serial('Student access control', () => {
     const assessmentLink = page.getByRole('link', { name: ASSESSMENT_TITLE, exact: true });
     await expect(assessmentLink).toBeVisible();
     await expect(assessmentLink).toHaveAttribute('href', /\/assessment\/\d+/);
-  });
-
-  test('disabled override blocks labeled student, not unlabeled', async ({
-    page,
-    baseURL,
-    courseInstance,
-    testCoursePath,
-    enableFeatureFlag,
-  }) => {
-    await enableFeatureFlag('enhanced-access-control');
-    await writeAssessmentConfig(testCoursePath, [
-      {
-        dateControl: {
-          releaseDate: '2020-01-01T00:00:00',
-          dueDate: '2099-01-01T00:00:00',
-        },
-      },
-      {
-        labels: ['Section A'],
-        enabled: false,
-      },
-    ]);
-    await syncCourse(testCoursePath);
-
-    // Student A is in "Section A" - override disables rule, but enabled is per-rule
-    // and doesn't inherit from main. The main rule still applies to all students.
-    // So Student A should still see the assessment via the main rule.
-    await page.context().addCookies([
-      { name: 'pl2_requested_uid', value: STUDENT_A.uid, url: baseURL },
-      { name: 'pl2_requested_data_changed', value: 'true', url: baseURL },
-    ]);
-    await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
-    const assessmentLinkA = page.getByRole('link', { name: ASSESSMENT_TITLE, exact: true });
-    await expect(assessmentLinkA).toBeVisible();
-
-    // Student B is NOT in "Section A" - should see the assessment as a clickable link
-    await page.context().addCookies([
-      { name: 'pl2_requested_uid', value: STUDENT_B.uid, url: baseURL },
-      { name: 'pl2_requested_data_changed', value: 'true', url: baseURL },
-    ]);
-    await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
-    const assessmentLink = page.getByRole('link', { name: ASSESSMENT_TITLE, exact: true });
-    await expect(assessmentLink).toBeVisible();
   });
 
   test('listBeforeRelease: false with future release hides assessment entirely', async ({

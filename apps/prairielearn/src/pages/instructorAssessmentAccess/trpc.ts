@@ -118,7 +118,6 @@ function formJsonToEnrollmentRuleData(
   const ac = rule.afterComplete;
   return {
     id: rule.id,
-    enabled: rule.enabled ?? true,
     listBeforeRelease: rule.listBeforeRelease ?? true,
     dateControlOverridden:
       dc?.enabled === true ||
@@ -170,7 +169,6 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 
 const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: string }> = z.object({
   id: z.string().optional(),
-  enabled: z.boolean().optional(),
   listBeforeRelease: z.boolean().nullable().optional(),
   labels: z.array(z.string()).optional(),
   dateControl: z
@@ -194,7 +192,6 @@ const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: string 
     .object({
       prairieTest: z
         .object({
-          enabled: z.boolean().optional(),
           exams: z
             .array(
               z.object({

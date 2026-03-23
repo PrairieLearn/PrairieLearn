@@ -5,7 +5,6 @@ CREATE TYPE enum_assessment_access_control_target_type AS ENUM('none', 'enrollme
 CREATE TABLE assessment_access_control_rules (
   id BIGSERIAL PRIMARY KEY,
   assessment_id BIGINT NOT NULL REFERENCES assessments (id) ON DELETE CASCADE ON UPDATE CASCADE,
-  enabled boolean,
   list_before_release boolean,
   -- `number` is unique per (assessment_id, target_type), not per assessment.
   -- number=0 is always the main rule (target_type='none'), while override rules

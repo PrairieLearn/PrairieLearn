@@ -739,10 +739,6 @@
             "type": "string"
           }
         },
-        "enabled": {
-          "description": "Whether this rule is enabled. Defaults to true for the main rule. Not inherited by overrides.",
-          "type": "boolean"
-        },
         "listBeforeRelease": {
           "description": "Whether students can see the assessment title before the release date. Defaults to false.",
           "anyOf": [
@@ -861,10 +857,6 @@
             "prairieTest": {
               "type": "object",
               "properties": {
-                "enabled": {
-                  "description": "Whether PrairieTest integration is enabled",
-                  "type": "boolean"
-                },
                 "exams": {
                   "description": "Array of associated PrairieTest exam configs",
                   "type": "array",
