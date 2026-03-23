@@ -25,23 +25,23 @@ export async function selectAssessmentQuestions({
     groupCounts[groupId] = (groupCounts[groupId] || 0) + 1;
   }
   let prevZoneId: string | null = null;
-  let prevAltGroupId: string | null = null;
+  let prevAltPoolId: string | null = null;
 
   const result: StaffAssessmentQuestionRow[] = [];
   for (const row of rows) {
     const start_new_zone = row.zone.id !== prevZoneId;
-    const start_new_alternative_group = row.alternative_group.id !== prevAltGroupId;
-    const alternative_group_size = groupCounts[row.alternative_group.id];
+    const start_new_alternative_pool = row.alternative_group.id !== prevAltPoolId;
+    const alternative_pool_size = groupCounts[row.alternative_group.id];
     result.push(
       StaffAssessmentQuestionRowSchema.parse({
         ...row,
         start_new_zone,
-        start_new_alternative_group,
-        alternative_group_size,
+        start_new_alternative_pool,
+        alternative_pool_size,
       }),
     );
     prevZoneId = row.zone.id;
-    prevAltGroupId = row.alternative_group.id;
+    prevAltPoolId = row.alternative_group.id;
   }
   return result;
 }

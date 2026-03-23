@@ -33,10 +33,10 @@ export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend(
   question_id: IdSchema,
   assessment_question_number: z.string(),
   alternative_group_number: AlternativeGroupSchema.shape.number,
-  alternative_group_size: z.number(),
+  alternative_pool_size: z.number(),
   zone_title: ZoneSchema.shape.title,
   start_new_zone: z.boolean(),
-  start_new_alternative_group: z.boolean(),
+  start_new_alternative_pool: z.boolean(),
 });
 export type AssessmentQuestionStatsRow = z.infer<typeof AssessmentQuestionStatsRowSchema>;
 

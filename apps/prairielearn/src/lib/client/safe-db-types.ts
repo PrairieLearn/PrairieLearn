@@ -55,10 +55,9 @@ export const RawUserAccessTokenSchema = RawAccessTokenSchema.pick({
 export const UserAccessTokenSchema = RawUserAccessTokenSchema.brand<'UserAccessToken'>();
 export type UserAccessToken = z.infer<typeof UserAccessTokenSchema>;
 
-/** Alternative Groups */
-export const StaffAlternativeGroupSchema =
-  RawAlternativeGroupSchema.brand<'StaffAlternativeGroup'>();
-export type StaffAlternativeGroup = z.infer<typeof StaffAlternativeGroupSchema>;
+/** Alternative Pools */
+export const StaffAlternativePoolSchema = RawAlternativeGroupSchema.brand<'StaffAlternativePool'>();
+export type StaffAlternativePool = z.infer<typeof StaffAlternativePoolSchema>;
 
 /** Assessments */
 export const RawStaffAssessmentSchema = RawAssessmentSchema;

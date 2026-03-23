@@ -37,7 +37,7 @@ export function AssessmentQuestionHeaders({
       ) : (
         ''
       )}
-      {question.start_new_alternative_group && question.alternative_group_size > 1 ? (
+      {question.start_new_alternative_pool && question.alternative_pool_size > 1 ? (
         <tr>
           <td colSpan={nTableCols}>
             {question.alternative_group.number}.{' '}

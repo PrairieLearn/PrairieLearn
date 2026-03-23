@@ -63,7 +63,7 @@ SELECT
       PARTITION BY
         ag.number
     )
-  ) AS alternative_group_size,
+  ) AS alternative_pool_size,
   iqs.num_instance_questions,
   iqs.num_instance_questions_to_grade,
   iqs.num_instance_questions_assigned,

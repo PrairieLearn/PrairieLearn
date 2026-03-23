@@ -11,7 +11,7 @@ import type {
 import {
   buildHierarchicalAssessment,
   compactPoints,
-  computeAltGroupChosenRange,
+  computeAltPoolChosenRange,
   computeQuestionTotalPoints,
   computeZonePointTotals,
   computeZoneQuestionCount,
@@ -106,7 +106,7 @@ describe('buildHierarchicalAssessment', () => {
           number_choose: 1,
         },
         assessment_question: { number: 1 },
-        start_new_alternative_group: true,
+        start_new_alternative_pool: true,
       } as StaffAssessmentQuestionRow,
       {
         question: { qid: 'q2', course_id: 'course-1' },
@@ -119,7 +119,7 @@ describe('buildHierarchicalAssessment', () => {
           number_choose: 1,
         },
         assessment_question: { number: 2 },
-        start_new_alternative_group: true,
+        start_new_alternative_pool: true,
       } as StaffAssessmentQuestionRow,
     ];
 
@@ -132,7 +132,7 @@ describe('buildHierarchicalAssessment', () => {
     expect(result[0].questions[1].id).toBe('q2');
   });
 
-  it('groups alternatives within the same alternative group', () => {
+  it('groups alternatives within the same alternative pool', () => {
     const rows: StaffAssessmentQuestionRow[] = [
       {
         question: { qid: 'alt1', course_id: 'course-1' },
@@ -144,7 +144,7 @@ describe('buildHierarchicalAssessment', () => {
           number_choose: 1,
         },
         assessment_question: { number: 1, number_in_alternative_group: 1 },
-        start_new_alternative_group: true,
+        start_new_alternative_pool: true,
       } as StaffAssessmentQuestionRow,
       {
         question: { qid: 'alt2', course_id: 'course-1' },
@@ -156,7 +156,7 @@ describe('buildHierarchicalAssessment', () => {
           number_choose: 1,
         },
         assessment_question: { number: 2, number_in_alternative_group: 2 },
-        start_new_alternative_group: false,
+        start_new_alternative_pool: false,
       } as StaffAssessmentQuestionRow,
     ];
 
@@ -190,7 +190,7 @@ describe('buildHierarchicalAssessment', () => {
           number: 1,
           json_comment: { note: 'standalone question comment' },
         },
-        start_new_alternative_group: true,
+        start_new_alternative_pool: true,
       } as unknown as StaffAssessmentQuestionRow,
     ];
 
@@ -477,7 +477,7 @@ describe('computeZonePointTotals', () => {
       expectedManual: 0,
     },
     {
-      name: 'caps alt group numberChoose at alternatives.length',
+      name: 'caps alt pool numberChoose at alternatives.length',
       questions: [
         {
           trackingId: 'q1',
@@ -517,7 +517,7 @@ describe('computeZonePointTotals', () => {
     expect(result.autoPoints).toBe(5);
   });
 
-  it('uses maxAutoPoints cap for alternatives within an alt group', () => {
+  it('uses maxAutoPoints cap for alternatives within an alt pool', () => {
     const questions = [
       {
         trackingId: 'q1',
@@ -532,7 +532,7 @@ describe('computeZonePointTotals', () => {
     ] as ZoneQuestionBlockForm[];
 
     const result = computeZonePointTotals(questions);
-    // Alternative a2 overrides with max 10; a1 inherits group max 5.
+    // Alternative a2 overrides with max 10; a1 inherits pool max 5.
     // numberChoose=1, so pick the best = 10.
     expect(result.autoPoints).toBe(10);
   });
@@ -549,7 +549,7 @@ describe('computeZoneQuestionCount', () => {
       expected: 2,
     },
     {
-      name: 'uses numberChoose for alt groups',
+      name: 'uses numberChoose for alt pools',
       questions: [
         {
           trackingId: 'q1',
@@ -581,7 +581,7 @@ describe('computeZoneQuestionCount', () => {
     expect(computeZoneQuestionCount(questions as ZoneQuestionBlockForm[])).toBe(expected);
   });
 
-  it('counts questions in zone with mixed questions and alternative groups', () => {
+  it('counts questions in zone with mixed questions and alternative pools', () => {
     const questions = [
       { trackingId: 'q1', id: 'q1' },
       {
@@ -598,12 +598,12 @@ describe('computeZoneQuestionCount', () => {
   });
 });
 
-describe('computeAltGroupChosenRange', () => {
+describe('computeAltPoolChosenRange', () => {
   function makeAlt(id: string) {
     return { trackingId: id, id } as ZoneQuestionBlockForm;
   }
 
-  function makeAltGroup(id: string, altCount: number, numberChoose?: number) {
+  function makeAltPool(id: string, altCount: number, numberChoose?: number) {
     return {
       trackingId: id,
       numberChoose,
@@ -625,41 +625,41 @@ describe('computeAltGroupChosenRange', () => {
       alts: 3,
       expected: 3,
     },
-    { name: 'empty alt group', zoneChoose: 2, agChoose: undefined, alts: 0, expected: 0 },
-  ])('single group: $name -> min=max=$expected', ({ zoneChoose, agChoose, alts, expected }) => {
-    const ag = makeAltGroup('ag1', alts, agChoose);
+    { name: 'empty alt pool', zoneChoose: 2, agChoose: undefined, alts: 0, expected: 0 },
+  ])('single pool: $name -> min=max=$expected', ({ zoneChoose, agChoose, alts, expected }) => {
+    const ag = makeAltPool('ag1', alts, agChoose);
     const zone = {
       trackingId: 'z1',
       numberChoose: zoneChoose,
       questions: [ag],
     } as ZoneAssessmentForm;
-    expect(computeAltGroupChosenRange(zone, ag)).toEqual({ min: expected, max: expected });
+    expect(computeAltPoolChosenRange(zone, ag)).toEqual({ min: expected, max: expected });
   });
 
-  it('spreads evenly across multiple alt groups, producing a range', () => {
-    // Two groups each effective=2, zone picks 3 of 4.
+  it('spreads evenly across multiple alt pools, producing a range', () => {
+    // Two pools each effective=2, zone picks 3 of 4.
     // Layer 1: 2 questions, layer 2: 2 questions. C=[0,2,4].
     // guaranteed=1 (C[1]=2 <= 3), max=2 (has layer 2 and 3 > C[1]).
-    const ag1 = makeAltGroup('ag1', 2, 2);
-    const ag2 = makeAltGroup('ag2', 2, 2);
+    const ag1 = makeAltPool('ag1', 2, 2);
+    const ag2 = makeAltPool('ag2', 2, 2);
     const zone = { trackingId: 'z1', numberChoose: 3, questions: [ag1, ag2] } as ZoneAssessmentForm;
 
-    expect(computeAltGroupChosenRange(zone, ag1)).toEqual({ min: 1, max: 2 });
-    expect(computeAltGroupChosenRange(zone, ag2)).toEqual({ min: 1, max: 2 });
+    expect(computeAltPoolChosenRange(zone, ag1)).toEqual({ min: 1, max: 2 });
+    expect(computeAltPoolChosenRange(zone, ag2)).toEqual({ min: 1, max: 2 });
   });
 
-  it('caps alt group at guaranteed when zone budget is exhausted by layer 1', () => {
-    // Standalone(1) + alt group(effective=2). Zone picks 2.
+  it('caps alt pool at guaranteed when zone budget is exhausted by layer 1', () => {
+    // Standalone(1) + alt pool(effective=2). Zone picks 2.
     // Layer 1: 2 items. C=[0,2,3]. Z=2.
-    // For alt group: guaranteed=1 (C[1]=2 <= 2), no budget left → max=1.
+    // For alt pool: guaranteed=1 (C[1]=2 <= 2), no budget left → max=1.
     const standalone = makeAlt('q1');
-    const ag = makeAltGroup('ag1', 2, 2);
+    const ag = makeAltPool('ag1', 2, 2);
     const zone = {
       trackingId: 'z1',
       numberChoose: 2,
       questions: [standalone, ag],
     } as ZoneAssessmentForm;
 
-    expect(computeAltGroupChosenRange(zone, ag)).toEqual({ min: 1, max: 1 });
+    expect(computeAltPoolChosenRange(zone, ag)).toEqual({ min: 1, max: 1 });
   });
 });

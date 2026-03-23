@@ -267,7 +267,7 @@ export const ZoneQuestionBlockJsonSchema = QuestionPointsJsonSchema.extend({
     .number()
     .int()
     .gte(0)
-    .describe('Number of questions to choose from this group.')
+    .describe('Number of questions to choose from this pool.')
     .optional(),
   triesPerVariant: z
     .number()

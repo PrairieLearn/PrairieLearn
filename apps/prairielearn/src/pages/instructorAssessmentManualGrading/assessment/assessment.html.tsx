@@ -16,7 +16,7 @@ export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
   title: z.string(),
   number: z.string().nullable(),
   alternative_group_number: z.number(),
-  alternative_group_size: z.coerce.number(),
+  alternative_pool_size: z.coerce.number(),
   num_instance_questions: z.coerce.number(),
   num_instance_questions_to_grade: z.coerce.number(),
   num_instance_questions_assigned: z.coerce.number(),
@@ -183,7 +183,7 @@ function AssessmentQuestionRow({
       <td className="align-middle">
         <a href={gradingUrl}>
           {question.alternative_group_number}.
-          {question.alternative_group_size === 1 ? '' : `${question.number_in_alternative_group}.`}{' '}
+          {question.alternative_pool_size === 1 ? '' : `${question.number_in_alternative_group}.`}{' '}
           {question.title}
         </a>
         {question.manual_rubric_id != null && (

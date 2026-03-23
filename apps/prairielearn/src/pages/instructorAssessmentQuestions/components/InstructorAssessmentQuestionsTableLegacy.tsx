@@ -31,13 +31,13 @@ function Title({
   hasCoursePermissionPreview: boolean;
   urlPrefix: string;
 }) {
-  const { question, assessment_question, alternative_group, alternative_group_size } = questionRow;
+  const { question, assessment_question, alternative_group, alternative_pool_size } = questionRow;
   const title = (
     <>
       <AssessmentQuestionNumber
         questionNumber={alternative_group.number}
         alternativeNumber={
-          alternative_group_size > 1 ? assessment_question.number_in_alternative_group : undefined
+          alternative_pool_size > 1 ? assessment_question.number_in_alternative_group : undefined
         }
         className="me-2"
       />

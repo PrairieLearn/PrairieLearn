@@ -43,7 +43,7 @@ export function TreeZoneNode({
   actions: TreeActions;
 }) {
   const { editMode, selectedItem, collapsedZones, changeTracking, assessmentType } = state;
-  const { setSelectedItem, dispatch, onAddQuestion, onAddAltGroup, onDeleteZone } = actions;
+  const { setSelectedItem, dispatch, onAddQuestion, onAddAltPool, onDeleteZone } = actions;
   const badgeTooltipId = useId();
   const isCollapsed = collapsedZones.has(zone.trackingId);
   const zonePointsMismatch = getZonePointsMismatch(zone, assessmentType);
@@ -294,10 +294,10 @@ export function TreeZoneNode({
                 <button
                   className="btn btn-sm btn-link text-muted"
                   type="button"
-                  onClick={() => onAddAltGroup(zone.trackingId)}
+                  onClick={() => onAddAltPool(zone.trackingId)}
                 >
                   <i className="bi bi-stack me-1" aria-hidden="true" />
-                  Add alternative group
+                  Add alternative pool
                 </button>
               </div>
             )}
