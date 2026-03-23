@@ -13,6 +13,7 @@ export const InstanceQuestionRowSchema = z.object({
   instance_question: StaffInstanceQuestionSchema,
   assessment_open: z.boolean(),
   uid: z.string().nullable(),
+  uid_list: z.array(z.string()).nullable(),
   assigned_grader_name: z.string().nullable(),
   last_grader_name: z.string().nullable(),
   assessment_question: StaffAssessmentQuestionSchema,

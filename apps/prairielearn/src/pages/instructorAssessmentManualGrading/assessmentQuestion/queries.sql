@@ -50,6 +50,7 @@ SELECT
   to_jsonb(iq.*) AS instance_question,
   ai.open AS assessment_open,
   COALESCE(u.uid, array_to_string(gul.uid_list, ', ')) AS uid,
+  COALESCE(gul.uid_list, ARRAY[u.uid]) AS uid_list,
   COALESCE(agu.name, agu.uid) AS assigned_grader_name,
   COALESCE(lgu.name, lgu.uid) AS last_grader_name,
   to_jsonb(aq.*) AS assessment_question,

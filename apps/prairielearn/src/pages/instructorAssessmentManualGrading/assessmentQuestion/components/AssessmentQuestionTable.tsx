@@ -1045,6 +1045,19 @@ export function AssessmentQuestionTable({
             { name: 'Graded By', value: row.last_grader_name || '' },
             { name: 'Modified At', value: row.instance_question.modified_at.toISOString() },
           ],
+          mapRowToJsonData: (row) => ({
+            instance_question_id: row.instance_question.id,
+            [assessment.team_work ? 'group_name' : 'name']: row.user_or_group_name || null,
+            ...(assessment.team_work ? { uids: row.uid_list ?? [] } : { uid: row.uid || null }),
+            requires_manual_grading: row.instance_question.requires_manual_grading,
+            assigned_grader_name: row.assigned_grader_name || null,
+            auto_points: row.instance_question.auto_points ?? null,
+            manual_points: row.instance_question.manual_points ?? null,
+            points: row.instance_question.points ?? null,
+            score_perc: row.instance_question.score_perc ?? null,
+            last_grader_name: row.last_grader_name || null,
+            modified_at: row.instance_question.modified_at.toISOString(),
+          }),
           hasSelection: true,
         }}
       />
