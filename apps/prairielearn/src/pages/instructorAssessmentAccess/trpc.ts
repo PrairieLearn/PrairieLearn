@@ -119,15 +119,6 @@ function formJsonToEnrollmentRuleData(
   return {
     id: rule.id,
     listBeforeRelease: rule.listBeforeRelease ?? true,
-    dateControlOverridden:
-      dc?.enabled === true ||
-      dc?.releaseDate !== undefined ||
-      dc?.dueDate !== undefined ||
-      dc?.earlyDeadlines !== undefined ||
-      dc?.lateDeadlines !== undefined ||
-      dc?.afterLastDeadline !== undefined ||
-      dc?.durationMinutes !== undefined ||
-      dc?.password !== undefined,
     releaseDateOverridden: dc?.releaseDate !== undefined,
     releaseDate: dc?.releaseDate ?? null,
     dueDateOverridden: dc?.dueDate !== undefined,
@@ -171,7 +162,6 @@ const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: string 
   labels: z.array(z.string()).optional(),
   dateControl: z
     .object({
-      enabled: z.boolean().optional(),
       releaseDate: DateStringInputSchema.optional(),
       dueDate: DateStringInputSchema.nullable().optional(),
       earlyDeadlines: z.array(DeadlineInputSchema).optional(),

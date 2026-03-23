@@ -762,12 +762,8 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "enabled": {
-              "description": "Whether dateControl is enabled or not",
-              "type": "boolean"
-            },
             "releaseDate": {
-              "description": "Deadline date as ISO String",
+              "description": "Release date as ISO String. If absent or null, no date-based access is granted.",
               "anyOf": [
                 {
                   "$ref": "#/definitions/DatetimeLocalStringSchema"

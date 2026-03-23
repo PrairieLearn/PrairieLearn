@@ -8,7 +8,6 @@ const sql = loadSqlEquiv(import.meta.url);
 export interface EnrollmentAccessControlRuleData {
   id?: string;
   listBeforeRelease: boolean;
-  dateControlOverridden: boolean;
   releaseDateOverridden: boolean;
   releaseDate: string | null;
   dueDateOverridden: boolean;
@@ -46,7 +45,6 @@ export async function syncEnrollmentAccessControl(
   const ruleJson = JSON.stringify({
     id: ruleData.id ?? null,
     list_before_release: ruleData.listBeforeRelease,
-    date_control_overridden: ruleData.dateControlOverridden,
     date_control_release_date_overridden: ruleData.releaseDateOverridden,
     date_control_release_date: ruleData.releaseDate,
     date_control_due_date_overridden: ruleData.dueDateOverridden,

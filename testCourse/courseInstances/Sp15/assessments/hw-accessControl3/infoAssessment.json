@@ -8,7 +8,6 @@
     {
       "listBeforeRelease": true,
       "dateControl": {
-        "enabled": true,
         "afterLastDeadline": { "allowSubmissions": true, "credit": 52 }
       },
       "afterComplete": { "hideQuestions": false, "hideScore": false }

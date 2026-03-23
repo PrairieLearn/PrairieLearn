@@ -41,46 +41,32 @@ function isOverride(row: AccessControlRuleRow): boolean {
 }
 
 function buildDateControl(row: AccessControlRuleRow): AccessControlJson['dateControl'] | undefined {
-  const override = isOverride(row);
-
-  if (override && !row.date_control_overridden) {
-    return undefined;
-  }
-
-  // For overrides, only include fields where *_overridden = true.
-  // For main rules (number 0), include all fields.
-  const includeField = (overridden: boolean) => !override || overridden;
-
+  // Only include fields that were explicitly configured (overridden flag is true).
+  // This applies uniformly to main rules and overrides.
   const dateControl: NonNullable<AccessControlJson['dateControl']> = {};
   let hasAnyField = false;
 
-  if (includeField(row.date_control_release_date_overridden)) {
-    if (row.date_control_release_date) {
-      dateControl.releaseDate = row.date_control_release_date.toISOString();
-      hasAnyField = true;
-    }
+  if (row.date_control_release_date_overridden) {
+    dateControl.releaseDate = row.date_control_release_date?.toISOString() ?? null;
+    hasAnyField = true;
   }
 
-  if (includeField(row.date_control_due_date_overridden)) {
+  if (row.date_control_due_date_overridden) {
     dateControl.dueDate = row.date_control_due_date?.toISOString() ?? null;
     hasAnyField = true;
   }
 
-  if (includeField(row.date_control_duration_minutes_overridden)) {
-    if (row.date_control_duration_minutes != null) {
-      dateControl.durationMinutes = row.date_control_duration_minutes;
-      hasAnyField = true;
-    }
+  if (row.date_control_duration_minutes_overridden && row.date_control_duration_minutes != null) {
+    dateControl.durationMinutes = row.date_control_duration_minutes;
+    hasAnyField = true;
   }
 
-  if (includeField(row.date_control_password_overridden)) {
-    if (row.date_control_password != null) {
-      dateControl.password = row.date_control_password;
-      hasAnyField = true;
-    }
+  if (row.date_control_password_overridden && row.date_control_password != null) {
+    dateControl.password = row.date_control_password;
+    hasAnyField = true;
   }
 
-  if (includeField(row.date_control_early_deadlines_overridden)) {
+  if (row.date_control_early_deadlines_overridden) {
     dateControl.earlyDeadlines =
       row.early_deadlines?.map((d) => ({
         date: d.date,
@@ -89,7 +75,7 @@ function buildDateControl(row: AccessControlRuleRow): AccessControlJson['dateCon
     hasAnyField = true;
   }
 
-  if (includeField(row.date_control_late_deadlines_overridden)) {
+  if (row.date_control_late_deadlines_overridden) {
     dateControl.lateDeadlines =
       row.late_deadlines?.map((d) => ({
         date: d.date,
@@ -100,7 +86,7 @@ function buildDateControl(row: AccessControlRuleRow): AccessControlJson['dateCon
 
   {
     const includeCredit =
-      includeField(row.date_control_after_last_deadline_credit_overridden) &&
+      row.date_control_after_last_deadline_credit_overridden &&
       row.date_control_after_last_deadline_credit != null;
     const includeAllowSubmissions = row.date_control_after_last_deadline_allow_submissions != null;
 
@@ -117,13 +103,7 @@ function buildDateControl(row: AccessControlRuleRow): AccessControlJson['dateCon
     }
   }
 
-  if (!override) {
-    // Main rule always includes dateControl if any fields are set
-    return hasAnyField ? dateControl : undefined;
-  }
-
-  // Override rule only includes dateControl if date_control_overridden is true
-  return dateControl;
+  return hasAnyField ? dateControl : undefined;
 }
 
 function buildAfterComplete(

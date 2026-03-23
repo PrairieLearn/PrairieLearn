@@ -1429,7 +1429,7 @@ describe('Access control syncing', () => {
       assert.equal(override.rule.afterComplete?.hideScore, true);
     });
 
-    it('override dateControl does not contain enabled field', async () => {
+    it('override dateControl round-trips correctly', async () => {
       const courseData = util.getCourseData();
       const groupName = 'Test Group';
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
@@ -1455,7 +1455,6 @@ describe('Access control syncing', () => {
         override.rule.dateControl?.dueDate,
         new Date('2024-04-01T23:59:00').toISOString(),
       );
-      assert.isUndefined(override.rule.dateControl?.enabled);
     });
 
     it('main rule defaults listBeforeRelease to false', async () => {

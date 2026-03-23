@@ -184,7 +184,6 @@ describe('migrateAllowAccess', () => {
       { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
     const { result, warnings } = migrateAllowAccess('single-deadline', rules);
-    expect(result.dateControl?.enabled).toBe(true);
     expect(result.dateControl?.releaseDate).toBe('2024-01-01');
     expect(result.dateControl?.dueDate).toBe('2024-06-01');
     expect(warnings).toHaveLength(0);
@@ -257,7 +256,7 @@ describe('migrateAllowAccess', () => {
   it('migrates hidden', () => {
     const rules: AssessmentAccessRuleJson[] = [{ active: false }];
     const { result } = migrateAllowAccess('hidden', rules);
-    expect(result.dateControl?.enabled).toBe(false);
+    expect(result.dateControl).toBeUndefined();
   });
 
   it('migrates no-op', () => {
@@ -333,7 +332,6 @@ describe('migrateAllowAccess', () => {
       { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
     const { result } = migrateAllowAccess('single-reduced-credit', rules);
-    expect(result.dateControl?.enabled).toBe(true);
     expect(result.dateControl?.releaseDate).toBe('2024-01-01');
     expect(result.dateControl?.dueDate).toBe('2024-06-01');
   });
@@ -451,7 +449,7 @@ describe('analyzeAssessmentFile', () => {
       JSON.stringify({
         type: 'Exam',
         title: 'Test',
-        accessControl: [{ dateControl: { enabled: true } }],
+        accessControl: [{ dateControl: { releaseDate: '2024-01-01' } }],
       }),
     );
     const result = await analyzeAssessmentFile(filePath, 'test');
@@ -724,7 +722,7 @@ describe('applyMigrationToAssessmentFile', () => {
       type: 'Homework',
       title: 'HW1',
       allowAccess: [{ credit: 100 }],
-      accessControl: [{ dateControl: { enabled: true } }],
+      accessControl: [{ dateControl: { releaseDate: '2024-01-01' } }],
     };
     await fs.writeFile(filePath, JSON.stringify(originalData));
 

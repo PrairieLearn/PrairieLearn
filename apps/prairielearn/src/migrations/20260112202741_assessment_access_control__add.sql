@@ -12,7 +12,6 @@ CREATE TABLE assessment_access_control_rules (
   number INTEGER NOT NULL,
   -- Target type: 'none' for main rule (applies to all), 'enrollment' for individual students, 'student_label' for student labels
   target_type enum_assessment_access_control_target_type NOT NULL,
-  date_control_overridden boolean NOT NULL DEFAULT false,
   date_control_release_date_overridden boolean NOT NULL DEFAULT false,
   date_control_release_date TIMESTAMP WITH TIME ZONE,
   date_control_due_date_overridden boolean NOT NULL DEFAULT false,

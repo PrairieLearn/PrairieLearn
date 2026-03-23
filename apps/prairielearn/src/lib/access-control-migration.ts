@@ -10,7 +10,6 @@ import type { AssessmentAccessRuleJson } from '../schemas/infoAssessment.js';
 
 import { formatJsonWithPrettier } from './prettier.js';
 
-
 export interface AssessmentMigrationAnalysis {
   tid: string;
   title: string;
@@ -157,7 +156,8 @@ export function classifyArchetype(rules: AssessmentAccessRuleJson[]): string {
     reducedCredit: creditRules.some((r) => r.creditType === 'reduced'),
     openCredit: creditRules.some((r) => r.isOpenCredit),
     viewing: nonCreditRules.some(
-      (r) => !r.isActive && r.hasDates && !r.isPrairieTest && !r.hasPassword && !r.hidesClosedAssessment,
+      (r) =>
+        !r.isActive && r.hasDates && !r.isPrairieTest && !r.hasPassword && !r.hidesClosedAssessment,
     ),
     hiding: nonCreditRules.some(
       (r) => !r.isActive || r.hidesClosedAssessment || r.hidesClosedScore,
@@ -225,7 +225,7 @@ function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
 
   const releaseDate = findReleaseDate(rules);
   if (creditRule.startDate || creditRule.endDate || releaseDate) {
-    result.dateControl = { enabled: true };
+    result.dateControl = {};
     if (releaseDate) result.dateControl.releaseDate = releaseDate;
     if (creditRule.endDate) result.dateControl.dueDate = creditRule.endDate;
     if (creditRule.timeLimitMin) result.dateControl.durationMinutes = creditRule.timeLimitMin;
@@ -262,9 +262,7 @@ function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
   const releaseDate = findReleaseDate(rules);
 
   const result: AccessControlJsonInput = {
-    dateControl: {
-      enabled: true,
-    },
+    dateControl: {},
   };
   if (releaseDate) result.dateControl!.releaseDate = releaseDate;
   if (dueDate) result.dateControl!.dueDate = dueDate;
@@ -313,7 +311,6 @@ function migratePrairieTestExam(rules: AssessmentAccessRuleJson[]): {
   const releaseDate = findReleaseDate(rules);
   if (releaseDate) {
     result.dateControl = {
-      enabled: true,
       releaseDate,
       dueDate: null,
     };
@@ -335,7 +332,6 @@ function migrateViewOnly(rules: AssessmentAccessRuleJson[]): {
 
   const result: AccessControlJsonInput = {
     dateControl: {
-      enabled: true,
       dueDate: null,
     },
   };
@@ -374,9 +370,7 @@ function migrateMultiDeadline(rules: AssessmentAccessRuleJson[]): {
   }
 
   const result: AccessControlJsonInput = {
-    dateControl: {
-      enabled: true,
-    },
+    dateControl: {},
   };
   if (releaseDate) result.dateControl!.releaseDate = releaseDate;
   if (dueDate) result.dateControl!.dueDate = dueDate;
@@ -401,7 +395,6 @@ function migratePasswordGated(rules: AssessmentAccessRuleJson[]): {
 
   const result: AccessControlJsonInput = {
     dateControl: {
-      enabled: true,
       password: passwordRule.password!,
     },
   };
@@ -419,7 +412,7 @@ function migrateHidden(_rules: AssessmentAccessRuleJson[]): {
   warnings: string[];
 } {
   return {
-    result: { dateControl: { enabled: false } },
+    result: {},
     warnings: [],
   };
 }

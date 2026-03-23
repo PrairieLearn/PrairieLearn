@@ -91,12 +91,6 @@ function validateAssessmentRules(
     );
   }
 
-  for (let i = 0; i < rules.length; i++) {
-    if (i > 0 && rules[i].dateControl?.enabled !== undefined) {
-      return `'dateControl.enabled' cannot be set on override rules (rule ${i}). It can only be set on the base rule (rule 0).`;
-    }
-  }
-
   return null;
 }
 
@@ -131,16 +125,6 @@ function prepareRuleRow(
   const hideScoreField = mapField(afterComplete.hideScore);
   const showScoreAgainDateField = mapField(afterComplete.showScoreAgainDate);
 
-  const dateControlOverridden =
-    releaseDateField.overridden ||
-    dueDateField.overridden ||
-    earlyDeadlinesField.overridden ||
-    lateDeadlinesField.overridden ||
-    durationMinutesField.overridden ||
-    passwordField.overridden ||
-    afterLastDeadlineAllowSubmissionsField.overridden ||
-    afterLastDeadlineCreditField.overridden;
-
   const ruleLabels = rule.labels ?? [];
   const studentLabelIds = ruleLabels
     .map((label) => studentLabelIdByName.get(label))
@@ -154,7 +138,6 @@ function prepareRuleRow(
     number: ruleNumber,
     list_before_release: listBeforeRelease.value ?? false,
     target_type: targetType,
-    date_control_overridden: dateControlOverridden,
     date_control_release_date_overridden: releaseDateField.overridden,
     date_control_release_date: releaseDateField.value,
     date_control_due_date_overridden: dueDateField.overridden,

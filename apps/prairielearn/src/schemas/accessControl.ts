@@ -18,10 +18,9 @@ const AfterLastDeadlineJsonSchema = z
 
 const DateControlJsonSchema = z
   .object({
-    enabled: z.boolean().optional().describe('Whether dateControl is enabled or not'), // convenience flag for saying everything is overriden and disabled
     releaseDate: DatetimeLocalStringSchema.nullable()
       .optional()
-      .describe('Deadline date as ISO String'),
+      .describe('Release date as ISO String. If absent or null, no date-based access is granted.'),
     dueDate: DatetimeLocalStringSchema.nullable().optional().describe('Due date as ISO String'),
     earlyDeadlines: z
       .array(DeadlineEntryJsonSchema)

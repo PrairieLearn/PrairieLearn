@@ -90,26 +90,13 @@ function instanceRoleAtLeast(
 function mergeDateControl(
   base: AccessControlJson['dateControl'],
   override: AccessControlJson['dateControl'],
-  stripBaseEnabled: boolean,
 ): AccessControlJson['dateControl'] {
   if (!base && !override) return undefined;
   if (!base) return override;
-  if (!override) {
-    if (stripBaseEnabled) {
-      const { enabled: _enabled, ...rest } = base;
-      return { ...rest };
-    }
-    return { ...base };
-  }
+  if (!override) return { ...base };
 
-  const merged: NonNullable<AccessControlJson['dateControl']> = stripBaseEnabled
-    ? (() => {
-        const { enabled: _e, ...r } = base;
-        return { ...r };
-      })()
-    : { ...base };
+  const merged: NonNullable<AccessControlJson['dateControl']> = { ...base };
   const ov = override;
-  if (ov.enabled !== undefined) merged.enabled = ov.enabled;
   if (ov.releaseDate !== undefined) merged.releaseDate = ov.releaseDate;
   if (ov.dueDate !== undefined) merged.dueDate = ov.dueDate;
   if (ov.earlyDeadlines !== undefined) merged.earlyDeadlines = ov.earlyDeadlines;
@@ -157,7 +144,7 @@ export function mergeRules(
     merged.listBeforeRelease = override.listBeforeRelease;
   }
 
-  merged.dateControl = mergeDateControl(main.dateControl, override.dateControl, true);
+  merged.dateControl = mergeDateControl(main.dateControl, override.dateControl);
   merged.afterComplete = mergeAfterComplete(main.afterComplete, override.afterComplete);
 
   return merged;
@@ -176,7 +163,7 @@ export function cascadeOverrides(
   if (base.listBeforeRelease !== undefined) merged.listBeforeRelease = base.listBeforeRelease;
   if (next.listBeforeRelease !== undefined) merged.listBeforeRelease = next.listBeforeRelease;
 
-  merged.dateControl = mergeDateControl(base.dateControl, next.dateControl, false);
+  merged.dateControl = mergeDateControl(base.dateControl, next.dateControl);
   merged.afterComplete = mergeAfterComplete(base.afterComplete, next.afterComplete);
 
   return merged;
@@ -197,7 +184,7 @@ function computeCredit(
   effectiveRule: AccessControlJson,
   authzMode: EnumMode | null,
 ): CreditResult {
-  if (!dateControl || dateControl.enabled === false) {
+  if (!dateControl?.releaseDate) {
     return {
       credit: 0,
       active: false,
@@ -464,7 +451,7 @@ export function resolveAccessControl(
   }
   const effectiveRule = mergeRules(mainRuleInput.rule, cascadedOverride);
 
-  const creditResult = computeCredit(effectiveRule.dateControl, date, effectiveRule, authzMode);
+  let creditResult = computeCredit(effectiveRule.dateControl, date, effectiveRule, authzMode);
 
   const prairieTestExamUuids = mainRuleInput.prairietestExamUuids;
   const hasPrairieTestExams = prairieTestExamUuids.length > 0;
@@ -484,6 +471,9 @@ export function resolveAccessControl(
     }
 
     examAccessEnd = matchingReservation.accessEnd;
+
+    // PrairieTest controls access — always grant full credit.
+    creditResult = { ...creditResult, credit: 100, active: true };
   } else if (authzMode === 'Exam') {
     // No PrairieTest exams configured but student is in PrairieTest exam mode
     return { ...UNAUTHORIZED_RESULT };

@@ -162,7 +162,7 @@ export function jsonToMainRuleFormData(json: AccessControlJsonWithId): MainRuleD
     id: json.id,
     trackingId: json.id ?? crypto.randomUUID(),
     listBeforeRelease: json.listBeforeRelease ?? true,
-    dateControlEnabled: dc?.enabled ?? false,
+    dateControlEnabled: dc?.releaseDate != null,
     releaseDate: toLocalDatetimeValue(dc?.releaseDate) ?? null,
     dueDate: toLocalDatetimeValue(dc?.dueDate) ?? null,
     earlyDeadlines: (dc?.earlyDeadlines ?? []).map((d) => ({
@@ -306,16 +306,17 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   };
 
   if (rule.dateControlEnabled) {
-    output.dateControl = { enabled: true };
-    if (rule.releaseDate) output.dateControl.releaseDate = rule.releaseDate;
+    output.dateControl = {};
+    // "Released immediately" in the UI sets releaseDate to null; persist as
+    // the current timestamp so it round-trips as a real date (matching the
+    // course-instance publishing pattern).
+    output.dateControl.releaseDate = rule.releaseDate || new Date().toISOString();
     if (rule.dueDate) output.dateControl.dueDate = rule.dueDate;
     if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (rule.lateDeadlines.length > 0) output.dateControl.lateDeadlines = rule.lateDeadlines;
     if (rule.afterLastDeadline) output.dateControl.afterLastDeadline = rule.afterLastDeadline;
     if (rule.durationMinutes != null) output.dateControl.durationMinutes = rule.durationMinutes;
     if (rule.password) output.dateControl.password = rule.password;
-  } else {
-    output.dateControl = { enabled: false };
   }
 
   if (rule.prairieTestEnabled && rule.prairieTestExams.length > 0) {

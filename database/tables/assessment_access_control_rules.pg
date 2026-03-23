@@ -17,7 +17,6 @@ columns
     date_control_duration_minutes_overridden: boolean not null default false
     date_control_early_deadlines_overridden: boolean not null default false
     date_control_late_deadlines_overridden: boolean not null default false
-    date_control_overridden: boolean not null default false
     date_control_password: text
     date_control_password_overridden: boolean not null default false
     date_control_release_date: timestamp with time zone
