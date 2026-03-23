@@ -25,7 +25,6 @@ WHERE
   stripe_object_id = $stripe_object_id;
 
 -- BLOCK mark_ai_grading_credit_checkout_session_completed
--- Uses credits_added = FALSE guard to ensure only one caller succeeds.
 UPDATE ai_grading_credit_checkout_sessions
 SET
   completed_at = NOW(),
