@@ -86,6 +86,21 @@ const questionByQidQuery = t.procedure.input(z.object({ qid: z.string() })).quer
     });
   }
 
+  if (opts.input.qid.startsWith('@')) {
+    const [sharing_name, qid] = opts.input.qid.slice(1).split('/');
+
+    const result = await sqldb.queryOptionalRow(
+      sql.search_shared_questions,
+      { qid, sharing_name, course_id: opts.ctx.course.id },
+      QuestionByQidResultSchema,
+    );
+
+    if (!result) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'Shared question not found' });
+    }
+
+    return result;
+  }
   const result = await sqldb.queryOptionalRow(
     sql.select_question_by_qid,
     {

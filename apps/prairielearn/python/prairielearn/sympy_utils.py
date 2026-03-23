@@ -978,7 +978,7 @@ def try_parse_string_as_sympy(
     ):
         expr_parsed = expr_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
         return SympyParseFailure(
-            "Your answer was simplified to this, which contains a complex number"
+            "Your answer was simplified to this, which contains a complex number "
             f"(denoted ${imaginary_unit}$): $${sympy.latex(expr_parsed)}$$"
         )
 
