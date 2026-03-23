@@ -234,23 +234,31 @@ function extractRepoSuffix(repository: string): string | null {
   return null;
 }
 
-export async function checkCourseRepositoryUrlExists(repository: string) {
+export async function checkCourseRepositoryUrlExists(repository: string, excludeCourseId?: string) {
   const suffix = extractRepoSuffix(repository);
   if (suffix == null) {
     // Fall back to exact match if we can't parse the URL.
-    return await sqldb.queryScalar(sql.exists_by_course_repository, { repository }, z.boolean());
+    return await sqldb.queryScalar(
+      sql.exists_by_course_repository,
+      { repository, exclude_course_id: excludeCourseId ?? null },
+      z.boolean(),
+    );
   }
 
   // Escape SQL LIKE wildcards so they are matched literally.
   const escapedSuffix = suffix.replaceAll('%', '\\%').replaceAll('_', '\\_');
   return await sqldb.queryScalar(
     sql.exists_by_course_repository_suffix,
-    { suffix: escapedSuffix },
+    { suffix: escapedSuffix, exclude_course_id: excludeCourseId ?? null },
     z.boolean(),
   );
 }
 
-export async function checkCoursePathExists(path: string) {
-  const result = await sqldb.queryScalar(sql.exists_by_course_path, { path }, z.boolean());
+export async function checkCoursePathExists(path: string, excludeCourseId?: string) {
+  const result = await sqldb.queryScalar(
+    sql.exists_by_course_path,
+    { path, exclude_course_id: excludeCourseId ?? null },
+    z.boolean(),
+  );
   return result;
 }
