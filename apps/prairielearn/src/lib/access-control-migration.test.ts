@@ -15,6 +15,7 @@ import {
 
 describe('classifyArchetype', () => {
   const cases: { name: string; rules: AssessmentAccessRuleJson[]; expected: string }[] = [
+    { name: 'empty rules', rules: [], expected: 'no-op' },
     { name: 'no-op rules', rules: [{}], expected: 'no-op' },
     {
       name: 'prairietest-exam',
@@ -43,7 +44,7 @@ describe('classifyArchetype', () => {
       name: 'single-deadline-with-viewing',
       rules: [
         { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
-        { startDate: '2024-01-01' },
+        { startDate: '2024-01-01', active: false },
       ],
       expected: 'single-deadline-with-viewing',
     },
@@ -68,7 +69,11 @@ describe('classifyArchetype', () => {
       rules: [{ credit: 100 }],
       expected: 'single-deadline',
     },
-    { name: 'view-only', rules: [{ startDate: '2024-01-01' }], expected: 'view-only' },
+    {
+      name: 'view-only',
+      rules: [{ startDate: '2024-01-01', active: false }],
+      expected: 'view-only',
+    },
     { name: 'hidden', rules: [{ active: false }], expected: 'hidden' },
     {
       name: 'single-deadline with mode-gated',
@@ -92,7 +97,6 @@ describe('classifyArchetype', () => {
       rules: [{ credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' }],
       expected: 'single-reduced-credit',
     },
-    { name: 'empty rules', rules: [], expected: 'no-op' },
     {
       name: 'ignores UID rules, classifies remainder',
       rules: [
@@ -115,7 +119,7 @@ describe('classifyArchetype', () => {
       ],
       expected: 'declining-credit',
     },
-    { name: 'mode-only rule', rules: [{ mode: 'Exam' }], expected: 'view-only' },
+    { name: 'mode-only rule', rules: [{ mode: 'Exam' }], expected: 'mode-gated' },
     {
       name: 'combined mode-gated and hides-closed',
       rules: [

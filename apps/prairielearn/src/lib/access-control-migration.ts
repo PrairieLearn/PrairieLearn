@@ -157,7 +157,7 @@ export function classifyArchetype(rules: AssessmentAccessRuleJson[]): string {
     reducedCredit: creditRules.some((r) => r.creditType === 'reduced'),
     openCredit: creditRules.some((r) => r.isOpenCredit),
     viewing: nonCreditRules.some(
-      (r) => r.isActive && !r.isPrairieTest && !r.hasPassword && !r.hidesClosedAssessment,
+      (r) => !r.isActive && r.hasDates && !r.isPrairieTest && !r.hasPassword && !r.hidesClosedAssessment,
     ),
     hiding: nonCreditRules.some(
       (r) => !r.isActive || r.hidesClosedAssessment || r.hidesClosedScore,

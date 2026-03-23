@@ -56,6 +56,8 @@ function resolverResultToSprocAuthzAssessment(
     show_closed_assessment: result.showClosedAssessment,
     show_closed_assessment_score: result.showClosedAssessmentScore,
     exam_access_end: result.examAccessEnd,
+    // Only report Exam mode when the student has an active PrairieTest
+    // reservation (examAccessEnd is non-null), indicating a live exam session.
     mode: authzMode === 'Exam' && result.examAccessEnd ? 'Exam' : null,
     next_active_time: null,
     access_rules: [],

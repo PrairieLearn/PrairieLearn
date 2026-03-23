@@ -41,6 +41,11 @@ export interface AccessControlResolverResult {
   active: boolean;
   showClosedAssessment: boolean;
   showClosedAssessmentScore: boolean;
+  /**
+   * When the assessment is gated behind a PrairieTest reservation, this is
+   * the reservation's `accessEnd` timestamp. Used to determine whether the
+   * student is still in an active exam session (i.e. mode should be 'Exam').
+   */
   examAccessEnd: Date | null;
   listBeforeRelease: boolean;
 }
