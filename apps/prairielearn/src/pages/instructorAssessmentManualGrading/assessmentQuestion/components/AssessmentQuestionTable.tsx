@@ -92,6 +92,9 @@ interface AssessmentQuestionTableProps {
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: ReturnType<typeof useManualGradingActions>;
+  onServerJobProgressRef?: React.MutableRefObject<
+    ((jobSequenceId: string, jobSequenceToken: string) => void) | null
+  >;
 }
 
 function AiGradingOptionContent({ text, numToGrade }: { text: string; numToGrade: number }) {
@@ -185,6 +188,7 @@ export function AssessmentQuestionTable({
   onSetGroupInfoModalState,
   onSetConflictModalState,
   mutations,
+  onServerJobProgressRef,
 }: AssessmentQuestionTableProps) {
   const trpc = useTRPC();
   // Query state management
@@ -405,6 +409,19 @@ export function AssessmentQuestionTable({
       });
     },
   });
+
+  // Expose handleAddOngoingJobSequence to the parent via ref so the chat panel
+  // can trigger progress bars when the AI agent starts a grading job.
+  useEffect(() => {
+    if (onServerJobProgressRef) {
+      onServerJobProgressRef.current = serverJobProgress.handleAddOngoingJobSequence;
+    }
+    return () => {
+      if (onServerJobProgressRef) {
+        onServerJobProgressRef.current = null;
+      }
+    };
+  }, [onServerJobProgressRef, serverJobProgress.handleAddOngoingJobSequence]);
 
   // Create columns using the extracted function
   const columns = useMemo(

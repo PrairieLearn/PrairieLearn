@@ -1,8 +1,9 @@
 import { useChat } from '@ai-sdk/react';
-import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { DefaultChatTransport, type ToolUIPart, type UIMessage } from 'ai';
-import { type ReactNode, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Modal } from 'react-bootstrap';
+import { type Socket, io } from 'socket.io-client';
 
 import { run } from '@prairielearn/run';
 import { NuqsAdapter } from '@prairielearn/ui';
@@ -19,6 +20,7 @@ import type {
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
+import { type ProgressUpdateMessage } from '../../../lib/serverJobProgressSocket.shared.js';
 import { createAssessmentQuestionTrpcClient } from '../../../trpc/assessmentQuestion/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/assessmentQuestion/context.js';
 
@@ -571,6 +573,119 @@ function ToolCall({ part }: { part: ToolUIPart }) {
 }
 
 /**
+ * Inline grading progress indicator displayed in the chat when AI grading is running.
+ * Connects to the server job progress socket to show real-time status.
+ */
+function InlineGradingProgress({
+  jobSequenceId,
+  jobSequenceToken,
+  onComplete,
+}: {
+  jobSequenceId: string;
+  jobSequenceToken: string;
+  onComplete: () => void;
+}) {
+  const [progress, setProgress] = useState<{
+    numComplete: number;
+    numFailed: number;
+    numTotal: number;
+    failureMessage?: string;
+  } | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+
+  useEffect(() => {
+    const socket = io('/server-job-progress');
+    socketRef.current = socket;
+
+    socket.emit(
+      'joinServerJobProgress',
+      {
+        job_sequence_id: jobSequenceId,
+        job_sequence_token: jobSequenceToken,
+      },
+      (response: ProgressUpdateMessage) => {
+        if (!response.has_progress_data) return;
+        setProgress({
+          numComplete: response.num_complete,
+          numFailed: response.num_failed,
+          numTotal: response.num_total,
+          failureMessage: response.job_failure_message,
+        });
+        if (response.num_complete >= response.num_total) {
+          onCompleteRef.current();
+        }
+      },
+    );
+
+    socket.on('serverJobProgressUpdate', (msg: ProgressUpdateMessage) => {
+      if (msg.job_sequence_id !== jobSequenceId || !msg.has_progress_data) return;
+      setProgress({
+        numComplete: msg.num_complete,
+        numFailed: msg.num_failed,
+        numTotal: msg.num_total,
+        failureMessage: msg.job_failure_message,
+      });
+      if (msg.num_complete >= msg.num_total) {
+        onCompleteRef.current();
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [jobSequenceId, jobSequenceToken]);
+
+  if (!progress) {
+    return (
+      <div className="d-flex align-items-center gap-2 py-2">
+        <div className="spinner-border spinner-border-sm" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <span className="text-muted small">Starting AI grading...</span>
+      </div>
+    );
+  }
+
+  const isComplete = progress.numComplete >= progress.numTotal;
+  const numSucceeded = progress.numComplete - progress.numFailed;
+  const progressPercent =
+    progress.numTotal > 0 ? Math.round((progress.numComplete / progress.numTotal) * 100) : 0;
+
+  return (
+    <div className="py-2">
+      <div className="d-flex align-items-center gap-2 mb-1">
+        {!isComplete && (
+          <div className="spinner-border spinner-border-sm" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        )}
+        {isComplete && <i className="bi bi-check-circle-fill text-success" />}
+        <span className="small fw-medium">
+          {isComplete
+            ? `AI grading complete: ${numSucceeded} graded${progress.numFailed > 0 ? `, ${progress.numFailed} failed` : ''}`
+            : `Grading ${progress.numComplete}/${progress.numTotal} submissions...`}
+        </span>
+      </div>
+      <div className="progress" style={{ height: '6px' }}>
+        <div
+          className={`progress-bar ${progress.numFailed > 0 ? 'bg-warning' : 'bg-success'}`}
+          role="progressbar"
+          style={{ width: `${progressPercent}%` }}
+          aria-valuenow={progressPercent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        />
+      </div>
+      {progress.failureMessage && (
+        <div className="text-danger small mt-1">{progress.failureMessage}</div>
+      )}
+    </div>
+  );
+}
+
+/**
  * Compute a master diff across all mutation tool calls in a single message.
  * Uses the `before` snapshot from the first mutation and `after` from the last.
  */
@@ -622,12 +737,46 @@ function MasterRubricDiff({
   return <RubricDiff diff={diff} />;
 }
 
-function MessageParts({ parts }: { parts: UIMessage['parts'] }) {
+function MessageParts({
+  parts,
+  onGradingComplete,
+}: {
+  parts: UIMessage['parts'];
+  onGradingComplete?: () => void;
+}) {
   return (
     <>
       {parts.map((part, index) => {
         const key = `part-${index}`;
         if (isToolPart(part)) {
+          // For startAiGrading tool, render inline progress instead of simple status
+          if (
+            part.type === 'tool-startAiGrading' &&
+            part.state === 'output-available' &&
+            onGradingComplete
+          ) {
+            try {
+              const raw = (part as ToolUIPart & { output?: unknown }).output;
+              const parsed =
+                typeof raw === 'string'
+                  ? JSON.parse(raw)
+                  : (raw as Record<string, unknown> | undefined);
+              if (parsed?.job_sequence_id && parsed?.job_sequence_token) {
+                return (
+                  <div key={key}>
+                    <ToolCall part={part} />
+                    <InlineGradingProgress
+                      jobSequenceId={parsed.job_sequence_id as string}
+                      jobSequenceToken={parsed.job_sequence_token as string}
+                      onComplete={onGradingComplete}
+                    />
+                  </div>
+                );
+              }
+            } catch {
+              // Fall through to default rendering
+            }
+          }
           return <ToolCall key={key} part={part} />;
         } else if (part.type === 'text') {
           if (!part.text) return null;
@@ -781,8 +930,9 @@ function AssessmentQuestionManualGradingInner({
   const [rubricDataState, setRubricDataState] = useState(initialRubricData);
   const [aiGradingStatsState, setAiGradingStatsState] = useState(aiGradingStats);
   const [isGradingInProgress, setIsGradingInProgress] = useState(false);
-
-  const workflowActionMutation = useMutation(trpc.workflowAction.mutationOptions());
+  const addOngoingJobSequenceRef = useRef<
+    ((jobSequenceId: string, jobSequenceToken: string) => void) | null
+  >(null);
 
   const hasPersistedGenerateMessage = initialChatMessages.some(
     (m) => m.phase === 'generate' && m.role === 'assistant' && m.status === 'completed',
@@ -800,7 +950,7 @@ function AssessmentQuestionManualGradingInner({
   const chatUrl = `${urlPrefix}/assessment/${assessment.id}/manual_grading/assessment_question/${assessmentQuestion.id}/chat`;
   const rubricDataUrl = `${chatUrl}/rubric_data`;
 
-  const refreshRubricData = () => {
+  const refreshRubricData = useCallback(() => {
     void fetch(rubricDataUrl, {
       headers: { 'X-CSRF-Token': chatCsrfToken },
     })
@@ -816,7 +966,7 @@ function AssessmentQuestionManualGradingInner({
       .catch(() => {
         // Ignore chat-side fetch errors; users can still refresh manually.
       });
-  };
+  }, [rubricDataUrl, chatCsrfToken]);
 
   const { messages, setMessages, sendMessage, status } = useChat<RubricChatMessage>({
     messages: persistedMessagesToInitialMessages(initialChatMessages),
@@ -883,6 +1033,50 @@ function AssessmentQuestionManualGradingInner({
   });
 
   const isGenerating = status === 'streaming' || status === 'submitted';
+
+  const handleGradingComplete = useCallback(() => {
+    setIsGradingInProgress(false);
+    refreshRubricData();
+    void queryClient.invalidateQueries({
+      queryKey: trpc.instances.queryKey(),
+    });
+  }, [queryClient, trpc.instances, refreshRubricData]);
+
+  // Scan messages for startAiGrading tool outputs and register them with
+  // the table's server job progress tracker so the standard progress bar appears.
+  const registeredJobSequencesRef = useRef(new Set<string>());
+  useEffect(() => {
+    for (const message of messages) {
+      for (const part of message.parts) {
+        if (
+          isToolPart(part) &&
+          part.type === 'tool-startAiGrading' &&
+          part.state === 'output-available'
+        ) {
+          try {
+            const raw = (part as ToolUIPart & { output?: unknown }).output;
+            const parsed =
+              typeof raw === 'string'
+                ? JSON.parse(raw)
+                : (raw as Record<string, unknown> | undefined);
+            if (
+              parsed?.job_sequence_id &&
+              parsed?.job_sequence_token &&
+              !registeredJobSequencesRef.current.has(parsed.job_sequence_id as string)
+            ) {
+              registeredJobSequencesRef.current.add(parsed.job_sequence_id as string);
+              addOngoingJobSequenceRef.current?.(
+                parsed.job_sequence_id as string,
+                parsed.job_sequence_token as string,
+              );
+            }
+          } catch {
+            // Ignore parse errors
+          }
+        }
+      }
+    }
+  }, [messages]);
 
   // Build a lookup of message id -> job_sequence_id for per-message job logs
   const jobSequenceByMessageId = useMemo(() => {
@@ -998,6 +1192,7 @@ function AssessmentQuestionManualGradingInner({
           availableAiGradingProviders={availableAiGradingProviders}
           onSetGroupInfoModalState={setGroupInfoModalState}
           onSetConflictModalState={setConflictModalState}
+          onServerJobProgressRef={addOngoingJobSequenceRef}
         />
 
         <GroupInfoModal
@@ -1099,7 +1294,7 @@ function AssessmentQuestionManualGradingInner({
 
             return (
               <div key={message.id} className="d-flex flex-column gap-1 mb-3">
-                <MessageParts parts={message.parts} />
+                <MessageParts parts={message.parts} onGradingComplete={handleGradingComplete} />
                 <MasterRubricDiff parts={message.parts} isComplete={isMessageComplete} />
                 {isMessageComplete && hasMutations(message.parts) && (
                   <div className="d-flex align-items-center gap-2">
@@ -1210,18 +1405,14 @@ function AssessmentQuestionManualGradingInner({
               <button
                 type="button"
                 className="btn btn-outline-success btn-sm"
-                disabled={isGradingInProgress || workflowActionMutation.isPending}
+                disabled={isGradingInProgress || isGenerating}
                 onClick={() => {
                   setIsGradingInProgress(true);
-                  workflowActionMutation.mutate(
-                    { action: 'proceed' },
-                    {
-                      onError: () => setIsGradingInProgress(false),
-                    },
-                  );
+                  currentPhaseRef.current = 'edit';
+                  void sendMessage({ text: 'Start AI grading' });
                 }}
               >
-                {workflowActionMutation.isPending || isGradingInProgress ? (
+                {isGradingInProgress ? (
                   <>
                     <span
                       className="spinner-border spinner-border-sm me-1"
@@ -1241,7 +1432,7 @@ function AssessmentQuestionManualGradingInner({
           )}
           <GradingPromptInput
             value={chatInput}
-            disabled={!hasGeneratedRubric}
+            disabled={!hasGeneratedRubric || isGradingInProgress}
             isGenerating={isGenerating}
             onChange={setChatInput}
             onSubmit={(text) => {

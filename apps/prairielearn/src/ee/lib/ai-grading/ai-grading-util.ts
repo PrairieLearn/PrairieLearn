@@ -412,6 +412,20 @@ export function extractSubmissionImages({
   return images;
 }
 
+/**
+ * Sanitize a rubric item description for use as a JSON schema property key
+ * in structured output calls. OpenAI's strict mode rejects property names
+ * containing double quotes, backslashes, and control characters.
+ */
+export function sanitizeSchemaKey(description: string): string {
+  // eslint-disable-next-line no-control-regex -- intentionally stripping control characters
+  const CONTROL_CHARS = /[\x00-\x1f\x7f]/g;
+  return description
+    .replaceAll('\\', '\\\\') // escape backslashes first
+    .replaceAll('"', "'") // replace double quotes with single quotes
+    .replaceAll(CONTROL_CHARS, ''); // strip control characters
+}
+
 export function parseAiRubricItems({
   ai_rubric_items,
   rubric_items,
@@ -433,9 +447,15 @@ export function parseAiRubricItems({
   });
 
   // Build a lookup table for rubric items by description.
+  // Also index by sanitized key so that AI responses using sanitized schema
+  // property names can be matched back to the original rubric items.
   const rubricItemsByDescription: Record<string, RubricItem> = {};
   for (const item of rubric_items) {
     rubricItemsByDescription[item.description] = item;
+    const sanitized = sanitizeSchemaKey(item.description);
+    if (sanitized !== item.description) {
+      rubricItemsByDescription[sanitized] = item;
+    }
   }
 
   // It's possible that the rubric could have changed since we last

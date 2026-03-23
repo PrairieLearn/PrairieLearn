@@ -18,9 +18,10 @@ import { selectInstanceQuestionsForAssessmentQuestion } from './ai-grading-util.
  *   - rubric_ready → rubric loaded, user confirms or edits
  *   - rubric_editing → user is editing, waiting for edit instruction
  *
- * Phase 2: grading (STUB — no actual AI grading yet)
- *   - grading_submission → pop next submission, mark as "graded"
- *   - check_remaining → check if more submissions
+ * Phase 2: grading
+ *   - ai_grading_running → grading in progress (background server job)
+ *   - grading_submission → pop next submission, mark as "graded" (legacy)
+ *   - check_remaining → check if more submissions (legacy)
  *
  * Phase 3: complete
  *   - review_final → all done, user reviews
@@ -187,11 +188,11 @@ async function takeStep(context: WorkflowStepContext): Promise<StepResult> {
         );
       }
 
-      if (action === 'start_grading_stub') {
-        logger.info('Starting AI grading stub');
+      if (action === 'start_grading') {
+        logger.info('Starting AI grading');
         return result(
           'grading',
-          { ...state, step: 'ai_grading_stub', action: undefined },
+          { ...state, step: 'ai_grading_running', action: undefined },
           'waiting_for_input',
         );
       }
@@ -200,13 +201,13 @@ async function takeStep(context: WorkflowStepContext): Promise<StepResult> {
       return result('rubric_setup', { ...state, step: 'rubric_editing' }, 'waiting_for_input');
     }
 
-    case 'ai_grading_stub': {
-      // The startAiGrading tool moves the workflow here, waits 5s, then resumes
-      // with 'grading_stub_complete' to move back to rubric_editing.
+    case 'ai_grading_running': {
+      // The startAiGrading tool creates a server job that runs in background.
+      // When grading finishes, the workflow is resumed with 'grading_complete'.
       const action = state.action;
 
-      if (action === 'grading_stub_complete') {
-        logger.info('AI grading stub complete, returning to rubric editing');
+      if (action === 'grading_complete') {
+        logger.info('AI grading complete, returning to rubric editing');
         return result(
           'rubric_setup',
           { ...state, step: 'rubric_editing', action: undefined },
@@ -214,7 +215,7 @@ async function takeStep(context: WorkflowStepContext): Promise<StepResult> {
         );
       }
 
-      return result('grading', { ...state, step: 'ai_grading_stub' }, 'waiting_for_input');
+      return result('grading', { ...state, step: 'ai_grading_running' }, 'waiting_for_input');
     }
 
     // -----------------------------------------------------------------

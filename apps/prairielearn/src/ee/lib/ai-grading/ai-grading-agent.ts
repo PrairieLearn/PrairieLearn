@@ -10,11 +10,22 @@ import {
   stepCountIs,
   tool,
 } from 'ai';
+import * as async from 'async';
+import mustache from 'mustache';
 import z from 'zod';
 
-import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryRow,
+  queryScalar,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { resumeWorkflow } from '@prairielearn/workflows';
+import { IdSchema } from '@prairielearn/zod';
 
+import { logResponseUsage } from '../../../lib/ai-util.js';
 import { config } from '../../../lib/config.js';
 import {
   type AiGradingMessage,
@@ -22,20 +33,37 @@ import {
   type Assessment,
   type AssessmentQuestion,
   type Course,
+  type CourseInstance,
+  type InstanceQuestion,
   type Question,
 } from '../../../lib/db-types.js';
+import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
+import { createServerJob } from '../../../lib/server-jobs.js';
+import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
+import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
 import { selectAssessmentQuestionById } from '../../../models/assessment-question.js';
+import { updateCourseInstanceUsagesForAiGradingResponses } from '../../../models/course-instance-usages.js';
+import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
+import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
+  addAiGradingCostToIntervalUsage,
+  containsImageCapture,
+  generatePrompt,
   generateSubmissionMessage,
+  getIntervalUsage,
+  insertAiGradingJob,
+  parseAiRubricItems,
+  sanitizeSchemaKey,
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastVariantAndSubmission,
 } from './ai-grading-util.js';
+import type { AIGradingLog, AIGradingLogger } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -45,7 +73,7 @@ const AGENTIC_AI_GRADING_MODEL: AiGradingModelId = 'gpt-5.4';
 // Model
 // ---------------------------------------------------------------------------
 
-function getAgenticGradingModel(): { model: LanguageModel; modelId: string } {
+function getAgenticGradingModel(): { model: LanguageModel; modelId: AiGradingModelId } {
   assert(config.aiGradingOpenAiApiKey, 'AI grading OpenAI API key is not configured');
   const openai = createOpenAI({
     apiKey: config.aiGradingOpenAiApiKey,
@@ -63,9 +91,18 @@ const RubricOutputSchema = z.object({
   rubric_items: z.array(
     z.object({
       points: z.coerce.number(),
-      description: z.string().max(100),
-      explanation: z.string().nullable(),
-      grader_note: z.string().nullable(),
+      description: z
+        .string()
+        .max(100)
+        .describe('Short rubric item label. MUST be 100 characters or fewer.'),
+      explanation: z
+        .string()
+        .nullable()
+        .describe('Detailed explanation shown to students. Max 10,000 characters.'),
+      grader_note: z
+        .string()
+        .nullable()
+        .describe('Private note for graders only. Max 10,000 characters.'),
       always_show_to_students: z.boolean(),
     }),
   ),
@@ -376,13 +413,15 @@ export interface DiffRubricState {
   rubric_items: Record<string, unknown>[];
 }
 
-interface AiGradingAgentContext {
+export interface AiGradingAgentContext {
   assessment: Assessment;
   assessmentQuestion: AssessmentQuestion;
   course: Course;
+  courseInstance: CourseInstance;
   question: Question;
   urlPrefix: string;
   authnUserId: string;
+  userId: string;
   hasCourseInstancePermissionEdit: boolean;
 }
 
@@ -1250,19 +1289,568 @@ function buildRubricToolsWithExecute({
     startAiGrading: tool({
       ...AI_GRADING_TOOLS.startAiGrading,
       execute: async () => {
-        job.info('Tool: startAiGrading — moving workflow to grading state');
-        if (!workflowRunId) {
-          return 'Error: no active workflow found. Cannot start AI grading.';
+        job.info('Tool: startAiGrading — starting agentic grading');
+
+        if (workflowRunId) {
+          await resumeWorkflow(workflowRunId, { action: 'start_grading' });
         }
 
-        await resumeWorkflow(workflowRunId, { action: 'start_grading_stub' });
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-        await resumeWorkflow(workflowRunId, { action: 'grading_stub_complete' });
+        const jobSequenceId = await startAgenticGrading({
+          context,
+          workflowRunId,
+        });
 
-        return 'AI grading has been started and completed.';
+        const jobSequenceToken = generateJobSequenceToken(jobSequenceId);
+
+        return JSON.stringify({
+          status: 'grading_started',
+          job_sequence_id: jobSequenceId,
+          job_sequence_token: jobSequenceToken,
+          message: 'AI grading started. Progress is shown below.',
+        });
       },
     }),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Agentic grading — per-submission decision + batch orchestration
+// ---------------------------------------------------------------------------
+
+const AGENTIC_GRADING_SYSTEM_PROMPT = [
+  'You are a lead teaching assistant for a course.',
+  'You will be shown a student submission and the current grading rubric.',
+  'You have two options:',
+  '1. GRADE: If the rubric adequately covers this submission, grade it by selecting which rubric items apply.',
+  '2. PROPOSE_RUBRIC_CHANGES: If you notice the rubric is missing important criteria, has ambiguous items, or needs modification based on this submission, propose specific changes.',
+  'Your primary goal is NOT just to grade, but to ensure the rubric is robust, clear, comprehensive, and allows for consistent grading by other TAs.',
+  'The current rubric is a draft. It may be underspecified.',
+  'Questions students received were programmatically generated and randomized. Avoid hardcoding randomized quantities and final solutions.',
+  'This rubric should work for any random variant of the question.',
+  'Rubric items cannot have partial credit: they are either fully awarded or not awarded at all.',
+  'When proposing changes, describe them concisely so the instructor can make a quick decision.',
+  'IMPORTANT: All text MUST be written entirely in English.',
+].join(' ');
+
+const PARALLEL_AGENTIC_GRADING_LIMIT = 20;
+
+interface AgenticGradingDecision {
+  decision: 'grade' | 'propose_rubric_changes';
+  explanation: string;
+  rubric_items?: Record<string, boolean>;
+  proposed_changes?: string;
+}
+
+/**
+ * Grade a single submission using the agentic decision schema:
+ * the AI decides whether to grade or propose rubric changes.
+ */
+async function gradeOneSubmissionWithDecision({
+  instanceQuestion,
+  context,
+  model,
+  modelId,
+  jobSequenceId,
+  logger,
+}: {
+  instanceQuestion: InstanceQuestion;
+  context: AiGradingAgentContext;
+  model: LanguageModel;
+  modelId: AiGradingModelId;
+  jobSequenceId: string;
+  logger: AIGradingLogger;
+}): Promise<{ success: boolean; decision: AgenticGradingDecision | null }> {
+  const questionCourse = await getQuestionCourse(context.question, context.course);
+  const questionModule = questionServers.getModule(context.question.type);
+
+  const { variant, submission } = await selectLastVariantAndSubmission(instanceQuestion.id);
+
+  const locals = {
+    ...buildQuestionUrls(context.urlPrefix, variant, context.question, instanceQuestion),
+    questionRenderContext: 'ai_grading' as const,
+  };
+
+  // Render question + answer
+  const renderQuestionResults = await questionModule.render({
+    renderSelection: { question: true, submissions: false, answer: true },
+    variant,
+    question: context.question,
+    submission: null,
+    submissions: [],
+    course: questionCourse,
+    locals,
+  });
+  if (renderQuestionResults.courseIssues.length > 0) {
+    logger.error(renderQuestionResults.courseIssues.toString());
+    return { success: false, decision: null };
+  }
+  const questionPrompt = renderQuestionResults.data.questionHtml;
+  const questionAnswer = renderQuestionResults.data.answerHtml;
+
+  // Render submission
+  const renderSubmissionResults = await questionModule.render({
+    renderSelection: { question: false, submissions: true, answer: false },
+    variant,
+    question: context.question,
+    submission,
+    submissions: [submission],
+    course: questionCourse,
+    locals,
+  });
+  const submissionText = renderSubmissionResults.data.submissionHtmls[0];
+  const hasImage = containsImageCapture(submissionText);
+
+  // Get rubric
+  const { rubric, rubric_items } = await selectCompleteRubric(context.assessmentQuestion.id);
+
+  // Render mustache templates in rubric items
+  const mustacheParams = {
+    correct_answers: submission.true_answer ?? {},
+    params: submission.params ?? {},
+    submitted_answers: submission.submitted_answer,
+  };
+  for (const rubricItem of rubric_items) {
+    rubricItem.description = mustache.render(rubricItem.description, mustacheParams);
+    rubricItem.explanation = rubricItem.explanation
+      ? mustache.render(rubricItem.explanation, mustacheParams)
+      : null;
+    rubricItem.grader_note = rubricItem.grader_note
+      ? mustache.render(rubricItem.grader_note, mustacheParams)
+      : null;
+  }
+
+  // Build the prompt using existing infrastructure
+  const input = await generatePrompt({
+    questionPrompt,
+    questionAnswer,
+    submission_text: submissionText,
+    submitted_answer: submission.submitted_answer,
+    rubric_items,
+    grader_guidelines: rubric?.grader_guidelines ?? null,
+    params: variant.params ?? {},
+    true_answer: variant.true_answer ?? {},
+    model_id: modelId,
+  });
+
+  // Add agentic system prompt
+  input.unshift({
+    role: 'system',
+    content: AGENTIC_GRADING_SYSTEM_PROMPT,
+  });
+
+  // Build dynamic rubric items schema (same pattern as ai-grading.ts).
+  // Sanitize descriptions for use as JSON schema property keys since
+  // structured output APIs reject certain characters (quotes, backslashes).
+  let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
+  for (const item of rubric_items) {
+    RubricGradingItemsSchema = RubricGradingItemsSchema.merge(
+      z.object({
+        [sanitizeSchemaKey(item.description)]: z.boolean(),
+      }),
+    );
+  }
+
+  const explanationDescription = run(() => {
+    const parts = ['Instructor-facing explanation of the grading decision.'];
+    if (hasImage) {
+      parts.push(
+        'You MUST include a complete transcription of all relevant text, numbers, and information from any images the student submitted.',
+        'You MUST transcribe the final answer(s) from the images.',
+        'You MUST use LaTeX formatting for mathematical expressions, equations, and formulas.',
+        'You MUST wrap inline LaTeX in dollar signs ($).',
+        'You MUST wrap block LaTeX in double dollar signs ($$).',
+      );
+    }
+    return parts.join(' ');
+  });
+
+  // Decision schema: grade OR propose_rubric_changes
+  // All fields must be required (not optional) for OpenAI strict mode.
+  // Use nullable instead of optional for conditional fields.
+  const DecisionSchema = z.object({
+    decision: z.enum(['grade', 'propose_rubric_changes']),
+    explanation: z.string().describe(explanationDescription),
+    rubric_items: RubricGradingItemsSchema.nullable().describe(
+      'Required when decision is "grade" (mark each rubric item as true/false). Set to null when decision is "propose_rubric_changes".',
+    ),
+    proposed_changes: z
+      .string()
+      .nullable()
+      .describe(
+        'Required when decision is "propose_rubric_changes" (describe the proposed changes). Set to null when decision is "grade".',
+      ),
+  });
+
+  const response = await generateObject({
+    model,
+    schema: DecisionSchema,
+    messages: input,
+  });
+
+  logResponseUsage({ response, logger });
+
+  // Track cost
+  const trackRateLimitAndCost = !context.courseInstance.ai_grading_use_custom_api_keys;
+  if (trackRateLimitAndCost) {
+    await addAiGradingCostToIntervalUsage({
+      courseInstance: context.courseInstance,
+      model: modelId,
+      usage: response.usage,
+    });
+  }
+
+  const result = response.object;
+  logger.info(`Decision for IQ ${instanceQuestion.id}: ${result.decision}`);
+
+  if (result.decision === 'propose_rubric_changes') {
+    return {
+      success: true,
+      decision: {
+        decision: 'propose_rubric_changes',
+        explanation: result.explanation,
+        proposed_changes: result.proposed_changes ?? '',
+      },
+    };
+  }
+
+  // decision === 'grade' — save the grading result
+  if (!result.rubric_items) {
+    logger.error('Grade decision missing rubric_items');
+    return { success: false, decision: null };
+  }
+
+  logger.info(`Parsed response: ${JSON.stringify(result, null, 2)}`);
+  const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
+    ai_rubric_items: result.rubric_items,
+    rubric_items,
+  });
+
+  // Check if this IQ needs score update (same logic as ai-grading.ts)
+  const allInstanceQuestions = await selectInstanceQuestionsForAssessmentQuestion({
+    assessment_question_id: context.assessmentQuestion.id,
+  });
+  const instanceQuestionGradingJobs = await selectGradingJobsInfo(allInstanceQuestions);
+  const shouldUpdateScore = !instanceQuestionGradingJobs[instanceQuestion.id].some(
+    (job) => job.grading_method === 'Manual',
+  );
+
+  if (shouldUpdateScore && rubric_items.length > 0) {
+    const manualRubricData = {
+      rubric_id: rubric_items[0].rubric_id,
+      applied_rubric_items: appliedRubricItems,
+    };
+    await runInTransactionAsync(async () => {
+      const { grading_job_id } = await manualGrading.updateInstanceQuestionScore({
+        assessment: context.assessment,
+        instance_question_id: instanceQuestion.id,
+        submission_id: submission.id,
+        check_modified_at: null,
+        score: {
+          manual_rubric_data: manualRubricData,
+          feedback: { manual: '' },
+        },
+        authn_user_id: context.userId,
+        is_ai_graded: true,
+      });
+      assert(grading_job_id);
+
+      await insertAiGradingJob({
+        grading_job_id,
+        job_sequence_id: jobSequenceId,
+        model_id: modelId,
+        prompt: input,
+        course_id: context.course.id,
+        course_instance_id: context.courseInstance.id,
+        response,
+      });
+
+      await updateCourseInstanceUsagesForAiGradingResponses({
+        gradingJobId: grading_job_id,
+        authnUserId: context.authnUserId,
+        model: modelId,
+        finalGradingResponse: response,
+      });
+    });
+  } else if (rubric_items.length > 0) {
+    await runInTransactionAsync(async () => {
+      assert(context.assessmentQuestion.max_manual_points);
+      const manualRubricGrading = await manualGrading.insertRubricGrading(
+        rubric_items[0].rubric_id,
+        context.assessmentQuestion.max_points ?? 0,
+        context.assessmentQuestion.max_manual_points,
+        appliedRubricItems,
+        0,
+      );
+      const score =
+        manualRubricGrading.computed_points / context.assessmentQuestion.max_manual_points;
+      const gradingJobId = await queryScalar(
+        sql.insert_grading_job,
+        {
+          submission_id: submission.id,
+          authn_user_id: context.userId,
+          grading_method: 'AI',
+          correct: null,
+          score,
+          auto_points: 0,
+          manual_points: manualRubricGrading.computed_points,
+          manual_rubric_grading_id: manualRubricGrading.id,
+          feedback: null,
+        },
+        IdSchema,
+      );
+
+      await insertAiGradingJob({
+        grading_job_id: gradingJobId,
+        job_sequence_id: jobSequenceId,
+        model_id: modelId,
+        prompt: input,
+        course_id: context.course.id,
+        course_instance_id: context.courseInstance.id,
+        response,
+      });
+
+      await updateCourseInstanceUsagesForAiGradingResponses({
+        gradingJobId,
+        authnUserId: context.authnUserId,
+        model: modelId,
+        finalGradingResponse: response,
+      });
+    });
+  }
+
+  for (const item of appliedRubricDescription) {
+    logger.info(`- ${item}`);
+  }
+
+  return {
+    success: true,
+    decision: {
+      decision: 'grade',
+      explanation: result.explanation,
+      rubric_items: result.rubric_items,
+    },
+  };
+}
+
+/**
+ * Start agentic AI grading: processes submissions in dynamically-sized batches.
+ * Returns the job sequence ID for progress tracking.
+ */
+export async function startAgenticGrading({
+  context,
+  workflowRunId,
+}: {
+  context: AiGradingAgentContext;
+  workflowRunId: string | null;
+}): Promise<string> {
+  if (!context.assessmentQuestion.max_manual_points) {
+    throw new Error(
+      'AI grading is only available on assessment questions that use manual grading.',
+    );
+  }
+
+  const { model, modelId } = getAgenticGradingModel();
+
+  const serverJob = await createServerJob({
+    type: 'ai_grading',
+    description: 'Agentic AI grading',
+    userId: context.userId,
+    authnUserId: context.authnUserId,
+    courseId: context.course.id,
+    courseInstanceId: context.courseInstance.id,
+    assessmentId: context.assessment.id,
+    assessmentQuestionId: context.assessmentQuestion.id,
+  });
+
+  const instanceQuestions = await selectInstanceQuestionsForAssessmentQuestion({
+    assessment_question_id: context.assessmentQuestion.id,
+  });
+
+  let itemStatuses = instanceQuestions.reduce(
+    (acc, iq) => {
+      acc[iq.id] = JobItemStatus.queued;
+      return acc;
+    },
+    {} as Record<string, JobItemStatus>,
+  );
+
+  await emitServerJobProgressUpdate({
+    job_sequence_id: serverJob.jobSequenceId,
+    num_complete: 0,
+    num_failed: 0,
+    num_total: instanceQuestions.length,
+    item_statuses: itemStatuses,
+  });
+
+  serverJob.executeInBackground(async (job) => {
+    const trackRateLimitAndCost = !context.courseInstance.ai_grading_use_custom_api_keys;
+    let rateLimitExceeded =
+      trackRateLimitAndCost &&
+      (await getIntervalUsage(context.courseInstance)) > config.aiGradingRateLimitDollars;
+
+    if (rateLimitExceeded) {
+      job.error("You've reached the hourly usage cap for AI grading. Please try again later.");
+      itemStatuses = instanceQuestions.reduce(
+        (acc, iq) => {
+          acc[iq.id] = JobItemStatus.failed;
+          return acc;
+        },
+        {} as Record<string, JobItemStatus>,
+      );
+      await emitServerJobProgressUpdate({
+        job_sequence_id: serverJob.jobSequenceId,
+        num_complete: instanceQuestions.length,
+        num_failed: instanceQuestions.length,
+        num_total: instanceQuestions.length,
+        job_failure_message: 'Hourly usage cap reached. Try again later.',
+        item_statuses: itemStatuses,
+      });
+      return;
+    }
+
+    job.info(`Using model ${modelId} for agentic AI grading.`);
+    job.info(`Found ${instanceQuestions.length} submissions to grade!`);
+
+    let numComplete = 0;
+    let numFailed = 0;
+    let batchSize = 1;
+    let consecutiveNoProposals = 0;
+    let batchStart = 0;
+    const allProposals: string[] = [];
+
+    while (batchStart < instanceQuestions.length) {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- mutated in async callback
+      if (rateLimitExceeded) break;
+
+      const batchEnd = Math.min(batchStart + batchSize, instanceQuestions.length);
+      const batch = instanceQuestions.slice(batchStart, batchEnd);
+      let batchHadProposals = false;
+
+      job.info(
+        `Batch: processing submissions ${batchStart + 1} to ${batchEnd} (batch size: ${batchSize})`,
+      );
+
+      await async.mapLimit(batch, batchSize, async (iq: InstanceQuestion) => {
+        if (rateLimitExceeded) {
+          itemStatuses[iq.id] = JobItemStatus.failed;
+          numFailed++;
+          return;
+        }
+
+        // Check rate limit
+        if (
+          trackRateLimitAndCost &&
+          (await getIntervalUsage(context.courseInstance)) > config.aiGradingRateLimitDollars
+        ) {
+          rateLimitExceeded = true;
+          itemStatuses[iq.id] = JobItemStatus.failed;
+          numFailed++;
+          return;
+        }
+
+        const logs: AIGradingLog[] = [];
+        const logger: AIGradingLogger = {
+          info: (msg: string) => logs.push({ messageType: 'info', message: msg }),
+          error: (msg: string) => logs.push({ messageType: 'error', message: msg }),
+        };
+
+        try {
+          itemStatuses[iq.id] = JobItemStatus.in_progress;
+          await emitServerJobProgressUpdate({
+            job_sequence_id: serverJob.jobSequenceId,
+            num_complete: numComplete,
+            num_failed: numFailed,
+            num_total: instanceQuestions.length,
+            item_statuses: itemStatuses,
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- mutated in async callback
+            job_failure_message: rateLimitExceeded
+              ? 'Hourly usage cap reached. Try again later.'
+              : undefined,
+          });
+
+          const result = await gradeOneSubmissionWithDecision({
+            instanceQuestion: iq,
+            context,
+            model,
+            modelId,
+            jobSequenceId: serverJob.jobSequenceId,
+            logger,
+          });
+
+          if (result.success) {
+            itemStatuses[iq.id] = JobItemStatus.complete;
+            if (result.decision?.decision === 'propose_rubric_changes') {
+              batchHadProposals = true;
+              allProposals.push(
+                `Submission ${iq.id}: ${result.decision.explanation}\n${result.decision.proposed_changes}`,
+              );
+            }
+          } else {
+            itemStatuses[iq.id] = JobItemStatus.failed;
+            numFailed++;
+          }
+        } catch (err: unknown) {
+          logger.error(String(err));
+          itemStatuses[iq.id] = JobItemStatus.failed;
+          numFailed++;
+        } finally {
+          numComplete++;
+          await emitServerJobProgressUpdate({
+            job_sequence_id: serverJob.jobSequenceId,
+            num_complete: numComplete,
+            num_failed: numFailed,
+            num_total: instanceQuestions.length,
+            item_statuses: itemStatuses,
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- mutated in async callback
+            job_failure_message: rateLimitExceeded
+              ? 'Hourly usage cap reached. Try again later.'
+              : undefined,
+          });
+          for (const log of logs) {
+            if (log.messageType === 'info') {
+              job.info(log.message);
+            } else {
+              job.error(log.message);
+            }
+          }
+        }
+      });
+
+      // Dynamic batch sizing
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- mutated in async callback
+      if (batchHadProposals) {
+        consecutiveNoProposals = 0;
+      } else {
+        consecutiveNoProposals++;
+        if (consecutiveNoProposals >= 3 && batchSize < PARALLEL_AGENTIC_GRADING_LIMIT) {
+          batchSize = Math.min(batchSize * 2, PARALLEL_AGENTIC_GRADING_LIMIT);
+          consecutiveNoProposals = 0;
+          job.info(`Increasing batch size to ${batchSize}`);
+        }
+      }
+
+      batchStart = batchEnd;
+    }
+
+    if (numFailed > 0) {
+      job.error(`\nNumber of errors: ${numFailed}`);
+      job.fail('Errors occurred while AI grading, see output for details');
+    }
+
+    if (allProposals.length > 0) {
+      job.info('\n--- Rubric Change Proposals ---');
+      for (const proposal of allProposals) {
+        job.info(proposal);
+      }
+    }
+
+    // Transition workflow back to rubric editing
+    if (workflowRunId) {
+      await resumeWorkflow(workflowRunId, { action: 'grading_complete' });
+    }
+  });
+
+  return serverJob.jobSequenceId;
 }
 
 export function createRubricAgent({

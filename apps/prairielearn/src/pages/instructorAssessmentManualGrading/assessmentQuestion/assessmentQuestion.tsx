@@ -323,9 +323,11 @@ router.post(
       assessment,
       assessmentQuestion: assessment_question,
       course: res.locals.course,
+      courseInstance: res.locals.course_instance,
       question,
       urlPrefix,
       authnUserId: res.locals.authn_user.id,
+      userId: res.locals.user.id,
       hasCourseInstancePermissionEdit: authz_data.has_course_instance_permission_edit ?? false,
     };
 
