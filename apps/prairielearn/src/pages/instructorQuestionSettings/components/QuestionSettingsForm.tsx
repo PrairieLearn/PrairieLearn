@@ -159,7 +159,7 @@ export const QuestionSettingsForm = ({
     ? Object.entries(question.preferences_schema).map(([name, schema]) => ({
         name,
         type: schema.type,
-        default: schema.default,
+        default: String(schema.default),
         enum: schema.enum?.map(String) ?? [],
       }))
     : [];
@@ -1062,7 +1062,19 @@ function PreferenceRow({
           id={`pref-${index}-type`}
           disabled={!canEdit}
           defaultValue={field.type}
-          {...register(`preferences.${index}.type`)}
+          {...register(`preferences.${index}.type`, {
+            onChange: (e) => {
+              setValue(`preferences.${index}.enum`, [], { shouldDirty: true });
+              // Sync react-hook-form's value when switching to boolean: the <select>
+              // shows "true" visually, but the internal value is still the old one.
+              if (e.target.value === 'boolean') {
+                const current = watch(`preferences.${index}.default`);
+                if (current !== 'true' && current !== 'false') {
+                  setValue(`preferences.${index}.default`, 'true', { shouldValidate: true });
+                }
+              }
+            },
+          })}
         >
           <option value="string">String</option>
           <option value="number">Number</option>
@@ -1195,11 +1207,7 @@ function EnumInput({
                 }
               }}
             />
-            <button
-              type="button"
-              className="btn btn-outline-secondary btn-sm"
-              onClick={addValue}
-            >
+            <button type="button" className="btn btn-outline-secondary btn-sm" onClick={addValue}>
               <i className="bi bi-plus" aria-hidden="true" />
             </button>
           </div>
