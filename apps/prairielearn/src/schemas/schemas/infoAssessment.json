@@ -740,11 +740,11 @@
           }
         },
         "enabled": {
-          "description": "Whether this set of permissions is enabled",
+          "description": "Whether this rule is enabled. Defaults to true for the main rule. Not inherited by overrides.",
           "type": "boolean"
         },
         "listBeforeRelease": {
-          "description": "Whether students can see the title and click into the assessment before release",
+          "description": "Whether students can see the assessment title before the release date. Defaults to false.",
           "anyOf": [
             {
               "anyOf": [

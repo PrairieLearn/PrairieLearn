@@ -11,6 +11,7 @@ import {
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   PotentialEnrollmentStatus,
@@ -955,6 +956,7 @@ export async function selectUsersAndEnrollmentsForCourseInstance(
     z.object({
       enrollment: EnrollmentSchema,
       user: UserSchema.nullable(),
+      student_label_ids: z.array(IdSchema),
     }),
   );
 }

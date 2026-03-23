@@ -608,7 +608,6 @@ describe('Access control syncing', () => {
       const enrollmentRule1Id = await sqldb.queryScalar(
         sql.insert_enrollment_access_control_rule,
         {
-          course_instance_id: assessment.course_instance_id,
           assessment_id: assessment.id,
           number: 1,
           duration_minutes: 150,
@@ -619,7 +618,6 @@ describe('Access control syncing', () => {
       const enrollmentRule2Id = await sqldb.queryScalar(
         sql.insert_enrollment_access_control_rule,
         {
-          course_instance_id: assessment.course_instance_id,
           assessment_id: assessment.id,
           number: 2,
           duration_minutes: 180,
@@ -749,7 +747,6 @@ describe('Access control syncing', () => {
       const enrollmentRuleId = await sqldb.queryScalar(
         sql.insert_enrollment_access_control_rule,
         {
-          course_instance_id: assessment.course_instance_id,
           assessment_id: assessment.id,
           number: 1,
           duration_minutes: 150,
@@ -921,7 +918,6 @@ describe('Access control syncing', () => {
       const ruleId = await sqldb.queryScalar(
         sql.insert_enrollment_access_control_rule,
         {
-          course_instance_id: assessment.course_instance_id,
           assessment_id: assessment.id,
           number: 100,
           duration_minutes: null,

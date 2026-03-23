@@ -7,8 +7,8 @@ columns
 indexes
     assessment_access_control_enrollments_pkey: PRIMARY KEY (id) USING btree (id)
     aac_enrollments_rule_id_enrollment_id_unique: UNIQUE (assessment_access_control_rule_id, enrollment_id) USING btree (assessment_access_control_rule_id, enrollment_id)
-    aac_enrollments_rule_id_idx: USING btree (assessment_access_control_rule_id)
     aac_enrollments_enrollment_id_idx: USING btree (enrollment_id)
+    aac_enrollments_rule_id_idx: USING btree (assessment_access_control_rule_id)
 
 check constraints
     assessment_access_control_enrollments_target_type_check: CHECK (target_type = 'enrollment'::enum_assessment_access_control_target_type)

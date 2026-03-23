@@ -75,7 +75,7 @@ async function getGradebookRows({
     course_instance_id: courseInstance.id,
     user_id: userId,
     authz_data: authzData,
-    reqDate,
+    req_date: reqDate,
   };
 
   if (auth === 'student') {
