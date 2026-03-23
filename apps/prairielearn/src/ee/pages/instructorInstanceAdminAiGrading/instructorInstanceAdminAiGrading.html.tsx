@@ -534,7 +534,7 @@ function PurchaseCreditsModal({
                     </div>
                     <div className="text-muted me-auto">{pkg.tagline}</div>
                     <div>
-                      Grades ~
+                      Grades about{' '}
                       <strong>{formatSubmissionCount(roundSubmissionEstimate(pkg.dollars))}</strong>{' '}
                       submissions
                     </div>
@@ -545,7 +545,7 @@ function PurchaseCreditsModal({
                     </div>
                     <div className="text-muted">{pkg.tagline}</div>
                     <div>
-                      Grades ~
+                      Grades about{' '}
                       <strong>{formatSubmissionCount(roundSubmissionEstimate(pkg.dollars))}</strong>{' '}
                       submissions
                     </div>
@@ -619,7 +619,8 @@ function PurchaseCreditsModal({
                 <div>
                   {customEstimate != null ? (
                     <span>
-                      Grades ~<strong>{formatSubmissionCount(customEstimate)}</strong> submissions
+                      Grades about <strong>{formatSubmissionCount(customEstimate)}</strong>{' '}
+                      submissions
                     </span>
                   ) : (
                     <span className="text-muted">Enter amount for estimate</span>
@@ -630,7 +631,9 @@ function PurchaseCreditsModal({
           </div>
         </div>
 
-        <div className="text-muted mt-3 small">Estimates may vary based on submission content.</div>
+        <div className="text-muted mt-3 small">
+          Actual number of graded submissions will vary based on submission content.
+        </div>
       </Modal.Body>
       <Modal.Footer>
         <button
