@@ -105,7 +105,7 @@ export async function processCreditPurchase({
 
     await insertAuditEvent({
       tableName: 'ai_grading_credit_checkout_sessions',
-      action: 'update',
+      action: 'insert',
       rowId: localSession.id,
       agentAuthnUserId: localSession.agent_user_id,
       agentUserId: localSession.agent_user_id,
