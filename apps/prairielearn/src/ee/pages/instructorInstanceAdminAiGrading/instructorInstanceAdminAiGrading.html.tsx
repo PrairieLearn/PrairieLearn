@@ -214,6 +214,7 @@ export function InstructorInstanceAdminAiGrading({
   stripePurchasingEnabled,
   initialCheckoutStatus,
   initialCheckoutAmountMilliDollars,
+  infrastructureFeeRate,
 }: {
   trpcCsrfToken: string;
   initialUseCustomApiKeys: boolean;
@@ -224,6 +225,7 @@ export function InstructorInstanceAdminAiGrading({
   stripePurchasingEnabled: boolean;
   initialCheckoutStatus: 'success' | 'cancelled' | null;
   initialCheckoutAmountMilliDollars: number | null;
+  infrastructureFeeRate: number;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -241,6 +243,7 @@ export function InstructorInstanceAdminAiGrading({
           stripePurchasingEnabled={stripePurchasingEnabled}
           initialCheckoutStatus={initialCheckoutStatus}
           initialCheckoutAmountMilliDollars={initialCheckoutAmountMilliDollars}
+          infrastructureFeeRate={infrastructureFeeRate}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -257,6 +260,7 @@ function AiGradingSettingsContent({
   stripePurchasingEnabled,
   initialCheckoutStatus,
   initialCheckoutAmountMilliDollars,
+  infrastructureFeeRate,
 }: {
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
@@ -265,6 +269,7 @@ function AiGradingSettingsContent({
   stripePurchasingEnabled: boolean;
   initialCheckoutStatus: 'success' | 'cancelled' | null;
   initialCheckoutAmountMilliDollars: number | null;
+  infrastructureFeeRate: number;
 }) {
   const trpc = useTRPC();
 
@@ -392,6 +397,7 @@ function AiGradingSettingsContent({
           stripePurchasingEnabled={stripePurchasingEnabled}
           initialCheckoutStatus={initialCheckoutStatus}
           initialCheckoutAmountMilliDollars={initialCheckoutAmountMilliDollars}
+          infrastructureFeeRate={infrastructureFeeRate}
         />
       </div>
 
@@ -431,12 +437,14 @@ function CreditPoolSection({
   stripePurchasingEnabled,
   initialCheckoutStatus,
   initialCheckoutAmountMilliDollars,
+  infrastructureFeeRate,
 }: {
   useCustomApiKeys: boolean;
   canEdit: boolean;
   stripePurchasingEnabled: boolean;
   initialCheckoutStatus: 'success' | 'cancelled' | null;
   initialCheckoutAmountMilliDollars: number | null;
+  infrastructureFeeRate: number;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -498,8 +506,33 @@ function CreditPoolSection({
           While custom API keys are active, PrairieLearn AI grading credits are not deducted.
         </p>
       )}
-      <CreditPoolDashboard trpc={trpc} balanceContext="instructor" dimmed={useCustomApiKeys} />
-      <PurchaseCreditsModal {...purchaseModalState} />
+      <CreditPoolDashboard
+        trpc={trpc}
+        balanceContext="instructor"
+        dimmed={useCustomApiKeys}
+        emptyState={
+          <div className="text-center py-5">
+            <i
+              className="bi bi-stars d-block mb-3 text-muted"
+              aria-hidden="true"
+              style={{ fontSize: '2.5rem' }}
+            />
+            <h3 className="h5 mb-2">Get started with AI grading</h3>
+            <p className="text-muted mb-3">Buy credits to start grading submissions with AI.</p>
+            {stripePurchasingEnabled && canEdit && (
+              <button
+                type="button"
+                className="btn btn-primary d-inline-flex align-items-center gap-2"
+                onClick={() => purchaseModalState.showWithData(null)}
+              >
+                <i className="bi bi-cart-plus" aria-hidden="true" />
+                Purchase credits
+              </button>
+            )}
+          </div>
+        }
+      />
+      <PurchaseCreditsModal {...purchaseModalState} infrastructureFeeRate={infrastructureFeeRate} />
     </div>
   );
 }

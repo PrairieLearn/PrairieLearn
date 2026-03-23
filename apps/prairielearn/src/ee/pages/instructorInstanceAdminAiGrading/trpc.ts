@@ -128,8 +128,12 @@ const createCheckoutMutation = t.procedure
     const { authn_user, course, course_instance, host } = opts.ctx;
     const amountMilliDollars = opts.input.amount_milli_dollars;
 
+    // The user pays credits + infrastructure fee; credits granted = amountMilliDollars.
     // Stripe expects amounts in cents; round up so we never under-charge.
-    const amountCents = Math.ceil(amountMilliDollars / 10);
+    const totalMilliDollars = Math.ceil(
+      amountMilliDollars * (1 + config.aiGradingInfrastructureFeePercent),
+    );
+    const amountCents = Math.ceil(totalMilliDollars / 10);
 
     const stripe = getStripeClient();
     const customerId = await getOrCreateStripeCustomerId(authn_user.id, {
@@ -170,6 +174,7 @@ const createCheckoutMutation = t.procedure
       metadata,
       payment_intent_data: {
         metadata,
+        receipt_email: authn_user.email ?? undefined,
       },
     });
 

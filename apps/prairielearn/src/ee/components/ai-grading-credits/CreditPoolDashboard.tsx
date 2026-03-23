@@ -18,12 +18,14 @@ export function CreditPoolDashboard({
   trpc,
   balanceContext,
   dimmed,
+  emptyState,
   header,
   children,
 }: {
   trpc: CreditPoolTRPC;
   balanceContext: 'admin' | 'instructor';
   dimmed?: boolean;
+  emptyState?: React.ReactNode;
   header?: React.ReactNode;
   children?: React.ReactNode;
 }) {
@@ -61,6 +63,14 @@ export function CreditPoolDashboard({
   }
 
   const pool = poolQuery.data;
+  const isEmpty =
+    pool.total_milli_dollars === 0 &&
+    pool.credit_transferable_milli_dollars === 0 &&
+    pool.credit_non_transferable_milli_dollars === 0;
+
+  if (isEmpty && emptyState && !dimmed) {
+    return <>{emptyState}</>;
+  }
 
   return (
     <>

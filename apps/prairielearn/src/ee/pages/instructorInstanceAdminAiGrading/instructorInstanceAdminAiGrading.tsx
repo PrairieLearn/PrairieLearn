@@ -132,6 +132,7 @@ router.get(
               stripePurchasingEnabled={stripePurchasingEnabled}
               initialCheckoutStatus={checkoutStatus}
               initialCheckoutAmountMilliDollars={checkoutAmountMilliDollars}
+              infrastructureFeeRate={config.aiGradingInfrastructureFeePercent}
             />
           </Hydrate>
         ),

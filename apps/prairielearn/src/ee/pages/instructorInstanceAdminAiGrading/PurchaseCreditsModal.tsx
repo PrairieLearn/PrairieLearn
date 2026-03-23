@@ -183,10 +183,12 @@ export function PurchaseCreditsModal({
   show,
   onHide,
   onExited,
+  infrastructureFeeRate,
 }: {
   show: boolean;
   onHide: () => void;
   onExited: () => void;
+  infrastructureFeeRate: number;
 }) {
   const trpc = useTRPC();
   // Stored as a string so the input field can show an empty value while typing.
@@ -263,9 +265,27 @@ export function PurchaseCreditsModal({
           />
         </div>
 
-        <div className="text-muted mt-3 small">
-          Actual number of graded submissions will vary based on submission content.
-        </div>
+        <p className="text-muted mt-3 mb-0 small">
+          Actual number of graded submissions varies based on question, submission, and rubric size.
+        </p>
+
+        {canProceed && (
+          <div className="mt-3 border rounded p-3">
+            <div className="d-flex justify-content-between mb-1">
+              <span>Credits</span>
+              <span>{`$${purchaseDollars.toFixed(2)}`}</span>
+            </div>
+            <div className="d-flex justify-content-between mb-2">
+              <span>Infrastructure fee</span>
+              <span>{`$${(purchaseDollars * infrastructureFeeRate).toFixed(2)}`}</span>
+            </div>
+            <hr className="my-1" />
+            <div className="d-flex justify-content-between fw-bold mt-2">
+              <span>Total</span>
+              <span>{`$${(purchaseDollars * (1 + infrastructureFeeRate)).toFixed(2)}`}</span>
+            </div>
+          </div>
+        )}
       </Modal.Body>
       <Modal.Footer>
         <button
