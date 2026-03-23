@@ -193,7 +193,7 @@ export function PurchaseCreditsModal({
   const [customAmount, setCustomAmount] = useState('50');
   const [selected, setSelected] = useState<SelectedPackage>({
     type: 'preset',
-    dollars: CREDIT_PACKAGES[0].dollars,
+    dollars: CREDIT_PACKAGES[1].dollars,
   });
 
   const checkoutMutation = useMutation({
