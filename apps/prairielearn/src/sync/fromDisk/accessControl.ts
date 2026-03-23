@@ -141,8 +141,6 @@ function prepareRuleRow(
     afterLastDeadlineAllowSubmissionsField.overridden ||
     afterLastDeadlineCreditField.overridden;
 
-  const integrationsPrairietestOverridden = rule.integrations?.prairieTest?.exams !== undefined;
-
   const ruleLabels = rule.labels ?? [];
   const studentLabelIds = ruleLabels
     .map((label) => studentLabelIdByName.get(label))
@@ -171,7 +169,6 @@ function prepareRuleRow(
     date_control_duration_minutes: durationMinutesField.value,
     date_control_password_overridden: passwordField.overridden,
     date_control_password: passwordField.value,
-    integrations_prairietest_overridden: integrationsPrairietestOverridden,
     after_complete_hide_questions: hideQuestionsField.value,
     after_complete_show_questions_again_date_overridden: showQuestionsAgainDateField.overridden,
     after_complete_show_questions_again_date: showQuestionsAgainDateField.value,

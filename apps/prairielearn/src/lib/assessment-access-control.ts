@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import type { AccessControlJsonWithId as SharedAccessControlJsonWithId } from '../pages/instructorAssessmentAccess/components/types.js';
+import type { AccessControlJsonWithId } from '../pages/instructorAssessmentAccess/components/types.js';
 import type { AccessControlJson } from '../schemas/accessControl.js';
 
 import {
@@ -19,7 +19,7 @@ const AccessControlRuleBaseSchema = AssessmentAccessControlRuleSchema.omit({
 
 const DeadlineArraySchema = z.array(z.object({ date: z.string(), credit: z.number() })).nullable();
 
-const JsonRuleRowSchema = AccessControlRuleBaseSchema.extend({
+const RuleRowSchema = AccessControlRuleBaseSchema.extend({
   target_type: z.enum(['none', 'student_label']),
   labels: z.array(z.string()).nullable(),
   early_deadlines: DeadlineArraySchema,
@@ -29,7 +29,7 @@ const JsonRuleRowSchema = AccessControlRuleBaseSchema.extend({
     .nullable(),
 });
 
-type JsonRuleRow = z.infer<typeof JsonRuleRowSchema>;
+type RuleRow = z.infer<typeof RuleRowSchema>;
 
 /**
  * Reverses the mapField() logic from sync/fromDisk/accessControl.ts:
@@ -125,12 +125,12 @@ function dbBaseRowToAccessControlJson(row: BaseRuleRow): AccessControlJson & { i
   };
 }
 
-function dbRowToAccessControlJson(row: JsonRuleRow): AccessControlJson & { id: string } {
+function dbRowToAccessControlJson(row: RuleRow): AccessControlJson & { id: string } {
   const base = dbBaseRowToAccessControlJson(row);
   const labels = row.labels ?? [];
 
   const integrations: AccessControlJson['integrations'] = {};
-  if (row.integrations_prairietest_overridden && row.prairietest_exams) {
+  if (row.prairietest_exams) {
     integrations.prairieTest = {
       exams: row.prairietest_exams.map((e) => ({
         examUuid: e.uuid,
@@ -146,8 +146,8 @@ function dbRowToAccessControlJson(row: JsonRuleRow): AccessControlJson & { id: s
   };
 }
 
-type AccessControlJsonWithId = Required<Pick<SharedAccessControlJsonWithId, 'id'>> &
-  SharedAccessControlJsonWithId;
+type AccessControlJsonWithRequiredId = Required<Pick<AccessControlJsonWithId, 'id'>> &
+  AccessControlJsonWithId;
 
 const EnrollmentRuleRowSchema = AccessControlRuleBaseSchema.extend({
   target_type: z.literal('enrollment'),
@@ -166,7 +166,9 @@ const EnrollmentRuleRowSchema = AccessControlRuleBaseSchema.extend({
 
 type EnrollmentRuleRow = z.infer<typeof EnrollmentRuleRowSchema>;
 
-function dbEnrollmentRowToAccessControlJson(row: EnrollmentRuleRow): AccessControlJsonWithId {
+function dbEnrollmentRowToAccessControlJson(
+  row: EnrollmentRuleRow,
+): AccessControlJsonWithRequiredId {
   const base = dbBaseRowToAccessControlJson(row);
   return {
     ...base,
@@ -185,12 +187,14 @@ async function fetchAccessControlJsonRules(
   const rows = await queryRows(
     sql.select_all_json_rules,
     { assessment_id: assessment.id },
-    JsonRuleRowSchema,
+    RuleRowSchema,
   );
   return rows.map(dbRowToAccessControlJson);
 }
 
-async function fetchEnrollmentRules(assessment: Assessment): Promise<AccessControlJsonWithId[]> {
+async function fetchEnrollmentRules(
+  assessment: Assessment,
+): Promise<AccessControlJsonWithRequiredId[]> {
   const rows = await queryRows(
     sql.select_all_enrollment_rules,
     { assessment_id: assessment.id },
@@ -201,7 +205,7 @@ async function fetchEnrollmentRules(assessment: Assessment): Promise<AccessContr
 
 export async function fetchAllAccessControlRules(
   assessment: Assessment,
-): Promise<AccessControlJsonWithId[]> {
+): Promise<AccessControlJsonWithRequiredId[]> {
   const [jsonRules, enrollmentRules] = await Promise.all([
     fetchAccessControlJsonRules(assessment),
     fetchEnrollmentRules(assessment),

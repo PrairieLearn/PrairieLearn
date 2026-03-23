@@ -243,9 +243,6 @@ export const AssessmentAccessControlRuleSchema = z.object({
   list_before_release: z.boolean().nullable(),
   number: z.number(),
 
-  // Integrations fields
-  integrations_prairietest_overridden: z.boolean(),
-
   // Target type: 'none' for main rule (applies to all), 'enrollment' for individual students, 'student_label' for labels
   target_type: z.enum(['none', 'enrollment', 'student_label']),
 });

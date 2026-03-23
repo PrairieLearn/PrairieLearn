@@ -359,7 +359,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
   const hasDateControl = DATE_CONTROL_FIELD_NAMES.some((f) => of.has(f));
 
   if (hasDateControl) {
-    output.dateControl = { enabled: true };
+    output.dateControl = {};
     if (of.has('releaseDate')) output.dateControl.releaseDate = rule.releaseDate;
     if (of.has('dueDate')) output.dateControl.dueDate = rule.dueDate;
     if (of.has('earlyDeadlines')) output.dateControl.earlyDeadlines = rule.earlyDeadlines;

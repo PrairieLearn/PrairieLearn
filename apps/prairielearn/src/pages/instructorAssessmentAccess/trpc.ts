@@ -10,12 +10,12 @@ import { runInTransactionAsync } from '@prairielearn/postgres';
 import { fetchAllAccessControlRules } from '../../lib/assessment-access-control.js';
 import { features } from '../../lib/features/index.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import { lockAssessment } from '../../models/assessment.js';
 import {
   type EnrollmentAccessControlRuleData,
   deleteEnrollmentAccessControlsByIds,
   syncEnrollmentAccessControl,
-} from '../../models/enrollment-access-control.js';
+} from '../../models/assessment-access-control-rules.js';
+import { lockAssessment } from '../../models/assessment.js';
 import {
   selectUsersAndEnrollmentsByUidsInCourseInstance,
   selectUsersAndEnrollmentsForCourseInstance,
@@ -141,8 +141,6 @@ function formJsonToEnrollmentRuleData(
     durationMinutes: dc?.durationMinutes ?? null,
     passwordOverridden: dc?.password !== undefined,
     password: dc?.password ?? null,
-    // PrairieTest integrations are only configured on the main rule, not on enrollment overrides.
-    integrationsPrairietestOverridden: false,
     hideQuestions: ac?.hideQuestions ?? null,
     showQuestionsAgainDateOverridden: ac?.showQuestionsAgainDate !== undefined,
     showQuestionsAgainDate: ac?.showQuestionsAgainDate ?? null,

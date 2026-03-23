@@ -26,7 +26,6 @@ CREATE TABLE assessment_access_control_rules (
   date_control_duration_minutes int,
   date_control_password_overridden boolean NOT NULL DEFAULT false,
   date_control_password text,
-  integrations_prairietest_overridden boolean NOT NULL DEFAULT false,
   -- after_complete_hide_questions and after_complete_hide_score use nullable
   -- boolean instead of a separate _overridden column: NULL = inherit from
   -- parent rule, true/false = explicitly set. This works because booleans

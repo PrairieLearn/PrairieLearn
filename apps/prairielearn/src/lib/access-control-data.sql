@@ -26,7 +26,6 @@ SELECT
   aacr.after_complete_show_questions_again_date_overridden,
   aacr.after_complete_show_score_again_date,
   aacr.after_complete_show_score_again_date_overridden,
-  aacr.integrations_prairietest_overridden,
   COALESCE(
     array_agg(DISTINCT ace.enrollment_id) FILTER (
       WHERE
@@ -118,7 +117,6 @@ SELECT
   aacr.after_complete_show_questions_again_date_overridden,
   aacr.after_complete_show_score_again_date,
   aacr.after_complete_show_score_again_date_overridden,
-  aacr.integrations_prairietest_overridden,
   COALESCE(
     array_agg(DISTINCT ace.enrollment_id) FILTER (
       WHERE

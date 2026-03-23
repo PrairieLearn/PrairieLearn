@@ -23,7 +23,6 @@ columns
     date_control_release_date: timestamp with time zone
     date_control_release_date_overridden: boolean not null default false
     id: bigint not null default nextval('assessment_access_control_rules_id_seq'::regclass)
-    integrations_prairietest_overridden: boolean not null default false
     list_before_release: boolean
     number: integer not null
     target_type: enum_assessment_access_control_target_type not null
