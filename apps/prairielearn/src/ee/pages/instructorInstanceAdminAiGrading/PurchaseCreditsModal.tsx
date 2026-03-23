@@ -15,7 +15,7 @@ import { useTRPC } from './utils/trpc-context.js';
 /**
  * Rounds a raw submission estimate to a "friendly" number for display.
  * Progressively coarsens rounding as numbers grow so estimates feel natural
- * (e.g. 3,333 → 3,300 rather than showing misleading precision).
+ * (e.g. 3,333 → 3,300).
  */
 function roundEstimate(dollars: number): number {
   const raw = Math.floor(dollars / APPROX_COST_PER_SUBMISSION_DOLLARS);
@@ -25,7 +25,7 @@ function roundEstimate(dollars: number): number {
   return raw;
 }
 
-/** Cap at 1,000,000 to prevent unrealistic display values and horizontal overflow. */
+/** Cap at 1,000,000 to prevent horizontal overflow. */
 function formatSubmissionCount(count: number): string {
   if (count >= 1_000_000) return '1,000,000+';
   return count.toLocaleString();
@@ -64,6 +64,7 @@ function PresetPackageCard({
       }}
     >
       <div className="card-body py-3 px-4">
+        {/* Wide viewport: single-row horizontal layout */}
         <div className="d-none d-md-flex align-items-center gap-3">
           <div className="fw-bold" style={{ fontSize: '1.15rem', flexShrink: 0 }}>
             {`$${dollars}`}
@@ -73,6 +74,7 @@ function PresetPackageCard({
             Grades about <strong>{estimate}</strong> submissions
           </div>
         </div>
+        {/* Narrow viewport: stacked layout */}
         <div className="d-md-none">
           <div className="fw-bold mb-1" style={{ fontSize: '1.15rem' }}>
             {`$${dollars}`}
@@ -189,7 +191,10 @@ export function PurchaseCreditsModal({
   const trpc = useTRPC();
   // Stored as a string so the input field can show an empty value while typing.
   const [customAmount, setCustomAmount] = useState('50');
-  const [selected, setSelected] = useState<SelectedPackage>({ type: 'preset', dollars: 25 });
+  const [selected, setSelected] = useState<SelectedPackage>({
+    type: 'preset',
+    dollars: CREDIT_PACKAGES[0].dollars,
+  });
 
   const checkoutMutation = useMutation({
     ...trpc.createCheckout.mutationOptions(),
@@ -219,7 +224,7 @@ export function PurchaseCreditsModal({
       onHide={onHide}
       onExited={() => {
         setCustomAmount('50');
-        setSelected({ type: 'preset', dollars: 25 });
+        setSelected({ type: 'preset', dollars: CREDIT_PACKAGES[0].dollars });
         checkoutMutation.reset();
         onExited();
       }}

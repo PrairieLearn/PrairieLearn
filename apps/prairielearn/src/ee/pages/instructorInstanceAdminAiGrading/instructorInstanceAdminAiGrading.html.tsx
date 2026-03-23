@@ -479,10 +479,13 @@ function CreditPoolSection({
           <h2 className="h5 mb-0">AI grading credits</h2>
           {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
         </div>
-        {stripePurchasingEnabled && canEdit && (
+        {stripePurchasingEnabled && (
           <button
             type="button"
             className="btn btn-sm btn-primary d-flex align-items-center gap-2"
+            disabled={!canEdit}
+            title={!canEdit ? 'You must be a course owner to purchase credits' : undefined}
+            style={!canEdit ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
             onClick={() => purchaseModalState.showWithData(null)}
           >
             <i className="bi bi-cart-plus" aria-hidden="true" />

@@ -41,13 +41,11 @@ function constructEvent(req: Request) {
 async function handleSessionUpdate(session: Stripe.Checkout.Session) {
   if (session.payment_status !== 'paid') return;
 
-  // Route based on the type tag we set when creating the checkout session.
   if (session.metadata?.prairielearn_type === 'ai_grading_credits') {
     await handleAiGradingCreditSessionUpdate(session);
     return;
   }
 
-  // Fall through to plan-grant checkout sessions (the original flow).
   await handlePlanGrantSessionUpdate(session);
 }
 

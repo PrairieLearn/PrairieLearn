@@ -49,10 +49,6 @@ export async function getCreditCheckoutSessionByStripeId(
   );
 }
 
-/**
- * Marks a checkout session as completed. Uses `credits_added = FALSE` guard
- * to ensure only one caller succeeds; returns whether this call claimed it.
- */
 async function markCheckoutSessionCompleted(stripe_object_id: string): Promise<boolean> {
   const result = await queryOptionalRow(
     sql.mark_ai_grading_credit_checkout_session_completed,
@@ -109,7 +105,7 @@ export async function processCreditPurchase({
 
     await insertAuditEvent({
       tableName: 'ai_grading_credit_checkout_sessions',
-      action: 'insert',
+      action: 'update',
       rowId: localSession.id,
       agentAuthnUserId: localSession.agent_user_id,
       agentUserId: localSession.agent_user_id,
