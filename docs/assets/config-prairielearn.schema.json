@@ -1056,6 +1056,10 @@
       },
       "default": {}
     },
+    "stripeAiGradingCreditsProductId": {
+      "type": ["string", "null"],
+      "default": null
+    },
     "aiGradingOpenAiApiKey": {
       "type": ["string", "null"],
       "default": null
