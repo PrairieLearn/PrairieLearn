@@ -2549,9 +2549,14 @@ export type AssessmentToolsConfig = { name: string; label: string; enabled: bool
 export async function getAssessmentToolsConfig(
   infoAssessmentPath: string,
 ): Promise<AssessmentToolsConfig> {
-  const raw = await fs.readFile(infoAssessmentPath, 'utf8');
-  const assessmentInfo = JSON.parse(raw);
-  const toolsConfig = assessmentInfo.tools ?? {};
+  let toolsConfig: Record<string, any> = {};
+  try {
+    const raw = await fs.readFile(infoAssessmentPath, 'utf8');
+    const assessmentInfo = JSON.parse(raw);
+    toolsConfig = assessmentInfo.tools ?? {};
+  } catch (err: any) {
+    if (err.code !== 'ENOENT') throw err;
+  }
 
   return EnumAssessmentToolSchema.options.map((tool) => ({
     name: tool,
