@@ -16,8 +16,8 @@ import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCredentials } from '../../../models/ai-grading-credentials.js';
 import { getStripeClient } from '../../lib/billing/stripe.js';
 import {
-  getAiGradingCreditCheckoutSessionByStripeObjectId,
-  processAiGradingCreditPurchase,
+  getCreditCheckoutSessionByStripeId,
+  processCreditPurchase,
 } from '../../models/ai-grading-credit-checkout-sessions.js';
 
 import { InstructorInstanceAdminAiGrading } from './instructorInstanceAdminAiGrading.html.js';
@@ -80,13 +80,13 @@ router.get(
     // process the session so credits are available immediately (the webhook
     // serves as a backup but may arrive later or not at all in local dev).
     let checkoutStatus: 'success' | 'cancelled' | null = null;
-    let checkoutAmountCents: number | null = null;
+    let checkoutAmountMilliDollars: number | null = null;
     if (canEdit && req.query.checkout === 'success' && req.query.session_id) {
       const stripeSessionId = z.string().parse(req.query.session_id);
-      const localSession = await getAiGradingCreditCheckoutSessionByStripeObjectId(stripeSessionId);
+      const localSession = await getCreditCheckoutSessionByStripeId(stripeSessionId);
 
       if (localSession) {
-        checkoutAmountCents = localSession.amount_cents;
+        checkoutAmountMilliDollars = localSession.amount_milli_dollars;
 
         if (!localSession.credits_added) {
           if (
@@ -100,13 +100,12 @@ router.get(
           const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
 
           if (session.payment_status === 'paid') {
-            await processAiGradingCreditPurchase({ localSession, stripeSession: session });
+            await processCreditPurchase({ localSession, stripeSession: session });
           }
         }
       }
       // Re-read to get the latest credits_added state after our transaction.
-      const updatedSession =
-        await getAiGradingCreditCheckoutSessionByStripeObjectId(stripeSessionId);
+      const updatedSession = await getCreditCheckoutSessionByStripeId(stripeSessionId);
       checkoutStatus = updatedSession?.credits_added ? 'success' : null;
     } else if (canEdit && req.query.checkout === 'cancelled') {
       checkoutStatus = 'cancelled';
@@ -132,7 +131,7 @@ router.get(
               aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
               stripePurchasingEnabled={stripePurchasingEnabled}
               initialCheckoutStatus={checkoutStatus}
-              initialCheckoutAmountCents={checkoutAmountCents}
+              initialCheckoutAmountMilliDollars={checkoutAmountMilliDollars}
             />
           </Hydrate>
         ),

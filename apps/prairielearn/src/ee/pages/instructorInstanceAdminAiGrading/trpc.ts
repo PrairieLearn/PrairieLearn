@@ -12,9 +12,13 @@ import {
   updateUseCustomApiKeys,
   upsertCredential,
 } from '../../../models/ai-grading-credentials.js';
+import {
+  MAX_PURCHASE_MILLI_DOLLARS,
+  MIN_PURCHASE_MILLI_DOLLARS,
+} from '../../lib/ai-grading-credit-purchase-constants.js';
 import { getOrCreateStripeCustomerId, getStripeClient } from '../../lib/billing/stripe.js';
 import { creditPoolProcedures, requireAiGradingFeature } from '../../lib/credit-pool-trpc.js';
-import { insertAiGradingCreditCheckoutSession } from '../../models/ai-grading-credit-checkout-sessions.js';
+import { insertCreditCheckoutSession } from '../../models/ai-grading-credit-checkout-sessions.js';
 
 import { formatCredential } from './utils/format.js';
 
@@ -94,20 +98,16 @@ const deleteCredentialMutation = t.procedure
     });
   });
 
-const MIN_PURCHASE_CENTS = 100; // $1.00
-const MAX_PURCHASE_CENTS = 1_000_000; // $10,000.00
-
-const createCreditCheckoutSessionMutation = t.procedure
+const createCheckoutMutation = t.procedure
   .use(requireEditPermission)
   .use(requireAiGradingFeature)
   .input(
     z.object({
-      amount_cents: z
+      amount_milli_dollars: z
         .number()
         .int()
-        .min(MIN_PURCHASE_CENTS)
-        .max(MAX_PURCHASE_CENTS)
-        .refine((v) => v % 100 === 0, 'Amount must be a whole dollar value'),
+        .min(MIN_PURCHASE_MILLI_DOLLARS)
+        .max(MAX_PURCHASE_MILLI_DOLLARS),
     }),
   )
   .mutation(async (opts) => {
@@ -126,7 +126,10 @@ const createCreditCheckoutSessionMutation = t.procedure
     }
 
     const { authn_user, course, course_instance, host } = opts.ctx;
-    const amountCents = opts.input.amount_cents;
+    const amountMilliDollars = opts.input.amount_milli_dollars;
+
+    // Stripe expects amounts in cents; round up so we never under-charge.
+    const amountCents = Math.ceil(amountMilliDollars / 10);
 
     const stripe = getStripeClient();
     const customerId = await getOrCreateStripeCustomerId(authn_user.id, {
@@ -139,6 +142,9 @@ const createCreditCheckoutSessionMutation = t.procedure
       prairielearn_type: 'ai_grading_credits',
       prairielearn_course_id: course.id,
       prairielearn_course_instance_id: course_instance.id,
+      prairielearn_course_instance_name: course_instance.short_name,
+      prairielearn_course_name: course.short_name,
+      prairielearn_institution_id: course.institution_id,
       prairielearn_user_id: authn_user.id,
     };
 
@@ -167,12 +173,12 @@ const createCreditCheckoutSessionMutation = t.procedure
       },
     });
 
-    await insertAiGradingCreditCheckoutSession({
+    await insertCreditCheckoutSession({
       agent_user_id: authn_user.id,
       stripe_object_id: session.id,
       course_instance_id: course_instance.id,
       data: session,
-      amount_cents: amountCents,
+      amount_milli_dollars: amountMilliDollars,
     });
 
     if (!session.url) {
@@ -190,7 +196,7 @@ export const aiGradingSettingsRouter = t.router({
   updateUseCustomApiKeys: updateUseCustomApiKeysMutation,
   addCredential: addCredentialMutation,
   deleteCredential: deleteCredentialMutation,
-  createCreditCheckoutSession: createCreditCheckoutSessionMutation,
+  createCheckout: createCheckoutMutation,
 });
 
 export type AiGradingSettingsRouter = typeof aiGradingSettingsRouter;

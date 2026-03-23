@@ -9,8 +9,8 @@ import { config } from '../../../lib/config.js';
 import { selectInstitutionForCourseInstance } from '../../../models/institution.js';
 import { clearStripeProductCache, getStripeClient } from '../../lib/billing/stripe.js';
 import {
-  getAiGradingCreditCheckoutSessionByStripeObjectId,
-  processAiGradingCreditPurchase,
+  getCreditCheckoutSessionByStripeId,
+  processCreditPurchase,
 } from '../../models/ai-grading-credit-checkout-sessions.js';
 import { ensurePlanGrant } from '../../models/plan-grants.js';
 import {
@@ -41,18 +41,18 @@ function constructEvent(req: Request) {
 async function handleSessionUpdate(session: Stripe.Checkout.Session) {
   if (session.payment_status !== 'paid') return;
 
-  // Check if this is an AI grading credits purchase.
+  // Route based on the type tag we set when creating the checkout session.
   if (session.metadata?.prairielearn_type === 'ai_grading_credits') {
     await handleAiGradingCreditSessionUpdate(session);
     return;
   }
 
-  // Otherwise, handle as a plan grant checkout session.
+  // Fall through to plan-grant checkout sessions (the original flow).
   await handlePlanGrantSessionUpdate(session);
 }
 
 async function handleAiGradingCreditSessionUpdate(session: Stripe.Checkout.Session) {
-  const localSession = await getAiGradingCreditCheckoutSessionByStripeObjectId(session.id);
+  const localSession = await getCreditCheckoutSessionByStripeId(session.id);
 
   if (!localSession) {
     // Unknown session — likely created by a different PrairieLearn instance.
@@ -64,7 +64,7 @@ async function handleAiGradingCreditSessionUpdate(session: Stripe.Checkout.Sessi
     return;
   }
 
-  await processAiGradingCreditPurchase({ localSession, stripeSession: session });
+  await processCreditPurchase({ localSession, stripeSession: session });
 }
 
 async function handlePlanGrantSessionUpdate(session: Stripe.Checkout.Session) {

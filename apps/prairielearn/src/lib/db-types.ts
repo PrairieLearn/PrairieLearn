@@ -229,7 +229,7 @@ export type Administrator = z.infer<typeof AdministratorSchema>;
 
 export const AiGradingCreditCheckoutSessionSchema = z.object({
   agent_user_id: IdSchema,
-  amount_cents: z.number(),
+  amount_milli_dollars: z.coerce.number(),
   completed_at: DateFromISOString.nullable(),
   course_instance_id: IdSchema,
   created_at: DateFromISOString,

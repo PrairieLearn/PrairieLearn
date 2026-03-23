@@ -5,7 +5,7 @@ INSERT INTO
     stripe_object_id,
     course_instance_id,
     data,
-    amount_cents
+    amount_milli_dollars
   )
 VALUES
   (
@@ -13,7 +13,7 @@ VALUES
     $stripe_object_id,
     $course_instance_id,
     $data,
-    $amount_cents
+    $amount_milli_dollars
   );
 
 -- BLOCK get_ai_grading_credit_checkout_session_by_stripe_object_id

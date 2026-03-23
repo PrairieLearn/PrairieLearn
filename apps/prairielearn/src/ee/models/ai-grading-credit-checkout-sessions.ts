@@ -17,29 +17,29 @@ import { insertAuditEvent } from '../../models/audit-event.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export async function insertAiGradingCreditCheckoutSession({
+export async function insertCreditCheckoutSession({
   agent_user_id,
   stripe_object_id,
   course_instance_id,
   data,
-  amount_cents,
+  amount_milli_dollars,
 }: {
   agent_user_id: string;
   stripe_object_id: string;
   course_instance_id: string;
-  data: any;
-  amount_cents: number;
+  data: Stripe.Checkout.Session;
+  amount_milli_dollars: number;
 }) {
   await execute(sql.insert_ai_grading_credit_checkout_session, {
     agent_user_id,
     stripe_object_id,
     course_instance_id,
     data,
-    amount_cents,
+    amount_milli_dollars,
   });
 }
 
-export async function getAiGradingCreditCheckoutSessionByStripeObjectId(
+export async function getCreditCheckoutSessionByStripeId(
   stripe_object_id: string,
 ): Promise<AiGradingCreditCheckoutSession | null> {
   return await queryOptionalRow(
@@ -50,13 +50,10 @@ export async function getAiGradingCreditCheckoutSessionByStripeObjectId(
 }
 
 /**
- * Atomically marks a checkout session as completed. Returns `true` if the
- * session was marked (i.e. it had not been completed yet), `false` otherwise.
- * Callers should only credit the pool when this returns `true`.
+ * Marks a checkout session as completed. Uses `credits_added = FALSE` guard
+ * to ensure only one caller succeeds; returns whether this call claimed it.
  */
-async function markAiGradingCreditCheckoutSessionCompleted(
-  stripe_object_id: string,
-): Promise<boolean> {
+async function markCheckoutSessionCompleted(stripe_object_id: string): Promise<boolean> {
   const result = await queryOptionalRow(
     sql.mark_ai_grading_credit_checkout_session_completed,
     { stripe_object_id },
@@ -65,7 +62,7 @@ async function markAiGradingCreditCheckoutSessionCompleted(
   return result !== null;
 }
 
-async function updateAiGradingCreditCheckoutSessionData({
+async function updateCheckoutSessionData({
   stripe_object_id,
   data,
 }: {
@@ -83,33 +80,29 @@ async function updateAiGradingCreditCheckoutSessionData({
 }
 
 /**
- * Processes a completed Stripe checkout session for AI grading credits.
- * Atomically marks the session as completed, adjusts the credit pool,
- * updates session data, and inserts an audit event — all within a single
- * transaction to prevent double-crediting and ensure auditability.
+ * Processes a paid Stripe checkout session: marks it completed, adds credits
+ * to the pool, and inserts an audit event — all in a single transaction.
  */
-export async function processAiGradingCreditPurchase({
+export async function processCreditPurchase({
   localSession,
   stripeSession,
 }: {
   localSession: AiGradingCreditCheckoutSession;
   stripeSession: Stripe.Checkout.Session;
 }): Promise<void> {
-  const deltaMilliDollars = localSession.amount_cents * 10;
-
   await runInTransactionAsync(async () => {
-    const claimed = await markAiGradingCreditCheckoutSessionCompleted(stripeSession.id);
+    const claimed = await markCheckoutSessionCompleted(stripeSession.id);
     if (!claimed) return;
 
     await adjustCreditPool({
       course_instance_id: localSession.course_instance_id,
-      delta_milli_dollars: deltaMilliDollars,
+      delta_milli_dollars: localSession.amount_milli_dollars,
       credit_type: 'transferable',
       user_id: localSession.agent_user_id,
       reason: 'Credit purchase',
     });
 
-    await updateAiGradingCreditCheckoutSessionData({
+    await updateCheckoutSessionData({
       stripe_object_id: stripeSession.id,
       data: stripeSession,
     });
@@ -122,7 +115,7 @@ export async function processAiGradingCreditPurchase({
       agentUserId: localSession.agent_user_id,
       courseInstanceId: localSession.course_instance_id,
       newRow: {
-        amount_cents: localSession.amount_cents,
+        amount_milli_dollars: localSession.amount_milli_dollars,
         course_instance_id: localSession.course_instance_id,
         agent_user_id: localSession.agent_user_id,
         stripe_object_id: stripeSession.id,

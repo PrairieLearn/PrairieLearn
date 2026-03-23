@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS ai_grading_credit_checkout_sessions (
   created_at timestamptz NOT NULL DEFAULT now(),
   completed_at timestamptz,
   data jsonb NOT NULL,
-  amount_cents integer NOT NULL CHECK (amount_cents > 0),
+  amount_milli_dollars bigint NOT NULL CHECK (amount_milli_dollars > 0),
   credits_added boolean NOT NULL DEFAULT FALSE
 );
 
