@@ -103,11 +103,9 @@ type AiGradingResponsesForPersistence = {
 
 interface AiGradingPersistenceContext {
   prompt: ModelMessage[];
-  course_id: string;
-  course_instance_id: string;
+  course_instance: CourseInstance;
+  instance_question: InstanceQuestion;
   authn_user_id: string;
-  assessment_question_id: string;
-  instance_question_id: string;
   job_sequence_id: string;
 }
 
@@ -147,7 +145,7 @@ async function insertAiGradingJobForResponses({
   grading_job_id: string;
   persistenceContext: Pick<
     AiGradingPersistenceContext,
-    'prompt' | 'course_id' | 'course_instance_id' | 'job_sequence_id'
+    'prompt' | 'course_instance' | 'job_sequence_id'
   >;
   responses: AiGradingResponsesForPersistence;
 }): Promise<string> {
@@ -156,8 +154,8 @@ async function insertAiGradingJobForResponses({
     job_sequence_id: persistenceContext.job_sequence_id,
     model_id: responses.model_id,
     prompt: persistenceContext.prompt,
-    course_id: persistenceContext.course_id,
-    course_instance_id: persistenceContext.course_instance_id,
+    course_id: persistenceContext.course_instance.course_id,
+    course_instance_id: persistenceContext.course_instance.id,
   };
 
   if (responses.rotationCorrectionApplied) {
@@ -250,11 +248,11 @@ async function finalizeAiGradingPersistence({
 
     await insertAiGradingJobAndDeductCreditsIfNeeded({
       trackRateLimitAndCost,
-      course_instance_id: persistenceContext.course_instance_id,
+      course_instance_id: persistenceContext.course_instance.id,
       cost_milli_dollars: costMilliDollars,
       user_id: persistenceContext.authn_user_id,
-      assessment_question_id: persistenceContext.assessment_question_id,
-      reason: `AI graded instance question ${persistenceContext.instance_question_id}`,
+      assessment_question_id: persistenceContext.instance_question.assessment_question_id,
+      reason: `AI graded instance question ${persistenceContext.instance_question.id}`,
       createAiGradingJob: async () =>
         await insertAiGradingJobForResponses({
           grading_job_id,
@@ -264,7 +262,7 @@ async function finalizeAiGradingPersistence({
     });
 
     await updateCourseInstanceUsagesForAiGradingResponses({
-      courseInstanceId: persistenceContext.course_instance_id,
+      courseInstanceId: persistenceContext.course_instance.id,
       authnUserId: persistenceContext.authn_user_id,
       model: responses.model_id,
       gradingResponseWithRotationIssue: responses.gradingResponseWithRotationIssue,
@@ -799,11 +797,9 @@ export async function aiGrade({
           : { model_id, rotationCorrectionApplied, finalGradingResponse };
         const persistenceContext = {
           prompt: input,
-          course_id: course.id,
-          course_instance_id: course_instance.id,
+          course_instance,
+          instance_question,
           authn_user_id,
-          assessment_question_id: assessment_question.id,
-          instance_question_id: instance_question.id,
           job_sequence_id: serverJob.jobSequenceId,
         } satisfies AiGradingPersistenceContext;
 
@@ -1014,11 +1010,9 @@ export async function aiGrade({
           : { model_id, rotationCorrectionApplied, finalGradingResponse };
         const persistenceContext = {
           prompt: input,
-          course_id: course.id,
-          course_instance_id: course_instance.id,
+          course_instance,
+          instance_question,
           authn_user_id,
-          assessment_question_id: assessment_question.id,
-          instance_question_id: instance_question.id,
           job_sequence_id: serverJob.jobSequenceId,
         } satisfies AiGradingPersistenceContext;
 
