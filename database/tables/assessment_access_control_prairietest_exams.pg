@@ -1,0 +1,13 @@
+columns
+    assessment_access_control_rule_id: bigint not null
+    id: bigint not null default nextval('assessment_access_control_prairietest_exams_id_seq'::regclass)
+    read_only: boolean not null default false
+    uuid: uuid not null
+
+indexes
+    assessment_access_control_prairietest_exams_pkey: PRIMARY KEY (id) USING btree (id)
+    aac_prairietest_exams_rule_id_uuid_unique: UNIQUE (assessment_access_control_rule_id, uuid) USING btree (assessment_access_control_rule_id, uuid)
+    aac_prairietest_exams_rule_id_idx: USING btree (assessment_access_control_rule_id)
+
+foreign-key constraints
+    aac_prairietest_exams_rule_id_fkey: FOREIGN KEY (assessment_access_control_rule_id) REFERENCES assessment_access_control_rules(id) ON UPDATE CASCADE ON DELETE CASCADE

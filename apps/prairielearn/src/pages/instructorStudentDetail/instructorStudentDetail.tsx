@@ -72,10 +72,11 @@ router.get(
 
     const gradebookRows = student.user?.id
       ? await getGradebookRows({
-          course_instance_id: courseInstance.id,
-          user_id: student.user.id,
-          authz_data: res.locals.authz_data,
-          req_date: res.locals.req_date,
+          courseInstance,
+          userId: student.user.id,
+          authzData: res.locals.authz_data,
+          reqDate: res.locals.req_date,
+          displayTimezone: courseInstance.display_timezone,
           auth: 'instructor',
         })
       : [];

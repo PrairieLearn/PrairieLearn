@@ -20,22 +20,8 @@ $(function() {
     <input
       class="js-hidden-capture-input"
       type="hidden"
-      name="{{file_name}}"
-      data-skip-unload-check="true"
-    />
-    <input
-      class="js-hidden-original-capture-input"
-      type="hidden"
-      name="{{file_name}}"
-      data-skip-unload-check="true"
-      disabled
-    />
-    <input 
-      class="js-hidden-capture-changed-flag"
-      type="hidden"
-      name="{{file_name}}_changed"
-      value="false"
-      disabled
+      name="{{answer_name}}"
+      data-deferred-initial-value="true"
     />
     <input
       type="file"
