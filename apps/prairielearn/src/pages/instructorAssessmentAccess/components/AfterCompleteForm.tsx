@@ -113,7 +113,7 @@ function QuestionVisibilityInput({ value, onChange, idPrefix }: QuestionVisibili
         />
         {hideQuestionsMode === 'hide_questions_between_dates' && (
           <div className="ms-4 mt-2">
-            <Row className="mb-2">
+            <Row className="mb-2 gy-3">
               <Col md={6}>
                 <Form.Label htmlFor={`${idPrefix}-show-questions-between-start`}>
                   Show questions on
@@ -283,7 +283,7 @@ function AfterCompleteCard({
         <Form.Text className="text-muted">{description}</Form.Text>
       </Card.Header>
       <Card.Body>
-        <Row>{children}</Row>
+        <Row className="gy-3">{children}</Row>
       </Card.Body>
     </Card>
   );
