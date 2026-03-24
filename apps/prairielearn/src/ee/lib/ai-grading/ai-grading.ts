@@ -47,6 +47,7 @@ import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
 import {
   deductCreditsForAiGrading,
   selectCreditPool,
+  selectCreditPoolForUpdate,
 } from '../../../models/ai-grading-credit-pool.js';
 import { updateCourseInstanceUsagesForAiGradingResponses } from '../../../models/course-instance-usages.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
@@ -678,6 +679,10 @@ export async function aiGrade({
             applied_rubric_items: appliedRubricItems,
           };
           await runInTransactionAsync(async () => {
+            if (trackRateLimitAndCost) {
+              await selectCreditPoolForUpdate(course_instance.id);
+            }
+
             const { grading_job_id } = await manualGrading.updateInstanceQuestionScore({
               assessment,
               instance_question_id: instance_question.id,
@@ -739,6 +744,10 @@ export async function aiGrade({
         } else {
           // Does not require grading: only create grading job and rubric grading
           await runInTransactionAsync(async () => {
+            if (trackRateLimitAndCost) {
+              await selectCreditPoolForUpdate(course_instance.id);
+            }
+
             assert(assessment_question.max_manual_points);
             const manual_rubric_grading = await manualGrading.insertRubricGrading(
               rubric_items[0].rubric_id,
@@ -960,6 +969,10 @@ export async function aiGrade({
           // Requires grading: update instance question score
           const feedback = finalGradingResponse.object.feedback;
           await runInTransactionAsync(async () => {
+            if (trackRateLimitAndCost) {
+              await selectCreditPoolForUpdate(course_instance.id);
+            }
+
             const { grading_job_id } = await manualGrading.updateInstanceQuestionScore({
               assessment,
               instance_question_id: instance_question.id,
@@ -1020,6 +1033,10 @@ export async function aiGrade({
         } else {
           // Does not require grading: only create grading job and rubric grading
           await runInTransactionAsync(async () => {
+            if (trackRateLimitAndCost) {
+              await selectCreditPoolForUpdate(course_instance.id);
+            }
+
             assert(assessment_question.max_manual_points);
             const grading_job_id = await queryScalar(
               sql.insert_grading_job,

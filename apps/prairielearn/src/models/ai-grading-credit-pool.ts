@@ -27,6 +27,17 @@ export async function selectCreditPool(course_instance_id: string): Promise<Cred
 }
 
 /**
+ * Get and lock the credit pool balances for a course instance.
+ */
+export async function selectCreditPoolForUpdate(course_instance_id: string): Promise<CreditPool> {
+  return await queryRow(
+    sql.select_credit_pool_for_update,
+    { course_instance_id },
+    CreditPoolSchema,
+  );
+}
+
+/**
  * Compute how a cost should be split between non-transferable (first) and transferable credits.
  */
 function splitDeduction(
