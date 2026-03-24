@@ -5,6 +5,7 @@ import {
   type MainRuleData,
   type OverrideData,
   formDataToJson,
+  jsonToMainRuleFormData,
 } from './types.js';
 
 const defaultMainRule: MainRuleData = {
@@ -48,6 +49,12 @@ function buildFormData(override: OverrideData): AccessControlFormData {
 }
 
 describe('formDataToJson', () => {
+  it('defaults listBeforeRelease to false when omitted from the main rule JSON', () => {
+    const mainRule = jsonToMainRuleFormData({});
+
+    expect(mainRule.listBeforeRelease).toBe(false);
+  });
+
   it('omits dateControl when no date fields are overridden', () => {
     const override: OverrideData = {
       ...baseOverride,

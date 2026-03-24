@@ -40,7 +40,7 @@ export function MainRuleForm({ courseInstance: _courseInstance }: MainRuleFormPr
             aria-describedby="mainRule-list-before-release-help"
           />
           <Form.Text id="mainRule-list-before-release-help" className="text-muted">
-            Students can see the title and click into assessment before release
+            Students can see the assessment title before release
           </Form.Text>
         </Form.Group>
       )}

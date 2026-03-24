@@ -118,7 +118,7 @@ function formJsonToEnrollmentRuleData(
   const ac = rule.afterComplete;
   return {
     id: rule.id,
-    listBeforeRelease: rule.listBeforeRelease ?? true,
+    listBeforeRelease: rule.listBeforeRelease ?? null,
     releaseDateOverridden: dc?.releaseDate !== undefined,
     releaseDate: dc?.releaseDate ?? null,
     dueDateOverridden: dc?.dueDate !== undefined,
@@ -156,24 +156,25 @@ const DeadlineInputSchema = z.object({
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: string }> = z
+export const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: string }> = z
   .object({
     id: z.string().optional(),
     listBeforeRelease: z.boolean().nullable().optional(),
     labels: z.array(z.string()).optional(),
     dateControl: z
       .object({
-        releaseDate: DateStringInputSchema.optional(),
+        releaseDate: DateStringInputSchema.nullable().optional(),
         dueDate: DateStringInputSchema.nullable().optional(),
-        earlyDeadlines: z.array(DeadlineInputSchema).optional(),
-        lateDeadlines: z.array(DeadlineInputSchema).optional(),
+        earlyDeadlines: z.array(DeadlineInputSchema).nullable().optional(),
+        lateDeadlines: z.array(DeadlineInputSchema).nullable().optional(),
         afterLastDeadline: z
           .object({
             credit: z.number().min(0, 'Credit must be non-negative').optional(),
             allowSubmissions: z.boolean().optional(),
           })
+          .nullable()
           .optional(),
-        durationMinutes: z.number().int().positive().optional(),
+        durationMinutes: z.number().int().positive().nullable().optional(),
         password: z.string().nullable().optional(),
       })
       .optional(),

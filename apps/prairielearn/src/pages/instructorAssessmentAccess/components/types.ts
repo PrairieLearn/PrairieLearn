@@ -161,7 +161,7 @@ export function jsonToMainRuleFormData(json: AccessControlJsonWithId): MainRuleD
   return {
     id: json.id,
     trackingId: json.id ?? crypto.randomUUID(),
-    listBeforeRelease: json.listBeforeRelease ?? true,
+    listBeforeRelease: json.listBeforeRelease ?? false,
     dateControlEnabled: dc?.releaseDate != null,
     releaseDate: toLocalDatetimeValue(dc?.releaseDate) ?? null,
     dueDate: toLocalDatetimeValue(dc?.dueDate) ?? null,

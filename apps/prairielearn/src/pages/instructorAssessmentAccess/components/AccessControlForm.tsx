@@ -96,7 +96,7 @@ export function AccessControlForm({
 
   const mainRule = initialData[0]
     ? jsonToMainRuleFormData(initialData[0])
-    : jsonToMainRuleFormData({ listBeforeRelease: true });
+    : jsonToMainRuleFormData({ listBeforeRelease: false });
   const overrides = initialData.slice(1).map(jsonToOverrideFormData);
 
   const methods = useForm<AccessControlFormData>({

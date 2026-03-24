@@ -101,9 +101,14 @@ function dbBaseRowToAccessControlJson(row: BaseRuleRow): AccessControlJson & { i
     afterComplete.showScoreAgainDate = row.after_complete_show_score_again_date?.toISOString();
   }
 
+  const isMainRule = row.number === 0 && row.target_type === 'none';
+  const listBeforeRelease = isMainRule
+    ? (row.list_before_release ?? false)
+    : row.list_before_release;
+
   return {
     id: row.id,
-    listBeforeRelease: row.list_before_release,
+    ...(listBeforeRelease != null ? { listBeforeRelease } : {}),
     dateControl: Object.keys(dateControl).length > 0 ? dateControl : undefined,
     afterComplete: Object.keys(afterComplete).length > 0 ? afterComplete : undefined,
   };

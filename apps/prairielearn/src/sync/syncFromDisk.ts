@@ -236,7 +236,10 @@ export async function syncDiskToSqlWithLock(
                 if (!assessmentId) continue;
 
                 const accessControlRules = assessment.data?.accessControl;
-                if (!accessControlRules || infofile.hasErrors(assessment)) {
+                if (infofile.hasErrors(assessment)) {
+                  continue;
+                }
+                if (!accessControlRules) {
                   inputs.push({ assessmentId, rules: [] });
                 } else {
                   inputs.push({ assessmentId, rules: accessControlRules });

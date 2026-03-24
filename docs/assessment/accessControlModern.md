@@ -44,7 +44,6 @@ Below is a complete skeleton showing all available fields. All fields are option
       "name": "Main rule",
       "listBeforeRelease": false,
       "dateControl": {
-        "enabled": true,
         "releaseDate": "2025-01-15T00:00:01",
         "dueDate": "2025-02-15T23:59:59",
         "earlyDeadlines": [{ "date": "2025-02-01T23:59:59", "credit": 110 }],
@@ -87,16 +86,15 @@ Below is a complete skeleton showing all available fields. All fields are option
 
 Controls when the assessment is available and how credit is computed over time.
 
-| Field               | Type    | Description                                                                                                                                             |
-| ------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`           | boolean | Master toggle. If `true`, date restrictions are active and credit is computed from the timeline below. If `false` or absent, the rule grants 0% credit. |
-| `releaseDate`       | string  | ISO datetime. The assessment is not visible to students before this date.                                                                               |
-| `dueDate`           | string  | ISO datetime. The primary deadline. Students receive 100% credit before this date.                                                                      |
-| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines _before_ the due date offering bonus credit (e.g., 110%).                                                  |
-| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines _after_ the due date offering reduced credit (e.g., 80%).                                                  |
-| `afterLastDeadline` | object  | Controls behavior after all deadlines have passed. See below.                                                                                           |
-| `durationMinutes`   | integer | Time limit in minutes for timed assessments.                                                                                                            |
-| `password`          | string  | Proctor password required to start the assessment.                                                                                                      |
+| Field               | Type    | Description                                                                                            |
+| ------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| `releaseDate`       | string  | ISO datetime. The assessment is not visible to students before this date.                              |
+| `dueDate`           | string  | ISO datetime. The primary deadline. Students receive 100% credit before this date.                     |
+| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines _before_ the due date offering bonus credit (e.g., 110%). |
+| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines _after_ the due date offering reduced credit (e.g., 80%). |
+| `afterLastDeadline` | object  | Controls behavior after all deadlines have passed. See below.                                          |
+| `durationMinutes`   | integer | Time limit in minutes for timed assessments.                                                           |
+| `password`          | string  | Proctor password required to start the assessment.                                                     |
 
 #### `afterLastDeadline`
 
@@ -122,7 +120,7 @@ earlyDeadline (110%)    dueDate (100%)    lateDeadline (80%)
 - **Between `releaseDate` and the first deadline**: Credit is the first entry's value (the highest credit in the timeline).
 - **Between each pair of deadlines**: Credit is the later deadline's value.
 - **After the last deadline**: Credit is `afterLastDeadline.credit` (default 0%).
-- **No `dateControl` or `enabled: false`**: 0% credit, not active.
+- **No `dateControl` or no `releaseDate`**: 0% credit, not active.
 
 ### `integrations`
 
@@ -208,7 +206,6 @@ Not all fields behave the same way during cascading:
   "accessControl": [
     {
       "dateControl": {
-        "enabled": true,
         "releaseDate": "2025-01-15T00:00:01",
         "dueDate": "2025-02-15T23:59:59"
       }
@@ -233,7 +230,6 @@ Not all fields behave the same way during cascading:
   "accessControl": [
     {
       "dateControl": {
-        "enabled": true,
         "releaseDate": "2025-01-15T00:00:01",
         "dueDate": "2025-02-15T23:59:59",
         "durationMinutes": 60
@@ -271,7 +267,6 @@ Not all fields behave the same way during cascading:
   "accessControl": [
     {
       "dateControl": {
-        "enabled": true,
         "releaseDate": "2025-01-15T00:00:01",
         "dueDate": "2025-02-15T23:59:59"
       }
@@ -289,7 +284,6 @@ Students can access the homework from Jan 15 to Feb 15 for 100% credit. After Fe
   "accessControl": [
     {
       "dateControl": {
-        "enabled": true,
         "releaseDate": "2025-01-15T00:00:01",
         "dueDate": "2025-02-15T23:59:59",
         "earlyDeadlines": [{ "date": "2025-02-01T23:59:59", "credit": 110 }],
@@ -323,7 +317,6 @@ Students can access the homework from Jan 15 to Feb 15 for 100% credit. After Fe
   "accessControl": [
     {
       "dateControl": {
-        "enabled": true,
         "releaseDate": "2025-03-10T09:00:00",
         "dueDate": "2025-03-10T11:00:00",
         "durationMinutes": 90,
@@ -371,7 +364,6 @@ Students must be checked in via PrairieTest. Time limits and scheduling are mana
   "accessControl": [
     {
       "dateControl": {
-        "enabled": true,
         "releaseDate": "2025-01-15T00:00:01",
         "dueDate": "2025-02-15T23:59:59",
         "durationMinutes": 60
@@ -426,7 +418,6 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "enabled": true,
             "releaseDate": "2025-01-15T00:00:01",
             "dueDate": "2025-02-15T23:59:59"
           }
@@ -468,7 +459,6 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "enabled": true,
             "releaseDate": "2025-01-15T00:00:01",
             "dueDate": "2025-02-15T23:59:59",
             "earlyDeadlines": [
@@ -507,7 +497,6 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "enabled": true,
             "releaseDate": "2025-03-10T09:00:00",
             "dueDate": "2025-03-10T11:00:00",
             "durationMinutes": 90
@@ -540,7 +529,6 @@ Below are common legacy patterns and their modern equivalents.
         {
           "integrations": {
             "prairieTest": {
-              "enabled": true,
               "exams": [
                 { "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871" }
               ]
@@ -575,7 +563,6 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "enabled": true,
             "releaseDate": "2025-03-10T09:00:00",
             "dueDate": "2025-03-10T11:00:00",
             "password": "mysecret"
@@ -613,7 +600,6 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "enabled": true,
             "releaseDate": "2025-01-15T00:00:01",
             "dueDate": "2025-02-15T23:59:59"
           },
@@ -653,7 +639,6 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "enabled": true,
             "releaseDate": "2025-01-15T00:00:01",
             "dueDate": "2025-02-15T23:59:59"
           },
@@ -687,7 +672,7 @@ Below are common legacy patterns and their modern equivalents.
     }
     ```
 
-    With no `dateControl` (or `dateControl.enabled: false`), the assessment grants 0% credit. To make an assessment always open with 100% credit, set `dateControl.enabled: true` with a `dueDate` far in the future.
+    With no `dateControl` (or no `releaseDate`), the assessment grants 0% credit. To make an assessment always open with 100% credit, set a `releaseDate` in the past and a `dueDate` far in the future.
 
 ### View-only after close
 
@@ -716,7 +701,6 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "enabled": true,
             "releaseDate": "2025-01-15T00:00:01",
             "dueDate": "2025-02-15T23:59:59",
             "afterLastDeadline": {

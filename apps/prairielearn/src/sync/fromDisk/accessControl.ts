@@ -136,6 +136,7 @@ function prepareRuleRow(
   const dateControl = rule.dateControl ?? {};
   const afterComplete = rule.afterComplete ?? {};
   const afterLastDeadline = dateControl.afterLastDeadline ?? {};
+  const isMainRule = ruleNumber === JSON_RULE_START;
 
   const listBeforeRelease = mapField(rule.listBeforeRelease);
   const releaseDateField = mapField(dateControl.releaseDate);
@@ -163,7 +164,8 @@ function prepareRuleRow(
   const ruleRow = JSON.stringify({
     assessment_id: assessmentId,
     number: ruleNumber,
-    list_before_release: listBeforeRelease.value ?? false,
+    // Main rules default to false; overrides inherit when omitted.
+    list_before_release: isMainRule ? (listBeforeRelease.value ?? false) : listBeforeRelease.value,
     target_type: targetType,
     date_control_release_date_overridden: releaseDateField.overridden,
     date_control_release_date: releaseDateField.value,

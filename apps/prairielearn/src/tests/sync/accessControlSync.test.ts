@@ -441,6 +441,62 @@ describe('Access control syncing', () => {
       assert.isOk(main);
       assert.equal(main.rule.listBeforeRelease, false);
     });
+
+    it('preserves inheritance for label overrides when listBeforeRelease is omitted', async () => {
+      const groupName = 'Extended time';
+      const syncedRules = await syncRulesAndRead(
+        [
+          makeAccessControlRule({ listBeforeRelease: true }),
+          makeAccessControlRule({
+            labels: [groupName],
+            dateControl: {
+              dueDate: '2024-03-28T23:59:00',
+            },
+          }),
+        ],
+        {
+          studentLabels: [groupName],
+        },
+      );
+
+      const assessment = await getAssessment(util.ASSESSMENT_ID);
+      const rules = await selectAccessControlRulesForAssessment(assessment);
+      const override = rules.find((rule) => rule.targetType === 'student_label');
+
+      assert.isOk(override);
+      assert.isUndefined(override.rule.listBeforeRelease);
+
+      const overrideRow = syncedRules.find((rule) => rule.target_type === 'student_label');
+      assert.isOk(overrideRow);
+      assert.isNull(overrideRow.list_before_release);
+    });
+  });
+
+  it('preserves existing access control rows when the assessment has unrelated sync errors', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+      util.ASSESSMENT_ID
+    ].accessControl = [makeAccessControlRule()];
+
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
+
+    let syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+    assert.equal(syncedRules.length, 1);
+
+    delete (
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[util.ASSESSMENT_ID] as {
+        title?: string;
+      }
+    ).title;
+
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+    assert.equal(syncedRules.length, 1);
+
+    const assessment = await getAssessment(util.ASSESSMENT_ID);
+    assert.isNotNull(assessment.sync_errors);
+    assert.match(assessment.sync_errors, /must have required property 'title'/);
   });
 
   describe('Deadline handling', () => {

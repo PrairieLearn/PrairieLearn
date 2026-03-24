@@ -156,7 +156,13 @@ function buildAfterComplete(
 function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRuleInput {
   const rule: AccessControlJson = {};
 
-  if (row.list_before_release != null) rule.listBeforeRelease = row.list_before_release;
+  if (isOverride(row)) {
+    if (row.list_before_release != null) {
+      rule.listBeforeRelease = row.list_before_release;
+    }
+  } else {
+    rule.listBeforeRelease = row.list_before_release ?? false;
+  }
 
   const dateControl = buildDateControl(row);
   if (dateControl !== undefined) rule.dateControl = dateControl;

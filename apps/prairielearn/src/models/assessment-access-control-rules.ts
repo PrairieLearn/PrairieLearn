@@ -7,7 +7,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 export interface EnrollmentAccessControlRuleData {
   id?: string;
-  listBeforeRelease: boolean;
+  listBeforeRelease: boolean | null;
   releaseDateOverridden: boolean;
   releaseDate: string | null;
   dueDateOverridden: boolean;
