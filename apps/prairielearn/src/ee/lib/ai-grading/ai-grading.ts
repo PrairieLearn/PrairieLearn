@@ -46,9 +46,8 @@ import { createServerJob } from '../../../lib/server-jobs.js';
 import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
 import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
 import {
-  deductCreditsForAiGrading,
+  insertAiGradingJobAndDeductCreditsIfNeeded,
   selectCreditPool,
-  selectCreditPoolForUpdate,
 } from '../../../models/ai-grading-credit-pool.js';
 import { updateCourseInstanceUsagesForAiGradingResponses } from '../../../models/course-instance-usages.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
@@ -113,52 +112,6 @@ function calculateTotalGradingCostMilliDollars({
   return calculateCostWithFeeMilliDollars(totalRawCost, config.aiGradingInfrastructureFeePercent);
 }
 
-/**
- * If cost tracking is enabled, calculate the total grading cost and deduct
- * credits for a single AI grading operation. Must be called inside the same
- * transaction that inserts the grading job.
- */
-async function deductAiGradingCostIfNeeded({
-  trackRateLimitAndCost,
-  model_id,
-  gradingResponseWithRotationIssue,
-  rotationCorrections,
-  finalGradingResponse,
-  course_instance_id,
-  user_id,
-  ai_grading_job_id,
-  assessment_question_id,
-  instance_question_id,
-}: {
-  trackRateLimitAndCost: boolean;
-  model_id: AiGradingModelId;
-  gradingResponseWithRotationIssue?: GenerateObjectResult<any>;
-  rotationCorrections?: Record<string, { response: GenerateObjectResult<any> }>;
-  finalGradingResponse: GenerateObjectResult<any>;
-  course_instance_id: string;
-  user_id: string;
-  ai_grading_job_id: string;
-  assessment_question_id: string;
-  instance_question_id: string;
-}): Promise<void> {
-  if (!trackRateLimitAndCost) return;
-
-  const costMilliDollars = calculateTotalGradingCostMilliDollars({
-    model_id,
-    gradingResponseWithRotationIssue,
-    rotationCorrections,
-    finalGradingResponse,
-  });
-  await deductCreditsForAiGrading({
-    course_instance_id,
-    cost_milli_dollars: costMilliDollars,
-    user_id,
-    ai_grading_job_id,
-    assessment_question_id,
-    reason: `AI graded instance question ${instance_question_id}`,
-  });
-}
-
 async function finalizeAiGradingPersistence({
   createGradingJob,
   trackRateLimitAndCost,
@@ -198,6 +151,14 @@ async function finalizeAiGradingPersistence({
 }): Promise<void> {
   await runInTransactionAsync(async () => {
     const grading_job_id = await createGradingJob();
+    const costMilliDollars = trackRateLimitAndCost
+      ? calculateTotalGradingCostMilliDollars({
+          model_id,
+          gradingResponseWithRotationIssue,
+          rotationCorrections,
+          finalGradingResponse,
+        })
+      : 0;
 
     const aiGradingJobParams = {
       grading_job_id,
@@ -208,41 +169,29 @@ async function finalizeAiGradingPersistence({
       course_instance_id: course_instance.id,
     };
 
-    // This section is deadlock-prone under parallel grading for one course
-    // instance: ai_grading_jobs insert takes an FK KEY SHARE on
-    // course_instances, then credit deduction needs FOR UPDATE on that same
-    // row. Take FOR UPDATE here first so concurrent workers use one lock order.
-    if (trackRateLimitAndCost) {
-      await selectCreditPoolForUpdate(course_instance.id);
-    }
-
-    const aiGradingJobId = rotationCorrectionApplied
-      ? await run(async () => {
-          assert(gradingResponseWithRotationIssue);
-          assert(rotationCorrections);
-          return await insertAiGradingJobWithRotationCorrection({
-            ...aiGradingJobParams,
-            gradingResponseWithRotationIssue,
-            rotationCorrections,
-            gradingResponseWithRotationCorrection: finalGradingResponse,
-          });
-        })
-      : await insertAiGradingJob({
-          ...aiGradingJobParams,
-          response: finalGradingResponse,
-        });
-
-    await deductAiGradingCostIfNeeded({
+    await insertAiGradingJobAndDeductCreditsIfNeeded({
       trackRateLimitAndCost,
-      model_id,
-      gradingResponseWithRotationIssue,
-      rotationCorrections,
-      finalGradingResponse,
       course_instance_id: course_instance.id,
+      cost_milli_dollars: costMilliDollars,
       user_id: authn_user_id,
-      ai_grading_job_id: aiGradingJobId,
       assessment_question_id,
-      instance_question_id,
+      reason: `AI graded instance question ${instance_question_id}`,
+      createAiGradingJob: async () =>
+        rotationCorrectionApplied
+          ? await run(async () => {
+              assert(gradingResponseWithRotationIssue);
+              assert(rotationCorrections);
+              return await insertAiGradingJobWithRotationCorrection({
+                ...aiGradingJobParams,
+                gradingResponseWithRotationIssue,
+                rotationCorrections,
+                gradingResponseWithRotationCorrection: finalGradingResponse,
+              });
+            })
+          : await insertAiGradingJob({
+              ...aiGradingJobParams,
+              response: finalGradingResponse,
+            }),
     });
 
     await updateCourseInstanceUsagesForAiGradingResponses({
