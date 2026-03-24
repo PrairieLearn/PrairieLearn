@@ -116,6 +116,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
   MathfieldElement.soundsDirectory = null;
   calculatorInputElement.menuItems = [];
+  // the `math-virtual-keyboard-policy` attribute doesn't seem to work when set in HTML
+  calculatorInputElement.mathVirtualKeyboardPolicy = 'manual';
   calculatorOutput.dataset.displayMode = 'numeric';
   calculatorOutput.dataset.angleMode = 'rad';
 
