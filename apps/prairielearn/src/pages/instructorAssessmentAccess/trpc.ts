@@ -145,9 +145,15 @@ function formJsonToEnrollmentRuleData(
   };
 }
 
-export const AccessControlJsonInputSchema = AccessControlJsonSchema.omit({ name: true }).extend({
-  id: z.string().optional(),
-});
+// TODO: Add client-side validation for duplicate PrairieTest exam UUIDs and
+// duplicate deadline dates before this goes live. The sync code
+// (validateAssessmentRules) catches these server-side, but the UI should block
+// saves proactively so users get immediate feedback instead of a sync error.
+export const AccessControlJsonInputSchema = AccessControlJsonSchema.omit({ name: true })
+  .extend({
+    id: z.string().optional(),
+  })
+  .strip();
 
 const EnrollmentRuleInputSchema = z.object({
   id: z.string().optional(),
