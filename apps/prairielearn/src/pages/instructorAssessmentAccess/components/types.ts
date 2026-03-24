@@ -1,4 +1,4 @@
-import { formatInTimeZone } from 'date-fns-tz';
+import { Temporal } from '@js-temporal/polyfill';
 import { z } from 'zod';
 
 import type { AccessControlJson } from '../../../schemas/accessControl.js';
@@ -164,7 +164,10 @@ function toLocalDatetimeValue(
 ): string | null | undefined {
   if (typeof value === 'string') {
     if (value.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(value)) {
-      return formatInTimeZone(new Date(value), displayTimezone, "yyyy-MM-dd'T'HH:mm:ss");
+      return Temporal.Instant.fromEpochMilliseconds(new Date(value).getTime())
+        .toZonedDateTimeISO(displayTimezone)
+        .toPlainDateTime()
+        .toString();
     }
     return value;
   }
@@ -335,7 +338,8 @@ function mainRuleToJson(rule: MainRuleData, displayTimezone: string): AccessCont
     // round-trips as a real date (matching the course-instance publishing
     // pattern).
     output.dateControl.releaseDate =
-      rule.releaseDate || formatInTimeZone(new Date(), displayTimezone, "yyyy-MM-dd'T'HH:mm:ss");
+      rule.releaseDate ||
+      Temporal.Now.zonedDateTimeISO(displayTimezone).toPlainDateTime().toString();
     if (rule.dueDate) output.dateControl.dueDate = rule.dueDate;
     if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (rule.lateDeadlines.length > 0) output.dateControl.lateDeadlines = rule.lateDeadlines;
