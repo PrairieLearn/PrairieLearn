@@ -74,12 +74,6 @@ export function AdministratorCourseFormFields({
   const pathMatchesRepo =
     !repositoryShortName || !path || path === `${coursesRoot}/${repositoryShortName}`;
 
-  const prefixReady = !institutionId || prefixData !== undefined || isPrefixQueryError;
-  const expectedRepoShortName =
-    prefixReady && shortName.trim() ? buildRepoShortName(prefixData?.prefix, shortName) : null;
-  const repoMatchesShortName =
-    !expectedRepoShortName || !repositoryShortName || repositoryShortName === expectedRepoShortName;
-
   const institutionAutoFilled =
     autoFilledInstitutionId != null && institutionId === autoFilledInstitutionId;
   const timezoneAutoFilled =
@@ -103,6 +97,13 @@ export function AdministratorCourseFormFields({
   });
 
   const effectivePrefix = suggestPrefixQuery.data?.prefix ?? prefixData?.prefix;
+
+  const prefixReady =
+    !institutionId || prefixData !== undefined || isPrefixQueryError || effectivePrefix != null;
+  const expectedRepoShortName =
+    prefixReady && shortName.trim() ? buildRepoShortName(effectivePrefix, shortName) : null;
+  const repoMatchesShortName =
+    !expectedRepoShortName || !repositoryShortName || repositoryShortName === expectedRepoShortName;
 
   useEffect(() => {
     if (!shortName) return;
