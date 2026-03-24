@@ -26,10 +26,6 @@ interface CourseInstanceMigrationAnalysis {
   allCanMigrate: boolean;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function getCreditRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
   return rules
     .filter((r) => (r.credit ?? 0) > 0)
@@ -78,10 +74,6 @@ function buildAfterComplete(
   if (hidesScore) result.hideScore = true;
   return result;
 }
-
-// ---------------------------------------------------------------------------
-// Archetype classification
-// ---------------------------------------------------------------------------
 
 interface RuleAnalysis {
   isPrairieTest: boolean;
@@ -203,10 +195,6 @@ export function classifyArchetype(rules: AssessmentAccessRuleJson[]): string {
   if (has.modeGate && creditRules.length === 0) return 'mode-gated';
   return 'unclassified';
 }
-
-// ---------------------------------------------------------------------------
-// Migration functions
-// ---------------------------------------------------------------------------
 
 function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
   result: AccessControlJsonInput;
@@ -427,10 +415,6 @@ function migrateNoOp(_rules: AssessmentAccessRuleJson[]): {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Dispatcher
-// ---------------------------------------------------------------------------
-
 export function migrateAllowAccess(
   archetype: string,
   rules: AssessmentAccessRuleJson[],
@@ -480,10 +464,7 @@ function isMigratable(archetype: string, warnings: string[]): boolean {
   return archetype !== 'unclassified' && !warnings.some((w) => w.startsWith('Unsupported'));
 }
 
-// ---------------------------------------------------------------------------
-// JSON-level migration (pure, synchronous)
-// ---------------------------------------------------------------------------
-
+/** Migrates assessment JSON from legacy allowAccess to modern accessControl format. */
 export function migrateAssessmentJson(
   jsonContent: string,
 ): { json: string; warnings: string[] } | null {
@@ -503,10 +484,6 @@ export function migrateAssessmentJson(
   delete data.allowAccess;
   return { json: JSON.stringify(data), warnings };
 }
-
-// ---------------------------------------------------------------------------
-// Analysis functions
-// ---------------------------------------------------------------------------
 
 export async function analyzeAssessmentFile(
   filePath: string,

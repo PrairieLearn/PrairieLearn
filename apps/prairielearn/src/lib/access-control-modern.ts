@@ -64,11 +64,14 @@ function resolverResultToSprocAuthzAssessment(
   };
 }
 
-export async function resolveModernAssessmentAccess(
-  input: ModernAssessmentAccessInput,
-): Promise<SprocAuthzAssessment & { list_before_release: boolean }> {
-  const { assessment, userId, courseInstance, authzData, reqDate, displayTimezone } = input;
-
+export async function resolveModernAssessmentAccess({
+  assessment,
+  userId,
+  courseInstance,
+  authzData,
+  reqDate,
+  displayTimezone,
+}: ModernAssessmentAccessInput): Promise<SprocAuthzAssessment & { show_before_release: boolean }> {
   const [rules, student, prairieTestReservations] = await Promise.all([
     selectAccessControlRulesForAssessment(assessment),
     selectStudentContext(userId, courseInstance),
@@ -90,7 +93,7 @@ export async function resolveModernAssessmentAccess(
 
   return {
     ...resolverResultToSprocAuthzAssessment(result, authzData.mode),
-    list_before_release: result.listBeforeRelease,
+    show_before_release: result.showBeforeRelease,
   };
 }
 
@@ -104,12 +107,16 @@ export interface ModernAssessmentInstanceAccessInput extends ModernAssessmentAcc
   groupWork: boolean | null;
 }
 
-export async function resolveModernAssessmentInstanceAccess(
-  input: ModernAssessmentInstanceAccessInput,
-): Promise<SprocAuthzAssessmentInstance & { list_before_release: boolean }> {
-  const assessmentResult = await resolveModernAssessmentAccess(input);
+export async function resolveModernAssessmentInstanceAccess({
+  assessmentInstance,
+  groupWork,
+  ...assessmentInput
+}: ModernAssessmentInstanceAccessInput): Promise<
+  SprocAuthzAssessmentInstance & { show_before_release: boolean }
+> {
+  const assessmentResult = await resolveModernAssessmentAccess(assessmentInput);
 
-  const { assessmentInstance, authzData, reqDate, groupWork } = input;
+  const { authzData, reqDate } = assessmentInput;
 
   const timeLimitExpired =
     assessmentInstance.date_limit != null && assessmentInstance.date_limit <= reqDate;
@@ -119,7 +126,7 @@ export async function resolveModernAssessmentInstanceAccess(
   // the instance's team. For individual work, check that the user_id matches.
   let ownsInstance: boolean;
   if (groupWork && assessmentInstance.team_id != null) {
-    const userGroupId = await getGroupId(input.assessment.id, authzData.user.id);
+    const userGroupId = await getGroupId(assessmentInput.assessment.id, authzData.user.id);
     ownsInstance = userGroupId != null && idsEqual(userGroupId, assessmentInstance.team_id);
   } else {
     ownsInstance = assessmentInstance.user_id === authzData.user.id;
@@ -154,11 +161,15 @@ interface ModernAssessmentAccessBatchInput {
   displayTimezone: string;
 }
 
-export async function resolveModernAssessmentAccessBatch(
-  input: ModernAssessmentAccessBatchInput,
-): Promise<Map<string, SprocAuthzAssessment & { list_before_release: boolean }>> {
-  const { courseInstance, userId, authzData, reqDate, displayTimezone } = input;
-
+export async function resolveModernAssessmentAccessBatch({
+  courseInstance,
+  userId,
+  authzData,
+  reqDate,
+  displayTimezone,
+}: ModernAssessmentAccessBatchInput): Promise<
+  Map<string, SprocAuthzAssessment & { show_before_release: boolean }>
+> {
   const [allRules, student, prairieTestReservations] = await Promise.all([
     selectAccessControlRulesForCourseInstance(courseInstance),
     selectStudentContext(userId, courseInstance),
@@ -167,7 +178,7 @@ export async function resolveModernAssessmentAccessBatch(
       : Promise.resolve([]),
   ]);
 
-  const results = new Map<string, SprocAuthzAssessment & { list_before_release: boolean }>();
+  const results = new Map<string, SprocAuthzAssessment & { show_before_release: boolean }>();
 
   for (const [assessmentId, rules] of allRules) {
     const result = resolveAccessControl({
@@ -183,7 +194,7 @@ export async function resolveModernAssessmentAccessBatch(
 
     results.set(assessmentId, {
       ...resolverResultToSprocAuthzAssessment(result, authzData.mode),
-      list_before_release: result.listBeforeRelease,
+      show_before_release: result.showBeforeRelease,
     });
   }
 

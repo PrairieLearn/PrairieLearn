@@ -10,6 +10,7 @@ import {
   RawStudentAssessmentSchema,
   RawStudentAssessmentSetSchema,
 } from './client/safe-db-types.js';
+import { AssessmentSchema } from './db-types.js';
 
 const StudentGradebookRowSchema = z
   .object({
@@ -17,7 +18,7 @@ const StudentGradebookRowSchema = z
     assessment_instance: RawStudentAssessmentInstanceSchema__UNSAFE,
     assessment_set: RawStudentAssessmentSetSchema,
     show_closed_assessment_score: z.boolean(),
-    modern_access_control: z.boolean(),
+    modern_access_control: AssessmentSchema.shape.modern_access_control,
     assessment_id: IdSchema,
   })
   .transform((data) => {
@@ -39,7 +40,7 @@ const StaffGradebookRowSchema = z
     assessment_instance: RawStaffAssessmentInstanceSchema,
     assessment_set: RawStaffAssessmentSetSchema,
     show_closed_assessment_score: z.boolean(),
-    modern_access_control: z.boolean(),
+    modern_access_control: AssessmentSchema.shape.modern_access_control,
     assessment_id: IdSchema,
   })
   .brand('StaffGradebookRow');

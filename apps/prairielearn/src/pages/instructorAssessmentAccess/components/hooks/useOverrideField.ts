@@ -25,6 +25,8 @@ export function useOverrideField(index: number, fieldName: string) {
     if (!current.includes(fieldName)) {
       setValue(
         `overrides.${index}.overriddenFields` as Path<AccessControlFormData>,
+        // react-hook-form's setValue types don't support dynamically-keyed
+        // arrays, so the cast is required to satisfy the generic constraint.
         [...current, fieldName] as never,
         { shouldDirty: true },
       );

@@ -41,7 +41,7 @@ const CourseInstanceAccessControlRuleRowSchema = AccessControlRuleRowSchema.exte
 type AccessControlRuleRow = z.infer<typeof AccessControlRuleRowSchema>;
 
 function isOverride(row: AccessControlRuleRow): boolean {
-  return row.number > 0;
+  return row.target_type !== 'none';
 }
 
 function buildDateControl(row: AccessControlRuleRow): AccessControlJson['dateControl'] | undefined {

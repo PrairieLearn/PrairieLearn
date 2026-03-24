@@ -1151,33 +1151,29 @@ export function validateAccessControlArray({
     return results;
   }
 
-  // An assignment-level rule has no `labels` property (applies to everyone)
-  const assignmentLevelRules = accessControlJsonArray.filter(
+  // A main rule has no `labels` property (applies to everyone)
+  const mainRules = accessControlJsonArray.filter(
     (rule) => rule.labels == null || rule.labels.length === 0,
   );
 
-  if (assignmentLevelRules.length === 0) {
-    // Error on first rule if no assignment-level rule exists
+  if (mainRules.length === 0) {
+    // Error on first rule if no main rule exists
+    results[0].errors.push('No main rule found. The first rule must apply to everyone.');
+  } else if (mainRules.length > 1) {
+    // Error on first rule if multiple main rules exist
     results[0].errors.push(
-      'No assignment-level rule found. The first rule must apply to everyone.',
-    );
-  } else if (assignmentLevelRules.length > 1) {
-    // Error on first rule if multiple assignment-level rules exist
-    results[0].errors.push(
-      `Found ${assignmentLevelRules.length} assignment-level rules. Only one rule should apply to everyone.`,
+      `Found ${mainRules.length} main rules. Only one rule should apply to everyone.`,
     );
   } else {
-    // The DB constraint `check_first_rule_is_none` requires the assignment-level rule at index 0
+    // The DB constraint `check_first_rule_is_none` requires the main rule at index 0
     const firstRule = accessControlJsonArray[0];
-    const isFirstRuleAssignmentLevel = firstRule.labels == null || firstRule.labels.length === 0;
-    if (!isFirstRuleAssignmentLevel) {
-      results[0].errors.push(
-        'The assignment-level rule (without labels) must be the first rule in the array.',
-      );
+    const isFirstRuleMain = firstRule.labels == null || firstRule.labels.length === 0;
+    if (!isFirstRuleMain) {
+      results[0].errors.push('The main rule (without labels) must be the first rule in the array.');
     }
   }
 
-  // Check for integrations on non-assignment-level rules
+  // Check for integrations on non-main rules
   accessControlJsonArray.forEach((rule, index) => {
     const labels = rule.labels ?? [];
     const seenLabels = new Set<string>();
@@ -1206,13 +1202,13 @@ export function validateAccessControlArray({
       }
     }
 
-    const isAssignmentLevel = rule.labels == null || rule.labels.length === 0;
-    if (!isAssignmentLevel && rule.integrations != null) {
+    const isMainRule = rule.labels == null || rule.labels.length === 0;
+    if (!isMainRule && rule.integrations != null) {
       results[index].errors.push(
-        'integrations can only be specified on assignment-level rules (rules without labels).',
+        'integrations can only be specified on the main rule (the rule without labels).',
       );
     }
-    if (!isAssignmentLevel && rule.listBeforeRelease !== undefined) {
+    if (!isMainRule && rule.listBeforeRelease !== undefined) {
       results[index].errors.push(
         'listBeforeRelease can only be specified on the main rule (the rule without labels).',
       );
