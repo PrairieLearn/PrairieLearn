@@ -16,6 +16,7 @@ import { useTRPC } from '../trpc/administrator/context.js';
 import {
   AdministratorCourseFormFields,
   type CourseFormFieldValues,
+  buildRepoShortName,
 } from './AdminstratorCourseFormFields.js';
 import { JobStatus } from './JobStatus.js';
 
@@ -303,16 +304,24 @@ function CourseRequestApproveModal({
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.createCourse.mutationOptions());
 
-  const repoName = 'pl-' + request.short_name.replaceAll(' ', '').toLowerCase();
+  const userInstitution = institutions.find((i) => i.id === request.user_institution_id);
+  const isDefaultInstitution = userInstitution?.short_name === 'Default';
+  const autoFilledInstitutionId =
+    userInstitution && !isDefaultInstitution ? userInstitution.id : null;
+  const defaultInstitutionId = autoFilledInstitutionId ?? '';
+  const defaultTimezone =
+    userInstitution && autoFilledInstitutionId ? userInstitution.display_timezone : '';
+
+  const repoName = buildRepoShortName(null, request.short_name);
   const path = coursesRoot + '/' + repoName;
 
   const methods = useForm<CourseRequestApproveFormData>({
     mode: 'onSubmit',
     defaultValues: {
-      institution_id: '',
+      institution_id: defaultInstitutionId,
       short_name: request.short_name,
       title: request.title,
-      display_timezone: '',
+      display_timezone: defaultTimezone,
       path,
       repository_short_name: repoName,
       github_user: request.github_user ?? '',
@@ -346,14 +355,14 @@ function CourseRequestApproveModal({
   };
 
   const legitimacyQuery = useQuery({
-    ...trpc.courseRequests.checkInstructorLegitimacyQuery.queryOptions({
+    ...trpc.courseRequests.checkInstructorLegitimacy.queryOptions({
       courseRequestId: request.id,
     }),
     enabled: false,
   });
 
   return (
-    <Modal show={show} backdrop="static" onHide={onCancel}>
+    <Modal show={show} backdrop="static" size="lg" onHide={onCancel}>
       <FormProvider {...methods}>
         <form
           name={`create-course-from-request-form-${request.id}`}
@@ -506,11 +515,9 @@ function CourseRequestApproveModal({
               institutions={institutions}
               availableTimezones={availableTimezones}
               coursesRoot={coursesRoot}
-              suggestPrefixOptions={{
-                institutionName: request.institution ?? '',
-                emailDomain: request.work_email?.split('@')[1] ?? '',
-              }}
+              emailDomain={request.work_email?.split('@')[1] ?? ''}
               aiSecretsConfigured={aiSecretsConfigured}
+              autoFilledInstitutionId={autoFilledInstitutionId}
             />
             <div className="mb-3">
               <label className="form-label" htmlFor="courseRequestAddInputGithubUser">

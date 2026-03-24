@@ -159,12 +159,14 @@ export async function suggestTimezone({
   };
 }
 
-export async function suggestPrefixFromEmailDomain({
+export async function suggestInstitutionPrefix({
+  institutionLongName,
+  institutionShortName,
   emailDomain,
-  institutionName,
 }: {
+  institutionLongName: string;
+  institutionShortName: string;
   emailDomain: string;
-  institutionName: string;
 }): Promise<PrefixResult> {
   const openai = createCourseRequestAiClient();
 
@@ -177,12 +179,14 @@ export async function suggestPrefixFromEmailDomain({
         'Identify the institution as a whole, NOT a department. For example, if the domain is "cs.illinois.edu", the prefix is "uiuc" (not "cs").',
         'Derive the prefix from the institution\'s primary domain name. For example, "berkeley.edu" gives "berkeley", "ubc.ca" gives "ubc".',
         "Search the web to find the institution's primary domain if it is not obvious from the email domain.",
+        'You MUST always return a non-empty prefix. If the domain or institution is unfamiliar, derive the best short prefix you can from the available information (e.g. the domain name itself). Never refuse or return an empty prefix.',
       ]),
     },
     {
       role: 'user',
       content: formatPrompt([
-        `Institution name: ${institutionName}`,
+        `Institution name: ${institutionLongName}`,
+        `Institution short name: ${institutionShortName}`,
         `Email domain: ${emailDomain}`,
       ]),
     },

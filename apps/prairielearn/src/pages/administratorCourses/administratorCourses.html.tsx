@@ -291,12 +291,8 @@ function CourseInsertModal({
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors, isSubmitting },
   } = methods;
-
-  const institutionId = watch('institution_id');
-  const selectedInstitution = institutions.find((i) => i.id === institutionId);
 
   const onSubmit = (data: InsertCourseFormData) => {
     mutation.mutate(
@@ -325,10 +321,6 @@ function CourseInsertModal({
               institutions={institutions}
               availableTimezones={availableTimezones}
               coursesRoot={coursesRoot}
-              suggestPrefixOptions={{
-                institutionName: selectedInstitution?.long_name ?? '',
-                emailDomain: selectedInstitution?.short_name ?? '',
-              }}
               aiSecretsConfigured={aiSecretsConfigured}
             />
             <div className="mb-3">

@@ -1,8 +1,10 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
+import { contains } from '@prairielearn/path-utils';
 import { IdSchema } from '@prairielearn/zod';
 
+import { config } from '../../lib/config.js';
 import { checkCoursePathExists, checkCourseRepositoryUrlExists } from '../../lib/course.js';
 import {
   deleteCourse,
@@ -33,6 +35,13 @@ const insert = t.procedure
     }),
   )
   .mutation(async ({ input, ctx }) => {
+    if (config.coursesRoot && !contains(config.coursesRoot, input.path, false)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `Path must be within ${config.coursesRoot}/`,
+      });
+    }
+
     const repoExists = await checkCourseRepositoryUrlExists(input.repository);
     if (repoExists) {
       throw new TRPCError({
@@ -112,6 +121,12 @@ const updateColumn = t.procedure
     }
 
     if (input.columnName === 'path') {
+      if (config.coursesRoot && !contains(config.coursesRoot, input.value, false)) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Path must be within ${config.coursesRoot}/`,
+        });
+      }
       const pathExists = await checkCoursePathExists(input.value, input.courseId);
       if (pathExists) {
         throw new TRPCError({

@@ -1,11 +1,13 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
+import { contains } from '@prairielearn/path-utils';
 import { IdSchema } from '@prairielearn/zod';
 
+import { config } from '../../lib/config.js';
 import {
   checkInstructorLegitimacy,
-  suggestPrefixFromEmailDomain,
+  suggestInstitutionPrefix,
 } from '../../lib/course-request-ai.js';
 import {
   createCourseFromRequest,
@@ -60,6 +62,13 @@ const createCourse = t.procedure
   )
   .output(z.object({ jobSequenceId: z.string() }))
   .mutation(async ({ input, ctx }) => {
+    if (config.coursesRoot && !contains(config.coursesRoot, input.path, false)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `Path must be within ${config.coursesRoot}/`,
+      });
+    }
+
     const repoExists = await checkCourseRepositoryExists(input.repoShortName);
     if (repoExists) {
       throw new TRPCError({
@@ -90,7 +99,7 @@ const createCourse = t.procedure
     return { jobSequenceId };
   });
 
-const checkInstructorLegitimacyQuery = t.procedure
+const checkInstructorLegitimacyProcedure = t.procedure
   .use(requireAdministrator)
   .input(z.object({ courseRequestId: IdSchema }))
   .output(
@@ -127,7 +136,7 @@ const checkInstructorLegitimacyQuery = t.procedure
     });
   });
 
-const selectInstitutionPrefixQuery = t.procedure
+const selectInstitutionPrefixProcedure = t.procedure
   .use(requireAdministrator)
   .input(z.object({ institutionId: IdSchema }))
   .output(
@@ -140,9 +149,15 @@ const selectInstitutionPrefixQuery = t.procedure
     return { prefix: row?.prefix ?? null };
   });
 
-const suggestPrefixFromEmailQuery = t.procedure
+const suggestInstitutionPrefixProcedure = t.procedure
   .use(requireAdministrator)
-  .input(z.object({ institutionName: z.string(), emailDomain: z.string() }))
+  .input(
+    z.object({
+      institutionLongName: z.string(),
+      institutionShortName: z.string(),
+      emailDomain: z.string(),
+    }),
+  )
   .output(
     z.object({
       prefix: z.string(),
@@ -162,16 +177,17 @@ const suggestPrefixFromEmailQuery = t.procedure
     }),
   )
   .query(async ({ input }) => {
-    return await suggestPrefixFromEmailDomain({
+    return await suggestInstitutionPrefix({
+      institutionLongName: input.institutionLongName,
+      institutionShortName: input.institutionShortName,
       emailDomain: input.emailDomain,
-      institutionName: input.institutionName,
     });
   });
 
 export const administratorCourseRequestsRouter = t.router({
-  checkInstructorLegitimacyQuery,
-  selectInstitutionPrefixQuery,
-  suggestPrefixFromEmailQuery,
+  checkInstructorLegitimacy: checkInstructorLegitimacyProcedure,
+  selectInstitutionPrefix: selectInstitutionPrefixProcedure,
+  suggestInstitutionPrefix: suggestInstitutionPrefixProcedure,
   deny,
   updateNote,
   createCourse,
