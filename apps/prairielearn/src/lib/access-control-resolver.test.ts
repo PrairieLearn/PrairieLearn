@@ -21,7 +21,7 @@ function makeMainRule(rule: AccessControlJson = {}): AccessControlRuleInput {
     targetType: 'none',
     enrollmentIds: [],
     studentLabelIds: [],
-    prairietestExamUuids: [],
+    prairietestExams: [],
   };
 }
 
@@ -36,7 +36,7 @@ function makeOverrideRule(
     targetType: opts.targetType ?? 'enrollment',
     enrollmentIds: opts.enrollmentIds ?? [],
     studentLabelIds: opts.studentLabelIds ?? [],
-    prairietestExamUuids: opts.prairietestExamUuids ?? [],
+    prairietestExams: opts.prairietestExams ?? [],
   };
 }
 
@@ -651,7 +651,7 @@ describe('resolveAccessControl', () => {
       targetType: 'none',
       enrollmentIds: [],
       studentLabelIds: [],
-      prairietestExamUuids: ['exam-uuid-1'],
+      prairietestExams: [{ uuid: 'exam-uuid-1', readOnly: false }],
     };
 
     const validReservation: PrairieTestReservation = {
@@ -722,6 +722,22 @@ describe('resolveAccessControl', () => {
       expect(result.examAccessEnd).toEqual(validReservation.accessEnd);
     });
 
+    it('sets active to false for readOnly exam', () => {
+      const readOnlyRule: AccessControlRuleInput = {
+        ...prairieTestMainRule,
+        prairietestExams: [{ uuid: 'exam-uuid-1', readOnly: true }],
+      };
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [readOnlyRule],
+        authzMode: 'Exam',
+        prairieTestReservations: [validReservation],
+      });
+      expect(result.authorized).toBe(true);
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(false);
+    });
+
     it('denies access for non-exam rule when in PrairieTest exam mode', () => {
       const result = resolveAccessControl({
         ...baseInput,
@@ -778,7 +794,7 @@ describe('resolveAccessControl', () => {
             targetType: 'none',
             enrollmentIds: [],
             studentLabelIds: [],
-            prairietestExamUuids: ['exam-uuid-1'],
+            prairietestExams: [{ uuid: 'exam-uuid-1', readOnly: false }],
           },
         ],
         authzMode: 'Exam',

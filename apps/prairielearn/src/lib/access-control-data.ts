@@ -20,12 +20,16 @@ const sql = loadSqlEquiv(import.meta.url);
 
 const DeadlineJsonSchema = z.array(z.object({ date: z.string(), credit: z.number() })).nullable();
 
+const PrairieTestExamJsonSchema = z
+  .array(z.object({ uuid: z.string(), read_only: z.boolean() }))
+  .nullable();
+
 const AccessControlRuleRowSchema = AssessmentAccessControlRuleSchema.omit({
   assessment_id: true,
 }).extend({
   enrollment_ids: z.array(IdSchema),
   student_label_ids: z.array(IdSchema),
-  prairietest_exam_uuids: z.array(z.string()),
+  prairietest_exams: PrairieTestExamJsonSchema,
   early_deadlines: DeadlineJsonSchema,
   late_deadlines: DeadlineJsonSchema,
 });
@@ -161,10 +165,15 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
   if (afterComplete !== undefined) rule.afterComplete = afterComplete;
 
   // Integrations are only on main rules (number 0)
-  if (!isOverride(row) && row.prairietest_exam_uuids.length > 0) {
+  const prairietestExamsRaw = (!isOverride(row) && row.prairietest_exams) || [];
+  const prairietestExams = prairietestExamsRaw.map((e) => ({
+    uuid: e.uuid,
+    readOnly: e.read_only,
+  }));
+  if (prairietestExams.length > 0) {
     rule.integrations = {
       prairieTest: {
-        exams: row.prairietest_exam_uuids.map((uuid) => ({ examUuid: uuid })),
+        exams: prairietestExams.map((e) => ({ examUuid: e.uuid, readOnly: e.readOnly })),
       },
     };
   }
@@ -175,7 +184,7 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
     targetType: row.target_type,
     enrollmentIds: row.enrollment_ids,
     studentLabelIds: row.student_label_ids,
-    prairietestExamUuids: !isOverride(row) ? row.prairietest_exam_uuids : [],
+    prairietestExams,
   };
 }
 

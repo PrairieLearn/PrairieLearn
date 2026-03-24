@@ -8,7 +8,7 @@ export interface AccessControlRuleInput {
   targetType: 'none' | 'enrollment' | 'student_label';
   enrollmentIds: string[];
   studentLabelIds: string[];
-  prairietestExamUuids: string[];
+  prairietestExams: Array<{ uuid: string; readOnly: boolean }>;
 }
 
 export interface StudentContext {
@@ -453,8 +453,8 @@ export function resolveAccessControl(
 
   let creditResult = computeCredit(effectiveRule.dateControl, date, effectiveRule, authzMode);
 
-  const prairieTestExamUuids = mainRuleInput.prairietestExamUuids;
-  const hasPrairieTestExams = prairieTestExamUuids.length > 0;
+  const prairieTestExams = mainRuleInput.prairietestExams;
+  const hasPrairieTestExams = prairieTestExams.length > 0;
   let examAccessEnd: Date | null = null;
 
   if (hasPrairieTestExams) {
@@ -463,17 +463,21 @@ export function resolveAccessControl(
       return { ...UNAUTHORIZED_RESULT };
     }
 
-    const matchingReservation = prairieTestReservations.find((r) =>
-      prairieTestExamUuids.includes(r.examUuid),
+    const matchedExam = prairieTestExams.find((exam) =>
+      prairieTestReservations.some((r) => r.examUuid === exam.uuid),
     );
-    if (!matchingReservation) {
+    if (!matchedExam) {
       return { ...UNAUTHORIZED_RESULT };
     }
 
+    const matchingReservation = prairieTestReservations.find(
+      (r) => r.examUuid === matchedExam.uuid,
+    )!;
     examAccessEnd = matchingReservation.accessEnd;
 
     // PrairieTest controls access — always grant full credit.
-    creditResult = { ...creditResult, credit: 100, active: true };
+    // readOnly exams set active=false so students can view but not submit.
+    creditResult = { ...creditResult, credit: 100, active: !matchedExam.readOnly };
   } else if (authzMode === 'Exam') {
     // No PrairieTest exams configured but student is in PrairieTest exam mode
     return { ...UNAUTHORIZED_RESULT };

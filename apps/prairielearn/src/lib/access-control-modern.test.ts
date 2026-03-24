@@ -20,7 +20,7 @@ describe('resolveModernAssessmentInstanceAccess', () => {
         targetType: 'none',
         enrollmentIds: [],
         studentLabelIds: [],
-        prairietestExamUuids: [],
+        prairietestExams: [],
       },
     ]);
 

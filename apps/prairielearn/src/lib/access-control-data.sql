@@ -39,13 +39,18 @@ SELECT
     ),
     '{}'
   ) AS student_label_ids,
-  COALESCE(
-    array_agg(DISTINCT acpe.uuid) FILTER (
-      WHERE
-        acpe.uuid IS NOT NULL
-    ),
-    '{}'
-  ) AS prairietest_exam_uuids,
+  (
+    SELECT
+      jsonb_agg(
+        jsonb_build_object('uuid', acpe.uuid, 'read_only', acpe.read_only)
+        ORDER BY
+          acpe.uuid
+      )
+    FROM
+      assessment_access_control_prairietest_exams acpe
+    WHERE
+      acpe.assessment_access_control_rule_id = aacr.id
+  ) AS prairietest_exams,
   (
     SELECT
       jsonb_agg(
@@ -74,7 +79,6 @@ FROM
   assessment_access_control_rules aacr
   LEFT JOIN assessment_access_control_enrollments ace ON ace.assessment_access_control_rule_id = aacr.id
   LEFT JOIN assessment_access_control_student_labels acsl ON acsl.assessment_access_control_rule_id = aacr.id
-  LEFT JOIN assessment_access_control_prairietest_exams acpe ON acpe.assessment_access_control_rule_id = aacr.id
 WHERE
   aacr.assessment_id = $assessment_id
 GROUP BY
@@ -129,13 +133,18 @@ SELECT
     ),
     '{}'
   ) AS student_label_ids,
-  COALESCE(
-    array_agg(DISTINCT acpe.uuid) FILTER (
-      WHERE
-        acpe.uuid IS NOT NULL
-    ),
-    '{}'
-  ) AS prairietest_exam_uuids,
+  (
+    SELECT
+      jsonb_agg(
+        jsonb_build_object('uuid', acpe.uuid, 'read_only', acpe.read_only)
+        ORDER BY
+          acpe.uuid
+      )
+    FROM
+      assessment_access_control_prairietest_exams acpe
+    WHERE
+      acpe.assessment_access_control_rule_id = aacr.id
+  ) AS prairietest_exams,
   (
     SELECT
       jsonb_agg(
@@ -165,7 +174,6 @@ FROM
   JOIN assessments a ON a.id = aacr.assessment_id
   LEFT JOIN assessment_access_control_enrollments ace ON ace.assessment_access_control_rule_id = aacr.id
   LEFT JOIN assessment_access_control_student_labels acsl ON acsl.assessment_access_control_rule_id = aacr.id
-  LEFT JOIN assessment_access_control_prairietest_exams acpe ON acpe.assessment_access_control_rule_id = aacr.id
 WHERE
   a.course_instance_id = $course_instance_id
 GROUP BY
