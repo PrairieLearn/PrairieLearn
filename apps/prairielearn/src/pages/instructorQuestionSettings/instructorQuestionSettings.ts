@@ -244,8 +244,8 @@ router.post(
                   ? pref.default === 'true'
                   : pref.default,
           };
-          if (pref.enum && pref.enum.trim() !== '') {
-            const enumValues = pref.enum.split(',').map((v) => v.trim());
+          if (pref.enum && pref.enum !== '[]') {
+            const enumValues: string[] = JSON.parse(pref.enum);
             entry.enum = pref.type === 'number' ? enumValues.map(Number) : enumValues;
           }
           preferencesSchema[pref.name] = entry;

@@ -1197,10 +1197,9 @@ function EnumInput({
 
   function addValue() {
     const trimmed = inputValue.trim();
-    if (trimmed && !enumValues.includes(trimmed)) {
-      setValue(`preferences.${index}.enum`, [...enumValues, trimmed], { shouldDirty: true });
-      setInputValue('');
-    }
+    if (!trimmed || enumValues.includes(trimmed)) return;
+    setValue(`preferences.${index}.enum`, [...enumValues, trimmed], { shouldDirty: true });
+    setInputValue('');
   }
 
   function removeValue(val: string) {
@@ -1225,7 +1224,7 @@ function EnumInput({
 
   return (
     <div>
-      <input type="hidden" name={`preferences.${index}.enum`} value={enumValues.join(', ')} />
+      <input type="hidden" name={`preferences.${index}.enum`} value={JSON.stringify(enumValues)} />
       <div className="d-flex flex-wrap gap-1">
         {enumValues.map((val) => (
           <span
