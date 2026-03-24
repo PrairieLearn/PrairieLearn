@@ -1,5 +1,5 @@
 import { A11yError, A11yResults } from '@sa11y/format';
-import axe from 'axe-core';
+import axe, { type RuleObject } from 'axe-core';
 import { HTMLRewriter } from 'html-rewriter-wasm';
 import { HtmlValidate, type RuleConfig, formatterFactory } from 'html-validate';
 import { JSDOM, VirtualConsole } from 'jsdom';
@@ -115,10 +115,12 @@ const ROUTE_RULE_OVERRIDES: Record<string, RuleConfig> = {
   // inside a native <button>.
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions': {
     'prefer-native-element': ['error', { exclude: ['radiogroup', 'radio', 'button'] }],
+  },
+};
 
-    // Relax the 'nested-interactive' rule for assessment editor tree rows, since .tree-row elements
-    // intentionally contain interactive children inside a <div>.
-    'nested-interactive': ['error', { exclude: ['div'] }],
+const A11Y_RULE_OVERRIDES: Record<string, RuleObject> = {
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions': {
+    'nested-interactive': { enabled: false },
   },
 };
 
@@ -134,13 +136,7 @@ async function checkPage(url: string, routePath?: string) {
   // pretty much every page in the application, we'll piggyback on them
   // to also run HTML validation.
   const validator = new HtmlValidate();
-  console.log('checking page at :', routePath);
   const routeOverrides = routePath ? (ROUTE_RULE_OVERRIDES[routePath] ?? {}) : {};
-  if (Object.keys(routeOverrides).length > 0) {
-    console.log('! ! ! ! ! !')
-    console.log('routeOverrides for route ' + routePath + ':', routeOverrides);
-    console.log('! ! ! ! ! !')
-  }
   const validationResults = await validator.validateString(text, {
     plugins: [Bootstrap4ConstructPlugin],
     rules: {
@@ -177,7 +173,6 @@ async function checkPage(url: string, routePath?: string) {
       return true;
     });
     result.errorCount = result.messages.length;
-    console.log('result.messages for route ' + routePath + ':', result.messages);
   }
 
   const formatter = formatterFactory('codeframe');
@@ -185,6 +180,7 @@ async function checkPage(url: string, routePath?: string) {
 
   const axeResults = await axe.run(jsdom.window.document.documentElement, {
     resultTypes: ['violations', 'incomplete'],
+    rules: routePath && routePath in A11Y_RULE_OVERRIDES ? A11Y_RULE_OVERRIDES[routePath] : {},
   });
   if (axeResults.violations.length > 0) {
     const err = new A11yError(
