@@ -49,7 +49,7 @@ function validateAssessmentRules(
   // If the course instance config is invalid, course-db skips label existence
   // checks to avoid cascading errors, and student label syncing is skipped.
   // We still need to reject labels missing from the database here so that
-  // label-targeted rules are not silently treated as assignment-level rules.
+  // label-targeted rules are not silently treated as main rules.
   for (const [index, rule] of rules.entries()) {
     if (index > 0 && rule.listBeforeRelease !== undefined) {
       return 'listBeforeRelease can only be specified on the main rule.';

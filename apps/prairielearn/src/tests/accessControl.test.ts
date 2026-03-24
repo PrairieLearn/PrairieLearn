@@ -80,7 +80,7 @@ describe('Valid configs', () => {
     // Example 7: Extended time override
     [
       {
-        // Assignment-level (no targets)
+        // Main rule (no targets)
         dateControl: {
           releaseDate: '2024-03-14T00:01:00',
           dueDate: '2024-03-21T23:59:00',
