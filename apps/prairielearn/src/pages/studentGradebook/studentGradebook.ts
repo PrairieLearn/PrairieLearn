@@ -50,10 +50,11 @@ router.get(
   logPageView('studentGradebook'),
   typedAsyncHandler<'course-instance'>(async (req, res) => {
     const rawRows = await getGradebookRows({
-      course_instance_id: res.locals.course_instance.id,
-      user_id: res.locals.user.id,
-      authz_data: res.locals.authz_data,
-      req_date: res.locals.req_date,
+      courseInstance: res.locals.course_instance,
+      userId: res.locals.user.id,
+      authzData: res.locals.authz_data,
+      reqDate: res.locals.req_date,
+      displayTimezone: res.locals.course_instance.display_timezone,
       auth: 'student',
     });
     const rows = rawRows.map((row, index) => mapRow(row, rawRows[index - 1]));
@@ -75,10 +76,11 @@ router.get(
     }
 
     const rows = await getGradebookRows({
-      course_instance_id: res.locals.course_instance.id,
-      user_id: res.locals.user.id,
-      authz_data: res.locals.authz_data,
-      req_date: res.locals.req_date,
+      courseInstance: res.locals.course_instance,
+      userId: res.locals.user.id,
+      authzData: res.locals.authz_data,
+      reqDate: res.locals.req_date,
+      displayTimezone: res.locals.course_instance.display_timezone,
       auth: 'student',
     });
 

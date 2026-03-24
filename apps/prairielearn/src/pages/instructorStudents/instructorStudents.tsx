@@ -5,7 +5,7 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { callScalar, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { callScalar } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
@@ -31,6 +31,7 @@ import {
   reenrollEnrollmentFromSync,
   removeEnrollmentFromSync,
   selectOptionalEnrollmentByUid,
+  selectUsersAndEnrollmentsForCourseInstance,
 } from '../../models/enrollment.js';
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
@@ -39,7 +40,6 @@ import { InstructorStudents } from './instructorStudents.html.js';
 import { StudentRowSchema } from './instructorStudents.shared.js';
 
 const router = Router();
-const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/data.json',
@@ -52,11 +52,8 @@ router.get(
       throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     const { course_instance: courseInstance } = pageContext;
-    const students = await queryRows(
-      sql.select_users_and_enrollments_for_course_instance,
-      { course_instance_id: courseInstance.id },
-      StudentRowSchema,
-    );
+    const rows = await selectUsersAndEnrollmentsForCourseInstance(courseInstance);
+    const students = rows.map((r) => StudentRowSchema.parse(r));
     res.json(students);
   }),
 );
@@ -502,11 +499,8 @@ router.get(
       return;
     }
 
-    const students = await queryRows(
-      sql.select_users_and_enrollments_for_course_instance,
-      { course_instance_id: courseInstance.id },
-      StudentRowSchema,
-    );
+    const allRows = await selectUsersAndEnrollmentsForCourseInstance(courseInstance);
+    const students = allRows.map((r) => StudentRowSchema.parse(r));
     const studentLabels = await selectStudentLabelsInCourseInstance(courseInstance);
 
     const host = getCanonicalHost(req);
