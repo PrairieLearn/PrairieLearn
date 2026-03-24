@@ -1,7 +1,8 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-import { afterEach, assert, beforeEach, describe, it } from 'vitest';
+import tmp from 'tmp-promise';
+import { assert, describe, it } from 'vitest';
 
 import type { AssessmentAccessRuleJson } from '../schemas/infoAssessment.js';
 
@@ -184,8 +185,9 @@ describe('migrateAllowAccess', () => {
       { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
     const { result, warnings } = migrateAllowAccess('single-deadline', rules);
-    assert.equal(result.dateControl?.releaseDate, '2024-01-01');
-    assert.equal(result.dateControl?.dueDate, '2024-06-01');
+    assert.deepEqual(result, {
+      dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+    });
     assert.lengthOf(warnings, 0);
   });
 
@@ -195,8 +197,9 @@ describe('migrateAllowAccess', () => {
       { startDate: '2024-01-01', active: false },
     ];
     const { result } = migrateAllowAccess('single-deadline-with-viewing', rules);
-    assert.equal(result.dateControl?.releaseDate, '2024-01-01');
-    assert.equal(result.dateControl?.dueDate, '2024-06-01');
+    assert.deepEqual(result, {
+      dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+    });
   });
 
   it('migrates timed-assessment', () => {
@@ -204,7 +207,9 @@ describe('migrateAllowAccess', () => {
       { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01', timeLimitMin: 90 },
     ];
     const { result } = migrateAllowAccess('timed-assessment', rules);
-    assert.equal(result.dateControl?.durationMinutes, 90);
+    assert.deepEqual(result, {
+      dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01', durationMinutes: 90 },
+    });
   });
 
   it('migrates declining-credit', () => {
@@ -214,16 +219,13 @@ describe('migrateAllowAccess', () => {
       { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
     const { result } = migrateAllowAccess('declining-credit', rules);
-    assert.equal(result.dateControl?.dueDate, '2024-03-01');
-    assert.equal(result.dateControl?.earlyDeadlines?.length, 1);
-    assert.deepEqual(result.dateControl?.earlyDeadlines?.[0], {
-      date: '2024-02-01',
-      credit: 110,
-    });
-    assert.equal(result.dateControl?.lateDeadlines?.length, 1);
-    assert.deepEqual(result.dateControl?.lateDeadlines?.[0], {
-      date: '2024-06-01',
-      credit: 50,
+    assert.deepEqual(result, {
+      dateControl: {
+        releaseDate: '2024-01-01',
+        dueDate: '2024-03-01',
+        earlyDeadlines: [{ date: '2024-02-01', credit: 110 }],
+        lateDeadlines: [{ date: '2024-06-01', credit: 50 }],
+      },
     });
   });
 
@@ -233,15 +235,18 @@ describe('migrateAllowAccess', () => {
       { startDate: '2024-01-01', active: false },
     ];
     const { result } = migrateAllowAccess('prairietest-exam', rules);
-    assert.deepEqual(result.integrations?.prairieTest?.exams, [{ examUuid: 'exam-uuid-1' }]);
-    assert.equal(result.dateControl?.releaseDate, '2024-01-01');
+    assert.deepEqual(result, {
+      integrations: { prairieTest: { exams: [{ examUuid: 'exam-uuid-1' }] } },
+      dateControl: { releaseDate: '2024-01-01', dueDate: null },
+    });
   });
 
   it('migrates view-only', () => {
     const rules: AssessmentAccessRuleJson[] = [{ startDate: '2024-01-01' }];
     const { result } = migrateAllowAccess('view-only', rules);
-    assert.isNull(result.dateControl?.dueDate);
-    assert.equal(result.dateControl.releaseDate, '2024-01-01');
+    assert.deepEqual(result, {
+      dateControl: { releaseDate: '2024-01-01', dueDate: null },
+    });
   });
 
   it('migrates password-gated', () => {
@@ -249,14 +254,15 @@ describe('migrateAllowAccess', () => {
       { password: 'secret', credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
     const { result } = migrateAllowAccess('password-gated', rules);
-    assert.equal(result.dateControl?.password, 'secret');
-    assert.equal(result.dateControl?.releaseDate, '2024-01-01');
+    assert.deepEqual(result, {
+      dateControl: { password: 'secret', releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+    });
   });
 
   it('migrates hidden', () => {
     const rules: AssessmentAccessRuleJson[] = [{ active: false }];
     const { result } = migrateAllowAccess('hidden', rules);
-    assert.isUndefined(result.dateControl);
+    assert.deepEqual(result, {});
   });
 
   it('migrates no-op', () => {
@@ -283,7 +289,10 @@ describe('migrateAllowAccess', () => {
       { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01', showClosedAssessment: false },
     ];
     const { result } = migrateAllowAccess('single-deadline', rules);
-    assert.equal(result.afterComplete?.hideQuestions, true);
+    assert.deepEqual(result, {
+      dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+      afterComplete: { hideQuestions: true },
+    });
   });
 
   it('includes afterComplete for showClosedAssessmentScore:false', () => {
@@ -296,7 +305,10 @@ describe('migrateAllowAccess', () => {
       },
     ];
     const { result } = migrateAllowAccess('single-deadline', rules);
-    assert.equal(result.afterComplete?.hideScore, true);
+    assert.deepEqual(result, {
+      dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+      afterComplete: { hideScore: true },
+    });
   });
 
   it('ignores UID rules during migration', () => {
@@ -305,7 +317,9 @@ describe('migrateAllowAccess', () => {
       { uids: ['user@example.com'], credit: 100, endDate: '2024-12-01' },
     ];
     const { result } = migrateAllowAccess('single-deadline', rules);
-    assert.equal(result.dateControl?.dueDate, '2024-06-01');
+    assert.deepEqual(result, {
+      dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+    });
   });
 
   it('multi-deadline produces collapse warning', () => {
@@ -323,8 +337,13 @@ describe('migrateAllowAccess', () => {
       { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
     ];
     const { result } = migrateAllowAccess('declining-credit', rules);
-    assert.equal(result.dateControl?.lateDeadlines?.length, 1);
-    assert.isUndefined(result.dateControl?.earlyDeadlines);
+    assert.deepEqual(result, {
+      dateControl: {
+        releaseDate: '2024-01-01',
+        dueDate: '2024-02-01',
+        lateDeadlines: [{ date: '2024-06-01', credit: 50 }],
+      },
+    });
   });
 
   it('migrates single-reduced-credit', () => {
@@ -332,8 +351,9 @@ describe('migrateAllowAccess', () => {
       { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
     const { result } = migrateAllowAccess('single-reduced-credit', rules);
-    assert.equal(result.dateControl?.releaseDate, '2024-01-01');
-    assert.equal(result.dateControl?.dueDate, '2024-06-01');
+    assert.deepEqual(result, {
+      dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+    });
   });
 
   it('migrates multiple prairietest exams', () => {
@@ -342,7 +362,11 @@ describe('migrateAllowAccess', () => {
       { examUuid: 'exam-2', credit: 100 },
     ];
     const { result } = migrateAllowAccess('prairietest-exam', rules);
-    assert.equal(result.integrations?.prairieTest?.exams?.length, 2);
+    assert.deepEqual(result, {
+      integrations: {
+        prairieTest: { exams: [{ examUuid: 'exam-1' }, { examUuid: 'exam-2' }] },
+      },
+    });
   });
 
   it('includes both hideQuestions and hideScore in afterComplete', () => {
@@ -356,8 +380,10 @@ describe('migrateAllowAccess', () => {
       },
     ];
     const { result } = migrateAllowAccess('single-deadline', rules);
-    assert.equal(result.afterComplete?.hideQuestions, true);
-    assert.equal(result.afterComplete?.hideScore, true);
+    assert.deepEqual(result, {
+      dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+      afterComplete: { hideQuestions: true, hideScore: true },
+    });
   });
 
   it('handles modifier suffix stripping for mode-gated hides-closed', () => {
@@ -371,16 +397,18 @@ describe('migrateAllowAccess', () => {
       },
     ];
     const { result } = migrateAllowAccess('single-deadline (mode-gated, hides-closed)', rules);
-    assert.equal(result.dateControl?.dueDate, '2024-06-01');
-    assert.equal(result.afterComplete?.hideQuestions, true);
+    assert.deepEqual(result, {
+      dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+      afterComplete: { hideQuestions: true },
+    });
   });
 
   it('password-gated without dates', () => {
     const rules: AssessmentAccessRuleJson[] = [{ password: 'secret', credit: 100 }];
     const { result } = migrateAllowAccess('password-gated', rules);
-    assert.equal(result.dateControl?.password, 'secret');
-    assert.isUndefined(result.dateControl?.releaseDate);
-    assert.isUndefined(result.dateControl?.dueDate);
+    assert.deepEqual(result, {
+      dateControl: { password: 'secret' },
+    });
   });
 
   it('returns unsupported warning for unknown archetype', () => {
@@ -425,441 +453,531 @@ describe('migrateAllowAccess', () => {
 });
 
 describe('analyzeAssessmentFile', () => {
-  let tmpDir: string;
-
-  beforeEach(async () => {
-    tmpDir = await fs.mkdtemp('/tmp/access-control-test-');
-  });
-
-  afterEach(async () => {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  });
-
   it('returns null for assessments with no allowAccess', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(filePath, JSON.stringify({ type: 'Exam', title: 'Test' }));
-    const result = await analyzeAssessmentFile(filePath, 'test');
-    assert.isNull(result);
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(filePath, JSON.stringify({ type: 'Exam', title: 'Test' }));
+        const result = await analyzeAssessmentFile(filePath, 'test');
+        assert.isNull(result);
+      },
+      { unsafeCleanup: true },
+    );
   });
 
   it('returns null for assessments already using accessControl', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(
-      filePath,
-      JSON.stringify({
-        type: 'Exam',
-        title: 'Test',
-        accessControl: [{ dateControl: { releaseDate: '2024-01-01' } }],
-      }),
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Exam',
+            title: 'Test',
+            accessControl: [{ dateControl: { releaseDate: '2024-01-01' } }],
+          }),
+        );
+        const result = await analyzeAssessmentFile(filePath, 'test');
+        assert.isNull(result);
+      },
+      { unsafeCleanup: true },
     );
-    const result = await analyzeAssessmentFile(filePath, 'test');
-    assert.isNull(result);
   });
 
   it('analyzes an assessment with legacy allowAccess', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(
-      filePath,
-      JSON.stringify({
-        type: 'Homework',
-        title: 'HW1',
-        allowAccess: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
-      }),
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
+          }),
+        );
+        const result = await analyzeAssessmentFile(filePath, 'hw01');
+        assert.isNotNull(result);
+        assert.equal(result.tid, 'hw01');
+        assert.equal(result.archetype, 'single-deadline');
+        assert.equal(result.canMigrate, true);
+        assert.equal(result.hasUidRules, false);
+      },
+      { unsafeCleanup: true },
     );
-    const result = await analyzeAssessmentFile(filePath, 'hw01');
-    assert.isNotNull(result);
-    assert.equal(result.tid, 'hw01');
-    assert.equal(result.archetype, 'single-deadline');
-    assert.equal(result.canMigrate, true);
-    assert.equal(result.hasUidRules, false);
   });
 
   it('flags uid rules', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(
-      filePath,
-      JSON.stringify({
-        type: 'Exam',
-        title: 'E1',
-        allowAccess: [
-          { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
-          { uids: ['user@example.com'], credit: 100, endDate: '2024-07-01' },
-        ],
-      }),
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Exam',
+            title: 'E1',
+            allowAccess: [
+              { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
+              { uids: ['user@example.com'], credit: 100, endDate: '2024-07-01' },
+            ],
+          }),
+        );
+        const result = await analyzeAssessmentFile(filePath, 'e01');
+        assert.isNotNull(result);
+        assert.equal(result.hasUidRules, true);
+      },
+      { unsafeCleanup: true },
     );
-    const result = await analyzeAssessmentFile(filePath, 'e01');
-    assert.isNotNull(result);
-    assert.equal(result.hasUidRules, true);
   });
 
   it('classifies from non-UID rules when mixed with UID rules', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(
-      filePath,
-      JSON.stringify({
-        type: 'Exam',
-        title: 'E1',
-        allowAccess: [
-          { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
-          { credit: 50, startDate: '2024-03-01', endDate: '2024-06-01' },
-          { uids: ['user@example.com'], credit: 100, endDate: '2024-07-01' },
-        ],
-      }),
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Exam',
+            title: 'E1',
+            allowAccess: [
+              { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
+              { credit: 50, startDate: '2024-03-01', endDate: '2024-06-01' },
+              { uids: ['user@example.com'], credit: 100, endDate: '2024-07-01' },
+            ],
+          }),
+        );
+        const result = await analyzeAssessmentFile(filePath, 'e01');
+        assert.isNotNull(result);
+        assert.equal(result.archetype, 'declining-credit');
+        assert.equal(result.hasUidRules, true);
+        assert.equal(result.canMigrate, true);
+      },
+      { unsafeCleanup: true },
     );
-    const result = await analyzeAssessmentFile(filePath, 'e01');
-    assert.isNotNull(result);
-    assert.equal(result.archetype, 'declining-credit');
-    assert.equal(result.hasUidRules, true);
-    assert.equal(result.canMigrate, true);
   });
 
   it('all-UID rules produces unclassified and canMigrate=false', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(
-      filePath,
-      JSON.stringify({
-        type: 'Exam',
-        title: 'E1',
-        allowAccess: [{ uids: ['user@example.com'], credit: 100 }],
-      }),
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Exam',
+            title: 'E1',
+            allowAccess: [{ uids: ['user@example.com'], credit: 100 }],
+          }),
+        );
+        const result = await analyzeAssessmentFile(filePath, 'e01');
+        assert.isNotNull(result);
+        assert.equal(result.archetype, 'unclassified');
+        assert.equal(result.canMigrate, false);
+        assert.equal(result.hasUidRules, true);
+      },
+      { unsafeCleanup: true },
     );
-    const result = await analyzeAssessmentFile(filePath, 'e01');
-    assert.isNotNull(result);
-    assert.equal(result.archetype, 'unclassified');
-    assert.equal(result.canMigrate, false);
-    assert.equal(result.hasUidRules, true);
   });
 
   it('returns null for empty allowAccess array', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(
-      filePath,
-      JSON.stringify({
-        type: 'Exam',
-        title: 'E1',
-        allowAccess: [],
-      }),
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Exam',
+            title: 'E1',
+            allowAccess: [],
+          }),
+        );
+        const result = await analyzeAssessmentFile(filePath, 'e01');
+        assert.isNull(result);
+      },
+      { unsafeCleanup: true },
     );
-    const result = await analyzeAssessmentFile(filePath, 'e01');
-    assert.isNull(result);
   });
 
   it('returns null for invalid JSON file', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(filePath, 'not valid json {{{');
-    const result = await analyzeAssessmentFile(filePath, 'e01');
-    assert.isNull(result);
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(filePath, 'not valid json {{{');
+        const result = await analyzeAssessmentFile(filePath, 'e01');
+        assert.isNull(result);
+      },
+      { unsafeCleanup: true },
+    );
   });
 
   it('no-op rule is technically migratable', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(
-      filePath,
-      JSON.stringify({
-        type: 'Homework',
-        title: 'HW1',
-        allowAccess: [{}],
-      }),
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [{}],
+          }),
+        );
+        const result = await analyzeAssessmentFile(filePath, 'hw01');
+        assert.isNotNull(result);
+        assert.equal(result.archetype, 'no-op');
+        assert.equal(result.canMigrate, true);
+      },
+      { unsafeCleanup: true },
     );
-    const result = await analyzeAssessmentFile(filePath, 'hw01');
-    assert.isNotNull(result);
-    assert.equal(result.archetype, 'no-op');
-    assert.equal(result.canMigrate, true);
   });
 });
 
 describe('analyzeCourseInstanceAssessments', () => {
-  let tmpDir: string;
-
-  beforeEach(async () => {
-    tmpDir = await fs.mkdtemp('/tmp/access-control-ci-test-');
-  });
-
-  afterEach(async () => {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  });
-
   it('returns empty analysis when no assessments directory exists', async () => {
-    const result = await analyzeCourseInstanceAssessments(tmpDir);
-    assert.equal(result.hasLegacyRules, false);
-    assert.lengthOf(result.assessments, 0);
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const result = await analyzeCourseInstanceAssessments(tmpDir);
+        assert.equal(result.hasLegacyRules, false);
+        assert.lengthOf(result.assessments, 0);
+      },
+      { unsafeCleanup: true },
+    );
   });
 
   it('analyzes assessments in a course instance', async () => {
-    const assessmentsDir = path.join(tmpDir, 'assessments');
-    await fs.mkdir(path.join(assessmentsDir, 'hw01'), { recursive: true });
-    await fs.mkdir(path.join(assessmentsDir, 'hw02'), { recursive: true });
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const assessmentsDir = path.join(tmpDir, 'assessments');
+        await fs.mkdir(path.join(assessmentsDir, 'hw01'), { recursive: true });
+        await fs.mkdir(path.join(assessmentsDir, 'hw02'), { recursive: true });
 
-    await fs.writeFile(
-      path.join(assessmentsDir, 'hw01', 'infoAssessment.json'),
-      JSON.stringify({
-        type: 'Homework',
-        title: 'HW1',
-        allowAccess: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
-      }),
-    );
-    await fs.writeFile(
-      path.join(assessmentsDir, 'hw02', 'infoAssessment.json'),
-      JSON.stringify({
-        type: 'Homework',
-        title: 'HW2',
-      }),
-    );
+        await fs.writeFile(
+          path.join(assessmentsDir, 'hw01', 'infoAssessment.json'),
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
+          }),
+        );
+        await fs.writeFile(
+          path.join(assessmentsDir, 'hw02', 'infoAssessment.json'),
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW2',
+          }),
+        );
 
-    const result = await analyzeCourseInstanceAssessments(tmpDir);
-    assert.equal(result.hasLegacyRules, true);
-    assert.lengthOf(result.assessments, 1);
-    assert.equal(result.assessments[0].tid, 'hw01');
-    assert.equal(result.allCanMigrate, true);
+        const result = await analyzeCourseInstanceAssessments(tmpDir);
+        assert.equal(result.hasLegacyRules, true);
+        assert.lengthOf(result.assessments, 1);
+        assert.equal(result.assessments[0].tid, 'hw01');
+        assert.equal(result.allCanMigrate, true);
+      },
+      { unsafeCleanup: true },
+    );
   });
 });
 
 describe('applyMigrationToAssessmentFile', () => {
-  let tmpDir: string;
-
-  beforeEach(async () => {
-    tmpDir = await fs.mkdtemp('/tmp/access-control-apply-test-');
-  });
-
-  afterEach(async () => {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  });
-
   it('keep strategy leaves file unchanged', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    const originalData = {
-      type: 'Homework',
-      title: 'HW1',
-      allowAccess: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
-    };
-    await fs.writeFile(filePath, JSON.stringify(originalData));
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        const originalData = {
+          type: 'Homework',
+          title: 'HW1',
+          allowAccess: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
+        };
+        await fs.writeFile(filePath, JSON.stringify(originalData));
 
-    await applyMigrationToAssessmentFile(filePath, 'keep', false);
+        await applyMigrationToAssessmentFile(filePath, 'keep', false);
 
-    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    assert.deepEqual(result, originalData);
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.deepEqual(result, originalData);
+      },
+      { unsafeCleanup: true },
+    );
   });
 
   it('wipe strategy removes allowAccess', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(
-      filePath,
-      JSON.stringify({
-        type: 'Homework',
-        title: 'HW1',
-        allowAccess: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
-      }),
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'wipe', false);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.isUndefined(result.allowAccess);
+        assert.isUndefined(result.accessControl);
+        assert.equal(result.type, 'Homework');
+      },
+      { unsafeCleanup: true },
     );
-
-    await applyMigrationToAssessmentFile(filePath, 'wipe', false);
-
-    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    assert.isUndefined(result.allowAccess);
-    assert.isUndefined(result.accessControl);
-    assert.equal(result.type, 'Homework');
   });
 
   it('migrate strategy converts compatible rules', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(
-      filePath,
-      JSON.stringify({
-        type: 'Homework',
-        title: 'HW1',
-        allowAccess: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
-      }),
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', false);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.isUndefined(result.allowAccess);
+        assert.isDefined(result.accessControl);
+        assert.lengthOf(result.accessControl, 1);
+        assert.equal(result.accessControl[0].dateControl?.dueDate, '2024-06-01');
+      },
+      { unsafeCleanup: true },
     );
-
-    await applyMigrationToAssessmentFile(filePath, 'migrate', false);
-
-    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    assert.isUndefined(result.allowAccess);
-    assert.isDefined(result.accessControl);
-    assert.lengthOf(result.accessControl, 1);
-    assert.equal(result.accessControl[0].dateControl?.dueDate, '2024-06-01');
   });
 
   it('migrate strategy with preserveIncompatible keeps incompatible rules', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(
-      filePath,
-      JSON.stringify({
-        type: 'Exam',
-        title: 'E1',
-        // uid-only rules are filtered out for classification, leaving an empty set -> unclassified
-        allowAccess: [{ uids: ['user@example.com'], credit: 100 }],
-      }),
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Exam',
+            title: 'E1',
+            // uid-only rules are filtered out for classification, leaving an empty set -> unclassified
+            allowAccess: [{ uids: ['user@example.com'], credit: 100 }],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', true);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        // preserveIncompatible: true means the original allowAccess is kept
+        assert.isDefined(result.allowAccess);
+        assert.isUndefined(result.accessControl);
+      },
+      { unsafeCleanup: true },
     );
-
-    await applyMigrationToAssessmentFile(filePath, 'migrate', true);
-
-    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    // preserveIncompatible: true means the original allowAccess is kept
-    assert.isDefined(result.allowAccess);
-    assert.isUndefined(result.accessControl);
   });
 
   it('migrate strategy without preserveIncompatible removes incompatible rules', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(
-      filePath,
-      JSON.stringify({
-        type: 'Exam',
-        title: 'E1',
-        allowAccess: [{ uids: ['user@example.com'], credit: 100 }],
-      }),
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Exam',
+            title: 'E1',
+            allowAccess: [{ uids: ['user@example.com'], credit: 100 }],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', false);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.isUndefined(result.allowAccess);
+        assert.isUndefined(result.accessControl);
+      },
+      { unsafeCleanup: true },
     );
-
-    await applyMigrationToAssessmentFile(filePath, 'migrate', false);
-
-    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    assert.isUndefined(result.allowAccess);
-    assert.isUndefined(result.accessControl);
   });
 
   it('skips files that already use accessControl', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    const originalData = {
-      type: 'Homework',
-      title: 'HW1',
-      allowAccess: [{ credit: 100 }],
-      accessControl: [{ dateControl: { releaseDate: '2024-01-01' } }],
-    };
-    await fs.writeFile(filePath, JSON.stringify(originalData));
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        const originalData = {
+          type: 'Homework',
+          title: 'HW1',
+          allowAccess: [{ credit: 100 }],
+          accessControl: [{ dateControl: { releaseDate: '2024-01-01' } }],
+        };
+        await fs.writeFile(filePath, JSON.stringify(originalData));
 
-    await applyMigrationToAssessmentFile(filePath, 'wipe', false);
+        await applyMigrationToAssessmentFile(filePath, 'wipe', false);
 
-    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    // File is unchanged because it already has accessControl
-    assert.isDefined(result.allowAccess);
-    assert.isDefined(result.accessControl);
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        // File is unchanged because it already has accessControl
+        assert.isDefined(result.allowAccess);
+        assert.isDefined(result.accessControl);
+      },
+      { unsafeCleanup: true },
+    );
   });
 
   it('skips files with no allowAccess', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    const originalData = { type: 'Homework', title: 'HW1' };
-    await fs.writeFile(filePath, JSON.stringify(originalData));
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        const originalData = { type: 'Homework', title: 'HW1' };
+        await fs.writeFile(filePath, JSON.stringify(originalData));
 
-    await applyMigrationToAssessmentFile(filePath, 'migrate', false);
+        await applyMigrationToAssessmentFile(filePath, 'migrate', false);
 
-    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    assert.isUndefined(result.accessControl);
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.isUndefined(result.accessControl);
+      },
+      { unsafeCleanup: true },
+    );
   });
 
   it('migrates non-UID rules when mixed with UID rules', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(
-      filePath,
-      JSON.stringify({
-        type: 'Homework',
-        title: 'HW1',
-        allowAccess: [
-          { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
-          { uids: ['user@example.com'], credit: 100, endDate: '2024-12-01' },
-        ],
-      }),
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [
+              { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
+              { uids: ['user@example.com'], credit: 100, endDate: '2024-12-01' },
+            ],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', false);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.isUndefined(result.allowAccess);
+        assert.lengthOf(result.accessControl, 1);
+        assert.equal(result.accessControl[0].dateControl?.dueDate, '2024-06-01');
+      },
+      { unsafeCleanup: true },
     );
-
-    await applyMigrationToAssessmentFile(filePath, 'migrate', false);
-
-    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    assert.isUndefined(result.allowAccess);
-    assert.lengthOf(result.accessControl, 1);
-    assert.equal(result.accessControl[0].dateControl?.dueDate, '2024-06-01');
   });
 
   it('declining-credit full pipeline', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(
-      filePath,
-      JSON.stringify({
-        type: 'Homework',
-        title: 'HW1',
-        allowAccess: [
-          { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
-          { credit: 50, startDate: '2024-03-01', endDate: '2024-06-01' },
-        ],
-      }),
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [
+              { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
+              { credit: 50, startDate: '2024-03-01', endDate: '2024-06-01' },
+            ],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', false);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.isUndefined(result.allowAccess);
+        assert.lengthOf(result.accessControl, 1);
+        assert.equal(result.accessControl[0].dateControl?.lateDeadlines?.length, 1);
+      },
+      { unsafeCleanup: true },
     );
-
-    await applyMigrationToAssessmentFile(filePath, 'migrate', false);
-
-    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    assert.isUndefined(result.allowAccess);
-    assert.lengthOf(result.accessControl, 1);
-    assert.equal(result.accessControl[0].dateControl?.lateDeadlines?.length, 1);
   });
 
   it('wipe with UID-only rules removes allowAccess without accessControl', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(
-      filePath,
-      JSON.stringify({
-        type: 'Exam',
-        title: 'E1',
-        allowAccess: [{ uids: ['user@example.com'], credit: 100 }],
-      }),
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Exam',
+            title: 'E1',
+            allowAccess: [{ uids: ['user@example.com'], credit: 100 }],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'wipe', false);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.isUndefined(result.allowAccess);
+        assert.isUndefined(result.accessControl);
+      },
+      { unsafeCleanup: true },
     );
-
-    await applyMigrationToAssessmentFile(filePath, 'wipe', false);
-
-    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    assert.isUndefined(result.allowAccess);
-    assert.isUndefined(result.accessControl);
   });
 
   it('all-UID rules with preserveIncompatible:true keeps allowAccess', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(
-      filePath,
-      JSON.stringify({
-        type: 'Exam',
-        title: 'E1',
-        allowAccess: [{ uids: ['user@example.com'], credit: 100 }],
-      }),
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Exam',
+            title: 'E1',
+            allowAccess: [{ uids: ['user@example.com'], credit: 100 }],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', true);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.isDefined(result.allowAccess);
+        assert.isUndefined(result.accessControl);
+      },
+      { unsafeCleanup: true },
     );
-
-    await applyMigrationToAssessmentFile(filePath, 'migrate', true);
-
-    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    assert.isDefined(result.allowAccess);
-    assert.isUndefined(result.accessControl);
   });
 
   it('all-UID rules with preserveIncompatible:false removes allowAccess', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(
-      filePath,
-      JSON.stringify({
-        type: 'Exam',
-        title: 'E1',
-        allowAccess: [{ uids: ['user@example.com'], credit: 100 }],
-      }),
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Exam',
+            title: 'E1',
+            allowAccess: [{ uids: ['user@example.com'], credit: 100 }],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', false);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.isUndefined(result.allowAccess);
+        assert.isUndefined(result.accessControl);
+      },
+      { unsafeCleanup: true },
     );
-
-    await applyMigrationToAssessmentFile(filePath, 'migrate', false);
-
-    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    assert.isUndefined(result.allowAccess);
-    assert.isUndefined(result.accessControl);
   });
 
   it('no-op rules produce empty accessControl entry', async () => {
-    const filePath = path.join(tmpDir, 'infoAssessment.json');
-    await fs.writeFile(
-      filePath,
-      JSON.stringify({
-        type: 'Homework',
-        title: 'HW1',
-        allowAccess: [{}],
-      }),
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [{}],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', false);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.isUndefined(result.allowAccess);
+        assert.lengthOf(result.accessControl, 1);
+        assert.deepEqual(result.accessControl[0], {});
+      },
+      { unsafeCleanup: true },
     );
-
-    await applyMigrationToAssessmentFile(filePath, 'migrate', false);
-
-    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    assert.isUndefined(result.allowAccess);
-    assert.lengthOf(result.accessControl, 1);
-    assert.deepEqual(result.accessControl[0], {});
   });
 });
