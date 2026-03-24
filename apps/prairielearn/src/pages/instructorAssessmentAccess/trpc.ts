@@ -6,7 +6,6 @@ import superjson from 'superjson';
 import { z } from 'zod';
 
 import { runInTransactionAsync } from '@prairielearn/postgres';
-import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 
 import { fetchAllAccessControlRules } from '../../lib/assessment-access-control.js';
 import { features } from '../../lib/features/index.js';
@@ -23,7 +22,7 @@ import {
   validateEnrollmentIdsInCourseInstance,
 } from '../../models/enrollment.js';
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
-import type { AccessControlJson } from '../../schemas/accessControl.js';
+import { type AccessControlJson, AccessControlJsonSchema } from '../../schemas/accessControl.js';
 import { syncAccessControl } from '../../sync/fromDisk/accessControl.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
@@ -146,98 +145,9 @@ function formJsonToEnrollmentRuleData(
   };
 }
 
-const DeadlineInputSchema = z.object({
-  date: DatetimeLocalStringSchema,
-  credit: z.number().min(0, 'Credit must be non-negative'),
+export const AccessControlJsonInputSchema = AccessControlJsonSchema.omit({ name: true }).extend({
+  id: z.string().optional(),
 });
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-// This schema mirrors AccessControlJsonSchema from '../../schemas/accessControl.js' but
-// intentionally omits .strict() / .describe() annotations and adds an `id` field (instead of
-// `name`) plus a .superRefine() for duplicate validation. Deriving one from the other would
-// require stripping .strict() at every nesting level, which Zod doesn't support cleanly.
-export const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: string }> = z
-  .object({
-    id: z.string().optional(),
-    listBeforeRelease: z.boolean().nullable().optional(),
-    labels: z.array(z.string()).optional(),
-    dateControl: z
-      .object({
-        releaseDate: DatetimeLocalStringSchema.nullable().optional(),
-        dueDate: DatetimeLocalStringSchema.nullable().optional(),
-        earlyDeadlines: z.array(DeadlineInputSchema).nullable().optional(),
-        lateDeadlines: z.array(DeadlineInputSchema).nullable().optional(),
-        afterLastDeadline: z
-          .object({
-            credit: z.number().min(0, 'Credit must be non-negative').optional(),
-            allowSubmissions: z.boolean().optional(),
-          })
-          .nullable()
-          .optional(),
-        durationMinutes: z.number().int().positive().nullable().optional(),
-        password: z.string().nullable().optional(),
-      })
-      .optional(),
-    integrations: z
-      .object({
-        prairieTest: z
-          .object({
-            exams: z
-              .array(
-                z.object({
-                  examUuid: z.string().regex(UUID_REGEX, 'Invalid UUID format'),
-                  readOnly: z.boolean().optional(),
-                }),
-              )
-              .optional(),
-          })
-          .optional(),
-      })
-      .optional(),
-    afterComplete: z
-      .object({
-        hideQuestions: z.boolean().optional(),
-        showQuestionsAgainDate: DatetimeLocalStringSchema.optional(),
-        hideQuestionsAgainDate: DatetimeLocalStringSchema.optional(),
-        hideScore: z.boolean().optional(),
-        showScoreAgainDate: DatetimeLocalStringSchema.optional(),
-      })
-      .optional(),
-  })
-  .superRefine((data, ctx) => {
-    const exams = data.integrations?.prairieTest?.exams ?? [];
-    const seenUuids = new Set<string>();
-    for (const e of exams) {
-      if (seenUuids.has(e.examUuid)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `Duplicate PrairieTest exam UUID: ${e.examUuid}`,
-          path: ['integrations', 'prairieTest', 'exams'],
-        });
-        break;
-      }
-      seenUuids.add(e.examUuid);
-    }
-
-    for (const [key, deadlines] of [
-      ['earlyDeadlines', data.dateControl?.earlyDeadlines],
-      ['lateDeadlines', data.dateControl?.lateDeadlines],
-    ] as const) {
-      const seenDates = new Set<string>();
-      for (const d of deadlines ?? []) {
-        if (seenDates.has(d.date)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Duplicate ${key === 'earlyDeadlines' ? 'early' : 'late'} deadline date: ${d.date}`,
-            path: ['dateControl', key],
-          });
-          break;
-        }
-        seenDates.add(d.date);
-      }
-    }
-  });
 
 const EnrollmentRuleInputSchema = z.object({
   id: z.string().optional(),

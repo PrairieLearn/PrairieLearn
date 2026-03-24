@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { Alert, Badge, Button, Form, ListGroup, Spinner, Tab, Tabs } from 'react-bootstrap';
 
+import { parseUniqueValuesFromString } from '../../../../lib/string-util.js';
 import { useTRPCClient } from '../../utils/trpc-context.js';
 import type { IndividualTarget } from '../types.js';
 
@@ -45,19 +46,8 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
     });
   }, [allStudents, excludedUids, searchQuery]);
 
-  const parseUids = (input: string): string[] => {
-    return [
-      ...new Set(
-        input
-          .split(/[\s,;]+/)
-          .map((uid) => uid.trim())
-          .filter(Boolean),
-      ),
-    ];
-  };
-
   const handleValidate = () => {
-    const uids = parseUids(uidInput);
+    const uids = parseUniqueValuesFromString(uidInput, 500);
     if (uids.length > 0) {
       validateMutation.mutate(uids);
     }
@@ -211,7 +201,7 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
 
           <div className="d-flex gap-2 mb-2">
             <Button
-              disabled={parseUids(uidInput).length === 0 || validateMutation.isPending}
+              disabled={uidInput.trim().length === 0 || validateMutation.isPending}
               size="sm"
               variant="outline-primary"
               onClick={handleValidate}

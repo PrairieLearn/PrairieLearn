@@ -311,7 +311,7 @@ export function AccessControlForm({
         />
       </Form>
 
-      <Modal show={deleteModal.show} centered onHide={deleteModal.hide}>
+      <Modal show={deleteModal.show} onHide={deleteModal.hide}>
         <Modal.Header closeButton>
           <Modal.Title>Delete override rule</Modal.Title>
         </Modal.Header>
