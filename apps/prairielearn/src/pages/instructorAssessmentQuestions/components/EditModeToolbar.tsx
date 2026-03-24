@@ -1,6 +1,5 @@
 import clsx from 'clsx';
 import { useId } from 'react';
-import { ToggleButton, ToggleButtonGroup } from 'react-bootstrap';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
@@ -22,20 +21,27 @@ export function ViewToggle({
 }) {
   return (
     <div className="d-flex gap-2 align-items-center">
-      <ToggleButtonGroup
-        type="radio"
-        name="viewType"
-        value={viewType}
-        size="sm"
-        onChange={(val: ViewType) => onViewTypeChange(val)}
-      >
-        <ToggleButton id="viewType-simple" value="simple" variant="outline-secondary">
+      <div className="btn-group btn-group-sm" role="group" aria-label="View type">
+        <button
+          type="button"
+          className={clsx('btn', viewType === 'simple' ? 'btn-secondary' : 'btn-outline-secondary')}
+          aria-pressed={viewType === 'simple'}
+          onClick={() => onViewTypeChange('simple')}
+        >
           Simple
-        </ToggleButton>
-        <ToggleButton id="viewType-detailed" value="detailed" variant="outline-secondary">
+        </button>
+        <button
+          type="button"
+          className={clsx(
+            'btn',
+            viewType === 'detailed' ? 'btn-secondary' : 'btn-outline-secondary',
+          )}
+          aria-pressed={viewType === 'detailed'}
+          onClick={() => onViewTypeChange('detailed')}
+        >
           Detailed
-        </ToggleButton>
-      </ToggleButtonGroup>
+        </button>
+      </div>
       {hasAlternatives && (
         <button
           className="btn btn-sm btn-outline-secondary"
