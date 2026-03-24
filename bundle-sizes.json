@@ -332,7 +332,7 @@
   "scripts/esm-bundles/hydrated-components/CourseInstancePublishing.ts": {
     "raw": 1181358,
     "gzip": 347229,
-    "brotli": 300571
+    "brotli": 300573
   },
   "scripts/esm-bundles/hydrated-components/CreateQuestionForm.ts": {
     "raw": 395419,
@@ -350,9 +350,9 @@
     "brotli": 114826
   },
   "scripts/esm-bundles/hydrated-components/AccessControl.ts": {
-    "raw": 1202285,
-    "gzip": 360581,
-    "brotli": 313085
+    "raw": 1202300,
+    "gzip": 360559,
+    "brotli": 313029
   },
   "scripts/esm-bundles/hydrated-components/AdminCreditPoolSection.ts": {
     "raw": 2027676,
