@@ -47,7 +47,7 @@ router.get(
         return {
           ...row,
           authorized: result.authorized,
-          credit_date_string: result.credit_date_string ?? row.credit_date_string,
+          credit_date_string: result.credit_date_string ?? 'None',
           active: result.active,
           show_closed_assessment_score: result.show_closed_assessment_score,
           show_before_release: result.show_before_release,

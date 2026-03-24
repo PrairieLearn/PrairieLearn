@@ -19,7 +19,7 @@ interface MainDateControlFormProps {
 
 export function MainDateControlForm({
   title = 'Date control',
-  description = 'Control access and credit to your exam based on a schedule',
+  description = 'Control access and credit to your assessment based on a schedule',
 }: MainDateControlFormProps) {
   const { register } = useFormContext<AccessControlFormData>();
 
@@ -77,7 +77,7 @@ export function MainDateControlForm({
 
         <hr className="my-4" />
 
-        <Row className="mb-3">
+        <Row className="mb-3 gy-3">
           <Col md={6}>
             <MainDurationField />
           </Col>
@@ -125,7 +125,7 @@ export function OverrideDateControlForm({
           <OverrideAfterLastDeadlineField index={index} />
         </div>
 
-        <Row className="mb-3">
+        <Row className="mb-3 gy-3">
           <Col md={6}>
             <OverrideDurationField index={index} />
           </Col>

@@ -113,10 +113,10 @@ function QuestionVisibilityInput({ value, onChange, idPrefix }: QuestionVisibili
         />
         {hideQuestionsMode === 'hide_questions_between_dates' && (
           <div className="ms-4 mt-2">
-            <Row className="mb-2">
+            <Row className="mb-2 gy-3">
               <Col md={6}>
                 <Form.Label htmlFor={`${idPrefix}-show-questions-between-start`}>
-                  Show questions on:
+                  Show questions on
                 </Form.Label>
                 <Form.Control
                   id={`${idPrefix}-show-questions-between-start`}
@@ -133,7 +133,7 @@ function QuestionVisibilityInput({ value, onChange, idPrefix }: QuestionVisibili
               </Col>
               <Col md={6}>
                 <Form.Label htmlFor={`${idPrefix}-hide-questions-between-end`}>
-                  Hide questions again on:
+                  Hide questions again on
                 </Form.Label>
                 <Form.Control
                   id={`${idPrefix}-hide-questions-between-end`}
@@ -211,7 +211,7 @@ function ScoreVisibilityInput({ value, onChange, idPrefix }: ScoreVisibilityInpu
         />
         {hideScoreMode === 'hide_score_until_date' && (
           <div className="ms-4 mt-2">
-            <Form.Label htmlFor={`${idPrefix}-show-score-date`}>Show score again on:</Form.Label>
+            <Form.Label htmlFor={`${idPrefix}-show-score-date`}>Show score again on</Form.Label>
             <Form.Control
               id={`${idPrefix}-show-score-date`}
               type="datetime-local"
@@ -242,7 +242,7 @@ const infoPopoverConfig = {
       <ul>
         <li>The time limit expires (if durationMinutes is set)</li>
         <li>The last late deadline passes (or due date if no late deadlines)</li>
-        <li>PrairieTest marks the assessment as complete</li>
+        <li>The student's PrairieTest reservation ends</li>
       </ul>
       <p>
         The completion date can be different for different students based on when they started or
@@ -283,7 +283,7 @@ function AfterCompleteCard({
         <Form.Text className="text-muted">{description}</Form.Text>
       </Card.Header>
       <Card.Body>
-        <Row>{children}</Row>
+        <Row className="gy-3">{children}</Row>
       </Card.Body>
     </Card>
   );
