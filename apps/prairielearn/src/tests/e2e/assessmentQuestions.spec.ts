@@ -313,7 +313,7 @@ test.describe('Assessment questions', () => {
         .filter({ hasText: /2 alternatives \(1 chosen\)/ })
         .click();
 
-      await page.getByRole('button', { name: 'Add alternative', exact: true }).last().click();
+      await page.getByRole('button', { name: 'Add alternative', exact: true }).first().click();
       await expect(page.getByLabel('Search by QID or title')).toBeVisible();
 
       await page.getByLabel('Search by QID or title').fill('addNumbers');
@@ -333,10 +333,10 @@ test.describe('Assessment questions', () => {
       const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
       const savedAssessment = JSON.parse(savedContent);
 
-      const lastBlock = savedAssessment.zones.at(-1).questions.at(-1);
-      expect(lastBlock.numberChoose).toBe(1);
-      expect(lastBlock.alternatives).toHaveLength(3);
-      expect(lastBlock.alternatives[2].id).toBe('addNumbers');
+      const altGroupBlock = savedAssessment.zones[2].questions[1];
+      expect(altGroupBlock.numberChoose).toBe(1);
+      expect(altGroupBlock.alternatives).toHaveLength(3);
+      expect(altGroupBlock.alternatives[2].id).toBe('addNumbers');
     });
 
     test('revalidates number to choose when alternatives are deleted from the tree', async ({
@@ -362,7 +362,7 @@ test.describe('Assessment questions', () => {
       await expect(page.getByText(warningText)).not.toBeVisible();
 
       await page
-        .getByRole('button', { name: 'Delete aiGradingMultiImageCapture', exact: true })
+        .getByRole('button', { name: 'Delete question aiGradingMultiImageCapture', exact: true })
         .click();
 
       await expect(page.getByText(warningText)).toBeVisible();
@@ -379,17 +379,17 @@ test.describe('Assessment questions', () => {
     await enterEditMode(page, courseInstance.id, assessment.id);
 
     await page.getByRole('button').filter({ hasText: 'partialCredit1' }).first().click();
-    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.locator('[aria-label="Delete question partialCredit1"]').first().click();
 
     await page.getByRole('button').filter({ hasText: 'partialCredit2' }).first().click();
-    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.locator('[aria-label="Delete question partialCredit2"]').first().click();
 
     // Save should be disabled because the zone has 0 questions
     const saveButton = page.getByRole('button', { name: 'Save and sync' });
     await expect(saveButton).toBeDisabled();
 
     await page.getByRole('button').filter({ hasText: 'Zone to delete' }).first().click();
-    await page.getByRole('button', { name: 'Delete zone', exact: true }).last().click();
+    await page.locator('[aria-label="Delete zone \'Zone to delete\'"]').last().click();
 
     await saveButton.click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();

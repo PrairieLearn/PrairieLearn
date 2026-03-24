@@ -189,6 +189,22 @@ class TestSympy:
             is None
         )
 
+    @pytest.mark.parametrize(("a_sub", "sympy_ref"), EXPR_PAIRS)
+    def test_try_parse_string_as_sympy(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
+        assert psu.SympyParseSuccess(sympy_ref) == psu.try_parse_string_as_sympy(
+            a_sub,
+            self.SYMBOL_NAMES,
+            allow_complex=True,
+        )
+
+    def test_try_parse_string_as_sympy_returns_failure(self) -> None:
+        result = psu.try_parse_string_as_sympy("0.1", self.SYMBOL_NAMES)
+        assert isinstance(result, psu.SympyParseFailure)
+        assert (
+            result.error == "Your answer contains the floating-point number 0.1. "
+            "All numbers must be expressed as integers (or ratios of integers)."
+        )
+
     @pytest.mark.parametrize(
         ("a_sub", "sympy_ref"),
         [("i", sympy.I), ("j", sympy.I), ("i*i", -1), ("j*j", -1)],
@@ -499,6 +515,28 @@ class TestExceptions:
         )
         assert format_error is not None
         assert "complex number" in format_error
+
+    @pytest.mark.parametrize(
+        "a_sub",
+        [
+            "sec(0)",
+            "(16-9*(sec(0)^2))/3",
+            "csc(1)",
+            "sec(n)",
+        ],
+    )
+    def test_trig_no_crash_with_no_simplify(self, a_sub: str) -> None:
+        """Expressions with sec/csc must not crash sympy_check when
+        simplify_expression=False. Regression test for a sympy bug where
+        checking is_extended_real on unevaluated sec(0) raises AttributeError.
+        """
+        psu.convert_string_to_sympy(
+            a_sub,
+            self.VARIABLES,
+            allow_complex=False,
+            allow_trig_functions=True,
+            simplify_expression=False,
+        )
 
     @pytest.mark.parametrize(
         ("expr", "expected_caret", "with_vars"),

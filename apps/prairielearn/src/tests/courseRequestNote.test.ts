@@ -4,7 +4,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { config } from '../lib/config.js';
 import { insertCourseRequest, selectAllCourseRequests } from '../lib/course-request.js';
-import { createAdministratorTrpcClient } from '../trpc/administrator/trpc-client.js';
+import { createAdministratorTrpcClient } from '../trpc/administrator/client.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -58,7 +58,7 @@ describe('Course request note', { timeout: 60_000 }, function () {
 
       const textarea = response.$(`#course-request-note-${courseRequestId}`);
       assert.lengthOf(textarea, 1);
-      assert.equal((textarea.val() as string).trim(), note);
+      assert.equal(textarea.text().trim(), note);
     });
   });
 
