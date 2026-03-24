@@ -93,6 +93,19 @@ const createCourse = t.procedure
     return { jobSequenceId };
   });
 
+const SourcesSchema = z
+  .array(z.object({ url: z.string().url(), title: z.string().optional() }))
+  .transform((sources) =>
+    sources.filter((s) => {
+      try {
+        const parsed = new URL(s.url);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    }),
+  );
+
 const checkInstructorLegitimacyProcedure = t.procedure
   .use(requireAdministrator)
   .input(z.object({ courseRequestId: IdSchema }))
@@ -101,18 +114,7 @@ const checkInstructorLegitimacyProcedure = t.procedure
       summary: z.string(),
       confidence: z.enum(['high', 'medium', 'low']),
       legitimate: z.boolean(),
-      sources: z
-        .array(z.object({ url: z.string().url(), title: z.string().optional() }))
-        .transform((sources) =>
-          sources.filter((s) => {
-            try {
-              const parsed = new URL(s.url);
-              return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-            } catch {
-              return false;
-            }
-          }),
-        ),
+      sources: SourcesSchema,
     }),
   )
   .query(async ({ input }) => {
@@ -156,18 +158,7 @@ const suggestInstitutionPrefixProcedure = t.procedure
     z.object({
       prefix: z.string(),
       reasoning: z.string(),
-      sources: z
-        .array(z.object({ url: z.string().url(), title: z.string().optional() }))
-        .transform((sources) =>
-          sources.filter((s) => {
-            try {
-              const parsed = new URL(s.url);
-              return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-            } catch {
-              return false;
-            }
-          }),
-        ),
+      sources: SourcesSchema,
     }),
   )
   .query(async ({ input }) => {

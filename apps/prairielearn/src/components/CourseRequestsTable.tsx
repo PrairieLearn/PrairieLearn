@@ -17,7 +17,7 @@ import {
   AdministratorCourseFormFields,
   type CourseFormFieldValues,
   buildRepoShortName,
-  useInstitutionPrefixQuery,
+  useInstitutionPrefix,
 } from './AdminstratorCourseFormFields.js';
 import { JobStatus } from './JobStatus.js';
 
@@ -335,14 +335,7 @@ function CourseRequestApproveModal({
     formState: { isSubmitting },
   } = methods;
   const institutionId = methods.watch('institution_id');
-  const { data: institutionPrefixData, isError: isInstitutionPrefixError } =
-    useInstitutionPrefixQuery(institutionId);
-  const selectedInstitution = institutions.find((i) => i.id === institutionId);
-  const isInstitutionPrefixReady =
-    !institutionId ||
-    selectedInstitution?.short_name === 'Default' ||
-    institutionPrefixData !== undefined ||
-    isInstitutionPrefixError;
+  const prefixState = useInstitutionPrefix(institutionId, institutions);
 
   const onSubmit = (data: CourseRequestApproveFormData) => {
     mutation.mutate(
@@ -497,22 +490,21 @@ function CourseRequestApproveModal({
                         <div className="mt-1">
                           <span className="small text-muted">Sources</span>
                           <div className="d-flex flex-wrap gap-1">
-                            {legitimacyQuery.data.sources
-                              .filter(
-                                (source, index, arr) =>
-                                  arr.findIndex((s) => s.url === source.url) === index,
-                              )
-                              .map((source) => (
-                                <a
-                                  key={source.url}
-                                  href={source.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="small"
-                                >
-                                  {source.title ?? source.url}
-                                </a>
-                              ))}
+                            {[
+                              ...new Map(
+                                legitimacyQuery.data.sources.map((s) => [s.url, s]),
+                              ).values(),
+                            ].map((source) => (
+                              <a
+                                key={source.url}
+                                href={source.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="small"
+                              >
+                                {source.title ?? source.url}
+                              </a>
+                            ))}
                           </div>
                         </div>
                       )}
@@ -525,8 +517,7 @@ function CourseRequestApproveModal({
               institutions={institutions}
               availableTimezones={availableTimezones}
               coursesRoot={coursesRoot}
-              institutionPrefix={institutionPrefixData?.prefix}
-              isInstitutionPrefixError={isInstitutionPrefixError}
+              prefixState={prefixState}
               emailDomain={request.work_email?.split('@')[1] ?? ''}
               aiSecretsConfigured={aiSecretsConfigured}
               autoFilledInstitutionId={autoFilledInstitutionId}
@@ -555,7 +546,7 @@ function CourseRequestApproveModal({
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={isSubmitting || mutation.isPending || !isInstitutionPrefixReady}
+              disabled={isSubmitting || mutation.isPending || prefixState.status === 'loading'}
             >
               Create course
             </button>

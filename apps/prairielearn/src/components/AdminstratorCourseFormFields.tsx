@@ -24,13 +24,34 @@ export function buildRepoShortName(prefix: string | null | undefined, shortName:
   return prefix ? `pl-${prefix}-${slug}` : `pl-${slug}`;
 }
 
-export function useInstitutionPrefixQuery(institutionId: string) {
+export type InstitutionPrefixState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'error' }
+  | { status: 'resolved'; prefix: string | null };
+
+export function useInstitutionPrefix(
+  institutionId: string,
+  institutions: AdminInstitution[],
+): InstitutionPrefixState {
   const trpc = useTRPC();
 
-  return useQuery({
+  const { data, isError, isLoading } = useQuery({
     ...trpc.courseRequests.selectInstitutionPrefix.queryOptions({ institutionId }),
     enabled: !!institutionId,
   });
+
+  const selectedInstitution = institutions.find((i) => i.id === institutionId);
+
+  if (!institutionId || selectedInstitution?.short_name === 'Default') {
+    return { status: 'idle' };
+  }
+  // Keep using the last resolved prefix if a refetch fails so repo/path auto-fill
+  // stays stable instead of temporarily falling back to a prefix-less value.
+  if (data !== undefined) return { status: 'resolved', prefix: data.prefix };
+  if (isError) return { status: 'error' };
+  if (isLoading) return { status: 'loading' };
+  return { status: 'loading' };
 }
 
 function AutoFilledHint({ children }: { children: React.ReactNode }) {
@@ -45,8 +66,7 @@ export function AdministratorCourseFormFields({
   institutions,
   availableTimezones,
   coursesRoot,
-  institutionPrefix,
-  isInstitutionPrefixError,
+  prefixState,
   emailDomain,
   aiSecretsConfigured,
   autoFilledInstitutionId,
@@ -54,8 +74,7 @@ export function AdministratorCourseFormFields({
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
   coursesRoot: string;
-  institutionPrefix: string | null | undefined;
-  isInstitutionPrefixError: boolean;
+  prefixState: InstitutionPrefixState;
   emailDomain?: string;
   aiSecretsConfigured: boolean;
   autoFilledInstitutionId?: string | null;
@@ -76,6 +95,7 @@ export function AdministratorCourseFormFields({
 
   const selectedInstitution = institutions.find((i) => i.id === institutionId);
   const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
+  const institutionPrefix = prefixState.status === 'resolved' ? prefixState.prefix : undefined;
 
   const repoFormatValid =
     !repositoryShortName || /^pl-[a-z0-9]+-[a-z0-9]+$/.test(repositoryShortName);
@@ -106,11 +126,7 @@ export function AdministratorCourseFormFields({
 
   const effectivePrefix = suggestPrefixQuery.data?.prefix ?? institutionPrefix;
 
-  const prefixReady =
-    !institutionId ||
-    institutionPrefix !== undefined ||
-    isInstitutionPrefixError ||
-    effectivePrefix != null;
+  const prefixReady = prefixState.status !== 'loading';
   const expectedRepoShortName =
     prefixReady && shortName.trim() ? buildRepoShortName(effectivePrefix, shortName) : null;
   const repoMatchesShortName =
@@ -118,7 +134,7 @@ export function AdministratorCourseFormFields({
 
   useEffect(() => {
     if (!shortName) return;
-    if (institutionId && institutionPrefix === undefined) return;
+    if (prefixState.status === 'loading') return;
     if (isDefaultInstitution) return;
 
     // Keep repo/path in sync with the selected institution prefix until the admin
@@ -139,8 +155,7 @@ export function AdministratorCourseFormFields({
   }, [
     effectivePrefix,
     shortName,
-    institutionId,
-    institutionPrefix,
+    prefixState.status,
     isDefaultInstitution,
     coursesRoot,
     repositoryShortName,
@@ -194,7 +209,7 @@ export function AdministratorCourseFormFields({
               institution is typically not intended for new courses.
             </div>
           )}
-          {isInstitutionPrefixError && (
+          {prefixState.status === 'error' && (
             <div className="form-text text-danger">
               Failed to load institution prefix. Repository name will not be auto-filled.
             </div>
@@ -297,7 +312,7 @@ export function AdministratorCourseFormFields({
             }
             {...register('repository_short_name', { required: 'Enter a repository name' })}
           />
-          {institutionPrefix !== undefined && !institutionPrefix && (
+          {prefixState.status === 'resolved' && !prefixState.prefix && (
             <OverlayTrigger
               trigger={['hover', 'focus']}
               placement="top"

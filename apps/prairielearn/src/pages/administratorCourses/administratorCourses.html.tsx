@@ -9,7 +9,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import {
   AdministratorCourseFormFields,
   type CourseFormFieldValues,
-  useInstitutionPrefixQuery,
+  useInstitutionPrefix,
 } from '../../components/AdminstratorCourseFormFields.js';
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
 import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
@@ -295,14 +295,7 @@ function CourseInsertModal({
     formState: { errors, isSubmitting },
   } = methods;
   const institutionId = methods.watch('institution_id');
-  const { data: institutionPrefixData, isError: isInstitutionPrefixError } =
-    useInstitutionPrefixQuery(institutionId);
-  const selectedInstitution = institutions.find((i) => i.id === institutionId);
-  const isInstitutionPrefixReady =
-    !institutionId ||
-    selectedInstitution?.short_name === 'Default' ||
-    institutionPrefixData !== undefined ||
-    isInstitutionPrefixError;
+  const prefixState = useInstitutionPrefix(institutionId, institutions);
 
   const onSubmit = (data: InsertCourseFormData) => {
     mutation.mutate(
@@ -331,8 +324,7 @@ function CourseInsertModal({
               institutions={institutions}
               availableTimezones={availableTimezones}
               coursesRoot={coursesRoot}
-              institutionPrefix={institutionPrefixData?.prefix}
-              isInstitutionPrefixError={isInstitutionPrefixError}
+              prefixState={prefixState}
               aiSecretsConfigured={aiSecretsConfigured}
             />
             <div className="mb-3">
@@ -366,7 +358,7 @@ function CourseInsertModal({
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={isSubmitting || mutation.isPending || !isInstitutionPrefixReady}
+              disabled={isSubmitting || mutation.isPending || prefixState.status === 'loading'}
             >
               Add course
             </button>
