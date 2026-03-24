@@ -57,7 +57,7 @@ SELECT
   q.title,
   q.id AS question_id,
   admin_assessment_question_number (aq.id) AS number,
-  ag.number AS alternative_group_number,
+  ag.number AS alternative_pool_number,
   (
     count(*) OVER (
       PARTITION BY

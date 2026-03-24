@@ -150,24 +150,24 @@ export function buildHierarchicalAssessment(
     const positionInZone = zoneAlternativePoolCounts[zoneNumber];
     if (!zones[zoneNumber - 1].questions[positionInZone]) {
       zones[zoneNumber - 1].questions[positionInZone] ??= {
-        comment: row.alternative_group.json_comment ?? undefined,
-        advanceScorePerc: row.alternative_group.advance_score_perc ?? undefined,
-        canView: row.alternative_group.json_can_view ?? [],
-        canSubmit: row.alternative_group.json_can_submit ?? [],
-        gradeRateMinutes: row.alternative_group.json_grade_rate_minutes ?? undefined,
-        allowRealTimeGrading: row.alternative_group.json_allow_real_time_grading ?? undefined,
-        numberChoose: row.alternative_group.number_choose ?? undefined,
-        triesPerVariant: row.alternative_group.json_tries_per_variant ?? undefined,
-        points: row.alternative_group.json_points ?? undefined,
-        autoPoints: row.alternative_group.json_auto_points ?? undefined,
-        maxPoints: row.alternative_group.json_max_points ?? undefined,
-        maxAutoPoints: row.alternative_group.json_max_auto_points ?? undefined,
-        manualPoints: row.alternative_group.json_manual_points ?? undefined,
-        forceMaxPoints: row.alternative_group.json_force_max_points ?? undefined,
+        comment: row.alternative_pool.json_comment ?? undefined,
+        advanceScorePerc: row.alternative_pool.advance_score_perc ?? undefined,
+        canView: row.alternative_pool.json_can_view ?? [],
+        canSubmit: row.alternative_pool.json_can_submit ?? [],
+        gradeRateMinutes: row.alternative_pool.json_grade_rate_minutes ?? undefined,
+        allowRealTimeGrading: row.alternative_pool.json_allow_real_time_grading ?? undefined,
+        numberChoose: row.alternative_pool.number_choose ?? undefined,
+        triesPerVariant: row.alternative_pool.json_tries_per_variant ?? undefined,
+        points: row.alternative_pool.json_points ?? undefined,
+        autoPoints: row.alternative_pool.json_auto_points ?? undefined,
+        maxPoints: row.alternative_pool.json_max_points ?? undefined,
+        maxAutoPoints: row.alternative_pool.json_max_auto_points ?? undefined,
+        manualPoints: row.alternative_pool.json_manual_points ?? undefined,
+        forceMaxPoints: row.alternative_pool.json_force_max_points ?? undefined,
       };
     }
 
-    if (row.alternative_group.json_has_alternatives) {
+    if (row.alternative_pool.json_has_alternatives) {
       if (row.assessment_question.number_in_alternative_group == null) {
         throw new Error('Assessment question number is required');
       }

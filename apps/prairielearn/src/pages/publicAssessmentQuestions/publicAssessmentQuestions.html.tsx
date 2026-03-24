@@ -87,7 +87,7 @@ function AssessmentQuestionsTable({
                   <a href="/pl/public/course/${course_id}/question/${question.question.id}/preview">
                     ${renderHtml(
                       <AssessmentQuestionNumber
-                        questionNumber={question.alternative_group.number}
+                        questionNumber={question.alternative_pool.number}
                         alternativeNumber={
                           question.alternative_pool_size > 1
                             ? question.assessment_question.number_in_alternative_group

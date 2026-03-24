@@ -9,7 +9,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
-  AlternativeGroupSchema,
+  AlternativePoolSchema,
   AssessmentQuestionSchema,
   CourseInstanceSchema,
   CourseSchema,
@@ -32,7 +32,7 @@ export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend(
   question_tags: z.array(TagSchema.shape.name),
   question_id: IdSchema,
   assessment_question_number: z.string(),
-  alternative_group_number: AlternativeGroupSchema.shape.number,
+  alternative_pool_number: AlternativePoolSchema.shape.number,
   alternative_pool_size: z.number(),
   zone_title: ZoneSchema.shape.title,
   start_new_zone: z.boolean(),

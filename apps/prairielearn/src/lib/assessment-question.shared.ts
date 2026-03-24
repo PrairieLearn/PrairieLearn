@@ -39,7 +39,7 @@ export const StaffAssessmentQuestionSqlSchema = z.object({
   assessment_question: StaffAssessmentQuestionSchema,
   question: StaffQuestionSchema,
   topic: StaffTopicSchema,
-  alternative_group: StaffAlternativePoolSchema,
+  alternative_pool: StaffAlternativePoolSchema,
   zone: StaffZoneSchema,
   assessment: StaffAssessmentSchema,
   course_instance: StaffCourseInstanceSchema,

@@ -99,7 +99,7 @@ describe('buildHierarchicalAssessment', () => {
         question: { qid: 'q1', course_id: 'course-1' },
         course: { sharing_name: 'test' },
         zone: { number: 1, title: 'Zone 1' },
-        alternative_group: {
+        alternative_pool: {
           number: 1,
           id: 'ag1',
           json_has_alternatives: false,
@@ -112,7 +112,7 @@ describe('buildHierarchicalAssessment', () => {
         question: { qid: 'q2', course_id: 'course-1' },
         course: { sharing_name: 'test' },
         zone: { number: 1, title: 'Zone 1' },
-        alternative_group: {
+        alternative_pool: {
           number: 2,
           id: 'ag2',
           json_has_alternatives: false,
@@ -138,7 +138,7 @@ describe('buildHierarchicalAssessment', () => {
         question: { qid: 'alt1', course_id: 'course-1' },
         course: { sharing_name: 'test' },
         zone: { number: 1, title: 'Zone 1' },
-        alternative_group: {
+        alternative_pool: {
           number: 1,
           json_has_alternatives: true,
           number_choose: 1,
@@ -150,7 +150,7 @@ describe('buildHierarchicalAssessment', () => {
         question: { qid: 'alt2', course_id: 'course-1' },
         course: { sharing_name: 'test' },
         zone: { number: 1, title: 'Zone 1' },
-        alternative_group: {
+        alternative_pool: {
           number: 1,
           json_has_alternatives: true,
           number_choose: 1,
@@ -179,7 +179,7 @@ describe('buildHierarchicalAssessment', () => {
           title: 'Zone 1',
           json_allow_real_time_grading: false,
         },
-        alternative_group: {
+        alternative_pool: {
           number: 1,
           id: 'ag1',
           json_has_alternatives: false,
@@ -642,7 +642,11 @@ describe('computeAltPoolChosenRange', () => {
     // guaranteed=1 (C[1]=2 <= 3), max=2 (has layer 2 and 3 > C[1]).
     const pool1 = makeAltPool('ag1', 2, 2);
     const pool2 = makeAltPool('ag2', 2, 2);
-    const zone = { trackingId: 'z1', numberChoose: 3, questions: [pool1, pool2] } as ZoneAssessmentForm;
+    const zone = {
+      trackingId: 'z1',
+      numberChoose: 3,
+      questions: [pool1, pool2],
+    } as ZoneAssessmentForm;
 
     expect(computeAltPoolChosenRange(zone, pool1)).toEqual({ min: 1, max: 2 });
     expect(computeAltPoolChosenRange(zone, pool2)).toEqual({ min: 1, max: 2 });

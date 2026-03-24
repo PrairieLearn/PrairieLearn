@@ -37,7 +37,7 @@ SELECT
       q.id = qt.question_id
   ) AS question_tags,
   admin_assessment_question_number (aq.id) AS assessment_question_number,
-  ag.number AS alternative_group_number,
+  ag.number AS alternative_pool_number,
   (
     count(*) OVER (
       PARTITION BY

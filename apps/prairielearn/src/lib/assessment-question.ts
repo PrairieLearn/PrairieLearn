@@ -21,7 +21,7 @@ export async function selectAssessmentQuestions({
 
   const groupCounts: Record<string, number> = {};
   for (const row of rows) {
-    const groupId = row.alternative_group.id;
+    const groupId = row.alternative_pool.id;
     groupCounts[groupId] = (groupCounts[groupId] || 0) + 1;
   }
   let prevZoneId: string | null = null;
@@ -30,8 +30,8 @@ export async function selectAssessmentQuestions({
   const result: StaffAssessmentQuestionRow[] = [];
   for (const row of rows) {
     const start_new_zone = row.zone.id !== prevZoneId;
-    const start_new_alternative_pool = row.alternative_group.id !== prevAltPoolId;
-    const alternative_pool_size = groupCounts[row.alternative_group.id];
+    const start_new_alternative_pool = row.alternative_pool.id !== prevAltPoolId;
+    const alternative_pool_size = groupCounts[row.alternative_pool.id];
     result.push(
       StaffAssessmentQuestionRowSchema.parse({
         ...row,
@@ -41,7 +41,7 @@ export async function selectAssessmentQuestions({
       }),
     );
     prevZoneId = row.zone.id;
-    prevAltPoolId = row.alternative_group.id;
+    prevAltPoolId = row.alternative_pool.id;
   }
   return result;
 }
