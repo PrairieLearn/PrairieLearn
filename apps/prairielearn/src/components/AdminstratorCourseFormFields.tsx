@@ -24,6 +24,15 @@ export function buildRepoShortName(prefix: string | null | undefined, shortName:
   return prefix ? `pl-${prefix}-${slug}` : `pl-${slug}`;
 }
 
+export function useInstitutionPrefixQuery(institutionId: string) {
+  const trpc = useTRPC();
+
+  return useQuery({
+    ...trpc.courseRequests.selectInstitutionPrefix.queryOptions({ institutionId }),
+    enabled: !!institutionId,
+  });
+}
+
 function AutoFilledHint({ children }: { children: React.ReactNode }) {
   return (
     <div className="form-text text-primary">
@@ -36,6 +45,8 @@ export function AdministratorCourseFormFields({
   institutions,
   availableTimezones,
   coursesRoot,
+  institutionPrefix,
+  isInstitutionPrefixError,
   emailDomain,
   aiSecretsConfigured,
   autoFilledInstitutionId,
@@ -43,6 +54,8 @@ export function AdministratorCourseFormFields({
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
   coursesRoot: string;
+  institutionPrefix: string | null | undefined;
+  isInstitutionPrefixError: boolean;
   emailDomain?: string;
   aiSecretsConfigured: boolean;
   autoFilledInstitutionId?: string | null;
@@ -52,7 +65,7 @@ export function AdministratorCourseFormFields({
     register,
     watch,
     setValue,
-    formState: { errors },
+    formState: { errors, dirtyFields },
   } = useFormContext<CourseFormFieldValues>();
 
   const institutionId = watch('institution_id');
@@ -60,11 +73,6 @@ export function AdministratorCourseFormFields({
   const path = watch('path');
   const repositoryShortName = watch('repository_short_name');
   const displayTimezone = watch('display_timezone');
-
-  const { data: prefixData, isError: isPrefixQueryError } = useQuery({
-    ...trpc.courseRequests.selectInstitutionPrefix.queryOptions({ institutionId }),
-    enabled: !!institutionId,
-  });
 
   const selectedInstitution = institutions.find((i) => i.id === institutionId);
   const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
@@ -80,8 +88,8 @@ export function AdministratorCourseFormFields({
     institutionAutoFilled && displayTimezone === selectedInstitution?.display_timezone;
   const repoAutoFilled =
     institutionAutoFilled &&
-    prefixData?.prefix != null &&
-    repositoryShortName === buildRepoShortName(prefixData.prefix, shortName);
+    institutionPrefix != null &&
+    repositoryShortName === buildRepoShortName(institutionPrefix, shortName);
   const pathAutoFilled = repoAutoFilled && path === `${coursesRoot}/${repositoryShortName}`;
 
   const institutionLongName = selectedInstitution?.long_name ?? '';
@@ -96,10 +104,13 @@ export function AdministratorCourseFormFields({
     enabled: false,
   });
 
-  const effectivePrefix = suggestPrefixQuery.data?.prefix ?? prefixData?.prefix;
+  const effectivePrefix = suggestPrefixQuery.data?.prefix ?? institutionPrefix;
 
   const prefixReady =
-    !institutionId || prefixData !== undefined || isPrefixQueryError || effectivePrefix != null;
+    !institutionId ||
+    institutionPrefix !== undefined ||
+    isInstitutionPrefixError ||
+    effectivePrefix != null;
   const expectedRepoShortName =
     prefixReady && shortName.trim() ? buildRepoShortName(effectivePrefix, shortName) : null;
   const repoMatchesShortName =
@@ -107,18 +118,34 @@ export function AdministratorCourseFormFields({
 
   useEffect(() => {
     if (!shortName) return;
-    if (institutionId && !prefixData) return;
+    if (institutionId && institutionPrefix === undefined) return;
     if (isDefaultInstitution) return;
+
+    // Keep repo/path in sync with the selected institution prefix until the admin
+    // manually edits those fields, then preserve the manual values.
     const newRepoShortName = buildRepoShortName(effectivePrefix, shortName);
-    setValue('path', `${coursesRoot}/${newRepoShortName}`);
-    setValue('repository_short_name', newRepoShortName);
+    const pathRepoShortName =
+      dirtyFields.repository_short_name && repositoryShortName
+        ? repositoryShortName
+        : newRepoShortName;
+
+    if (!dirtyFields.repository_short_name) {
+      setValue('repository_short_name', newRepoShortName);
+    }
+
+    if (!dirtyFields.path) {
+      setValue('path', `${coursesRoot}/${pathRepoShortName}`);
+    }
   }, [
     effectivePrefix,
     shortName,
     institutionId,
-    prefixData,
+    institutionPrefix,
     isDefaultInstitution,
     coursesRoot,
+    repositoryShortName,
+    dirtyFields.path,
+    dirtyFields.repository_short_name,
     setValue,
   ]);
 
@@ -167,7 +194,7 @@ export function AdministratorCourseFormFields({
               institution is typically not intended for new courses.
             </div>
           )}
-          {isPrefixQueryError && (
+          {isInstitutionPrefixError && (
             <div className="form-text text-danger">
               Failed to load institution prefix. Repository name will not be auto-filled.
             </div>
@@ -270,7 +297,7 @@ export function AdministratorCourseFormFields({
             }
             {...register('repository_short_name', { required: 'Enter a repository name' })}
           />
-          {prefixData !== undefined && !prefixData.prefix && (
+          {institutionPrefix !== undefined && !institutionPrefix && (
             <OverlayTrigger
               trigger={['hover', 'focus']}
               placement="top"

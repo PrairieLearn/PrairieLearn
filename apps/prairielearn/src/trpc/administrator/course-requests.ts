@@ -1,10 +1,8 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { contains } from '@prairielearn/path-utils';
 import { IdSchema } from '@prairielearn/zod';
 
-import { config } from '../../lib/config.js';
 import {
   checkInstructorLegitimacy,
   suggestInstitutionPrefix,
@@ -18,6 +16,7 @@ import {
 } from '../../lib/course-request.js';
 import { checkCoursePathExists, checkCourseRepositoryExists } from '../../lib/course.js';
 
+import { normalizeCoursePathInput } from './course-path.js';
 import { requireAdministrator, t } from './init.js';
 
 const deny = t.procedure
@@ -62,12 +61,7 @@ const createCourse = t.procedure
   )
   .output(z.object({ jobSequenceId: z.string() }))
   .mutation(async ({ input, ctx }) => {
-    if (config.coursesRoot && !contains(config.coursesRoot, input.path, false)) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: `Path must be within ${config.coursesRoot}/`,
-      });
-    }
+    const normalizedPath = normalizeCoursePathInput(input.path);
 
     const repoExists = await checkCourseRepositoryExists(input.repoShortName);
     if (repoExists) {
@@ -77,7 +71,7 @@ const createCourse = t.procedure
       });
     }
 
-    const pathExists = await checkCoursePathExists(input.path);
+    const pathExists = await checkCoursePathExists(normalizedPath);
     if (pathExists) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
@@ -91,7 +85,7 @@ const createCourse = t.procedure
       title: input.title,
       institutionId: input.institutionId,
       displayTimezone: input.displayTimezone,
-      path: input.path,
+      path: normalizedPath,
       repoShortName: input.repoShortName,
       githubUser: input.githubUser.trim().length > 0 ? input.githubUser.trim() : null,
       authnUser: ctx.authn_user,

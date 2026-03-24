@@ -17,6 +17,7 @@ import {
   AdministratorCourseFormFields,
   type CourseFormFieldValues,
   buildRepoShortName,
+  useInstitutionPrefixQuery,
 } from './AdminstratorCourseFormFields.js';
 import { JobStatus } from './JobStatus.js';
 
@@ -333,6 +334,15 @@ function CourseRequestApproveModal({
     handleSubmit,
     formState: { isSubmitting },
   } = methods;
+  const institutionId = methods.watch('institution_id');
+  const { data: institutionPrefixData, isError: isInstitutionPrefixError } =
+    useInstitutionPrefixQuery(institutionId);
+  const selectedInstitution = institutions.find((i) => i.id === institutionId);
+  const isInstitutionPrefixReady =
+    !institutionId ||
+    selectedInstitution?.short_name === 'Default' ||
+    institutionPrefixData !== undefined ||
+    isInstitutionPrefixError;
 
   const onSubmit = (data: CourseRequestApproveFormData) => {
     mutation.mutate(
@@ -515,6 +525,8 @@ function CourseRequestApproveModal({
               institutions={institutions}
               availableTimezones={availableTimezones}
               coursesRoot={coursesRoot}
+              institutionPrefix={institutionPrefixData?.prefix}
+              isInstitutionPrefixError={isInstitutionPrefixError}
               emailDomain={request.work_email?.split('@')[1] ?? ''}
               aiSecretsConfigured={aiSecretsConfigured}
               autoFilledInstitutionId={autoFilledInstitutionId}
@@ -543,7 +555,7 @@ function CourseRequestApproveModal({
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={isSubmitting || mutation.isPending}
+              disabled={isSubmitting || mutation.isPending || !isInstitutionPrefixReady}
             >
               Create course
             </button>
