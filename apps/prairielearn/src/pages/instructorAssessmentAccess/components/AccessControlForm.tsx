@@ -271,6 +271,7 @@ export function AccessControlForm({
             <div className="split-pane__left-body p-3">
               <AccessControlSummary
                 courseInstanceId={courseInstance.id}
+                displayTimezone={courseInstance.display_timezone}
                 getOverrideName={getOverrideName}
                 mainRule={watchedData.mainRule}
                 overrides={watchedData.overrides}
