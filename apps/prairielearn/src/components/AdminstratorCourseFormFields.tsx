@@ -24,7 +24,7 @@ export function buildRepoShortName(prefix: string | null | undefined, shortName:
   return prefix ? `pl-${prefix}-${slug}` : `pl-${slug}`;
 }
 
-export type InstitutionPrefixState =
+type InstitutionPrefixState =
   | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'error' }
