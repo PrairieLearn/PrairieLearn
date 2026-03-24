@@ -1068,12 +1068,15 @@ function PreferenceRow({
               setValue(`preferences.${index}.enum`, [], { shouldDirty: true });
               // Sync react-hook-form's value when switching to boolean: the <select>
               // shows "true" visually, but the internal value is still the old one.
+              const current = watch(`preferences.${index}.default`);
               if (e.target.value === 'boolean') {
-                const current = watch(`preferences.${index}.default`);
                 if (current !== 'true' && current !== 'false') {
                   setValue(`preferences.${index}.default`, 'true', { shouldValidate: true });
                 }
+                return;
               }
+
+              setValue(`preferences.${index}.default`, '', { shouldValidate: true });
             },
           })}
         >
@@ -1262,7 +1265,8 @@ function EnumInput({
                   e.preventDefault();
                   addValue();
                 } else if (e.key === 'Escape') {
-                  stopAdding();
+                  setInputValue('');
+                  setAdding(false);
                 }
               }}
               onBlur={stopAdding}
