@@ -281,7 +281,7 @@ function AssessmentEditorInner({
       } else {
         // Adding to zone or changing a standalone question: disable only
         // standalone QIDs already directly in the zone (not ones inside alt
-        // groups, since selecting those would move them out of the group).
+        // pools, since selecting those would move them out of the pool).
         const zone = zones.find((z) => z.trackingId === selectedItem.zoneTrackingId);
         if (zone) {
           for (const q of zone.questions) {
@@ -562,7 +562,7 @@ function AssessmentEditorInner({
       return;
     }
 
-    // Alternative reorder within same group
+    // Alternative reorder within same pool
     if (activeType === 'alternative') {
       const fromPos = positionByStableId[activeIdStr];
       const toPos = positionByStableId[overIdStr];
@@ -570,7 +570,7 @@ function AssessmentEditorInner({
       if (!fromPos || !toPos) return;
       if (fromPos.alternativeIndex == null || toPos.alternativeIndex == null) return;
 
-      // Only handle within-group reorder here; cross-group is handled in handleDragOver
+      // Only handle within-pool reorder here; cross-pool is handled in handleDragOver
       const fromBlock = zones[fromPos.zoneIndex].questions[fromPos.questionIndex];
       const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
       if (fromBlock.trackingId !== toBlock.trackingId) return;
@@ -672,7 +672,7 @@ function AssessmentEditorInner({
       if (!toPos) return;
 
       if (overType === 'alternative' && toPos.alternativeIndex != null) {
-        // Alternative dragged over alternative in different group → cross-group move
+        // Alternative dragged over alternative in different pool → cross-pool move
         const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
         if (fromBlock.trackingId !== toBlock.trackingId) {
           dispatch({
@@ -686,7 +686,7 @@ function AssessmentEditorInner({
       }
 
       if (overType === 'question') {
-        // If the alternative resolved to its own parent group, skip extraction
+        // If the alternative resolved to its own parent pool, skip extraction
         const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
         if (fromBlock.trackingId === toBlock.trackingId) return;
 

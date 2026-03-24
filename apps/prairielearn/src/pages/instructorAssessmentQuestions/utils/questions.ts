@@ -232,7 +232,7 @@ export function computeZonePointTotals(
   // instead of the initial autoPoints value.
   const blockPoints = questions.map((q) => {
     if (q.alternatives) {
-      // Resolve each alternative's effective points (alternative-level ?? group-level)
+      // Resolve each alternative's effective points (alternative-level ?? pool-level)
       const resolved = q.alternatives.map((alt) => ({
         auto: firstPoints(
           alt.maxAutoPoints ??

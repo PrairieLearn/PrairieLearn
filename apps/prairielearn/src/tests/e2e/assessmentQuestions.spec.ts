@@ -358,7 +358,7 @@ test.describe('Assessment questions', () => {
       const numberChooseInput = page.getByLabel('Number to choose');
       await numberChooseInput.clear();
       await numberChooseInput.fill('2');
-      const warningText = 'Number to choose exceeds the number of alternatives in this group.';
+      const warningText = 'Number to choose exceeds the number of alternatives in this pool.';
       await expect(page.getByText(warningText)).not.toBeVisible();
 
       await page

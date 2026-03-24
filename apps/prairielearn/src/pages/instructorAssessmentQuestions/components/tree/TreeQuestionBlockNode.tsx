@@ -132,7 +132,7 @@ export function TreeQuestionBlockNode({
     );
   }
 
-  // Alternative group
+  // Alternative pool
   const alternativeCount = alternatives?.length ?? 0;
 
   // Is one of our alternatives being dragged away?
@@ -144,7 +144,7 @@ export function TreeQuestionBlockNode({
 
   const pointsMismatch =
     alternatives != null && hasPointsMismatch(alternatives, assessmentType, zoneQuestionBlock);
-  // This warning triggers when alternatives are deleted from a group, reducing
+  // This warning triggers when alternatives are deleted from a pool, reducing
   // the count below an already-saved numberChoose.
   const chooseExceeds = hasAltPoolChooseExceedsCount(zoneQuestionBlock);
 
@@ -162,7 +162,7 @@ export function TreeQuestionBlockNode({
       }}
       className={clsx(isMergeOver && 'bg-primary-subtle')}
     >
-      {/* Alt group header */}
+      {/* Alt pool header */}
       <div
         role="button"
         tabIndex={0}
@@ -233,14 +233,14 @@ export function TreeQuestionBlockNode({
                 <WarningIndicator
                   tooltipId={`points-mismatch-${zoneQuestionBlock.trackingId}`}
                   label="Inconsistent points"
-                  body="Students will receive different total points because this group has alternatives with different point values"
+                  body="Students will receive different total points because this pool has alternatives with different point values"
                 />
               )}
               {chooseExceeds && (
                 <WarningIndicator
                   tooltipId={`choose-exceeds-${zoneQuestionBlock.trackingId}`}
                   label="Choose exceeds count"
-                  body="Number to choose exceeds the number of alternatives in this group"
+                  body="Number to choose exceeds the number of alternatives in this pool"
                 />
               )}
             </span>
