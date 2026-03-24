@@ -6,6 +6,7 @@ import superjson from 'superjson';
 import { z } from 'zod';
 
 import { runInTransactionAsync } from '@prairielearn/postgres';
+import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 
 import { fetchAllAccessControlRules } from '../../lib/assessment-access-control.js';
 import { features } from '../../lib/features/index.js';
@@ -145,17 +146,17 @@ function formJsonToEnrollmentRuleData(
   };
 }
 
-const DateStringInputSchema = z.string().refine((s) => !Number.isNaN(new Date(s).getTime()), {
-  message: 'Must be a valid date string',
-});
-
 const DeadlineInputSchema = z.object({
-  date: DateStringInputSchema,
+  date: DatetimeLocalStringSchema,
   credit: z.number().min(0, 'Credit must be non-negative'),
 });
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// This schema mirrors AccessControlJsonSchema from '../../schemas/accessControl.js' but
+// intentionally omits .strict() / .describe() annotations and adds an `id` field (instead of
+// `name`) plus a .superRefine() for duplicate validation. Deriving one from the other would
+// require stripping .strict() at every nesting level, which Zod doesn't support cleanly.
 export const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: string }> = z
   .object({
     id: z.string().optional(),
@@ -163,8 +164,8 @@ export const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: 
     labels: z.array(z.string()).optional(),
     dateControl: z
       .object({
-        releaseDate: DateStringInputSchema.nullable().optional(),
-        dueDate: DateStringInputSchema.nullable().optional(),
+        releaseDate: DatetimeLocalStringSchema.nullable().optional(),
+        dueDate: DatetimeLocalStringSchema.nullable().optional(),
         earlyDeadlines: z.array(DeadlineInputSchema).nullable().optional(),
         lateDeadlines: z.array(DeadlineInputSchema).nullable().optional(),
         afterLastDeadline: z
@@ -197,10 +198,10 @@ export const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: 
     afterComplete: z
       .object({
         hideQuestions: z.boolean().optional(),
-        showQuestionsAgainDate: DateStringInputSchema.optional(),
-        hideQuestionsAgainDate: DateStringInputSchema.optional(),
+        showQuestionsAgainDate: DatetimeLocalStringSchema.optional(),
+        hideQuestionsAgainDate: DatetimeLocalStringSchema.optional(),
         hideScore: z.boolean().optional(),
-        showScoreAgainDate: DateStringInputSchema.optional(),
+        showScoreAgainDate: DatetimeLocalStringSchema.optional(),
       })
       .optional(),
   })

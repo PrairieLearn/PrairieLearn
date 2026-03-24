@@ -10,8 +10,8 @@ import {
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
+import { getFieldName } from '../hooks/fieldNames.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
-import { getFieldName } from '../hooks/useTypedFormWatch.js';
 import type { AccessControlFormData, AfterLastDeadlineValue, DeadlineEntry } from '../types.js';
 import { getLastDeadlineDate, getUserTimezone } from '../utils/dateUtils.js';
 

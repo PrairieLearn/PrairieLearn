@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Badge, Button, Form, ListGroup, Spinner, Tab, Tabs } from 'react-bootstrap';
 
 import { useTRPCClient } from '../../utils/trpc-context.js';
@@ -45,12 +45,16 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
     });
   }, [allStudents, excludedUids, searchQuery]);
 
-  const parseUids = useCallback((input: string) => {
-    return input
-      .split(/[,\s\n]+/)
-      .map((uid) => uid.trim())
-      .filter((uid) => uid.length > 0);
-  }, []);
+  const parseUids = (input: string): string[] => {
+    return [
+      ...new Set(
+        input
+          .split(/[\s,;]+/)
+          .map((uid) => uid.trim())
+          .filter(Boolean),
+      ),
+    ];
+  };
 
   const handleValidate = () => {
     const uids = parseUids(uidInput);
