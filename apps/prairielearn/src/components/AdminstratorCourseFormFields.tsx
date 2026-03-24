@@ -199,9 +199,7 @@ export function AdministratorCourseFormFields({
             {errors.institution_id.message}
           </div>
         )}
-        {institutionAutoFilled && (
-          <AutoFilledHint source="requesting user's account" />
-        )}
+        {institutionAutoFilled && <AutoFilledHint source="requesting user's account" />}
         <div aria-live="polite" aria-atomic="true">
           {isDefaultInstitution && (
             <div className="form-text text-warning">
@@ -325,7 +323,9 @@ export function AdministratorCourseFormFields({
                 type="button"
                 className="btn btn-outline-primary flex-shrink-0"
                 aria-label="Suggest repository name prefix"
-                disabled={suggestPrefixQuery.isFetching || !shortName.trim() || !institutionLongName}
+                disabled={
+                  suggestPrefixQuery.isFetching || !shortName.trim() || !institutionLongName
+                }
                 aria-busy={suggestPrefixQuery.isFetching}
                 onClick={() => suggestPrefixQuery.refetch()}
               >
