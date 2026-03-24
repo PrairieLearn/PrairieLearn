@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 
 import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
+import stableStringify from 'fast-json-stable-stringify';
 import superjson from 'superjson';
 import { z } from 'zod';
 
@@ -219,6 +220,21 @@ export const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: 
       seenUuids.add(e.examUuid);
     }
 
+    if (data.labels) {
+      const seenLabels = new Set<string>();
+      for (const label of data.labels) {
+        if (seenLabels.has(label)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Duplicate label: "${label}"`,
+            path: ['labels'],
+          });
+          break;
+        }
+        seenLabels.add(label);
+      }
+    }
+
     for (const [key, deadlines] of [
       ['earlyDeadlines', data.dateControl?.earlyDeadlines],
       ['lateDeadlines', data.dateControl?.lateDeadlines],
@@ -350,7 +366,7 @@ const saveAllRules = t.procedure
   });
 
 export function computeHash(rules: object[]): string {
-  return crypto.createHash('sha256').update(JSON.stringify(rules)).digest('hex');
+  return crypto.createHash('sha256').update(stableStringify(rules)).digest('hex');
 }
 
 export const accessControlRouter = t.router({

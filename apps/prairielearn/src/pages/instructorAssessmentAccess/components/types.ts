@@ -1,3 +1,4 @@
+import { formatInTimeZone } from 'date-fns-tz';
 import { z } from 'zod';
 
 import type { AccessControlJson } from '../../../schemas/accessControl.js';
@@ -139,22 +140,41 @@ export type OverrideData = z.infer<typeof OverrideSchema>;
 export type AccessControlFormData = z.infer<typeof AccessControlFormDataSchema>;
 
 /**
- * Strip the trailing 'Z' from an ISO date string so it is compatible with
- * `<input type="datetime-local">` which expects `yyyy-MM-ddThh:mm[:ss[.SSS]]`.
+ * Convert a date string to a timezone-naive datetime-local value suitable for
+ * `<input type="datetime-local">` (format: `yyyy-MM-ddTHH:mm:ss`).
+ *
+ * If the string carries timezone information (trailing `Z` or `+/-HH:MM`), it
+ * is converted to the course instance's display timezone.  Timezone-naive
+ * strings are returned as-is.
  */
-function toLocalDatetimeValue(value: string): string;
-function toLocalDatetimeValue(value: string | null): string | null;
-function toLocalDatetimeValue(value: string | undefined): string | undefined;
-function toLocalDatetimeValue(value: string | null | undefined): string | null | undefined;
+function toLocalDatetimeValue(value: string, displayTimezone: string): string;
+function toLocalDatetimeValue(value: string | null, displayTimezone: string): string | null;
+function toLocalDatetimeValue(
+  value: string | undefined,
+  displayTimezone: string,
+): string | undefined;
+function toLocalDatetimeValue(
+  value: string | null | undefined,
+  displayTimezone: string,
+): string | null | undefined;
 
-function toLocalDatetimeValue(value: string | null | undefined): string | null | undefined {
+function toLocalDatetimeValue(
+  value: string | null | undefined,
+  displayTimezone: string,
+): string | null | undefined {
   if (typeof value === 'string') {
-    return value.replace(/Z$/, '');
+    if (value.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(value)) {
+      return formatInTimeZone(new Date(value), displayTimezone, "yyyy-MM-dd'T'HH:mm:ss");
+    }
+    return value;
   }
   return value;
 }
 
-export function jsonToMainRuleFormData(json: AccessControlJsonWithId): MainRuleData {
+export function jsonToMainRuleFormData(
+  json: AccessControlJsonWithId,
+  displayTimezone: string,
+): MainRuleData {
   const dc = json.dateControl;
   const ac = json.afterComplete;
 
@@ -163,15 +183,15 @@ export function jsonToMainRuleFormData(json: AccessControlJsonWithId): MainRuleD
     trackingId: json.id ?? crypto.randomUUID(),
     listBeforeRelease: json.listBeforeRelease ?? false,
     dateControlEnabled: dc?.releaseDate != null,
-    releaseDate: toLocalDatetimeValue(dc?.releaseDate) ?? null,
-    dueDate: toLocalDatetimeValue(dc?.dueDate) ?? null,
+    releaseDate: toLocalDatetimeValue(dc?.releaseDate, displayTimezone) ?? null,
+    dueDate: toLocalDatetimeValue(dc?.dueDate, displayTimezone) ?? null,
     earlyDeadlines: (dc?.earlyDeadlines ?? []).map((d) => ({
       ...d,
-      date: toLocalDatetimeValue(d.date),
+      date: toLocalDatetimeValue(d.date, displayTimezone),
     })),
     lateDeadlines: (dc?.lateDeadlines ?? []).map((d) => ({
       ...d,
-      date: toLocalDatetimeValue(d.date),
+      date: toLocalDatetimeValue(d.date, displayTimezone),
     })),
     afterLastDeadline: dc?.afterLastDeadline ?? null,
     durationMinutes: dc?.durationMinutes ?? null,
@@ -180,17 +200,20 @@ export function jsonToMainRuleFormData(json: AccessControlJsonWithId): MainRuleD
     prairieTestExams: json.integrations?.prairieTest?.exams ?? [],
     questionVisibility: {
       hideQuestions: ac?.hideQuestions ?? false,
-      showAgainDate: toLocalDatetimeValue(ac?.showQuestionsAgainDate),
-      hideAgainDate: toLocalDatetimeValue(ac?.hideQuestionsAgainDate),
+      showAgainDate: toLocalDatetimeValue(ac?.showQuestionsAgainDate, displayTimezone),
+      hideAgainDate: toLocalDatetimeValue(ac?.hideQuestionsAgainDate, displayTimezone),
     },
     scoreVisibility: {
       hideScore: ac?.hideScore ?? false,
-      showAgainDate: toLocalDatetimeValue(ac?.showScoreAgainDate),
+      showAgainDate: toLocalDatetimeValue(ac?.showScoreAgainDate, displayTimezone),
     },
   };
 }
 
-export function jsonToOverrideFormData(json: AccessControlJsonWithId): OverrideData {
+export function jsonToOverrideFormData(
+  json: AccessControlJsonWithId,
+  displayTimezone: string,
+): OverrideData {
   const dc = json.dateControl;
   const ac = json.afterComplete;
 
@@ -217,13 +240,13 @@ export function jsonToOverrideFormData(json: AccessControlJsonWithId): OverrideD
 
   let releaseDate: string | null = null;
   if (dc?.releaseDate !== undefined) {
-    releaseDate = toLocalDatetimeValue(dc.releaseDate) ?? null;
+    releaseDate = toLocalDatetimeValue(dc.releaseDate, displayTimezone) ?? null;
     overriddenFields.push('releaseDate');
   }
 
   let dueDate: string | null = null;
   if (dc?.dueDate !== undefined) {
-    dueDate = toLocalDatetimeValue(dc.dueDate) ?? null;
+    dueDate = toLocalDatetimeValue(dc.dueDate, displayTimezone) ?? null;
     overriddenFields.push('dueDate');
   }
 
@@ -231,7 +254,7 @@ export function jsonToOverrideFormData(json: AccessControlJsonWithId): OverrideD
   if (dc?.earlyDeadlines !== undefined) {
     earlyDeadlines = (dc.earlyDeadlines ?? []).map((d) => ({
       ...d,
-      date: toLocalDatetimeValue(d.date),
+      date: toLocalDatetimeValue(d.date, displayTimezone),
     }));
     overriddenFields.push('earlyDeadlines');
   }
@@ -240,7 +263,7 @@ export function jsonToOverrideFormData(json: AccessControlJsonWithId): OverrideD
   if (dc?.lateDeadlines !== undefined) {
     lateDeadlines = (dc.lateDeadlines ?? []).map((d) => ({
       ...d,
-      date: toLocalDatetimeValue(d.date),
+      date: toLocalDatetimeValue(d.date, displayTimezone),
     }));
     overriddenFields.push('lateDeadlines');
   }
@@ -267,8 +290,8 @@ export function jsonToOverrideFormData(json: AccessControlJsonWithId): OverrideD
   if (ac?.hideQuestions !== undefined) {
     questionVisibility = {
       hideQuestions: ac.hideQuestions,
-      showAgainDate: toLocalDatetimeValue(ac.showQuestionsAgainDate),
-      hideAgainDate: toLocalDatetimeValue(ac.hideQuestionsAgainDate),
+      showAgainDate: toLocalDatetimeValue(ac.showQuestionsAgainDate, displayTimezone),
+      hideAgainDate: toLocalDatetimeValue(ac.hideQuestionsAgainDate, displayTimezone),
     };
     overriddenFields.push('questionVisibility');
   }
@@ -277,7 +300,7 @@ export function jsonToOverrideFormData(json: AccessControlJsonWithId): OverrideD
   if (ac?.hideScore !== undefined) {
     scoreVisibility = {
       hideScore: ac.hideScore,
-      showAgainDate: toLocalDatetimeValue(ac.showScoreAgainDate),
+      showAgainDate: toLocalDatetimeValue(ac.showScoreAgainDate, displayTimezone),
     };
     overriddenFields.push('scoreVisibility');
   }
@@ -299,7 +322,7 @@ export function jsonToOverrideFormData(json: AccessControlJsonWithId): OverrideD
   };
 }
 
-function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
+function mainRuleToJson(rule: MainRuleData, displayTimezone: string): AccessControlJsonWithId {
   const output: AccessControlJsonWithId = {
     id: rule.id,
     listBeforeRelease: rule.listBeforeRelease,
@@ -308,9 +331,11 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   if (rule.dateControlEnabled) {
     output.dateControl = {};
     // "Released immediately" in the UI sets releaseDate to null; persist as
-    // the current timestamp so it round-trips as a real date (matching the
-    // course-instance publishing pattern).
-    output.dateControl.releaseDate = rule.releaseDate || new Date().toISOString();
+    // the current timestamp in the course instance's display timezone so it
+    // round-trips as a real date (matching the course-instance publishing
+    // pattern).
+    output.dateControl.releaseDate =
+      rule.releaseDate || formatInTimeZone(new Date(), displayTimezone, "yyyy-MM-dd'T'HH:mm:ss");
     if (rule.dueDate) output.dateControl.dueDate = rule.dueDate;
     if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (rule.lateDeadlines.length > 0) output.dateControl.lateDeadlines = rule.lateDeadlines;
@@ -401,8 +426,14 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
   return output;
 }
 
-export function formDataToJson(formData: AccessControlFormData): AccessControlJsonWithId[] {
-  return [mainRuleToJson(formData.mainRule), ...formData.overrides.map(overrideToJson)];
+export function formDataToJson(
+  formData: AccessControlFormData,
+  displayTimezone: string,
+): AccessControlJsonWithId[] {
+  return [
+    mainRuleToJson(formData.mainRule, displayTimezone),
+    ...formData.overrides.map(overrideToJson),
+  ];
 }
 
 export function createDefaultOverrideFormData(): OverrideData {
