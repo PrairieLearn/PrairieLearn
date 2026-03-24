@@ -79,6 +79,29 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 
+interface AiGradingResponsesForPersistence {
+  model_id: AiGradingModelId;
+  gradingResponseWithRotationIssue?: GenerateObjectResult<any>;
+  rotationCorrections?: Record<
+    string,
+    {
+      degreesRotated: CounterClockwiseRotationDegrees;
+      response: GenerateObjectResult<any>;
+    }
+  >;
+  finalGradingResponse: GenerateObjectResult<any>;
+}
+
+interface AiGradingPersistenceContext {
+  prompt: ModelMessage[];
+  course_id: string;
+  course_instance_id: string;
+  authn_user_id: string;
+  assessment_question_id: string;
+  instance_question_id: string;
+  job_sequence_id: string;
+}
+
 /**
  * Calculate the total cost in milli-dollars (with infrastructure fee) for all
  * responses from a single grading operation.
@@ -88,12 +111,7 @@ function calculateTotalGradingCostMilliDollars({
   gradingResponseWithRotationIssue,
   rotationCorrections,
   finalGradingResponse,
-}: {
-  model_id: AiGradingModelId;
-  gradingResponseWithRotationIssue?: GenerateObjectResult<any>;
-  rotationCorrections?: Record<string, { response: GenerateObjectResult<any> }>;
-  finalGradingResponse: GenerateObjectResult<any>;
-}): number {
+}: AiGradingResponsesForPersistence): number {
   let totalRawCost = calculateResponseCost({ model: model_id, usage: finalGradingResponse.usage });
   if (gradingResponseWithRotationIssue) {
     totalRawCost += calculateResponseCost({
@@ -112,95 +130,139 @@ function calculateTotalGradingCostMilliDollars({
   return calculateCostWithFeeMilliDollars(totalRawCost, config.aiGradingInfrastructureFeePercent);
 }
 
+async function insertAiGradingJobForResponses({
+  grading_job_id,
+  persistenceContext,
+  responses,
+}: {
+  grading_job_id: string;
+  persistenceContext: Pick<
+    AiGradingPersistenceContext,
+    'prompt' | 'course_id' | 'course_instance_id' | 'job_sequence_id'
+  >;
+  responses: AiGradingResponsesForPersistence;
+}): Promise<string> {
+  const aiGradingJobParams = {
+    grading_job_id,
+    job_sequence_id: persistenceContext.job_sequence_id,
+    model_id: responses.model_id,
+    prompt: persistenceContext.prompt,
+    course_id: persistenceContext.course_id,
+    course_instance_id: persistenceContext.course_instance_id,
+  };
+
+  if (responses.gradingResponseWithRotationIssue || responses.rotationCorrections) {
+    assert(responses.gradingResponseWithRotationIssue);
+    assert(responses.rotationCorrections);
+    return await insertAiGradingJobWithRotationCorrection({
+      ...aiGradingJobParams,
+      gradingResponseWithRotationIssue: responses.gradingResponseWithRotationIssue,
+      rotationCorrections: responses.rotationCorrections,
+      gradingResponseWithRotationCorrection: responses.finalGradingResponse,
+    });
+  }
+
+  return await insertAiGradingJob({
+    ...aiGradingJobParams,
+    response: responses.finalGradingResponse,
+  });
+}
+
+async function updateInstanceQuestionScoreForAiGrading({
+  assessment,
+  instance_question_id,
+  submission_id,
+  authn_user_id,
+  score,
+}: {
+  assessment: Assessment;
+  instance_question_id: string;
+  submission_id: string;
+  authn_user_id: string;
+  score: Parameters<typeof manualGrading.updateInstanceQuestionScore>[0]['score'];
+}): Promise<string> {
+  const { grading_job_id } = await manualGrading.updateInstanceQuestionScore({
+    assessment,
+    instance_question_id,
+    submission_id,
+    check_modified_at: null,
+    score,
+    authn_user_id,
+    is_ai_graded: true,
+  });
+  assert(grading_job_id);
+  return grading_job_id;
+}
+
+async function insertAiOnlyGradingJob({
+  submission_id,
+  authn_user_id,
+  score,
+  manual_points,
+  manual_rubric_grading_id,
+}: {
+  submission_id: string;
+  authn_user_id: string;
+  score: number;
+  manual_points: number;
+  manual_rubric_grading_id: string | null;
+}): Promise<string> {
+  return await queryScalar(
+    sql.insert_grading_job,
+    {
+      submission_id,
+      authn_user_id,
+      grading_method: 'AI',
+      correct: null,
+      score,
+      auto_points: 0,
+      manual_points,
+      manual_rubric_grading_id,
+      feedback: null,
+    },
+    IdSchema,
+  );
+}
+
 async function finalizeAiGradingPersistence({
   createGradingJob,
   trackRateLimitAndCost,
-  rotationCorrectionApplied,
-  gradingResponseWithRotationIssue,
-  rotationCorrections,
-  finalGradingResponse,
-  model_id,
-  prompt,
-  course,
-  course_instance,
-  authn_user_id,
-  assessment_question_id,
-  instance_question_id,
-  job_sequence_id,
+  persistenceContext,
+  responses,
 }: {
   createGradingJob: () => Promise<string>;
   trackRateLimitAndCost: boolean;
-  rotationCorrectionApplied: boolean;
-  gradingResponseWithRotationIssue?: GenerateObjectResult<any>;
-  rotationCorrections?: Record<
-    string,
-    {
-      degreesRotated: CounterClockwiseRotationDegrees;
-      response: GenerateObjectResult<any>;
-    }
-  >;
-  finalGradingResponse: GenerateObjectResult<any>;
-  model_id: AiGradingModelId;
-  prompt: ModelMessage[];
-  course: Course;
-  course_instance: CourseInstance;
-  authn_user_id: string;
-  assessment_question_id: string;
-  instance_question_id: string;
-  job_sequence_id: string;
+  persistenceContext: AiGradingPersistenceContext;
+  responses: AiGradingResponsesForPersistence;
 }): Promise<void> {
   await runInTransactionAsync(async () => {
     const grading_job_id = await createGradingJob();
     const costMilliDollars = trackRateLimitAndCost
-      ? calculateTotalGradingCostMilliDollars({
-          model_id,
-          gradingResponseWithRotationIssue,
-          rotationCorrections,
-          finalGradingResponse,
-        })
+      ? calculateTotalGradingCostMilliDollars(responses)
       : 0;
-
-    const aiGradingJobParams = {
-      grading_job_id,
-      job_sequence_id,
-      model_id,
-      prompt,
-      course_id: course.id,
-      course_instance_id: course_instance.id,
-    };
 
     await insertAiGradingJobAndDeductCreditsIfNeeded({
       trackRateLimitAndCost,
-      course_instance_id: course_instance.id,
+      course_instance_id: persistenceContext.course_instance_id,
       cost_milli_dollars: costMilliDollars,
-      user_id: authn_user_id,
-      assessment_question_id,
-      reason: `AI graded instance question ${instance_question_id}`,
+      user_id: persistenceContext.authn_user_id,
+      assessment_question_id: persistenceContext.assessment_question_id,
+      reason: `AI graded instance question ${persistenceContext.instance_question_id}`,
       createAiGradingJob: async () =>
-        rotationCorrectionApplied
-          ? await run(async () => {
-              assert(gradingResponseWithRotationIssue);
-              assert(rotationCorrections);
-              return await insertAiGradingJobWithRotationCorrection({
-                ...aiGradingJobParams,
-                gradingResponseWithRotationIssue,
-                rotationCorrections,
-                gradingResponseWithRotationCorrection: finalGradingResponse,
-              });
-            })
-          : await insertAiGradingJob({
-              ...aiGradingJobParams,
-              response: finalGradingResponse,
-            }),
+        await insertAiGradingJobForResponses({
+          grading_job_id,
+          persistenceContext,
+          responses,
+        }),
     });
 
     await updateCourseInstanceUsagesForAiGradingResponses({
-      courseInstanceId: course_instance.id,
-      authnUserId: authn_user_id,
-      model: model_id,
-      gradingResponseWithRotationIssue,
-      rotationCorrections,
-      finalGradingResponse,
+      courseInstanceId: persistenceContext.course_instance_id,
+      authnUserId: persistenceContext.authn_user_id,
+      model: responses.model_id,
+      gradingResponseWithRotationIssue: responses.gradingResponseWithRotationIssue,
+      rotationCorrections: responses.rotationCorrections,
+      finalGradingResponse: responses.finalGradingResponse,
     });
   });
 }
@@ -719,6 +781,21 @@ export async function aiGrade({
           ai_rubric_items: finalGradingResponse.object.rubric_items,
           rubric_items,
         });
+        const responsesForPersistence = {
+          model_id,
+          gradingResponseWithRotationIssue,
+          rotationCorrections,
+          finalGradingResponse,
+        } satisfies AiGradingResponsesForPersistence;
+        const persistenceContext = {
+          prompt: input,
+          course_id: course.id,
+          course_instance_id: course_instance.id,
+          authn_user_id,
+          assessment_question_id: assessment_question.id,
+          instance_question_id: instance_question.id,
+          job_sequence_id: serverJob.jobSequenceId,
+        } satisfies AiGradingPersistenceContext;
 
         if (shouldUpdateScore) {
           // Requires grading: update instance question score
@@ -727,36 +804,21 @@ export async function aiGrade({
             applied_rubric_items: appliedRubricItems,
           };
           await finalizeAiGradingPersistence({
-            createGradingJob: async () => {
-              const { grading_job_id } = await manualGrading.updateInstanceQuestionScore({
+            createGradingJob: async () =>
+              await updateInstanceQuestionScoreForAiGrading({
                 assessment,
                 instance_question_id: instance_question.id,
                 submission_id: submission.id,
-                check_modified_at: null,
                 score: {
                   // TODO: consider asking for and recording freeform feedback.
                   manual_rubric_data,
                   feedback: { manual: '' },
                 },
                 authn_user_id: user_id,
-                is_ai_graded: true,
-              });
-              assert(grading_job_id);
-              return grading_job_id;
-            },
+              }),
             trackRateLimitAndCost,
-            rotationCorrectionApplied,
-            gradingResponseWithRotationIssue,
-            rotationCorrections,
-            finalGradingResponse,
-            model_id,
-            prompt: input,
-            course,
-            course_instance,
-            authn_user_id,
-            assessment_question_id: assessment_question.id,
-            instance_question_id: instance_question.id,
-            job_sequence_id: serverJob.jobSequenceId,
+            persistenceContext,
+            responses: responsesForPersistence,
           });
         } else {
           // Does not require grading: only create grading job and rubric grading
@@ -772,35 +834,17 @@ export async function aiGrade({
               );
               const score =
                 manual_rubric_grading.computed_points / assessment_question.max_manual_points;
-              return await queryScalar(
-                sql.insert_grading_job,
-                {
-                  submission_id: submission.id,
-                  authn_user_id: user_id,
-                  grading_method: 'AI',
-                  correct: null,
-                  score,
-                  auto_points: 0,
-                  manual_points: manual_rubric_grading.computed_points,
-                  manual_rubric_grading_id: manual_rubric_grading.id,
-                  feedback: null,
-                },
-                IdSchema,
-              );
+              return await insertAiOnlyGradingJob({
+                submission_id: submission.id,
+                authn_user_id: user_id,
+                score,
+                manual_points: manual_rubric_grading.computed_points,
+                manual_rubric_grading_id: manual_rubric_grading.id,
+              });
             },
             trackRateLimitAndCost,
-            rotationCorrectionApplied,
-            gradingResponseWithRotationIssue,
-            rotationCorrections,
-            finalGradingResponse,
-            model_id,
-            prompt: input,
-            course,
-            course_instance,
-            authn_user_id,
-            assessment_question_id: assessment_question.id,
-            instance_question_id: instance_question.id,
-            job_sequence_id: serverJob.jobSequenceId,
+            persistenceContext,
+            responses: responsesForPersistence,
           });
         }
 
@@ -949,75 +993,57 @@ export async function aiGrade({
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);
         const score = finalGradingResponse.object.score;
+        const responsesForPersistence = {
+          model_id,
+          gradingResponseWithRotationIssue,
+          rotationCorrections,
+          finalGradingResponse,
+        } satisfies AiGradingResponsesForPersistence;
+        const persistenceContext = {
+          prompt: input,
+          course_id: course.id,
+          course_instance_id: course_instance.id,
+          authn_user_id,
+          assessment_question_id: assessment_question.id,
+          instance_question_id: instance_question.id,
+          job_sequence_id: serverJob.jobSequenceId,
+        } satisfies AiGradingPersistenceContext;
 
         if (shouldUpdateScore) {
           // Requires grading: update instance question score
           const feedback = finalGradingResponse.object.feedback;
           await finalizeAiGradingPersistence({
-            createGradingJob: async () => {
-              const { grading_job_id } = await manualGrading.updateInstanceQuestionScore({
+            createGradingJob: async () =>
+              await updateInstanceQuestionScoreForAiGrading({
                 assessment,
                 instance_question_id: instance_question.id,
                 submission_id: submission.id,
-                check_modified_at: null,
                 score: {
                   manual_score_perc: score,
                   feedback: { manual: feedback },
                 },
                 authn_user_id: user_id,
-                is_ai_graded: true,
-              });
-              assert(grading_job_id);
-              return grading_job_id;
-            },
+              }),
             trackRateLimitAndCost,
-            rotationCorrectionApplied,
-            gradingResponseWithRotationIssue,
-            rotationCorrections,
-            finalGradingResponse,
-            model_id,
-            prompt: input,
-            course,
-            course_instance,
-            authn_user_id,
-            assessment_question_id: assessment_question.id,
-            instance_question_id: instance_question.id,
-            job_sequence_id: serverJob.jobSequenceId,
+            persistenceContext,
+            responses: responsesForPersistence,
           });
         } else {
           // Does not require grading: only create grading job and rubric grading
           await finalizeAiGradingPersistence({
             createGradingJob: async () => {
               assert(assessment_question.max_manual_points);
-              return await queryScalar(
-                sql.insert_grading_job,
-                {
-                  submission_id: submission.id,
-                  authn_user_id: user_id,
-                  grading_method: 'AI',
-                  correct: null,
-                  score: score / 100,
-                  auto_points: 0,
-                  manual_points: (score * assessment_question.max_manual_points) / 100,
-                  manual_rubric_grading_id: null,
-                  feedback: null,
-                },
-                IdSchema,
-              );
+              return await insertAiOnlyGradingJob({
+                submission_id: submission.id,
+                authn_user_id: user_id,
+                score: score / 100,
+                manual_points: (score * assessment_question.max_manual_points) / 100,
+                manual_rubric_grading_id: null,
+              });
             },
             trackRateLimitAndCost,
-            rotationCorrectionApplied,
-            gradingResponseWithRotationIssue,
-            rotationCorrections,
-            finalGradingResponse,
-            model_id,
-            prompt: input,
-            course,
-            course_instance,
-            authn_user_id,
-            assessment_question_id: assessment_question.id,
-            instance_question_id: instance_question.id,
-            job_sequence_id: serverJob.jobSequenceId,
+            persistenceContext,
+            responses: responsesForPersistence,
           });
         }
 
