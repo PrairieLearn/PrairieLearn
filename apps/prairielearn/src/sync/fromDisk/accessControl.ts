@@ -139,7 +139,7 @@ function prepareRuleRow(
 } {
   const dateControl = rule.dateControl ?? {};
   const afterComplete = rule.afterComplete ?? {};
-  const afterLastDeadline = dateControl.afterLastDeadline ?? {};
+  const afterLastDeadline = dateControl.afterLastDeadline;
   const isMainRule = ruleNumber === JSON_RULE_START;
 
   const listBeforeRelease = mapField(rule.listBeforeRelease);
@@ -149,8 +149,9 @@ function prepareRuleRow(
   const lateDeadlinesField = mapField(dateControl.lateDeadlines);
   const durationMinutesField = mapField(dateControl.durationMinutes);
   const passwordField = mapField(dateControl.password);
-  const afterLastDeadlineAllowSubmissionsField = mapField(afterLastDeadline.allowSubmissions);
-  const afterLastDeadlineCreditField = mapField(afterLastDeadline.credit);
+  const afterLastDeadlineAllowSubmissionsField = mapField(afterLastDeadline?.allowSubmissions);
+  const afterLastDeadlineCreditField =
+    afterLastDeadline === null ? mapField<null>(null) : mapField(afterLastDeadline?.credit);
   const hideQuestionsField = mapField(afterComplete.hideQuestions);
   const showQuestionsAgainDateField = mapField(afterComplete.showQuestionsAgainDate);
   const hideQuestionsAgainDateField = mapField(afterComplete.hideQuestionsAgainDate);

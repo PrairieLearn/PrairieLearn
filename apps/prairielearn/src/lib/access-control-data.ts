@@ -60,12 +60,12 @@ function buildDateControl(row: AccessControlRuleRow): AccessControlJson['dateCon
     hasAnyField = true;
   }
 
-  if (row.date_control_duration_minutes_overridden && row.date_control_duration_minutes != null) {
+  if (row.date_control_duration_minutes_overridden) {
     dateControl.durationMinutes = row.date_control_duration_minutes;
     hasAnyField = true;
   }
 
-  if (row.date_control_password_overridden && row.date_control_password != null) {
+  if (row.date_control_password_overridden) {
     dateControl.password = row.date_control_password;
     hasAnyField = true;
   }
@@ -89,19 +89,25 @@ function buildDateControl(row: AccessControlRuleRow): AccessControlJson['dateCon
   }
 
   {
-    const includeCredit =
-      row.date_control_after_last_deadline_credit_overridden &&
-      row.date_control_after_last_deadline_credit != null;
+    const includeCredit = row.date_control_after_last_deadline_credit_overridden;
     const includeAllowSubmissions = row.date_control_after_last_deadline_allow_submissions != null;
 
     if (includeCredit || includeAllowSubmissions) {
-      dateControl.afterLastDeadline = {};
-      if (includeCredit) {
-        dateControl.afterLastDeadline.credit = row.date_control_after_last_deadline_credit!;
-      }
-      if (includeAllowSubmissions) {
-        dateControl.afterLastDeadline.allowSubmissions =
-          row.date_control_after_last_deadline_allow_submissions!;
+      if (
+        row.date_control_after_last_deadline_credit_overridden &&
+        row.date_control_after_last_deadline_credit == null &&
+        row.date_control_after_last_deadline_allow_submissions == null
+      ) {
+        dateControl.afterLastDeadline = null;
+      } else {
+        dateControl.afterLastDeadline = {};
+        if (row.date_control_after_last_deadline_credit != null) {
+          dateControl.afterLastDeadline.credit = row.date_control_after_last_deadline_credit;
+        }
+        if (includeAllowSubmissions) {
+          dateControl.afterLastDeadline.allowSubmissions =
+            row.date_control_after_last_deadline_allow_submissions!;
+        }
       }
       hasAnyField = true;
     }

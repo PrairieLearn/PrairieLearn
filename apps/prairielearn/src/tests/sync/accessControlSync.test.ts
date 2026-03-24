@@ -8,6 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { selectAccessControlRulesForAssessment } from '../../lib/access-control-data.js';
+import { resolveAccessControl } from '../../lib/access-control-resolver.js';
 import {
   AssessmentAccessControlEarlyDeadlineSchema,
   AssessmentAccessControlEnrollmentSchema,
@@ -1806,6 +1807,112 @@ describe('Access control syncing', () => {
         override.rule.dateControl?.dueDate,
         new Date('2024-04-01T23:59:00').toISOString(),
       );
+    });
+
+    it('explicit null override removals round-trip correctly', async () => {
+      const courseData = util.getCourseData();
+      const groupName = 'Test Group';
+      addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+
+      const mainRule: AccessControlJsonInput = {
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+          durationMinutes: 90,
+          password: 'secret123',
+          afterLastDeadline: { credit: 10, allowSubmissions: true },
+        },
+      };
+      const overrideRule: AccessControlJsonInput = {
+        labels: [groupName],
+        dateControl: {
+          durationMinutes: null,
+          password: null,
+          afterLastDeadline: null,
+        },
+      };
+
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        util.ASSESSMENT_ID
+      ].accessControl = [mainRule, overrideRule];
+      await util.writeAndSyncCourseData(courseData);
+
+      const assessment = await getAssessment(util.ASSESSMENT_ID);
+      const rules = await selectAccessControlRulesForAssessment(assessment);
+      const override = rules.find((r) => r.number > 0);
+      assert.isOk(override);
+      assert.isOk(override.rule.dateControl);
+      assert.strictEqual(override.rule.dateControl.durationMinutes, null);
+      assert.strictEqual(override.rule.dateControl.password, null);
+      assert.strictEqual(override.rule.dateControl.afterLastDeadline, null);
+    });
+
+    it('explicit null override removals change resolved access behavior', async () => {
+      const courseData = util.getCourseData();
+      const groupName = 'Test Group';
+      addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+
+      const mainRule: AccessControlJsonInput = {
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+          durationMinutes: 90,
+          password: 'secret123',
+          afterLastDeadline: { credit: 10, allowSubmissions: true },
+        },
+      };
+      const overrideRule: AccessControlJsonInput = {
+        labels: [groupName],
+        dateControl: {
+          durationMinutes: null,
+          password: null,
+          afterLastDeadline: null,
+        },
+      };
+
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        util.ASSESSMENT_ID
+      ].accessControl = [mainRule, overrideRule];
+      await util.writeAndSyncCourseData(courseData);
+
+      const assessment = await getAssessment(util.ASSESSMENT_ID);
+      const rules = await selectAccessControlRulesForAssessment(assessment);
+      const override = rules.find((r) => r.number > 0);
+      assert.isOk(override);
+      assert.equal(override.targetType, 'student_label');
+      assert.lengthOf(override.studentLabelIds, 1);
+
+      const beforeDueResult = resolveAccessControl({
+        rules,
+        student: {
+          enrollmentId: null,
+          studentLabelIds: override.studentLabelIds,
+        },
+        date: new Date('2024-03-20T12:00:00Z'),
+        displayTimezone: 'America/Chicago',
+        authzMode: 'Public',
+        courseRole: 'None',
+        courseInstanceRole: 'None',
+        prairieTestReservations: [],
+      });
+      assert.isNull(beforeDueResult.timeLimitMin);
+      assert.isNull(beforeDueResult.password);
+
+      const afterDueResult = resolveAccessControl({
+        rules,
+        student: {
+          enrollmentId: null,
+          studentLabelIds: override.studentLabelIds,
+        },
+        date: new Date('2024-03-22T12:00:00Z'),
+        displayTimezone: 'America/Chicago',
+        authzMode: 'Public',
+        courseRole: 'None',
+        courseInstanceRole: 'None',
+        prairieTestReservations: [],
+      });
+      assert.equal(afterDueResult.credit, 0);
+      assert.isFalse(afterDueResult.active);
     });
 
     it('only configured fields appear in the round-tripped JSON', async () => {

@@ -51,7 +51,7 @@ function dbBaseRowToAccessControlJson(row: BaseRuleRow): AccessControlJson & { i
   const dateControl: AccessControlJson['dateControl'] = {};
 
   if (row.date_control_release_date_overridden) {
-    dateControl.releaseDate = row.date_control_release_date?.toISOString();
+    dateControl.releaseDate = row.date_control_release_date?.toISOString() ?? null;
   }
   if (row.date_control_due_date_overridden) {
     dateControl.dueDate = row.date_control_due_date?.toISOString() ?? null;
@@ -66,17 +66,25 @@ function dbBaseRowToAccessControlJson(row: BaseRuleRow): AccessControlJson & { i
     row.date_control_after_last_deadline_credit_overridden ||
     row.date_control_after_last_deadline_allow_submissions !== null
   ) {
-    dateControl.afterLastDeadline = {
-      credit:
-        unmapField(
-          row.date_control_after_last_deadline_credit_overridden,
-          row.date_control_after_last_deadline_credit,
-        ) ?? undefined,
-      allowSubmissions: row.date_control_after_last_deadline_allow_submissions ?? undefined,
-    };
+    if (
+      row.date_control_after_last_deadline_credit_overridden &&
+      row.date_control_after_last_deadline_credit == null &&
+      row.date_control_after_last_deadline_allow_submissions == null
+    ) {
+      dateControl.afterLastDeadline = null;
+    } else {
+      dateControl.afterLastDeadline = {
+        credit:
+          unmapField(
+            row.date_control_after_last_deadline_credit_overridden,
+            row.date_control_after_last_deadline_credit,
+          ) ?? undefined,
+        allowSubmissions: row.date_control_after_last_deadline_allow_submissions ?? undefined,
+      };
+    }
   }
   if (row.date_control_duration_minutes_overridden) {
-    dateControl.durationMinutes = row.date_control_duration_minutes ?? undefined;
+    dateControl.durationMinutes = row.date_control_duration_minutes;
   }
   if (row.date_control_password_overridden) {
     dateControl.password = row.date_control_password;
