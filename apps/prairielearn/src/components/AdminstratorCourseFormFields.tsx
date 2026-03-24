@@ -54,10 +54,10 @@ export function useInstitutionPrefix(
   return { status: 'loading' };
 }
 
-function AutoFilledHint({ children }: { children: React.ReactNode }) {
+function AutoFilledHint({ source }: { source: string }) {
   return (
     <div className="form-text text-primary">
-      <i className="bi bi-stars" aria-hidden="true" /> Auto-filled {children}
+      <i className="bi bi-stars" aria-hidden="true" /> Auto-filled from {source}
     </div>
   );
 }
@@ -200,7 +200,7 @@ export function AdministratorCourseFormFields({
           </div>
         )}
         {institutionAutoFilled && (
-          <AutoFilledHint>from requesting user&apos;s account</AutoFilledHint>
+          <AutoFilledHint source="requesting user's account" />
         )}
         <div aria-live="polite" aria-atomic="true">
           {isDefaultInstitution && (
@@ -241,7 +241,7 @@ export function AdministratorCourseFormFields({
             {errors.display_timezone.message}
           </div>
         )}
-        {timezoneAutoFilled && <AutoFilledHint>from selected institution</AutoFilledHint>}
+        {timezoneAutoFilled && <AutoFilledHint source="selected institution" />}
       </div>
 
       <div className="col-md-6">
@@ -312,14 +312,12 @@ export function AdministratorCourseFormFields({
             }
             {...register('repository_short_name', { required: 'Enter a repository name' })}
           />
-          {prefixState.status === 'resolved' && !prefixState.prefix && (
+          {prefixState.status === 'resolved' && !prefixState.prefix && aiSecretsConfigured && (
             <OverlayTrigger
               trigger={['hover', 'focus']}
               placement="top"
               tooltip={{
-                body: aiSecretsConfigured
-                  ? 'Use AI to suggest a repository name prefix based on the institution'
-                  : 'AI features require the corresponding OpenAI key to be configured.',
+                body: 'Use AI to suggest a repository name prefix based on the institution',
                 props: { id: 'suggest-prefix-tooltip' },
               }}
             >
@@ -327,12 +325,7 @@ export function AdministratorCourseFormFields({
                 type="button"
                 className="btn btn-outline-primary flex-shrink-0"
                 aria-label="Suggest repository name prefix"
-                disabled={
-                  suggestPrefixQuery.isFetching ||
-                  !shortName.trim() ||
-                  !institutionLongName ||
-                  !aiSecretsConfigured
-                }
+                disabled={suggestPrefixQuery.isFetching || !shortName.trim() || !institutionLongName}
                 aria-busy={suggestPrefixQuery.isFetching}
                 onClick={() => suggestPrefixQuery.refetch()}
               >
@@ -350,7 +343,7 @@ export function AdministratorCourseFormFields({
             {errors.repository_short_name.message}
           </div>
         )}
-        {repoAutoFilled && <AutoFilledHint>from selected institution</AutoFilledHint>}
+        {repoAutoFilled && <AutoFilledHint source="selected institution" />}
         <div aria-live="polite" aria-atomic="true">
           {!repoFormatValid && (
             <div className="form-text text-warning">
@@ -393,7 +386,7 @@ export function AdministratorCourseFormFields({
             {errors.path.message}
           </div>
         )}
-        {pathAutoFilled && <AutoFilledHint>from selected institution</AutoFilledHint>}
+        {pathAutoFilled && <AutoFilledHint source="selected institution" />}
         <div aria-live="polite" aria-atomic="true">
           {!pathMatchesRepo && (
             <div className="form-text text-warning">
