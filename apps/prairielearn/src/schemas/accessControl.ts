@@ -116,7 +116,7 @@ export const AccessControlJsonSchema = z
       .optional()
       .nullable()
       .describe(
-        'Whether students can see the assessment title before the release date. Defaults to false.',
+        'Main rule only. Whether students can see the assessment title before the release date. Defaults to false.',
       ),
 
     dateControl: DateControlJsonSchema,

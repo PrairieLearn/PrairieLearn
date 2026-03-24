@@ -8,7 +8,7 @@ export interface AccessControlRuleInput {
   targetType: 'none' | 'enrollment' | 'student_label';
   enrollmentIds: string[];
   studentLabelIds: string[];
-  prairietestExams: Array<{ uuid: string; readOnly: boolean }>;
+  prairietestExams: { uuid: string; readOnly: boolean }[];
 }
 
 export interface StudentContext {
@@ -138,11 +138,8 @@ export function mergeRules(
 
   const merged: AccessControlJson = {};
 
-  // Policy-level fields: inherit from main, override can replace.
+  // listBeforeRelease is only configurable on the main rule.
   if (main.listBeforeRelease !== undefined) merged.listBeforeRelease = main.listBeforeRelease;
-  if (override.listBeforeRelease !== undefined) {
-    merged.listBeforeRelease = override.listBeforeRelease;
-  }
 
   merged.dateControl = mergeDateControl(main.dateControl, override.dateControl);
   merged.afterComplete = mergeAfterComplete(main.afterComplete, override.afterComplete);
@@ -157,16 +154,10 @@ export function cascadeOverrides(
   base: AccessControlJson,
   next: AccessControlJson,
 ): AccessControlJson {
-  const merged: AccessControlJson = {};
-
-  // listBeforeRelease cascades.
-  if (base.listBeforeRelease !== undefined) merged.listBeforeRelease = base.listBeforeRelease;
-  if (next.listBeforeRelease !== undefined) merged.listBeforeRelease = next.listBeforeRelease;
-
-  merged.dateControl = mergeDateControl(base.dateControl, next.dateControl);
-  merged.afterComplete = mergeAfterComplete(base.afterComplete, next.afterComplete);
-
-  return merged;
+  return {
+    dateControl: mergeDateControl(base.dateControl, next.dateControl),
+    afterComplete: mergeAfterComplete(base.afterComplete, next.afterComplete),
+  };
 }
 
 interface CreditResult {

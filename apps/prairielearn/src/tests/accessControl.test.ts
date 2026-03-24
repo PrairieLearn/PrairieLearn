@@ -252,6 +252,35 @@ describe('Assignment-level rule requirement', () => {
       'Should have no errors with one assignment-level rule',
     );
   });
+
+  it('should fail validation when an override specifies listBeforeRelease', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        listBeforeRelease: false,
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+        },
+      },
+      {
+        labels: ['student1'],
+        listBeforeRelease: true,
+        dateControl: {
+          dueDate: '2024-03-22T23:59:00',
+        },
+      },
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const results = validateAccessControlArray({
+      accessControlJsonArray: parsedRules,
+    });
+
+    assert.isTrue(
+      results[1].errors.some((err) => err.includes('listBeforeRelease can only be specified')),
+      `Expected listBeforeRelease validation error, but got: ${results[1].errors.join(', ')}`,
+    );
+  });
 });
 
 describe('Date fields without seconds', () => {

@@ -50,7 +50,11 @@ function validateAssessmentRules(
   // checks to avoid cascading errors, and student label syncing is skipped.
   // We still need to reject labels missing from the database here so that
   // label-targeted rules are not silently treated as assignment-level rules.
-  for (const rule of rules) {
+  for (const [index, rule] of rules.entries()) {
+    if (index > 0 && rule.listBeforeRelease !== undefined) {
+      return 'listBeforeRelease can only be specified on the main rule.';
+    }
+
     const ruleLabels = rule.labels ?? [];
     const seenLabels = new Set<string>();
     const duplicateLabels = new Set<string>();
@@ -164,8 +168,8 @@ function prepareRuleRow(
   const ruleRow = JSON.stringify({
     assessment_id: assessmentId,
     number: ruleNumber,
-    // Main rules default to false; overrides inherit when omitted.
-    list_before_release: isMainRule ? (listBeforeRelease.value ?? false) : listBeforeRelease.value,
+    // listBeforeRelease is only configurable on the main rule.
+    list_before_release: isMainRule ? (listBeforeRelease.value ?? false) : null,
     target_type: targetType,
     date_control_release_date_overridden: releaseDateField.overridden,
     date_control_release_date: releaseDateField.value,

@@ -31,7 +31,7 @@ The `accessControl` field is an array of rules in `infoAssessment.json`:
 ```
 
 - The **first element** (index 0) is the **main rule**. It applies to all students and sets the default behavior for the assessment.
-- **Subsequent elements** are **overrides**. Each override targets specific students using [student labels](#student-labels-and-overrides) or individual enrollments (configured via the UI), and can change any subset of the main rule's fields.
+- **Subsequent elements** are **overrides**. Each override targets specific students using [student labels](#student-labels-and-overrides) or individual enrollments (configured via the UI), and can change any subset of the main rule's fields except `listBeforeRelease`.
 
 ### Full JSON skeleton
 
@@ -156,10 +156,10 @@ The same logic applies to `hideScore` / `showScoreAgainDate` (there is no "hide 
 
 ### Other fields
 
-| Field               | Type    | Default | Description                                                                                                            |
-| ------------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `name`              | string  |         | A descriptive name for the rule (for display in the UI).                                                               |
-| `listBeforeRelease` | boolean | `false` | If `true`, the assessment title is shown on the Assessments page before the release date, but students cannot open it. |
+| Field               | Type    | Default | Description                                                                                                                            |
+| ------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`              | string  |         | A descriptive name for the rule (for display in the UI).                                                                               |
+| `listBeforeRelease` | boolean | `false` | Main rule only. If `true`, the assessment title is shown on the Assessments page before the release date, but students cannot open it. |
 
 ## Student labels and overrides
 
@@ -191,11 +191,11 @@ When a student accesses an assessment, the system resolves which rule applies us
 
 Not all fields behave the same way during cascading:
 
-| Field                        | Main → Override merge                                                       | Override → Override cascade                                 |
-| ---------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `dateControl.*` sub-fields   | Override replaces individual sub-fields; unset sub-fields inherit from main | Later override replaces; unset fields kept from earlier     |
-| `afterComplete.*` sub-fields | Same as `dateControl`                                                       | Same as `dateControl`                                       |
-| `listBeforeRelease`          | Inherits from main; override can replace                                    | Cascades (carries from earlier override; later can replace) |
+| Field                        | Main → Override merge                                                       | Override → Override cascade                             |
+| ---------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `dateControl.*` sub-fields   | Override replaces individual sub-fields; unset sub-fields inherit from main | Later override replaces; unset fields kept from earlier |
+| `afterComplete.*` sub-fields | Same as `dateControl`                                                       | Same as `dateControl`                                   |
+| `listBeforeRelease`          | Main rule only                                                              | Not applicable                                          |
 
 ### Override examples
 

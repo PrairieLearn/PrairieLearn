@@ -470,6 +470,33 @@ describe('Access control syncing', () => {
       assert.isOk(overrideRow);
       assert.isNull(overrideRow.list_before_release);
     });
+
+    it('rejects listBeforeRelease on label-based overrides', async () => {
+      const groupName = 'Extended time';
+      const courseData = util.getCourseData();
+      addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        util.ASSESSMENT_ID
+      ].accessControl = [
+        makeAccessControlRule({ listBeforeRelease: false }),
+        makeAccessControlRule({
+          labels: [groupName],
+          listBeforeRelease: true,
+          dateControl: {
+            dueDate: '2024-03-28T23:59:00',
+          },
+        }),
+      ];
+
+      await util.writeAndSyncCourseData(courseData);
+
+      const assessment = await getAssessment(util.ASSESSMENT_ID);
+      assert.isNotNull(assessment.sync_errors);
+      assert.match(
+        assessment.sync_errors,
+        /listBeforeRelease can only be specified on the main rule/,
+      );
+    });
   });
 
   it('preserves existing access control rows when the assessment has unrelated sync errors', async () => {

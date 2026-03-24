@@ -1275,6 +1275,11 @@ describe('mergeRules', () => {
     expect(result.dateControl?.dueDate).toBe('2025-04-01T00:00:00Z');
     expect(result.dateControl?.password).toBe('secret');
   });
+
+  it('ignores listBeforeRelease on overrides', () => {
+    const result = mergeRules({ listBeforeRelease: false }, { listBeforeRelease: true });
+    expect(result.listBeforeRelease).toBe(false);
+  });
 });
 
 describe('cascadeOverrides', () => {
@@ -1310,9 +1315,9 @@ describe('cascadeOverrides', () => {
     expect(result.afterComplete?.hideScore).toBe(true);
   });
 
-  it('preserves listBeforeRelease from base when next does not set it', () => {
+  it('does not carry listBeforeRelease through cascaded overrides', () => {
     const result = cascadeOverrides({ listBeforeRelease: true }, {});
-    expect(result.listBeforeRelease).toBe(true);
+    expect(result.listBeforeRelease).toBeUndefined();
   });
 });
 

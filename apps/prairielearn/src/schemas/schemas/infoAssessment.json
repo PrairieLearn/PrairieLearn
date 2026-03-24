@@ -741,7 +741,7 @@
           }
         },
         "listBeforeRelease": {
-          "description": "Whether students can see the assessment title before the release date. Defaults to false.",
+          "description": "Main rule only. Whether students can see the assessment title before the release date. Defaults to false.",
           "anyOf": [
             {
               "anyOf": [

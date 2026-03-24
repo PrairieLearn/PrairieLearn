@@ -156,11 +156,7 @@ function buildAfterComplete(
 function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRuleInput {
   const rule: AccessControlJson = {};
 
-  if (isOverride(row)) {
-    if (row.list_before_release != null) {
-      rule.listBeforeRelease = row.list_before_release;
-    }
-  } else {
+  if (!isOverride(row)) {
     rule.listBeforeRelease = row.list_before_release ?? false;
   }
 
