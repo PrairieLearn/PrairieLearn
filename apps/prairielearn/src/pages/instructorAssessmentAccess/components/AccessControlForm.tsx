@@ -168,7 +168,7 @@ export function AccessControlForm({
   };
 
   const getOverrideName = (index: number): string => {
-    if (index < 0 || index >= watchedData.overrides.length) return `Override ${index + 1}`;
+    if (index >= watchedData.overrides.length) return `Override ${index + 1}`;
     const override = watchedData.overrides[index];
     const appliesTo = override.appliesTo;
 
@@ -241,7 +241,7 @@ export function AccessControlForm({
       </div>
     ) : selectedRule?.type === 'override' ? (
       (() => {
-        if (selectedRule.index < 0 || selectedRule.index >= watchedData.overrides.length) {
+        if (selectedRule.index >= watchedData.overrides.length) {
           return null;
         }
         const override = watchedData.overrides[selectedRule.index];
