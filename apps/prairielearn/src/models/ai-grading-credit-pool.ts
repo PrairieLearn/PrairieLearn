@@ -130,6 +130,11 @@ async function deductCreditsForAiGradingWithLockedPool(
  * order. When cost tracking is enabled, this takes FOR UPDATE on
  * course_instances before ai_grading_jobs is inserted, avoiding FK KEY SHARE ->
  * FOR UPDATE deadlocks under parallel grading.
+ *
+ * This function opens its own transaction, but is safe to call inside an
+ * existing `runInTransactionAsync` — the nested call reuses the outer
+ * transaction. In that case, the FOR UPDATE lock is held for the lifetime of
+ * the *outer* transaction, not just this function.
  */
 export async function insertAiGradingJobAndDeductCreditsIfNeeded({
   trackRateLimitAndCost,

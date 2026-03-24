@@ -79,18 +79,27 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 
-interface AiGradingResponsesForPersistence {
+type AiGradingResponsesForPersistence = {
   model_id: AiGradingModelId;
-  gradingResponseWithRotationIssue?: GenerateObjectResult<any>;
-  rotationCorrections?: Record<
-    string,
-    {
-      degreesRotated: CounterClockwiseRotationDegrees;
-      response: GenerateObjectResult<any>;
-    }
-  >;
   finalGradingResponse: GenerateObjectResult<any>;
-}
+} & (
+  | {
+      rotationCorrectionApplied: true;
+      gradingResponseWithRotationIssue: GenerateObjectResult<any>;
+      rotationCorrections: Record<
+        string,
+        {
+          degreesRotated: CounterClockwiseRotationDegrees;
+          response: GenerateObjectResult<any>;
+        }
+      >;
+    }
+  | {
+      rotationCorrectionApplied: false;
+      gradingResponseWithRotationIssue?: undefined;
+      rotationCorrections?: undefined;
+    }
+);
 
 interface AiGradingPersistenceContext {
   prompt: ModelMessage[];
@@ -151,9 +160,7 @@ async function insertAiGradingJobForResponses({
     course_instance_id: persistenceContext.course_instance_id,
   };
 
-  if (responses.gradingResponseWithRotationIssue || responses.rotationCorrections) {
-    assert(responses.gradingResponseWithRotationIssue);
-    assert(responses.rotationCorrections);
+  if (responses.rotationCorrectionApplied) {
     return await insertAiGradingJobWithRotationCorrection({
       ...aiGradingJobParams,
       gradingResponseWithRotationIssue: responses.gradingResponseWithRotationIssue,
@@ -781,12 +788,15 @@ export async function aiGrade({
           ai_rubric_items: finalGradingResponse.object.rubric_items,
           rubric_items,
         });
-        const responsesForPersistence = {
-          model_id,
-          gradingResponseWithRotationIssue,
-          rotationCorrections,
-          finalGradingResponse,
-        } satisfies AiGradingResponsesForPersistence;
+        const responsesForPersistence: AiGradingResponsesForPersistence = rotationCorrectionApplied
+          ? {
+              model_id,
+              rotationCorrectionApplied,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
+            }
+          : { model_id, rotationCorrectionApplied, finalGradingResponse };
         const persistenceContext = {
           prompt: input,
           course_id: course.id,
@@ -993,12 +1003,15 @@ export async function aiGrade({
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);
         const score = finalGradingResponse.object.score;
-        const responsesForPersistence = {
-          model_id,
-          gradingResponseWithRotationIssue,
-          rotationCorrections,
-          finalGradingResponse,
-        } satisfies AiGradingResponsesForPersistence;
+        const responsesForPersistence: AiGradingResponsesForPersistence = rotationCorrectionApplied
+          ? {
+              model_id,
+              rotationCorrectionApplied,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
+            }
+          : { model_id, rotationCorrectionApplied, finalGradingResponse };
         const persistenceContext = {
           prompt: input,
           course_id: course.id,
