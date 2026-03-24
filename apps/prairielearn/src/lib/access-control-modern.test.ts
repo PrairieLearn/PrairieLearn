@@ -33,9 +33,9 @@ describe('resolveModernAssessmentInstanceAccess', () => {
   });
 
   const baseInput = {
-    assessment: { id: '1' } as Assessment,
+    assessment: { id: '1', team_work: false } as Assessment,
     userId: 'user-1',
-    courseInstance: { id: 'ci-1' } as CourseInstance,
+    courseInstance: { id: 'ci-1', display_timezone: 'America/Chicago' } as CourseInstance,
     authzData: {
       user: { id: 'user-1' },
       mode: 'Public',
@@ -44,7 +44,6 @@ describe('resolveModernAssessmentInstanceAccess', () => {
       has_course_instance_permission_view: false,
     },
     reqDate: new Date('2025-03-15T12:00:00Z'),
-    displayTimezone: 'America/Chicago',
   } satisfies Partial<ModernAssessmentInstanceAccessInput>;
 
   describe('individual (non-group) assessment instances', () => {
@@ -57,7 +56,6 @@ describe('resolveModernAssessmentInstanceAccess', () => {
           team_id: null,
           date_limit: null,
         },
-        groupWork: false,
       });
 
       expect(result.authorized).toBe(true);
@@ -73,7 +71,6 @@ describe('resolveModernAssessmentInstanceAccess', () => {
           team_id: null,
           date_limit: null,
         },
-        groupWork: false,
       });
 
       expect(result.authorized).toBe(false);
@@ -93,7 +90,6 @@ describe('resolveModernAssessmentInstanceAccess', () => {
           team_id: null,
           date_limit: null,
         },
-        groupWork: false,
       });
 
       expect(result.authorized).toBe(true);
@@ -107,13 +103,13 @@ describe('resolveModernAssessmentInstanceAccess', () => {
 
       const result = await resolveModernAssessmentInstanceAccess({
         ...baseInput,
+        assessment: { ...baseInput.assessment, team_work: true } as Assessment,
         assessmentInstance: {
           id: 'ai-1',
           user_id: null,
           team_id: 'team-1',
           date_limit: null,
         },
-        groupWork: true,
       });
 
       expect(result.authorized).toBe(true);
@@ -126,13 +122,13 @@ describe('resolveModernAssessmentInstanceAccess', () => {
 
       const result = await resolveModernAssessmentInstanceAccess({
         ...baseInput,
+        assessment: { ...baseInput.assessment, team_work: true } as Assessment,
         assessmentInstance: {
           id: 'ai-1',
           user_id: null,
           team_id: 'team-1',
           date_limit: null,
         },
-        groupWork: true,
       });
 
       expect(result.authorized).toBe(false);
@@ -144,13 +140,13 @@ describe('resolveModernAssessmentInstanceAccess', () => {
 
       const result = await resolveModernAssessmentInstanceAccess({
         ...baseInput,
+        assessment: { ...baseInput.assessment, team_work: true } as Assessment,
         assessmentInstance: {
           id: 'ai-1',
           user_id: null,
           team_id: 'team-1',
           date_limit: null,
         },
-        groupWork: true,
       });
 
       expect(result.authorized).toBe(false);
@@ -162,6 +158,7 @@ describe('resolveModernAssessmentInstanceAccess', () => {
 
       const result = await resolveModernAssessmentInstanceAccess({
         ...baseInput,
+        assessment: { ...baseInput.assessment, team_work: true } as Assessment,
         authzData: {
           ...baseInput.authzData,
           has_course_instance_permission_view: true,
@@ -172,7 +169,6 @@ describe('resolveModernAssessmentInstanceAccess', () => {
           team_id: 'team-1',
           date_limit: null,
         },
-        groupWork: true,
       });
 
       expect(result.authorized).toBe(true);
@@ -190,7 +186,6 @@ describe('resolveModernAssessmentInstanceAccess', () => {
           team_id: null,
           date_limit: new Date('2025-03-15T11:00:00Z'),
         },
-        groupWork: false,
       });
 
       expect(result.time_limit_expired).toBe(true);
@@ -205,7 +200,6 @@ describe('resolveModernAssessmentInstanceAccess', () => {
           team_id: null,
           date_limit: new Date('2025-03-15T13:00:00Z'),
         },
-        groupWork: false,
       });
 
       expect(result.time_limit_expired).toBe(false);

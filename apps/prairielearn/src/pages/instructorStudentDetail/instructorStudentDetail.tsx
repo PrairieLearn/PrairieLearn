@@ -76,7 +76,6 @@ router.get(
           userId: student.user.id,
           authzData: res.locals.authz_data,
           reqDate: res.locals.req_date,
-          displayTimezone: courseInstance.display_timezone,
           auth: 'instructor',
         })
       : [];

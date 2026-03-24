@@ -25,6 +25,7 @@ interface SortableOverrideCardProps {
   override: OverrideData;
   title: string;
   courseInstanceId: string;
+  displayTimezone: string;
   errors?: string[];
   onEdit: () => void;
   onRemove: () => void;
@@ -35,6 +36,7 @@ function SortableOverrideCard({
   override,
   title,
   courseInstanceId,
+  displayTimezone,
   errors,
   onEdit,
   onRemove,
@@ -56,6 +58,7 @@ function SortableOverrideCard({
         isMainRule={false}
         title={title}
         courseInstanceId={courseInstanceId}
+        displayTimezone={displayTimezone}
         errors={errors}
         dragHandleProps={{ ...attributes, ...listeners }}
         onEdit={onEdit}
@@ -65,9 +68,15 @@ function SortableOverrideCard({
   );
 }
 
-function MainRuleSummaryContent({ rule }: { rule: MainRuleData }) {
+function MainRuleSummaryContent({
+  rule,
+  displayTimezone,
+}: {
+  rule: MainRuleData;
+  displayTimezone: string;
+}) {
   const summaryLines = generateRuleSummary(rule, 'compact');
-  const dateTableRows = generateDateTableRows(rule, 'compact');
+  const dateTableRows = generateDateTableRows(rule, displayTimezone, 'compact');
 
   return (
     <div>
@@ -108,6 +117,7 @@ interface AccessControlSummaryProps {
   onEditOverride: (index: number) => void;
   /** Course instance ID for building URLs */
   courseInstanceId: string;
+  displayTimezone: string;
 }
 
 export function AccessControlSummary({
@@ -122,6 +132,7 @@ export function AccessControlSummary({
   onEditMainRule,
   onEditOverride,
   courseInstanceId,
+  displayTimezone,
 }: AccessControlSummaryProps) {
   const dndId = useId();
   const sensors = useSensors(
@@ -176,7 +187,7 @@ export function AccessControlSummary({
           </Alert>
         )}
 
-        <MainRuleSummaryContent rule={mainRule} />
+        <MainRuleSummaryContent rule={mainRule} displayTimezone={displayTimezone} />
       </section>
 
       <section>
@@ -225,6 +236,7 @@ export function AccessControlSummary({
                       override={override}
                       title={getOverrideName(index)}
                       courseInstanceId={courseInstanceId}
+                      displayTimezone={displayTimezone}
                       errors={getOverrideErrors?.(index)}
                       onEdit={() => onEditOverride(index)}
                       onRemove={() => onRemoveOverride(index)}
