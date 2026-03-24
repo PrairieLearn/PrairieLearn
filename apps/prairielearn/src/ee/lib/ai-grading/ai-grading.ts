@@ -714,15 +714,6 @@ export async function aiGrade({
                   response: finalGradingResponse,
                 });
 
-            await updateCourseInstanceUsagesForAiGradingResponses({
-              gradingJobId: grading_job_id,
-              authnUserId: authn_user_id,
-              model: model_id,
-              gradingResponseWithRotationIssue,
-              rotationCorrections,
-              finalGradingResponse,
-            });
-
             await deductAiGradingCostIfNeeded({
               trackRateLimitAndCost,
               model_id,
@@ -734,6 +725,15 @@ export async function aiGrade({
               ai_grading_job_id: aiGradingJobId,
               assessment_question_id: assessment_question.id,
               instance_question_id: instance_question.id,
+            });
+
+            await updateCourseInstanceUsagesForAiGradingResponses({
+              courseInstanceId: course_instance.id,
+              authnUserId: authn_user_id,
+              model: model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
             });
           });
         } else {
@@ -786,15 +786,6 @@ export async function aiGrade({
                   response: finalGradingResponse,
                 });
 
-            await updateCourseInstanceUsagesForAiGradingResponses({
-              gradingJobId: grading_job_id,
-              authnUserId: authn_user_id,
-              model: model_id,
-              gradingResponseWithRotationIssue,
-              rotationCorrections,
-              finalGradingResponse,
-            });
-
             await deductAiGradingCostIfNeeded({
               trackRateLimitAndCost,
               model_id,
@@ -806,6 +797,15 @@ export async function aiGrade({
               ai_grading_job_id: aiGradingJobId,
               assessment_question_id: assessment_question.id,
               instance_question_id: instance_question.id,
+            });
+
+            await updateCourseInstanceUsagesForAiGradingResponses({
+              courseInstanceId: course_instance.id,
+              authnUserId: authn_user_id,
+              model: model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
             });
           });
         }
@@ -995,15 +995,6 @@ export async function aiGrade({
                   response: finalGradingResponse,
                 });
 
-            await updateCourseInstanceUsagesForAiGradingResponses({
-              gradingJobId: grading_job_id,
-              authnUserId: authn_user_id,
-              model: model_id,
-              gradingResponseWithRotationIssue,
-              rotationCorrections,
-              finalGradingResponse,
-            });
-
             await deductAiGradingCostIfNeeded({
               trackRateLimitAndCost,
               model_id,
@@ -1015,6 +1006,15 @@ export async function aiGrade({
               ai_grading_job_id: aiGradingJobId,
               assessment_question_id: assessment_question.id,
               instance_question_id: instance_question.id,
+            });
+
+            await updateCourseInstanceUsagesForAiGradingResponses({
+              courseInstanceId: course_instance.id,
+              authnUserId: authn_user_id,
+              model: model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
             });
           });
         } else {
@@ -1057,15 +1057,6 @@ export async function aiGrade({
                   response: finalGradingResponse,
                 });
 
-            await updateCourseInstanceUsagesForAiGradingResponses({
-              gradingJobId: grading_job_id,
-              authnUserId: authn_user_id,
-              model: model_id,
-              gradingResponseWithRotationIssue,
-              rotationCorrections,
-              finalGradingResponse,
-            });
-
             await deductAiGradingCostIfNeeded({
               trackRateLimitAndCost,
               model_id,
@@ -1077,6 +1068,15 @@ export async function aiGrade({
               ai_grading_job_id: aiGradingJobId,
               assessment_question_id: assessment_question.id,
               instance_question_id: instance_question.id,
+            });
+
+            await updateCourseInstanceUsagesForAiGradingResponses({
+              courseInstanceId: course_instance.id,
+              authnUserId: authn_user_id,
+              model: model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
             });
           });
         }
