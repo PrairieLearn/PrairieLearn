@@ -121,6 +121,10 @@ export const AccessControlJsonSchema = z
       .array(z.string())
       .optional()
       .describe('Array of student label names this set targets'),
+    // .default(false) is safe here because listBeforeRelease is main-rule-only:
+    // override rules are rejected if they set it to true, and the sync/resolver
+    // already treat absent as false. Using .default() instead of .optional()
+    // produces cleaner JSON schema output (no nested anyOf/not for undefined).
     listBeforeRelease: z
       .boolean()
       .nullable()
