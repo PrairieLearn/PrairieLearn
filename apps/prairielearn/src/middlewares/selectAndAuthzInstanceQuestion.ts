@@ -87,7 +87,7 @@ export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQue
 };
 
 export async function selectAndAuthzInstanceQuestion(req: Request, res: Response) {
-  let row = await sqldb.queryOptionalRow(
+  const row = await sqldb.queryOptionalRow(
     sql.select_and_auth,
     {
       instance_question_id: req.params.instance_question_id,
@@ -119,11 +119,9 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
       courseInstance: res.locals.course_instance,
       authzData: res.locals.authz_data,
       reqDate: res.locals.req_date,
-      displayTimezone: res.locals.course_instance.display_timezone,
       assessmentInstance: row.assessment_instance,
-      groupWork: row.assessment.team_work,
     });
-    row = { ...row, authz_result: modernResult };
+    row.authz_result = modernResult;
   }
 
   if (!row.authz_result.authorized) throw new error.HttpStatusError(403, 'Access denied');
