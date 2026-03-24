@@ -315,6 +315,7 @@ export function InstructorAssessmentAccessNew({
     },
     options: {
       fullWidth: true,
+      contentPadding: false,
     },
     content: html`
       ${hydrateHtml(
