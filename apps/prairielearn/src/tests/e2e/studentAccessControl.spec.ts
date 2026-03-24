@@ -43,6 +43,8 @@ test.describe.serial('Student access control', () => {
   // testCoursePath is worker-scoped, so in CI (where workers=1) all spec files
   // share the same temp copy. Save/restore prevents modifications from leaking
   // into other spec files that use the same worker.
+  // TODO: consider having the fixture itself snapshot/restore the course directory
+  // so individual spec files don't need to handle this.
   let originalConfig: string;
 
   test.beforeAll(async ({ testCoursePath, courseInstance }) => {
