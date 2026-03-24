@@ -55,7 +55,7 @@ export function parsePointsListValue(v: string): number | number[] | string | un
 
 /**
  * Validates that at least one points field (auto points or manual points) is set.
- * When `parentValues` is provided (e.g. for alternatives inheriting from an alt pool),
+ * When `parentValues` is provided (e.g. for alternatives inheriting from an alternative pool),
  * the parent's values also satisfy the requirement.
  * Returns an error message if all are undefined, or undefined if valid.
  */

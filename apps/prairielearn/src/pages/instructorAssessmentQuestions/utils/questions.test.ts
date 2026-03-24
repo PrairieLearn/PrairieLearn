@@ -615,37 +615,37 @@ describe('computeAltPoolChosenRange', () => {
   }
 
   it.each([
-    { name: 'no zone numberChoose', zoneChoose: undefined, agChoose: 2, alts: 3, expected: 2 },
-    { name: 'zone numberChoose >= effective', zoneChoose: 3, agChoose: 2, alts: 3, expected: 2 },
-    { name: 'zone numberChoose < effective', zoneChoose: 2, agChoose: 3, alts: 3, expected: 2 },
+    { name: 'no zone numberChoose', zoneChoose: undefined, poolChoose: 2, alts: 3, expected: 2 },
+    { name: 'zone numberChoose >= effective', zoneChoose: 3, poolChoose: 2, alts: 3, expected: 2 },
+    { name: 'zone numberChoose < effective', zoneChoose: 2, poolChoose: 3, alts: 3, expected: 2 },
     {
-      name: 'null ag numberChoose (all)',
+      name: 'null pool numberChoose (all)',
       zoneChoose: undefined,
-      agChoose: undefined,
+      poolChoose: undefined,
       alts: 3,
       expected: 3,
     },
-    { name: 'empty alt pool', zoneChoose: 2, agChoose: undefined, alts: 0, expected: 0 },
-  ])('single pool: $name -> min=max=$expected', ({ zoneChoose, agChoose, alts, expected }) => {
-    const ag = makeAltPool('ag1', alts, agChoose);
+    { name: 'empty alt pool', zoneChoose: 2, poolChoose: undefined, alts: 0, expected: 0 },
+  ])('single pool: $name -> min=max=$expected', ({ zoneChoose, poolChoose, alts, expected }) => {
+    const pool = makeAltPool('ag1', alts, poolChoose);
     const zone = {
       trackingId: 'z1',
       numberChoose: zoneChoose,
-      questions: [ag],
+      questions: [pool],
     } as ZoneAssessmentForm;
-    expect(computeAltPoolChosenRange(zone, ag)).toEqual({ min: expected, max: expected });
+    expect(computeAltPoolChosenRange(zone, pool)).toEqual({ min: expected, max: expected });
   });
 
   it('spreads evenly across multiple alt pools, producing a range', () => {
     // Two pools each effective=2, zone picks 3 of 4.
     // Layer 1: 2 questions, layer 2: 2 questions. C=[0,2,4].
     // guaranteed=1 (C[1]=2 <= 3), max=2 (has layer 2 and 3 > C[1]).
-    const ag1 = makeAltPool('ag1', 2, 2);
-    const ag2 = makeAltPool('ag2', 2, 2);
-    const zone = { trackingId: 'z1', numberChoose: 3, questions: [ag1, ag2] } as ZoneAssessmentForm;
+    const pool1 = makeAltPool('ag1', 2, 2);
+    const pool2 = makeAltPool('ag2', 2, 2);
+    const zone = { trackingId: 'z1', numberChoose: 3, questions: [pool1, pool2] } as ZoneAssessmentForm;
 
-    expect(computeAltPoolChosenRange(zone, ag1)).toEqual({ min: 1, max: 2 });
-    expect(computeAltPoolChosenRange(zone, ag2)).toEqual({ min: 1, max: 2 });
+    expect(computeAltPoolChosenRange(zone, pool1)).toEqual({ min: 1, max: 2 });
+    expect(computeAltPoolChosenRange(zone, pool2)).toEqual({ min: 1, max: 2 });
   });
 
   it('caps alt pool at guaranteed when zone budget is exhausted by layer 1', () => {
@@ -653,13 +653,13 @@ describe('computeAltPoolChosenRange', () => {
     // Layer 1: 2 items. C=[0,2,3]. Z=2.
     // For alt pool: guaranteed=1 (C[1]=2 <= 2), no budget left → max=1.
     const standalone = makeAlt('q1');
-    const ag = makeAltPool('ag1', 2, 2);
+    const pool = makeAltPool('ag1', 2, 2);
     const zone = {
       trackingId: 'z1',
       numberChoose: 2,
-      questions: [standalone, ag],
+      questions: [standalone, pool],
     } as ZoneAssessmentForm;
 
-    expect(computeAltPoolChosenRange(zone, ag)).toEqual({ min: 1, max: 1 });
+    expect(computeAltPoolChosenRange(zone, pool)).toEqual({ min: 1, max: 1 });
   });
 });

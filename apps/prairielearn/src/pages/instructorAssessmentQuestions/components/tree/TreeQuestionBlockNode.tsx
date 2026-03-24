@@ -33,7 +33,7 @@ import { makeDraggableStyle } from './dragUtils.js';
  * Renders a single question block within a zone in the assessment tree.
  *
  * A "question block" is either a standalone question or an alternative pool
- * (a pool of interchangeable questions from which one is randomly selected).
+ * (a pool of interchangeable questions from which a subset is randomly chosen).
  * Standalone questions render as a single `TreeQuestionRow`; alternative pools
  * render as a collapsible header with nested `SortableAlternativeRow` children.
  */
