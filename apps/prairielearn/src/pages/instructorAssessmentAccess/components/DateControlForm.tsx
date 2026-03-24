@@ -67,12 +67,13 @@ export function MainDateControlForm({
           <MainDeadlineArrayField type="late" />
         </div>
 
-        <hr className="my-4" />
-
         {hasAnyDateControl && (
-          <div className="mb-3">
-            <MainAfterLastDeadlineField />
-          </div>
+          <>
+            <hr className="my-4" />
+            <div className="mb-3">
+              <MainAfterLastDeadlineField />
+            </div>
+          </>
         )}
 
         <hr className="my-4" />

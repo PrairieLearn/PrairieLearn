@@ -268,7 +268,7 @@ export function AccessControlForm({
           rightTitle={rightTitle}
           rightHeaderAction={rightHeaderAction}
           left={
-            <div className="split-pane__left-body p-3">
+            <div className="split-pane__left-body p-2">
               <AccessControlSummary
                 courseInstanceId={courseInstance.id}
                 displayTimezone={courseInstance.display_timezone}
