@@ -241,7 +241,7 @@ describe('migrateAllowAccess', () => {
     const rules: AssessmentAccessRuleJson[] = [{ startDate: '2024-01-01' }];
     const { result } = migrateAllowAccess('view-only', rules);
     assert.isNull(result.dateControl?.dueDate);
-    assert.equal(result.dateControl?.releaseDate, '2024-01-01');
+    assert.equal(result.dateControl.releaseDate, '2024-01-01');
   });
 
   it('migrates password-gated', () => {

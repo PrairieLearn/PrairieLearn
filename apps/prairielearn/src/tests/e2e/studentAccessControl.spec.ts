@@ -78,7 +78,7 @@ test.describe.serial('Student access control', () => {
     await syncCourse(testCoursePath);
   });
 
-  test('disabled rule hides assessment from student list', async ({
+  test('rule with no releaseDate shows assessment as inactive (not clickable)', async ({
     page,
     baseURL,
     courseInstance,
@@ -95,7 +95,11 @@ test.describe.serial('Student access control', () => {
     ]);
 
     await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
-    await expect(page.getByText(ASSESSMENT_TITLE, { exact: true })).not.toBeVisible();
+
+    // The assessment title should be visible but not as a clickable link
+    await expect(page.getByText(ASSESSMENT_TITLE, { exact: true })).toBeVisible();
+    const assessmentLink = page.getByRole('link', { name: ASSESSMENT_TITLE, exact: true });
+    await expect(assessmentLink).not.toBeVisible();
   });
 
   test('listBeforeRelease: true with future release shows grayed-out assessment', async ({

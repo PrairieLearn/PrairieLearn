@@ -13,7 +13,6 @@
       "afterComplete": { "hideQuestions": false, "hideScore": false }
     },
     {
-      "listBeforeRelease": true,
       "labels": ["Section A"],
       "dateControl": { "dueDate": "2026-01-28T18:14" }
     }
