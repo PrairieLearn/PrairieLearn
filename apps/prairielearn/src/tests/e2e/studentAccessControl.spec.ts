@@ -86,15 +86,7 @@ test.describe.serial('Student access control', () => {
     enableFeatureFlag,
   }) => {
     await enableFeatureFlag('enhanced-access-control');
-    await writeAssessmentConfig(testCoursePath, [
-      {
-        dateControl: {
-          enabled: false,
-          releaseDate: '2020-01-01T00:00:00',
-          dueDate: '2099-01-01T00:00:00',
-        },
-      },
-    ]);
+    await writeAssessmentConfig(testCoursePath, [{}]);
     await syncCourse(testCoursePath);
 
     await page.context().addCookies([
