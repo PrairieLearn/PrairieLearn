@@ -679,10 +679,6 @@ export async function aiGrade({
             applied_rubric_items: appliedRubricItems,
           };
           await runInTransactionAsync(async () => {
-            if (trackRateLimitAndCost) {
-              await selectCreditPoolForUpdate(course_instance.id);
-            }
-
             const { grading_job_id } = await manualGrading.updateInstanceQuestionScore({
               assessment,
               instance_question_id: instance_question.id,
@@ -706,6 +702,15 @@ export async function aiGrade({
               course_id: course.id,
               course_instance_id: course_instance.id,
             };
+
+            // This block is deadlock-prone under parallel grading for one course
+            // instance: ai_grading_jobs insert takes FK KEY SHARE on
+            // course_instances, then credit deduction needs FOR UPDATE on that
+            // same row. Lock here so FOR UPDATE is taken first, but only after
+            // score updates to keep the lock window narrow.
+            if (trackRateLimitAndCost) {
+              await selectCreditPoolForUpdate(course_instance.id);
+            }
 
             const aiGradingJobId = rotationCorrectionApplied
               ? await insertAiGradingJobWithRotationCorrection({
@@ -744,10 +749,6 @@ export async function aiGrade({
         } else {
           // Does not require grading: only create grading job and rubric grading
           await runInTransactionAsync(async () => {
-            if (trackRateLimitAndCost) {
-              await selectCreditPoolForUpdate(course_instance.id);
-            }
-
             assert(assessment_question.max_manual_points);
             const manual_rubric_grading = await manualGrading.insertRubricGrading(
               rubric_items[0].rubric_id,
@@ -782,6 +783,14 @@ export async function aiGrade({
               course_id: course.id,
               course_instance_id: course_instance.id,
             };
+
+            // This no-score-update path is still deadlock-prone for the same
+            // reason: ai_grading_jobs FK KEY SHARE, followed by credit deduction
+            // FOR UPDATE on course_instances. Take FOR UPDATE here first so
+            // concurrent workers use one lock order and the section stays short.
+            if (trackRateLimitAndCost) {
+              await selectCreditPoolForUpdate(course_instance.id);
+            }
 
             const aiGradingJobId = rotationCorrectionApplied
               ? await insertAiGradingJobWithRotationCorrection({
@@ -969,10 +978,6 @@ export async function aiGrade({
           // Requires grading: update instance question score
           const feedback = finalGradingResponse.object.feedback;
           await runInTransactionAsync(async () => {
-            if (trackRateLimitAndCost) {
-              await selectCreditPoolForUpdate(course_instance.id);
-            }
-
             const { grading_job_id } = await manualGrading.updateInstanceQuestionScore({
               assessment,
               instance_question_id: instance_question.id,
@@ -995,6 +1000,14 @@ export async function aiGrade({
               course_id: course.id,
               course_instance_id: course_instance.id,
             };
+
+            // This path is deadlock-prone with concurrent workers on the same
+            // course instance because ai_grading_jobs insert takes FK KEY SHARE
+            // and deduction later needs FOR UPDATE on course_instances. Lock
+            // here first, after score updates, to avoid upgrade cycles.
+            if (trackRateLimitAndCost) {
+              await selectCreditPoolForUpdate(course_instance.id);
+            }
 
             const aiGradingJobId = rotationCorrectionApplied
               ? await insertAiGradingJobWithRotationCorrection({
@@ -1033,10 +1046,6 @@ export async function aiGrade({
         } else {
           // Does not require grading: only create grading job and rubric grading
           await runInTransactionAsync(async () => {
-            if (trackRateLimitAndCost) {
-              await selectCreditPoolForUpdate(course_instance.id);
-            }
-
             assert(assessment_question.max_manual_points);
             const grading_job_id = await queryScalar(
               sql.insert_grading_job,
@@ -1062,6 +1071,14 @@ export async function aiGrade({
               course_id: course.id,
               course_instance_id: course_instance.id,
             };
+
+            // This path has the same deadlock pattern as the others: concurrent
+            // ai_grading_jobs inserts hold FK KEY SHARE on course_instances, then
+            // deduction requests FOR UPDATE. Acquire FOR UPDATE here first so all
+            // workers follow the same order.
+            if (trackRateLimitAndCost) {
+              await selectCreditPoolForUpdate(course_instance.id);
+            }
             const aiGradingJobId = rotationCorrectionApplied
               ? await insertAiGradingJobWithRotationCorrection({
                   ...aiGradingJobParams,
