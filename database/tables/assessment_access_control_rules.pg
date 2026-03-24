@@ -9,11 +9,11 @@ columns
     after_complete_show_score_again_date_overridden: boolean not null default false
     assessment_id: bigint not null
     date_control_after_last_deadline_allow_submissions: boolean
-    date_control_after_last_deadline_credit: integer
+    date_control_after_last_deadline_credit: integer, CHECK (date_control_after_last_deadline_credit >= 0)
     date_control_after_last_deadline_credit_overridden: boolean not null default false
     date_control_due_date: timestamp with time zone
     date_control_due_date_overridden: boolean not null default false
-    date_control_duration_minutes: integer
+    date_control_duration_minutes: integer, CHECK (date_control_duration_minutes > 0)
     date_control_duration_minutes_overridden: boolean not null default false
     date_control_early_deadlines_overridden: boolean not null default false
     date_control_late_deadlines_overridden: boolean not null default false

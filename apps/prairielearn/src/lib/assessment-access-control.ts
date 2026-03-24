@@ -42,11 +42,6 @@ function unmapField<T>(overridden: boolean, value: T | null): T | null | undefin
   return value;
 }
 
-function toISOStringOrUndefined(overridden: boolean, date: Date | null): string | undefined {
-  if (!overridden || date === null) return undefined;
-  return date.toISOString();
-}
-
 type BaseRuleRow = z.infer<typeof AccessControlRuleBaseSchema> & {
   early_deadlines: z.infer<typeof DeadlineArraySchema>;
   late_deadlines: z.infer<typeof DeadlineArraySchema>;
@@ -92,25 +87,18 @@ function dbBaseRowToAccessControlJson(row: BaseRuleRow): AccessControlJson & { i
     afterComplete.hideQuestions = row.after_complete_hide_questions;
   }
   if (row.after_complete_show_questions_again_date_overridden) {
-    afterComplete.showQuestionsAgainDate = toISOStringOrUndefined(
-      true,
-      row.after_complete_show_questions_again_date,
-    );
+    afterComplete.showQuestionsAgainDate =
+      row.after_complete_show_questions_again_date?.toISOString();
   }
   if (row.after_complete_hide_questions_again_date_overridden) {
-    afterComplete.hideQuestionsAgainDate = toISOStringOrUndefined(
-      true,
-      row.after_complete_hide_questions_again_date,
-    );
+    afterComplete.hideQuestionsAgainDate =
+      row.after_complete_hide_questions_again_date?.toISOString();
   }
   if (row.after_complete_hide_score !== null) {
     afterComplete.hideScore = row.after_complete_hide_score;
   }
   if (row.after_complete_show_score_again_date_overridden) {
-    afterComplete.showScoreAgainDate = toISOStringOrUndefined(
-      true,
-      row.after_complete_show_score_again_date,
-    );
+    afterComplete.showScoreAgainDate = row.after_complete_show_score_again_date?.toISOString();
   }
 
   return {

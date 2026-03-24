@@ -76,6 +76,33 @@ function validateAssessmentRules(
     }
   }
 
+  for (const rule of rules) {
+    const exams = rule.integrations?.prairieTest?.exams ?? [];
+    const seenUuids = new Set<string>();
+    for (const e of exams) {
+      if (seenUuids.has(e.examUuid)) {
+        return `Duplicate PrairieTest exam UUID: ${e.examUuid}.`;
+      }
+      seenUuids.add(e.examUuid);
+    }
+
+    const earlyDates = new Set<string>();
+    for (const d of rule.dateControl?.earlyDeadlines ?? []) {
+      if (earlyDates.has(d.date)) {
+        return `Duplicate early deadline date: ${d.date}.`;
+      }
+      earlyDates.add(d.date);
+    }
+
+    const lateDates = new Set<string>();
+    for (const d of rule.dateControl?.lateDeadlines ?? []) {
+      if (lateDates.has(d.date)) {
+        return `Duplicate late deadline date: ${d.date}.`;
+      }
+      lateDates.add(d.date);
+    }
+  }
+
   const assessmentInvalidUuids: string[] = [];
   for (const rule of rules) {
     for (const e of rule.integrations?.prairieTest?.exams ?? []) {

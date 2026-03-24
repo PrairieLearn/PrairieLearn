@@ -156,52 +156,86 @@ const DeadlineInputSchema = z.object({
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: string }> = z.object({
-  id: z.string().optional(),
-  listBeforeRelease: z.boolean().nullable().optional(),
-  labels: z.array(z.string()).optional(),
-  dateControl: z
-    .object({
-      releaseDate: DateStringInputSchema.optional(),
-      dueDate: DateStringInputSchema.nullable().optional(),
-      earlyDeadlines: z.array(DeadlineInputSchema).optional(),
-      lateDeadlines: z.array(DeadlineInputSchema).optional(),
-      afterLastDeadline: z
-        .object({
-          credit: z.number().min(0, 'Credit must be non-negative').optional(),
-          allowSubmissions: z.boolean().optional(),
-        })
-        .optional(),
-      durationMinutes: z.number().int().positive().optional(),
-      password: z.string().nullable().optional(),
-    })
-    .optional(),
-  integrations: z
-    .object({
-      prairieTest: z
-        .object({
-          exams: z
-            .array(
-              z.object({
-                examUuid: z.string().regex(UUID_REGEX, 'Invalid UUID format'),
-                readOnly: z.boolean().optional(),
-              }),
-            )
-            .optional(),
-        })
-        .optional(),
-    })
-    .optional(),
-  afterComplete: z
-    .object({
-      hideQuestions: z.boolean().optional(),
-      showQuestionsAgainDate: DateStringInputSchema.optional(),
-      hideQuestionsAgainDate: DateStringInputSchema.optional(),
-      hideScore: z.boolean().optional(),
-      showScoreAgainDate: DateStringInputSchema.optional(),
-    })
-    .optional(),
-});
+const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: string }> = z
+  .object({
+    id: z.string().optional(),
+    listBeforeRelease: z.boolean().nullable().optional(),
+    labels: z.array(z.string()).optional(),
+    dateControl: z
+      .object({
+        releaseDate: DateStringInputSchema.optional(),
+        dueDate: DateStringInputSchema.nullable().optional(),
+        earlyDeadlines: z.array(DeadlineInputSchema).optional(),
+        lateDeadlines: z.array(DeadlineInputSchema).optional(),
+        afterLastDeadline: z
+          .object({
+            credit: z.number().min(0, 'Credit must be non-negative').optional(),
+            allowSubmissions: z.boolean().optional(),
+          })
+          .optional(),
+        durationMinutes: z.number().int().positive().optional(),
+        password: z.string().nullable().optional(),
+      })
+      .optional(),
+    integrations: z
+      .object({
+        prairieTest: z
+          .object({
+            exams: z
+              .array(
+                z.object({
+                  examUuid: z.string().regex(UUID_REGEX, 'Invalid UUID format'),
+                  readOnly: z.boolean().optional(),
+                }),
+              )
+              .optional(),
+          })
+          .optional(),
+      })
+      .optional(),
+    afterComplete: z
+      .object({
+        hideQuestions: z.boolean().optional(),
+        showQuestionsAgainDate: DateStringInputSchema.optional(),
+        hideQuestionsAgainDate: DateStringInputSchema.optional(),
+        hideScore: z.boolean().optional(),
+        showScoreAgainDate: DateStringInputSchema.optional(),
+      })
+      .optional(),
+  })
+  .superRefine((data, ctx) => {
+    const exams = data.integrations?.prairieTest?.exams ?? [];
+    const seenUuids = new Set<string>();
+    for (const e of exams) {
+      if (seenUuids.has(e.examUuid)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Duplicate PrairieTest exam UUID: ${e.examUuid}`,
+          path: ['integrations', 'prairieTest', 'exams'],
+        });
+        break;
+      }
+      seenUuids.add(e.examUuid);
+    }
+
+    for (const [key, deadlines] of [
+      ['earlyDeadlines', data.dateControl?.earlyDeadlines],
+      ['lateDeadlines', data.dateControl?.lateDeadlines],
+    ] as const) {
+      const seenDates = new Set<string>();
+      for (const d of deadlines ?? []) {
+        if (seenDates.has(d.date)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Duplicate ${key === 'earlyDeadlines' ? 'early' : 'late'} deadline date: ${d.date}`,
+            path: ['dateControl', key],
+          });
+          break;
+        }
+        seenDates.add(d.date);
+      }
+    }
+  });
 
 const EnrollmentRuleInputSchema = z.object({
   id: z.string().optional(),

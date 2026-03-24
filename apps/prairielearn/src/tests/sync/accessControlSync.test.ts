@@ -196,48 +196,183 @@ describe('Access control syncing', () => {
     });
   });
 
-  describe('Three-way field mapping', () => {
-    it('handles undefined fields (inherit)', async () => {
-      const rule = makeAccessControlRule({
-        dateControl: {
-          // releaseDate is undefined - should inherit
-          // releaseDate = undefined <=> release_date_override = false, release_date = NULL
-          dueDate: '2024-03-21T23:59:00',
-        },
-      });
-      const syncedRules = await syncRulesAndRead([rule]);
-      assert.equal(syncedRules.length, 1);
-      assert.isFalse(syncedRules[0].date_control_release_date_overridden);
-      assert.isNull(syncedRules[0].date_control_release_date);
-      assert.isTrue(syncedRules[0].date_control_due_date_overridden);
-      assert.isNotNull(syncedRules[0].date_control_due_date);
-    });
-
-    it('handles null fields (override and unset)', async () => {
-      const rule = makeAccessControlRule({
-        dateControl: {
-          password: null, // explicitly override and remove password
-        },
-      });
-      const syncedRules = await syncRulesAndRead([rule]);
-      assert.equal(syncedRules.length, 1);
-      assert.equal(syncedRules[0].date_control_password_overridden, true);
-      assert.isNull(syncedRules[0].date_control_password);
-    });
-
-    it('handles value fields (override and set)', async () => {
+  // The `_overridden` flags on each DB column track whether a field was
+  // explicitly present in the source JSON. The mapping is:
+  //   JSON field undefined → overridden=false, value=NULL  ("not configured")
+  //   JSON field null      → overridden=true,  value=NULL  ("explicitly cleared")
+  //   JSON field has value → overridden=true,  value=<val> ("explicitly set")
+  //
+  // For main rules (number=0), "not configured" simply means the field was
+  // absent from the JSON — there is no parent to inherit from.
+  // For overrides (number>0), "not configured" means "inherit from the main
+  // rule"; the resolver's merge step skips undefined fields.
+  describe('_overridden flag behavior on main rules', () => {
+    it('fields present in JSON get overridden=true', async () => {
       const rule = makeAccessControlRule({
         dateControl: {
           releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+          durationMinutes: 90,
+          password: 'secret',
         },
       });
       const syncedRules = await syncRulesAndRead([rule]);
-      assert.equal(syncedRules.length, 1);
-      assert.equal(syncedRules[0].date_control_release_date_overridden, true);
-      // Verify date is stored - the exact UTC value depends on server timezone
-      assert.isNotNull(syncedRules[0].date_control_release_date);
-      const storedDate = new Date(syncedRules[0].date_control_release_date);
-      assert.isTrue(storedDate instanceof Date && !Number.isNaN(storedDate.getTime()));
+      const row = syncedRules[0];
+      assert.isTrue(row.date_control_release_date_overridden);
+      assert.isNotNull(row.date_control_release_date);
+      assert.isTrue(row.date_control_due_date_overridden);
+      assert.isNotNull(row.date_control_due_date);
+      assert.isTrue(row.date_control_duration_minutes_overridden);
+      assert.equal(row.date_control_duration_minutes, 90);
+      assert.isTrue(row.date_control_password_overridden);
+      assert.equal(row.date_control_password, 'secret');
+    });
+
+    it('fields absent from JSON get overridden=false and value=NULL', async () => {
+      const rule = makeAccessControlRule({
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          // dueDate, durationMinutes, password, deadlines all omitted
+        },
+      });
+      const syncedRules = await syncRulesAndRead([rule]);
+      const row = syncedRules[0];
+      assert.isFalse(row.date_control_due_date_overridden);
+      assert.isNull(row.date_control_due_date);
+      assert.isFalse(row.date_control_duration_minutes_overridden);
+      assert.isNull(row.date_control_duration_minutes);
+      assert.isFalse(row.date_control_password_overridden);
+      assert.isNull(row.date_control_password);
+      assert.isFalse(row.date_control_early_deadlines_overridden);
+      assert.isFalse(row.date_control_late_deadlines_overridden);
+      assert.isFalse(row.date_control_after_last_deadline_credit_overridden);
+      assert.isNull(row.date_control_after_last_deadline_credit);
+      assert.isNull(row.date_control_after_last_deadline_allow_submissions);
+    });
+
+    it('null fields get overridden=true with value=NULL', async () => {
+      const rule = makeAccessControlRule({
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: null,
+          password: null,
+        },
+      });
+      const syncedRules = await syncRulesAndRead([rule]);
+      const row = syncedRules[0];
+      // Explicitly set to null: overridden=true, value=NULL
+      assert.isTrue(row.date_control_due_date_overridden);
+      assert.isNull(row.date_control_due_date);
+      assert.isTrue(row.date_control_password_overridden);
+      assert.isNull(row.date_control_password);
+    });
+
+    it('no dateControl at all: all flags are overridden=false', async () => {
+      const rule = makeAccessControlRule({ dateControl: undefined });
+      const syncedRules = await syncRulesAndRead([rule]);
+      const row = syncedRules[0];
+      assert.isFalse(row.date_control_release_date_overridden);
+      assert.isFalse(row.date_control_due_date_overridden);
+      assert.isFalse(row.date_control_duration_minutes_overridden);
+      assert.isFalse(row.date_control_password_overridden);
+      assert.isFalse(row.date_control_early_deadlines_overridden);
+      assert.isFalse(row.date_control_late_deadlines_overridden);
+      assert.isFalse(row.date_control_after_last_deadline_credit_overridden);
+    });
+
+    it('afterComplete fields follow the same pattern', async () => {
+      const rule = makeAccessControlRule({
+        afterComplete: {
+          hideQuestions: true,
+          showQuestionsAgainDate: '2024-04-01T00:00:00',
+          // hideScore and showScoreAgainDate omitted
+        },
+      });
+      const syncedRules = await syncRulesAndRead([rule]);
+      const row = syncedRules[0];
+      assert.equal(row.after_complete_hide_questions, true);
+      assert.isTrue(row.after_complete_show_questions_again_date_overridden);
+      assert.isNotNull(row.after_complete_show_questions_again_date);
+      // Omitted fields
+      assert.isNull(row.after_complete_hide_score);
+      assert.isFalse(row.after_complete_show_score_again_date_overridden);
+      assert.isNull(row.after_complete_show_score_again_date);
+    });
+  });
+
+  describe('_overridden flag behavior on override rules', () => {
+    it('override with one field: only that field gets overridden=true', async () => {
+      const groupName = 'Test Group';
+      const mainRule = makeAccessControlRule({
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+          durationMinutes: 90,
+          password: 'secret',
+        },
+      });
+      const overrideRule: AccessControlJsonInput = {
+        labels: [groupName],
+        dateControl: {
+          dueDate: '2024-04-01T23:59:00',
+        },
+      };
+      const syncedRules = await syncRulesAndRead([mainRule, overrideRule], {
+        studentLabels: [groupName],
+      });
+      const override = syncedRules.find((r) => r.target_type === 'student_label');
+      assert.isOk(override);
+      // Only dueDate was configured on the override
+      assert.isTrue(override.date_control_due_date_overridden);
+      assert.isNotNull(override.date_control_due_date);
+      // Everything else should be overridden=false (inherit from main)
+      assert.isFalse(override.date_control_release_date_overridden);
+      assert.isNull(override.date_control_release_date);
+      assert.isFalse(override.date_control_duration_minutes_overridden);
+      assert.isNull(override.date_control_duration_minutes);
+      assert.isFalse(override.date_control_password_overridden);
+      assert.isNull(override.date_control_password);
+      assert.isFalse(override.date_control_early_deadlines_overridden);
+      assert.isFalse(override.date_control_late_deadlines_overridden);
+    });
+
+    it('override with no dateControl: all flags are overridden=false', async () => {
+      const groupName = 'Test Group';
+      const mainRule = makeAccessControlRule();
+      const overrideRule: AccessControlJsonInput = {
+        labels: [groupName],
+        // no dateControl at all — inherit everything
+      };
+      const syncedRules = await syncRulesAndRead([mainRule, overrideRule], {
+        studentLabels: [groupName],
+      });
+      const override = syncedRules.find((r) => r.target_type === 'student_label');
+      assert.isOk(override);
+      assert.isFalse(override.date_control_release_date_overridden);
+      assert.isFalse(override.date_control_due_date_overridden);
+      assert.isFalse(override.date_control_duration_minutes_overridden);
+      assert.isFalse(override.date_control_password_overridden);
+      assert.isFalse(override.date_control_early_deadlines_overridden);
+      assert.isFalse(override.date_control_late_deadlines_overridden);
+      assert.isFalse(override.date_control_after_last_deadline_credit_overridden);
+    });
+
+    it('override with null releaseDate: overridden=true, value=NULL', async () => {
+      const groupName = 'Test Group';
+      const mainRule = makeAccessControlRule();
+      const overrideRule: AccessControlJsonInput = {
+        labels: [groupName],
+        dateControl: {
+          releaseDate: null, // explicitly clear — no date-based access for this group
+        },
+      };
+      const syncedRules = await syncRulesAndRead([mainRule, overrideRule], {
+        studentLabels: [groupName],
+      });
+      const override = syncedRules.find((r) => r.target_type === 'student_label');
+      assert.isOk(override);
+      assert.isTrue(override.date_control_release_date_overridden);
+      assert.isNull(override.date_control_release_date);
     });
   });
 
@@ -1477,6 +1612,143 @@ describe('Access control syncing', () => {
       assert.isOk(main);
       // listBeforeRelease: omitted in JSON → false in DB → false in rule
       assert.equal(main.rule.listBeforeRelease, false);
+    });
+  });
+
+  describe('Main rule dateControl round-trip', () => {
+    it('only configured fields appear in the round-tripped JSON', async () => {
+      const courseData = util.getCourseData();
+      const mainRule: AccessControlJsonInput = {
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+        },
+      };
+
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        util.ASSESSMENT_ID
+      ].accessControl = [mainRule];
+      await util.writeAndSyncCourseData(courseData);
+
+      const assessment = await getAssessment(util.ASSESSMENT_ID);
+      const rules = await selectAccessControlRulesForAssessment(assessment);
+      const main = rules.find((r) => r.number === 0);
+      assert.isOk(main);
+      const dc = main.rule.dateControl;
+      assert.isOk(dc);
+      assert.equal(dc.releaseDate, new Date('2024-03-14T00:01:00').toISOString());
+      assert.equal(dc.dueDate, new Date('2024-03-21T23:59:00').toISOString());
+      // Fields not in the original JSON should be absent
+      assert.isUndefined(dc.durationMinutes);
+      assert.isUndefined(dc.password);
+      assert.isUndefined(dc.earlyDeadlines);
+      assert.isUndefined(dc.lateDeadlines);
+      assert.isUndefined(dc.afterLastDeadline);
+    });
+
+    it('no dateControl in JSON produces no dateControl in round-trip', async () => {
+      const courseData = util.getCourseData();
+      const mainRule: AccessControlJsonInput = {};
+
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        util.ASSESSMENT_ID
+      ].accessControl = [mainRule];
+      await util.writeAndSyncCourseData(courseData);
+
+      const assessment = await getAssessment(util.ASSESSMENT_ID);
+      const rules = await selectAccessControlRulesForAssessment(assessment);
+      const main = rules.find((r) => r.number === 0);
+      assert.isOk(main);
+      assert.isUndefined(main.rule.dateControl);
+    });
+
+    it('all dateControl fields round-trip correctly', async () => {
+      const courseData = util.getCourseData();
+      const mainRule: AccessControlJsonInput = {
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+          durationMinutes: 90,
+          password: 'secret123',
+          earlyDeadlines: [{ date: '2024-03-18T23:59:00', credit: 120 }],
+          lateDeadlines: [{ date: '2024-03-28T23:59:00', credit: 50 }],
+          afterLastDeadline: { credit: 10, allowSubmissions: true },
+        },
+        afterComplete: {
+          hideQuestions: true,
+          showQuestionsAgainDate: '2024-04-01T00:00:00',
+          hideScore: true,
+          showScoreAgainDate: '2024-04-15T00:00:00',
+        },
+      };
+
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        util.ASSESSMENT_ID
+      ].accessControl = [mainRule];
+      await util.writeAndSyncCourseData(courseData);
+
+      const assessment = await getAssessment(util.ASSESSMENT_ID);
+      const rules = await selectAccessControlRulesForAssessment(assessment);
+      const main = rules.find((r) => r.number === 0);
+      assert.isOk(main);
+      const dc = main.rule.dateControl;
+      assert.isOk(dc);
+      assert.equal(dc.releaseDate, new Date('2024-03-14T00:01:00').toISOString());
+      assert.equal(dc.dueDate, new Date('2024-03-21T23:59:00').toISOString());
+      assert.equal(dc.durationMinutes, 90);
+      assert.equal(dc.password, 'secret123');
+      assert.equal(dc.earlyDeadlines?.length, 1);
+      assert.equal(dc.earlyDeadlines?.[0].credit, 120);
+      assert.equal(dc.lateDeadlines?.length, 1);
+      assert.equal(dc.lateDeadlines?.[0].credit, 50);
+      assert.equal(dc.afterLastDeadline?.credit, 10);
+      assert.equal(dc.afterLastDeadline?.allowSubmissions, true);
+
+      const ac = main.rule.afterComplete;
+      assert.isOk(ac);
+      assert.equal(ac.hideQuestions, true);
+      assert.equal(ac.showQuestionsAgainDate, new Date('2024-04-01T00:00:00').toISOString());
+      assert.equal(ac.hideScore, true);
+      assert.equal(ac.showScoreAgainDate, new Date('2024-04-15T00:00:00').toISOString());
+    });
+
+    it('override only includes its own configured fields, not inherited ones', async () => {
+      const courseData = util.getCourseData();
+      const groupName = 'Override Group';
+      addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+
+      const mainRule: AccessControlJsonInput = {
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+          durationMinutes: 90,
+          password: 'secret123',
+        },
+      };
+      const overrideRule: AccessControlJsonInput = {
+        labels: [groupName],
+        dateControl: {
+          dueDate: '2024-04-01T23:59:00',
+        },
+      };
+
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        util.ASSESSMENT_ID
+      ].accessControl = [mainRule, overrideRule];
+      await util.writeAndSyncCourseData(courseData);
+
+      const assessment = await getAssessment(util.ASSESSMENT_ID);
+      const rules = await selectAccessControlRulesForAssessment(assessment);
+      const override = rules.find((r) => r.number > 0);
+      assert.isOk(override);
+      const dc = override.rule.dateControl;
+      assert.isOk(dc);
+      // Only dueDate was configured on the override
+      assert.equal(dc.dueDate, new Date('2024-04-01T23:59:00').toISOString());
+      // Fields from the main rule should NOT appear on the override's own JSON
+      assert.isUndefined(dc.releaseDate);
+      assert.isUndefined(dc.durationMinutes);
+      assert.isUndefined(dc.password);
     });
   });
 });

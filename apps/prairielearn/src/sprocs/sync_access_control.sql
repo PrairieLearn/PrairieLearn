@@ -175,14 +175,14 @@ BEGIN
         AND aacr.target_type IN ('none', 'student_label')
     JOIN assessments a ON a.id = aacr.assessment_id AND a.course_instance_id = syncing_course_instance_id;
 
-    -- Insert PrairieTest exams.
+    -- Insert PrairieTest exams (main rules only).
     INSERT INTO assessment_access_control_prairietest_exams (assessment_access_control_rule_id, uuid, read_only)
     SELECT aacr.id, (e ->> 2)::uuid, (e ->> 3)::boolean
     FROM UNNEST(prairietest_exams_data) AS e
     JOIN assessment_access_control_rules aacr ON
         aacr.assessment_id = (e ->> 0)::bigint
         AND aacr.number = (e ->> 1)::integer
-        AND aacr.target_type IN ('none', 'student_label')
+        AND aacr.target_type = 'none'
     JOIN assessments a ON a.id = aacr.assessment_id AND a.course_instance_id = syncing_course_instance_id;
 
     -- Delete excess rules: rules with number > max incoming number per assessment.

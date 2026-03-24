@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import type { AssessmentAccessRuleJson } from '../schemas/infoAssessment.js';
 
@@ -174,7 +174,7 @@ describe('classifyArchetype', () => {
   ];
 
   it.each(cases)('classifies $name as $expected', ({ rules, expected }) => {
-    expect(classifyArchetype(rules)).toBe(expected);
+    assert.equal(classifyArchetype(rules), expected);
   });
 });
 
@@ -184,9 +184,9 @@ describe('migrateAllowAccess', () => {
       { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
     const { result, warnings } = migrateAllowAccess('single-deadline', rules);
-    expect(result.dateControl?.releaseDate).toBe('2024-01-01');
-    expect(result.dateControl?.dueDate).toBe('2024-06-01');
-    expect(warnings).toHaveLength(0);
+    assert.equal(result.dateControl?.releaseDate, '2024-01-01');
+    assert.equal(result.dateControl?.dueDate, '2024-06-01');
+    assert.lengthOf(warnings, 0);
   });
 
   it('migrates single-deadline-with-viewing', () => {
@@ -195,8 +195,8 @@ describe('migrateAllowAccess', () => {
       { startDate: '2024-01-01', active: false },
     ];
     const { result } = migrateAllowAccess('single-deadline-with-viewing', rules);
-    expect(result.dateControl?.releaseDate).toBe('2024-01-01');
-    expect(result.dateControl?.dueDate).toBe('2024-06-01');
+    assert.equal(result.dateControl?.releaseDate, '2024-01-01');
+    assert.equal(result.dateControl?.dueDate, '2024-06-01');
   });
 
   it('migrates timed-assessment', () => {
@@ -204,7 +204,7 @@ describe('migrateAllowAccess', () => {
       { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01', timeLimitMin: 90 },
     ];
     const { result } = migrateAllowAccess('timed-assessment', rules);
-    expect(result.dateControl?.durationMinutes).toBe(90);
+    assert.equal(result.dateControl?.durationMinutes, 90);
   });
 
   it('migrates declining-credit', () => {
@@ -214,14 +214,14 @@ describe('migrateAllowAccess', () => {
       { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
     const { result } = migrateAllowAccess('declining-credit', rules);
-    expect(result.dateControl?.dueDate).toBe('2024-03-01');
-    expect(result.dateControl?.earlyDeadlines).toHaveLength(1);
-    expect(result.dateControl?.earlyDeadlines?.[0]).toEqual({
+    assert.equal(result.dateControl?.dueDate, '2024-03-01');
+    assert.equal(result.dateControl?.earlyDeadlines?.length, 1);
+    assert.deepEqual(result.dateControl?.earlyDeadlines?.[0], {
       date: '2024-02-01',
       credit: 110,
     });
-    expect(result.dateControl?.lateDeadlines).toHaveLength(1);
-    expect(result.dateControl?.lateDeadlines?.[0]).toEqual({
+    assert.equal(result.dateControl?.lateDeadlines?.length, 1);
+    assert.deepEqual(result.dateControl?.lateDeadlines?.[0], {
       date: '2024-06-01',
       credit: 50,
     });
@@ -233,15 +233,15 @@ describe('migrateAllowAccess', () => {
       { startDate: '2024-01-01', active: false },
     ];
     const { result } = migrateAllowAccess('prairietest-exam', rules);
-    expect(result.integrations?.prairieTest?.exams).toEqual([{ examUuid: 'exam-uuid-1' }]);
-    expect(result.dateControl?.releaseDate).toBe('2024-01-01');
+    assert.deepEqual(result.integrations?.prairieTest?.exams, [{ examUuid: 'exam-uuid-1' }]);
+    assert.equal(result.dateControl?.releaseDate, '2024-01-01');
   });
 
   it('migrates view-only', () => {
     const rules: AssessmentAccessRuleJson[] = [{ startDate: '2024-01-01' }];
     const { result } = migrateAllowAccess('view-only', rules);
-    expect(result.dateControl?.dueDate).toBeNull();
-    expect(result.dateControl?.releaseDate).toBe('2024-01-01');
+    assert.isNull(result.dateControl?.dueDate);
+    assert.equal(result.dateControl?.releaseDate, '2024-01-01');
   });
 
   it('migrates password-gated', () => {
@@ -249,33 +249,33 @@ describe('migrateAllowAccess', () => {
       { password: 'secret', credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
     const { result } = migrateAllowAccess('password-gated', rules);
-    expect(result.dateControl?.password).toBe('secret');
-    expect(result.dateControl?.releaseDate).toBe('2024-01-01');
+    assert.equal(result.dateControl?.password, 'secret');
+    assert.equal(result.dateControl?.releaseDate, '2024-01-01');
   });
 
   it('migrates hidden', () => {
     const rules: AssessmentAccessRuleJson[] = [{ active: false }];
     const { result } = migrateAllowAccess('hidden', rules);
-    expect(result.dateControl).toBeUndefined();
+    assert.isUndefined(result.dateControl);
   });
 
   it('migrates no-op', () => {
     const rules: AssessmentAccessRuleJson[] = [{}];
     const { result, warnings } = migrateAllowAccess('no-op', rules);
-    expect(result).toEqual({});
-    expect(warnings).toHaveLength(1);
+    assert.deepEqual(result, {});
+    assert.lengthOf(warnings, 1);
   });
 
   it('migrates always-open', () => {
     const rules: AssessmentAccessRuleJson[] = [{ credit: 100 }];
     const { result, warnings } = migrateAllowAccess('always-open', rules);
-    expect(result).toEqual({});
-    expect(warnings).toHaveLength(0);
+    assert.deepEqual(result, {});
+    assert.lengthOf(warnings, 0);
   });
 
   it('returns unsupported warning for unclassified', () => {
     const { warnings } = migrateAllowAccess('unclassified', []);
-    expect(warnings[0]).toMatch(/Unsupported/);
+    assert.match(warnings[0], /Unsupported/);
   });
 
   it('includes afterComplete for showClosedAssessment:false', () => {
@@ -283,7 +283,7 @@ describe('migrateAllowAccess', () => {
       { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01', showClosedAssessment: false },
     ];
     const { result } = migrateAllowAccess('single-deadline', rules);
-    expect(result.afterComplete?.hideQuestions).toBe(true);
+    assert.equal(result.afterComplete?.hideQuestions, true);
   });
 
   it('includes afterComplete for showClosedAssessmentScore:false', () => {
@@ -296,7 +296,7 @@ describe('migrateAllowAccess', () => {
       },
     ];
     const { result } = migrateAllowAccess('single-deadline', rules);
-    expect(result.afterComplete?.hideScore).toBe(true);
+    assert.equal(result.afterComplete?.hideScore, true);
   });
 
   it('ignores UID rules during migration', () => {
@@ -305,7 +305,7 @@ describe('migrateAllowAccess', () => {
       { uids: ['user@example.com'], credit: 100, endDate: '2024-12-01' },
     ];
     const { result } = migrateAllowAccess('single-deadline', rules);
-    expect(result.dateControl?.dueDate).toBe('2024-06-01');
+    assert.equal(result.dateControl?.dueDate, '2024-06-01');
   });
 
   it('multi-deadline produces collapse warning', () => {
@@ -314,7 +314,7 @@ describe('migrateAllowAccess', () => {
       { credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
     ];
     const { warnings } = migrateAllowAccess('multi-deadline', rules);
-    expect(warnings[0]).toMatch(/collapsed/);
+    assert.match(warnings[0], /collapsed/);
   });
 
   it('declining-credit with bonus and reduced (no full)', () => {
@@ -323,8 +323,8 @@ describe('migrateAllowAccess', () => {
       { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
     ];
     const { result } = migrateAllowAccess('declining-credit', rules);
-    expect(result.dateControl?.lateDeadlines).toHaveLength(1);
-    expect(result.dateControl?.earlyDeadlines).toBeUndefined();
+    assert.equal(result.dateControl?.lateDeadlines?.length, 1);
+    assert.isUndefined(result.dateControl?.earlyDeadlines);
   });
 
   it('migrates single-reduced-credit', () => {
@@ -332,8 +332,8 @@ describe('migrateAllowAccess', () => {
       { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
     const { result } = migrateAllowAccess('single-reduced-credit', rules);
-    expect(result.dateControl?.releaseDate).toBe('2024-01-01');
-    expect(result.dateControl?.dueDate).toBe('2024-06-01');
+    assert.equal(result.dateControl?.releaseDate, '2024-01-01');
+    assert.equal(result.dateControl?.dueDate, '2024-06-01');
   });
 
   it('migrates multiple prairietest exams', () => {
@@ -342,7 +342,7 @@ describe('migrateAllowAccess', () => {
       { examUuid: 'exam-2', credit: 100 },
     ];
     const { result } = migrateAllowAccess('prairietest-exam', rules);
-    expect(result.integrations?.prairieTest?.exams).toHaveLength(2);
+    assert.equal(result.integrations?.prairieTest?.exams?.length, 2);
   });
 
   it('includes both hideQuestions and hideScore in afterComplete', () => {
@@ -356,8 +356,8 @@ describe('migrateAllowAccess', () => {
       },
     ];
     const { result } = migrateAllowAccess('single-deadline', rules);
-    expect(result.afterComplete?.hideQuestions).toBe(true);
-    expect(result.afterComplete?.hideScore).toBe(true);
+    assert.equal(result.afterComplete?.hideQuestions, true);
+    assert.equal(result.afterComplete?.hideScore, true);
   });
 
   it('handles modifier suffix stripping for mode-gated hides-closed', () => {
@@ -371,56 +371,56 @@ describe('migrateAllowAccess', () => {
       },
     ];
     const { result } = migrateAllowAccess('single-deadline (mode-gated, hides-closed)', rules);
-    expect(result.dateControl?.dueDate).toBe('2024-06-01');
-    expect(result.afterComplete?.hideQuestions).toBe(true);
+    assert.equal(result.dateControl?.dueDate, '2024-06-01');
+    assert.equal(result.afterComplete?.hideQuestions, true);
   });
 
   it('password-gated without dates', () => {
     const rules: AssessmentAccessRuleJson[] = [{ password: 'secret', credit: 100 }];
     const { result } = migrateAllowAccess('password-gated', rules);
-    expect(result.dateControl?.password).toBe('secret');
-    expect(result.dateControl?.releaseDate).toBeUndefined();
-    expect(result.dateControl?.dueDate).toBeUndefined();
+    assert.equal(result.dateControl?.password, 'secret');
+    assert.isUndefined(result.dateControl?.releaseDate);
+    assert.isUndefined(result.dateControl?.dueDate);
   });
 
   it('returns unsupported warning for unknown archetype', () => {
     const { result, warnings } = migrateAllowAccess('some-future-thing', []);
-    expect(warnings[0]).toMatch(/Unsupported/);
-    expect(result).toEqual({});
+    assert.match(warnings[0], /Unsupported/);
+    assert.deepEqual(result, {});
   });
 
   it('no-op returns warning with empty result', () => {
     const { result, warnings } = migrateAllowAccess('no-op', [{}]);
-    expect(warnings[0]).toMatch(/No-op/);
-    expect(result).toEqual({});
+    assert.match(warnings[0], /No-op/);
+    assert.deepEqual(result, {});
   });
 
   it('declining-credit with no credit rules returns warning', () => {
     const rules: AssessmentAccessRuleJson[] = [{ startDate: '2024-01-01' }];
     const { result, warnings } = migrateAllowAccess('declining-credit', rules);
-    expect(warnings[0]).toMatch(/No credit rules found/);
-    expect(result).toEqual({});
+    assert.match(warnings[0], /No credit rules found/);
+    assert.deepEqual(result, {});
   });
 
   it('single-deadline with no credit rule returns warning', () => {
     const rules: AssessmentAccessRuleJson[] = [{ startDate: '2024-01-01' }];
     const { result, warnings } = migrateAllowAccess('single-deadline', rules);
-    expect(warnings[0]).toMatch(/No credit rule found/);
-    expect(result).toEqual({});
+    assert.match(warnings[0], /No credit rule found/);
+    assert.deepEqual(result, {});
   });
 
   it('prairietest-exam with no examUuid returns warning', () => {
     const rules: AssessmentAccessRuleJson[] = [{ credit: 100 }];
     const { result, warnings } = migrateAllowAccess('prairietest-exam', rules);
-    expect(warnings[0]).toMatch(/No examUuid rule found/);
-    expect(result).toEqual({});
+    assert.match(warnings[0], /No examUuid rule found/);
+    assert.deepEqual(result, {});
   });
 
   it('password-gated with no password returns warning', () => {
     const rules: AssessmentAccessRuleJson[] = [{ credit: 100 }];
     const { result, warnings } = migrateAllowAccess('password-gated', rules);
-    expect(warnings[0]).toMatch(/No password rule found/);
-    expect(result).toEqual({});
+    assert.match(warnings[0], /No password rule found/);
+    assert.deepEqual(result, {});
   });
 });
 
@@ -439,7 +439,7 @@ describe('analyzeAssessmentFile', () => {
     const filePath = path.join(tmpDir, 'infoAssessment.json');
     await fs.writeFile(filePath, JSON.stringify({ type: 'Exam', title: 'Test' }));
     const result = await analyzeAssessmentFile(filePath, 'test');
-    expect(result).toBeNull();
+    assert.isNull(result);
   });
 
   it('returns null for assessments already using accessControl', async () => {
@@ -453,7 +453,7 @@ describe('analyzeAssessmentFile', () => {
       }),
     );
     const result = await analyzeAssessmentFile(filePath, 'test');
-    expect(result).toBeNull();
+    assert.isNull(result);
   });
 
   it('analyzes an assessment with legacy allowAccess', async () => {
@@ -467,11 +467,11 @@ describe('analyzeAssessmentFile', () => {
       }),
     );
     const result = await analyzeAssessmentFile(filePath, 'hw01');
-    expect(result).not.toBeNull();
-    expect(result!.tid).toBe('hw01');
-    expect(result!.archetype).toBe('single-deadline');
-    expect(result!.canMigrate).toBe(true);
-    expect(result!.hasUidRules).toBe(false);
+    assert.isNotNull(result);
+    assert.equal(result.tid, 'hw01');
+    assert.equal(result.archetype, 'single-deadline');
+    assert.equal(result.canMigrate, true);
+    assert.equal(result.hasUidRules, false);
   });
 
   it('flags uid rules', async () => {
@@ -488,7 +488,8 @@ describe('analyzeAssessmentFile', () => {
       }),
     );
     const result = await analyzeAssessmentFile(filePath, 'e01');
-    expect(result!.hasUidRules).toBe(true);
+    assert.isNotNull(result);
+    assert.equal(result.hasUidRules, true);
   });
 
   it('classifies from non-UID rules when mixed with UID rules', async () => {
@@ -506,10 +507,10 @@ describe('analyzeAssessmentFile', () => {
       }),
     );
     const result = await analyzeAssessmentFile(filePath, 'e01');
-    expect(result).not.toBeNull();
-    expect(result!.archetype).toBe('declining-credit');
-    expect(result!.hasUidRules).toBe(true);
-    expect(result!.canMigrate).toBe(true);
+    assert.isNotNull(result);
+    assert.equal(result.archetype, 'declining-credit');
+    assert.equal(result.hasUidRules, true);
+    assert.equal(result.canMigrate, true);
   });
 
   it('all-UID rules produces unclassified and canMigrate=false', async () => {
@@ -523,10 +524,10 @@ describe('analyzeAssessmentFile', () => {
       }),
     );
     const result = await analyzeAssessmentFile(filePath, 'e01');
-    expect(result).not.toBeNull();
-    expect(result!.archetype).toBe('unclassified');
-    expect(result!.canMigrate).toBe(false);
-    expect(result!.hasUidRules).toBe(true);
+    assert.isNotNull(result);
+    assert.equal(result.archetype, 'unclassified');
+    assert.equal(result.canMigrate, false);
+    assert.equal(result.hasUidRules, true);
   });
 
   it('returns null for empty allowAccess array', async () => {
@@ -540,14 +541,14 @@ describe('analyzeAssessmentFile', () => {
       }),
     );
     const result = await analyzeAssessmentFile(filePath, 'e01');
-    expect(result).toBeNull();
+    assert.isNull(result);
   });
 
   it('returns null for invalid JSON file', async () => {
     const filePath = path.join(tmpDir, 'infoAssessment.json');
     await fs.writeFile(filePath, 'not valid json {{{');
     const result = await analyzeAssessmentFile(filePath, 'e01');
-    expect(result).toBeNull();
+    assert.isNull(result);
   });
 
   it('no-op rule is technically migratable', async () => {
@@ -561,9 +562,9 @@ describe('analyzeAssessmentFile', () => {
       }),
     );
     const result = await analyzeAssessmentFile(filePath, 'hw01');
-    expect(result).not.toBeNull();
-    expect(result!.archetype).toBe('no-op');
-    expect(result!.canMigrate).toBe(true);
+    assert.isNotNull(result);
+    assert.equal(result.archetype, 'no-op');
+    assert.equal(result.canMigrate, true);
   });
 });
 
@@ -580,8 +581,8 @@ describe('analyzeCourseInstanceAssessments', () => {
 
   it('returns empty analysis when no assessments directory exists', async () => {
     const result = await analyzeCourseInstanceAssessments(tmpDir);
-    expect(result.hasLegacyRules).toBe(false);
-    expect(result.assessments).toHaveLength(0);
+    assert.equal(result.hasLegacyRules, false);
+    assert.lengthOf(result.assessments, 0);
   });
 
   it('analyzes assessments in a course instance', async () => {
@@ -606,10 +607,10 @@ describe('analyzeCourseInstanceAssessments', () => {
     );
 
     const result = await analyzeCourseInstanceAssessments(tmpDir);
-    expect(result.hasLegacyRules).toBe(true);
-    expect(result.assessments).toHaveLength(1);
-    expect(result.assessments[0].tid).toBe('hw01');
-    expect(result.allCanMigrate).toBe(true);
+    assert.equal(result.hasLegacyRules, true);
+    assert.lengthOf(result.assessments, 1);
+    assert.equal(result.assessments[0].tid, 'hw01');
+    assert.equal(result.allCanMigrate, true);
   });
 });
 
@@ -636,7 +637,7 @@ describe('applyMigrationToAssessmentFile', () => {
     await applyMigrationToAssessmentFile(filePath, 'keep', false);
 
     const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    expect(result).toEqual(originalData);
+    assert.deepEqual(result, originalData);
   });
 
   it('wipe strategy removes allowAccess', async () => {
@@ -653,9 +654,9 @@ describe('applyMigrationToAssessmentFile', () => {
     await applyMigrationToAssessmentFile(filePath, 'wipe', false);
 
     const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    expect(result.allowAccess).toBeUndefined();
-    expect(result.accessControl).toBeUndefined();
-    expect(result.type).toBe('Homework');
+    assert.isUndefined(result.allowAccess);
+    assert.isUndefined(result.accessControl);
+    assert.equal(result.type, 'Homework');
   });
 
   it('migrate strategy converts compatible rules', async () => {
@@ -672,10 +673,10 @@ describe('applyMigrationToAssessmentFile', () => {
     await applyMigrationToAssessmentFile(filePath, 'migrate', false);
 
     const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    expect(result.allowAccess).toBeUndefined();
-    expect(result.accessControl).toBeDefined();
-    expect(result.accessControl).toHaveLength(1);
-    expect(result.accessControl[0].dateControl?.dueDate).toBe('2024-06-01');
+    assert.isUndefined(result.allowAccess);
+    assert.isDefined(result.accessControl);
+    assert.lengthOf(result.accessControl, 1);
+    assert.equal(result.accessControl[0].dateControl?.dueDate, '2024-06-01');
   });
 
   it('migrate strategy with preserveIncompatible keeps incompatible rules', async () => {
@@ -694,8 +695,8 @@ describe('applyMigrationToAssessmentFile', () => {
 
     const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
     // preserveIncompatible: true means the original allowAccess is kept
-    expect(result.allowAccess).toBeDefined();
-    expect(result.accessControl).toBeUndefined();
+    assert.isDefined(result.allowAccess);
+    assert.isUndefined(result.accessControl);
   });
 
   it('migrate strategy without preserveIncompatible removes incompatible rules', async () => {
@@ -712,8 +713,8 @@ describe('applyMigrationToAssessmentFile', () => {
     await applyMigrationToAssessmentFile(filePath, 'migrate', false);
 
     const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    expect(result.allowAccess).toBeUndefined();
-    expect(result.accessControl).toBeUndefined();
+    assert.isUndefined(result.allowAccess);
+    assert.isUndefined(result.accessControl);
   });
 
   it('skips files that already use accessControl', async () => {
@@ -730,8 +731,8 @@ describe('applyMigrationToAssessmentFile', () => {
 
     const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
     // File is unchanged because it already has accessControl
-    expect(result.allowAccess).toBeDefined();
-    expect(result.accessControl).toBeDefined();
+    assert.isDefined(result.allowAccess);
+    assert.isDefined(result.accessControl);
   });
 
   it('skips files with no allowAccess', async () => {
@@ -742,7 +743,7 @@ describe('applyMigrationToAssessmentFile', () => {
     await applyMigrationToAssessmentFile(filePath, 'migrate', false);
 
     const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    expect(result.accessControl).toBeUndefined();
+    assert.isUndefined(result.accessControl);
   });
 
   it('migrates non-UID rules when mixed with UID rules', async () => {
@@ -762,9 +763,9 @@ describe('applyMigrationToAssessmentFile', () => {
     await applyMigrationToAssessmentFile(filePath, 'migrate', false);
 
     const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    expect(result.allowAccess).toBeUndefined();
-    expect(result.accessControl).toHaveLength(1);
-    expect(result.accessControl[0].dateControl?.dueDate).toBe('2024-06-01');
+    assert.isUndefined(result.allowAccess);
+    assert.lengthOf(result.accessControl, 1);
+    assert.equal(result.accessControl[0].dateControl?.dueDate, '2024-06-01');
   });
 
   it('declining-credit full pipeline', async () => {
@@ -784,9 +785,9 @@ describe('applyMigrationToAssessmentFile', () => {
     await applyMigrationToAssessmentFile(filePath, 'migrate', false);
 
     const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    expect(result.allowAccess).toBeUndefined();
-    expect(result.accessControl).toHaveLength(1);
-    expect(result.accessControl[0].dateControl?.lateDeadlines).toHaveLength(1);
+    assert.isUndefined(result.allowAccess);
+    assert.lengthOf(result.accessControl, 1);
+    assert.equal(result.accessControl[0].dateControl?.lateDeadlines?.length, 1);
   });
 
   it('wipe with UID-only rules removes allowAccess without accessControl', async () => {
@@ -803,8 +804,8 @@ describe('applyMigrationToAssessmentFile', () => {
     await applyMigrationToAssessmentFile(filePath, 'wipe', false);
 
     const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    expect(result.allowAccess).toBeUndefined();
-    expect(result.accessControl).toBeUndefined();
+    assert.isUndefined(result.allowAccess);
+    assert.isUndefined(result.accessControl);
   });
 
   it('all-UID rules with preserveIncompatible:true keeps allowAccess', async () => {
@@ -821,8 +822,8 @@ describe('applyMigrationToAssessmentFile', () => {
     await applyMigrationToAssessmentFile(filePath, 'migrate', true);
 
     const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    expect(result.allowAccess).toBeDefined();
-    expect(result.accessControl).toBeUndefined();
+    assert.isDefined(result.allowAccess);
+    assert.isUndefined(result.accessControl);
   });
 
   it('all-UID rules with preserveIncompatible:false removes allowAccess', async () => {
@@ -839,8 +840,8 @@ describe('applyMigrationToAssessmentFile', () => {
     await applyMigrationToAssessmentFile(filePath, 'migrate', false);
 
     const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    expect(result.allowAccess).toBeUndefined();
-    expect(result.accessControl).toBeUndefined();
+    assert.isUndefined(result.allowAccess);
+    assert.isUndefined(result.accessControl);
   });
 
   it('no-op rules produce empty accessControl entry', async () => {
@@ -857,8 +858,8 @@ describe('applyMigrationToAssessmentFile', () => {
     await applyMigrationToAssessmentFile(filePath, 'migrate', false);
 
     const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    expect(result.allowAccess).toBeUndefined();
-    expect(result.accessControl).toHaveLength(1);
-    expect(result.accessControl[0]).toEqual({});
+    assert.isUndefined(result.allowAccess);
+    assert.lengthOf(result.accessControl, 1);
+    assert.deepEqual(result.accessControl[0], {});
   });
 });

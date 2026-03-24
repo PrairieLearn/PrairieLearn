@@ -6,6 +6,7 @@ columns
 
 indexes
     assessment_access_control_prairietest_exams_pkey: PRIMARY KEY (id) USING btree (id)
+    aac_prairietest_exams_rule_id_uuid_unique: UNIQUE (assessment_access_control_rule_id, uuid) USING btree (assessment_access_control_rule_id, uuid)
     aac_prairietest_exams_rule_id_idx: USING btree (assessment_access_control_rule_id)
 
 foreign-key constraints

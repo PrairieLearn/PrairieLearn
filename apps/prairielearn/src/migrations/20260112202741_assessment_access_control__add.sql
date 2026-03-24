@@ -20,9 +20,9 @@ CREATE TABLE assessment_access_control_rules (
   date_control_late_deadlines_overridden boolean NOT NULL DEFAULT false,
   date_control_after_last_deadline_allow_submissions boolean,
   date_control_after_last_deadline_credit_overridden boolean NOT NULL DEFAULT false,
-  date_control_after_last_deadline_credit int,
+  date_control_after_last_deadline_credit int CHECK (date_control_after_last_deadline_credit >= 0),
   date_control_duration_minutes_overridden boolean NOT NULL DEFAULT false,
-  date_control_duration_minutes int,
+  date_control_duration_minutes int CHECK (date_control_duration_minutes > 0),
   date_control_password_overridden boolean NOT NULL DEFAULT false,
   date_control_password text,
   -- after_complete_hide_questions and after_complete_hide_score use nullable
@@ -90,7 +90,8 @@ CREATE TABLE assessment_access_control_early_deadlines (
   id BIGSERIAL PRIMARY KEY,
   assessment_access_control_rule_id BIGINT NOT NULL,
   date TIMESTAMP WITH TIME ZONE NOT NULL,
-  credit INT NOT NULL,
+  credit INT NOT NULL CHECK (credit >= 0),
+  CONSTRAINT aac_early_deadlines_rule_id_date_unique UNIQUE (assessment_access_control_rule_id, date),
   CONSTRAINT aac_early_deadlines_rule_id_fkey FOREIGN KEY (assessment_access_control_rule_id) REFERENCES assessment_access_control_rules (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -101,7 +102,8 @@ CREATE TABLE assessment_access_control_late_deadlines (
   id BIGSERIAL PRIMARY KEY,
   assessment_access_control_rule_id BIGINT NOT NULL,
   date TIMESTAMP WITH TIME ZONE NOT NULL,
-  credit INT NOT NULL,
+  credit INT NOT NULL CHECK (credit >= 0),
+  CONSTRAINT aac_late_deadlines_rule_id_date_unique UNIQUE (assessment_access_control_rule_id, date),
   CONSTRAINT aac_late_deadlines_rule_id_fkey FOREIGN KEY (assessment_access_control_rule_id) REFERENCES assessment_access_control_rules (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -113,6 +115,7 @@ CREATE TABLE assessment_access_control_prairietest_exams (
   assessment_access_control_rule_id BIGINT NOT NULL,
   uuid uuid NOT NULL,
   read_only boolean NOT NULL DEFAULT false,
+  CONSTRAINT aac_prairietest_exams_rule_id_uuid_unique UNIQUE (assessment_access_control_rule_id, uuid),
   CONSTRAINT aac_prairietest_exams_rule_id_fkey FOREIGN KEY (assessment_access_control_rule_id) REFERENCES assessment_access_control_rules (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
