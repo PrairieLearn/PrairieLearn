@@ -42,7 +42,12 @@ const prefixSchema = z.object({
     .describe(
       "Explain how you identified the institution's primary domain and derived the prefix.",
     ),
-  prefix: z.string().describe('Lowercase only, no spaces or special characters.'),
+  prefix: z
+    .string()
+    .trim()
+    .min(1)
+    .regex(/^[a-z0-9]+$/)
+    .describe('Lowercase only, no spaces or special characters.'),
 });
 
 interface AiSource {
