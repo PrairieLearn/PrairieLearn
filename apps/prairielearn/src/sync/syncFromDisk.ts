@@ -7,6 +7,7 @@ import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
+import type { Course } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
@@ -16,7 +17,6 @@ import {
   getLockNameForCoursePath,
   selectOrInsertCourseByPath,
 } from '../models/course.js';
-import { selectInstitutionForCourse } from '../models/institution.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
 import * as courseDB from './course-db.js';
@@ -62,15 +62,15 @@ export type SyncResults = SyncResultSharingError | SyncResultComplete;
 
 export async function checkSharingConfigurationValid(
   courseId: string,
+  institutionId: string,
   courseData: courseDB.CourseData,
   logger: ServerJobLogger,
 ): Promise<boolean> {
   if (!config.checkSharingOnSync) return true;
 
-  const institution = await selectInstitutionForCourse({ course_id: courseId });
   const sharingEnabled = await features.enabled('question-sharing', {
     course_id: courseId,
-    institution_id: institution.id,
+    institution_id: institutionId,
   });
 
   // If sharing is not enabled, we'll skip all of these sharing checks. Instead, we'll
@@ -113,11 +113,13 @@ export async function checkSharingConfigurationValid(
 }
 
 export async function syncDiskToSqlWithLock(
-  courseId: string,
-  courseDir: string,
+  course: Course,
   logger: ServerJobLogger,
   courseData?: courseDB.CourseData,
 ): Promise<SyncResults> {
+  const courseId = course.id;
+  const courseDir = course.path;
+
   async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
     const start = performance.now();
 
@@ -138,7 +140,7 @@ export async function syncDiskToSqlWithLock(
   }
 
   const sharingConfigurationValid = await timed('Validated sharing configuration', () =>
-    checkSharingConfigurationValid(courseId, courseData, logger),
+    checkSharingConfigurationValid(courseId, course.institution_id, courseData, logger),
   );
   if (!sharingConfigurationValid) {
     return {
@@ -204,9 +206,8 @@ export async function syncDiskToSqlWithLock(
     await timed('Synced assessment modules', () =>
       syncAssessmentModules.sync(courseId, courseData),
     );
-    const institution = await selectInstitutionForCourse({ course_id: courseId });
     const hasEnhancedAccessControl = await features.enabled('enhanced-access-control', {
-      institution_id: institution.id,
+      institution_id: course.institution_id,
       course_id: courseId,
     });
     await timed('Synced all assessments', async () => {
@@ -295,12 +296,8 @@ export async function syncDiskToSqlWithLock(
   };
 }
 
-export async function syncDiskToSql(
-  course_id: string,
-  courseDir: string,
-  logger: ServerJobLogger,
-): Promise<SyncResults> {
-  const lockName = getLockNameForCoursePath(courseDir);
+export async function syncDiskToSql(course: Course, logger: ServerJobLogger): Promise<SyncResults> {
+  const lockName = getLockNameForCoursePath(course.path);
   logger.verbose(`Trying lock ${lockName}`);
   const result = await namedLocks.doWithLock(
     lockName,
@@ -308,12 +305,12 @@ export async function syncDiskToSql(
       timeout: 0,
       onNotAcquired: () => {
         logger.verbose(chalk.redBright(`Did not acquire lock ${lockName}`));
-        throw new Error(`Another user is already syncing or modifying the course: ${courseDir}`);
+        throw new Error(`Another user is already syncing or modifying the course: ${course.path}`);
       },
     },
     async () => {
       logger.verbose(`Acquired lock ${lockName}`);
-      return await syncDiskToSqlWithLock(course_id, courseDir, logger);
+      return await syncDiskToSqlWithLock(course, logger);
     },
   );
 
@@ -335,5 +332,5 @@ export async function syncOrCreateDiskToSql(
     branch: await getGitDefaultBranch(courseDir),
     repository: await getGitRemoteUrl(courseDir),
   });
-  return await syncDiskToSql(course.id, courseDir, logger);
+  return await syncDiskToSql(course, logger);
 }

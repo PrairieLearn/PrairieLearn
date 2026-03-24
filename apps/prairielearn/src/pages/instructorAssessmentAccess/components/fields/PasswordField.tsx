@@ -31,6 +31,8 @@ function PasswordInput({ value, onChange, idPrefix }: PasswordInputProps) {
             aria-label="Assessment password"
             placeholder="Password"
             value={value}
+            minLength={1}
+            required
             onChange={({ currentTarget }) => onChange(currentTarget.value)}
           />
           <Button

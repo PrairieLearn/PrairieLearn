@@ -142,22 +142,20 @@ describe('Valid configs', () => {
     );
 
     parsedAccessControlExamples.forEach((rules, exampleIndex) => {
-      const results = validateAccessControlArray({
+      const result = validateAccessControlArray({
         accessControlJsonArray: rules,
       });
 
-      results.forEach((result, ruleIndex) => {
-        assert.deepEqual(
-          result.errors,
-          [],
-          `Expected no errors for example ${exampleIndex}, rule ${ruleIndex}, but got: ${result.errors.join(', ')}`,
-        );
-        assert.deepEqual(
-          result.warnings,
-          [],
-          `Expected no warnings for example ${exampleIndex}, rule ${ruleIndex}, but got: ${result.warnings.join(', ')}`,
-        );
-      });
+      assert.deepEqual(
+        result.errors,
+        [],
+        `Expected no errors for example ${exampleIndex}, but got: ${result.errors.join(', ')}`,
+      );
+      assert.deepEqual(
+        result.warnings,
+        [],
+        `Expected no warnings for example ${exampleIndex}, but got: ${result.warnings.join(', ')}`,
+      );
     });
   });
 });
@@ -182,17 +180,14 @@ describe('Assignment-level rule requirement', () => {
     const parsedRules: AccessControlJson[] = rulesWithoutAssignmentLevel.map((rule) =>
       AccessControlJsonSchema.parse(rule),
     );
-    const results = validateAccessControlArray({
+    const result = validateAccessControlArray({
       accessControlJsonArray: parsedRules,
     });
 
+    assert.isTrue(result.errors.length > 0, 'Expected error when no assignment-level rule exists');
     assert.isTrue(
-      results[0].errors.length > 0,
-      'Expected error when no assignment-level rule exists',
-    );
-    assert.isTrue(
-      results[0].errors.some((err) => err.includes('No assignment-level rule found')),
-      `Expected "No assignment-level rule found" error, but got: ${results[0].errors.join(', ')}`,
+      result.errors.some((err) => err.includes('No assignment-level rule found')),
+      `Expected "No assignment-level rule found" error, but got: ${result.errors.join(', ')}`,
     );
   });
 
@@ -215,17 +210,17 @@ describe('Assignment-level rule requirement', () => {
     const parsedRules: AccessControlJson[] = rulesWithMultipleAssignmentLevel.map((rule) =>
       AccessControlJsonSchema.parse(rule),
     );
-    const results = validateAccessControlArray({
+    const result = validateAccessControlArray({
       accessControlJsonArray: parsedRules,
     });
 
     assert.isTrue(
-      results[0].errors.length > 0,
+      result.errors.length > 0,
       'Expected error when multiple assignment-level rules exist',
     );
     assert.isTrue(
-      results[0].errors.some((err) => err.includes('Found 2 assignment-level rules')),
-      `Expected "Found 2 assignment-level rules" error, but got: ${results[0].errors.join(', ')}`,
+      result.errors.some((err) => err.includes('Found 2 assignment-level rules')),
+      `Expected "Found 2 assignment-level rules" error, but got: ${result.errors.join(', ')}`,
     );
   });
 
@@ -242,15 +237,11 @@ describe('Assignment-level rule requirement', () => {
     const parsedRules: AccessControlJson[] = rulesWithOneAssignmentLevel.map((rule) =>
       AccessControlJsonSchema.parse(rule),
     );
-    const results = validateAccessControlArray({
+    const result = validateAccessControlArray({
       accessControlJsonArray: parsedRules,
     });
 
-    assert.equal(
-      results[0].errors.length,
-      0,
-      'Should have no errors with one assignment-level rule',
-    );
+    assert.equal(result.errors.length, 0, 'Should have no errors with one assignment-level rule');
   });
 
   it('should fail validation when an override specifies listBeforeRelease', () => {
@@ -272,13 +263,13 @@ describe('Assignment-level rule requirement', () => {
     ];
 
     const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
-    const results = validateAccessControlArray({
+    const result = validateAccessControlArray({
       accessControlJsonArray: parsedRules,
     });
 
     assert.isTrue(
-      results[1].errors.some((err) => err.includes('listBeforeRelease can only be specified')),
-      `Expected listBeforeRelease validation error, but got: ${results[1].errors.join(', ')}`,
+      result.errors.some((err) => err.includes('listBeforeRelease can only be specified')),
+      `Expected listBeforeRelease validation error, but got: ${result.errors.join(', ')}`,
     );
   });
 });
@@ -305,14 +296,10 @@ describe('Date fields without seconds', () => {
     assert.equal(parsed.dateControl?.lateDeadlines?.[0].date, '2024-03-23T23:59:00');
     assert.equal(parsed.afterComplete?.showQuestionsAgainDate, '2024-03-25T12:00:00');
 
-    const results = validateAccessControlArray({
+    const result = validateAccessControlArray({
       accessControlJsonArray: [parsed],
     });
-    assert.deepEqual(
-      results[0].errors,
-      [],
-      `Expected no errors, but got: ${results[0].errors.join(', ')}`,
-    );
+    assert.deepEqual(result.errors, [], `Expected no errors, but got: ${result.errors.join(', ')}`);
   });
 
   it('should still accept dates with seconds', () => {
@@ -328,14 +315,10 @@ describe('Date fields without seconds', () => {
     assert.equal(parsed.dateControl?.releaseDate, '2024-03-14T00:01:00');
     assert.equal(parsed.dateControl?.dueDate, '2024-03-21T23:59:00');
 
-    const results = validateAccessControlArray({
+    const result = validateAccessControlArray({
       accessControlJsonArray: [parsed],
     });
-    assert.deepEqual(
-      results[0].errors,
-      [],
-      `Expected no errors, but got: ${results[0].errors.join(', ')}`,
-    );
+    assert.deepEqual(result.errors, [], `Expected no errors, but got: ${result.errors.join(', ')}`);
   });
 });
 
