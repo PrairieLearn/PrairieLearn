@@ -507,6 +507,11 @@ export type InstanceQuestionScoreInput = z.infer<typeof InstanceQuestionScoreInp
  * @param params.is_ai_graded - Whether the score update is the result of AI grading or manual grading
  * @returns The ID of the grading job created, if any, and a flag indicating if the score was not updated due to a modified_at conflict.
  */
+// WARNING: Concurrent calls for instance_questions belonging to the same
+// assessment_instance will deadlock, because updateAssessmentInstanceGrade
+// locks ALL instance_question rows for the assessment_instance. Callers that
+// grade multiple instance_questions in parallel must serialize calls with a
+// mutex (see ai-grading.ts for an example).
 export async function updateInstanceQuestionScore({
   assessment,
   instance_question_id,
