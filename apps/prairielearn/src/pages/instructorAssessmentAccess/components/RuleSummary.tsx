@@ -1,5 +1,7 @@
 import { Alert, Badge, Button, Card, Table } from 'react-bootstrap';
 
+import { formatDate } from '@prairielearn/formatter';
+
 import {
   getCourseInstanceStudentLabelsUrl,
   getStudentEnrollmentUrl,
@@ -24,22 +26,6 @@ function isOverrideFieldActive(rule: RuleData, fieldName: string): boolean {
   return rule.overriddenFields.includes(fieldName);
 }
 
-function formatDate(dateStr: string): string {
-  if (!dateStr) return '';
-  try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  } catch {
-    return dateStr;
-  }
-}
-
 interface DateTableRow {
   date: string;
   label: string;
@@ -49,6 +35,7 @@ interface DateTableRow {
 
 export function generateDateTableRows(
   rule: RuleData,
+  displayTimezone: string,
   verbosity: SummaryVerbosity = 'compact',
 ): DateTableRow[] {
   const rows: DateTableRow[] = [];
@@ -64,15 +51,7 @@ export function generateDateTableRows(
     return rows;
   }
 
-  interface DateEntry {
-    date: string;
-    timestamp: number;
-    label: string;
-    credit: string;
-    visibility: string;
-  }
-
-  const entries: DateEntry[] = [];
+  const entries: (DateTableRow & { timestamp: number })[] = [];
 
   const releaseDate = rule.releaseDate;
   const dueDate = rule.dueDate;
@@ -146,7 +125,7 @@ export function generateDateTableRows(
 
   for (const entry of entries) {
     rows.push({
-      date: formatDate(entry.date),
+      date: formatDate(new Date(entry.date), displayTimezone),
       label: entry.label,
       credit: entry.credit,
       visibility: entry.visibility,
@@ -270,6 +249,7 @@ interface RuleSummaryCardProps {
   editUrl?: string;
   onEdit?: () => void;
   courseInstanceId: string;
+  displayTimezone: string;
   errors?: string[];
   onEditStudentLabels?: () => void;
   onRemove?: () => void;
@@ -284,13 +264,14 @@ export function RuleSummaryCard({
   editUrl,
   onEdit,
   courseInstanceId,
+  displayTimezone,
   errors,
   onEditStudentLabels,
   dragHandleProps,
 }: RuleSummaryCardProps) {
   const effectiveVerbosity: SummaryVerbosity = isMainRule ? 'compact' : 'verbose';
   const summaryLines = generateRuleSummary(rule, effectiveVerbosity);
-  const dateTableRows = generateDateTableRows(rule, effectiveVerbosity);
+  const dateTableRows = generateDateTableRows(rule, displayTimezone, effectiveVerbosity);
 
   const overrideRule = !isMainRule ? (rule as OverrideData) : null;
 

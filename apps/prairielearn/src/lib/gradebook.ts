@@ -19,7 +19,6 @@ interface GetGradebookRowsParams {
   userId: string;
   authzData: AuthzDataForAccessControl;
   reqDate: Date;
-  displayTimezone: string;
   auth: 'student' | 'instructor';
 }
 
@@ -39,7 +38,6 @@ async function applyModernAccessControl<
     userId: params.userId,
     authzData: params.authzData,
     reqDate: params.reqDate,
-    displayTimezone: params.displayTimezone,
   });
 
   for (const row of rows) {
@@ -68,7 +66,6 @@ async function getGradebookRows({
   userId,
   authzData,
   reqDate,
-  displayTimezone,
   auth,
 }: GetGradebookRowsParams): Promise<StudentGradebookRow[] | StaffGradebookRow[]> {
   const queryParams = {
@@ -89,7 +86,6 @@ async function getGradebookRows({
       userId,
       authzData,
       reqDate,
-      displayTimezone,
       auth,
     });
     return rows;
@@ -105,7 +101,6 @@ async function getGradebookRows({
     userId,
     authzData,
     reqDate,
-    displayTimezone,
     auth,
   });
   return rows;

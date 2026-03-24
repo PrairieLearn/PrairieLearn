@@ -26,7 +26,7 @@ const SelectAndAuthzAssessmentSchema = z.object({
 export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema>;
 
 export default asyncHandler(async (req, res, next) => {
-  let row = await queryOptionalRow(
+  const row = await queryOptionalRow(
     sql.select_and_auth,
     {
       assessment_id: req.params.assessment_id,
@@ -47,9 +47,8 @@ export default asyncHandler(async (req, res, next) => {
       courseInstance: res.locals.course_instance,
       authzData: res.locals.authz_data,
       reqDate: res.locals.req_date,
-      displayTimezone: res.locals.course_instance.display_timezone,
     });
-    row = { ...row, authz_result: modernResult };
+    row.authz_result = modernResult;
   }
   if (!row.authz_result.authorized) {
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
