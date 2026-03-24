@@ -92,7 +92,7 @@ export function AccessControlForm({
   isSaving = false,
 }: AccessControlFormProps) {
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
-  const deleteModal = useModalState<number>();
+  const deleteModal = useModalState<{ index: number; name: string }>();
 
   const mainRule = initialData[0]
     ? jsonToMainRuleFormData(initialData[0])
@@ -148,15 +148,15 @@ export function AccessControlForm({
   };
 
   const handleDeleteClick = (index: number) => {
-    deleteModal.showWithData(index);
+    deleteModal.showWithData({ index, name: getOverrideName(index) });
   };
 
   const handleDeleteConfirm = () => {
     if (deleteModal.data !== null) {
-      if (selectedRule?.type === 'override' && selectedRule.index === deleteModal.data) {
+      if (selectedRule?.type === 'override' && selectedRule.index === deleteModal.data.index) {
         setSelectedRule(null);
       }
-      removeOverride(deleteModal.data);
+      removeOverride(deleteModal.data.index);
     }
     deleteModal.hide();
   };
@@ -314,7 +314,7 @@ export function AccessControlForm({
       <ConfirmationModal
         show={deleteModal.show}
         title="Delete override rule"
-        message={`Are you sure you want to delete "${deleteModal.data !== null ? getOverrideName(deleteModal.data) : ''}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete "${deleteModal.data?.name ?? ''}"? This action cannot be undone.`}
         confirmText="Delete"
         confirmVariant="danger"
         onConfirm={handleDeleteConfirm}

@@ -26,11 +26,13 @@ async function navigateToAccessPage(page: Page, courseInstanceId: string, assess
   await page.waitForSelector('.js-hydrated-component');
 }
 
-/**
- * Returns the currently visible dialog (offcanvas or modal).
- * Bootstrap only sets aria-modal="true" on the active dialog.
- */
-function getVisibleDialog(page: Page): Locator {
+/** Returns the split-pane detail panel used for editing rules. */
+function getDetailPanel(page: Page): Locator {
+  return page.locator('#split-pane-detail');
+}
+
+/** Returns the currently visible modal dialog (e.g. delete confirmation). */
+function getVisibleModal(page: Page): Locator {
   return page.locator('[aria-modal="true"]');
 }
 
@@ -69,17 +71,17 @@ test.describe('Access control UI', () => {
     });
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
-    // Click "Add override" → new card appears and drawer opens
+    // Click "Add override" → new card appears and detail panel opens
     await page.getByRole('button', { name: /Add override/i }).click();
 
-    const drawer = getVisibleDialog(page);
-    await expect(drawer).toBeVisible();
+    const panel = getDetailPanel(page);
+    await expect(panel).toBeVisible();
 
     // Select "Student labels" radio in "Applies to"
-    await drawer.getByLabel('Student labels').check();
+    await panel.getByLabel('Student labels').check();
 
     // Click "Add student labels" button to open the popover
-    await drawer.getByRole('button', { name: /Add student labels/i }).click();
+    await panel.getByRole('button', { name: /Add student labels/i }).click();
 
     // Select "Extra time" from the student label list in the popover
     const popover = page.locator('[data-popper-placement]');
@@ -89,9 +91,8 @@ test.describe('Access control UI', () => {
     // Click "Add 1 student label" button
     await popover.getByRole('button', { name: /Add 1 student label/i }).click();
 
-    // Click "Done"
-    await drawer.getByRole('button', { name: 'Done' }).click();
-    await expect(drawer).not.toBeVisible();
+    // Close the detail panel
+    await panel.getByRole('button', { name: 'Close detail panel' }).click();
 
     // Verify new override card visible with "Extra time"
     await expect(page.getByText('Overrides for Extra time')).toBeVisible();
@@ -119,12 +120,16 @@ test.describe('Access control UI', () => {
     const initialRecords = await getAccessControlRecords(assessment.id);
     const initialOverrideCount = initialRecords.filter((r) => r.number > 0).length;
 
-    // Click "Remove" on the Section A override card
-    const overrideCard = page.locator('.card').filter({ hasText: 'Overrides for Section A' });
-    await overrideCard.getByRole('button', { name: /Remove/i }).click();
+    // Click "Remove" on the Section A override
+    await page
+      .getByText('Overrides for Section A')
+      .locator('..')
+      .locator('..')
+      .getByRole('button', { name: /Remove/i })
+      .click();
 
     // Confirm deletion in modal
-    const modal = getVisibleDialog(page);
+    const modal = getVisibleModal(page);
     await expect(modal).toBeVisible();
     await expect(modal.getByText('Delete override rule')).toBeVisible();
     await modal.getByRole('button', { name: 'Delete' }).click();
@@ -153,39 +158,42 @@ test.describe('Access control UI', () => {
     });
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
-    // Click "Edit" on the Section A override card
-    const overrideCard = page.locator('.card').filter({ hasText: 'Overrides for Section A' });
-    await overrideCard.getByRole('button', { name: /Edit/i }).click();
+    // Click "Edit" on the Section A override
+    await page
+      .getByText('Overrides for Section A')
+      .locator('..')
+      .locator('..')
+      .getByRole('button', { name: /Edit/i })
+      .click();
 
-    const drawer = getVisibleDialog(page);
-    await expect(drawer).toBeVisible();
+    const panel = getDetailPanel(page);
+    await expect(panel).toBeVisible();
 
     // Override the duration field: find "Time limit" label and click its associated Override button
-    await drawer
+    await panel
       .getByText('Time limit', { exact: true })
       .locator('../..')
       .getByRole('button', { name: 'Override' })
       .click();
 
     // Enable the time limit checkbox (now rendered as a labeled form check)
-    await drawer.getByLabel('Time limit').check();
+    await panel.getByLabel('Time limit').check();
 
     // Verify duration input shows default of 60
-    await expect(drawer.getByRole('spinbutton')).toHaveValue('60');
+    await expect(panel.getByRole('spinbutton')).toHaveValue('60');
 
     // Override question visibility
-    await drawer
+    await panel
       .getByText('Question visibility', { exact: true })
       .locator('../..')
       .getByRole('button', { name: 'Override' })
       .click();
 
     // Select "Hide questions permanently"
-    await drawer.getByLabel('Hide questions permanently').check();
+    await panel.getByLabel('Hide questions permanently').check();
 
-    // Click "Done"
-    await drawer.getByRole('button', { name: 'Done' }).click();
-    await expect(drawer).not.toBeVisible();
+    // Close the detail panel
+    await panel.getByRole('button', { name: 'Close detail panel' }).click();
 
     // Verify summary shows the changes
     await expect(page.getByText('Time limit: 60 minutes')).toBeVisible();
