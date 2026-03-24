@@ -27,6 +27,24 @@ export async function selectCreditPool(course_instance_id: string): Promise<Cred
 }
 
 /**
+ * Lock the course_instances row for this course instance before writing AI
+ * grading rows that reference it.
+ *
+ * AI grading transactions are deadlock-prone here because concurrent workers on
+ * the same course instance insert into ai_grading_jobs (taking FK KEY SHARE on
+ * course_instances) and then deduct credits (requiring FOR UPDATE on that same
+ * row). We call this immediately before ai_grading_jobs insert so FOR UPDATE is
+ * taken first and no lock upgrade cycle is created.
+ */
+export async function selectCreditPoolForUpdate(course_instance_id: string): Promise<CreditPool> {
+  return await queryRow(
+    sql.select_credit_pool_for_update,
+    { course_instance_id },
+    CreditPoolSchema,
+  );
+}
+
+/**
  * Compute how a cost should be split between non-transferable (first) and transferable credits.
  */
 function splitDeduction(
