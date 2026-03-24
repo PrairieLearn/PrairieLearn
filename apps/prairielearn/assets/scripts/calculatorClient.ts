@@ -116,7 +116,9 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
   MathfieldElement.soundsDirectory = null;
   calculatorInputElement.menuItems = [];
-  // the `math-virtual-keyboard-policy` attribute doesn't seem to work when set in HTML
+  // Prevent MathLive's built-in virtual keyboard from appearing on touch devices,
+  // since the calculator provides its own custom on-screen keyboard.
+  // Note: the HTML attribute `math-virtual-keyboard-policy` doesn't seem to work, so we set it here via JS.
   calculatorInputElement.mathVirtualKeyboardPolicy = 'manual';
   calculatorOutput.dataset.displayMode = 'numeric';
   calculatorOutput.dataset.angleMode = 'rad';
