@@ -136,15 +136,11 @@ export function mergeRules(
 ): AccessControlJson {
   if (!override) return main;
 
-  const merged: AccessControlJson = {};
-
-  // listBeforeRelease is only configurable on the main rule.
-  if (main.listBeforeRelease !== undefined) merged.listBeforeRelease = main.listBeforeRelease;
-
-  merged.dateControl = mergeDateControl(main.dateControl, override.dateControl);
-  merged.afterComplete = mergeAfterComplete(main.afterComplete, override.afterComplete);
-
-  return merged;
+  return {
+    listBeforeRelease: main.listBeforeRelease,
+    dateControl: mergeDateControl(main.dateControl, override.dateControl),
+    afterComplete: mergeAfterComplete(main.afterComplete, override.afterComplete),
+  };
 }
 
 /**
@@ -155,6 +151,7 @@ export function cascadeOverrides(
   next: AccessControlJson,
 ): AccessControlJson {
   return {
+    listBeforeRelease: false,
     dateControl: mergeDateControl(base.dateControl, next.dateControl),
     afterComplete: mergeAfterComplete(base.afterComplete, next.afterComplete),
   };
@@ -311,8 +308,8 @@ function computeTimeLimitMin(
 
 export function resolveVisibility(
   hide: boolean | undefined,
-  showAgainDate: string | undefined,
-  hideAgainDate: string | undefined,
+  showAgainDate: string | null | undefined,
+  hideAgainDate: string | null | undefined,
   date: Date,
 ): boolean {
   if (!hide) return true;

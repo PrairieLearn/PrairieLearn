@@ -180,12 +180,12 @@ export function jsonToMainRuleFormData(json: AccessControlJsonWithId): MainRuleD
     prairieTestExams: json.integrations?.prairieTest?.exams ?? [],
     questionVisibility: {
       hideQuestions: ac?.hideQuestions ?? false,
-      showAgainDate: toLocalDatetimeValue(ac?.showQuestionsAgainDate),
-      hideAgainDate: toLocalDatetimeValue(ac?.hideQuestionsAgainDate),
+      showAgainDate: toLocalDatetimeValue(ac?.showQuestionsAgainDate) ?? undefined,
+      hideAgainDate: toLocalDatetimeValue(ac?.hideQuestionsAgainDate) ?? undefined,
     },
     scoreVisibility: {
       hideScore: ac?.hideScore ?? false,
-      showAgainDate: toLocalDatetimeValue(ac?.showScoreAgainDate),
+      showAgainDate: toLocalDatetimeValue(ac?.showScoreAgainDate) ?? undefined,
     },
   };
 }
@@ -267,8 +267,8 @@ export function jsonToOverrideFormData(json: AccessControlJsonWithId): OverrideD
   if (ac?.hideQuestions !== undefined) {
     questionVisibility = {
       hideQuestions: ac.hideQuestions,
-      showAgainDate: toLocalDatetimeValue(ac.showQuestionsAgainDate),
-      hideAgainDate: toLocalDatetimeValue(ac.hideQuestionsAgainDate),
+      showAgainDate: toLocalDatetimeValue(ac.showQuestionsAgainDate) ?? undefined,
+      hideAgainDate: toLocalDatetimeValue(ac.hideQuestionsAgainDate) ?? undefined,
     };
     overriddenFields.push('questionVisibility');
   }
@@ -277,7 +277,7 @@ export function jsonToOverrideFormData(json: AccessControlJsonWithId): OverrideD
   if (ac?.hideScore !== undefined) {
     scoreVisibility = {
       hideScore: ac.hideScore,
-      showAgainDate: toLocalDatetimeValue(ac.showScoreAgainDate),
+      showAgainDate: toLocalDatetimeValue(ac.showScoreAgainDate) ?? undefined,
     };
     overriddenFields.push('scoreVisibility');
   }
@@ -353,6 +353,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
   const output: AccessControlJsonWithId = {
     id: rule.id,
     labels,
+    listBeforeRelease: false,
   };
 
   const of = new Set(rule.overriddenFields);
