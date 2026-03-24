@@ -531,7 +531,7 @@ export const QuestionSettingsForm = ({
                       <th>Name</th>
                       <th style={{ width: '7rem' }}>Type</th>
                       <th>Default</th>
-                      <th>Allowed values</th>
+                      <th>Restrict values (Optional)</th>
                       {canEdit && <th style={{ width: '2.5rem' }} />}
                     </tr>
                   </thead>
@@ -1018,10 +1018,11 @@ function PreferenceRow({
 
   const draggableStyle = makeDraggableStyle({ isDragging, transform, transition });
   const prefType = watch(`preferences.${index}.type`);
+  const enumValues = watch(`preferences.${index}.enum`);
   const allPreferences = watch('preferences');
 
   return (
-    <tr ref={setNodeRef} style={draggableStyle}>
+    <tr ref={setNodeRef} style={{ ...draggableStyle, verticalAlign: 'top' }}>
       {canEdit && (
         <td>
           <DragHandle attributes={attributes} listeners={listeners} disabled={!canEdit} />
@@ -1097,6 +1098,27 @@ function PreferenceRow({
             <option value="true">true</option>
             <option value="false">false</option>
           </select>
+        ) : enumValues.length > 0 ? (
+          <select
+            className={clsx('form-select form-select-sm', errors?.default && 'is-invalid')}
+            id={`pref-${index}-default`}
+            disabled={!canEdit}
+            defaultValue={String(field.default)}
+            aria-invalid={!!errors?.default || undefined}
+            aria-errormessage={errors?.default ? `pref-${index}-default-error` : undefined}
+            {...register(`preferences.${index}.default`, {
+              required: 'Default is required',
+            })}
+          >
+            <option value="" disabled>
+              Select a default
+            </option>
+            {enumValues.map((val) => (
+              <option key={val} value={val}>
+                {val}
+              </option>
+            ))}
+          </select>
         ) : (
           <input
             type={prefType === 'number' ? 'number' : 'text'}
@@ -1116,13 +1138,6 @@ function PreferenceRow({
                   }
                   return true;
                 },
-                inEnum: (value) => {
-                  const enumValues = watch(`preferences.${index}.enum`);
-                  if (enumValues.length > 0 && !enumValues.includes(String(value))) {
-                    return 'Default must be one of the allowed values';
-                  }
-                  return true;
-                },
               },
             })}
           />
@@ -1137,7 +1152,13 @@ function PreferenceRow({
         {prefType === 'boolean' ? (
           <span className="text-muted small">N/A</span>
         ) : (
-          <EnumInput index={index} canEdit={canEdit} watch={watch} setValue={setValue} />
+          <EnumInput
+            index={index}
+            canEdit={canEdit}
+            prefType={prefType}
+            watch={watch}
+            setValue={setValue}
+          />
         )}
       </td>
       {canEdit && (
@@ -1159,15 +1180,19 @@ function PreferenceRow({
 function EnumInput({
   index,
   canEdit,
+  prefType,
   watch,
   setValue,
 }: {
   index: number;
   canEdit: boolean;
+  prefType: string;
   watch: UseFormWatch<QuestionSettingsFormValues>;
   setValue: UseFormSetValue<QuestionSettingsFormValues>;
 }) {
   const [inputValue, setInputValue] = useState('');
+  const [adding, setAdding] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const enumValues = watch(`preferences.${index}.enum`);
 
   function addValue() {
@@ -1186,70 +1211,75 @@ function EnumInput({
     );
   }
 
-  const [expanded, setExpanded] = useState(false);
+  function startAdding() {
+    setAdding(true);
+    // Focus the input after it renders
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }
+
+  function stopAdding() {
+    addValue();
+    setAdding(false);
+    setInputValue('');
+  }
 
   return (
     <div>
       <input type="hidden" name={`preferences.${index}.enum`} value={enumValues.join(', ')} />
-      <div className="d-flex gap-1">
-        {canEdit && (
-          <div className="input-group input-group-sm" style={{ flex: 1 }}>
+      <div className="d-flex flex-wrap gap-1">
+        {enumValues.map((val) => (
+          <span
+            key={val}
+            className="badge bg-secondary d-inline-flex align-items-center gap-1"
+            title={val}
+            style={{ maxWidth: '12rem' }}
+          >
+            <span className="text-truncate">{val}</span>
+            {canEdit && (
+              <button
+                type="button"
+                className="btn-close btn-close-white"
+                style={{ fontSize: '0.5rem' }}
+                aria-label={`Remove ${val}`}
+                onClick={() => removeValue(val)}
+              />
+            )}
+          </span>
+        ))}
+        {enumValues.length === 0 && !adding && <span className="text-muted small">Any value</span>}
+        {canEdit &&
+          (adding ? (
             <input
-              type="text"
+              ref={inputRef}
+              type={prefType === 'number' ? 'number' : 'text'}
+              step={prefType === 'number' ? 'any' : undefined}
               className="form-control form-control-sm"
               placeholder="Add value"
               value={inputValue}
+              style={{ width: '8rem', height: '1.5rem', fontSize: '0.75rem' }}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
                   addValue();
+                } else if (e.key === 'Escape') {
+                  stopAdding();
                 }
               }}
+              onBlur={stopAdding}
             />
-            <button type="button" className="btn btn-outline-secondary btn-sm" onClick={addValue}>
-              <i className="bi bi-plus" aria-hidden="true" />
-            </button>
-          </div>
-        )}
-        {enumValues.length > 0 && (
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-secondary text-nowrap"
-            aria-expanded={expanded}
-            onClick={() => setExpanded(!expanded)}
-          >
-            {enumValues.length} value{enumValues.length !== 1 && 's'}{' '}
-            <i
-              className={clsx('bi', expanded ? 'bi-chevron-up' : 'bi-chevron-down')}
-              aria-hidden="true"
-            />
-          </button>
-        )}
-      </div>
-      {expanded && enumValues.length > 0 && (
-        <div className="d-flex flex-wrap gap-1 mt-1">
-          {enumValues.map((val) => (
-            <span
-              key={val}
-              className="badge bg-secondary d-inline-flex align-items-center gap-1"
-              title={val}
-              style={{ maxWidth: '12rem' }}
+          ) : (
+            <button
+              type="button"
+              className="badge bg-primary border-0 d-inline-flex align-items-center gap-1"
+              style={{ cursor: 'pointer', fontSize: '0.75em' }}
+              onClick={startAdding}
             >
-              <span className="text-truncate">{val}</span>
-              {canEdit && (
-                <button
-                  type="button"
-                  className="btn-close btn-close-white"
-                  style={{ fontSize: '0.5rem' }}
-                  aria-label={`Remove ${val}`}
-                  onClick={() => removeValue(val)}
-                />
-              )}
-            </span>
+              <i className="bi bi-plus" aria-hidden="true" />
+              Add value
+            </button>
           ))}
-        </div>
-      )}
+      </div>
     </div>
   );
 }
