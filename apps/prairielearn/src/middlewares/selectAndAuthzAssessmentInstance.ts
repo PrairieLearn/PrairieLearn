@@ -53,7 +53,7 @@ export type ResLocalsAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmen
 };
 
 async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
-  let row = await sqldb.queryOptionalRow(
+  const row = await sqldb.queryOptionalRow(
     sql.select_and_auth,
     {
       assessment_instance_id: req.params.assessment_instance_id,
@@ -72,11 +72,9 @@ async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
       courseInstance: res.locals.course_instance,
       authzData: res.locals.authz_data,
       reqDate: res.locals.req_date,
-      displayTimezone: res.locals.course_instance.display_timezone,
       assessmentInstance: row.assessment_instance,
-      groupWork: row.assessment.team_work,
     });
-    row = { ...row, authz_result: modernResult };
+    row.authz_result = modernResult;
   }
 
   if (!row.authz_result.authorized) {

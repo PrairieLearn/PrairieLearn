@@ -34,7 +34,6 @@ router.get(
           userId: res.locals.user.id,
           authzData: res.locals.authz_data,
           reqDate: res.locals.req_date,
-          displayTimezone: res.locals.course_instance.display_timezone,
         })
       : null;
 

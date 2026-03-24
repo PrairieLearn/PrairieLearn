@@ -48,26 +48,21 @@ function buildDateControl(row: AccessControlRuleRow): AccessControlJson['dateCon
   // Only include fields that were explicitly configured (overridden flag is true).
   // This applies uniformly to main rules and overrides.
   const dateControl: NonNullable<AccessControlJson['dateControl']> = {};
-  let hasAnyField = false;
 
   if (row.date_control_release_date_overridden) {
     dateControl.releaseDate = row.date_control_release_date?.toISOString() ?? null;
-    hasAnyField = true;
   }
 
   if (row.date_control_due_date_overridden) {
     dateControl.dueDate = row.date_control_due_date?.toISOString() ?? null;
-    hasAnyField = true;
   }
 
   if (row.date_control_duration_minutes_overridden) {
     dateControl.durationMinutes = row.date_control_duration_minutes;
-    hasAnyField = true;
   }
 
   if (row.date_control_password_overridden) {
     dateControl.password = row.date_control_password;
-    hasAnyField = true;
   }
 
   if (row.date_control_early_deadlines_overridden) {
@@ -76,7 +71,6 @@ function buildDateControl(row: AccessControlRuleRow): AccessControlJson['dateCon
         date: d.date,
         credit: d.credit,
       })) ?? null;
-    hasAnyField = true;
   }
 
   if (row.date_control_late_deadlines_overridden) {
@@ -85,7 +79,6 @@ function buildDateControl(row: AccessControlRuleRow): AccessControlJson['dateCon
         date: d.date,
         credit: d.credit,
       })) ?? null;
-    hasAnyField = true;
   }
 
   {
@@ -109,11 +102,10 @@ function buildDateControl(row: AccessControlRuleRow): AccessControlJson['dateCon
             row.date_control_after_last_deadline_allow_submissions!;
         }
       }
-      hasAnyField = true;
     }
   }
 
-  return hasAnyField ? dateControl : undefined;
+  return Object.keys(dateControl).length > 0 ? dateControl : undefined;
 }
 
 function buildAfterComplete(
@@ -123,17 +115,14 @@ function buildAfterComplete(
   const includeField = (overridden: boolean) => !override || overridden;
 
   const afterComplete: NonNullable<AccessControlJson['afterComplete']> = {};
-  let hasAnyField = false;
 
   if (row.after_complete_hide_questions != null) {
     afterComplete.hideQuestions = row.after_complete_hide_questions;
-    hasAnyField = true;
   }
   if (includeField(row.after_complete_hide_questions_again_date_overridden)) {
     if (row.after_complete_hide_questions_again_date) {
       afterComplete.hideQuestionsAgainDate =
         row.after_complete_hide_questions_again_date.toISOString();
-      hasAnyField = true;
     }
   }
 
@@ -141,22 +130,19 @@ function buildAfterComplete(
     if (row.after_complete_show_questions_again_date) {
       afterComplete.showQuestionsAgainDate =
         row.after_complete_show_questions_again_date.toISOString();
-      hasAnyField = true;
     }
   }
 
   if (row.after_complete_hide_score != null) {
     afterComplete.hideScore = row.after_complete_hide_score;
-    hasAnyField = true;
   }
   if (includeField(row.after_complete_show_score_again_date_overridden)) {
     if (row.after_complete_show_score_again_date) {
       afterComplete.showScoreAgainDate = row.after_complete_show_score_again_date.toISOString();
-      hasAnyField = true;
     }
   }
 
-  return hasAnyField ? afterComplete : undefined;
+  return Object.keys(afterComplete).length > 0 ? afterComplete : undefined;
 }
 
 function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRuleInput {
@@ -227,11 +213,6 @@ export async function selectAccessControlRulesForCourseInstance(
   return result;
 }
 
-const StudentContextRowSchema = z.object({
-  enrollment_id: IdSchema,
-  student_label_ids: z.array(IdSchema),
-});
-
 export async function selectStudentContext(
   userId: string,
   courseInstance: CourseInstance,
@@ -239,7 +220,10 @@ export async function selectStudentContext(
   const row = await queryOptionalRow(
     sql.select_student_context,
     { user_id: userId, course_instance_id: courseInstance.id },
-    StudentContextRowSchema,
+    z.object({
+      enrollment_id: IdSchema,
+      student_label_ids: z.array(IdSchema),
+    }),
   );
   if (!row) {
     return { enrollmentId: null, studentLabelIds: [] };
@@ -250,11 +234,6 @@ export async function selectStudentContext(
   };
 }
 
-const PrairieTestReservationRowSchema = z.object({
-  exam_uuid: z.string(),
-  access_end: DateFromISOString,
-});
-
 export async function selectPrairieTestReservations(
   userId: string,
   date: Date,
@@ -262,7 +241,10 @@ export async function selectPrairieTestReservations(
   const rows = await queryRows(
     sql.select_prairietest_reservation,
     { user_id: userId, date },
-    PrairieTestReservationRowSchema,
+    z.object({
+      exam_uuid: z.string(),
+      access_end: DateFromISOString,
+    }),
   );
   return rows.map((row) => ({
     examUuid: row.exam_uuid,

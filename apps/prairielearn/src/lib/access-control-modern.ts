@@ -39,7 +39,6 @@ interface ModernAssessmentAccessInput {
   courseInstance: CourseInstance;
   authzData: AuthzDataForAccessControl;
   reqDate: Date;
-  displayTimezone: string;
 }
 
 function resolverResultToSprocAuthzAssessment(
@@ -70,7 +69,6 @@ export async function resolveModernAssessmentAccess({
   courseInstance,
   authzData,
   reqDate,
-  displayTimezone,
 }: ModernAssessmentAccessInput): Promise<SprocAuthzAssessment & { show_before_release: boolean }> {
   const [rules, student, prairieTestReservations] = await Promise.all([
     selectAccessControlRulesForAssessment(assessment),
@@ -84,7 +82,7 @@ export async function resolveModernAssessmentAccess({
     rules,
     student,
     date: reqDate,
-    displayTimezone,
+    displayTimezone: courseInstance.display_timezone,
     authzMode: authzData.mode ?? null,
     courseRole: authzData.course_role ?? 'None',
     courseInstanceRole: authzData.course_instance_role ?? 'None',
@@ -104,19 +102,17 @@ export interface ModernAssessmentInstanceAccessInput extends ModernAssessmentAcc
     team_id: string | null;
     date_limit: Date | null;
   };
-  groupWork: boolean | null;
 }
 
 export async function resolveModernAssessmentInstanceAccess({
   assessmentInstance,
-  groupWork,
   ...assessmentInput
 }: ModernAssessmentInstanceAccessInput): Promise<
   SprocAuthzAssessmentInstance & { show_before_release: boolean }
 > {
   const assessmentResult = await resolveModernAssessmentAccess(assessmentInput);
 
-  const { authzData, reqDate } = assessmentInput;
+  const { assessment, authzData, reqDate } = assessmentInput;
 
   const timeLimitExpired =
     assessmentInstance.date_limit != null && assessmentInstance.date_limit <= reqDate;
@@ -125,8 +121,8 @@ export async function resolveModernAssessmentInstanceAccess({
   // For group work, check that the user is in an active group matching
   // the instance's team. For individual work, check that the user_id matches.
   let ownsInstance: boolean;
-  if (groupWork && assessmentInstance.team_id != null) {
-    const userGroupId = await getGroupId(assessmentInput.assessment.id, authzData.user.id);
+  if (assessment.team_work && assessmentInstance.team_id != null) {
+    const userGroupId = await getGroupId(assessment.id, authzData.user.id);
     ownsInstance = userGroupId != null && idsEqual(userGroupId, assessmentInstance.team_id);
   } else {
     ownsInstance = assessmentInstance.user_id === authzData.user.id;
@@ -158,7 +154,6 @@ interface ModernAssessmentAccessBatchInput {
   userId: string;
   authzData: AuthzDataForAccessControl;
   reqDate: Date;
-  displayTimezone: string;
 }
 
 export async function resolveModernAssessmentAccessBatch({
@@ -166,7 +161,6 @@ export async function resolveModernAssessmentAccessBatch({
   userId,
   authzData,
   reqDate,
-  displayTimezone,
 }: ModernAssessmentAccessBatchInput): Promise<
   Map<string, SprocAuthzAssessment & { show_before_release: boolean }>
 > {
@@ -185,7 +179,7 @@ export async function resolveModernAssessmentAccessBatch({
       rules,
       student,
       date: reqDate,
-      displayTimezone,
+      displayTimezone: courseInstance.display_timezone,
       authzMode: authzData.mode ?? null,
       courseRole: authzData.course_role ?? 'None',
       courseInstanceRole: authzData.course_instance_role ?? 'None',
