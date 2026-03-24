@@ -48,11 +48,7 @@ router.get(
         return {
           ...row,
           authorized: result.authorized,
-          // The coalesce is dead code: every path through resolveAccessControl
-          // returns a non-null creditDateString (either a formatted string or 'None').
-          // The type is `string | null` but null is never produced in practice.
-          // TODO: remove the coalesce and tighten the type to `string`.
-          credit_date_string: result.credit_date_string ?? row.credit_date_string,
+          credit_date_string: result.credit_date_string ?? 'None',
           active: result.active,
           show_closed_assessment_score: result.show_closed_assessment_score,
           list_before_release: result.list_before_release,
