@@ -46,7 +46,7 @@ Frequently used packages:
 
 When working on a task, you should typecheck / lint / format individual files as you go. When you are done, you should typecheck / lint / format all changed files.
 
-Run `make format-changed` from the root directory to format all changed files (staged + unstaged + untracked) compared to HEAD. This is useful for formatting all your work-in-progress changes.
+Run `make format-changed` from the root directory to format all files changed on the current branch compared to the default branch, including committed, staged, unstaged, and untracked changes.
 
 ### TypeScript
 
