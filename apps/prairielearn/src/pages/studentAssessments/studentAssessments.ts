@@ -48,6 +48,8 @@ router.get(
         return {
           ...row,
           authorized: result.authorized,
+          // Fall back to the legacy SQL-computed credit string if the modern resolver
+          // returns null (e.g., when the assessment has no date-based access rules).
           credit_date_string: result.credit_date_string ?? row.credit_date_string,
           active: result.active,
           show_closed_assessment_score: result.show_closed_assessment_score,

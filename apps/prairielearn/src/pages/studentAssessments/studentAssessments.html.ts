@@ -110,7 +110,7 @@ export function StudentAssessments({
                     </td>
                     <td class="text-center align-middle">
                       ${row.list_before_release
-                        ? html`<span class="text-muted">Opens soon</span>`
+                        ? html`<span class="text-muted">Not yet open</span>`
                         : row.credit_date_string === 'None'
                           ? ''
                           : row.assessment_instance_open !== false

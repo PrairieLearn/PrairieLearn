@@ -19,7 +19,7 @@ interface MainDateControlFormProps {
 
 export function MainDateControlForm({
   title = 'Date control',
-  description = 'Control access and credit to your exam based on a schedule',
+  description = 'Control access and credit to your assessment based on a schedule',
 }: MainDateControlFormProps) {
   const { register } = useFormContext<AccessControlFormData>();
 
