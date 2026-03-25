@@ -191,8 +191,7 @@ function prepareRuleRow(
     .map((label) => studentLabelIdByName.get(label))
     .filter((id): id is string => id !== undefined);
 
-  const targetType: 'none' | 'student_label' =
-    studentLabelIds.length > 0 ? 'student_label' : 'none';
+  const targetType: 'none' | 'student_label' = isMainRule ? 'none' : 'student_label';
 
   const ruleRow = JSON.stringify({
     assessment_id: assessmentId,

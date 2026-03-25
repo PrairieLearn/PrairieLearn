@@ -1214,7 +1214,13 @@ export function validateAccessControlArray({
       );
     }
 
-    errors.push(...validateRuleDateOrdering(rule), ...validateRuleCreditMonotonicity(rule));
+    const dateErrors = validateRuleDateOrdering(rule);
+    errors.push(...dateErrors);
+    // Credit monotonicity assumes deadlines are chronological; skip if dates
+    // are out of order to avoid misleading "not monotonically decreasing" errors.
+    if (dateErrors.length === 0) {
+      errors.push(...validateRuleCreditMonotonicity(rule));
+    }
   }
 
   return { errors, warnings };
