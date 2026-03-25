@@ -19,6 +19,7 @@ import {
   AssessmentSchema,
   CourseInstanceSchema,
 } from '../../lib/db-types.js';
+import { AssessmentAccessControlEditor, getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectOrInsertUserByUid } from '../../models/user.js';
@@ -2077,5 +2078,252 @@ describe('Access control syncing', () => {
       assert.isOk(main);
       assert.deepEqual(main.prairietestExams, [{ uuid: TEST_EXAM_UUID, readOnly: true }]);
     });
+  });
+});
+
+describe('AssessmentAccessControlEditor', () => {
+  beforeAll(helperDb.before);
+  afterAll(helperDb.after);
+
+  beforeEach(async () => {
+    await helperDb.resetDatabase();
+    await features.enable('enhanced-access-control');
+    await sqldb.executeRow(sql.insert_pt_exam, { uuid: TEST_EXAM_UUID });
+  });
+
+  function getAssessmentPath(courseDir: string) {
+    return path.join(
+      courseDir,
+      'courseInstances',
+      util.COURSE_INSTANCE_ID,
+      'assessments',
+      util.ASSESSMENT_ID,
+      'infoAssessment.json',
+    );
+  }
+
+  function makeFakeLocals(courseDir: string) {
+    return {
+      authz_data: { has_course_permission_edit: true, authn_user: { id: '1' } },
+      course: { id: '1', path: courseDir, example_course: false } as any,
+      user: {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+        uid: 'test@example.com',
+      } as any,
+    };
+  }
+
+  it('writes access control rules to infoAssessment.json', async () => {
+    const courseData = util.getCourseData();
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+
+    const assessmentPath = getAssessmentPath(courseDir);
+    const origHash = (await getOriginalHash(assessmentPath))!;
+
+    const rules: AccessControlJsonInput[] = [
+      makeAccessControlRule({ listBeforeRelease: true }),
+      makeAccessControlRule({
+        labels: ['Section A'],
+        dateControl: { dueDate: '2024-04-01T23:59:00' },
+      }),
+    ];
+
+    const editor = new AssessmentAccessControlEditor({
+      locals: makeFakeLocals(courseDir),
+      assessmentPath,
+      assessmentTid: util.ASSESSMENT_ID,
+      accessControlRules: rules,
+      origHash,
+    });
+
+    const result = await editor.write();
+    assert.isNotNull(result);
+    assert.deepEqual(result.pathsToAdd, [assessmentPath]);
+
+    const fileContent = await fs.readFile(assessmentPath, 'utf8');
+    const parsed = JSON.parse(fileContent);
+
+    assert.isArray(parsed.accessControl);
+    assert.equal(parsed.accessControl.length, 2);
+    assert.equal(parsed.accessControl[0].listBeforeRelease, true);
+    assert.deepEqual(parsed.accessControl[1].labels, ['Section A']);
+    assert.equal(parsed.accessControl[1].dateControl.dueDate, '2024-04-01T23:59:00');
+  });
+
+  it('preserves other keys in infoAssessment.json', async () => {
+    const courseData = util.getCourseData();
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+
+    const assessmentPath = getAssessmentPath(courseDir);
+    const origContent = await fs.readFile(assessmentPath, 'utf8');
+    const origParsed = JSON.parse(origContent);
+    const origHash = (await getOriginalHash(assessmentPath))!;
+
+    const rules: AccessControlJsonInput[] = [makeAccessControlRule()];
+    const editor = new AssessmentAccessControlEditor({
+      locals: makeFakeLocals(courseDir),
+      assessmentPath,
+      assessmentTid: util.ASSESSMENT_ID,
+      accessControlRules: rules,
+      origHash,
+    });
+
+    await editor.write();
+
+    const fileContent = await fs.readFile(assessmentPath, 'utf8');
+    const parsed = JSON.parse(fileContent);
+
+    assert.equal(parsed.uuid, origParsed.uuid);
+    assert.equal(parsed.title, origParsed.title);
+    assert.equal(parsed.type, origParsed.type);
+    assert.isArray(parsed.zones);
+  });
+
+  it('returns null when no changes are made', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+      util.ASSESSMENT_ID
+    ].accessControl = [makeAccessControlRule()];
+
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    const assessmentPath = getAssessmentPath(courseDir);
+
+    // First write to normalize formatting (prettier)
+    const origHash1 = (await getOriginalHash(assessmentPath))!;
+    const rules: AccessControlJsonInput[] = [makeAccessControlRule()];
+    const editor1 = new AssessmentAccessControlEditor({
+      locals: makeFakeLocals(courseDir),
+      assessmentPath,
+      assessmentTid: util.ASSESSMENT_ID,
+      accessControlRules: rules,
+      origHash: origHash1,
+    });
+    await editor1.write();
+
+    // Second write with same rules should return null (no-op)
+    const origHash2 = (await getOriginalHash(assessmentPath))!;
+    const editor2 = new AssessmentAccessControlEditor({
+      locals: makeFakeLocals(courseDir),
+      assessmentPath,
+      assessmentTid: util.ASSESSMENT_ID,
+      accessControlRules: rules,
+      origHash: origHash2,
+    });
+
+    const result = await editor2.write();
+    assert.isNull(result);
+  });
+
+  it('throws on hash mismatch (concurrent edit detection)', async () => {
+    const courseData = util.getCourseData();
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    const assessmentPath = getAssessmentPath(courseDir);
+
+    const origHash = (await getOriginalHash(assessmentPath))!;
+
+    // Simulate another user modifying the file
+    const content = await fs.readFile(assessmentPath, 'utf8');
+    const parsed = JSON.parse(content);
+    parsed.title = 'Modified by another user';
+    await fs.writeFile(assessmentPath, JSON.stringify(parsed, null, 2) + '\n');
+
+    const rules: AccessControlJsonInput[] = [makeAccessControlRule()];
+    const editor = new AssessmentAccessControlEditor({
+      locals: makeFakeLocals(courseDir),
+      assessmentPath,
+      assessmentTid: util.ASSESSMENT_ID,
+      accessControlRules: rules,
+      origHash,
+    });
+
+    try {
+      await editor.write();
+      assert.fail('Expected write() to throw');
+    } catch (err: any) {
+      assert.match(err.message, /Another user made changes/);
+    }
+  });
+
+  it('omits listBeforeRelease: false and empty objects from output', async () => {
+    const courseData = util.getCourseData();
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    const assessmentPath = getAssessmentPath(courseDir);
+    const origHash = (await getOriginalHash(assessmentPath))!;
+
+    const rules: AccessControlJsonInput[] = [
+      { listBeforeRelease: false, dateControl: {}, afterComplete: {} },
+    ];
+
+    const editor = new AssessmentAccessControlEditor({
+      locals: makeFakeLocals(courseDir),
+      assessmentPath,
+      assessmentTid: util.ASSESSMENT_ID,
+      accessControlRules: rules,
+      origHash,
+    });
+
+    await editor.write();
+
+    const fileContent = await fs.readFile(assessmentPath, 'utf8');
+    const parsed = JSON.parse(fileContent);
+
+    assert.isArray(parsed.accessControl);
+    assert.equal(parsed.accessControl.length, 1);
+    assert.notProperty(parsed.accessControl[0], 'listBeforeRelease');
+    assert.notProperty(parsed.accessControl[0], 'dateControl');
+    assert.notProperty(parsed.accessControl[0], 'afterComplete');
+  });
+
+  it('writes to disk and syncs correctly to DB', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+      util.ASSESSMENT_ID
+    ].accessControl = [makeAccessControlRule()];
+
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
+
+    const assessmentPath = getAssessmentPath(courseDir);
+    const origHash = (await getOriginalHash(assessmentPath))!;
+
+    const newRules: AccessControlJsonInput[] = [
+      makeAccessControlRule({ dateControl: { durationMinutes: 45 } }),
+      makeAccessControlRule({
+        labels: ['Group A'],
+        dateControl: { dueDate: '2024-05-01T23:59:00' },
+      }),
+    ];
+
+    const editor = new AssessmentAccessControlEditor({
+      locals: makeFakeLocals(courseDir),
+      assessmentPath,
+      assessmentTid: util.ASSESSMENT_ID,
+      accessControlRules: newRules,
+      origHash,
+    });
+
+    await editor.write();
+
+    // Add a student label to the course instance config before re-syncing
+    // so that the label-targeted rule can be synced successfully.
+    const ciPath = path.join(
+      courseDir,
+      'courseInstances',
+      util.COURSE_INSTANCE_ID,
+      'infoCourseInstance.json',
+    );
+    const ciContent = JSON.parse(await fs.readFile(ciPath, 'utf8'));
+    ciContent.studentLabels = [{ uuid: crypto.randomUUID(), name: 'Group A', color: 'blue1' }];
+    await fs.writeFile(ciPath, JSON.stringify(ciContent, null, 2) + '\n');
+
+    await util.syncCourseData(courseDir);
+
+    const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+    assert.equal(syncedRules.length, 2);
+    assert.equal(syncedRules[0].number, 0);
+    assert.equal(syncedRules[0].date_control_duration_minutes, 45);
+    assert.equal(syncedRules[1].number, 1);
+    assert.equal(syncedRules[1].target_type, 'student_label');
   });
 });
