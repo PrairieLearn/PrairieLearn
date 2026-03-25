@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
@@ -45,6 +45,7 @@ export function AdministratorCourseFormFields({
     register,
     watch,
     setValue,
+    getValues,
     formState: { errors },
   } = useFormContext<CourseFormFieldValues>();
 
@@ -61,14 +62,22 @@ export function AdministratorCourseFormFields({
   const selectedInstitution = institutions.find((i) => i.id === institutionId);
   const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
 
+  const syncRepoFromShortName = useCallback(
+    (currentShortName: string) => {
+      if (!currentShortName) return;
+      if (institutionId && !prefixData) return;
+      if (isDefaultInstitution) return;
+      const newRepoShortName = buildRepoShortName(prefixData?.prefix, currentShortName);
+      setValue('path', `${coursesRoot}/${newRepoShortName}`);
+      setValue('repository_short_name', newRepoShortName);
+    },
+    [institutionId, prefixData, isDefaultInstitution, coursesRoot, setValue],
+  );
+
+  // Sync repo name when institution/prefix changes.
   useEffect(() => {
-    if (!shortName) return;
-    if (institutionId && !prefixData) return;
-    if (isDefaultInstitution) return;
-    const newRepoShortName = buildRepoShortName(prefixData?.prefix, shortName);
-    setValue('path', `${coursesRoot}/${newRepoShortName}`);
-    setValue('repository_short_name', newRepoShortName);
-  }, [prefixData, shortName, institutionId, isDefaultInstitution, coursesRoot, setValue]);
+    syncRepoFromShortName(getValues('short_name'));
+  }, [syncRepoFromShortName, getValues]);
 
   const repoFormatValid =
     !repositoryShortName || /^pl-[a-z0-9]+-[a-z0-9]+$/.test(repositoryShortName);
@@ -91,11 +100,12 @@ export function AdministratorCourseFormFields({
 
   useEffect(() => {
     if (!suggestPrefixQuery.data?.prefix) return;
-    if (!shortName.trim()) return;
-    const newRepoShortName = buildRepoShortName(suggestPrefixQuery.data.prefix, shortName);
+    const currentShortName = getValues('short_name');
+    if (!currentShortName.trim()) return;
+    const newRepoShortName = buildRepoShortName(suggestPrefixQuery.data.prefix, currentShortName);
     setValue('path', `${coursesRoot}/${newRepoShortName}`);
     setValue('repository_short_name', newRepoShortName);
-  }, [suggestPrefixQuery.data, shortName, coursesRoot, setValue]);
+  }, [suggestPrefixQuery.data, coursesRoot, setValue, getValues]);
 
   return (
     <>
@@ -157,7 +167,10 @@ export function AdministratorCourseFormFields({
           placeholder="XC 101"
           aria-invalid={errors.short_name ? true : undefined}
           aria-errormessage={errors.short_name ? 'courseFormShortName-error' : undefined}
-          {...register('short_name', { required: 'Enter a short name' })}
+          {...register('short_name', {
+            required: 'Enter a short name',
+            onChange: (e) => syncRepoFromShortName(e.target.value),
+          })}
         />
         {errors.short_name && (
           <div id="courseFormShortName-error" className="invalid-feedback">
