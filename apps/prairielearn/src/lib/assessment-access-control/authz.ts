@@ -15,8 +15,7 @@ import { idsEqual } from '../id.js';
 import {
   selectAccessControlRulesForAssessment,
   selectAccessControlRulesForCourseInstance,
-  selectPrairieTestReservations,
-  selectStudentContext,
+  selectUserAccessContext,
 } from './data.js';
 import { type AccessControlResolverResult, resolveAccessControl } from './resolver.js';
 
@@ -69,17 +68,14 @@ export async function resolveModernAssessmentAccess({
   authzData,
   reqDate,
 }: ModernAssessmentAccessInput): Promise<SprocAuthzAssessment> {
-  const [rules, student, prairieTestReservations] = await Promise.all([
+  const [rules, { enrollment, prairieTestReservations }] = await Promise.all([
     selectAccessControlRulesForAssessment(assessment),
-    selectStudentContext(userId, courseInstance),
-    authzData.mode === 'Exam'
-      ? selectPrairieTestReservations(userId, reqDate)
-      : Promise.resolve([]),
+    selectUserAccessContext(userId, courseInstance, reqDate),
   ]);
 
   const result = resolveAccessControl({
     rules,
-    student,
+    enrollment,
     date: reqDate,
     displayTimezone: courseInstance.display_timezone,
     authzMode: authzData.mode ?? null,
@@ -175,12 +171,9 @@ export async function resolveModernAssessmentAccessBatch({
   authzData,
   reqDate,
 }: ModernAssessmentAccessBatchInput): Promise<Map<string, SprocAuthzAssessment>> {
-  const [allRules, student, prairieTestReservations] = await Promise.all([
+  const [allRules, { enrollment, prairieTestReservations }] = await Promise.all([
     selectAccessControlRulesForCourseInstance(courseInstance),
-    selectStudentContext(userId, courseInstance),
-    authzData.mode === 'Exam'
-      ? selectPrairieTestReservations(userId, reqDate)
-      : Promise.resolve([]),
+    selectUserAccessContext(userId, courseInstance, reqDate),
   ]);
 
   const results = new Map<string, SprocAuthzAssessment>();
@@ -188,7 +181,7 @@ export async function resolveModernAssessmentAccessBatch({
   for (const [assessmentId, rules] of allRules) {
     const result = resolveAccessControl({
       rules,
-      student,
+      enrollment,
       date: reqDate,
       displayTimezone: courseInstance.display_timezone,
       authzMode: authzData.mode ?? null,
