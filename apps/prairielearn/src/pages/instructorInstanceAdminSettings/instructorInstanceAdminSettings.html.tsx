@@ -11,6 +11,7 @@ import type { NavPage } from '../../components/Navbar.types.js';
 import { CourseInstanceShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import type { PageContext } from '../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import { getCourseInstanceSettingsUrl } from '../../lib/client/url.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
@@ -18,9 +19,12 @@ import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 import { CopyCourseInstanceModal } from './components/CopyCourseInstanceModal.js';
 import { SelfEnrollmentSettings } from './components/SelfEnrollmentSettings.js';
 import type { SettingsFormValues } from './instructorInstanceAdminSettings.types.js';
+import { createSettingsTrpcClient } from './utils/trpc-client.js';
+import { TRPCProvider } from './utils/trpc-context.js';
 
 export function InstructorInstanceAdminSettings({
   csrfToken,
+  trpcCsrfToken,
   urlPrefix,
   navPage,
   canEdit,
@@ -39,6 +43,7 @@ export function InstructorInstanceAdminSettings({
   isAdministrator,
 }: {
   csrfToken: string;
+  trpcCsrfToken: string;
   urlPrefix: string;
   navPage: NavPage;
   canEdit: boolean;
@@ -59,6 +64,11 @@ export function InstructorInstanceAdminSettings({
   const [queryClient] = useState(() => new QueryClient());
 
   const [showCopyModal, setShowCopyModal] = useState(false);
+
+  const [trpcClient] = useState(() => {
+    const settingsUrl = getCourseInstanceSettingsUrl(courseInstance.id);
+    return createSettingsTrpcClient(trpcCsrfToken, `${settingsUrl}/trpc`);
+  });
 
   const shortNames = new Set(names.map((name) => name.short_name));
 
@@ -125,6 +135,7 @@ export function InstructorInstanceAdminSettings({
                 id="ciid"
                 aria-invalid={errors.ciid ? 'true' : 'false'}
                 disabled={!canEdit}
+                defaultValue={defaultValues.ciid}
                 required
                 {...register('ciid', {
                   required: 'Short name is required',
@@ -157,6 +168,7 @@ export function InstructorInstanceAdminSettings({
                 id="long_name"
                 disabled={!canEdit}
                 aria-describedby="long_name-help"
+                defaultValue={defaultValues.long_name}
                 required
                 {...register('long_name')}
                 name="long_name"
@@ -172,6 +184,7 @@ export function InstructorInstanceAdminSettings({
               <Form.Select
                 id="display_timezone"
                 disabled={!canEdit}
+                defaultValue={defaultValues.display_timezone}
                 {...register('display_timezone')}
                 name="display_timezone"
               >
@@ -200,6 +213,7 @@ export function InstructorInstanceAdminSettings({
               <Form.Select
                 id="group_assessments_by"
                 disabled={!canEdit}
+                defaultValue={defaultValues.group_assessments_by}
                 {...register('group_assessments_by')}
                 name="group_assessments_by"
               >
@@ -296,14 +310,16 @@ export function InstructorInstanceAdminSettings({
           </div>
         )}
 
-        <CopyCourseInstanceModal
-          show={showCopyModal}
-          csrfToken={csrfToken}
-          courseShortName={course.short_name}
-          courseInstance={courseInstance}
-          isAdministrator={isAdministrator}
-          onHide={() => setShowCopyModal(false)}
-        />
+        <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+          <CopyCourseInstanceModal
+            show={showCopyModal}
+            csrfToken={csrfToken}
+            courseShortName={course.short_name}
+            courseInstance={courseInstance}
+            isAdministrator={isAdministrator}
+            onHide={() => setShowCopyModal(false)}
+          />
+        </TRPCProvider>
       </div>
     </QueryClientProviderDebug>
   );
