@@ -188,12 +188,12 @@ export function jsonToMainRuleFormData(
     prairieTestExams: json.integrations?.prairieTest?.exams ?? [],
     questionVisibility: {
       hideQuestions: ac?.hideQuestions ?? false,
-      showAgainDate: toLocalDatetimeValue(ac?.showQuestionsAgainDate, displayTimezone),
-      hideAgainDate: toLocalDatetimeValue(ac?.hideQuestionsAgainDate, displayTimezone),
+      showAgainDate: toLocalDatetimeValue(ac?.showQuestionsAgainDate, displayTimezone) ?? undefined,
+      hideAgainDate: toLocalDatetimeValue(ac?.hideQuestionsAgainDate, displayTimezone) ?? undefined,
     },
     scoreVisibility: {
       hideScore: ac?.hideScore ?? false,
-      showAgainDate: toLocalDatetimeValue(ac?.showScoreAgainDate, displayTimezone),
+      showAgainDate: toLocalDatetimeValue(ac?.showScoreAgainDate, displayTimezone) ?? undefined,
     },
   };
 }
@@ -278,8 +278,8 @@ export function jsonToOverrideFormData(
   if (ac?.hideQuestions !== undefined) {
     questionVisibility = {
       hideQuestions: ac.hideQuestions,
-      showAgainDate: toLocalDatetimeValue(ac.showQuestionsAgainDate, displayTimezone),
-      hideAgainDate: toLocalDatetimeValue(ac.hideQuestionsAgainDate, displayTimezone),
+      showAgainDate: toLocalDatetimeValue(ac.showQuestionsAgainDate, displayTimezone) ?? undefined,
+      hideAgainDate: toLocalDatetimeValue(ac.hideQuestionsAgainDate, displayTimezone) ?? undefined,
     };
     overriddenFields.push('questionVisibility');
   }
@@ -288,7 +288,7 @@ export function jsonToOverrideFormData(
   if (ac?.hideScore !== undefined) {
     scoreVisibility = {
       hideScore: ac.hideScore,
-      showAgainDate: toLocalDatetimeValue(ac.showScoreAgainDate, displayTimezone),
+      showAgainDate: toLocalDatetimeValue(ac.showScoreAgainDate, displayTimezone) ?? undefined,
     };
     overriddenFields.push('scoreVisibility');
   }
