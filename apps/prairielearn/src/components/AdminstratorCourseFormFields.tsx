@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
@@ -62,22 +62,21 @@ export function AdministratorCourseFormFields({
   const selectedInstitution = institutions.find((i) => i.id === institutionId);
   const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
 
-  const syncRepoFromShortName = useCallback(
-    (currentShortName: string) => {
-      if (!currentShortName) return;
-      if (institutionId && !prefixData) return;
-      if (isDefaultInstitution) return;
-      const newRepoShortName = buildRepoShortName(prefixData?.prefix, currentShortName);
-      setValue('path', `${coursesRoot}/${newRepoShortName}`);
-      setValue('repository_short_name', newRepoShortName);
-    },
-    [institutionId, prefixData, isDefaultInstitution, coursesRoot, setValue],
-  );
+  const syncRepoFromShortName = (currentShortName: string) => {
+    if (!currentShortName) return;
+    if (institutionId && !prefixData) return;
+    if (isDefaultInstitution) return;
+    const newRepoShortName = buildRepoShortName(prefixData?.prefix, currentShortName);
+    setValue('path', `${coursesRoot}/${newRepoShortName}`);
+    setValue('repository_short_name', newRepoShortName);
+  };
 
   // Sync repo name when institution/prefix changes.
-  useEffect(() => {
-    syncRepoFromShortName(getValues('short_name'));
-  }, [syncRepoFromShortName, getValues]);
+  useEffect(
+    () => syncRepoFromShortName(getValues('short_name')),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- syncRepoFromShortName closes over these same deps
+    [institutionId, prefixData, isDefaultInstitution, coursesRoot],
+  );
 
   const repoFormatValid =
     !repositoryShortName || /^pl-[a-z0-9]+-[a-z0-9]+$/.test(repositoryShortName);
@@ -97,15 +96,6 @@ export function AdministratorCourseFormFields({
     }),
     enabled: false,
   });
-
-  useEffect(() => {
-    if (!suggestPrefixQuery.data?.prefix) return;
-    const currentShortName = getValues('short_name');
-    if (!currentShortName.trim()) return;
-    const newRepoShortName = buildRepoShortName(suggestPrefixQuery.data.prefix, currentShortName);
-    setValue('path', `${coursesRoot}/${newRepoShortName}`);
-    setValue('repository_short_name', newRepoShortName);
-  }, [suggestPrefixQuery.data, coursesRoot, setValue, getValues]);
 
   return (
     <>
@@ -328,7 +318,15 @@ export function AdministratorCourseFormFields({
                   !aiSecretsConfigured
                 }
                 aria-busy={suggestPrefixQuery.isFetching}
-                onClick={() => suggestPrefixQuery.refetch()}
+                onClick={async () => {
+                  const result = await suggestPrefixQuery.refetch();
+                  if (!result.data?.prefix) return;
+                  const currentShortName = getValues('short_name');
+                  if (!currentShortName.trim()) return;
+                  const newRepoShortName = buildRepoShortName(result.data.prefix, currentShortName);
+                  setValue('path', `${coursesRoot}/${newRepoShortName}`);
+                  setValue('repository_short_name', newRepoShortName);
+                }}
               >
                 {suggestPrefixQuery.isFetching ? (
                   <>

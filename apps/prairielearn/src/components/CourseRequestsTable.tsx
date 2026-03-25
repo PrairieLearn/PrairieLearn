@@ -107,169 +107,174 @@ export function CourseRequestsTable({
 
 CourseRequestsTable.displayName = 'CourseRequestsTable';
 
-const CourseRequestTableRow = memo(({
-  row,
-  showAll,
-  urlPrefix,
-  onApprove,
-}: {
-  row: CourseRequestRow;
-  showAll: boolean;
-  urlPrefix: string;
-  onApprove: (row: CourseRequestRow) => void;
-}) => {
-  const [noteOpen, setNoteOpen] = useState(Boolean(row.note));
-  const [jobsOpen, setJobsOpen] = useState(false);
-  const [showDenyPopover, setShowDenyPopover] = useState(false);
+const CourseRequestTableRow = memo(
+  ({
+    row,
+    showAll,
+    urlPrefix,
+    onApprove,
+  }: {
+    row: CourseRequestRow;
+    showAll: boolean;
+    urlPrefix: string;
+    onApprove: (row: CourseRequestRow) => void;
+  }) => {
+    const [noteOpen, setNoteOpen] = useState(Boolean(row.note));
+    const [jobsOpen, setJobsOpen] = useState(false);
+    const [showDenyPopover, setShowDenyPopover] = useState(false);
 
-  return (
-    <>
-      <tr>
-        <td className="align-middle">{row.created_at.toISOString()}</td>
-        <td className="align-middle">
-          {row.short_name}: {row.title}
-        </td>
-        <td className="align-middle">
-          <EmptyState value={row.institution} label="No institution" />
-        </td>
-        <td className="align-middle">
-          {row.first_name || row.last_name ? (
-            <>
-              {row.first_name} {row.last_name} {row.work_email ? `(${row.work_email})` : ''}
-            </>
-          ) : (
-            <span className="text-muted fst-italic">No contact info</span>
-          )}
-        </td>
-        <td className="align-middle">
-          {row.user_name} ({row.user_uid})
-        </td>
-        <td className="align-middle">
-          <EmptyState value={row.github_user} label="No GitHub user" />
-        </td>
-        <td className="align-middle">
-          <EmptyState value={row.referral_source} label="No referral source" />
-        </td>
-        <td className="align-middle">
-          <CourseRequestStatusIcon status={row.approved_status} />
-        </td>
-        {showAll && (
+    return (
+      <>
+        <tr>
+          <td className="align-middle">{row.created_at.toISOString()}</td>
           <td className="align-middle">
-            {row.approved_status !== 'pending' &&
-              (row.approved_by_name ?? 'Automatically Approved')}
+            {row.short_name}: {row.title}
           </td>
-        )}
-        <td className="align-middle py-1">
-          {row.approved_status !== 'approved' && (
-            <div className="d-flex flex-wrap gap-1">
-              <OverlayTrigger
-                trigger="click"
-                placement="auto"
-                popover={{
-                  header: 'Deny course request',
-                  body: (
-                    <CourseRequestDenyForm
-                      request={row}
-                      onCancel={() => setShowDenyPopover(false)}
-                    />
-                  ),
-                }}
-                show={showDenyPopover}
-                rootClose
-                onToggle={setShowDenyPopover}
-              >
-                <button type="button" className="btn btn-sm btn-danger text-nowrap">
-                  <i className="fa fa-times" aria-hidden="true" /> Deny
-                </button>
-              </OverlayTrigger>
-              <button
-                type="button"
-                className="btn btn-sm btn-success text-nowrap"
-                onClick={() => onApprove(row)}
-              >
-                <i className="fa fa-check" aria-hidden="true" /> Approve
-              </button>
-            </div>
-          )}
-        </td>
-        <td className="align-middle">
-          <Dropdown>
-            <Dropdown.Toggle
-              variant="secondary"
-              size="sm"
-              className="btn-xs"
-              aria-label={`Show details for ${row.short_name}`}
-            >
-              Show details
-            </Dropdown.Toggle>
-            <Dropdown.Menu popperConfig={{ strategy: 'fixed' }} renderOnMount>
-              <Dropdown.Item as="button" onClick={() => setNoteOpen(!noteOpen)}>
-                {noteOpen ? 'Close note' : 'Edit note'}
-              </Dropdown.Item>
-              {row.jobs.length > 0 && (
-                <Dropdown.Item as="button" onClick={() => setJobsOpen(!jobsOpen)}>
-                  {jobsOpen ? 'Hide jobs' : 'Show jobs'}
-                </Dropdown.Item>
-              )}
-            </Dropdown.Menu>
-          </Dropdown>
-        </td>
-      </tr>
-      {noteOpen && (
-        <tr>
-          <td colSpan={showAll ? 11 : 10} className="p-0">
-            <CourseRequestEditNoteForm request={row} onCancel={() => setNoteOpen(false)} />
+          <td className="align-middle">
+            <EmptyState value={row.institution} label="No institution" />
           </td>
-        </tr>
-      )}
-      {row.jobs.length > 0 && (
-        <tr>
-          <td colSpan={showAll ? 11 : 10} className="p-0">
-            {jobsOpen && (
-              <table className="table table-sm table-active mb-0" aria-label="Course request jobs">
-                <thead>
-                  <tr>
-                    <th>Number</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                    <th>User</th>
-                    <th>Status</th>
-                    <th>
-                      <span className="visually-hidden">Details</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...row.jobs].reverse().map((job) => {
-                    return (
-                      <tr key={job.id}>
-                        <td>{job.number}</td>
-                        <td>{job.start_date.toISOString()}</td>
-                        <td>{job.finish_date?.toISOString()}</td>
-                        <td>{job.authn_user_name}</td>
-                        <td>
-                          <JobStatus status={job.status} />
-                        </td>
-                        <td>
-                          <a
-                            href={`${urlPrefix}/administrator/jobSequence/${job.id}`}
-                            className="btn btn-xs btn-info float-end"
-                          >
-                            Details
-                          </a>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          <td className="align-middle">
+            {row.first_name || row.last_name ? (
+              <>
+                {row.first_name} {row.last_name} {row.work_email ? `(${row.work_email})` : ''}
+              </>
+            ) : (
+              <span className="text-muted fst-italic">No contact info</span>
             )}
           </td>
+          <td className="align-middle">
+            {row.user_name} ({row.user_uid})
+          </td>
+          <td className="align-middle">
+            <EmptyState value={row.github_user} label="No GitHub user" />
+          </td>
+          <td className="align-middle">
+            <EmptyState value={row.referral_source} label="No referral source" />
+          </td>
+          <td className="align-middle">
+            <CourseRequestStatusIcon status={row.approved_status} />
+          </td>
+          {showAll && (
+            <td className="align-middle">
+              {row.approved_status !== 'pending' &&
+                (row.approved_by_name ?? 'Automatically Approved')}
+            </td>
+          )}
+          <td className="align-middle py-1">
+            {row.approved_status !== 'approved' && (
+              <div className="d-flex flex-wrap gap-1">
+                <OverlayTrigger
+                  trigger="click"
+                  placement="auto"
+                  popover={{
+                    header: 'Deny course request',
+                    body: (
+                      <CourseRequestDenyForm
+                        request={row}
+                        onCancel={() => setShowDenyPopover(false)}
+                      />
+                    ),
+                  }}
+                  show={showDenyPopover}
+                  rootClose
+                  onToggle={setShowDenyPopover}
+                >
+                  <button type="button" className="btn btn-sm btn-danger text-nowrap">
+                    <i className="fa fa-times" aria-hidden="true" /> Deny
+                  </button>
+                </OverlayTrigger>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-success text-nowrap"
+                  onClick={() => onApprove(row)}
+                >
+                  <i className="fa fa-check" aria-hidden="true" /> Approve
+                </button>
+              </div>
+            )}
+          </td>
+          <td className="align-middle">
+            <Dropdown>
+              <Dropdown.Toggle
+                variant="secondary"
+                size="sm"
+                className="btn-xs"
+                aria-label={`Show details for ${row.short_name}`}
+              >
+                Show details
+              </Dropdown.Toggle>
+              <Dropdown.Menu popperConfig={{ strategy: 'fixed' }} renderOnMount>
+                <Dropdown.Item as="button" onClick={() => setNoteOpen(!noteOpen)}>
+                  {noteOpen ? 'Close note' : 'Edit note'}
+                </Dropdown.Item>
+                {row.jobs.length > 0 && (
+                  <Dropdown.Item as="button" onClick={() => setJobsOpen(!jobsOpen)}>
+                    {jobsOpen ? 'Hide jobs' : 'Show jobs'}
+                  </Dropdown.Item>
+                )}
+              </Dropdown.Menu>
+            </Dropdown>
+          </td>
         </tr>
-      )}
-    </>
-  );
-});
+        {noteOpen && (
+          <tr>
+            <td colSpan={showAll ? 11 : 10} className="p-0">
+              <CourseRequestEditNoteForm request={row} onCancel={() => setNoteOpen(false)} />
+            </td>
+          </tr>
+        )}
+        {row.jobs.length > 0 && (
+          <tr>
+            <td colSpan={showAll ? 11 : 10} className="p-0">
+              {jobsOpen && (
+                <table
+                  className="table table-sm table-active mb-0"
+                  aria-label="Course request jobs"
+                >
+                  <thead>
+                    <tr>
+                      <th>Number</th>
+                      <th>Start Date</th>
+                      <th>End Date</th>
+                      <th>User</th>
+                      <th>Status</th>
+                      <th>
+                        <span className="visually-hidden">Details</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...row.jobs].reverse().map((job) => {
+                      return (
+                        <tr key={job.id}>
+                          <td>{job.number}</td>
+                          <td>{job.start_date.toISOString()}</td>
+                          <td>{job.finish_date?.toISOString()}</td>
+                          <td>{job.authn_user_name}</td>
+                          <td>
+                            <JobStatus status={job.status} />
+                          </td>
+                          <td>
+                            <a
+                              href={`${urlPrefix}/administrator/jobSequence/${job.id}`}
+                              className="btn btn-xs btn-info float-end"
+                            >
+                              Details
+                            </a>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </td>
+          </tr>
+        )}
+      </>
+    );
+  },
+);
 
 function CourseRequestApproveModal({
   show,
