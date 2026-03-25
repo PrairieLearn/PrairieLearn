@@ -1,9 +1,9 @@
 {
-  "uuid": "a1b2c3d4-2222-4f7b-8c1d-2e5a6b9c0d1f",
+  "uuid": "f5b2c8d1-9a3e-4f7b-8c1d-2e5a6b9c0d1f",
   "type": "Homework",
-  "title": "Add student-label override",
+  "title": "Access control UI tests",
   "set": "Access Control Tests",
-  "number": "2",
+  "number": "1",
   "accessControl": [
     {
       "listBeforeRelease": true,
