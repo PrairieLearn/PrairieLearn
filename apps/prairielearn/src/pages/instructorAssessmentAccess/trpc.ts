@@ -27,6 +27,9 @@ import {
   type AccessControlJson,
   AccessControlJsonSchema,
   MAX_ACCESS_CONTROL_RULES,
+  MAX_ENROLLMENT_RULES,
+  validateRuleCreditMonotonicity,
+  validateRuleDateOrdering,
 } from '../../schemas/accessControl.js';
 import { syncAccessControl } from '../../sync/fromDisk/accessControl.js';
 
@@ -156,7 +159,31 @@ function formJsonToEnrollmentRuleData(
 // saves proactively so users get immediate feedback instead of a sync error.
 export const AccessControlJsonInputSchema = AccessControlJsonSchema.extend({
   id: z.string().optional(),
-}).strip();
+})
+  .strip()
+  .superRefine((rule, ctx) => {
+    const labels = rule.labels ?? [];
+    const seen = new Set<string>();
+    for (const label of labels) {
+      if (seen.has(label)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Duplicate student label: "${label}".`,
+          path: ['labels'],
+        });
+        break;
+      }
+      seen.add(label);
+    }
+
+    for (const error of validateRuleDateOrdering(rule)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: error, path: ['dateControl'] });
+    }
+
+    for (const error of validateRuleCreditMonotonicity(rule)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: error, path: ['dateControl'] });
+    }
+  });
 
 const EnrollmentRuleInputSchema = z.object({
   id: z.string().optional(),
@@ -169,7 +196,7 @@ const saveAllRules = t.procedure
   .input(
     z.object({
       rules: z.array(AccessControlJsonInputSchema).max(MAX_ACCESS_CONTROL_RULES),
-      enrollmentRules: z.array(EnrollmentRuleInputSchema).optional(),
+      enrollmentRules: z.array(EnrollmentRuleInputSchema).max(MAX_ENROLLMENT_RULES).optional(),
       origHash: z.string(),
     }),
   )
@@ -185,10 +212,24 @@ const saveAllRules = t.procedure
       });
     }
 
+    if (rules.slice(1).some((rule) => rule.integrations != null)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'integrations can only be specified on the main rule.',
+      });
+    }
+
     if (enrollmentRules?.some((rule) => rule.ruleJson.listBeforeRelease !== undefined)) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'listBeforeRelease can only be specified on the main rule.',
+      });
+    }
+
+    if (enrollmentRules?.some((rule) => rule.ruleJson.integrations != null)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'integrations can only be specified on the main rule.',
       });
     }
 

@@ -1409,7 +1409,7 @@ describe('Access control syncing', () => {
           dueDate: '2024-03-21T23:59:00',
           earlyDeadlines: [
             { date: '2024-03-18T23:59:00', credit: 120 },
-            { date: '2024-03-18T23:59:00', credit: 80 },
+            { date: '2024-03-18T23:59:00', credit: 110 },
           ],
         },
       });

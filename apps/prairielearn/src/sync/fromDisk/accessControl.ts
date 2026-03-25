@@ -3,7 +3,12 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { StudentLabelSchema } from '../../lib/db-types.js';
-import { type AccessControlJson, MAX_ACCESS_CONTROL_RULES } from '../../schemas/accessControl.js';
+import {
+  type AccessControlJson,
+  MAX_ACCESS_CONTROL_RULES,
+  validateRuleCreditMonotonicity,
+  validateRuleDateOrdering,
+} from '../../schemas/accessControl.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -100,6 +105,12 @@ function validateAssessmentRules(
       }
       lateDates.add(d.date);
     }
+
+    const dateErrors = validateRuleDateOrdering(rule);
+    if (dateErrors.length > 0) return dateErrors[0];
+
+    const creditErrors = validateRuleCreditMonotonicity(rule);
+    if (creditErrors.length > 0) return creditErrors[0];
   }
 
   const assessmentInvalidUuids: string[] = [];

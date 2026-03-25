@@ -28,6 +28,8 @@ import {
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
+  validateRuleCreditMonotonicity,
+  validateRuleDateOrdering,
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
@@ -1146,6 +1148,9 @@ export function validateAccessControlArray({
   const warnings: string[] = [];
 
   if (accessControlJsonArray.length === 0) {
+    warnings.push(
+      'accessControl array is empty. Add at least one rule or remove the accessControl key.',
+    );
     return { errors, warnings };
   }
 
@@ -1208,6 +1213,8 @@ export function validateAccessControlArray({
         'listBeforeRelease can only be specified on the main rule (the rule without labels).',
       );
     }
+
+    errors.push(...validateRuleDateOrdering(rule), ...validateRuleCreditMonotonicity(rule));
   }
 
   return { errors, warnings };
