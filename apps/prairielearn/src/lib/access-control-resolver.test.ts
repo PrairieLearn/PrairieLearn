@@ -261,7 +261,7 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(false);
     });
 
-    it('returns listBeforeRelease when set and before release', () => {
+    it('returns showBeforeRelease when set and before release', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -276,11 +276,11 @@ describe('resolveAccessControl', () => {
         date: new Date('2025-03-15T12:00:00Z'),
       });
       expect(result.authorized).toBe(true);
-      expect(result.listBeforeRelease).toBe(true);
+      expect(result.showBeforeRelease).toBe(true);
       expect(result.active).toBe(false);
     });
 
-    it('does not set listBeforeRelease after release', () => {
+    it('does not set showBeforeRelease after release', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -294,7 +294,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T12:00:00Z'),
       });
-      expect(result.listBeforeRelease).toBe(false);
+      expect(result.showBeforeRelease).toBe(false);
     });
 
     it('handles dateControl without releaseDate as no date-based access (0 credit)', () => {
@@ -1198,7 +1198,7 @@ describe('resolveAccessControl', () => {
     );
   });
 
-  describe('listBeforeRelease edge cases', () => {
+  describe('showBeforeRelease edge cases', () => {
     it('lists assessment normally when listBeforeRelease set without dateControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
@@ -1207,7 +1207,7 @@ describe('resolveAccessControl', () => {
       // No dateControl → no release date concept → assessment just listed
       expect(result.authorized).toBe(true);
       // Not "before release" since there's no release
-      expect(result.listBeforeRelease).toBe(false);
+      expect(result.showBeforeRelease).toBe(false);
     });
 
     it('lists assessment normally when dateControl has no releaseDate', () => {
@@ -1224,7 +1224,7 @@ describe('resolveAccessControl', () => {
       });
       // dateControl exists but no releaseDate → always available
       expect(result.authorized).toBe(true);
-      expect(result.listBeforeRelease).toBe(false);
+      expect(result.showBeforeRelease).toBe(false);
     });
   });
 });

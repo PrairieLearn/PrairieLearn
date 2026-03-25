@@ -206,7 +206,7 @@ export async function syncDiskToSqlWithLock(
     await timed('Synced assessment modules', () =>
       syncAssessmentModules.sync(courseId, courseData),
     );
-    const hasEnhancedAccessControl = await features.enabled('enhanced-access-control', {
+    const enhancedAccessControlEnabled = await features.enabled('enhanced-access-control', {
       institution_id: course.institution_id,
       course_id: courseId,
     });
@@ -224,11 +224,11 @@ export async function syncDiskToSqlWithLock(
               courseInstanceId,
               courseInstanceData,
               questionIds,
-              hasEnhancedAccessControl,
+              enhancedAccessControlEnabled,
             ),
           );
 
-          if (assessmentIds.name_to_id_map && hasEnhancedAccessControl) {
+          if (assessmentIds.name_to_id_map && enhancedAccessControlEnabled) {
             const idMap = assessmentIds.name_to_id_map;
             await timed(`Synced access control for ${ciid}`, async () => {
               const inputs: AccessControlSyncInput[] = [];
