@@ -407,7 +407,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        enrollment: { enrollmentId: null, studentLabelIds: [] },
+        enrollment: null,
         date: new Date('2025-03-15T00:00:00Z'),
       });
       expect(result.credit).toBe(0);

@@ -212,7 +212,7 @@ export async function selectAccessControlRulesForCourseInstance(
 }
 
 export interface UserAccessContext {
-  enrollment: EnrollmentContext;
+  enrollment: EnrollmentContext | null;
   prairieTestReservations: PrairieTestReservation[];
 }
 
@@ -248,7 +248,7 @@ export async function selectUserAccessContext(
           enrollmentId: row.enrollment.enrollment_id,
           studentLabelIds: row.enrollment.student_label_ids,
         }
-      : { enrollmentId: null, studentLabelIds: [] },
+      : null,
     prairieTestReservations: row.reservations.map((r) => ({
       examUuid: r.exam_uuid,
       accessEnd: r.access_end,

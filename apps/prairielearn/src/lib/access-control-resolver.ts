@@ -45,7 +45,7 @@ export interface AccessControlRuleInput {
 }
 
 export interface EnrollmentContext {
-  enrollmentId: string | null;
+  enrollmentId: string;
   studentLabelIds: string[];
 }
 
@@ -56,7 +56,7 @@ export interface PrairieTestReservation {
 
 export interface AccessControlResolverInput {
   rules: AccessControlRuleInput[];
-  enrollment: EnrollmentContext;
+  enrollment: EnrollmentContext | null;
   date: Date;
   displayTimezone: string;
   authzMode: EnumMode | null;
@@ -459,16 +459,19 @@ export function resolveAccessControl(
       return a.number - b.number;
     });
 
-  // Collect all matching overrides.
+  // Collect all matching overrides. If the user has no enrollment, no
+  // overrides can match (they target enrollments or student labels).
   const matchedOverrides: AccessControlRuleInput[] = [];
-  for (const rule of overrides) {
-    if (rule.targetType === 'enrollment') {
-      if (enrollment.enrollmentId && rule.enrollmentIds.includes(enrollment.enrollmentId)) {
-        matchedOverrides.push(rule);
-      }
-    } else if (rule.targetType === 'student_label') {
-      if (rule.studentLabelIds.some((id) => enrollment.studentLabelIds.includes(id))) {
-        matchedOverrides.push(rule);
+  if (enrollment) {
+    for (const rule of overrides) {
+      if (rule.targetType === 'enrollment') {
+        if (rule.enrollmentIds.includes(enrollment.enrollmentId)) {
+          matchedOverrides.push(rule);
+        }
+      } else if (rule.targetType === 'student_label') {
+        if (rule.studentLabelIds.some((id) => enrollment.studentLabelIds.includes(id))) {
+          matchedOverrides.push(rule);
+        }
       }
     }
   }
