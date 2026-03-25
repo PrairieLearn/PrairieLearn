@@ -148,7 +148,9 @@ export async function syncDiskToSqlWithLock(
   logger.info('Syncing info to database');
 
   await timed('Synced all course data', async () => {
-    await timed('Synced course info', () => syncCourseInfo.sync(course.path, courseData, course.id));
+    await timed('Synced course info', () =>
+      syncCourseInfo.sync(course.path, courseData, course.id),
+    );
     const courseInstanceIds = await timed('Synced course instances', () =>
       syncCourseInstances.sync(course.id, courseData),
     );
