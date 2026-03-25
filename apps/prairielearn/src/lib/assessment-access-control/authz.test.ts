@@ -24,9 +24,14 @@ const baseAssessmentResult: SprocAuthzAssessment = {
   access_rules: [],
 };
 
+const unauthorizedResult: SprocAuthzAssessment = {
+  ...baseAssessmentResult,
+  authorized: false,
+};
+
 describe('applyInstanceAccess', () => {
-  describe('individual (non-group) assessment instances', () => {
-    it('grants access when user owns the instance', () => {
+  describe('owner access', () => {
+    it('grants full access when user owns the instance', () => {
       const result = applyInstanceAccess({
         assessmentResult: baseAssessmentResult,
         ownsInstance: true,
@@ -38,38 +43,7 @@ describe('applyInstanceAccess', () => {
       expect(result.authorized_edit).toBe(true);
     });
 
-    it('denies edit access when user does not own the instance', () => {
-      const result = applyInstanceAccess({
-        assessmentResult: baseAssessmentResult,
-        ownsInstance: false,
-        timeLimitExpired: false,
-        hasCourseInstancePermissionView: false,
-      });
-
-      expect(result.authorized).toBe(false);
-      expect(result.authorized_edit).toBe(false);
-    });
-
-    it('grants view access to non-owner with course instance permission', () => {
-      const result = applyInstanceAccess({
-        assessmentResult: baseAssessmentResult,
-        ownsInstance: false,
-        timeLimitExpired: false,
-        hasCourseInstancePermissionView: true,
-      });
-
-      expect(result.authorized).toBe(true);
-      expect(result.authorized_edit).toBe(false);
-    });
-  });
-
-  describe('unauthorized assessment result', () => {
-    const unauthorizedResult: SprocAuthzAssessment = {
-      ...baseAssessmentResult,
-      authorized: false,
-    };
-
-    it('denies edit even when user owns the instance', () => {
+    it('denies edit when assessment is unauthorized, even if user owns the instance', () => {
       const result = applyInstanceAccess({
         assessmentResult: unauthorizedResult,
         ownsInstance: true,
@@ -82,8 +56,46 @@ describe('applyInstanceAccess', () => {
     });
   });
 
-  describe('time limit expiration', () => {
-    it('reports time_limit_expired when date_limit has passed', () => {
+  describe('non-owner access', () => {
+    it('denies all access without view permission', () => {
+      const result = applyInstanceAccess({
+        assessmentResult: baseAssessmentResult,
+        ownsInstance: false,
+        timeLimitExpired: false,
+        hasCourseInstancePermissionView: false,
+      });
+
+      expect(result.authorized).toBe(false);
+      expect(result.authorized_edit).toBe(false);
+    });
+
+    it('grants view-only access with view permission', () => {
+      const result = applyInstanceAccess({
+        assessmentResult: baseAssessmentResult,
+        ownsInstance: false,
+        timeLimitExpired: false,
+        hasCourseInstancePermissionView: true,
+      });
+
+      expect(result.authorized).toBe(true);
+      expect(result.authorized_edit).toBe(false);
+    });
+
+    it('view permission does not override an unauthorized assessment', () => {
+      const result = applyInstanceAccess({
+        assessmentResult: unauthorizedResult,
+        ownsInstance: false,
+        timeLimitExpired: false,
+        hasCourseInstancePermissionView: true,
+      });
+
+      expect(result.authorized).toBe(false);
+      expect(result.authorized_edit).toBe(false);
+    });
+  });
+
+  describe('time limit', () => {
+    it('passes through timeLimitExpired=true', () => {
       const result = applyInstanceAccess({
         assessmentResult: baseAssessmentResult,
         ownsInstance: true,
@@ -94,7 +106,7 @@ describe('applyInstanceAccess', () => {
       expect(result.time_limit_expired).toBe(true);
     });
 
-    it('reports time_limit_expired as false when date_limit has not passed', () => {
+    it('passes through timeLimitExpired=false', () => {
       const result = applyInstanceAccess({
         assessmentResult: baseAssessmentResult,
         ownsInstance: true,
