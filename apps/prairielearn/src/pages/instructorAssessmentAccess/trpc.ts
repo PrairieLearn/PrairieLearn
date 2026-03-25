@@ -31,7 +31,7 @@ import {
   validateRuleCreditMonotonicity,
   validateRuleDateOrdering,
 } from '../../schemas/accessControl.js';
-import { syncAccessControl } from '../../sync/fromDisk/accessControl.js';
+import { syncAccessControl, validateRule } from '../../sync/fromDisk/accessControl.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'assessment'>;
@@ -154,9 +154,9 @@ function formJsonToEnrollmentRuleData(
 }
 
 // TODO: Add client-side validation for duplicate PrairieTest exam UUIDs and
-// duplicate deadline dates before this goes live. The sync code
-// (validateAssessmentRules) catches these server-side, but the UI should block
-// saves proactively so users get immediate feedback instead of a sync error.
+// duplicate deadline dates before this goes live. Server-side validation
+// (validateRule) catches these for all rule types, but the UI should block
+// saves proactively so users get immediate feedback instead of a server error.
 export const AccessControlJsonInputSchema = AccessControlJsonSchema.extend({
   id: z.string().optional(),
 })
@@ -247,6 +247,12 @@ const saveAllRules = t.procedure
       }
 
       const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
+      for (const rule of rulesToSync) {
+        const ruleError = validateRule(rule);
+        if (ruleError) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
+        }
+      }
       await syncAccessControl(courseInstanceId, assessmentId, rulesToSync);
 
       // Only process enrollment rule deletions when enrollmentRules is explicitly
@@ -288,6 +294,11 @@ const saveAllRules = t.procedure
         }
 
         for (const enrollmentRule of enrollmentRules) {
+          const ruleError = validateRule(enrollmentRule.ruleJson);
+          if (ruleError) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
+          }
+
           const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
           if (enrollmentRule.id) {
             ruleData.id = enrollmentRule.id;

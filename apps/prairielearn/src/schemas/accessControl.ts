@@ -17,14 +17,14 @@ export const MAX_ENROLLMENT_RULES = 100;
 export const DeadlineEntryJsonSchema = z
   .object({
     date: DatetimeLocalStringSchema.describe('Date as ISO String for additional deadline'),
-    credit: z.number().describe('Amount of credit as a percent to allow'),
+    credit: z.number().min(0).describe('Amount of credit as a percent to allow'),
   })
   .strict();
 
 const AfterLastDeadlineJsonSchema = z
   .object({
     allowSubmissions: z.boolean().optional(),
-    credit: z.number().optional(),
+    credit: z.number().min(0).optional(),
   })
   .strict();
 

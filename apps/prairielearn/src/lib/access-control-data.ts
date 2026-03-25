@@ -1,18 +1,19 @@
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import type {
   AccessControlRuleInput,
+  EnrollmentContext,
   PrairieTestReservation,
   RuntimeAccessControl,
   RuntimeAfterComplete,
   RuntimeDateControl,
-  StudentContext,
 } from './access-control-resolver.js';
 import {
   type Assessment,
+  type AssessmentAccessControlRule,
   AssessmentAccessControlRuleSchema,
   type CourseInstance,
 } from './db-types.js';
@@ -25,9 +26,8 @@ const PrairieTestExamJsonSchema = z
   .array(z.object({ uuid: z.string(), read_only: z.boolean() }))
   .nullable();
 
-const AccessControlRuleRowSchema = AssessmentAccessControlRuleSchema.omit({
-  assessment_id: true,
-}).extend({
+const AccessControlRuleRowSchema = z.object({
+  access_control_rule: AssessmentAccessControlRuleSchema,
   enrollment_ids: z.array(IdSchema),
   student_label_ids: z.array(IdSchema),
   prairietest_exams: PrairieTestExamJsonSchema,
@@ -35,72 +35,72 @@ const AccessControlRuleRowSchema = AssessmentAccessControlRuleSchema.omit({
   late_deadlines: DeadlineJsonSchema,
 });
 
-const CourseInstanceAccessControlRuleRowSchema = AccessControlRuleRowSchema.extend({
-  assessment_id: IdSchema,
-});
-
 type AccessControlRuleRow = z.infer<typeof AccessControlRuleRowSchema>;
 
-function isOverride(row: AccessControlRuleRow): boolean {
-  return row.target_type !== 'none';
+function isOverride(rule: AssessmentAccessControlRule): boolean {
+  return rule.target_type !== 'none';
 }
 
-function buildDateControl(row: AccessControlRuleRow): RuntimeDateControl | undefined {
+function buildDateControl(
+  rule: AssessmentAccessControlRule,
+  earlyDeadlines: z.infer<typeof DeadlineJsonSchema>,
+  lateDeadlines: z.infer<typeof DeadlineJsonSchema>,
+): RuntimeDateControl | undefined {
   // Only include fields that were explicitly configured (overridden flag is true).
   // This applies uniformly to main rules and overrides.
   const dateControl: RuntimeDateControl = {};
 
-  if (row.date_control_release_date_overridden) {
-    dateControl.releaseDate = row.date_control_release_date;
+  if (rule.date_control_release_date_overridden) {
+    dateControl.releaseDate = rule.date_control_release_date;
   }
 
-  if (row.date_control_due_date_overridden) {
-    dateControl.dueDate = row.date_control_due_date;
+  if (rule.date_control_due_date_overridden) {
+    dateControl.dueDate = rule.date_control_due_date;
   }
 
-  if (row.date_control_duration_minutes_overridden) {
-    dateControl.durationMinutes = row.date_control_duration_minutes;
+  if (rule.date_control_duration_minutes_overridden) {
+    dateControl.durationMinutes = rule.date_control_duration_minutes;
   }
 
-  if (row.date_control_password_overridden) {
-    dateControl.password = row.date_control_password;
+  if (rule.date_control_password_overridden) {
+    dateControl.password = rule.date_control_password;
   }
 
-  if (row.date_control_early_deadlines_overridden) {
+  if (rule.date_control_early_deadlines_overridden) {
     dateControl.earlyDeadlines =
-      row.early_deadlines?.map((d) => ({
+      earlyDeadlines?.map((d) => ({
         date: d.date,
         credit: d.credit,
       })) ?? null;
   }
 
-  if (row.date_control_late_deadlines_overridden) {
+  if (rule.date_control_late_deadlines_overridden) {
     dateControl.lateDeadlines =
-      row.late_deadlines?.map((d) => ({
+      lateDeadlines?.map((d) => ({
         date: d.date,
         credit: d.credit,
       })) ?? null;
   }
 
   {
-    const includeCredit = row.date_control_after_last_deadline_credit_overridden;
-    const includeAllowSubmissions = row.date_control_after_last_deadline_allow_submissions != null;
+    const includeCredit = rule.date_control_after_last_deadline_credit_overridden;
+    const includeAllowSubmissions = rule.date_control_after_last_deadline_allow_submissions != null;
 
     if (includeCredit || includeAllowSubmissions) {
       if (
-        row.date_control_after_last_deadline_credit_overridden &&
-        row.date_control_after_last_deadline_credit == null &&
-        row.date_control_after_last_deadline_allow_submissions == null
+        rule.date_control_after_last_deadline_credit_overridden &&
+        rule.date_control_after_last_deadline_credit == null &&
+        rule.date_control_after_last_deadline_allow_submissions == null
       ) {
         dateControl.afterLastDeadline = null;
       } else {
         dateControl.afterLastDeadline = {};
-        if (row.date_control_after_last_deadline_credit != null) {
-          dateControl.afterLastDeadline.credit = row.date_control_after_last_deadline_credit;
+        if (rule.date_control_after_last_deadline_credit != null) {
+          dateControl.afterLastDeadline.credit = rule.date_control_after_last_deadline_credit;
         }
         if (includeAllowSubmissions) {
           dateControl.afterLastDeadline.allowSubmissions =
-            row.date_control_after_last_deadline_allow_submissions!;
+            rule.date_control_after_last_deadline_allow_submissions!;
         }
       }
     }
@@ -109,33 +109,33 @@ function buildDateControl(row: AccessControlRuleRow): RuntimeDateControl | undef
   return Object.keys(dateControl).length > 0 ? dateControl : undefined;
 }
 
-function buildAfterComplete(row: AccessControlRuleRow): RuntimeAfterComplete | undefined {
-  const override = isOverride(row);
+function buildAfterComplete(rule: AssessmentAccessControlRule): RuntimeAfterComplete | undefined {
+  const override = isOverride(rule);
   const includeField = (overridden: boolean) => !override || overridden;
 
   const afterComplete: RuntimeAfterComplete = {};
 
-  if (row.after_complete_hide_questions != null) {
-    afterComplete.hideQuestions = row.after_complete_hide_questions;
+  if (rule.after_complete_hide_questions != null) {
+    afterComplete.hideQuestions = rule.after_complete_hide_questions;
   }
-  if (includeField(row.after_complete_hide_questions_again_date_overridden)) {
-    if (row.after_complete_hide_questions_again_date) {
-      afterComplete.hideQuestionsAgainDate = row.after_complete_hide_questions_again_date;
+  if (includeField(rule.after_complete_hide_questions_again_date_overridden)) {
+    if (rule.after_complete_hide_questions_again_date) {
+      afterComplete.hideQuestionsAgainDate = rule.after_complete_hide_questions_again_date;
     }
   }
 
-  if (includeField(row.after_complete_show_questions_again_date_overridden)) {
-    if (row.after_complete_show_questions_again_date) {
-      afterComplete.showQuestionsAgainDate = row.after_complete_show_questions_again_date;
+  if (includeField(rule.after_complete_show_questions_again_date_overridden)) {
+    if (rule.after_complete_show_questions_again_date) {
+      afterComplete.showQuestionsAgainDate = rule.after_complete_show_questions_again_date;
     }
   }
 
-  if (row.after_complete_hide_score != null) {
-    afterComplete.hideScore = row.after_complete_hide_score;
+  if (rule.after_complete_hide_score != null) {
+    afterComplete.hideScore = rule.after_complete_hide_score;
   }
-  if (includeField(row.after_complete_show_score_again_date_overridden)) {
-    if (row.after_complete_show_score_again_date) {
-      afterComplete.showScoreAgainDate = row.after_complete_show_score_again_date;
+  if (includeField(rule.after_complete_show_score_again_date_overridden)) {
+    if (rule.after_complete_show_score_again_date) {
+      afterComplete.showScoreAgainDate = rule.after_complete_show_score_again_date;
     }
   }
 
@@ -143,26 +143,27 @@ function buildAfterComplete(row: AccessControlRuleRow): RuntimeAfterComplete | u
 }
 
 function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRuleInput {
-  const rule: RuntimeAccessControl = {};
+  const runtimeRule: RuntimeAccessControl = {};
+  const rule = row.access_control_rule;
 
-  if (!isOverride(row)) {
-    rule.listBeforeRelease = row.list_before_release ?? false;
+  if (!isOverride(rule)) {
+    runtimeRule.listBeforeRelease = rule.list_before_release ?? false;
   }
 
-  const dateControl = buildDateControl(row);
-  if (dateControl !== undefined) rule.dateControl = dateControl;
+  const dateControl = buildDateControl(rule, row.early_deadlines, row.late_deadlines);
+  if (dateControl !== undefined) runtimeRule.dateControl = dateControl;
 
-  const afterComplete = buildAfterComplete(row);
-  if (afterComplete !== undefined) rule.afterComplete = afterComplete;
+  const afterComplete = buildAfterComplete(rule);
+  if (afterComplete !== undefined) runtimeRule.afterComplete = afterComplete;
 
   // Integrations are only on main rules (number 0)
-  const prairietestExamsRaw = (!isOverride(row) && row.prairietest_exams) || [];
+  const prairietestExamsRaw = (!isOverride(rule) && row.prairietest_exams) || [];
   const prairietestExams = prairietestExamsRaw.map((e) => ({
     uuid: e.uuid,
     readOnly: e.read_only,
   }));
   if (prairietestExams.length > 0) {
-    rule.integrations = {
+    runtimeRule.integrations = {
       prairieTest: {
         exams: prairietestExams.map((e) => ({ examUuid: e.uuid, readOnly: e.readOnly })),
       },
@@ -170,9 +171,9 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
   }
 
   return {
-    rule,
-    number: row.number,
-    targetType: row.target_type,
+    rule: runtimeRule,
+    number: rule.number,
+    targetType: rule.target_type,
     enrollmentIds: row.enrollment_ids,
     studentLabelIds: row.student_label_ids,
     prairietestExams,
@@ -183,8 +184,8 @@ export async function selectAccessControlRulesForAssessment(
   assessment: Assessment,
 ): Promise<AccessControlRuleInput[]> {
   const rows = await queryRows(
-    sql.select_access_control_rules_for_assessment,
-    { assessment_id: assessment.id },
+    sql.select_access_control_rules,
+    { assessment_id: assessment.id, course_instance_id: null },
     AccessControlRuleRowSchema,
   );
   return rows.map(rowToAccessControlRuleInput);
@@ -194,14 +195,14 @@ export async function selectAccessControlRulesForCourseInstance(
   courseInstance: CourseInstance,
 ): Promise<Map<string, AccessControlRuleInput[]>> {
   const rows = await queryRows(
-    sql.select_access_control_rules_for_course_instance,
-    { course_instance_id: courseInstance.id },
-    CourseInstanceAccessControlRuleRowSchema,
+    sql.select_access_control_rules,
+    { assessment_id: null, course_instance_id: courseInstance.id },
+    AccessControlRuleRowSchema,
   );
 
   const result = new Map<string, AccessControlRuleInput[]>();
   for (const row of rows) {
-    const assessmentId = row.assessment_id;
+    const assessmentId = row.access_control_rule.assessment_id;
     if (!result.has(assessmentId)) {
       result.set(assessmentId, []);
     }
@@ -210,41 +211,47 @@ export async function selectAccessControlRulesForCourseInstance(
   return result;
 }
 
-export async function selectStudentContext(
-  userId: string,
-  courseInstance: CourseInstance,
-): Promise<StudentContext> {
-  const row = await queryOptionalRow(
-    sql.select_student_context,
-    { user_id: userId, course_instance_id: courseInstance.id },
-    z.object({
-      enrollment_id: IdSchema,
-      student_label_ids: z.array(IdSchema),
-    }),
-  );
-  if (!row) {
-    return { enrollmentId: null, studentLabelIds: [] };
-  }
-  return {
-    enrollmentId: row.enrollment_id,
-    studentLabelIds: row.student_label_ids,
-  };
+export interface UserAccessContext {
+  enrollment: EnrollmentContext | null;
+  prairieTestReservations: PrairieTestReservation[];
 }
 
-export async function selectPrairieTestReservations(
-  userId: string,
-  date: Date,
-): Promise<PrairieTestReservation[]> {
-  const rows = await queryRows(
-    sql.select_prairietest_reservation,
-    { user_id: userId, date },
+const UserAccessContextRowSchema = z.object({
+  enrollment: z
+    .object({
+      enrollment_id: IdSchema,
+      student_label_ids: z.array(IdSchema),
+    })
+    .nullable(),
+  reservations: z.array(
     z.object({
       exam_uuid: z.string(),
       access_end: DateFromISOString,
     }),
+  ),
+});
+
+export async function selectUserAccessContext(
+  userId: string,
+  courseInstance: CourseInstance,
+  date: Date,
+): Promise<UserAccessContext> {
+  const row = await queryRow(
+    sql.select_user_access_context,
+    { user_id: userId, course_instance_id: courseInstance.id, date },
+    UserAccessContextRowSchema,
   );
-  return rows.map((row) => ({
-    examUuid: row.exam_uuid,
-    accessEnd: row.access_end,
-  }));
+
+  return {
+    enrollment: row.enrollment
+      ? {
+          enrollmentId: row.enrollment.enrollment_id,
+          studentLabelIds: row.enrollment.student_label_ids,
+        }
+      : null,
+    prairieTestReservations: row.reservations.map((r) => ({
+      examUuid: r.exam_uuid,
+      accessEnd: r.access_end,
+    })),
+  };
 }
