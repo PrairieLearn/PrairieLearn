@@ -1,4 +1,4 @@
-import { QueryClient, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
@@ -6,7 +6,7 @@ import type { PageContext } from '../../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getAssessmentAccessUrl } from '../../../lib/client/url.js';
 import { createAccessControlTrpcClient } from '../utils/trpc-client.js';
-import { TRPCProvider, useTRPCClient } from '../utils/trpc-context.js';
+import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 
 import { AccessControlForm } from './AccessControlForm.js';
 import type { AccessControlJsonWithId } from './types.js';
@@ -25,17 +25,19 @@ function AssessmentAccessControlInner({
   initialData,
 }: AssessmentAccessControlProps) {
   const [origHash, setOrigHash] = useState(initialOrigHash);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  const trpcClient = useTRPCClient();
+  const trpc = useTRPC();
 
-  const handleFormSubmit = async (data: AccessControlJsonWithId[]) => {
-    setShowSuccess(false);
-    setSaveError(null);
-    setIsSaving(true);
+  const saveMutation = useMutation(
+    trpc.saveAllRules.mutationOptions({
+      onSuccess: (result) => {
+        setOrigHash(result.newHash);
+        void queryClient.invalidateQueries();
+      },
+    }),
+  );
 
+  const handleFormSubmit = (data: AccessControlJsonWithId[]) => {
     const jsonRules = data.filter((r) => r.ruleType !== 'enrollment');
     const enrollmentRules = data
       .filter((r) => r.ruleType === 'enrollment')
@@ -45,39 +47,32 @@ function AssessmentAccessControlInner({
         ruleJson,
       }));
 
-    try {
-      const result = await trpcClient.saveAllRules.mutate({
-        rules: jsonRules,
-        enrollmentRules,
-        origHash,
-      });
-      setOrigHash(result.newHash);
-      setShowSuccess(true);
-      void queryClient.invalidateQueries();
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to save access control');
-    } finally {
-      setIsSaving(false);
-    }
+    saveMutation.mutate({
+      rules: jsonRules,
+      enrollmentRules,
+      origHash,
+    });
   };
 
   return (
     <div style={{ height: '100%' }} data-split-pane-page>
-      {showSuccess && (
-        <Alert variant="success" dismissible onClose={() => setShowSuccess(false)}>
+      {saveMutation.isSuccess && (
+        <Alert variant="success" dismissible onClose={() => saveMutation.reset()}>
           Access control updated successfully.
         </Alert>
       )}
-      {saveError && (
-        <Alert variant="danger" dismissible onClose={() => setSaveError(null)}>
-          {saveError}
+      {saveMutation.isError && (
+        <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
+          {saveMutation.error instanceof Error
+            ? saveMutation.error.message
+            : 'Failed to save access control'}
         </Alert>
       )}
 
       <AccessControlForm
         courseInstance={courseInstance}
         initialData={initialData}
-        isSaving={isSaving}
+        isSaving={saveMutation.isPending}
         onSubmit={handleFormSubmit}
       />
     </div>

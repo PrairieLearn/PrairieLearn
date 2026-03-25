@@ -12,7 +12,7 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { parseAsStringLiteral, useQueryState } from 'nuqs';
+import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
@@ -56,7 +56,13 @@ import { getStructuralSaveValidationErrorKind } from '../utils/saveValidation.js
 import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 import { useAssessmentEditor } from '../utils/useAssessmentEditor.js';
-import { findQuestionByTrackingId } from '../utils/zoneLookup.js';
+import {
+  findAltGroupByTrackingId,
+  findAlternativeByTrackingId,
+  findQuestionByTrackingId,
+  findZoneByTrackingId,
+  getInitialSelectedZoneItem,
+} from '../utils/zoneLookup.js';
 
 import { EditModeToolbar } from './EditModeToolbar.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
@@ -137,6 +143,7 @@ interface AssessmentEditorInnerProps {
   switchViewUrl: string | null;
   questionSharingEnabled: boolean;
   consumePublicQuestionsEnabled: boolean;
+  search: string;
 }
 
 function AssessmentEditorInner({
@@ -153,6 +160,7 @@ function AssessmentEditorInner({
   switchViewUrl,
   questionSharingEnabled,
   consumePublicQuestionsEnabled,
+  search,
 }: AssessmentEditorInnerProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -160,17 +168,22 @@ function AssessmentEditorInner({
     mutationFn: (qid: string) => queryClient.fetchQuery(trpc.questionByQid.queryOptions({ qid })),
   });
 
+  const [_preselection, setPreselection] = useQueryState('selected', parseAsString.withDefault(''));
+
   const [initialState] = useState<EditorState>(() => {
     const questionMetadataMap = Object.fromEntries(
       questionRows.map((r) => [questionDisplayName(course, r), toEditorMetadata(r)]),
     );
+
+    const zones = prepareZonesForEditor(jsonZones, questionMetadataMap);
+
     return {
-      zones: prepareZonesForEditor(jsonZones, questionMetadataMap),
+      zones,
       questionMetadata: questionMetadataMap,
       collapsedGroups: new Set<string>(),
       collapsedZones: new Set<string>(),
       dismissedBanners: new Set<string>(),
-      selectedItem: null,
+      selectedItem: getInitialSelectedZoneItem(search, zones),
     };
   });
 
@@ -185,9 +198,40 @@ function AssessmentEditorInner({
   } = useAssessmentEditor(initialState);
 
   const setSelectedItem = useCallback(
-    (item: SelectedItem) => dispatch({ type: 'SET_SELECTED_ITEM', selectedItem: item }),
+    (item: SelectedItem) => {
+      dispatch({ type: 'SET_SELECTED_ITEM', selectedItem: item });
+    },
     [dispatch],
   );
+
+  useEffect(() => {
+    const next = run(() => {
+      switch (selectedItem?.type) {
+        case 'question': {
+          const foundQuestion = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
+          return foundQuestion?.question.id ? `q:${foundQuestion.question.id}` : null;
+        }
+        case 'zone': {
+          const foundZone = findZoneByTrackingId(zones, selectedItem.zoneTrackingId);
+          return foundZone ? `z:${foundZone.zoneIndex}` : null;
+        }
+        case 'altGroup': {
+          const foundAltGroup = findAltGroupByTrackingId(zones, selectedItem.questionTrackingId);
+          return foundAltGroup
+            ? `z:${foundAltGroup.zoneIndex}:${foundAltGroup.altGroupIndex}`
+            : null;
+        }
+        case 'alternative': {
+          const foundAlt = findAlternativeByTrackingId(zones, selectedItem.alternativeTrackingId);
+          return foundAlt ? `q:${foundAlt.alternative.id}` : null;
+        }
+        default:
+          return null;
+      }
+    });
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    void setPreselection(next);
+  }, [selectedItem, zones, setPreselection]);
 
   const initialZonesJson = useMemo(() => JSON.stringify(initialState.zones), [initialState.zones]);
   const initialPropsMap = useMemo(() => buildPropsMap(initialState.zones), [initialState.zones]);
@@ -1112,11 +1156,12 @@ export function AssessmentQuestionsEditor({
 }: AssessmentEditorProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => createAssessmentQuestionsTrpcClient(trpcCsrfToken));
+
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient}>
         <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-          <AssessmentEditorInner {...innerProps} />
+          <AssessmentEditorInner search={search} {...innerProps} />
         </TRPCProvider>
       </QueryClientProviderDebug>
     </NuqsAdapter>
