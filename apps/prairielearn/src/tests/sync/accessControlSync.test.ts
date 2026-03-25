@@ -1861,7 +1861,7 @@ describe('Access control syncing', () => {
 
       const beforeDueResult = resolveAccessControl({
         rules,
-        student: {
+        enrollment: {
           enrollmentId: null,
           studentLabelIds: override.studentLabelIds,
         },
@@ -1877,7 +1877,7 @@ describe('Access control syncing', () => {
 
       const afterDueResult = resolveAccessControl({
         rules,
-        student: {
+        enrollment: {
           enrollmentId: null,
           studentLabelIds: override.studentLabelIds,
         },
