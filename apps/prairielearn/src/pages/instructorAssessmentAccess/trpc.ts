@@ -258,14 +258,14 @@ const saveAllRules = t.procedure
     const courseInstanceId = opts.ctx.course_instance.id;
     const assessmentId = opts.ctx.assessment.id;
 
-    if (rules.slice(1).some((rule) => rule.listBeforeRelease != null)) {
+    if (rules.slice(1).some((rule) => rule.listBeforeRelease !== undefined)) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'listBeforeRelease can only be specified on the main rule.',
       });
     }
 
-    if (enrollmentRules?.some((rule) => rule.ruleJson.listBeforeRelease != null)) {
+    if (enrollmentRules?.some((rule) => rule.ruleJson.listBeforeRelease !== undefined)) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'listBeforeRelease can only be specified on the main rule.',
