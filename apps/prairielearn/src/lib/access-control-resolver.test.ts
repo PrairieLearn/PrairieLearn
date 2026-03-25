@@ -41,23 +41,11 @@ function toRuntime(json: AccessControlJson): RuntimeAccessControl {
     result.afterComplete = {
       ...acRest,
       showQuestionsAgainDate:
-        showQuestionsAgainDate !== undefined
-          ? showQuestionsAgainDate !== null
-            ? new Date(showQuestionsAgainDate)
-            : null
-          : undefined,
+        showQuestionsAgainDate != null ? new Date(showQuestionsAgainDate) : showQuestionsAgainDate,
       hideQuestionsAgainDate:
-        hideQuestionsAgainDate !== undefined
-          ? hideQuestionsAgainDate !== null
-            ? new Date(hideQuestionsAgainDate)
-            : null
-          : undefined,
+        hideQuestionsAgainDate != null ? new Date(hideQuestionsAgainDate) : hideQuestionsAgainDate,
       showScoreAgainDate:
-        showScoreAgainDate !== undefined
-          ? showScoreAgainDate !== null
-            ? new Date(showScoreAgainDate)
-            : null
-          : undefined,
+        showScoreAgainDate != null ? new Date(showScoreAgainDate) : showScoreAgainDate,
     };
   }
   return result;
