@@ -294,8 +294,7 @@ export abstract class Editor {
             this.course.path,
           );
           const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
-            this.course.id,
-            this.course.institution_id,
+            this.course,
             possibleCourseData,
             job,
           );

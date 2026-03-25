@@ -61,16 +61,15 @@ interface SyncResultComplete {
 export type SyncResults = SyncResultSharingError | SyncResultComplete;
 
 export async function checkSharingConfigurationValid(
-  courseId: string,
-  institutionId: string,
+  course: Course,
   courseData: courseDB.CourseData,
   logger: ServerJobLogger,
 ): Promise<boolean> {
   if (!config.checkSharingOnSync) return true;
 
   const sharingEnabled = await features.enabled('question-sharing', {
-    course_id: courseId,
-    institution_id: institutionId,
+    course_id: course.id,
+    institution_id: course.institution_id,
   });
 
   // If sharing is not enabled, we'll skip all of these sharing checks. Instead, we'll
@@ -78,7 +77,7 @@ export async function checkSharingConfigurationValid(
   // sync errors if they are.
   if (!sharingEnabled) return true;
 
-  const sharedQuestions = await selectSharedQuestions(courseId);
+  const sharedQuestions = await selectSharedQuestions(course.id);
   const existInvalidRenames = getInvalidRenames(sharedQuestions, courseData, logger);
   const existInvalidPublicSharingRemovals = checkInvalidPublicSharingRemovals(
     sharedQuestions,
@@ -86,13 +85,13 @@ export async function checkSharingConfigurationValid(
     logger,
   );
   const existInvalidSharingSetDeletions = await checkInvalidSharingSetDeletions(
-    courseId,
+    course.id,
     courseData,
     logger,
   );
   const existInvalidSharingSetAdditions = checkInvalidSharingSetAdditions(courseData, logger);
   const existInvalidSharingSetRemovals = await checkInvalidSharingSetRemovals(
-    courseId,
+    course.id,
     courseData,
     logger,
   );
@@ -117,9 +116,6 @@ export async function syncDiskToSqlWithLock(
   logger: ServerJobLogger,
   courseData?: courseDB.CourseData,
 ): Promise<SyncResults> {
-  const courseId = course.id;
-  const courseDir = course.path;
-
   async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
     const start = performance.now();
 
@@ -135,26 +131,26 @@ export async function syncDiskToSqlWithLock(
 
   if (!courseData) {
     courseData = await timed('Loaded course data from disk', () =>
-      courseDB.loadFullCourse(courseId, courseDir),
+      courseDB.loadFullCourse(course.id, course.path),
     );
   }
 
   const sharingConfigurationValid = await timed('Validated sharing configuration', () =>
-    checkSharingConfigurationValid(courseId, course.institution_id, courseData, logger),
+    checkSharingConfigurationValid(course, courseData, logger),
   );
   if (!sharingConfigurationValid) {
     return {
       status: 'sharing_error',
-      courseId,
+      courseId: course.id,
     };
   }
 
   logger.info('Syncing info to database');
 
   await timed('Synced all course data', async () => {
-    await timed('Synced course info', () => syncCourseInfo.sync(courseDir, courseData, courseId));
+    await timed('Synced course info', () => syncCourseInfo.sync(course.path, courseData, course.id));
     const courseInstanceIds = await timed('Synced course instances', () =>
-      syncCourseInstances.sync(courseId, courseData),
+      syncCourseInstances.sync(course.id, courseData),
     );
     await timed('Synced student labels', async () => {
       await async.eachLimit(
@@ -170,9 +166,9 @@ export async function syncDiskToSqlWithLock(
         },
       );
     });
-    await timed('Synced topics', () => syncTopics.sync(courseId, courseData));
+    await timed('Synced topics', () => syncTopics.sync(course.id, courseData));
     const questionIds = await timed('Synced questions', () =>
-      syncQuestions.sync(courseId, courseData),
+      syncQuestions.sync(course.id, courseData),
     );
 
     await timed('Synced authors', () => syncAuthors.sync(courseData.questions, questionIds));
@@ -184,7 +180,7 @@ export async function syncDiskToSqlWithLock(
     await timed('Check sharing validity', async () => {
       await async.eachLimit(Object.entries(courseData.courseInstances), 3, async ([, ci]) => {
         const prefs = await syncAssessments.validateAssessmentSharedQuestions(
-          courseId,
+          course.id,
           ci.assessments,
           questionIds,
         );
@@ -199,16 +195,16 @@ export async function syncDiskToSqlWithLock(
     });
 
     await timed('Synced sharing sets', () =>
-      syncSharingSets.sync(courseId, courseData, questionIds),
+      syncSharingSets.sync(course.id, courseData, questionIds),
     );
-    await timed('Synced tags', () => syncTags.sync(courseId, courseData, questionIds));
-    await timed('Synced assessment sets', () => syncAssessmentSets.sync(courseId, courseData));
+    await timed('Synced tags', () => syncTags.sync(course.id, courseData, questionIds));
+    await timed('Synced assessment sets', () => syncAssessmentSets.sync(course.id, courseData));
     await timed('Synced assessment modules', () =>
-      syncAssessmentModules.sync(courseId, courseData),
+      syncAssessmentModules.sync(course.id, courseData),
     );
     const enhancedAccessControlEnabled = await features.enabled('enhanced-access-control', {
       institution_id: course.institution_id,
-      course_id: courseId,
+      course_id: course.id,
     });
     await timed('Synced all assessments', async () => {
       // Ensure that a single course with a ton of course instances can't
@@ -220,7 +216,7 @@ export async function syncDiskToSqlWithLock(
           const courseInstanceId = courseInstanceIds[ciid];
           const assessmentIds = await timed(`Synced assessments for ${ciid}`, () =>
             syncAssessments.sync(
-              courseId,
+              course.id,
               courseInstanceId,
               courseInstanceData,
               questionIds,
@@ -283,7 +279,7 @@ export async function syncDiskToSqlWithLock(
   // since in some cases we actually discover new warnings/errors during the
   // sync process. For instance, we don't actually validate exam UUIDs or qids of
   // questions imported from other courses until the database sync step.
-  courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, (line) =>
+  courseDB.writeErrorsAndWarningsForCourseData(course.id, courseData, (line) =>
     logger.info(line || ''),
   );
 
@@ -291,7 +287,7 @@ export async function syncDiskToSqlWithLock(
     status: 'complete',
     hadJsonErrors: courseDataHasErrors,
     hadJsonErrorsOrWarnings: courseDataHasErrorsOrWarnings,
-    courseId,
+    courseId: course.id,
     courseData,
   };
 }
