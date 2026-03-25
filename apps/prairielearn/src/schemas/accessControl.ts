@@ -2,6 +2,12 @@ import { z } from 'zod';
 
 import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 
+/**
+ * Maximum number of access control rules (main + overrides) per assessment.
+ * Enforced during both JSON sync and tRPC input validation.
+ */
+export const MAX_ACCESS_CONTROL_RULES = 50;
+
 export const DeadlineEntryJsonSchema = z
   .object({
     date: DatetimeLocalStringSchema.describe('Date as ISO String for additional deadline'),
@@ -88,30 +94,33 @@ const AfterCompleteJsonSchema = z
       .boolean()
       .optional()
       .describe(
-        'Whether to enable settings controlling question visibility after assessment completion',
+        'Whether to hide questions after assessment completion. When true, questions are hidden until showQuestionsAgainDate (if set).',
       ),
-    showQuestionsAgainDate: DatetimeLocalStringSchema.optional().describe(
-      'Date as ISO String for when to unhide questions to students after assessment completion',
-    ),
-    hideQuestionsAgainDate: DatetimeLocalStringSchema.optional().describe(
-      'Date as ISO String for when to rehide questions to students after unhiding questions after assessment completion',
-    ),
+    showQuestionsAgainDate: DatetimeLocalStringSchema.nullable()
+      .optional()
+      .describe(
+        'Date as ISO String for when hidden questions become visible again after assessment completion',
+      ),
+    hideQuestionsAgainDate: DatetimeLocalStringSchema.nullable()
+      .optional()
+      .describe('Date as ISO String for when questions are re-hidden after being shown again'),
     hideScore: z
       .boolean()
       .optional()
       .describe(
-        'Whether to enable settings controlling score visibility after assessment completion',
+        'Whether to hide scores after assessment completion. When true, scores are hidden until showScoreAgainDate (if set).',
       ),
-    showScoreAgainDate: DatetimeLocalStringSchema.optional().describe(
-      'Date as ISO String for when to reveal hidden scores after assessment completion',
-    ),
+    showScoreAgainDate: DatetimeLocalStringSchema.nullable()
+      .optional()
+      .describe(
+        'Date as ISO String for when hidden scores become visible again after assessment completion',
+      ),
   })
   .strict()
   .optional();
 
 export const AccessControlJsonSchema = z
   .object({
-    name: z.string().optional().describe('Name for AccessControl rule'),
     labels: z
       .array(z.string())
       .optional()
@@ -119,9 +128,8 @@ export const AccessControlJsonSchema = z
     listBeforeRelease: z
       .boolean()
       .optional()
-      .nullable()
       .describe(
-        'Main rule only. Whether students can see the assessment title before the release date. Defaults to false.',
+        'Main rule only. Whether to list the assessment title before the release date. Students can see the title but cannot open the assessment. Defaults to false.',
       ),
 
     dateControl: DateControlJsonSchema,
@@ -131,4 +139,6 @@ export const AccessControlJsonSchema = z
   .strict();
 
 export type AccessControlJson = z.infer<typeof AccessControlJsonSchema>;
-export type AccessControlJsonInput = z.input<typeof AccessControlJsonSchema>;
+// With no .default() transforms, input and output types are identical.
+// Keep the alias for callers that distinguish conceptually between the two.
+export type AccessControlJsonInput = AccessControlJson;
