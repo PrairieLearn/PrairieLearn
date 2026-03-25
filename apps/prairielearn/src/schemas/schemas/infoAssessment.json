@@ -846,7 +846,15 @@
             },
             "password": {
               "description": "Password for assessment",
-              "type": ["string", "null"]
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           }
         },
