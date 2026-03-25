@@ -6,10 +6,12 @@ import {
   queryOptionalRow,
   queryRow,
   queryRows,
+  queryScalar,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   PotentialEnrollmentStatus,
@@ -943,4 +945,29 @@ export async function inviteEnrollment({
       requiredRole,
     });
   });
+}
+
+export async function selectUsersAndEnrollmentsForCourseInstance(
+  courseInstance: CourseInstanceContext,
+) {
+  return queryRows(
+    sql.select_users_and_enrollments_for_course_instance,
+    { course_instance_id: courseInstance.id },
+    z.object({
+      enrollment: EnrollmentSchema,
+      user: UserSchema.nullable(),
+      student_label_ids: z.array(IdSchema),
+    }),
+  );
+}
+
+export async function validateEnrollmentIdsInCourseInstance(
+  ids: Set<string>,
+  courseInstance: CourseInstanceContext,
+): Promise<number> {
+  return queryScalar(
+    sql.validate_enrollment_ids_in_course_instance,
+    { enrollment_ids: [...ids], course_instance_id: courseInstance.id },
+    z.number(),
+  );
 }
