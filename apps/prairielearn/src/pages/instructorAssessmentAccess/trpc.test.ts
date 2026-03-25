@@ -14,12 +14,10 @@ describe('AccessControlJsonInputSchema', () => {
         durationMinutes: null,
         password: null,
       },
-      listBeforeRelease: null,
     });
 
     expect(result.dateControl?.releaseDate).toBeNull();
     expect(result.dateControl?.afterLastDeadline).toBeNull();
     expect(result.dateControl?.durationMinutes).toBeNull();
-    expect(result.listBeforeRelease).toBeNull();
   });
 });

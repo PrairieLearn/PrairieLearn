@@ -3,7 +3,7 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { StudentLabelSchema } from '../../lib/db-types.js';
-import type { AccessControlJson } from '../../schemas/accessControl.js';
+import { type AccessControlJson, MAX_ACCESS_CONTROL_RULES } from '../../schemas/accessControl.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -23,7 +23,6 @@ function mapField<T>(jsonValue: T | null | undefined): {
 }
 
 const JSON_RULE_START = 0;
-const MAX_JSON_RULES = 1000;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
@@ -37,8 +36,8 @@ function validateAssessmentRules(
 ): string | null {
   if (rules.length === 0) return null;
 
-  if (rules.length > MAX_JSON_RULES) {
-    return `Too many access control rules: ${rules.length}. Maximum allowed is ${MAX_JSON_RULES}.`;
+  if (rules.length > MAX_ACCESS_CONTROL_RULES) {
+    return `Too many access control rules: ${rules.length}. Maximum allowed is ${MAX_ACCESS_CONTROL_RULES}.`;
   }
 
   // Keep label validation here even though course-db validates it earlier.
