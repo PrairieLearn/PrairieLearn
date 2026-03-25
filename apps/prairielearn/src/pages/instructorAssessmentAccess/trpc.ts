@@ -28,8 +28,6 @@ import {
   AccessControlJsonSchema,
   MAX_ACCESS_CONTROL_RULES,
   MAX_ENROLLMENT_RULES,
-  validateRuleCreditMonotonicity,
-  validateRuleDateOrdering,
 } from '../../schemas/accessControl.js';
 import { syncAccessControl, validateRule } from '../../sync/fromDisk/accessControl.js';
 
@@ -159,31 +157,7 @@ function formJsonToEnrollmentRuleData(
 // saves proactively so users get immediate feedback instead of a server error.
 export const AccessControlJsonInputSchema = AccessControlJsonSchema.extend({
   id: z.string().optional(),
-})
-  .strip()
-  .superRefine((rule, ctx) => {
-    const labels = rule.labels ?? [];
-    const seen = new Set<string>();
-    for (const label of labels) {
-      if (seen.has(label)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `Duplicate student label: "${label}".`,
-          path: ['labels'],
-        });
-        break;
-      }
-      seen.add(label);
-    }
-
-    for (const error of validateRuleDateOrdering(rule)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: error, path: ['dateControl'] });
-    }
-
-    for (const error of validateRuleCreditMonotonicity(rule)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: error, path: ['dateControl'] });
-    }
-  });
+}).strip();
 
 const EnrollmentRuleInputSchema = z.object({
   id: z.string().optional(),
