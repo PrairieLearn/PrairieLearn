@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import type { z } from 'zod';
 
 import type { SprocAuthzAssessmentSchema } from '../db-types.js';
