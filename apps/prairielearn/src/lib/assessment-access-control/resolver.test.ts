@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AccessControlJson } from '../schemas/accessControl.js';
+import type { AccessControlJson } from '../../schemas/accessControl.js';
 
 import {
   type AccessControlResolverInput,
@@ -13,7 +13,7 @@ import {
   mergeRules,
   resolveAccessControl,
   resolveVisibility,
-} from './access-control-resolver.js';
+} from './resolver.js';
 
 /**
  * Converts an `AccessControlJson` (string dates) to `RuntimeAccessControl`

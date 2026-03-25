@@ -3,6 +3,12 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
+import {
+  type Assessment,
+  AssessmentAccessControlRuleSchema,
+  type CourseInstance,
+} from '../db-types.js';
+
 import type {
   AccessControlRuleInput,
   EnrollmentContext,
@@ -10,13 +16,7 @@ import type {
   RuntimeAccessControl,
   RuntimeAfterComplete,
   RuntimeDateControl,
-} from './access-control-resolver.js';
-import {
-  type Assessment,
-  type AssessmentAccessControlRule,
-  AssessmentAccessControlRuleSchema,
-  type CourseInstance,
-} from './db-types.js';
+} from './resolver.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -36,6 +36,7 @@ const AccessControlRuleRowSchema = z.object({
 });
 
 type AccessControlRuleRow = z.infer<typeof AccessControlRuleRowSchema>;
+type AssessmentAccessControlRule = z.infer<typeof AssessmentAccessControlRuleSchema>;
 
 function isOverride(rule: AssessmentAccessControlRule): boolean {
   return rule.target_type !== 'none';
@@ -205,7 +206,7 @@ export async function selectAccessControlRulesForCourseInstance(
   return result;
 }
 
-export interface UserAccessContext {
+interface UserAccessContext {
   enrollment: EnrollmentContext | null;
   prairieTestReservations: PrairieTestReservation[];
 }

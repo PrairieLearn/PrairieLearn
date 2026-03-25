@@ -1,6 +1,5 @@
-import type { AccessControlJson } from '../schemas/accessControl.js';
-
-import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from './db-types.js';
+import type { AccessControlJson } from '../../schemas/accessControl.js';
+import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-types.js';
 
 /**
  * Runtime version of date control fields. Top-level date columns use `Date`

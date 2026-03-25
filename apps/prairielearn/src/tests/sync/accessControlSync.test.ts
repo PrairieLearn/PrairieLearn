@@ -7,8 +7,8 @@ import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { selectAccessControlRulesForAssessment } from '../../lib/access-control-data.js';
-import { resolveAccessControl } from '../../lib/access-control-resolver.js';
+import { selectAccessControlRulesForAssessment } from '../../lib/assessment-access-control/data.js';
+import { resolveAccessControl } from '../../lib/assessment-access-control/resolver.js';
 import {
   AssessmentAccessControlEarlyDeadlineSchema,
   AssessmentAccessControlEnrollmentSchema,

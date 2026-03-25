@@ -8,7 +8,6 @@ import { z } from 'zod';
 
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
-import { fetchAllAccessControlRules } from '../../lib/assessment-access-control.js';
 import { features } from '../../lib/features/index.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import {
@@ -29,6 +28,8 @@ import {
   MAX_ACCESS_CONTROL_RULES,
 } from '../../schemas/accessControl.js';
 import { syncAccessControl, validateRule } from '../../sync/fromDisk/accessControl.js';
+
+import { fetchAllAccessControlRules } from './rules.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'assessment'>;
