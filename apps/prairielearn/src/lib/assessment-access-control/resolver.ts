@@ -486,6 +486,23 @@ export function resolveAccessControl(
 
   let creditResult = computeCredit(effectiveRule.dateControl, date, effectiveRule, authzMode);
 
+  // PrairieTest exam-mode access control.
+  //
+  // This logic is equivalent to the legacy `check_assessment_access_rule` sproc
+  // (lines 39-75) with two additions:
+  // - Multiple PT exams per rule (legacy only supported one exam_uuid per rule)
+  // - read_only exam support (sets active=false for view-only access)
+  //
+  // Core invariants (matching legacy behavior):
+  // - Student in Exam mode + assessment has PT exams → must have valid reservation
+  // - Student in Exam mode + assessment has NO PT exams → deny access
+  // - Student NOT in Exam mode + assessment has PT exams → deny access
+  // - Valid reservation = user has pt_reservation where now ∈ [access_start, access_end]
+  //   and reservation's exam UUID matches one of the configured exams
+  //
+  // In the legacy system, exam_uuid was per-rule (each assessment_access_rule had
+  // its own exam_uuid column). In the modern system, PT exams are configured only
+  // on the main rule (number=0) and are effectively assessment-level.
   const prairieTestExams = mainRuleInput.prairietestExams;
   const hasPrairieTestExams = prairieTestExams.length > 0;
   let examAccessEnd: Date | null = null;

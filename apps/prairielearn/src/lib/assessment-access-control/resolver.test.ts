@@ -780,6 +780,76 @@ describe('resolveAccessControl', () => {
       });
       expect(result.authorized).toBe(false);
     });
+
+    it('grants access when rule has multiple configured exams and reservation matches one', () => {
+      const multiExamRule: AccessControlRuleInput = {
+        ...prairieTestMainRule,
+        prairietestExams: [
+          { uuid: 'exam-uuid-1', readOnly: false },
+          { uuid: 'exam-uuid-2', readOnly: false },
+          { uuid: 'exam-uuid-3', readOnly: true },
+        ],
+      };
+      const reservation: PrairieTestReservation = {
+        examUuid: 'exam-uuid-2',
+        accessEnd: new Date('2025-03-15T16:00:00Z'),
+      };
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [multiExamRule],
+        authzMode: 'Exam',
+        prairieTestReservations: [reservation],
+      });
+      expect(result.authorized).toBe(true);
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(true);
+      expect(result.examAccessEnd).toEqual(reservation.accessEnd);
+    });
+
+    it('uses readOnly flag from matched exam when multiple exams are configured', () => {
+      const multiExamRule: AccessControlRuleInput = {
+        ...prairieTestMainRule,
+        prairietestExams: [
+          { uuid: 'exam-uuid-1', readOnly: false },
+          { uuid: 'exam-uuid-3', readOnly: true },
+        ],
+      };
+      const reservation: PrairieTestReservation = {
+        examUuid: 'exam-uuid-3',
+        accessEnd: new Date('2025-03-15T16:00:00Z'),
+      };
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [multiExamRule],
+        authzMode: 'Exam',
+        prairieTestReservations: [reservation],
+      });
+      expect(result.authorized).toBe(true);
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(false);
+    });
+
+    it('overrides date-control credit with 100% when PT reservation matches', () => {
+      const ruleWithDateControl: AccessControlRuleInput = {
+        ...prairieTestMainRule,
+        rule: toRuntime({
+          dateControl: {
+            releaseDate: '2025-01-01T00:00:00Z',
+            dueDate: '2025-02-01T00:00:00Z',
+            afterLastDeadline: { credit: 50 },
+          },
+        }),
+      };
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [ruleWithDateControl],
+        authzMode: 'Exam',
+        prairieTestReservations: [validReservation],
+      });
+      expect(result.authorized).toBe(true);
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(true);
+    });
   });
 
   describe('time limit computation', () => {
