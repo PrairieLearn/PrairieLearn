@@ -212,7 +212,7 @@ export async function selectAccessControlRulesForCourseInstance(
   return result;
 }
 
-export interface UserAccessContext {
+interface UserAccessContext {
   enrollment: EnrollmentContext | null;
   prairieTestReservations: PrairieTestReservation[];
 }
