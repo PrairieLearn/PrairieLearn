@@ -5,9 +5,9 @@ import type { AccessControlJson } from '../schemas/accessControl.js';
 import {
   type AccessControlResolverInput,
   type AccessControlRuleInput,
+  type EnrollmentContext,
   type PrairieTestReservation,
   type RuntimeAccessControl,
-  type StudentContext,
   cascadeOverrides,
   formatDateShort,
   mergeRules,
@@ -77,14 +77,14 @@ function makeOverrideRule(
   };
 }
 
-const defaultStudent: StudentContext = {
+const defaultEnrollment: EnrollmentContext = {
   enrollmentId: 'enroll-1',
   studentLabelIds: ['label-1'],
 };
 
 const baseInput: AccessControlResolverInput = {
   rules: [makeMainRule()],
-  student: defaultStudent,
+  enrollment: defaultEnrollment,
   date: new Date('2025-03-15T12:00:00Z'),
   displayTimezone: 'America/Chicago',
   authzMode: 'Public',
@@ -368,7 +368,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       });
       // Override extends due date, so at 2025-03-15 we should have 100% credit
       // with next deadline at 2025-05-01
@@ -389,7 +389,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-other'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
         date: new Date('2025-03-15T00:00:00Z'),
       });
       // No override match, so main rule's due date (March 10) applies, we're past it
@@ -410,7 +410,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: null, studentLabelIds: [] },
+        enrollment: null,
         date: new Date('2025-03-15T00:00:00Z'),
       });
       expect(result.credit).toBe(0);
@@ -431,7 +431,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'student_label', studentLabelIds: ['label-1', 'label-2'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
       });
       expect(result.credit).toBe(100);
     });
@@ -449,7 +449,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'student_label', studentLabelIds: ['label-other'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
         date: new Date('2025-03-15T00:00:00Z'),
       });
       expect(result.credit).toBe(0);
@@ -475,7 +475,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       });
       // Both overrides apply, second (due July 1 UTC = Jun 30 CDT) wins
       expect(result.credit).toBe(100);
@@ -500,7 +500,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       });
       // Second override (due July 1 UTC = Jun 30 CDT) wins via cascade
       expect(result.creditDateString).toContain('Jun 30');
@@ -526,7 +526,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'student_label', studentLabelIds: ['label-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
       });
       // Enrollment override (due June 1 UTC = May 31 CDT) wins over student label (July 1)
       expect(result.creditDateString).toContain('May 31');
@@ -550,7 +550,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
       });
       // Enrollment override should win despite student_label having lower number
       expect(result.creditDateString).toContain('May 31');
@@ -574,7 +574,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'student_label', studentLabelIds: ['label-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
       });
       // Only student label override matches (due July 1 UTC = Jun 30 CDT)
       expect(result.creditDateString).toContain('Jun 30');
@@ -598,7 +598,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       });
       // Both apply via cascading, second (number=2, due Aug 1 UTC = Jul 31 CDT) wins
       expect(result.creditDateString).toContain('Jul 31');
@@ -624,7 +624,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
       });
       // student_label sets dueDate, enrollment sets password — both should apply
       expect(result.password).toBe('override-pw');
@@ -652,7 +652,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       });
       expect(result.password).toBe('secret123');
       expect(result.credit).toBe(100);
@@ -675,7 +675,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       });
       expect(result.password).toBe('override-pass');
     });
