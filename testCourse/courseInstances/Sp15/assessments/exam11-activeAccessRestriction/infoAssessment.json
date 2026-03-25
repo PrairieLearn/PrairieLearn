@@ -1,9 +1,9 @@
 {
   "uuid": "db241fb7-8ca4-4316-a92d-85c7753c6d9c",
   "type": "Exam",
-  "title": "Exam active access restriction",
-  "set": "Access Control Tests",
-  "number": "6",
+  "title": "Test Active Access Rule",
+  "set": "Exam",
+  "number": "11",
   "allowAccess": [
     {
       "timeLimitMin": 50,
