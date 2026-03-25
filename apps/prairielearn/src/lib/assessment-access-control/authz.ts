@@ -17,11 +17,8 @@ import {
   selectAccessControlRulesForCourseInstance,
   selectPrairieTestReservations,
   selectStudentContext,
-} from './access-control-data.js';
-import {
-  type AccessControlResolverResult,
-  resolveAccessControl,
-} from './access-control-resolver.js';
+} from './data.js';
+import { type AccessControlResolverResult, resolveAccessControl } from './resolver.js';
 
 type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 type SprocAuthzAssessmentInstance = z.infer<typeof SprocAuthzAssessmentInstanceSchema>;
@@ -103,6 +100,38 @@ export interface ModernAssessmentInstanceAccessInput extends ModernAssessmentAcc
   };
 }
 
+export function applyInstanceAccess({
+  assessmentResult,
+  ownsInstance,
+  timeLimitExpired,
+  hasCourseInstancePermissionView,
+}: {
+  assessmentResult: SprocAuthzAssessment;
+  ownsInstance: boolean;
+  timeLimitExpired: boolean;
+  hasCourseInstancePermissionView: boolean;
+}): SprocAuthzAssessmentInstance {
+  let authorizedEdit = assessmentResult.authorized && ownsInstance;
+
+  if (!ownsInstance) {
+    authorizedEdit = false;
+    if (!hasCourseInstancePermissionView) {
+      return {
+        ...assessmentResult,
+        authorized: false,
+        authorized_edit: false,
+        time_limit_expired: timeLimitExpired,
+      };
+    }
+  }
+
+  return {
+    ...assessmentResult,
+    authorized_edit: authorizedEdit,
+    time_limit_expired: timeLimitExpired,
+  };
+}
+
 export async function resolveModernAssessmentInstanceAccess({
   assessmentInstance,
   ...assessmentInput
@@ -125,25 +154,12 @@ export async function resolveModernAssessmentInstanceAccess({
     ownsInstance = assessmentInstance.user_id === authzData.user.id;
   }
 
-  let authorizedEdit = assessmentResult.authorized && ownsInstance;
-
-  if (!ownsInstance) {
-    authorizedEdit = false;
-    if (!authzData.has_course_instance_permission_view) {
-      return {
-        ...assessmentResult,
-        authorized: false,
-        authorized_edit: false,
-        time_limit_expired: timeLimitExpired,
-      };
-    }
-  }
-
-  return {
-    ...assessmentResult,
-    authorized_edit: authorizedEdit,
-    time_limit_expired: timeLimitExpired,
-  };
+  return applyInstanceAccess({
+    assessmentResult,
+    ownsInstance,
+    timeLimitExpired,
+    hasCourseInstancePermissionView: authzData.has_course_instance_permission_view ?? false,
+  });
 }
 
 interface ModernAssessmentAccessBatchInput {

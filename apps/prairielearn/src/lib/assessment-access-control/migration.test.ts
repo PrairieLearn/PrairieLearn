@@ -12,7 +12,7 @@ import {
   applyMigrationToAssessmentFile,
   classifyArchetype,
   migrateAllowAccess,
-} from './access-control-migration.js';
+} from './migration.js';
 
 describe('classifyArchetype', () => {
   const cases: { name: string; rules: AssessmentAccessRuleJson[]; expected: string }[] = [

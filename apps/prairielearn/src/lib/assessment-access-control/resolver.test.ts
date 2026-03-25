@@ -13,7 +13,7 @@ import {
   mergeRules,
   resolveAccessControl,
   resolveVisibility,
-} from './access-control-resolver.js';
+} from './resolver.js';
 
 /**
  * Converts an `AccessControlJson` (string dates) to `RuntimeAccessControl`

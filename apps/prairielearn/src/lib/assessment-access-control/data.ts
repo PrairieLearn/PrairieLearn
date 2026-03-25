@@ -16,7 +16,7 @@ import type {
   RuntimeAfterComplete,
   RuntimeDateControl,
   StudentContext,
-} from './access-control-resolver.js';
+} from './resolver.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

@@ -7,7 +7,6 @@ import { z } from 'zod';
 
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
-import { fetchAllAccessControlRules } from '../../lib/assessment-access-control/assessment-access-control.js';
 import { features } from '../../lib/features/index.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import {
@@ -24,6 +23,8 @@ import {
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
 import { type AccessControlJson, AccessControlJsonSchema } from '../../schemas/accessControl.js';
 import { syncAccessControl } from '../../sync/fromDisk/accessControl.js';
+
+import { fetchAllAccessControlRules } from './rules.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'assessment'>;
