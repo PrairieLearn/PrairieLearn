@@ -77,7 +77,7 @@ ORDER BY
   END,
   aacr.number;
 
--- BLOCK select_student_access_context
+-- BLOCK select_user_access_context
 WITH
   student AS (
     SELECT

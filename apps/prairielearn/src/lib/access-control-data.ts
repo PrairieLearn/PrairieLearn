@@ -9,7 +9,7 @@ import type {
   RuntimeAccessControl,
   RuntimeAfterComplete,
   RuntimeDateControl,
-  StudentContext,
+  UserContext,
 } from './access-control-resolver.js';
 import {
   type Assessment,
@@ -208,12 +208,12 @@ export async function selectAccessControlRulesForCourseInstance(
   return result;
 }
 
-export interface StudentAccessContext {
-  student: StudentContext;
+export interface UserAccessContext {
+  user: UserContext;
   prairieTestReservations: PrairieTestReservation[];
 }
 
-const StudentAccessContextRowSchema = z.object({
+const UserAccessContextRowSchema = z.object({
   student: z
     .object({
       enrollment_id: IdSchema,
@@ -228,19 +228,19 @@ const StudentAccessContextRowSchema = z.object({
   ),
 });
 
-export async function selectStudentAccessContext(
+export async function selectUserAccessContext(
   userId: string,
   courseInstance: CourseInstance,
   date: Date,
-): Promise<StudentAccessContext> {
+): Promise<UserAccessContext> {
   const row = await queryRow(
-    sql.select_student_access_context,
+    sql.select_user_access_context,
     { user_id: userId, course_instance_id: courseInstance.id, date },
-    StudentAccessContextRowSchema,
+    UserAccessContextRowSchema,
   );
 
   return {
-    student: row.student
+    user: row.student
       ? {
           enrollmentId: row.student.enrollment_id,
           studentLabelIds: row.student.student_label_ids,

@@ -3,7 +3,7 @@ import type { z } from 'zod';
 import {
   selectAccessControlRulesForAssessment,
   selectAccessControlRulesForCourseInstance,
-  selectStudentAccessContext,
+  selectUserAccessContext,
 } from './access-control-data.js';
 import {
   type AccessControlResolverResult,
@@ -69,14 +69,14 @@ export async function resolveModernAssessmentAccess({
   authzData,
   reqDate,
 }: ModernAssessmentAccessInput): Promise<SprocAuthzAssessment & { show_before_release: boolean }> {
-  const [rules, { student, prairieTestReservations }] = await Promise.all([
+  const [rules, { user, prairieTestReservations }] = await Promise.all([
     selectAccessControlRulesForAssessment(assessment),
-    selectStudentAccessContext(userId, courseInstance, reqDate),
+    selectUserAccessContext(userId, courseInstance, reqDate),
   ]);
 
   const result = resolveAccessControl({
     rules,
-    student,
+    user,
     date: reqDate,
     displayTimezone: courseInstance.display_timezone,
     authzMode: authzData.mode ?? null,
@@ -160,9 +160,9 @@ export async function resolveModernAssessmentAccessBatch({
 }: ModernAssessmentAccessBatchInput): Promise<
   Map<string, SprocAuthzAssessment & { show_before_release: boolean }>
 > {
-  const [allRules, { student, prairieTestReservations }] = await Promise.all([
+  const [allRules, { user, prairieTestReservations }] = await Promise.all([
     selectAccessControlRulesForCourseInstance(courseInstance),
-    selectStudentAccessContext(userId, courseInstance, reqDate),
+    selectUserAccessContext(userId, courseInstance, reqDate),
   ]);
 
   const results = new Map<string, SprocAuthzAssessment & { show_before_release: boolean }>();
@@ -170,7 +170,7 @@ export async function resolveModernAssessmentAccessBatch({
   for (const [assessmentId, rules] of allRules) {
     const result = resolveAccessControl({
       rules,
-      student,
+      user,
       date: reqDate,
       displayTimezone: courseInstance.display_timezone,
       authzMode: authzData.mode ?? null,
