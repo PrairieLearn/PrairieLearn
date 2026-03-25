@@ -139,8 +139,9 @@ export type OverrideData = z.infer<typeof OverrideSchema>;
 export type AccessControlFormData = z.infer<typeof AccessControlFormDataSchema>;
 
 /**
- * Strip the trailing 'Z' from an ISO date string so it is compatible with
- * `<input type="datetime-local">` which expects `yyyy-MM-ddThh:mm[:ss[.SSS]]`.
+ * Convert an ISO date string to a datetime-local value compatible with
+ * `<input type="datetime-local">` (format: `YYYY-MM-DDTHH:MM` or `YYYY-MM-DDTHH:MM:SS`).
+ * Strips trailing milliseconds and the 'Z' timezone indicator.
  */
 function toLocalDatetimeValue(value: string): string;
 function toLocalDatetimeValue(value: string | null): string | null;
@@ -149,7 +150,7 @@ function toLocalDatetimeValue(value: string | null | undefined): string | null |
 
 function toLocalDatetimeValue(value: string | null | undefined): string | null | undefined {
   if (typeof value === 'string') {
-    return value.replace(/Z$/, '');
+    return value.replace(/\.\d+Z$|Z$|\.\d+$/, '');
   }
   return value;
 }
@@ -310,7 +311,8 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
     // "Released immediately" in the UI sets releaseDate to null; persist as
     // the current timestamp so it round-trips as a real date (matching the
     // course-instance publishing pattern).
-    output.dateControl.releaseDate = rule.releaseDate || new Date().toISOString();
+    output.dateControl.releaseDate =
+      rule.releaseDate || toLocalDatetimeValue(new Date().toISOString());
     if (rule.dueDate) output.dateControl.dueDate = rule.dueDate;
     if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (rule.lateDeadlines.length > 0) output.dateControl.lateDeadlines = rule.lateDeadlines;

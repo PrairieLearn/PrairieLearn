@@ -19,7 +19,7 @@ import { config } from '../../lib/config.js';
 import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { handleTrpcError } from '../../lib/trpc.js';
 
 import {
@@ -41,11 +41,9 @@ router.use(
   }),
 );
 
-function getAssessmentPath(resLocals: {
-  course: { path: string };
-  course_instance: { short_name: string | null };
-  assessment: { tid: string | null };
-}): string {
+function getAssessmentPath(
+  resLocals: Pick<ResLocalsForPage<'assessment'>, 'course' | 'course_instance' | 'assessment'>,
+): string {
   return path.join(
     resLocals.course.path,
     'courseInstances',
@@ -59,11 +57,8 @@ function getAssessmentPath(resLocals: {
 router.get(
   '/',
   typedAsyncHandler<'assessment'>(async (req, res) => {
-    const assessmentId = res.locals.assessment.id;
-
-    const jsonRules = await fetchAllAccessControlRules(res.locals.assessment);
-
-    if (jsonRules.length > 0) {
+    if (res.locals.assessment.modern_access_control) {
+      const jsonRules = await fetchAllAccessControlRules(res.locals.assessment);
       const origHash = computeHash(jsonRules);
       const trpcCsrfToken = generatePrefixCsrfToken(
         {
@@ -85,7 +80,7 @@ router.get(
 
     const accessRules = await queryRows(
       sql.assessment_access_rules,
-      { assessment_id: assessmentId },
+      { assessment_id: res.locals.assessment.id },
       AssessmentAccessRulesSchema,
     );
 

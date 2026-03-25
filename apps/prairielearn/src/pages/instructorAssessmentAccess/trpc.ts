@@ -22,7 +22,11 @@ import {
   validateEnrollmentIdsInCourseInstance,
 } from '../../models/enrollment.js';
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
-import { type AccessControlJson, MAX_ACCESS_CONTROL_RULES } from '../../schemas/accessControl.js';
+import {
+  type AccessControlJson,
+  AccessControlJsonSchema,
+  MAX_ACCESS_CONTROL_RULES,
+} from '../../schemas/accessControl.js';
 import { syncAccessControl } from '../../sync/fromDisk/accessControl.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
@@ -145,98 +149,14 @@ function formJsonToEnrollmentRuleData(
   };
 }
 
-const DateStringInputSchema = z.string().refine((s) => !Number.isNaN(new Date(s).getTime()), {
-  message: 'Must be a valid date string',
-});
-
-const DeadlineInputSchema = z.object({
-  date: DateStringInputSchema,
-  credit: z.number().min(0, 'Credit must be non-negative'),
-});
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-export const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: string }> = z
-  .object({
+// TODO: Add client-side validation for duplicate PrairieTest exam UUIDs and
+// duplicate deadline dates before this goes live. The sync code
+// (validateAssessmentRules) catches these server-side, but the UI should block
+// saves proactively so users get immediate feedback instead of a sync error.
+export const AccessControlJsonInputSchema = AccessControlJsonSchema.extend({
     id: z.string().optional(),
-    listBeforeRelease: z.boolean().optional(),
-    labels: z.array(z.string()).optional(),
-    dateControl: z
-      .object({
-        releaseDate: DateStringInputSchema.nullable().optional(),
-        dueDate: DateStringInputSchema.nullable().optional(),
-        earlyDeadlines: z.array(DeadlineInputSchema).nullable().optional(),
-        lateDeadlines: z.array(DeadlineInputSchema).nullable().optional(),
-        afterLastDeadline: z
-          .object({
-            credit: z.number().min(0, 'Credit must be non-negative').optional(),
-            allowSubmissions: z.boolean().optional(),
-          })
-          .nullable()
-          .optional(),
-        durationMinutes: z.number().int().positive().nullable().optional(),
-        password: z.string().min(1, 'Password cannot be empty').nullable().optional(),
-      })
-      .optional(),
-    integrations: z
-      .object({
-        prairieTest: z
-          .object({
-            exams: z
-              .array(
-                z.object({
-                  examUuid: z.string().regex(UUID_REGEX, 'Invalid UUID format'),
-                  readOnly: z.boolean().optional(),
-                }),
-              )
-              .optional(),
-          })
-          .optional(),
-      })
-      .optional(),
-    afterComplete: z
-      .object({
-        hideQuestions: z.boolean().optional(),
-        showQuestionsAgainDate: DateStringInputSchema.nullable().optional(),
-        hideQuestionsAgainDate: DateStringInputSchema.nullable().optional(),
-        hideScore: z.boolean().optional(),
-        showScoreAgainDate: DateStringInputSchema.nullable().optional(),
-      })
-      .optional(),
   })
-  .superRefine((data, ctx) => {
-    const exams = data.integrations?.prairieTest?.exams ?? [];
-    const seenUuids = new Set<string>();
-    for (const e of exams) {
-      if (seenUuids.has(e.examUuid)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `Duplicate PrairieTest exam UUID: ${e.examUuid}`,
-          path: ['integrations', 'prairieTest', 'exams'],
-        });
-        break;
-      }
-      seenUuids.add(e.examUuid);
-    }
-
-    for (const [key, deadlines] of [
-      ['earlyDeadlines', data.dateControl?.earlyDeadlines],
-      ['lateDeadlines', data.dateControl?.lateDeadlines],
-    ] as const) {
-      const seenDates = new Set<string>();
-      for (const d of deadlines ?? []) {
-        if (seenDates.has(d.date)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Duplicate ${key === 'earlyDeadlines' ? 'early' : 'late'} deadline date: ${d.date}`,
-            path: ['dateControl', key],
-          });
-          break;
-        }
-        seenDates.add(d.date);
-      }
-    }
-  });
+  .strip();
 
 const EnrollmentRuleInputSchema = z.object({
   id: z.string().optional(),

@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import { useState } from 'react';
-import { Alert, Form } from 'react-bootstrap';
+import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
 import { OverlayTrigger, useModalState } from '@prairielearn/ui';
@@ -9,7 +9,6 @@ import { SplitPane } from '../../../components/SplitPane.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 
 import { AccessControlSummary } from './AccessControlSummary.js';
-import { ConfirmationModal } from './ConfirmationModal.js';
 import { MainRuleForm } from './MainRuleForm.js';
 import { OverrideRuleContent } from './OverrideRuleContent.js';
 import { AppliesToField } from './fields/AppliesToField.js';
@@ -312,15 +311,23 @@ export function AccessControlForm({
         />
       </Form>
 
-      <ConfirmationModal
-        show={deleteModal.show}
-        title="Delete override rule"
-        message={`Are you sure you want to delete "${deleteModal.data?.name ?? ''}"? This action cannot be undone.`}
-        confirmText="Delete"
-        confirmVariant="danger"
-        onConfirm={handleDeleteConfirm}
-        onCancel={deleteModal.hide}
-      />
+      <Modal show={deleteModal.show} onHide={deleteModal.hide}>
+        <Modal.Header closeButton>
+          <Modal.Title>Delete override rule</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to delete &quot;{deleteModal.data?.name ?? ''}&quot;? This action
+          cannot be undone.
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={deleteModal.hide}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDeleteConfirm}>
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </FormProvider>
   );
 }
