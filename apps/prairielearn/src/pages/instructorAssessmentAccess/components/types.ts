@@ -143,33 +143,18 @@ export type AccessControlFormData = z.infer<typeof AccessControlFormDataSchema>;
  * Convert a date string to a timezone-naive datetime-local value suitable for
  * `<input type="datetime-local">` (format: `yyyy-MM-ddTHH:mm:ss`).
  *
- * If the string carries timezone information (trailing `Z` or `+/-HH:MM`), it
- * is converted to the course instance's display timezone.  Timezone-naive
- * strings are returned as-is.
+ * Parses the ISO 8601 string as a UTC instant, then converts it to the course
+ * instance's display timezone. Null/undefined values pass through unchanged.
  */
-function toLocalDatetimeValue(value: string, displayTimezone: string): string;
-function toLocalDatetimeValue(value: string | null, displayTimezone: string): string | null;
-function toLocalDatetimeValue(
-  value: string | undefined,
+function toLocalDatetimeValue<T extends string | null | undefined>(
+  value: T,
   displayTimezone: string,
-): string | undefined;
-function toLocalDatetimeValue(
-  value: string | null | undefined,
-  displayTimezone: string,
-): string | null | undefined;
-
-function toLocalDatetimeValue(
-  value: string | null | undefined,
-  displayTimezone: string,
-): string | null | undefined {
+): T {
   if (typeof value === 'string') {
-    if (value.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(value)) {
-      return Temporal.Instant.fromEpochMilliseconds(new Date(value).getTime())
-        .toZonedDateTimeISO(displayTimezone)
-        .toPlainDateTime()
-        .toString();
-    }
-    return value;
+    return Temporal.Instant.from(value)
+      .toZonedDateTimeISO(displayTimezone)
+      .toPlainDateTime()
+      .toString() as T;
   }
   return value;
 }
