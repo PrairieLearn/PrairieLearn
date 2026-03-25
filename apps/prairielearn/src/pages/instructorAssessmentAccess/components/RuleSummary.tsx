@@ -68,14 +68,14 @@ export function generateDateTableRows(
       date: releaseDate,
       timestamp: new Date(releaseDate).getTime(),
       label: 'Release',
-      credit: '—',
+      credit: '100%',
       visibility: visibilityParts.join(' '),
     });
   } else if (releaseDate === null && verbosity === 'verbose') {
     rows.push({
       date: 'Released immediately',
       label: '',
-      credit: '—',
+      credit: '100%',
       visibility: 'Assessment opens',
     });
   }
@@ -98,7 +98,7 @@ export function generateDateTableRows(
       timestamp: new Date(dueDate).getTime(),
       label: 'Due',
       credit: '100%',
-      visibility: 'Open',
+      visibility: 'Due',
     });
   } else if (dueDate === null && verbosity === 'verbose') {
     rows.push({
@@ -186,7 +186,9 @@ export function generateRuleSummary(
   }
 
   if (isMainRuleData(rule) && rule.prairieTestEnabled && rule.prairieTestExams.length > 0) {
-    lines.push(`${rule.prairieTestExams.length} PrairieTest exam(s)`);
+    lines.push(
+      `${rule.prairieTestExams.length} PrairieTest ${rule.prairieTestExams.length === 1 ? 'exam' : 'exams'}`,
+    );
   }
 
   const hasAfterLastDeadline = rule.afterLastDeadline != null;
