@@ -26,8 +26,8 @@ async function impersonateUser(page: Page, uid: string, baseURL: string) {
   ]);
 }
 
-const ASSESSMENT_TITLE = 'Access Control Test';
-const ASSESSMENT_DIR = 'courseInstances/Sp15/assessments/hw-accessControl';
+const ASSESSMENT_TITLE = 'Main rule and student visibility';
+const ASSESSMENT_DIR = 'courseInstances/Sp15/assessments/act-mainRuleAndVisibility';
 
 async function writeAssessmentConfig(
   testCoursePath: string,

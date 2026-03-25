@@ -1,9 +1,9 @@
 {
   "uuid": "a1b2c3d4-1111-4f7b-8c1d-2e5a6b9c0d1f",
   "type": "Homework",
-  "title": "Access Control Test 2",
-  "set": "Homework",
-  "number": "15",
+  "title": "Spare access control fixture",
+  "set": "Access Control Tests",
+  "number": "2",
   "accessControl": [
     {
       "listBeforeRelease": true,

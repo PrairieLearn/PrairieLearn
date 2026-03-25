@@ -1,9 +1,9 @@
 {
   "uuid": "a1b2c3d4-4444-4f7b-8c1d-2e5a6b9c0d1f",
   "type": "Homework",
-  "title": "Access Control Test 5",
-  "set": "Homework",
-  "number": "18",
+  "title": "Edit override settings",
+  "set": "Access Control Tests",
+  "number": "5",
   "accessControl": [
     {
       "listBeforeRelease": true,

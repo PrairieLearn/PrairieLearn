@@ -42,11 +42,11 @@ describe(
       await helperServer.before()();
       const { id: examId } = await selectAssessmentByTid({
         course_instance_id: '1',
-        tid: 'exam11-activeAccessRestriction',
+        tid: 'act-examActiveRule',
       });
       const { id: hwId } = await selectAssessmentByTid({
         course_instance_id: '1',
-        tid: 'hw8-activeAccessRestriction',
+        tid: 'act-hwActiveRule',
       });
       context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
       context.assessmentListUrl = `${context.courseInstanceBaseUrl}/assessments`;
@@ -56,7 +56,7 @@ describe(
 
       context.hwId = hwId;
       context.hwUrl = `${context.courseInstanceBaseUrl}/assessment/${context.hwId}/`;
-      context.hwNumber = '8';
+      context.hwNumber = '7';
     });
 
     afterAll(helperServer.after);
@@ -92,7 +92,7 @@ describe(
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.isTrue(response.ok);
 
-        assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 0);
+        assert.lengthOf(response.$('a:contains("Exam active access restriction")'), 0);
       },
     );
 
@@ -113,8 +113,8 @@ describe(
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.isTrue(response.ok);
 
-        assert.lengthOf(response.$('td:contains("Test Active Access Rule")'), 1);
-        assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 0); // there should be no link
+        assert.lengthOf(response.$('td:contains("Exam active access restriction")'), 1);
+        assert.lengthOf(response.$('a:contains("Exam active access restriction")'), 0); // there should be no link
       },
     );
 
@@ -147,7 +147,7 @@ describe(
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.isTrue(response.ok);
 
-        assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 1);
+        assert.lengthOf(response.$('a:contains("Exam active access restriction")'), 1);
       },
     );
 
@@ -276,7 +276,7 @@ describe(
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.isTrue(response.ok);
 
-        assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 1);
+        assert.lengthOf(response.$('a:contains("Exam active access restriction")'), 1);
       },
     );
 
@@ -413,10 +413,10 @@ describe(
 
       // the link to the first question begins with "HWX.1." where X is the homework number
       const questionWithVariantPath = response
-        .$(`a:contains(HW${context.hwNumber}.1.)`)
+        .$(`a:contains(ACT${context.hwNumber}.1.)`)
         .attr('href');
       const questionWithoutVariantPath = response
-        .$(`a:contains(HW${context.hwNumber}.2.)`)
+        .$(`a:contains(ACT${context.hwNumber}.2.)`)
         .attr('href');
       context.hwQuestionUrl = `${context.siteUrl}${questionWithVariantPath}`;
       context.hwQuestionWithoutVariantUrl = `${context.siteUrl}${questionWithoutVariantPath}`;

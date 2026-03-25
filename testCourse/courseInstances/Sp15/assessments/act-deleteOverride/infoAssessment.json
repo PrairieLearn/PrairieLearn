@@ -1,9 +1,9 @@
 {
   "uuid": "a1b2c3d4-3333-4f7b-8c1d-2e5a6b9c0d1f",
   "type": "Homework",
-  "title": "Access Control Test 4",
-  "set": "Homework",
-  "number": "17",
+  "title": "Delete override",
+  "set": "Access Control Tests",
+  "number": "4",
   "accessControl": [
     {
       "listBeforeRelease": true,

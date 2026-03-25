@@ -1,9 +1,9 @@
 {
   "uuid": "f5b2c8d1-9a3e-4f7b-8c1d-2e5a6b9c0d1f",
   "type": "Homework",
-  "title": "Access Control Test",
-  "set": "Homework",
-  "number": "14",
+  "title": "Main rule and student visibility",
+  "set": "Access Control Tests",
+  "number": "1",
   "accessControl": [
     {
       "listBeforeRelease": true,

@@ -45,7 +45,7 @@ test.describe('Access control UI', () => {
   test('can view page with initial data and verify summary', async ({ page, courseInstance }) => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
-      tid: 'hw-accessControl',
+      tid: 'act-mainRuleAndVisibility',
     });
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
@@ -67,7 +67,7 @@ test.describe('Access control UI', () => {
   }) => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
-      tid: 'hw-accessControl3',
+      tid: 'act-addOverride',
     });
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
@@ -110,7 +110,7 @@ test.describe('Access control UI', () => {
   test('can delete an override', async ({ page, courseInstance }) => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
-      tid: 'hw-accessControl4',
+      tid: 'act-deleteOverride',
     });
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
@@ -154,7 +154,7 @@ test.describe('Access control UI', () => {
   }) => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
-      tid: 'hw-accessControl5',
+      tid: 'act-editOverride',
     });
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
