@@ -141,26 +141,26 @@ function buildAfterComplete(rule: AssessmentAccessControlRule): RuntimeAfterComp
 }
 
 function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRuleInput {
-  const rule: RuntimeAccessControl = {};
-  const acr = row.access_control_rule;
+  const runtimeRule: RuntimeAccessControl = {};
+  const rule = row.access_control_rule;
 
-  if (!isOverride(acr)) {
-    rule.listBeforeRelease = acr.list_before_release ?? false;
+  if (!isOverride(rule)) {
+    runtimeRule.listBeforeRelease = rule.list_before_release ?? false;
   }
 
-  const dateControl = buildDateControl(acr, row.early_deadlines, row.late_deadlines);
-  if (dateControl !== undefined) rule.dateControl = dateControl;
+  const dateControl = buildDateControl(rule, row.early_deadlines, row.late_deadlines);
+  if (dateControl !== undefined) runtimeRule.dateControl = dateControl;
 
-  const afterComplete = buildAfterComplete(acr);
-  if (afterComplete !== undefined) rule.afterComplete = afterComplete;
+  const afterComplete = buildAfterComplete(rule);
+  if (afterComplete !== undefined) runtimeRule.afterComplete = afterComplete;
 
-  const prairietestExamsRaw = (!isOverride(acr) && row.prairietest_exams) || [];
+  const prairietestExamsRaw = (!isOverride(rule) && row.prairietest_exams) || [];
   const prairietestExams = prairietestExamsRaw.map((e) => ({
     uuid: e.uuid,
     readOnly: e.read_only,
   }));
   if (prairietestExams.length > 0) {
-    rule.integrations = {
+    runtimeRule.integrations = {
       prairieTest: {
         exams: prairietestExams.map((e) => ({ examUuid: e.uuid, readOnly: e.readOnly })),
       },
@@ -168,9 +168,9 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
   }
 
   return {
-    rule,
-    number: acr.number,
-    targetType: acr.target_type,
+    rule: runtimeRule,
+    number: rule.number,
+    targetType: rule.target_type,
     enrollmentIds: row.enrollment_ids,
     studentLabelIds: row.student_label_ids,
     prairietestExams,
