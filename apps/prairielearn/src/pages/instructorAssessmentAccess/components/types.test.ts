@@ -8,6 +8,8 @@ import {
   jsonToMainRuleFormData,
 } from './types.js';
 
+const TEST_TIMEZONE = 'America/Chicago';
+
 const defaultMainRule: MainRuleData = {
   trackingId: 'main-1',
   listBeforeRelease: true,
@@ -50,7 +52,7 @@ function buildFormData(override: OverrideData): AccessControlFormData {
 
 describe('formDataToJson', () => {
   it('defaults listBeforeRelease to false when omitted from the main rule JSON', () => {
-    const mainRule = jsonToMainRuleFormData({});
+    const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
 
     expect(mainRule.listBeforeRelease).toBe(false);
   });
@@ -61,7 +63,7 @@ describe('formDataToJson', () => {
       trackingId: 'o-1',
     };
 
-    const result = formDataToJson(buildFormData(override));
+    const result = formDataToJson(buildFormData(override), TEST_TIMEZONE);
     expect(result[1].dateControl).toBeUndefined();
   });
 
@@ -74,7 +76,7 @@ describe('formDataToJson', () => {
       password: 'pw',
     };
 
-    const result = formDataToJson(buildFormData(override));
+    const result = formDataToJson(buildFormData(override), TEST_TIMEZONE);
     const dc = result[1].dateControl!;
     expect(dc.dueDate).toBe('2025-05-01T00:00:00Z');
     expect(dc.password).toBe('pw');
@@ -99,7 +101,7 @@ describe('formDataToJson', () => {
       },
     };
 
-    const overrideJson = formDataToJson(buildFormData(override))[1];
+    const overrideJson = formDataToJson(buildFormData(override), TEST_TIMEZONE)[1];
     expect(overrideJson.labels).toEqual(['label-a', 'label-b']);
     expect(overrideJson.ruleType).toBeUndefined();
     expect(overrideJson.individuals).toBeUndefined();
@@ -116,7 +118,7 @@ describe('formDataToJson', () => {
       },
     };
 
-    const overrideJson = formDataToJson(buildFormData(override))[1];
+    const overrideJson = formDataToJson(buildFormData(override), TEST_TIMEZONE)[1];
     expect(overrideJson.ruleType).toBe('enrollment');
     expect(overrideJson.individuals).toEqual([
       { enrollmentId: 'e-1', uid: 'user@test.com', name: 'Test User' },
@@ -133,7 +135,7 @@ describe('formDataToJson', () => {
       scoreVisibility: { hideScore: true },
     };
 
-    const overrideJson = formDataToJson(buildFormData(override))[1];
+    const overrideJson = formDataToJson(buildFormData(override), TEST_TIMEZONE)[1];
     expect(overrideJson.afterComplete).toBeDefined();
     expect(overrideJson.afterComplete!.hideQuestions).toBe(true);
     expect(overrideJson.afterComplete!.showQuestionsAgainDate).toBe('2025-06-01T00:00:00Z');
@@ -146,7 +148,7 @@ describe('formDataToJson', () => {
       trackingId: 'o-8',
     };
 
-    const overrideJson = formDataToJson(buildFormData(override))[1];
+    const overrideJson = formDataToJson(buildFormData(override), TEST_TIMEZONE)[1];
     expect(overrideJson.afterComplete).toBeUndefined();
   });
 
@@ -182,7 +184,7 @@ describe('formDataToJson', () => {
       ],
     };
 
-    const result = formDataToJson(formData);
+    const result = formDataToJson(formData, TEST_TIMEZONE);
     const overrideJson = result[1];
 
     expect(overrideJson.dateControl).toBeDefined();

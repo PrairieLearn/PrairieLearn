@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 
 import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
+import stableStringify from 'fast-json-stable-stringify';
 import superjson from 'superjson';
 import { z } from 'zod';
 
@@ -21,7 +22,11 @@ import {
   validateEnrollmentIdsInCourseInstance,
 } from '../../models/enrollment.js';
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
-import { type AccessControlJson, AccessControlJsonSchema } from '../../schemas/accessControl.js';
+import {
+  type AccessControlJson,
+  AccessControlJsonSchema,
+  MAX_ACCESS_CONTROL_RULES,
+} from '../../schemas/accessControl.js';
 import { syncAccessControl } from '../../sync/fromDisk/accessControl.js';
 
 import { fetchAllAccessControlRules } from './rules.js';
@@ -150,11 +155,9 @@ function formJsonToEnrollmentRuleData(
 // duplicate deadline dates before this goes live. The sync code
 // (validateAssessmentRules) catches these server-side, but the UI should block
 // saves proactively so users get immediate feedback instead of a sync error.
-export const AccessControlJsonInputSchema = AccessControlJsonSchema.omit({ name: true })
-  .extend({
-    id: z.string().optional(),
-  })
-  .strip();
+export const AccessControlJsonInputSchema = AccessControlJsonSchema.extend({
+  id: z.string().optional(),
+}).strip();
 
 const EnrollmentRuleInputSchema = z.object({
   id: z.string().optional(),
@@ -166,7 +169,7 @@ const saveAllRules = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
-      rules: z.array(AccessControlJsonInputSchema),
+      rules: z.array(AccessControlJsonInputSchema).max(MAX_ACCESS_CONTROL_RULES),
       enrollmentRules: z.array(EnrollmentRuleInputSchema).optional(),
       origHash: z.string(),
     }),
@@ -268,7 +271,7 @@ const saveAllRules = t.procedure
   });
 
 export function computeHash(rules: object[]): string {
-  return crypto.createHash('sha256').update(JSON.stringify(rules)).digest('hex');
+  return crypto.createHash('sha256').update(stableStringify(rules)).digest('hex');
 }
 
 export const accessControlRouter = t.router({
