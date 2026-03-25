@@ -18,6 +18,7 @@ import { features } from '../lib/features/index.js';
 import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
+  type AccessControlJson,
   type AssessmentJson,
   type AssessmentJsonInput,
   type AssessmentSetJson,
@@ -262,12 +263,18 @@ export async function loadFullCourse(
       );
     });
 
+    const validStudentLabelNames =
+      courseInstance.data == null
+        ? undefined
+        : new Set(courseInstance.data.studentLabels?.map((label) => label.name));
+
     const assessments = await loadAssessments({
       coursePath,
       courseInstanceDirectory,
       courseInstanceExpired,
       questions,
       sharingEnabled,
+      validStudentLabelNames,
     });
 
     for (const assessment of Object.values(assessments)) {
@@ -1125,6 +1132,88 @@ function formatValues(qids: Set<string> | string[]) {
 }
 
 /**
+ * Validates an array of access control rules.
+ * Returns a single object with all accumulated errors and warnings.
+ */
+export function validateAccessControlArray({
+  accessControlJsonArray,
+  validStudentLabelNames,
+}: {
+  accessControlJsonArray: AccessControlJson[];
+  validStudentLabelNames?: Set<string>;
+}): { warnings: string[]; errors: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  if (accessControlJsonArray.length === 0) {
+    return { errors, warnings };
+  }
+
+  // A main rule has no `labels` property (applies to everyone)
+  const mainRules = accessControlJsonArray.filter(
+    (rule) => rule.labels == null || rule.labels.length === 0,
+  );
+
+  if (mainRules.length === 0) {
+    errors.push('No main rule found. The first rule must apply to everyone.');
+  } else if (mainRules.length > 1) {
+    errors.push(`Found ${mainRules.length} main rules. Only one rule should apply to everyone.`);
+  } else {
+    // The DB constraint `check_first_rule_is_none` requires the main rule at index 0
+    const firstRule = accessControlJsonArray[0];
+    const isFirstRuleMain = firstRule.labels == null || firstRule.labels.length === 0;
+    if (!isFirstRuleMain) {
+      errors.push('The main rule (without labels) must be the first rule in the array.');
+    }
+  }
+
+  for (const rule of accessControlJsonArray) {
+    const labels = rule.labels ?? [];
+    const seenLabels = new Set<string>();
+    const duplicateLabels = new Set<string>();
+
+    for (const label of labels) {
+      if (seenLabels.has(label)) {
+        duplicateLabels.add(label);
+      } else {
+        seenLabels.add(label);
+      }
+    }
+
+    if (duplicateLabels.size > 0) {
+      errors.push(
+        `Found duplicate student labels in this access control rule: ${formatValues(duplicateLabels)}.`,
+      );
+    }
+
+    if (validStudentLabelNames !== undefined) {
+      const invalidLabels = [...seenLabels].filter((label) => !validStudentLabelNames.has(label));
+      if (invalidLabels.length > 0) {
+        errors.push(
+          `The access control rule targets non-existent student labels: ${formatValues(invalidLabels)}.`,
+        );
+      }
+    }
+
+    if (rule.dateControl?.password === '') {
+      errors.push('Password cannot be empty.');
+    }
+
+    const isMainRule = rule.labels == null || rule.labels.length === 0;
+    if (!isMainRule && rule.integrations != null) {
+      errors.push('integrations can only be specified on the main rule (the rule without labels).');
+    }
+    if (!isMainRule && rule.listBeforeRelease !== undefined) {
+      errors.push(
+        'listBeforeRelease can only be specified on the main rule (the rule without labels).',
+      );
+    }
+  }
+
+  return { errors, warnings };
+}
+
+/**
  * Converts legacy group properties to the new groups format for unified handling.
  */
 export function convertLegacyGroupsToGroupsConfig(assessment: AssessmentJson): GroupsJson {
@@ -1161,12 +1250,14 @@ function validateAssessment({
   questions,
   sharingEnabled,
   courseInstanceExpired,
+  validStudentLabelNames,
 }: {
   assessment: AssessmentJson;
   rawAssessment: AssessmentJsonInput;
   questions: Record<string, InfoFile<QuestionJson>>;
   sharingEnabled: boolean;
   courseInstanceExpired: boolean;
+  validStudentLabelNames?: Set<string>;
 }): { warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -1546,6 +1637,16 @@ function validateAssessment({
     });
   }
 
+  // Validate access control rules if defined
+  if (assessment.accessControl) {
+    const accessControlValidation = validateAccessControlArray({
+      accessControlJsonArray: assessment.accessControl,
+      validStudentLabelNames,
+    });
+    errors.push(...accessControlValidation.errors);
+    warnings.push(...accessControlValidation.warnings);
+  }
+
   if (assessment.zones[0]?.lockpoint) {
     errors.push('The first zone cannot have lockpoint: true');
   }
@@ -1795,12 +1896,14 @@ async function loadAssessments({
   courseInstanceExpired,
   questions,
   sharingEnabled,
+  validStudentLabelNames,
 }: {
   coursePath: string;
   courseInstanceDirectory: string;
   courseInstanceExpired: boolean;
   questions: Record<string, InfoFile<QuestionJson>>;
   sharingEnabled: boolean;
+  validStudentLabelNames?: Set<string>;
 }): Promise<Record<string, InfoFile<AssessmentJson>>> {
   const assessmentsPath = path.join('courseInstances', courseInstanceDirectory, 'assessments');
   const assessments = await loadInfoForDirectory({
@@ -1816,6 +1919,7 @@ async function loadAssessments({
         questions,
         sharingEnabled,
         courseInstanceExpired,
+        validStudentLabelNames,
       }),
     recursive: true,
   });
