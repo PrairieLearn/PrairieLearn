@@ -465,7 +465,7 @@ describe('Access control syncing', () => {
       const override = rules.find((rule) => rule.targetType === 'student_label');
 
       assert.isOk(override);
-      assert.equal(override.rule.listBeforeRelease, false);
+      assert.isUndefined(override.rule.listBeforeRelease);
 
       const overrideRow = syncedRules.find((rule) => rule.target_type === 'student_label');
       assert.isOk(overrideRow);

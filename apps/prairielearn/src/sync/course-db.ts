@@ -1212,7 +1212,7 @@ export function validateAccessControlArray({
         'integrations can only be specified on assignment-level rules (rules without labels).',
       );
     }
-    if (!isAssignmentLevel && rule.listBeforeRelease === true) {
+    if (!isAssignmentLevel && rule.listBeforeRelease != null) {
       results[index].errors.push(
         'listBeforeRelease can only be specified on the main rule (the rule without labels).',
       );

@@ -110,11 +110,13 @@ function dbBaseRowToAccessControlJson(row: BaseRuleRow): AccessControlJson & { i
   }
 
   const isMainRule = row.number === 0 && row.target_type === 'none';
-  const listBeforeRelease = isMainRule ? (row.list_before_release ?? false) : false;
+  const listBeforeRelease = isMainRule
+    ? (row.list_before_release ?? false)
+    : row.list_before_release;
 
   return {
     id: row.id,
-    listBeforeRelease,
+    ...(listBeforeRelease != null ? { listBeforeRelease } : {}),
     dateControl: Object.keys(dateControl).length > 0 ? dateControl : undefined,
     afterComplete: Object.keys(afterComplete).length > 0 ? afterComplete : undefined,
   };

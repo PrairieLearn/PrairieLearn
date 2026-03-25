@@ -120,14 +120,9 @@ export const AccessControlJsonSchema = z
       .array(z.string())
       .optional()
       .describe('Array of student label names this set targets'),
-    // .default(false) is safe here because listBeforeRelease is main-rule-only:
-    // override rules are rejected if they set it to true, and the sync/resolver
-    // already treat absent as false. Using .default() instead of .optional()
-    // produces cleaner JSON schema output (no nested anyOf/not for undefined).
     listBeforeRelease: z
       .boolean()
-      .nullable()
-      .default(false)
+      .optional()
       .describe(
         'Main rule only. Whether to list the assessment title before the release date. Students can see the title but cannot open the assessment. Defaults to false.',
       ),
@@ -139,4 +134,6 @@ export const AccessControlJsonSchema = z
   .strict();
 
 export type AccessControlJson = z.infer<typeof AccessControlJsonSchema>;
-export type AccessControlJsonInput = z.input<typeof AccessControlJsonSchema>;
+// With no .default() transforms, input and output types are identical.
+// Keep the alias for callers that distinguish conceptually between the two.
+export type AccessControlJsonInput = AccessControlJson;

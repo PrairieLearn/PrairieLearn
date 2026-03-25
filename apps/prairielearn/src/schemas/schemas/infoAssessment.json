@@ -738,8 +738,7 @@
         },
         "listBeforeRelease": {
           "description": "Main rule only. Whether to list the assessment title before the release date. Students can see the title but cannot open the assessment. Defaults to false.",
-          "type": ["boolean", "null"],
-          "default": false
+          "type": "boolean"
         },
         "dateControl": {
           "type": "object",

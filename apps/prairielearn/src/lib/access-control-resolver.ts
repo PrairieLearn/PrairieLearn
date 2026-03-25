@@ -136,11 +136,15 @@ export function mergeRules(
 ): AccessControlJson {
   if (!override) return main;
 
-  return {
-    listBeforeRelease: main.listBeforeRelease,
-    dateControl: mergeDateControl(main.dateControl, override.dateControl),
-    afterComplete: mergeAfterComplete(main.afterComplete, override.afterComplete),
-  };
+  const merged: AccessControlJson = {};
+
+  // listBeforeRelease is only configurable on the main rule.
+  if (main.listBeforeRelease !== undefined) merged.listBeforeRelease = main.listBeforeRelease;
+
+  merged.dateControl = mergeDateControl(main.dateControl, override.dateControl);
+  merged.afterComplete = mergeAfterComplete(main.afterComplete, override.afterComplete);
+
+  return merged;
 }
 
 /**
@@ -151,7 +155,6 @@ export function cascadeOverrides(
   next: AccessControlJson,
 ): AccessControlJson {
   return {
-    listBeforeRelease: false,
     dateControl: mergeDateControl(base.dateControl, next.dateControl),
     afterComplete: mergeAfterComplete(base.afterComplete, next.afterComplete),
   };

@@ -22,11 +22,7 @@ import {
   validateEnrollmentIdsInCourseInstance,
 } from '../../models/enrollment.js';
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
-import {
-  type AccessControlJson,
-  type AccessControlJsonInput,
-  MAX_ACCESS_CONTROL_RULES,
-} from '../../schemas/accessControl.js';
+import { type AccessControlJson, MAX_ACCESS_CONTROL_RULES } from '../../schemas/accessControl.js';
 import { syncAccessControl } from '../../sync/fromDisk/accessControl.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
@@ -160,14 +156,10 @@ const DeadlineInputSchema = z.object({
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export const AccessControlJsonInputSchema: z.ZodType<
-  AccessControlJson & { id?: string },
-  z.ZodTypeDef,
-  AccessControlJsonInput & { id?: string }
-> = z
+export const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: string }> = z
   .object({
     id: z.string().optional(),
-    listBeforeRelease: z.boolean().nullable().default(false),
+    listBeforeRelease: z.boolean().optional(),
     labels: z.array(z.string()).optional(),
     dateControl: z
       .object({
@@ -266,14 +258,14 @@ const saveAllRules = t.procedure
     const courseInstanceId = opts.ctx.course_instance.id;
     const assessmentId = opts.ctx.assessment.id;
 
-    if (rules.slice(1).some((rule) => rule.listBeforeRelease === true)) {
+    if (rules.slice(1).some((rule) => rule.listBeforeRelease != null)) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'listBeforeRelease can only be specified on the main rule.',
       });
     }
 
-    if (enrollmentRules?.some((rule) => rule.ruleJson.listBeforeRelease === true)) {
+    if (enrollmentRules?.some((rule) => rule.ruleJson.listBeforeRelease != null)) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'listBeforeRelease can only be specified on the main rule.',

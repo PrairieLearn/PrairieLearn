@@ -353,7 +353,6 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
   const output: AccessControlJsonWithId = {
     id: rule.id,
     labels,
-    listBeforeRelease: false,
   };
 
   const of = new Set(rule.overriddenFields);

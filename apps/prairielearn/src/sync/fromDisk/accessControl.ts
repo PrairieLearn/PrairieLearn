@@ -50,7 +50,7 @@ function validateAssessmentRules(
   // We still need to reject labels missing from the database here so that
   // label-targeted rules are not silently treated as assignment-level rules.
   for (const [index, rule] of rules.entries()) {
-    if (index > 0 && rule.listBeforeRelease === true) {
+    if (index > 0 && rule.listBeforeRelease != null) {
       return 'listBeforeRelease can only be specified on the main rule.';
     }
 
