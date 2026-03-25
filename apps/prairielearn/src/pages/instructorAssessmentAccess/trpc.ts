@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
-import { fetchAllAccessControlRules } from '../../lib/assessment-access-control.js';
+import { fetchAllAccessControlRules } from '../../lib/assessment-access-control/assessment-access-control.js';
 import { features } from '../../lib/features/index.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import {

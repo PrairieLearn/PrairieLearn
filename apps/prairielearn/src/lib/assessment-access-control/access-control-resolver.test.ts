@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AccessControlJson } from '../schemas/accessControl.js';
+import type { AccessControlJson } from '../../schemas/accessControl.js';
 
 import {
   type AccessControlResolverInput,

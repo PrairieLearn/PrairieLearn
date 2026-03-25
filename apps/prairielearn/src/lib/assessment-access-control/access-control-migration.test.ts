@@ -4,7 +4,7 @@ import * as path from 'path';
 import tmp from 'tmp-promise';
 import { assert, describe, it } from 'vitest';
 
-import type { AssessmentAccessRuleJson } from '../schemas/infoAssessment.js';
+import type { AssessmentAccessRuleJson } from '../../schemas/infoAssessment.js';
 
 import {
   analyzeAssessmentFile,

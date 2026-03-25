@@ -12,8 +12,8 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import {
   analyzeAssessmentFile,
   migrateAssessmentJson,
-} from '../../lib/access-control-migration.js';
-import { fetchAllAccessControlRules } from '../../lib/assessment-access-control.js';
+} from '../../lib/assessment-access-control/access-control-migration.js';
+import { fetchAllAccessControlRules } from '../../lib/assessment-access-control/assessment-access-control.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
 import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';

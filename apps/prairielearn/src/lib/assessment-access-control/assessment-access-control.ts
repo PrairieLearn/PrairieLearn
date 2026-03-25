@@ -2,14 +2,13 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import type { AccessControlJsonWithId } from '../pages/instructorAssessmentAccess/components/types.js';
-import type { AccessControlJson } from '../schemas/accessControl.js';
-
+import type { AccessControlJsonWithId } from '../../pages/instructorAssessmentAccess/components/types.js';
+import type { AccessControlJson } from '../../schemas/accessControl.js';
 import {
   type Assessment,
   AssessmentAccessControlPrairietestExamSchema,
   AssessmentAccessControlRuleSchema,
-} from './db-types.js';
+} from '../db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

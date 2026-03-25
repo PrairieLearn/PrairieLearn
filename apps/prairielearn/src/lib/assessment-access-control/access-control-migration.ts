@@ -5,10 +5,9 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-import type { AccessControlJsonInput } from '../schemas/accessControl.js';
-import type { AssessmentAccessRuleJson } from '../schemas/infoAssessment.js';
-
-import { formatJsonWithPrettier } from './prettier.js';
+import type { AccessControlJsonInput } from '../../schemas/accessControl.js';
+import type { AssessmentAccessRuleJson } from '../../schemas/infoAssessment.js';
+import { formatJsonWithPrettier } from '../prettier.js';
 
 export interface AssessmentMigrationAnalysis {
   tid: string;

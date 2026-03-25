@@ -3,6 +3,12 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
+import {
+  type Assessment,
+  AssessmentAccessControlRuleSchema,
+  type CourseInstance,
+} from '../db-types.js';
+
 import type {
   AccessControlRuleInput,
   PrairieTestReservation,
@@ -11,11 +17,6 @@ import type {
   RuntimeDateControl,
   StudentContext,
 } from './access-control-resolver.js';
-import {
-  type Assessment,
-  AssessmentAccessControlRuleSchema,
-  type CourseInstance,
-} from './db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

@@ -1,5 +1,17 @@
 import type { z } from 'zod';
 
+import type {
+  Assessment,
+  CourseInstance,
+  EnumCourseInstanceRole,
+  EnumCourseRole,
+  EnumMode,
+  SprocAuthzAssessmentInstanceSchema,
+  SprocAuthzAssessmentSchema,
+} from '../db-types.js';
+import { getGroupId } from '../groups.js';
+import { idsEqual } from '../id.js';
+
 import {
   selectAccessControlRulesForAssessment,
   selectAccessControlRulesForCourseInstance,
@@ -10,17 +22,6 @@ import {
   type AccessControlResolverResult,
   resolveAccessControl,
 } from './access-control-resolver.js';
-import type {
-  Assessment,
-  CourseInstance,
-  EnumCourseInstanceRole,
-  EnumCourseRole,
-  EnumMode,
-  SprocAuthzAssessmentInstanceSchema,
-  SprocAuthzAssessmentSchema,
-} from './db-types.js';
-import { getGroupId } from './groups.js';
-import { idsEqual } from './id.js';
 
 type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 type SprocAuthzAssessmentInstance = z.infer<typeof SprocAuthzAssessmentInstanceSchema>;
@@ -58,6 +59,7 @@ function resolverResultToSprocAuthzAssessment(
     // Only report Exam mode when the student has an active PrairieTest
     // reservation (examAccessEnd is non-null), indicating a live exam session.
     mode: authzMode === 'Exam' && result.examAccessEnd ? 'Exam' : null,
+    show_before_release: result.showBeforeRelease,
     next_active_time: null,
     access_rules: [],
   };
@@ -69,7 +71,7 @@ export async function resolveModernAssessmentAccess({
   courseInstance,
   authzData,
   reqDate,
-}: ModernAssessmentAccessInput): Promise<SprocAuthzAssessment & { show_before_release: boolean }> {
+}: ModernAssessmentAccessInput): Promise<SprocAuthzAssessment> {
   const [rules, student, prairieTestReservations] = await Promise.all([
     selectAccessControlRulesForAssessment(assessment),
     selectStudentContext(userId, courseInstance),
@@ -89,10 +91,7 @@ export async function resolveModernAssessmentAccess({
     prairieTestReservations,
   });
 
-  return {
-    ...resolverResultToSprocAuthzAssessment(result, authzData.mode),
-    show_before_release: result.showBeforeRelease,
-  };
+  return resolverResultToSprocAuthzAssessment(result, authzData.mode);
 }
 
 export interface ModernAssessmentInstanceAccessInput extends ModernAssessmentAccessInput {
@@ -107,9 +106,7 @@ export interface ModernAssessmentInstanceAccessInput extends ModernAssessmentAcc
 export async function resolveModernAssessmentInstanceAccess({
   assessmentInstance,
   ...assessmentInput
-}: ModernAssessmentInstanceAccessInput): Promise<
-  SprocAuthzAssessmentInstance & { show_before_release: boolean }
-> {
+}: ModernAssessmentInstanceAccessInput): Promise<SprocAuthzAssessmentInstance> {
   const assessmentResult = await resolveModernAssessmentAccess(assessmentInput);
 
   const { assessment, authzData, reqDate } = assessmentInput;
@@ -161,9 +158,7 @@ export async function resolveModernAssessmentAccessBatch({
   userId,
   authzData,
   reqDate,
-}: ModernAssessmentAccessBatchInput): Promise<
-  Map<string, SprocAuthzAssessment & { show_before_release: boolean }>
-> {
+}: ModernAssessmentAccessBatchInput): Promise<Map<string, SprocAuthzAssessment>> {
   const [allRules, student, prairieTestReservations] = await Promise.all([
     selectAccessControlRulesForCourseInstance(courseInstance),
     selectStudentContext(userId, courseInstance),
@@ -172,7 +167,7 @@ export async function resolveModernAssessmentAccessBatch({
       : Promise.resolve([]),
   ]);
 
-  const results = new Map<string, SprocAuthzAssessment & { show_before_release: boolean }>();
+  const results = new Map<string, SprocAuthzAssessment>();
 
   for (const [assessmentId, rules] of allRules) {
     const result = resolveAccessControl({
@@ -186,10 +181,7 @@ export async function resolveModernAssessmentAccessBatch({
       prairieTestReservations,
     });
 
-    results.set(assessmentId, {
-      ...resolverResultToSprocAuthzAssessment(result, authzData.mode),
-      show_before_release: result.showBeforeRelease,
-    });
+    results.set(assessmentId, resolverResultToSprocAuthzAssessment(result, authzData.mode));
   }
 
   return results;
