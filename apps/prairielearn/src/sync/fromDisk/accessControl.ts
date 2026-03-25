@@ -35,6 +35,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  * credit monotonicity, and target-type constraints (e.g. integrations and
  * listBeforeRelease are only valid on the main rule).
  *
+ * @param rule The access control rule to validate.
  * @param targetType 'none' for the main rule, 'student_label' or 'enrollment' for overrides.
  */
 export function validateRule(
