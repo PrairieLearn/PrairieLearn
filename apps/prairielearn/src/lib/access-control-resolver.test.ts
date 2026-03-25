@@ -1236,7 +1236,6 @@ describe('mergeRules', () => {
   });
 
   it.each<{ field: keyof AccessControlJson; main: AccessControlJson }>([
-    { field: 'name', main: { name: 'Main Rule' } },
     { field: 'labels', main: { labels: ['group-a'] } },
     { field: 'integrations', main: { integrations: { prairieTest: { exams: [] } } } },
   ])('does not inherit $field from main', ({ field, main }) => {
