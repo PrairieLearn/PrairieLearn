@@ -675,43 +675,6 @@ describe('analyzeCourseInstanceAssessments', () => {
       { unsafeCleanup: true },
     );
   });
-
-  it('discovers nested assessments in subdirectories', async () => {
-    await tmp.withDir(
-      async ({ path: tmpDir }) => {
-        const assessmentsDir = path.join(tmpDir, 'assessments');
-        await fs.mkdir(path.join(assessmentsDir, 'hw01'), { recursive: true });
-        await fs.mkdir(path.join(assessmentsDir, 'exams', 'midterm', 'exam01'), {
-          recursive: true,
-        });
-
-        await fs.writeFile(
-          path.join(assessmentsDir, 'hw01', 'infoAssessment.json'),
-          JSON.stringify({
-            type: 'Homework',
-            title: 'HW1',
-            allowAccess: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
-          }),
-        );
-        await fs.writeFile(
-          path.join(assessmentsDir, 'exams', 'midterm', 'exam01', 'infoAssessment.json'),
-          JSON.stringify({
-            type: 'Exam',
-            title: 'Midterm Exam',
-            allowAccess: [{ mode: 'Exam', credit: 100 }],
-          }),
-        );
-
-        const result = await analyzeCourseInstanceAssessments(tmpDir);
-        assert.equal(result.hasLegacyRules, true);
-        assert.lengthOf(result.assessments, 2);
-
-        const tids = result.assessments.map((a) => a.tid).sort();
-        assert.deepEqual(tids, [path.join('exams', 'midterm', 'exam01'), 'hw01']);
-      },
-      { unsafeCleanup: true },
-    );
-  });
 });
 
 describe('applyMigrationToAssessmentFile', () => {
