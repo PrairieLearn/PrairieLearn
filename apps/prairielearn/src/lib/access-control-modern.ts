@@ -69,14 +69,14 @@ export async function resolveModernAssessmentAccess({
   authzData,
   reqDate,
 }: ModernAssessmentAccessInput): Promise<SprocAuthzAssessment & { show_before_release: boolean }> {
-  const [rules, { user, prairieTestReservations }] = await Promise.all([
+  const [rules, { enrollment, prairieTestReservations }] = await Promise.all([
     selectAccessControlRulesForAssessment(assessment),
     selectUserAccessContext(userId, courseInstance, reqDate),
   ]);
 
   const result = resolveAccessControl({
     rules,
-    user,
+    enrollment,
     date: reqDate,
     displayTimezone: courseInstance.display_timezone,
     authzMode: authzData.mode ?? null,
@@ -160,7 +160,7 @@ export async function resolveModernAssessmentAccessBatch({
 }: ModernAssessmentAccessBatchInput): Promise<
   Map<string, SprocAuthzAssessment & { show_before_release: boolean }>
 > {
-  const [allRules, { user, prairieTestReservations }] = await Promise.all([
+  const [allRules, { enrollment, prairieTestReservations }] = await Promise.all([
     selectAccessControlRulesForCourseInstance(courseInstance),
     selectUserAccessContext(userId, courseInstance, reqDate),
   ]);
@@ -170,7 +170,7 @@ export async function resolveModernAssessmentAccessBatch({
   for (const [assessmentId, rules] of allRules) {
     const result = resolveAccessControl({
       rules,
-      user,
+      enrollment,
       date: reqDate,
       displayTimezone: courseInstance.display_timezone,
       authzMode: authzData.mode ?? null,

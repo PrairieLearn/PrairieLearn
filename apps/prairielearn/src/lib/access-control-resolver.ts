@@ -44,7 +44,7 @@ export interface AccessControlRuleInput {
   prairietestExams: { uuid: string; readOnly: boolean }[];
 }
 
-export interface UserContext {
+export interface EnrollmentContext {
   enrollmentId: string | null;
   studentLabelIds: string[];
 }
@@ -56,7 +56,7 @@ export interface PrairieTestReservation {
 
 export interface AccessControlResolverInput {
   rules: AccessControlRuleInput[];
-  user: UserContext;
+  enrollment: EnrollmentContext;
   date: Date;
   displayTimezone: string;
   authzMode: EnumMode | null;
@@ -417,7 +417,7 @@ export function resolveAccessControl(
 ): AccessControlResolverResult {
   const {
     rules,
-    user,
+    enrollment,
     date,
     displayTimezone,
     authzMode,
@@ -463,11 +463,11 @@ export function resolveAccessControl(
   const matchedOverrides: AccessControlRuleInput[] = [];
   for (const rule of overrides) {
     if (rule.targetType === 'enrollment') {
-      if (user.enrollmentId && rule.enrollmentIds.includes(user.enrollmentId)) {
+      if (enrollment.enrollmentId && rule.enrollmentIds.includes(enrollment.enrollmentId)) {
         matchedOverrides.push(rule);
       }
     } else if (rule.targetType === 'student_label') {
-      if (rule.studentLabelIds.some((id) => user.studentLabelIds.includes(id))) {
+      if (rule.studentLabelIds.some((id) => enrollment.studentLabelIds.includes(id))) {
         matchedOverrides.push(rule);
       }
     }

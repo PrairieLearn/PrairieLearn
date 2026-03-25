@@ -9,7 +9,7 @@ import type {
   RuntimeAccessControl,
   RuntimeAfterComplete,
   RuntimeDateControl,
-  UserContext,
+  EnrollmentContext,
 } from './access-control-resolver.js';
 import {
   type Assessment,
@@ -209,7 +209,7 @@ export async function selectAccessControlRulesForCourseInstance(
 }
 
 export interface UserAccessContext {
-  user: UserContext;
+  enrollment: EnrollmentContext;
   prairieTestReservations: PrairieTestReservation[];
 }
 
@@ -240,7 +240,7 @@ export async function selectUserAccessContext(
   );
 
   return {
-    user: row.enrollment
+    enrollment: row.enrollment
       ? {
           enrollmentId: row.enrollment.enrollment_id,
           studentLabelIds: row.enrollment.student_label_ids,

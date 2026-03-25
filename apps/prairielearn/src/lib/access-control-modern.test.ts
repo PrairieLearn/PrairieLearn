@@ -25,7 +25,7 @@ describe('resolveModernAssessmentInstanceAccess', () => {
     ]);
 
     vi.spyOn(accessControlData, 'selectUserAccessContext').mockResolvedValue({
-      user: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+      enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       prairieTestReservations: [],
     });
   });
