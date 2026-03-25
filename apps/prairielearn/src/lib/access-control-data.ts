@@ -5,11 +5,11 @@ import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import type {
   AccessControlRuleInput,
+  EnrollmentContext,
   PrairieTestReservation,
   RuntimeAccessControl,
   RuntimeAfterComplete,
   RuntimeDateControl,
-  EnrollmentContext,
 } from './access-control-resolver.js';
 import {
   type Assessment,
