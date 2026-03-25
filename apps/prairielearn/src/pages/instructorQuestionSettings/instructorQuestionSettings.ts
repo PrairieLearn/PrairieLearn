@@ -244,6 +244,16 @@ router.post(
                       path: [i, 'default'],
                     });
                   }
+                  if (
+                    pref.type === 'number' &&
+                    !enumValues.every((v) => Number.isFinite(Number(v)))
+                  ) {
+                    ctx.addIssue({
+                      code: z.ZodIssueCode.custom,
+                      message: 'Enum values must be valid numbers for number type',
+                      path: [i, 'enum'],
+                    });
+                  }
                 }
               }
             })
