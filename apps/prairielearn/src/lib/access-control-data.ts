@@ -214,7 +214,7 @@ export interface UserAccessContext {
 }
 
 const UserAccessContextRowSchema = z.object({
-  student: z
+  enrollment: z
     .object({
       enrollment_id: IdSchema,
       student_label_ids: z.array(IdSchema),
@@ -240,10 +240,10 @@ export async function selectUserAccessContext(
   );
 
   return {
-    user: row.student
+    user: row.enrollment
       ? {
-          enrollmentId: row.student.enrollment_id,
-          studentLabelIds: row.student.student_label_ids,
+          enrollmentId: row.enrollment.enrollment_id,
+          studentLabelIds: row.enrollment.student_label_ids,
         }
       : { enrollmentId: null, studentLabelIds: [] },
     prairieTestReservations: row.reservations.map((r) => ({

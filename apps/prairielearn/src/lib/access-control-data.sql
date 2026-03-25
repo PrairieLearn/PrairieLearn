@@ -79,7 +79,7 @@ ORDER BY
 
 -- BLOCK select_user_access_context
 WITH
-  student AS (
+  enrollment AS (
     SELECT
       e.id AS enrollment_id,
       COALESCE(
@@ -113,10 +113,10 @@ WITH
 SELECT
   (
     SELECT
-      to_jsonb(s.*)
+      to_jsonb(e.*)
     FROM
-      student s
-  ) AS student,
+      enrollment e
+  ) AS enrollment,
   COALESCE(
     (
       SELECT
