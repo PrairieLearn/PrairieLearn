@@ -24,10 +24,14 @@ async function keyboardDrag(page: Page, source: Locator, direction: 'up' | 'down
   const arrowKey = direction === 'up' ? 'ArrowUp' : 'ArrowDown';
   await source.focus();
   await page.keyboard.press(' ');
-  // Wait for dnd-kit to activate the drag before issuing arrow key moves.
   await expect(source).toHaveAttribute('aria-pressed', 'true');
   for (let i = 0; i < steps; i++) {
     await page.keyboard.press(arrowKey);
+    // dnd-kit's sortableKeyboardCoordinates reads DOM rects to compute
+    // the next drop position. Yield to the event loop so React can
+    // commit the state update and dnd-kit can re-measure rects before
+    // the next arrow press.
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
   }
   await page.keyboard.press(' ');
 }
