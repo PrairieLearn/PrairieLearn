@@ -51,11 +51,11 @@ function buildDateControl(row: AccessControlRuleRow): RuntimeDateControl | undef
   const dateControl: RuntimeDateControl = {};
 
   if (row.date_control_release_date_overridden) {
-    dateControl.releaseDate = row.date_control_release_date ?? null;
+    dateControl.releaseDate = row.date_control_release_date;
   }
 
   if (row.date_control_due_date_overridden) {
-    dateControl.dueDate = row.date_control_due_date ?? null;
+    dateControl.dueDate = row.date_control_due_date;
   }
 
   if (row.date_control_duration_minutes_overridden) {
