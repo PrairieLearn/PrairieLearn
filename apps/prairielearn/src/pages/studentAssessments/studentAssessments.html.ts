@@ -37,7 +37,7 @@ export const StudentAssessmentsRowSchema = z.object({
   link: z.string(),
   start_new_assessment_group: z.boolean(),
   assessment_group_heading: z.string(),
-  list_before_release: z.boolean().optional(),
+  show_before_release: z.boolean().optional(),
 });
 type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowSchema>;
 
@@ -94,7 +94,7 @@ export function StudentAssessments({
                       </span>
                     </td>
                     <td class="align-middle">
-                      ${row.list_before_release
+                      ${row.show_before_release
                         ? html`<span class="text-muted">${row.title}</span>`
                         : row.multiple_instance_header ||
                             (!row.active && row.assessment_instance_id == null)
@@ -109,7 +109,7 @@ export function StudentAssessments({
                             `}
                     </td>
                     <td class="text-center align-middle">
-                      ${row.list_before_release
+                      ${row.show_before_release
                         ? html`<span class="text-muted">Not yet open</span>`
                         : row.credit_date_string === 'None'
                           ? ''

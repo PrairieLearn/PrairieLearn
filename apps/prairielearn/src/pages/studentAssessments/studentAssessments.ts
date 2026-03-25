@@ -50,12 +50,12 @@ router.get(
           credit_date_string: result.credit_date_string ?? 'None',
           active: result.active,
           show_closed_assessment_score: result.show_closed_assessment_score,
-          list_before_release: result.list_before_release,
+          show_before_release: result.show_before_release,
         };
       })
       .filter((row): row is NonNullable<typeof row> => {
         if (row == null) return false;
-        if (row.list_before_release) return true;
+        if (row.show_before_release) return true;
         return row.authorized;
       });
 

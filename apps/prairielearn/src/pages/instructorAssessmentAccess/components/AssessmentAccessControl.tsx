@@ -11,7 +11,7 @@ import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 import { AccessControlForm } from './AccessControlForm.js';
 import type { AccessControlJsonWithId } from './types.js';
 
-interface AccessControlProps {
+interface AssessmentAccessControlProps {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
   origHash: string;
@@ -19,11 +19,11 @@ interface AccessControlProps {
   initialData: AccessControlJsonWithId[];
 }
 
-function AccessControlInner({
+function AssessmentAccessControlInner({
   courseInstance,
   origHash: initialOrigHash,
   initialData,
-}: AccessControlProps) {
+}: AssessmentAccessControlProps) {
   const [origHash, setOrigHash] = useState(initialOrigHash);
   const queryClient = useQueryClient();
   const trpc = useTRPC();
@@ -79,7 +79,7 @@ function AccessControlInner({
   );
 }
 
-export function AccessControl(props: AccessControlProps) {
+export function AssessmentAccessControl(props: AssessmentAccessControlProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => {
     const accessUrl = getAssessmentAccessUrl({
@@ -91,9 +91,9 @@ export function AccessControl(props: AccessControlProps) {
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <AccessControlInner {...props} />
+        <AssessmentAccessControlInner {...props} />
       </TRPCProvider>
     </QueryClientProviderDebug>
   );
 }
-AccessControl.displayName = 'AccessControl';
+AssessmentAccessControl.displayName = 'AssessmentAccessControl';

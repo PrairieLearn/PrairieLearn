@@ -29,14 +29,14 @@ function DurationInput({ value, onChange, idPrefix }: DurationInputProps) {
             placeholder="Duration in minutes"
             min="1"
             value={value}
-            onChange={({ currentTarget }) => onChange(Number(currentTarget.value) || 60)}
+            onChange={({ currentTarget }) => onChange(Number(currentTarget.value) || null)}
           />
           <InputGroup.Text>minutes</InputGroup.Text>
         </InputGroup>
       )}
       <Form.Text className="text-muted">
         {value !== null
-          ? `Students will have ${value || 60} minutes to complete the assessment.`
+          ? `Students will have ${value} minutes to complete the assessment.`
           : 'Add a time limit to the assessment.'}
       </Form.Text>
     </Form.Group>
