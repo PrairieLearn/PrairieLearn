@@ -174,6 +174,10 @@ export async function insertAiGradingJobAndDeductCreditsIfNeeded({
  * Atomically deduct credits from the pool for AI grading.
  * Deducts from non-transferable credits first, then transferable.
  * Throws if the pool has insufficient credits.
+ *
+ * Exported for testing. Production callers should use
+ * {@link insertAiGradingJobAndDeductCreditsIfNeeded} instead to ensure
+ * correct lock ordering and avoid deadlocks.
  */
 export async function deductCreditsForAiGrading(
   params: DeductCreditsForAiGradingParams,
