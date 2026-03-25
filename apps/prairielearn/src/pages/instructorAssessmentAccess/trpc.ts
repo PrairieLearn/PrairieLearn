@@ -154,9 +154,8 @@ function formJsonToEnrollmentRuleData(
 // (validateAssessmentRules) catches these server-side, but the UI should block
 // saves proactively so users get immediate feedback instead of a sync error.
 export const AccessControlJsonInputSchema = AccessControlJsonSchema.extend({
-    id: z.string().optional(),
-  })
-  .strip();
+  id: z.string().optional(),
+}).strip();
 
 const EnrollmentRuleInputSchema = z.object({
   id: z.string().optional(),
