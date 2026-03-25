@@ -154,55 +154,7 @@ export const AccessControlJsonInputSchema = AccessControlJsonSchema.omit({ name:
   .extend({
     id: z.string().optional(),
   })
-  .strip()
-  .superRefine((data, ctx) => {
-    const exams = data.integrations?.prairieTest?.exams ?? [];
-    const seenUuids = new Set<string>();
-    for (const e of exams) {
-      if (seenUuids.has(e.examUuid)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `Duplicate PrairieTest exam UUID: ${e.examUuid}`,
-          path: ['integrations', 'prairieTest', 'exams'],
-        });
-        break;
-      }
-      seenUuids.add(e.examUuid);
-    }
-
-    if (data.labels) {
-      const seenLabels = new Set<string>();
-      for (const label of data.labels) {
-        if (seenLabels.has(label)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Duplicate label: "${label}"`,
-            path: ['labels'],
-          });
-          break;
-        }
-        seenLabels.add(label);
-      }
-    }
-
-    for (const [key, deadlines] of [
-      ['earlyDeadlines', data.dateControl?.earlyDeadlines],
-      ['lateDeadlines', data.dateControl?.lateDeadlines],
-    ] as const) {
-      const seenDates = new Set<string>();
-      for (const d of deadlines ?? []) {
-        if (seenDates.has(d.date)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Duplicate ${key === 'earlyDeadlines' ? 'early' : 'late'} deadline date: ${d.date}`,
-            path: ['dateControl', key],
-          });
-          break;
-        }
-        seenDates.add(d.date);
-      }
-    }
-  });
+  .strip();
 
 const EnrollmentRuleInputSchema = z.object({
   id: z.string().optional(),
