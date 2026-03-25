@@ -176,12 +176,77 @@ router.post(
           preferences: z
             .array(
               z.object({
-                name: z.string(),
+                name: z.string().min(1, 'Preference name is required'),
                 type: z.enum(['string', 'number', 'boolean']),
-                default: z.string(),
+                default: z.string().min(1, 'Default value is required'),
                 enum: z.string().optional(),
               }),
             )
+            .superRefine((prefs, ctx) => {
+              const names = new Set<string>();
+              for (let i = 0; i < prefs.length; i++) {
+                const pref = prefs[i];
+                if (names.has(pref.name)) {
+                  ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: `Duplicate preference name: "${pref.name}"`,
+                    path: [i, 'name'],
+                  });
+                }
+                names.add(pref.name);
+
+                if (pref.type === 'number') {
+                  const num = Number(pref.default);
+                  if (!Number.isFinite(num)) {
+                    ctx.addIssue({
+                      code: z.ZodIssueCode.custom,
+                      message: 'Default must be a finite number',
+                      path: [i, 'default'],
+                    });
+                  }
+                } else if (pref.type === 'boolean') {
+                  if (pref.default !== 'true' && pref.default !== 'false') {
+                    ctx.addIssue({
+                      code: z.ZodIssueCode.custom,
+                      message: 'Default must be "true" or "false"',
+                      path: [i, 'default'],
+                    });
+                  }
+                }
+
+                if (pref.enum && pref.enum !== '[]') {
+                  let enumValues: string[];
+                  try {
+                    enumValues = JSON.parse(pref.enum);
+                  } catch {
+                    ctx.addIssue({
+                      code: z.ZodIssueCode.custom,
+                      message: 'Invalid enum format',
+                      path: [i, 'enum'],
+                    });
+                    continue;
+                  }
+                  if (
+                    !Array.isArray(enumValues) ||
+                    !enumValues.every((v) => typeof v === 'string')
+                  ) {
+                    ctx.addIssue({
+                      code: z.ZodIssueCode.custom,
+                      message: 'Enum must be an array of strings',
+                      path: [i, 'enum'],
+                    });
+                    continue;
+                  }
+                  if (enumValues.length > 0 && !enumValues.includes(pref.default)) {
+                    ctx.addIssue({
+                      code: z.ZodIssueCode.custom,
+                      message: 'Default must be one of the enum values',
+                      path: [i, 'default'],
+                    });
+                  }
+                }
+              }
+            })
             .default([]),
           external_grading_image: z.string().optional(),
           external_grading_files: GradedFilesSchema,

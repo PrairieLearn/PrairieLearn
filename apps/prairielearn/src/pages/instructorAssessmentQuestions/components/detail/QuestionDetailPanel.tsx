@@ -561,7 +561,6 @@ export function QuestionDetailPanel({
                       viewValue={
                         hasOverride ? String(currentValue) : `${String(schema.default)} (default)`
                       }
-                      helpText={`Default: ${String(schema.default)}`}
                     >
                       {(aria) => (
                         <div className="d-flex align-items-center gap-2">
@@ -589,7 +588,7 @@ export function QuestionDetailPanel({
                               );
                             }}
                           >
-                            <option value="">Use default ({String(schema.default)})</option>
+                            <option value="">{`Default (${String(schema.default)})`}</option>
                             <option value="true">true</option>
                             <option value="false">false</option>
                           </select>
@@ -609,7 +608,6 @@ export function QuestionDetailPanel({
                       viewValue={
                         hasOverride ? String(currentValue) : `${String(schema.default)} (default)`
                       }
-                      helpText={`Default: ${String(schema.default)}`}
                     >
                       {(aria) => (
                         <select
@@ -636,7 +634,7 @@ export function QuestionDetailPanel({
                             );
                           }}
                         >
-                          <option value="">Use default ({String(schema.default)})</option>
+                          <option value="">{`Default (${String(schema.default)})`}</option>
                           {schema.enum?.map((v) => (
                             <option key={String(v)} value={String(v)}>
                               {String(v)}
@@ -657,7 +655,7 @@ export function QuestionDetailPanel({
                     viewValue={
                       hasOverride ? String(currentValue) : `${String(schema.default)} (default)`
                     }
-                    helpText={`Default: ${String(schema.default)}`}
+                    helpText=""
                   >
                     {(aria) => (
                       <input
@@ -665,7 +663,7 @@ export function QuestionDetailPanel({
                         step={schema.type === 'number' ? 'any' : undefined}
                         className="form-control form-control-sm"
                         {...aria.inputProps}
-                        placeholder={String(schema.default)}
+                        placeholder={`Default (${String(schema.default)})`}
                         defaultValue={hasOverride ? String(currentValue) : ''}
                         onBlur={(e) => {
                           const val = e.target.value.trim();

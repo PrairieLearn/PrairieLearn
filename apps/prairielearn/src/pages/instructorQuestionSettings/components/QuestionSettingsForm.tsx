@@ -532,7 +532,7 @@ export const QuestionSettingsForm = ({
                       <th>Name</th>
                       <th style={{ width: '7rem' }}>Type</th>
                       <th>Default</th>
-                      <th>Allowed values (Optional)</th>
+                      <th>Allowed values</th>
                       {canEdit && <th style={{ width: '2.5rem' }} />}
                     </tr>
                   </thead>
