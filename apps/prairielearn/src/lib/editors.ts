@@ -26,6 +26,7 @@ import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
+import { applyMigrationToAssessmentFile } from './access-control-migration.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import type { StaffCourse } from './client/safe-db-types.js';
@@ -56,12 +57,7 @@ async function syncCourseFromDisk(
 ) {
   const endGitHash = await getCourseCommitHash(course.path);
 
-  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(
-    course.id,
-    course.path,
-    job,
-    courseData,
-  );
+  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course, job, courseData);
 
   if (syncResult.status === 'sharing_error') {
     throw new Error('Sync completely failed due to invalid question sharing edit.');
@@ -298,7 +294,7 @@ export abstract class Editor {
             this.course.path,
           );
           const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
-            this.course.id,
+            this.course,
             possibleCourseData,
             job,
           );
@@ -820,6 +816,10 @@ export class CourseInstanceCopyEditor extends Editor {
   private from_path: string;
   private is_transfer: boolean;
   private metadataOverrides?: Record<string, any>;
+  private accessControlMigration?: {
+    strategy: 'migrate' | 'keep' | 'wipe';
+    preserveIncompatible: boolean;
+  };
 
   public readonly uuid: string;
 
@@ -829,6 +829,10 @@ export class CourseInstanceCopyEditor extends Editor {
       from_path: string;
       course_instance: CourseInstance;
       metadataOverrides?: Record<string, any>;
+      accessControlMigration?: {
+        strategy: 'migrate' | 'keep' | 'wipe';
+        preserveIncompatible: boolean;
+      };
     },
   ) {
     const is_transfer = !idsEqual(params.locals.course.id, params.from_course.id);
@@ -841,6 +845,7 @@ export class CourseInstanceCopyEditor extends Editor {
     this.from_path = params.from_path;
     this.is_transfer = is_transfer;
     this.metadataOverrides = params.metadataOverrides;
+    this.accessControlMigration = params.accessControlMigration;
 
     this.uuid = crypto.randomUUID();
   }
@@ -998,6 +1003,23 @@ export class CourseInstanceCopyEditor extends Editor {
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
+
+    if (this.accessControlMigration && this.accessControlMigration.strategy !== 'keep') {
+      const assessmentsPath = path.join(courseInstancePath, 'assessments');
+      if (await fs.pathExists(assessmentsPath)) {
+        const assessmentDirs = await fs.readdir(assessmentsPath);
+        for (const dir of assessmentDirs) {
+          const infoPath = path.join(assessmentsPath, dir, 'infoAssessment.json');
+          if (await fs.pathExists(infoPath)) {
+            await applyMigrationToAssessmentFile(
+              infoPath,
+              this.accessControlMigration.strategy,
+              this.accessControlMigration.preserveIncompatible,
+            );
+          }
+        }
+      }
+    }
 
     pathsToAdd.push(courseInstancePath);
     return {
