@@ -203,6 +203,12 @@ const saveAllRules = t.procedure
       }
 
       const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
+      for (const rule of rulesToSync) {
+        const ruleError = validateRule(rule);
+        if (ruleError) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
+        }
+      }
       await syncAccessControl(courseInstanceId, assessmentId, rulesToSync);
 
       // Only process enrollment rule deletions when enrollmentRules is explicitly
