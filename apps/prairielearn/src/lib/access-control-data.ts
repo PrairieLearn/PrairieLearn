@@ -119,24 +119,18 @@ function buildAfterComplete(row: AccessControlRuleRow): RuntimeAfterComplete | u
     afterComplete.hideQuestions = row.after_complete_hide_questions;
   }
   if (includeField(row.after_complete_hide_questions_again_date_overridden)) {
-    if (row.after_complete_hide_questions_again_date) {
-      afterComplete.hideQuestionsAgainDate = row.after_complete_hide_questions_again_date;
-    }
+    afterComplete.hideQuestionsAgainDate = row.after_complete_hide_questions_again_date ?? null;
   }
 
   if (includeField(row.after_complete_show_questions_again_date_overridden)) {
-    if (row.after_complete_show_questions_again_date) {
-      afterComplete.showQuestionsAgainDate = row.after_complete_show_questions_again_date;
-    }
+    afterComplete.showQuestionsAgainDate = row.after_complete_show_questions_again_date ?? null;
   }
 
   if (row.after_complete_hide_score != null) {
     afterComplete.hideScore = row.after_complete_hide_score;
   }
   if (includeField(row.after_complete_show_score_again_date_overridden)) {
-    if (row.after_complete_show_score_again_date) {
-      afterComplete.showScoreAgainDate = row.after_complete_show_score_again_date;
-    }
+    afterComplete.showScoreAgainDate = row.after_complete_show_score_again_date ?? null;
   }
 
   return Object.keys(afterComplete).length > 0 ? afterComplete : undefined;

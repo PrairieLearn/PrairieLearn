@@ -19,10 +19,10 @@ export interface RuntimeDateControl {
 
 export interface RuntimeAfterComplete {
   hideQuestions?: boolean;
-  showQuestionsAgainDate?: Date;
-  hideQuestionsAgainDate?: Date;
+  showQuestionsAgainDate?: Date | null;
+  hideQuestionsAgainDate?: Date | null;
   hideScore?: boolean;
-  showScoreAgainDate?: Date;
+  showScoreAgainDate?: Date | null;
 }
 
 /**
@@ -351,8 +351,8 @@ function computeTimeLimitMin(
 
 export function resolveVisibility(
   hide: boolean | undefined,
-  showAgainDate: Date | undefined,
-  hideAgainDate: Date | undefined,
+  showAgainDate: Date | null | undefined,
+  hideAgainDate: Date | null | undefined,
   date: Date,
 ): boolean {
   if (!hide) return true;

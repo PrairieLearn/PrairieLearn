@@ -96,17 +96,18 @@ function dbBaseRowToAccessControlJson(row: BaseRuleRow): AccessControlJson & { i
   }
   if (row.after_complete_show_questions_again_date_overridden) {
     afterComplete.showQuestionsAgainDate =
-      row.after_complete_show_questions_again_date?.toISOString();
+      row.after_complete_show_questions_again_date?.toISOString() ?? null;
   }
   if (row.after_complete_hide_questions_again_date_overridden) {
     afterComplete.hideQuestionsAgainDate =
-      row.after_complete_hide_questions_again_date?.toISOString();
+      row.after_complete_hide_questions_again_date?.toISOString() ?? null;
   }
   if (row.after_complete_hide_score !== null) {
     afterComplete.hideScore = row.after_complete_hide_score;
   }
   if (row.after_complete_show_score_again_date_overridden) {
-    afterComplete.showScoreAgainDate = row.after_complete_show_score_again_date?.toISOString();
+    afterComplete.showScoreAgainDate =
+      row.after_complete_show_score_again_date?.toISOString() ?? null;
   }
 
   const isMainRule = row.number === 0 && row.target_type === 'none';
