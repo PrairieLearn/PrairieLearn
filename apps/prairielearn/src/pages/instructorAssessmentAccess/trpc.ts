@@ -175,7 +175,7 @@ export const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: 
           .nullable()
           .optional(),
         durationMinutes: z.number().int().positive().nullable().optional(),
-        password: z.string().nullable().optional(),
+        password: z.string().min(1, 'Password cannot be empty').nullable().optional(),
       })
       .optional(),
     integrations: z

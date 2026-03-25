@@ -13,6 +13,7 @@ import {
   AssessmentAccessControlEarlyDeadlineSchema,
   AssessmentAccessControlEnrollmentSchema,
   AssessmentAccessControlLateDeadlineSchema,
+  type AssessmentAccessControlRule,
   AssessmentAccessControlRuleSchema,
   AssessmentAccessControlStudentLabelSchema,
   AssessmentSchema,
@@ -20,6 +21,7 @@ import {
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
+import { selectOrInsertUserByUid } from '../../models/user.js';
 import { type AccessControlJsonInput } from '../../schemas/accessControl.js';
 import * as helperDb from '../helperDb.js';
 
@@ -42,7 +44,7 @@ function makeAccessControlRule(
   };
 }
 
-const TARGET_TYPE_ORDER: Record<string, number> = {
+const TARGET_TYPE_ORDER: Record<AssessmentAccessControlRule['target_type'], number> = {
   none: 0,
   student_label: 1,
   enrollment: 2,
@@ -67,8 +69,7 @@ async function findSyncedAccessControlRules(assessmentId: string) {
   return allRules
     .filter((rule) => idsEqual(rule.assessment_id, dbId))
     .sort((a, b) => {
-      const typeOrder =
-        (TARGET_TYPE_ORDER[a.target_type] ?? 99) - (TARGET_TYPE_ORDER[b.target_type] ?? 99);
+      const typeOrder = TARGET_TYPE_ORDER[a.target_type] - TARGET_TYPE_ORDER[b.target_type];
       if (typeOrder !== 0) return typeOrder;
       return a.number - b.number;
     });
@@ -124,7 +125,7 @@ describe('Access control syncing', () => {
   });
 
   describe('Basic rule syncing', () => {
-    it('adds a new assignment-level access control rule', async () => {
+    it('adds a new main access control rule', async () => {
       const { courseData, courseDir } = await util.createAndSyncCourseData();
 
       const newRule = makeAccessControlRule();
@@ -138,7 +139,7 @@ describe('Access control syncing', () => {
       assert.equal(syncedRules.length, 1);
       assert.equal(syncedRules[0].number, 0);
       assert.equal(syncedRules[0].date_control_release_date_overridden, true);
-      // assignment-level rules have 'none' target_type (applies to all)
+      // main rules have 'none' target_type (applies to all)
       assert.equal(syncedRules[0].target_type, 'none');
     });
 
@@ -156,7 +157,7 @@ describe('Access control syncing', () => {
       const initialRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
       assert.equal(initialRules.length, 1);
 
-      // Replace with a different rule (at least one assignment-level rule is required)
+      // Replace with a different rule (at least one main rule is required)
       const newRule = makeAccessControlRule({
         dateControl: { durationMinutes: 45 },
       });
@@ -762,7 +763,7 @@ describe('Access control syncing', () => {
     });
 
     // Validate renumbering group rules works in the database
-    // Note: The assignment-level rule (target_type='none') must remain at position 0
+    // Note: The main rule (target_type='none') must remain at position 0
     it('respects rule number when group rules are renumbered', async () => {
       const courseData = util.getCourseData();
       const groupName1 = 'Group A';
@@ -854,27 +855,18 @@ describe('Access control syncing', () => {
       assert.equal(allRules[2].date_control_duration_minutes, 120); // group2
 
       // manually create 2 enrollment-level rules (UI creation)
-      const user1Id = await sqldb.queryScalar(
-        sql.insert_user,
-        { uid: 'user1@example.com', name: 'User 1', institution_id: '1' },
-        IdSchema,
-      );
-
-      const user2Id = await sqldb.queryScalar(
-        sql.insert_user,
-        { uid: 'user2@example.com', name: 'User 2', institution_id: '1' },
-        IdSchema,
-      );
+      const user1 = await selectOrInsertUserByUid('user1@example.com');
+      const user2 = await selectOrInsertUserByUid('user2@example.com');
 
       const enrollment1Id = await sqldb.queryScalar(
         sql.insert_enrollment,
-        { user_id: user1Id, course_instance_id: assessment.course_instance_id, status: 'joined' },
+        { user_id: user1.id, course_instance_id: assessment.course_instance_id, status: 'joined' },
         IdSchema,
       );
 
       const enrollment2Id = await sqldb.queryScalar(
         sql.insert_enrollment,
-        { user_id: user2Id, course_instance_id: assessment.course_instance_id, status: 'joined' },
+        { user_id: user2.id, course_instance_id: assessment.course_instance_id, status: 'joined' },
         IdSchema,
       );
 
@@ -1005,15 +997,11 @@ describe('Access control syncing', () => {
       );
       assert.isOk(assessment);
 
-      const userId = await sqldb.queryScalar(
-        sql.insert_user,
-        { uid: 'user@example.com', name: 'Test User', institution_id: '1' },
-        IdSchema,
-      );
+      const user = await selectOrInsertUserByUid('user@example.com');
 
       const enrollmentId = await sqldb.queryScalar(
         sql.insert_enrollment,
-        { user_id: userId, course_instance_id: assessment.course_instance_id, status: 'joined' },
+        { user_id: user.id, course_instance_id: assessment.course_instance_id, status: 'joined' },
         IdSchema,
       );
 
@@ -1192,15 +1180,11 @@ describe('Access control syncing', () => {
       );
       assert.isOk(assessment);
 
-      const userId = await sqldb.queryScalar(
-        sql.insert_user,
-        { uid: 'user@example.com', name: 'Test User', institution_id: '1' },
-        IdSchema,
-      );
+      const user = await selectOrInsertUserByUid('user@example.com');
 
       const enrollmentId = await sqldb.queryScalar(
         sql.insert_enrollment,
-        { user_id: userId, course_instance_id: assessment.course_instance_id, status: 'joined' },
+        { user_id: user.id, course_instance_id: assessment.course_instance_id, status: 'joined' },
         IdSchema,
       );
 
@@ -1260,8 +1244,8 @@ describe('Access control syncing', () => {
     });
   });
 
-  describe('Assignment-level rule requirement', () => {
-    it('rejects sync when no assignment-level rule exists', async () => {
+  describe('Main rule requirement', () => {
+    it('rejects sync when no main rule exists', async () => {
       const groupName = 'Test Group';
       const groupRule = makeAccessControlRule({
         labels: [groupName],
@@ -1270,14 +1254,10 @@ describe('Access control syncing', () => {
       const syncedRules = await syncRulesAndRead([groupRule], {
         studentLabels: [groupName],
       });
-      assert.equal(
-        syncedRules.length,
-        0,
-        'Should not sync any rules when there is no assignment-level rule',
-      );
+      assert.equal(syncedRules.length, 0, 'Should not sync any rules when there is no main rule');
     });
 
-    it('rejects sync when multiple assignment-level rules exist', async () => {
+    it('rejects sync when multiple main rules exist', async () => {
       const rule1 = makeAccessControlRule({
         dateControl: { durationMinutes: 60 },
       });
@@ -1288,24 +1268,24 @@ describe('Access control syncing', () => {
       assert.equal(
         syncedRules.length,
         0,
-        'Should not sync any rules when there are multiple assignment-level rules',
+        'Should not sync any rules when there are multiple main rules',
       );
     });
 
-    it('successfully syncs with exactly one assignment-level rule', async () => {
+    it('successfully syncs with exactly one main rule', async () => {
       const groupName = 'Test Group';
-      const assignmentRule = makeAccessControlRule({
+      const mainRule = makeAccessControlRule({
         dateControl: { durationMinutes: 60 },
       });
       const groupRule = makeAccessControlRule({
         labels: [groupName],
         dateControl: { durationMinutes: 90 },
       });
-      const syncedRules = await syncRulesAndRead([assignmentRule, groupRule], {
+      const syncedRules = await syncRulesAndRead([mainRule, groupRule], {
         studentLabels: [groupName],
       });
       assert.equal(syncedRules.length, 2, 'Should sync all rules when properly configured');
-      assert.equal(syncedRules[0].date_control_duration_minutes, 60); // assignment
+      assert.equal(syncedRules[0].date_control_duration_minutes, 60); // main
       assert.equal(syncedRules[1].date_control_duration_minutes, 90); // group
     });
   });
@@ -1485,15 +1465,15 @@ describe('Access control syncing', () => {
       assert.equal(syncedRules.length, 0);
     });
 
-    it('rejects sync when non-assignment-level rule specifies integrations', async () => {
+    it('rejects sync when non-main rule specifies integrations', async () => {
       const courseData = util.getCourseData();
       const groupName = 'Test Group';
 
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
 
-      // create an assignment-level rule without integrations
+      // create a main rule without integrations
       // and a group-level rule WITH integrations (which should be invalid)
-      const assignmentRule = makeAccessControlRule({
+      const mainRule = makeAccessControlRule({
         dateControl: { durationMinutes: 60 },
       });
       const groupRuleWithIntegrations = makeAccessControlRule({
@@ -1508,7 +1488,7 @@ describe('Access control syncing', () => {
 
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
         util.ASSESSMENT_ID
-      ].accessControl = [assignmentRule, groupRuleWithIntegrations];
+      ].accessControl = [mainRule, groupRuleWithIntegrations];
 
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       const syncResults = await util.syncCourseData(courseDir);
@@ -1517,7 +1497,7 @@ describe('Access control syncing', () => {
       if (syncResults.status === 'complete') {
         assert.isTrue(
           syncResults.hadJsonErrors,
-          'Sync should have JSON errors when non-assignment-level rule specifies integrations',
+          'Sync should have JSON errors when non-main rule specifies integrations',
         );
 
         const assessment =
@@ -1530,10 +1510,10 @@ describe('Access control syncing', () => {
         assert.isTrue(
           assessment.errors.some((error) =>
             error.includes(
-              'integrations can only be specified on assignment-level rules (rules without labels)',
+              'integrations can only be specified on the main rule (the rule without labels)',
             ),
           ),
-          'Should have specific error about integrations on non-assignment-level rule',
+          'Should have specific error about integrations on non-main rule',
         );
       }
 
@@ -1541,19 +1521,19 @@ describe('Access control syncing', () => {
       assert.equal(
         syncedRules.length,
         0,
-        'Should not sync any rules when a non-assignment-level rule specifies integrations',
+        'Should not sync any rules when a non-main rule specifies integrations',
       );
     });
 
-    it('allows assignment-level rule to specify integrations', async () => {
+    it('allows main rule to specify integrations', async () => {
       const courseData = util.getCourseData();
       const groupName = 'Test Group';
 
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
 
-      // create an assignment-level rule WITH integrations (should be valid)
+      // create a main rule WITH integrations (should be valid)
       // and a group-level rule WITHOUT integrations
-      const assignmentRuleWithIntegrations = makeAccessControlRule({
+      const mainRuleWithIntegrations = makeAccessControlRule({
         dateControl: { durationMinutes: 60 },
         integrations: {
           prairieTest: {
@@ -1568,7 +1548,7 @@ describe('Access control syncing', () => {
 
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
         util.ASSESSMENT_ID
-      ].accessControl = [assignmentRuleWithIntegrations, groupRule];
+      ].accessControl = [mainRuleWithIntegrations, groupRule];
 
       await util.writeAndSyncCourseData(courseData);
 
@@ -1576,7 +1556,7 @@ describe('Access control syncing', () => {
       assert.equal(
         syncedRules.length,
         2,
-        'Should sync all rules when only assignment-level rule has integrations',
+        'Should sync all rules when only main rule has integrations',
       );
     });
   });
@@ -1803,10 +1783,7 @@ describe('Access control syncing', () => {
       const rules = await selectAccessControlRulesForAssessment(assessment);
       const override = rules.find((r) => r.number > 0);
       assert.isOk(override);
-      assert.equal(
-        override.rule.dateControl?.dueDate,
-        new Date('2024-04-01T23:59:00').toISOString(),
-      );
+      assert.deepEqual(override.rule.dateControl?.dueDate, new Date('2024-04-01T23:59:00'));
     });
 
     it('explicit null override removals round-trip correctly', async () => {
@@ -1935,8 +1912,8 @@ describe('Access control syncing', () => {
       assert.isOk(main);
       const dc = main.rule.dateControl;
       assert.isOk(dc);
-      assert.equal(dc.releaseDate, new Date('2024-03-14T00:01:00').toISOString());
-      assert.equal(dc.dueDate, new Date('2024-03-21T23:59:00').toISOString());
+      assert.deepEqual(dc.releaseDate, new Date('2024-03-14T00:01:00'));
+      assert.deepEqual(dc.dueDate, new Date('2024-03-21T23:59:00'));
       // Fields not in the original JSON should be absent
       assert.isUndefined(dc.durationMinutes);
       assert.isUndefined(dc.password);
@@ -1992,8 +1969,8 @@ describe('Access control syncing', () => {
       assert.isOk(main);
       const dc = main.rule.dateControl;
       assert.isOk(dc);
-      assert.equal(dc.releaseDate, new Date('2024-03-14T00:01:00').toISOString());
-      assert.equal(dc.dueDate, new Date('2024-03-21T23:59:00').toISOString());
+      assert.deepEqual(dc.releaseDate, new Date('2024-03-14T00:01:00'));
+      assert.deepEqual(dc.dueDate, new Date('2024-03-21T23:59:00'));
       assert.equal(dc.durationMinutes, 90);
       assert.equal(dc.password, 'secret123');
       assert.equal(dc.earlyDeadlines?.length, 1);
@@ -2006,9 +1983,9 @@ describe('Access control syncing', () => {
       const ac = main.rule.afterComplete;
       assert.isOk(ac);
       assert.equal(ac.hideQuestions, true);
-      assert.equal(ac.showQuestionsAgainDate, new Date('2024-04-01T00:00:00').toISOString());
+      assert.deepEqual(ac.showQuestionsAgainDate, new Date('2024-04-01T00:00:00'));
       assert.equal(ac.hideScore, true);
-      assert.equal(ac.showScoreAgainDate, new Date('2024-04-15T00:00:00').toISOString());
+      assert.deepEqual(ac.showScoreAgainDate, new Date('2024-04-15T00:00:00'));
     });
 
     it('override only includes its own configured fields, not inherited ones', async () => {
@@ -2043,7 +2020,7 @@ describe('Access control syncing', () => {
       const dc = override.rule.dateControl;
       assert.isOk(dc);
       // Only dueDate was configured on the override
-      assert.equal(dc.dueDate, new Date('2024-04-01T23:59:00').toISOString());
+      assert.deepEqual(dc.dueDate, new Date('2024-04-01T23:59:00'));
       // Fields from the main rule should NOT appear on the override's own JSON
       assert.isUndefined(dc.releaseDate);
       assert.isUndefined(dc.durationMinutes);

@@ -269,7 +269,7 @@ function AfterCompleteCard({
       <Card.Header>
         <div className="d-flex align-items-center">
           <span>{title}</span>
-          <OverlayTrigger trigger="click" placement="right" popover={infoPopoverConfig}>
+          <OverlayTrigger trigger="click" placement="auto" popover={infoPopoverConfig}>
             <Button
               variant="link"
               size="sm"

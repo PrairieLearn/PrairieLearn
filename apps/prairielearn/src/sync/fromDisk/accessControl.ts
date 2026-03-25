@@ -9,9 +9,8 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * Maps a JSON field value to database overridden/value pair.
- * - undefined → overridden: false, value: null (inherit from previous rule)
- * - null → overridden: true, value: null (override and unset)
- * - value → overridden: true, value: value (override and set)
+ * `undefined` means "not specified" (inherit from parent rule); any other
+ * value (including `null`) means "explicitly overridden".
  */
 function mapField<T>(jsonValue: T | null | undefined): {
   overridden: boolean;
@@ -19,11 +18,8 @@ function mapField<T>(jsonValue: T | null | undefined): {
 } {
   if (jsonValue === undefined) {
     return { overridden: false, value: null };
-  } else if (jsonValue === null) {
-    return { overridden: true, value: null };
-  } else {
-    return { overridden: true, value: jsonValue };
   }
+  return { overridden: true, value: jsonValue };
 }
 
 const JSON_RULE_START = 0;
@@ -48,7 +44,7 @@ function validateAssessmentRules(
   // If the course instance config is invalid, course-db skips label existence
   // checks to avoid cascading errors, and student label syncing is skipped.
   // We still need to reject labels missing from the database here so that
-  // label-targeted rules are not silently treated as assignment-level rules.
+  // label-targeted rules are not silently treated as main rules.
   for (const [index, rule] of rules.entries()) {
     if (index > 0 && rule.listBeforeRelease !== undefined) {
       return 'listBeforeRelease can only be specified on the main rule.';
