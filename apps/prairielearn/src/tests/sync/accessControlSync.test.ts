@@ -21,6 +21,7 @@ import {
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
+import { selectOrInsertUserByUid } from '../../models/user.js';
 import { type AccessControlJsonInput } from '../../schemas/accessControl.js';
 import * as helperDb from '../helperDb.js';
 
@@ -854,27 +855,18 @@ describe('Access control syncing', () => {
       assert.equal(allRules[2].date_control_duration_minutes, 120); // group2
 
       // manually create 2 enrollment-level rules (UI creation)
-      const user1Id = await sqldb.queryScalar(
-        sql.insert_user,
-        { uid: 'user1@example.com', name: 'User 1', institution_id: '1' },
-        IdSchema,
-      );
-
-      const user2Id = await sqldb.queryScalar(
-        sql.insert_user,
-        { uid: 'user2@example.com', name: 'User 2', institution_id: '1' },
-        IdSchema,
-      );
+      const user1 = await selectOrInsertUserByUid('user1@example.com');
+      const user2 = await selectOrInsertUserByUid('user2@example.com');
 
       const enrollment1Id = await sqldb.queryScalar(
         sql.insert_enrollment,
-        { user_id: user1Id, course_instance_id: assessment.course_instance_id, status: 'joined' },
+        { user_id: user1.id, course_instance_id: assessment.course_instance_id, status: 'joined' },
         IdSchema,
       );
 
       const enrollment2Id = await sqldb.queryScalar(
         sql.insert_enrollment,
-        { user_id: user2Id, course_instance_id: assessment.course_instance_id, status: 'joined' },
+        { user_id: user2.id, course_instance_id: assessment.course_instance_id, status: 'joined' },
         IdSchema,
       );
 
@@ -1005,15 +997,11 @@ describe('Access control syncing', () => {
       );
       assert.isOk(assessment);
 
-      const userId = await sqldb.queryScalar(
-        sql.insert_user,
-        { uid: 'user@example.com', name: 'Test User', institution_id: '1' },
-        IdSchema,
-      );
+      const user = await selectOrInsertUserByUid('user@example.com');
 
       const enrollmentId = await sqldb.queryScalar(
         sql.insert_enrollment,
-        { user_id: userId, course_instance_id: assessment.course_instance_id, status: 'joined' },
+        { user_id: user.id, course_instance_id: assessment.course_instance_id, status: 'joined' },
         IdSchema,
       );
 
@@ -1192,15 +1180,11 @@ describe('Access control syncing', () => {
       );
       assert.isOk(assessment);
 
-      const userId = await sqldb.queryScalar(
-        sql.insert_user,
-        { uid: 'user@example.com', name: 'Test User', institution_id: '1' },
-        IdSchema,
-      );
+      const user = await selectOrInsertUserByUid('user@example.com');
 
       const enrollmentId = await sqldb.queryScalar(
         sql.insert_enrollment,
-        { user_id: userId, course_instance_id: assessment.course_instance_id, status: 'joined' },
+        { user_id: user.id, course_instance_id: assessment.course_instance_id, status: 'joined' },
         IdSchema,
       );
 

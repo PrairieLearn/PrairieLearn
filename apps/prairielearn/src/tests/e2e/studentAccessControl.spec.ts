@@ -2,6 +2,8 @@ import assert from 'node:assert';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import type { Page } from '@playwright/test';
+
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import {
@@ -17,6 +19,13 @@ import { expect, test } from './fixtures.js';
 const STUDENT_A = { uid: 'e2e_ac_student_a@test.com', name: 'AC Student A', uin: 'AC001' };
 const STUDENT_B = { uid: 'e2e_ac_student_b@test.com', name: 'AC Student B', uin: 'AC002' };
 
+async function impersonateUser(page: Page, uid: string, baseURL: string) {
+  await page.context().addCookies([
+    { name: 'pl2_requested_uid', value: uid, url: baseURL },
+    { name: 'pl2_requested_data_changed', value: 'true', url: baseURL },
+  ]);
+}
+
 const ASSESSMENT_TITLE = 'Access Control Test';
 const ASSESSMENT_DIR = 'courseInstances/Sp15/assessments/hw-accessControl';
 
@@ -31,10 +40,14 @@ async function writeAssessmentConfig(
 }
 
 test.describe.serial('Student access control', () => {
+  // testCoursePath is worker-scoped, so in CI (where workers=1) all spec files
+  // share the same temp copy. Save/restore prevents modifications from leaking
+  // into other spec files that use the same worker.
+  // TODO: consider having the fixture itself snapshot/restore the course directory
+  // so individual spec files don't need to handle this.
   let originalConfig: string;
 
   test.beforeAll(async ({ testCoursePath, courseInstance }) => {
-    // Save original assessment config for restoration
     const configPath = path.join(testCoursePath, ASSESSMENT_DIR, 'infoAssessment.json');
     originalConfig = await fs.readFile(configPath, 'utf-8');
 
@@ -89,10 +102,7 @@ test.describe.serial('Student access control', () => {
     await writeAssessmentConfig(testCoursePath, [{}]);
     await syncCourse(testCoursePath);
 
-    await page.context().addCookies([
-      { name: 'pl2_requested_uid', value: STUDENT_A.uid, url: baseURL },
-      { name: 'pl2_requested_data_changed', value: 'true', url: baseURL },
-    ]);
+    await impersonateUser(page, STUDENT_A.uid, baseURL);
 
     await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
 
@@ -121,10 +131,7 @@ test.describe.serial('Student access control', () => {
     ]);
     await syncCourse(testCoursePath);
 
-    await page.context().addCookies([
-      { name: 'pl2_requested_uid', value: STUDENT_A.uid, url: baseURL },
-      { name: 'pl2_requested_data_changed', value: 'true', url: baseURL },
-    ]);
+    await impersonateUser(page, STUDENT_A.uid, baseURL);
 
     await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
 
@@ -155,10 +162,7 @@ test.describe.serial('Student access control', () => {
     ]);
     await syncCourse(testCoursePath);
 
-    await page.context().addCookies([
-      { name: 'pl2_requested_uid', value: STUDENT_A.uid, url: baseURL },
-      { name: 'pl2_requested_data_changed', value: 'true', url: baseURL },
-    ]);
+    await impersonateUser(page, STUDENT_A.uid, baseURL);
 
     await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
 
@@ -186,10 +190,7 @@ test.describe.serial('Student access control', () => {
     ]);
     await syncCourse(testCoursePath);
 
-    await page.context().addCookies([
-      { name: 'pl2_requested_uid', value: STUDENT_A.uid, url: baseURL },
-      { name: 'pl2_requested_data_changed', value: 'true', url: baseURL },
-    ]);
+    await impersonateUser(page, STUDENT_A.uid, baseURL);
 
     await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
 
