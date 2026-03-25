@@ -3,7 +3,7 @@
   "type": "Homework",
   "title": "Add student-label override",
   "set": "Access Control Tests",
-  "number": "3",
+  "number": "2",
   "accessControl": [
     {
       "listBeforeRelease": true,

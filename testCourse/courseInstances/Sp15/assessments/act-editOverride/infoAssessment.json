@@ -3,7 +3,7 @@
   "type": "Homework",
   "title": "Edit override settings",
   "set": "Access Control Tests",
-  "number": "5",
+  "number": "4",
   "accessControl": [
     {
       "listBeforeRelease": true,

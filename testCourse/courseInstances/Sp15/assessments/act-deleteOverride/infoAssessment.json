@@ -3,7 +3,7 @@
   "type": "Homework",
   "title": "Delete override",
   "set": "Access Control Tests",
-  "number": "4",
+  "number": "3",
   "accessControl": [
     {
       "listBeforeRelease": true,
