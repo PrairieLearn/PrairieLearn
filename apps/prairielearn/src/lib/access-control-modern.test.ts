@@ -24,12 +24,10 @@ describe('resolveModernAssessmentInstanceAccess', () => {
       },
     ]);
 
-    vi.spyOn(accessControlData, 'selectStudentContext').mockResolvedValue({
-      enrollmentId: 'enroll-1',
-      studentLabelIds: [],
+    vi.spyOn(accessControlData, 'selectUserAccessContext').mockResolvedValue({
+      enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+      prairieTestReservations: [],
     });
-
-    vi.spyOn(accessControlData, 'selectPrairieTestReservations').mockResolvedValue([]);
   });
 
   const baseInput = {
