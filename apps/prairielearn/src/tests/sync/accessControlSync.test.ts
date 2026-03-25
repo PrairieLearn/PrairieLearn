@@ -1783,10 +1783,7 @@ describe('Access control syncing', () => {
       const rules = await selectAccessControlRulesForAssessment(assessment);
       const override = rules.find((r) => r.number > 0);
       assert.isOk(override);
-      assert.equal(
-        override.rule.dateControl?.dueDate,
-        new Date('2024-04-01T23:59:00').toISOString(),
-      );
+      assert.deepEqual(override.rule.dateControl?.dueDate, new Date('2024-04-01T23:59:00'));
     });
 
     it('explicit null override removals round-trip correctly', async () => {
@@ -1915,8 +1912,8 @@ describe('Access control syncing', () => {
       assert.isOk(main);
       const dc = main.rule.dateControl;
       assert.isOk(dc);
-      assert.equal(dc.releaseDate, new Date('2024-03-14T00:01:00').toISOString());
-      assert.equal(dc.dueDate, new Date('2024-03-21T23:59:00').toISOString());
+      assert.deepEqual(dc.releaseDate, new Date('2024-03-14T00:01:00'));
+      assert.deepEqual(dc.dueDate, new Date('2024-03-21T23:59:00'));
       // Fields not in the original JSON should be absent
       assert.isUndefined(dc.durationMinutes);
       assert.isUndefined(dc.password);
@@ -1972,8 +1969,8 @@ describe('Access control syncing', () => {
       assert.isOk(main);
       const dc = main.rule.dateControl;
       assert.isOk(dc);
-      assert.equal(dc.releaseDate, new Date('2024-03-14T00:01:00').toISOString());
-      assert.equal(dc.dueDate, new Date('2024-03-21T23:59:00').toISOString());
+      assert.deepEqual(dc.releaseDate, new Date('2024-03-14T00:01:00'));
+      assert.deepEqual(dc.dueDate, new Date('2024-03-21T23:59:00'));
       assert.equal(dc.durationMinutes, 90);
       assert.equal(dc.password, 'secret123');
       assert.equal(dc.earlyDeadlines?.length, 1);
@@ -1986,9 +1983,9 @@ describe('Access control syncing', () => {
       const ac = main.rule.afterComplete;
       assert.isOk(ac);
       assert.equal(ac.hideQuestions, true);
-      assert.equal(ac.showQuestionsAgainDate, new Date('2024-04-01T00:00:00').toISOString());
+      assert.deepEqual(ac.showQuestionsAgainDate, new Date('2024-04-01T00:00:00'));
       assert.equal(ac.hideScore, true);
-      assert.equal(ac.showScoreAgainDate, new Date('2024-04-15T00:00:00').toISOString());
+      assert.deepEqual(ac.showScoreAgainDate, new Date('2024-04-15T00:00:00'));
     });
 
     it('override only includes its own configured fields, not inherited ones', async () => {
@@ -2023,7 +2020,7 @@ describe('Access control syncing', () => {
       const dc = override.rule.dateControl;
       assert.isOk(dc);
       // Only dueDate was configured on the override
-      assert.equal(dc.dueDate, new Date('2024-04-01T23:59:00').toISOString());
+      assert.deepEqual(dc.dueDate, new Date('2024-04-01T23:59:00'));
       // Fields from the main rule should NOT appear on the override's own JSON
       assert.isUndefined(dc.releaseDate);
       assert.isUndefined(dc.durationMinutes);

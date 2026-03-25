@@ -1133,7 +1133,7 @@ function formatValues(qids: Set<string> | string[]) {
 
 /**
  * Validates an array of access control rules.
- * Returns an array of validation results, one per rule.
+ * Returns a single object with all accumulated errors and warnings.
  */
 export function validateAccessControlArray({
   accessControlJsonArray,
@@ -1141,14 +1141,12 @@ export function validateAccessControlArray({
 }: {
   accessControlJsonArray: AccessControlJson[];
   validStudentLabelNames?: Set<string>;
-}): { warnings: string[]; errors: string[] }[] {
-  const results: { warnings: string[]; errors: string[] }[] = accessControlJsonArray.map(() => ({
-    warnings: [],
-    errors: [],
-  }));
+}): { warnings: string[]; errors: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
 
   if (accessControlJsonArray.length === 0) {
-    return results;
+    return { errors, warnings };
   }
 
   // A main rule has no `labels` property (applies to everyone)
@@ -1157,24 +1155,19 @@ export function validateAccessControlArray({
   );
 
   if (mainRules.length === 0) {
-    // Error on first rule if no main rule exists
-    results[0].errors.push('No main rule found. The first rule must apply to everyone.');
+    errors.push('No main rule found. The first rule must apply to everyone.');
   } else if (mainRules.length > 1) {
-    // Error on first rule if multiple main rules exist
-    results[0].errors.push(
-      `Found ${mainRules.length} main rules. Only one rule should apply to everyone.`,
-    );
+    errors.push(`Found ${mainRules.length} main rules. Only one rule should apply to everyone.`);
   } else {
     // The DB constraint `check_first_rule_is_none` requires the main rule at index 0
     const firstRule = accessControlJsonArray[0];
     const isFirstRuleMain = firstRule.labels == null || firstRule.labels.length === 0;
     if (!isFirstRuleMain) {
-      results[0].errors.push('The main rule (without labels) must be the first rule in the array.');
+      errors.push('The main rule (without labels) must be the first rule in the array.');
     }
   }
 
-  // Check for integrations on non-main rules
-  accessControlJsonArray.forEach((rule, index) => {
+  for (const rule of accessControlJsonArray) {
     const labels = rule.labels ?? [];
     const seenLabels = new Set<string>();
     const duplicateLabels = new Set<string>();
@@ -1188,7 +1181,7 @@ export function validateAccessControlArray({
     }
 
     if (duplicateLabels.size > 0) {
-      results[index].errors.push(
+      errors.push(
         `Found duplicate student labels in this access control rule: ${formatValues(duplicateLabels)}.`,
       );
     }
@@ -1196,26 +1189,28 @@ export function validateAccessControlArray({
     if (validStudentLabelNames !== undefined) {
       const invalidLabels = [...seenLabels].filter((label) => !validStudentLabelNames.has(label));
       if (invalidLabels.length > 0) {
-        results[index].errors.push(
+        errors.push(
           `The access control rule targets non-existent student labels: ${formatValues(invalidLabels)}.`,
         );
       }
     }
 
+    if (rule.dateControl?.password === '') {
+      errors.push('Password cannot be empty.');
+    }
+
     const isMainRule = rule.labels == null || rule.labels.length === 0;
     if (!isMainRule && rule.integrations != null) {
-      results[index].errors.push(
-        'integrations can only be specified on the main rule (the rule without labels).',
-      );
+      errors.push('integrations can only be specified on the main rule (the rule without labels).');
     }
     if (!isMainRule && rule.listBeforeRelease !== undefined) {
-      results[index].errors.push(
+      errors.push(
         'listBeforeRelease can only be specified on the main rule (the rule without labels).',
       );
     }
-  });
+  }
 
-  return results;
+  return { errors, warnings };
 }
 
 /**
@@ -1648,10 +1643,8 @@ function validateAssessment({
       accessControlJsonArray: assessment.accessControl,
       validStudentLabelNames,
     });
-    for (const result of accessControlValidation) {
-      errors.push(...result.errors);
-      warnings.push(...result.warnings);
-    }
+    errors.push(...accessControlValidation.errors);
+    warnings.push(...accessControlValidation.warnings);
   }
 
   if (assessment.zones[0]?.lockpoint) {

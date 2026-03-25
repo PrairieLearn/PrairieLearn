@@ -9,7 +9,7 @@ import {
 
 import { ChipGroup } from '@prairielearn/ui';
 
-import type { NamePrefix } from '../hooks/useTypedFormWatch.js';
+import type { NamePrefix } from '../hooks/fieldNames.js';
 import type {
   AccessControlFormData,
   AppliesTo,

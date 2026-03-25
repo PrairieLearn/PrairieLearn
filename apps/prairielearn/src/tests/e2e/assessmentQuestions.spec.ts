@@ -54,10 +54,6 @@ async function resetAssessmentFromTemplate({
 }
 
 test.describe('Assessment questions', () => {
-  test.beforeEach(async ({ enableFeatureFlag }) => {
-    await enableFeatureFlag('assessment-questions-editor');
-  });
-
   test.describe('exam5-perZoneGrading mutations', () => {
     const assessmentTid = 'exam5-perZoneGrading';
 

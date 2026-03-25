@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { hydrateHtml } from '@prairielearn/react/server';
+import { Hydrate } from '@prairielearn/react/server';
 
 import { CommentPopoverHtml } from '../../components/CommentPopover.js';
 import { Modal } from '../../components/Modal.js';
@@ -317,16 +317,16 @@ export function InstructorAssessmentAccessNew({
       fullWidth: true,
       contentPadding: false,
     },
-    content: html`
-      ${hydrateHtml(
+    content: (
+      <Hydrate>
         <AssessmentAccessControl
           courseInstance={pageContext.course_instance}
           csrfToken={trpcCsrfToken}
           origHash={origHash}
           assessmentId={resLocals.assessment.id}
           initialData={initialData}
-        />,
-      )}
-    `,
+        />
+      </Hydrate>
+    ),
   });
 }

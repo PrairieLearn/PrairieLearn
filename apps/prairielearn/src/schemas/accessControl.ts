@@ -42,7 +42,12 @@ const DateControlJsonSchema = z
       .nullable()
       .optional()
       .describe('Desired duration limit for assessment'),
-    password: z.string().nullable().optional().describe('Password for assessment'),
+    password: z
+      .string()
+      .min(1, 'Password cannot be empty')
+      .nullable()
+      .optional()
+      .describe('Password for assessment'),
   })
   .strict()
   .optional();

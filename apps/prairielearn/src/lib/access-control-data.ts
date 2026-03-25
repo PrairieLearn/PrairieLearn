@@ -3,11 +3,12 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
-import type { AccessControlJson } from '../schemas/accessControl.js';
-
 import type {
   AccessControlRuleInput,
   PrairieTestReservation,
+  RuntimeAccessControl,
+  RuntimeAfterComplete,
+  RuntimeDateControl,
   StudentContext,
 } from './access-control-resolver.js';
 import {
@@ -44,17 +45,17 @@ function isOverride(row: AccessControlRuleRow): boolean {
   return row.target_type !== 'none';
 }
 
-function buildDateControl(row: AccessControlRuleRow): AccessControlJson['dateControl'] | undefined {
+function buildDateControl(row: AccessControlRuleRow): RuntimeDateControl | undefined {
   // Only include fields that were explicitly configured (overridden flag is true).
   // This applies uniformly to main rules and overrides.
-  const dateControl: NonNullable<AccessControlJson['dateControl']> = {};
+  const dateControl: RuntimeDateControl = {};
 
   if (row.date_control_release_date_overridden) {
-    dateControl.releaseDate = row.date_control_release_date?.toISOString() ?? null;
+    dateControl.releaseDate = row.date_control_release_date;
   }
 
   if (row.date_control_due_date_overridden) {
-    dateControl.dueDate = row.date_control_due_date?.toISOString() ?? null;
+    dateControl.dueDate = row.date_control_due_date;
   }
 
   if (row.date_control_duration_minutes_overridden) {
@@ -108,28 +109,24 @@ function buildDateControl(row: AccessControlRuleRow): AccessControlJson['dateCon
   return Object.keys(dateControl).length > 0 ? dateControl : undefined;
 }
 
-function buildAfterComplete(
-  row: AccessControlRuleRow,
-): AccessControlJson['afterComplete'] | undefined {
+function buildAfterComplete(row: AccessControlRuleRow): RuntimeAfterComplete | undefined {
   const override = isOverride(row);
   const includeField = (overridden: boolean) => !override || overridden;
 
-  const afterComplete: NonNullable<AccessControlJson['afterComplete']> = {};
+  const afterComplete: RuntimeAfterComplete = {};
 
   if (row.after_complete_hide_questions != null) {
     afterComplete.hideQuestions = row.after_complete_hide_questions;
   }
   if (includeField(row.after_complete_hide_questions_again_date_overridden)) {
     if (row.after_complete_hide_questions_again_date) {
-      afterComplete.hideQuestionsAgainDate =
-        row.after_complete_hide_questions_again_date.toISOString();
+      afterComplete.hideQuestionsAgainDate = row.after_complete_hide_questions_again_date;
     }
   }
 
   if (includeField(row.after_complete_show_questions_again_date_overridden)) {
     if (row.after_complete_show_questions_again_date) {
-      afterComplete.showQuestionsAgainDate =
-        row.after_complete_show_questions_again_date.toISOString();
+      afterComplete.showQuestionsAgainDate = row.after_complete_show_questions_again_date;
     }
   }
 
@@ -138,7 +135,7 @@ function buildAfterComplete(
   }
   if (includeField(row.after_complete_show_score_again_date_overridden)) {
     if (row.after_complete_show_score_again_date) {
-      afterComplete.showScoreAgainDate = row.after_complete_show_score_again_date.toISOString();
+      afterComplete.showScoreAgainDate = row.after_complete_show_score_again_date;
     }
   }
 
@@ -146,7 +143,7 @@ function buildAfterComplete(
 }
 
 function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRuleInput {
-  const rule: AccessControlJson = {};
+  const rule: RuntimeAccessControl = {};
 
   if (!isOverride(row)) {
     rule.listBeforeRelease = row.list_before_release ?? false;

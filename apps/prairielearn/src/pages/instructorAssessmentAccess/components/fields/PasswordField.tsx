@@ -26,11 +26,16 @@ function PasswordInput({ value, onChange, idPrefix }: PasswordInputProps) {
       />
       {value !== null && (
         <InputGroup className="mt-2">
+          {/* TODO: Wire up react-hook-form validation rules and add
+              aria-invalid/aria-errormessage so the client rejects empty
+              passwords before the server does. */}
           <Form.Control
             type={showPassword ? 'text' : 'password'}
             aria-label="Assessment password"
             placeholder="Password"
             value={value}
+            minLength={1}
+            required
             onChange={({ currentTarget }) => onChange(currentTarget.value)}
           />
           <Button

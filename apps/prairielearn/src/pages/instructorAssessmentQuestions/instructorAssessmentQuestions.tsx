@@ -78,18 +78,12 @@ router.get(
     // for doing operations.
     const jsonZones = buildHierarchicalAssessment(res.locals.course, questionRows);
 
-    const editorEnabled = await features.enabledFromLocals(
-      'assessment-questions-editor',
-      res.locals,
-    );
     const questionSharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
     const consumePublicQuestionsEnabled = await features.enabledFromLocals(
       'consume-public-questions',
       res.locals,
     );
-
-    const showLegacy = !editorEnabled || req.query.view === 'legacy';
-    const showEditor = editorEnabled && !showLegacy;
+    const showEditor = req.query.view !== 'legacy';
 
     const pageContext = extractPageContext(res.locals, {
       pageType: 'assessment',
@@ -111,7 +105,6 @@ router.get(
 
     // Build toggle link that adds/removes the `view=legacy` query parameter.
     const toggleUrl = (() => {
-      if (!editorEnabled) return null;
       const url = getUrl(req);
       const params = new URLSearchParams(url.search);
       if (showEditor) {
@@ -215,14 +208,6 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'save_questions') {
-      const editorEnabled = await features.enabledFromLocals(
-        'assessment-questions-editor',
-        res.locals,
-      );
-      if (!editorEnabled) {
-        throw new HttpStatusError(403, 'Assessment questions editor feature is not enabled');
-      }
-
       if (!res.locals.authz_data.has_course_permission_edit) {
         throw new HttpStatusError(403, 'Access denied (must be course editor)');
       }
