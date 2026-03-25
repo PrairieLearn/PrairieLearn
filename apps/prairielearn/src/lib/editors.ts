@@ -23,7 +23,6 @@ import {
   updateCourseCommitHash,
 } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
-import type { AccessControlJson } from '../schemas/accessControl.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
@@ -807,103 +806,6 @@ export class AssessmentAddEditor extends Editor {
     return {
       pathsToAdd: [assessmentPath],
       commitMessage: `${this.course_instance.short_name}: add assessment ${tid}`,
-    };
-  }
-}
-
-/**
- * Checks if a value is a non-null, non-array, non-empty object.
- */
-function isNonEmptyObject(value: unknown): boolean {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    !Array.isArray(value) &&
-    Object.keys(value).length > 0
-  );
-}
-
-/**
- * Cleans access control rules for writing to infoAssessment.json on disk.
- * Removes empty objects/arrays and omits listBeforeRelease: false on the main rule.
- */
-function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): object[] {
-  return rules.map((rule, index) => {
-    const clean: Record<string, unknown> = {};
-
-    if (rule.labels && rule.labels.length > 0) {
-      clean.labels = rule.labels;
-    }
-
-    if (index === 0 && rule.listBeforeRelease === true) {
-      clean.listBeforeRelease = true;
-    }
-
-    if (isNonEmptyObject(rule.dateControl)) {
-      clean.dateControl = rule.dateControl;
-    }
-
-    if (rule.integrations && isNonEmptyObject(rule.integrations)) {
-      clean.integrations = rule.integrations;
-    }
-
-    if (isNonEmptyObject(rule.afterComplete)) {
-      clean.afterComplete = rule.afterComplete;
-    }
-
-    return clean;
-  });
-}
-
-export class AssessmentAccessControlEditor extends Editor {
-  private assessmentPath: string;
-  private accessControlRules: AccessControlJson[];
-  private origHash: string;
-
-  constructor(
-    params: BaseEditorOptions & {
-      assessmentPath: string;
-      assessmentTid: string;
-      accessControlRules: AccessControlJson[];
-      origHash: string;
-    },
-  ) {
-    super({
-      ...params,
-      description: `Update access control for ${params.assessmentTid}`,
-    });
-    this.assessmentPath = params.assessmentPath;
-    this.accessControlRules = params.accessControlRules;
-    this.origHash = params.origHash;
-  }
-
-  async write(): Promise<WriteResult | null> {
-    debug('AssessmentAccessControlEditor: write()');
-
-    const diskContents = await fs.readFile(this.assessmentPath, 'utf8');
-
-    // Verify hash to detect concurrent edits
-    const diskHash = sha256(b64EncodeUnicode(diskContents)).toString();
-    if (this.origHash !== diskHash) {
-      throw new Error('Another user made changes to the file you were editing.');
-    }
-
-    // Parse, update accessControl, serialize
-    const assessmentJson = JSON.parse(diskContents);
-    assessmentJson.accessControl = cleanAccessControlRulesForDisk(this.accessControlRules);
-
-    const newContents = await formatJsonWithPrettier(JSON.stringify(assessmentJson));
-
-    // No-op check: if formatted output matches disk, skip write
-    if (newContents === diskContents) {
-      return null;
-    }
-
-    await fs.writeFile(this.assessmentPath, newContents);
-
-    return {
-      pathsToAdd: [this.assessmentPath],
-      commitMessage: this.description,
     };
   }
 }

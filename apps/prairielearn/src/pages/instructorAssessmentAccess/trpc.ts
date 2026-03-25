@@ -2,13 +2,16 @@ import * as path from 'path';
 
 import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
+import fs from 'fs-extra';
 import superjson from 'superjson';
 import { z } from 'zod';
 
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
-import { AssessmentAccessControlEditor, getOriginalHash } from '../../lib/editors.js';
+import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
+import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import {
   type EnrollmentAccessControlRuleData,
@@ -166,6 +169,61 @@ const EnrollmentRuleInputSchema = z.object({
   ruleJson: AccessControlJsonInputSchema,
 });
 
+function isNonEmptyObject(value: unknown): boolean {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.keys(value).length > 0
+  );
+}
+
+/**
+ * Cleans access control rules for writing to infoAssessment.json on disk.
+ * Removes empty objects/arrays and omits listBeforeRelease: false on the main rule.
+ */
+export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): object[] {
+  return rules.map((rule, index) => {
+    const clean: Record<string, unknown> = {};
+
+    if (rule.labels && rule.labels.length > 0) {
+      clean.labels = rule.labels;
+    }
+
+    if (index === 0 && rule.listBeforeRelease === true) {
+      clean.listBeforeRelease = true;
+    }
+
+    if (isNonEmptyObject(rule.dateControl)) {
+      clean.dateControl = rule.dateControl;
+    }
+
+    if (rule.integrations && isNonEmptyObject(rule.integrations)) {
+      clean.integrations = rule.integrations;
+    }
+
+    if (isNonEmptyObject(rule.afterComplete)) {
+      clean.afterComplete = rule.afterComplete;
+    }
+
+    return clean;
+  });
+}
+
+/**
+ * Reads infoAssessment.json from disk, merges in the given access control
+ * rules, and returns the formatted JSON string ready for FileModifyEditor.
+ */
+async function buildAccessControlFileContents(
+  assessmentPath: string,
+  rules: AccessControlJson[],
+): Promise<string> {
+  const diskContents = await fs.readFile(assessmentPath, 'utf8');
+  const assessmentJson = JSON.parse(diskContents);
+  assessmentJson.accessControl = cleanAccessControlRulesForDisk(rules);
+  return formatJsonWithPrettier(JSON.stringify(assessmentJson));
+}
+
 const saveAllRules = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
@@ -201,25 +259,30 @@ const saveAllRules = t.procedure
       }
     }
 
-    // Write main rules to disk via Editor (handles git commit + sync to DB)
-    const assessmentPath = path.join(
+    // Build the updated file contents and write to disk via FileModifyEditor
+    // (handles git commit + sync to DB).
+    const assessmentDir = path.join(
       opts.ctx.course.path,
       'courseInstances',
       opts.ctx.course_instance.short_name!,
       'assessments',
       opts.ctx.assessment.tid!,
-      'infoAssessment.json',
     );
+    const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
+    const formattedJson = await buildAccessControlFileContents(assessmentPath, rulesToSync);
 
-    const editor = new AssessmentAccessControlEditor({
+    const editor = new FileModifyEditor({
       locals: {
         authz_data: opts.ctx.authz_data,
         course: opts.ctx.course,
         user: opts.ctx.user,
       },
-      assessmentPath,
-      assessmentTid: opts.ctx.assessment.tid!,
-      accessControlRules: rulesToSync,
+      container: {
+        rootPath: assessmentDir,
+        invalidRootPaths: [],
+      },
+      filePath: assessmentPath,
+      editContents: b64EncodeUnicode(formattedJson),
       origHash,
     });
 
