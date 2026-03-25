@@ -48,75 +48,75 @@ interface BaseRuleRow {
 }
 
 function dbBaseRowToAccessControlJson(row: BaseRuleRow): AccessControlJson & { id: string } {
-  const acr = row.access_control_rule;
+  const rule = row.access_control_rule;
   const dateControl: AccessControlJson['dateControl'] = {};
 
-  if (acr.date_control_release_date_overridden) {
-    dateControl.releaseDate = acr.date_control_release_date?.toISOString() ?? null;
+  if (rule.date_control_release_date_overridden) {
+    dateControl.releaseDate = rule.date_control_release_date?.toISOString() ?? null;
   }
-  if (acr.date_control_due_date_overridden) {
-    dateControl.dueDate = acr.date_control_due_date?.toISOString() ?? null;
+  if (rule.date_control_due_date_overridden) {
+    dateControl.dueDate = rule.date_control_due_date?.toISOString() ?? null;
   }
-  if (acr.date_control_early_deadlines_overridden) {
+  if (rule.date_control_early_deadlines_overridden) {
     dateControl.earlyDeadlines = row.early_deadlines ?? [];
   }
-  if (acr.date_control_late_deadlines_overridden) {
+  if (rule.date_control_late_deadlines_overridden) {
     dateControl.lateDeadlines = row.late_deadlines ?? [];
   }
   if (
-    acr.date_control_after_last_deadline_credit_overridden ||
-    acr.date_control_after_last_deadline_allow_submissions !== null
+    rule.date_control_after_last_deadline_credit_overridden ||
+    rule.date_control_after_last_deadline_allow_submissions !== null
   ) {
     if (
-      acr.date_control_after_last_deadline_credit_overridden &&
-      acr.date_control_after_last_deadline_credit == null &&
-      acr.date_control_after_last_deadline_allow_submissions == null
+      rule.date_control_after_last_deadline_credit_overridden &&
+      rule.date_control_after_last_deadline_credit == null &&
+      rule.date_control_after_last_deadline_allow_submissions == null
     ) {
       dateControl.afterLastDeadline = null;
     } else {
       dateControl.afterLastDeadline = {
         credit:
           unmapField(
-            acr.date_control_after_last_deadline_credit_overridden,
-            acr.date_control_after_last_deadline_credit,
+            rule.date_control_after_last_deadline_credit_overridden,
+            rule.date_control_after_last_deadline_credit,
           ) ?? undefined,
-        allowSubmissions: acr.date_control_after_last_deadline_allow_submissions ?? undefined,
+        allowSubmissions: rule.date_control_after_last_deadline_allow_submissions ?? undefined,
       };
     }
   }
-  if (acr.date_control_duration_minutes_overridden) {
-    dateControl.durationMinutes = acr.date_control_duration_minutes;
+  if (rule.date_control_duration_minutes_overridden) {
+    dateControl.durationMinutes = rule.date_control_duration_minutes;
   }
-  if (acr.date_control_password_overridden) {
-    dateControl.password = acr.date_control_password;
+  if (rule.date_control_password_overridden) {
+    dateControl.password = rule.date_control_password;
   }
 
   const afterComplete: AccessControlJson['afterComplete'] = {};
-  if (acr.after_complete_hide_questions !== null) {
-    afterComplete.hideQuestions = acr.after_complete_hide_questions;
+  if (rule.after_complete_hide_questions !== null) {
+    afterComplete.hideQuestions = rule.after_complete_hide_questions;
   }
-  if (acr.after_complete_show_questions_again_date_overridden) {
+  if (rule.after_complete_show_questions_again_date_overridden) {
     afterComplete.showQuestionsAgainDate =
-      acr.after_complete_show_questions_again_date?.toISOString();
+      rule.after_complete_show_questions_again_date?.toISOString();
   }
-  if (acr.after_complete_hide_questions_again_date_overridden) {
+  if (rule.after_complete_hide_questions_again_date_overridden) {
     afterComplete.hideQuestionsAgainDate =
-      acr.after_complete_hide_questions_again_date?.toISOString();
+      rule.after_complete_hide_questions_again_date?.toISOString();
   }
-  if (acr.after_complete_hide_score !== null) {
-    afterComplete.hideScore = acr.after_complete_hide_score;
+  if (rule.after_complete_hide_score !== null) {
+    afterComplete.hideScore = rule.after_complete_hide_score;
   }
-  if (acr.after_complete_show_score_again_date_overridden) {
-    afterComplete.showScoreAgainDate = acr.after_complete_show_score_again_date?.toISOString();
+  if (rule.after_complete_show_score_again_date_overridden) {
+    afterComplete.showScoreAgainDate = rule.after_complete_show_score_again_date?.toISOString();
   }
 
-  const isMainRule = acr.number === 0 && acr.target_type === 'none';
+  const isMainRule = rule.number === 0 && rule.target_type === 'none';
   const listBeforeRelease = isMainRule
-    ? (acr.list_before_release ?? false)
-    : acr.list_before_release;
+    ? (rule.list_before_release ?? false)
+    : rule.list_before_release;
 
   return {
-    id: acr.id,
+    id: rule.id,
     ...(listBeforeRelease != null ? { listBeforeRelease } : {}),
     dateControl: Object.keys(dateControl).length > 0 ? dateControl : undefined,
     afterComplete: Object.keys(afterComplete).length > 0 ? afterComplete : undefined,
