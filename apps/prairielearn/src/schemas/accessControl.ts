@@ -116,7 +116,6 @@ const AfterCompleteJsonSchema = z
 
 export const AccessControlJsonSchema = z
   .object({
-    name: z.string().optional().describe('Name for AccessControl rule (not persisted)'),
     labels: z
       .array(z.string())
       .optional()

@@ -729,10 +729,6 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "name": {
-          "description": "Name for AccessControl rule (not persisted)",
-          "type": "string"
-        },
         "labels": {
           "description": "Array of student label names this set targets",
           "type": "array",
