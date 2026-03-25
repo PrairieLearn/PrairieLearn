@@ -91,7 +91,7 @@ export async function resolveModernAssessmentAccess({
   return resolverResultToSprocAuthzAssessment(result, authzData.mode);
 }
 
-export interface ModernAssessmentInstanceAccessInput extends ModernAssessmentAccessInput {
+interface ModernAssessmentInstanceAccessInput extends ModernAssessmentAccessInput {
   assessmentInstance: {
     id: string;
     user_id: string | null;
