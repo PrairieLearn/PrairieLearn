@@ -3,13 +3,7 @@
   "title": "Test Course",
   "assessmentSets": [
     { "abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1" },
-    { "abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "brown1" },
-    {
-      "abbreviation": "ACT",
-      "name": "Access Control Tests",
-      "heading": "Access Control Test Assessments",
-      "color": "gray1"
-    }
+    { "abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "brown1" }
   ],
   "assessmentModules": [
     { "name": "Module1", "heading": "Module 1" },

@@ -11,7 +11,7 @@ import { expect, test } from './fixtures.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const ASSESSMENT_TID = 'act-accessControlUi';
+const ASSESSMENT_TID = 'hw19-accessControlUi';
 
 async function getAccessControlRecords(assessmentId: string) {
   return sqldb.queryRows(
