@@ -46,6 +46,8 @@ function buildDateControl(
   earlyDeadlines: z.infer<typeof DeadlineJsonSchema>,
   lateDeadlines: z.infer<typeof DeadlineJsonSchema>,
 ): RuntimeDateControl | undefined {
+  // Only include fields that were explicitly configured (overridden flag is true).
+  // This applies uniformly to main rules and overrides.
   const dateControl: RuntimeDateControl = {};
 
   if (rule.date_control_release_date_overridden) {
@@ -154,6 +156,7 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
   const afterComplete = buildAfterComplete(rule);
   if (afterComplete !== undefined) runtimeRule.afterComplete = afterComplete;
 
+  // Integrations are only on main rules (number 0)
   const prairietestExamsRaw = (!isOverride(rule) && row.prairietest_exams) || [];
   const prairietestExams = prairietestExamsRaw.map((e) => ({
     uuid: e.uuid,
