@@ -124,16 +124,15 @@ function CoursesCard({
           <i className="fa fa-plus" aria-hidden="true" />
           <span className="d-none d-sm-inline">Add course</span>
         </button>
-        {showAddCourseModal && (
-          <CourseInsertModal
-            institutions={institutions}
-            availableTimezones={availableTimezones}
-            coursesRoot={coursesRoot}
-            courseRepoDefaultBranch={courseRepoDefaultBranch}
-            aiSecretsConfigured={aiSecretsConfigured}
-            onCancel={() => setShowAddCourseModal(false)}
-          />
-        )}
+        <CourseInsertModal
+          institutions={institutions}
+          availableTimezones={availableTimezones}
+          coursesRoot={coursesRoot}
+          courseRepoDefaultBranch={courseRepoDefaultBranch}
+          aiSecretsConfigured={aiSecretsConfigured}
+          show={showAddCourseModal}
+          onCancel={() => setShowAddCourseModal(false)}
+        />
       </div>
       <div className="table-responsive">
         <table className="table table-sm table-hover table-striped" aria-label="Courses">
@@ -169,7 +168,7 @@ function CoursesCard({
   );
 }
 
-const CourseRow = memo(function CourseRow({ row }: { row: CourseWithInstitution }) {
+const CourseRow = memo(({ row }: { row: CourseWithInstitution }) => {
   const [showDeletePopover, setShowDeletePopover] = useState(false);
 
   return (
@@ -289,6 +288,7 @@ function CourseInsertModal({
   availableTimezones,
   coursesRoot,
   courseRepoDefaultBranch,
+  show,
   onCancel,
   aiSecretsConfigured,
 }: {
@@ -296,6 +296,7 @@ function CourseInsertModal({
   availableTimezones: Timezone[];
   coursesRoot: string;
   courseRepoDefaultBranch: string;
+  show: boolean;
   onCancel: () => void;
   aiSecretsConfigured: boolean;
 }) {
@@ -341,7 +342,7 @@ function CourseInsertModal({
   };
 
   return (
-    <Modal backdrop="static" show onHide={onCancel}>
+    <Modal backdrop="static" show={show} onHide={onCancel} onEntering={() => methods.reset()}>
       <FormProvider {...methods}>
         <form name="add-course-form" onSubmit={handleSubmit(onSubmit)}>
           <Modal.Header closeButton>

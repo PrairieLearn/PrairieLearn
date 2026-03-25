@@ -107,7 +107,7 @@ export function CourseRequestsTable({
 
 CourseRequestsTable.displayName = 'CourseRequestsTable';
 
-const CourseRequestTableRow = memo(function CourseRequestTableRow({
+const CourseRequestTableRow = memo(({
   row,
   showAll,
   urlPrefix,
@@ -117,7 +117,7 @@ const CourseRequestTableRow = memo(function CourseRequestTableRow({
   showAll: boolean;
   urlPrefix: string;
   onApprove: (row: CourseRequestRow) => void;
-}) {
+}) => {
   const [noteOpen, setNoteOpen] = useState(Boolean(row.note));
   const [jobsOpen, setJobsOpen] = useState(false);
   const [showDenyPopover, setShowDenyPopover] = useState(false);
