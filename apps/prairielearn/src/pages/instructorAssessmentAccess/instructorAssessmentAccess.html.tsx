@@ -14,7 +14,7 @@ import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-import { AccessControl } from './components/AccessControl.js';
+import { AssessmentAccessControl } from './components/AssessmentAccessControl.js';
 import type { AccessControlJsonWithId } from './components/types.js';
 
 export const AssessmentAccessRulesSchema = z.object({
@@ -318,7 +318,7 @@ export function InstructorAssessmentAccessNew({
     },
     content: html`
       ${hydrateHtml(
-        <AccessControl
+        <AssessmentAccessControl
           courseInstance={pageContext.course_instance}
           csrfToken={trpcCsrfToken}
           origHash={origHash}

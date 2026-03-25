@@ -47,7 +47,14 @@ export interface AccessControlResolverResult {
    * student is still in an active exam session (i.e. mode should be 'Exam').
    */
   examAccessEnd: Date | null;
-  listBeforeRelease: boolean;
+  /**
+   * Resolved visibility flag: true when the raw `listBeforeRelease` config
+   * flag is set on the rule AND the current date is actually before the
+   * release date. This is distinct from the raw `listBeforeRelease` property
+   * on the rule JSON — that property is config input, while this is the
+   * computed "should we show this assessment right now?" decision.
+   */
+  showBeforeRelease: boolean;
 }
 
 const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
@@ -60,7 +67,7 @@ const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
   showClosedAssessment: true,
   showClosedAssessmentScore: true,
   examAccessEnd: null,
-  listBeforeRelease: false,
+  showBeforeRelease: false,
 };
 
 const COURSE_ROLE_RANK: Record<EnumCourseRole, number> = {
@@ -400,7 +407,7 @@ export function resolveAccessControl(
       showClosedAssessment: true,
       showClosedAssessmentScore: true,
       examAccessEnd: null,
-      listBeforeRelease: false,
+      showBeforeRelease: false,
     };
   }
 
@@ -490,14 +497,15 @@ export function resolveAccessControl(
     date,
   );
 
-  // listBeforeRelease is a policy flag on the rule, not derived from credit.
-  // It's only meaningful when we're before the release date.
-  const listBeforeRelease =
+  // Resolve the raw `listBeforeRelease` config flag into a concrete
+  // `showBeforeRelease` boolean: true only when we're actually before the
+  // release date AND the flag is set on the rule.
+  const showBeforeRelease =
     creditResult.beforeRelease && (effectiveRule.listBeforeRelease ?? false);
 
-  // If the assessment is before its release date and listBeforeRelease is false,
+  // If the assessment is before its release date and showBeforeRelease is false,
   // the student should not see or access it at all.
-  if (creditResult.beforeRelease && !listBeforeRelease) {
+  if (creditResult.beforeRelease && !showBeforeRelease) {
     return { ...UNAUTHORIZED_RESULT };
   }
 
@@ -518,6 +526,6 @@ export function resolveAccessControl(
     showClosedAssessment,
     showClosedAssessmentScore,
     examAccessEnd,
-    listBeforeRelease,
+    showBeforeRelease,
   };
 }
