@@ -13,6 +13,7 @@ import { useMemo, useRef, useState } from 'react';
 import {
   type FieldArrayWithId,
   type FieldErrors,
+  type UseFormClearErrors,
   type UseFormRegister,
   type UseFormSetValue,
   type UseFormWatch,
@@ -531,7 +532,7 @@ export const QuestionSettingsForm = ({
                       <th>Name</th>
                       <th style={{ width: '7rem' }}>Type</th>
                       <th>Default</th>
-                      <th>Restrict values (Optional)</th>
+                      <th>Allowed values (Optional)</th>
                       {canEdit && <th style={{ width: '2.5rem' }} />}
                     </tr>
                   </thead>
@@ -547,6 +548,7 @@ export const QuestionSettingsForm = ({
                         setValue={setValue}
                         errors={errors.preferences?.[index]}
                         remove={remove}
+                        clearErrors={clearErrors}
                       />
                     ))}
                   </tbody>
@@ -1001,6 +1003,7 @@ function PreferenceRow({
   setValue,
   errors,
   remove,
+  clearErrors,
 }: {
   field: FieldArrayWithId<QuestionSettingsFormValues, 'preferences', 'id'>;
   index: number;
@@ -1010,6 +1013,7 @@ function PreferenceRow({
   setValue: UseFormSetValue<QuestionSettingsFormValues>;
   errors?: FieldErrors<PreferenceField>;
   remove: (index: number) => void;
+  clearErrors: UseFormClearErrors<QuestionSettingsFormValues>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: field.id,
@@ -1018,6 +1022,7 @@ function PreferenceRow({
 
   const draggableStyle = makeDraggableStyle({ isDragging, transform, transition });
   const prefType = watch(`preferences.${index}.type`);
+  const preferenceDefaultValue = watch(`preferences.${index}.default`);
   const enumValues = watch(`preferences.${index}.enum`);
   const allPreferences = watch('preferences');
 
@@ -1037,7 +1042,7 @@ function PreferenceRow({
           )}
           id={`pref-${index}-name`}
           disabled={!canEdit}
-          placeholder="e.g. gravitational_constant"
+          placeholder="e.g. show_hints"
           defaultValue={field.name}
           aria-invalid={!!errors?.name || undefined}
           aria-errormessage={errors?.name ? `pref-${index}-name-error` : undefined}
@@ -1068,15 +1073,15 @@ function PreferenceRow({
               setValue(`preferences.${index}.enum`, [], { shouldDirty: true });
               // Sync react-hook-form's value when switching to boolean: the <select>
               // shows "true" visually, but the internal value is still the old one.
-              const current = watch(`preferences.${index}.default`);
               if (e.target.value === 'boolean') {
-                if (current !== 'true' && current !== 'false') {
-                  setValue(`preferences.${index}.default`, 'true', { shouldValidate: true });
+                if (preferenceDefaultValue !== 'true' && preferenceDefaultValue !== 'false') {
+                  setValue(`preferences.${index}.default`, 'true');
                 }
+                clearErrors(`preferences.${index}.default`);
                 return;
               }
 
-              setValue(`preferences.${index}.default`, '', { shouldValidate: true });
+              setValue(`preferences.${index}.default`, '', { shouldValidate: false });
             },
           })}
         >
@@ -1091,11 +1096,11 @@ function PreferenceRow({
             className={clsx('form-select form-select-sm', errors?.default && 'is-invalid')}
             id={`pref-${index}-default`}
             disabled={!canEdit}
-            defaultValue={String(field.default)}
+            value={String(preferenceDefaultValue)}
             aria-invalid={!!errors?.default || undefined}
             aria-errormessage={errors?.default ? `pref-${index}-default-error` : undefined}
             {...register(`preferences.${index}.default`, {
-              required: 'Default is required',
+              required: 'A default value is required',
             })}
           >
             <option value="true">true</option>
@@ -1110,7 +1115,7 @@ function PreferenceRow({
             aria-invalid={!!errors?.default || undefined}
             aria-errormessage={errors?.default ? `pref-${index}-default-error` : undefined}
             {...register(`preferences.${index}.default`, {
-              required: 'Default is required',
+              required: 'A default value is required',
             })}
           >
             <option value="" disabled>
@@ -1133,10 +1138,11 @@ function PreferenceRow({
             aria-invalid={!!errors?.default || undefined}
             aria-errormessage={errors?.default ? `pref-${index}-default-error` : undefined}
             {...register(`preferences.${index}.default`, {
-              required: 'Default is required',
+              required: 'A default value is required',
               validate: {
                 matchesType: (value) => {
-                  if (prefType === 'number' && Number.isNaN(Number(value))) {
+                  const currentType = watch(`preferences.${index}.type`);
+                  if (currentType === 'number' && Number.isNaN(Number(value))) {
                     return 'Must be a number';
                   }
                   return true;
@@ -1151,7 +1157,7 @@ function PreferenceRow({
           </div>
         )}
       </td>
-      <td>
+      <td className="align-middle">
         {prefType === 'boolean' ? (
           <span className="text-muted small">N/A</span>
         ) : (
@@ -1228,7 +1234,7 @@ function EnumInput({
   return (
     <div>
       <input type="hidden" name={`preferences.${index}.enum`} value={JSON.stringify(enumValues)} />
-      <div className="d-flex flex-wrap gap-1">
+      <div className="d-flex flex-wrap gap-1 align-items-center">
         {enumValues.map((val) => (
           <span
             key={val}
@@ -1248,7 +1254,9 @@ function EnumInput({
             )}
           </span>
         ))}
-        {enumValues.length === 0 && !adding && <span className="text-muted small">Any value</span>}
+        {enumValues.length === 0 && !adding && (
+          <span className="badge bg-light text-muted border">Any value</span>
+        )}
         {canEdit &&
           (adding ? (
             <input
