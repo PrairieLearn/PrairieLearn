@@ -64,6 +64,7 @@ WHERE
   OR (
     $course_instance_id::bigint IS NOT NULL
     AND a.course_instance_id = $course_instance_id
+    AND a.deleted_at IS NULL
   )
 GROUP BY
   aacr.id
