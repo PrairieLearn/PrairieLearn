@@ -1,11 +1,11 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Alert, Dropdown, Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
 import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
@@ -40,6 +40,8 @@ export function CourseRequestsTable({
   urlPrefix: string;
   aiSecretsConfigured: boolean;
 }) {
+  const approveModal = useModalState<CourseRequestRow>();
+
   const headerPrefix = showAll ? 'All' : 'Pending';
   return (
     <div className="card mb-4">
@@ -77,12 +79,9 @@ export function CourseRequestsTable({
               <CourseRequestTableRow
                 key={row.id}
                 row={row}
-                institutions={institutions}
-                availableTimezones={availableTimezones}
-                coursesRoot={coursesRoot}
                 showAll={showAll}
                 urlPrefix={urlPrefix}
-                aiSecretsConfigured={aiSecretsConfigured}
+                onApprove={approveModal.showWithData}
               />
             ))}
           </tbody>
@@ -94,211 +93,240 @@ export function CourseRequestsTable({
           course to the database.
         </small>
       </div>
+      <CourseRequestApproveModal
+        {...approveModal}
+        institutions={institutions}
+        availableTimezones={availableTimezones}
+        coursesRoot={coursesRoot}
+        urlPrefix={urlPrefix}
+        aiSecretsConfigured={aiSecretsConfigured}
+      />
     </div>
   );
 }
 
 CourseRequestsTable.displayName = 'CourseRequestsTable';
 
-function CourseRequestTableRow({
-  row,
+const CourseRequestTableRow = memo(
+  ({
+    row,
+    showAll,
+    urlPrefix,
+    onApprove,
+  }: {
+    row: CourseRequestRow;
+    showAll: boolean;
+    urlPrefix: string;
+    onApprove: (row: CourseRequestRow) => void;
+  }) => {
+    const [noteOpen, setNoteOpen] = useState(Boolean(row.note));
+    const [jobsOpen, setJobsOpen] = useState(false);
+    const [showDenyPopover, setShowDenyPopover] = useState(false);
+
+    return (
+      <>
+        <tr>
+          <td className="align-middle">{row.created_at.toISOString()}</td>
+          <td className="align-middle">
+            {row.short_name}: {row.title}
+          </td>
+          <td className="align-middle">
+            <EmptyState value={row.institution} label="No institution" />
+          </td>
+          <td className="align-middle">
+            {row.first_name || row.last_name ? (
+              <>
+                {row.first_name} {row.last_name} {row.work_email ? `(${row.work_email})` : ''}
+              </>
+            ) : (
+              <span className="text-muted fst-italic">No contact info</span>
+            )}
+          </td>
+          <td className="align-middle">
+            {row.user_name} ({row.user_uid})
+          </td>
+          <td className="align-middle">
+            <EmptyState value={row.github_user} label="No GitHub user" />
+          </td>
+          <td className="align-middle">
+            <EmptyState value={row.referral_source} label="No referral source" />
+          </td>
+          <td className="align-middle">
+            <CourseRequestStatusIcon status={row.approved_status} />
+          </td>
+          {showAll && (
+            <td className="align-middle">
+              {row.approved_status !== 'pending' &&
+                (row.approved_by_name ?? 'Automatically Approved')}
+            </td>
+          )}
+          <td className="align-middle py-1">
+            {row.approved_status !== 'approved' && (
+              <div className="d-flex flex-wrap gap-1">
+                <OverlayTrigger
+                  trigger="click"
+                  placement="auto"
+                  popover={{
+                    header: 'Deny course request',
+                    body: (
+                      <CourseRequestDenyForm
+                        request={row}
+                        onCancel={() => setShowDenyPopover(false)}
+                      />
+                    ),
+                  }}
+                  show={showDenyPopover}
+                  rootClose
+                  onToggle={setShowDenyPopover}
+                >
+                  <button type="button" className="btn btn-sm btn-danger text-nowrap">
+                    <i className="fa fa-times" aria-hidden="true" /> Deny
+                  </button>
+                </OverlayTrigger>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-success text-nowrap"
+                  onClick={() => onApprove(row)}
+                >
+                  <i className="fa fa-check" aria-hidden="true" /> Approve
+                </button>
+              </div>
+            )}
+          </td>
+          <td className="align-middle">
+            <Dropdown>
+              <Dropdown.Toggle
+                variant="secondary"
+                size="sm"
+                className="btn-xs"
+                aria-label={`Show details for ${row.short_name}`}
+              >
+                Show details
+              </Dropdown.Toggle>
+              <Dropdown.Menu popperConfig={{ strategy: 'fixed' }} renderOnMount>
+                <Dropdown.Item as="button" onClick={() => setNoteOpen(!noteOpen)}>
+                  {noteOpen ? 'Close note' : 'Edit note'}
+                </Dropdown.Item>
+                {row.jobs.length > 0 && (
+                  <Dropdown.Item as="button" onClick={() => setJobsOpen(!jobsOpen)}>
+                    {jobsOpen ? 'Hide jobs' : 'Show jobs'}
+                  </Dropdown.Item>
+                )}
+              </Dropdown.Menu>
+            </Dropdown>
+          </td>
+        </tr>
+        {noteOpen && (
+          <tr>
+            <td colSpan={showAll ? 11 : 10} className="p-0">
+              <CourseRequestEditNoteForm request={row} onCancel={() => setNoteOpen(false)} />
+            </td>
+          </tr>
+        )}
+        {row.jobs.length > 0 && (
+          <tr>
+            <td colSpan={showAll ? 11 : 10} className="p-0">
+              {jobsOpen && (
+                <table
+                  className="table table-sm table-active mb-0"
+                  aria-label="Course request jobs"
+                >
+                  <thead>
+                    <tr>
+                      <th>Number</th>
+                      <th>Start Date</th>
+                      <th>End Date</th>
+                      <th>User</th>
+                      <th>Status</th>
+                      <th>
+                        <span className="visually-hidden">Details</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...row.jobs].reverse().map((job) => {
+                      return (
+                        <tr key={job.id}>
+                          <td>{job.number}</td>
+                          <td>{job.start_date.toISOString()}</td>
+                          <td>{job.finish_date?.toISOString()}</td>
+                          <td>{job.authn_user_name}</td>
+                          <td>
+                            <JobStatus status={job.status} />
+                          </td>
+                          <td>
+                            <a
+                              href={`${urlPrefix}/administrator/jobSequence/${job.id}`}
+                              className="btn btn-xs btn-info float-end"
+                            >
+                              Details
+                            </a>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </td>
+          </tr>
+        )}
+      </>
+    );
+  },
+);
+
+function CourseRequestApproveModal({
+  show,
+  data,
+  onHide,
+  onExited,
   institutions,
   availableTimezones,
   coursesRoot,
-  showAll,
   urlPrefix,
   aiSecretsConfigured,
-}: {
-  row: CourseRequestRow;
+}: ReturnType<typeof useModalState<CourseRequestRow>> & {
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
   coursesRoot: string;
-  showAll: boolean;
   urlPrefix: string;
   aiSecretsConfigured: boolean;
 }) {
-  const [noteOpen, setNoteOpen] = useState(Boolean(row.note));
-  const [jobsOpen, setJobsOpen] = useState(false);
-  const [showDenyPopover, setShowDenyPopover] = useState(false);
-  const [showApproveModal, setShowApproveModal] = useState(false);
-
   return (
-    <>
-      <tr>
-        <td className="align-middle">{row.created_at.toISOString()}</td>
-        <td className="align-middle">
-          {row.short_name}: {row.title}
-        </td>
-        <td className="align-middle">
-          <EmptyState value={row.institution} label="No institution" />
-        </td>
-        <td className="align-middle">
-          {row.first_name || row.last_name ? (
-            <>
-              {row.first_name} {row.last_name} {row.work_email ? `(${row.work_email})` : ''}
-            </>
-          ) : (
-            <span className="text-muted fst-italic">No contact info</span>
-          )}
-        </td>
-        <td className="align-middle">
-          {row.user_name} ({row.user_uid})
-        </td>
-        <td className="align-middle">
-          <EmptyState value={row.github_user} label="No GitHub user" />
-        </td>
-        <td className="align-middle">
-          <EmptyState value={row.referral_source} label="No referral source" />
-        </td>
-        <td className="align-middle">
-          <CourseRequestStatusIcon status={row.approved_status} />
-        </td>
-        {showAll && (
-          <td className="align-middle">
-            {row.approved_status !== 'pending' &&
-              (row.approved_by_name ?? 'Automatically Approved')}
-          </td>
-        )}
-        <td className="align-middle py-1">
-          {row.approved_status !== 'approved' && (
-            <div className="d-flex flex-wrap gap-1">
-              <OverlayTrigger
-                trigger="click"
-                placement="auto"
-                popover={{
-                  header: 'Deny course request',
-                  body: (
-                    <CourseRequestDenyForm
-                      request={row}
-                      onCancel={() => setShowDenyPopover(false)}
-                    />
-                  ),
-                }}
-                show={showDenyPopover}
-                rootClose
-                onToggle={setShowDenyPopover}
-              >
-                <button type="button" className="btn btn-sm btn-danger text-nowrap">
-                  <i className="fa fa-times" aria-hidden="true" /> Deny
-                </button>
-              </OverlayTrigger>
-              <button
-                type="button"
-                className="btn btn-sm btn-success text-nowrap"
-                onClick={() => setShowApproveModal(true)}
-              >
-                <i className="fa fa-check" aria-hidden="true" /> Approve
-              </button>
-              <CourseRequestApproveModal
-                request={row}
-                institutions={institutions}
-                availableTimezones={availableTimezones}
-                coursesRoot={coursesRoot}
-                urlPrefix={urlPrefix}
-                show={showApproveModal}
-                aiSecretsConfigured={aiSecretsConfigured}
-                onCancel={() => setShowApproveModal(false)}
-              />
-            </div>
-          )}
-        </td>
-        <td className="align-middle">
-          <Dropdown>
-            <Dropdown.Toggle
-              variant="secondary"
-              size="sm"
-              className="btn-xs"
-              aria-label={`Show details for ${row.short_name}`}
-            >
-              Show details
-            </Dropdown.Toggle>
-            <Dropdown.Menu popperConfig={{ strategy: 'fixed' }} renderOnMount>
-              <Dropdown.Item as="button" onClick={() => setNoteOpen(!noteOpen)}>
-                {noteOpen ? 'Close note' : 'Edit note'}
-              </Dropdown.Item>
-              {row.jobs.length > 0 && (
-                <Dropdown.Item as="button" onClick={() => setJobsOpen(!jobsOpen)}>
-                  {jobsOpen ? 'Hide jobs' : 'Show jobs'}
-                </Dropdown.Item>
-              )}
-            </Dropdown.Menu>
-          </Dropdown>
-        </td>
-      </tr>
-      {noteOpen && (
-        <tr>
-          <td colSpan={showAll ? 11 : 10} className="p-0">
-            <CourseRequestEditNoteForm request={row} onCancel={() => setNoteOpen(false)} />
-          </td>
-        </tr>
+    <Modal show={show} backdrop="static" onHide={onHide} onExited={onExited}>
+      {data && (
+        <CourseRequestApproveModalContent
+          key={data.id}
+          request={data}
+          institutions={institutions}
+          availableTimezones={availableTimezones}
+          coursesRoot={coursesRoot}
+          urlPrefix={urlPrefix}
+          aiSecretsConfigured={aiSecretsConfigured}
+          onCancel={onHide}
+        />
       )}
-      {row.jobs.length > 0 && (
-        <tr>
-          <td colSpan={showAll ? 11 : 10} className="p-0">
-            {jobsOpen && (
-              <table className="table table-sm table-active mb-0" aria-label="Course request jobs">
-                <thead>
-                  <tr>
-                    <th>Number</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                    <th>User</th>
-                    <th>Status</th>
-                    <th>
-                      <span className="visually-hidden">Details</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...row.jobs].reverse().map((job) => {
-                    return (
-                      <tr key={job.id}>
-                        <td>{job.number}</td>
-                        <td>{job.start_date.toISOString()}</td>
-                        <td>{job.finish_date?.toISOString()}</td>
-                        <td>{job.authn_user_name}</td>
-                        <td>
-                          <JobStatus status={job.status} />
-                        </td>
-                        <td>
-                          <a
-                            href={`${urlPrefix}/administrator/jobSequence/${job.id}`}
-                            className="btn btn-xs btn-info float-end"
-                          >
-                            Details
-                          </a>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </td>
-        </tr>
-      )}
-    </>
+    </Modal>
   );
 }
 
-function CourseRequestApproveModal({
+function CourseRequestApproveModalContent({
   request,
   institutions,
   availableTimezones,
   coursesRoot,
   urlPrefix,
-  show,
-  onCancel,
   aiSecretsConfigured,
+  onCancel,
 }: {
   request: CourseRequestRow;
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
   coursesRoot: string;
   urlPrefix: string;
-  show: boolean;
-  onCancel: () => void;
   aiSecretsConfigured: boolean;
+  onCancel: () => void;
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.createCourse.mutationOptions());
@@ -353,197 +381,195 @@ function CourseRequestApproveModal({
   });
 
   return (
-    <Modal show={show} backdrop="static" onHide={onCancel}>
-      <FormProvider {...methods}>
-        <form
-          name={`create-course-from-request-form-${request.id}`}
-          onSubmit={handleSubmit(onSubmit)}
-        >
-          <Modal.Header closeButton>
-            <Modal.Title>Approve course request</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <div className="card mb-3">
-              <div className="card-header d-flex align-items-center justify-content-between py-2">
-                <strong>Requesting instructor</strong>
-                <OverlayTrigger
-                  trigger={['hover', 'focus']}
-                  placement="bottom"
-                  tooltip={{
-                    body: aiSecretsConfigured
-                      ? 'Uses AI web search to verify whether the instructor appears in faculty directories or professional profiles at their stated institution.'
-                      : 'AI features require the corresponding OpenAI key to be configured.',
-                    props: { id: 'check-instructor-legitimacy-tooltip' },
-                  }}
-                >
-                  <span className="d-inline-block">
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-secondary"
-                      disabled={legitimacyQuery.isFetching || !aiSecretsConfigured}
-                      aria-busy={legitimacyQuery.isFetching}
-                      onClick={() => legitimacyQuery.refetch()}
+    <FormProvider {...methods}>
+      <form
+        name={`create-course-from-request-form-${request.id}`}
+        onSubmit={handleSubmit(onSubmit)}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Approve course request</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="card mb-3">
+            <div className="card-header d-flex align-items-center justify-content-between py-2">
+              <strong>Requesting instructor</strong>
+              <OverlayTrigger
+                trigger={['hover', 'focus']}
+                placement="bottom"
+                tooltip={{
+                  body: aiSecretsConfigured
+                    ? 'Uses AI web search to verify whether the instructor appears in faculty directories or professional profiles at their stated institution.'
+                    : 'AI features require the corresponding OpenAI key to be configured.',
+                  props: { id: 'check-instructor-legitimacy-tooltip' },
+                }}
+              >
+                <span className="d-inline-block">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    disabled={legitimacyQuery.isFetching || !aiSecretsConfigured}
+                    aria-busy={legitimacyQuery.isFetching}
+                    onClick={() => legitimacyQuery.refetch()}
+                  >
+                    {legitimacyQuery.isFetching ? (
+                      <>
+                        <i className="fa fa-spinner fa-spin" aria-hidden="true" /> Checking...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa fa-search" aria-hidden="true" /> Check legitimacy
+                      </>
+                    )}
+                  </button>
+                </span>
+              </OverlayTrigger>
+            </div>
+            <div className="card-body py-2">
+              <div className="row g-2 small">
+                <div className="col-12">
+                  <strong>Requested by:</strong>{' '}
+                  {request.first_name || request.last_name ? (
+                    <span>
+                      {request.first_name} {request.last_name}
+                      {request.work_email && ` (${request.work_email})`}
+                    </span>
+                  ) : request.work_email ? (
+                    <span>{request.work_email}</span>
+                  ) : (
+                    <span className="fst-italic text-muted">Not provided</span>
+                  )}
+                </div>
+                <div className="col-12">
+                  <strong>PrairieLearn user:</strong>{' '}
+                  {request.user_name ? (
+                    <span>
+                      {request.user_name} ({request.user_uid})
+                    </span>
+                  ) : (
+                    <span>{request.user_uid}</span>
+                  )}
+                </div>
+                <div className="col-12">
+                  <strong>Institution:</strong>{' '}
+                  {request.institution ? (
+                    <span>{request.institution}</span>
+                  ) : (
+                    <span className="fst-italic text-muted">Not provided</span>
+                  )}
+                </div>
+                <div className="col-12">
+                  <strong>GitHub:</strong>{' '}
+                  {request.github_user ? (
+                    <a
+                      href={`https://github.com/${request.github_user}`}
+                      target="_blank"
+                      rel="noreferrer"
                     >
-                      {legitimacyQuery.isFetching ? (
-                        <>
-                          <i className="fa fa-spinner fa-spin" aria-hidden="true" /> Checking...
-                        </>
-                      ) : (
-                        <>
-                          <i className="fa fa-search" aria-hidden="true" /> Check legitimacy
-                        </>
-                      )}
-                    </button>
-                  </span>
-                </OverlayTrigger>
+                      {request.github_user}
+                    </a>
+                  ) : (
+                    <span className="fst-italic text-muted">Not provided</span>
+                  )}
+                </div>
               </div>
-              <div className="card-body py-2">
-                <div className="row g-2 small">
-                  <div className="col-12">
-                    <strong>Requested by:</strong>{' '}
-                    {request.first_name || request.last_name ? (
-                      <span>
-                        {request.first_name} {request.last_name}
-                        {request.work_email && ` (${request.work_email})`}
-                      </span>
-                    ) : request.work_email ? (
-                      <span>{request.work_email}</span>
-                    ) : (
-                      <span className="fst-italic text-muted">Not provided</span>
-                    )}
+              <div aria-live="polite" aria-atomic="true">
+                {legitimacyQuery.isError && (
+                  <div className="mt-2 text-danger small">
+                    Failed to check legitimacy. Try again.
                   </div>
-                  <div className="col-12">
-                    <strong>PrairieLearn user:</strong>{' '}
-                    {request.user_name ? (
-                      <span>
-                        {request.user_name} ({request.user_uid})
-                      </span>
-                    ) : (
-                      <span>{request.user_uid}</span>
-                    )}
-                  </div>
-                  <div className="col-12">
-                    <strong>Institution:</strong>{' '}
-                    {request.institution ? (
-                      <span>{request.institution}</span>
-                    ) : (
-                      <span className="fst-italic text-muted">Not provided</span>
-                    )}
-                  </div>
-                  <div className="col-12">
-                    <strong>GitHub:</strong>{' '}
-                    {request.github_user ? (
-                      <a
-                        href={`https://github.com/${request.github_user}`}
-                        target="_blank"
-                        rel="noreferrer"
+                )}
+                {legitimacyQuery.data && (
+                  <div className="mt-2 pt-2 border-top">
+                    <div className="d-flex align-items-start gap-2">
+                      <span
+                        className={clsx('badge', {
+                          'text-bg-success':
+                            legitimacyQuery.data.legitimate &&
+                            legitimacyQuery.data.confidence === 'high',
+                          'text-bg-warning':
+                            legitimacyQuery.data.legitimate &&
+                            legitimacyQuery.data.confidence !== 'high',
+                          'text-bg-danger': !legitimacyQuery.data.legitimate,
+                        })}
                       >
-                        {request.github_user}
-                      </a>
-                    ) : (
-                      <span className="fst-italic text-muted">Not provided</span>
+                        {legitimacyQuery.data.legitimate
+                          ? 'Likely legitimate'
+                          : 'Likely not legitimate'}{' '}
+                        &middot; {legitimacyQuery.data.confidence} confidence
+                      </span>
+                    </div>
+                    <small className="text-muted">
+                      <ReactMarkdown>{legitimacyQuery.data.summary}</ReactMarkdown>
+                    </small>
+                    {legitimacyQuery.data.sources.length > 0 && (
+                      <div className="mt-1">
+                        <span className="small text-muted">Sources</span>
+                        <div className="d-flex flex-wrap gap-1">
+                          {legitimacyQuery.data.sources
+                            .filter(
+                              (source, index, arr) =>
+                                arr.findIndex((s) => s.url === source.url) === index,
+                            )
+                            .map((source) => (
+                              <a
+                                key={source.url}
+                                href={source.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="small"
+                              >
+                                {source.title ?? source.url}
+                              </a>
+                            ))}
+                        </div>
+                      </div>
                     )}
                   </div>
-                </div>
-                <div aria-live="polite" aria-atomic="true">
-                  {legitimacyQuery.isError && (
-                    <div className="mt-2 text-danger small">
-                      Failed to check legitimacy. Try again.
-                    </div>
-                  )}
-                  {legitimacyQuery.data && (
-                    <div className="mt-2 pt-2 border-top">
-                      <div className="d-flex align-items-start gap-2">
-                        <span
-                          className={clsx('badge', {
-                            'text-bg-success':
-                              legitimacyQuery.data.legitimate &&
-                              legitimacyQuery.data.confidence === 'high',
-                            'text-bg-warning':
-                              legitimacyQuery.data.legitimate &&
-                              legitimacyQuery.data.confidence !== 'high',
-                            'text-bg-danger': !legitimacyQuery.data.legitimate,
-                          })}
-                        >
-                          {legitimacyQuery.data.legitimate
-                            ? 'Likely legitimate'
-                            : 'Likely not legitimate'}{' '}
-                          &middot; {legitimacyQuery.data.confidence} confidence
-                        </span>
-                      </div>
-                      <small className="text-muted">
-                        <ReactMarkdown>{legitimacyQuery.data.summary}</ReactMarkdown>
-                      </small>
-                      {legitimacyQuery.data.sources.length > 0 && (
-                        <div className="mt-1">
-                          <span className="small text-muted">Sources</span>
-                          <div className="d-flex flex-wrap gap-1">
-                            {legitimacyQuery.data.sources
-                              .filter(
-                                (source, index, arr) =>
-                                  arr.findIndex((s) => s.url === source.url) === index,
-                              )
-                              .map((source) => (
-                                <a
-                                  key={source.url}
-                                  href={source.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="small"
-                                >
-                                  {source.title ?? source.url}
-                                </a>
-                              ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             </div>
-            <AdministratorCourseFormFields
-              institutions={institutions}
-              availableTimezones={availableTimezones}
-              coursesRoot={coursesRoot}
-              suggestPrefixOptions={{
-                institutionName: request.institution ?? '',
-                emailDomain: request.work_email?.split('@')[1] ?? '',
-              }}
-              aiSecretsConfigured={aiSecretsConfigured}
+          </div>
+          <AdministratorCourseFormFields
+            institutions={institutions}
+            availableTimezones={availableTimezones}
+            coursesRoot={coursesRoot}
+            suggestPrefixOptions={{
+              institutionName: request.institution ?? '',
+              emailDomain: request.work_email?.split('@')[1] ?? '',
+            }}
+            aiSecretsConfigured={aiSecretsConfigured}
+          />
+          <div className="mb-3">
+            <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
+              GitHub username
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              id="courseRequestAddInputGithubUser"
+              {...register('github_user')}
             />
-            <div className="mb-3">
-              <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
-                GitHub username
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                id="courseRequestAddInputGithubUser"
-                {...register('github_user')}
-              />
-            </div>
-            {mutation.isError && (
-              <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-                {mutation.error.message}
-              </Alert>
-            )}
-          </Modal.Body>
-          <Modal.Footer>
-            <button type="button" className="btn btn-secondary" onClick={onCancel}>
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isSubmitting || mutation.isPending}
-            >
-              Create course
-            </button>
-          </Modal.Footer>
-        </form>
-      </FormProvider>
-    </Modal>
+          </div>
+          {mutation.isError && (
+            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+              {mutation.error.message}
+            </Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <button type="button" className="btn btn-secondary" onClick={onCancel}>
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={isSubmitting || mutation.isPending}
+          >
+            Create course
+          </button>
+        </Modal.Footer>
+      </form>
+    </FormProvider>
   );
 }
 

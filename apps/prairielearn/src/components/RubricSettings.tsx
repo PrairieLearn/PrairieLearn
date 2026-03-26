@@ -383,9 +383,14 @@ export function RubricSettings({
   };
 
   const reportInputValidity = () => {
-    // Performs validation on the required inputs
-    const required = document.querySelectorAll<HTMLInputElement>('#rubric-editor input[required]');
-    return Array.from(required).every((input) => input.reportValidity());
+    // Performs validation on the all inputs
+    // This will make sure that all non-nullable inputs are filled, and number inputs parse as numbers
+    const inputs = document.querySelectorAll<HTMLInputElement>('#rubric-editor input');
+    const textareas = document.querySelectorAll<HTMLTextAreaElement>('#rubric-editor textarea');
+    return (
+      Array.from(inputs).every((input) => input.reportValidity()) &&
+      Array.from(textareas).every((input) => input.reportValidity())
+    );
   };
 
   const submitSettings = async (use_rubric: boolean) => {
@@ -687,6 +692,7 @@ export function RubricSettings({
                       type="number"
                       value={minPoints ?? ''}
                       disabled={!hasCourseInstancePermissionEdit}
+                      required
                       onInput={({ currentTarget }) =>
                         setMinPoints(
                           currentTarget.value.length > 0 ? Number(currentTarget.value) : null,
@@ -713,6 +719,7 @@ export function RubricSettings({
                       type="number"
                       value={maxExtraPoints ?? ''}
                       disabled={!hasCourseInstancePermissionEdit}
+                      required
                       onInput={({ currentTarget }) =>
                         setMaxExtraPoints(
                           currentTarget.value.length > 0 ? Number(currentTarget.value) : null,
