@@ -3,7 +3,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import {
   type AuthzDataForAccessControl,
   resolveModernAssessmentAccessBatch,
-} from './access-control-modern.js';
+} from './assessment-access-control/authz.js';
 import { type CourseInstance } from './db-types.js';
 import {
   type StaffGradebookRow,

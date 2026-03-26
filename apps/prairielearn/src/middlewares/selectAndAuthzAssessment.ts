@@ -3,7 +3,7 @@ import z from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
-import { resolveModernAssessmentAccess } from '../lib/access-control-modern.js';
+import { resolveModernAssessmentAccess } from '../lib/assessment-access-control/authz.js';
 import {
   AssessmentModuleSchema,
   AssessmentSchema,
