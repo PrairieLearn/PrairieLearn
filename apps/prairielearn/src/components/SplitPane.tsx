@@ -37,7 +37,7 @@ export function SplitPane({
   /** Called when the user closes the detail panel via the X button. */
   onClose?: () => void;
 }) {
-  const [manualCollapsed, setManualCollapsed] = useState(true);
+  const [manualCollapsed, setManualCollapsed] = useState(!forceOpen);
   const prevForceOpenRef = useRef(forceOpen);
   const narrowContainerRef = useRef<HTMLDivElement>(null);
   const savedScrollTopRef = useRef(0);
