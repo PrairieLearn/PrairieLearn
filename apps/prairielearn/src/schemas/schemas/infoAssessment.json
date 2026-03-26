@@ -805,7 +805,8 @@
                       "type": "boolean"
                     },
                     "credit": {
-                      "type": "number"
+                      "type": "number",
+                      "minimum": 0
                     }
                   }
                 },
@@ -936,7 +937,8 @@
         },
         "credit": {
           "description": "Amount of credit as a percent to allow",
-          "type": "number"
+          "type": "number",
+          "minimum": 0
         }
       }
     }

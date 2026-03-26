@@ -93,10 +93,11 @@ export function AccessControlForm({
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
   const deleteModal = useModalState<{ index: number; name: string }>();
 
+  const displayTimezone = courseInstance.display_timezone;
   const mainRule = initialData[0]
-    ? jsonToMainRuleFormData(initialData[0])
-    : jsonToMainRuleFormData({ listBeforeRelease: false });
-  const overrides = initialData.slice(1).map(jsonToOverrideFormData);
+    ? jsonToMainRuleFormData(initialData[0], displayTimezone)
+    : jsonToMainRuleFormData({ listBeforeRelease: false }, displayTimezone);
+  const overrides = initialData.slice(1).map((o) => jsonToOverrideFormData(o, displayTimezone));
 
   const methods = useForm<AccessControlFormData>({
     mode: 'onChange',
@@ -127,7 +128,7 @@ export function AccessControlForm({
   const watchedData = watch();
 
   const handleFormSubmit = (data: AccessControlFormData) => {
-    const jsonOutput = formDataToJson(data);
+    const jsonOutput = formDataToJson(data, displayTimezone);
     onSubmit(jsonOutput);
   };
 
@@ -152,15 +153,21 @@ export function AccessControlForm({
 
   const handleDeleteConfirm = () => {
     if (deleteModal.data !== null) {
-      if (selectedRule?.type === 'override' && selectedRule.index === deleteModal.data.index) {
-        setSelectedRule(null);
+      const deletedIndex = deleteModal.data.index;
+      if (selectedRule?.type === 'override') {
+        if (selectedRule.index === deletedIndex) {
+          setSelectedRule(null);
+        } else if (selectedRule.index > deletedIndex) {
+          setSelectedRule({ type: 'override', index: selectedRule.index - 1 });
+        }
       }
-      removeOverride(deleteModal.data.index);
+      removeOverride(deletedIndex);
     }
     deleteModal.hide();
   };
 
   const getOverrideName = (index: number): string => {
+    if (index >= watchedData.overrides.length) return `Override ${index + 1}`;
     const override = watchedData.overrides[index];
     const appliesTo = override.appliesTo;
 
@@ -233,6 +240,9 @@ export function AccessControlForm({
       </div>
     ) : selectedRule?.type === 'override' ? (
       (() => {
+        if (selectedRule.index >= watchedData.overrides.length) {
+          return null;
+        }
         const override = watchedData.overrides[selectedRule.index];
         const hasNoTargets =
           (override.appliesTo.targetType === 'individual' &&

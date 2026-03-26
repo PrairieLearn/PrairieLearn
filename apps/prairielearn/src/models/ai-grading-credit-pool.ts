@@ -27,6 +27,24 @@ export async function selectCreditPool(course_instance_id: string): Promise<Cred
 }
 
 /**
+ * Lock the course_instances row for this course instance before writing AI
+ * grading rows that reference it.
+ *
+ * AI grading transactions are deadlock-prone here because concurrent workers on
+ * the same course instance insert into ai_grading_jobs (taking FK KEY SHARE on
+ * course_instances) and then deduct credits (requiring FOR UPDATE on that same
+ * row). We call this immediately before ai_grading_jobs insert so FOR UPDATE is
+ * taken first and no lock upgrade cycle is created.
+ */
+async function selectCreditPoolForUpdate(course_instance_id: string): Promise<CreditPool> {
+  return await queryRow(
+    sql.select_credit_pool_for_update,
+    { course_instance_id },
+    CreditPoolSchema,
+  );
+}
+
+/**
  * Compute how a cost should be split between non-transferable (first) and transferable credits.
  */
 function splitDeduction(
@@ -38,80 +56,135 @@ function splitDeduction(
   return { nonTransferableDeduction, transferableDeduction };
 }
 
-/**
- * Atomically deduct credits from the pool for AI grading.
- * Deducts from non-transferable credits first, then transferable.
- * Throws if the pool has insufficient credits.
- */
-export async function deductCreditsForAiGrading({
-  course_instance_id,
-  cost_milli_dollars,
-  user_id,
-  ai_grading_job_id,
-  assessment_question_id,
-  reason,
-}: {
+interface DeductCreditsForAiGradingParams {
   course_instance_id: string;
   cost_milli_dollars: number;
   user_id: string | null;
   ai_grading_job_id: string | null;
   assessment_question_id: string | null;
   reason: string;
-}): Promise<void> {
-  await runInTransactionAsync(async () => {
-    const before = await queryRow(
-      sql.select_credit_pool_for_update,
-      { course_instance_id },
-      CreditPoolSchema,
-    );
+}
 
-    if (before.total_milli_dollars < cost_milli_dollars) {
-      throw new Error('Insufficient AI grading credits');
-    }
+async function deductCreditsForAiGradingWithLockedPool(
+  before: CreditPool,
+  {
+    course_instance_id,
+    cost_milli_dollars,
+    user_id,
+    ai_grading_job_id,
+    assessment_question_id,
+    reason,
+  }: DeductCreditsForAiGradingParams,
+): Promise<void> {
+  if (before.total_milli_dollars < cost_milli_dollars) {
+    throw new Error('Insufficient AI grading credits');
+  }
 
-    const { nonTransferableDeduction, transferableDeduction } = splitDeduction(
-      cost_milli_dollars,
-      before.credit_non_transferable_milli_dollars,
-    );
+  const { nonTransferableDeduction, transferableDeduction } = splitDeduction(
+    cost_milli_dollars,
+    before.credit_non_transferable_milli_dollars,
+  );
 
-    const newNonTransferable =
-      before.credit_non_transferable_milli_dollars - nonTransferableDeduction;
-    const newTransferable = before.credit_transferable_milli_dollars - transferableDeduction;
-    const newTotal = newNonTransferable + newTransferable;
+  const newNonTransferable =
+    before.credit_non_transferable_milli_dollars - nonTransferableDeduction;
+  const newTransferable = before.credit_transferable_milli_dollars - transferableDeduction;
+  const newTotal = newNonTransferable + newTransferable;
 
-    await execute(sql.update_credit_balances, {
+  await execute(sql.update_credit_balances, {
+    course_instance_id,
+    credit_transferable_milli_dollars: newTransferable,
+    credit_non_transferable_milli_dollars: newNonTransferable,
+  });
+
+  if (nonTransferableDeduction > 0) {
+    await execute(sql.insert_credit_pool_change, {
       course_instance_id,
-      credit_transferable_milli_dollars: newTransferable,
-      credit_non_transferable_milli_dollars: newNonTransferable,
+      credit_before_milli_dollars: before.total_milli_dollars,
+      credit_after_milli_dollars: before.total_milli_dollars - nonTransferableDeduction,
+      delta_milli_dollars: -nonTransferableDeduction,
+      credit_type: 'non_transferable',
+      reason,
+      user_id,
+      ai_grading_job_id,
+      assessment_question_id,
     });
+  }
 
-    if (nonTransferableDeduction > 0) {
-      await execute(sql.insert_credit_pool_change, {
+  if (transferableDeduction > 0) {
+    await execute(sql.insert_credit_pool_change, {
+      course_instance_id,
+      credit_before_milli_dollars: before.total_milli_dollars - nonTransferableDeduction,
+      credit_after_milli_dollars: newTotal,
+      delta_milli_dollars: -transferableDeduction,
+      credit_type: 'transferable',
+      reason,
+      user_id,
+      ai_grading_job_id,
+      assessment_question_id,
+    });
+  }
+}
+
+/**
+ * Run AI grading job insertion and credit deduction under one consistent lock
+ * order. When cost tracking is enabled, this takes FOR UPDATE on
+ * course_instances before ai_grading_jobs is inserted, avoiding FK KEY SHARE ->
+ * FOR UPDATE deadlocks under parallel grading.
+ *
+ * This function opens its own transaction, but is safe to call inside an
+ * existing `runInTransactionAsync` — the nested call reuses the outer
+ * transaction. In that case, the FOR UPDATE lock is held for the lifetime of
+ * the *outer* transaction, not just this function.
+ */
+export async function insertAiGradingJobAndDeductCreditsIfNeeded({
+  trackRateLimitAndCost,
+  createAiGradingJob,
+  course_instance_id,
+  cost_milli_dollars,
+  user_id,
+  assessment_question_id,
+  reason,
+}: Omit<DeductCreditsForAiGradingParams, 'ai_grading_job_id'> & {
+  trackRateLimitAndCost: boolean;
+  createAiGradingJob: () => Promise<string>;
+}): Promise<string> {
+  return await runInTransactionAsync(async () => {
+    const creditPool = trackRateLimitAndCost
+      ? await selectCreditPoolForUpdate(course_instance_id)
+      : null;
+
+    const ai_grading_job_id = await createAiGradingJob();
+
+    if (creditPool) {
+      await deductCreditsForAiGradingWithLockedPool(creditPool, {
         course_instance_id,
-        credit_before_milli_dollars: before.total_milli_dollars,
-        credit_after_milli_dollars: before.total_milli_dollars - nonTransferableDeduction,
-        delta_milli_dollars: -nonTransferableDeduction,
-        credit_type: 'non_transferable',
-        reason,
+        cost_milli_dollars,
         user_id,
         ai_grading_job_id,
         assessment_question_id,
+        reason,
       });
     }
 
-    if (transferableDeduction > 0) {
-      await execute(sql.insert_credit_pool_change, {
-        course_instance_id,
-        credit_before_milli_dollars: before.total_milli_dollars - nonTransferableDeduction,
-        credit_after_milli_dollars: newTotal,
-        delta_milli_dollars: -transferableDeduction,
-        credit_type: 'transferable',
-        reason,
-        user_id,
-        ai_grading_job_id,
-        assessment_question_id,
-      });
-    }
+    return ai_grading_job_id;
+  });
+}
+
+/**
+ * Atomically deduct credits from the pool for AI grading.
+ * Deducts from non-transferable credits first, then transferable.
+ * Throws if the pool has insufficient credits.
+ *
+ * Exported for testing. Production callers should use
+ * {@link insertAiGradingJobAndDeductCreditsIfNeeded} instead to ensure
+ * correct lock ordering and avoid deadlocks.
+ */
+export async function deductCreditsForAiGrading(
+  params: DeductCreditsForAiGradingParams,
+): Promise<void> {
+  await runInTransactionAsync(async () => {
+    const before = await selectCreditPoolForUpdate(params.course_instance_id);
+    await deductCreditsForAiGradingWithLockedPool(before, params);
   });
 }
 

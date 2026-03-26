@@ -26,6 +26,39 @@ const JSON_RULE_START = 0;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
+ * Validates a single access control rule for duplicate deadlines and exam UUIDs.
+ * Returns an error string if validation fails, or null if the rule is valid.
+ */
+export function validateRule(rule: AccessControlJson): string | null {
+  const exams = rule.integrations?.prairieTest?.exams ?? [];
+  const seenUuids = new Set<string>();
+  for (const e of exams) {
+    if (seenUuids.has(e.examUuid)) {
+      return `Duplicate PrairieTest exam UUID: ${e.examUuid}.`;
+    }
+    seenUuids.add(e.examUuid);
+  }
+
+  const earlyDates = new Set<string>();
+  for (const d of rule.dateControl?.earlyDeadlines ?? []) {
+    if (earlyDates.has(d.date)) {
+      return `Duplicate early deadline date: ${d.date}.`;
+    }
+    earlyDates.add(d.date);
+  }
+
+  const lateDates = new Set<string>();
+  for (const d of rule.dateControl?.lateDeadlines ?? []) {
+    if (lateDates.has(d.date)) {
+      return `Duplicate late deadline date: ${d.date}.`;
+    }
+    lateDates.add(d.date);
+  }
+
+  return null;
+}
+
+/**
  * Validates and prepares rules for a single assessment. Returns an error
  * string if validation fails, or null if the rules are valid.
  */
@@ -76,30 +109,8 @@ function validateAssessmentRules(
   }
 
   for (const rule of rules) {
-    const exams = rule.integrations?.prairieTest?.exams ?? [];
-    const seenUuids = new Set<string>();
-    for (const e of exams) {
-      if (seenUuids.has(e.examUuid)) {
-        return `Duplicate PrairieTest exam UUID: ${e.examUuid}.`;
-      }
-      seenUuids.add(e.examUuid);
-    }
-
-    const earlyDates = new Set<string>();
-    for (const d of rule.dateControl?.earlyDeadlines ?? []) {
-      if (earlyDates.has(d.date)) {
-        return `Duplicate early deadline date: ${d.date}.`;
-      }
-      earlyDates.add(d.date);
-    }
-
-    const lateDates = new Set<string>();
-    for (const d of rule.dateControl?.lateDeadlines ?? []) {
-      if (lateDates.has(d.date)) {
-        return `Duplicate late deadline date: ${d.date}.`;
-      }
-      lateDates.add(d.date);
-    }
+    const ruleError = validateRule(rule);
+    if (ruleError) return ruleError;
   }
 
   const assessmentInvalidUuids: string[] = [];
