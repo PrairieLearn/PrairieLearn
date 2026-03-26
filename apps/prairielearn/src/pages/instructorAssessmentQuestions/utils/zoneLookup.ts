@@ -76,7 +76,7 @@ export function findZoneByTrackingId(
 }
 
 /**
- * Finds an alternative group by its trackingId across all zones.
+ * Finds an alternative pool by its trackingId across all zones.
  * Returns the alternative pool, parent zone, and their indices.
  */
 export function findAltPoolByTrackingId(
