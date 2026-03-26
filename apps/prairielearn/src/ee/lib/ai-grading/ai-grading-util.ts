@@ -620,52 +620,65 @@ export async function deleteAiGradingJobs({
   // TODO: revisit this before general availability of AI grading. This implementation
   // was added primarily to facilitate demos at ASEE 2025. It may not behave completely
   // correctly in call cases; see the TODOs in the SQL query for more details.
-  //
-  // TODO: we should add locking here. Specifically, we should process each
-  // assessment instance + instance question one at a time in separate
-  // transactions so that we don't need to lock all relevant assessment instances
-  // and assessment questions at once.
-  const iqs = await runInTransactionAsync(async () => {
-    const iqs = await queryRows(
-      sql.delete_ai_grading_jobs,
-      {
-        authn_user_id,
-        assessment_question_ids,
-      },
-      z.object({
-        id: IdSchema,
-        assessment_instance_id: IdSchema,
-        max_points: AssessmentQuestionSchema.shape.max_points,
-        max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
-        max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
-        points: InstanceQuestionSchema.shape.points,
-        score_perc: InstanceQuestionSchema.shape.score_perc,
-        auto_points: InstanceQuestionSchema.shape.auto_points,
-        manual_points: InstanceQuestionSchema.shape.manual_points,
-        most_recent_manual_grading_job: GradingJobSchema.nullable(),
-      }),
-    );
-
-    for (const iq of iqs) {
-      await updateAssessmentInstanceGrade({
-        assessment_instance_id: iq.assessment_instance_id,
-        // We use the user who is performing the deletion.
-        authn_user_id,
-        credit: 100,
-        allowDecrease: true,
-      });
-    }
-
-    return iqs;
+  const DeletedAiGradingIqSchema = z.object({
+    id: IdSchema,
+    assessment_instance_id: IdSchema,
+    max_points: AssessmentQuestionSchema.shape.max_points,
+    max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
+    max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
+    points: InstanceQuestionSchema.shape.points,
+    score_perc: InstanceQuestionSchema.shape.score_perc,
+    auto_points: InstanceQuestionSchema.shape.auto_points,
+    manual_points: InstanceQuestionSchema.shape.manual_points,
+    most_recent_manual_grading_job: GradingJobSchema.nullable(),
   });
+  const assessmentInstanceIds = await queryRows(
+    sql.select_assessment_instance_ids_for_ai_grading_job_deletion,
+    { assessment_question_ids },
+    z.object({ assessment_instance_id: IdSchema }),
+  );
 
-  // Important: this is done outside of the above transaction so that we don't
-  // hold a database connection open while we do network calls.
-  //
-  // This is here for consistency with other assessment score updating code. We
-  // shouldn't hit this for the vast majority of assessments.
-  for (const iq of iqs) {
-    await ltiOutcomes.updateScore(iq.assessment_instance_id);
+  const iqs: z.infer<typeof DeletedAiGradingIqSchema>[] = [];
+  for (const { assessment_instance_id } of assessmentInstanceIds) {
+    const iqsForAssessmentInstance = await runInTransactionAsync(async () => {
+      // Lock assessment_instances first to match the worker's lock order.
+      await queryRow(
+        sql.lock_assessment_instance_for_ai_grading_job_deletion,
+        { assessment_instance_id },
+        z.object({ id: IdSchema }),
+      );
+
+      const iqs = await queryRows(
+        sql.delete_ai_grading_jobs_for_assessment_instance,
+        {
+          authn_user_id,
+          assessment_question_ids,
+          assessment_instance_id,
+        },
+        DeletedAiGradingIqSchema,
+      );
+
+      if (iqs.length > 0) {
+        await updateAssessmentInstanceGrade({
+          assessment_instance_id,
+          // We use the user who is performing the deletion.
+          authn_user_id,
+          credit: 100,
+          allowDecrease: true,
+        });
+      }
+
+      return iqs;
+    });
+    iqs.push(...iqsForAssessmentInstance);
+    if (iqsForAssessmentInstance.length > 0) {
+      // Important: this is done outside of the above transaction so that we don't
+      // hold a database connection open while we do network calls.
+      //
+      // This is here for consistency with other assessment score updating code. We
+      // shouldn't hit this for the vast majority of assessments.
+      await ltiOutcomes.updateScore(assessment_instance_id);
+    }
   }
 
   return iqs;

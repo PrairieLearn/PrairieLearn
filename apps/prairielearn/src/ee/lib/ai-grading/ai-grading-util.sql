@@ -99,7 +99,35 @@ ORDER BY
 LIMIT
   1;
 
--- BLOCK delete_ai_grading_jobs
+-- BLOCK select_assessment_instance_ids_for_ai_grading_job_deletion
+SELECT DISTINCT
+  iq.assessment_instance_id
+FROM
+  grading_jobs AS gj
+  JOIN submissions AS s ON (s.id = gj.submission_id)
+  JOIN variants AS v ON (v.id = s.variant_id)
+  JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+WHERE
+  gj.grading_method = 'AI'
+  AND gj.deleted_at IS NULL
+  AND iq.assessment_question_id IN (
+    SELECT
+      unnest($assessment_question_ids::int[])
+  )
+ORDER BY
+  iq.assessment_instance_id ASC;
+
+-- BLOCK lock_assessment_instance_for_ai_grading_job_deletion
+SELECT
+  ai.id
+FROM
+  assessment_instances AS ai
+WHERE
+  ai.id = $assessment_instance_id
+FOR NO KEY UPDATE OF
+  ai;
+
+-- BLOCK delete_ai_grading_jobs_for_assessment_instance
 WITH
   deleted_grading_jobs AS (
     UPDATE grading_jobs AS gj
@@ -114,6 +142,7 @@ WITH
       gj.submission_id = s.id
       AND gj.grading_method = 'AI'
       AND gj.deleted_at IS NULL
+      AND iq.assessment_instance_id = $assessment_instance_id
       AND iq.assessment_question_id IN (
         SELECT
           unnest($assessment_question_ids::int[])
