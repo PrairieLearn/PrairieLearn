@@ -1,6 +1,78 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { correctGeminiMalformedRubricGradingJson, parseSubmission } from './ai-grading-util.js';
+import {
+  correctGeminiMalformedRubricGradingJson,
+  isNoObjectGeneratedError,
+  parseSubmission,
+  withNoObjectRetry,
+} from './ai-grading-util.js';
+
+describe('isNoObjectGeneratedError', () => {
+  it('should return true for AI SDK no-object errors by name', () => {
+    const err = Object.assign(new Error('No object generated'), {
+      name: 'AI_NoObjectGeneratedError',
+    });
+    expect(isNoObjectGeneratedError(err)).toBe(true);
+  });
+
+  it('should return false for non no-object errors', () => {
+    expect(isNoObjectGeneratedError(new Error('Some other error'))).toBe(false);
+  });
+});
+
+describe('withNoObjectRetry', () => {
+  it('should retry and succeed for no-object errors', async () => {
+    const err = Object.assign(new Error('No object generated'), {
+      name: 'AI_NoObjectGeneratedError',
+    });
+    const operation = vi.fn().mockRejectedValueOnce(err).mockResolvedValue('ok');
+    const onNoObjectRetry = vi.fn();
+
+    const result = await withNoObjectRetry({
+      operation,
+      noObjectRetries: 1,
+      onNoObjectRetry,
+    });
+
+    expect(result).toBe('ok');
+    expect(operation).toHaveBeenCalledTimes(2);
+    expect(onNoObjectRetry).toHaveBeenCalledTimes(1);
+    expect(onNoObjectRetry).toHaveBeenCalledWith(1, 2);
+  });
+
+  it('should not retry for non no-object errors', async () => {
+    const err = new Error('Network failure');
+    const operation = vi.fn().mockRejectedValue(err);
+
+    await expect(
+      withNoObjectRetry({
+        operation,
+        noObjectRetries: 2,
+      }),
+    ).rejects.toBe(err);
+    expect(operation).toHaveBeenCalledTimes(1);
+  });
+
+  it('should throw after exhausting retries for no-object errors', async () => {
+    const err = Object.assign(new Error('No object generated'), {
+      name: 'AI_NoObjectGeneratedError',
+    });
+    const operation = vi.fn().mockRejectedValue(err);
+    const onNoObjectRetry = vi.fn();
+
+    await expect(
+      withNoObjectRetry({
+        operation,
+        noObjectRetries: 2,
+        onNoObjectRetry,
+      }),
+    ).rejects.toBe(err);
+    expect(operation).toHaveBeenCalledTimes(3);
+    expect(onNoObjectRetry).toHaveBeenCalledTimes(2);
+    expect(onNoObjectRetry).toHaveBeenNthCalledWith(1, 1, 3);
+    expect(onNoObjectRetry).toHaveBeenNthCalledWith(2, 2, 3);
+  });
+});
 
 describe('parseSubmission', () => {
   it('should return empty array for empty HTML', () => {

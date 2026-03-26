@@ -4,6 +4,7 @@ import {
   type LanguageModel,
   type LanguageModelUsage,
   type ModelMessage,
+  NoObjectGeneratedError,
   type UserContent,
   generateObject,
 } from 'ai';
@@ -736,6 +737,43 @@ export async function addAiGradingCostToIntervalUsage({
   await rateLimiter.addToIntervalUsage(getIntervalUsageKey(courseInstance), responseCost);
 }
 
+export function isNoObjectGeneratedError(err: unknown): boolean {
+  if (NoObjectGeneratedError.isInstance(err)) {
+    return true;
+  }
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'name' in err &&
+    err.name === 'AI_NoObjectGeneratedError'
+  );
+}
+
+export async function withNoObjectRetry<T>({
+  operation,
+  noObjectRetries = 0,
+  onNoObjectRetry,
+}: {
+  operation: () => Promise<T>;
+  noObjectRetries?: number;
+  onNoObjectRetry?: (attempt: number, maxAttempts: number) => void;
+}): Promise<T> {
+  const maxAttempts = noObjectRetries + 1;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await operation();
+    } catch (err) {
+      if (!isNoObjectGeneratedError(err) || attempt >= maxAttempts) {
+        throw err;
+      }
+      onNoObjectRetry?.(attempt, maxAttempts);
+    }
+  }
+
+  throw new Error('Unreachable: withNoObjectRetry exhausted attempts without returning.');
+}
+
 /**
  * Rotates a base64-encoded image by the specified counterclockwise rotation.
  *
@@ -766,13 +804,19 @@ async function rotateBase64Image(
  * @param params
  * @param params.image - The base64-encoded image to correct.
  * @param params.model - The LLM to use for determining the correct orientation.
+ * @param params.noObjectRetries - Number of retries for `AI_NoObjectGeneratedError`.
+ * @param params.onNoObjectRetry - Optional callback invoked before each retry.
  */
 async function correctImageOrientation({
   image,
   model,
+  noObjectRetries = 0,
+  onNoObjectRetry,
 }: {
   image: string;
   model: LanguageModel;
+  noObjectRetries?: number;
+  onNoObjectRetry?: (attempt: number, maxAttempts: number) => void;
 }): Promise<{
   correctedImage: string;
   degreesRotated: CounterClockwiseRotationDegrees;
@@ -819,10 +863,15 @@ async function correctImageOrientation({
     });
   }
 
-  const response = await generateObject({
-    model,
-    schema: RotationCorrectionOutputSchema,
-    messages: prompt,
+  const response = await withNoObjectRetry({
+    noObjectRetries,
+    onNoObjectRetry,
+    operation: async () =>
+      await generateObject({
+        model,
+        schema: RotationCorrectionOutputSchema,
+        messages: prompt,
+      }),
   });
 
   const index = Number.parseInt(response.object.upright_image) - 1;
@@ -841,6 +890,8 @@ async function correctImageOrientation({
  * @param param.submittedAnswer - The student's submitted answer object.
  * @param param.submittedImages - A mapping from filenames to base64-encoded images.
  * @param param.model - The LLM to use for determining the correct orientations.
+ * @param param.noObjectRetries - Number of retries for `AI_NoObjectGeneratedError`.
+ * @param param.onNoObjectRetry - Optional callback invoked before each image retry.
  *
  * @returns An updated submitted answer with corrected images, rotations correction amounts, and LLM responses.
  */
@@ -849,10 +900,14 @@ export async function correctImagesOrientation({
   /** The key is the filename, and the value is the base64-encoded image */
   submittedImages,
   model,
+  noObjectRetries = 0,
+  onNoObjectRetry,
 }: {
   submittedAnswer: Record<string, any>;
   submittedImages: Record<string, string>;
   model: LanguageModel;
+  noObjectRetries?: number;
+  onNoObjectRetry?: (filename: string, attempt: number, maxAttempts: number) => void;
 }) {
   if (!submittedAnswer._files) {
     return {
@@ -878,6 +933,11 @@ export async function correctImagesOrientation({
     const { correctedImage, degreesRotated, response } = await correctImageOrientation({
       image,
       model,
+      noObjectRetries,
+      onNoObjectRetry:
+        onNoObjectRetry == null
+          ? undefined
+          : (attempt, maxAttempts) => onNoObjectRetry(filename, attempt, maxAttempts),
     });
 
     const existingIndex = submittedAnswer._files.findIndex(

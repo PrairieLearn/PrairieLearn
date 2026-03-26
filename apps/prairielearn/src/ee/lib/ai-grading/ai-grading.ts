@@ -66,9 +66,11 @@ import {
   getIntervalUsage,
   insertAiGradingJob,
   insertAiGradingJobWithRotationCorrection,
+  isNoObjectGeneratedError,
   parseAiRubricItems,
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastVariantAndSubmission,
+  withNoObjectRetry,
 } from './ai-grading-util.js';
 import {
   type AIGradingLog,
@@ -273,6 +275,7 @@ async function finalizeAiGradingPersistence({
 }
 
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
+const GEMINI_NO_OBJECT_RETRY_COUNT = 2;
 const HOURLY_USAGE_CAP_REACHED_MESSAGE = 'Hourly usage cap reached. Try again later.';
 const INSUFFICIENT_CREDITS_MESSAGE = 'Insufficient AI grading credits.';
 
@@ -612,6 +615,24 @@ export async function aiGrade({
         safetyIdentifier: `course_${course.id}`,
       };
 
+      const runGenerateObject = async <T>({
+        stage,
+        operation,
+      }: {
+        stage: string;
+        operation: () => Promise<GenerateObjectResult<T>>;
+      }): Promise<GenerateObjectResult<T>> => {
+        return await withNoObjectRetry({
+          operation,
+          noObjectRetries: provider === 'google' ? GEMINI_NO_OBJECT_RETRY_COUNT : 0,
+          onNoObjectRetry: (attempt, maxAttempts) => {
+            logger.error(
+              `Gemini returned no object while ${stage}. Retrying (${attempt}/${maxAttempts - 1}).`,
+            );
+          },
+        });
+      };
+
       if (rubric_items.length > 0) {
         // Dynamically generate the rubric schema based on the rubric items.
         let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
@@ -659,6 +680,21 @@ export async function aiGrade({
             return correctGeminiMalformedRubricGradingJson(options.text);
           };
 
+          const runRubricGradingWithoutRotation = async () =>
+            await runGenerateObject({
+              stage: 'grading rubric response',
+              operation: async () =>
+                await generateObject({
+                  model,
+                  schema: RubricGradingResultSchema,
+                  messages: input,
+                  experimental_repairText,
+                  providerOptions: {
+                    openai: openaiProviderOptions,
+                  },
+                }),
+            });
+
           if (
             !hasImage ||
             !submission.submitted_answer ||
@@ -667,28 +703,38 @@ export async function aiGrade({
             provider !== 'google'
           ) {
             return {
-              finalGradingResponse: await generateObject({
-                model,
-                schema: RubricGradingResultSchema,
-                messages: input,
-                experimental_repairText,
-                providerOptions: {
-                  openai: openaiProviderOptions,
-                },
-              }),
+              finalGradingResponse: await runRubricGradingWithoutRotation(),
               rotationCorrectionApplied: false,
             };
           }
 
-          const initialResponse = await generateObject({
-            model,
-            schema: RubricImageGradingResultSchema,
-            messages: input,
-            experimental_repairText,
-            providerOptions: {
-              openai: openaiProviderOptions,
-            },
-          });
+          let initialResponse: GenerateObjectResult<z.infer<typeof RubricImageGradingResultSchema>>;
+          try {
+            initialResponse = await runGenerateObject({
+              stage: 'detecting handwriting orientation',
+              operation: async () =>
+                await generateObject({
+                  model,
+                  schema: RubricImageGradingResultSchema,
+                  messages: input,
+                  experimental_repairText,
+                  providerOptions: {
+                    openai: openaiProviderOptions,
+                  },
+                }),
+            });
+          } catch (err) {
+            if (!isNoObjectGeneratedError(err)) {
+              throw err;
+            }
+            logger.error(
+              'Gemini returned no object while detecting image orientation; continuing without rotation correction.',
+            );
+            return {
+              finalGradingResponse: await runRubricGradingWithoutRotation(),
+              rotationCorrectionApplied: false,
+            };
+          }
 
           if (
             initialResponse.object.handwriting_orientations.every(
@@ -704,11 +750,38 @@ export async function aiGrade({
           // so we assume all images might need correction. If an image is already upright, the
           // correction process will keep the image the same.
 
-          const { rotatedSubmittedAnswer, rotationCorrections } = await correctImagesOrientation({
-            submittedAnswer: submission.submitted_answer,
-            submittedImages,
-            model,
-          });
+          let rotatedSubmittedAnswer: Record<string, any>;
+          let rotationCorrections: Record<
+            string,
+            {
+              degreesRotated: CounterClockwiseRotationDegrees;
+              response: GenerateObjectResult<any>;
+            }
+          >;
+          try {
+            ({ rotatedSubmittedAnswer, rotationCorrections } = await correctImagesOrientation({
+              submittedAnswer: submission.submitted_answer,
+              submittedImages,
+              model,
+              noObjectRetries: GEMINI_NO_OBJECT_RETRY_COUNT,
+              onNoObjectRetry: (filename, attempt, maxAttempts) => {
+                logger.error(
+                  `Gemini returned no object while selecting image rotation for ${filename}. Retrying (${attempt}/${maxAttempts - 1}).`,
+                );
+              },
+            }));
+          } catch (err) {
+            if (!isNoObjectGeneratedError(err)) {
+              throw err;
+            }
+            logger.error(
+              'Gemini returned no object while selecting image rotation; using initial grading response without rotation correction.',
+            );
+            return {
+              finalGradingResponse: initialResponse,
+              rotationCorrectionApplied: false,
+            };
+          }
 
           const rotationCorrected = Object.values(rotationCorrections).some(
             (correction) => correction.degreesRotated !== 0,
@@ -730,15 +803,33 @@ export async function aiGrade({
           });
 
           // Perform grading with the rotation-corrected images.
-          const finalResponse = await generateObject({
-            model,
-            schema: RubricImageGradingResultSchema,
-            messages: input,
-            experimental_repairText,
-            providerOptions: {
-              openai: openaiProviderOptions,
-            },
-          });
+          let finalResponse: GenerateObjectResult<z.infer<typeof RubricImageGradingResultSchema>>;
+          try {
+            finalResponse = await runGenerateObject({
+              stage: 'grading rotated submission',
+              operation: async () =>
+                await generateObject({
+                  model,
+                  schema: RubricImageGradingResultSchema,
+                  messages: input,
+                  experimental_repairText,
+                  providerOptions: {
+                    openai: openaiProviderOptions,
+                  },
+                }),
+            });
+          } catch (err) {
+            if (!isNoObjectGeneratedError(err)) {
+              throw err;
+            }
+            logger.error(
+              'Gemini returned no object while grading the rotation-corrected submission; using initial grading response.',
+            );
+            return {
+              finalGradingResponse: initialResponse,
+              rotationCorrectionApplied: false,
+            };
+          }
 
           return {
             rotationCorrectionApplied: true,
@@ -889,6 +980,20 @@ export async function aiGrade({
           gradingResponseWithRotationIssue,
           rotationCorrections,
         } = (await run(async () => {
+          const runScoreGradingWithoutRotation = async () =>
+            await runGenerateObject({
+              stage: 'grading score response',
+              operation: async () =>
+                await generateObject({
+                  model,
+                  schema: GradingResultSchema,
+                  messages: input,
+                  providerOptions: {
+                    openai: openaiProviderOptions,
+                  },
+                }),
+            });
+
           if (
             !hasImage ||
             !submission.submitted_answer ||
@@ -897,26 +1002,37 @@ export async function aiGrade({
             provider !== 'google'
           ) {
             return {
-              finalGradingResponse: await generateObject({
-                model,
-                schema: GradingResultSchema,
-                messages: input,
-                providerOptions: {
-                  openai: openaiProviderOptions,
-                },
-              }),
+              finalGradingResponse: await runScoreGradingWithoutRotation(),
               rotationCorrectionApplied: false,
             };
           }
 
-          const initialResponse = await generateObject({
-            model,
-            schema: ImageGradingResultSchema,
-            messages: input,
-            providerOptions: {
-              openai: openaiProviderOptions,
-            },
-          });
+          let initialResponse: GenerateObjectResult<z.infer<typeof ImageGradingResultSchema>>;
+          try {
+            initialResponse = await runGenerateObject({
+              stage: 'detecting handwriting orientation',
+              operation: async () =>
+                await generateObject({
+                  model,
+                  schema: ImageGradingResultSchema,
+                  messages: input,
+                  providerOptions: {
+                    openai: openaiProviderOptions,
+                  },
+                }),
+            });
+          } catch (err) {
+            if (!isNoObjectGeneratedError(err)) {
+              throw err;
+            }
+            logger.error(
+              'Gemini returned no object while detecting image orientation; continuing without rotation correction.',
+            );
+            return {
+              finalGradingResponse: await runScoreGradingWithoutRotation(),
+              rotationCorrectionApplied: false,
+            };
+          }
 
           if (
             initialResponse.object.handwriting_orientations.every(
@@ -927,11 +1043,38 @@ export async function aiGrade({
             return { finalGradingResponse: initialResponse, rotationCorrectionApplied: false };
           }
 
-          const { rotatedSubmittedAnswer, rotationCorrections } = await correctImagesOrientation({
-            submittedAnswer: submission.submitted_answer,
-            submittedImages,
-            model,
-          });
+          let rotatedSubmittedAnswer: Record<string, any>;
+          let rotationCorrections: Record<
+            string,
+            {
+              degreesRotated: CounterClockwiseRotationDegrees;
+              response: GenerateObjectResult<any>;
+            }
+          >;
+          try {
+            ({ rotatedSubmittedAnswer, rotationCorrections } = await correctImagesOrientation({
+              submittedAnswer: submission.submitted_answer,
+              submittedImages,
+              model,
+              noObjectRetries: GEMINI_NO_OBJECT_RETRY_COUNT,
+              onNoObjectRetry: (filename, attempt, maxAttempts) => {
+                logger.error(
+                  `Gemini returned no object while selecting image rotation for ${filename}. Retrying (${attempt}/${maxAttempts - 1}).`,
+                );
+              },
+            }));
+          } catch (err) {
+            if (!isNoObjectGeneratedError(err)) {
+              throw err;
+            }
+            logger.error(
+              'Gemini returned no object while selecting image rotation; using initial grading response without rotation correction.',
+            );
+            return {
+              finalGradingResponse: initialResponse,
+              rotationCorrectionApplied: false,
+            };
+          }
 
           // Regenerate the prompt with the rotation-corrected images.
           input = await generatePrompt({
@@ -947,14 +1090,32 @@ export async function aiGrade({
           });
 
           // Perform grading with the rotation-corrected images.
-          const finalResponse = await generateObject({
-            model,
-            schema: ImageGradingResultSchema,
-            messages: input,
-            providerOptions: {
-              openai: openaiProviderOptions,
-            },
-          });
+          let finalResponse: GenerateObjectResult<z.infer<typeof ImageGradingResultSchema>>;
+          try {
+            finalResponse = await runGenerateObject({
+              stage: 'grading rotated submission',
+              operation: async () =>
+                await generateObject({
+                  model,
+                  schema: ImageGradingResultSchema,
+                  messages: input,
+                  providerOptions: {
+                    openai: openaiProviderOptions,
+                  },
+                }),
+            });
+          } catch (err) {
+            if (!isNoObjectGeneratedError(err)) {
+              throw err;
+            }
+            logger.error(
+              'Gemini returned no object while grading the rotation-corrected submission; using initial grading response.',
+            );
+            return {
+              finalGradingResponse: initialResponse,
+              rotationCorrectionApplied: false,
+            };
+          }
 
           return {
             rotationCorrectionApplied: true,
