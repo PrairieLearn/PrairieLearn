@@ -217,9 +217,7 @@ function AssessmentEditorInner({
         }
         case 'altPool': {
           const foundAltPool = findAltPoolByTrackingId(zones, selectedItem.questionTrackingId);
-          return foundAltPool
-            ? `z:${foundAltPool.zoneIndex}:${foundAltPool.altPoolIndex}`
-            : null;
+          return foundAltPool ? `z:${foundAltPool.zoneIndex}:${foundAltPool.altPoolIndex}` : null;
         }
         case 'alternative': {
           const foundAlt = findAlternativeByTrackingId(zones, selectedItem.alternativeTrackingId);
