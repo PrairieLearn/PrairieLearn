@@ -2,10 +2,8 @@ import { Alert, Button, Card } from 'react-bootstrap';
 
 import { formatDate } from '@prairielearn/formatter';
 
-import {
-  getCourseInstanceStudentLabelsUrl,
-  getStudentEnrollmentUrl,
-} from '../../../lib/client/url.js';
+import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
+import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 
 import {
   DATE_CONTROL_FIELD_NAMES,
@@ -364,13 +362,13 @@ export function RuleSummaryCard({
           {studentLabels.length > 0 ? (
             <>
               {studentLabels.map((studentLabel) => (
-                <a
+                <StudentLabelBadge
                   key={studentLabel.studentLabelId || studentLabel.name}
-                  href={getCourseInstanceStudentLabelsUrl(courseInstanceId)}
-                  className={`badge text-decoration-none ${studentLabel.color ? `color-${studentLabel.color}` : 'bg-secondary'}`}
-                >
-                  {studentLabel.name}
-                </a>
+                  label={{
+                    name: studentLabel.name,
+                    color: studentLabel.color ?? 'gray',
+                  }}
+                />
               ))}
             </>
           ) : (

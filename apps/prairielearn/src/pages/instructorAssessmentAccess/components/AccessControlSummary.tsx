@@ -149,9 +149,6 @@ export function AccessControlSummary({
 
   const sortableIds = useMemo(() => overrides.map((o) => o.trackingId), [overrides]);
 
-  const hasIndividualOverrides = overrides.some((o) => o.appliesTo.targetType === 'individual');
-  const hasLabelOverrides = overrides.some((o) => o.appliesTo.targetType === 'student_label');
-  const hasBothTypes = hasIndividualOverrides && hasLabelOverrides;
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return;
@@ -220,9 +217,8 @@ export function AccessControlSummary({
             <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
               {overrides.map((override, index) => {
                 const isFirstIndividual =
-                  hasBothTypes && index === 0 && override.appliesTo.targetType === 'individual';
+                  index === 0 && override.appliesTo.targetType === 'individual';
                 const isFirstLabel =
-                  hasBothTypes &&
                   override.appliesTo.targetType === 'student_label' &&
                   (index === 0 || overrides[index - 1].appliesTo.targetType !== 'student_label');
 
@@ -230,12 +226,12 @@ export function AccessControlSummary({
                   <Fragment key={sortableIds[index]}>
                     {isFirstIndividual && (
                       <small className="text-muted fw-semibold d-block mb-2">
-                        Individual overrides
+                        Overrides for individual students
                       </small>
                     )}
                     {isFirstLabel && (
                       <small className="text-muted fw-semibold d-block mb-2 mt-3">
-                        Student label overrides
+                        Overrides for student labels
                       </small>
                     )}
                     <SortableOverrideCard
