@@ -237,6 +237,18 @@ const saveAllRules = t.procedure
   .mutation(async (opts) => {
     const { rules, enrollmentRules, origHash } = opts.input;
 
+    const enhancedEnabled = await features.enabled('enhanced-access-control', {
+      institution_id: opts.ctx.course.institution_id,
+      course_id: opts.ctx.course.id,
+      course_instance_id: opts.ctx.course_instance.id,
+    });
+    if (!enhancedEnabled) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Enhanced access control is not enabled for this course.',
+      });
+    }
+
     // Validate main rules before writing to disk
     const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
     for (const [index, rule] of rulesToSync.entries()) {
@@ -304,18 +316,6 @@ const saveAllRules = t.procedure
         await deleteEnrollmentAccessControlsByIds(idsToDelete, opts.ctx.assessment);
 
         if (enrollmentRules.length > 0) {
-          const enhancedEnabled = await features.enabled('enhanced-access-control', {
-            institution_id: opts.ctx.course.institution_id,
-            course_id: opts.ctx.course.id,
-            course_instance_id: opts.ctx.course_instance.id,
-          });
-          if (!enhancedEnabled) {
-            throw new TRPCError({
-              code: 'FORBIDDEN',
-              message: 'Enhanced access control is not enabled for this course.',
-            });
-          }
-
           const allEnrollmentIds = new Set(enrollmentRules.flatMap((r) => r.enrollmentIds));
           if (allEnrollmentIds.size > 0) {
             const validCount = await validateEnrollmentIdsInCourseInstance(
