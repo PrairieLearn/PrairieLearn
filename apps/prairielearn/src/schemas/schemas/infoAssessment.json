@@ -501,7 +501,7 @@
           "minItems": 1
         },
         "numberChoose": {
-          "description": "Number of questions to choose from this group.",
+          "description": "Number of questions to choose from this pool.",
           "type": "integer",
           "minimum": 0
         },

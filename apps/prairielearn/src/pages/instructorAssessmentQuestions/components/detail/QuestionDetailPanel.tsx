@@ -115,12 +115,12 @@ export function QuestionDetailPanel({
   const maxAutoPointsValue = question.maxAutoPoints ?? zoneQuestionBlock?.maxAutoPoints;
   const manualPointsValue = question.manualPoints ?? zoneQuestionBlock?.manualPoints;
 
-  // Alternative's own values (may be undefined = inheriting from group)
+  // Alternative's own values (may be undefined = inheriting from pool)
   const ownAutoPoints = question.autoPoints ?? undefined;
   const ownMaxAutoPoints = question.maxAutoPoints ?? undefined;
   const ownManualPoints = question.manualPoints ?? undefined;
 
-  // Group's values (what would be inherited)
+  // Pool's values (what would be inherited)
   const inheritedAutoPoints = zoneQuestionBlock?.autoPoints ?? undefined;
   const inheritedMaxAutoPoints = zoneQuestionBlock?.maxAutoPoints ?? undefined;
   const inheritedManualPoints = zoneQuestionBlock?.manualPoints ?? undefined;
@@ -234,7 +234,7 @@ export function QuestionDetailPanel({
 
   const advancedInheritance: AdvancedFieldsInheritance = run(() => {
     if (isAlternative) {
-      // Alternatives inherit from alt group -> zone -> assessment
+      // Alternatives inherit from alt pool -> zone -> assessment
       const parentAdvanceScorePerc =
         zoneQuestionBlock.advanceScorePerc ??
         zone?.advanceScorePerc ??
@@ -255,24 +255,24 @@ export function QuestionDetailPanel({
         parentForceMaxPoints,
         advanceScorePercFromLabel:
           zoneQuestionBlock.advanceScorePerc != null
-            ? 'group'
+            ? 'pool'
             : zone?.advanceScorePerc != null
               ? 'zone'
               : 'assessment',
         gradeRateMinutesFromLabel:
           zoneQuestionBlock.gradeRateMinutes != null
-            ? 'group'
+            ? 'pool'
             : zone?.gradeRateMinutes != null
               ? 'zone'
               : 'assessment',
         allowRealTimeGradingFromLabel:
           zoneQuestionBlock.allowRealTimeGrading != null
-            ? 'group'
+            ? 'pool'
             : zone?.allowRealTimeGrading != null
               ? 'zone'
               : 'assessment',
-        // Only alt groups define forceMaxPoints; fallback is never displayed
-        forceMaxPointsFromLabel: zoneQuestionBlock.forceMaxPoints != null ? 'group' : 'assessment',
+        // Only alt pools define forceMaxPoints; fallback is never displayed
+        forceMaxPointsFromLabel: zoneQuestionBlock.forceMaxPoints != null ? 'pool' : 'assessment',
         watch,
         setValue,
         resetAndSave,
@@ -291,7 +291,7 @@ export function QuestionDetailPanel({
       advanceScorePercFromLabel: zone?.advanceScorePerc != null ? 'zone' : 'assessment',
       gradeRateMinutesFromLabel: zone?.gradeRateMinutes != null ? 'zone' : 'assessment',
       allowRealTimeGradingFromLabel: zone?.allowRealTimeGrading != null ? 'zone' : 'assessment',
-      // Only alt groups define forceMaxPoints; fallback is never displayed
+      // Only alt pools define forceMaxPoints; fallback is never displayed
       forceMaxPointsFromLabel: 'assessment',
       watch,
       setValue,

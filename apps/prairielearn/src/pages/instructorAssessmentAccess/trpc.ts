@@ -26,6 +26,7 @@ import {
   type AccessControlJson,
   AccessControlJsonSchema,
   MAX_ACCESS_CONTROL_RULES,
+  MAX_ENROLLMENT_RULES,
 } from '../../schemas/accessControl.js';
 import { syncAccessControl, validateRule } from '../../sync/fromDisk/accessControl.js';
 
@@ -170,7 +171,7 @@ const saveAllRules = t.procedure
   .input(
     z.object({
       rules: z.array(AccessControlJsonInputSchema).max(MAX_ACCESS_CONTROL_RULES),
-      enrollmentRules: z.array(EnrollmentRuleInputSchema).optional(),
+      enrollmentRules: z.array(EnrollmentRuleInputSchema).max(MAX_ENROLLMENT_RULES).optional(),
       origHash: z.string(),
     }),
   )
@@ -178,20 +179,6 @@ const saveAllRules = t.procedure
     const { rules, enrollmentRules, origHash } = opts.input;
     const courseInstanceId = opts.ctx.course_instance.id;
     const assessmentId = opts.ctx.assessment.id;
-
-    if (rules.slice(1).some((rule) => rule.listBeforeRelease !== undefined)) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'listBeforeRelease can only be specified on the main rule.',
-      });
-    }
-
-    if (enrollmentRules?.some((rule) => rule.ruleJson.listBeforeRelease !== undefined)) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'listBeforeRelease can only be specified on the main rule.',
-      });
-    }
 
     return runInTransactionAsync(async () => {
       await lockAssessment(opts.ctx.assessment);
@@ -207,8 +194,9 @@ const saveAllRules = t.procedure
       }
 
       const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
-      for (const rule of rulesToSync) {
-        const ruleError = validateRule(rule);
+      for (const [index, rule] of rulesToSync.entries()) {
+        const targetType = index === 0 ? 'none' : 'student_label';
+        const ruleError = validateRule(rule, targetType);
         if (ruleError) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
         }
@@ -254,7 +242,7 @@ const saveAllRules = t.procedure
         }
 
         for (const enrollmentRule of enrollmentRules) {
-          const ruleError = validateRule(enrollmentRule.ruleJson);
+          const ruleError = validateRule(enrollmentRule.ruleJson, 'enrollment');
           if (ruleError) {
             throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
           }

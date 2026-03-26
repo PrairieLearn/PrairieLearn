@@ -18,7 +18,7 @@ import {
   type QuestionMetadataMap,
   getSharedTags,
   getSharedTopic,
-  hasAltGroupChooseExceedsCount,
+  hasAltPoolChooseExceedsCount,
   hasPointsMismatch,
   validatePositiveInteger,
 } from '../../utils/questions.js';
@@ -28,7 +28,7 @@ import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields
 import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
 
-interface AltGroupFormData {
+interface AltPoolFormData {
   numberChoose?: number;
   comment?: string;
   autoPoints?: number | number[];
@@ -41,7 +41,7 @@ interface AltGroupFormData {
   allowRealTimeGrading?: boolean;
 }
 
-export function AltGroupDetailPanel({
+export function AltPoolDetailPanel({
   zoneQuestionBlock,
   zone,
   questionMetadata,
@@ -58,7 +58,7 @@ export function AltGroupDetailPanel({
   state: DetailState;
   onUpdate: (
     questionTrackingId: string,
-    question: Partial<ZoneQuestionBlockForm> | Partial<AltGroupFormData>,
+    question: Partial<ZoneQuestionBlockForm> | Partial<AltPoolFormData>,
   ) => void;
   onFormValidChange: (isValid: boolean) => void;
   onDismissBanner: (trackingId: string) => void;
@@ -76,7 +76,7 @@ export function AltGroupDetailPanel({
     setValue,
     trigger,
     formState: { errors, isDirty, isValid },
-  } = useForm<AltGroupFormData>({
+  } = useForm<AltPoolFormData>({
     mode: 'onChange',
     values: {
       numberChoose: zoneQuestionBlock.numberChoose ?? undefined,
@@ -112,7 +112,7 @@ export function AltGroupDetailPanel({
   }, [alternativeCount, trigger, onFormValidChange]);
 
   const handleSave = useCallback(
-    (data: AltGroupFormData) =>
+    (data: AltPoolFormData) =>
       onUpdate(zoneQuestionBlock.trackingId, {
         ...data,
         comment: parseCommentValue(data.comment),
@@ -142,7 +142,7 @@ export function AltGroupDetailPanel({
     parentAdvanceScorePerc,
     parentGradeRateMinutes,
     parentAllowRealTimeGrading,
-    // forceMaxPoints never has a parent for alt groups; it's only defined at the alt group level
+    // forceMaxPoints never has a parent for alt pools; it's only defined at the alt pool level
     parentForceMaxPoints: undefined,
     advanceScorePercFromLabel: zone.advanceScorePerc != null ? 'zone' : 'assessment',
     gradeRateMinutesFromLabel: zone.gradeRateMinutes != null ? 'zone' : 'assessment',
@@ -162,7 +162,7 @@ export function AltGroupDetailPanel({
   const pointsMismatch =
     zoneQuestionBlock.alternatives != null &&
     hasPointsMismatch(zoneQuestionBlock.alternatives, assessmentType, zoneQuestionBlock);
-  const chooseExceeds = hasAltGroupChooseExceedsCount(zoneQuestionBlock);
+  const chooseExceeds = hasAltPoolChooseExceedsCount(zoneQuestionBlock);
   const hasAutoGradedWithOnlyManualPoints =
     zoneQuestionBlock.alternatives?.some((alt) => {
       const metadata = questionMetadata[alt.id];
@@ -179,21 +179,21 @@ export function AltGroupDetailPanel({
       {pointsMismatch && (
         <div className="alert alert-warning small mb-3" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
-          Students will receive different total points because this group has alternatives with
+          Students will receive different total points because this pool has alternatives with
           different point values.
         </div>
       )}
       {chooseExceeds && (
         <div className="alert alert-warning small mb-3" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
-          Number to choose exceeds the number of alternatives in this group.
+          Number to choose exceeds the number of alternatives in this pool.
         </div>
       )}
       {zoneQuestionBlock.pointsDistributedInfoBanner &&
         !state.dismissedBanners.has(zoneQuestionBlock.trackingId) && (
           <div className="alert alert-info small mb-3 alert-dismissible" role="alert">
             <i className="bi bi-info-circle-fill me-1" aria-hidden="true" />
-            This group contains both auto-graded and manually-graded questions. Points have been
+            This pool contains both auto-graded and manually-graded questions. Points have been
             distributed to individual alternatives based on each question's grading method.
             <button
               type="button"
@@ -206,13 +206,13 @@ export function AltGroupDetailPanel({
       {hasAutoGradedWithOnlyManualPoints && (
         <div className="alert alert-info small mb-3" role="alert">
           <i className="bi bi-info-circle-fill me-1" aria-hidden="true" />
-          One or more alternatives in this group are auto-graded but only have manual points.
+          One or more alternatives in this pool are auto-graded but only have manual points.
           Auto-grading results for those questions will not contribute to the score.
         </div>
       )}
       <div className="d-flex flex-column gap-2">
         <div className="text-muted small">
-          {alternativeCount} alternative{alternativeCount !== 1 ? 's' : ''} in group
+          {alternativeCount} alternative{alternativeCount !== 1 ? 's' : ''} in pool
         </div>
         {sharedTopic && (
           <div>
@@ -483,7 +483,7 @@ export function AltGroupDetailPanel({
         register={register}
         errors={errors}
         idPrefix={idPrefix}
-        variant="altGroup"
+        variant="altPool"
         editMode={editMode}
         inheritance={advancedInheritance}
       />
