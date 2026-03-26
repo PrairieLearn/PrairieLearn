@@ -11,7 +11,7 @@ import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
 export function Navbar({
   resLocals,
   navPage,
-  navSubPage,
+  navSubPage, // oxlint-disable-line no-unused-vars -- false positive: used via ??= below
   navbarType,
   sideNavEnabled = false,
 }: {

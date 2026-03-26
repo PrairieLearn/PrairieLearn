@@ -117,13 +117,15 @@ update-jsonschema:
 lint-all: lint-js lint-python lint-html lint-mustache lint-docs lint-docker lint-actions lint-shell lint-sql-migrations lint-sql
 
 lint: lint-js lint-python lint-html lint-links lint-changeset
-lint-js:
+lint-js: lint-js-oxlint
 	@yarn eslint "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" --check
 # This is a separate target since the caches don't respect updates to plugins.
-lint-js-cached:
+lint-js-cached: lint-js-oxlint
 	@yarn eslint --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" --check --cache --cache-strategy content
+lint-js-oxlint:
+	@yarn oxlint -c oxlint.json .
 lint-python:
 	@uv run ruff check ./
 	@uv run ruff format --check ./
@@ -159,6 +161,7 @@ format-sql:
 	@uv run sqlfluff fix
 
 format-js:
+	@yarn oxlint -c oxlint.json --fix .
 	@yarn eslint --ext js --fix "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier --write "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 # This is a separate target since the caches don't respect updates to plugins.

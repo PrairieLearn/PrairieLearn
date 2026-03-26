@@ -51,6 +51,7 @@
     "knip": "^5.85.0",
     "linkinator": "^7.6.1",
     "markdownlint-cli2": "^0.21.0",
+    "oxlint": "^1.57.0",
     "prettier": "3.8.1",
     "prettier-plugin-pkg": "^0.21.2",
     "prettier-plugin-sh": "^0.18.0",
