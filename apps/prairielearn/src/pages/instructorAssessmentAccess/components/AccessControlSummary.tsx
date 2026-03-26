@@ -81,7 +81,7 @@ function MainRuleSummaryContent({
   return (
     <div>
       {dateTableRows.length > 0 && (
-        <div className="mb-3">
+        <div className="mb-2">
           <DateTableView rows={dateTableRows} />
         </div>
       )}

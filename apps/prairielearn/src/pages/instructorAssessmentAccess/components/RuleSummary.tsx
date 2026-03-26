@@ -274,14 +274,16 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
         <tbody>
           {rows.map((row) => (
             <tr key={`${row.date}-${row.label}-${row.credit}-${row.visibility}`}>
-              <td className="ps-3 border-0">
+              <td className="ps-3 border-0" style={tdStyle}>
                 {row.label && <span className="text-body-secondary me-1">{row.label}:</span>}
                 {row.date}
               </td>
-              <td className="border-0">
+              <td className="border-0" style={tdStyle}>
                 <CreditBadge credit={row.credit} />
               </td>
-              <td className="border-0">{row.visibility}</td>
+              <td className="border-0" style={tdStyle}>
+                {row.visibility}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -294,6 +296,11 @@ const thStyle = {
   fontSize: '0.75rem',
   textTransform: 'uppercase' as const,
   letterSpacing: '0.05em',
+  paddingTop: '0.5rem',
+  paddingBottom: '0.5rem',
+};
+
+const tdStyle = {
   paddingTop: '0.5rem',
   paddingBottom: '0.5rem',
 };
@@ -354,19 +361,28 @@ export function RuleSummaryCard({
               <i className="bi bi-grip-vertical" aria-hidden="true" />
             </button>
           )}
-          {overrideRule && (
-            <span className="d-inline-flex align-items-center gap-1 text-body-secondary small">
-              <i
-                className={
-                  overrideRule.appliesTo.targetType === 'student_label'
-                    ? 'bi bi-people'
-                    : 'bi bi-person'
-                }
-                aria-hidden="true"
-              />
-            </span>
+          {studentLabels.length > 0 ? (
+            <>
+              {studentLabels.map((studentLabel) => (
+                <a
+                  key={studentLabel.studentLabelId || studentLabel.name}
+                  href={getCourseInstanceStudentLabelsUrl(courseInstanceId)}
+                  className={`badge text-decoration-none ${studentLabel.color ? `color-${studentLabel.color}` : 'bg-secondary'}`}
+                >
+                  {studentLabel.name}
+                </a>
+              ))}
+            </>
+          ) : (
+            <>
+              {overrideRule && (
+                <span className="d-inline-flex align-items-center gap-1 text-body-secondary small">
+                  <i className="bi bi-person" aria-hidden="true" />
+                </span>
+              )}
+              <strong>{title}</strong>
+            </>
           )}
-          <strong>{title}</strong>
         </div>
         <div className="d-flex gap-2 flex-shrink-0">
           {onEditStudentLabels && (
@@ -428,21 +444,6 @@ export function RuleSummaryCard({
           </div>
         )}
 
-        {studentLabels.length > 0 && (
-          <div className="d-flex align-items-center gap-2 flex-wrap mb-2">
-            <span className="text-body-secondary">Applies to:</span>
-            {studentLabels.map((studentLabel) => (
-              <a
-                key={studentLabel.studentLabelId || studentLabel.name}
-                href={getCourseInstanceStudentLabelsUrl(courseInstanceId)}
-                className={`badge text-decoration-none ${studentLabel.color ? `color-${studentLabel.color}` : 'bg-secondary'}`}
-              >
-                {studentLabel.name}
-              </a>
-            ))}
-          </div>
-        )}
-
         {students.length > 0 && (
           <div className="mb-2">
             <span className="text-body-secondary">Applies to: </span>
@@ -463,7 +464,6 @@ export function RuleSummaryCard({
 
         {dateTableRows.length === 0 &&
           summaryItems.length === 0 &&
-          studentLabels.length === 0 &&
           students.length === 0 && (
             <p className="text-body-secondary mb-0">No specific settings configured</p>
           )}
