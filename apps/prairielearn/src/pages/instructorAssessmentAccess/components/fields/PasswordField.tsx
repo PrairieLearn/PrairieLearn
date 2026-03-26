@@ -31,6 +31,7 @@ function PasswordInput({ value, onChange, idPrefix }: PasswordInputProps) {
               passwords before the server does. */}
           <Form.Control
             type={showPassword ? 'text' : 'password'}
+            autoComplete="off"
             aria-label="Assessment password"
             placeholder="Password"
             value={value}

@@ -1,4 +1,4 @@
-import { Alert, Badge, Button, Card, Table } from 'react-bootstrap';
+import { Alert, Button, Card } from 'react-bootstrap';
 
 import { formatDate } from '@prairielearn/formatter';
 
@@ -161,34 +161,40 @@ export function generateDateTableRows(
   return rows;
 }
 
+interface SummaryItem {
+  icon: string;
+  text: string;
+}
+
 export function generateRuleSummary(
   rule: RuleData,
   verbosity: SummaryVerbosity = 'compact',
-): string[] {
-  const lines: string[] = [];
+): SummaryItem[] {
+  const items: SummaryItem[] = [];
 
   if (isOverrideFieldActive(rule, 'durationMinutes')) {
     const durationMinutes = rule.durationMinutes;
     if (durationMinutes !== null) {
-      lines.push(`Time limit: ${durationMinutes} minutes`);
+      items.push({ icon: 'bi-clock', text: `${durationMinutes} minutes` });
     } else if (verbosity === 'verbose') {
-      lines.push('No time limit');
+      items.push({ icon: 'bi-clock', text: 'No time limit' });
     }
   }
 
   if (isOverrideFieldActive(rule, 'password')) {
     const password = rule.password;
     if (password !== null && password !== '') {
-      lines.push('Password protected');
+      items.push({ icon: 'bi-lock', text: 'Password protected' });
     } else if (verbosity === 'verbose') {
-      lines.push('No password');
+      items.push({ icon: 'bi-unlock', text: 'No password' });
     }
   }
 
   if (isMainRuleData(rule) && rule.prairieTestEnabled && rule.prairieTestExams.length > 0) {
-    lines.push(
-      `${rule.prairieTestExams.length} PrairieTest ${rule.prairieTestExams.length === 1 ? 'exam' : 'exams'}`,
-    );
+    items.push({
+      icon: 'bi-pc-display',
+      text: `${rule.prairieTestExams.length} PrairieTest ${rule.prairieTestExams.length === 1 ? 'exam' : 'exams'}`,
+    });
   }
 
   const hasAfterLastDeadline = rule.afterLastDeadline != null;
@@ -197,52 +203,100 @@ export function generateRuleSummary(
     if (isOverrideFieldActive(rule, 'questionVisibility')) {
       const qv = rule.questionVisibility;
       if (qv.hideQuestions) {
-        lines.push('Questions hidden after completion');
+        items.push({ icon: 'bi-eye-slash', text: 'Questions hidden after completion' });
       } else if (verbosity === 'verbose') {
-        lines.push('Questions visible after completion');
+        items.push({ icon: 'bi-eye', text: 'Questions visible after completion' });
       }
     }
     if (isOverrideFieldActive(rule, 'scoreVisibility')) {
       const sv = rule.scoreVisibility;
       if (sv.hideScore) {
-        lines.push('Score hidden after completion');
+        items.push({ icon: 'bi-eye-slash', text: 'Score hidden after completion' });
       } else if (verbosity === 'verbose') {
-        lines.push('Score visible after completion');
+        items.push({ icon: 'bi-eye', text: 'Score visible after completion' });
       }
     }
   }
 
-  return lines;
+  return items;
+}
+
+function CreditBadge({ credit }: { credit: string }) {
+  const numericValue = Number.parseInt(credit, 10);
+  let bgColor: string;
+  let textColor: string;
+
+  if (numericValue === 100) {
+    bgColor = '#dcfce7';
+    textColor = '#166534';
+  } else if (numericValue === 0) {
+    bgColor = '#fee2e2';
+    textColor = '#991b1b';
+  } else {
+    bgColor = '#fef3c7';
+    textColor = '#92400e';
+  }
+
+  return (
+    <span
+      className="badge rounded-pill fw-medium"
+      style={{ backgroundColor: bgColor, color: textColor }}
+    >
+      {credit}
+    </span>
+  );
 }
 
 export function DateTableView({ rows }: { rows: DateTableRow[] }) {
   if (rows.length === 0) return null;
   return (
-    <div className="table-responsive">
-      <Table size="sm" className="mb-0" bordered>
-        <thead className="table-light">
-          <tr>
-            <th>Date</th>
-            <th>Credit</th>
-            <th>Visibility</th>
+    <div
+      className="border rounded overflow-hidden"
+      style={{ borderColor: 'var(--bs-border-color)' }}
+    >
+      <table className="table table-sm mb-0">
+        <thead>
+          <tr style={{ backgroundColor: 'var(--bs-tertiary-bg)' }}>
+            <th className="fw-semibold text-body-secondary border-bottom ps-3" style={thStyle}>
+              <i className="bi bi-calendar3 me-1" aria-hidden="true" />
+              Date
+            </th>
+            <th className="fw-semibold text-body-secondary border-bottom" style={thStyle}>
+              <i className="bi bi-percent me-1" aria-hidden="true" />
+              Credit
+            </th>
+            <th className="fw-semibold text-body-secondary border-bottom" style={thStyle}>
+              <i className="bi bi-eye me-1" aria-hidden="true" />
+              Visibility
+            </th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
             <tr key={`${row.date}-${row.label}-${row.credit}-${row.visibility}`}>
-              <td>
-                {row.label && <span className="text-muted me-1">{row.label}:</span>}
+              <td className="ps-3 border-0">
+                {row.label && <span className="text-body-secondary me-1">{row.label}:</span>}
                 {row.date}
               </td>
-              <td>{row.credit}</td>
-              <td>{row.visibility}</td>
+              <td className="border-0">
+                <CreditBadge credit={row.credit} />
+              </td>
+              <td className="border-0">{row.visibility}</td>
             </tr>
           ))}
         </tbody>
-      </Table>
+      </table>
     </div>
   );
 }
+
+const thStyle = {
+  fontSize: '0.75rem',
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.05em',
+  paddingTop: '0.5rem',
+  paddingBottom: '0.5rem',
+};
 
 interface RuleSummaryCardProps {
   rule: RuleData;
@@ -272,7 +326,7 @@ export function RuleSummaryCard({
   dragHandleProps,
 }: RuleSummaryCardProps) {
   const effectiveVerbosity: SummaryVerbosity = isMainRule ? 'compact' : 'verbose';
-  const summaryLines = generateRuleSummary(rule, effectiveVerbosity);
+  const summaryItems = generateRuleSummary(rule, effectiveVerbosity);
   const dateTableRows = generateDateTableRows(rule, displayTimezone, effectiveVerbosity);
 
   const overrideRule = !isMainRule ? (rule as OverrideData) : null;
@@ -301,9 +355,16 @@ export function RuleSummaryCard({
             </button>
           )}
           {overrideRule && (
-            <Badge bg="secondary">
-              {overrideRule.appliesTo.targetType === 'student_label' ? 'Student label' : 'Student'}
-            </Badge>
+            <span className="d-inline-flex align-items-center gap-1 text-body-secondary small">
+              <i
+                className={
+                  overrideRule.appliesTo.targetType === 'student_label'
+                    ? 'bi bi-people'
+                    : 'bi bi-person'
+                }
+                aria-hidden="true"
+              />
+            </span>
           )}
           <strong>{title}</strong>
         </div>
@@ -342,28 +403,49 @@ export function RuleSummaryCard({
 
         {dateTableRows.length > 0 && (
           <div className="mb-3">
-            <strong className="d-block mb-2">Deadlines</strong>
+            <div
+              className="text-body-secondary fw-semibold mb-2"
+              style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+            >
+              Deadlines
+            </div>
             <DateTableView rows={dateTableRows} />
           </div>
         )}
 
-        {studentLabels.length > 0 && (
-          <div className="mb-2">
-            <span className="text-muted">Student labels: </span>
-            {studentLabels.map((studentLabel, idx) => (
-              <span key={studentLabel.studentLabelId || studentLabel.name}>
-                <a href={getCourseInstanceStudentLabelsUrl(courseInstanceId)}>
-                  {studentLabel.name}
-                </a>
-                {idx < studentLabels.length - 1 && ', '}
+        {summaryItems.length > 0 && (
+          <div className="d-flex flex-wrap gap-2 mb-3">
+            {summaryItems.map((item) => (
+              <span
+                key={item.text}
+                className="d-inline-flex align-items-center gap-1 border rounded-pill px-3 py-1"
+                style={{ fontSize: '0.875rem' }}
+              >
+                <i className={`bi ${item.icon}`} aria-hidden="true" />
+                {item.text}
               </span>
+            ))}
+          </div>
+        )}
+
+        {studentLabels.length > 0 && (
+          <div className="d-flex align-items-center gap-2 flex-wrap mb-2">
+            <span className="text-body-secondary">Applies to:</span>
+            {studentLabels.map((studentLabel) => (
+              <a
+                key={studentLabel.studentLabelId || studentLabel.name}
+                href={getCourseInstanceStudentLabelsUrl(courseInstanceId)}
+                className={`badge text-decoration-none ${studentLabel.color ? `color-${studentLabel.color}` : 'bg-secondary'}`}
+              >
+                {studentLabel.name}
+              </a>
             ))}
           </div>
         )}
 
         {students.length > 0 && (
           <div className="mb-2">
-            <span className="text-muted">Students: </span>
+            <span className="text-body-secondary">Applies to: </span>
             {students.map((student, idx) => (
               <span key={student.enrollmentId ?? student.uid}>
                 {student.enrollmentId ? (
@@ -379,19 +461,11 @@ export function RuleSummaryCard({
           </div>
         )}
 
-        {summaryLines.length > 0 && (
-          <ul className="mb-0 ps-3">
-            {summaryLines.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
-        )}
-
         {dateTableRows.length === 0 &&
-          summaryLines.length === 0 &&
+          summaryItems.length === 0 &&
           studentLabels.length === 0 &&
           students.length === 0 && (
-            <p className="text-muted mb-0">No specific settings configured</p>
+            <p className="text-body-secondary mb-0">No specific settings configured</p>
           )}
       </Card.Body>
     </Card>

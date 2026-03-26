@@ -27,12 +27,6 @@ export function MainDateControlForm({
     name: 'mainRule.dateControlEnabled',
   });
 
-  const dueDate = useWatch<AccessControlFormData, 'mainRule.dueDate'>({
-    name: 'mainRule.dueDate',
-  });
-
-  const hasAnyDateControl = dueDate !== null;
-
   return (
     <Card className="mb-4">
       <Card.Header>
@@ -47,46 +41,45 @@ export function MainDateControlForm({
           {description}
         </Form.Text>
       </Card.Header>
-      <Card.Body
-        style={{
-          opacity: dateControlEnabled ? 1 : 0.5,
-          pointerEvents: dateControlEnabled ? 'auto' : 'none',
-        }}
-        aria-disabled={!dateControlEnabled ? true : undefined}
-      >
-        <div className="mb-3">
-          <MainReleaseDateField />
-        </div>
-        <div className="mb-3">
-          <MainDeadlineArrayField type="early" />
-        </div>
-        <div className="mb-3">
-          <MainDueDateField />
-        </div>
-        <div className="mb-4">
-          <MainDeadlineArrayField type="late" />
-        </div>
+      {dateControlEnabled ? (
+        <Card.Body>
+          <div className="mb-3">
+            <MainReleaseDateField />
+          </div>
+          <div className="mb-3">
+            <MainDeadlineArrayField type="early" />
+          </div>
+          <div className="mb-3">
+            <MainDueDateField />
+          </div>
+          <div className="mb-4">
+            <MainDeadlineArrayField type="late" />
+          </div>
 
-        {hasAnyDateControl && (
-          <>
-            <hr className="my-4" />
-            <div className="mb-3">
-              <MainAfterLastDeadlineField />
-            </div>
-          </>
-        )}
+          <hr className="my-4" />
+          <div className="mb-3">
+            <MainAfterLastDeadlineField />
+          </div>
 
-        <hr className="my-4" />
+          <hr className="my-4" />
 
-        <Row className="mb-3 gy-3">
-          <Col md={6}>
-            <MainDurationField />
-          </Col>
-          <Col md={6}>
-            <MainPasswordField />
-          </Col>
-        </Row>
-      </Card.Body>
+          <Row className="mb-3 gy-3">
+            <Col md={6}>
+              <MainDurationField />
+            </Col>
+            <Col md={6}>
+              <MainPasswordField />
+            </Col>
+          </Row>
+        </Card.Body>
+      ) : (
+        <Card.Body>
+          <p className="text-body-secondary mb-0">
+            Enable date control to configure release dates, due dates, deadlines, time limits, and
+            passwords.
+          </p>
+        </Card.Body>
+      )}
     </Card>
   );
 }

@@ -65,6 +65,7 @@ export const IndividualTargetSchema = z.object({
 export const StudentLabelTargetSchema = z.object({
   studentLabelId: z.string(),
   name: z.string(),
+  color: z.string().optional(),
 });
 
 export const AppliesToSchema = z.object({
@@ -170,7 +171,7 @@ export function jsonToMainRuleFormData(
     id: json.id,
     trackingId: json.id ?? crypto.randomUUID(),
     listBeforeRelease: json.listBeforeRelease ?? false,
-    dateControlEnabled: dc?.releaseDate != null,
+    dateControlEnabled: dc != null,
     releaseDate: toLocalDatetimeValue(dc?.releaseDate, displayTimezone) ?? null,
     dueDate: toLocalDatetimeValue(dc?.dueDate, displayTimezone) ?? null,
     earlyDeadlines: (dc?.earlyDeadlines ?? []).map((d) => ({
