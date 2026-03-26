@@ -48,7 +48,6 @@ export function AltGroupDetailPanel({
   idPrefix,
   state,
   onUpdate,
-  onDelete,
   onFormValidChange,
   onDismissBanner,
 }: {
@@ -61,7 +60,6 @@ export function AltGroupDetailPanel({
     questionTrackingId: string,
     question: Partial<ZoneQuestionBlockForm> | Partial<AltGroupFormData>,
   ) => void;
-  onDelete: (questionTrackingId: string) => void;
   onFormValidChange: (isValid: boolean) => void;
   onDismissBanner: (trackingId: string) => void;
 }) {
@@ -489,18 +487,6 @@ export function AltGroupDetailPanel({
         editMode={editMode}
         inheritance={advancedInheritance}
       />
-
-      {editMode && (
-        <div className="d-flex gap-2">
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-danger"
-            onClick={() => onDelete(zoneQuestionBlock.trackingId)}
-          >
-            Delete alternative group
-          </button>
-        </div>
-      )}
     </div>
   );
 }

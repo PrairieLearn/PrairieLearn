@@ -241,6 +241,7 @@ export function SelfEnrollmentSettings({
           type="checkbox"
           id="self_enrollment_enabled"
           disabled={!canEdit || !hasModernPublishing}
+          defaultChecked={selfEnrollmentEnabled}
           {...control.register('self_enrollment_enabled')}
         />
         {(!canEdit || !hasModernPublishing) && (
@@ -264,6 +265,7 @@ export function SelfEnrollmentSettings({
           type="checkbox"
           id="self_enrollment_use_enrollment_code"
           disabled={!canEdit || !selfEnrollmentEnabled || !hasModernPublishing}
+          defaultChecked={selfEnrollmentUseEnrollmentCode}
           {...control.register('self_enrollment_use_enrollment_code')}
         />
         {(!canEdit || !selfEnrollmentEnabled || !hasModernPublishing) && (
@@ -287,6 +289,7 @@ export function SelfEnrollmentSettings({
           type="checkbox"
           id="self_enrollment_restrict_to_institution"
           disabled={!canEdit || !selfEnrollmentEnabled || !hasModernPublishing}
+          defaultChecked={selfEnrollmentRestrictToInstitution}
           {...control.register('self_enrollment_restrict_to_institution')}
         />
         {(!canEdit || !selfEnrollmentEnabled || !hasModernPublishing) && (
@@ -310,6 +313,7 @@ export function SelfEnrollmentSettings({
           type="checkbox"
           id="disable_self_enrollment_after_date"
           disabled={!canEdit || !hasModernPublishing || !selfEnrollmentEnabled}
+          defaultChecked={selfEnrollmentEnabledBeforeDateEnabled}
           {...control.register('self_enrollment_enabled_before_date_enabled', {
             onChange: async (event) => {
               if (!event.target.checked) {
@@ -353,6 +357,7 @@ export function SelfEnrollmentSettings({
             !selfEnrollmentEnabled
           }
           step="1"
+          defaultValue={selfEnrollmentEnabledBeforeDate}
           {...control.register('self_enrollment_enabled_before_date', {
             validate: (value, { self_enrollment_enabled_before_date_enabled }) => {
               if (self_enrollment_enabled_before_date_enabled && !value) {

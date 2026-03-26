@@ -216,12 +216,15 @@ nav:
           - 'Overview': assessment/overview.md
           - 'Configuration': assessment/configuration.md
           - 'Access control': 'assessment/accessControl.md'
+          # TODO: unhide once modern access control is generally available.
+          # - 'Modern access control': 'assessment/accessControlModern.md'
           - 'Remote exams': 'assessment/remoteExams.md'
           - 'Regrading assessments': 'assessment/regrading.md'
       - 'Questions':
           - 'Overview': question/overview.md
           - '<code>question.html</code>': 'question/template.md'
           - '<code>server.py</code>': 'question/server.md'
+          - 'Preferences': 'question/preferences.md'
           - 'Runtime environment': 'question/runtime.md'
           - 'Accessibility': 'question/accessibility.md'
       - 'Elements':
@@ -344,6 +347,7 @@ not_in_nav: |
   elements/pl-dropdown.md
   elements/pl-variable-score.md
   dev-guide/contrib/*
+  assessment/accessControlModern.md
 
 validation:
   omitted_files: warn

@@ -24,10 +24,14 @@ async function keyboardDrag(page: Page, source: Locator, direction: 'up' | 'down
   const arrowKey = direction === 'up' ? 'ArrowUp' : 'ArrowDown';
   await source.focus();
   await page.keyboard.press(' ');
-  // Wait for dnd-kit to activate the drag before issuing arrow key moves.
   await expect(source).toHaveAttribute('aria-pressed', 'true');
   for (let i = 0; i < steps; i++) {
     await page.keyboard.press(arrowKey);
+    // dnd-kit's sortableKeyboardCoordinates reads DOM rects to compute
+    // the next drop position. Yield to the event loop so React can
+    // commit the state update and dnd-kit can re-measure rects before
+    // the next arrow press.
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
   }
   await page.keyboard.press(' ');
 }
@@ -54,10 +58,6 @@ async function resetAssessmentFromTemplate({
 }
 
 test.describe('Assessment questions', () => {
-  test.beforeEach(async ({ enableFeatureFlag }) => {
-    await enableFeatureFlag('assessment-questions-editor');
-  });
-
   test.describe('exam5-perZoneGrading mutations', () => {
     const assessmentTid = 'exam5-perZoneGrading';
 
@@ -362,7 +362,7 @@ test.describe('Assessment questions', () => {
       await expect(page.getByText(warningText)).not.toBeVisible();
 
       await page
-        .getByRole('button', { name: 'Delete aiGradingMultiImageCapture', exact: true })
+        .getByRole('button', { name: 'Delete question aiGradingMultiImageCapture', exact: true })
         .click();
 
       await expect(page.getByText(warningText)).toBeVisible();
@@ -379,17 +379,17 @@ test.describe('Assessment questions', () => {
     await enterEditMode(page, courseInstance.id, assessment.id);
 
     await page.getByRole('button').filter({ hasText: 'partialCredit1' }).first().click();
-    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.locator('[aria-label="Delete question partialCredit1"]').first().click();
 
     await page.getByRole('button').filter({ hasText: 'partialCredit2' }).first().click();
-    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.locator('[aria-label="Delete question partialCredit2"]').first().click();
 
     // Save should be disabled because the zone has 0 questions
     const saveButton = page.getByRole('button', { name: 'Save and sync' });
     await expect(saveButton).toBeDisabled();
 
     await page.getByRole('button').filter({ hasText: 'Zone to delete' }).first().click();
-    await page.getByRole('button', { name: 'Delete zone', exact: true }).last().click();
+    await page.locator('[aria-label="Delete zone \'Zone to delete\'"]').last().click();
 
     await saveButton.click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
