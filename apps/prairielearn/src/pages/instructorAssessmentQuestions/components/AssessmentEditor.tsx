@@ -39,7 +39,7 @@ import type {
   ZoneQuestionBlockForm,
 } from '../types.js';
 import {
-  createAltGroupWithTrackingId,
+  createAltPoolWithTrackingId,
   createZoneWithTrackingId,
   prepareZonesForEditor,
   stripTrackingIds,
@@ -57,7 +57,7 @@ import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 import { useAssessmentEditor } from '../utils/useAssessmentEditor.js';
 import {
-  findAltGroupByTrackingId,
+  findAltPoolByTrackingId,
   findAlternativeByTrackingId,
   findQuestionByTrackingId,
   findZoneByTrackingId,
@@ -102,7 +102,7 @@ function useBeforeUnload(enabled: boolean): () => void {
 /**
  * Collision detection for vertical lists that uses item boundaries instead of
  * center distances. Unlike closestCenter, this works correctly for items of
- * different heights (e.g. a tall alt group next to a short question row).
+ * different heights (e.g. a tall alt pool next to a short question row).
  */
 const verticalBoundaryCollision: CollisionDetection = (args) => {
   const { collisionRect, droppableContainers, droppableRects } = args;
@@ -180,7 +180,7 @@ function AssessmentEditorInner({
     return {
       zones,
       questionMetadata: questionMetadataMap,
-      collapsedGroups: new Set<string>(),
+      collapsedPools: new Set<string>(),
       collapsedZones: new Set<string>(),
       dismissedBanners: new Set<string>(),
       selectedItem: getInitialSelectedZoneItem(search, zones),
@@ -190,7 +190,7 @@ function AssessmentEditorInner({
   const {
     zones,
     questionMetadata,
-    collapsedGroups,
+    collapsedPools,
     collapsedZones,
     dismissedBanners,
     selectedItem,
@@ -215,11 +215,9 @@ function AssessmentEditorInner({
           const foundZone = findZoneByTrackingId(zones, selectedItem.zoneTrackingId);
           return foundZone ? `z:${foundZone.zoneIndex}` : null;
         }
-        case 'altGroup': {
-          const foundAltGroup = findAltGroupByTrackingId(zones, selectedItem.questionTrackingId);
-          return foundAltGroup
-            ? `z:${foundAltGroup.zoneIndex}:${foundAltGroup.altGroupIndex}`
-            : null;
+        case 'altPool': {
+          const foundAltPool = findAltPoolByTrackingId(zones, selectedItem.questionTrackingId);
+          return foundAltPool ? `z:${foundAltPool.zoneIndex}:${foundAltPool.altPoolIndex}` : null;
         }
         case 'alternative': {
           const foundAlt = findAlternativeByTrackingId(zones, selectedItem.alternativeTrackingId);
@@ -315,7 +313,7 @@ function AssessmentEditorInner({
     if (selectedItem?.type === 'picker') {
       const returnTo = selectedItem.returnToSelection;
       if (returnTo?.type === 'alternative') {
-        // Changing an alternative: disable only siblings in the same alt group
+        // Changing an alternative: disable only siblings in the same alt pool
         const result = findQuestionByTrackingId(zones, returnTo.questionTrackingId);
         if (result?.question.alternatives) {
           for (const alt of result.question.alternatives) {
@@ -325,7 +323,7 @@ function AssessmentEditorInner({
       } else {
         // Adding to zone or changing a standalone question: disable only
         // standalone QIDs already directly in the zone (not ones inside alt
-        // groups, since selecting those would move them out of the group).
+        // pools, since selecting those would move them out of the pool).
         const zone = zones.find((z) => z.trackingId === selectedItem.zoneTrackingId);
         if (zone) {
           for (const q of zone.questions) {
@@ -333,11 +331,11 @@ function AssessmentEditorInner({
           }
         }
       }
-    } else if (selectedItem?.type === 'altGroupPicker' && selectedItem.altGroupTrackingId) {
-      // Disable only QIDs in the target alt group
+    } else if (selectedItem?.type === 'altPoolPicker' && selectedItem.altPoolTrackingId) {
+      // Disable only QIDs in the target alt pool
       for (const zone of zones) {
         for (const q of zone.questions) {
-          if (q.trackingId === selectedItem.altGroupTrackingId && q.alternatives) {
+          if (q.trackingId === selectedItem.altPoolTrackingId && q.alternatives) {
             for (const alt of q.alternatives) {
               if (alt.id) disabled.add(alt.id);
             }
@@ -369,12 +367,12 @@ function AssessmentEditorInner({
 
   // Custom collision detection:
   // 1. For standalone question drags (mouse only): check if the cursor is inside
-  //    an alt group's merge zone. If yes, return the merge zone so the question
-  //    can be merged into the group on drop. The merge zone is inset from the alt
-  //    group edges so the top/bottom resolve to reorder instead of merge.
+  //    an alt pool's merge zone. If yes, return the merge zone so the question
+  //    can be merged into the pool on drop. The merge zone is inset from the alt
+  //    pool edges so the top/bottom resolve to reorder instead of merge.
   // 2. Fall back to boundary-based vertical collision (not closestCenter) to
   //    determine reorder position. closestCenter uses item centers, which breaks
-  //    for items of very different heights — tall alt groups have centers far from
+  //    for items of very different heights — tall alt pools have centers far from
   //    their edges, making it impossible to position items immediately above/below.
   const collisionDetection: CollisionDetection = (args) => {
     const activeData = args.active.data.current;
@@ -390,8 +388,8 @@ function AssessmentEditorInner({
         if (container.data.current?.type !== 'merge-zone') continue;
         const rect = args.droppableRects.get(container.id);
         if (!rect) continue;
-        // Inset the merge zone so the edges of the alt group body still resolve
-        // to reorder. This gives the user room to drag past the group without
+        // Inset the merge zone so the edges of the alt pool body still resolve
+        // to reorder. This gives the user room to drag past the pool without
         // accidentally triggering a merge.
         const inset = Math.min(20, (rect.bottom - rect.top) / 4);
         if (dragCenterY >= rect.top + inset && dragCenterY <= rect.bottom - inset) {
@@ -406,7 +404,7 @@ function AssessmentEditorInner({
       if (activeType === 'question' && type === 'alternative') return false;
       if (activeType !== 'zone' && type === 'zone') return false;
       if (type === 'merge-zone') return false;
-      // When dragging an alternative, exclude its parent alt group so siblings
+      // When dragging an alternative, exclude its parent alt pool so siblings
       // resolve correctly in boundary collision
       if (
         activeType === 'alternative' &&
@@ -462,11 +460,11 @@ function AssessmentEditorInner({
   };
 
   const handlePickerDone = () => {
-    if (selectedItem?.type === 'altGroupPicker' && selectedItem.altGroupTrackingId) {
-      // After adding to an alt group, select the alt group detail panel
+    if (selectedItem?.type === 'altPoolPicker' && selectedItem.altPoolTrackingId) {
+      // After adding to an alt pool, select the alt pool detail panel
       setSelectedItem({
-        type: 'altGroup',
-        questionTrackingId: selectedItem.altGroupTrackingId,
+        type: 'altPool',
+        questionTrackingId: selectedItem.altPoolTrackingId,
       });
       return;
     }
@@ -552,25 +550,25 @@ function AssessmentEditorInner({
     dispatch({ type: 'DELETE_ZONE', zoneTrackingId });
   };
 
-  const handleAddAltGroup = (zoneTrackingId: string) => {
-    const newAltGroup = createAltGroupWithTrackingId();
+  const handleAddAltPool = (zoneTrackingId: string) => {
+    const newAltPool = createAltPoolWithTrackingId();
     dispatch({
       type: 'ADD_QUESTION',
       zoneTrackingId,
-      question: newAltGroup,
+      question: newAltPool,
     });
     setSelectedItem({
-      type: 'altGroup',
-      questionTrackingId: newAltGroup.trackingId,
+      type: 'altPool',
+      questionTrackingId: newAltPool.trackingId,
     });
   };
 
-  const handleAddToAltGroup = (altGroupTrackingId: string) => {
+  const handleAddToAltPool = (altPoolTrackingId: string) => {
     const zoneTrackingId = zones.find((z) =>
-      z.questions.some((q) => q.trackingId === altGroupTrackingId),
+      z.questions.some((q) => q.trackingId === altPoolTrackingId),
     )?.trackingId;
     if (!zoneTrackingId) return;
-    setSelectedItem({ type: 'altGroupPicker', zoneTrackingId, altGroupTrackingId });
+    setSelectedItem({ type: 'altPoolPicker', zoneTrackingId, altPoolTrackingId });
   };
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
@@ -606,7 +604,7 @@ function AssessmentEditorInner({
       return;
     }
 
-    // Alternative reorder within same group
+    // Alternative reorder within same pool
     if (activeType === 'alternative') {
       const fromPos = positionByStableId[activeIdStr];
       const toPos = positionByStableId[overIdStr];
@@ -614,7 +612,7 @@ function AssessmentEditorInner({
       if (!fromPos || !toPos) return;
       if (fromPos.alternativeIndex == null || toPos.alternativeIndex == null) return;
 
-      // Only handle within-group reorder here; cross-group is handled in handleDragOver
+      // Only handle within-pool reorder here; cross-pool is handled in handleDragOver
       const fromBlock = zones[fromPos.zoneIndex].questions[fromPos.questionIndex];
       const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
       if (fromBlock.trackingId !== toBlock.trackingId) return;
@@ -629,19 +627,19 @@ function AssessmentEditorInner({
       dispatch({
         type: 'REORDER_ALTERNATIVE',
         alternativeTrackingId: activeIdStr,
-        toAltGroupTrackingId: fromBlock.trackingId,
+        toAltPoolTrackingId: fromBlock.trackingId,
         beforeAlternativeTrackingId,
       });
       return;
     }
 
-    // Merge standalone question into alt group via merge zone
+    // Merge standalone question into alt pool via merge zone
     if (over.data.current?.type === 'merge-zone') {
-      const altGroupTrackingId = over.data.current.altGroupTrackingId as string;
+      const altPoolTrackingId = over.data.current.altPoolTrackingId as string;
       dispatch({
-        type: 'MERGE_QUESTION_INTO_ALT_GROUP',
+        type: 'MERGE_QUESTION_INTO_ALT_POOL',
         questionTrackingId: activeIdStr,
-        toAltGroupTrackingId: altGroupTrackingId,
+        toAltPoolTrackingId: altPoolTrackingId,
         beforeAlternativeTrackingId: null,
       });
       return;
@@ -653,7 +651,7 @@ function AssessmentEditorInner({
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!fromPosition || !rawToPosition) return;
 
-    // If "over" resolved to an alternative inside an alt group, use the alt group's position
+    // If "over" resolved to an alternative inside an alt pool, use the alt pool's position
     const toPosition =
       rawToPosition.alternativeIndex != null
         ? { zoneIndex: rawToPosition.zoneIndex, questionIndex: rawToPosition.questionIndex }
@@ -716,13 +714,13 @@ function AssessmentEditorInner({
       if (!toPos) return;
 
       if (overType === 'alternative' && toPos.alternativeIndex != null) {
-        // Alternative dragged over alternative in different group → cross-group move
+        // Alternative dragged over alternative in different pool → cross-pool move
         const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
         if (fromBlock.trackingId !== toBlock.trackingId) {
           dispatch({
             type: 'REORDER_ALTERNATIVE',
             alternativeTrackingId: activeIdStr,
-            toAltGroupTrackingId: toBlock.trackingId,
+            toAltPoolTrackingId: toBlock.trackingId,
             beforeAlternativeTrackingId: toBlock.alternatives![toPos.alternativeIndex].trackingId,
           });
         }
@@ -730,7 +728,7 @@ function AssessmentEditorInner({
       }
 
       if (overType === 'question') {
-        // If the alternative resolved to its own parent group, skip extraction
+        // If the alternative resolved to its own parent pool, skip extraction
         const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
         if (fromBlock.trackingId === toBlock.trackingId) return;
 
@@ -781,13 +779,13 @@ function AssessmentEditorInner({
     }
   };
 
-  const isAllExpanded = collapsedGroups.size === 0;
+  const isAllExpanded = collapsedPools.size === 0;
 
   const zonesForSave = useMemo(() => stripTrackingIds(zones), [zones]);
   const hasZoneWithNoEffectiveQuestions = zonesForSave.some((zone) => zone.questions.length === 0);
 
-  // Check against pre-stripped zones since stripTrackingIds silently drops empty alt groups
-  const hasEmptyAltGroup = zones.some((zone) =>
+  // Check against pre-stripped zones since stripTrackingIds silently drops empty alt pools
+  const hasEmptyAltPool = zones.some((zone) =>
     zone.questions.some((q) => q.alternatives?.length === 0),
   );
   const structuralSaveValidationErrorKind = useMemo(
@@ -803,7 +801,7 @@ function AssessmentEditorInner({
   const saveButtonDisabled =
     !hasUnsavedChanges ||
     hasZoneWithNoEffectiveQuestions ||
-    hasEmptyAltGroup ||
+    hasEmptyAltPool ||
     selectedFormHasErrors ||
     structuralSaveValidationErrorKind != null;
 
@@ -816,8 +814,8 @@ function AssessmentEditorInner({
             return 'Cannot save: the selected zone has configuration errors';
           case 'question':
             return 'Cannot save: the selected question has configuration errors';
-          case 'altGroup':
-            return 'Cannot save: the selected alternative group has configuration errors';
+          case 'altPool':
+            return 'Cannot save: the selected alternative pool has configuration errors';
           case 'alternative':
             return 'Cannot save: the selected alternative has configuration errors';
           default:
@@ -829,8 +827,8 @@ function AssessmentEditorInner({
     switch (structuralSaveValidationErrorKind) {
       case 'zone':
         return 'Cannot save: one or more zones have configuration errors';
-      case 'altGroup':
-        return 'Cannot save: one or more alternative groups have configuration errors';
+      case 'altPool':
+        return 'Cannot save: one or more alternative pools have configuration errors';
       default:
         return undefined;
     }
@@ -838,8 +836,8 @@ function AssessmentEditorInner({
 
   const saveButtonDisabledReason = hasZoneWithNoEffectiveQuestions
     ? 'Cannot save: one or more zones have no questions'
-    : hasEmptyAltGroup
-      ? 'Cannot save: one or more alternative groups have no questions'
+    : hasEmptyAltPool
+      ? 'Cannot save: one or more alternative pools have no questions'
       : (selectedFormErrorDisabledReason ?? structuralSaveValidationErrorReason);
 
   const treeState: TreeState = useMemo(
@@ -848,7 +846,7 @@ function AssessmentEditorInner({
       viewType,
       selectedItem,
       questionMetadata,
-      collapsedGroups,
+      collapsedPools,
       collapsedZones,
       changeTracking,
       courseInstanceId: courseInstance.id,
@@ -860,7 +858,7 @@ function AssessmentEditorInner({
       viewType,
       selectedItem,
       questionMetadata,
-      collapsedGroups,
+      collapsedPools,
       collapsedZones,
       changeTracking,
       courseInstance.id,
@@ -872,8 +870,8 @@ function AssessmentEditorInner({
   const treeActions: TreeActions = useMemo(
     () => ({
       onAddQuestion: handleAddQuestion,
-      onAddAltGroup: handleAddAltGroup,
-      onAddToAltGroup: handleAddToAltGroup,
+      onAddAltPool: handleAddAltPool,
+      onAddToAltPool: handleAddToAltPool,
       onDeleteQuestion: handleDeleteQuestion,
       onDeleteZone: handleDeleteZone,
       setSelectedItem,
@@ -922,7 +920,7 @@ function AssessmentEditorInner({
       onUpdateQuestion: handleUpdateQuestion,
       onDeleteQuestion: handleDeleteQuestion,
       onDeleteZone: handleDeleteZone,
-      onAddToAltGroup: handleAddToAltGroup,
+      onAddToAltPool: handleAddToAltPool,
       onQuestionPicked: handleQuestionPicked,
       onPickQuestion: handlePickQuestion,
       onRemoveQuestionByQid: handleRemoveQuestionByQid,
@@ -940,9 +938,9 @@ function AssessmentEditorInner({
 
   const toggleExpandCollapse = () => {
     if (isAllExpanded) {
-      dispatch({ type: 'COLLAPSE_ALL_GROUPS' });
+      dispatch({ type: 'COLLAPSE_ALL_POOLS' });
     } else {
-      dispatch({ type: 'EXPAND_ALL_GROUPS' });
+      dispatch({ type: 'EXPAND_ALL_POOLS' });
     }
   };
 
@@ -992,10 +990,10 @@ function AssessmentEditorInner({
           'alternative',
           '#question-alternatives',
         );
-      case 'altGroup':
+      case 'altPool':
         return docsLink(
-          editMode ? 'Edit alternative group' : 'Alternative group',
-          'alternative group',
+          editMode ? 'Edit alternative pool' : 'Alternative pool',
+          'alternative pool',
           '#question-alternatives',
         );
       case 'picker': {
@@ -1007,17 +1005,17 @@ function AssessmentEditorInner({
         const name = zoneDisplayName(selectedItem.zoneTrackingId);
         return `Adding to "${name}"`;
       }
-      case 'altGroupPicker': {
+      case 'altPoolPicker': {
         const name = zoneDisplayName(selectedItem.zoneTrackingId);
-        return selectedItem.altGroupTrackingId
-          ? `Adding to alternative group in "${name}"`
-          : `Creating alternative group in "${name}"`;
+        return selectedItem.altPoolTrackingId
+          ? `Adding to alternative pool in "${name}"`
+          : `Creating alternative pool in "${name}"`;
       }
     }
   });
 
   const rightHeaderAction = run(() => {
-    if (selectedItem?.type === 'picker' || selectedItem?.type === 'altGroupPicker') {
+    if (selectedItem?.type === 'picker' || selectedItem?.type === 'altPoolPicker') {
       const isChangeMode = selectedItem.type === 'picker' && selectedItem.returnToSelection != null;
       return (
         <button

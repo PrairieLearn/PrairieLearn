@@ -380,6 +380,10 @@ export const AlternativeGroupSchema = z.object({
 });
 export type AlternativeGroup = z.infer<typeof AlternativeGroupSchema>;
 
+// The DB table is still "alternative_groups"; this alias lets the codebase use "pool" terminology.
+export const AlternativePoolSchema = AlternativeGroupSchema;
+export type AlternativePool = AlternativeGroup;
+
 export const AssessmentScoreLogSchema = null;
 export const AssessmentStateLogSchema = null;
 
