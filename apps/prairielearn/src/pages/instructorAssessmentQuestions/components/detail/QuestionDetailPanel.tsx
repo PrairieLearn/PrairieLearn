@@ -551,140 +551,42 @@ export function QuestionDetailPanel({
                 const currentValue = question.preferences?.[name];
                 const hasOverride = currentValue != null;
 
-                if (schema.type === 'boolean') {
-                  return (
-                    <FormField
-                      key={name}
-                      editMode={editMode}
-                      id={`${idPrefix}-pref-${name}`}
-                      label={<span className="font-monospace">{name}</span>}
-                      viewValue={
-                        hasOverride ? String(currentValue) : `${String(schema.default)} (default)`
-                      }
-                    >
-                      {(aria) => (
-                        <div className="d-flex align-items-center gap-2">
-                          <select
-                            className="form-select form-select-sm"
-                            {...aria.inputProps}
-                            value={hasOverride ? String(currentValue) : ''}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              const newPreferences = { ...question.preferences };
-                              if (val === '') {
-                                delete newPreferences[name];
-                              } else {
-                                newPreferences[name] = val === 'true';
-                              }
-                              onUpdate(
-                                questionTrackingId,
-                                {
-                                  preferences:
-                                    Object.keys(newPreferences).length > 0
-                                      ? newPreferences
-                                      : undefined,
-                                },
-                                alternativeTrackingId,
-                              );
-                            }}
-                          >
-                            <option value="">{`Default (${String(schema.default)})`}</option>
-                            <option value="true">true</option>
-                            <option value="false">false</option>
-                          </select>
-                        </div>
-                      )}
-                    </FormField>
+                function clearOverride() {
+                  const newPreferences = { ...question.preferences };
+                  delete newPreferences[name];
+                  onUpdate(
+                    questionTrackingId,
+                    {
+                      preferences:
+                        Object.keys(newPreferences).length > 0 ? newPreferences : undefined,
+                    },
+                    alternativeTrackingId,
                   );
                 }
 
-                if (schema.enum && schema.enum.length > 0) {
-                  return (
-                    <FormField
-                      key={name}
-                      editMode={editMode}
-                      id={`${idPrefix}-pref-${name}`}
-                      label={<span className="font-monospace">{name}</span>}
-                      viewValue={
-                        hasOverride ? String(currentValue) : `${String(schema.default)} (default)`
-                      }
-                    >
-                      {(aria) => (
-                        <select
-                          className="form-select form-select-sm"
-                          {...aria.inputProps}
-                          value={hasOverride ? String(currentValue) : ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            const newPreferences = { ...question.preferences };
-                            if (val === '') {
-                              delete newPreferences[name];
-                            } else {
-                              newPreferences[name] = schema.type === 'number' ? Number(val) : val;
-                            }
-                            onUpdate(
-                              questionTrackingId,
-                              {
-                                preferences:
-                                  Object.keys(newPreferences).length > 0
-                                    ? newPreferences
-                                    : undefined,
-                              },
-                              alternativeTrackingId,
-                            );
-                          }}
-                        >
-                          <option value="">{`Default (${String(schema.default)})`}</option>
-                          {schema.enum?.map((v) => (
-                            <option key={String(v)} value={String(v)}>
-                              {String(v)}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </FormField>
+                function setOverride(value: string | number | boolean) {
+                  onUpdate(
+                    questionTrackingId,
+                    {
+                      preferences: { ...question.preferences, [name]: value },
+                    },
+                    alternativeTrackingId,
                   );
                 }
 
                 return (
-                  <FormField
+                  <PreferenceField
                     key={name}
+                    name={name}
+                    schema={schema}
+                    idPrefix={idPrefix}
                     editMode={editMode}
-                    id={`${idPrefix}-pref-${name}`}
-                    label={<span className="font-monospace">{name}</span>}
-                    viewValue={
-                      hasOverride ? String(currentValue) : `${String(schema.default)} (default)`
-                    }
-                    helpText=""
-                  >
-                    {(aria) => (
-                      <input
-                        type={schema.type === 'number' ? 'number' : 'text'}
-                        step={schema.type === 'number' ? 'any' : undefined}
-                        className="form-control form-control-sm"
-                        {...aria.inputProps}
-                        placeholder={`Default (${String(schema.default)})`}
-                        defaultValue={hasOverride ? String(currentValue) : ''}
-                        onBlur={(e) => {
-                          const val = e.target.value.trim();
-                          const newPreferences = { ...question.preferences };
-                          if (val === '') {
-                            delete newPreferences[name];
-                          } else {
-                            newPreferences[name] = schema.type === 'number' ? Number(val) : val;
-                          }
-                          onUpdate(
-                            questionTrackingId,
-                            {
-                              preferences:
-                                Object.keys(newPreferences).length > 0 ? newPreferences : undefined,
-                            },
-                            alternativeTrackingId,
-                          );
-                        }}
-                      />
-                    )}
-                  </FormField>
+                    hasOverride={hasOverride}
+                    currentValue={currentValue}
+                    onOverride={() => setOverride(schema.default)}
+                    onReset={clearOverride}
+                    onChange={setOverride}
+                  />
                 );
               })}
             </Wrapper>
@@ -1069,5 +971,158 @@ function PointsFields({
         ))}
       {!isManualGrading && manualPointsField}
     </>
+  );
+}
+
+function PreferenceField({
+  name,
+  schema,
+  idPrefix,
+  editMode,
+  hasOverride,
+  currentValue,
+  onOverride,
+  onReset,
+  onChange,
+}: {
+  name: string;
+  schema: { type: string; default: string | number | boolean; enum?: (string | number)[] };
+  idPrefix: string;
+  editMode: boolean;
+  hasOverride: boolean;
+  currentValue: string | number | boolean | undefined;
+  onOverride: () => void;
+  onReset: () => void;
+  onChange: (value: string | number | boolean) => void;
+}) {
+  const id = `${idPrefix}-pref-${name}`;
+  const defaultDisplay = String(schema.default);
+
+  if (!editMode) {
+    return (
+      <FormField
+        editMode={false}
+        id={id}
+        label={<span className="font-monospace">{name}</span>}
+        viewValue={hasOverride ? String(currentValue) : `${defaultDisplay} (default)`}
+      >
+        {() => null}
+      </FormField>
+    );
+  }
+
+  if (!hasOverride) {
+    return (
+      <div className="mb-3">
+        <label htmlFor={id} className="form-label">
+          <span className="font-monospace">{name}</span>
+        </label>
+        <input
+          type="text"
+          className="form-control form-control-sm bg-light"
+          id={id}
+          value={defaultDisplay}
+          aria-describedby={`${id}-help`}
+          disabled
+        />
+        <small id={`${id}-help`} className="form-text text-muted">
+          Using question default.{' '}
+          <button
+            type="button"
+            className="btn btn-link btn-sm p-0 align-baseline"
+            onClick={onOverride}
+          >
+            Override
+          </button>
+        </small>
+      </div>
+    );
+  }
+
+  const resetButton = (
+    <button
+      type="button"
+      className="btn btn-outline-secondary"
+      title="Reset to question default"
+      onClick={onReset}
+    >
+      <i className="bi bi-arrow-counterclockwise" />
+    </button>
+  );
+
+  if (schema.type === 'boolean') {
+    return (
+      <div className="mb-3">
+        <label htmlFor={id} className="form-label">
+          <span className="font-monospace">{name}</span>
+        </label>
+        <div className="input-group input-group-sm">
+          <select
+            className="form-select form-select-sm"
+            id={id}
+            value={String(currentValue)}
+            onChange={(e) => onChange(e.target.value === 'true')}
+          >
+            <option value="true">true</option>
+            <option value="false">false</option>
+          </select>
+          {resetButton}
+        </div>
+      </div>
+    );
+  }
+
+  if (schema.enum && schema.enum.length > 0) {
+    return (
+      <div className="mb-3">
+        <label htmlFor={id} className="form-label">
+          <span className="font-monospace">{name}</span>
+        </label>
+        <div className="input-group input-group-sm">
+          <select
+            className="form-select form-select-sm"
+            id={id}
+            value={String(currentValue)}
+            onChange={(e) => {
+              const val = e.target.value;
+              onChange(schema.type === 'number' ? Number(val) : val);
+            }}
+          >
+            {schema.enum.map((v) => (
+              <option key={String(v)} value={String(v)}>
+                {String(v)}
+              </option>
+            ))}
+          </select>
+          {resetButton}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-3">
+      <label htmlFor={id} className="form-label">
+        <span className="font-monospace">{name}</span>
+      </label>
+      <div className="input-group input-group-sm">
+        <input
+          type={schema.type === 'number' ? 'number' : 'text'}
+          step={schema.type === 'number' ? 'any' : undefined}
+          className="form-control form-control-sm"
+          id={id}
+          defaultValue={String(currentValue)}
+          onBlur={(e) => {
+            const val = e.target.value.trim();
+            if (val === '') {
+              onReset();
+            } else {
+              onChange(schema.type === 'number' ? Number(val) : val);
+            }
+          }}
+        />
+        {resetButton}
+      </div>
+    </div>
   );
 }
