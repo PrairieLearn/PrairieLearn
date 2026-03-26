@@ -17,6 +17,8 @@ export interface AccessControlJsonWithId extends AccessControlJson {
   /** Rule type: 'student_label' for label-based rules, 'enrollment' for individual student rules, 'none' for rules without specific targeting */
   ruleType?: 'student_label' | 'enrollment' | 'none' | null;
   individuals?: AccessControlIndividual[];
+  /** Student label details (id, name, color) from the database, used for rendering colored badges. */
+  labelDetails?: Array<{ id: string; name: string; color: string }>;
 }
 
 /** Field names that belong to the date control section of an access control rule. */
@@ -225,7 +227,9 @@ export function jsonToOverrideFormData(
     appliesTo = {
       targetType: 'student_label',
       individuals: [],
-      studentLabels: (json.labels ?? []).map((name: string) => ({ studentLabelId: '', name })),
+      studentLabels: json.labelDetails
+        ? json.labelDetails.map((l) => ({ studentLabelId: l.id, name: l.name, color: l.color }))
+        : (json.labels ?? []).map((name: string) => ({ studentLabelId: '', name })),
     };
   }
 
