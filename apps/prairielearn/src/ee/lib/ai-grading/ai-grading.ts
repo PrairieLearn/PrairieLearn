@@ -105,7 +105,7 @@ interface AiGradingPersistenceContext {
   prompt: ModelMessage[];
   course_instance: CourseInstance;
   instance_question: InstanceQuestion;
-  /** Persisted AI grading actions are attributed to the authenticated user, even under impersonation. */
+  /** Persisted AI grading actions are attributed to the authenticated user, even with a different effective user. */
   authn_user_id: string;
   job_sequence_id: string;
 }
