@@ -17,6 +17,7 @@ export function QuestionTableBody({
   courseInstanceId,
   displayTimezone,
   assessmentType,
+  showQuestionTitles,
   someQuestionsAllowRealTimeGrading,
   someQuestionsForbidRealTimeGrading,
   hasAutoGradingQuestion,
@@ -32,6 +33,7 @@ export function QuestionTableBody({
   courseInstanceId: string;
   displayTimezone: string;
   assessmentType: EnumAssessmentType;
+  showQuestionTitles: boolean;
   someQuestionsAllowRealTimeGrading: boolean;
   someQuestionsForbidRealTimeGrading: boolean;
   hasAutoGradingQuestion: boolean;
@@ -116,7 +118,7 @@ export function QuestionTableBody({
               rowLabelText:
                 assessmentType === 'Exam'
                   ? `Question ${row.question_number}`
-                  : row.question.title?.trim()
+                  : showQuestionTitles && row.question.title?.trim()
                     ? `${row.question_number}. ${row.question.title}`
                     : row.question_number,
             })}

@@ -48,6 +48,7 @@ const updateAssessment = t.procedure
       text: z.string().optional(),
       allow_issue_reporting: z.boolean(),
       allow_personal_notes: z.boolean(),
+      showQuestionTitles: z.boolean().optional(),
       multiple_instance: z.boolean(),
       auto_close: z.boolean(),
       require_honor_code: z.boolean(),
@@ -131,6 +132,11 @@ const updateAssessment = t.procedure
       assessmentInfo.allowPersonalNotes,
       input.allow_personal_notes,
       true,
+    );
+    assessmentInfo.showQuestionTitles = propertyValueWithDefault(
+      assessmentInfo.showQuestionTitles,
+      input.showQuestionTitles ?? (assessment.type === 'Exam' ? false : true),
+      assessment.type === 'Exam' ? false : true,
     );
 
     assessmentInfo.tools = assessmentInfo.tools ?? {};

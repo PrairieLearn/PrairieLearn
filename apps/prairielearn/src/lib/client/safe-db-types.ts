@@ -92,6 +92,7 @@ export const RawStudentAssessmentSchema = RawStaffAssessmentSchema.pick({
   multiple_instance: true,
   number: true,
   require_honor_code: true,
+  show_question_titles: true,
   shuffle_questions: true,
   team_work: true,
   text: true,

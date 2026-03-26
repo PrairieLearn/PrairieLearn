@@ -436,22 +436,27 @@ export function QuestionTitle({
   questionContext,
   question,
   questionNumber,
+  showQuestionTitles,
 }: {
   questionContext: QuestionContext;
   question: Question;
   questionNumber: string;
+  showQuestionTitles?: boolean;
 }): HtmlValue {
   const hasTitle = !!question.title?.trim();
 
   if (questionContext === 'student_homework') {
-    return hasTitle ? `${questionNumber}. ${question.title}` : questionNumber;
-  } else if (questionContext === 'student_exam') {
-    return hasTitle
+    return showQuestionTitles && hasTitle ? `${questionNumber}. ${question.title}` : questionNumber;
+  }
+
+  // During exams, questions titles are hidden by default.
+  // They are only shown when explicitly enabled on the assessment and the question has a title
+  if (questionContext === 'student_exam') {
+    return showQuestionTitles && hasTitle
       ? `Question ${questionNumber}: ${question.title}`
       : `Question ${questionNumber}`;
-  } else {
-    return hasTitle ? question.title : html`<span class="font-monospace">${question.qid}</span>`;
   }
+  return hasTitle ? question.title : html`<span class="font-monospace">${question.qid}</span>`;
 }
 
 interface QuestionFooterResLocals {
@@ -863,6 +868,11 @@ function QuestionPanel({
             questionContext,
             question,
             questionNumber: instance_question_info?.question_number,
+            // The assessment setting only applies in the student exam context.
+            showQuestionTitles:
+              questionContext === 'student_exam' || questionContext === 'student_homework'
+                ? !!resLocals.assessment?.show_question_titles
+                : false,
           })}
         </h1>
         <div class="ms-auto d-flex flex-row gap-1">

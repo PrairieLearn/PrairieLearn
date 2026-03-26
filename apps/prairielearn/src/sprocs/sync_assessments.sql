@@ -165,6 +165,7 @@ BEGIN
             allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean,
             json_allow_real_time_grading = (valid_assessment.data->>'json_allow_real_time_grading')::boolean,
             require_honor_code = (valid_assessment.data->>'require_honor_code')::boolean,
+            show_question_titles = (valid_assessment.data->>'show_question_titles')::boolean,
             honor_code = valid_assessment.data->>'honor_code',
             allow_personal_notes = (valid_assessment.data->>'allow_personal_notes')::boolean,
             team_work = (valid_assessment.data->>'team_work')::boolean,

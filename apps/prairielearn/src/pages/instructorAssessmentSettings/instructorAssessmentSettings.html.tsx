@@ -108,6 +108,7 @@ interface SettingsFormValues {
   text?: string;
   allow_issue_reporting: boolean;
   allow_personal_notes: boolean;
+  showQuestionTitles: boolean;
   multiple_instance: boolean;
   auto_close: boolean;
   require_honor_code: boolean;
@@ -228,6 +229,7 @@ function InstructorAssessmentSettingsInner({
     text: assessment.text ?? '',
     allow_issue_reporting: assessment.allow_issue_reporting ?? true,
     allow_personal_notes: assessment.allow_personal_notes,
+    showQuestionTitles: assessment.show_question_titles,
     multiple_instance: assessment.multiple_instance,
     auto_close: assessment.auto_close ?? true,
     require_honor_code: assessment.require_honor_code ?? true,
@@ -891,6 +893,23 @@ function InstructorAssessmentSettingsInner({
                 </label>
                 <div id="allow-personal-notes-help" className="small text-muted">
                   Allow students to upload personal notes for this assessment.
+                </div>
+              </div>
+              <div className="mb-3 form-check">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="show_question_titles"
+                  aria-describedby="show-question-titles-help"
+                  disabled={!canEdit}
+                  defaultChecked={defaultValues.showQuestionTitles}
+                  {...register('showQuestionTitles')}
+                />
+                <label className="form-check-label" htmlFor="show_question_titles">
+                  Show question titles to students
+                </label>
+                <div id="show-question-titles-help" className="small text-muted">
+                  If enabled, students will see question titles during this assessment.
                 </div>
               </div>
               {assessment.type === 'Exam' && (
