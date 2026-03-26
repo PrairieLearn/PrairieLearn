@@ -32,6 +32,9 @@ function PasswordInput({ value, onChange, idPrefix }: PasswordInputProps) {
           <Form.Control
             type={showPassword ? 'text' : 'password'}
             autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            data-form-type="other"
             aria-label="Assessment password"
             placeholder="Password"
             value={value}

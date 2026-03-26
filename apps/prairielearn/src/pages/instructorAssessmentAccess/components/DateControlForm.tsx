@@ -28,59 +28,57 @@ export function MainDateControlForm({
   });
 
   return (
-    <Card className="mb-4">
-      <Card.Header>
-        <Form.Check
-          type="checkbox"
-          id="mainRule-date-control-enabled"
-          label={title}
-          {...register('mainRule.dateControlEnabled')}
-          aria-describedby="mainRule-date-control-help"
-        />
-        <Form.Text id="mainRule-date-control-help" className="text-muted">
-          {description}
-        </Form.Text>
-      </Card.Header>
-      {dateControlEnabled ? (
-        <Card.Body>
-          <div className="mb-3">
-            <MainReleaseDateField />
-          </div>
-          <div className="mb-3">
-            <MainDeadlineArrayField type="early" />
-          </div>
-          <div className="mb-3">
-            <MainDueDateField />
-          </div>
-          <div className="mb-4">
-            <MainDeadlineArrayField type="late" />
-          </div>
+    <>
+      <Card className="mb-4">
+        <Card.Header>
+          <Form.Check
+            type="checkbox"
+            id="mainRule-date-control-enabled"
+            label={title}
+            {...register('mainRule.dateControlEnabled')}
+            aria-describedby="mainRule-date-control-help"
+          />
+          <Form.Text id="mainRule-date-control-help" className="text-muted">
+            {description}
+          </Form.Text>
+        </Card.Header>
+        {dateControlEnabled ? (
+          <Card.Body>
+            <div className="mb-3">
+              <MainReleaseDateField />
+            </div>
+            <div className="mb-3">
+              <MainDeadlineArrayField type="early" />
+            </div>
+            <div className="mb-3">
+              <MainDueDateField />
+            </div>
+            <div className="mb-4">
+              <MainDeadlineArrayField type="late" />
+            </div>
+          </Card.Body>
+        ) : (
+          <Card.Body>
+            <p className="text-body-secondary mb-0">
+              Enable date control to configure release dates, due dates, and deadlines.
+            </p>
+          </Card.Body>
+        )}
+      </Card>
 
-          <hr className="my-4" />
-          <div className="mb-3">
-            <MainAfterLastDeadlineField />
-          </div>
+      <div className="mb-3">
+        <MainAfterLastDeadlineField />
+      </div>
 
-          <hr className="my-4" />
-
-          <Row className="mb-3 gy-3">
-            <Col md={6}>
-              <MainDurationField />
-            </Col>
-            <Col md={6}>
-              <MainPasswordField />
-            </Col>
-          </Row>
-        </Card.Body>
-      ) : (
-        <Card.Body>
-          <p className="text-body-secondary mb-0">
-            Enable date control to configure release dates, due dates, deadlines, time limits, and
-            passwords.
-          </p>
-        </Card.Body>
-      )}
-    </Card>
+      <Row className="mb-3 gy-3">
+        <Col md={6}>
+          <MainDurationField />
+        </Col>
+        <Col md={6}>
+          <MainPasswordField />
+        </Col>
+      </Row>
+    </>
   );
 }
 

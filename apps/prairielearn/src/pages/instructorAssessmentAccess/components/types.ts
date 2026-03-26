@@ -171,7 +171,11 @@ export function jsonToMainRuleFormData(
     id: json.id,
     trackingId: json.id ?? crypto.randomUUID(),
     listBeforeRelease: json.listBeforeRelease ?? false,
-    dateControlEnabled: dc != null,
+    dateControlEnabled:
+      dc?.releaseDate != null ||
+      dc?.dueDate != null ||
+      (dc?.earlyDeadlines?.length ?? 0) > 0 ||
+      (dc?.lateDeadlines?.length ?? 0) > 0,
     releaseDate: toLocalDatetimeValue(dc?.releaseDate, displayTimezone) ?? null,
     dueDate: toLocalDatetimeValue(dc?.dueDate, displayTimezone) ?? null,
     earlyDeadlines: (dc?.earlyDeadlines ?? []).map((d) => ({
@@ -319,16 +323,26 @@ function mainRuleToJson(rule: MainRuleData, displayTimezone: string): AccessCont
 
   if (rule.dateControlEnabled) {
     output.dateControl = {};
-    // "Released immediately" in the UI sets releaseDate to null; persist as
-    // the current timestamp in the course instance's display timezone so it
-    // round-trips as a real date (matching the course-instance publishing
-    // pattern).
-    output.dateControl.releaseDate =
-      rule.releaseDate ||
-      Temporal.Now.zonedDateTimeISO(displayTimezone).toPlainDateTime().toString();
+    if (rule.releaseDate) {
+      output.dateControl.releaseDate = rule.releaseDate;
+    } else {
+      // "Released immediately" with dates configured: persist as the current
+      // timestamp so the assessment is open now (matching the course-instance
+      // publishing pattern). Truncate to minutes to satisfy the datetime-local
+      // schema.
+      output.dateControl.releaseDate = Temporal.Now.zonedDateTimeISO(displayTimezone)
+        .toPlainDateTime()
+        .toString({ smallestUnit: 'minute' });
+    }
     if (rule.dueDate) output.dateControl.dueDate = rule.dueDate;
     if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (rule.lateDeadlines.length > 0) output.dateControl.lateDeadlines = rule.lateDeadlines;
+  }
+
+  // Non-date fields live under dateControl in the schema but should be
+  // preserved regardless of whether the date control toggle is enabled.
+  if (rule.afterLastDeadline || rule.durationMinutes != null || rule.password) {
+    output.dateControl ??= {};
     if (rule.afterLastDeadline) output.dateControl.afterLastDeadline = rule.afterLastDeadline;
     if (rule.durationMinutes != null) output.dateControl.durationMinutes = rule.durationMinutes;
     if (rule.password) output.dateControl.password = rule.password;

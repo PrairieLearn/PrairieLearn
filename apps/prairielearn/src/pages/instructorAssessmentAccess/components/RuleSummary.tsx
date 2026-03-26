@@ -47,91 +47,91 @@ export function generateDateTableRows(
     ? rule.dateControlEnabled
     : DATE_CONTROL_FIELD_NAMES.some((f) => isOverrideFieldActive(rule, f));
 
-  if (!isDateControlEnabled) {
-    return rows;
+  if (isDateControlEnabled) {
+    const entries: (DateTableRow & { timestamp: number })[] = [];
+
+    const releaseDate = rule.releaseDate;
+    const dueDate = rule.dueDate;
+    const earlyDeadlines = rule.earlyDeadlines;
+    const lateDeadlines = rule.lateDeadlines;
+
+    if (releaseDate) {
+      const visibilityParts: string[] = ['Assessment opens'];
+      if (isMain && rule.listBeforeRelease) {
+        visibilityParts.push('(listed before release)');
+      }
+      entries.push({
+        date: releaseDate,
+        timestamp: new Date(releaseDate).getTime(),
+        label: 'Release',
+        credit: '100%',
+        visibility: visibilityParts.join(' '),
+      });
+    } else if (releaseDate === null && verbosity === 'verbose') {
+      rows.push({
+        date: 'Released immediately',
+        label: '',
+        credit: '100%',
+        visibility: 'Assessment opens',
+      });
+    }
+
+    earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+      if (deadline.date) {
+        entries.push({
+          date: deadline.date,
+          timestamp: new Date(deadline.date).getTime(),
+          label: `Early ${index + 1}`,
+          credit: `${deadline.credit}%`,
+          visibility: 'Open',
+        });
+      }
+    });
+
+    if (dueDate) {
+      entries.push({
+        date: dueDate,
+        timestamp: new Date(dueDate).getTime(),
+        label: 'Due',
+        credit: '100%',
+        visibility: 'Due',
+      });
+    } else if (dueDate === null && verbosity === 'verbose') {
+      rows.push({
+        date: 'No due date',
+        label: '',
+        credit: '100%',
+        visibility: 'Open',
+      });
+    }
+
+    lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+      if (deadline.date) {
+        entries.push({
+          date: deadline.date,
+          timestamp: new Date(deadline.date).getTime(),
+          label: `Late ${index + 1}`,
+          credit: `${deadline.credit}%`,
+          visibility: 'Open',
+        });
+      }
+    });
+
+    entries.sort((a, b) => a.timestamp - b.timestamp);
+
+    for (const entry of entries) {
+      rows.push({
+        date: formatDate(new Date(entry.date), displayTimezone),
+        label: entry.label,
+        credit: entry.credit,
+        visibility: entry.visibility,
+      });
+    }
   }
 
-  const entries: (DateTableRow & { timestamp: number })[] = [];
-
-  const releaseDate = rule.releaseDate;
-  const dueDate = rule.dueDate;
-  const earlyDeadlines = rule.earlyDeadlines;
-  const lateDeadlines = rule.lateDeadlines;
+  // afterLastDeadline is shown regardless of dateControlEnabled since it can
+  // be configured independently of date-based access control.
   const afterLastDeadline = rule.afterLastDeadline;
-
-  if (releaseDate) {
-    const visibilityParts: string[] = ['Assessment opens'];
-    if (isMain && rule.listBeforeRelease) {
-      visibilityParts.push('(listed before release)');
-    }
-    entries.push({
-      date: releaseDate,
-      timestamp: new Date(releaseDate).getTime(),
-      label: 'Release',
-      credit: '100%',
-      visibility: visibilityParts.join(' '),
-    });
-  } else if (releaseDate === null && verbosity === 'verbose') {
-    rows.push({
-      date: 'Released immediately',
-      label: '',
-      credit: '100%',
-      visibility: 'Assessment opens',
-    });
-  }
-
-  earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
-    if (deadline.date) {
-      entries.push({
-        date: deadline.date,
-        timestamp: new Date(deadline.date).getTime(),
-        label: `Early ${index + 1}`,
-        credit: `${deadline.credit}%`,
-        visibility: 'Open',
-      });
-    }
-  });
-
-  if (dueDate) {
-    entries.push({
-      date: dueDate,
-      timestamp: new Date(dueDate).getTime(),
-      label: 'Due',
-      credit: '100%',
-      visibility: 'Due',
-    });
-  } else if (dueDate === null && verbosity === 'verbose') {
-    rows.push({
-      date: 'No due date',
-      label: '',
-      credit: '100%',
-      visibility: 'Open',
-    });
-  }
-
-  lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
-    if (deadline.date) {
-      entries.push({
-        date: deadline.date,
-        timestamp: new Date(deadline.date).getTime(),
-        label: `Late ${index + 1}`,
-        credit: `${deadline.credit}%`,
-        visibility: 'Open',
-      });
-    }
-  });
-
-  entries.sort((a, b) => a.timestamp - b.timestamp);
-
-  for (const entry of entries) {
-    rows.push({
-      date: formatDate(new Date(entry.date), displayTimezone),
-      label: entry.label,
-      credit: entry.credit,
-      visibility: entry.visibility,
-    });
-  }
-
   if (afterLastDeadline) {
     const visibilityParts: string[] = [];
 
@@ -402,7 +402,7 @@ export function RuleSummaryCard({
         )}
 
         {dateTableRows.length > 0 && (
-          <div className="mb-3">
+          <div className="mb-2">
             <div
               className="text-body-secondary fw-semibold mb-2"
               style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}

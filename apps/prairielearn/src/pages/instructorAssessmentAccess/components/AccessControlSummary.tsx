@@ -10,7 +10,7 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Fragment, useId, useMemo } from 'react';
-import { Button, Card } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 
 import {
   DateTableView,
@@ -79,7 +79,7 @@ function MainRuleSummaryContent({
   const dateTableRows = generateDateTableRows(rule, displayTimezone, 'compact');
 
   return (
-    <Card.Body>
+    <div>
       {dateTableRows.length > 0 && (
         <div className="mb-3">
           <DateTableView rows={dateTableRows} />
@@ -104,7 +104,7 @@ function MainRuleSummaryContent({
       {dateTableRows.length === 0 && summaryItems.length === 0 && (
         <p className="text-body-secondary mb-0">No specific settings configured</p>
       )}
-    </Card.Body>
+    </div>
   );
 }
 
@@ -194,9 +194,7 @@ export function AccessControlSummary({
           </div>
         )}
 
-        <Card>
-          <MainRuleSummaryContent rule={mainRule} displayTimezone={displayTimezone} />
-        </Card>
+        <MainRuleSummaryContent rule={mainRule} displayTimezone={displayTimezone} />
       </section>
 
       <section>
