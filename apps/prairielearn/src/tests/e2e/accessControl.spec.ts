@@ -11,6 +11,8 @@ import { expect, test } from './fixtures.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+const ASSESSMENT_TID = 'hw19-accessControlUi';
+
 async function getAccessControlRecords(assessmentId: string) {
   return sqldb.queryRows(
     sql.select_access_controls,
@@ -37,7 +39,9 @@ function getVisibleModal(page: Page): Locator {
 }
 
 test.describe('Access control UI', () => {
-  test.beforeAll(async ({ testCoursePath }) => {
+  // Re-sync before each test to reset the assessment back to its on-disk state,
+  // so that mutations from one test don't leak into the next.
+  test.beforeEach(async ({ testCoursePath }) => {
     await features.enable('enhanced-access-control');
     await syncCourse(testCoursePath);
   });
@@ -45,7 +49,7 @@ test.describe('Access control UI', () => {
   test('can view page with initial data and verify summary', async ({ page, courseInstance }) => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
-      tid: 'hw-accessControl',
+      tid: ASSESSMENT_TID,
     });
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
@@ -67,7 +71,7 @@ test.describe('Access control UI', () => {
   }) => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
-      tid: 'hw-accessControl3',
+      tid: ASSESSMENT_TID,
     });
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
@@ -110,7 +114,7 @@ test.describe('Access control UI', () => {
   test('can delete an override', async ({ page, courseInstance }) => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
-      tid: 'hw-accessControl4',
+      tid: ASSESSMENT_TID,
     });
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
@@ -154,7 +158,7 @@ test.describe('Access control UI', () => {
   }) => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
-      tid: 'hw-accessControl5',
+      tid: ASSESSMENT_TID,
     });
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 

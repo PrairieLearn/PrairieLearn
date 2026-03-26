@@ -357,7 +357,11 @@ function AccessControlStep({
   if (analysisQuery.isError) {
     return (
       <Modal.Body>
-        <Alert variant="danger">Failed to analyze access control rules. You can still copy.</Alert>
+        <Alert variant="danger">
+          Failed to analyze access control rules. You can still copy the course instance. Assessment
+          access rules will be migrated to the modern format where possible; any rules that cannot
+          be migrated will be preserved in their current format.
+        </Alert>
       </Modal.Body>
     );
   }

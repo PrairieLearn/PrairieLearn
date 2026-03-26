@@ -4,7 +4,7 @@ import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
 
-import { analyzeCourseInstanceAssessments } from '../../lib/access-control-migration.js';
+import { analyzeCourseInstanceAssessments } from '../../lib/assessment-access-control/migration.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {

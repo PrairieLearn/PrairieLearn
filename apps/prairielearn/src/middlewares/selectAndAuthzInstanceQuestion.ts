@@ -6,7 +6,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { resolveModernAssessmentInstanceAccess } from '../lib/access-control-modern.js';
+import { resolveModernAssessmentInstanceAccess } from '../lib/assessment-access-control/authz.js';
 import { assessmentInstanceLabel } from '../lib/assessment.shared.js';
 import {
   AssessmentInstanceSchema,

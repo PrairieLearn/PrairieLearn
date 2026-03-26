@@ -6,7 +6,7 @@ import { Hydrate } from '@prairielearn/react/server';
 import { CommentPopoverHtml } from '../../components/CommentPopover.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import type { AssessmentMigrationAnalysis } from '../../lib/access-control-migration.js';
+import type { AssessmentMigrationAnalysis } from '../../lib/assessment-access-control/migration.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';

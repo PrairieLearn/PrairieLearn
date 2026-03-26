@@ -2,7 +2,7 @@ import { Router } from 'express';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { resolveModernAssessmentAccessBatch } from '../../lib/access-control-modern.js';
+import { resolveModernAssessmentAccessBatch } from '../../lib/assessment-access-control/authz.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import logPageView from '../../middlewares/logPageView.js';
 
