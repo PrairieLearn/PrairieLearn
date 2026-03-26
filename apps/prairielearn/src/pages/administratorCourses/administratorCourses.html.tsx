@@ -344,8 +344,8 @@ function CourseInsertModal({
     <Modal
       show={show}
       backdrop="static"
-      onHide={onCancel}
       size="lg"
+      onHide={onCancel}
       onEntering={() => methods.reset()}
     >
       <FormProvider {...methods}>
