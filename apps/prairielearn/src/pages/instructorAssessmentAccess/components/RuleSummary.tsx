@@ -221,28 +221,17 @@ export function generateRuleSummary(
 
 function CreditBadge({ credit }: { credit: string }) {
   const numericValue = Number.parseInt(credit, 10);
-  let bgColor: string;
-  let textColor: string;
+  let className: string;
 
   if (numericValue === 100) {
-    bgColor = '#dcfce7';
-    textColor = '#166534';
+    className = 'bg-success-subtle text-success-emphasis';
   } else if (numericValue === 0) {
-    bgColor = '#fee2e2';
-    textColor = '#991b1b';
+    className = 'bg-danger-subtle text-danger-emphasis';
   } else {
-    bgColor = '#fef3c7';
-    textColor = '#92400e';
+    className = 'bg-warning-subtle text-warning-emphasis';
   }
 
-  return (
-    <span
-      className="badge rounded-pill fw-medium"
-      style={{ backgroundColor: bgColor, color: textColor }}
-    >
-      {credit}
-    </span>
-  );
+  return <span className={`badge rounded-pill fw-medium ${className}`}>{credit}</span>;
 }
 
 export function DateTableView({ rows }: { rows: DateTableRow[] }) {
@@ -254,7 +243,7 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
     >
       <table className="table table-sm mb-0">
         <thead>
-          <tr style={{ backgroundColor: 'var(--bs-tertiary-bg)' }}>
+          <tr>
             <th className="fw-semibold text-body-secondary border-bottom ps-3" style={thStyle}>
               <i className="bi bi-calendar3 me-1" aria-hidden="true" />
               Date
