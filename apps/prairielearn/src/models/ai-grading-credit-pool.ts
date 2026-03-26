@@ -199,12 +199,14 @@ export async function adjustCreditPool({
   credit_type,
   user_id,
   reason,
+  checkout_session_id,
 }: {
   course_instance_id: string;
   delta_milli_dollars: number;
   credit_type: 'transferable' | 'non_transferable';
   user_id: string;
   reason: string;
+  checkout_session_id?: string | null;
 }): Promise<void> {
   if (delta_milli_dollars === 0) return;
 
@@ -246,6 +248,7 @@ export async function adjustCreditPool({
       user_id,
       ai_grading_job_id: null,
       assessment_question_id: null,
+      checkout_session_id: checkout_session_id ?? null,
     });
   });
 }
@@ -260,6 +263,10 @@ const BatchedCreditPoolChangeRowSchema = z.object({
   reason: z.string(),
   user_name: z.string().nullable(),
   user_uid: z.string().nullable(),
+  checkout_session_id: z.coerce.string().nullable(),
+  checkout_session_refunded_at: z.coerce.date().nullable(),
+  checkout_session_amount_milli_dollars: z.coerce.number().nullable(),
+  checkout_session_infrastructure_fee_milli_dollars: z.coerce.number().nullable(),
   total_count: z.coerce.number(),
 });
 

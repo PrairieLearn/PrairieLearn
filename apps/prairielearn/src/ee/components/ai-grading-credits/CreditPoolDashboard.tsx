@@ -21,6 +21,9 @@ export function CreditPoolDashboard({
   emptyState,
   header,
   children,
+  showRefundActions,
+  onRefund,
+  isRefunding,
 }: {
   trpc: CreditPoolTRPC;
   balanceContext: 'admin' | 'instructor';
@@ -28,6 +31,9 @@ export function CreditPoolDashboard({
   emptyState?: React.ReactNode;
   header?: React.ReactNode;
   children?: React.ReactNode;
+  showRefundActions?: boolean;
+  onRefund?: (checkoutSessionId: string) => void;
+  isRefunding?: boolean;
 }) {
   const [showHistory, setShowHistory] = useState(false);
   const [page, setPage] = useState(1);
@@ -154,7 +160,11 @@ export function CreditPoolDashboard({
                   rows={changesQuery.data.rows}
                   totalCount={changesQuery.data.totalCount}
                   page={page}
+                  showRefundActions={showRefundActions}
+                  transferableMilliDollars={pool.credit_transferable_milli_dollars}
+                  isRefunding={isRefunding}
                   onPageChange={setPage}
+                  onRefund={onRefund}
                 />
               )}
             </div>

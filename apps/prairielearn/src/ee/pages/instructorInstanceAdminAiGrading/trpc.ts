@@ -178,12 +178,15 @@ const createCheckoutMutation = t.procedure
       },
     });
 
+    const infrastructureFeeMilliDollars = totalMilliDollars - amountMilliDollars;
+
     await insertCreditCheckoutSession({
       agent_user_id: authn_user.id,
       stripe_object_id: session.id,
       course_instance_id: course_instance.id,
       data: session,
       amount_milli_dollars: amountMilliDollars,
+      infrastructure_fee_milli_dollars: infrastructureFeeMilliDollars,
     });
 
     if (!session.url) {

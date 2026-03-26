@@ -5,7 +5,8 @@ INSERT INTO
     stripe_object_id,
     course_instance_id,
     data,
-    amount_milli_dollars
+    amount_milli_dollars,
+    infrastructure_fee_milli_dollars
   )
 VALUES
   (
@@ -13,7 +14,8 @@ VALUES
     $stripe_object_id,
     $course_instance_id,
     $data,
-    $amount_milli_dollars
+    $amount_milli_dollars,
+    $infrastructure_fee_milli_dollars
   );
 
 -- BLOCK get_ai_grading_credit_checkout_session_by_stripe_object_id
@@ -24,6 +26,14 @@ FROM
 WHERE
   stripe_object_id = $stripe_object_id;
 
+-- BLOCK get_ai_grading_credit_checkout_session_by_id
+SELECT
+  *
+FROM
+  ai_grading_credit_checkout_sessions
+WHERE
+  id = $id;
+
 -- BLOCK mark_ai_grading_credit_checkout_session_completed
 UPDATE ai_grading_credit_checkout_sessions
 SET
@@ -32,6 +42,16 @@ SET
 WHERE
   stripe_object_id = $stripe_object_id
   AND credits_added = FALSE
+RETURNING
+  *;
+
+-- BLOCK mark_ai_grading_credit_checkout_session_refunded
+UPDATE ai_grading_credit_checkout_sessions
+SET
+  refunded_at = NOW()
+WHERE
+  id = $id
+  AND refunded_at IS NULL
 RETURNING
   *;
 

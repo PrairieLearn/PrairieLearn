@@ -63,12 +63,27 @@ function AdminCreditPoolContent({
     },
   });
 
+  const refundMutation = useMutation({
+    ...trpc.refundCreditPurchase.mutationOptions(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: trpc.creditPool.queryKey() });
+      void queryClient.invalidateQueries({ queryKey: trpc.creditPoolChanges.queryKey() });
+    },
+  });
+
   const { isSuccess: adjustIsSuccess, reset: adjustReset } = adjustMutation;
   useEffect(() => {
     if (!adjustIsSuccess) return;
     const timer = setTimeout(() => adjustReset(), 5000);
     return () => clearTimeout(timer);
   }, [adjustIsSuccess, adjustReset]);
+
+  const { isSuccess: refundIsSuccess, reset: refundReset } = refundMutation;
+  useEffect(() => {
+    if (!refundIsSuccess) return;
+    const timer = setTimeout(() => refundReset(), 5000);
+    return () => clearTimeout(timer);
+  }, [refundIsSuccess, refundReset]);
 
   return (
     <div className="mb-5">
@@ -86,6 +101,11 @@ function AdminCreditPoolContent({
             )}
           </>
         }
+        isRefunding={refundMutation.isPending}
+        showRefundActions
+        onRefund={(checkoutSessionId) =>
+          refundMutation.mutate({ checkout_session_id: checkoutSessionId })
+        }
       >
         <AdjustCreditsForm
           isDeleted={isDeleted}
@@ -98,6 +118,16 @@ function AdminCreditPoolContent({
           onDismissError={() => adjustMutation.reset()}
           onDismissSuccess={() => adjustMutation.reset()}
         />
+        {refundMutation.isError && (
+          <Alert variant="danger" dismissible onClose={() => refundMutation.reset()}>
+            Refund failed: {refundMutation.error.message}
+          </Alert>
+        )}
+        {refundMutation.isSuccess && (
+          <Alert variant="success" dismissible onClose={() => refundMutation.reset()}>
+            Refund processed successfully.
+          </Alert>
+        )}
       </CreditPoolDashboard>
     </div>
   );

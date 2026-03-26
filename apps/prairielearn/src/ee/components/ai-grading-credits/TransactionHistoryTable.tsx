@@ -1,4 +1,8 @@
 import clsx from 'clsx';
+import { useEffect, useRef, useState } from 'react';
+import { Badge, Button, Modal } from 'react-bootstrap';
+
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 
@@ -13,6 +17,10 @@ interface TransactionHistoryRow {
   reason: string;
   user_name: string | null;
   user_uid: string | null;
+  checkout_session_id: string | null;
+  checkout_session_refunded_at: Date | null;
+  checkout_session_amount_milli_dollars: number | null;
+  checkout_session_infrastructure_fee_milli_dollars: number | null;
 }
 
 export function TransactionHistoryTable({
@@ -20,13 +28,31 @@ export function TransactionHistoryTable({
   totalCount,
   page,
   onPageChange,
+  showRefundActions,
+  transferableMilliDollars,
+  onRefund,
+  isRefunding,
 }: {
   rows: TransactionHistoryRow[];
   totalCount: number;
   page: number;
   onPageChange: (page: number) => void;
+  showRefundActions?: boolean;
+  transferableMilliDollars?: number;
+  onRefund?: (checkoutSessionId: string) => void;
+  isRefunding?: boolean;
 }) {
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const [refundTarget, setRefundTarget] = useState<TransactionHistoryRow | null>(null);
+  const wasRefunding = useRef(false);
+
+  // Close modal when refund finishes (transition from refunding -> not refunding)
+  useEffect(() => {
+    if (wasRefunding.current && !isRefunding) {
+      setRefundTarget(null);
+    }
+    wasRefunding.current = isRefunding ?? false;
+  }, [isRefunding]);
 
   return (
     <>
@@ -68,6 +94,18 @@ export function TransactionHistoryTable({
                     {change.submission_count > 1
                       ? `${change.reason} (${change.submission_count} submissions)`
                       : change.reason}
+                    {change.checkout_session_refunded_at != null && (
+                      <Badge bg="secondary" className="ms-2">
+                        Refunded
+                      </Badge>
+                    )}
+                    {showRefundActions && (
+                      <RefundActionInline
+                        row={change}
+                        transferableMilliDollars={transferableMilliDollars ?? 0}
+                        onClickRefund={() => setRefundTarget(change)}
+                      />
+                    )}
                   </td>
                   <td className="align-middle px-3 py-2">
                     {change.user_name ?? change.user_uid ?? '\u2014'}
@@ -109,6 +147,122 @@ export function TransactionHistoryTable({
           </ul>
         </nav>
       )}
+
+      {refundTarget && (
+        <RefundConfirmationModal
+          row={refundTarget}
+          isRefunding={isRefunding ?? false}
+          onConfirm={() => {
+            if (refundTarget.checkout_session_id && onRefund) {
+              onRefund(refundTarget.checkout_session_id);
+            }
+          }}
+          onCancel={() => setRefundTarget(null)}
+        />
+      )}
     </>
+  );
+}
+
+const PURCHASE_REASONS = ['Credit purchase', 'Stripe purchase'];
+
+function RefundActionInline({
+  row,
+  transferableMilliDollars,
+  onClickRefund,
+}: {
+  row: TransactionHistoryRow;
+  transferableMilliDollars: number;
+  onClickRefund: () => void;
+}) {
+  if (!row.checkout_session_id || !PURCHASE_REASONS.includes(row.reason)) {
+    return null;
+  }
+
+  if (row.checkout_session_refunded_at != null) {
+    return null;
+  }
+
+  const creditAmount = row.checkout_session_amount_milli_dollars ?? 0;
+  const canRefund = transferableMilliDollars >= creditAmount;
+
+  if (!canRefund) {
+    return (
+      <OverlayTrigger
+        placement="top"
+        tooltip={{
+          props: { id: `refund-tooltip-${row.id}` },
+          body: `Insufficient transferable credits to refund. The course instance needs at least ${formatMilliDollars(creditAmount)} in transferable credits.`,
+        }}
+      >
+        <span className="d-inline-block ms-2">
+          <Button variant="outline-secondary" size="sm" style={{ pointerEvents: 'none' }} disabled>
+            Refund
+          </Button>
+        </span>
+      </OverlayTrigger>
+    );
+  }
+
+  return (
+    <Button variant="outline-danger" size="sm" className="ms-2" onClick={onClickRefund}>
+      Refund
+    </Button>
+  );
+}
+
+function RefundConfirmationModal({
+  row,
+  isRefunding,
+  onConfirm,
+  onCancel,
+}: {
+  row: TransactionHistoryRow;
+  isRefunding: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const creditAmount = row.checkout_session_amount_milli_dollars ?? 0;
+  const infraFee = row.checkout_session_infrastructure_fee_milli_dollars ?? 0;
+  const totalRefund = creditAmount + infraFee;
+
+  return (
+    <Modal show centered onHide={isRefunding ? undefined : onCancel}>
+      <Modal.Header closeButton={!isRefunding}>
+        <Modal.Title>Confirm refund</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <p>Are you sure you want to refund this credit purchase?</p>
+        <table className="table table-sm mb-3">
+          <tbody>
+            <tr>
+              <td>Credits to deduct</td>
+              <td className="text-end fw-bold">{formatMilliDollars(creditAmount)}</td>
+            </tr>
+            <tr>
+              <td>Infrastructure fee</td>
+              <td className="text-end fw-bold">{formatMilliDollars(infraFee)}</td>
+            </tr>
+            <tr className="border-top-2">
+              <td className="fw-bold">Total Stripe refund</td>
+              <td className="text-end fw-bold">{formatMilliDollars(totalRefund)}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p className="text-muted small mb-0">
+          This will deduct {formatMilliDollars(creditAmount)} from the transferable credit balance
+          and issue a {formatMilliDollars(totalRefund)} refund to the original payment method via
+          Stripe.
+        </p>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" disabled={isRefunding} onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button variant="danger" disabled={isRefunding} onClick={onConfirm}>
+          {isRefunding ? 'Processing...' : 'Confirm refund'}
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 }

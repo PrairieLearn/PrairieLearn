@@ -14,6 +14,7 @@ import {
 } from '../../lib/db-types.js';
 import { adjustCreditPool } from '../../models/ai-grading-credit-pool.js';
 import { insertAuditEvent } from '../../models/audit-event.js';
+import { getStripeClient } from '../lib/billing/stripe.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -23,12 +24,14 @@ export async function insertCreditCheckoutSession({
   course_instance_id,
   data,
   amount_milli_dollars,
+  infrastructure_fee_milli_dollars,
 }: {
   agent_user_id: string;
   stripe_object_id: string;
   course_instance_id: string;
   data: Stripe.Checkout.Session;
   amount_milli_dollars: number;
+  infrastructure_fee_milli_dollars: number;
 }) {
   await execute(sql.insert_ai_grading_credit_checkout_session, {
     agent_user_id,
@@ -36,6 +39,7 @@ export async function insertCreditCheckoutSession({
     course_instance_id,
     data,
     amount_milli_dollars,
+    infrastructure_fee_milli_dollars,
   });
 }
 
@@ -96,6 +100,7 @@ export async function processCreditPurchase({
       credit_type: 'transferable',
       user_id: localSession.agent_user_id,
       reason: 'Credit purchase',
+      checkout_session_id: localSession.id,
     });
 
     await updateCheckoutSessionData({
@@ -118,4 +123,86 @@ export async function processCreditPurchase({
       },
     });
   });
+}
+
+/**
+ * Refunds a completed credit purchase: deducts credits from the transferable pool,
+ * marks the checkout session as refunded, inserts an audit event, and issues a
+ * Stripe refund for the full amount (credits + infrastructure fee).
+ */
+export async function refundCreditPurchase({
+  checkout_session_id,
+  course_instance_id,
+  admin_user_id,
+}: {
+  checkout_session_id: string;
+  course_instance_id: string;
+  admin_user_id: string;
+}): Promise<void> {
+  const session = await queryRow(
+    sql.get_ai_grading_credit_checkout_session_by_id,
+    { id: checkout_session_id },
+    AiGradingCreditCheckoutSessionSchema,
+  );
+
+  if (session.course_instance_id !== course_instance_id) {
+    throw new Error('Checkout session does not belong to this course instance');
+  }
+
+  if (!session.credits_added) {
+    throw new Error('Cannot refund a purchase that has not been completed');
+  }
+
+  if (session.refunded_at != null) {
+    throw new Error('This purchase has already been refunded');
+  }
+
+  await runInTransactionAsync(async () => {
+    const marked = await queryOptionalRow(
+      sql.mark_ai_grading_credit_checkout_session_refunded,
+      { id: checkout_session_id },
+      AiGradingCreditCheckoutSessionSchema,
+    );
+    if (!marked) {
+      throw new Error('Failed to mark checkout session as refunded (already refunded)');
+    }
+
+    await adjustCreditPool({
+      course_instance_id: session.course_instance_id,
+      delta_milli_dollars: -session.amount_milli_dollars,
+      credit_type: 'transferable',
+      user_id: admin_user_id,
+      reason: 'Credit purchase refund',
+      checkout_session_id: session.id,
+    });
+
+    await insertAuditEvent({
+      tableName: 'ai_grading_credit_checkout_sessions',
+      action: 'update',
+      actionDetail: 'refund',
+      rowId: session.id,
+      agentAuthnUserId: admin_user_id,
+      agentUserId: admin_user_id,
+      courseInstanceId: session.course_instance_id,
+      oldRow: {
+        refunded_at: null,
+        amount_milli_dollars: session.amount_milli_dollars,
+        infrastructure_fee_milli_dollars: session.infrastructure_fee_milli_dollars,
+      },
+      newRow: {
+        refunded_at: new Date().toISOString(),
+        amount_milli_dollars: session.amount_milli_dollars,
+        infrastructure_fee_milli_dollars: session.infrastructure_fee_milli_dollars,
+      },
+    });
+  });
+
+  // Issue Stripe refund after the DB transaction commits.
+  const paymentIntent = session.data.payment_intent;
+  if (paymentIntent) {
+    const paymentIntentId =
+      typeof paymentIntent === 'string' ? paymentIntent : (paymentIntent as { id: string }).id;
+    const stripe = getStripeClient();
+    await stripe.refunds.create({ payment_intent: paymentIntentId });
+  }
 }

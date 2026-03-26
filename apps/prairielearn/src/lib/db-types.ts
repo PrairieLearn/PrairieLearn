@@ -315,6 +315,8 @@ export const AiGradingCreditCheckoutSessionSchema = z.object({
   credits_added: z.boolean(),
   data: z.record(z.unknown()),
   id: IdSchema,
+  infrastructure_fee_milli_dollars: z.coerce.number(),
+  refunded_at: DateFromISOString.nullable(),
   stripe_object_id: z.string(),
 });
 export type AiGradingCreditCheckoutSession = z.infer<typeof AiGradingCreditCheckoutSessionSchema>;
@@ -322,6 +324,7 @@ export type AiGradingCreditCheckoutSession = z.infer<typeof AiGradingCreditCheck
 export const AiGradingCreditPoolChangeSchema = z.object({
   ai_grading_job_id: IdSchema.nullable(),
   assessment_question_id: IdSchema.nullable(),
+  checkout_session_id: IdSchema.nullable(),
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
   credit_after_milli_dollars: z.coerce.number(),

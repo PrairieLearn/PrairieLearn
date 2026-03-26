@@ -28,7 +28,7 @@ export const requiredTableFields = {
 export type SupportedTableActionCombination =
   | {
       tableName: 'ai_grading_credit_checkout_sessions';
-      actionDetail?: null;
+      actionDetail?: 'refund' | null;
     }
   | {
       tableName: 'course_instances';
