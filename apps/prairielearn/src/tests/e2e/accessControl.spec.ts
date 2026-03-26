@@ -7,6 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { AssessmentAccessControlRuleSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
+import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { syncCourse } from '../helperCourse.js';
 
@@ -54,9 +55,21 @@ function getVisibleModal(page: Page): Locator {
 }
 
 test.describe('Access control UI', () => {
-  // Re-sync before each test to reset the assessment back to its on-disk state,
-  // so that mutations from one test don't leak into the next.
+  // Restore the original infoAssessment.json and re-sync before each test so
+  // that mutations from one test (which are committed to git by FileModifyEditor)
+  // don't leak into the next.
   test.beforeEach(async ({ testCoursePath }) => {
+    const relativePath = path.join(
+      'courseInstances',
+      'Sp15',
+      'assessments',
+      ASSESSMENT_TID,
+      'infoAssessment.json',
+    );
+    await fs.copyFile(
+      path.join(TEST_COURSE_PATH, relativePath),
+      path.join(testCoursePath, relativePath),
+    );
     await features.enable('enhanced-access-control');
     await syncCourse(testCoursePath);
   });
