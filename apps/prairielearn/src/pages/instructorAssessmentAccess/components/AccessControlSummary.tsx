@@ -149,7 +149,6 @@ export function AccessControlSummary({
 
   const sortableIds = useMemo(() => overrides.map((o) => o.trackingId), [overrides]);
 
-
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return;
     const oldIndex = sortableIds.indexOf(String(active.id));

@@ -38,6 +38,11 @@ function getVisibleModal(page: Page): Locator {
   return page.locator('[aria-modal="true"]');
 }
 
+/** Returns the override card containing the given label text. */
+function getOverrideCard(page: Page, labelText: string): Locator {
+  return page.getByTestId('override-card').filter({ hasText: labelText });
+}
+
 test.describe('Access control UI', () => {
   // Re-sync before each test to reset the assessment back to its on-disk state,
   // so that mutations from one test don't leak into the next.
@@ -58,7 +63,7 @@ test.describe('Access control UI', () => {
     await expect(page.getByRole('button', { name: /Add override/i })).toBeVisible();
 
     // Verify Section A override card is visible with its student label badge
-    await expect(page.getByText('Section A')).toBeVisible();
+    await expect(getOverrideCard(page, 'Section A')).toBeVisible();
 
     // Save button should be disabled (no unsaved changes)
     await expect(page.getByRole('button', { name: /Save and sync/i })).toBeDisabled();
@@ -98,7 +103,7 @@ test.describe('Access control UI', () => {
     await panel.getByRole('button', { name: 'Close detail panel' }).click();
 
     // Verify new override card visible with "Extra time" badge
-    await expect(page.getByText('Extra time')).toBeVisible();
+    await expect(getOverrideCard(page, 'Extra time')).toBeVisible();
 
     // Save
     await page.getByRole('button', { name: /Save and sync/i }).click();
@@ -117,18 +122,14 @@ test.describe('Access control UI', () => {
     });
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
-    // Verify we start with the Section A override
-    await expect(page.getByText('Section A')).toBeVisible();
+    const sectionACard = getOverrideCard(page, 'Section A');
+    await expect(sectionACard).toBeVisible();
 
     const initialRecords = await getAccessControlRecords(assessment.id);
     const initialOverrideCount = initialRecords.filter((r) => r.number > 0).length;
 
     // Click "Remove" on the Section A override
-    await page
-      .getByText('Section A')
-      .locator('../..')
-      .getByRole('button', { name: /Remove/i })
-      .click();
+    await sectionACard.getByRole('button', { name: /Remove/i }).click();
 
     // Confirm deletion in modal
     const modal = getVisibleModal(page);
@@ -161,21 +162,13 @@ test.describe('Access control UI', () => {
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
     // Click "Edit" on the Section A override
-    await page
-      .getByText('Section A')
-      .locator('../..')
-      .getByRole('button', { name: /Edit/i })
-      .click();
+    await getOverrideCard(page, 'Section A').getByRole('button', { name: /Edit/i }).click();
 
     const panel = getDetailPanel(page);
     await expect(panel).toBeVisible();
 
-    // Override the duration field: find "Time limit" label and click its associated Override button
-    await panel
-      .getByText('Time limit', { exact: true })
-      .locator('../..')
-      .getByRole('button', { name: 'Override' })
-      .click();
+    // Override the duration field
+    await panel.getByRole('button', { name: 'Override Time limit' }).click();
 
     // Enable the time limit checkbox (now rendered as a labeled form check)
     await panel.getByLabel('Time limit').check();
@@ -184,11 +177,7 @@ test.describe('Access control UI', () => {
     await expect(panel.getByRole('spinbutton')).toHaveValue('60');
 
     // Override question visibility
-    await panel
-      .getByText('Question visibility', { exact: true })
-      .locator('../..')
-      .getByRole('button', { name: 'Override' })
-      .click();
+    await panel.getByRole('button', { name: 'Override Question visibility' }).click();
 
     // Select "Hide questions permanently"
     await panel.getByLabel('Hide questions permanently').check();

@@ -334,7 +334,7 @@ export function RuleSummaryCard({
       : [];
 
   return (
-    <Card className="mb-3">
+    <Card className="mb-3" data-testid={isMainRule ? undefined : 'override-card'}>
       <Card.Header className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
         <div className="d-flex align-items-center gap-2 flex-wrap">
           {dragHandleProps && (
@@ -449,11 +449,9 @@ export function RuleSummaryCard({
           </div>
         )}
 
-        {dateTableRows.length === 0 &&
-          summaryItems.length === 0 &&
-          students.length === 0 && (
-            <p className="text-body-secondary mb-0">No specific settings configured</p>
-          )}
+        {dateTableRows.length === 0 && summaryItems.length === 0 && students.length === 0 && (
+          <p className="text-body-secondary mb-0">No specific settings configured</p>
+        )}
       </Card.Body>
     </Card>
   );
