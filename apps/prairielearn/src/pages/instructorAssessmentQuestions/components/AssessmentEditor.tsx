@@ -57,7 +57,7 @@ import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 import { useAssessmentEditor } from '../utils/useAssessmentEditor.js';
 import {
-  findAltGroupByTrackingId,
+  findAltPoolByTrackingId,
   findAlternativeByTrackingId,
   findQuestionByTrackingId,
   findZoneByTrackingId,
@@ -215,10 +215,10 @@ function AssessmentEditorInner({
           const foundZone = findZoneByTrackingId(zones, selectedItem.zoneTrackingId);
           return foundZone ? `z:${foundZone.zoneIndex}` : null;
         }
-        case 'altGroup': {
-          const foundAltGroup = findAltGroupByTrackingId(zones, selectedItem.questionTrackingId);
-          return foundAltGroup
-            ? `z:${foundAltGroup.zoneIndex}:${foundAltGroup.altGroupIndex}`
+        case 'altPool': {
+          const foundAltPool = findAltPoolByTrackingId(zones, selectedItem.questionTrackingId);
+          return foundAltPool
+            ? `z:${foundAltPool.zoneIndex}:${foundAltPool.altPoolIndex}`
             : null;
         }
         case 'alternative': {
