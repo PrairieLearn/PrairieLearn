@@ -1,4 +1,5 @@
 import type Stripe from 'stripe';
+import { z } from 'zod';
 
 import {
   execute,
@@ -167,14 +168,27 @@ export async function refundCreditPurchase({
       throw new Error('Failed to mark checkout session as refunded (already refunded)');
     }
 
-    await adjustCreditPool({
-      course_instance_id: session.course_instance_id,
-      delta_milli_dollars: -session.amount_milli_dollars,
-      credit_type: 'transferable',
-      user_id: admin_user_id,
-      reason: 'Credit purchase refund',
-      checkout_session_id: session.id,
-    });
+    // Cap the deduction at the available transferable balance so it never goes negative.
+    const pool = await queryRow(
+      sql.get_transferable_balance_for_refund,
+      { course_instance_id: session.course_instance_id },
+      z.object({ credit_transferable_milli_dollars: z.coerce.number() }),
+    );
+    const deductAmount = Math.min(
+      session.amount_milli_dollars,
+      pool.credit_transferable_milli_dollars,
+    );
+
+    if (deductAmount > 0) {
+      await adjustCreditPool({
+        course_instance_id: session.course_instance_id,
+        delta_milli_dollars: -deductAmount,
+        credit_type: 'transferable',
+        user_id: admin_user_id,
+        reason: 'Credit purchase refund',
+        checkout_session_id: session.id,
+      });
+    }
 
     await insertAuditEvent({
       tableName: 'ai_grading_credit_checkout_sessions',

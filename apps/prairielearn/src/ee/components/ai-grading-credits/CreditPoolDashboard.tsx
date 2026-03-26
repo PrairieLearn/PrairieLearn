@@ -43,7 +43,7 @@ export function CreditPoolDashboard({
   const poolQuery = useQuery(trpc.creditPool.queryOptions());
   const changesQuery = useQuery({
     ...trpc.creditPoolChanges.queryOptions({ page }),
-    enabled: showHistory,
+    enabled: showHistory || poolQuery.data != null,
   });
   const dailySpendingQuery = useQuery(trpc.dailySpending.queryOptions({ days: chartDays }));
   const validGroupBy = groupBy !== 'none' ? groupBy : undefined;
@@ -69,13 +69,24 @@ export function CreditPoolDashboard({
   }
 
   const pool = poolQuery.data;
-  const isEmpty =
+  const hasNoBalance =
     pool.total_milli_dollars === 0 &&
     pool.credit_transferable_milli_dollars === 0 &&
     pool.credit_non_transferable_milli_dollars === 0;
+  const hasTransactions = (changesQuery.data?.totalCount ?? 0) > 0;
 
-  if (isEmpty && emptyState && !dimmed) {
-    return <>{emptyState}</>;
+  if (hasNoBalance && emptyState && !dimmed) {
+    if (!changesQuery.isFetched) {
+      return (
+        <div className="text-center py-4">
+          <Spinner animation="border" size="sm" className="me-2" />
+          Loading AI grading credits...
+        </div>
+      );
+    }
+    if (!hasTransactions) {
+      return <>{emptyState}</>;
+    }
   }
 
   return (

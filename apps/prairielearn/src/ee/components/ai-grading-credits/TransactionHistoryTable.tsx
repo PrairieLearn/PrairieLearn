@@ -2,8 +2,6 @@ import clsx from 'clsx';
 import { useEffect, useRef, useState } from 'react';
 import { Badge, Button, Modal } from 'react-bootstrap';
 
-import { OverlayTrigger } from '@prairielearn/ui';
-
 import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 
 const PAGE_SIZE = 25;
@@ -94,15 +92,15 @@ export function TransactionHistoryTable({
                     {change.submission_count > 1
                       ? `${change.reason} (${change.submission_count} submissions)`
                       : change.reason}
-                    {change.checkout_session_refunded_at != null && (
-                      <Badge bg="secondary" className="ms-2">
-                        Refunded
-                      </Badge>
-                    )}
+                    {change.checkout_session_refunded_at != null &&
+                      change.delta_milli_dollars > 0 && (
+                        <Badge bg="secondary" className="ms-2">
+                          Refunded
+                        </Badge>
+                      )}
                     {showRefundActions && (
                       <RefundActionInline
                         row={change}
-                        transferableMilliDollars={transferableMilliDollars ?? 0}
                         onClickRefund={() => setRefundTarget(change)}
                       />
                     )}
@@ -152,6 +150,7 @@ export function TransactionHistoryTable({
         <RefundConfirmationModal
           row={refundTarget}
           isRefunding={isRefunding ?? false}
+          transferableMilliDollars={transferableMilliDollars ?? 0}
           onConfirm={() => {
             if (refundTarget.checkout_session_id && onRefund) {
               onRefund(refundTarget.checkout_session_id);
@@ -168,11 +167,9 @@ const PURCHASE_REASONS = ['Credit purchase', 'Stripe purchase'];
 
 function RefundActionInline({
   row,
-  transferableMilliDollars,
   onClickRefund,
 }: {
   row: TransactionHistoryRow;
-  transferableMilliDollars: number;
   onClickRefund: () => void;
 }) {
   if (!row.checkout_session_id || !PURCHASE_REASONS.includes(row.reason)) {
@@ -181,27 +178,6 @@ function RefundActionInline({
 
   if (row.checkout_session_refunded_at != null) {
     return null;
-  }
-
-  const creditAmount = row.checkout_session_amount_milli_dollars ?? 0;
-  const canRefund = transferableMilliDollars >= creditAmount;
-
-  if (!canRefund) {
-    return (
-      <OverlayTrigger
-        placement="top"
-        tooltip={{
-          props: { id: `refund-tooltip-${row.id}` },
-          body: `Insufficient transferable credits to refund. The course instance needs at least ${formatMilliDollars(creditAmount)} in transferable credits.`,
-        }}
-      >
-        <span className="d-inline-block ms-2">
-          <Button variant="outline-secondary" size="sm" style={{ pointerEvents: 'none' }} disabled>
-            Refund
-          </Button>
-        </span>
-      </OverlayTrigger>
-    );
   }
 
   return (
@@ -214,17 +190,21 @@ function RefundActionInline({
 function RefundConfirmationModal({
   row,
   isRefunding,
+  transferableMilliDollars,
   onConfirm,
   onCancel,
 }: {
   row: TransactionHistoryRow;
   isRefunding: boolean;
+  transferableMilliDollars: number;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
   const creditAmount = row.checkout_session_amount_milli_dollars ?? 0;
   const infraFee = row.checkout_session_infrastructure_fee_milli_dollars ?? 0;
   const totalRefund = creditAmount + infraFee;
+  const creditsSpent = Math.max(0, creditAmount - transferableMilliDollars);
+  const creditsToDeduct = Math.min(creditAmount, transferableMilliDollars);
 
   return (
     <Modal show centered onHide={isRefunding ? undefined : onCancel}>
@@ -233,11 +213,19 @@ function RefundConfirmationModal({
       </Modal.Header>
       <Modal.Body>
         <p>Are you sure you want to refund this credit purchase?</p>
+        {creditsSpent > 0 && (
+          <div className="alert alert-warning">
+            The instructor has already used {formatMilliDollars(creditsSpent)} of the{' '}
+            {formatMilliDollars(creditAmount)} purchased credits. Only{' '}
+            {formatMilliDollars(creditsToDeduct)} will be deducted from the credit balance, but the
+            full amount will still be refunded via Stripe.
+          </div>
+        )}
         <table className="table table-sm mb-3">
           <tbody>
             <tr>
               <td>Credits to deduct</td>
-              <td className="text-end fw-bold">{formatMilliDollars(creditAmount)}</td>
+              <td className="text-end fw-bold">{formatMilliDollars(creditsToDeduct)}</td>
             </tr>
             <tr>
               <td>Infrastructure fee</td>
@@ -250,9 +238,9 @@ function RefundConfirmationModal({
           </tbody>
         </table>
         <p className="text-muted small mb-0">
-          This will deduct {formatMilliDollars(creditAmount)} from the transferable credit balance
-          and issue a {formatMilliDollars(totalRefund)} refund to the original payment method via
-          Stripe.
+          This will deduct {formatMilliDollars(creditsToDeduct)} from the transferable credit
+          balance and issue a {formatMilliDollars(totalRefund)} refund to the original payment
+          method via Stripe.
         </p>
       </Modal.Body>
       <Modal.Footer>
