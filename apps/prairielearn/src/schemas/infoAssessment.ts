@@ -1,5 +1,6 @@
 import { type ZodSchema, z } from 'zod';
 
+import { AccessControlJsonSchema } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
 
 export const EnumAssessmentToolSchema = z.enum(['calculator']);
@@ -176,6 +177,7 @@ export const AssessmentAccessRuleJsonSchema = z
     'An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.',
   );
 
+export type AssessmentAccessRuleJson = z.input<typeof AssessmentAccessRuleJsonSchema>;
 export const PointsSingleJsonSchema = z.number().gte(0).describe('A single point value.');
 
 export const PointsListJsonSchema = z
@@ -428,6 +430,10 @@ export const AssessmentJsonSchema = z
       )
       .optional()
       .default([]),
+    accessControl: z
+      .array(AccessControlJsonSchema)
+      .describe('Access control settings for the assessment.')
+      .optional(),
     text: z.string().describe('HTML text shown on the assessment overview page.').optional(),
     maxPoints: z
       .number()

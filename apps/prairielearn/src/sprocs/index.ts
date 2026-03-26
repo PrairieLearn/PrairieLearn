@@ -44,6 +44,8 @@ export async function init() {
       'server_usage_current.sql',
       'sync_questions.sql',
       'sync_assessments.sql',
+      'sync_access_control.sql',
+      'sync_enrollment_access_control.sql',
       'team_info.sql',
       'teams_uid_list.sql',
       'workspace_loads_current.sql',
