@@ -313,7 +313,7 @@ function CourseInsertModal({
   };
 
   return (
-    <Modal show={show} backdrop="static" onHide={onCancel}>
+    <Modal show={show} backdrop="static" onHide={onCancel} size="lg">
       <FormProvider {...methods}>
         <form name="add-course-form" onSubmit={handleSubmit(onSubmit)}>
           <Modal.Header closeButton>
