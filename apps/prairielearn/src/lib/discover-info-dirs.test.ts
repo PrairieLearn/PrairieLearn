@@ -20,7 +20,7 @@ describe('discoverInfoDirs', () => {
         await fs.writeFile(path.join(tmpDir, 'a', 'info.json'), '{}');
         await fs.writeFile(path.join(tmpDir, 'b', 'info.json'), '{}');
 
-        const result = (await discoverInfoDirs(tmpDir, 'info.json')).sort();
+        const result = await discoverInfoDirs(tmpDir, 'info.json');
         assert.deepEqual(result, ['a', 'b']);
       },
       { unsafeCleanup: true },
@@ -67,7 +67,7 @@ describe('discoverInfoDirs', () => {
         await fs.writeFile(path.join(tmpDir, 'group', 'item1', 'info.json'), '{}');
         await fs.writeFile(path.join(tmpDir, 'group', 'item2', 'info.json'), '{}');
 
-        const result = (await discoverInfoDirs(tmpDir, 'info.json')).sort();
+        const result = await discoverInfoDirs(tmpDir, 'info.json');
         assert.deepEqual(result, [path.join('group', 'item1'), path.join('group', 'item2')]);
       },
       { unsafeCleanup: true },

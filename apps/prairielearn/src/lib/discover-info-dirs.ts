@@ -38,5 +38,5 @@ export async function discoverInfoDirs(rootDirectory: string, infoFile: string):
   };
 
   await walk('');
-  return results;
+  return results.sort();
 }
