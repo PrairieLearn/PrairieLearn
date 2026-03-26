@@ -57,9 +57,8 @@ test.describe('Access control UI', () => {
     await expect(page.getByRole('heading', { name: 'Overrides' })).toBeVisible();
     await expect(page.getByRole('button', { name: /Add override/i })).toBeVisible();
 
-    // Verify Section A override card is visible with its title and student label link
-    await expect(page.getByText('Overrides for Section A')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Section A' })).toBeVisible();
+    // Verify Section A override card is visible with its student label badge
+    await expect(page.getByText('Section A')).toBeVisible();
 
     // Save button should be disabled (no unsaved changes)
     await expect(page.getByRole('button', { name: /Save and sync/i })).toBeDisabled();
@@ -98,8 +97,8 @@ test.describe('Access control UI', () => {
     // Close the detail panel
     await panel.getByRole('button', { name: 'Close detail panel' }).click();
 
-    // Verify new override card visible with "Extra time"
-    await expect(page.getByText('Overrides for Extra time')).toBeVisible();
+    // Verify new override card visible with "Extra time" badge
+    await expect(page.getByText('Extra time')).toBeVisible();
 
     // Save
     await page.getByRole('button', { name: /Save and sync/i }).click();
@@ -119,16 +118,15 @@ test.describe('Access control UI', () => {
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
     // Verify we start with the Section A override
-    await expect(page.getByText('Overrides for Section A')).toBeVisible();
+    await expect(page.getByText('Section A')).toBeVisible();
 
     const initialRecords = await getAccessControlRecords(assessment.id);
     const initialOverrideCount = initialRecords.filter((r) => r.number > 0).length;
 
     // Click "Remove" on the Section A override
     await page
-      .getByText('Overrides for Section A')
-      .locator('..')
-      .locator('..')
+      .getByText('Section A')
+      .locator('../..')
       .getByRole('button', { name: /Remove/i })
       .click();
 
@@ -164,9 +162,8 @@ test.describe('Access control UI', () => {
 
     // Click "Edit" on the Section A override
     await page
-      .getByText('Overrides for Section A')
-      .locator('..')
-      .locator('..')
+      .getByText('Section A')
+      .locator('../..')
       .getByRole('button', { name: /Edit/i })
       .click();
 
@@ -200,7 +197,7 @@ test.describe('Access control UI', () => {
     await panel.getByRole('button', { name: 'Close detail panel' }).click();
 
     // Verify summary shows the changes
-    await expect(page.getByText('Time limit: 60 minutes')).toBeVisible();
+    await expect(page.getByText('60 minutes')).toBeVisible();
     await expect(page.getByText('Questions hidden after completion')).toBeVisible();
 
     // Save

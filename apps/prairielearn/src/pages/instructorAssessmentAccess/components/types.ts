@@ -18,7 +18,7 @@ export interface AccessControlJsonWithId extends AccessControlJson {
   ruleType?: 'student_label' | 'enrollment' | 'none' | null;
   individuals?: AccessControlIndividual[];
   /** Student label details (id, name, color) from the database, used for rendering colored badges. */
-  labelDetails?: Array<{ id: string; name: string; color: string }>;
+  labelDetails?: { id: string; name: string; color: string }[];
 }
 
 /** Field names that belong to the date control section of an access control rule. */

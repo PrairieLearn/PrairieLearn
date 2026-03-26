@@ -32,13 +32,13 @@ function PasswordInput({ value, onChange, idPrefix }: PasswordInputProps) {
           <Form.Control
             type={showPassword ? 'text' : 'password'}
             autoComplete="off"
-            data-1p-ignore
-            data-lpignore="true"
             data-form-type="other"
+            data-lpignore="true"
             aria-label="Assessment password"
             placeholder="Password"
             value={value}
             minLength={1}
+            data-1p-ignore
             required
             onChange={({ currentTarget }) => onChange(currentTarget.value)}
           />
