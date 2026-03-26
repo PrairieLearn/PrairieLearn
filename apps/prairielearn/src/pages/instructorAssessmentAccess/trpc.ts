@@ -2,12 +2,12 @@ import crypto from 'node:crypto';
 
 import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
+import stableStringify from 'fast-json-stable-stringify';
 import superjson from 'superjson';
 import { z } from 'zod';
 
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
-import { fetchAllAccessControlRules } from '../../lib/assessment-access-control.js';
 import { features } from '../../lib/features/index.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import {
@@ -22,8 +22,14 @@ import {
   validateEnrollmentIdsInCourseInstance,
 } from '../../models/enrollment.js';
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
-import type { AccessControlJson } from '../../schemas/accessControl.js';
-import { syncAccessControl } from '../../sync/fromDisk/accessControl.js';
+import {
+  type AccessControlJson,
+  AccessControlJsonSchema,
+  MAX_ACCESS_CONTROL_RULES,
+} from '../../schemas/accessControl.js';
+import { syncAccessControl, validateRule } from '../../sync/fromDisk/accessControl.js';
+
+import { fetchAllAccessControlRules } from './rules.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'assessment'>;
@@ -145,98 +151,13 @@ function formJsonToEnrollmentRuleData(
   };
 }
 
-const DateStringInputSchema = z.string().refine((s) => !Number.isNaN(new Date(s).getTime()), {
-  message: 'Must be a valid date string',
-});
-
-const DeadlineInputSchema = z.object({
-  date: DateStringInputSchema,
-  credit: z.number().min(0, 'Credit must be non-negative'),
-});
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-export const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: string }> = z
-  .object({
-    id: z.string().optional(),
-    listBeforeRelease: z.boolean().nullable().optional(),
-    labels: z.array(z.string()).optional(),
-    dateControl: z
-      .object({
-        releaseDate: DateStringInputSchema.nullable().optional(),
-        dueDate: DateStringInputSchema.nullable().optional(),
-        earlyDeadlines: z.array(DeadlineInputSchema).nullable().optional(),
-        lateDeadlines: z.array(DeadlineInputSchema).nullable().optional(),
-        afterLastDeadline: z
-          .object({
-            credit: z.number().min(0, 'Credit must be non-negative').optional(),
-            allowSubmissions: z.boolean().optional(),
-          })
-          .nullable()
-          .optional(),
-        durationMinutes: z.number().int().positive().nullable().optional(),
-        password: z.string().nullable().optional(),
-      })
-      .optional(),
-    integrations: z
-      .object({
-        prairieTest: z
-          .object({
-            exams: z
-              .array(
-                z.object({
-                  examUuid: z.string().regex(UUID_REGEX, 'Invalid UUID format'),
-                  readOnly: z.boolean().optional(),
-                }),
-              )
-              .optional(),
-          })
-          .optional(),
-      })
-      .optional(),
-    afterComplete: z
-      .object({
-        hideQuestions: z.boolean().optional(),
-        showQuestionsAgainDate: DateStringInputSchema.optional(),
-        hideQuestionsAgainDate: DateStringInputSchema.optional(),
-        hideScore: z.boolean().optional(),
-        showScoreAgainDate: DateStringInputSchema.optional(),
-      })
-      .optional(),
-  })
-  .superRefine((data, ctx) => {
-    const exams = data.integrations?.prairieTest?.exams ?? [];
-    const seenUuids = new Set<string>();
-    for (const e of exams) {
-      if (seenUuids.has(e.examUuid)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `Duplicate PrairieTest exam UUID: ${e.examUuid}`,
-          path: ['integrations', 'prairieTest', 'exams'],
-        });
-        break;
-      }
-      seenUuids.add(e.examUuid);
-    }
-
-    for (const [key, deadlines] of [
-      ['earlyDeadlines', data.dateControl?.earlyDeadlines],
-      ['lateDeadlines', data.dateControl?.lateDeadlines],
-    ] as const) {
-      const seenDates = new Set<string>();
-      for (const d of deadlines ?? []) {
-        if (seenDates.has(d.date)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Duplicate ${key === 'earlyDeadlines' ? 'early' : 'late'} deadline date: ${d.date}`,
-            path: ['dateControl', key],
-          });
-          break;
-        }
-        seenDates.add(d.date);
-      }
-    }
-  });
+// TODO: Add client-side validation for duplicate PrairieTest exam UUIDs and
+// duplicate deadline dates before this goes live. Server-side validation
+// (validateRule) catches these for all rule types, but the UI should block
+// saves proactively so users get immediate feedback instead of a server error.
+export const AccessControlJsonInputSchema = AccessControlJsonSchema.extend({
+  id: z.string().optional(),
+}).strip();
 
 const EnrollmentRuleInputSchema = z.object({
   id: z.string().optional(),
@@ -248,7 +169,7 @@ const saveAllRules = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
-      rules: z.array(AccessControlJsonInputSchema),
+      rules: z.array(AccessControlJsonInputSchema).max(MAX_ACCESS_CONTROL_RULES),
       enrollmentRules: z.array(EnrollmentRuleInputSchema).optional(),
       origHash: z.string(),
     }),
@@ -286,6 +207,12 @@ const saveAllRules = t.procedure
       }
 
       const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
+      for (const rule of rulesToSync) {
+        const ruleError = validateRule(rule);
+        if (ruleError) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
+        }
+      }
       await syncAccessControl(courseInstanceId, assessmentId, rulesToSync);
 
       // Only process enrollment rule deletions when enrollmentRules is explicitly
@@ -327,6 +254,11 @@ const saveAllRules = t.procedure
         }
 
         for (const enrollmentRule of enrollmentRules) {
+          const ruleError = validateRule(enrollmentRule.ruleJson);
+          if (ruleError) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
+          }
+
           const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
           if (enrollmentRule.id) {
             ruleData.id = enrollmentRule.id;
@@ -350,7 +282,7 @@ const saveAllRules = t.procedure
   });
 
 export function computeHash(rules: object[]): string {
-  return crypto.createHash('sha256').update(JSON.stringify(rules)).digest('hex');
+  return crypto.createHash('sha256').update(stableStringify(rules)).digest('hex');
 }
 
 export const accessControlRouter = t.router({

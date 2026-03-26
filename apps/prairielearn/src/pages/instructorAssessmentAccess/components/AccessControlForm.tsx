@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import { useState } from 'react';
-import { Alert, Form } from 'react-bootstrap';
+import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
 import { OverlayTrigger, useModalState } from '@prairielearn/ui';
@@ -9,7 +9,6 @@ import { SplitPane } from '../../../components/SplitPane.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 
 import { AccessControlSummary } from './AccessControlSummary.js';
-import { ConfirmationModal } from './ConfirmationModal.js';
 import { MainRuleForm } from './MainRuleForm.js';
 import { OverrideRuleContent } from './OverrideRuleContent.js';
 import { AppliesToField } from './fields/AppliesToField.js';
@@ -94,10 +93,11 @@ export function AccessControlForm({
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
   const deleteModal = useModalState<{ index: number; name: string }>();
 
+  const displayTimezone = courseInstance.display_timezone;
   const mainRule = initialData[0]
-    ? jsonToMainRuleFormData(initialData[0])
-    : jsonToMainRuleFormData({ listBeforeRelease: false });
-  const overrides = initialData.slice(1).map(jsonToOverrideFormData);
+    ? jsonToMainRuleFormData(initialData[0], displayTimezone)
+    : jsonToMainRuleFormData({ listBeforeRelease: false }, displayTimezone);
+  const overrides = initialData.slice(1).map((o) => jsonToOverrideFormData(o, displayTimezone));
 
   const methods = useForm<AccessControlFormData>({
     mode: 'onChange',
@@ -128,7 +128,7 @@ export function AccessControlForm({
   const watchedData = watch();
 
   const handleFormSubmit = (data: AccessControlFormData) => {
-    const jsonOutput = formDataToJson(data);
+    const jsonOutput = formDataToJson(data, displayTimezone);
     onSubmit(jsonOutput);
   };
 
@@ -153,15 +153,21 @@ export function AccessControlForm({
 
   const handleDeleteConfirm = () => {
     if (deleteModal.data !== null) {
-      if (selectedRule?.type === 'override' && selectedRule.index === deleteModal.data.index) {
-        setSelectedRule(null);
+      const deletedIndex = deleteModal.data.index;
+      if (selectedRule?.type === 'override') {
+        if (selectedRule.index === deletedIndex) {
+          setSelectedRule(null);
+        } else if (selectedRule.index > deletedIndex) {
+          setSelectedRule({ type: 'override', index: selectedRule.index - 1 });
+        }
       }
-      removeOverride(deleteModal.data.index);
+      removeOverride(deletedIndex);
     }
     deleteModal.hide();
   };
 
   const getOverrideName = (index: number): string => {
+    if (index >= watchedData.overrides.length) return `Override ${index + 1}`;
     const override = watchedData.overrides[index];
     const appliesTo = override.appliesTo;
 
@@ -234,6 +240,9 @@ export function AccessControlForm({
       </div>
     ) : selectedRule?.type === 'override' ? (
       (() => {
+        if (selectedRule.index >= watchedData.overrides.length) {
+          return null;
+        }
         const override = watchedData.overrides[selectedRule.index];
         const hasNoTargets =
           (override.appliesTo.targetType === 'individual' &&
@@ -312,15 +321,23 @@ export function AccessControlForm({
         />
       </Form>
 
-      <ConfirmationModal
-        show={deleteModal.show}
-        title="Delete override rule"
-        message={`Are you sure you want to delete "${deleteModal.data?.name ?? ''}"? This action cannot be undone.`}
-        confirmText="Delete"
-        confirmVariant="danger"
-        onConfirm={handleDeleteConfirm}
-        onCancel={deleteModal.hide}
-      />
+      <Modal show={deleteModal.show} onHide={deleteModal.hide}>
+        <Modal.Header closeButton>
+          <Modal.Title>Delete override rule</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to delete &quot;{deleteModal.data?.name ?? ''}&quot;? This action
+          cannot be undone.
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={deleteModal.hide}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDeleteConfirm}>
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </FormProvider>
   );
 }

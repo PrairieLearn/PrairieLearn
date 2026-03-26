@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { hydrateHtml } from '@prairielearn/react/server';
+import { Hydrate } from '@prairielearn/react/server';
 
 import { CommentPopoverHtml } from '../../components/CommentPopover.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import type { AssessmentMigrationAnalysis } from '../../lib/access-control-migration.js';
+import type { AssessmentMigrationAnalysis } from '../../lib/assessment-access-control/migration.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
@@ -14,7 +14,7 @@ import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-import { AccessControl } from './components/AccessControl.js';
+import { AssessmentAccessControl } from './components/AssessmentAccessControl.js';
 import type { AccessControlJsonWithId } from './components/types.js';
 
 export const AssessmentAccessRulesSchema = z.object({
@@ -315,17 +315,18 @@ export function InstructorAssessmentAccessNew({
     },
     options: {
       fullWidth: true,
+      contentPadding: false,
     },
-    content: html`
-      ${hydrateHtml(
-        <AccessControl
+    content: (
+      <Hydrate>
+        <AssessmentAccessControl
           courseInstance={pageContext.course_instance}
           csrfToken={trpcCsrfToken}
           origHash={origHash}
           assessmentId={resLocals.assessment.id}
           initialData={initialData}
-        />,
-      )}
-    `,
+        />
+      </Hydrate>
+    ),
   });
 }

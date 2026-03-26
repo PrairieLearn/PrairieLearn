@@ -1,22 +1,56 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AccessControlJson } from '../schemas/accessControl.js';
+import type { AccessControlJson } from '../../schemas/accessControl.js';
 
 import {
   type AccessControlResolverInput,
   type AccessControlRuleInput,
+  type EnrollmentContext,
   type PrairieTestReservation,
-  type StudentContext,
+  type RuntimeAccessControl,
   cascadeOverrides,
   formatDateShort,
   mergeRules,
   resolveAccessControl,
   resolveVisibility,
-} from './access-control-resolver.js';
+} from './resolver.js';
+
+/**
+ * Converts an `AccessControlJson` (string dates) to `RuntimeAccessControl`
+ * (Date dates) for use in tests.
+ */
+function toRuntime(json: AccessControlJson): RuntimeAccessControl {
+  const { dateControl, afterComplete, ...rest } = json;
+  const result: RuntimeAccessControl = { ...rest };
+  if (dateControl) {
+    const { releaseDate, dueDate, ...dcRest } = dateControl;
+    result.dateControl = {
+      ...dcRest,
+      releaseDate:
+        releaseDate !== undefined
+          ? releaseDate !== null
+            ? new Date(releaseDate)
+            : null
+          : undefined,
+      dueDate: dueDate !== undefined ? (dueDate !== null ? new Date(dueDate) : null) : undefined,
+    };
+  }
+  if (afterComplete) {
+    const { showQuestionsAgainDate, hideQuestionsAgainDate, showScoreAgainDate, ...acRest } =
+      afterComplete;
+    result.afterComplete = {
+      ...acRest,
+      showQuestionsAgainDate: showQuestionsAgainDate ? new Date(showQuestionsAgainDate) : undefined,
+      hideQuestionsAgainDate: hideQuestionsAgainDate ? new Date(hideQuestionsAgainDate) : undefined,
+      showScoreAgainDate: showScoreAgainDate ? new Date(showScoreAgainDate) : undefined,
+    };
+  }
+  return result;
+}
 
 function makeMainRule(rule: AccessControlJson = {}): AccessControlRuleInput {
   return {
-    rule,
+    rule: toRuntime(rule),
     number: 0,
     targetType: 'none',
     enrollmentIds: [],
@@ -31,7 +65,7 @@ function makeOverrideRule(
   opts: Partial<Omit<AccessControlRuleInput, 'rule' | 'number'>> = {},
 ): AccessControlRuleInput {
   return {
-    rule,
+    rule: toRuntime(rule),
     number,
     targetType: opts.targetType ?? 'enrollment',
     enrollmentIds: opts.enrollmentIds ?? [],
@@ -40,14 +74,14 @@ function makeOverrideRule(
   };
 }
 
-const defaultStudent: StudentContext = {
+const defaultEnrollment: EnrollmentContext = {
   enrollmentId: 'enroll-1',
   studentLabelIds: ['label-1'],
 };
 
 const baseInput: AccessControlResolverInput = {
   rules: [makeMainRule()],
-  student: defaultStudent,
+  enrollment: defaultEnrollment,
   date: new Date('2025-03-15T12:00:00Z'),
   displayTimezone: 'America/Chicago',
   authzMode: 'Public',
@@ -227,7 +261,7 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(false);
     });
 
-    it('returns listBeforeRelease when set and before release', () => {
+    it('returns showBeforeRelease when set and before release', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -242,11 +276,11 @@ describe('resolveAccessControl', () => {
         date: new Date('2025-03-15T12:00:00Z'),
       });
       expect(result.authorized).toBe(true);
-      expect(result.listBeforeRelease).toBe(true);
+      expect(result.showBeforeRelease).toBe(true);
       expect(result.active).toBe(false);
     });
 
-    it('does not set listBeforeRelease after release', () => {
+    it('does not set showBeforeRelease after release', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -260,7 +294,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T12:00:00Z'),
       });
-      expect(result.listBeforeRelease).toBe(false);
+      expect(result.showBeforeRelease).toBe(false);
     });
 
     it('handles dateControl without releaseDate as no date-based access (0 credit)', () => {
@@ -331,7 +365,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       });
       // Override extends due date, so at 2025-03-15 we should have 100% credit
       // with next deadline at 2025-05-01
@@ -352,7 +386,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-other'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
         date: new Date('2025-03-15T00:00:00Z'),
       });
       // No override match, so main rule's due date (March 10) applies, we're past it
@@ -373,7 +407,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: null, studentLabelIds: [] },
+        enrollment: null,
         date: new Date('2025-03-15T00:00:00Z'),
       });
       expect(result.credit).toBe(0);
@@ -394,7 +428,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'student_label', studentLabelIds: ['label-1', 'label-2'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
       });
       expect(result.credit).toBe(100);
     });
@@ -412,7 +446,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'student_label', studentLabelIds: ['label-other'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
         date: new Date('2025-03-15T00:00:00Z'),
       });
       expect(result.credit).toBe(0);
@@ -438,7 +472,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       });
       // Both overrides apply, second (due July 1 UTC = Jun 30 CDT) wins
       expect(result.credit).toBe(100);
@@ -463,7 +497,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       });
       // Second override (due July 1 UTC = Jun 30 CDT) wins via cascade
       expect(result.creditDateString).toContain('Jun 30');
@@ -489,7 +523,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'student_label', studentLabelIds: ['label-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
       });
       // Enrollment override (due June 1 UTC = May 31 CDT) wins over student label (July 1)
       expect(result.creditDateString).toContain('May 31');
@@ -513,7 +547,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
       });
       // Enrollment override should win despite student_label having lower number
       expect(result.creditDateString).toContain('May 31');
@@ -537,7 +571,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'student_label', studentLabelIds: ['label-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
       });
       // Only student label override matches (due July 1 UTC = Jun 30 CDT)
       expect(result.creditDateString).toContain('Jun 30');
@@ -561,7 +595,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       });
       // Both apply via cascading, second (number=2, due Aug 1 UTC = Jul 31 CDT) wins
       expect(result.creditDateString).toContain('Jul 31');
@@ -587,7 +621,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
       });
       // student_label sets dueDate, enrollment sets password — both should apply
       expect(result.password).toBe('override-pw');
@@ -615,7 +649,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       });
       expect(result.password).toBe('secret123');
       expect(result.credit).toBe(100);
@@ -638,7 +672,7 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       });
       expect(result.password).toBe('override-pass');
     });
@@ -789,7 +823,9 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           {
-            rule: { dateControl: { durationMinutes: 60, dueDate: '2025-04-01T00:00:00Z' } },
+            rule: toRuntime({
+              dateControl: { durationMinutes: 60, dueDate: '2025-04-01T00:00:00Z' },
+            }),
             number: 0,
             targetType: 'none',
             enrollmentIds: [],
@@ -1162,7 +1198,7 @@ describe('resolveAccessControl', () => {
     );
   });
 
-  describe('listBeforeRelease edge cases', () => {
+  describe('showBeforeRelease edge cases', () => {
     it('lists assessment normally when listBeforeRelease set without dateControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
@@ -1171,7 +1207,7 @@ describe('resolveAccessControl', () => {
       // No dateControl → no release date concept → assessment just listed
       expect(result.authorized).toBe(true);
       // Not "before release" since there's no release
-      expect(result.listBeforeRelease).toBe(false);
+      expect(result.showBeforeRelease).toBe(false);
     });
 
     it('lists assessment normally when dateControl has no releaseDate', () => {
@@ -1188,96 +1224,105 @@ describe('resolveAccessControl', () => {
       });
       // dateControl exists but no releaseDate → always available
       expect(result.authorized).toBe(true);
-      expect(result.listBeforeRelease).toBe(false);
+      expect(result.showBeforeRelease).toBe(false);
     });
   });
 });
 
 describe('mergeRules', () => {
   it('returns main rule when override is null', () => {
-    const main: AccessControlJson = { listBeforeRelease: true };
+    const main = toRuntime({ listBeforeRelease: true });
     expect(mergeRules(main, null)).toEqual(main);
   });
 
   it('preserves main dateControl fields not in override', () => {
     const result = mergeRules(
-      { dateControl: { dueDate: '2025-04-01T00:00:00Z', password: 'secret' } },
-      { dateControl: { dueDate: '2025-05-01T00:00:00Z' } },
+      toRuntime({ dateControl: { dueDate: '2025-04-01T00:00:00Z', password: 'secret' } }),
+      toRuntime({ dateControl: { dueDate: '2025-05-01T00:00:00Z' } }),
     );
-    expect(result.dateControl?.dueDate).toBe('2025-05-01T00:00:00Z');
+    expect(result.dateControl?.dueDate).toEqual(new Date('2025-05-01T00:00:00Z'));
     expect(result.dateControl?.password).toBe('secret');
   });
 
   it('does not mutate main rule', () => {
-    const main: AccessControlJson = {
+    const main = toRuntime({
       dateControl: { dueDate: '2025-04-01T00:00:00Z' },
-    };
-    mergeRules(main, { dateControl: { dueDate: '2025-05-01T00:00:00Z' } });
-    expect(main.dateControl?.dueDate).toBe('2025-04-01T00:00:00Z');
+    });
+    mergeRules(main, toRuntime({ dateControl: { dueDate: '2025-05-01T00:00:00Z' } }));
+    expect(main.dateControl?.dueDate).toEqual(new Date('2025-04-01T00:00:00Z'));
   });
 
   it('sets dateControl from override when main has none', () => {
-    const result = mergeRules({}, { dateControl: { dueDate: '2025-05-01T00:00:00Z' } });
-    expect(result.dateControl?.dueDate).toBe('2025-05-01T00:00:00Z');
+    const result = mergeRules(
+      toRuntime({}),
+      toRuntime({ dateControl: { dueDate: '2025-05-01T00:00:00Z' } }),
+    );
+    expect(result.dateControl?.dueDate).toEqual(new Date('2025-05-01T00:00:00Z'));
   });
 
   it('sets afterComplete from override when main has none', () => {
-    const result = mergeRules({}, { afterComplete: { hideQuestions: true } });
+    const result = mergeRules(toRuntime({}), toRuntime({ afterComplete: { hideQuestions: true } }));
     expect(result.afterComplete?.hideQuestions).toBe(true);
   });
 
   it('merges afterComplete fields', () => {
     const result = mergeRules(
-      { afterComplete: { hideQuestions: true, hideScore: true } },
-      { afterComplete: { hideQuestions: false } },
+      toRuntime({ afterComplete: { hideQuestions: true, hideScore: true } }),
+      toRuntime({ afterComplete: { hideQuestions: false } }),
     );
     expect(result.afterComplete?.hideQuestions).toBe(false);
     expect(result.afterComplete?.hideScore).toBe(true);
   });
 
-  it.each<{ field: keyof AccessControlJson; main: AccessControlJson }>([
-    { field: 'name', main: { name: 'Main Rule' } },
+  it.each<{ field: keyof RuntimeAccessControl; main: AccessControlJson }>([
     { field: 'labels', main: { labels: ['group-a'] } },
     { field: 'integrations', main: { integrations: { prairieTest: { exams: [] } } } },
   ])('does not inherit $field from main', ({ field, main }) => {
-    const result = mergeRules(main, {});
+    const result = mergeRules(toRuntime(main), toRuntime({}));
     expect(result[field]).toBeUndefined();
   });
 
   it('inherits releaseDate from main when override does not set it', () => {
     const result = mergeRules(
-      { dateControl: { releaseDate: '2025-03-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' } },
-      { dateControl: { dueDate: '2025-05-01T00:00:00Z' } },
+      toRuntime({
+        dateControl: { releaseDate: '2025-03-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' },
+      }),
+      toRuntime({ dateControl: { dueDate: '2025-05-01T00:00:00Z' } }),
     );
-    expect(result.dateControl?.releaseDate).toBe('2025-03-01T00:00:00Z');
-    expect(result.dateControl?.dueDate).toBe('2025-05-01T00:00:00Z');
+    expect(result.dateControl?.releaseDate).toEqual(new Date('2025-03-01T00:00:00Z'));
+    expect(result.dateControl?.dueDate).toEqual(new Date('2025-05-01T00:00:00Z'));
   });
 
   it('override can set releaseDate to null to block date-based access', () => {
     const result = mergeRules(
-      { dateControl: { releaseDate: '2025-03-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' } },
-      { dateControl: { releaseDate: null } },
+      toRuntime({
+        dateControl: { releaseDate: '2025-03-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' },
+      }),
+      toRuntime({ dateControl: { releaseDate: null } }),
     );
     expect(result.dateControl?.releaseDate).toBeNull();
-    expect(result.dateControl?.dueDate).toBe('2025-04-01T00:00:00Z');
+    expect(result.dateControl?.dueDate).toEqual(new Date('2025-04-01T00:00:00Z'));
   });
 
   it('inherits afterComplete from main when override has none', () => {
-    const result = mergeRules({ afterComplete: { hideQuestions: true } }, {});
+    const result = mergeRules(toRuntime({ afterComplete: { hideQuestions: true } }), toRuntime({}));
     expect(result.afterComplete?.hideQuestions).toBe(true);
   });
 
   it('inherits dateControl sub-fields from main when override has none', () => {
     const result = mergeRules(
-      { dateControl: { dueDate: '2025-04-01T00:00:00Z', password: 'secret' } },
-      {},
+      toRuntime({ dateControl: { dueDate: '2025-04-01T00:00:00Z', password: 'secret' } }),
+      toRuntime({}),
     );
-    expect(result.dateControl?.dueDate).toBe('2025-04-01T00:00:00Z');
+    expect(result.dateControl?.dueDate).toEqual(new Date('2025-04-01T00:00:00Z'));
     expect(result.dateControl?.password).toBe('secret');
   });
 
   it('ignores listBeforeRelease on overrides', () => {
-    const result = mergeRules({ listBeforeRelease: false }, { listBeforeRelease: true });
+    const result = mergeRules(
+      toRuntime({ listBeforeRelease: false }),
+      toRuntime({ listBeforeRelease: true }),
+    );
     expect(result.listBeforeRelease).toBe(false);
   });
 });
@@ -1285,38 +1330,41 @@ describe('mergeRules', () => {
 describe('cascadeOverrides', () => {
   it('merges dateControl sub-fields from base and next', () => {
     const result = cascadeOverrides(
-      { dateControl: { dueDate: '2025-04-01', password: 'pw1' } },
-      { dateControl: { dueDate: '2025-05-01' } },
+      toRuntime({ dateControl: { dueDate: '2025-04-01T00:00:00Z', password: 'pw1' } }),
+      toRuntime({ dateControl: { dueDate: '2025-05-01T00:00:00Z' } }),
     );
-    expect(result.dateControl?.dueDate).toBe('2025-05-01');
+    expect(result.dateControl?.dueDate).toEqual(new Date('2025-05-01T00:00:00Z'));
     expect(result.dateControl?.password).toBe('pw1');
   });
 
   it('inherits all dateControl from base when next has none', () => {
     const result = cascadeOverrides(
-      { dateControl: { dueDate: '2025-04-01', password: 'pw1' } },
-      {},
+      toRuntime({ dateControl: { dueDate: '2025-04-01T00:00:00Z', password: 'pw1' } }),
+      toRuntime({}),
     );
-    expect(result.dateControl?.dueDate).toBe('2025-04-01');
+    expect(result.dateControl?.dueDate).toEqual(new Date('2025-04-01T00:00:00Z'));
     expect(result.dateControl?.password).toBe('pw1');
   });
 
   it('sets dateControl from next when base has none', () => {
-    const result = cascadeOverrides({}, { dateControl: { dueDate: '2025-05-01' } });
-    expect(result.dateControl?.dueDate).toBe('2025-05-01');
+    const result = cascadeOverrides(
+      toRuntime({}),
+      toRuntime({ dateControl: { dueDate: '2025-05-01T00:00:00Z' } }),
+    );
+    expect(result.dateControl?.dueDate).toEqual(new Date('2025-05-01T00:00:00Z'));
   });
 
   it('merges afterComplete sub-fields', () => {
     const result = cascadeOverrides(
-      { afterComplete: { hideQuestions: true, hideScore: true } },
-      { afterComplete: { hideQuestions: false } },
+      toRuntime({ afterComplete: { hideQuestions: true, hideScore: true } }),
+      toRuntime({ afterComplete: { hideQuestions: false } }),
     );
     expect(result.afterComplete?.hideQuestions).toBe(false);
     expect(result.afterComplete?.hideScore).toBe(true);
   });
 
   it('does not carry listBeforeRelease through cascaded overrides', () => {
-    const result = cascadeOverrides({ listBeforeRelease: true }, {});
+    const result = cascadeOverrides(toRuntime({ listBeforeRelease: true }), toRuntime({}));
     expect(result.listBeforeRelease).toBeUndefined();
   });
 });
@@ -1337,21 +1385,33 @@ describe('resolveVisibility', () => {
   });
 
   it('returns true when past show-again date', () => {
-    expect(resolveVisibility(true, '2025-03-10T00:00:00Z', undefined, now)).toBe(true);
+    expect(resolveVisibility(true, new Date('2025-03-10T00:00:00Z'), undefined, now)).toBe(true);
   });
 
   it('returns false when before show-again date', () => {
-    expect(resolveVisibility(true, '2025-03-20T00:00:00Z', undefined, now)).toBe(false);
+    expect(resolveVisibility(true, new Date('2025-03-20T00:00:00Z'), undefined, now)).toBe(false);
   });
 
   it('returns false when past hide-again date', () => {
-    expect(resolveVisibility(true, '2025-03-10T00:00:00Z', '2025-03-14T00:00:00Z', now)).toBe(
-      false,
-    );
+    expect(
+      resolveVisibility(
+        true,
+        new Date('2025-03-10T00:00:00Z'),
+        new Date('2025-03-14T00:00:00Z'),
+        now,
+      ),
+    ).toBe(false);
   });
 
   it('returns true when past show-again but before hide-again', () => {
-    expect(resolveVisibility(true, '2025-03-10T00:00:00Z', '2025-03-20T00:00:00Z', now)).toBe(true);
+    expect(
+      resolveVisibility(
+        true,
+        new Date('2025-03-10T00:00:00Z'),
+        new Date('2025-03-20T00:00:00Z'),
+        now,
+      ),
+    ).toBe(true);
   });
 });
 

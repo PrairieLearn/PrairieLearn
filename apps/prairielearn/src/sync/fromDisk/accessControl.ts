@@ -3,15 +3,14 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { StudentLabelSchema } from '../../lib/db-types.js';
-import type { AccessControlJson } from '../../schemas/accessControl.js';
+import { type AccessControlJson, MAX_ACCESS_CONTROL_RULES } from '../../schemas/accessControl.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * Maps a JSON field value to database overridden/value pair.
- * - undefined → overridden: false, value: null (inherit from previous rule)
- * - null → overridden: true, value: null (override and unset)
- * - value → overridden: true, value: value (override and set)
+ * `undefined` means "not specified" (inherit from parent rule); any other
+ * value (including `null`) means "explicitly overridden".
  */
 function mapField<T>(jsonValue: T | null | undefined): {
   overridden: boolean;
@@ -19,16 +18,45 @@ function mapField<T>(jsonValue: T | null | undefined): {
 } {
   if (jsonValue === undefined) {
     return { overridden: false, value: null };
-  } else if (jsonValue === null) {
-    return { overridden: true, value: null };
-  } else {
-    return { overridden: true, value: jsonValue };
   }
+  return { overridden: true, value: jsonValue };
 }
 
 const JSON_RULE_START = 0;
-const MAX_JSON_RULES = 1000;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Validates a single access control rule for duplicate deadlines and exam UUIDs.
+ * Returns an error string if validation fails, or null if the rule is valid.
+ */
+export function validateRule(rule: AccessControlJson): string | null {
+  const exams = rule.integrations?.prairieTest?.exams ?? [];
+  const seenUuids = new Set<string>();
+  for (const e of exams) {
+    if (seenUuids.has(e.examUuid)) {
+      return `Duplicate PrairieTest exam UUID: ${e.examUuid}.`;
+    }
+    seenUuids.add(e.examUuid);
+  }
+
+  const earlyDates = new Set<string>();
+  for (const d of rule.dateControl?.earlyDeadlines ?? []) {
+    if (earlyDates.has(d.date)) {
+      return `Duplicate early deadline date: ${d.date}.`;
+    }
+    earlyDates.add(d.date);
+  }
+
+  const lateDates = new Set<string>();
+  for (const d of rule.dateControl?.lateDeadlines ?? []) {
+    if (lateDates.has(d.date)) {
+      return `Duplicate late deadline date: ${d.date}.`;
+    }
+    lateDates.add(d.date);
+  }
+
+  return null;
+}
 
 /**
  * Validates and prepares rules for a single assessment. Returns an error
@@ -41,15 +69,15 @@ function validateAssessmentRules(
 ): string | null {
   if (rules.length === 0) return null;
 
-  if (rules.length > MAX_JSON_RULES) {
-    return `Too many access control rules: ${rules.length}. Maximum allowed is ${MAX_JSON_RULES}.`;
+  if (rules.length > MAX_ACCESS_CONTROL_RULES) {
+    return `Too many access control rules: ${rules.length}. Maximum allowed is ${MAX_ACCESS_CONTROL_RULES}.`;
   }
 
   // Keep label validation here even though course-db validates it earlier.
   // If the course instance config is invalid, course-db skips label existence
   // checks to avoid cascading errors, and student label syncing is skipped.
   // We still need to reject labels missing from the database here so that
-  // label-targeted rules are not silently treated as assignment-level rules.
+  // label-targeted rules are not silently treated as main rules.
   for (const [index, rule] of rules.entries()) {
     if (index > 0 && rule.listBeforeRelease !== undefined) {
       return 'listBeforeRelease can only be specified on the main rule.';
@@ -81,30 +109,8 @@ function validateAssessmentRules(
   }
 
   for (const rule of rules) {
-    const exams = rule.integrations?.prairieTest?.exams ?? [];
-    const seenUuids = new Set<string>();
-    for (const e of exams) {
-      if (seenUuids.has(e.examUuid)) {
-        return `Duplicate PrairieTest exam UUID: ${e.examUuid}.`;
-      }
-      seenUuids.add(e.examUuid);
-    }
-
-    const earlyDates = new Set<string>();
-    for (const d of rule.dateControl?.earlyDeadlines ?? []) {
-      if (earlyDates.has(d.date)) {
-        return `Duplicate early deadline date: ${d.date}.`;
-      }
-      earlyDates.add(d.date);
-    }
-
-    const lateDates = new Set<string>();
-    for (const d of rule.dateControl?.lateDeadlines ?? []) {
-      if (lateDates.has(d.date)) {
-        return `Duplicate late deadline date: ${d.date}.`;
-      }
-      lateDates.add(d.date);
-    }
+    const ruleError = validateRule(rule);
+    if (ruleError) return ruleError;
   }
 
   const assessmentInvalidUuids: string[] = [];

@@ -26,7 +26,7 @@ import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
-import { applyMigrationToAssessmentFile } from './access-control-migration.js';
+import { applyMigrationToAssessmentFile } from './assessment-access-control/migration.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import type { StaffCourse } from './client/safe-db-types.js';
@@ -57,12 +57,7 @@ async function syncCourseFromDisk(
 ) {
   const endGitHash = await getCourseCommitHash(course.path);
 
-  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(
-    course.id,
-    course.path,
-    job,
-    courseData,
-  );
+  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course, job, courseData);
 
   if (syncResult.status === 'sharing_error') {
     throw new Error('Sync completely failed due to invalid question sharing edit.');
@@ -299,7 +294,7 @@ export abstract class Editor {
             this.course.path,
           );
           const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
-            this.course.id,
+            this.course,
             possibleCourseData,
             job,
           );

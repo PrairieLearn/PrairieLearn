@@ -110,7 +110,7 @@ function mergeAndValidatePreferences(
 function getParamsForAssessment(
   assessmentInfoFile: AssessmentInfoFile,
   questionIds: Record<string, any>,
-  hasEnhancedAccessControl: boolean,
+  enhancedAccessControlEnabled: boolean,
 ) {
   if (infofile.hasErrors(assessmentInfoFile)) return null;
   const assessment = assessmentInfoFile.data;
@@ -438,7 +438,7 @@ function getParamsForAssessment(
     json_can_view: groups.rolePermissions.canView,
     json_can_submit: groups.rolePermissions.canSubmit,
     modern_access_control:
-      hasEnhancedAccessControl &&
+      enhancedAccessControlEnabled &&
       allowAccess.length === 0 &&
       (assessment.accessControl?.length ?? 0) > 0,
     allowAccess,
@@ -501,7 +501,7 @@ export async function sync(
   courseInstanceId: string,
   courseInstanceData: CourseInstanceData,
   questionIds: Record<string, any>,
-  hasEnhancedAccessControl: boolean,
+  enhancedAccessControlEnabled: boolean,
 ) {
   const assessments = courseInstanceData.assessments;
 
@@ -551,7 +551,7 @@ export async function sync(
   }
 
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
-    const params = getParamsForAssessment(assessment, questionIds, hasEnhancedAccessControl);
+    const params = getParamsForAssessment(assessment, questionIds, enhancedAccessControlEnabled);
     return JSON.stringify([
       tid,
       assessment.uuid,

@@ -80,7 +80,7 @@ describe('Valid configs', () => {
     // Example 7: Extended time override
     [
       {
-        // Assignment-level (no targets)
+        // Main rule (no targets)
         dateControl: {
           releaseDate: '2024-03-14T00:01:00',
           dueDate: '2024-03-21T23:59:00',
@@ -142,29 +142,27 @@ describe('Valid configs', () => {
     );
 
     parsedAccessControlExamples.forEach((rules, exampleIndex) => {
-      const results = validateAccessControlArray({
+      const result = validateAccessControlArray({
         accessControlJsonArray: rules,
       });
 
-      results.forEach((result, ruleIndex) => {
-        assert.deepEqual(
-          result.errors,
-          [],
-          `Expected no errors for example ${exampleIndex}, rule ${ruleIndex}, but got: ${result.errors.join(', ')}`,
-        );
-        assert.deepEqual(
-          result.warnings,
-          [],
-          `Expected no warnings for example ${exampleIndex}, rule ${ruleIndex}, but got: ${result.warnings.join(', ')}`,
-        );
-      });
+      assert.deepEqual(
+        result.errors,
+        [],
+        `Expected no errors for example ${exampleIndex}, but got: ${result.errors.join(', ')}`,
+      );
+      assert.deepEqual(
+        result.warnings,
+        [],
+        `Expected no warnings for example ${exampleIndex}, but got: ${result.warnings.join(', ')}`,
+      );
     });
   });
 });
 
-describe('Assignment-level rule requirement', () => {
-  it('should fail validation when no assignment-level rule exists', () => {
-    const rulesWithoutAssignmentLevel: AccessControlJsonInput[] = [
+describe('Main rule requirement', () => {
+  it('should fail validation when no main rule exists', () => {
+    const rulesWithoutMain: AccessControlJsonInput[] = [
       {
         labels: ['student1'],
         dateControl: {
@@ -179,25 +177,22 @@ describe('Assignment-level rule requirement', () => {
       },
     ];
 
-    const parsedRules: AccessControlJson[] = rulesWithoutAssignmentLevel.map((rule) =>
+    const parsedRules: AccessControlJson[] = rulesWithoutMain.map((rule) =>
       AccessControlJsonSchema.parse(rule),
     );
-    const results = validateAccessControlArray({
+    const result = validateAccessControlArray({
       accessControlJsonArray: parsedRules,
     });
 
+    assert.isTrue(result.errors.length > 0, 'Expected error when no main rule exists');
     assert.isTrue(
-      results[0].errors.length > 0,
-      'Expected error when no assignment-level rule exists',
-    );
-    assert.isTrue(
-      results[0].errors.some((err) => err.includes('No assignment-level rule found')),
-      `Expected "No assignment-level rule found" error, but got: ${results[0].errors.join(', ')}`,
+      result.errors.some((err) => err.includes('No main rule found')),
+      `Expected "No main rule found" error, but got: ${result.errors.join(', ')}`,
     );
   });
 
-  it('should fail validation when multiple assignment-level rules exist', () => {
-    const rulesWithMultipleAssignmentLevel: AccessControlJsonInput[] = [
+  it('should fail validation when multiple main rules exist', () => {
+    const rulesWithMultipleMain: AccessControlJsonInput[] = [
       {
         dateControl: {
           releaseDate: '2024-03-14T00:01:00',
@@ -212,25 +207,22 @@ describe('Assignment-level rule requirement', () => {
       },
     ];
 
-    const parsedRules: AccessControlJson[] = rulesWithMultipleAssignmentLevel.map((rule) =>
+    const parsedRules: AccessControlJson[] = rulesWithMultipleMain.map((rule) =>
       AccessControlJsonSchema.parse(rule),
     );
-    const results = validateAccessControlArray({
+    const result = validateAccessControlArray({
       accessControlJsonArray: parsedRules,
     });
 
+    assert.isTrue(result.errors.length > 0, 'Expected error when multiple main rules exist');
     assert.isTrue(
-      results[0].errors.length > 0,
-      'Expected error when multiple assignment-level rules exist',
-    );
-    assert.isTrue(
-      results[0].errors.some((err) => err.includes('Found 2 assignment-level rules')),
-      `Expected "Found 2 assignment-level rules" error, but got: ${results[0].errors.join(', ')}`,
+      result.errors.some((err) => err.includes('Found 2 main rules')),
+      `Expected "Found 2 main rules" error, but got: ${result.errors.join(', ')}`,
     );
   });
 
-  it('should pass validation with exactly one assignment-level rule', () => {
-    const rulesWithOneAssignmentLevel: AccessControlJsonInput[] = [
+  it('should pass validation with exactly one main rule', () => {
+    const rulesWithOneMain: AccessControlJsonInput[] = [
       {
         dateControl: {
           releaseDate: '2024-03-14T00:01:00',
@@ -239,18 +231,14 @@ describe('Assignment-level rule requirement', () => {
       },
     ];
 
-    const parsedRules: AccessControlJson[] = rulesWithOneAssignmentLevel.map((rule) =>
+    const parsedRules: AccessControlJson[] = rulesWithOneMain.map((rule) =>
       AccessControlJsonSchema.parse(rule),
     );
-    const results = validateAccessControlArray({
+    const result = validateAccessControlArray({
       accessControlJsonArray: parsedRules,
     });
 
-    assert.equal(
-      results[0].errors.length,
-      0,
-      'Should have no errors with one assignment-level rule',
-    );
+    assert.equal(result.errors.length, 0, 'Should have no errors with one main rule');
   });
 
   it('should fail validation when an override specifies listBeforeRelease', () => {
@@ -272,13 +260,13 @@ describe('Assignment-level rule requirement', () => {
     ];
 
     const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
-    const results = validateAccessControlArray({
+    const result = validateAccessControlArray({
       accessControlJsonArray: parsedRules,
     });
 
     assert.isTrue(
-      results[1].errors.some((err) => err.includes('listBeforeRelease can only be specified')),
-      `Expected listBeforeRelease validation error, but got: ${results[1].errors.join(', ')}`,
+      result.errors.some((err) => err.includes('listBeforeRelease can only be specified')),
+      `Expected listBeforeRelease validation error, but got: ${result.errors.join(', ')}`,
     );
   });
 });
@@ -305,14 +293,10 @@ describe('Date fields without seconds', () => {
     assert.equal(parsed.dateControl?.lateDeadlines?.[0].date, '2024-03-23T23:59:00');
     assert.equal(parsed.afterComplete?.showQuestionsAgainDate, '2024-03-25T12:00:00');
 
-    const results = validateAccessControlArray({
+    const result = validateAccessControlArray({
       accessControlJsonArray: [parsed],
     });
-    assert.deepEqual(
-      results[0].errors,
-      [],
-      `Expected no errors, but got: ${results[0].errors.join(', ')}`,
-    );
+    assert.deepEqual(result.errors, [], `Expected no errors, but got: ${result.errors.join(', ')}`);
   });
 
   it('should still accept dates with seconds', () => {
@@ -328,14 +312,10 @@ describe('Date fields without seconds', () => {
     assert.equal(parsed.dateControl?.releaseDate, '2024-03-14T00:01:00');
     assert.equal(parsed.dateControl?.dueDate, '2024-03-21T23:59:00');
 
-    const results = validateAccessControlArray({
+    const result = validateAccessControlArray({
       accessControlJsonArray: [parsed],
     });
-    assert.deepEqual(
-      results[0].errors,
-      [],
-      `Expected no errors, but got: ${results[0].errors.join(', ')}`,
-    );
+    assert.deepEqual(result.errors, [], `Expected no errors, but got: ${result.errors.join(', ')}`);
   });
 });
 

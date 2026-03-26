@@ -135,6 +135,7 @@ export function InstructorInstanceAdminSettings({
                 id="ciid"
                 aria-invalid={errors.ciid ? 'true' : 'false'}
                 disabled={!canEdit}
+                defaultValue={defaultValues.ciid}
                 required
                 {...register('ciid', {
                   required: 'Short name is required',
@@ -167,6 +168,7 @@ export function InstructorInstanceAdminSettings({
                 id="long_name"
                 disabled={!canEdit}
                 aria-describedby="long_name-help"
+                defaultValue={defaultValues.long_name}
                 required
                 {...register('long_name')}
                 name="long_name"
@@ -182,6 +184,7 @@ export function InstructorInstanceAdminSettings({
               <Form.Select
                 id="display_timezone"
                 disabled={!canEdit}
+                defaultValue={defaultValues.display_timezone}
                 {...register('display_timezone')}
                 name="display_timezone"
               >
@@ -210,6 +213,7 @@ export function InstructorInstanceAdminSettings({
               <Form.Select
                 id="group_assessments_by"
                 disabled={!canEdit}
+                defaultValue={defaultValues.group_assessments_by}
                 {...register('group_assessments_by')}
                 name="group_assessments_by"
               >

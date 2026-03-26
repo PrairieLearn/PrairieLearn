@@ -1,15 +1,5 @@
 import type { z } from 'zod';
 
-import {
-  selectAccessControlRulesForAssessment,
-  selectAccessControlRulesForCourseInstance,
-  selectPrairieTestReservations,
-  selectStudentContext,
-} from './access-control-data.js';
-import {
-  type AccessControlResolverResult,
-  resolveAccessControl,
-} from './access-control-resolver.js';
 import type {
   Assessment,
   CourseInstance,
@@ -18,9 +8,16 @@ import type {
   EnumMode,
   SprocAuthzAssessmentInstanceSchema,
   SprocAuthzAssessmentSchema,
-} from './db-types.js';
-import { getGroupId } from './groups.js';
-import { idsEqual } from './id.js';
+} from '../db-types.js';
+import { getGroupId } from '../groups.js';
+import { idsEqual } from '../id.js';
+
+import {
+  selectAccessControlRulesForAssessment,
+  selectAccessControlRulesForCourseInstance,
+  selectUserAccessContext,
+} from './data.js';
+import { type AccessControlResolverResult, resolveAccessControl } from './resolver.js';
 
 type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 type SprocAuthzAssessmentInstance = z.infer<typeof SprocAuthzAssessmentInstanceSchema>;
@@ -58,27 +55,27 @@ function resolverResultToSprocAuthzAssessment(
     // Only report Exam mode when the student has an active PrairieTest
     // reservation (examAccessEnd is non-null), indicating a live exam session.
     mode: authzMode === 'Exam' && result.examAccessEnd ? 'Exam' : null,
+    show_before_release: result.showBeforeRelease,
     next_active_time: null,
     access_rules: [],
   };
 }
 
-export async function resolveModernAssessmentAccess(
-  input: ModernAssessmentAccessInput,
-): Promise<SprocAuthzAssessment & { list_before_release: boolean }> {
-  const { assessment, userId, courseInstance, authzData, reqDate } = input;
-
-  const [rules, student, prairieTestReservations] = await Promise.all([
+export async function resolveModernAssessmentAccess({
+  assessment,
+  userId,
+  courseInstance,
+  authzData,
+  reqDate,
+}: ModernAssessmentAccessInput): Promise<SprocAuthzAssessment> {
+  const [rules, { enrollment, prairieTestReservations }] = await Promise.all([
     selectAccessControlRulesForAssessment(assessment),
-    selectStudentContext(userId, courseInstance),
-    authzData.mode === 'Exam'
-      ? selectPrairieTestReservations(userId, reqDate)
-      : Promise.resolve([]),
+    selectUserAccessContext(userId, courseInstance, reqDate),
   ]);
 
   const result = resolveAccessControl({
     rules,
-    student,
+    enrollment,
     date: reqDate,
     displayTimezone: courseInstance.display_timezone,
     authzMode: authzData.mode ?? null,
@@ -87,13 +84,10 @@ export async function resolveModernAssessmentAccess(
     prairieTestReservations,
   });
 
-  return {
-    ...resolverResultToSprocAuthzAssessment(result, authzData.mode),
-    list_before_release: result.listBeforeRelease,
-  };
+  return resolverResultToSprocAuthzAssessment(result, authzData.mode);
 }
 
-export interface ModernAssessmentInstanceAccessInput extends ModernAssessmentAccessInput {
+interface ModernAssessmentInstanceAccessInput extends ModernAssessmentAccessInput {
   assessmentInstance: {
     id: string;
     user_id: string | null;
@@ -102,32 +96,22 @@ export interface ModernAssessmentInstanceAccessInput extends ModernAssessmentAcc
   };
 }
 
-export async function resolveModernAssessmentInstanceAccess(
-  input: ModernAssessmentInstanceAccessInput,
-): Promise<SprocAuthzAssessmentInstance & { list_before_release: boolean }> {
-  const assessmentResult = await resolveModernAssessmentAccess(input);
-
-  const { assessment, assessmentInstance, authzData, reqDate } = input;
-
-  const timeLimitExpired =
-    assessmentInstance.date_limit != null && assessmentInstance.date_limit <= reqDate;
-
-  // Determine if the effective user owns this assessment instance.
-  // For group work, check that the user is in an active group matching
-  // the instance's team. For individual work, check that the user_id matches.
-  let ownsInstance: boolean;
-  if (assessment.team_work && assessmentInstance.team_id != null) {
-    const userGroupId = await getGroupId(input.assessment.id, authzData.user.id);
-    ownsInstance = userGroupId != null && idsEqual(userGroupId, assessmentInstance.team_id);
-  } else {
-    ownsInstance = assessmentInstance.user_id === authzData.user.id;
-  }
-
+export function applyInstanceAccess({
+  assessmentResult,
+  ownsInstance,
+  timeLimitExpired,
+  hasCourseInstancePermissionView,
+}: {
+  assessmentResult: SprocAuthzAssessment;
+  ownsInstance: boolean;
+  timeLimitExpired: boolean;
+  hasCourseInstancePermissionView: boolean;
+}): SprocAuthzAssessmentInstance {
   let authorizedEdit = assessmentResult.authorized && ownsInstance;
 
   if (!ownsInstance) {
     authorizedEdit = false;
-    if (!authzData.has_course_instance_permission_view) {
+    if (!hasCourseInstancePermissionView) {
       return {
         ...assessmentResult,
         authorized: false,
@@ -144,6 +128,36 @@ export async function resolveModernAssessmentInstanceAccess(
   };
 }
 
+export async function resolveModernAssessmentInstanceAccess({
+  assessmentInstance,
+  ...assessmentInput
+}: ModernAssessmentInstanceAccessInput): Promise<SprocAuthzAssessmentInstance> {
+  const assessmentResult = await resolveModernAssessmentAccess(assessmentInput);
+
+  const { assessment, authzData, reqDate } = assessmentInput;
+
+  const timeLimitExpired =
+    assessmentInstance.date_limit != null && assessmentInstance.date_limit <= reqDate;
+
+  // Determine if the effective user owns this assessment instance.
+  // For group work, check that the user is in an active group matching
+  // the instance's team. For individual work, check that the user_id matches.
+  let ownsInstance: boolean;
+  if (assessment.team_work && assessmentInstance.team_id != null) {
+    const userGroupId = await getGroupId(assessment.id, authzData.user.id);
+    ownsInstance = userGroupId != null && idsEqual(userGroupId, assessmentInstance.team_id);
+  } else {
+    ownsInstance = assessmentInstance.user_id === authzData.user.id;
+  }
+
+  return applyInstanceAccess({
+    assessmentResult,
+    ownsInstance,
+    timeLimitExpired,
+    hasCourseInstancePermissionView: authzData.has_course_instance_permission_view ?? false,
+  });
+}
+
 interface ModernAssessmentAccessBatchInput {
   courseInstance: CourseInstance;
   userId: string;
@@ -151,25 +165,23 @@ interface ModernAssessmentAccessBatchInput {
   reqDate: Date;
 }
 
-export async function resolveModernAssessmentAccessBatch(
-  input: ModernAssessmentAccessBatchInput,
-): Promise<Map<string, SprocAuthzAssessment & { list_before_release: boolean }>> {
-  const { courseInstance, userId, authzData, reqDate } = input;
-
-  const [allRules, student, prairieTestReservations] = await Promise.all([
+export async function resolveModernAssessmentAccessBatch({
+  courseInstance,
+  userId,
+  authzData,
+  reqDate,
+}: ModernAssessmentAccessBatchInput): Promise<Map<string, SprocAuthzAssessment>> {
+  const [allRules, { enrollment, prairieTestReservations }] = await Promise.all([
     selectAccessControlRulesForCourseInstance(courseInstance),
-    selectStudentContext(userId, courseInstance),
-    authzData.mode === 'Exam'
-      ? selectPrairieTestReservations(userId, reqDate)
-      : Promise.resolve([]),
+    selectUserAccessContext(userId, courseInstance, reqDate),
   ]);
 
-  const results = new Map<string, SprocAuthzAssessment & { list_before_release: boolean }>();
+  const results = new Map<string, SprocAuthzAssessment>();
 
   for (const [assessmentId, rules] of allRules) {
     const result = resolveAccessControl({
       rules,
-      student,
+      enrollment,
       date: reqDate,
       displayTimezone: courseInstance.display_timezone,
       authzMode: authzData.mode ?? null,
@@ -178,10 +190,7 @@ export async function resolveModernAssessmentAccessBatch(
       prairieTestReservations,
     });
 
-    results.set(assessmentId, {
-      ...resolverResultToSprocAuthzAssessment(result, authzData.mode),
-      list_before_release: result.listBeforeRelease,
-    });
+    results.set(assessmentId, resolverResultToSprocAuthzAssessment(result, authzData.mode));
   }
 
   return results;

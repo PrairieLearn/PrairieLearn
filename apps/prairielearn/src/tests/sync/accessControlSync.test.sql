@@ -1,11 +1,3 @@
--- BLOCK insert_user
-INSERT INTO
-  users (uid, name, institution_id)
-VALUES
-  ($uid, $name, $institution_id)
-RETURNING
-  id;
-
 -- BLOCK insert_enrollment
 INSERT INTO
   enrollments (

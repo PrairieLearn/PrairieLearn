@@ -12,14 +12,13 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import {
   analyzeAssessmentFile,
   migrateAssessmentJson,
-} from '../../lib/access-control-migration.js';
-import { fetchAllAccessControlRules } from '../../lib/assessment-access-control.js';
+} from '../../lib/assessment-access-control/migration.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
 import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { handleTrpcError } from '../../lib/trpc.js';
 
 import {
@@ -27,6 +26,7 @@ import {
   InstructorAssessmentAccess,
   InstructorAssessmentAccessNew,
 } from './instructorAssessmentAccess.html.js';
+import { fetchAllAccessControlRules } from './rules.js';
 import { accessControlRouter, computeHash, createContext } from './trpc.js';
 
 const router = Router();
@@ -41,11 +41,9 @@ router.use(
   }),
 );
 
-function getAssessmentPath(resLocals: {
-  course: { path: string };
-  course_instance: { short_name: string | null };
-  assessment: { tid: string | null };
-}): string {
+function getAssessmentPath(
+  resLocals: Pick<ResLocalsForPage<'assessment'>, 'course' | 'course_instance' | 'assessment'>,
+): string {
   return path.join(
     resLocals.course.path,
     'courseInstances',
@@ -59,11 +57,8 @@ function getAssessmentPath(resLocals: {
 router.get(
   '/',
   typedAsyncHandler<'assessment'>(async (req, res) => {
-    const assessmentId = res.locals.assessment.id;
-
-    const jsonRules = await fetchAllAccessControlRules(res.locals.assessment);
-
-    if (jsonRules.length > 0) {
+    if (res.locals.assessment.modern_access_control) {
+      const jsonRules = await fetchAllAccessControlRules(res.locals.assessment);
       const origHash = computeHash(jsonRules);
       const trpcCsrfToken = generatePrefixCsrfToken(
         {
@@ -80,58 +75,59 @@ router.get(
           initialData: jsonRules,
         }),
       );
-    } else {
-      const accessRules = await queryRows(
-        sql.assessment_access_rules,
-        { assessment_id: assessmentId },
-        AssessmentAccessRulesSchema,
-      );
-
-      const assessmentPath = getAssessmentPath(res.locals);
-      const migrationAnalysis = await analyzeAssessmentFile(
-        assessmentPath,
-        res.locals.assessment.tid!,
-      );
-      const origHash = (await getOriginalHash(assessmentPath)) ?? '';
-      const canEdit =
-        res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
-
-      let migrationPreview: {
-        beforeJson: string;
-        afterJson: string;
-        warnings: string[];
-        hasUidRules: boolean;
-      } | null = null;
-
-      if (migrationAnalysis?.canMigrate) {
-        const content = await fs.readFile(assessmentPath, 'utf-8');
-        const parsed = JSON.parse(content);
-        const beforeJson = JSON.stringify(parsed.allowAccess, null, 2);
-
-        const migrationResult = migrateAssessmentJson(content);
-        if (migrationResult) {
-          const migratedParsed = JSON.parse(migrationResult.json);
-          const afterJson = JSON.stringify(migratedParsed.accessControl, null, 2);
-          migrationPreview = {
-            beforeJson,
-            afterJson,
-            warnings: migrationResult.warnings,
-            hasUidRules: migrationAnalysis.hasUidRules,
-          };
-        }
-      }
-
-      res.send(
-        InstructorAssessmentAccess({
-          resLocals: res.locals,
-          accessRules,
-          migrationAnalysis,
-          migrationPreview,
-          origHash,
-          canEdit,
-        }),
-      );
+      return;
     }
+
+    const accessRules = await queryRows(
+      sql.assessment_access_rules,
+      { assessment_id: res.locals.assessment.id },
+      AssessmentAccessRulesSchema,
+    );
+
+    const assessmentPath = getAssessmentPath(res.locals);
+    const migrationAnalysis = await analyzeAssessmentFile(
+      assessmentPath,
+      res.locals.assessment.tid!,
+    );
+    const origHash = (await getOriginalHash(assessmentPath)) ?? '';
+    const canEdit =
+      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
+
+    let migrationPreview: {
+      beforeJson: string;
+      afterJson: string;
+      warnings: string[];
+      hasUidRules: boolean;
+    } | null = null;
+
+    if (migrationAnalysis?.canMigrate) {
+      const content = await fs.readFile(assessmentPath, 'utf-8');
+      const parsed = JSON.parse(content);
+      const beforeJson = JSON.stringify(parsed.allowAccess, null, 2);
+
+      const migrationResult = migrateAssessmentJson(content);
+      if (migrationResult) {
+        const migratedParsed = JSON.parse(migrationResult.json);
+        const afterJson = JSON.stringify(migratedParsed.accessControl, null, 2);
+        migrationPreview = {
+          beforeJson,
+          afterJson,
+          warnings: migrationResult.warnings,
+          hasUidRules: migrationAnalysis.hasUidRules,
+        };
+      }
+    }
+
+    res.send(
+      InstructorAssessmentAccess({
+        resLocals: res.locals,
+        accessRules,
+        migrationAnalysis,
+        migrationPreview,
+        origHash,
+        canEdit,
+      }),
+    );
   }),
 );
 

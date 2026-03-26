@@ -1,9 +1,41 @@
-import type { AccessControlJson } from '../schemas/accessControl.js';
+import type { AccessControlJson } from '../../schemas/accessControl.js';
+import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-types.js';
 
-import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from './db-types.js';
+/**
+ * Runtime version of date control fields. Top-level date columns use `Date`
+ * objects (they come from the database as Date). Deadline entry dates remain
+ * as strings since they are stored as JSON strings in JSONB columns.
+ */
+export interface RuntimeDateControl {
+  releaseDate?: Date | null;
+  dueDate?: Date | null;
+  earlyDeadlines?: { date: string; credit: number }[] | null;
+  lateDeadlines?: { date: string; credit: number }[] | null;
+  afterLastDeadline?: { allowSubmissions?: boolean; credit?: number } | null;
+  durationMinutes?: number | null;
+  password?: string | null;
+}
+
+export interface RuntimeAfterComplete {
+  hideQuestions?: boolean;
+  showQuestionsAgainDate?: Date;
+  hideQuestionsAgainDate?: Date;
+  hideScore?: boolean;
+  showScoreAgainDate?: Date;
+}
+
+/**
+ * Runtime representation of an access control rule, used by the data layer
+ * and resolver. Mirrors `AccessControlJson` but uses `Date` objects for
+ * top-level date fields instead of ISO strings.
+ */
+export type RuntimeAccessControl = Omit<AccessControlJson, 'dateControl' | 'afterComplete'> & {
+  dateControl?: RuntimeDateControl;
+  afterComplete?: RuntimeAfterComplete;
+};
 
 export interface AccessControlRuleInput {
-  rule: AccessControlJson;
+  rule: RuntimeAccessControl;
   number: number;
   targetType: 'none' | 'enrollment' | 'student_label';
   enrollmentIds: string[];
@@ -11,8 +43,8 @@ export interface AccessControlRuleInput {
   prairietestExams: { uuid: string; readOnly: boolean }[];
 }
 
-export interface StudentContext {
-  enrollmentId: string | null;
+export interface EnrollmentContext {
+  enrollmentId: string;
   studentLabelIds: string[];
 }
 
@@ -23,7 +55,7 @@ export interface PrairieTestReservation {
 
 export interface AccessControlResolverInput {
   rules: AccessControlRuleInput[];
-  student: StudentContext;
+  enrollment: EnrollmentContext | null;
   date: Date;
   displayTimezone: string;
   authzMode: EnumMode | null;
@@ -47,7 +79,14 @@ export interface AccessControlResolverResult {
    * student is still in an active exam session (i.e. mode should be 'Exam').
    */
   examAccessEnd: Date | null;
-  listBeforeRelease: boolean;
+  /**
+   * Resolved visibility flag: true when the raw `listBeforeRelease` config
+   * flag is set on the rule AND the current date is actually before the
+   * release date. This is distinct from the raw `listBeforeRelease` property
+   * on the rule JSON — that property is config input, while this is the
+   * computed "should we show this assessment right now?" decision.
+   */
+  showBeforeRelease: boolean;
 }
 
 const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
@@ -60,7 +99,7 @@ const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
   showClosedAssessment: true,
   showClosedAssessmentScore: true,
   examAccessEnd: null,
-  listBeforeRelease: false,
+  showBeforeRelease: false,
 };
 
 const COURSE_ROLE_RANK: Record<EnumCourseRole, number> = {
@@ -88,14 +127,14 @@ function instanceRoleAtLeast(
 }
 
 function mergeDateControl(
-  base: AccessControlJson['dateControl'],
-  override: AccessControlJson['dateControl'],
-): AccessControlJson['dateControl'] {
+  base: RuntimeDateControl | undefined,
+  override: RuntimeDateControl | undefined,
+): RuntimeDateControl | undefined {
   if (!base && !override) return undefined;
   if (!base) return override;
   if (!override) return { ...base };
 
-  const merged: NonNullable<AccessControlJson['dateControl']> = { ...base };
+  const merged: RuntimeDateControl = { ...base };
   const ov = override;
   if (ov.releaseDate !== undefined) merged.releaseDate = ov.releaseDate;
   if (ov.dueDate !== undefined) merged.dueDate = ov.dueDate;
@@ -108,9 +147,9 @@ function mergeDateControl(
 }
 
 function mergeAfterComplete(
-  base: AccessControlJson['afterComplete'],
-  override: AccessControlJson['afterComplete'],
-): AccessControlJson['afterComplete'] {
+  base: RuntimeAfterComplete | undefined,
+  override: RuntimeAfterComplete | undefined,
+): RuntimeAfterComplete | undefined {
   if (!base && !override) return undefined;
   if (!base) return override;
   if (!override) return { ...base };
@@ -131,12 +170,12 @@ function mergeAfterComplete(
 }
 
 export function mergeRules(
-  main: AccessControlJson,
-  override: AccessControlJson | null,
-): AccessControlJson {
+  main: RuntimeAccessControl,
+  override: RuntimeAccessControl | null,
+): RuntimeAccessControl {
   if (!override) return main;
 
-  const merged: AccessControlJson = {};
+  const merged: RuntimeAccessControl = {};
 
   // listBeforeRelease is only configurable on the main rule.
   if (main.listBeforeRelease !== undefined) merged.listBeforeRelease = main.listBeforeRelease;
@@ -151,9 +190,9 @@ export function mergeRules(
  * Cascades two override JSONs where the second wins.
  */
 export function cascadeOverrides(
-  base: AccessControlJson,
-  next: AccessControlJson,
-): AccessControlJson {
+  base: RuntimeAccessControl,
+  next: RuntimeAccessControl,
+): RuntimeAccessControl {
   return {
     dateControl: mergeDateControl(base.dateControl, next.dateControl),
     afterComplete: mergeAfterComplete(base.afterComplete, next.afterComplete),
@@ -170,9 +209,9 @@ interface CreditResult {
 }
 
 function computeCredit(
-  dateControl: AccessControlJson['dateControl'],
+  dateControl: RuntimeDateControl | undefined,
   date: Date,
-  effectiveRule: AccessControlJson,
+  effectiveRule: RuntimeAccessControl,
   authzMode: EnumMode | null,
 ): CreditResult {
   if (!dateControl?.releaseDate) {
@@ -186,10 +225,10 @@ function computeCredit(
     };
   }
 
-  const releaseDate = dateControl.releaseDate ? new Date(dateControl.releaseDate) : null;
-  const dueDate = dateControl.dueDate ? new Date(dateControl.dueDate) : null;
+  const releaseDate = dateControl.releaseDate;
+  const dueDate = dateControl.dueDate ?? null;
 
-  if (releaseDate && date < releaseDate) {
+  if (date < releaseDate) {
     return {
       credit: 0,
       active: false,
@@ -201,7 +240,7 @@ function computeCredit(
   }
 
   // If due date is before release date, access is blocked.
-  if (dueDate && releaseDate && dueDate <= releaseDate) {
+  if (dueDate && dueDate <= releaseDate) {
     return {
       credit: 0,
       active: false,
@@ -220,7 +259,7 @@ function computeCredit(
     for (const entry of dateControl.earlyDeadlines) {
       const entryDate = new Date(entry.date);
       // Filter out early deadlines before release date or after/at due date.
-      if (releaseDate && entryDate <= releaseDate) continue;
+      if (entryDate <= releaseDate) continue;
       if (dueDate && entryDate >= dueDate) continue;
       timeline.push({ date: entryDate, credit: entry.credit });
     }
@@ -234,7 +273,7 @@ function computeCredit(
     for (const entry of dateControl.lateDeadlines) {
       const entryDate = new Date(entry.date);
       // Filter out late deadlines before release date or before/at due date.
-      if (releaseDate && entryDate <= releaseDate) continue;
+      if (entryDate <= releaseDate) continue;
       if (dueDate && entryDate <= dueDate) continue;
       timeline.push({ date: entryDate, credit: entry.credit });
     }
@@ -311,19 +350,19 @@ function computeTimeLimitMin(
 
 export function resolveVisibility(
   hide: boolean | undefined,
-  showAgainDate: string | undefined,
-  hideAgainDate: string | undefined,
+  showAgainDate: Date | undefined,
+  hideAgainDate: Date | undefined,
   date: Date,
 ): boolean {
   if (!hide) return true;
 
   let visible = false;
 
-  if (showAgainDate && date >= new Date(showAgainDate)) {
+  if (showAgainDate && date >= showAgainDate) {
     visible = true;
   }
 
-  if (visible && hideAgainDate && date >= new Date(hideAgainDate)) {
+  if (visible && hideAgainDate && date >= hideAgainDate) {
     visible = false;
   }
 
@@ -377,7 +416,7 @@ export function resolveAccessControl(
 ): AccessControlResolverResult {
   const {
     rules,
-    student,
+    enrollment,
     date,
     displayTimezone,
     authzMode,
@@ -400,7 +439,7 @@ export function resolveAccessControl(
       showClosedAssessment: true,
       showClosedAssessmentScore: true,
       examAccessEnd: null,
-      listBeforeRelease: false,
+      showBeforeRelease: false,
     };
   }
 
@@ -419,22 +458,25 @@ export function resolveAccessControl(
       return a.number - b.number;
     });
 
-  // Collect all matching overrides.
+  // Collect all matching overrides. If the user has no enrollment, no
+  // overrides can match (they target enrollments or student labels).
   const matchedOverrides: AccessControlRuleInput[] = [];
-  for (const rule of overrides) {
-    if (rule.targetType === 'enrollment') {
-      if (student.enrollmentId && rule.enrollmentIds.includes(student.enrollmentId)) {
-        matchedOverrides.push(rule);
-      }
-    } else if (rule.targetType === 'student_label') {
-      if (rule.studentLabelIds.some((id) => student.studentLabelIds.includes(id))) {
-        matchedOverrides.push(rule);
+  if (enrollment) {
+    for (const rule of overrides) {
+      if (rule.targetType === 'enrollment') {
+        if (rule.enrollmentIds.includes(enrollment.enrollmentId)) {
+          matchedOverrides.push(rule);
+        }
+      } else if (rule.targetType === 'student_label') {
+        if (rule.studentLabelIds.some((id) => enrollment.studentLabelIds.includes(id))) {
+          matchedOverrides.push(rule);
+        }
       }
     }
   }
 
   // Cascade all matched overrides, then merge with main rule.
-  let cascadedOverride: AccessControlJson | null = null;
+  let cascadedOverride: RuntimeAccessControl | null = null;
   for (const override of matchedOverrides) {
     cascadedOverride = cascadedOverride
       ? cascadeOverrides(cascadedOverride, override.rule)
@@ -490,14 +532,15 @@ export function resolveAccessControl(
     date,
   );
 
-  // listBeforeRelease is a policy flag on the rule, not derived from credit.
-  // It's only meaningful when we're before the release date.
-  const listBeforeRelease =
+  // Resolve the raw `listBeforeRelease` config flag into a concrete
+  // `showBeforeRelease` boolean: true only when we're actually before the
+  // release date AND the flag is set on the rule.
+  const showBeforeRelease =
     creditResult.beforeRelease && (effectiveRule.listBeforeRelease ?? false);
 
-  // If the assessment is before its release date and listBeforeRelease is false,
+  // If the assessment is before its release date and showBeforeRelease is false,
   // the student should not see or access it at all.
-  if (creditResult.beforeRelease && !listBeforeRelease) {
+  if (creditResult.beforeRelease && !showBeforeRelease) {
     return { ...UNAUTHORIZED_RESULT };
   }
 
@@ -518,6 +561,6 @@ export function resolveAccessControl(
     showClosedAssessment,
     showClosedAssessmentScore,
     examAccessEnd,
-    listBeforeRelease,
+    showBeforeRelease,
   };
 }
