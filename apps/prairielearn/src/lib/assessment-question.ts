@@ -19,10 +19,10 @@ export async function selectAssessmentQuestions({
     StaffAssessmentQuestionSqlSchema,
   );
 
-  const groupCounts: Record<string, number> = {};
+  const poolCounts: Record<string, number> = {};
   for (const row of rows) {
-    const groupId = row.alternative_pool.id;
-    groupCounts[groupId] = (groupCounts[groupId] || 0) + 1;
+    const poolId = row.alternative_pool.id;
+    poolCounts[poolId] = (poolCounts[poolId] || 0) + 1;
   }
   let prevZoneId: string | null = null;
   let prevAltPoolId: string | null = null;
@@ -31,7 +31,7 @@ export async function selectAssessmentQuestions({
   for (const row of rows) {
     const start_new_zone = row.zone.id !== prevZoneId;
     const start_new_alternative_pool = row.alternative_pool.id !== prevAltPoolId;
-    const alternative_pool_size = groupCounts[row.alternative_pool.id];
+    const alternative_pool_size = poolCounts[row.alternative_pool.id];
     result.push(
       StaffAssessmentQuestionRowSchema.parse({
         ...row,

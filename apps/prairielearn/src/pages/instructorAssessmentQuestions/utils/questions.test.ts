@@ -132,7 +132,7 @@ describe('buildHierarchicalAssessment', () => {
     expect(result[0].questions[1].id).toBe('q2');
   });
 
-  it('groups alternatives within the same alternative pool', () => {
+  it('collects alternatives within the same alternative pool', () => {
     const rows: StaffAssessmentQuestionRow[] = [
       {
         question: { qid: 'alt1', course_id: 'course-1' },
