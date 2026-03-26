@@ -547,48 +547,19 @@ export function QuestionDetailPanel({
           <>
             <DetailSectionHeader>Preferences</DetailSectionHeader>
             <Wrapper className={clsx(!editMode && 'mb-0')}>
-              {Object.entries(questionData.question.preferences_schema).map(([name, schema]) => {
-                const currentValue = question.preferences?.[name];
-                const hasOverride = currentValue != null;
-
-                function clearOverride() {
-                  const newPreferences = { ...question.preferences };
-                  delete newPreferences[name];
-                  onUpdate(
-                    questionTrackingId,
-                    {
-                      preferences:
-                        Object.keys(newPreferences).length > 0 ? newPreferences : undefined,
-                    },
-                    alternativeTrackingId,
-                  );
-                }
-
-                function setOverride(value: string | number | boolean) {
-                  onUpdate(
-                    questionTrackingId,
-                    {
-                      preferences: { ...question.preferences, [name]: value },
-                    },
-                    alternativeTrackingId,
-                  );
-                }
-
-                return (
-                  <PreferenceField
-                    key={name}
-                    name={name}
-                    schema={schema}
-                    idPrefix={idPrefix}
-                    editMode={editMode}
-                    hasOverride={hasOverride}
-                    currentValue={currentValue}
-                    onOverride={() => setOverride(schema.default)}
-                    onReset={clearOverride}
-                    onChange={setOverride}
-                  />
-                );
-              })}
+              {Object.entries(questionData.question.preferences_schema).map(([name, schema]) => (
+                <PreferenceField
+                  key={name}
+                  name={name}
+                  schema={schema}
+                  idPrefix={idPrefix}
+                  editMode={editMode}
+                  preferences={question.preferences}
+                  questionTrackingId={questionTrackingId}
+                  alternativeTrackingId={alternativeTrackingId}
+                  onUpdate={onUpdate}
+                />
+              ))}
             </Wrapper>
           </>
         )}
@@ -979,24 +950,48 @@ function PreferenceField({
   schema,
   idPrefix,
   editMode,
-  hasOverride,
-  currentValue,
-  onOverride,
-  onReset,
-  onChange,
+  preferences,
+  questionTrackingId,
+  alternativeTrackingId,
+  onUpdate,
 }: {
   name: string;
   schema: { type: string; default: string | number | boolean; enum?: (string | number)[] };
   idPrefix: string;
   editMode: boolean;
-  hasOverride: boolean;
-  currentValue: string | number | boolean | undefined;
-  onOverride: () => void;
-  onReset: () => void;
-  onChange: (value: string | number | boolean) => void;
+  preferences: Record<string, string | number | boolean> | undefined;
+  questionTrackingId: string;
+  alternativeTrackingId: string | undefined;
+  onUpdate: (
+    questionTrackingId: string,
+    question: Partial<ZoneQuestionBlockForm> | Partial<QuestionAlternativeForm>,
+    alternativeTrackingId?: string,
+  ) => void;
 }) {
   const id = `${idPrefix}-pref-${name}`;
   const defaultDisplay = String(schema.default);
+  const currentValue = preferences?.[name];
+  const hasOverride = currentValue != null;
+
+  function setOverride(value: string | number | boolean) {
+    onUpdate(
+      questionTrackingId,
+      { preferences: { ...preferences, [name]: value } },
+      alternativeTrackingId,
+    );
+  }
+
+  function clearOverride() {
+    const newPreferences = { ...preferences };
+    delete newPreferences[name];
+    onUpdate(
+      questionTrackingId,
+      {
+        preferences: Object.keys(newPreferences).length > 0 ? newPreferences : undefined,
+      },
+      alternativeTrackingId,
+    );
+  }
 
   if (!editMode) {
     return (
@@ -1030,7 +1025,7 @@ function PreferenceField({
           <button
             type="button"
             className="btn btn-link btn-sm p-0 align-baseline"
-            onClick={onOverride}
+            onClick={() => setOverride(schema.default)}
           >
             Override
           </button>
@@ -1044,7 +1039,7 @@ function PreferenceField({
       type="button"
       className="btn btn-outline-secondary"
       title="Reset to question default"
-      onClick={onReset}
+      onClick={clearOverride}
     >
       <i className="bi bi-arrow-counterclockwise" />
     </button>
@@ -1061,7 +1056,7 @@ function PreferenceField({
             className="form-select form-select-sm"
             id={id}
             value={String(currentValue)}
-            onChange={(e) => onChange(e.target.value === 'true')}
+            onChange={(e) => setOverride(e.target.value === 'true')}
           >
             <option value="true">true</option>
             <option value="false">false</option>
@@ -1085,7 +1080,7 @@ function PreferenceField({
             value={String(currentValue)}
             onChange={(e) => {
               const val = e.target.value;
-              onChange(schema.type === 'number' ? Number(val) : val);
+              setOverride(schema.type === 'number' ? Number(val) : val);
             }}
           >
             {schema.enum.map((v) => (
@@ -1115,9 +1110,9 @@ function PreferenceField({
           onBlur={(e) => {
             const val = e.target.value.trim();
             if (val === '') {
-              onReset();
+              clearOverride();
             } else {
-              onChange(schema.type === 'number' ? Number(val) : val);
+              setOverride(schema.type === 'number' ? Number(val) : val);
             }
           }}
         />
