@@ -70,18 +70,37 @@ const requireCourseInstancePermissionEdit = t.middleware(async (opts) => {
   return opts.next();
 });
 
-const students = t.procedure.use(requireCourseInstancePermissionView).query(async (opts) => {
-  const rows = await selectUsersAndEnrollmentsForCourseInstance(opts.ctx.course_instance);
-  return rows
-    .filter((r) => r.enrollment.status === 'joined' && r.user != null)
-    .map((r) => ({
-      id: r.enrollment.id,
-      uid: r.user!.uid,
-      name: r.user!.name,
-    }));
+const requireEnhancedAccessControl = t.middleware(async (opts) => {
+  const enabled = await features.enabled('enhanced-access-control', {
+    institution_id: opts.ctx.course.institution_id,
+    course_id: opts.ctx.course.id,
+    course_instance_id: opts.ctx.course_instance.id,
+  });
+  if (!enabled) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Enhanced access control is not enabled for this course.',
+    });
+  }
+  return opts.next();
 });
 
+const students = t.procedure
+  .use(requireEnhancedAccessControl)
+  .use(requireCourseInstancePermissionView)
+  .query(async (opts) => {
+    const rows = await selectUsersAndEnrollmentsForCourseInstance(opts.ctx.course_instance);
+    return rows
+      .filter((r) => r.enrollment.status === 'joined' && r.user != null)
+      .map((r) => ({
+        id: r.enrollment.id,
+        uid: r.user!.uid,
+        name: r.user!.name,
+      }));
+  });
+
 const validateUids = t.procedure
+  .use(requireEnhancedAccessControl)
   .use(requireCourseInstancePermissionView)
   .input(z.object({ uids: z.array(z.string()) }))
   .query(async (opts) => {
@@ -109,14 +128,17 @@ const validateUids = t.procedure
     });
   });
 
-const studentLabels = t.procedure.use(requireCourseInstancePermissionView).query(async (opts) => {
-  const labels = await selectStudentLabelsInCourseInstance(opts.ctx.course_instance);
-  return labels.map((label) => ({
-    id: label.id,
-    name: label.name,
-    color: label.color,
-  }));
-});
+const studentLabels = t.procedure
+  .use(requireEnhancedAccessControl)
+  .use(requireCourseInstancePermissionView)
+  .query(async (opts) => {
+    const labels = await selectStudentLabelsInCourseInstance(opts.ctx.course_instance);
+    return labels.map((label) => ({
+      id: label.id,
+      name: label.name,
+      color: label.color,
+    }));
+  });
 
 function formJsonToEnrollmentRuleData(
   rule: AccessControlJson & { id?: string },
@@ -167,6 +189,7 @@ const EnrollmentRuleInputSchema = z.object({
 });
 
 const saveAllRules = t.procedure
+  .use(requireEnhancedAccessControl)
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
@@ -215,18 +238,6 @@ const saveAllRules = t.procedure
       }
 
       if (enrollmentRules !== undefined && enrollmentRules.length > 0) {
-        const enhancedEnabled = await features.enabled('enhanced-access-control', {
-          institution_id: opts.ctx.course.institution_id,
-          course_id: opts.ctx.course.id,
-          course_instance_id: opts.ctx.course_instance.id,
-        });
-        if (!enhancedEnabled) {
-          throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: 'Enhanced access control is not enabled for this course.',
-          });
-        }
-
         const allEnrollmentIds = new Set(enrollmentRules.flatMap((r) => r.enrollmentIds));
         if (allEnrollmentIds.size > 0) {
           const validCount = await validateEnrollmentIdsInCourseInstance(
