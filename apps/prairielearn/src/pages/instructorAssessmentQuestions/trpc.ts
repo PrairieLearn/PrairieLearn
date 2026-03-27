@@ -87,7 +87,8 @@ const questionByQidQuery = t.procedure.input(z.object({ qid: z.string() })).quer
   }
 
   if (opts.input.qid.startsWith('@')) {
-    const [sharing_name, qid] = opts.input.qid.slice(1).split('/');
+    const [sharing_name, ...qidComponents] = opts.input.qid.slice(1).split('/');
+    const qid = qidComponents.join('/');
 
     const result = await sqldb.queryOptionalRow(
       sql.search_shared_questions,
