@@ -97,17 +97,18 @@ function dbBaseRowToAccessControlJson(row: BaseRuleRow): AccessControlJson & { i
   }
   if (rule.after_complete_show_questions_again_date_overridden) {
     afterComplete.showQuestionsAgainDate =
-      rule.after_complete_show_questions_again_date?.toISOString();
+      rule.after_complete_show_questions_again_date?.toISOString() ?? null;
   }
   if (rule.after_complete_hide_questions_again_date_overridden) {
     afterComplete.hideQuestionsAgainDate =
-      rule.after_complete_hide_questions_again_date?.toISOString();
+      rule.after_complete_hide_questions_again_date?.toISOString() ?? null;
   }
   if (rule.after_complete_hide_score !== null) {
     afterComplete.hideScore = rule.after_complete_hide_score;
   }
   if (rule.after_complete_show_score_again_date_overridden) {
-    afterComplete.showScoreAgainDate = rule.after_complete_show_score_again_date?.toISOString();
+    afterComplete.showScoreAgainDate =
+      rule.after_complete_show_score_again_date?.toISOString() ?? null;
   }
 
   const isMainRule = rule.number === 0 && rule.target_type === 'none';

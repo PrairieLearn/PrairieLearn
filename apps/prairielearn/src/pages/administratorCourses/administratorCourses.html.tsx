@@ -9,6 +9,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import {
   AdministratorCourseFormFields,
   type CourseFormFieldValues,
+  useInstitutionPrefix,
 } from '../../components/AdminstratorCourseFormFields.js';
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
 import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
@@ -319,12 +320,10 @@ function CourseInsertModal({
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors, isSubmitting },
   } = methods;
-
-  const institutionId = watch('institution_id');
-  const selectedInstitution = institutions.find((i) => i.id === institutionId);
+  const institutionId = methods.watch('institution_id');
+  const prefixState = useInstitutionPrefix(institutionId, institutions);
 
   const onSubmit = (data: InsertCourseFormData) => {
     mutation.mutate(
@@ -342,7 +341,13 @@ function CourseInsertModal({
   };
 
   return (
-    <Modal backdrop="static" show={show} onHide={onCancel} onEntering={() => methods.reset()}>
+    <Modal
+      show={show}
+      backdrop="static"
+      size="lg"
+      onHide={onCancel}
+      onEntering={() => methods.reset()}
+    >
       <FormProvider {...methods}>
         <form name="add-course-form" onSubmit={handleSubmit(onSubmit)}>
           <Modal.Header closeButton>
@@ -353,10 +358,7 @@ function CourseInsertModal({
               institutions={institutions}
               availableTimezones={availableTimezones}
               coursesRoot={coursesRoot}
-              suggestPrefixOptions={{
-                institutionName: selectedInstitution?.long_name ?? '',
-                emailDomain: selectedInstitution?.short_name ?? '',
-              }}
+              prefixState={prefixState}
               aiSecretsConfigured={aiSecretsConfigured}
             />
             <div className="mb-3">
@@ -390,7 +392,7 @@ function CourseInsertModal({
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={isSubmitting || mutation.isPending}
+              disabled={isSubmitting || mutation.isPending || prefixState.status === 'loading'}
             >
               Add course
             </button>
