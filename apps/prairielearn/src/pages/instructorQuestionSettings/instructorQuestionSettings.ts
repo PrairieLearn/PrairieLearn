@@ -212,7 +212,7 @@ router.post(
       questionInfo.partialCredit = propertyValueWithDefault(
         questionInfo.partialCredit,
         body.partial_credit,
-        true,
+        res.locals.question.type === 'Freeform',
       );
 
       const workspaceOptions = {

@@ -136,7 +136,7 @@ export const QuestionSettingsForm = ({
     grading_method: question.grading_method,
     single_variant: question.single_variant ?? false,
     show_correct_answer: question.show_correct_answer ?? true,
-    partial_credit: question.partial_credit ?? true,
+    partial_credit: question.partial_credit ?? question.type === 'Freeform',
     workspace_enabled: !!question.workspace_image,
     workspace_image: question.workspace_image ?? '',
     workspace_port: question.workspace_port?.toString() ?? '',
