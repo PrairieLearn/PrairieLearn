@@ -452,7 +452,7 @@ export const QuestionSettingsForm = ({
         <div className="small text-muted">
           If enabled, the question will award partial points for fractional scores. For example, if
           only some elements on the page are correct, the student receives a proportional score.
-          Disabling this means the question awards only 0% or 100%.
+          When disabled, the question awards only 0% or 100%.
         </div>
       </div>
 
