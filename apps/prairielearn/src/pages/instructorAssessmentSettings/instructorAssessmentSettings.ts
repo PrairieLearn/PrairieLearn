@@ -204,7 +204,7 @@ router.post(
         // to the assessmentInfo when editing an existing assessment that doesn't
         // have those tools configured.
         if (tool in assessmentInfo.tools || enabled) {
-          assessmentInfo.tools[tool] = { enabled };
+          assessmentInfo.tools[tool] = { ...assessmentInfo.tools[tool], enabled };
         }
       }
 
