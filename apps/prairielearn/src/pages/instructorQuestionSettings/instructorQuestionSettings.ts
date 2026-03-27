@@ -152,6 +152,7 @@ router.post(
           grading_method: EnumGradingMethodSchema.optional(),
           single_variant: BooleanFromCheckboxSchema,
           show_correct_answer: BooleanFromCheckboxSchema,
+          partial_credit: BooleanFromCheckboxSchema,
           workspace_image: z.string().optional(),
           workspace_port: IntegerFromStringOrEmptySchema.nullable().optional(),
           workspace_home: z.string().optional(),
@@ -205,6 +206,12 @@ router.post(
       questionInfo.showCorrectAnswer = propertyValueWithDefault(
         questionInfo.showCorrectAnswer,
         body.show_correct_answer,
+        true,
+      );
+
+      questionInfo.partialCredit = propertyValueWithDefault(
+        questionInfo.partialCredit,
+        body.partial_credit,
         true,
       );
 
