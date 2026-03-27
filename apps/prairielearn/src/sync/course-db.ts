@@ -299,6 +299,19 @@ export async function loadFullCourse(
     sharingEnabled,
   });
 
+  // Validate question sharing sets against course sharing sets. If a question references a sharing set that isn't in the course, that's an error.
+  for (const question of Object.values(questions)) {
+    if (infofile.hasErrors(question) || !question.data?.sharingSets) break;
+    for (const sharingSetName of question.data.sharingSets) {
+      if (!courseInfo.data?.sharingSets?.some((set) => set.name === sharingSetName)) {
+        infofile.addError(
+          question,
+          `Question references sharing set "${sharingSetName}" which does not exist in the course.`,
+        );
+      }
+    }
+  }
+
   return {
     course: courseInfo,
     questions,
