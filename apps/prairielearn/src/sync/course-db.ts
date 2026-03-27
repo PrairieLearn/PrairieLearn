@@ -301,7 +301,7 @@ export async function loadFullCourse(
 
   // Validate question sharing sets against course sharing sets.
   for (const question of Object.values(questions)) {
-    if (infofile.hasErrors(question) || !question.data?.sharingSets) break;
+    if (infofile.hasErrors(question) || !question.data?.sharingSets) continue;
     for (const sharingSetName of question.data.sharingSets) {
       if (!courseInfo.data?.sharingSets?.some((set) => set.name === sharingSetName)) {
         infofile.addError(
