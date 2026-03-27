@@ -7,6 +7,7 @@ import * as path from 'path';
 
 import type { AccessControlJsonInput } from '../../schemas/accessControl.js';
 import type { AssessmentAccessRuleJson } from '../../schemas/infoAssessment.js';
+import { discoverInfoDirs } from '../discover-info-dirs.js';
 import { formatJsonWithPrettier } from '../prettier.js';
 
 export interface AssessmentMigrationAnalysis {
@@ -532,14 +533,8 @@ export async function analyzeCourseInstanceAssessments(
   const assessmentsPath = path.join(courseInstancePath, 'assessments');
   const assessments: AssessmentMigrationAnalysis[] = [];
 
-  let dirs: string[];
-  try {
-    dirs = await fs.readdir(assessmentsPath);
-  } catch {
-    return { assessments: [], hasLegacyRules: false, allCanMigrate: true };
-  }
-
-  for (const dir of dirs) {
+  const assessmentDirs = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
+  for (const dir of assessmentDirs) {
     const infoPath = path.join(assessmentsPath, dir, 'infoAssessment.json');
     const analysis = await analyzeAssessmentFile(infoPath, dir);
     if (analysis) {
