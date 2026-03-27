@@ -1947,6 +1947,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@deltablot/dropzone@npm:^7.4.3":
+  version: 7.4.3
+  resolution: "@deltablot/dropzone@npm:7.4.3"
+  dependencies:
+    "@swc/helpers": "npm:^0.5.18"
+  checksum: 10c0/bc9339b4021a66552a9a3c99ed104c374f0f6ea85b3e64ef68711f95989e3c1ed88187f80fbf805b422c548a02f26d8ae8e13fa313fe5ee9ab127cbe7bdb7fd6
+  languageName: node
+  linkType: hard
+
 "@dnd-kit/abstract@npm:^0.3.2":
   version: 0.3.2
   resolution: "@dnd-kit/abstract@npm:0.3.2"
@@ -4816,6 +4825,7 @@ __metadata:
     "@aws-sdk/credential-providers": "npm:^3.1002.0"
     "@aws-sdk/lib-storage": "npm:^3.1002.0"
     "@cortex-js/compute-engine": "npm:^0.55.3"
+    "@deltablot/dropzone": "npm:^7.4.3"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/react": "npm:^0.3.2"
     "@dnd-kit/sortable": "npm:^10.0.0"
@@ -8241,6 +8251,15 @@ __metadata:
   dependencies:
     tslib: "npm:^2.8.0"
   checksum: 10c0/cb32d72e32f775c30287bffbcf61c89ea3a963608cb3a4a675a3f9af545b8b3ab0bc9930432a5520a7307daaa87538158e253584ae1cf39f3e7e6e83408a2d51
+  languageName: node
+  linkType: hard
+
+"@swc/helpers@npm:^0.5.18":
+  version: 0.5.20
+  resolution: "@swc/helpers@npm:0.5.20"
+  dependencies:
+    tslib: "npm:^2.8.0"
+  checksum: 10c0/d18305b7a1f89703d568888e6e6ade69a9f30c606d2123d11dd04feb28ba86569e478594a1d31de242bc882822a730c2bee9b7e2eb39d5ae31154dad93e8e107
   languageName: node
   linkType: hard
 

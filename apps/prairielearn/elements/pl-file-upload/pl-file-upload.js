@@ -121,9 +121,9 @@
      * Initializes the file upload zone on the question.
      */
     initializeTemplate() {
-      const $dropTarget = this.element.find('.upload-dropzone');
+      const $dropTarget = this.element.find('.upload-dropzone').get(0);
 
-      $dropTarget.dropzone({
+      new Dropzone($dropTarget, {
         url: '/none',
         autoProcessQueue: false,
         accept: (file, done) => {

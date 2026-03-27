@@ -1,7 +1,7 @@
 {
   "controller": "pl-file-upload.py",
   "dependencies": {
-    "nodeModulesScripts": ["dropzone/dist/dropzone.js"],
+    "nodeModulesScripts": ["@deltablot/dropzone/dist/dropzone-min.js"],
     "elementScripts": ["pl-file-upload.js"],
     "elementStyles": ["pl-file-upload.css"]
   }
