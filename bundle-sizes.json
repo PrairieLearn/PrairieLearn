@@ -225,39 +225,39 @@
     "brotli": 476
   },
   "scripts/esm-bundles/hydrated-components/UserSettingsPage.ts": {
-    "raw": 530601,
-    "gzip": 165987,
-    "brotli": 144113
+    "raw": 529937,
+    "gzip": 165757,
+    "brotli": 143890
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudents.ts": {
-    "raw": 1211301,
-    "gzip": 357459,
-    "brotli": 309706
+    "raw": 1210642,
+    "gzip": 357237,
+    "brotli": 309372
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudentsLabels.ts": {
-    "raw": 1039717,
-    "gzip": 307503,
-    "brotli": 266677
+    "raw": 1039058,
+    "gzip": 307274,
+    "brotli": 266349
   },
   "scripts/esm-bundles/hydrated-components/QuestionSettingsCardFooter.ts": {
-    "raw": 941090,
-    "gzip": 286679,
-    "brotli": 229424
+    "raw": 940426,
+    "gzip": 286446,
+    "brotli": 229105
   },
   "scripts/esm-bundles/hydrated-components/QuestionSettingsForm.ts": {
-    "raw": 1157630,
-    "gzip": 341140,
-    "brotli": 277302
+    "raw": 1156966,
+    "gzip": 340908,
+    "brotli": 276974
   },
   "scripts/esm-bundles/hydrated-components/RichTextEditor.ts": {
-    "raw": 1490398,
-    "gzip": 458588,
-    "brotli": 389982
+    "raw": 1489734,
+    "gzip": 458354,
+    "brotli": 389720
   },
   "scripts/esm-bundles/hydrated-components/RubricSettings.ts": {
-    "raw": 447806,
-    "gzip": 138448,
-    "brotli": 120691
+    "raw": 447142,
+    "gzip": 138219,
+    "brotli": 120466
   },
   "scripts/esm-bundles/hydrated-components/SampleQuestions.ts": {
     "raw": 297458,
@@ -265,34 +265,34 @@
     "brotli": 82225
   },
   "scripts/esm-bundles/hydrated-components/TagsTopicsTable.ts": {
-    "raw": 727532,
-    "gzip": 216696,
-    "brotli": 170812
+    "raw": 726868,
+    "gzip": 216464,
+    "brotli": 170592
   },
   "scripts/esm-bundles/hydrated-components/HomeCards.ts": {
-    "raw": 962710,
-    "gzip": 282500,
-    "brotli": 244250
+    "raw": 962046,
+    "gzip": 282270,
+    "brotli": 243907
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentQuestionsTableLegacy.ts": {
-    "raw": 637451,
-    "gzip": 204386,
-    "brotli": 160460
+    "raw": 636787,
+    "gzip": 204153,
+    "brotli": 160230
   },
   "scripts/esm-bundles/hydrated-components/InstructorCourseAdminInstances.ts": {
-    "raw": 1218239,
-    "gzip": 370320,
-    "brotli": 302632
+    "raw": 1217575,
+    "gzip": 370085,
+    "brotli": 302312
   },
   "scripts/esm-bundles/hydrated-components/InstructorGradebookTable.ts": {
-    "raw": 971177,
-    "gzip": 284020,
-    "brotli": 245582
+    "raw": 970518,
+    "gzip": 283794,
+    "brotli": 245250
   },
   "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminAiGrading.ts": {
-    "raw": 2063398,
-    "gzip": 658161,
-    "brotli": 549332
+    "raw": 2062734,
+    "gzip": 657928,
+    "brotli": 549232
   },
   "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminBillingForm.ts": {
     "raw": 258890,
@@ -300,24 +300,24 @@
     "brotli": 70396
   },
   "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminSettings.ts": {
-    "raw": 1333939,
-    "gzip": 403049,
-    "brotli": 331512
+    "raw": 1333275,
+    "gzip": 402816,
+    "brotli": 331153
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudentDetail.ts": {
-    "raw": 1317281,
-    "gzip": 387639,
-    "brotli": 317122
+    "raw": 1316622,
+    "gzip": 387411,
+    "brotli": 316796
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionsEditor.ts": {
-    "raw": 1420328,
-    "gzip": 419623,
-    "brotli": 345854
+    "raw": 1419664,
+    "gzip": 419390,
+    "brotli": 345635
   },
   "scripts/esm-bundles/hydrated-components/AssessmentSetsPage.ts": {
-    "raw": 939908,
-    "gzip": 279289,
-    "brotli": 241526
+    "raw": 939244,
+    "gzip": 279058,
+    "brotli": 241205
   },
   "scripts/esm-bundles/hydrated-components/AuthzAccessMismatch.ts": {
     "raw": 259415,
@@ -325,14 +325,14 @@
     "brotli": 70750
   },
   "scripts/esm-bundles/hydrated-components/CopyCourseInstanceModal.ts": {
-    "raw": 742971,
-    "gzip": 220474,
-    "brotli": 192032
+    "raw": 742307,
+    "gzip": 220244,
+    "brotli": 191811
   },
   "scripts/esm-bundles/hydrated-components/CourseInstancePublishing.ts": {
-    "raw": 1180246,
-    "gzip": 346811,
-    "brotli": 300204
+    "raw": 1179582,
+    "gzip": 346581,
+    "brotli": 299883
   },
   "scripts/esm-bundles/hydrated-components/CreateQuestionForm.ts": {
     "raw": 395419,
@@ -345,24 +345,24 @@
     "brotli": 69877
   },
   "scripts/esm-bundles/hydrated-components/EnrollmentCodeRequired.ts": {
-    "raw": 400690,
-    "gzip": 130912,
-    "brotli": 114413
+    "raw": 400026,
+    "gzip": 130683,
+    "brotli": 114196
   },
   "scripts/esm-bundles/hydrated-components/AdminCreditPoolSection.ts": {
-    "raw": 2026346,
-    "gzip": 645047,
-    "brotli": 537415
+    "raw": 2025682,
+    "gzip": 644817,
+    "brotli": 537326
   },
   "scripts/esm-bundles/hydrated-components/AdministratorCourseRequests.ts": {
-    "raw": 1060563,
-    "gzip": 320820,
-    "brotli": 278988
+    "raw": 1059899,
+    "gzip": 320592,
+    "brotli": 278680
   },
   "scripts/esm-bundles/hydrated-components/AdministratorCourses.ts": {
-    "raw": 1069108,
-    "gzip": 323200,
-    "brotli": 281071
+    "raw": 1068444,
+    "gzip": 322972,
+    "brotli": 280746
   },
   "scripts/esm-bundles/hydrated-components/AdministratorInstitutionSsoForm.ts": {
     "raw": 256094,
@@ -370,23 +370,23 @@
     "brotli": 69586
   },
   "scripts/esm-bundles/hydrated-components/AdministratorInstitutionsTable.ts": {
-    "raw": 1041480,
-    "gzip": 315855,
-    "brotli": 274582
+    "raw": 1040816,
+    "gzip": 315621,
+    "brotli": 274258
   },
   "scripts/esm-bundles/hydrated-components/AiQuestionGenerationEditor.ts": {
-    "raw": 2591710,
-    "gzip": 747351,
-    "brotli": 635214
+    "raw": 2591046,
+    "gzip": 747120,
+    "brotli": 634844
   },
   "scripts/esm-bundles/hydrated-components/AssessmentAccessControl.ts": {
-    "raw": 1202609,
-    "gzip": 360891,
-    "brotli": 313358
+    "raw": 1204831,
+    "gzip": 361601,
+    "brotli": 313825
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionManualGrading.ts": {
-    "raw": 1303434,
-    "gzip": 383036,
-    "brotli": 314682
+    "raw": 1302770,
+    "gzip": 382806,
+    "brotli": 314333
   }
 }
