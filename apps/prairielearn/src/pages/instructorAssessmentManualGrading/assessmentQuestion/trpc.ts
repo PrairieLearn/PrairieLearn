@@ -183,7 +183,7 @@ const getAiGradingModalDataQuery = t.procedure
   )
   .query(async (opts) => {
     const mode = Array.isArray(opts.input.selection) ? 'selected' : opts.input.selection;
-    const instance_question_ids = Array.isArray(opts.input.selection)
+    const selected_instance_question_ids = Array.isArray(opts.input.selection)
       ? opts.input.selection
       : undefined;
 
@@ -193,7 +193,7 @@ const getAiGradingModalDataQuery = t.procedure
       course: opts.ctx.course,
       urlPrefix: opts.ctx.urlPrefix,
       mode,
-      instance_question_ids,
+      selected_instance_question_ids,
     });
 
     const using_custom_api_keys = opts.ctx.course_instance.ai_grading_use_custom_api_keys;
@@ -211,8 +211,6 @@ const getAiGradingModalDataQuery = t.procedure
       num_to_grade: costEstimate.num_to_grade,
       avg_input_tokens_per_submission: costEstimate.avg_input_tokens_per_submission,
       estimated_output_tokens: costEstimate.estimated_output_tokens,
-      has_images: costEstimate.has_images,
-      estimation_reliable: costEstimate.estimation_reliable,
       credit_pool,
       model_pricing,
       infrastructure_fee_percent: config.aiGradingInfrastructureFeePercent,
@@ -261,10 +259,9 @@ const aiGradeInstanceQuestionMutation = t.procedure
       });
     }
 
-    // Persist the selected model before starting the grading job so that
-    // a failure after this point doesn't cause duplicate jobs on retry.
+    // Persist the selected model as the user's preference for this assessment question.
     await execute(
-      'UPDATE assessment_questions SET ai_grading_preferred_model = $model_id WHERE id = $id',
+      'UPDATE assessment_questions SET ai_grading_last_selected_model = $model_id WHERE id = $id',
       { model_id: opts.input.model_id, id: opts.ctx.assessment_question.id },
     );
 

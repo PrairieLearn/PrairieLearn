@@ -1,8 +1,8 @@
 import type { ModelMessage } from 'ai';
 import mustache from 'mustache';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import { assertNever } from '@prairielearn/utils';
 
 import type { AssessmentQuestion, Course, Question } from '../../../lib/db-types.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
@@ -11,13 +11,40 @@ import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
 
 import { DEFAULT_AI_GRADING_MODEL } from './ai-grading-models.shared.js';
-import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
-  containsImageCapture,
+  filterInstanceQuestionsByMode,
   generatePrompt,
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastVariantAndSubmission,
 } from './ai-grading-util.js';
+
+// --- Token estimation constants ---
+// These are approximate values that may need empirical tuning.
+
+/** Approximate number of characters per token for English text. */
+const CHARS_PER_TOKEN = 4;
+
+/**
+ * Approximate number of tokens consumed by a single image in the prompt.
+ * TODO: Empirically derive this from past student submissions for `pl-image-capture`.
+ */
+const TOKENS_PER_IMAGE = 1000;
+
+/**
+ * Approximate number of tokens for the explanation field in the AI grading output.
+ * This represents a moderately-sized grading explanation.
+ */
+const EXPLANATION_TOKENS = 400;
+
+/**
+ * Approximate number of tokens for the feedback field in the numeric scoring output.
+ */
+const FEEDBACK_TOKENS = 200;
+
+/**
+ * Approximate number of tokens for the score field (a single integer 0-100).
+ */
+const SCORE_TOKENS = 5;
 
 function estimateTokensFromMessages(messages: ModelMessage[]): {
   tokens: number;
@@ -38,8 +65,31 @@ function estimateTokensFromMessages(messages: ModelMessage[]): {
       }
     }
   }
-  // ~4 chars per token for English text, ~1000 tokens per image
-  return { tokens: Math.ceil(charCount / 4) + imageCount * 1000, imageCount };
+  return {
+    tokens: Math.ceil(charCount / CHARS_PER_TOKEN) + imageCount * TOKENS_PER_IMAGE,
+    imageCount,
+  };
+}
+
+/**
+ * Estimates the output token count based on the rubric structure, reconstructing
+ * the expected output schema shape. With a rubric, the output is:
+ *   { explanation: string, rubric_items: { [description]: boolean, ... } }
+ * Without a rubric, the output is:
+ *   { explanation: string, feedback: string, score: number }
+ */
+function estimateOutputTokens(rubricItemDescriptions: string[]): number {
+  if (rubricItemDescriptions.length > 0) {
+    // Reconstruct what the filled rubric output would look like:
+    // { "explanation": "...", "rubric_items": { "desc1": false, "desc2": false, ... } }
+    const rubricJson = JSON.stringify(
+      Object.fromEntries(rubricItemDescriptions.map((desc) => [desc, false])),
+    );
+    const rubricStructureTokens = Math.ceil(rubricJson.length / CHARS_PER_TOKEN);
+    return EXPLANATION_TOKENS + rubricStructureTokens;
+  }
+  // Numeric scoring: { "explanation": "...", "feedback": "...", "score": N }
+  return EXPLANATION_TOKENS + FEEDBACK_TOKENS + SCORE_TOKENS;
 }
 
 export async function estimateAiGradingCost({
@@ -48,70 +98,53 @@ export async function estimateAiGradingCost({
   course,
   urlPrefix,
   mode,
-  instance_question_ids,
+  selected_instance_question_ids,
 }: {
   assessment_question: AssessmentQuestion;
   question: Question;
   course: Course;
   urlPrefix: string;
   mode: 'all' | 'human_graded' | 'selected';
-  instance_question_ids?: string[];
+  /** When mode is 'selected', the specific instance question IDs to grade. */
+  selected_instance_question_ids?: string[];
 }): Promise<{
   num_to_grade: number;
   avg_input_tokens_per_submission: number;
   estimated_output_tokens: number;
-  has_images: boolean;
-  estimation_reliable: boolean;
 }> {
   const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion({
     assessment_question_id: assessment_question.id,
   });
 
-  const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
-
-  const filtered_instance_questions = all_instance_questions.filter((instance_question) => {
-    switch (mode) {
-      case 'all':
-        return true;
-      case 'human_graded':
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        return instanceQuestionGradingJobs[instance_question.id]?.some(
-          (job) => job.grading_method === 'Manual',
-        );
-      case 'selected':
-        return instance_question_ids?.includes(instance_question.id);
-      default:
-        assertNever(mode);
-    }
-  });
+  const filtered_instance_questions = await filterInstanceQuestionsByMode(
+    all_instance_questions,
+    mode,
+    selected_instance_question_ids,
+  );
 
   const num_to_grade = filtered_instance_questions.length;
+
+  const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
+  const estimated_output_tokens = estimateOutputTokens(
+    rubric_items.map((item) => item.description),
+  );
 
   if (num_to_grade === 0) {
     return {
       num_to_grade: 0,
       avg_input_tokens_per_submission: 0,
-      estimated_output_tokens: 0,
-      has_images: false,
-      estimation_reliable: true,
+      estimated_output_tokens,
     };
   }
 
-  // Take a random sample of submissions to estimate token counts (Fisher-Yates).
-  const sampleSize = Math.min(20, num_to_grade);
-  const pool = [...filtered_instance_questions];
-  for (let i = pool.length - 1; i > 0 && pool.length - i <= sampleSize; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  const sampled = pool.slice(pool.length - sampleSize);
+  // Randomly sort and take the first 20 submissions to estimate token counts.
+  const shuffled = [...filtered_instance_questions].sort(() => Math.random() - 0.5);
+  const sampled = shuffled.slice(0, Math.min(20, num_to_grade));
 
-  const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
   const question_course = await getQuestionCourse(question, course);
 
   let totalInputTokens = 0;
   let successCount = 0;
-  let has_images = false;
 
   for (const instance_question of sampled) {
     try {
@@ -157,10 +190,6 @@ export async function estimateAiGradingCost({
 
       const submission_text = render_submission_results.data.submissionHtmls[0];
 
-      if (containsImageCapture(submission_text)) {
-        has_images = true;
-      }
-
       // Apply mustache rendering to rubric items (same as in aiGrade).
       const renderedRubricItems = rubric_items.map((item) => {
         const mustacheParams = {
@@ -199,36 +228,18 @@ export async function estimateAiGradingCost({
     }
   }
 
-  const estimation_reliable = successCount > 0;
-  if (!estimation_reliable) {
-    logger.warn(
-      `Cost estimation: all ${sampleSize} sampled submissions failed for assessment question ${assessment_question.id}`,
+  if (successCount === 0) {
+    throw new HttpStatusError(
+      500,
+      `Cost estimation failed: all ${sampled.length} sampled submissions failed to render for assessment question ${assessment_question.id}`,
     );
   }
 
-  const avg_input_tokens_per_submission =
-    successCount > 0 ? Math.ceil(totalInputTokens / successCount) : 0;
-
-  // Estimate output tokens based on rubric structure.
-  let estimated_output_tokens: number;
-  if (rubric_items.length > 0) {
-    // Output: { explanation: string, rubric_items: { [desc]: boolean } }
-    estimated_output_tokens = 200 + rubric_items.length * 5;
-  } else {
-    // Output: { explanation: string, feedback: string, score: number }
-    estimated_output_tokens = 300;
-  }
-
-  if (has_images) {
-    // Add extra tokens for image orientation and transcription.
-    estimated_output_tokens += 120;
-  }
+  const avg_input_tokens_per_submission = Math.ceil(totalInputTokens / successCount);
 
   return {
     num_to_grade,
     avg_input_tokens_per_submission,
     estimated_output_tokens,
-    has_images,
-    estimation_reliable,
   };
 }

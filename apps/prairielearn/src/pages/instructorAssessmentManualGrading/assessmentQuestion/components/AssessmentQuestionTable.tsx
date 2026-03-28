@@ -103,16 +103,14 @@ function AiGradingOptionContent({ text, numToGrade }: { text: string; numToGrade
 function AiGradingOption({
   text,
   numToGrade,
-  disabled,
   onSelect,
 }: {
   text: string;
   numToGrade: number;
-  disabled: boolean;
   onSelect: () => void;
 }) {
   return (
-    <Dropdown.Item disabled={numToGrade === 0 || disabled} onClick={onSelect}>
+    <Dropdown.Item disabled={numToGrade === 0} onClick={onSelect}>
       <AiGradingOptionContent text={text} numToGrade={numToGrade} />
     </Dropdown.Item>
   );
@@ -755,7 +753,6 @@ export function AssessmentQuestionTable({
                       <AiGradingOption
                         text="Grade all human-graded"
                         numToGrade={aiGradingCounts.humanGraded}
-                        disabled={false}
                         onSelect={() => {
                           if (aiGradingModelSelectionEnabled) {
                             onSetModelSelectionModalState({
@@ -783,7 +780,6 @@ export function AssessmentQuestionTable({
                       <AiGradingOption
                         text="Grade selected"
                         numToGrade={aiGradingCounts.selected}
-                        disabled={false}
                         onSelect={() => {
                           if (aiGradingModelSelectionEnabled) {
                             onSetModelSelectionModalState({
@@ -813,7 +809,6 @@ export function AssessmentQuestionTable({
                       <AiGradingOption
                         text="Grade all"
                         numToGrade={aiGradingCounts.all}
-                        disabled={false}
                         onSelect={() => {
                           if (aiGradingModelSelectionEnabled) {
                             onSetModelSelectionModalState({

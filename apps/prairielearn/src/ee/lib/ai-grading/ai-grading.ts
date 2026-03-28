@@ -62,6 +62,7 @@ import {
   correctGeminiMalformedRubricGradingJson,
   correctImagesOrientation,
   extractSubmissionImages,
+  filterInstanceQuestionsByMode,
   generatePrompt,
   getIntervalUsage,
   insertAiGradingJob,
@@ -367,23 +368,14 @@ export async function aiGrade({
     assessment_question_id: assessment_question.id,
   });
 
-  const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
+  const instance_questions = await filterInstanceQuestionsByMode(
+    all_instance_questions,
+    mode,
+    instance_question_ids,
+  );
 
-  const instance_questions = all_instance_questions.filter((instance_question) => {
-    switch (mode) {
-      case 'human_graded':
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        return instanceQuestionGradingJobs[instance_question.id]?.some(
-          (job) => job.grading_method === 'Manual',
-        );
-      case 'all':
-        return true;
-      case 'selected':
-        return instance_question_ids?.includes(instance_question.id);
-      default:
-        assertNever(mode);
-    }
-  });
+  // Used later to determine whether to update the score for each instance question.
+  const instanceQuestionGradingJobs = await selectGradingJobsInfo(instance_questions);
 
   let item_statuses = instance_questions.reduce(
     (acc, instance_question) => {

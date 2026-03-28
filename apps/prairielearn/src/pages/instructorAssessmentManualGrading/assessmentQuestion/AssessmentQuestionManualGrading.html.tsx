@@ -191,10 +191,11 @@ function AssessmentQuestionManualGradingInner({
       />
 
       <AiGradingModelSelectionModal
+        key={assessmentQuestion.ai_grading_last_selected_model ?? 'default'}
         modalState={modelSelectionModalState}
         mutation={mutations.gradeSubmissionsMutation}
         availableProviders={availableAiGradingProviders}
-        aiGradingPreferredModel={assessmentQuestion.ai_grading_preferred_model ?? null}
+        aiGradingLastSelectedModel={assessmentQuestion.ai_grading_last_selected_model ?? null}
         onSuccess={(data) => {
           setPendingGradingJob(data);
         }}

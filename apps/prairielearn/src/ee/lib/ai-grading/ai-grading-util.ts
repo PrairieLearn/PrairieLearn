@@ -47,6 +47,7 @@ import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
+import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import { type CounterClockwiseRotationDegrees, RotationCorrectionOutputSchema } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -445,6 +446,35 @@ export function parseAiRubricItems({
     rubric_item_id: rubricItemsByDescription[description].id,
   }));
   return { appliedRubricItems, appliedRubricDescription };
+}
+
+/**
+ * Filters instance questions based on the grading mode. For 'human_graded' mode,
+ * only includes questions whose most recent grading job was manual (not AI-graded).
+ * For 'selected' mode, filters to the provided instance question IDs.
+ */
+export async function filterInstanceQuestionsByMode<T extends { id: string }>(
+  all_instance_questions: T[],
+  mode: 'all' | 'human_graded' | 'selected',
+  selected_instance_question_ids?: string[],
+): Promise<T[]> {
+  const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
+
+  return all_instance_questions.filter((instance_question) => {
+    switch (mode) {
+      case 'all':
+        return true;
+      case 'human_graded':
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        return instanceQuestionGradingJobs[instance_question.id]?.some(
+          (job) => job.grading_method === 'Manual',
+        );
+      case 'selected':
+        return selected_instance_question_ids?.includes(instance_question.id);
+      default:
+        assertNever(mode);
+    }
+  });
 }
 
 export async function selectInstanceQuestionsForAssessmentQuestion({
