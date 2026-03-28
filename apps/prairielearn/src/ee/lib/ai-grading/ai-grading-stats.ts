@@ -1,34 +1,24 @@
 import assert from 'node:assert';
 
-import { z } from 'zod';
-
-import { loadSqlEquiv, queryOptionalScalar, queryRows } from '@prairielearn/postgres';
-import { DateFromISOString, IdSchema } from '@prairielearn/zod';
+import { loadSqlEquiv, queryOptionalScalar } from '@prairielearn/postgres';
+import { DateFromISOString } from '@prairielearn/zod';
 
 import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
 import {
   type Assessment,
   type AssessmentQuestion,
   type RubricItem,
-  RubricItemSchema,
 } from '../../../lib/db-types.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import { selectInstanceQuestionGroups } from '../ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
-import { selectInstanceQuestionsForAssessmentQuestion } from './ai-grading-util.js';
+import {
+  selectGradingJobsInfo,
+  selectInstanceQuestionsForAssessmentQuestion,
+} from './ai-grading-util.js';
 import type { AiGradingGeneralStats, WithAIGradingStats } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-const GradingJobInfoSchema = z.object({
-  grading_job_id: IdSchema,
-  graded_at: DateFromISOString.nullable(),
-  grading_method: z.enum(['Manual', 'AI']),
-  manual_points: z.number().nullable(),
-  manual_rubric_grading_id: IdSchema.nullable(),
-  grader_name: z.string(),
-  rubric_items: z.array(RubricItemSchema),
-});
-type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
 
 type FillInstanceQuestionColumnEntriesResultType<
   T extends {
@@ -213,31 +203,6 @@ export async function calculateAiGradingStats(
     stats.rubric_stats[rubric_item.id] = disagreement_count;
   }
   return stats;
-}
-
-/**
- * Select the latest human grading job and AI grading job
- * information, including rubric grading information for each input instance question.
- * @param instance_questions the array of instance questions (including their ids)
- * @returns a record mapping each id to its grading jobs
- */
-export async function selectGradingJobsInfo<T extends { id: string }>(
-  instance_questions: T[],
-): Promise<Record<string, GradingJobInfo[]>> {
-  const grading_jobs = await queryRows(
-    sql.select_ai_and_human_grading_jobs_and_rubric,
-    { instance_question_ids: instance_questions.map((iq) => iq.id) },
-    GradingJobInfoSchema.extend({ instance_question_id: IdSchema }),
-  );
-  // Construct mapping from instance question id to grading job info
-  return grading_jobs.reduce(
-    (acc, item) => {
-      acc[item.instance_question_id] ??= [];
-      acc[item.instance_question_id].push(item);
-      return acc;
-    },
-    {} as Record<string, GradingJobInfo[]>,
-  );
 }
 
 function rubricListIncludes(items: RubricItem[], itemToCheck: RubricItem): boolean {

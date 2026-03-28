@@ -55,7 +55,6 @@ import * as questionServers from '../../../question-servers/index.js';
 
 import { resolveAiGradingKeys } from './ai-grading-credentials.js';
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
-import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   addAiGradingCostToIntervalUsage,
   containsImageCapture,
@@ -68,6 +67,7 @@ import {
   insertAiGradingJob,
   insertAiGradingJobWithRotationCorrection,
   parseAiRubricItems,
+  selectGradingJobsInfo,
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastVariantAndSubmission,
 } from './ai-grading-util.js';
