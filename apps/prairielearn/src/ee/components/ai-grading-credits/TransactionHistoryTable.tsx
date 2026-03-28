@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Badge, Button, Modal } from 'react-bootstrap';
 
 import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
@@ -42,15 +42,14 @@ export function TransactionHistoryTable({
 }) {
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
   const [refundTarget, setRefundTarget] = useState<TransactionHistoryRow | null>(null);
-  const wasRefunding = useRef(false);
+  const wasRefundingRef = useRef(false);
 
-  // Close modal when refund finishes (transition from refunding -> not refunding)
-  useEffect(() => {
-    if (wasRefunding.current && !isRefunding) {
-      setRefundTarget(null);
-    }
-    wasRefunding.current = isRefunding ?? false;
-  }, [isRefunding]);
+  // Close modal when refund finishes (transition from refunding -> not refunding).
+  // Computed during render to avoid useEffect + setState on prop change.
+  if (wasRefundingRef.current && !isRefunding && refundTarget != null) {
+    setRefundTarget(null);
+  }
+  wasRefundingRef.current = isRefunding ?? false;
 
   return (
     <>

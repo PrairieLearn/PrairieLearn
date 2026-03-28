@@ -107,6 +107,7 @@ async function deductCreditsForAiGradingWithLockedPool(
       user_id,
       ai_grading_job_id,
       assessment_question_id,
+      checkout_session_id: null,
     });
   }
 
@@ -121,6 +122,7 @@ async function deductCreditsForAiGradingWithLockedPool(
       user_id,
       ai_grading_job_id,
       assessment_question_id,
+      checkout_session_id: null,
     });
   }
 }
