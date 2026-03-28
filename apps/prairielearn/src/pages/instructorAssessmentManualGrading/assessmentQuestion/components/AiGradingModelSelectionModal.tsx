@@ -58,11 +58,32 @@ function getTitle(modalState: AiGradingModelSelectionModalState): string {
   }
 }
 
+/** Margin of error multiplier applied to cost estimates to account for estimation inaccuracy. */
+const COST_ESTIMATE_MARGIN = 1.2;
+
+/**
+ * Estimates the total cost for grading all submissions with a given model.
+ *
+ * Formula:
+ *   cost_per_submission = (avg_input_tokens * input_price
+ *                        + estimated_output_tokens * output_price
+ *                        + estimated_reasoning_tokens * output_price) / 1e6
+ *   raw_cost = cost_per_submission * num_to_grade
+ *   total = ceil(raw_cost * (1 + infrastructure_fee_percent / 100) * 1000 * COST_ESTIMATE_MARGIN)
+ *
+ * Where:
+ * - avg_input_tokens is sampled from up to 20 submissions
+ * - estimated_output_tokens is derived from the expected JSON output structure
+ * - estimated_reasoning_tokens = avg_input_tokens * REASONING_INPUT_MULTIPLIER (0.5)
+ * - COST_ESTIMATE_MARGIN (1.2) adds a 20% buffer for estimation error
+ * - Result is in milli-dollars (1/1000th of a dollar)
+ */
 function estimateTotalCostForModel(
   modelId: string,
   data: {
     avg_input_tokens_per_submission: number;
     estimated_output_tokens: number;
+    estimated_reasoning_tokens: number;
     model_pricing: Record<string, { input: number; output: number }>;
     infrastructure_fee_percent: number;
   },
@@ -72,10 +93,13 @@ function estimateTotalCostForModel(
   const pricing = data.model_pricing[modelId];
   const costPerSubmissionDollars =
     (data.avg_input_tokens_per_submission * pricing.input) / 1e6 +
-    (data.estimated_output_tokens * pricing.output) / 1e6;
-  return calculateCostWithFeeMilliDollars(
-    costPerSubmissionDollars * numToGrade,
-    data.infrastructure_fee_percent,
+    (data.estimated_output_tokens * pricing.output) / 1e6 +
+    (data.estimated_reasoning_tokens * pricing.output) / 1e6;
+  return Math.ceil(
+    calculateCostWithFeeMilliDollars(
+      costPerSubmissionDollars * numToGrade,
+      data.infrastructure_fee_percent,
+    ) * COST_ESTIMATE_MARGIN,
   );
 }
 
@@ -182,6 +206,7 @@ function ModelSelector({
   data: {
     avg_input_tokens_per_submission: number;
     estimated_output_tokens: number;
+    estimated_reasoning_tokens: number;
     model_pricing: Record<string, { input: number; output: number }>;
     infrastructure_fee_percent: number;
     using_custom_api_keys: boolean;
@@ -255,8 +280,10 @@ function ModelSelector({
                   </span>
                 )}
               </div>
-              {/* Sublabel shown below on mobile only */}
-              <div className="text-muted small d-sm-none ms-4 ps-2">{model.sublabel}</div>
+              {/* Sublabel shown below on mobile only, aligned with the radio label text */}
+              <div className="text-muted small d-sm-none" style={{ paddingLeft: '1.75em' }}>
+                {model.sublabel}
+              </div>
             </div>
           );
         })}
@@ -466,6 +493,7 @@ export function AiGradingModelSelectionModal({
                 ? {
                     avg_input_tokens_per_submission: data.avg_input_tokens_per_submission,
                     estimated_output_tokens: data.estimated_output_tokens,
+                    estimated_reasoning_tokens: data.estimated_reasoning_tokens,
                     model_pricing: data.model_pricing,
                     infrastructure_fee_percent: data.infrastructure_fee_percent,
                     using_custom_api_keys: data.using_custom_api_keys,

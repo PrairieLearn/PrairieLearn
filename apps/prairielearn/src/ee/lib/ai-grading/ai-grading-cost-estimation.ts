@@ -21,8 +21,8 @@ import {
 // --- Token estimation constants ---
 // These are approximate values that may need empirical tuning.
 
-/** Approximate number of characters per token for English text. */
-const CHARS_PER_TOKEN = 4;
+/** Approximate number of characters per token for code/HTML-heavy content. */
+const CHARS_PER_TOKEN = 3;
 
 /**
  * Approximate number of tokens consumed by a single image in the prompt.
@@ -30,20 +30,24 @@ const CHARS_PER_TOKEN = 4;
  */
 const INPUT_TOKENS_PER_IMAGE = 1000;
 
-/**
- * Approximate number of tokens for the explanation field in the AI grading output.
- * This represents a moderately-sized grading explanation.
- */
-const EXPLANATION_OUTPUT_TOKENS = 400;
+/** Average character length of the explanation field in the AI grading output. */
+const AVG_EXPLANATION_LENGTH = 4000;
+
+/** Average character length of the feedback field in the numeric scoring output. */
+const AVG_FEEDBACK_LENGTH = 2000;
 
 /**
- * Approximate number of tokens for the feedback field in the numeric scoring output.
+ * Multiplier applied to input tokens to estimate reasoning token usage.
+ * Reasoning tokens scale with input complexity and are priced at the output rate.
  */
-const FEEDBACK_OUTPUT_TOKENS = 200;
+const REASONING_INPUT_MULTIPLIER = 0.5;
 
 function estimateTokensFromMessages(messages: ModelMessage[]): {
   tokens: number;
+  textTokens: number;
+  imageTokens: number;
   imageCount: number;
+  totalTextLength: number;
 } {
   let totalTextLength = 0;
   let imageCount = 0;
@@ -60,9 +64,14 @@ function estimateTokensFromMessages(messages: ModelMessage[]): {
       }
     }
   }
+  const textTokens = Math.ceil(totalTextLength / CHARS_PER_TOKEN);
+  const imageTokens = imageCount * INPUT_TOKENS_PER_IMAGE;
   return {
-    tokens: Math.ceil(totalTextLength / CHARS_PER_TOKEN) + imageCount * INPUT_TOKENS_PER_IMAGE,
+    tokens: textTokens + imageTokens,
+    textTokens,
+    imageTokens,
     imageCount,
+    totalTextLength,
   };
 }
 
@@ -71,7 +80,7 @@ function estimateTokensFromMessages(messages: ModelMessage[]): {
  * with or without a rubric.
  */
 function estimateOutputTokens(rubricItemDescriptions: string[]): number {
-  const explanationPlaceholder = 'x'.repeat(EXPLANATION_OUTPUT_TOKENS * CHARS_PER_TOKEN);
+  const explanationPlaceholder = 'x'.repeat(AVG_EXPLANATION_LENGTH);
 
   if (rubricItemDescriptions.length > 0) {
     // Reconstruct what the filled rubric output would look like.
@@ -80,16 +89,30 @@ function estimateOutputTokens(rubricItemDescriptions: string[]): number {
       explanation: explanationPlaceholder,
       rubric_items: Object.fromEntries(rubricItemDescriptions.map((desc) => [desc, false])),
     });
-    return Math.ceil(rubricOutputJson.length / CHARS_PER_TOKEN);
+    const totalTokens = Math.ceil(rubricOutputJson.length / CHARS_PER_TOKEN);
+    logger.info('Cost estimation: output token estimate (rubric)', {
+      rubric_item_count: rubricItemDescriptions.length,
+      avg_explanation_length: AVG_EXPLANATION_LENGTH,
+      rubric_json_length: rubricOutputJson.length,
+      total_output_tokens: totalTokens,
+    });
+    return totalTokens;
   }
   // Numeric scoring: { "explanation": "...", "feedback": "...", "score": N }
-  const feedbackPlaceholder = 'x'.repeat(FEEDBACK_OUTPUT_TOKENS * CHARS_PER_TOKEN);
+  const feedbackPlaceholder = 'x'.repeat(AVG_FEEDBACK_LENGTH);
   const numericOutputJson = JSON.stringify({
     explanation: explanationPlaceholder,
     feedback: feedbackPlaceholder,
     score: 0,
   });
-  return Math.ceil(numericOutputJson.length / CHARS_PER_TOKEN);
+  const totalTokens = Math.ceil(numericOutputJson.length / CHARS_PER_TOKEN);
+  logger.info('Cost estimation: output token estimate (numeric)', {
+    avg_explanation_length: AVG_EXPLANATION_LENGTH,
+    avg_feedback_length: AVG_FEEDBACK_LENGTH,
+    numeric_json_length: numericOutputJson.length,
+    total_output_tokens: totalTokens,
+  });
+  return totalTokens;
 }
 
 export async function estimateAiGradingCost({
@@ -111,6 +134,7 @@ export async function estimateAiGradingCost({
   num_to_grade: number;
   avg_input_tokens_per_submission: number;
   estimated_output_tokens: number;
+  estimated_reasoning_tokens: number;
 }> {
   const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion({
     assessment_question_id: assessment_question.id,
@@ -134,6 +158,7 @@ export async function estimateAiGradingCost({
       num_to_grade: 0,
       avg_input_tokens_per_submission: 0,
       estimated_output_tokens,
+      estimated_reasoning_tokens: 0,
     };
   }
 
@@ -217,7 +242,16 @@ export async function estimateAiGradingCost({
         model_id: DEFAULT_AI_GRADING_MODEL,
       });
 
-      const { tokens } = estimateTokensFromMessages(messages);
+      const { tokens, textTokens, imageTokens, imageCount, totalTextLength } =
+        estimateTokensFromMessages(messages);
+      logger.info('Cost estimation: input token estimate for submission', {
+        instance_question_id: instance_question.id,
+        total_text_length: totalTextLength,
+        text_tokens: textTokens,
+        image_count: imageCount,
+        image_tokens: imageTokens,
+        total_input_tokens: tokens,
+      });
       totalInputTokens += tokens;
       successCount++;
     } catch (err) {
@@ -236,10 +270,27 @@ export async function estimateAiGradingCost({
   }
 
   const avg_input_tokens_per_submission = Math.ceil(totalInputTokens / successCount);
+  const estimated_reasoning_tokens = Math.ceil(
+    avg_input_tokens_per_submission * REASONING_INPUT_MULTIPLIER,
+  );
+
+  logger.info('Cost estimation: summary', {
+    assessment_question_id: assessment_question.id,
+    num_to_grade,
+    sampled_count: sampled.length,
+    success_count: successCount,
+    total_input_tokens_sampled: totalInputTokens,
+    avg_input_tokens_per_submission,
+    estimated_output_tokens,
+    estimated_reasoning_tokens,
+    has_rubric: rubric_items.length > 0,
+    rubric_item_count: rubric_items.length,
+  });
 
   return {
     num_to_grade,
     avg_input_tokens_per_submission,
     estimated_output_tokens,
+    estimated_reasoning_tokens,
   };
 }

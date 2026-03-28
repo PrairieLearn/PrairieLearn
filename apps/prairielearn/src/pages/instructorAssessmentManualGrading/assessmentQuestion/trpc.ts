@@ -211,6 +211,7 @@ const getAiGradingModalDataQuery = t.procedure
       num_to_grade: costEstimate.num_to_grade,
       avg_input_tokens_per_submission: costEstimate.avg_input_tokens_per_submission,
       estimated_output_tokens: costEstimate.estimated_output_tokens,
+      estimated_reasoning_tokens: costEstimate.estimated_reasoning_tokens,
       credit_pool,
       model_pricing,
       infrastructure_fee_percent: config.aiGradingInfrastructureFeePercent,
