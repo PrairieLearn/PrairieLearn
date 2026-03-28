@@ -3,6 +3,7 @@ import z from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
+import { resolveModernAssessmentAccess } from '../lib/assessment-access-control/authz.js';
 import {
   AssessmentModuleSchema,
   AssessmentSchema,
@@ -39,7 +40,16 @@ export default asyncHandler(async (req, res, next) => {
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;
   }
-  // TODO: consider row.assessment.modern_access_control
+  if (row.assessment.modern_access_control) {
+    const modernResult = await resolveModernAssessmentAccess({
+      assessment: row.assessment,
+      userId: res.locals.authz_data.user.id,
+      courseInstance: res.locals.course_instance,
+      authzData: res.locals.authz_data,
+      reqDate: res.locals.req_date,
+    });
+    row.authz_result = modernResult;
+  }
   if (!row.authz_result.authorized) {
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;

@@ -28,7 +28,7 @@ export function DragPreview({
             {hasTitle ? (
               qData!.question.title
             ) : (
-              <span className="font-monospace">{question.id ?? 'Alternative group'}</span>
+              <span className="font-monospace">{question.id ?? 'Alternative pool'}</span>
             )}
           </div>
         );
