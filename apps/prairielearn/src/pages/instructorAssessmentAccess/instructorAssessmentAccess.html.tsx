@@ -49,6 +49,7 @@ export function InstructorAssessmentAccess({
   migrationPreview,
   origHash,
   canEdit,
+  enhancedAccessControlEnabled,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
   accessRules: AssessmentAccessRules[];
@@ -56,6 +57,7 @@ export function InstructorAssessmentAccess({
   migrationPreview: MigrationPreview | null;
   origHash: string;
   canEdit: boolean;
+  enhancedAccessControlEnabled: boolean;
 }) {
   const showComments = accessRules.some((access_rule) => isRenderableComment(access_rule.comment));
   return PageLayout({
@@ -87,13 +89,19 @@ export function InstructorAssessmentAccess({
             : ''}
         </div>
 
-        <div class="alert alert-warning mb-0 rounded-0 border-start-0 border-end-0 border-top-0">
-          ${migrationAnalysis && !migrationAnalysis.canMigrate
-            ? html`This assessment uses the legacy access control system. Automatic migration is not
-              available for this assessment's access rules.`
-            : html`This assessment uses the legacy access control system. Consider migrating to the
-              modern format for a better editing experience.`}
-        </div>
+        ${enhancedAccessControlEnabled
+          ? html`
+              <div
+                class="alert alert-warning mb-0 rounded-0 border-start-0 border-end-0 border-top-0"
+              >
+                ${migrationAnalysis && !migrationAnalysis.canMigrate
+                  ? html`This assessment uses the legacy access control system. Automatic migration
+                    is not available for this assessment's access rules.`
+                  : html`This assessment uses the legacy access control system. Consider migrating
+                    to the modern format for a better editing experience.`}
+              </div>
+            `
+          : ''}
 
         <div class="table-responsive">
           <table class="table table-sm table-hover" aria-label="Access rules">

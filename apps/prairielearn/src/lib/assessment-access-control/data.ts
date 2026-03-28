@@ -120,24 +120,18 @@ function buildAfterComplete(rule: AssessmentAccessControlRule): RuntimeAfterComp
     afterComplete.hideQuestions = rule.after_complete_hide_questions;
   }
   if (includeField(rule.after_complete_hide_questions_again_date_overridden)) {
-    if (rule.after_complete_hide_questions_again_date) {
-      afterComplete.hideQuestionsAgainDate = rule.after_complete_hide_questions_again_date;
-    }
+    afterComplete.hideQuestionsAgainDate = rule.after_complete_hide_questions_again_date ?? null;
   }
 
   if (includeField(rule.after_complete_show_questions_again_date_overridden)) {
-    if (rule.after_complete_show_questions_again_date) {
-      afterComplete.showQuestionsAgainDate = rule.after_complete_show_questions_again_date;
-    }
+    afterComplete.showQuestionsAgainDate = rule.after_complete_show_questions_again_date ?? null;
   }
 
   if (rule.after_complete_hide_score != null) {
     afterComplete.hideScore = rule.after_complete_hide_score;
   }
   if (includeField(rule.after_complete_show_score_again_date_overridden)) {
-    if (rule.after_complete_show_score_again_date) {
-      afterComplete.showScoreAgainDate = rule.after_complete_show_score_again_date;
-    }
+    afterComplete.showScoreAgainDate = rule.after_complete_show_score_again_date ?? null;
   }
 
   return Object.keys(afterComplete).length > 0 ? afterComplete : undefined;

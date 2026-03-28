@@ -16,11 +16,17 @@ const sql = loadSqlEquiv(import.meta.url);
 
 const DeadlineArraySchema = z.array(z.object({ date: z.string(), credit: z.number() })).nullable();
 
+const LabelDetailSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  color: z.string(),
+});
+
 const RuleRowSchema = z.object({
   access_control_rule: AssessmentAccessControlRuleSchema.extend({
     target_type: z.enum(['none', 'student_label']),
   }),
-  labels: z.array(z.string()).nullable(),
+  labels: z.array(LabelDetailSchema).nullable(),
   early_deadlines: DeadlineArraySchema,
   late_deadlines: DeadlineArraySchema,
   prairietest_exams: z
@@ -97,17 +103,18 @@ function dbBaseRowToAccessControlJson(row: BaseRuleRow): AccessControlJson & { i
   }
   if (rule.after_complete_show_questions_again_date_overridden) {
     afterComplete.showQuestionsAgainDate =
-      rule.after_complete_show_questions_again_date?.toISOString();
+      rule.after_complete_show_questions_again_date?.toISOString() ?? null;
   }
   if (rule.after_complete_hide_questions_again_date_overridden) {
     afterComplete.hideQuestionsAgainDate =
-      rule.after_complete_hide_questions_again_date?.toISOString();
+      rule.after_complete_hide_questions_again_date?.toISOString() ?? null;
   }
   if (rule.after_complete_hide_score !== null) {
     afterComplete.hideScore = rule.after_complete_hide_score;
   }
   if (rule.after_complete_show_score_again_date_overridden) {
-    afterComplete.showScoreAgainDate = rule.after_complete_show_score_again_date?.toISOString();
+    afterComplete.showScoreAgainDate =
+      rule.after_complete_show_score_again_date?.toISOString() ?? null;
   }
 
   const isMainRule = rule.number === 0 && rule.target_type === 'none';
@@ -123,9 +130,12 @@ function dbBaseRowToAccessControlJson(row: BaseRuleRow): AccessControlJson & { i
   };
 }
 
-function dbRowToAccessControlJson(row: RuleRow): AccessControlJson & { id: string } {
+type AccessControlJsonWithRequiredId = Required<Pick<AccessControlJsonWithId, 'id'>> &
+  AccessControlJsonWithId;
+
+function dbRowToAccessControlJson(row: RuleRow): AccessControlJsonWithRequiredId {
   const base = dbBaseRowToAccessControlJson(row);
-  const labels = row.labels ?? [];
+  const labelDetails = row.labels ?? [];
 
   const integrations: AccessControlJson['integrations'] = {};
   if (row.prairietest_exams) {
@@ -139,13 +149,11 @@ function dbRowToAccessControlJson(row: RuleRow): AccessControlJson & { id: strin
 
   return {
     ...base,
-    labels: labels.length > 0 ? labels : undefined,
+    labels: labelDetails.length > 0 ? labelDetails.map((l) => l.name) : undefined,
+    labelDetails: labelDetails.length > 0 ? labelDetails : undefined,
     integrations: Object.keys(integrations).length > 0 ? integrations : undefined,
   };
 }
-
-type AccessControlJsonWithRequiredId = Required<Pick<AccessControlJsonWithId, 'id'>> &
-  AccessControlJsonWithId;
 
 const EnrollmentRuleRowSchema = z.object({
   access_control_rule: AssessmentAccessControlRuleSchema.extend({

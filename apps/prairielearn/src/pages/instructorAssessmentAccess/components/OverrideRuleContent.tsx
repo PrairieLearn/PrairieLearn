@@ -11,7 +11,7 @@ export function OverrideRuleContent({ index }: OverrideRuleContentProps) {
       <OverrideDateControlForm
         index={index}
         title="Date control"
-        description="Control access and credit to your exam based on a schedule"
+        description="Control access and credit to your assessment based on a schedule"
       />
 
       <OverrideAfterCompleteForm

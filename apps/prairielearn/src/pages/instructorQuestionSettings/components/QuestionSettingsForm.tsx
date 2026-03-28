@@ -65,6 +65,7 @@ interface QuestionSettingsFormValues {
   grading_method: 'Internal' | 'External' | 'Manual';
   single_variant: boolean;
   show_correct_answer: boolean;
+  partial_credit: boolean;
   workspace_enabled: boolean;
   workspace_image: string;
   workspace_port: string;
@@ -135,6 +136,7 @@ export const QuestionSettingsForm = ({
     grading_method: question.grading_method,
     single_variant: question.single_variant ?? false,
     show_correct_answer: question.show_correct_answer ?? true,
+    partial_credit: question.partial_credit ?? question.type === 'Freeform',
     workspace_enabled: !!question.workspace_image,
     workspace_image: question.workspace_image ?? '',
     workspace_port: question.workspace_port?.toString() ?? '',
@@ -432,6 +434,25 @@ export const QuestionSettingsForm = ({
         <div className="small text-muted">
           If enabled, the correct answer panel will be shown after all submission attempts have been
           exhausted.
+        </div>
+      </div>
+
+      <div className="mb-3 form-check">
+        <input
+          className="form-check-input"
+          type="checkbox"
+          id="partial_credit"
+          disabled={!canEdit}
+          defaultChecked={defaultValues.partial_credit}
+          {...register('partial_credit')}
+        />
+        <label className="form-check-label" htmlFor="partial_credit">
+          Partial credit
+        </label>
+        <div className="small text-muted">
+          If enabled, the question will award partial points for fractional scores. For example, if
+          only some elements on the page are correct, the student receives a proportional score.
+          When disabled, the question awards only 0% or 100%.
         </div>
       </div>
 
