@@ -28,37 +28,32 @@ const CHARS_PER_TOKEN = 4;
  * Approximate number of tokens consumed by a single image in the prompt.
  * TODO: Empirically derive this from past student submissions for `pl-image-capture`.
  */
-const TOKENS_PER_IMAGE = 1000;
+const INPUT_TOKENS_PER_IMAGE = 1000;
 
 /**
  * Approximate number of tokens for the explanation field in the AI grading output.
  * This represents a moderately-sized grading explanation.
  */
-const EXPLANATION_TOKENS = 400;
+const EXPLANATION_OUTPUT_TOKENS = 400;
 
 /**
  * Approximate number of tokens for the feedback field in the numeric scoring output.
  */
-const FEEDBACK_TOKENS = 200;
-
-/**
- * Approximate number of tokens for the score field (a single integer 0-100).
- */
-const SCORE_TOKENS = 5;
+const FEEDBACK_OUTPUT_TOKENS = 200;
 
 function estimateTokensFromMessages(messages: ModelMessage[]): {
   tokens: number;
   imageCount: number;
 } {
-  let charCount = 0;
+  let totalTextLength = 0;
   let imageCount = 0;
   for (const msg of messages) {
     if (typeof msg.content === 'string') {
-      charCount += msg.content.length;
+      totalTextLength += msg.content.length;
     } else if (Array.isArray(msg.content)) {
       for (const part of msg.content) {
         if (part.type === 'text') {
-          charCount += part.text.length;
+          totalTextLength += part.text.length;
         } else if (part.type === 'image') {
           imageCount++;
         }
@@ -66,30 +61,35 @@ function estimateTokensFromMessages(messages: ModelMessage[]): {
     }
   }
   return {
-    tokens: Math.ceil(charCount / CHARS_PER_TOKEN) + imageCount * TOKENS_PER_IMAGE,
+    tokens: Math.ceil(totalTextLength / CHARS_PER_TOKEN) + imageCount * INPUT_TOKENS_PER_IMAGE,
     imageCount,
   };
 }
 
 /**
- * Estimates the output token count based on the rubric structure, reconstructing
- * the expected output schema shape. With a rubric, the output is:
- *   { explanation: string, rubric_items: { [description]: boolean, ... } }
- * Without a rubric, the output is:
- *   { explanation: string, feedback: string, score: number }
+ * Estimates the output token count based on the grading result structure
+ * with or without a rubric.
  */
 function estimateOutputTokens(rubricItemDescriptions: string[]): number {
+  const explanationPlaceholder = 'x'.repeat(EXPLANATION_OUTPUT_TOKENS * CHARS_PER_TOKEN);
+
   if (rubricItemDescriptions.length > 0) {
-    // Reconstruct what the filled rubric output would look like:
-    // { "explanation": "...", "rubric_items": { "desc1": false, "desc2": false, ... } }
-    const rubricJson = JSON.stringify(
-      Object.fromEntries(rubricItemDescriptions.map((desc) => [desc, false])),
-    );
-    const rubricStructureTokens = Math.ceil(rubricJson.length / CHARS_PER_TOKEN);
-    return EXPLANATION_TOKENS + rubricStructureTokens;
+    // Reconstruct what the filled rubric output would look like.
+    // We use `false` since it's the longer of the two boolean strings ("false" vs "true").
+    const rubricOutputJson = JSON.stringify({
+      explanation: explanationPlaceholder,
+      rubric_items: Object.fromEntries(rubricItemDescriptions.map((desc) => [desc, false])),
+    });
+    return Math.ceil(rubricOutputJson.length / CHARS_PER_TOKEN);
   }
   // Numeric scoring: { "explanation": "...", "feedback": "...", "score": N }
-  return EXPLANATION_TOKENS + FEEDBACK_TOKENS + SCORE_TOKENS;
+  const feedbackPlaceholder = 'x'.repeat(FEEDBACK_OUTPUT_TOKENS * CHARS_PER_TOKEN);
+  const numericOutputJson = JSON.stringify({
+    explanation: explanationPlaceholder,
+    feedback: feedbackPlaceholder,
+    score: 0,
+  });
+  return Math.ceil(numericOutputJson.length / CHARS_PER_TOKEN);
 }
 
 export async function estimateAiGradingCost({

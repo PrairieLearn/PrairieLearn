@@ -41,20 +41,18 @@ function getSelection(
   }
 }
 
-function pluralizeSubmissions(count: number): string {
-  return count === 1 ? 'submission' : 'submissions';
-}
+const pluralizeSubmissions = (count: number) => (count === 1 ? 'submission' : 'submissions');
 
 function getTitle(modalState: AiGradingModelSelectionModalState): string {
   if (modalState == null) return '';
-  const submissions = pluralizeSubmissions(modalState.numToGrade);
+  const pluralizedSubmissions = pluralizeSubmissions(modalState.numToGrade);
   switch (modalState.type) {
     case 'all':
-      return `Grade ${modalState.numToGrade} ${submissions}`;
+      return `Grade ${modalState.numToGrade} ${pluralizedSubmissions}`;
     case 'human_graded':
-      return `Grade ${modalState.numToGrade} human-graded ${submissions}`;
+      return `Grade ${modalState.numToGrade} human-graded ${pluralizedSubmissions}`;
     case 'selected':
-      return `Grade ${modalState.numToGrade} selected ${submissions}`;
+      return `Grade ${modalState.numToGrade} selected ${pluralizedSubmissions}`;
     default:
       assertNever(modalState);
   }
@@ -82,8 +80,10 @@ function estimateTotalCostForModel(
 }
 
 /**
- * Returns the first available model based on provider order, or the default model
- * if the preferred model is available.
+ * Returns the preferred model if available, otherwise falls back to the first
+ * model whose provider is in the available list. A previously preferred model
+ * might not be available (e.g. if the user switched from PrairieLearn-managed
+ * to custom API keys).
  */
 function getDefaultModel(
   aiGradingLastSelectedModel: string | null,
@@ -118,44 +118,48 @@ function ProviderSelector({
         {providers.map((provider) => {
           const isActive = activeProvider === provider;
           const isAvailable = availableProviders.includes(provider);
+          const providerOption = (
+            <div
+              role="radio"
+              aria-checked={isActive}
+              tabIndex={isActive ? 0 : -1}
+              className={clsx('border rounded-3 px-3 py-2 h-100', {
+                'border-primary bg-primary bg-opacity-10': isActive,
+                'opacity-50': !isAvailable,
+              })}
+              style={{ cursor: isAvailable ? 'pointer' : 'default' }}
+              onClick={() => {
+                if (isAvailable) onSelect(provider);
+              }}
+              onKeyDown={(e) => {
+                if (isAvailable && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault();
+                  onSelect(provider);
+                }
+              }}
+            >
+              <div className={clsx('fw-semibold', { 'text-primary': isActive })}>
+                {AI_GRADING_PROVIDER_DISPLAY_NAMES[provider]}
+              </div>
+              <div className="text-muted small">{AI_GRADING_PROVIDER_SUBLABELS[provider]}</div>
+            </div>
+          );
+
           return (
             <div key={provider} className="col-12 col-md-4">
-              <OverlayTrigger
-                placement="top"
-                tooltip={
-                  isAvailable
-                    ? undefined
-                    : {
-                        props: { id: `provider-tooltip-${provider}` },
-                        body: 'No API key configured',
-                      }
-                }
-              >
-                <div
-                  role="radio"
-                  aria-checked={isActive}
-                  tabIndex={isActive ? 0 : -1}
-                  className={clsx('border rounded-3 px-3 py-2 h-100', {
-                    'border-primary bg-primary bg-opacity-10': isActive,
-                    'opacity-50': !isAvailable,
-                  })}
-                  style={{ cursor: isAvailable ? 'pointer' : 'default' }}
-                  onClick={() => {
-                    if (isAvailable) onSelect(provider);
-                  }}
-                  onKeyDown={(e) => {
-                    if (isAvailable && (e.key === 'Enter' || e.key === ' ')) {
-                      e.preventDefault();
-                      onSelect(provider);
-                    }
+              {isAvailable ? (
+                providerOption
+              ) : (
+                <OverlayTrigger
+                  placement="top"
+                  tooltip={{
+                    props: { id: `provider-tooltip-${provider}` },
+                    body: 'No API key configured',
                   }}
                 >
-                  <div className={clsx('fw-semibold', { 'text-primary': isActive })}>
-                    {AI_GRADING_PROVIDER_DISPLAY_NAMES[provider]}
-                  </div>
-                  <div className="text-muted small">{AI_GRADING_PROVIDER_SUBLABELS[provider]}</div>
-                </div>
-              </OverlayTrigger>
+                  {providerOption}
+                </OverlayTrigger>
+              )}
             </div>
           );
         })}
@@ -261,7 +265,7 @@ function ModelSelector({
   );
 }
 
-function BalanceSummary({
+function BalanceEstimatedChangeSummary({
   currentBalance,
   estimatedCost,
   projectedBalance,
@@ -284,66 +288,67 @@ function BalanceSummary({
       : null;
 
   return (
-    <div className="border rounded p-3 mt-3" aria-live="polite">
-      {/* Desktop: horizontal centered layout */}
-      <div className="d-none d-md-flex text-center">
-        <div className="flex-fill py-1">
-          <div className="text-muted small">Current balance</div>
-          <div className="fw-semibold">{formatMilliDollars(currentBalance)}</div>
-        </div>
-        <div className="vr mx-2" />
-        <div className="flex-fill py-1">
-          <div className="text-muted small">Estimated cost</div>
-          <div className="fw-semibold">
-            {estimatedCost != null ? formatMilliDollars(estimatedCost) : 'N/A'}
+    <div aria-live="polite">
+      <div className="border rounded p-3 mt-3">
+        {/* Desktop: horizontal centered layout */}
+        <div className="d-none d-md-flex text-center">
+          <div className="flex-fill py-1">
+            <div className="text-muted small">Current balance</div>
+            <div className="fw-semibold">{formatMilliDollars(currentBalance)}</div>
+          </div>
+          <div className="vr mx-2" />
+          <div className="flex-fill py-1">
+            <div className="text-muted small">Estimated cost</div>
+            <div className="fw-semibold">
+              {estimatedCost != null ? formatMilliDollars(estimatedCost) : 'N/A'}
+            </div>
+          </div>
+          <div className="vr mx-2" />
+          <div className="flex-fill py-1">
+            <div className="text-muted small">Balance after grading</div>
+            <div
+              className={clsx('fw-semibold', {
+                'text-danger': insufficientBalance,
+              })}
+            >
+              {displayedBalance != null ? formatMilliDollars(displayedBalance) : 'N/A'}
+            </div>
           </div>
         </div>
-        <div className="vr mx-2" />
-        <div className="flex-fill py-1">
-          <div className="text-muted small">Balance after grading</div>
-          <div
-            className={clsx('fw-semibold', {
-              'text-danger': insufficientBalance,
-            })}
-          >
-            {displayedBalance != null ? formatMilliDollars(displayedBalance) : 'N/A'}
+        {/* Mobile: left-aligned rows with label and value */}
+        <div className="d-md-none d-flex flex-column gap-1">
+          <div className="d-flex justify-content-between">
+            <span className="text-muted small">Current balance</span>
+            <span className="fw-semibold">{formatMilliDollars(currentBalance)}</span>
           </div>
-        </div>
-      </div>
-      {/* Mobile: left-aligned rows with label and value */}
-      <div className="d-md-none d-flex flex-column gap-1">
-        <div className="d-flex justify-content-between">
-          <span className="text-muted small">Current balance</span>
-          <span className="fw-semibold">{formatMilliDollars(currentBalance)}</span>
-        </div>
-        <div className="d-flex justify-content-between">
-          <span className="text-muted small">Estimated cost</span>
-          <span className="fw-semibold">
-            {estimatedCost != null ? formatMilliDollars(estimatedCost) : 'N/A'}
-          </span>
-        </div>
-        <div className="d-flex justify-content-between">
-          <span className="text-muted small">Balance after grading</span>
-          <span
-            className={clsx('fw-semibold', {
-              'text-danger': insufficientBalance,
-            })}
-          >
-            {displayedBalance != null ? formatMilliDollars(displayedBalance) : 'N/A'}
-          </span>
+          <div className="d-flex justify-content-between">
+            <span className="text-muted small">Estimated cost</span>
+            <span className="fw-semibold">
+              {estimatedCost != null ? formatMilliDollars(estimatedCost) : 'N/A'}
+            </span>
+          </div>
+          <div className="d-flex justify-content-between">
+            <span className="text-muted small">Balance after grading</span>
+            <span
+              className={clsx('fw-semibold', {
+                'text-danger': insufficientBalance,
+              })}
+            >
+              {displayedBalance != null ? formatMilliDollars(displayedBalance) : 'N/A'}
+            </span>
+          </div>
         </div>
       </div>
       {insufficientBalance && (
-        <Alert variant="warning" className="mt-2 mb-0">
+        <Alert variant="warning" className="mt-3 mb-0">
           Insufficient balance to grade all {numToGrade} {pluralizeSubmissions(numToGrade)}.
           {estimatedSubmissionsGraded != null && (
             <>
               {' '}
-              We estimate approximately {estimatedSubmissionsGraded}{' '}
-              {pluralizeSubmissions(estimatedSubmissionsGraded)} will be graded before the balance
-              runs out. Remaining submissions will not be graded.
+              Approximately {estimatedSubmissionsGraded} will be graded; the rest will be skipped.
             </>
-          )}
+          )}{' '}
+          Add funds to grade all submissions.
         </Alert>
       )}
     </div>
@@ -479,7 +484,7 @@ export function AiGradingModelSelectionModal({
           )}
 
           {data && !data.using_custom_api_keys && data.credit_pool != null && (
-            <BalanceSummary
+            <BalanceEstimatedChangeSummary
               currentBalance={data.credit_pool.total_milli_dollars}
               estimatedCost={selectedCostMilliDollars}
               projectedBalance={projectedBalance}
@@ -508,9 +513,7 @@ export function AiGradingModelSelectionModal({
                 }
                 type="submit"
               >
-                {mutation.isPending
-                  ? 'Submitting...'
-                  : `Grade ${numToGrade} ${pluralizeSubmissions(numToGrade)}`}
+                {mutation.isPending ? 'Submitting...' : 'Grade submissions'}
               </Button>
             </div>
             <small className="text-muted my-0 text-end d-block">

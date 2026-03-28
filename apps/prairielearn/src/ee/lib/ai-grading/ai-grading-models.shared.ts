@@ -74,8 +74,8 @@ export const AI_GRADING_PROVIDER_DISPLAY_NAMES: Record<EnumAiGradingProvider, st
 
 export const AI_GRADING_PROVIDER_SUBLABELS: Record<EnumAiGradingProvider, string> = {
   openai: 'General grading',
-  google: 'Gemini models',
-  anthropic: 'Claude models',
+  google: 'Images & multimodal',
+  anthropic: 'Code & reasoning',
 };
 
 export const AI_GRADING_PROVIDER_OPTIONS = AI_GRADING_PROVIDERS.map((provider) => ({

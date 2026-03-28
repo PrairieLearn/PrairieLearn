@@ -368,14 +368,14 @@ export async function aiGrade({
     assessment_question_id: assessment_question.id,
   });
 
+  // Used later to determine whether to update the score for each instance question.
+  const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
+
   const instance_questions = await filterInstanceQuestionsByMode(
     all_instance_questions,
     mode,
     instance_question_ids,
   );
-
-  // Used later to determine whether to update the score for each instance question.
-  const instanceQuestionGradingJobs = await selectGradingJobsInfo(instance_questions);
 
   let item_statuses = instance_questions.reduce(
     (acc, instance_question) => {
