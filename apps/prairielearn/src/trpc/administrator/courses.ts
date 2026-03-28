@@ -11,6 +11,7 @@ import {
   updateCourseColumn,
 } from '../../models/course.js';
 
+import { normalizeCoursePathInput } from './course-path.js';
 import { requireAdministrator, t } from './init.js';
 
 const insert = t.procedure
@@ -33,6 +34,8 @@ const insert = t.procedure
     }),
   )
   .mutation(async ({ input, ctx }) => {
+    const normalizedPath = normalizeCoursePathInput(input.path);
+
     const repoExists = await checkCourseRepositoryUrlExists(input.repository);
     if (repoExists) {
       throw new TRPCError({
@@ -41,7 +44,7 @@ const insert = t.procedure
       });
     }
 
-    const pathExists = await checkCoursePathExists(input.path);
+    const pathExists = await checkCoursePathExists(normalizedPath);
     if (pathExists) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
@@ -54,7 +57,7 @@ const insert = t.procedure
       short_name: input.shortName,
       title: input.title,
       display_timezone: input.displayTimezone,
-      path: input.path,
+      path: normalizedPath,
       repository: input.repository,
       branch: input.branch,
       authn_user_id: ctx.authn_user.id,
@@ -101,8 +104,10 @@ const updateColumn = t.procedure
     }),
   )
   .mutation(async ({ input, ctx }) => {
+    let value = input.value;
+
     if (input.columnName === 'repository') {
-      const repoExists = await checkCourseRepositoryUrlExists(input.value, input.courseId);
+      const repoExists = await checkCourseRepositoryUrlExists(value, input.courseId);
       if (repoExists) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
@@ -112,7 +117,8 @@ const updateColumn = t.procedure
     }
 
     if (input.columnName === 'path') {
-      const pathExists = await checkCoursePathExists(input.value, input.courseId);
+      value = normalizeCoursePathInput(value);
+      const pathExists = await checkCoursePathExists(value, input.courseId);
       if (pathExists) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
@@ -124,7 +130,7 @@ const updateColumn = t.procedure
     await updateCourseColumn({
       courseId: input.courseId,
       columnName: input.columnName,
-      value: input.value,
+      value,
       authnUserId: ctx.authn_user.id,
     });
   });

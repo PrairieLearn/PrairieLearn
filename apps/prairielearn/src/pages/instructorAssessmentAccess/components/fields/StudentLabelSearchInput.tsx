@@ -69,6 +69,7 @@ export function StudentLabelSearchInput({
       .map((label) => ({
         studentLabelId: label.id,
         name: label.name,
+        color: label.color,
       }));
     if (labelsToAdd.length > 0) {
       onSelect(labelsToAdd);

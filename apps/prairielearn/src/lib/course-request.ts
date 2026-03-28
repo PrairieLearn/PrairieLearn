@@ -43,6 +43,7 @@ const CourseRequestRowSchema = z.object({
   referral_source: z.string().nullable(),
   short_name: z.string(),
   title: z.string(),
+  user_institution_id: IdSchema,
   user_name: z.string().nullable(),
   user_uid: z.string(),
   work_email: z.string().nullable(),

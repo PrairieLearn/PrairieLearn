@@ -17,6 +17,8 @@ export interface AccessControlJsonWithId extends AccessControlJson {
   /** Rule type: 'student_label' for label-based rules, 'enrollment' for individual student rules, 'none' for rules without specific targeting */
   ruleType?: 'student_label' | 'enrollment' | 'none' | null;
   individuals?: AccessControlIndividual[];
+  /** Student label details (id, name, color) from the database, used for rendering colored badges. */
+  labelDetails?: { id: string; name: string; color: string }[];
 }
 
 /** Field names that belong to the date control section of an access control rule. */
@@ -65,6 +67,7 @@ export const IndividualTargetSchema = z.object({
 export const StudentLabelTargetSchema = z.object({
   studentLabelId: z.string(),
   name: z.string(),
+  color: z.string().optional(),
 });
 
 export const AppliesToSchema = z.object({
@@ -154,7 +157,7 @@ function toLocalDatetimeValue<T extends string | null | undefined>(
     return Temporal.Instant.from(value)
       .toZonedDateTimeISO(displayTimezone)
       .toPlainDateTime()
-      .toString() as T;
+      .toString({ smallestUnit: 'second' }) as T;
   }
   return value;
 }
@@ -170,7 +173,11 @@ export function jsonToMainRuleFormData(
     id: json.id,
     trackingId: json.id ?? crypto.randomUUID(),
     listBeforeRelease: json.listBeforeRelease ?? false,
-    dateControlEnabled: dc?.releaseDate != null,
+    dateControlEnabled:
+      dc?.releaseDate != null ||
+      dc?.dueDate != null ||
+      (dc?.earlyDeadlines?.length ?? 0) > 0 ||
+      (dc?.lateDeadlines?.length ?? 0) > 0,
     releaseDate: toLocalDatetimeValue(dc?.releaseDate, displayTimezone) ?? null,
     dueDate: toLocalDatetimeValue(dc?.dueDate, displayTimezone) ?? null,
     earlyDeadlines: (dc?.earlyDeadlines ?? []).map((d) => ({
@@ -220,7 +227,9 @@ export function jsonToOverrideFormData(
     appliesTo = {
       targetType: 'student_label',
       individuals: [],
-      studentLabels: (json.labels ?? []).map((name: string) => ({ studentLabelId: '', name })),
+      studentLabels: json.labelDetails
+        ? json.labelDetails.map((l) => ({ studentLabelId: l.id, name: l.name, color: l.color }))
+        : (json.labels ?? []).map((name: string) => ({ studentLabelId: '', name })),
     };
   }
 
@@ -318,16 +327,26 @@ function mainRuleToJson(rule: MainRuleData, displayTimezone: string): AccessCont
 
   if (rule.dateControlEnabled) {
     output.dateControl = {};
-    // "Released immediately" in the UI sets releaseDate to null; persist as
-    // the current timestamp in the course instance's display timezone so it
-    // round-trips as a real date (matching the course-instance publishing
-    // pattern).
-    output.dateControl.releaseDate =
-      rule.releaseDate ||
-      Temporal.Now.zonedDateTimeISO(displayTimezone).toPlainDateTime().toString();
+    if (rule.releaseDate) {
+      output.dateControl.releaseDate = rule.releaseDate;
+    } else {
+      // "Released immediately" with dates configured: persist as the current
+      // timestamp so the assessment is open now (matching the course-instance
+      // publishing pattern). Truncate to minutes to satisfy the datetime-local
+      // schema.
+      output.dateControl.releaseDate = Temporal.Now.zonedDateTimeISO(displayTimezone)
+        .toPlainDateTime()
+        .toString({ smallestUnit: 'minute' });
+    }
     if (rule.dueDate) output.dateControl.dueDate = rule.dueDate;
     if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (rule.lateDeadlines.length > 0) output.dateControl.lateDeadlines = rule.lateDeadlines;
+  }
+
+  // Non-date fields live under dateControl in the schema but should be
+  // preserved regardless of whether the date control toggle is enabled.
+  if (rule.afterLastDeadline || rule.durationMinutes != null || rule.password) {
+    output.dateControl ??= {};
     if (rule.afterLastDeadline) output.dateControl.afterLastDeadline = rule.afterLastDeadline;
     if (rule.durationMinutes != null) output.dateControl.durationMinutes = rule.durationMinutes;
     if (rule.password) output.dateControl.password = rule.password;
