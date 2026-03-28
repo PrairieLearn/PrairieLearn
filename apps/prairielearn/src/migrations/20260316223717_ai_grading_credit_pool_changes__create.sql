@@ -16,7 +16,6 @@ CREATE TABLE ai_grading_credit_pool_changes (
   user_id BIGINT REFERENCES users (id) ON UPDATE CASCADE ON DELETE SET NULL,
   ai_grading_job_id BIGINT REFERENCES ai_grading_jobs (id) ON UPDATE CASCADE ON DELETE SET NULL,
   assessment_question_id BIGINT REFERENCES assessment_questions (id) ON UPDATE CASCADE ON DELETE SET NULL,
-  checkout_session_id BIGINT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

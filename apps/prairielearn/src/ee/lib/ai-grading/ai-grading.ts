@@ -21,7 +21,7 @@ import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
-  calculateCostWithFeeMilliDollars,
+  calculateCostMilliDollars,
   formatMilliDollars,
 } from '../../../lib/ai-grading-credits.js';
 import {
@@ -110,8 +110,9 @@ interface AiGradingPersistenceContext {
 }
 
 /**
- * Calculate the total cost in milli-dollars (with infrastructure fee) for all
- * responses from a single grading operation.
+ * Calculate the total cost in milli-dollars for all responses from a single
+ * grading operation. This is the raw API cost only; the infrastructure fee is
+ * charged separately at purchase time.
  */
 function calculateTotalGradingCostMilliDollars({
   model_id,
@@ -134,7 +135,7 @@ function calculateTotalGradingCostMilliDollars({
       });
     }
   }
-  return calculateCostWithFeeMilliDollars(totalRawCost, config.aiGradingInfrastructureFeePercent);
+  return calculateCostMilliDollars(totalRawCost);
 }
 
 async function insertAiGradingJobForResponses({

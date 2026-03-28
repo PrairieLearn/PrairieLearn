@@ -86,16 +86,16 @@ router.get(
       const localSession = await getCreditCheckoutSessionByStripeId(stripeSessionId);
 
       if (localSession) {
+        if (
+          localSession.course_instance_id !== courseInstance.id ||
+          localSession.agent_user_id !== authn_user.id
+        ) {
+          throw new error.HttpStatusError(400, 'Invalid session');
+        }
+
         checkoutAmountMilliDollars = localSession.amount_milli_dollars;
 
         if (!localSession.credits_added) {
-          if (
-            localSession.course_instance_id !== courseInstance.id ||
-            localSession.agent_user_id !== authn_user.id
-          ) {
-            throw new error.HttpStatusError(400, 'Invalid session');
-          }
-
           const stripe = getStripeClient();
           const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
 

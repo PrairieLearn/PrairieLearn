@@ -169,10 +169,13 @@ export async function refundCreditPurchase({
   const paymentIntentId =
     typeof paymentIntent === 'string' ? paymentIntent : (paymentIntent as { id: string }).id;
 
-  // Issue Stripe refund first so that a Stripe failure does not leave the DB
-  // in an inconsistent "refunded" state.
+  // Issue Stripe refund with an idempotency key derived from the checkout
+  // session so that retries (e.g. after a DB failure) do not create duplicate
+  // refunds.  Stripe is called before the DB commit so that a Stripe failure
+  // does not leave the database in an inconsistent "refunded" state.
   const stripe = getStripeClient();
-  await stripe.refunds.create({ payment_intent: paymentIntentId });
+  const idempotencyKey = `refund_checkout_session_${checkout_session_id}`;
+  await stripe.refunds.create({ payment_intent: paymentIntentId }, { idempotencyKey });
 
   await runInTransactionAsync(async () => {
     const marked = await queryOptionalRow(

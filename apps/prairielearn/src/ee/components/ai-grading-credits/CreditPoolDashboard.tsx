@@ -43,7 +43,7 @@ export function CreditPoolDashboard({
   const poolQuery = useQuery(trpc.creditPool.queryOptions());
   const changesQuery = useQuery({
     ...trpc.creditPoolChanges.queryOptions({ page }),
-    enabled: showHistory || poolQuery.data != null,
+    enabled: showHistory || (emptyState != null && poolQuery.data != null),
   });
   const dailySpendingQuery = useQuery(trpc.dailySpending.queryOptions({ days: chartDays }));
   const validGroupBy = groupBy !== 'none' ? groupBy : undefined;

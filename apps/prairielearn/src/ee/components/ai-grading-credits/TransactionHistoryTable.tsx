@@ -45,7 +45,7 @@ export function TransactionHistoryTable({
   const wasRefundingRef = useRef(false);
 
   // Close modal when refund finishes (transition from refunding -> not refunding).
-  // Computed during render to avoid useEffect + setState on prop change.
+  // Computed during render per React docs recommendation for adjusting state on prop change.
   if (wasRefundingRef.current && !isRefunding && refundTarget != null) {
     setRefundTarget(null);
   }
