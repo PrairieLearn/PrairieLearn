@@ -100,7 +100,7 @@ function CustomPackageCard({
   onSelect: () => void;
   onAmountChange: (value: string) => void;
 }) {
-  const customDollars = Math.max(0, Math.floor(Number.parseFloat(customAmount) || 0));
+  const customDollars = Math.max(0, Number.parseInt(customAmount || '0', 10));
   const estimate = customDollars >= 1 ? roundEstimate(customDollars) : null;
 
   return (
@@ -207,7 +207,7 @@ export function PurchaseCreditsModal({
     },
   });
 
-  const customDollars = Math.max(0, Math.floor(Number.parseFloat(customAmount) || 0));
+  const customDollars = Math.max(0, Number.parseInt(customAmount || '0', 10));
   const purchaseDollars = selected.type === 'preset' ? selected.dollars : customDollars;
   const minDollars = MIN_PURCHASE_MILLI_DOLLARS / 1000;
   const maxDollars = MAX_PURCHASE_MILLI_DOLLARS / 1000;
@@ -226,7 +226,7 @@ export function PurchaseCreditsModal({
       onHide={onHide}
       onExited={() => {
         setCustomAmount('50');
-        setSelected({ type: 'preset', dollars: CREDIT_PACKAGES[0].dollars });
+        setSelected({ type: 'preset', dollars: CREDIT_PACKAGES[1].dollars });
         checkoutMutation.reset();
         onExited();
       }}

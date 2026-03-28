@@ -70,12 +70,13 @@ export function CreditPoolDashboard({
 
   const pool = poolQuery.data;
   const hasNoBalance =
-    pool.total_milli_dollars === 0 &&
     pool.credit_transferable_milli_dollars === 0 &&
     pool.credit_non_transferable_milli_dollars === 0;
-  const hasTransactions = (changesQuery.data?.totalCount ?? 0) > 0;
 
   if (hasNoBalance && emptyState && !dimmed) {
+    if (changesQuery.isError) {
+      return <Alert variant="danger">Failed to load transaction history.</Alert>;
+    }
     if (!changesQuery.isFetched) {
       return (
         <div className="text-center py-4">
@@ -84,6 +85,7 @@ export function CreditPoolDashboard({
         </div>
       );
     }
+    const hasTransactions = (changesQuery.data?.totalCount ?? 0) > 0;
     if (!hasTransactions) {
       return <>{emptyState}</>;
     }

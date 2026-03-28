@@ -127,9 +127,12 @@ export async function processCreditPurchase({
 }
 
 /**
- * Refunds a completed credit purchase: deducts credits from the transferable pool,
- * marks the checkout session as refunded, inserts an audit event, and issues a
- * Stripe refund for the full amount (credits + infrastructure fee).
+ * Refunds a completed credit purchase: issues a Stripe refund first, then
+ * deducts credits from the transferable pool, marks the checkout session as
+ * refunded, and inserts an audit event — all in a single transaction.
+ *
+ * Stripe is called before the DB commit so that a Stripe failure does not
+ * leave the database in an inconsistent "refunded" state.
  */
 export async function refundCreditPurchase({
   checkout_session_id,
@@ -157,6 +160,19 @@ export async function refundCreditPurchase({
   if (session.refunded_at != null) {
     throw new Error('This purchase has already been refunded');
   }
+
+  // Resolve the payment intent ID before doing anything destructive.
+  const paymentIntent = session.data.payment_intent;
+  if (!paymentIntent) {
+    throw new Error('Cannot refund: checkout session has no payment intent');
+  }
+  const paymentIntentId =
+    typeof paymentIntent === 'string' ? paymentIntent : (paymentIntent as { id: string }).id;
+
+  // Issue Stripe refund first so that a Stripe failure does not leave the DB
+  // in an inconsistent "refunded" state.
+  const stripe = getStripeClient();
+  await stripe.refunds.create({ payment_intent: paymentIntentId });
 
   await runInTransactionAsync(async () => {
     const marked = await queryOptionalRow(
@@ -210,13 +226,4 @@ export async function refundCreditPurchase({
       },
     });
   });
-
-  // Issue Stripe refund after the DB transaction commits.
-  const paymentIntent = session.data.payment_intent;
-  if (paymentIntent) {
-    const paymentIntentId =
-      typeof paymentIntent === 'string' ? paymentIntent : (paymentIntent as { id: string }).id;
-    const stripe = getStripeClient();
-    await stripe.refunds.create({ payment_intent: paymentIntentId });
-  }
 }

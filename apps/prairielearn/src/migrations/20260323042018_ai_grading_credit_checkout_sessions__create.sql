@@ -17,4 +17,6 @@ CREATE INDEX IF NOT EXISTS ai_grading_credit_checkout_sessions_agent_user_id_idx
 CREATE INDEX IF NOT EXISTS ai_grading_credit_checkout_sessions_course_instance_id_idx ON ai_grading_credit_checkout_sessions USING btree (course_instance_id);
 
 ALTER TABLE ai_grading_credit_pool_changes
-ADD CONSTRAINT ai_grading_credit_pool_changes_checkout_session_id_fkey FOREIGN KEY (checkout_session_id) REFERENCES ai_grading_credit_checkout_sessions (id) ON UPDATE CASCADE ON DELETE SET NULL;
+ADD CONSTRAINT ai_grading_credit_pool_changes_checkout_session_id_fkey FOREIGN KEY (checkout_session_id) REFERENCES ai_grading_credit_checkout_sessions (id) ON UPDATE CASCADE ON DELETE SET NULL NOT VALID;
+
+ALTER TABLE ai_grading_credit_pool_changes VALIDATE CONSTRAINT ai_grading_credit_pool_changes_checkout_session_id_fkey;

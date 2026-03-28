@@ -163,8 +163,6 @@ export function TransactionHistoryTable({
   );
 }
 
-const PURCHASE_REASONS = ['Credit purchase', 'Stripe purchase'];
-
 function RefundActionInline({
   row,
   onClickRefund,
@@ -172,7 +170,7 @@ function RefundActionInline({
   row: TransactionHistoryRow;
   onClickRefund: () => void;
 }) {
-  if (!row.checkout_session_id || !PURCHASE_REASONS.includes(row.reason)) {
+  if (!row.checkout_session_id || row.delta_milli_dollars <= 0) {
     return null;
   }
 

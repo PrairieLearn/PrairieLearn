@@ -519,11 +519,14 @@ function CreditPoolSection({
             />
             <h3 className="h5 mb-2">Get started with AI grading</h3>
             <p className="text-muted mb-3">Buy credits to start grading submissions with AI.</p>
-            {stripePurchasingEnabled && canEdit && (
+            {stripePurchasingEnabled && (
               <button
                 type="button"
                 className="btn btn-primary d-inline-flex align-items-center gap-2"
-                onClick={() => purchaseModalState.showWithData(null)}
+                disabled={!canEdit}
+                title={!canEdit ? 'You must be a course owner to purchase credits' : undefined}
+                style={!canEdit ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                onClick={canEdit ? () => purchaseModalState.showWithData(null) : undefined}
               >
                 <i className="bi bi-cart-plus" aria-hidden="true" />
                 Purchase credits
