@@ -39,9 +39,9 @@ FROM
 WHERE
   iq.id = $instance_question_id;
 
--- BLOCK unset_grading_needed
+-- BLOCK set_assessment_instance_grading_needed
 UPDATE assessment_instances AS ai
 SET
-  grading_needed = FALSE
+  grading_needed = $grading_needed
 WHERE
   ai.id = $assessment_instance_id;

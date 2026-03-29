@@ -1,12 +1,13 @@
-import { mapSeries } from 'async';
+import { mapLimit } from 'async';
+import { groupBy } from 'es-toolkit';
 import { z } from 'zod';
 
-import { HttpStatusError } from '@prairielearn/error';
-import { execute, loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { closeAssessmentInstance } from '../lib/assessment.js';
 import { config } from '../lib/config.js';
 import {
+  type Assessment,
   AssessmentQuestionSchema,
   type Course,
   type CourseInstance,
@@ -90,6 +91,29 @@ const InstanceQuestionRefetchSchema = z.object({
   instance_question: InstanceQuestionSchema,
 });
 
+interface SharedContext {
+  assessment: Assessment;
+  courseInstance: CourseInstance;
+  assessmentCourse: Course;
+  testType: TestType | 'random';
+  maxAttempts: number;
+}
+
+interface QuestionResult {
+  attempts: number;
+  lastSubmissionId: string | null;
+  testType: TestType;
+}
+
+interface FinalizedInstanceQuestion {
+  instanceQuestion: InstanceQuestionQuery;
+  attempts: number;
+  testType: TestType;
+  finalInstanceQuestion: InstanceQuestion;
+}
+
+const CONCURRENCY = 5;
+
 export default async function ({
   assessment_id,
   test_type,
@@ -108,7 +132,13 @@ export default async function ({
   const assessmentCourse = await selectCourseById(courseInstance.course_id);
 
   const parsed = Number.parseInt(max_attempts_str, 10);
-  const maxAttempts = Number.isNaN(parsed) ? 10 : parsed;
+  const ctx: SharedContext = {
+    assessment,
+    courseInstance,
+    assessmentCourse,
+    testType: test_type,
+    maxAttempts: Number.isNaN(parsed) ? 10 : parsed,
+  };
   const shouldClose = close_str === 'true';
 
   const instanceQuestions = await queryRows(
@@ -117,206 +147,217 @@ export default async function ({
     InstanceQuestionQuerySchema,
   );
 
-  // Group instance questions by assessment instance for closing later.
-  const instanceQuestionsByAssessmentInstance = new Map<string, InstanceQuestionQuery[]>();
-  for (const iq of instanceQuestions) {
-    const aiId = iq.instance_question.assessment_instance_id;
-    const list = instanceQuestionsByAssessmentInstance.get(aiId) ?? [];
-    list.push(iq);
-    instanceQuestionsByAssessmentInstance.set(aiId, list);
-  }
+  const byAssessmentInstance = groupBy(
+    instanceQuestions,
+    (iq) => iq.instance_question.assessment_instance_id,
+  );
 
-  const rows: ResultRow[] = [];
+  const allResults = await mapLimit(
+    Object.entries(byAssessmentInstance),
+    CONCURRENCY,
+    async ([assessmentInstanceId, questions]: [string, InstanceQuestionQuery[]]) => {
+      const userId = questions[0].user.id;
 
-  for (const [assessmentInstanceId, questions] of instanceQuestionsByAssessmentInstance) {
-    const userId = questions[0].user.id;
+      const results = await mapLimit(questions, CONCURRENCY, async (instanceQuestion: InstanceQuestionQuery) => {
+        const result = await processQuestion(instanceQuestion, ctx);
+        return finalizeQuestion(instanceQuestion, result, ctx);
+      });
 
-    const questionRows = await mapSeries(
-      questions,
-      async ({
-        question,
-        instance_question,
-        user,
-        question_course,
-        assessment_question,
-      }: InstanceQuestionQuery): Promise<ResultRow> => {
-        const maxAutoPoints = assessment_question.max_auto_points ?? 0;
-        const maxManualPoints = assessment_question.max_manual_points ?? 0;
-        const isExternal = question.grading_method === 'External';
+      const allSucceeded = results.every((r) => r.attempts > 0);
+      let closed = false;
 
-        let attempts = 0;
-        let lastSubmissionId: string | null = null;
-        let actualTestType: TestType = test_type === 'random' ? 'correct' : test_type;
-
-        if (isExternal) {
-          // External grading: save a submission without triggering the external
-          // grader, then assign full auto points directly.
-          const { submissionData, variant, hasFatalIssue, currentTestType } =
-            await createVariantAndSubmissionData({
-              question,
-              instance_question,
-              user,
-              question_course,
-              courseInstance,
-              assessmentCourse,
-              test_type,
-            });
-          actualTestType = currentTestType;
-
-          if (!hasFatalIssue) {
-            const result = await saveSubmission(
-              submissionData,
-              variant,
-              question,
-              assessmentCourse,
-            );
-            lastSubmissionId = result.submission_id;
-            attempts = 1;
-          }
-
-          if (maxAutoPoints > 0 && !hasFatalIssue && currentTestType !== 'invalid') {
-            await updateInstanceQuestionScore({
-              assessment,
-              instance_question_id: instance_question.id,
-              submission_id: lastSubmissionId,
-              check_modified_at: null,
-              score: { auto_score_perc: currentTestType === 'correct' ? 100 : 0 },
-              authn_user_id: user.id,
-            });
-          }
-        } else {
-          // Auto-graded or manual-only: submit and grade up to maxAttempts
-          // times. For manual-only questions gradeVariant is a no-op, so
-          // the loop runs once and we assign manual points below.
-          let currentIq: InstanceQuestion = instance_question;
-          for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            if (!currentIq.open || currentIq.status === 'complete') break;
-            if (
-              assessment.type === 'Homework' &&
-              maxAutoPoints > 0 &&
-              (currentIq.auto_points ?? 0) >= maxAutoPoints
-            ) {
-              break;
-            }
-
-            const { submissionData, variant, hasFatalIssue, currentTestType } =
-              await createVariantAndSubmissionData({
-                question,
-                instance_question: currentIq,
-                user,
-                question_course,
-                courseInstance,
-                assessmentCourse,
-                test_type,
-              });
-            actualTestType = currentTestType;
-            if (hasFatalIssue) break;
-
-            lastSubmissionId = await saveAndGradeSubmission(
-              submissionData,
-              variant,
-              question,
-              assessmentCourse,
-              true,
-              true,
-            );
-            attempts++;
-
-            if (maxAutoPoints === 0) break;
-
-            // Re-fetch to check if the question is now closed/complete.
-            const iqRow = await queryOptionalRow(
-              sql.select_instance_question_by_id,
-              { instance_question_id: instance_question.id },
-              InstanceQuestionRefetchSchema,
-            );
-            if (!iqRow) break;
-            currentIq = iqRow.instance_question;
-          }
-        }
-
-        // Assign manual points based on test type. Skip if no submission was
-        // created (e.g. the question had a fatal issue).
-        if (maxManualPoints > 0 && lastSubmissionId !== null) {
-          const manualScorePerc = actualTestType === 'correct' ? 100 : 0;
-          await updateInstanceQuestionScore({
-            assessment,
-            instance_question_id: instance_question.id,
-            submission_id: lastSubmissionId,
-            check_modified_at: null,
-            score: { manual_score_perc: manualScorePerc },
-            authn_user_id: user.id,
-          });
-        }
-
-        // Re-fetch final state for output.
-        const finalIqRow = await queryOptionalRow(
-          sql.select_instance_question_by_id,
-          { instance_question_id: instance_question.id },
-          InstanceQuestionRefetchSchema,
-        );
-        const finalIq = finalIqRow?.instance_question;
-
-        return {
-          course_instance_id: assessment.course_instance_id,
-          course_instance: courseInstance.short_name ?? '',
-          assessment_id: assessment.id,
-          assessment: assessment.tid ?? assessment.id,
-          assessment_instance_id: instance_question.assessment_instance_id,
-          uid: user.uid,
-          qid: question.qid ?? question.id,
-          test_type: actualTestType,
-          attempts,
-          auto_points: finalIq?.auto_points ?? 0,
-          manual_points: finalIq?.manual_points ?? 0,
-          max_auto_points: maxAutoPoints,
-          max_manual_points: maxManualPoints,
-          status: finalIq?.status ?? 'unknown',
-          closed: null,
-        };
-      },
-    );
-
-    rows.push(...questionRows);
-
-    // Close the assessment instance after all questions are handled.
-    // Skip closing if any question failed to produce a submission (attempts=0),
-    // so the tool can be re-run to retry those questions.
-    const allQuestionsSucceeded = questionRows.every((row) => (row.attempts as number) > 0);
-    let closed = false;
-
-    if (shouldClose && allQuestionsSucceeded) {
-      try {
+      if (shouldClose && allSucceeded) {
+        // We intentionally avoid `gradeAssessmentInstance` here because it calls
+        // `gradeVariant` on all open variants, which would kick off the external
+        // grader for externally-graded questions. Instead, we close the instance
+        // and unset grading_needed directly.
         await closeAssessmentInstance({
           assessment_instance_id: assessmentInstanceId,
           authn_user_id: userId,
           client_fingerprint_id: null,
         });
-        // All grading is already done; clear the flag so autoFinishExams doesn't re-grade.
-        await execute(sql.unset_grading_needed, {
+        await execute(sql.set_assessment_instance_grading_needed, {
           assessment_instance_id: assessmentInstanceId,
+          grading_needed: false,
         });
         closed = true;
-      } catch (err) {
-        if (
-          err instanceof HttpStatusError &&
-          err.status === 403 &&
-          err.message.includes('not open')
-        ) {
-          // Assessment instance is already closed; ignore.
-          closed = true;
-        } else {
-          throw err;
-        }
       }
-    }
 
-    for (const row of questionRows) {
-      row.closed = closed ? 'true' : 'false';
-    }
+      return results.map((r) => buildResultRow(r, ctx, closed));
+    },
+  );
+
+  return { rows: allResults.flat(), columns };
+}
+
+async function processQuestion(
+  instanceQuestion: InstanceQuestionQuery,
+  ctx: SharedContext,
+): Promise<QuestionResult> {
+  const { question, instance_question, user, question_course, assessment_question } =
+    instanceQuestion;
+  const maxAutoPoints = assessment_question.max_auto_points ?? 0;
+
+  if (question.grading_method === 'External') {
+    return processExternalQuestion(instanceQuestion, ctx);
   }
 
-  return { rows, columns };
+  // Auto-graded or manual-only: submit and grade up to maxAttempts times.
+  // For manual-only questions gradeVariant is a no-op, so the loop runs
+  // once and manual points are assigned in finalizeQuestion.
+  let currentIq: InstanceQuestion = instance_question;
+  let attempts = 0;
+  let lastSubmissionId: string | null = null;
+  let testType: TestType = ctx.testType === 'random' ? 'correct' : ctx.testType;
+
+  for (let attempt = 0; attempt < ctx.maxAttempts; attempt++) {
+    if (!currentIq.open || currentIq.status === 'complete') break;
+    if (
+      ctx.assessment.type === 'Homework' &&
+      maxAutoPoints > 0 &&
+      (currentIq.auto_points ?? 0) >= maxAutoPoints
+    ) {
+      break;
+    }
+
+    const { submissionData, variant, hasFatalIssue, currentTestType } =
+      await createVariantAndSubmissionData({
+        question,
+        instance_question: currentIq,
+        user,
+        question_course,
+        courseInstance: ctx.courseInstance,
+        assessmentCourse: ctx.assessmentCourse,
+        test_type: ctx.testType,
+      });
+    testType = currentTestType;
+    if (hasFatalIssue) break;
+
+    lastSubmissionId = await saveAndGradeSubmission(
+      submissionData,
+      variant,
+      question,
+      ctx.assessmentCourse,
+      true,
+      true,
+    );
+    attempts++;
+
+    if (maxAutoPoints === 0) break;
+
+    const iqRow = await queryOptionalRow(
+      sql.select_instance_question_by_id,
+      { instance_question_id: instance_question.id },
+      InstanceQuestionRefetchSchema,
+    );
+    if (!iqRow) break;
+    currentIq = iqRow.instance_question;
+  }
+
+  return { attempts, lastSubmissionId, testType };
+}
+
+async function processExternalQuestion(
+  instanceQuestion: InstanceQuestionQuery,
+  ctx: SharedContext,
+): Promise<QuestionResult> {
+  const { question, instance_question, user, question_course, assessment_question } =
+    instanceQuestion;
+  const maxAutoPoints = assessment_question.max_auto_points ?? 0;
+
+  // External grading: save a submission without triggering the external
+  // grader, then assign full auto points directly.
+  const { submissionData, variant, hasFatalIssue, currentTestType } =
+    await createVariantAndSubmissionData({
+      question,
+      instance_question,
+      user,
+      question_course,
+      courseInstance: ctx.courseInstance,
+      assessmentCourse: ctx.assessmentCourse,
+      test_type: ctx.testType,
+    });
+
+  if (hasFatalIssue) {
+    return { attempts: 0, lastSubmissionId: null, testType: currentTestType };
+  }
+
+  const { submission_id } = await saveSubmission(
+    submissionData,
+    variant,
+    question,
+    ctx.assessmentCourse,
+  );
+
+  if (maxAutoPoints > 0 && currentTestType !== 'invalid') {
+    await updateInstanceQuestionScore({
+      assessment: ctx.assessment,
+      instance_question_id: instance_question.id,
+      submission_id,
+      check_modified_at: null,
+      score: { auto_score_perc: currentTestType === 'correct' ? 100 : 0 },
+      authn_user_id: user.id,
+    });
+  }
+
+  return { attempts: 1, lastSubmissionId: submission_id, testType: currentTestType };
+}
+
+async function finalizeQuestion(
+  instanceQuestion: InstanceQuestionQuery,
+  result: QuestionResult,
+  ctx: SharedContext,
+): Promise<FinalizedInstanceQuestion> {
+  const maxManualPoints = instanceQuestion.assessment_question.max_manual_points ?? 0;
+
+  if (maxManualPoints > 0 && result.lastSubmissionId !== null) {
+    await updateInstanceQuestionScore({
+      assessment: ctx.assessment,
+      instance_question_id: instanceQuestion.instance_question.id,
+      submission_id: result.lastSubmissionId,
+      check_modified_at: null,
+      score: { manual_score_perc: result.testType === 'correct' ? 100 : 0 },
+      authn_user_id: instanceQuestion.user.id,
+    });
+  }
+
+  const refetchedRow = await queryRow(
+    sql.select_instance_question_by_id,
+    { instance_question_id: instanceQuestion.instance_question.id },
+    InstanceQuestionRefetchSchema,
+  );
+
+  return {
+    instanceQuestion,
+    attempts: result.attempts,
+    testType: result.testType,
+    finalInstanceQuestion: refetchedRow.instance_question,
+  };
+}
+
+function buildResultRow(
+  result: FinalizedInstanceQuestion,
+  ctx: SharedContext,
+  closed: boolean,
+): ResultRow {
+  const { instanceQuestion, attempts, testType, finalInstanceQuestion } = result;
+  return {
+    course_instance_id: ctx.assessment.course_instance_id,
+    course_instance: ctx.courseInstance.short_name ?? '',
+    assessment_id: ctx.assessment.id,
+    assessment: ctx.assessment.tid ?? ctx.assessment.id,
+    assessment_instance_id: instanceQuestion.instance_question.assessment_instance_id,
+    uid: instanceQuestion.user.uid,
+    qid: instanceQuestion.question.qid ?? instanceQuestion.question.id,
+    test_type: testType,
+    attempts,
+    auto_points: finalInstanceQuestion.auto_points,
+    manual_points: finalInstanceQuestion.manual_points,
+    max_auto_points: instanceQuestion.assessment_question.max_auto_points ?? 0,
+    max_manual_points: instanceQuestion.assessment_question.max_manual_points ?? 0,
+    status: finalInstanceQuestion.status,
+    closed: closed ? 'true' : 'false',
+  };
 }
 
 async function createVariantAndSubmissionData({
