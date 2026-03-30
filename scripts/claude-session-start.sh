@@ -20,9 +20,13 @@ for bin in /usr/lib/postgresql/16/bin/*; do
 done
 
 # We need graphviz for the python dependencies.
-echo "[session-start] Installing system packages..."
-timeout 30 bash -c 'apt-get update -qq && apt-get install -y -qq graphviz libgraphviz-dev postgresql-16-pgvector 2>&1' || echo "[session-start] WARNING: apt-get timed out or failed"
-echo "[session-start] System packages done"
+if dpkg -l graphviz libgraphviz-dev postgresql-16-pgvector > /dev/null 2>&1; then
+    echo "[session-start] System packages already installed, skipping"
+else
+    echo "[session-start] Installing system packages..."
+    timeout 30 bash -c 'apt-get update -qq && apt-get install -y -qq graphviz libgraphviz-dev postgresql-16-pgvector 2>&1' || echo "[session-start] WARNING: apt-get timed out or failed"
+    echo "[session-start] System packages done"
+fi
 
 # Load nvm
 . /opt/nvm/nvm.sh
