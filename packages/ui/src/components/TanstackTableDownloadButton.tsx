@@ -3,7 +3,7 @@ import type { Table } from '@tanstack/react-table';
 import { downloadAsCSV, downloadAsJSON } from '@prairielearn/browser-utils';
 
 export interface TanstackTableCsvCell {
-  value: string | number | null;
+  value: string | string[] | number | null;
   /** The name of the column in the CSV file. */
   name: string;
 }
@@ -49,7 +49,9 @@ export function TanstackTableDownloadButton<RowDataModel>({
     }
 
     const header = jsonRows[0].map((cell) => cell.name);
-    const csvRows = jsonRows.map((row) => row.map((cell) => cell.value));
+    const csvRows = jsonRows.map((row) =>
+      row.map((cell) => (Array.isArray(cell.value) ? cell.value.join('; ') : cell.value)),
+    );
     downloadAsCSV(header, csvRows, filename);
   }
 

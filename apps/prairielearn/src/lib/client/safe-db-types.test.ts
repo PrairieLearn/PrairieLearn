@@ -6,7 +6,7 @@ import type z from 'zod';
 import {
   RawStaffEnrollmentSchema,
   RawStudentEnrollmentSchema,
-  StaffAlternativeGroupSchema,
+  StaffAlternativePoolSchema,
   StaffAssessmentInstanceSchema,
   StaffAssessmentQuestionSchema,
   StaffAssessmentSchema,
@@ -73,6 +73,8 @@ const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   ai_grading_use_custom_api_keys: false,
   assessments_group_by: 'Set',
   course_id: '1',
+  credit_non_transferable_milli_dollars: 0,
+  credit_transferable_milli_dollars: 0,
   deleted_at: null,
   display_timezone: 'UTC',
   enrollment_code: 'AAABBBCCCC',
@@ -332,7 +334,7 @@ const minimalStaffAuditEvent: z.input<typeof StaffAuditEventSchema> = {
   team_id: null,
 };
 
-const minimalStaffAlternativeGroup: z.input<typeof StaffAlternativeGroupSchema> = {
+const minimalStaffAlternativePool: z.input<typeof StaffAlternativePoolSchema> = {
   advance_score_perc: null,
   assessment_id: '2',
   id: '5',
@@ -630,13 +632,13 @@ describe('safe-db-types schemas', () => {
     expect(parsed).toMatchObject(minimalStaffAuditEvent);
   });
 
-  it('parses valid StaffAlternativeGroup and drops extra fields', () => {
-    const parsed = StaffAlternativeGroupSchema.parse({
-      ...minimalStaffAlternativeGroup,
+  it('parses valid StaffAlternativePool and drops extra fields', () => {
+    const parsed = StaffAlternativePoolSchema.parse({
+      ...minimalStaffAlternativePool,
       extra: 123,
     });
     expect(parsed).not.toHaveProperty('extra');
-    expect(parsed).toMatchObject(minimalStaffAlternativeGroup);
+    expect(parsed).toMatchObject(minimalStaffAlternativePool);
   });
 
   it('parses valid StaffAssessmentQuestion and drops extra fields', () => {
