@@ -20,10 +20,7 @@ import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
-import {
-  calculateCostWithFeeMilliDollars,
-  formatMilliDollars,
-} from '../../../lib/ai-grading-credits.js';
+import { costToMilliDollars, formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 import {
   type AiImageGradingResponses,
   calculateResponseCost,
@@ -106,13 +103,17 @@ interface AiGradingPersistenceContext {
   prompt: ModelMessage[];
   course_instance: CourseInstance;
   instance_question: InstanceQuestion;
+  /** Persisted AI grading actions are attributed to the authenticated user, even with a different effective user. */
   authn_user_id: string;
   job_sequence_id: string;
 }
 
 /**
- * Calculate the total cost in milli-dollars (with infrastructure fee) for all
- * responses from a single grading operation.
+ * Calculate the total API cost in milli-dollars for all responses from a
+ * single grading operation.
+ *
+ * The infrastructure fee is not included here; it is
+ * charged at payment time, not at credit-pool deduction time.
  */
 function calculateTotalGradingCostMilliDollars({
   model_id,
@@ -120,22 +121,22 @@ function calculateTotalGradingCostMilliDollars({
   rotationCorrections,
   finalGradingResponse,
 }: AiGradingResponsesForPersistence): number {
-  let totalRawCost = calculateResponseCost({ model: model_id, usage: finalGradingResponse.usage });
+  let totalCost = calculateResponseCost({ model: model_id, usage: finalGradingResponse.usage });
   if (gradingResponseWithRotationIssue) {
-    totalRawCost += calculateResponseCost({
+    totalCost += calculateResponseCost({
       model: model_id,
       usage: gradingResponseWithRotationIssue.usage,
     });
   }
   if (rotationCorrections) {
     for (const correction of Object.values(rotationCorrections)) {
-      totalRawCost += calculateResponseCost({
+      totalCost += calculateResponseCost({
         model: model_id,
         usage: correction.response.usage,
       });
     }
   }
-  return calculateCostWithFeeMilliDollars(totalRawCost, config.aiGradingInfrastructureFeePercent);
+  return costToMilliDollars(totalCost);
 }
 
 async function insertAiGradingJobForResponses({
@@ -302,7 +303,9 @@ export async function aiGrade({
   assessment: Assessment;
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
+  /** Authenticated user; AI grading persistence is attributed to this actor. */
   authn_user_id: string;
+  /** Effective user; used for server job context but not grading actor attribution. */
   user_id: string;
   mode: 'human_graded' | 'all' | 'selected';
   /**
@@ -356,6 +359,8 @@ export async function aiGrade({
   const serverJob = await createServerJob({
     type: 'ai_grading',
     description: 'Perform AI grading',
+    // Preserve effective-user context for job ownership while also recording the
+    // authenticated actor who initiated the AI grading operation.
     userId: user_id,
     authnUserId: authn_user_id,
     courseId: course.id,
@@ -812,7 +817,7 @@ export async function aiGrade({
                   manual_rubric_data,
                   feedback: { manual: '' },
                 },
-                authn_user_id: user_id,
+                authn_user_id,
               }),
             trackRateLimitAndCost,
             persistenceContext,
@@ -834,7 +839,7 @@ export async function aiGrade({
                 manual_rubric_grading.computed_points / assessment_question.max_manual_points;
               return await insertAiOnlyGradingJob({
                 submission_id: submission.id,
-                authn_user_id: user_id,
+                authn_user_id,
                 score,
                 manual_points: manual_rubric_grading.computed_points,
                 manual_rubric_grading_id: manual_rubric_grading.id,
@@ -1021,20 +1026,20 @@ export async function aiGrade({
                   manual_score_perc: score,
                   feedback: { manual: feedback },
                 },
-                authn_user_id: user_id,
+                authn_user_id,
               }),
             trackRateLimitAndCost,
             persistenceContext,
             responses: responsesForPersistence,
           });
         } else {
-          // Does not require grading: only create grading job and rubric grading
+          // Does not require grading: only create grading job
           await finalizeAiGradingPersistence({
             createGradingJob: async () => {
               assert(assessment_question.max_manual_points);
               return await insertAiOnlyGradingJob({
                 submission_id: submission.id,
-                authn_user_id: user_id,
+                authn_user_id,
                 score: score / 100,
                 manual_points: (score * assessment_question.max_manual_points) / 100,
                 manual_rubric_grading_id: null,
