@@ -1973,7 +1973,7 @@ function checkInvalidSharedCourseInstances(courseData: CourseData): void {
   for (const courseInstance of Object.values(courseData.courseInstances)) {
     if (!courseInstance.courseInstance.data?.shareSourcePublicly) continue;
     const hasNonPubliclySharedAssessments = Object.values(courseInstance.assessments).some(
-      (assessment) => !assessment.data?.shareSourcePublicly,
+      (assessment) => !infofile.hasErrors(assessment) && !assessment.data?.shareSourcePublicly,
     );
     if (hasNonPubliclySharedAssessments) {
       infofile.addError(
@@ -1995,7 +1995,12 @@ function checkInvalidSharedAssessments(courseData: CourseData): void {
       const containsNonPublicQuestions = assessment.data.zones
         .flatMap((zone) => zone.questions)
         .flatMap((question) => [question.id, ...(question.alternatives?.map((a) => a.id) || [])])
-        .filter((qid): qid is string => qid != null && qid in courseData.questions)
+        .filter(
+          (qid): qid is string =>
+            qid != null &&
+            qid in courseData.questions &&
+            !infofile.hasErrors(courseData.questions[qid]),
+        )
         .map((qid) => courseData.questions[qid].data)
         .some((infoJson) => infoJson && !infoJson.sharePublicly && !infoJson.shareSourcePublicly);
       if (containsNonPublicQuestions) {
@@ -2009,6 +2014,10 @@ function checkInvalidSharedAssessments(courseData: CourseData): void {
 }
 
 function checkInvalidSharingSetAdditions(courseData: CourseData): void {
+  // If infoCourse.json has errors, we may be missing the sharing sets or they
+  // may be malformed, so skip this check to avoid confusing errors about
+  // sharing sets not existing.
+  if (infofile.hasErrors(courseData.course)) return;
   const sharingSetNames = new Set((courseData.course.data?.sharingSets || []).map((ss) => ss.name));
 
   for (const qid in courseData.questions) {
