@@ -94,7 +94,13 @@ export async function processCreditPurchase({
   stripeSession: Stripe.Checkout.Session;
 }): Promise<void> {
   await runInTransactionAsync(async () => {
-    // Keep lock order parent -> child to avoid deadlocks with FK cascade paths.
+    // Lock course_instances before checkout_sessions to match parent -> child
+    // FK/cascade order. Without this, this transaction could lock the checkout
+    // row first while a concurrent course_instances delete locks the parent
+    // first, creating a cycle:
+    // T1: checkout_session -> waits on course_instance
+    // T2: course_instance -> waits on checkout_session
+    // which PostgreSQL resolves as a deadlock.
     await selectCreditPoolForUpdate(localSession.course_instance_id);
 
     const claimed = await markCheckoutSessionCompleted(stripeSession.id);
@@ -183,7 +189,9 @@ export async function refundCreditPurchase({
   await stripe.refunds.create({ payment_intent: paymentIntentId }, { idempotencyKey });
 
   await runInTransactionAsync(async () => {
-    // Keep lock order parent -> child to avoid deadlocks with FK cascade paths.
+    // Same lock-order rule as processCreditPurchase (course_instance first,
+    // checkout_session second) to avoid the parent/child lock inversion cycle
+    // with concurrent course_instance delete/cascade operations.
     const pool = await selectCreditPoolForUpdate(session.course_instance_id);
 
     const marked = await queryOptionalRow(

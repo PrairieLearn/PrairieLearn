@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { calculateCreditPurchaseCharge } from './ai-grading-credit-purchase-constants.js';
 
+// These tests pin the rounding behavior when converting milli-dollars to Stripe
+// cents and then deriving the infrastructure fee from the charged amount.
 describe('calculateCreditPurchaseCharge', () => {
   it('derives fee from charged cents for a non-cent-aligned purchase', () => {
     const result = calculateCreditPurchaseCharge({

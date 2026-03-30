@@ -18,7 +18,7 @@ export function CreditPoolDashboard({
   trpc,
   balanceContext,
   dimmed,
-  emptyState,
+  onPurchaseClick,
   header,
   children,
   showRefundActions,
@@ -28,13 +28,14 @@ export function CreditPoolDashboard({
   trpc: CreditPoolTRPC;
   balanceContext: 'admin' | 'instructor';
   dimmed?: boolean;
-  emptyState?: React.ReactNode;
+  onPurchaseClick?: () => void;
   header?: React.ReactNode;
   children?: React.ReactNode;
   showRefundActions?: boolean;
   onRefund?: (checkoutSessionId: string) => void;
   isRefunding?: boolean;
 }) {
+  const showEmptyState = balanceContext === 'instructor';
   const [showHistory, setShowHistory] = useState(false);
   const [page, setPage] = useState(1);
   const [chartDays, setChartDays] = useState<ChartDays>(DEFAULT_CHART_DAYS);
@@ -43,7 +44,7 @@ export function CreditPoolDashboard({
   const poolQuery = useQuery(trpc.creditPool.queryOptions());
   const changesQuery = useQuery({
     ...trpc.creditPoolChanges.queryOptions({ page }),
-    enabled: showHistory || (emptyState != null && poolQuery.data != null),
+    enabled: showHistory || (showEmptyState && poolQuery.data != null),
   });
   const dailySpendingQuery = useQuery(trpc.dailySpending.queryOptions({ days: chartDays }));
   const validGroupBy = groupBy !== 'none' ? groupBy : undefined;
@@ -73,7 +74,7 @@ export function CreditPoolDashboard({
     pool.credit_transferable_milli_dollars === 0 &&
     pool.credit_non_transferable_milli_dollars === 0;
 
-  if (hasNoBalance && emptyState && !dimmed) {
+  if (hasNoBalance && showEmptyState && !dimmed) {
     if (changesQuery.isError) {
       return <Alert variant="danger">Failed to load transaction history.</Alert>;
     }
@@ -87,7 +88,27 @@ export function CreditPoolDashboard({
     }
     const hasTransactions = (changesQuery.data?.totalCount ?? 0) > 0;
     if (!hasTransactions) {
-      return <>{emptyState}</>;
+      return (
+        <div className="text-center py-5">
+          <i
+            className="bi bi-stars d-block mb-3 text-muted"
+            aria-hidden="true"
+            style={{ fontSize: '2.5rem' }}
+          />
+          <h3 className="h5 mb-2">Get started with AI grading</h3>
+          <p className="text-muted mb-3">Buy credits to start grading submissions with AI.</p>
+          {onPurchaseClick && (
+            <button
+              type="button"
+              className="btn btn-primary d-inline-flex align-items-center gap-2"
+              onClick={onPurchaseClick}
+            >
+              <i className="bi bi-cart-plus" aria-hidden="true" />
+              Purchase credits
+            </button>
+          )}
+        </div>
+      );
     }
   }
 
