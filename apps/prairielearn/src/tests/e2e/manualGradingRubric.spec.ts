@@ -157,7 +157,7 @@ test.describe('Manual grading rubric submission panel update', () => {
     ).toBeVisible();
   });
 
-  test('submission group updates persist and percentage grading falls back to total points', async ({
+  test('submission group updates persist and manual points grading works', async ({
     page,
     baseURL,
     courseInstance,
@@ -219,10 +219,9 @@ test.describe('Manual grading rubric submission panel update', () => {
     await expect(page.getByLabel('Change selected submission group')).toContainText('No group');
     await expect(page.locator('#grade-button')).toBeVisible();
 
-    await page.locator('#use-score-perc-main').check();
-    await expect(page.getByText('Manual Score:')).toBeVisible();
-    await page.locator('input[name="score_manual_percent"]').fill('20.5');
-    await page.locator('form[name="manual-grading-form"] textarea').fill('Percentage grading path');
+    const manualPointsInput = page.locator('input[name="score_manual_points"]');
+    await manualPointsInput.fill('1.5');
+    await page.locator('form[name="manual-grading-form"] textarea').fill('Points grading path');
     await Promise.all([page.waitForNavigation(), page.locator('#grade-button').click()]);
 
     const updatedScores = await sqldb.queryRow(
@@ -235,7 +234,7 @@ test.describe('Manual grading rubric submission panel update', () => {
       }),
     );
 
-    expect(updatedScores.manual_points).toBeGreaterThan(0);
+    expect(updatedScores.manual_points).toBeCloseTo(1.5);
     expect(updatedScores.points).toBeGreaterThan(updatedScores.auto_points ?? 0);
   });
 });
