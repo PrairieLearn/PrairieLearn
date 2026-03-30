@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# This script is specialized for the default Claude Code remote environment.
+
 set -euo pipefail
 
 # Only run in remote (Claude Code on the web) environments
@@ -18,6 +21,9 @@ done
 
 # We need graphviz for the python dependencies.
 apt-get update -qq && apt-get install -y -qq graphviz libgraphviz-dev postgresql-16-pgvector 2>&1
+
+# Load nvm
+. /opt/nvm/nvm.sh
 
 # nvm is already installed in the default Claude Code environment, but we need to install Node.js 24.
 nvm install 24
