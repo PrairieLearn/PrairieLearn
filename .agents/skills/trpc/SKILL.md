@@ -3,228 +3,69 @@ name: trpc
 description: Conventions for writing tRPC routers and procedures in PrairieLearn.
 ---
 
+## Quick reference
+
+- **Adding a procedure to an existing feature?** Find the subrouter file in the appropriate scope directory, add the procedure. No other files need changes.
+- **Adding a new subrouter to an existing scope?** Create a new file in the scope directory, export a router, register it in that scope's `trpc.ts`.
+- **Adding a new scope?** Copy an existing scope directory (e.g. `trpc/assessment/`), adjust the `ResLocalsForPage` type, context fields, URL helper in `lib/client/url.ts`, and mount path in `server.ts`.
+- **Wiring up client-side React?** Follow the pattern in any page that already uses tRPC (e.g. `pages/instructorInstanceAdminSettings/`). Key pieces: `generatePrefixCsrfToken` from `@prairielearn/signed-token` server-side, scope's `client.ts` + `context.ts` + `QueryClientProviderDebug` client-side.
+- **Returning typed errors?** See [Typed errors](#typed-errors).
+
 ## Authorization scopes
 
-tRPC routers are mounted per authorization scope, not per page. Each scope has its own directory under `apps/prairielearn/src/trpc/` and is mounted behind the corresponding Express authorization middleware chain. Only scopes with active subrouters exist as directories.
+tRPC routers are mounted per authorization scope, not per page. Each scope has its own directory under `apps/prairielearn/src/trpc/` and is mounted behind the corresponding Express authorization middleware chain.
 
-| Scope               | Directory                  | Mount path                                           | `ResLocalsForPage` type            | Express middleware                                             |
-| ------------------- | -------------------------- | ---------------------------------------------------- | ---------------------------------- | -------------------------------------------------------------- |
-| administrator       | `trpc/administrator/`      | `/pl/administrator/trpc`                             | `'plain'`                          | `authzIsAdministrator`                                         |
-| course              | (create when needed)       | `/pl/course/:course_id/trpc`                         | `'course'`                         | `authzCourseOrInstance`, `authzHasCoursePreview`               |
-| course instance     | `trpc/courseInstance/`     | `/pl/course_instance/:id/instructor/trpc`            | `'course-instance'`                | `authzCourseOrInstance`, `authzHasCoursePreviewOrInstanceView` |
-| assessment          | `trpc/assessment/`         | `.../assessment/:assessment_id/trpc`                 | `'assessment'`                     | `selectAndAuthzAssessment`                                     |
-| assessment question | `trpc/assessmentQuestion/` | `.../assessment/:aid/assessment_question/:aqid/trpc` | `'instructor-assessment-question'` | `selectAndAuthzAssessmentQuestion`                             |
-| assessment instance | (create when needed)       | `.../assessment_instance/:ai_id/trpc`                | `'assessment-instance'`            | `selectAndAuthzAssessmentInstance`                             |
-| instance question   | (create when needed)       | `.../instance_question/:iq_id/trpc`                  | `'instance-question'`              | `selectAndAuthzInstanceQuestion`                               |
+| Scope               | Directory                  | Mount path                                           | `ResLocalsForPage` type            |
+| ------------------- | -------------------------- | ---------------------------------------------------- | ---------------------------------- |
+| administrator       | `trpc/administrator/`      | `/pl/administrator/trpc`                             | `'plain'`                          |
+| course              | (create when needed)       | `/pl/course/:course_id/trpc`                         | `'course'`                         |
+| course instance     | `trpc/courseInstance/`     | `/pl/course_instance/:id/instructor/trpc`            | `'course-instance'`                |
+| assessment          | `trpc/assessment/`         | `.../assessment/:assessment_id/trpc`                 | `'assessment'`                     |
+| assessment question | `trpc/assessmentQuestion/` | `.../assessment/:aid/assessment_question/:aqid/trpc` | `'instructor-assessment-question'` |
+| assessment instance | (create when needed)       | `.../assessment_instance/:ai_id/trpc`                | `'assessment-instance'`            |
+| instance question   | (create when needed)       | `.../instance_question/:iq_id/trpc`                  | `'instance-question'`              |
 
-Do **not** create per-page tRPC routers. If you need a new procedure, add it to the router for the appropriate scope.
-
-tRPC scope URLs are constructed using helpers in `lib/client/url.ts` (e.g. `getAssessmentTrpcUrl`, `getCourseInstanceTrpcUrl`). Use these in both server-side CSRF token generation and client-side URL construction.
+Do **not** create per-page tRPC routers.
 
 ## File structure
 
-Every scope directory contains the same set of files:
+Every scope directory contains: `init.ts`, `trpc.ts`, `client.ts`, `context.ts`, plus one `*.ts` file per subrouter and optional `*.sql` files for scope-specific queries. All routers use `superjson` as the transformer in both `init.ts` and `client.ts`.
 
-| File         | Purpose                                                                              |
-| ------------ | ------------------------------------------------------------------------------------ |
-| `init.ts`    | `initTRPC` setup with `appErrorFormatter`, `createContext`, authorization middleware |
-| `trpc.ts`    | Combines subrouters into the scope's root router, exports the Express middleware     |
-| `client.ts`  | `createTRPCClient` factory for client-side use                                       |
-| `context.ts` | `createTRPCContext` for `@trpc/tanstack-react-query`                                 |
-| `*.ts`       | One file per subrouter (e.g. `student-labels.ts`, `courses.ts`)                      |
+See any existing scope (e.g. `trpc/assessment/`) for the exact boilerplate. The files follow a mechanical pattern — `init.ts` creates the tRPC instance and authorization middleware, `trpc.ts` composes subrouters and exports Express middleware via `createExpressMiddleware`, `client.ts` creates the HTTP client with CSRF headers, `context.ts` exports `TRPCProvider`/`useTRPC` via `createTRPCContext`.
 
-## Writing a subrouter
+## Conventions
 
-Each subrouter lives in its own file and exports a single router. Procedures are defined as module-level constants and composed into the router at the bottom of the file.
+### Naming
 
-```ts
-// trpc/courseInstance/widgets.ts
-import { z } from 'zod';
+- Procedure names describe the action: `list`, `upsert`, `destroy` — not `listWidgets` or `deleteMutation`.
+- Variable names may use a `Mutation`/`Procedure` suffix (e.g. `const setModeMutation = t.procedure...`), but the router key must not: `setMode: setModeMutation`.
+- Subrouter exports: `{feature}Router` (e.g. `widgetsRouter`). Router keys: camelCase (`widgets`).
 
-import { IdSchema } from '@prairielearn/zod';
+### Authorization
 
-import { StaffWidgetSchema } from '../../lib/client/safe-db-types.js';
-import { selectWidgetsInCourseInstance } from '../../models/widget.js';
+- Permission middleware (`requireCourseInstancePermissionView`, etc.) is defined in `init.ts` and chained with `.use()`.
+- Feature flag middleware (checking `features.enabled(...)`) goes in the subrouter file, not `init.ts`. See `trpc/assessment/access-control.ts` for an example.
+- Each scope's `createContext` includes the full `locals` object alongside extracted fields as an escape hatch.
 
-import { requireCourseInstancePermissionView, t } from './init.js';
+### Returning data
 
-const list = t.procedure
-  .use(requireCourseInstancePermissionView)
-  .output(z.object({ widgets: z.array(StaffWidgetSchema) }))
-  .query(async (opts) => {
-    const widgets = await selectWidgetsInCourseInstance(opts.ctx.course_instance);
-    return { widgets: widgets.map((w) => StaffWidgetSchema.parse(w)) };
-  });
+- Use role-scoped schemas from `lib/client/safe-db-types.ts` (e.g. `StaffStudentLabelSchema`). Always `.parse()` records through the schema before returning.
+- Use existing model functions from `models/` instead of one-off SQL.
 
-const update = t.procedure
-  .use(requireCourseInstancePermissionEdit)
-  .input(z.object({ widgetId: IdSchema, name: z.string().min(1) }))
-  .mutation(async (opts) => {
-    // ...
-  });
+### Client-side CSRF flow
 
-export const widgetsRouter = t.router({
-  list,
-  update,
-});
-```
+The CSRF token is generated server-side with `generatePrefixCsrfToken` using the scope's URL helper from `lib/client/url.ts`, passed as a prop to the hydrated component, and sent by the tRPC client as an `X-CSRF-Token` header. The Express CSRF middleware validates it before the request reaches the tRPC router.
 
-Then register the subrouter in `trpc.ts`:
+## Typed errors
 
-```ts
-export const courseInstanceRouter = t.router({
-  studentLabels: studentLabelsRouter,
-  widgets: widgetsRouter,
-});
-```
+tRPC doesn't natively support typed errors. This codebase uses `throwAppError` (server, from `trpc/app-errors.ts`) and `getAppError` (client, from `lib/client/errors.ts`).
 
-### Naming conventions
+1. Define an error interface in the subrouter file, keyed by procedure name.
+2. Throw with `throwAppError<MyError['ProcedureName']>({ code: '...' })`. Optional second arg is a tRPC error code (default `'BAD_REQUEST'`, use `'CONFLICT'` for hash mismatches, etc.).
+3. Handle on the client with `getAppError<MyError['ProcedureName']>(error)` — always handle the `'UNKNOWN'` fallback code.
 
-- Procedure names describe the action without redundant prefixes: `list`, `upsert`, `destroy`, `checkUids` -- not `listWidgets`, `mutateWidget`, `deleteWidgetMutation`.
-- Do not include `mutation` or `query` in the procedure name; the procedure type (`.query()` vs `.mutation()`) already conveys this.
-- Subrouter exports use the pattern `{feature}Router` (e.g. `widgetsRouter`, `studentLabelsRouter`).
-- The key in the parent router uses camelCase matching the feature: `widgets`, `studentLabels`.
+See `trpc/assessment/access-control.ts` (server) and `lib/client/errors.ts` (client) for complete examples.
 
-## Key patterns
+## Testing
 
-### Context and authorization
-
-`createContext` in `init.ts` extracts typed data from `res.locals` using the scope's `ResLocalsForPage` type. Authorization middleware (e.g. `requireCourseInstancePermissionView`) is defined in `init.ts` and chained onto procedures with `.use()`.
-
-```ts
-const list = t.procedure.use(requireCourseInstancePermissionView).query(async (opts) => {
-  // opts.ctx has course, course_instance, authz_data, locals
-});
-```
-
-Multiple middleware can be chained for fine-grained checks:
-
-```ts
-const upsert = t.procedure
-  .use(requireCoursePermissionEdit)
-  .use(requireCourseInstancePermissionEdit)
-  .mutation(async (opts) => {
-    /* ... */
-  });
-```
-
-### Input and output schemas
-
-Use Zod schemas for both `.input()` and `.output()`. Use `IdSchema` from `@prairielearn/zod` for database IDs.
-
-### safe-db-types
-
-When returning database records to the client, use the role-scoped schemas from `lib/client/safe-db-types.ts` (e.g. `StaffWidgetSchema`, `AdminCourseSchema`). Parse records through the schema before returning them:
-
-```ts
-return { labels: labels.map((l) => StaffStudentLabelSchema.parse(l)) };
-```
-
-### Model functions
-
-Use existing model functions from `models/` instead of writing one-off SQL. Pass typed context objects (e.g. `courseInstance: opts.ctx.course_instance`).
-
-### App errors
-
-Typed application-level errors use `throwAppError` (server) and `getAppError` (client) from `trpc/app-errors.ts`. Error types are co-located with the subrouter procedures that throw them.
-
-Every scope's `init.ts` must include `errorFormatter: appErrorFormatter` in the `initTRPC.create()` call.
-
-To add typed errors to a subrouter:
-
-1. Define an error interface in the subrouter file, keyed by procedure name:
-
-```ts
-// trpc/courseInstance/widgets.ts
-export interface WidgetError {
-  Update: { code: 'NAME_TAKEN'; name: string } | { code: 'SYNC_FAILED'; id: string };
-  Delete: { code: 'SYNC_FAILED'; id: string };
-}
-```
-
-2. Throw typed errors in procedures:
-
-```ts
-import { throwAppError } from '../app-errors.js';
-
-// Procedure-specific: all errors for that procedure
-throwAppError<WidgetError['Update']>({ code: 'NAME_TAKEN', name });
-
-// Error map: only errors shared across ALL procedures (SYNC_FAILED)
-throwAppError<WidgetError>({ code: 'SYNC_FAILED', id });
-```
-
-3. Handle on the client using `getAppError` from `lib/client/errors.ts`:
-
-```ts
-import { getAppError } from '../../../lib/client/errors.js';
-import type { WidgetError } from '../../../trpc/courseInstance/widgets.js';
-
-const appError = getAppError<WidgetError['Update']>(mutation.error);
-if (appError) {
-  switch (appError.code) {
-    case 'NAME_TAKEN': // appError.name is typed
-    case 'UNKNOWN': // fallback for untyped errors
-  }
-}
-```
-
-### Client-side usage with @trpc/tanstack-react-query
-
-Each scope provides a React context via `context.ts` that exports `TRPCProvider`, `useTRPC`, and optionally `useTRPCClient`.
-
-Setup pattern in a hydrated component:
-
-```tsx
-import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
-import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
-
-// Outer component: create client and wrap with providers
-export function MyPage({ trpcCsrfToken, courseInstance, assessment }: Props) {
-  const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() =>
-    createAssessmentTrpcClient({
-      csrfToken: trpcCsrfToken,
-      courseInstanceId: courseInstance.id,
-      assessmentId: assessment.id,
-    }),
-  );
-  return (
-    <QueryClientProviderDebug client={queryClient}>
-      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <MyPageInner />
-      </TRPCProvider>
-    </QueryClientProviderDebug>
-  );
-}
-
-// Inner component: use hooks
-function MyPageInner() {
-  const trpc = useTRPC();
-  const { data } = useQuery(trpc.mySubrouter.list.queryOptions());
-  const mutation = useMutation(trpc.mySubrouter.update.mutationOptions());
-}
-```
-
-The CSRF token is generated server-side using scope-level URL helpers from `lib/client/url.ts`:
-
-```ts
-const trpcCsrfToken = generatePrefixCsrfToken(
-  {
-    url: getAssessmentTrpcUrl({
-      courseInstanceId: assessment.course_instance_id,
-      assessmentId: assessment.id,
-    }),
-    authn_user_id: res.locals.authn_user.id,
-  },
-  config.secretKey,
-);
-```
-
-### superjson
-
-All tRPC routers use `superjson` as the transformer, which handles `Date`, `Map`, `Set`, and other non-JSON types automatically. Both server (`init.ts`) and client (`client.ts`) must use the same transformer.
-
-### Error handling
-
-Global tRPC error handling is provided by `handleTrpcError` from `lib/trpc.ts`, which is passed as `onError` when creating the Express middleware in `trpc.ts`. This handles Sentry reporting and structured logging automatically.
+tRPC procedures are tested as integration tests via HTTP. See `tests/instructorStudentsLabels.test.ts` for the pattern: create a client with `generatePrefixCsrfToken` + the scope's `create*TrpcClient`, call procedures directly, assert with `TRPCClientError` for error cases.
