@@ -131,3 +131,39 @@ export function getQuestionUrl({
 export function getQuestionCreateUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/course_admin/questions/create`;
 }
+
+// tRPC scope URLs
+
+export function getAdministratorTrpcUrl(): string {
+  return '/pl/administrator/trpc';
+}
+
+export function getCourseTrpcUrl(courseId: string): string {
+  return `/pl/course/${courseId}/trpc`;
+}
+
+export function getCourseInstanceTrpcUrl(courseInstanceId: string): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/trpc`;
+}
+
+export function getAssessmentTrpcUrl({
+  courseInstanceId,
+  assessmentId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+}): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/trpc`;
+}
+
+export function getAssessmentQuestionTrpcUrl({
+  courseInstanceId,
+  assessmentId,
+  assessmentQuestionId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  assessmentQuestionId: string;
+}): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/assessment_question/${assessmentQuestionId}/trpc`;
+}

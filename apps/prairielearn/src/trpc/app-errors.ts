@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import type { TRPC_ERROR_CODE_KEY } from '@trpc/server/unstable-core-do-not-import';
+import type { ErrorFormatter, TRPC_ERROR_CODE_KEY } from '@trpc/server/unstable-core-do-not-import';
 
 /**
  * Typed application-level errors for tRPC procedures.
@@ -7,7 +7,14 @@ import type { TRPC_ERROR_CODE_KEY } from '@trpc/server/unstable-core-do-not-impo
  * tRPC doesn't natively support typed errors (https://github.com/trpc/trpc/issues/3438).
  * This module works around that by attaching discriminated error metadata via
  * the error formatter, so the client can narrow on `appError.code` per procedure.
+ *
+ * Error interfaces for each subrouter are defined here in one place, grouped
+ * by scope. The combined error map powers the client-side `getAppError` helper.
  */
+
+// ---------------------------------------------------------------------------
+// Course instance scope
+// ---------------------------------------------------------------------------
 
 export interface StudentLabelErrors {
   upsert:
@@ -16,33 +23,52 @@ export interface StudentLabelErrors {
   destroy: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
 
-export interface CourseInstanceErrorMap {
+// ---------------------------------------------------------------------------
+// Combined error map (add new subrouter error interfaces above, register here)
+// ---------------------------------------------------------------------------
+
+export interface AppErrorMap {
   studentLabels: StudentLabelErrors;
 }
 
 type Values<T> = T[keyof T];
 type AllProcedureErrors<T> = Values<{ [K in keyof T]: Values<T[K]> }>;
 
-/** Union of every app-level error across all course instance procedures. */
-type AppErrorMeta = AllProcedureErrors<CourseInstanceErrorMap>;
+/** Union of every app-level error across all tRPC procedures. */
+type AppErrorMeta = AllProcedureErrors<AppErrorMap>;
 
 /** Dot-path keys like `'studentLabels.upsert'` for every procedure with declared errors. */
 export type AppErrorPaths = {
   // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-  [R in keyof CourseInstanceErrorMap & string]: {
-    [P in keyof CourseInstanceErrorMap[R] & string]: `${R}.${P}`;
-  }[keyof CourseInstanceErrorMap[R] & string];
+  [R in keyof AppErrorMap & string]: {
+    [P in keyof AppErrorMap[R] & string]: `${R}.${P}`;
+  }[keyof AppErrorMap[R] & string];
   // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-}[keyof CourseInstanceErrorMap & string];
+}[keyof AppErrorMap & string];
 
 /** Resolves a dot-path to the error union declared for that procedure. */
 export type AppErrorForPath<Path extends string> = Path extends `${infer R}.${infer P}`
-  ? R extends keyof CourseInstanceErrorMap
-    ? P extends keyof CourseInstanceErrorMap[R]
-      ? CourseInstanceErrorMap[R][P]
+  ? R extends keyof AppErrorMap
+    ? P extends keyof AppErrorMap[R]
+      ? AppErrorMap[R][P]
       : never
     : never
   : never;
+
+/**
+ * Error formatter that attaches typed `AppError` metadata to tRPC responses.
+ * Pass this to `initTRPC.create({ errorFormatter: appErrorFormatter })` in
+ * each scope's `init.ts`.
+ */
+export const appErrorFormatter: ErrorFormatter<unknown, any> = ({ shape, error }) => {
+  return {
+    ...shape,
+    data: {
+      ...shape.data,
+      ...(error instanceof AppError ? { appError: error.meta } : {}),
+    },
+  };
+};
 
 /**
  * A `TRPCError` subclass that carries typed, discriminated metadata.

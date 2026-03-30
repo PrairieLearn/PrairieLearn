@@ -1,15 +1,12 @@
 import crypto from 'node:crypto';
 
-import { TRPCError, initTRPC } from '@trpc/server';
-import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
+import { TRPCError } from '@trpc/server';
 import stableStringify from 'fast-json-stable-stringify';
-import superjson from 'superjson';
 import { z } from 'zod';
 
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import { features } from '../../lib/features/index.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import {
   type EnrollmentAccessControlRuleData,
   deleteEnrollmentAccessControlsByIds,
@@ -22,6 +19,7 @@ import {
   validateEnrollmentIdsInCourseInstance,
 } from '../../models/enrollment.js';
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
+import { fetchAllAccessControlRules } from '../../pages/instructorAssessmentAccess/rules.js';
 import {
   type AccessControlJson,
   AccessControlJsonSchema,
@@ -30,45 +28,11 @@ import {
 } from '../../schemas/accessControl.js';
 import { syncAccessControl, validateRule } from '../../sync/fromDisk/accessControl.js';
 
-import { fetchAllAccessControlRules } from './rules.js';
-
-export function createContext({ res }: CreateExpressContextOptions) {
-  const locals = res.locals as ResLocalsForPage<'assessment'>;
-
-  return {
-    course: locals.course,
-    course_instance: locals.course_instance,
-    assessment: locals.assessment,
-    authz_data: locals.authz_data,
-    authn_user: locals.authn_user,
-  };
-}
-
-type TRPCContext = Awaited<ReturnType<typeof createContext>>;
-
-const t = initTRPC.context<TRPCContext>().create({
-  transformer: superjson,
-});
-
-const requireCourseInstancePermissionView = t.middleware(async (opts) => {
-  if (!opts.ctx.authz_data.has_course_instance_permission_view) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Access denied (must have student data view permission)',
-    });
-  }
-  return opts.next();
-});
-
-const requireCourseInstancePermissionEdit = t.middleware(async (opts) => {
-  if (!opts.ctx.authz_data.has_course_instance_permission_edit) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Access denied (must have course instance edit permission)',
-    });
-  }
-  return opts.next();
-});
+import {
+  requireCourseInstancePermissionEdit,
+  requireCourseInstancePermissionView,
+  t,
+} from './init.js';
 
 const requireEnhancedAccessControl = t.middleware(async (opts) => {
   const enabled = await features.enabled('enhanced-access-control', {
@@ -290,5 +254,3 @@ export const accessControlRouter = t.router({
   studentLabels,
   saveAllRules,
 });
-
-export type AccessControlRouter = typeof accessControlRouter;

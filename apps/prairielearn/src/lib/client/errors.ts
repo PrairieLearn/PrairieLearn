@@ -1,6 +1,6 @@
 import { TRPCClientError } from '@trpc/client';
 
-import type { AppErrorForPath, AppErrorPaths } from '../../trpc/courseInstance/app-errors.js';
+import type { AppErrorForPath, AppErrorPaths } from '../../trpc/app-errors.js';
 
 /**
  * Extracts a typed app-level error from a tRPC error, narrowed to the

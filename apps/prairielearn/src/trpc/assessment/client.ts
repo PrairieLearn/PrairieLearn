@@ -1,23 +1,25 @@
 import { createTRPCClient, httpLink } from '@trpc/client';
 import superjson from 'superjson';
 
-import { getCourseInstanceTrpcUrl } from '../../lib/client/url.js';
+import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 
-import type { CourseInstanceRouter } from './trpc.js';
+import type { AssessmentRouter } from './trpc.js';
 
-export function createCourseInstanceTrpcClient({
+export function createAssessmentTrpcClient({
   csrfToken,
   courseInstanceId,
+  assessmentId,
   urlBase = '',
 }: {
   csrfToken: string;
   courseInstanceId: string;
+  assessmentId: string;
   urlBase?: string;
 }) {
-  return createTRPCClient<CourseInstanceRouter>({
+  return createTRPCClient<AssessmentRouter>({
     links: [
       httpLink({
-        url: `${urlBase}${getCourseInstanceTrpcUrl(courseInstanceId)}`,
+        url: `${urlBase}${getAssessmentTrpcUrl({ courseInstanceId, assessmentId })}`,
         headers: {
           'X-TRPC': 'true',
           'X-CSRF-Token': csrfToken,

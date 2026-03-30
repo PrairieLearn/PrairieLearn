@@ -7,6 +7,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { b64EncodeUnicode } from '../lib/base64-util.js';
+import { getAssessmentQuestionTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { InstanceQuestionSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
@@ -14,7 +15,7 @@ import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
-import { type ManualGradingAssessmentQuestionRouter } from '../pages/instructorAssessmentManualGrading/assessmentQuestion/trpc.js';
+import type { AssessmentQuestionRouter } from '../trpc/assessmentQuestion/trpc.js';
 
 import {
   type User,
@@ -158,10 +159,19 @@ async function createTrpcClient(assessmentQuestionUrl: string) {
   const props = superjson.parse<{ trpcCsrfToken: string }>(propsJson);
   const trpcCsrfToken = props.trpcCsrfToken;
 
-  return createTRPCClient<ManualGradingAssessmentQuestionRouter>({
+  // Extract IDs from the manual grading page URL to construct the scope-level tRPC URL.
+  const pageUrl = new URL(assessmentQuestionUrl);
+  const match = pageUrl.pathname.match(
+    /\/pl\/course_instance\/(\d+)\/instructor\/assessment\/(\d+)\/manual_grading\/assessment_question\/(\d+)/,
+  );
+  if (!match) throw new Error(`Cannot parse assessment question URL: ${assessmentQuestionUrl}`);
+  const [, courseInstanceId, assessmentId, assessmentQuestionId] = match;
+  const trpcUrl = `${pageUrl.origin}${getAssessmentQuestionTrpcUrl({ courseInstanceId, assessmentId, assessmentQuestionId })}`;
+
+  return createTRPCClient<AssessmentQuestionRouter>({
     links: [
       httpLink({
-        url: assessmentQuestionUrl + '/trpc',
+        url: trpcUrl,
         headers: {
           'X-TRPC': 'true',
           'X-CSRF-Token': trpcCsrfToken,
@@ -174,7 +184,7 @@ async function createTrpcClient(assessmentQuestionUrl: string) {
 
 async function loadInstances(assessmentQuestionUrl: string) {
   const client = await createTrpcClient(assessmentQuestionUrl);
-  return await client.instances.query();
+  return await client.manualGrading.instances.query();
 }
 
 function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void {
@@ -653,7 +663,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       test.sequential('tag question to specific grader', async () => {
         setUser(defaultUser);
         const client = await createTrpcClient(manualGradingAssessmentQuestionUrl);
-        await client.setAssignedGrader.mutate({
+        await client.manualGrading.setAssignedGrader.mutate({
           assigned_grader: mockStaff[0].id!,
           instance_question_ids: [iqId.toString()],
         });

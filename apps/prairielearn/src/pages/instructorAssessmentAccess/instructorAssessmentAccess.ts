@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import fs from 'fs-extra';
 
@@ -14,13 +13,14 @@ import {
   migrateAssessmentJson,
 } from '../../lib/assessment-access-control/migration.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
-import { handleTrpcError } from '../../lib/trpc.js';
+import { computeHash } from '../../trpc/assessment/access-control.js';
 
 import {
   AssessmentAccessRulesSchema,
@@ -28,19 +28,9 @@ import {
   InstructorAssessmentAccessNew,
 } from './instructorAssessmentAccess.html.js';
 import { fetchAllAccessControlRules } from './rules.js';
-import { accessControlRouter, computeHash, createContext } from './trpc.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
-
-router.use(
-  '/trpc',
-  trpcExpress.createExpressMiddleware({
-    router: accessControlRouter,
-    createContext,
-    onError: handleTrpcError,
-  }),
-);
 
 function getAssessmentPath(
   resLocals: Pick<ResLocalsForPage<'assessment'>, 'course' | 'course_instance' | 'assessment'>,
@@ -68,7 +58,10 @@ router.get(
       const origHash = computeHash(jsonRules);
       const trpcCsrfToken = generatePrefixCsrfToken(
         {
-          url: req.originalUrl.split('?')[0].replace(/\/$/, '') + '/trpc',
+          url: getAssessmentTrpcUrl({
+            courseInstanceId: res.locals.course_instance.id,
+            assessmentId: res.locals.assessment.id,
+          }),
           authn_user_id: res.locals.authn_user.id,
         },
         config.secretKey,

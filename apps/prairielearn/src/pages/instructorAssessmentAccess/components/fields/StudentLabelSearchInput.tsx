@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { Button, Form, ListGroup, Spinner } from 'react-bootstrap';
 
-import { useTRPCClient } from '../../utils/trpc-context.js';
+import { useTRPCClient } from '../../../../trpc/assessment/context.js';
 import type { StudentLabelTarget } from '../types.js';
 
 interface StudentLabelSearchInputProps {
@@ -22,7 +22,7 @@ export function StudentLabelSearchInput({
 
   const { data: studentLabels, isLoading } = useQuery({
     queryKey: ['access-control-student-labels'],
-    queryFn: () => trpcClient.studentLabels.query(),
+    queryFn: () => trpcClient.accessControl.studentLabels.query(),
   });
 
   const filteredStudentLabels = useMemo(() => {

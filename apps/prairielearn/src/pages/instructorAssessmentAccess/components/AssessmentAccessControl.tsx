@@ -4,9 +4,8 @@ import { Alert } from 'react-bootstrap';
 
 import type { PageContext } from '../../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import { getAssessmentAccessUrl } from '../../../lib/client/url.js';
-import { createAccessControlTrpcClient } from '../utils/trpc-client.js';
-import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
+import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
+import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
 
 import { AccessControlForm } from './AccessControlForm.js';
 import type { AccessControlJsonWithId } from './types.js';
@@ -29,7 +28,7 @@ function AssessmentAccessControlInner({
   const trpc = useTRPC();
 
   const saveMutation = useMutation(
-    trpc.saveAllRules.mutationOptions({
+    trpc.accessControl.saveAllRules.mutationOptions({
       onSuccess: (result) => {
         setOrigHash(result.newHash);
         void queryClient.invalidateQueries();
@@ -81,13 +80,13 @@ function AssessmentAccessControlInner({
 
 export function AssessmentAccessControl(props: AssessmentAccessControlProps) {
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => {
-    const accessUrl = getAssessmentAccessUrl({
+  const [trpcClient] = useState(() =>
+    createAssessmentTrpcClient({
+      csrfToken: props.csrfToken,
       courseInstanceId: props.courseInstance.id,
       assessmentId: props.assessmentId,
-    });
-    return createAccessControlTrpcClient(props.csrfToken, `${accessUrl}/trpc`);
-  });
+    }),
+  );
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>

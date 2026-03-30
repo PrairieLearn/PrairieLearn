@@ -19,7 +19,7 @@ const trpcCsrfToken = generatePrefixCsrfToken(
 );
 const trpcClient = createAdministratorTrpcClient({
   csrfToken: trpcCsrfToken,
-  urlPrefix: baseUrl,
+  urlBase: baseUrl,
 });
 
 describe('Course request note', { timeout: 60_000 }, function () {

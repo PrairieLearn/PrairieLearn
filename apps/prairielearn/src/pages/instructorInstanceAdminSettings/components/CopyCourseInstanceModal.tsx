@@ -24,10 +24,11 @@ import {
   getCourseInstanceSettingsUrl,
 } from '../../../lib/client/url.js';
 import { validateShortName } from '../../../lib/short-name.js';
-import type { SettingsRouter } from '../trpc.js';
-import { useTRPC } from '../utils/trpc-context.js';
+import { useTRPC } from '../../../trpc/courseInstance/context.js';
+import type { CourseInstanceRouter } from '../../../trpc/courseInstance/trpc.js';
 
-type AnalysisResult = inferRouterOutputs<SettingsRouter>['analyzeAccessControl'];
+type AnalysisResult =
+  inferRouterOutputs<CourseInstanceRouter>['instanceAdminSettings']['analyzeAccessControl'];
 
 type Step = 'settings' | 'access-control';
 
@@ -57,7 +58,7 @@ export function CopyCourseInstanceModal({
   const [step, setStep] = useState<Step>('settings');
 
   const trpc = useTRPC();
-  const analysisQuery = useQuery(trpc.analyzeAccessControl.queryOptions());
+  const analysisQuery = useQuery(trpc.instanceAdminSettings.analyzeAccessControl.queryOptions());
 
   const methods = useForm<CopyFormValues>({
     defaultValues: {
