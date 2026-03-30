@@ -112,7 +112,7 @@ test.describe('Manual grading rubric submission panel update', () => {
     await expect(rubricCheckboxes.first()).toBeVisible({ timeout: 10000 });
 
     await rubricCheckboxes.first().check();
-    await page.locator('form[name="manual-grading-form"] textarea').fill('Good work on this!');
+    await page.getByLabel('Feedback:').fill('Good work on this!');
 
     await Promise.all([page.waitForNavigation(), page.locator('#grade-button').click()]);
 
@@ -219,9 +219,8 @@ test.describe('Manual grading rubric submission panel update', () => {
     await expect(page.getByLabel('Change selected submission group')).toContainText('No group');
     await expect(page.locator('#grade-button')).toBeVisible();
 
-    const manualPointsInput = page.locator('input[name="score_manual_points"]');
-    await manualPointsInput.fill('1.5');
-    await page.locator('form[name="manual-grading-form"] textarea').fill('Points grading path');
+    await page.getByLabel('Manual Points:').fill('1.5');
+    await page.getByLabel('Feedback:').fill('Points grading path');
     await Promise.all([page.waitForNavigation(), page.locator('#grade-button').click()]);
 
     const updatedScores = await sqldb.queryRow(
