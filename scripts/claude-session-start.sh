@@ -38,7 +38,7 @@ timeout 120 make deps || echo "[session-start] WARNING: make deps timed out or f
 
 scripts/start_postgres.sh
 scripts/start_redis.sh
-# scripts/start_s3rver.sh
+scripts/start_s3rver.sh
 
 # Playwright blocks downloads from within a remote Claude Code environment,
 # so we need to symlink the already-installed version to the expected location.
