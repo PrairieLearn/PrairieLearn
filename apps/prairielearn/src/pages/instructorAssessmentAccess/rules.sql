@@ -1,34 +1,17 @@
 -- BLOCK select_all_json_rules
 SELECT
-  aacr.id::text AS id,
-  aacr.number,
-  aacr.target_type,
-  aacr.list_before_release,
-  aacr.date_control_release_date_overridden,
-  aacr.date_control_release_date,
-  aacr.date_control_due_date_overridden,
-  aacr.date_control_due_date,
-  aacr.date_control_early_deadlines_overridden,
-  aacr.date_control_late_deadlines_overridden,
-  aacr.date_control_after_last_deadline_allow_submissions,
-  aacr.date_control_after_last_deadline_credit_overridden,
-  aacr.date_control_after_last_deadline_credit,
-  aacr.date_control_duration_minutes_overridden,
-  aacr.date_control_duration_minutes,
-  aacr.date_control_password_overridden,
-  aacr.date_control_password,
-  aacr.after_complete_hide_questions,
-  aacr.after_complete_show_questions_again_date_overridden,
-  aacr.after_complete_show_questions_again_date,
-  aacr.after_complete_hide_questions_again_date_overridden,
-  aacr.after_complete_hide_questions_again_date,
-  aacr.after_complete_hide_score,
-  aacr.after_complete_show_score_again_date_overridden,
-  aacr.after_complete_show_score_again_date,
+  to_jsonb(aacr.*) AS access_control_rule,
   (
     SELECT
       jsonb_agg(
-        sl.name
+        jsonb_build_object(
+          'id',
+          sl.id::text,
+          'name',
+          sl.name,
+          'color',
+          sl.color
+        )
         ORDER BY
           sl.name
       )
@@ -84,31 +67,7 @@ ORDER BY
 
 -- BLOCK select_all_enrollment_rules
 SELECT
-  aacr.id::text AS id,
-  aacr.number,
-  aacr.target_type,
-  aacr.list_before_release,
-  aacr.date_control_release_date_overridden,
-  aacr.date_control_release_date,
-  aacr.date_control_due_date_overridden,
-  aacr.date_control_due_date,
-  aacr.date_control_early_deadlines_overridden,
-  aacr.date_control_late_deadlines_overridden,
-  aacr.date_control_after_last_deadline_allow_submissions,
-  aacr.date_control_after_last_deadline_credit_overridden,
-  aacr.date_control_after_last_deadline_credit,
-  aacr.date_control_duration_minutes_overridden,
-  aacr.date_control_duration_minutes,
-  aacr.date_control_password_overridden,
-  aacr.date_control_password,
-  aacr.after_complete_hide_questions,
-  aacr.after_complete_show_questions_again_date_overridden,
-  aacr.after_complete_show_questions_again_date,
-  aacr.after_complete_hide_questions_again_date_overridden,
-  aacr.after_complete_hide_questions_again_date,
-  aacr.after_complete_hide_score,
-  aacr.after_complete_show_score_again_date_overridden,
-  aacr.after_complete_show_score_again_date,
+  to_jsonb(aacr.*) AS access_control_rule,
   (
     SELECT
       jsonb_agg(

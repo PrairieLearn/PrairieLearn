@@ -1,4 +1,5 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { type UseQueryResult, useMutation, useQuery } from '@tanstack/react-query';
+import type { inferRouterOutputs } from '@trpc/server';
 import clsx from 'clsx';
 import { useState } from 'react';
 import { Alert, Form, Modal, Spinner } from 'react-bootstrap';
@@ -23,7 +24,10 @@ import {
   getCourseInstanceSettingsUrl,
 } from '../../../lib/client/url.js';
 import { validateShortName } from '../../../lib/short-name.js';
+import type { SettingsRouter } from '../trpc.js';
 import { useTRPC } from '../utils/trpc-context.js';
+
+type AnalysisResult = inferRouterOutputs<SettingsRouter>['analyzeAccessControl'];
 
 type Step = 'settings' | 'access-control';
 
@@ -333,25 +337,11 @@ function AccessControlStep({
   accessControlStrategy,
   register,
 }: {
-  analysisQuery: ReturnType<typeof useQuery>;
+  analysisQuery: UseQueryResult<AnalysisResult, unknown>;
   accessControlStrategy: string;
   register: ReturnType<typeof useForm<CopyFormValues>>['register'];
 }) {
-  const analysis = analysisQuery.data as
-    | {
-        assessments: {
-          tid: string;
-          title: string;
-          type: string;
-          archetype: string;
-          canMigrate: boolean;
-          ruleCount: number;
-          hasUidRules: boolean;
-        }[];
-        hasLegacyRules: boolean;
-        allCanMigrate: boolean;
-      }
-    | undefined;
+  const analysis = analysisQuery.data;
 
   if (analysisQuery.isLoading) {
     return (
@@ -367,7 +357,11 @@ function AccessControlStep({
   if (analysisQuery.isError) {
     return (
       <Modal.Body>
-        <Alert variant="danger">Failed to analyze access control rules. You can still copy.</Alert>
+        <Alert variant="danger">
+          Failed to analyze access control rules. You can still copy the course instance. Assessment
+          access rules will be migrated to the modern format where possible; any rules that cannot
+          be migrated will be preserved in their current format.
+        </Alert>
       </Modal.Body>
     );
   }

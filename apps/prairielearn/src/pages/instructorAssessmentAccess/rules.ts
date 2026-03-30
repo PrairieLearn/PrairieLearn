@@ -2,26 +2,31 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import type { AccessControlJsonWithId } from '../pages/instructorAssessmentAccess/components/types.js';
-import type { AccessControlJson } from '../schemas/accessControl.js';
-
 import {
   type Assessment,
   AssessmentAccessControlPrairietestExamSchema,
+  type AssessmentAccessControlRule,
   AssessmentAccessControlRuleSchema,
-} from './db-types.js';
+} from '../../lib/db-types.js';
+import type { AccessControlJson } from '../../schemas/accessControl.js';
+
+import type { AccessControlJsonWithId } from './components/types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const AccessControlRuleBaseSchema = AssessmentAccessControlRuleSchema.omit({
-  assessment_id: true,
-});
-
 const DeadlineArraySchema = z.array(z.object({ date: z.string(), credit: z.number() })).nullable();
 
-const RuleRowSchema = AccessControlRuleBaseSchema.extend({
-  target_type: z.enum(['none', 'student_label']),
-  labels: z.array(z.string()).nullable(),
+const LabelDetailSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  color: z.string(),
+});
+
+const RuleRowSchema = z.object({
+  access_control_rule: AssessmentAccessControlRuleSchema.extend({
+    target_type: z.enum(['none', 'student_label']),
+  }),
+  labels: z.array(LabelDetailSchema).nullable(),
   early_deadlines: DeadlineArraySchema,
   late_deadlines: DeadlineArraySchema,
   prairietest_exams: z
@@ -42,89 +47,95 @@ function unmapField<T>(overridden: boolean, value: T | null): T | null | undefin
   return value;
 }
 
-type BaseRuleRow = z.infer<typeof AccessControlRuleBaseSchema> & {
+interface BaseRuleRow {
+  access_control_rule: AssessmentAccessControlRule;
   early_deadlines: z.infer<typeof DeadlineArraySchema>;
   late_deadlines: z.infer<typeof DeadlineArraySchema>;
-};
+}
 
 function dbBaseRowToAccessControlJson(row: BaseRuleRow): AccessControlJson & { id: string } {
+  const rule = row.access_control_rule;
   const dateControl: AccessControlJson['dateControl'] = {};
 
-  if (row.date_control_release_date_overridden) {
-    dateControl.releaseDate = row.date_control_release_date?.toISOString() ?? null;
+  if (rule.date_control_release_date_overridden) {
+    dateControl.releaseDate = rule.date_control_release_date?.toISOString() ?? null;
   }
-  if (row.date_control_due_date_overridden) {
-    dateControl.dueDate = row.date_control_due_date?.toISOString() ?? null;
+  if (rule.date_control_due_date_overridden) {
+    dateControl.dueDate = rule.date_control_due_date?.toISOString() ?? null;
   }
-  if (row.date_control_early_deadlines_overridden) {
+  if (rule.date_control_early_deadlines_overridden) {
     dateControl.earlyDeadlines = row.early_deadlines ?? [];
   }
-  if (row.date_control_late_deadlines_overridden) {
+  if (rule.date_control_late_deadlines_overridden) {
     dateControl.lateDeadlines = row.late_deadlines ?? [];
   }
   if (
-    row.date_control_after_last_deadline_credit_overridden ||
-    row.date_control_after_last_deadline_allow_submissions !== null
+    rule.date_control_after_last_deadline_credit_overridden ||
+    rule.date_control_after_last_deadline_allow_submissions !== null
   ) {
     if (
-      row.date_control_after_last_deadline_credit_overridden &&
-      row.date_control_after_last_deadline_credit == null &&
-      row.date_control_after_last_deadline_allow_submissions == null
+      rule.date_control_after_last_deadline_credit_overridden &&
+      rule.date_control_after_last_deadline_credit == null &&
+      rule.date_control_after_last_deadline_allow_submissions == null
     ) {
       dateControl.afterLastDeadline = null;
     } else {
       dateControl.afterLastDeadline = {
         credit:
           unmapField(
-            row.date_control_after_last_deadline_credit_overridden,
-            row.date_control_after_last_deadline_credit,
+            rule.date_control_after_last_deadline_credit_overridden,
+            rule.date_control_after_last_deadline_credit,
           ) ?? undefined,
-        allowSubmissions: row.date_control_after_last_deadline_allow_submissions ?? undefined,
+        allowSubmissions: rule.date_control_after_last_deadline_allow_submissions ?? undefined,
       };
     }
   }
-  if (row.date_control_duration_minutes_overridden) {
-    dateControl.durationMinutes = row.date_control_duration_minutes;
+  if (rule.date_control_duration_minutes_overridden) {
+    dateControl.durationMinutes = rule.date_control_duration_minutes;
   }
-  if (row.date_control_password_overridden) {
-    dateControl.password = row.date_control_password;
+  if (rule.date_control_password_overridden) {
+    dateControl.password = rule.date_control_password;
   }
 
   const afterComplete: AccessControlJson['afterComplete'] = {};
-  if (row.after_complete_hide_questions !== null) {
-    afterComplete.hideQuestions = row.after_complete_hide_questions;
+  if (rule.after_complete_hide_questions !== null) {
+    afterComplete.hideQuestions = rule.after_complete_hide_questions;
   }
-  if (row.after_complete_show_questions_again_date_overridden) {
+  if (rule.after_complete_show_questions_again_date_overridden) {
     afterComplete.showQuestionsAgainDate =
-      row.after_complete_show_questions_again_date?.toISOString();
+      rule.after_complete_show_questions_again_date?.toISOString() ?? null;
   }
-  if (row.after_complete_hide_questions_again_date_overridden) {
+  if (rule.after_complete_hide_questions_again_date_overridden) {
     afterComplete.hideQuestionsAgainDate =
-      row.after_complete_hide_questions_again_date?.toISOString();
+      rule.after_complete_hide_questions_again_date?.toISOString() ?? null;
   }
-  if (row.after_complete_hide_score !== null) {
-    afterComplete.hideScore = row.after_complete_hide_score;
+  if (rule.after_complete_hide_score !== null) {
+    afterComplete.hideScore = rule.after_complete_hide_score;
   }
-  if (row.after_complete_show_score_again_date_overridden) {
-    afterComplete.showScoreAgainDate = row.after_complete_show_score_again_date?.toISOString();
+  if (rule.after_complete_show_score_again_date_overridden) {
+    afterComplete.showScoreAgainDate =
+      rule.after_complete_show_score_again_date?.toISOString() ?? null;
   }
 
-  const isMainRule = row.number === 0 && row.target_type === 'none';
+  const isMainRule = rule.number === 0 && rule.target_type === 'none';
   const listBeforeRelease = isMainRule
-    ? (row.list_before_release ?? false)
-    : row.list_before_release;
+    ? (rule.list_before_release ?? false)
+    : rule.list_before_release;
 
   return {
-    id: row.id,
+    id: rule.id,
     ...(listBeforeRelease != null ? { listBeforeRelease } : {}),
     dateControl: Object.keys(dateControl).length > 0 ? dateControl : undefined,
     afterComplete: Object.keys(afterComplete).length > 0 ? afterComplete : undefined,
   };
 }
 
-function dbRowToAccessControlJson(row: RuleRow): AccessControlJson & { id: string } {
+type AccessControlJsonWithRequiredId = Required<Pick<AccessControlJsonWithId, 'id'>> &
+  AccessControlJsonWithId;
+
+function dbRowToAccessControlJson(row: RuleRow): AccessControlJsonWithRequiredId {
   const base = dbBaseRowToAccessControlJson(row);
-  const labels = row.labels ?? [];
+  const labelDetails = row.labels ?? [];
 
   const integrations: AccessControlJson['integrations'] = {};
   if (row.prairietest_exams) {
@@ -138,16 +149,16 @@ function dbRowToAccessControlJson(row: RuleRow): AccessControlJson & { id: strin
 
   return {
     ...base,
-    labels: labels.length > 0 ? labels : undefined,
+    labels: labelDetails.length > 0 ? labelDetails.map((l) => l.name) : undefined,
+    labelDetails: labelDetails.length > 0 ? labelDetails : undefined,
     integrations: Object.keys(integrations).length > 0 ? integrations : undefined,
   };
 }
 
-type AccessControlJsonWithRequiredId = Required<Pick<AccessControlJsonWithId, 'id'>> &
-  AccessControlJsonWithId;
-
-const EnrollmentRuleRowSchema = AccessControlRuleBaseSchema.extend({
-  target_type: z.literal('enrollment'),
+const EnrollmentRuleRowSchema = z.object({
+  access_control_rule: AssessmentAccessControlRuleSchema.extend({
+    target_type: z.literal('enrollment'),
+  }),
   enrollments: z
     .array(
       z.object({

@@ -12,11 +12,11 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import {
   analyzeAssessmentFile,
   migrateAssessmentJson,
-} from '../../lib/access-control-migration.js';
-import { fetchAllAccessControlRules } from '../../lib/assessment-access-control.js';
+} from '../../lib/assessment-access-control/migration.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
 import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
@@ -27,6 +27,7 @@ import {
   InstructorAssessmentAccess,
   InstructorAssessmentAccessNew,
 } from './instructorAssessmentAccess.html.js';
+import { fetchAllAccessControlRules } from './rules.js';
 import { accessControlRouter, computeHash, createContext } from './trpc.js';
 
 const router = Router();
@@ -57,7 +58,12 @@ function getAssessmentPath(
 router.get(
   '/',
   typedAsyncHandler<'assessment'>(async (req, res) => {
-    if (res.locals.assessment.modern_access_control) {
+    const enhancedAccessControlEnabled = await features.enabledFromLocals(
+      'enhanced-access-control',
+      res.locals,
+    );
+
+    if (enhancedAccessControlEnabled && res.locals.assessment.modern_access_control) {
       const jsonRules = await fetchAllAccessControlRules(res.locals.assessment);
       const origHash = computeHash(jsonRules);
       const trpcCsrfToken = generatePrefixCsrfToken(
@@ -85,14 +91,8 @@ router.get(
     );
 
     const assessmentPath = getAssessmentPath(res.locals);
-    const migrationAnalysis = await analyzeAssessmentFile(
-      assessmentPath,
-      res.locals.assessment.tid!,
-    );
-    const origHash = (await getOriginalHash(assessmentPath)) ?? '';
-    const canEdit =
-      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
+    let migrationAnalysis: Awaited<ReturnType<typeof analyzeAssessmentFile>> = null;
     let migrationPreview: {
       beforeJson: string;
       afterJson: string;
@@ -100,23 +100,31 @@ router.get(
       hasUidRules: boolean;
     } | null = null;
 
-    if (migrationAnalysis?.canMigrate) {
-      const content = await fs.readFile(assessmentPath, 'utf-8');
-      const parsed = JSON.parse(content);
-      const beforeJson = JSON.stringify(parsed.allowAccess, null, 2);
+    if (enhancedAccessControlEnabled) {
+      migrationAnalysis = await analyzeAssessmentFile(assessmentPath, res.locals.assessment.tid!);
 
-      const migrationResult = migrateAssessmentJson(content);
-      if (migrationResult) {
-        const migratedParsed = JSON.parse(migrationResult.json);
-        const afterJson = JSON.stringify(migratedParsed.accessControl, null, 2);
-        migrationPreview = {
-          beforeJson,
-          afterJson,
-          warnings: migrationResult.warnings,
-          hasUidRules: migrationAnalysis.hasUidRules,
-        };
+      if (migrationAnalysis?.canMigrate) {
+        const content = await fs.readFile(assessmentPath, 'utf-8');
+        const parsed = JSON.parse(content);
+        const beforeJson = JSON.stringify(parsed.allowAccess, null, 2);
+
+        const migrationResult = migrateAssessmentJson(content);
+        if (migrationResult) {
+          const migratedParsed = JSON.parse(migrationResult.json);
+          const afterJson = JSON.stringify(migratedParsed.accessControl, null, 2);
+          migrationPreview = {
+            beforeJson,
+            afterJson,
+            warnings: migrationResult.warnings,
+            hasUidRules: migrationAnalysis.hasUidRules,
+          };
+        }
       }
     }
+
+    const origHash = (await getOriginalHash(assessmentPath)) ?? '';
+    const canEdit =
+      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
     res.send(
       InstructorAssessmentAccess({
@@ -126,6 +134,7 @@ router.get(
         migrationPreview,
         origHash,
         canEdit,
+        enhancedAccessControlEnabled,
       }),
     );
   }),
@@ -137,6 +146,14 @@ router.post(
     if (req.body.__action === 'migrate_access_control') {
       if (!res.locals.authz_data.has_course_permission_edit || res.locals.course.example_course) {
         throw new HttpStatusError(403, 'Access denied');
+      }
+
+      const enhancedAccessControlEnabled = await features.enabledFromLocals(
+        'enhanced-access-control',
+        res.locals,
+      );
+      if (!enhancedAccessControlEnabled) {
+        throw new HttpStatusError(403, 'Enhanced access control is not enabled for this course.');
       }
 
       const assessmentPath = getAssessmentPath(res.locals);

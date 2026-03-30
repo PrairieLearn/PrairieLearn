@@ -1,6 +1,5 @@
-import type { AccessControlJson } from '../schemas/accessControl.js';
-
-import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from './db-types.js';
+import type { AccessControlJson } from '../../schemas/accessControl.js';
+import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-types.js';
 
 /**
  * Runtime version of date control fields. Top-level date columns use `Date`
@@ -19,10 +18,10 @@ export interface RuntimeDateControl {
 
 export interface RuntimeAfterComplete {
   hideQuestions?: boolean;
-  showQuestionsAgainDate?: Date;
-  hideQuestionsAgainDate?: Date;
+  showQuestionsAgainDate?: Date | null;
+  hideQuestionsAgainDate?: Date | null;
   hideScore?: boolean;
-  showScoreAgainDate?: Date;
+  showScoreAgainDate?: Date | null;
 }
 
 /**
@@ -44,8 +43,8 @@ export interface AccessControlRuleInput {
   prairietestExams: { uuid: string; readOnly: boolean }[];
 }
 
-export interface StudentContext {
-  enrollmentId: string | null;
+export interface EnrollmentContext {
+  enrollmentId: string;
   studentLabelIds: string[];
 }
 
@@ -56,7 +55,7 @@ export interface PrairieTestReservation {
 
 export interface AccessControlResolverInput {
   rules: AccessControlRuleInput[];
-  student: StudentContext;
+  enrollment: EnrollmentContext | null;
   date: Date;
   displayTimezone: string;
   authzMode: EnumMode | null;
@@ -351,8 +350,8 @@ function computeTimeLimitMin(
 
 export function resolveVisibility(
   hide: boolean | undefined,
-  showAgainDate: Date | undefined,
-  hideAgainDate: Date | undefined,
+  showAgainDate: Date | null | undefined,
+  hideAgainDate: Date | null | undefined,
   date: Date,
 ): boolean {
   if (!hide) return true;
@@ -417,7 +416,7 @@ export function resolveAccessControl(
 ): AccessControlResolverResult {
   const {
     rules,
-    student,
+    enrollment,
     date,
     displayTimezone,
     authzMode,
@@ -459,16 +458,19 @@ export function resolveAccessControl(
       return a.number - b.number;
     });
 
-  // Collect all matching overrides.
+  // Collect all matching overrides. If the user has no enrollment, no
+  // overrides can match (they target enrollments or student labels).
   const matchedOverrides: AccessControlRuleInput[] = [];
-  for (const rule of overrides) {
-    if (rule.targetType === 'enrollment') {
-      if (student.enrollmentId && rule.enrollmentIds.includes(student.enrollmentId)) {
-        matchedOverrides.push(rule);
-      }
-    } else if (rule.targetType === 'student_label') {
-      if (rule.studentLabelIds.some((id) => student.studentLabelIds.includes(id))) {
-        matchedOverrides.push(rule);
+  if (enrollment) {
+    for (const rule of overrides) {
+      if (rule.targetType === 'enrollment') {
+        if (rule.enrollmentIds.includes(enrollment.enrollmentId)) {
+          matchedOverrides.push(rule);
+        }
+      } else if (rule.targetType === 'student_label') {
+        if (rule.studentLabelIds.some((id) => enrollment.studentLabelIds.includes(id))) {
+          matchedOverrides.push(rule);
+        }
       }
     }
   }
@@ -484,6 +486,23 @@ export function resolveAccessControl(
 
   let creditResult = computeCredit(effectiveRule.dateControl, date, effectiveRule, authzMode);
 
+  // PrairieTest exam-mode access control.
+  //
+  // This logic is equivalent to the legacy `check_assessment_access_rule` sproc
+  // (lines 39-75) with two additions:
+  // - Multiple PT exams per rule (legacy only supported one exam_uuid per rule)
+  // - read_only exam support (sets active=false for view-only access)
+  //
+  // Core invariants (matching legacy behavior):
+  // - Student in Exam mode + assessment has PT exams → must have valid reservation
+  // - Student in Exam mode + assessment has NO PT exams → deny access
+  // - Student NOT in Exam mode + assessment has PT exams → deny access
+  // - Valid reservation = user has pt_reservation where now ∈ [access_start, access_end]
+  //   and reservation's exam UUID matches one of the configured exams
+  //
+  // In the legacy system, exam_uuid was per-rule (each assessment_access_rule had
+  // its own exam_uuid column). In the modern system, PT exams are configured only
+  // on the main rule (number=0) and are effectively assessment-level.
   const prairieTestExams = mainRuleInput.prairietestExams;
   const hasPrairieTestExams = prairieTestExams.length > 0;
   let examAccessEnd: Date | null = null;

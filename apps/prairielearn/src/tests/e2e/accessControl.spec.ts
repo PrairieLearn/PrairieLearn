@@ -11,6 +11,8 @@ import { expect, test } from './fixtures.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+const ASSESSMENT_TID = 'hw19-accessControlUi';
+
 async function getAccessControlRecords(assessmentId: string) {
   return sqldb.queryRows(
     sql.select_access_controls,
@@ -36,8 +38,15 @@ function getVisibleModal(page: Page): Locator {
   return page.locator('[aria-modal="true"]');
 }
 
+/** Returns the override card containing the given label text. */
+function getOverrideCard(page: Page, labelText: string): Locator {
+  return page.getByTestId('override-card').filter({ hasText: labelText });
+}
+
 test.describe('Access control UI', () => {
-  test.beforeAll(async ({ testCoursePath }) => {
+  // Re-sync before each test to reset the assessment back to its on-disk state,
+  // so that mutations from one test don't leak into the next.
+  test.beforeEach(async ({ testCoursePath }) => {
     await features.enable('enhanced-access-control');
     await syncCourse(testCoursePath);
   });
@@ -45,7 +54,7 @@ test.describe('Access control UI', () => {
   test('can view page with initial data and verify summary', async ({ page, courseInstance }) => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
-      tid: 'hw-accessControl',
+      tid: ASSESSMENT_TID,
     });
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
@@ -53,9 +62,8 @@ test.describe('Access control UI', () => {
     await expect(page.getByRole('heading', { name: 'Overrides' })).toBeVisible();
     await expect(page.getByRole('button', { name: /Add override/i })).toBeVisible();
 
-    // Verify Section A override card is visible with its title and student label link
-    await expect(page.getByText('Overrides for Section A')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Section A' })).toBeVisible();
+    // Verify Section A override card is visible with its student label badge
+    await expect(getOverrideCard(page, 'Section A')).toBeVisible();
 
     // Save button should be disabled (no unsaved changes)
     await expect(page.getByRole('button', { name: /Save and sync/i })).toBeDisabled();
@@ -67,7 +75,7 @@ test.describe('Access control UI', () => {
   }) => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
-      tid: 'hw-accessControl3',
+      tid: ASSESSMENT_TID,
     });
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
@@ -94,8 +102,8 @@ test.describe('Access control UI', () => {
     // Close the detail panel
     await panel.getByRole('button', { name: 'Close detail panel' }).click();
 
-    // Verify new override card visible with "Extra time"
-    await expect(page.getByText('Overrides for Extra time')).toBeVisible();
+    // Verify new override card visible with "Extra time" badge
+    await expect(getOverrideCard(page, 'Extra time')).toBeVisible();
 
     // Save
     await page.getByRole('button', { name: /Save and sync/i }).click();
@@ -110,23 +118,18 @@ test.describe('Access control UI', () => {
   test('can delete an override', async ({ page, courseInstance }) => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
-      tid: 'hw-accessControl4',
+      tid: ASSESSMENT_TID,
     });
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
-    // Verify we start with the Section A override
-    await expect(page.getByText('Overrides for Section A')).toBeVisible();
+    const sectionACard = getOverrideCard(page, 'Section A');
+    await expect(sectionACard).toBeVisible();
 
     const initialRecords = await getAccessControlRecords(assessment.id);
     const initialOverrideCount = initialRecords.filter((r) => r.number > 0).length;
 
     // Click "Remove" on the Section A override
-    await page
-      .getByText('Overrides for Section A')
-      .locator('..')
-      .locator('..')
-      .getByRole('button', { name: /Remove/i })
-      .click();
+    await sectionACard.getByRole('button', { name: /Remove/i }).click();
 
     // Confirm deletion in modal
     const modal = getVisibleModal(page);
@@ -154,27 +157,18 @@ test.describe('Access control UI', () => {
   }) => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
-      tid: 'hw-accessControl5',
+      tid: ASSESSMENT_TID,
     });
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
     // Click "Edit" on the Section A override
-    await page
-      .getByText('Overrides for Section A')
-      .locator('..')
-      .locator('..')
-      .getByRole('button', { name: /Edit/i })
-      .click();
+    await getOverrideCard(page, 'Section A').getByRole('button', { name: /Edit/i }).click();
 
     const panel = getDetailPanel(page);
     await expect(panel).toBeVisible();
 
-    // Override the duration field: find "Time limit" label and click its associated Override button
-    await panel
-      .getByText('Time limit', { exact: true })
-      .locator('../..')
-      .getByRole('button', { name: 'Override' })
-      .click();
+    // Override the duration field
+    await panel.getByRole('button', { name: 'Override Time limit' }).click();
 
     // Enable the time limit checkbox (now rendered as a labeled form check)
     await panel.getByLabel('Time limit').check();
@@ -183,11 +177,7 @@ test.describe('Access control UI', () => {
     await expect(panel.getByRole('spinbutton')).toHaveValue('60');
 
     // Override question visibility
-    await panel
-      .getByText('Question visibility', { exact: true })
-      .locator('../..')
-      .getByRole('button', { name: 'Override' })
-      .click();
+    await panel.getByRole('button', { name: 'Override Question visibility' }).click();
 
     // Select "Hide questions permanently"
     await panel.getByLabel('Hide questions permanently').check();
@@ -196,7 +186,7 @@ test.describe('Access control UI', () => {
     await panel.getByRole('button', { name: 'Close detail panel' }).click();
 
     // Verify summary shows the changes
-    await expect(page.getByText('Time limit: 60 minutes')).toBeVisible();
+    await expect(page.getByText('60 minutes')).toBeVisible();
     await expect(page.getByText('Questions hidden after completion')).toBeVisible();
 
     // Save

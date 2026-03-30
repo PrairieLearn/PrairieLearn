@@ -18,7 +18,8 @@ CREATE FUNCTION
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
         OUT active boolean,         -- If the assessment is active
         OUT next_active_time text,  -- The next time the assessment becomes active. This is non-null only if the assessment is not currently active but will be later.
-        OUT access_rules jsonb       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
+        OUT access_rules jsonb,      -- For display to the user. The currently active rule is marked by 'active' = TRUE.
+        OUT show_before_release boolean -- Always false for the legacy path; the modern path overrides this.
     )
 AS $$
 DECLARE
@@ -46,6 +47,7 @@ BEGIN
     show_closed_assessment_score := assessment_result.show_closed_assessment_score;
     active := assessment_result.active;
     next_active_time := assessment_result.next_active_time;
+    show_before_release := assessment_result.show_before_release;
 
     time_limit_expired := FALSE;
     IF assessment_instance.date_limit IS NOT NULL AND assessment_instance.date_limit < req_date THEN

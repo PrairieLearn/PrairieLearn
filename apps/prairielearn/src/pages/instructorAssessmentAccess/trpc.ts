@@ -2,12 +2,12 @@ import crypto from 'node:crypto';
 
 import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
+import stableStringify from 'fast-json-stable-stringify';
 import superjson from 'superjson';
 import { z } from 'zod';
 
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
-import { fetchAllAccessControlRules } from '../../lib/assessment-access-control.js';
 import { features } from '../../lib/features/index.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import {
@@ -26,8 +26,11 @@ import {
   type AccessControlJson,
   AccessControlJsonSchema,
   MAX_ACCESS_CONTROL_RULES,
+  MAX_ENROLLMENT_RULES,
 } from '../../schemas/accessControl.js';
-import { syncAccessControl } from '../../sync/fromDisk/accessControl.js';
+import { syncAccessControl, validateRule } from '../../sync/fromDisk/accessControl.js';
+
+import { fetchAllAccessControlRules } from './rules.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'assessment'>;
@@ -67,18 +70,37 @@ const requireCourseInstancePermissionEdit = t.middleware(async (opts) => {
   return opts.next();
 });
 
-const students = t.procedure.use(requireCourseInstancePermissionView).query(async (opts) => {
-  const rows = await selectUsersAndEnrollmentsForCourseInstance(opts.ctx.course_instance);
-  return rows
-    .filter((r) => r.enrollment.status === 'joined' && r.user != null)
-    .map((r) => ({
-      id: r.enrollment.id,
-      uid: r.user!.uid,
-      name: r.user!.name,
-    }));
+const requireEnhancedAccessControl = t.middleware(async (opts) => {
+  const enabled = await features.enabled('enhanced-access-control', {
+    institution_id: opts.ctx.course.institution_id,
+    course_id: opts.ctx.course.id,
+    course_instance_id: opts.ctx.course_instance.id,
+  });
+  if (!enabled) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Enhanced access control is not enabled for this course.',
+    });
+  }
+  return opts.next();
 });
 
+const students = t.procedure
+  .use(requireEnhancedAccessControl)
+  .use(requireCourseInstancePermissionView)
+  .query(async (opts) => {
+    const rows = await selectUsersAndEnrollmentsForCourseInstance(opts.ctx.course_instance);
+    return rows
+      .filter((r) => r.enrollment.status === 'joined' && r.user != null)
+      .map((r) => ({
+        id: r.enrollment.id,
+        uid: r.user!.uid,
+        name: r.user!.name,
+      }));
+  });
+
 const validateUids = t.procedure
+  .use(requireEnhancedAccessControl)
   .use(requireCourseInstancePermissionView)
   .input(z.object({ uids: z.array(z.string()) }))
   .query(async (opts) => {
@@ -106,14 +128,17 @@ const validateUids = t.procedure
     });
   });
 
-const studentLabels = t.procedure.use(requireCourseInstancePermissionView).query(async (opts) => {
-  const labels = await selectStudentLabelsInCourseInstance(opts.ctx.course_instance);
-  return labels.map((label) => ({
-    id: label.id,
-    name: label.name,
-    color: label.color,
-  }));
-});
+const studentLabels = t.procedure
+  .use(requireEnhancedAccessControl)
+  .use(requireCourseInstancePermissionView)
+  .query(async (opts) => {
+    const labels = await selectStudentLabelsInCourseInstance(opts.ctx.course_instance);
+    return labels.map((label) => ({
+      id: label.id,
+      name: label.name,
+      color: label.color,
+    }));
+  });
 
 function formJsonToEnrollmentRuleData(
   rule: AccessControlJson & { id?: string },
@@ -150,9 +175,9 @@ function formJsonToEnrollmentRuleData(
 }
 
 // TODO: Add client-side validation for duplicate PrairieTest exam UUIDs and
-// duplicate deadline dates before this goes live. The sync code
-// (validateAssessmentRules) catches these server-side, but the UI should block
-// saves proactively so users get immediate feedback instead of a sync error.
+// duplicate deadline dates before this goes live. Server-side validation
+// (validateRule) catches these for all rule types, but the UI should block
+// saves proactively so users get immediate feedback instead of a server error.
 export const AccessControlJsonInputSchema = AccessControlJsonSchema.extend({
   id: z.string().optional(),
 }).strip();
@@ -164,11 +189,12 @@ const EnrollmentRuleInputSchema = z.object({
 });
 
 const saveAllRules = t.procedure
+  .use(requireEnhancedAccessControl)
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
       rules: z.array(AccessControlJsonInputSchema).max(MAX_ACCESS_CONTROL_RULES),
-      enrollmentRules: z.array(EnrollmentRuleInputSchema).optional(),
+      enrollmentRules: z.array(EnrollmentRuleInputSchema).max(MAX_ENROLLMENT_RULES).optional(),
       origHash: z.string(),
     }),
   )
@@ -176,20 +202,6 @@ const saveAllRules = t.procedure
     const { rules, enrollmentRules, origHash } = opts.input;
     const courseInstanceId = opts.ctx.course_instance.id;
     const assessmentId = opts.ctx.assessment.id;
-
-    if (rules.slice(1).some((rule) => rule.listBeforeRelease !== undefined)) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'listBeforeRelease can only be specified on the main rule.',
-      });
-    }
-
-    if (enrollmentRules?.some((rule) => rule.ruleJson.listBeforeRelease !== undefined)) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'listBeforeRelease can only be specified on the main rule.',
-      });
-    }
 
     return runInTransactionAsync(async () => {
       await lockAssessment(opts.ctx.assessment);
@@ -205,6 +217,13 @@ const saveAllRules = t.procedure
       }
 
       const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
+      for (const [index, rule] of rulesToSync.entries()) {
+        const targetType = index === 0 ? 'none' : 'student_label';
+        const ruleError = validateRule(rule, targetType);
+        if (ruleError) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
+        }
+      }
       await syncAccessControl(courseInstanceId, assessmentId, rulesToSync);
 
       // Only process enrollment rule deletions when enrollmentRules is explicitly
@@ -219,18 +238,6 @@ const saveAllRules = t.procedure
       }
 
       if (enrollmentRules !== undefined && enrollmentRules.length > 0) {
-        const enhancedEnabled = await features.enabled('enhanced-access-control', {
-          institution_id: opts.ctx.course.institution_id,
-          course_id: opts.ctx.course.id,
-          course_instance_id: opts.ctx.course_instance.id,
-        });
-        if (!enhancedEnabled) {
-          throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: 'Enhanced access control is not enabled for this course.',
-          });
-        }
-
         const allEnrollmentIds = new Set(enrollmentRules.flatMap((r) => r.enrollmentIds));
         if (allEnrollmentIds.size > 0) {
           const validCount = await validateEnrollmentIdsInCourseInstance(
@@ -246,6 +253,11 @@ const saveAllRules = t.procedure
         }
 
         for (const enrollmentRule of enrollmentRules) {
+          const ruleError = validateRule(enrollmentRule.ruleJson, 'enrollment');
+          if (ruleError) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
+          }
+
           const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
           if (enrollmentRule.id) {
             ruleData.id = enrollmentRule.id;
@@ -269,7 +281,7 @@ const saveAllRules = t.procedure
   });
 
 export function computeHash(rules: object[]): string {
-  return crypto.createHash('sha256').update(JSON.stringify(rules)).digest('hex');
+  return crypto.createHash('sha256').update(stableStringify(rules)).digest('hex');
 }
 
 export const accessControlRouter = t.router({

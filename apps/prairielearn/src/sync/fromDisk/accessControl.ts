@@ -3,7 +3,12 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { StudentLabelSchema } from '../../lib/db-types.js';
-import { type AccessControlJson, MAX_ACCESS_CONTROL_RULES } from '../../schemas/accessControl.js';
+import {
+  type AccessControlJson,
+  MAX_ACCESS_CONTROL_RULES,
+  validateRuleCreditMonotonicity,
+  validateRuleDateOrdering,
+} from '../../schemas/accessControl.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -26,6 +31,61 @@ const JSON_RULE_START = 0;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
+ * Validates a single access control rule. Checks duplicates, date ordering,
+ * credit monotonicity, and target-type constraints (e.g. integrations and
+ * listBeforeRelease are only valid on the main rule).
+ *
+ * @param rule The access control rule to validate.
+ * @param targetType 'none' for the main rule, 'student_label' or 'enrollment' for overrides.
+ */
+export function validateRule(
+  rule: AccessControlJson,
+  targetType: 'none' | 'student_label' | 'enrollment',
+): string | null {
+  if (targetType !== 'none') {
+    if (rule.listBeforeRelease !== undefined) {
+      return 'listBeforeRelease can only be specified on the main rule.';
+    }
+    if (rule.integrations != null) {
+      return 'integrations can only be specified on the main rule.';
+    }
+  }
+
+  const exams = rule.integrations?.prairieTest?.exams ?? [];
+  const seenUuids = new Set<string>();
+  for (const e of exams) {
+    if (seenUuids.has(e.examUuid)) {
+      return `Duplicate PrairieTest exam UUID: ${e.examUuid}.`;
+    }
+    seenUuids.add(e.examUuid);
+  }
+
+  const earlyDates = new Set<string>();
+  for (const d of rule.dateControl?.earlyDeadlines ?? []) {
+    if (earlyDates.has(d.date)) {
+      return `Duplicate early deadline date: ${d.date}.`;
+    }
+    earlyDates.add(d.date);
+  }
+
+  const lateDates = new Set<string>();
+  for (const d of rule.dateControl?.lateDeadlines ?? []) {
+    if (lateDates.has(d.date)) {
+      return `Duplicate late deadline date: ${d.date}.`;
+    }
+    lateDates.add(d.date);
+  }
+
+  const dateErrors = validateRuleDateOrdering(rule);
+  if (dateErrors.length > 0) return dateErrors[0];
+
+  const creditErrors = validateRuleCreditMonotonicity(rule);
+  if (creditErrors.length > 0) return creditErrors[0];
+
+  return null;
+}
+
+/**
  * Validates and prepares rules for a single assessment. Returns an error
  * string if validation fails, or null if the rules are valid.
  */
@@ -46,10 +106,6 @@ function validateAssessmentRules(
   // We still need to reject labels missing from the database here so that
   // label-targeted rules are not silently treated as main rules.
   for (const [index, rule] of rules.entries()) {
-    if (index > 0 && rule.listBeforeRelease !== undefined) {
-      return 'listBeforeRelease can only be specified on the main rule.';
-    }
-
     const ruleLabels = rule.labels ?? [];
     const seenLabels = new Set<string>();
     const duplicateLabels = new Set<string>();
@@ -73,33 +129,10 @@ function validateAssessmentRules(
     if (invalidLabels.length > 0) {
       return `Invalid student label(s): ${invalidLabels.join(', ')}.`;
     }
-  }
 
-  for (const rule of rules) {
-    const exams = rule.integrations?.prairieTest?.exams ?? [];
-    const seenUuids = new Set<string>();
-    for (const e of exams) {
-      if (seenUuids.has(e.examUuid)) {
-        return `Duplicate PrairieTest exam UUID: ${e.examUuid}.`;
-      }
-      seenUuids.add(e.examUuid);
-    }
-
-    const earlyDates = new Set<string>();
-    for (const d of rule.dateControl?.earlyDeadlines ?? []) {
-      if (earlyDates.has(d.date)) {
-        return `Duplicate early deadline date: ${d.date}.`;
-      }
-      earlyDates.add(d.date);
-    }
-
-    const lateDates = new Set<string>();
-    for (const d of rule.dateControl?.lateDeadlines ?? []) {
-      if (lateDates.has(d.date)) {
-        return `Duplicate late deadline date: ${d.date}.`;
-      }
-      lateDates.add(d.date);
-    }
+    const targetType = index === 0 ? 'none' : 'student_label';
+    const ruleError = validateRule(rule, targetType);
+    if (ruleError) return ruleError;
   }
 
   const assessmentInvalidUuids: string[] = [];
@@ -158,8 +191,7 @@ function prepareRuleRow(
     .map((label) => studentLabelIdByName.get(label))
     .filter((id): id is string => id !== undefined);
 
-  const targetType: 'none' | 'student_label' =
-    studentLabelIds.length > 0 ? 'student_label' : 'none';
+  const targetType: 'none' | 'student_label' = isMainRule ? 'none' : 'student_label';
 
   const ruleRow = JSON.stringify({
     assessment_id: assessmentId,

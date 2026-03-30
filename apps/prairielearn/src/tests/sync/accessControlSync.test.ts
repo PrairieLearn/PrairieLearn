@@ -7,8 +7,8 @@ import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { selectAccessControlRulesForAssessment } from '../../lib/access-control-data.js';
-import { resolveAccessControl } from '../../lib/access-control-resolver.js';
+import { selectAccessControlRulesForAssessment } from '../../lib/assessment-access-control/data.js';
+import { resolveAccessControl } from '../../lib/assessment-access-control/resolver.js';
 import {
   AssessmentAccessControlEarlyDeadlineSchema,
   AssessmentAccessControlEnrollmentSchema,
@@ -1409,7 +1409,7 @@ describe('Access control syncing', () => {
           dueDate: '2024-03-21T23:59:00',
           earlyDeadlines: [
             { date: '2024-03-18T23:59:00', credit: 120 },
-            { date: '2024-03-18T23:59:00', credit: 80 },
+            { date: '2024-03-18T23:59:00', credit: 110 },
           ],
         },
       });
@@ -1861,8 +1861,8 @@ describe('Access control syncing', () => {
 
       const beforeDueResult = resolveAccessControl({
         rules,
-        student: {
-          enrollmentId: null,
+        enrollment: {
+          enrollmentId: 'enroll-1',
           studentLabelIds: override.studentLabelIds,
         },
         date: new Date('2024-03-20T12:00:00Z'),
@@ -1877,8 +1877,8 @@ describe('Access control syncing', () => {
 
       const afterDueResult = resolveAccessControl({
         rules,
-        student: {
-          enrollmentId: null,
+        enrollment: {
+          enrollmentId: 'enroll-1',
           studentLabelIds: override.studentLabelIds,
         },
         date: new Date('2024-03-22T12:00:00Z'),
