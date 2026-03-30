@@ -496,8 +496,13 @@ class OrderBlocksOptions:
                         f'Tag "{answer_options.tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
                     )
                 used_tags.append(answer_options.tag)
-                if answer_options.initially_placed and answer_options.tag in distractor_tags:
-                    raise ValueError("A block with distractors cannot be initially placed.")
+                if (
+                    answer_options.initially_placed
+                    and answer_options.tag in distractor_tags
+                ):
+                    raise ValueError(
+                        "A block with distractors cannot be initially placed."
+                    )
             elif answer_options.initially_placed:
                 raise ValueError("Incorrect blocks cannot be initially placed.")
 
