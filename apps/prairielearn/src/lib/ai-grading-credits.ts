@@ -13,11 +13,16 @@ export function formatMilliDollars(milliDollars: number): string {
 }
 
 /**
- * Convert a cost in dollars to milli-dollars, rounded up.
+ * Convert raw API cost in dollars to milli-dollars with an infrastructure fee markup.
  *
- * @param costDollars - The cost in US dollars (e.g. 0.0045)
- * @returns The cost in milli-dollars, rounded up to the nearest milli-dollar
+ * @param rawCostDollars - The raw API cost in US dollars (e.g. 0.0045)
+ * @param feeDecimal - The infrastructure fee as a decimal (e.g. 0.2 for 20%)
+ * @returns The total cost in milli-dollars, rounded to the nearest milli-dollar
  */
-export function costToMilliDollars(costDollars: number): number {
-  return Math.ceil(costDollars * 1000);
+export function calculateCostWithFeeMilliDollars(
+  rawCostDollars: number,
+  feeDecimal: number,
+): number {
+  const totalDollars = rawCostDollars * (1 + feeDecimal);
+  return Math.ceil(totalDollars * 1000);
 }
