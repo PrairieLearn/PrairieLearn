@@ -45,6 +45,7 @@ import type {
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
 import type { RubricData } from '../../../../lib/manualGrading.types.js';
 import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
+import type { ManualGradingError } from '../../../../trpc/assessmentQuestion/manual-grading.js';
 import {
   GRADING_STATUS_VALUES,
   type GradingStatusValue,
@@ -677,7 +678,7 @@ export function AssessmentQuestionTable({
           onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
         />
       )}
-      <QueryErrors
+      <QueryErrors<ManualGradingError[keyof ManualGradingError]>
         queries={[
           deleteAiGradingJobsMutation,
           deleteAiGroupingsMutation,
