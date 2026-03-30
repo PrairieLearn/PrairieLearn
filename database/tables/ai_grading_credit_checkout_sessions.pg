@@ -7,7 +7,6 @@ columns
     credits_added: boolean not null default false
     data: jsonb not null
     id: bigint not null default nextval('ai_grading_credit_checkout_sessions_id_seq'::regclass)
-    infrastructure_fee_milli_dollars: bigint not null default 0
     refunded_at: timestamp with time zone
     stripe_object_id: text not null
 

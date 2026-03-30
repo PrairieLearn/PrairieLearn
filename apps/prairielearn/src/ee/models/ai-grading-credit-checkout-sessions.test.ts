@@ -81,7 +81,6 @@ describe('ai-grading-credit-checkout-sessions', () => {
       course_instance_id: COURSE_INSTANCE_ID,
       data: makeStripeSession(stripeObjectId),
       amount_milli_dollars: purchaseAmountMilliDollars,
-      infrastructure_fee_milli_dollars: 500,
     });
 
     const localSession = await getCreditCheckoutSessionByStripeId(stripeObjectId);
@@ -125,7 +124,6 @@ describe('ai-grading-credit-checkout-sessions', () => {
       course_instance_id: COURSE_INSTANCE_ID,
       data: makeStripeSession(stripeObjectId),
       amount_milli_dollars: purchaseAmountMilliDollars,
-      infrastructure_fee_milli_dollars: 600,
     });
 
     const localSession = await getCreditCheckoutSessionByStripeId(stripeObjectId);

@@ -27,14 +27,12 @@ export async function insertCreditCheckoutSession({
   course_instance_id,
   data,
   amount_milli_dollars,
-  infrastructure_fee_milli_dollars,
 }: {
   agent_user_id: string;
   stripe_object_id: string;
   course_instance_id: string;
   data: Stripe.Checkout.Session;
   amount_milli_dollars: number;
-  infrastructure_fee_milli_dollars: number;
 }) {
   await execute(sql.insert_ai_grading_credit_checkout_session, {
     agent_user_id,
@@ -42,7 +40,6 @@ export async function insertCreditCheckoutSession({
     course_instance_id,
     data,
     amount_milli_dollars,
-    infrastructure_fee_milli_dollars,
   });
 }
 
@@ -234,12 +231,10 @@ export async function refundCreditPurchase({
       oldRow: {
         refunded_at: null,
         amount_milli_dollars: session.amount_milli_dollars,
-        infrastructure_fee_milli_dollars: session.infrastructure_fee_milli_dollars,
       },
       newRow: {
         refunded_at: new Date().toISOString(),
         amount_milli_dollars: session.amount_milli_dollars,
-        infrastructure_fee_milli_dollars: session.infrastructure_fee_milli_dollars,
       },
     });
   });

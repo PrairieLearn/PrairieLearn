@@ -18,7 +18,6 @@ interface TransactionHistoryRow {
   checkout_session_id: string | null;
   checkout_session_refunded_at: Date | null;
   checkout_session_amount_milli_dollars: number | null;
-  checkout_session_infrastructure_fee_milli_dollars: number | null;
 }
 
 export function TransactionHistoryTable({
@@ -198,8 +197,6 @@ function RefundConfirmationModal({
   onCancel: () => void;
 }) {
   const creditAmount = row.checkout_session_amount_milli_dollars ?? 0;
-  const infraFee = row.checkout_session_infrastructure_fee_milli_dollars ?? 0;
-  const totalRefund = creditAmount + infraFee;
   const creditsSpent = Math.max(0, creditAmount - transferableMilliDollars);
   const creditsToDeduct = Math.min(creditAmount, transferableMilliDollars);
 
@@ -212,33 +209,17 @@ function RefundConfirmationModal({
         <p>Are you sure you want to refund this credit purchase?</p>
         {creditsSpent > 0 && (
           <div className="alert alert-warning">
-            The instructor has already used {formatMilliDollars(creditsSpent)} of the{' '}
-            {formatMilliDollars(creditAmount)} purchased credits. Only{' '}
-            {formatMilliDollars(creditsToDeduct)} will be deducted from the credit balance, but the
-            full amount will still be refunded via Stripe.
+            <div>
+              Instructor used {formatMilliDollars(creditsSpent)} of{' '}
+              {formatMilliDollars(creditAmount)}.
+            </div>
+            <div>
+              {formatMilliDollars(creditsToDeduct)} will be deducted from their transferable
+              credits.
+            </div>
+            <div>{formatMilliDollars(creditAmount)} will be refunded via Stripe.</div>
           </div>
         )}
-        <table className="table table-sm mb-3">
-          <tbody>
-            <tr>
-              <td>Credits to deduct</td>
-              <td className="text-end fw-bold">{formatMilliDollars(creditsToDeduct)}</td>
-            </tr>
-            <tr>
-              <td>Infrastructure fee</td>
-              <td className="text-end fw-bold">{formatMilliDollars(infraFee)}</td>
-            </tr>
-            <tr className="border-top-2">
-              <td className="fw-bold">Total Stripe refund</td>
-              <td className="text-end fw-bold">{formatMilliDollars(totalRefund)}</td>
-            </tr>
-          </tbody>
-        </table>
-        <p className="text-muted small mb-0">
-          This will deduct {formatMilliDollars(creditsToDeduct)} from the transferable credit
-          balance and issue a {formatMilliDollars(totalRefund)} refund to the original payment
-          method via Stripe.
-        </p>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" disabled={isRefunding} onClick={onCancel}>

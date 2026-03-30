@@ -8,7 +8,6 @@ import {
   CREDIT_PACKAGES,
   MAX_PURCHASE_MILLI_DOLLARS,
   MIN_PURCHASE_MILLI_DOLLARS,
-  calculateCreditPurchaseCharge,
 } from '../../lib/ai-grading-credit-purchase-constants.js';
 
 import { useTRPC } from './utils/trpc-context.js';
@@ -184,12 +183,10 @@ export function PurchaseCreditsModal({
   show,
   onHide,
   onExited,
-  infrastructureFeeRate,
 }: {
   show: boolean;
   onHide: () => void;
   onExited: () => void;
-  infrastructureFeeRate: number;
 }) {
   const trpc = useTRPC();
   // Stored as a string so the input field can show an empty value while typing.
@@ -211,12 +208,6 @@ export function PurchaseCreditsModal({
   const customDollars = Math.max(0, Number.parseInt(customAmount || '0', 10));
   const purchaseDollars = selected.type === 'preset' ? selected.dollars : customDollars;
   const amountMilliDollars = purchaseDollars * 1000;
-  const { charged_milli_dollars, infrastructure_fee_milli_dollars } = calculateCreditPurchaseCharge(
-    {
-      amount_milli_dollars: amountMilliDollars,
-      infrastructure_fee_rate: infrastructureFeeRate,
-    },
-  );
   const minDollars = MIN_PURCHASE_MILLI_DOLLARS / 1000;
   const maxDollars = MAX_PURCHASE_MILLI_DOLLARS / 1000;
   const canProceed = purchaseDollars >= minDollars && purchaseDollars <= maxDollars;
@@ -275,24 +266,6 @@ export function PurchaseCreditsModal({
         <p className="text-muted mt-3 mb-0 small">
           Actual number of graded submissions varies based on question, submission, and rubric size.
         </p>
-
-        {canProceed && (
-          <div className="mt-3 border rounded p-3">
-            <div className="d-flex justify-content-between mb-1">
-              <span>Credits</span>
-              <span>{`$${(amountMilliDollars / 1000).toFixed(2)}`}</span>
-            </div>
-            <div className="d-flex justify-content-between mb-2">
-              <span>Infrastructure fee</span>
-              <span>{`$${(infrastructure_fee_milli_dollars / 1000).toFixed(2)}`}</span>
-            </div>
-            <hr className="my-1" />
-            <div className="d-flex justify-content-between fw-bold mt-2">
-              <span>Total</span>
-              <span>{`$${(charged_milli_dollars / 1000).toFixed(2)}`}</span>
-            </div>
-          </div>
-        )}
       </Modal.Body>
       <Modal.Footer>
         <button

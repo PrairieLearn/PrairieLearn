@@ -128,14 +128,9 @@ const createCheckoutMutation = t.procedure
 
     const { authn_user, course, course_instance, host } = opts.ctx;
     const amountMilliDollars = opts.input.amount_milli_dollars;
-    // Stripe cents are the source of truth; persisted fee values are derived
-    // from the charged cent amount so refund totals match exactly.
-    const { stripe_amount_cents, infrastructure_fee_milli_dollars } = calculateCreditPurchaseCharge(
-      {
-        amount_milli_dollars: amountMilliDollars,
-        infrastructure_fee_rate: config.aiGradingInfrastructureFeePercent,
-      },
-    );
+    const { stripe_amount_cents } = calculateCreditPurchaseCharge({
+      amount_milli_dollars: amountMilliDollars,
+    });
 
     const stripe = getStripeClient();
     const customerId = await getOrCreateStripeCustomerId(authn_user.id, {
@@ -186,7 +181,6 @@ const createCheckoutMutation = t.procedure
       course_instance_id: course_instance.id,
       data: session,
       amount_milli_dollars: amountMilliDollars,
-      infrastructure_fee_milli_dollars,
     });
 
     if (!session.url) {

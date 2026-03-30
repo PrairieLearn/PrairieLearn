@@ -268,7 +268,6 @@ const BatchedCreditPoolChangeRowSchema = z.object({
   checkout_session_id: z.coerce.string().nullable(),
   checkout_session_refunded_at: z.coerce.date().nullable(),
   checkout_session_amount_milli_dollars: z.coerce.number().nullable(),
-  checkout_session_infrastructure_fee_milli_dollars: z.coerce.number().nullable(),
   total_count: z.coerce.number(),
 });
 

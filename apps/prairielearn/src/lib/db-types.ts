@@ -315,7 +315,6 @@ export const AiGradingCreditCheckoutSessionSchema = z.object({
   credits_added: z.boolean(),
   data: z.record(z.unknown()),
   id: IdSchema,
-  infrastructure_fee_milli_dollars: z.coerce.number(),
   refunded_at: DateFromISOString.nullable(),
   stripe_object_id: z.string(),
 });

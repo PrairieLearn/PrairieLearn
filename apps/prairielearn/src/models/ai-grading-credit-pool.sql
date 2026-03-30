@@ -90,8 +90,7 @@ WITH
       MAX(u.uid) AS user_uid,
       NULL::bigint AS checkout_session_id,
       NULL::timestamptz AS checkout_session_refunded_at,
-      NULL::bigint AS checkout_session_amount_milli_dollars,
-      NULL::bigint AS checkout_session_infrastructure_fee_milli_dollars
+      NULL::bigint AS checkout_session_amount_milli_dollars
     FROM
       ai_grading_credit_pool_changes AS c
       JOIN ai_grading_jobs AS j ON j.id = c.ai_grading_job_id
@@ -117,8 +116,7 @@ WITH
       u.uid AS user_uid,
       NULL::bigint AS checkout_session_id,
       NULL::timestamptz AS checkout_session_refunded_at,
-      NULL::bigint AS checkout_session_amount_milli_dollars,
-      NULL::bigint AS checkout_session_infrastructure_fee_milli_dollars
+      NULL::bigint AS checkout_session_amount_milli_dollars
     FROM
       ai_grading_credit_pool_changes AS c
       JOIN ai_grading_jobs AS j ON j.id = c.ai_grading_job_id
@@ -140,8 +138,7 @@ WITH
       u.uid AS user_uid,
       cs.id AS checkout_session_id,
       cs.refunded_at AS checkout_session_refunded_at,
-      cs.amount_milli_dollars AS checkout_session_amount_milli_dollars,
-      cs.infrastructure_fee_milli_dollars AS checkout_session_infrastructure_fee_milli_dollars
+      cs.amount_milli_dollars AS checkout_session_amount_milli_dollars
     FROM
       ai_grading_credit_pool_changes AS c
       LEFT JOIN users AS u ON u.id = c.user_id
