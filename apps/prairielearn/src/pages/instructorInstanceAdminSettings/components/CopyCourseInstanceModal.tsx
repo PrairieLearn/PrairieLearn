@@ -18,6 +18,7 @@ import {
   type SelfEnrollmentFormValues,
 } from '../../../components/CourseInstanceSelfEnrollmentForm.js';
 import { CourseInstanceShortNameDescription } from '../../../components/ShortNameDescriptions.js';
+import { getAppError } from '../../../lib/client/errors.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import {
   getCourseInstanceEditErrorUrl,
@@ -25,6 +26,7 @@ import {
 } from '../../../lib/client/url.js';
 import { validateShortName } from '../../../lib/short-name.js';
 import { useTRPC } from '../../../trpc/courseInstance/context.js';
+import type { InstanceAdminSettingsError } from '../../../trpc/courseInstance/instance-admin-settings.js';
 import type { CourseInstanceRouter } from '../../../trpc/courseInstance/trpc.js';
 
 type AnalysisResult =
@@ -356,12 +358,19 @@ function AccessControlStep({
   }
 
   if (analysisQuery.isError) {
+    const appError =
+      getAppError<InstanceAdminSettingsError['AnalyzeAccessControl']>(analysisQuery.error);
+    const message =
+      appError?.code === 'NO_SHORT_NAME'
+        ? 'This course instance does not have a short name, so access control rules cannot be analyzed.'
+        : 'Failed to analyze access control rules.';
+
     return (
       <Modal.Body>
         <Alert variant="danger">
-          Failed to analyze access control rules. You can still copy the course instance. Assessment
-          access rules will be migrated to the modern format where possible; any rules that cannot
-          be migrated will be preserved in their current format.
+          {message} You can still copy the course instance. Assessment access rules will be migrated
+          to the modern format where possible; any rules that cannot be migrated will be preserved in
+          their current format.
         </Alert>
       </Modal.Body>
     );

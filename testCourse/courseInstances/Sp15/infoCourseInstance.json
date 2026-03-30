@@ -4,6 +4,7 @@
   "publishing": { "startDate": "1900-01-19T00:00:01", "endDate": "2400-05-13T23:59:59" },
   "studentLabels": [
     { "uuid": "72d09468-259c-4c6a-bca1-77fe87fbeb14", "name": "Section A", "color": "red1" },
-    { "uuid": "5e9f4eeb-1a03-4af1-9e99-d42e24049ab4", "name": "Extra time", "color": "blue1" }
+    { "uuid": "5e9f4eeb-1a03-4af1-9e99-d42e24049ab4", "name": "Extra time", "color": "blue1" },
+    { "uuid": "59139486-417d-4937-a56e-2d7fe93d49fa", "name": "label1", "color": "blue3" }
   ]
 }
