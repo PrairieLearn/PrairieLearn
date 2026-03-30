@@ -20,21 +20,29 @@ for bin in /usr/lib/postgresql/16/bin/*; do
 done
 
 # We need graphviz for the python dependencies.
+echo "[session-start] Installing system packages..."
 apt-get update -qq && apt-get install -y -qq graphviz libgraphviz-dev postgresql-16-pgvector 2>&1
+echo "[session-start] System packages installed"
 
 # Load nvm
 . /opt/nvm/nvm.sh
 
 # nvm is already installed in the default Claude Code environment, but we need to install Node.js 24.
+echo "[session-start] Installing Node.js 24..."
 nvm install 24
 nvm alias default 24
+echo "[session-start] Node.js 24 installed"
 
 # uv is already installed in the default Claude Code environment, but we need to update it to the latest version.
 # https://github.com/astral-sh/uv/issues/14016#issuecomment-2969548188
+echo "[session-start] Updating uv..."
 (cd /tmp && uv pip install --system --reinstall uv)
 rm /root/.local/bin/uv # Uninstall the outdated uv binary.
+echo "[session-start] uv updated"
 
+echo "[session-start] Running make deps..."
 make deps
+echo "[session-start] make deps complete"
 
 echo "[session-start] Starting postgres..."
 scripts/start_postgres.sh
