@@ -38,9 +38,8 @@ make deps
 
 make start-support
 
-# Playwright's installed chromium version may not match the version expected by
-# the current playwright package. Symlink the available version so that
-# `npx playwright screenshot` and similar commands work without downloading.
+# Playwright blocks downloads from within a remote Claude Code environment,
+# so we need to symlink the already-installed version to the expected location.
 PW_BROWSERS_JSON="$CLAUDE_PROJECT_DIR/node_modules/playwright-core/browsers.json"
 if [ -f "$PW_BROWSERS_JSON" ]; then
     EXPECTED_REV=$(python3 -c "import json; bs=json.load(open('$PW_BROWSERS_JSON'))['browsers']; print(next(b['revision'] for b in bs if b['name']=='chromium-headless-shell'))")
@@ -48,7 +47,7 @@ if [ -f "$PW_BROWSERS_JSON" ]; then
 
     if [ ! -x "$EXPECTED_DIR/chrome-headless-shell-linux64/chrome-headless-shell" ]; then
         # Find the latest available installed chromium headless shell
-        AVAILABLE_DIR=$(ls -d "$HOME/.cache/ms-playwright/chromium_headless_shell-"*/chrome-linux 2>/dev/null | sort -V | tail -1)
+        AVAILABLE_DIR=$(ls -d "$HOME/.cache/ms-playwright/chromium_headless_shell-"*/chrome-linux 2> /dev/null | sort -V | tail -1)
         if [ -n "$AVAILABLE_DIR" ]; then
             mkdir -p "$EXPECTED_DIR/chrome-headless-shell-linux64"
             for f in "$AVAILABLE_DIR"/*; do
