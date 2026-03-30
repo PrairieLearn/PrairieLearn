@@ -1994,11 +1994,11 @@ function checkInvalidSharedAssessments(courseData: CourseData): void {
       }
       const containsNonPublicQuestions = assessment.data.zones.some((zone) =>
         zone.questions.some((question) => {
-          if (!question.id) {
+          if (!question.id || !(question.id in courseData.questions)) {
             return false;
           }
-          const infoJson = courseData.questions[question.id];
-          return !infoJson.data?.sharePublicly && !infoJson.data?.shareSourcePublicly;
+          const infoJson = courseData.questions[question.id].data;
+          return infoJson && !infoJson.sharePublicly && !infoJson.shareSourcePublicly;
         }),
       );
       if (containsNonPublicQuestions) {

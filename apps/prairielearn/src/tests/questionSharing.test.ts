@@ -704,7 +704,7 @@ describe('Question Sharing', function () {
         );
 
         const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-        assert(syncResult.status, 'complete');
+        assert(syncResult.status === 'complete');
 
         const assessment = await selectAssessmentByTid({
           course_instance_id: sharingCourseInstanceId,
