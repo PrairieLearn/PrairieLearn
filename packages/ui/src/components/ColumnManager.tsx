@@ -312,6 +312,9 @@ export function ColumnManager<RowDataModel>({
     }
   }, [activeElementId]);
 
+  const hasHideableColumns = allLeafColumns.some((c) => c.getCanHide());
+  if (!hasHideableColumns && !topContent) return null;
+
   return (
     <Dropdown
       ref={menuRef}

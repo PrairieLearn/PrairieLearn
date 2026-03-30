@@ -13,6 +13,7 @@ import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { parseUniqueValuesFromString } from '../../lib/string-util.js';
+import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
   type CourseInstanceAuthz,
@@ -30,10 +31,8 @@ import {
   updateCoursePermissionsRole,
 } from '../../models/course-permissions.js';
 
-import {
-  CourseUsersRowSchema,
-  InstructorCourseAdminStaff,
-} from './instructorCourseAdminStaff.html.js';
+import { InstructorCourseAdminStaff } from './instructorCourseAdminStaff.html.js';
+import { CourseUsersRowSchema } from './instructorCourseAdminStaff.types.js';
 
 const debug = debugfn('prairielearn:instructorCourseAdminStaff');
 
@@ -84,6 +83,7 @@ router.get(
         courseUsers,
         uidsLimit: MAX_UIDS,
         githubAccessLink,
+        search: getUrl(req).search,
       }),
     );
   }),
@@ -403,11 +403,19 @@ ${given_cp_and_cip.join(',\n')}
         throw new error.HttpStatusError(400, 'Undefined course instance id');
       }
 
+      const insertRole = req.body.course_instance_role ?? 'Student Data Viewer';
+      if (!['Student Data Viewer', 'Student Data Editor'].includes(insertRole)) {
+        throw new error.HttpStatusError(
+          400,
+          `Invalid requested course instance role: ${insertRole}`,
+        );
+      }
+
       await insertCourseInstancePermissions({
         course_id: res.locals.course.id,
         user_id: req.body.user_id,
         course_instance_id: req.body.course_instance_id,
-        course_instance_role: 'Student Data Viewer',
+        course_instance_role: insertRole,
         authn_user_id: res.locals.authz_data.authn_user.id,
       });
       res.redirect(req.originalUrl);

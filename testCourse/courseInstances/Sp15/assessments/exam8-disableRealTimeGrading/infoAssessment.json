@@ -5,7 +5,6 @@
   "set": "Exam",
   "number": "8",
   "allowRealTimeGrading": false,
-  "allowAccess": [{ "credit": 100, "timeLimitMin": 50, "showClosedAssessment": false }],
   "zones": [
     {
       "title": "Hard questions",
@@ -18,5 +17,6 @@
         { "id": "brokenGeneration", "autoPoints": 10 }
       ]
     }
-  ]
+  ],
+  "accessControl": [{ "afterComplete": { "hideQuestions": true } }]
 }
