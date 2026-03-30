@@ -20,10 +20,7 @@ import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
-import {
-  calculateCostWithFeeMilliDollars,
-  formatMilliDollars,
-} from '../../../lib/ai-grading-credits.js';
+import { costToMilliDollars, formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 import {
   type AiImageGradingResponses,
   calculateResponseCost,
@@ -111,8 +108,11 @@ interface AiGradingPersistenceContext {
 }
 
 /**
- * Calculate the total cost in milli-dollars (with infrastructure fee) for all
- * responses from a single grading operation.
+ * Calculate the total API cost in milli-dollars for all responses from a
+ * single grading operation.
+ *
+ * The infrastructure fee is not included here; it is
+ * charged at payment time, not at credit-pool deduction time.
  */
 function calculateTotalGradingCostMilliDollars({
   model_id,
@@ -120,22 +120,22 @@ function calculateTotalGradingCostMilliDollars({
   rotationCorrections,
   finalGradingResponse,
 }: AiGradingResponsesForPersistence): number {
-  let totalRawCost = calculateResponseCost({ model: model_id, usage: finalGradingResponse.usage });
+  let totalCost = calculateResponseCost({ model: model_id, usage: finalGradingResponse.usage });
   if (gradingResponseWithRotationIssue) {
-    totalRawCost += calculateResponseCost({
+    totalCost += calculateResponseCost({
       model: model_id,
       usage: gradingResponseWithRotationIssue.usage,
     });
   }
   if (rotationCorrections) {
     for (const correction of Object.values(rotationCorrections)) {
-      totalRawCost += calculateResponseCost({
+      totalCost += calculateResponseCost({
         model: model_id,
         usage: correction.response.usage,
       });
     }
   }
-  return calculateCostWithFeeMilliDollars(totalRawCost, config.aiGradingInfrastructureFeePercent);
+  return costToMilliDollars(totalCost);
 }
 
 async function insertAiGradingJobForResponses({
