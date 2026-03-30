@@ -8,9 +8,8 @@ fi
 
 cd "$CLAUDE_PROJECT_DIR"
 
-# Load nvm (it's a shell function, not a binary, so it must be sourced)
-export NVM_DIR="${NVM_DIR:-/opt/nvm}"
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+# Load nvm
+. /opt/nvm/nvm.sh
 
 # Make PostgreSQL binaries available system-wide (needed by start_postgres.sh
 # which runs commands as the postgres user via su).
