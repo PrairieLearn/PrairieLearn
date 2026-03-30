@@ -21,7 +21,7 @@ done
 
 # We need graphviz for the python dependencies.
 echo "[session-start] Installing system packages..."
-timeout 120 bash -c 'apt-get update -qq && apt-get install -y -qq graphviz libgraphviz-dev postgresql-16-pgvector 2>&1' || echo "[session-start] WARNING: apt-get timed out or failed"
+timeout 30 bash -c 'apt-get update -qq && apt-get install -y -qq graphviz libgraphviz-dev postgresql-16-pgvector 2>&1' || echo "[session-start] WARNING: apt-get timed out or failed"
 echo "[session-start] System packages done"
 
 # Load nvm
@@ -29,23 +29,23 @@ echo "[session-start] System packages done"
 
 # nvm is already installed in the default Claude Code environment, but we need to install Node.js 24.
 echo "[session-start] Installing Node.js 24..."
-timeout 60 bash -c '. /opt/nvm/nvm.sh && nvm install 24 && nvm alias default 24' || echo "[session-start] WARNING: nvm install timed out or failed"
+timeout 30 bash -c '. /opt/nvm/nvm.sh && nvm install 24 && nvm alias default 24' || echo "[session-start] WARNING: nvm install timed out or failed"
 nvm use 24 2>/dev/null || true
 echo "[session-start] Node.js done"
 
 # uv is already installed in the default Claude Code environment, but we need to update it to the latest version.
 # https://github.com/astral-sh/uv/issues/14016#issuecomment-2969548188
 echo "[session-start] Updating uv..."
-timeout 60 bash -c '(cd /tmp && uv pip install --system --reinstall uv)' || echo "[session-start] WARNING: uv update timed out or failed"
+timeout 30 bash -c '(cd /tmp && uv pip install --system --reinstall uv)' || echo "[session-start] WARNING: uv update timed out or failed"
 rm -f /root/.local/bin/uv # Uninstall the outdated uv binary.
 echo "[session-start] uv done"
 
 echo "[session-start] Running make deps..."
-timeout 300 make deps || echo "[session-start] WARNING: make deps timed out or failed"
+timeout 60 make deps || echo "[session-start] WARNING: make deps timed out or failed"
 echo "[session-start] make deps done"
 
 echo "[session-start] Starting postgres..."
-timeout 60 scripts/start_postgres.sh || echo "[session-start] WARNING: postgres timed out or failed"
+timeout 30 scripts/start_postgres.sh || echo "[session-start] WARNING: postgres timed out or failed"
 echo "[session-start] Starting redis..."
 timeout 10 scripts/start_redis.sh || echo "[session-start] WARNING: redis timed out or failed"
 echo "[session-start] Starting s3rver..."
