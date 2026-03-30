@@ -422,7 +422,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             else:
                 html_params["incorrect"] = True
 
-
         with open("pl-order-blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
         return html
@@ -431,7 +430,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if grading_method is GradingMethodType.EXTERNAL:
             return ""  # external grader is responsible for displaying results screen
 
-        feedback = data["partial_scores"].get(answer_name, {"score": None}).get("feedback", "")
+        feedback = (
+            data["partial_scores"].get(answer_name, {"score": None}).get("feedback", "")
+        )
         submission_was_graded = score is not None
 
         student_submission = [
