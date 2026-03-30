@@ -30,7 +30,9 @@ nvm install 24
 nvm alias default 24
 
 # uv is already installed in the default Claude Code environment, but we need to update it to the latest version.
-uv self update
+# Run from /tmp to avoid the required-version check in pyproject.toml, which
+# would block the update when the installed version is older than required.
+(cd /tmp && uv self update)
 
 make deps
 make start-support
