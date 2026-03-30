@@ -35,4 +35,22 @@ nvm alias default 24
 rm /root/.local/bin/uv # Uninstall the outdated uv binary.
 
 make deps
-# make start-support
+
+# Start support services with timeouts to prevent hanging.
+# The s3rver script uses lsof which can hang in some environments.
+timeout 30 scripts/start_postgres.sh || echo "Warning: start_postgres.sh timed out or failed"
+timeout 10 scripts/start_redis.sh || echo "Warning: start_redis.sh timed out or failed"
+timeout 15 scripts/start_s3rver.sh || echo "Warning: start_s3rver.sh timed out or failed"
+
+# Playwright's installed chromium version may not match the version expected by
+# the current playwright package. Symlink the available version so that
+# `npx playwright screenshot` and similar commands work without downloading.
+EXPECTED_DIR="$HOME/.cache/ms-playwright/chromium_headless_shell-1208"
+AVAILABLE_DIR="$HOME/.cache/ms-playwright/chromium_headless_shell-1194"
+if [ -d "$AVAILABLE_DIR/chrome-linux" ] && [ ! -x "$EXPECTED_DIR/chrome-headless-shell-linux64/chrome-headless-shell" ]; then
+    mkdir -p "$EXPECTED_DIR/chrome-headless-shell-linux64"
+    for f in "$AVAILABLE_DIR/chrome-linux"/*; do
+        ln -sf "$f" "$EXPECTED_DIR/chrome-headless-shell-linux64/$(basename "$f")"
+    done
+    ln -sf "$AVAILABLE_DIR/chrome-linux/headless_shell" "$EXPECTED_DIR/chrome-headless-shell-linux64/chrome-headless-shell"
+fi
