@@ -62,7 +62,7 @@ export interface RubricSettingsPayload {
   }[];
 }
 
-export interface RubricSettingsResponse {
+interface RubricSettingsResponse {
   rubricData: RubricData | null;
   modifiedAt: string;
   aiGradingStats: AiGradingGeneralStats | null;
