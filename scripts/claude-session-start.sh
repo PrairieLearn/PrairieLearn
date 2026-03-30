@@ -36,11 +36,7 @@ rm /root/.local/bin/uv # Uninstall the outdated uv binary.
 
 make deps
 
-# Start support services with timeouts to prevent hanging.
-# The s3rver script uses lsof which can hang in some environments.
-timeout 30 scripts/start_postgres.sh || echo "Warning: start_postgres.sh timed out or failed"
-timeout 10 scripts/start_redis.sh || echo "Warning: start_redis.sh timed out or failed"
-timeout 15 scripts/start_s3rver.sh || echo "Warning: start_s3rver.sh timed out or failed"
+make start-support
 
 # Playwright's installed chromium version may not match the version expected by
 # the current playwright package. Symlink the available version so that
