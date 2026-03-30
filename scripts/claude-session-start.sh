@@ -32,6 +32,7 @@ nvm alias default 24
 # uv is already installed in the default Claude Code environment, but we need to update it to the latest version.
 # https://github.com/astral-sh/uv/issues/14016#issuecomment-2969548188
 (cd /tmp && uv pip install --system --reinstall uv)
+rm /root/.local/bin/uv # Uninstall the outdated uv binary.
 
 make deps
 make start-support
