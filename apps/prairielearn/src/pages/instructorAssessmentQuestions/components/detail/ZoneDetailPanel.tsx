@@ -75,7 +75,12 @@ export function ZoneDetailPanel({
         zone.tools?.[tool] != null ? zone.tools[tool].enabled : undefined,
       ]),
     ),
-    tool_calculator: zone.tools?.calculator?.enabled,
+    ...(Object.fromEntries(
+      EnumAssessmentToolSchema.options.map((tool) => [
+        `tool_${tool}` as const,
+        zone.tools?.[tool] != null ? zone.tools[tool].enabled : undefined,
+      ]),
+    ) as ToolFormFields),
   };
 
   const {
