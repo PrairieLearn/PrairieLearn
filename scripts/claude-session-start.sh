@@ -35,4 +35,4 @@ nvm alias default 24
 rm /root/.local/bin/uv # Uninstall the outdated uv binary.
 
 make deps
-make start-support
+# make start-support
