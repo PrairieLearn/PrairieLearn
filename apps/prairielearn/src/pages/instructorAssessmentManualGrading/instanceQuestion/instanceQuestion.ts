@@ -1,4 +1,3 @@
-import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
@@ -28,7 +27,6 @@ import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
-import { handleTrpcError } from '../../../lib/trpc.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
@@ -42,7 +40,6 @@ import {
   fetchRubricGrading,
   fetchSubmissionCredits,
 } from './queries.js';
-import { createContext, manualGradingInstanceQuestionRouter } from './trpc.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -172,15 +169,6 @@ router.get(
         trpcCsrfToken,
       }),
     );
-  }),
-);
-
-router.use(
-  '/trpc',
-  trpcExpress.createExpressMiddleware({
-    router: manualGradingInstanceQuestionRouter,
-    createContext,
-    onError: handleTrpcError,
   }),
 );
 

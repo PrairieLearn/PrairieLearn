@@ -91,6 +91,7 @@ import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
 import { administratorTrpcRouter } from './trpc/administrator/trpc.js';
 import { courseInstanceTrpcRouter } from './trpc/courseInstance/trpc.js';
+import { instanceQuestionTrpcRouter } from './trpc/instanceQuestion/trpc.js';
 
 process.on('warning', (e) => console.warn(e));
 
@@ -991,6 +992,13 @@ export async function initExpress(): Promise<Express> {
       (
         await import('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion.js')
       ).default,
+    ],
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/instance_question/:instance_question_id(\\d+)/trpc',
+    [
+      (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
+      instanceQuestionTrpcRouter,
     ],
   );
   app.use(

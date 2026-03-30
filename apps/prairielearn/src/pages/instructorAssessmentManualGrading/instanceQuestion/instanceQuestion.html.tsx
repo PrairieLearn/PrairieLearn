@@ -23,11 +23,11 @@ import {
 } from '../../../lib/client/safe-db-types.js';
 import { type InstanceQuestionGroup, type User } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
+import type { GradingContextData, RubricQueryData } from '../../../trpc/instanceQuestion/trpc.js';
 
 import { ManualGradingInstanceQuestionPage } from './ManualGradingInstanceQuestionPage.js';
 import type { InstanceQuestionPageUrls } from './pageUrls.js';
 import type { GradingJobData } from './queries.js';
-import type { GradingContextData, RubricQueryData } from './trpc.js';
 
 export function InstanceQuestion({
   resLocals,

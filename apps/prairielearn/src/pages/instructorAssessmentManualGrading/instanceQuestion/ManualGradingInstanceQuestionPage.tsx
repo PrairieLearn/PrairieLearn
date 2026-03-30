@@ -4,12 +4,12 @@ import { useCallback, useState } from 'react';
 import { RubricSettings } from '../../../components/RubricSettings.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
+import { createInstanceQuestionTrpcClient } from '../../../trpc/instanceQuestion/client.js';
+import { TRPCProvider, useTRPC } from '../../../trpc/instanceQuestion/context.js';
+import type { GradingContextData, RubricQueryData } from '../../../trpc/instanceQuestion/trpc.js';
 
 import { InstanceQuestionGradingPanel } from './InstanceQuestionGradingPanel.js';
 import type { InstanceQuestionPageUrls } from './pageUrls.js';
-import type { GradingContextData, RubricQueryData } from './trpc.js';
-import { createManualGradingInstanceQuestionTrpcClient } from './utils/trpc-client.js';
-import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
 
 interface ManualGradingInstanceQuestionPageProps {
   initialRubricData: RubricQueryData;
@@ -48,7 +48,7 @@ export function ManualGradingInstanceQuestionPage({
         defaultOptions: { queries: { refetchOnWindowFocus: false } },
       }),
   );
-  const [trpcClient] = useState(() => createManualGradingInstanceQuestionTrpcClient(trpcCsrfToken));
+  const [trpcClient] = useState(() => createInstanceQuestionTrpcClient(trpcCsrfToken));
 
   return (
     <QueryClientProviderDebug client={queryClient}>
@@ -88,13 +88,13 @@ function ManualGradingInstanceQuestionPageInner({
   const queryClient = useQueryClient();
 
   const { data: rubricData } = useQuery({
-    ...trpc.rubricData.queryOptions(),
+    ...trpc.manualGrading.rubricData.queryOptions(),
     initialData: initialRubricData,
     staleTime: Infinity,
   });
 
   const { data: gradingContext } = useQuery({
-    ...trpc.gradingContext.queryOptions({
+    ...trpc.manualGrading.gradingContext.queryOptions({
       conflictGradingJobId: initialConflictGradingJobId,
     }),
     initialData: initialGradingContext,
@@ -106,7 +106,7 @@ function ManualGradingInstanceQuestionPageInner({
   const handleRubricSaved = useCallback(
     (_data: { rubric_data: RubricData | null; modifiedAt: string }) => {
       void queryClient.invalidateQueries({
-        queryKey: trpc.rubricData.queryKey(),
+        queryKey: trpc.manualGrading.rubricData.queryKey(),
       });
     },
     [queryClient, trpc],

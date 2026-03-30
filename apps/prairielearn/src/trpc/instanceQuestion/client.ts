@@ -1,10 +1,10 @@
 import { createTRPCClient, httpLink } from '@trpc/client';
 import superjson from 'superjson';
 
-import type { ManualGradingInstanceQuestionRouter } from '../trpc.js';
+import type { InstanceQuestionRouter } from './trpc.js';
 
-export function createManualGradingInstanceQuestionTrpcClient(csrfToken: string) {
-  return createTRPCClient<ManualGradingInstanceQuestionRouter>({
+export function createInstanceQuestionTrpcClient(csrfToken: string) {
+  return createTRPCClient<InstanceQuestionRouter>({
     links: [
       httpLink({
         url: typeof window === 'undefined' ? '' : window.location.pathname + '/trpc',

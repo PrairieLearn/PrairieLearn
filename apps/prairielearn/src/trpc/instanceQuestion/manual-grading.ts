@@ -1,50 +1,14 @@
-import { TRPCError, type inferRouterOutputs, initTRPC } from '@trpc/server';
-import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
-import superjson from 'superjson';
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { features } from '../../../lib/features/index.js';
-import type { ResLocalsForPage } from '../../../lib/res-locals.js';
-
+import { features } from '../../lib/features/index.js';
 import {
   buildGradingContextPayload,
   buildRubricDataPayload,
   fetchSubmissionAndVariant,
-} from './queries.js';
+} from '../../pages/instructorAssessmentManualGrading/instanceQuestion/queries.js';
 
-export function createContext({ res }: CreateExpressContextOptions) {
-  const locals = res.locals as ResLocalsForPage<'instructor-instance-question'>;
-
-  return {
-    user: locals.authz_data.user,
-    authn_user: locals.authz_data.authn_user,
-    course: locals.course,
-    course_instance: locals.course_instance,
-    assessment: locals.assessment,
-    assessment_instance: locals.assessment_instance,
-    question: locals.question,
-    assessment_question: locals.assessment_question,
-    instance_question: locals.instance_question,
-    urlPrefix: locals.urlPrefix,
-    authz_data: locals.authz_data,
-  };
-}
-
-type TRPCContext = Awaited<ReturnType<typeof createContext>>;
-
-const t = initTRPC.context<TRPCContext>().create({
-  transformer: superjson,
-});
-
-const viewerProcedure = t.procedure.use(async (opts) => {
-  if (!opts.ctx.authz_data.has_course_instance_permission_view) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Access denied (must be a student data viewer)',
-    });
-  }
-  return opts.next();
-});
+import { type TRPCContext, requireCourseInstancePermissionView, t } from './init.js';
 
 async function getAiGradingEnabled(ctx: TRPCContext): Promise<boolean> {
   return features.enabled('ai-grading', {
@@ -54,6 +18,8 @@ async function getAiGradingEnabled(ctx: TRPCContext): Promise<boolean> {
     user_id: ctx.authn_user.id,
   });
 }
+
+const viewerProcedure = t.procedure.use(requireCourseInstancePermissionView);
 
 const rubricDataQuery = viewerProcedure.query(async (opts) => {
   const { assessment_question, instance_question } = opts.ctx;
@@ -115,13 +81,7 @@ const gradingContextQuery = viewerProcedure
     });
   });
 
-export const manualGradingInstanceQuestionRouter = t.router({
+export const manualGradingRouter = t.router({
   rubricData: rubricDataQuery,
   gradingContext: gradingContextQuery,
 });
-
-export type ManualGradingInstanceQuestionRouter = typeof manualGradingInstanceQuestionRouter;
-
-type RouterOutputs = inferRouterOutputs<ManualGradingInstanceQuestionRouter>;
-export type RubricQueryData = RouterOutputs['rubricData'];
-export type GradingContextData = RouterOutputs['gradingContext'];
