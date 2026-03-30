@@ -358,8 +358,9 @@ function AccessControlStep({
   }
 
   if (analysisQuery.isError) {
-    const appError =
-      getAppError<InstanceAdminSettingsError['AnalyzeAccessControl']>(analysisQuery.error);
+    const appError = getAppError<InstanceAdminSettingsError['AnalyzeAccessControl']>(
+      analysisQuery.error,
+    );
     const message =
       appError?.code === 'NO_SHORT_NAME'
         ? 'This course instance does not have a short name, so access control rules cannot be analyzed.'
@@ -369,8 +370,8 @@ function AccessControlStep({
       <Modal.Body>
         <Alert variant="danger">
           {message} You can still copy the course instance. Assessment access rules will be migrated
-          to the modern format where possible; any rules that cannot be migrated will be preserved in
-          their current format.
+          to the modern format where possible; any rules that cannot be migrated will be preserved
+          in their current format.
         </Alert>
       </Modal.Body>
     );
