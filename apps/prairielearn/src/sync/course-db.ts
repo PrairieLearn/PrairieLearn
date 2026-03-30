@@ -1992,15 +1992,12 @@ function checkInvalidSharedAssessments(courseData: CourseData): void {
       if (!assessment.data?.shareSourcePublicly) {
         continue;
       }
-      const containsNonPublicQuestions = assessment.data.zones.some((zone) =>
-        zone.questions.some((question) => {
-          if (!question.id || !(question.id in courseData.questions)) {
-            return false;
-          }
-          const infoJson = courseData.questions[question.id].data;
-          return infoJson && !infoJson.sharePublicly && !infoJson.shareSourcePublicly;
-        }),
-      );
+      const containsNonPublicQuestions = assessment.data.zones
+        .flatMap((zone) => zone.questions)
+        .flatMap((question) => [question.id, ...(question.alternatives?.map((a) => a.id) || [])])
+        .filter((qid): qid is string => qid != null && qid in courseData.questions)
+        .map((qid) => courseData.questions[qid].data)
+        .some((infoJson) => infoJson && !infoJson.sharePublicly && !infoJson.shareSourcePublicly);
       if (containsNonPublicQuestions) {
         infofile.addError(
           assessment,
