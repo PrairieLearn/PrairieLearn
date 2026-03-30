@@ -30,7 +30,7 @@ echo "[session-start] System packages done"
 # nvm is already installed in the default Claude Code environment, but we need to install Node.js 24.
 echo "[session-start] Installing Node.js 24..."
 timeout 30 bash -c '. /opt/nvm/nvm.sh && nvm install 24 && nvm alias default 24' || echo "[session-start] WARNING: nvm install timed out or failed"
-nvm use 24 2>/dev/null || true
+nvm use 24 2> /dev/null || true
 echo "[session-start] Node.js done"
 
 # uv is already installed in the default Claude Code environment, but we need to update it to the latest version.
@@ -47,10 +47,10 @@ echo "[session-start] make deps done"
 echo "[session-start] Starting postgres..."
 timeout 30 scripts/start_postgres.sh || echo "[session-start] WARNING: postgres timed out or failed"
 echo "[session-start] Starting redis..."
-timeout 10 scripts/start_redis.sh || echo "[session-start] WARNING: redis timed out or failed"
-echo "[session-start] Starting s3rver..."
-timeout 30 scripts/start_s3rver.sh || echo "[session-start] WARNING: s3rver timed out or failed"
-echo "[session-start] All support services done"
+# timeout 10 scripts/start_redis.sh || echo "[session-start] WARNING: redis timed out or failed"
+# echo "[session-start] Starting s3rver..."
+# timeout 30 scripts/start_s3rver.sh || echo "[session-start] WARNING: s3rver timed out or failed"
+# echo "[session-start] All support services done"
 
 # Playwright blocks downloads from within a remote Claude Code environment,
 # so we need to symlink the already-installed version to the expected location.
