@@ -8,12 +8,15 @@ ulimit -Sn 4096
 
 # exit if s3rver is already running
 # Use curl instead of lsof to avoid hanging in some environments.
+echo "[start_s3rver] Checking if port 5000 is in use..."
 if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5000 2>/dev/null | grep -q ".*"; then
+    echo "[start_s3rver] Port 5000 is responding, checking process..."
     # Something is listening on port 5000; check if it's s3rver
     PID=$(timeout 5 lsof -i :5000 -t 2>/dev/null)
     if [ -n "$PID" ]; then
         PROCESS_NAME=$(ps -p $PID -o args= 2>/dev/null)
         if grep -q "[s]3rver" <<< "$PROCESS_NAME"; then
+            echo "[start_s3rver] s3rver already running (PID $PID), skipping"
             exit
         fi
 
@@ -32,15 +35,18 @@ if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5000 2>/dev/null | gr
     fi
 fi
 
+echo "[start_s3rver] Starting s3rver..."
 mkdir -p ./s3rver
 node_modules/.bin/s3rver --address 127.0.0.1 --port 5000 --directory ./s3rver --configure-bucket workspaces --configure-bucket chunks --configure-bucket file-store --configure-bucket workspace-logs > /dev/null &
 
 # wait for s3rver to start (timeout after 10 seconds)
+echo "[start_s3rver] Waiting for s3rver to be ready..."
 SECONDS=0
 until curl -s -o /dev/null http://127.0.0.1:5000 2>/dev/null; do
     if [ "$SECONDS" -ge 10 ]; then
-        echo "Warning: s3rver did not start within 10 seconds"
+        echo "[start_s3rver] ERROR: s3rver did not start within 10 seconds"
         exit 1
     fi
     sleep 1
 done
+echo "[start_s3rver] s3rver is ready (took ${SECONDS}s)"
