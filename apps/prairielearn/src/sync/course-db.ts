@@ -36,12 +36,6 @@ import * as schemas from '../schemas/index.js';
 import { deduplicateByName } from './deduplicate.js';
 import * as infofile from './infofile.js';
 import { isDraftQid } from './question.js';
-import {
-  checkInvalidDraftQuestionSharing,
-  checkInvalidSharedAssessments,
-  checkInvalidSharedCourseInstances,
-  checkInvalidSharingSetAdditions,
-} from './sharing.js';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
@@ -1959,4 +1953,83 @@ async function loadAssessments({
       `UUID "${uuid}" is used in other assessments in this course instance: ${ids.join(', ')}`,
   );
   return assessments;
+}
+
+function checkInvalidDraftQuestionSharing(courseData: CourseData): void {
+  for (const [qid, question] of Object.entries(courseData.questions)) {
+    if (!isDraftQid(qid)) continue;
+
+    if (question.data?.sharingSets && question.data.sharingSets.length > 0) {
+      infofile.addError(question, 'Draft questions cannot be added to sharing sets.');
+    }
+
+    if (question.data?.sharePublicly || question.data?.shareSourcePublicly) {
+      infofile.addError(question, 'Draft questions cannot be publicly shared.');
+    }
+  }
+}
+
+function checkInvalidSharedCourseInstances(courseData: CourseData): void {
+  for (const courseInstance of Object.values(courseData.courseInstances)) {
+    if (!courseInstance.courseInstance.data?.shareSourcePublicly) continue;
+    const hasNonPubliclySharedAssessments = Object.values(courseInstance.assessments).some(
+      (assessment) => !assessment.data?.shareSourcePublicly,
+    );
+    if (hasNonPubliclySharedAssessments) {
+      infofile.addError(
+        courseInstance.courseInstance,
+        'Course instance is publicly shared but contains assessments which are not publicly shared',
+      );
+    }
+  }
+}
+
+function checkInvalidSharedAssessments(courseData: CourseData): void {
+  for (const courseInstanceKey in courseData.courseInstances) {
+    const courseInstance = courseData.courseInstances[courseInstanceKey];
+    for (const tid in courseInstance.assessments) {
+      const assessment = courseInstance.assessments[tid];
+      if (!assessment.data?.shareSourcePublicly) {
+        continue;
+      }
+      const containsNonPublicQuestions = assessment.data.zones.some((zone) =>
+        zone.questions.some((question) => {
+          if (!question.id) {
+            return false;
+          }
+          const infoJson = courseData.questions[question.id];
+          return !infoJson.data?.sharePublicly && !infoJson.data?.shareSourcePublicly;
+        }),
+      );
+      if (containsNonPublicQuestions) {
+        infofile.addError(
+          assessment,
+          'Assessiment is publicly shared but contains questions which are not publicly shared',
+        );
+      }
+    }
+  }
+}
+
+function checkInvalidSharingSetAdditions(courseData: CourseData): void {
+  const sharingSetNames = new Set((courseData.course.data?.sharingSets || []).map((ss) => ss.name));
+
+  for (const qid in courseData.questions) {
+    const question = courseData.questions[qid];
+    const questionSharingSets = question.data?.sharingSets || [];
+    const invalidSharingSets = questionSharingSets.filter(
+      (sharingSet) => !sharingSetNames.has(sharingSet),
+    );
+    if (invalidSharingSets.length === 1) {
+      infofile.addError(
+        question,
+        `Sharing set ${invalidSharingSets[0]} does not exist in this course`,
+      );
+    } else if (invalidSharingSets.length > 1) {
+      infofile.addError(
+        question,
+        `Sharing sets ${invalidSharingSets.join(', ')} do not exist in this course`,
+      );
+    }
+  }
 }

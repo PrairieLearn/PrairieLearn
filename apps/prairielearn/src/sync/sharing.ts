@@ -6,8 +6,6 @@ import { IdSchema } from '@prairielearn/zod';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
 
 import { type CourseData } from './course-db.js';
-import { addError } from './infofile.js';
-import { isDraftQid } from './question.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -105,26 +103,6 @@ export async function checkInvalidSharingSetDeletions(
   return existInvalidSharingSetDeletions;
 }
 
-export function checkInvalidSharingSetAdditions(courseData: CourseData): void {
-  const sharingSetNames = new Set((courseData.course.data?.sharingSets || []).map((ss) => ss.name));
-
-  for (const qid in courseData.questions) {
-    const question = courseData.questions[qid];
-    const questionSharingSets = question.data?.sharingSets || [];
-    const invalidSharingSets = questionSharingSets.filter(
-      (sharingSet) => !sharingSetNames.has(sharingSet),
-    );
-    if (invalidSharingSets.length === 1) {
-      addError(question, `Sharing set ${invalidSharingSets[0]} does not exist in this course`);
-    } else if (invalidSharingSets.length > 1) {
-      addError(
-        question,
-        `Sharing sets ${invalidSharingSets.join(', ')} do not exist in this course`,
-      );
-    }
-  }
-}
-
 export async function checkInvalidSharingSetRemovals(
   courseId: string,
   courseData: CourseData,
@@ -175,60 +153,4 @@ export async function checkInvalidSharingSetRemovals(
   }
 
   return existInvalidSharingSetRemovals;
-}
-
-export function checkInvalidSharedAssessments(courseData: CourseData): void {
-  for (const courseInstanceKey in courseData.courseInstances) {
-    const courseInstance = courseData.courseInstances[courseInstanceKey];
-    for (const tid in courseInstance.assessments) {
-      const assessment = courseInstance.assessments[tid];
-      if (!assessment.data?.shareSourcePublicly) {
-        continue;
-      }
-      const containsNonPublicQuestions = assessment.data.zones.some((zone) =>
-        zone.questions.some((question) => {
-          if (!question.id) {
-            return false;
-          }
-          const infoJson = courseData.questions[question.id];
-          return !infoJson.data?.sharePublicly && !infoJson.data?.shareSourcePublicly;
-        }),
-      );
-      if (containsNonPublicQuestions) {
-        addError(
-          assessment,
-          'Assessiment is publicly shared but contains questions which are not publicly shared',
-        );
-      }
-    }
-  }
-}
-
-export function checkInvalidSharedCourseInstances(courseData: CourseData): void {
-  for (const courseInstance of Object.values(courseData.courseInstances)) {
-    if (!courseInstance.courseInstance.data?.shareSourcePublicly) continue;
-    const hasNonPubliclySharedAssessments = Object.values(courseInstance.assessments).some(
-      (assessment) => !assessment.data?.shareSourcePublicly,
-    );
-    if (hasNonPubliclySharedAssessments) {
-      addError(
-        courseInstance.courseInstance,
-        'Course instance is publicly shared but contains assessments which are not publicly shared',
-      );
-    }
-  }
-}
-
-export function checkInvalidDraftQuestionSharing(courseData: CourseData): void {
-  for (const [qid, question] of Object.entries(courseData.questions)) {
-    if (!isDraftQid(qid)) continue;
-
-    if (question.data?.sharingSets && question.data.sharingSets.length > 0) {
-      addError(question, 'Draft questions cannot be added to sharing sets.');
-    }
-
-    if (question.data?.sharePublicly || question.data?.shareSourcePublicly) {
-      addError(question, 'Draft questions cannot be publicly shared.');
-    }
-  }
 }
