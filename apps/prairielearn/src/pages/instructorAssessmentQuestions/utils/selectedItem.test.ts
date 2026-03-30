@@ -35,13 +35,13 @@ function makeZone(trackingId: string, questions: ZoneQuestionBlockForm[]): ZoneA
 }
 
 describe('sanitizeSelectedItem', () => {
-  it('rewrites an alternative selection when the alternative moves to a different group', () => {
+  it('rewrites an alternative selection when the alternative moves to a different pool', () => {
     const zones = [
       makeZone('z1', [
-        makeQuestion('group-a', {
+        makeQuestion('pool-a', {
           alternatives: [{ trackingId: tid('alt-0'), id: 'q0' }],
         }),
-        makeQuestion('group-b', {
+        makeQuestion('pool-b', {
           alternatives: [{ trackingId: tid('alt-1'), id: 'q1' }],
         }),
       ]),
@@ -50,7 +50,7 @@ describe('sanitizeSelectedItem', () => {
     const result = sanitizeSelectedItem(
       {
         type: 'alternative',
-        questionTrackingId: 'group-a',
+        questionTrackingId: 'pool-a',
         alternativeTrackingId: 'alt-1',
       },
       zones,
@@ -58,7 +58,7 @@ describe('sanitizeSelectedItem', () => {
 
     expect(result).toEqual({
       type: 'alternative',
-      questionTrackingId: 'group-b',
+      questionTrackingId: 'pool-b',
       alternativeTrackingId: 'alt-1',
     } satisfies SelectedItem);
   });
@@ -69,7 +69,7 @@ describe('sanitizeSelectedItem', () => {
     const result = sanitizeSelectedItem(
       {
         type: 'alternative',
-        questionTrackingId: 'group-a',
+        questionTrackingId: 'pool-a',
         alternativeTrackingId: 'alt-1',
       },
       zones,
@@ -88,7 +88,7 @@ describe('sanitizeSelectedItem', () => {
       sanitizeSelectedItem(
         {
           type: 'alternative',
-          questionTrackingId: 'group-a',
+          questionTrackingId: 'pool-a',
           alternativeTrackingId: 'alt-1',
         },
         zones,

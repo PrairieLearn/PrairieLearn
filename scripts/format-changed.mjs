@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 // @ts-check
 //
-// Formats all changed files (staged + unstaged) compared to HEAD.
-// This is useful for formatting all your work-in-progress changes before committing.
+// Formats all files changed on the current branch compared to the default branch,
+// including both committed and uncommitted changes.
 
-import { execSync, spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { execFileSync, spawn } from 'node:child_process';
 
 // File patterns matching the project's linter configurations
 const ESLINT_EXTENSIONS = new Set([
@@ -44,25 +43,67 @@ const PRETTIER_EXTENSIONS = new Set([
 const RUFF_EXTENSIONS = new Set(['.py']);
 
 /**
- * Get all changed files compared to HEAD (both staged and unstaged).
+ * Detect the remote default branch (e.g. origin/main or origin/master).
+ * @returns {string}
+ */
+function getBaseBranch() {
+  // Use origin's HEAD symref, which tracks the remote's default branch.
+  try {
+    const ref = execFileSync('git', ['symbolic-ref', 'refs/remotes/origin/HEAD'], {
+      encoding: 'utf-8',
+    }).trim();
+    // ref is like "refs/remotes/origin/main" — strip the prefix.
+    const prefix = 'refs/remotes/';
+    return ref.slice(prefix.length);
+  } catch {
+    // origin/HEAD may not be set (e.g. older clones). Probe common names.
+  }
+
+  for (const candidate of ['origin/master', 'origin/main']) {
+    try {
+      execFileSync('git', ['rev-parse', '--verify', candidate], { encoding: 'utf-8' });
+      return candidate;
+    } catch {
+      // Try next candidate.
+    }
+  }
+
+  throw new Error('Could not determine the default branch. Run: git remote set-head origin --auto');
+}
+
+/**
+ * Get the merge base between the current branch and the default branch.
+ * @returns {string}
+ */
+function getMergeBase() {
+  const baseBranch = getBaseBranch();
+  return execFileSync('git', ['merge-base', 'HEAD', baseBranch], { encoding: 'utf-8' }).trim();
+}
+
+/**
+ * Get all changed files on the current branch compared to the default branch,
+ * including committed, staged, unstaged, and untracked changes.
  * @returns {string[]}
  */
 function getChangedFiles() {
-  // Get modified/added files (staged and unstaged)
-  const diffOutput = execSync('git diff --name-only HEAD', { encoding: 'utf-8' });
+  const mergeBase = getMergeBase();
 
-  // Get untracked files
-  const untrackedOutput = execSync('git ls-files --others --exclude-standard', {
+  // Get all files changed between merge base and working tree, excluding deletions
+  const diffOutput = execFileSync('git', ['diff', '--name-only', '--diff-filter=d', mergeBase], {
     encoding: 'utf-8',
   });
 
-  const files = new Set([
-    ...diffOutput.split('\n').filter(Boolean),
-    ...untrackedOutput.split('\n').filter(Boolean),
-  ]);
+  // Get untracked files
+  const untrackedOutput = execFileSync('git', ['ls-files', '--others', '--exclude-standard'], {
+    encoding: 'utf-8',
+  });
 
-  // Filter to only existing files (in case of deletions)
-  return [...files].filter((file) => existsSync(file));
+  return [
+    ...new Set([
+      ...diffOutput.split('\n').filter(Boolean),
+      ...untrackedOutput.split('\n').filter(Boolean),
+    ]),
+  ];
 }
 
 /**

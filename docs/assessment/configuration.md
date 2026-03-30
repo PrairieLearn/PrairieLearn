@@ -952,7 +952,7 @@ Real-time grading can be disabled for an entire assessment:
 }
 ```
 
-It can also be disabled for specific zones, alternative groups, or questions by adding `"allowRealTimeGrading": false` to the relevant part of the `infoAssessment.json` file. For example, the following configuration disables real-time grading for the second zone only:
+It can also be disabled for specific zones, alternative pools, or questions by adding `"allowRealTimeGrading": false` to the relevant part of the `infoAssessment.json` file. For example, the following configuration disables real-time grading for the second zone only:
 
 ```json title="infoAssessment.json"
 {
