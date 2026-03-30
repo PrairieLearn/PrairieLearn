@@ -69,12 +69,6 @@ export function ZoneDetailPanel({
     gradeRateMinutes: zone.gradeRateMinutes ?? undefined,
     // We do this so that `isDirty = false` when the value is inherited.
     allowRealTimeGrading: zone.allowRealTimeGrading ?? undefined,
-    ...Object.fromEntries(
-      EnumAssessmentToolSchema.options.map((tool) => [
-        `tool_${tool}` as const,
-        zone.tools?.[tool] != null ? zone.tools[tool].enabled : undefined,
-      ]),
-    ),
     ...(Object.fromEntries(
       EnumAssessmentToolSchema.options.map((tool) => [
         `tool_${tool}` as const,
