@@ -118,7 +118,7 @@ export function ZoneDetailPanel({
       const tools: Record<string, { enabled: boolean }> = {};
       let hasToolOverride = false;
       for (const tool of EnumAssessmentToolSchema.options) {
-        const value = data[`tool_${tool}`];
+        const value = coerceToBoolean(data[`tool_${tool}`]);
         if (value != null) {
           tools[tool] = { enabled: value };
           hasToolOverride = true;
