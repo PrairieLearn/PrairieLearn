@@ -15,6 +15,7 @@ import {
 import {
   MAX_PURCHASE_MILLI_DOLLARS,
   MIN_PURCHASE_MILLI_DOLLARS,
+  calculateCreditPurchaseCharge,
 } from '../../lib/ai-grading-credit-purchase-constants.js';
 import { getOrCreateStripeCustomerId, getStripeClient } from '../../lib/billing/stripe.js';
 import { creditPoolProcedures, requireAiGradingFeature } from '../../lib/credit-pool-trpc.js';
@@ -127,13 +128,14 @@ const createCheckoutMutation = t.procedure
 
     const { authn_user, course, course_instance, host } = opts.ctx;
     const amountMilliDollars = opts.input.amount_milli_dollars;
-
-    // The user pays credits + infrastructure fee; credits granted = amountMilliDollars.
-    // Stripe expects amounts in cents; round up so we never under-charge.
-    const totalMilliDollars = Math.ceil(
-      amountMilliDollars * (1 + config.aiGradingInfrastructureFeePercent),
+    // Stripe cents are the source of truth; persisted fee values are derived
+    // from the charged cent amount so refund totals match exactly.
+    const { stripe_amount_cents, infrastructure_fee_milli_dollars } = calculateCreditPurchaseCharge(
+      {
+        amount_milli_dollars: amountMilliDollars,
+        infrastructure_fee_rate: config.aiGradingInfrastructureFeePercent,
+      },
     );
-    const amountCents = Math.ceil(totalMilliDollars / 10);
 
     const stripe = getStripeClient();
     const customerId = await getOrCreateStripeCustomerId(authn_user.id, {
@@ -163,7 +165,7 @@ const createCheckoutMutation = t.procedure
           price_data: {
             currency: 'usd',
             product: config.stripeAiGradingCreditsProductId,
-            unit_amount: amountCents,
+            unit_amount: stripe_amount_cents,
           },
           quantity: 1,
         },
@@ -178,15 +180,13 @@ const createCheckoutMutation = t.procedure
       },
     });
 
-    const infrastructureFeeMilliDollars = totalMilliDollars - amountMilliDollars;
-
     await insertCreditCheckoutSession({
       agent_user_id: authn_user.id,
       stripe_object_id: session.id,
       course_instance_id: course_instance.id,
       data: session,
       amount_milli_dollars: amountMilliDollars,
-      infrastructure_fee_milli_dollars: infrastructureFeeMilliDollars,
+      infrastructure_fee_milli_dollars,
     });
 
     if (!session.url) {

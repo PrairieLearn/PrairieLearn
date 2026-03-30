@@ -13,3 +13,33 @@ export const CREDIT_PACKAGES = [
   { dollars: 25, tagline: 'Best for small courses' },
   { dollars: 100, tagline: 'Best for large courses' },
 ] as const;
+
+/**
+ * Calculates Stripe charge values for a credit purchase.
+ *
+ * Stripe charges in whole cents, so we round up to avoid under-charging and
+ * then derive persisted milli-dollar values from the charged cent amount.
+ */
+export function calculateCreditPurchaseCharge({
+  amount_milli_dollars,
+  infrastructure_fee_rate,
+}: {
+  amount_milli_dollars: number;
+  infrastructure_fee_rate: number;
+}): {
+  stripe_amount_cents: number;
+  charged_milli_dollars: number;
+  infrastructure_fee_milli_dollars: number;
+} {
+  const stripe_amount_cents = Math.ceil(
+    (amount_milli_dollars * (1 + infrastructure_fee_rate)) / 10,
+  );
+  const charged_milli_dollars = stripe_amount_cents * 10;
+  const infrastructure_fee_milli_dollars = charged_milli_dollars - amount_milli_dollars;
+
+  return {
+    stripe_amount_cents,
+    charged_milli_dollars,
+    infrastructure_fee_milli_dollars,
+  };
+}
