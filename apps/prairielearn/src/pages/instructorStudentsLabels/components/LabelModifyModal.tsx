@@ -206,7 +206,7 @@ export function LabelModifyModal({
       onExited={() => {
         setStage({ type: 'editing' });
         saveMutation.reset();
-        reset({ name: '', color: 'blue1', uids: '' });
+        reset();
         onExited?.();
       }}
     >
