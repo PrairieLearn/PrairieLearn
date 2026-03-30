@@ -2,6 +2,8 @@ columns
     ai_grading_use_custom_api_keys: boolean not null default false
     assessments_group_by: enum_assessment_grouping not null default 'Set'::enum_assessment_grouping
     course_id: bigint not null
+    credit_non_transferable_milli_dollars: bigint not null default 0
+    credit_transferable_milli_dollars: bigint not null default 0
     deleted_at: timestamp with time zone
     display_timezone: text not null
     enrollment_code: character varying(255) not null
@@ -30,6 +32,8 @@ indexes
     course_instances_course_id_idx: USING btree (course_id)
 
 check constraints
+    course_instances_credit_non_transferable_milli_dollars_check: CHECK (credit_non_transferable_milli_dollars >= 0)
+    course_instances_credit_transferable_milli_dollars_check: CHECK (credit_transferable_milli_dollars >= 0)
     course_instances_publishing_dates_consistency_check: CHECK (publishing_start_date IS NULL AND publishing_end_date IS NULL OR publishing_start_date IS NOT NULL AND publishing_end_date IS NOT NULL)
 
 foreign-key constraints
@@ -37,6 +41,7 @@ foreign-key constraints
     course_instances_sync_job_sequence_id_fkey: FOREIGN KEY (sync_job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
+    ai_grading_credit_pool_changes: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     ai_grading_jobs: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessments: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     audit_events: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE SET NULL

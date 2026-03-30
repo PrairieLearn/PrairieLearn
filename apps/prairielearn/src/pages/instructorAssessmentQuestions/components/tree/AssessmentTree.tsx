@@ -2,6 +2,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { ReactNode } from 'react';
 
 import type { TreeActions, TreeState, ViewType, ZoneAssessmentForm } from '../../types.js';
+import { computeQuestionNumber } from '../../utils/zoneLookup.js';
 import { ViewToggle } from '../EditModeToolbar.js';
 import { ViewSwitcherDropdown } from '../ViewSwitcherDropdown.js';
 
@@ -60,6 +61,7 @@ export function AssessmentTree({
                 key={zone.trackingId}
                 zone={zone}
                 zoneNumber={zoneIndex + 1}
+                questionStartNumber={computeQuestionNumber(zones, zoneIndex, 0)}
                 state={state}
                 actions={actions}
               />
