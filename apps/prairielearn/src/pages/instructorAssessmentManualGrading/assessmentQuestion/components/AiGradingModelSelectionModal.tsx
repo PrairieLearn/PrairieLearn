@@ -142,10 +142,9 @@ function ProviderSelector({
         {providers.map((provider) => {
           const isActive = activeProvider === provider;
           const isAvailable = availableProviders.includes(provider);
-          const radioId = `ai-grading-provider-${provider}`;
           const providerOption = (
-            <div
-              className={clsx('border rounded-3 px-3 py-2 h-100', {
+            <label
+              className={clsx('border rounded-3 px-3 py-2 h-100 d-block mb-0', {
                 'border-primary bg-primary bg-opacity-10': isActive,
                 'opacity-50': !isAvailable,
               })}
@@ -153,20 +152,17 @@ function ProviderSelector({
             >
               <input
                 type="radio"
-                id={radioId}
                 name="ai-grading-provider"
                 className="visually-hidden"
                 checked={isActive}
                 disabled={!isAvailable}
                 onChange={() => onSelect(provider)}
               />
-              <label htmlFor={radioId}>
-                <div className={clsx('fw-semibold', { 'text-primary': isActive })}>
-                  {AI_GRADING_PROVIDER_DISPLAY_NAMES[provider]}
-                </div>
-                <div className="text-muted small">{AI_GRADING_PROVIDER_SUBLABELS[provider]}</div>
-              </label>
-            </div>
+              <div className={clsx('fw-semibold', { 'text-primary': isActive })}>
+                {AI_GRADING_PROVIDER_DISPLAY_NAMES[provider]}
+              </div>
+              <div className="text-muted small">{AI_GRADING_PROVIDER_SUBLABELS[provider]}</div>
+            </label>
           );
 
           return (
@@ -233,12 +229,14 @@ function ModelSelector({
             : null;
 
           return (
-            <div
+            <label
               key={model.modelId}
-              className={clsx('border rounded-3 px-3 py-2', {
+              htmlFor={`model-${model.modelId}`}
+              className={clsx('border rounded-3 px-3 py-2 mb-0', {
                 'border-primary bg-primary bg-opacity-10': isSelected,
                 'opacity-50': !isAvailable,
               })}
+              style={{ cursor: isAvailable ? 'pointer' : 'default' }}
             >
               <div className="d-flex align-items-center justify-content-between flex-wrap gap-1">
                 <Form.Check
@@ -272,7 +270,7 @@ function ModelSelector({
               <div className="text-muted small d-sm-none" style={{ paddingLeft: '1.75em' }}>
                 {model.sublabel}
               </div>
-            </div>
+            </label>
           );
         })}
       </div>
