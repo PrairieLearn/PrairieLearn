@@ -40,9 +40,12 @@ function toRuntime(json: AccessControlJson): RuntimeAccessControl {
       afterComplete;
     result.afterComplete = {
       ...acRest,
-      showQuestionsAgainDate: showQuestionsAgainDate ? new Date(showQuestionsAgainDate) : undefined,
-      hideQuestionsAgainDate: hideQuestionsAgainDate ? new Date(hideQuestionsAgainDate) : undefined,
-      showScoreAgainDate: showScoreAgainDate ? new Date(showScoreAgainDate) : undefined,
+      showQuestionsAgainDate:
+        showQuestionsAgainDate != null ? new Date(showQuestionsAgainDate) : showQuestionsAgainDate,
+      hideQuestionsAgainDate:
+        hideQuestionsAgainDate != null ? new Date(hideQuestionsAgainDate) : hideQuestionsAgainDate,
+      showScoreAgainDate:
+        showScoreAgainDate != null ? new Date(showScoreAgainDate) : showScoreAgainDate,
     };
   }
   return result;
@@ -1344,6 +1347,32 @@ describe('mergeRules', () => {
     expect(result.afterComplete?.hideScore).toBe(true);
   });
 
+  it('allows override to clear main rule after-complete dates via null', () => {
+    const result = mergeRules(
+      toRuntime({
+        afterComplete: {
+          hideQuestions: true,
+          showQuestionsAgainDate: '2025-06-01T00:00:00Z',
+          hideQuestionsAgainDate: '2025-09-01T00:00:00Z',
+          hideScore: true,
+          showScoreAgainDate: '2025-07-01T00:00:00Z',
+        },
+      }),
+      toRuntime({
+        afterComplete: {
+          showQuestionsAgainDate: null,
+          hideQuestionsAgainDate: null,
+          showScoreAgainDate: null,
+        },
+      }),
+    );
+    expect(result.afterComplete?.hideQuestions).toBe(true);
+    expect(result.afterComplete?.showQuestionsAgainDate).toBeNull();
+    expect(result.afterComplete?.hideQuestionsAgainDate).toBeNull();
+    expect(result.afterComplete?.hideScore).toBe(true);
+    expect(result.afterComplete?.showScoreAgainDate).toBeNull();
+  });
+
   it.each<{ field: keyof RuntimeAccessControl; main: AccessControlJson }>([
     { field: 'labels', main: { labels: ['group-a'] } },
     { field: 'integrations', main: { integrations: { prairieTest: { exams: [] } } } },
@@ -1452,6 +1481,10 @@ describe('resolveVisibility', () => {
 
   it('returns false when hide is true and no show-again date', () => {
     expect(resolveVisibility(true, undefined, undefined, now)).toBe(false);
+  });
+
+  it('returns false when hide is true and show-again date is null', () => {
+    expect(resolveVisibility(true, null, undefined, now)).toBe(false);
   });
 
   it('returns true when past show-again date', () => {

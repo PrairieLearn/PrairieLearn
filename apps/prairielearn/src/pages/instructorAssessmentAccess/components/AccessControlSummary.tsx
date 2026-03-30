@@ -10,7 +10,7 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Fragment, useId, useMemo } from 'react';
-import { Alert, Button } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 
 import {
   DateTableView,
@@ -75,27 +75,34 @@ function MainRuleSummaryContent({
   rule: MainRuleData;
   displayTimezone: string;
 }) {
-  const summaryLines = generateRuleSummary(rule, 'compact');
+  const summaryItems = generateRuleSummary(rule, 'compact');
   const dateTableRows = generateDateTableRows(rule, displayTimezone, 'compact');
 
   return (
     <div>
       {dateTableRows.length > 0 && (
-        <div className="mb-3">
+        <div className="mb-2">
           <DateTableView rows={dateTableRows} />
         </div>
       )}
 
-      {summaryLines.length > 0 && (
-        <ul className="mb-0 ps-3">
-          {summaryLines.map((line) => (
-            <li key={line}>{line}</li>
+      {summaryItems.length > 0 && (
+        <div className="d-flex flex-wrap gap-2">
+          {summaryItems.map((item) => (
+            <span
+              key={item.text}
+              className="d-inline-flex align-items-center gap-1 border rounded-pill px-3 py-1"
+              style={{ fontSize: '0.875rem' }}
+            >
+              <i className={`bi ${item.icon}`} aria-hidden="true" />
+              {item.text}
+            </span>
           ))}
-        </ul>
+        </div>
       )}
 
-      {dateTableRows.length === 0 && summaryLines.length === 0 && (
-        <p className="text-muted mb-0">No specific settings configured</p>
+      {dateTableRows.length === 0 && summaryItems.length === 0 && (
+        <p className="text-body-secondary mb-0">No specific settings configured</p>
       )}
     </div>
   );
@@ -142,10 +149,6 @@ export function AccessControlSummary({
 
   const sortableIds = useMemo(() => overrides.map((o) => o.trackingId), [overrides]);
 
-  const hasIndividualOverrides = overrides.some((o) => o.appliesTo.targetType === 'individual');
-  const hasLabelOverrides = overrides.some((o) => o.appliesTo.targetType === 'student_label');
-  const hasBothTypes = hasIndividualOverrides && hasLabelOverrides;
-
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return;
     const oldIndex = sortableIds.indexOf(String(active.id));
@@ -178,13 +181,13 @@ export function AccessControlSummary({
         </div>
 
         {mainRuleErrors && mainRuleErrors.length > 0 && (
-          <Alert variant="danger" className="mb-3">
+          <div className="alert alert-danger mb-3">
             <ul className="mb-0">
               {mainRuleErrors.map((msg) => (
                 <li key={msg}>{msg}</li>
               ))}
             </ul>
-          </Alert>
+          </div>
         )}
 
         <MainRuleSummaryContent rule={mainRule} displayTimezone={displayTimezone} />
@@ -193,7 +196,7 @@ export function AccessControlSummary({
       <section>
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h5 className="mb-0">Overrides</h5>
-          <Button variant="success" size="sm" onClick={onAddOverride}>
+          <Button variant="primary" size="sm" onClick={onAddOverride}>
             <i className="bi bi-plus-lg me-1" /> Add override
           </Button>
         </div>
@@ -213,9 +216,8 @@ export function AccessControlSummary({
             <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
               {overrides.map((override, index) => {
                 const isFirstIndividual =
-                  hasBothTypes && index === 0 && override.appliesTo.targetType === 'individual';
+                  index === 0 && override.appliesTo.targetType === 'individual';
                 const isFirstLabel =
-                  hasBothTypes &&
                   override.appliesTo.targetType === 'student_label' &&
                   (index === 0 || overrides[index - 1].appliesTo.targetType !== 'student_label');
 
@@ -223,12 +225,12 @@ export function AccessControlSummary({
                   <Fragment key={sortableIds[index]}>
                     {isFirstIndividual && (
                       <small className="text-muted fw-semibold d-block mb-2">
-                        Individual overrides
+                        Overrides for individual students
                       </small>
                     )}
                     {isFirstLabel && (
                       <small className="text-muted fw-semibold d-block mb-2 mt-3">
-                        Student label overrides
+                        Overrides for student labels
                       </small>
                     )}
                     <SortableOverrideCard
@@ -248,11 +250,13 @@ export function AccessControlSummary({
           </DndContext>
         )}
 
-        <p className="text-muted small mt-3 mb-0">
-          Overrides are applied in order from top to bottom. Student label overrides are evaluated
-          first, then individual overrides (which take priority). Each override inherits all
-          settings from the ones above it — only explicitly overridden fields are changed.
-        </p>
+        <div className="rounded p-3 mt-3" style={{ backgroundColor: 'var(--bs-tertiary-bg)' }}>
+          <p className="text-body-secondary small mb-0">
+            Overrides are applied in order from top to bottom. Student label overrides are evaluated
+            first, then individual overrides (which take priority). Each override inherits all
+            settings from the ones above it — only explicitly overridden fields are changed.
+          </p>
+        </div>
       </section>
     </div>
   );

@@ -16,6 +16,8 @@ import { useTRPC } from '../trpc/administrator/context.js';
 import {
   AdministratorCourseFormFields,
   type CourseFormFieldValues,
+  buildRepoShortName,
+  useInstitutionPrefix,
 } from './AdminstratorCourseFormFields.js';
 import { JobStatus } from './JobStatus.js';
 
@@ -294,7 +296,7 @@ function CourseRequestApproveModal({
   aiSecretsConfigured: boolean;
 }) {
   return (
-    <Modal show={show} backdrop="static" onHide={onHide} onExited={onExited}>
+    <Modal show={show} backdrop="static" size="lg" onHide={onHide} onExited={onExited}>
       {data && (
         <CourseRequestApproveModalContent
           key={data.id}
@@ -331,16 +333,24 @@ function CourseRequestApproveModalContent({
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.createCourse.mutationOptions());
 
-  const repoName = 'pl-' + request.short_name.replaceAll(' ', '').toLowerCase();
+  const userInstitution = institutions.find((i) => i.id === request.user_institution_id);
+  const isDefaultInstitution = userInstitution?.short_name === 'Default';
+  const autoFilledInstitutionId =
+    userInstitution && !isDefaultInstitution ? userInstitution.id : null;
+  const defaultInstitutionId = autoFilledInstitutionId ?? '';
+  const defaultTimezone =
+    userInstitution && autoFilledInstitutionId ? userInstitution.display_timezone : '';
+
+  const repoName = buildRepoShortName(null, request.short_name);
   const path = coursesRoot + '/' + repoName;
 
   const methods = useForm<CourseRequestApproveFormData>({
     mode: 'onSubmit',
     defaultValues: {
-      institution_id: '',
+      institution_id: defaultInstitutionId,
       short_name: request.short_name,
       title: request.title,
-      display_timezone: '',
+      display_timezone: defaultTimezone,
       path,
       repository_short_name: repoName,
       github_user: request.github_user ?? '',
@@ -352,6 +362,8 @@ function CourseRequestApproveModalContent({
     handleSubmit,
     formState: { isSubmitting },
   } = methods;
+  const institutionId = methods.watch('institution_id');
+  const prefixState = useInstitutionPrefix(institutionId, institutions);
 
   const onSubmit = (data: CourseRequestApproveFormData) => {
     mutation.mutate(
@@ -374,7 +386,7 @@ function CourseRequestApproveModalContent({
   };
 
   const legitimacyQuery = useQuery({
-    ...trpc.courseRequests.checkInstructorLegitimacyQuery.queryOptions({
+    ...trpc.courseRequests.checkInstructorLegitimacy.queryOptions({
       courseRequestId: request.id,
     }),
     enabled: false,
@@ -505,22 +517,21 @@ function CourseRequestApproveModalContent({
                       <div className="mt-1">
                         <span className="small text-muted">Sources</span>
                         <div className="d-flex flex-wrap gap-1">
-                          {legitimacyQuery.data.sources
-                            .filter(
-                              (source, index, arr) =>
-                                arr.findIndex((s) => s.url === source.url) === index,
-                            )
-                            .map((source) => (
-                              <a
-                                key={source.url}
-                                href={source.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="small"
-                              >
-                                {source.title ?? source.url}
-                              </a>
-                            ))}
+                          {[
+                            ...new Map(
+                              legitimacyQuery.data.sources.map((s) => [s.url, s]),
+                            ).values(),
+                          ].map((source) => (
+                            <a
+                              key={source.url}
+                              href={source.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="small"
+                            >
+                              {source.title ?? source.url}
+                            </a>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -533,11 +544,10 @@ function CourseRequestApproveModalContent({
             institutions={institutions}
             availableTimezones={availableTimezones}
             coursesRoot={coursesRoot}
-            suggestPrefixOptions={{
-              institutionName: request.institution ?? '',
-              emailDomain: request.work_email?.split('@')[1] ?? '',
-            }}
+            prefixState={prefixState}
+            emailDomain={request.work_email?.split('@')[1] ?? ''}
             aiSecretsConfigured={aiSecretsConfigured}
+            autoFilledInstitutionId={autoFilledInstitutionId}
           />
           <div className="mb-3">
             <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
@@ -563,7 +573,7 @@ function CourseRequestApproveModalContent({
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={isSubmitting || mutation.isPending}
+            disabled={isSubmitting || mutation.isPending || prefixState.status === 'loading'}
           >
             Create course
           </button>

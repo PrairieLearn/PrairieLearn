@@ -4,7 +4,14 @@ SELECT
   (
     SELECT
       jsonb_agg(
-        sl.name
+        jsonb_build_object(
+          'id',
+          sl.id::text,
+          'name',
+          sl.name,
+          'color',
+          sl.color
+        )
         ORDER BY
           sl.name
       )
