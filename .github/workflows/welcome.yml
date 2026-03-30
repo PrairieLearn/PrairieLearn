@@ -1,0 +1,32 @@
+name: Welcome first-time contributors
+
+on:
+  pull_request_target:
+    types: [opened]
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  welcome:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-message: |
+            Thanks for your first pull request to PrairieLearn! Here are a few things to keep in mind:
+
+            - Make sure you've read the [contributing guide](https://github.com/PrairieLearn/PrairieLearn/blob/master/CONTRIBUTING.md) and the [dev guide](https://docs.prairielearn.com/dev-guide/).
+            - Our CLA bot will ask you to sign a [contributor license agreement](https://github.com/PrairieLearn/cla) if you haven't already.
+            - A maintainer will need to approve CI workflows for your PR. This is normal for first-time contributors.
+            - If you get stuck, feel free to ask questions here or in the `#pl-dev` channel on [Slack](https://prairielearn.com/slack).
+
+            We appreciate your contribution!
+          issue-message: |
+            Thanks for opening your first issue on PrairieLearn! A maintainer will take a look soon.
+
+            In the meantime, if you have questions or want to discuss further, feel free to join the `#pl-dev` channel on [Slack](https://prairielearn.com/slack).
