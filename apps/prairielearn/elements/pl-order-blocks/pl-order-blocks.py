@@ -339,6 +339,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     grading_method = order_blocks_options.grading_method
 
+    score = data["partial_scores"].get(answer_name, {"score": None}).get("score", None)
+    if score is not None:
+        try:
+            score = float(score * 100)
+        except Exception as exc:
+            raise ValueError(
+                f"invalid score: {data['partial_scores'][answer_name].get('score', 0)}"
+            ) from exc
+
     if data["panel"] == "question":
         editable = data["editable"]
 
@@ -385,6 +394,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         uuid = pl.get_uuid()
         html_params = {
             "question": True,
+            "parse-error": data["format_errors"].get(answer_name, None),
             "answer_name": answer_name,
             "source-header": order_blocks_options.source_header,
             "solution-header": order_blocks_options.solution_header,
@@ -404,6 +414,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "editable": editable,
             "block_layout": "pl-order-blocks-horizontal" if inline else "",
         }
+        if score is not None:
+            if score >= 100:
+                html_params["correct"] = True
+            elif score > 0:
+                html_params["partially_correct"] = math.floor(score)
+            else:
+                html_params["incorrect"] = True
+
 
         with open("pl-order-blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
@@ -413,11 +431,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if grading_method is GradingMethodType.EXTERNAL:
             return ""  # external grader is responsible for displaying results screen
 
-        score = None
-        feedback = None
-        if answer_name in data["partial_scores"]:
-            score = data["partial_scores"][answer_name]["score"]
-            feedback = data["partial_scores"][answer_name].get("feedback", "")
+        feedback = data["partial_scores"].get(answer_name, {"score": None}).get("feedback", "")
         submission_was_graded = score is not None
 
         student_submission = [
@@ -454,20 +468,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else "pl-order-blocks-right"
             ),
         }
-
         if score is not None:
-            try:
-                score = float(score * 100)
-                if score >= 100:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partially_correct"] = math.floor(score)
-                else:
-                    html_params["incorrect"] = True
-            except Exception as exc:
-                raise ValueError(
-                    f"invalid score: {data['partial_scores'][answer_name].get('score', 0)}"
-                ) from exc
+            if score >= 100:
+                html_params["correct"] = True
+            elif score > 0:
+                html_params["partially_correct"] = math.floor(score)
+            else:
+                html_params["incorrect"] = True
 
         with open("pl-order-blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
@@ -554,7 +561,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         student_answer is None or student_answer == []
     ):
         data["format_errors"][answer_name] = (
-            "Your submitted answer was blank; you did not drag any answer blocks into the answer area."
+            "Your submitted answer was blank; the answer area must contain at least one block."
         )
         return
 
