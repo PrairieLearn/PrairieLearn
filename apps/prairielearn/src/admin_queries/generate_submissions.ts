@@ -2,7 +2,13 @@ import { mapLimit } from 'async';
 import { groupBy } from 'es-toolkit';
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import { closeAssessmentInstance } from '../lib/assessment.js';
 import { config } from '../lib/config.js';
@@ -158,10 +164,14 @@ export default async function ({
     async ([assessmentInstanceId, questions]: [string, InstanceQuestionQuery[]]) => {
       const userId = questions[0].user.id;
 
-      const results = await mapLimit(questions, CONCURRENCY, async (instanceQuestion: InstanceQuestionQuery) => {
-        const result = await processQuestion(instanceQuestion, ctx);
-        return finalizeQuestion(instanceQuestion, result, ctx);
-      });
+      const results = await mapLimit(
+        questions,
+        CONCURRENCY,
+        async (instanceQuestion: InstanceQuestionQuery) => {
+          const result = await processQuestion(instanceQuestion, ctx);
+          return finalizeQuestion(instanceQuestion, result, ctx);
+        },
+      );
 
       const allSucceeded = results.every((r) => r.attempts > 0);
       let closed = false;
