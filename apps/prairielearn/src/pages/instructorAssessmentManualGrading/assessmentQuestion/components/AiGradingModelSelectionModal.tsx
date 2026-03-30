@@ -138,34 +138,34 @@ function ProviderSelector({
   return (
     <>
       <div className="text-muted small fw-semibold mb-2">Provider</div>
-      <div role="radiogroup" aria-label="Select provider" className="row g-2">
+      <div className="row g-2">
         {providers.map((provider) => {
           const isActive = activeProvider === provider;
           const isAvailable = availableProviders.includes(provider);
+          const radioId = `ai-grading-provider-${provider}`;
           const providerOption = (
             <div
-              role="radio"
-              aria-checked={isActive}
-              tabIndex={isActive ? 0 : -1}
               className={clsx('border rounded-3 px-3 py-2 h-100', {
                 'border-primary bg-primary bg-opacity-10': isActive,
                 'opacity-50': !isAvailable,
               })}
               style={{ cursor: isAvailable ? 'pointer' : 'default' }}
-              onClick={() => {
-                if (isAvailable) onSelect(provider);
-              }}
-              onKeyDown={(e) => {
-                if (isAvailable && (e.key === 'Enter' || e.key === ' ')) {
-                  e.preventDefault();
-                  onSelect(provider);
-                }
-              }}
             >
-              <div className={clsx('fw-semibold', { 'text-primary': isActive })}>
-                {AI_GRADING_PROVIDER_DISPLAY_NAMES[provider]}
-              </div>
-              <div className="text-muted small">{AI_GRADING_PROVIDER_SUBLABELS[provider]}</div>
+              <input
+                type="radio"
+                id={radioId}
+                name="ai-grading-provider"
+                className="visually-hidden"
+                checked={isActive}
+                disabled={!isAvailable}
+                onChange={() => onSelect(provider)}
+              />
+              <label htmlFor={radioId}>
+                <div className={clsx('fw-semibold', { 'text-primary': isActive })}>
+                  {AI_GRADING_PROVIDER_DISPLAY_NAMES[provider]}
+                </div>
+                <div className="text-muted small">{AI_GRADING_PROVIDER_SUBLABELS[provider]}</div>
+              </label>
             </div>
           );
 
@@ -214,6 +214,8 @@ function ModelSelector({
   numToGrade: number;
   onSelect: (modelId: AiGradingModelId) => void;
 }) {
+  const providerModels = AI_GRADING_MODELS.filter((m) => m.provider === activeProvider);
+
   return (
     <>
       <div className="d-flex align-items-center justify-content-between mt-3 mb-2">
@@ -223,7 +225,7 @@ function ModelSelector({
         )}
       </div>
       <div className="d-flex flex-column gap-2">
-        {AI_GRADING_MODELS.filter((m) => m.provider === activeProvider).map((model) => {
+        {providerModels.map((model) => {
           const isSelected = selectedModel === model.modelId;
           const isAvailable = availableProviders.includes(model.provider);
           const costMilliDollars = data
@@ -233,24 +235,10 @@ function ModelSelector({
           return (
             <div
               key={model.modelId}
-              role="radio"
-              aria-checked={isSelected}
-              aria-disabled={!isAvailable}
-              tabIndex={isSelected ? 0 : -1}
               className={clsx('border rounded-3 px-3 py-2', {
                 'border-primary bg-primary bg-opacity-10': isSelected,
                 'opacity-50': !isAvailable,
               })}
-              style={{ cursor: isAvailable ? 'pointer' : 'default' }}
-              onClick={() => {
-                if (isAvailable) onSelect(model.modelId);
-              }}
-              onKeyDown={(e) => {
-                if (isAvailable && (e.key === 'Enter' || e.key === ' ')) {
-                  e.preventDefault();
-                  onSelect(model.modelId);
-                }
-              }}
             >
               <div className="d-flex align-items-center justify-content-between flex-wrap gap-1">
                 <Form.Check
