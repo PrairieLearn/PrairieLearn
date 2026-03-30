@@ -288,7 +288,7 @@ def test_answer_validation(options: dict, answer_options_list: list[dict]) -> No
                 {"tag": "1", "correct": True, "initially-placed": True},
                 {"tag": "2", "correct": False, "initially-placed": True},
             ],
-            "Incorrect blocks cannot be initially-placed.",
+            "Incorrect blocks cannot be initially placed.",
         ),
         (
             {
@@ -299,7 +299,7 @@ def test_answer_validation(options: dict, answer_options_list: list[dict]) -> No
                 {"tag": "1", "correct": True, "initially-placed": True},
                 {"tag": "2", "distractor-for": "1", "initially-placed": True},
             ],
-            "A block with distractors cannot be initially-placed.",
+            "A block with distractors cannot be initially placed.",
         ),
     ],
 )
