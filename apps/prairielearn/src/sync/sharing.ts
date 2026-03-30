@@ -6,6 +6,7 @@ import { IdSchema } from '@prairielearn/zod';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
 
 import { type CourseData } from './course-db.js';
+import { addError } from './infofile.js';
 import { isDraftQid } from './question.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -104,38 +105,24 @@ export async function checkInvalidSharingSetDeletions(
   return existInvalidSharingSetDeletions;
 }
 
-export function checkInvalidSharingSetAdditions(
-  courseData: CourseData,
-  logger: ServerJobLogger,
-): boolean {
-  const invalidSharingSetAdditions: Record<string, string[]> = {};
+export function checkInvalidSharingSetAdditions(courseData: CourseData): void {
   const sharingSetNames = new Set((courseData.course.data?.sharingSets || []).map((ss) => ss.name));
 
   for (const qid in courseData.questions) {
     const question = courseData.questions[qid];
     const questionSharingSets = question.data?.sharingSets || [];
-    questionSharingSets.forEach((sharingSet) => {
-      if (!sharingSetNames.has(sharingSet)) {
-        if (!(qid in invalidSharingSetAdditions)) {
-          invalidSharingSetAdditions[qid] = [];
-        }
-        invalidSharingSetAdditions[qid].push(sharingSet);
-      }
-    });
-  }
-
-  const existInvalidSharingSetAdditions = Object.keys(invalidSharingSetAdditions).length > 0;
-  if (existInvalidSharingSetAdditions) {
-    logger.error(
-      `✖ Course sync completely failed. The following questions are being added to sharing sets which do not exist: ${Object.keys(
-        invalidSharingSetAdditions,
-      )
-        .map((key) => `${key}: ${JSON.stringify(invalidSharingSetAdditions[key])}`)
-        .join(', ')}`,
+    const invalidSharingSets = questionSharingSets.filter(
+      (sharingSet) => !sharingSetNames.has(sharingSet),
     );
+    if (invalidSharingSets.length === 1) {
+      addError(question, `Sharing set ${invalidSharingSets[0]} does not exist in this course`);
+    } else if (invalidSharingSets.length > 1) {
+      addError(
+        question,
+        `Sharing sets ${invalidSharingSets.join(', ')} do not exist in this course`,
+      );
+    }
   }
-
-  return existInvalidSharingSetAdditions;
 }
 
 export async function checkInvalidSharingSetRemovals(
@@ -190,11 +177,7 @@ export async function checkInvalidSharingSetRemovals(
   return existInvalidSharingSetRemovals;
 }
 
-export function checkInvalidSharedAssessments(
-  courseData: CourseData,
-  logger: ServerJobLogger,
-): boolean {
-  const invalidSharedAssessments = new Set<string>();
+export function checkInvalidSharedAssessments(courseData: CourseData): void {
   for (const courseInstanceKey in courseData.courseInstances) {
     const courseInstance = courseData.courseInstances[courseInstanceKey];
     for (const tid in courseInstance.assessments) {
@@ -202,88 +185,50 @@ export function checkInvalidSharedAssessments(
       if (!assessment.data?.shareSourcePublicly) {
         continue;
       }
-      for (const zone of assessment.data.zones) {
-        for (const question of zone.questions) {
+      const containsNonPublicQuestions = assessment.data.zones.some((zone) =>
+        zone.questions.some((question) => {
           if (!question.id) {
-            continue;
+            return false;
           }
           const infoJson = courseData.questions[question.id];
-          if (!infoJson.data?.sharePublicly && !infoJson.data?.shareSourcePublicly) {
-            invalidSharedAssessments.add(tid);
-          }
-        }
+          return !infoJson.data?.sharePublicly && !infoJson.data?.shareSourcePublicly;
+        }),
+      );
+      if (containsNonPublicQuestions) {
+        addError(
+          assessment,
+          'Assessiment is publicly shared but contains questions which are not publicly shared',
+        );
       }
     }
   }
-
-  const existInvalidSharedAssessment = invalidSharedAssessments.size > 0;
-  if (existInvalidSharedAssessment) {
-    logger.error(
-      `✖ Course sync completely failed. The following assessments have their source publicly shared, but contain questions which are not publicly shared: ${Array.from(invalidSharedAssessments).join(', ')}`,
-    );
-  }
-  return existInvalidSharedAssessment;
 }
 
-export function checkInvalidSharedCourseInstances(
-  courseData: CourseData,
-  logger: ServerJobLogger,
-): boolean {
-  const invalidSharedCourseInstances = new Set<string>();
-
-  for (const courseInstanceKey in courseData.courseInstances) {
-    const courseInstance = courseData.courseInstances[courseInstanceKey];
+export function checkInvalidSharedCourseInstances(courseData: CourseData): void {
+  for (const courseInstance of Object.values(courseData.courseInstances)) {
     if (!courseInstance.courseInstance.data?.shareSourcePublicly) continue;
-
-    for (const tid in courseInstance.assessments) {
-      const assessment = courseInstance.assessments[tid];
-      if (!assessment.data?.shareSourcePublicly) {
-        invalidSharedCourseInstances.add(courseInstance.courseInstance.data.longName);
-      }
+    const hasNonPubliclySharedAssessments = Object.values(courseInstance.assessments).some(
+      (assessment) => !assessment.data?.shareSourcePublicly,
+    );
+    if (hasNonPubliclySharedAssessments) {
+      addError(
+        courseInstance.courseInstance,
+        'Course instance is publicly shared but contains assessments which are not publicly shared',
+      );
     }
   }
-
-  const existInvalidSharedCourseInstance = invalidSharedCourseInstances.size > 0;
-  if (existInvalidSharedCourseInstance) {
-    logger.error(
-      `✖ Course sync completely failed. The following course instances are publicly shared but contain assessments which are not shared: ${Array.from(invalidSharedCourseInstances).join(', ')}`,
-    );
-  }
-  return existInvalidSharedCourseInstance;
 }
 
-export function checkInvalidDraftQuestionSharing(
-  courseData: CourseData,
-  logger: ServerJobLogger,
-): boolean {
-  const draftQuestionsWithSharingSets: string[] = [];
-  const draftQuestionsWithPublicSharing: string[] = [];
-  for (const qid in courseData.questions) {
-    const question = courseData.questions[qid];
+export function checkInvalidDraftQuestionSharing(courseData: CourseData): void {
+  for (const [qid, question] of Object.entries(courseData.questions)) {
+    if (!isDraftQid(qid)) continue;
 
-    const isDraft = isDraftQid(qid);
-    const questionSharingSets = question.data?.sharingSets || [];
-
-    if (isDraft && questionSharingSets.length > 0) {
-      draftQuestionsWithSharingSets.push(qid);
+    if (question.data?.sharingSets && question.data.sharingSets.length > 0) {
+      addError(question, 'Draft questions cannot be added to sharing sets.');
     }
 
-    if (isDraft && (question.data?.sharePublicly || question.data?.shareSourcePublicly)) {
-      draftQuestionsWithPublicSharing.push(qid);
+    if (question.data?.sharePublicly || question.data?.shareSourcePublicly) {
+      addError(question, 'Draft questions cannot be publicly shared.');
     }
   }
-
-  if (draftQuestionsWithSharingSets.length > 0) {
-    logger.error(
-      `✖ Course sync completely failed. The following draft questions cannot be added to sharing sets: ${draftQuestionsWithSharingSets.join(', ')}`,
-    );
-  }
-
-  if (draftQuestionsWithPublicSharing.length > 0) {
-    logger.error(
-      `✖ Course sync completely failed. The following draft questions cannot be publicly shared: ${draftQuestionsWithPublicSharing.join(', ')}`,
-    );
-  }
-
-  return draftQuestionsWithSharingSets.length > 0 || draftQuestionsWithPublicSharing.length > 0;
 }

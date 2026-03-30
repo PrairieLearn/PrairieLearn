@@ -36,6 +36,12 @@ import * as schemas from '../schemas/index.js';
 import { deduplicateByName } from './deduplicate.js';
 import * as infofile from './infofile.js';
 import { isDraftQid } from './question.js';
+import {
+  checkInvalidDraftQuestionSharing,
+  checkInvalidSharedAssessments,
+  checkInvalidSharedCourseInstances,
+  checkInvalidSharingSetAdditions,
+} from './sharing.js';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
@@ -291,7 +297,7 @@ export async function loadFullCourse(
     };
   }
 
-  const courseInfo = await loadCourseInfo({
+  const course = await loadCourseInfo({
     courseId,
     coursePath,
     assessmentSetsInUse,
@@ -299,24 +305,22 @@ export async function loadFullCourse(
     sharingEnabled,
   });
 
-  // Validate question sharing sets against course sharing sets.
-  for (const question of Object.values(questions)) {
-    if (infofile.hasErrors(question) || !question.data?.sharingSets) continue;
-    for (const sharingSetName of question.data.sharingSets) {
-      if (!courseInfo.data?.sharingSets?.some((set) => set.name === sharingSetName)) {
-        infofile.addError(
-          question,
-          `Question references sharing set "${sharingSetName}" which does not exist in the course.`,
-        );
-      }
-    }
-  }
+  const courseData = { course, questions, courseInstances };
 
-  return {
-    course: courseInfo,
-    questions,
-    courseInstances,
-  };
+  // These checks are done regardless of whether sharing is enabled or not,
+  // since they primarily check for the correctness of sharing attributes. If a
+  // local environment doesn't have sharing enabled, these issues are still
+  // validated to ensure that, when the course moves to a production environment
+  // where sharing is enabled, these issues are caught and can be resolved
+  // before they cause problems in production. The checks update the courseData
+  // directly by adding sync errors to the relevant info files, which will then
+  // be emitted as part of the normal sync results.
+  checkInvalidSharingSetAdditions(courseData);
+  checkInvalidSharedAssessments(courseData);
+  checkInvalidSharedCourseInstances(courseData);
+  checkInvalidDraftQuestionSharing(courseData);
+
+  return courseData;
 }
 
 function writeErrorsAndWarningsForInfoFileIfNeeded<T>(

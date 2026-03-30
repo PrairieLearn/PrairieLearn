@@ -34,11 +34,7 @@ import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
 import * as infofile from './infofile.js';
 import {
-  checkInvalidDraftQuestionSharing,
   checkInvalidPublicSharingRemovals,
-  checkInvalidSharedAssessments,
-  checkInvalidSharedCourseInstances,
-  checkInvalidSharingSetAdditions,
   checkInvalidSharingSetDeletions,
   checkInvalidSharingSetRemovals,
   getInvalidRenames,
@@ -89,26 +85,18 @@ export async function checkSharingConfigurationValid(
     courseData,
     logger,
   );
-  const existInvalidSharingSetAdditions = checkInvalidSharingSetAdditions(courseData, logger);
   const existInvalidSharingSetRemovals = await checkInvalidSharingSetRemovals(
     course.id,
     courseData,
     logger,
   );
-  const existInvalidSharedAssessment = checkInvalidSharedAssessments(courseData, logger);
-  const existInvalidSharedCourseInstance = checkInvalidSharedCourseInstances(courseData, logger);
-  const existInvalidDraftQuestionSharing = checkInvalidDraftQuestionSharing(courseData, logger);
 
-  const sharingConfigurationValid =
+  return (
     !existInvalidRenames &&
     !existInvalidPublicSharingRemovals &&
     !existInvalidSharingSetDeletions &&
-    !existInvalidSharingSetAdditions &&
-    !existInvalidSharingSetRemovals &&
-    !existInvalidSharedAssessment &&
-    !existInvalidSharedCourseInstance &&
-    !existInvalidDraftQuestionSharing;
-  return sharingConfigurationValid;
+    !existInvalidSharingSetRemovals
+  );
 }
 
 export async function syncDiskToSqlWithLock(
