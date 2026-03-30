@@ -13,11 +13,11 @@ export function formatMilliDollars(milliDollars: number): string {
 }
 
 /**
- * Convert raw API cost in dollars to milli-dollars.
+ * Convert a cost in dollars to milli-dollars, rounded up.
  *
- * @param rawCostDollars - The raw API cost in US dollars (e.g. 0.0045)
+ * @param costDollars - The cost in US dollars (e.g. 0.0045)
  * @returns The cost in milli-dollars, rounded up to the nearest milli-dollar
  */
-export function calculateCostMilliDollars(rawCostDollars: number): number {
-  return Math.ceil(rawCostDollars * 1000);
+export function costToMilliDollars(costDollars: number): number {
+  return Math.ceil(costDollars * 1000);
 }
