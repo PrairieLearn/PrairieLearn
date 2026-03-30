@@ -22,7 +22,6 @@ import {
   RubricSchema,
   type Submission,
 } from './db-types.js';
-import { getAutoScaleMax, getManualScaleMax } from './gradingMath.js';
 import { idsEqual } from './id.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
 import {
@@ -543,16 +542,6 @@ export async function updateInstanceQuestionScore({
 
     score = InstanceQuestionScoreInputSchema.parse(score);
 
-    const totalScaleMax = current_submission.max_points ?? 0;
-    const manualScaleMax = getManualScaleMax({
-      maxManualPoints: current_submission.max_manual_points ?? 0,
-      maxPoints: totalScaleMax,
-    });
-    const autoScaleMax = getAutoScaleMax({
-      maxAutoPoints: current_submission.max_auto_points ?? 0,
-      maxPoints: totalScaleMax,
-    });
-
     let new_points: number | null = null;
     let new_score_perc: number | null = null;
     let new_auto_score_perc: number | null = null;
@@ -574,7 +563,7 @@ export async function updateInstanceQuestionScore({
             (value) => (value.score ?? 0) * (value.weight ?? 1),
           )) /
         sumBy(Object.values(score.partial_scores), (value) => value.weight ?? 1);
-      new_auto_points = (new_auto_score_perc / 100) * autoScaleMax;
+      new_auto_points = (new_auto_score_perc / 100) * (current_submission.max_auto_points ?? 0);
     }
 
     if (score.auto_score_perc != null) {
@@ -585,13 +574,16 @@ export async function updateInstanceQuestionScore({
         throw new Error('Cannot set both auto_score_perc and score_perc');
       }
       new_auto_score_perc = Number(score.auto_score_perc);
-      new_auto_points = (new_auto_score_perc * autoScaleMax) / 100;
+      new_auto_points = (new_auto_score_perc * (current_submission.max_auto_points ?? 0)) / 100;
     } else if (score.auto_points != null) {
       if (score.points != null) {
         throw new Error('Cannot set both auto_points and points');
       }
       new_auto_points = Number(score.auto_points);
-      new_auto_score_perc = autoScaleMax > 0 ? (new_auto_points * 100) / autoScaleMax : 0;
+      new_auto_score_perc =
+        current_submission.max_auto_points != null && current_submission.max_auto_points > 0
+          ? (new_auto_points * 100) / current_submission.max_auto_points
+          : 0;
     }
 
     if (current_submission.manual_rubric_id && score.manual_rubric_data?.rubric_id) {
@@ -630,30 +622,43 @@ export async function updateInstanceQuestionScore({
       if (score.score_perc != null) {
         throw new Error('Cannot set both manual_score_perc and score_perc');
       }
-      new_manual_points = (Number(score.manual_score_perc) * manualScaleMax) / 100;
+      new_manual_points =
+        (Number(score.manual_score_perc) * (current_submission.max_manual_points ?? 0)) / 100;
       new_points = new_manual_points + (new_auto_points ?? current_submission.auto_points ?? 0);
-      new_score_perc = totalScaleMax > 0 ? (new_points * 100) / totalScaleMax : 0;
+      new_score_perc =
+        current_submission.max_points != null && current_submission.max_points > 0
+          ? (new_points * 100) / current_submission.max_points
+          : 0;
     } else if (score.manual_points != null) {
       if (score.points != null) {
         throw new Error('Cannot set both manual_points and points');
       }
       new_manual_points = Number(score.manual_points);
       new_points = new_manual_points + (new_auto_points ?? current_submission.auto_points ?? 0);
-      new_score_perc = totalScaleMax > 0 ? (new_points * 100) / totalScaleMax : 0;
+      new_score_perc =
+        current_submission.max_points != null && current_submission.max_points > 0
+          ? (new_points * 100) / current_submission.max_points
+          : 0;
     } else if (score.score_perc != null) {
       if (score.points != null) {
         throw new Error('Cannot set both score_perc and points');
       }
       new_score_perc = Number(score.score_perc);
-      new_points = (new_score_perc * totalScaleMax) / 100;
+      new_points = (new_score_perc * (current_submission.max_points ?? 0)) / 100;
       new_manual_points = new_points - (new_auto_points ?? current_submission.auto_points ?? 0);
     } else if (score.points != null) {
       new_points = Number(score.points);
-      new_score_perc = totalScaleMax > 0 ? (new_points * 100) / totalScaleMax : 0;
+      new_score_perc =
+        current_submission.max_points != null && current_submission.max_points > 0
+          ? (new_points * 100) / current_submission.max_points
+          : 0;
       new_manual_points = new_points - (new_auto_points ?? current_submission.auto_points ?? 0);
     } else if (new_auto_points != null) {
       new_points = new_auto_points + (current_submission.manual_points ?? 0);
-      new_score_perc = totalScaleMax > 0 ? (new_points * 100) / totalScaleMax : 0;
+      new_score_perc =
+        current_submission.max_points != null && current_submission.max_points > 0
+          ? (new_points * 100) / current_submission.max_points
+          : 0;
     }
 
     let grading_job_id: string | null = null;

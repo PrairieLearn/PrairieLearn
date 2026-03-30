@@ -43,7 +43,7 @@ import type { ResLocalsCourseInstanceAuthz } from '../../../middlewares/authzCou
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
 
-export const sql = sqldb.loadSqlEquiv(import.meta.url);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export const GradingJobDataSchema = GradingJobSchema.extend({
   score_perc: z.number().nullable(),
@@ -62,7 +62,7 @@ const SubmissionAndVariantSchema = z.object({
   variant_true_answer: z.record(z.string(), z.any()).nullable(),
 });
 
-export type SubmissionAndVariant = z.infer<typeof SubmissionAndVariantSchema>;
+type SubmissionAndVariant = z.infer<typeof SubmissionAndVariantSchema>;
 
 export async function fetchSubmissionAndVariant(
   instanceQuestionId: string,
