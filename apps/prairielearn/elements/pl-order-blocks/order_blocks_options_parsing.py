@@ -65,7 +65,7 @@ MAX_INDENTATION_DEFAULT = 4
 DISTRACTOR_FOR_DEFAULT = None
 DISTRACTOR_FEEDBACK_DEFAULT = None
 ANSWER_CORRECT_DEFAULT = True
-PRE_DRAGGED_DEFAULT = False
+INITIALLY_PLACED_DEFAULT = False
 ANSWER_INDENT_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
 INDENTATION_DEFAULT = False
@@ -133,7 +133,7 @@ class AnswerOptions:
     tag: str
     depends: Edges | ColoredEdges
     correct: bool
-    pre_dragged: bool
+    initially_placed: bool
     ranking: int
     indent: int | None
     distractor_for: str | None
@@ -159,8 +159,8 @@ class AnswerOptions:
         self.correct = pl.get_boolean_attrib(
             html_element, "correct", ANSWER_CORRECT_DEFAULT
         )
-        self.pre_dragged = pl.get_boolean_attrib(
-            html_element, "pre-dragged", PRE_DRAGGED_DEFAULT
+        self.initially_placed = pl.get_boolean_attrib(
+            html_element, "initially-placed", INITIALLY_PLACED_DEFAULT
         )
         self.ranking = pl.get_integer_attrib(html_element, "ranking", -1)
         self.indent = pl.get_integer_attrib(
@@ -191,7 +191,7 @@ class AnswerOptions:
             pl.check_attribs(
                 html_element,
                 required_attribs=[],
-                optional_attribs=["correct", "pre-dragged"],
+                optional_attribs=["correct", "initially-placed"],
             )
         elif grading_method in [
             GradingMethodType.UNORDERED,
@@ -202,7 +202,7 @@ class AnswerOptions:
                 required_attribs=[],
                 optional_attribs=[
                     "correct",
-                    "pre-dragged",
+                    "initially-placed",
                     "indent",
                     "distractor-feedback",
                 ],
@@ -213,7 +213,7 @@ class AnswerOptions:
                 required_attribs=[],
                 optional_attribs=[
                     "correct",
-                    "pre-dragged",
+                    "initially-placed",
                     "tag",
                     "ranking",
                     "indent",
@@ -228,7 +228,7 @@ class AnswerOptions:
                 required_attribs=[],
                 optional_attribs=[
                     "correct",
-                    "pre-dragged",
+                    "initially-placed",
                     "tag",
                     "depends",
                     "comment",
@@ -496,10 +496,10 @@ class OrderBlocksOptions:
                         f'Tag "{answer_options.tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
                     )
                 used_tags.append(answer_options.tag)
-                if answer_options.pre_dragged and answer_options.tag in distractor_tags:
-                    raise ValueError("A block with distractors cannot be pre-dragged.")
-            elif answer_options.pre_dragged:
-                raise ValueError("Incorrect blocks cannot be pre-dragged.")
+                if answer_options.initially_placed and answer_options.tag in distractor_tags:
+                    raise ValueError("A block with distractors cannot be initially placed.")
+            elif answer_options.initially_placed:
+                raise ValueError("Incorrect blocks cannot be initially placed.")
 
             if (
                 answer_options.group_info["tag"] in used_tags

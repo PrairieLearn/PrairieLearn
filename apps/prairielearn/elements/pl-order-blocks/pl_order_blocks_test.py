@@ -73,8 +73,8 @@ def assert_answer_options(
     ):
         if "correct" in test_options:
             assert answer_options.correct == test_options["correct"]
-        if "pre-dragged" in test_options:
-            assert answer_options.pre_dragged == test_options["pre-dragged"]
+        if "initially-placed" in test_options:
+            assert answer_options.initially_placed == test_options["initially-placed"]
         if "ranking" in test_options:
             assert answer_options.ranking == test_options["ranking"]
         if "indent" in test_options:
@@ -285,10 +285,10 @@ def test_answer_validation(options: dict, answer_options_list: list[dict]) -> No
                 "grading-method": "dag",
             },
             [
-                {"tag": "1", "correct": True, "pre-dragged": True},
-                {"tag": "2", "correct": False, "pre-dragged": True},
+                {"tag": "1", "correct": True, "initially-placed": True},
+                {"tag": "2", "correct": False, "pinitially-placed": True},
             ],
-            "Incorrect blocks cannot be pre-dragged.",
+            "Incorrect blocks cannot be initially-placed.",
         ),
         (
             {
@@ -296,17 +296,17 @@ def test_answer_validation(options: dict, answer_options_list: list[dict]) -> No
                 "grading-method": "dag",
             },
             [
-                {"tag": "1", "correct": True, "pre-dragged": True},
-                {"tag": "2", "distractor-for": "1", "pre-dragged": True},
+                {"tag": "1", "correct": True, "initially-placed": True},
+                {"tag": "2", "distractor-for": "1", "pinitially-placed": True},
             ],
-            "A block with distractors cannot be pre-dragged.",
+            "A block with distractors cannot be initially-placed.",
         ),
     ],
 )
-def test_pre_dragged_validation_failure(
+def test_initially_placed_validation_failure(
     options: dict, answer_options_list: list[dict], error: str
 ) -> None:
-    """Tests valid pl-answer pre-dragged option failure"""
+    """Tests valid pl-answer initially-placed option failure"""
     tags_html = "\n".join(
         build_tag("pl-answer", answer_options) for answer_options in answer_options_list
     )
