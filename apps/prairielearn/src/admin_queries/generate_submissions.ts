@@ -164,16 +164,15 @@ export default async function ({
     async ([assessmentInstanceId, questions]: [string, InstanceQuestionQuery[]]) => {
       const userId = questions[0].user.id;
 
-      const results = await mapLimit(
-        questions,
-        CONCURRENCY,
-        async (instanceQuestion: InstanceQuestionQuery) => {
-          const result = await processQuestion(instanceQuestion, ctx);
-          return finalizeQuestion(instanceQuestion, result, ctx);
-        },
-      );
+      const results: FinalizedInstanceQuestion[] = [];
+      for (const instanceQuestion of questions) {
+        const result = await processQuestion(instanceQuestion, ctx);
+        results.push(await finalizeQuestion(instanceQuestion, result, ctx));
+      }
 
-      const allSucceeded = results.every((r) => r.attempts > 0);
+      const allSucceeded = results.every(
+        (r) => r.attempts > 0 && r.finalInstanceQuestion.status !== 'invalid',
+      );
       let closed = false;
 
       if (shouldClose && allSucceeded) {
