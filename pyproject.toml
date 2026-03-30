@@ -70,6 +70,8 @@ docs = [
   "mkdocstrings==1.0.3",
   "mkdocstrings-python==2.0.3",
   "pymdown-extensions==10.21",
+  # https://github.com/pygments/pygments/issues/3076
+  "pygments==2.19.2",
   # mkdocstrings-python will format the docstrings using ruff
   # https://mkdocstrings.github.io/python/usage/configuration/signatures/#line_length
   "ruff==0.15.4",
