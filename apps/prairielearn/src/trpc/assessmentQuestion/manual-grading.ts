@@ -149,7 +149,9 @@ const aiGradeInstanceQuestionsMutation = t.procedure
     });
 
     if (!aiGradingModelSelectionEnabled && opts.input.model_id !== DEFAULT_AI_GRADING_MODEL) {
-      throwAppError<ManualGradingError['AiGradeInstanceQuestions']>({ code: 'MODEL_NOT_AVAILABLE' });
+      throwAppError<ManualGradingError['AiGradeInstanceQuestions']>({
+        code: 'MODEL_NOT_AVAILABLE',
+      });
     }
 
     const job_sequence_id = await aiGrade({

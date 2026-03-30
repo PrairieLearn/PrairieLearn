@@ -4,7 +4,6 @@ import Alert from 'react-bootstrap/Alert';
 import { getAppError } from '../../../../lib/client/errors.js';
 import type { AppErrorBase } from '../../../../trpc/app-errors.js';
 
-
 export function QueryErrors<T extends AppErrorBase = AppErrorBase>({
   queries,
   messages = {},

@@ -300,7 +300,10 @@ function CourseDeleteForm({
           </div>
         )}
       </div>
-      <CourseErrorAlert<AdminCourseError['Delete']> error={mutation.error} onDismiss={() => mutation.reset()} />
+      <CourseErrorAlert<AdminCourseError['Delete']>
+        error={mutation.error}
+        onDismiss={() => mutation.reset()}
+      />
       <div className="d-flex justify-content-end gap-2">
         <button type="button" className="btn btn-secondary gap-2" onClick={onCancel}>
           Cancel
@@ -408,7 +411,10 @@ function CourseInsertModal({
                 </div>
               )}
             </div>
-            <CourseErrorAlert<AdminCourseError['Insert']> error={mutation.error} onDismiss={() => mutation.reset()} />
+            <CourseErrorAlert<AdminCourseError['Insert']>
+              error={mutation.error}
+              onDismiss={() => mutation.reset()}
+            />
           </Modal.Body>
           <Modal.Footer>
             <button type="button" className="btn btn-secondary" onClick={onCancel}>
@@ -532,7 +538,10 @@ function CourseUpdateColumnForm({
         />
         {errors.value && <div className="invalid-feedback">{errors.value.message}</div>}
       </div>
-      <CourseErrorAlert<AdminCourseError['UpdateColumn']> error={mutation.error} onDismiss={() => mutation.reset()} />
+      <CourseErrorAlert<AdminCourseError['UpdateColumn']>
+        error={mutation.error}
+        onDismiss={() => mutation.reset()}
+      />
       <div className="d-flex justify-content-end gap-2">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel

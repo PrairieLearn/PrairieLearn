@@ -86,7 +86,9 @@ function AssessmentAccessControlInner({
           Access control updated successfully.
         </Alert>
       )}
-      {saveMutation.isError && <SaveErrorAlert error={saveMutation.error} onDismiss={() => saveMutation.reset()} />}
+      {saveMutation.isError && (
+        <SaveErrorAlert error={saveMutation.error} onDismiss={() => saveMutation.reset()} />
+      )}
 
       <AccessControlForm
         courseInstance={courseInstance}
