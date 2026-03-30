@@ -31,8 +31,15 @@ if [[ -z "$PGHOST" ]]; then
 fi
 
 if [[ "$ACTION" == "start" ]]; then
-    # wait for postgres to start (local or PGHOST)
-    until pg_isready -q; do sleep 1; done
+    # wait for postgres to start (local or PGHOST), timeout after 30 seconds
+    SECONDS=0
+    until pg_isready -q; do
+        if [[ "$SECONDS" -ge 30 ]]; then
+            echo "Warning: postgres did not start within 30 seconds"
+            exit 1
+        fi
+        sleep 1
+    done
 fi
 
 if [[ $INIT_RESOLVE ]]; then
