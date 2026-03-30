@@ -94,13 +94,16 @@ export async function processCreditPurchase({
   stripeSession: Stripe.Checkout.Session;
 }): Promise<void> {
   await runInTransactionAsync(async () => {
-    // Lock course_instances before checkout_sessions to match parent -> child
-    // FK/cascade order. Without this, this transaction could lock the checkout
-    // row first while a concurrent course_instances delete locks the parent
-    // first, creating a cycle:
-    // T1: checkout_session -> waits on course_instance
-    // T2: course_instance -> waits on checkout_session
-    // which PostgreSQL resolves as a deadlock.
+    /*
+     * Deadlock risk here is specific to checkout-session processing vs.
+     * course-instance deletion. In purchase/refund handling, we update
+     * ai_grading_credit_checkout_sessions (child) and then lock
+     * course_instances FOR UPDATE (parent) when adjusting credits. But deleting
+     * a course instance locks course_instances first and then cascades to
+     * ai_grading_credit_checkout_sessions. We lock the parent first here so our
+     * lock order matches the delete flow and avoids a child->parent /
+     * parent->child deadlock cycle.
+     */
     await selectCreditPoolForUpdate(localSession.course_instance_id);
 
     const claimed = await markCheckoutSessionCompleted(stripeSession.id);
