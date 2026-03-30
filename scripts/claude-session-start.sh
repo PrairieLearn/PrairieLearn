@@ -36,7 +36,13 @@ rm /root/.local/bin/uv # Uninstall the outdated uv binary.
 
 make deps
 
-make start-support
+echo "[session-start] Starting postgres..."
+scripts/start_postgres.sh
+echo "[session-start] Starting redis..."
+scripts/start_redis.sh
+echo "[session-start] Starting s3rver..."
+scripts/start_s3rver.sh
+echo "[session-start] All support services started"
 
 # Playwright blocks downloads from within a remote Claude Code environment,
 # so we need to symlink the already-installed version to the expected location.

@@ -20,15 +20,19 @@ mkdir -p $PGDATA
 chown -f postgres:postgres $PGDATA
 su postgres -c 'pg_ctl status' > /dev/null 2>&1
 if [[ $? == 4 ]]; then
-    echo "Making new postgres database at ${PGDATA}"
-    su postgres -c "initdb" > /dev/null 2>&1
+    echo "[start_postgres] Making new postgres database at ${PGDATA}"
+    timeout 30 su postgres -c "initdb" > /dev/null 2>&1
     INIT_RESOLVE=0
     ACTION=start
 fi
 
 # Only locally start postgres if we weren't given a PGHOST environment variable
 if [[ -z "$PGHOST" ]]; then
-    su postgres -c "pg_ctl --silent --log=${PGDATA}/postgresql.log ${ACTION}"
+    echo "[start_postgres] Running pg_ctl ${ACTION}..."
+    timeout 30 su postgres -c "pg_ctl --silent --log=${PGDATA}/postgresql.log ${ACTION}" || {
+        echo "[start_postgres] ERROR: pg_ctl ${ACTION} timed out or failed"
+        exit 1
+    }
 fi
 
 if [[ "$ACTION" == "start" ]]; then
