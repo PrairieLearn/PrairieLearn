@@ -37,7 +37,13 @@ export function FieldWrapper({
           <div className="d-flex justify-content-between align-items-center">
             <span className="text-muted">{label}</span>
             {onOverride && (
-              <Button size="sm" variant="outline-primary" className="ms-3" onClick={onOverride}>
+              <Button
+                size="sm"
+                variant="outline-primary"
+                className="ms-3"
+                aria-label={`Override ${label}`}
+                onClick={onOverride}
+              >
                 Override
               </Button>
             )}
