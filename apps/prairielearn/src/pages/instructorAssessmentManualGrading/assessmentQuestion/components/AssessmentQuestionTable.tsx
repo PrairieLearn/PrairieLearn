@@ -686,6 +686,12 @@ export function AssessmentQuestionTable({
           setAssignedGraderMutation,
           setRequiresManualGradingMutation,
         ]}
+        messages={{
+          MODEL_NOT_AVAILABLE:
+            'AI grading model selection is not available. The default model must be used.',
+          GRADER_NOT_AUTHORIZED:
+            'The assigned grader does not have Student Data Editor permission.',
+        }}
       />
       {deleteAiGradingJobsMutation.isSuccess && (
         <Alert

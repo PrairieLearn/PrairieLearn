@@ -1,14 +1,16 @@
 import { TRPCClientError } from '@trpc/client';
 
-import type { AppErrorForPath, AppErrorPaths } from '../../trpc/app-errors.js';
+import type { AppErrorBase } from '../../trpc/app-errors.js';
 
 /**
  * Extracts a typed app-level error from a tRPC error, narrowed to the
- * errors declared for a specific procedure. Returns `{ code: 'UNKNOWN' }`
- * for errors without typed metadata (network failures, permission errors, etc.).
+ * error type `T`. Returns `{ code: 'UNKNOWN' }` for errors without typed
+ * metadata (network failures, permission errors, etc.).
  *
  * @example
- * const appError = getAppError<'studentLabels.upsert'>(mutation.error);
+ * import type { UpsertError } from '../../trpc/courseInstance/student-labels.js';
+ *
+ * const appError = getAppError<UpsertError>(mutation.error);
  * if (appError) {
  *   switch (appError.code) {
  *     case 'LABEL_NAME_TAKEN': ...
@@ -18,11 +20,11 @@ import type { AppErrorForPath, AppErrorPaths } from '../../trpc/app-errors.js';
  *   }
  * }
  */
-export function getAppError<Path extends AppErrorPaths>(
+export function getAppError<T extends AppErrorBase = AppErrorBase>(
   error: unknown,
-): (AppErrorForPath<Path> & { message: string }) | { code: 'UNKNOWN'; message: string } | null {
+): (T & { message: string }) | { code: 'UNKNOWN'; message: string } | null {
   if (error instanceof TRPCClientError) {
-    const appError = (error.data as { appError?: AppErrorForPath<Path> } | undefined)?.appError;
+    const appError = (error.data as { appError?: T } | undefined)?.appError;
     if (appError) return { ...appError, message: error.message };
     return { code: 'UNKNOWN', message: error.message };
   }

@@ -2,13 +2,39 @@ import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
+import { getAppError } from '../../../lib/client/errors.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
+import type { AccessControlError } from '../../../trpc/assessment/access-control.js';
 import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
 
 import { AccessControlForm } from './AccessControlForm.js';
 import type { AccessControlJsonWithId } from './types.js';
+
+function SaveErrorAlert({ error, onDismiss }: { error: unknown; onDismiss: () => void }) {
+  const appError = getAppError<AccessControlError['SaveAllRules']>(error);
+  if (!appError) return null;
+
+  const message = (() => {
+    switch (appError.code) {
+      case 'HASH_MISMATCH':
+        return 'The access control rules have been modified since you loaded this page. Please refresh and try again.';
+      case 'RULE_VALIDATION_FAILED':
+        return appError.error;
+      case 'INVALID_ENROLLMENT_IDS':
+        return 'One or more enrollment IDs do not belong to this course instance.';
+      case 'UNKNOWN':
+        return appError.message;
+    }
+  })();
+
+  return (
+    <Alert variant="danger" dismissible onClose={onDismiss}>
+      {message}
+    </Alert>
+  );
+}
 
 interface AssessmentAccessControlProps {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
@@ -60,13 +86,7 @@ function AssessmentAccessControlInner({
           Access control updated successfully.
         </Alert>
       )}
-      {saveMutation.isError && (
-        <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
-          {saveMutation.error instanceof Error
-            ? saveMutation.error.message
-            : 'Failed to save access control'}
-        </Alert>
-      )}
+      {saveMutation.isError && <SaveErrorAlert error={saveMutation.error} onDismiss={() => saveMutation.reset()} />}
 
       <AccessControlForm
         courseInstance={courseInstance}

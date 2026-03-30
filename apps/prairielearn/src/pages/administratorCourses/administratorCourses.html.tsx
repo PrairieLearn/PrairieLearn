@@ -11,6 +11,8 @@ import {
   type CourseFormFieldValues,
   useInstitutionPrefix,
 } from '../../components/AdminstratorCourseFormFields.js';
+import { getAppError } from '../../lib/client/errors.js';
+import type { AppErrorBase } from '../../trpc/app-errors.js';
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
 import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
@@ -18,8 +20,39 @@ import type { CourseRequestRow } from '../../lib/course-request.js';
 import type { Timezone } from '../../lib/timezone.shared.js';
 import { createAdministratorTrpcClient } from '../../trpc/administrator/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/administrator/context.js';
+import type { AdminCourseError } from '../../trpc/administrator/courses.js';
 
 import type { CourseWithInstitution } from './administratorCourses.shared.js';
+
+function CourseErrorAlert<T extends AppErrorBase>({
+  error,
+  onDismiss,
+}: {
+  error: unknown;
+  onDismiss: () => void;
+}) {
+  const appError = getAppError<T>(error);
+  if (!appError) return null;
+
+  const message = (() => {
+    switch (appError.code) {
+      case 'REPOSITORY_EXISTS':
+        return 'A course with this repository already exists.';
+      case 'PATH_EXISTS':
+        return 'A course with this path already exists.';
+      case 'CONFIRMATION_MISMATCH':
+        return 'Confirmation did not match the expected value.';
+      default:
+        return appError.message;
+    }
+  })();
+
+  return (
+    <Alert variant="danger" dismissible onClose={onDismiss}>
+      {message}
+    </Alert>
+  );
+}
 
 interface InsertCourseFormData extends CourseFormFieldValues {
   branch: string;
@@ -267,11 +300,7 @@ function CourseDeleteForm({
           </div>
         )}
       </div>
-      {mutation.isError && (
-        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-          {mutation.error.message}
-        </Alert>
-      )}
+      <CourseErrorAlert<AdminCourseError['Delete']> error={mutation.error} onDismiss={() => mutation.reset()} />
       <div className="d-flex justify-content-end gap-2">
         <button type="button" className="btn btn-secondary gap-2" onClick={onCancel}>
           Cancel
@@ -379,11 +408,7 @@ function CourseInsertModal({
                 </div>
               )}
             </div>
-            {mutation.isError && (
-              <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-                {mutation.error.message}
-              </Alert>
-            )}
+            <CourseErrorAlert<AdminCourseError['Insert']> error={mutation.error} onDismiss={() => mutation.reset()} />
           </Modal.Body>
           <Modal.Footer>
             <button type="button" className="btn btn-secondary" onClick={onCancel}>
@@ -507,11 +532,7 @@ function CourseUpdateColumnForm({
         />
         {errors.value && <div className="invalid-feedback">{errors.value.message}</div>}
       </div>
-      {mutation.isError && (
-        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-          {mutation.error.message}
-        </Alert>
-      )}
+      <CourseErrorAlert<AdminCourseError['UpdateColumn']> error={mutation.error} onDismiss={() => mutation.reset()} />
       <div className="d-flex justify-content-end gap-2">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel

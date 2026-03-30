@@ -1,4 +1,3 @@
-import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
@@ -10,9 +9,16 @@ import {
   selectCourseById,
   updateCourseColumn,
 } from '../../models/course.js';
+import { throwAppError } from '../app-errors.js';
 
 import { normalizeCoursePathInput } from './course-path.js';
 import { requireAdministrator, t } from './init.js';
+
+export interface AdminCourseError {
+  Insert: { code: 'REPOSITORY_EXISTS' } | { code: 'PATH_EXISTS' };
+  Delete: { code: 'CONFIRMATION_MISMATCH' };
+  UpdateColumn: { code: 'REPOSITORY_EXISTS' } | { code: 'PATH_EXISTS' };
+}
 
 const insert = t.procedure
   .use(requireAdministrator)
@@ -38,18 +44,12 @@ const insert = t.procedure
 
     const repoExists = await checkCourseRepositoryUrlExists(input.repository);
     if (repoExists) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'A course with this repository already exists.',
-      });
+      throwAppError<AdminCourseError['Insert']>({ code: 'REPOSITORY_EXISTS' });
     }
 
     const pathExists = await checkCoursePathExists(normalizedPath);
     if (pathExists) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'A course with this path already exists.',
-      });
+      throwAppError<AdminCourseError['Insert']>({ code: 'PATH_EXISTS' });
     }
 
     await insertCourse({
@@ -75,10 +75,7 @@ const deleteCourseProcedure = t.procedure
   .mutation(async ({ input, ctx }) => {
     const course = await selectCourseById(input.courseId);
     if (input.confirmShortName !== course.short_name) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: `Confirmation did not match expected value of "${course.short_name}"`,
-      });
+      throwAppError<AdminCourseError['Delete']>({ code: 'CONFIRMATION_MISMATCH' });
     }
 
     await deleteCourse({
@@ -109,10 +106,7 @@ const updateColumn = t.procedure
     if (input.columnName === 'repository') {
       const repoExists = await checkCourseRepositoryUrlExists(value, input.courseId);
       if (repoExists) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'A course with this repository already exists.',
-        });
+        throwAppError<AdminCourseError['UpdateColumn']>({ code: 'REPOSITORY_EXISTS' });
       }
     }
 
@@ -120,10 +114,7 @@ const updateColumn = t.procedure
       value = normalizeCoursePathInput(value);
       const pathExists = await checkCoursePathExists(value, input.courseId);
       if (pathExists) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'A course with this path already exists.',
-        });
+        throwAppError<AdminCourseError['UpdateColumn']>({ code: 'PATH_EXISTS' });
       }
     }
 

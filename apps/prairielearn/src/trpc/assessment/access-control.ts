@@ -27,12 +27,20 @@ import {
   MAX_ENROLLMENT_RULES,
 } from '../../schemas/accessControl.js';
 import { syncAccessControl, validateRule } from '../../sync/fromDisk/accessControl.js';
+import { throwAppError } from '../app-errors.js';
 
 import {
   requireCourseInstancePermissionEdit,
   requireCourseInstancePermissionView,
   t,
 } from './init.js';
+
+export interface AccessControlError {
+  SaveAllRules:
+    | { code: 'HASH_MISMATCH' }
+    | { code: 'RULE_VALIDATION_FAILED'; error: string }
+    | { code: 'INVALID_ENROLLMENT_IDS' };
+}
 
 const requireEnhancedAccessControl = t.middleware(async (opts) => {
   const enabled = await features.enabled('enhanced-access-control', {
@@ -173,11 +181,7 @@ const saveAllRules = t.procedure
       const currentHash = computeHash(currentRules);
 
       if (currentHash !== origHash) {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message:
-            'The access control rules have been modified since you loaded this page. Please refresh and try again.',
-        });
+        throwAppError<AccessControlError['SaveAllRules']>({ code: 'HASH_MISMATCH' }, 'CONFLICT');
       }
 
       const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
@@ -185,7 +189,10 @@ const saveAllRules = t.procedure
         const targetType = index === 0 ? 'none' : 'student_label';
         const ruleError = validateRule(rule, targetType);
         if (ruleError) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
+          throwAppError<AccessControlError['SaveAllRules']>({
+            code: 'RULE_VALIDATION_FAILED',
+            error: ruleError,
+          });
         }
       }
       await syncAccessControl(courseInstanceId, assessmentId, rulesToSync);
@@ -209,9 +216,8 @@ const saveAllRules = t.procedure
             opts.ctx.course_instance,
           );
           if (validCount !== allEnrollmentIds.size) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: 'One or more enrollment IDs do not belong to this course instance.',
+            throwAppError<AccessControlError['SaveAllRules']>({
+              code: 'INVALID_ENROLLMENT_IDS',
             });
           }
         }
@@ -219,7 +225,10 @@ const saveAllRules = t.procedure
         for (const enrollmentRule of enrollmentRules) {
           const ruleError = validateRule(enrollmentRule.ruleJson, 'enrollment');
           if (ruleError) {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
+            throwAppError<AccessControlError['SaveAllRules']>({
+              code: 'RULE_VALIDATION_FAILED',
+              error: ruleError,
+            });
           }
 
           const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);

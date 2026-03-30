@@ -1,4 +1,3 @@
-import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
@@ -15,9 +14,14 @@ import {
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
 import { checkCoursePathExists, checkCourseRepositoryExists } from '../../lib/course.js';
+import { throwAppError } from '../app-errors.js';
 
 import { normalizeCoursePathInput } from './course-path.js';
 import { requireAdministrator, t } from './init.js';
+
+export interface AdminCourseRequestError {
+  CreateCourse: { code: 'REPOSITORY_EXISTS' } | { code: 'PATH_EXISTS' };
+}
 
 const deny = t.procedure
   .use(requireAdministrator)
@@ -65,18 +69,12 @@ const createCourse = t.procedure
 
     const repoExists = await checkCourseRepositoryExists(input.repoShortName);
     if (repoExists) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'A course with this repository already exists.',
-      });
+      throwAppError<AdminCourseRequestError['CreateCourse']>({ code: 'REPOSITORY_EXISTS' });
     }
 
     const pathExists = await checkCoursePathExists(normalizedPath);
     if (pathExists) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'A course with this path already exists.',
-      });
+      throwAppError<AdminCourseRequestError['CreateCourse']>({ code: 'PATH_EXISTS' });
     }
 
     const jobSequenceId = await createCourseFromRequest({

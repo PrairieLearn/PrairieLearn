@@ -7,11 +7,13 @@ import ReactMarkdown from 'react-markdown';
 
 import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
+import { getAppError } from '../lib/client/errors.js';
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
 import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
 import type { CourseRequestRow } from '../lib/course-request.js';
 import { type Timezone } from '../lib/timezone.shared.js';
 import { useTRPC } from '../trpc/administrator/context.js';
+import type { AdminCourseRequestError } from '../trpc/administrator/course-requests.js';
 
 import {
   AdministratorCourseFormFields,
@@ -20,6 +22,28 @@ import {
   useInstitutionPrefix,
 } from './AdminstratorCourseFormFields.js';
 import { JobStatus } from './JobStatus.js';
+
+function CreateCourseErrorAlert({ error, onDismiss }: { error: unknown; onDismiss: () => void }) {
+  const appError = getAppError<AdminCourseRequestError['CreateCourse']>(error);
+  if (!appError) return null;
+
+  const message = (() => {
+    switch (appError.code) {
+      case 'REPOSITORY_EXISTS':
+        return 'A course with this repository already exists.';
+      case 'PATH_EXISTS':
+        return 'A course with this path already exists.';
+      case 'UNKNOWN':
+        return appError.message;
+    }
+  })();
+
+  return (
+    <Alert variant="danger" dismissible onClose={onDismiss}>
+      {message}
+    </Alert>
+  );
+}
 
 interface CourseRequestApproveFormData extends CourseFormFieldValues {
   github_user: string;
@@ -560,11 +584,7 @@ function CourseRequestApproveModalContent({
               {...register('github_user')}
             />
           </div>
-          {mutation.isError && (
-            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {mutation.error.message}
-            </Alert>
-          )}
+          <CreateCourseErrorAlert error={mutation.error} onDismiss={() => mutation.reset()} />
         </Modal.Body>
         <Modal.Footer>
           <button type="button" className="btn btn-secondary" onClick={onCancel}>

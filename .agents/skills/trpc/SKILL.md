@@ -126,44 +126,48 @@ Use existing model functions from `models/` instead of writing one-off SQL. Pass
 
 ### App errors
 
-Typed application-level errors are defined in `trpc/app-errors.ts`. This file contains:
-
-- Error interfaces grouped by scope (e.g. `StudentLabelErrors`)
-- A combined `AppErrorMap` that registers all error interfaces
-- `appErrorFormatter` -- the reusable error formatter used in every scope's `init.ts`
-- The `AppError` class and `throwAppError` helper
-- Client-side helper types (`AppErrorPaths`, `AppErrorForPath`)
+Typed application-level errors use `throwAppError` (server) and `getAppError` (client) from `trpc/app-errors.ts`. Error types are co-located with the subrouter procedures that throw them.
 
 Every scope's `init.ts` must include `errorFormatter: appErrorFormatter` in the `initTRPC.create()` call.
 
-To add errors for a new subrouter:
+To add typed errors to a subrouter:
 
-1. Define the error interface in `trpc/app-errors.ts`:
+1. Define an error interface in the subrouter file, keyed by procedure name:
 
 ```ts
-export interface WidgetErrors {
-  update: { code: 'NAME_TAKEN'; name: string };
+// trpc/courseInstance/widgets.ts
+export interface WidgetError {
+  Update: { code: 'NAME_TAKEN'; name: string } | { code: 'SYNC_FAILED'; id: string };
+  Delete: { code: 'SYNC_FAILED'; id: string };
 }
 ```
 
-2. Register it in `AppErrorMap`:
+2. Throw typed errors in procedures:
 
 ```ts
-export interface AppErrorMap {
-  studentLabels: StudentLabelErrors;
-  widgets: WidgetErrors;
+import { throwAppError } from '../app-errors.js';
+
+// Procedure-specific: all errors for that procedure
+throwAppError<WidgetError['Update']>({ code: 'NAME_TAKEN', name });
+
+// Error map: only errors shared across ALL procedures (SYNC_FAILED)
+throwAppError<WidgetError>({ code: 'SYNC_FAILED', id });
+```
+
+3. Handle on the client using `getAppError` from `lib/client/errors.ts`:
+
+```ts
+import { getAppError } from '../../../lib/client/errors.js';
+import type { WidgetError } from '../../../trpc/courseInstance/widgets.js';
+
+const appError = getAppError<WidgetError['Update']>(mutation.error);
+if (appError) {
+  switch (appError.code) {
+    case 'NAME_TAKEN': // appError.name is typed
+    case 'UNKNOWN': // fallback for untyped errors
+  }
 }
 ```
-
-3. Throw typed errors in procedures:
-
-```ts
-import { type WidgetErrors, throwAppError } from '../app-errors.js';
-
-throwAppError<WidgetErrors>({ code: 'NAME_TAKEN', name });
-```
-
-The client can then narrow on the error using `getAppError` from `lib/client/errors.ts`.
 
 ### Client-side usage with @trpc/tanstack-react-query
 

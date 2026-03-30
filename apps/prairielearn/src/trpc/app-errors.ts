@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import type { ErrorFormatter, TRPC_ERROR_CODE_KEY } from '@trpc/server/unstable-core-do-not-import';
+import type { TRPCDefaultErrorShape, TRPC_ERROR_CODE_KEY } from '@trpc/server';
 
 /**
  * Typed application-level errors for tRPC procedures.
@@ -8,76 +8,75 @@ import type { ErrorFormatter, TRPC_ERROR_CODE_KEY } from '@trpc/server/unstable-
  * This module works around that by attaching discriminated error metadata via
  * the error formatter, so the client can narrow on `appError.code` per procedure.
  *
- * Error interfaces for each subrouter are defined here in one place, grouped
- * by scope. The combined error map powers the client-side `getAppError` helper.
+ * Error types are co-located with the subrouter procedures that throw them
+ * as interfaces keyed by procedure name. This file provides the shared
+ * infrastructure: `AppError`, `throwAppError`, and `appErrorFormatter`.
  */
 
-// ---------------------------------------------------------------------------
-// Course instance scope
-// ---------------------------------------------------------------------------
-
-export interface StudentLabelErrors {
-  upsert:
-    | { code: 'LABEL_NAME_TAKEN'; name: string }
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
-  destroy: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
-}
-
-// ---------------------------------------------------------------------------
-// Combined error map (add new subrouter error interfaces above, register here)
-// ---------------------------------------------------------------------------
-
-export interface AppErrorMap {
-  studentLabels: StudentLabelErrors;
+export interface AppErrorBase {
+  code: string;
 }
 
 type Values<T> = T[keyof T];
-type AllProcedureErrors<T> = Values<{ [K in keyof T]: Values<T[K]> }>;
 
-/** Union of every app-level error across all tRPC procedures. */
-type AppErrorMeta = AllProcedureErrors<AppErrorMap>;
+/**
+ * Returns 'fail' if error type `E` is NOT a member of `Map[K]` for some key `K`.
+ */
+type ErrorInvalidForAny<E, Map> = {
+  [K in keyof Map]: E extends Map[K] ? never : 'fail';
+}[keyof Map];
 
-/** Dot-path keys like `'studentLabels.upsert'` for every procedure with declared errors. */
-export type AppErrorPaths = {
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-  [R in keyof AppErrorMap & string]: {
-    [P in keyof AppErrorMap[R] & string]: `${R}.${P}`;
-  }[keyof AppErrorMap[R] & string];
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-}[keyof AppErrorMap & string];
-
-/** Resolves a dot-path to the error union declared for that procedure. */
-export type AppErrorForPath<Path extends string> = Path extends `${infer R}.${infer P}`
-  ? R extends keyof AppErrorMap
-    ? P extends keyof AppErrorMap[R]
-      ? AppErrorMap[R][P]
+/**
+ * Computes errors common to ALL procedure error types in an error map.
+ * Keeps only error variants that are assignable to every procedure's union.
+ */
+type SharedProcedureErrors<Map> =
+  Values<Map> extends infer E
+    ? E extends unknown
+      ? ErrorInvalidForAny<E, Map> extends never
+        ? E
+        : never
       : never
-    : never
-  : never;
+    : never;
+
+/**
+ * Resolves the accepted error type:
+ * - Direct error type (has `code`): use as-is.
+ * - Error map interface (keyed by procedure): compute shared errors.
+ */
+type ResolveError<T> = T extends AppErrorBase ? T : SharedProcedureErrors<T>;
+
+interface AppErrorShape extends TRPCDefaultErrorShape {
+  data: TRPCDefaultErrorShape['data'] & { appError?: AppErrorBase };
+}
 
 /**
  * Error formatter that attaches typed `AppError` metadata to tRPC responses.
  * Pass this to `initTRPC.create({ errorFormatter: appErrorFormatter })` in
  * each scope's `init.ts`.
  */
-export const appErrorFormatter: ErrorFormatter<unknown, any> = ({ shape, error }) => {
-  return {
-    ...shape,
-    data: {
-      ...shape.data,
-      ...(error instanceof AppError ? { appError: error.meta } : {}),
-    },
-  };
-};
+export const appErrorFormatter = ({
+  shape,
+  error,
+}: {
+  shape: TRPCDefaultErrorShape;
+  error: TRPCError;
+}): AppErrorShape => ({
+  ...shape,
+  data: {
+    ...shape.data,
+    ...(error instanceof AppError ? { appError: error.meta } : {}),
+  },
+});
 
 /**
  * A `TRPCError` subclass that carries typed, discriminated metadata.
  * The error formatter detects `AppError` instances and attaches `.meta`
  * to the serialized response so the client can narrow on it.
  */
-export class AppError extends TRPCError {
+class AppError extends TRPCError {
   constructor(
-    public readonly meta: AppErrorMeta,
+    public readonly meta: AppErrorBase,
     trpcCode: TRPC_ERROR_CODE_KEY = 'BAD_REQUEST',
   ) {
     super({ code: trpcCode, message: meta.code });
@@ -85,15 +84,26 @@ export class AppError extends TRPCError {
 }
 
 /**
- * Throws an `AppError` constrained to the errors declared in an error map.
+ * Throws an `AppError` with typed metadata.
+ *
+ * Accepts either a direct error type or an error map interface.
+ * When given an error map, only errors shared across ALL procedures are accepted.
  *
  * @example
- * throwAppError<StudentLabelErrors>({ code: 'LABEL_NAME_TAKEN', name });
- * throwAppError<StudentLabelErrors>({ code: 'SYNC_JOB_FAILED', jobSequenceId }, 'INTERNAL_SERVER_ERROR');
+ * export interface WidgetError {
+ *   Update: { code: 'NAME_TAKEN'; name: string } | { code: 'SYNC_FAILED'; id: string };
+ *   Delete: { code: 'SYNC_FAILED'; id: string };
+ * }
+ *
+ * // Procedure-specific: all errors for Update
+ * throwAppError<WidgetError['Update']>({ code: 'NAME_TAKEN', name });
+ *
+ * // Error map: only errors shared across ALL procedures (SYNC_FAILED)
+ * throwAppError<WidgetError>({ code: 'SYNC_FAILED', id });
  */
-export function throwAppError<E extends { [K in keyof E]: AppErrorMeta }>(
-  meta: E[keyof E],
+export function throwAppError<T>(
+  meta: ResolveError<T>,
   trpcCode: TRPC_ERROR_CODE_KEY = 'BAD_REQUEST',
 ): never {
-  throw new AppError(meta, trpcCode);
+  throw new AppError(meta as AppErrorBase, trpcCode);
 }
