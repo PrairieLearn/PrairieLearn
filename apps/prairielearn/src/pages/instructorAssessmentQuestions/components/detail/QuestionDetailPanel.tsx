@@ -1034,15 +1034,18 @@ function PreferenceField({
     );
   }
 
-  const resetButton = (
-    <button
-      type="button"
-      className="btn btn-outline-secondary"
-      title="Reset to question default"
-      onClick={clearOverride}
-    >
-      <i className="bi bi-arrow-counterclockwise" />
-    </button>
+  const resetHelpText = (
+    <small id={`${id}-help`} className="form-text text-muted">
+      Overrides question default ({defaultDisplay}).{' '}
+      <button
+        type="button"
+        className="btn btn-link btn-sm p-0 align-baseline"
+        title="Reset to question default"
+        onClick={clearOverride}
+      >
+        Reset
+      </button>
+    </small>
   );
 
   if (schema.type === 'boolean') {
@@ -1051,18 +1054,16 @@ function PreferenceField({
         <label htmlFor={id} className="form-label">
           <span className="font-monospace">{name}</span>
         </label>
-        <div className="input-group input-group-sm">
-          <select
-            className="form-select form-select-sm"
-            id={id}
-            value={String(currentValue)}
-            onChange={(e) => setOverride(e.target.value === 'true')}
-          >
-            <option value="true">true</option>
-            <option value="false">false</option>
-          </select>
-          {resetButton}
-        </div>
+        <select
+          className="form-select form-select-sm"
+          id={id}
+          value={String(currentValue)}
+          onChange={(e) => setOverride(e.target.value === 'true')}
+        >
+          <option value="true">true</option>
+          <option value="false">false</option>
+        </select>
+        {resetHelpText}
       </div>
     );
   }
@@ -1073,24 +1074,22 @@ function PreferenceField({
         <label htmlFor={id} className="form-label">
           <span className="font-monospace">{name}</span>
         </label>
-        <div className="input-group input-group-sm">
-          <select
-            className="form-select form-select-sm"
-            id={id}
-            value={String(currentValue)}
-            onChange={(e) => {
-              const val = e.target.value;
-              setOverride(schema.type === 'number' ? Number(val) : val);
-            }}
-          >
-            {schema.enum.map((v) => (
-              <option key={String(v)} value={String(v)}>
-                {String(v)}
-              </option>
-            ))}
-          </select>
-          {resetButton}
-        </div>
+        <select
+          className="form-select form-select-sm"
+          id={id}
+          value={String(currentValue)}
+          onChange={(e) => {
+            const val = e.target.value;
+            setOverride(schema.type === 'number' ? Number(val) : val);
+          }}
+        >
+          {schema.enum.map((v) => (
+            <option key={String(v)} value={String(v)}>
+              {String(v)}
+            </option>
+          ))}
+        </select>
+        {resetHelpText}
       </div>
     );
   }
@@ -1100,24 +1099,22 @@ function PreferenceField({
       <label htmlFor={id} className="form-label">
         <span className="font-monospace">{name}</span>
       </label>
-      <div className="input-group input-group-sm">
-        <input
-          type={schema.type === 'number' ? 'number' : 'text'}
-          step={schema.type === 'number' ? 'any' : undefined}
-          className="form-control form-control-sm"
-          id={id}
-          defaultValue={String(currentValue)}
-          onBlur={(e) => {
-            const val = e.target.value.trim();
-            if (val === '') {
-              clearOverride();
-            } else {
-              setOverride(schema.type === 'number' ? Number(val) : val);
-            }
-          }}
-        />
-        {resetButton}
-      </div>
+      <input
+        type={schema.type === 'number' ? 'number' : 'text'}
+        step={schema.type === 'number' ? 'any' : undefined}
+        className="form-control form-control-sm"
+        id={id}
+        defaultValue={String(currentValue)}
+        onBlur={(e) => {
+          const val = e.target.value.trim();
+          if (val === '') {
+            clearOverride();
+          } else {
+            setOverride(schema.type === 'number' ? Number(val) : val);
+          }
+        }}
+      />
+      {resetHelpText}
     </div>
   );
 }

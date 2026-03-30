@@ -1238,7 +1238,7 @@ function EnumInput({
         {enumValues.map((val) => (
           <span
             key={val}
-            className="badge bg-secondary d-inline-flex align-items-center gap-1"
+            className="badge bg-light text-dark border d-inline-flex align-items-center gap-1"
             title={val}
             style={{ maxWidth: '12rem' }}
           >
@@ -1246,7 +1246,7 @@ function EnumInput({
             {canEdit && (
               <button
                 type="button"
-                className="btn-close btn-close-white"
+                className="btn-close"
                 style={{ fontSize: '0.5rem' }}
                 aria-label={`Remove ${val}`}
                 onClick={() => removeValue(val)}
@@ -1255,7 +1255,7 @@ function EnumInput({
           </span>
         ))}
         {enumValues.length === 0 && !adding && (
-          <span className="badge bg-light text-muted border">Any value</span>
+          <span className="badge bg-light text-muted border-0">Any value</span>
         )}
         {canEdit &&
           (adding ? (
@@ -1282,8 +1282,8 @@ function EnumInput({
           ) : (
             <button
               type="button"
-              className="badge bg-primary border-0 d-inline-flex align-items-center gap-1"
-              style={{ cursor: 'pointer', fontSize: '0.75em' }}
+              className="btn btn-xs btn-outline-primary d-inline-flex align-items-center gap-1"
+              style={{ fontSize: '0.75em' }}
               onClick={startAdding}
             >
               <i className="bi bi-plus" aria-hidden="true" />
