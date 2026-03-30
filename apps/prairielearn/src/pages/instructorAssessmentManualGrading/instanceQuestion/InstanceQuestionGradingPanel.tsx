@@ -6,6 +6,7 @@ import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 import { type ConflictGradingJobProps, ConflictGradingModal } from './ConflictGradingModal.js';
 import { GradingForm } from './GradingForm.js';
+import type { InstanceQuestionPageUrls } from './pageUrls.js';
 import type { RubricGradingData } from './queries.js';
 
 interface GradingPanelProps {
@@ -30,6 +31,7 @@ interface GradingPanelProps {
   instanceQuestionGroups?: StaffInstanceQuestionGroup[];
   skipGradedSubmissions: boolean;
   showSubmissionsAssignedToMeOnly: boolean;
+  pageUrls: InstanceQuestionPageUrls;
   onToggleRubricSettings?: () => void;
   graderGuidelinesRendered: string | null;
   conflictGradingJob: ConflictGradingJobProps | null;
@@ -58,6 +60,7 @@ export function InstanceQuestionGradingPanel(props: GradingPanelProps) {
     instanceQuestionGroups,
     skipGradedSubmissions,
     showSubmissionsAssignedToMeOnly: showSubmissionsAssignedToMeOnlyProp,
+    pageUrls,
     graderGuidelinesRendered,
     onToggleRubricSettings,
     conflictGradingJob,
@@ -103,6 +106,7 @@ export function InstanceQuestionGradingPanel(props: GradingPanelProps) {
         skipGradedSubmissions={skipGradedSubmissions}
         showSubmissionsAssignedToMeOnly={showSubmissionsAssignedToMeOnly}
         graderGuidelinesRendered={graderGuidelinesRendered}
+        pageUrls={pageUrls}
         onToggleRubricSettings={onToggleRubricSettings}
       />
 
@@ -124,6 +128,7 @@ export function InstanceQuestionGradingPanel(props: GradingPanelProps) {
           graders={graders}
           skipGradedSubmissions={skipGradedSubmissions}
           showSubmissionsAssignedToMeOnly={showSubmissionsAssignedToMeOnly}
+          pageUrls={pageUrls}
           conflictGradingJob={conflictGradingJob}
           conflictGradingJobDateFormatted={conflictGradingJobDateFormatted}
           conflictLastGraderName={conflictLastGraderName}

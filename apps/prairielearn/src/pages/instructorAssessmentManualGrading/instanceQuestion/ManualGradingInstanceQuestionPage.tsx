@@ -6,6 +6,7 @@ import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 import { InstanceQuestionGradingPanel } from './InstanceQuestionGradingPanel.js';
+import type { InstanceQuestionPageUrls } from './pageUrls.js';
 import type { GradingContextData, RubricQueryData } from './trpc.js';
 import { createManualGradingInstanceQuestionTrpcClient } from './utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
@@ -15,6 +16,7 @@ interface ManualGradingInstanceQuestionPageProps {
   initialGradingContext: GradingContextData;
   trpcCsrfToken: string;
   csrfToken: string;
+  pageUrls: InstanceQuestionPageUrls;
   hasCourseInstancePermissionEdit: boolean;
   assessmentInstanceOpen: boolean;
   breadcrumb: {
@@ -31,6 +33,7 @@ interface ManualGradingInstanceQuestionPageProps {
   questionContainerHtml: string;
   personalNotesPanelHtml: string;
   instructorInfoPanelHtml: string;
+  initialConflictGradingJobId: string | null;
 }
 
 export function ManualGradingInstanceQuestionPage({
@@ -68,6 +71,7 @@ function ManualGradingInstanceQuestionPageInner({
   initialRubricData,
   initialGradingContext,
   csrfToken,
+  pageUrls,
   hasCourseInstancePermissionEdit,
   assessmentInstanceOpen,
   breadcrumb,
@@ -78,14 +82,10 @@ function ManualGradingInstanceQuestionPageInner({
   questionContainerHtml,
   personalNotesPanelHtml,
   instructorInfoPanelHtml,
+  initialConflictGradingJobId,
 }: InnerProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-
-  const conflictGradingJobId =
-    typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get('conflict_grading_job_id')
-      : null;
 
   const { data: rubricData } = useQuery({
     ...trpc.rubricData.queryOptions(),
@@ -95,7 +95,7 @@ function ManualGradingInstanceQuestionPageInner({
 
   const { data: gradingContext } = useQuery({
     ...trpc.gradingContext.queryOptions({
-      conflictGradingJobId,
+      conflictGradingJobId: initialConflictGradingJobId,
     }),
     initialData: initialGradingContext,
     staleTime: Infinity,
@@ -225,6 +225,7 @@ function ManualGradingInstanceQuestionPageInner({
                   ? showSubmissionsAssignedToMeOnly
                   : false
               }
+              pageUrls={pageUrls}
               graderGuidelinesRendered={rubricData.graderGuidelinesRendered}
               conflictGradingJob={gradingContext.conflictGradingJob}
               conflictGradingJobDateFormatted={gradingContext.conflictGradingJobDateFormatted}

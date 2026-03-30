@@ -8,10 +8,17 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { mathjaxTypeset } from '../../../lib/client/mathjax.js';
 import type { StaffInstanceQuestionGroup, StaffUser } from '../../../lib/client/safe-db-types.js';
+import {
+  getAutoScaleMax,
+  getManualScaleMax,
+  percentageToPoints,
+  roundPoints,
+} from '../../../lib/gradingMath.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
-import { GradingPointsInput, TotalPointsDisplay, roundPoints } from './GradingPointsSection.js';
+import { GradingPointsInput, TotalPointsDisplay } from './GradingPointsSection.js';
 import { RubricInputSection } from './RubricInputSection.js';
+import type { InstanceQuestionPageUrls } from './pageUrls.js';
 import type { RubricGradingData } from './queries.js';
 
 interface GradingFormValues {
@@ -46,6 +53,7 @@ export function GradingForm({
   skipGradedSubmissions,
   showSubmissionsAssignedToMeOnly,
   graderGuidelinesRendered,
+  pageUrls,
   onToggleRubricSettings,
 }: {
   csrfToken: string;
@@ -71,6 +79,7 @@ export function GradingForm({
   skipGradedSubmissions: boolean;
   showSubmissionsAssignedToMeOnly: boolean;
   graderGuidelinesRendered: string | null;
+  pageUrls: InstanceQuestionPageUrls;
   onToggleRubricSettings?: () => void;
 }) {
   const { watch, setValue, getValues } = useForm<GradingFormValues>({
@@ -205,14 +214,17 @@ export function GradingForm({
     value: number,
     source: 'points' | 'percentage',
   ) => {
-    const max = type === 'auto' ? maxAutoPoints : maxManualPoints;
-    const pts = source === 'percentage' ? (value * max) / 100 : value;
+    const scaleMaxPoints =
+      type === 'auto'
+        ? getAutoScaleMax({ maxAutoPoints, maxPoints })
+        : getManualScaleMax({ maxManualPoints, maxPoints });
+    const pts = source === 'percentage' ? percentageToPoints(value, scaleMaxPoints) : value;
     setValue(type === 'auto' ? 'autoPoints' : 'manualPoints', roundPoints(pts));
   };
 
   const handleAdjustPointsChange = (value: number, source: 'points' | 'percentage') => {
     const maxPts = maxManualPoints || maxPoints;
-    setValue('adjustPoints', source === 'percentage' ? (value * maxPts) / 100 : value);
+    setValue('adjustPoints', source === 'percentage' ? percentageToPoints(value, maxPts) : value);
   };
 
   const handleToggleItem = (id: string) => {
@@ -249,7 +261,7 @@ export function GradingForm({
     setSelectedGroup(newGroup);
 
     try {
-      const response = await fetch('./manual_instance_question_group', {
+      const response = await fetch(pageUrls.manualInstanceQuestionGroupUrl, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -294,13 +306,20 @@ export function GradingForm({
     : [emptyGroup];
 
   const maxPointsForPercentage = maxManualPoints || maxPoints;
+  const manualScaleMax = getManualScaleMax({ maxManualPoints, maxPoints });
+  const autoScaleMax = getAutoScaleMax({ maxAutoPoints, maxPoints });
   const showRubricInManualSection =
     rubricData && (!rubricData.rubric.replace_auto_points || (!maxAutoPoints && !autoPoints));
   const showRubricInTotalSection = rubricData?.rubric.replace_auto_points;
   const hasAutoPoints = maxAutoPoints > 0 || autoPoints > 0;
 
   return (
-    <form ref={formRef} name="manual-grading-form" method="POST">
+    <form
+      ref={formRef}
+      name="manual-grading-form"
+      method="POST"
+      action={pageUrls.instanceQuestionBaseUrl}
+    >
       <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="modified_at" value={modifiedAt} />
       <input type="hidden" name="submission_id" value={submissionId} />
@@ -401,7 +420,7 @@ export function GradingForm({
             context={context}
             disabled={disabled}
             points={roundPoints(effectiveManualPoints)}
-            maxPoints={maxManualPoints}
+            scaleMaxPoints={manualScaleMax}
             showPercentage={maxPoints > 0}
             showInput={!rubricData}
             showInputEdit={false}
@@ -437,7 +456,7 @@ export function GradingForm({
                 context={context}
                 disabled={disabled}
                 points={autoPoints}
-                maxPoints={maxAutoPoints}
+                scaleMaxPoints={autoScaleMax}
                 showPercentage={maxPoints > 0}
                 showInput={false}
                 showInputEdit={!disabled}

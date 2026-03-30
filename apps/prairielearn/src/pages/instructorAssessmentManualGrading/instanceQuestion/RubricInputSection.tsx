@@ -1,9 +1,8 @@
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
+import { roundPoints } from '../../../lib/gradingMath.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
-
-import { roundPoints } from './GradingPointsSection.js';
 
 function RubricItemCheckbox({
   item,

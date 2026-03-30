@@ -25,6 +25,7 @@ import { type InstanceQuestionGroup, type User } from '../../../lib/db-types.js'
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import { ManualGradingInstanceQuestionPage } from './ManualGradingInstanceQuestionPage.js';
+import type { InstanceQuestionPageUrls } from './pageUrls.js';
 import type { GradingJobData } from './queries.js';
 import type { GradingContextData, RubricQueryData } from './trpc.js';
 
@@ -145,6 +146,11 @@ export function InstanceQuestion({
     csrfToken: resLocals.__csrf_token,
   }).toString();
 
+  const pageUrls: InstanceQuestionPageUrls = {
+    instanceQuestionBaseUrl: `${resLocals.urlPrefix}/assessment/${resLocals.assessment.id}/manual_grading/instance_question/${resLocals.instance_question.id}`,
+    manualInstanceQuestionGroupUrl: `${resLocals.urlPrefix}/assessment/${resLocals.assessment.id}/manual_grading/instance_question/${resLocals.instance_question.id}/manual_instance_question_group`,
+  };
+
   // Build initial data matching the tRPC query return shapes.
   const initialRubricData: RubricQueryData = {
     rubricData: rubric_data,
@@ -256,6 +262,7 @@ export function InstanceQuestion({
           initialGradingContext={initialGradingContext}
           trpcCsrfToken={trpcCsrfToken}
           csrfToken={__csrf_token}
+          pageUrls={pageUrls}
           hasCourseInstancePermissionEdit={resLocals.authz_data.has_course_instance_permission_edit}
           assessmentInstanceOpen={resLocals.assessment_instance.open ?? false}
           breadcrumb={{
@@ -272,6 +279,7 @@ export function InstanceQuestion({
           questionContainerHtml={questionContainerHtml}
           personalNotesPanelHtml={personalNotesPanelHtml}
           instructorInfoPanelHtml={instructorInfoPanelHtml}
+          initialConflictGradingJobId={conflict_grading_job?.id ?? null}
         />,
       )}
     `,

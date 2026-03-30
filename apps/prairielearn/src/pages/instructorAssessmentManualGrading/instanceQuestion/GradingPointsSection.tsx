@@ -1,8 +1,6 @@
 import { useState } from 'react';
 
-export function roundPoints(points: number): number {
-  return Math.round(Number(points) * 100) / 100;
-}
+import { pointsToPercentage, roundPoints } from '../../../lib/gradingMath.js';
 
 export function GradingPointsInput({
   type,
@@ -10,7 +8,7 @@ export function GradingPointsInput({
   context,
   showInput,
   points,
-  maxPoints,
+  scaleMaxPoints,
   showPercentage,
   disabled,
   showInputEdit,
@@ -24,7 +22,7 @@ export function GradingPointsInput({
   context: string;
   showInput: boolean;
   points: number;
-  maxPoints: number;
+  scaleMaxPoints: number;
   showPercentage: boolean;
   disabled: boolean;
   showInputEdit: boolean;
@@ -34,7 +32,7 @@ export function GradingPointsInput({
   onToggleRubricSettings?: () => void;
 }) {
   const [editEnabled, setEditEnabled] = useState(false);
-  const percentage = maxPoints ? roundPoints((points * 100) / maxPoints) : 0;
+  const percentage = pointsToPercentage(points, scaleMaxPoints);
 
   return (
     <div className="mb-3">
@@ -52,7 +50,7 @@ export function GradingPointsInput({
             <>
               {!usePercentage && (
                 <span>
-                  <span>{roundPoints(points)}</span> / {maxPoints}
+                  <span>{roundPoints(points)}</span> / {scaleMaxPoints}
                 </span>
               )}
               {showPercentage && usePercentage && <span>{percentage}%</span>}
@@ -93,7 +91,7 @@ export function GradingPointsInput({
             required
             onChange={(e) => onPointsChange?.(Number(e.target.value), 'points')}
           />
-          <span className="input-group-text">/ {maxPoints}</span>
+          <span className="input-group-text">/ {scaleMaxPoints}</span>
         </div>
       )}
       {showPercentage && usePercentage && (showInput || editEnabled) && (
@@ -131,7 +129,7 @@ export function TotalPointsDisplay({
   showRubricButton: boolean;
   onToggleRubricSettings?: () => void;
 }) {
-  const percentage = maxPoints ? roundPoints((totalPoints * 100) / maxPoints) : 0;
+  const percentage = pointsToPercentage(totalPoints, maxPoints);
   return (
     <>
       {showRubricButton && !disabled && onToggleRubricSettings && (

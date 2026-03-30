@@ -4,6 +4,7 @@ import type { StaffUser } from '../../../lib/client/safe-db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 import { GradingForm } from './GradingForm.js';
+import type { InstanceQuestionPageUrls } from './pageUrls.js';
 import type { RubricGradingData } from './queries.js';
 
 export interface ConflictGradingJobProps {
@@ -33,6 +34,7 @@ export function ConflictGradingModal({
   graders,
   skipGradedSubmissions,
   showSubmissionsAssignedToMeOnly,
+  pageUrls,
   conflictGradingJob,
   conflictGradingJobDateFormatted,
   conflictLastGraderName,
@@ -55,6 +57,7 @@ export function ConflictGradingModal({
   graders: StaffUser[] | null;
   skipGradedSubmissions: boolean;
   showSubmissionsAssignedToMeOnly: boolean;
+  pageUrls: InstanceQuestionPageUrls;
   conflictGradingJob: ConflictGradingJobProps;
   conflictGradingJobDateFormatted: string | null;
   conflictLastGraderName: string | null;
@@ -102,6 +105,7 @@ export function ConflictGradingModal({
                 skipGradedSubmissions={skipGradedSubmissions}
                 showSubmissionsAssignedToMeOnly={showSubmissionsAssignedToMeOnly}
                 graderGuidelinesRendered={null}
+                pageUrls={pageUrls}
               />
             </div>
           </div>
@@ -136,6 +140,7 @@ export function ConflictGradingModal({
                 skipGradedSubmissions={skipGradedSubmissions}
                 showSubmissionsAssignedToMeOnly={showSubmissionsAssignedToMeOnly}
                 graderGuidelinesRendered={null}
+                pageUrls={pageUrls}
               />
             </div>
           </div>

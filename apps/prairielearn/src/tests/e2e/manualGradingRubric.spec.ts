@@ -1,6 +1,11 @@
+import type { Page } from '@playwright/test';
+import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { setAiGradingMode } from '../../ee/lib/ai-grading/ai-grading-util.js';
+import { insertDefaultInstanceQuestionGroups } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
@@ -13,6 +18,13 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const STUDENT = { uid: 'e2e_rubric_student@test.com', name: 'E2E Rubric Student', uin: 'E2E001' };
 
 let assessmentId: string;
+
+async function assumeStudentIdentity(page: Page, baseURL: string) {
+  await page.context().addCookies([
+    { name: 'pl2_requested_uid', value: STUDENT.uid, url: baseURL },
+    { name: 'pl2_requested_data_changed', value: 'true', url: baseURL },
+  ]);
+}
 
 test.describe('Manual grading rubric submission panel update', () => {
   test.beforeAll(async ({ courseInstance }) => {
@@ -38,10 +50,7 @@ test.describe('Manual grading rubric submission panel update', () => {
     baseURL,
     courseInstance,
   }) => {
-    await page.context().addCookies([
-      { name: 'pl2_requested_uid', value: STUDENT.uid, url: baseURL },
-      { name: 'pl2_requested_data_changed', value: 'true', url: baseURL },
-    ]);
+    await assumeStudentIdentity(page, baseURL);
 
     await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
     await page.getByRole('link', { name: 'Homework for Internal, External, Manual' }).click();
@@ -146,5 +155,87 @@ test.describe('Manual grading rubric submission panel update', () => {
         .locator('[data-testid="submission-with-feedback"] [data-testid="rubric-item-description"]')
         .first(),
     ).toBeVisible();
+  });
+
+  test('submission group updates persist and percentage grading falls back to total points', async ({
+    page,
+    baseURL,
+    courseInstance,
+    enableFeatureFlag,
+  }) => {
+    await enableFeatureFlag('ai-grading');
+    await assumeStudentIdentity(page, baseURL);
+
+    await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
+    await page.getByRole('link', { name: 'Homework for Internal, External, Manual' }).click();
+    await page
+      .getByRole('link', { name: 'Manual Grading: Adding two numbers (with auto points)' })
+      .click();
+
+    const csrfToken = await page.locator('form input[name="__csrf_token"]').first().inputValue();
+    const variantId = await page.locator('form input[name="__variant_id"]').first().inputValue();
+    await page.request.post(page.url(), {
+      form: {
+        __csrf_token: csrfToken,
+        __variant_id: variantId,
+        __action: 'save',
+        c: '1',
+      },
+    });
+
+    await page.context().clearCookies();
+
+    const identifiers = await sqldb.queryRow(
+      sql.select_instance_question_identifiers,
+      { assessment_id: assessmentId, qid: 'manualGrade/addingNumbers2' },
+      z.object({
+        instance_question_id: IdSchema,
+        assessment_question_id: IdSchema,
+      }),
+    );
+
+    await insertDefaultInstanceQuestionGroups({
+      assessment_question_id: identifiers.assessment_question_id,
+    });
+    await setAiGradingMode(identifiers.assessment_question_id, true);
+
+    const manualGradingIQUrl = `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessmentId}/manual_grading/instance_question/${identifiers.instance_question_id}`;
+    await page.goto(manualGradingIQUrl);
+
+    const submissionGroupToggle = page.getByLabel('Change selected submission group');
+    await expect(submissionGroupToggle).toBeVisible();
+    await submissionGroupToggle.click();
+    await page.getByRole('button', { name: 'Review Needed' }).click();
+    await expect(submissionGroupToggle).toContainText('Review Needed');
+    await expect(page.locator('#grade-button')).toBeHidden();
+
+    await page.reload();
+    await expect(page.getByLabel('Change selected submission group')).toContainText(
+      'Review Needed',
+    );
+
+    await page.getByLabel('Change selected submission group').click();
+    await page.getByRole('button', { name: 'No group' }).click();
+    await expect(page.getByLabel('Change selected submission group')).toContainText('No group');
+    await expect(page.locator('#grade-button')).toBeVisible();
+
+    await page.locator('#use-score-perc-main').check();
+    await expect(page.getByText('Manual Score:')).toBeVisible();
+    await page.locator('input[name="score_manual_percent"]').fill('20.5');
+    await page.locator('form[name="manual-grading-form"] textarea').fill('Percentage grading path');
+    await Promise.all([page.waitForNavigation(), page.locator('#grade-button').click()]);
+
+    const updatedScores = await sqldb.queryRow(
+      sql.select_instance_question_scores,
+      { instance_question_id: identifiers.instance_question_id },
+      z.object({
+        auto_points: z.number().nullable(),
+        manual_points: z.number().nullable(),
+        points: z.number().nullable(),
+      }),
+    );
+
+    expect(updatedScores.manual_points).toBeGreaterThan(0);
+    expect(updatedScores.points).toBeGreaterThan(updatedScores.auto_points ?? 0);
   });
 });

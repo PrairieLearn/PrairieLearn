@@ -14,3 +14,30 @@ ORDER BY
   iq.id DESC
 LIMIT
   1;
+
+-- BLOCK select_instance_question_identifiers
+SELECT
+  iq.id AS instance_question_id,
+  aq.id AS assessment_question_id
+FROM
+  instance_questions AS iq
+  JOIN assessment_instances AS ai ON ai.id = iq.assessment_instance_id
+  JOIN assessment_questions AS aq ON aq.id = iq.assessment_question_id
+  JOIN questions AS q ON q.id = aq.question_id
+WHERE
+  ai.assessment_id = $assessment_id
+  AND q.qid = $qid
+ORDER BY
+  iq.id DESC
+LIMIT
+  1;
+
+-- BLOCK select_instance_question_scores
+SELECT
+  iq.auto_points,
+  iq.manual_points,
+  iq.points
+FROM
+  instance_questions AS iq
+WHERE
+  iq.id = $instance_question_id;
