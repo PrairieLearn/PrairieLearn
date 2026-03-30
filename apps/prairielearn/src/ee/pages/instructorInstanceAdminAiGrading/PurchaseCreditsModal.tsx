@@ -8,6 +8,7 @@ import {
   CREDIT_PACKAGES,
   MAX_PURCHASE_MILLI_DOLLARS,
   MIN_PURCHASE_MILLI_DOLLARS,
+  calculateCreditPurchaseCharge,
 } from '../../lib/ai-grading-credit-purchase-constants.js';
 
 import { useTRPC } from './utils/trpc-context.js';
@@ -209,12 +210,18 @@ export function PurchaseCreditsModal({
 
   const customDollars = Math.max(0, Number.parseInt(customAmount || '0', 10));
   const purchaseDollars = selected.type === 'preset' ? selected.dollars : customDollars;
+  const amountMilliDollars = purchaseDollars * 1000;
+  const { charged_milli_dollars, infrastructure_fee_milli_dollars } = calculateCreditPurchaseCharge(
+    {
+      amount_milli_dollars: amountMilliDollars,
+      infrastructure_fee_rate: infrastructureFeeRate,
+    },
+  );
   const minDollars = MIN_PURCHASE_MILLI_DOLLARS / 1000;
   const maxDollars = MAX_PURCHASE_MILLI_DOLLARS / 1000;
   const canProceed = purchaseDollars >= minDollars && purchaseDollars <= maxDollars;
 
   function handleProceed() {
-    const amountMilliDollars = purchaseDollars * 1000;
     checkoutMutation.mutate({ amount_milli_dollars: amountMilliDollars });
   }
 
@@ -273,16 +280,16 @@ export function PurchaseCreditsModal({
           <div className="mt-3 border rounded p-3">
             <div className="d-flex justify-content-between mb-1">
               <span>Credits</span>
-              <span>{`$${purchaseDollars.toFixed(2)}`}</span>
+              <span>{`$${(amountMilliDollars / 1000).toFixed(2)}`}</span>
             </div>
             <div className="d-flex justify-content-between mb-2">
               <span>Infrastructure fee</span>
-              <span>{`$${(purchaseDollars * infrastructureFeeRate).toFixed(2)}`}</span>
+              <span>{`$${(infrastructure_fee_milli_dollars / 1000).toFixed(2)}`}</span>
             </div>
             <hr className="my-1" />
             <div className="d-flex justify-content-between fw-bold mt-2">
               <span>Total</span>
-              <span>{`$${(purchaseDollars * (1 + infrastructureFeeRate)).toFixed(2)}`}</span>
+              <span>{`$${(charged_milli_dollars / 1000).toFixed(2)}`}</span>
             </div>
           </div>
         )}

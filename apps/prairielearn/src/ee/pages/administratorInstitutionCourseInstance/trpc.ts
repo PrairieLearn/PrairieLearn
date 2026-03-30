@@ -3,6 +3,8 @@ import type { CreateExpressContextOptions } from '@trpc/server/adapters/express'
 import superjson from 'superjson';
 import { z } from 'zod';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import { config } from '../../../lib/config.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { adjustCreditPool, selectCreditPool } from '../../../models/ai-grading-credit-pool.js';
@@ -76,7 +78,7 @@ const adjustCreditPoolMutation = t.procedure
 
 const refundCreditPurchaseMutation = t.procedure
   .use(requireAiGradingFeature)
-  .input(z.object({ checkout_session_id: z.string() }))
+  .input(z.object({ checkout_session_id: IdSchema }))
   .mutation(async (opts) => {
     await refundCreditPurchase({
       checkout_session_id: opts.input.checkout_session_id,
