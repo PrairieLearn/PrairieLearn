@@ -171,7 +171,7 @@ if (appError) {
 
 ### Client-side usage with @trpc/tanstack-react-query
 
-Each scope provides a React context via `context.ts` that exports `TRPCProvider`, `useTRPC`, and optionally `useTRPCClient`. Pages re-export these from a local `utils/trpc-context.ts` file.
+Each scope provides a React context via `context.ts` that exports `TRPCProvider`, `useTRPC`, and optionally `useTRPCClient`.
 
 Setup pattern in a hydrated component:
 

@@ -8,9 +8,9 @@ import type { AppErrorBase } from '../../trpc/app-errors.js';
  * metadata (network failures, permission errors, etc.).
  *
  * @example
- * import type { UpsertError } from '../../trpc/courseInstance/student-labels.js';
+ * import type { StudentLabelError } from '../../trpc/courseInstance/student-labels.js';
  *
- * const appError = getAppError<UpsertError>(mutation.error);
+ * const appError = getAppError<StudentLabelError['Upsert']>(mutation.error);
  * if (appError) {
  *   switch (appError.code) {
  *     case 'LABEL_NAME_TAKEN': ...
