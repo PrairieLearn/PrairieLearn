@@ -2,7 +2,7 @@
 
 # This script is specialized for the default Claude Code remote environment.
 
-set -euo pipefail
+set -uo pipefail
 
 # Only run in remote (Claude Code on the web) environments
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
@@ -20,29 +20,37 @@ for bin in /usr/lib/postgresql/16/bin/*; do
 done
 
 # We need graphviz for the python dependencies.
-apt-get update -qq && apt-get install -y -qq graphviz libgraphviz-dev postgresql-16-pgvector 2>&1
+echo "[session-start] Installing system packages..."
+timeout 30 bash -c 'apt-get update -qq && apt-get install -y -qq graphviz libgraphviz-dev postgresql-16-pgvector 2>&1' || echo "[session-start] WARNING: apt-get timed out or failed"
+echo "[session-start] System packages done"
 
 # Load nvm
 . /opt/nvm/nvm.sh
 
 # nvm is already installed in the default Claude Code environment, but we need to install Node.js 24.
-nvm install 24
-nvm alias default 24
+echo "[session-start] Installing Node.js 24..."
+timeout 30 bash -c '. /opt/nvm/nvm.sh && nvm install 24 && nvm alias default 24' || echo "[session-start] WARNING: nvm install timed out or failed"
+nvm use 24 2>/dev/null || true
+echo "[session-start] Node.js done"
 
 # uv is already installed in the default Claude Code environment, but we need to update it to the latest version.
 # https://github.com/astral-sh/uv/issues/14016#issuecomment-2969548188
-(cd /tmp && uv pip install --system --reinstall uv)
-rm /root/.local/bin/uv # Uninstall the outdated uv binary.
+echo "[session-start] Updating uv..."
+timeout 30 bash -c '(cd /tmp && uv pip install --system --reinstall uv)' || echo "[session-start] WARNING: uv update timed out or failed"
+rm -f /root/.local/bin/uv # Uninstall the outdated uv binary.
+echo "[session-start] uv done"
 
-make deps
+echo "[session-start] Running make deps..."
+timeout 60 make deps || echo "[session-start] WARNING: make deps timed out or failed"
+echo "[session-start] make deps done"
 
 echo "[session-start] Starting postgres..."
-scripts/start_postgres.sh
+timeout 30 scripts/start_postgres.sh || echo "[session-start] WARNING: postgres timed out or failed"
 echo "[session-start] Starting redis..."
-scripts/start_redis.sh
+timeout 10 scripts/start_redis.sh || echo "[session-start] WARNING: redis timed out or failed"
 echo "[session-start] Starting s3rver..."
-scripts/start_s3rver.sh
-echo "[session-start] All support services started"
+timeout 30 scripts/start_s3rver.sh || echo "[session-start] WARNING: s3rver timed out or failed"
+echo "[session-start] All support services done"
 
 # Playwright blocks downloads from within a remote Claude Code environment,
 # so we need to symlink the already-installed version to the expected location.
