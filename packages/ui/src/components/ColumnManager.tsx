@@ -334,7 +334,16 @@ export function ColumnManager<RowDataModel>({
       >
         <i className="bi bi-view-list me-2" aria-hidden="true" /> View{' '}
       </Dropdown.Toggle>
-      <Dropdown.Menu style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+      <Dropdown.Menu
+        style={{ maxHeight: '60vh', overflowY: 'auto' }}
+        onMouseDown={(e: React.MouseEvent) => {
+          // Prevent mousedown from moving focus away from the toggle button.
+          // Without this, clicking non-focusable elements like label text causes
+          // a blur with relatedTarget=null, which closes the dropdown before the
+          // click event can fire and toggle the checkbox.
+          e.preventDefault();
+        }}
+      >
         {topContent && (
           <>
             {topContent}

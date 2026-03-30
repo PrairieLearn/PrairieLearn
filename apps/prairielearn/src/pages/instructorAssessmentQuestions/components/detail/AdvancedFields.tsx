@@ -19,17 +19,17 @@ import { InheritableField } from './InheritableField.js';
 const HELP_TEXT = {
   advanceScorePerc: {
     question: 'Minimum score percentage required to unlock the next question.',
-    altGroup: 'Default minimum score percentage to unlock the next question.',
+    altPool: 'Default minimum score percentage to unlock the next question.',
     zone: 'Default minimum score percentage to unlock the next question.',
   },
   gradeRateMinutes: {
     question: 'Minimum time between grading attempts.',
-    altGroup: 'Minimum time between grading attempts for questions in this group.',
+    altPool: 'Minimum time between grading attempts for questions in this pool.',
     zone: 'Minimum time between grading attempts for questions in this zone.',
   },
   allowRealTimeGrading: {
     question: 'Allow students to see grading results during the exam (Exams only).',
-    altGroup: 'Allow students to see grading results during the exam (Exams only).',
+    altPool: 'Allow students to see grading results during the exam (Exams only).',
     zone: 'Allow students to see grading results during the exam for questions in this zone (Exams only).',
   },
 } as const;
@@ -40,10 +40,10 @@ const HELP_TEXT = {
  * when the corresponding `parent*` value is non-null; when `parent*` is
  * undefined the label is never displayed, so its value is irrelevant.
  *
- * For `forceMaxPoints` specifically, only alt groups define this property —
+ * For `forceMaxPoints` specifically, only alt pools define this property —
  * zones and assessments do not — so `parentForceMaxPoints` is `undefined`
- * everywhere except inside an alt group. The `forceMaxPointsFromLabel` fallback
- * is therefore never displayed outside of alt groups.
+ * everywhere except inside an alt pool. The `forceMaxPointsFromLabel` fallback
+ * is therefore never displayed outside of alt pools.
  */
 export interface AdvancedFieldsInheritance {
   parentAdvanceScorePerc: number | undefined;
@@ -71,7 +71,7 @@ export function AdvancedFields({
   register: UseFormRegister<any>;
   errors?: FieldErrors;
   idPrefix: string;
-  variant: 'question' | 'altGroup' | 'zone';
+  variant: 'question' | 'altPool' | 'zone';
   editMode?: boolean;
   inheritance: AdvancedFieldsInheritance;
   zoneIndex?: number;

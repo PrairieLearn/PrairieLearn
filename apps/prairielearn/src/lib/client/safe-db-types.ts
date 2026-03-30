@@ -19,7 +19,8 @@ import { type z } from 'zod';
 
 import {
   AccessTokenSchema as RawAccessTokenSchema,
-  AlternativeGroupSchema as RawAlternativeGroupSchema,
+  AlternativePoolSchema as RawAlternativePoolSchema,
+  AssessmentAccessControlRuleSchema as RawAssessmentAccessControlRuleSchema,
   AssessmentInstanceSchema as RawAssessmentInstanceSchema,
   AssessmentModuleSchema as RawAssessmentModuleSchema,
   AssessmentQuestionSchema as RawAssessmentQuestionSchema,
@@ -37,6 +38,7 @@ import {
   QuestionSchema as RawQuestionSchema,
   RubricItemSchema as RawRubricItemSchema,
   RubricSchema as RawRubricSchema,
+  StudentLabelSchema as RawStudentLabelSchema,
   TagSchema as RawTagSchema,
   TopicSchema as RawTopicSchema,
   UserSchema as RawUserSchema,
@@ -54,10 +56,17 @@ export const RawUserAccessTokenSchema = RawAccessTokenSchema.pick({
 export const UserAccessTokenSchema = RawUserAccessTokenSchema.brand<'UserAccessToken'>();
 export type UserAccessToken = z.infer<typeof UserAccessTokenSchema>;
 
-/** Alternative Groups */
-export const StaffAlternativeGroupSchema =
-  RawAlternativeGroupSchema.brand<'StaffAlternativeGroup'>();
-export type StaffAlternativeGroup = z.infer<typeof StaffAlternativeGroupSchema>;
+/** Alternative Pools */
+export const StaffAlternativePoolSchema = RawAlternativePoolSchema.brand<'StaffAlternativePool'>();
+export type StaffAlternativePool = z.infer<typeof StaffAlternativePoolSchema>;
+
+/** Assessment Access Control Rules */
+export const RawStaffAssessmentAccessControlRuleSchema = RawAssessmentAccessControlRuleSchema;
+export const StaffAssessmentAccessControlRuleSchema =
+  RawAssessmentAccessControlRuleSchema.brand<'StaffAssessmentAccessControlRule'>();
+export type StaffAssessmentAccessControlRule = z.infer<
+  typeof StaffAssessmentAccessControlRuleSchema
+>;
 
 /** Assessments */
 export const RawStaffAssessmentSchema = RawAssessmentSchema;
@@ -420,3 +429,13 @@ export type StaffRubric = z.infer<typeof StaffRubricSchema>;
 
 export const StaffRubricItemSchema = RawRubricItemSchema.brand<'StaffRubricItem'>();
 export type StaffRubricItem = z.infer<typeof StaffRubricItemSchema>;
+
+/** Student Labels */
+export const RawStaffStudentLabelSchema = RawStudentLabelSchema.pick({
+  color: true,
+  id: true,
+  name: true,
+  uuid: true,
+});
+export const StaffStudentLabelSchema = RawStaffStudentLabelSchema.brand<'StaffStudentLabel'>();
+export type StaffStudentLabel = z.infer<typeof StaffStudentLabelSchema>;

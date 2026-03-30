@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import {
   AssessmentInstanceSchema,
@@ -49,5 +51,6 @@ export const GradebookRowSchema = z.object({
       uid_other_users_group: OtherGroupUserSchema.array(),
     }),
   ),
+  student_label_ids: IdSchema.array(),
 });
 export type GradebookRow = z.infer<typeof GradebookRowSchema>;

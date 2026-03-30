@@ -82,6 +82,11 @@ export const ConfigSchema = z.object({
     .refine((s) => s.startsWith('/') && !s.endsWith('/'), {
       message: 'must be an absolute path and not end with a slash',
     }),
+  /**
+   * Root directory for course repositories on disk. The default is appropriate
+   * for production; for local development you typically want to set this to
+   * the directory that contains your test course(s).
+   */
   coursesRoot: z.string().default('/data1/courses'),
   /** Set to null or '' to disable Redis. */
   redisUrl: z.string().nullable().default('redis://localhost:6379/'),
@@ -581,10 +586,28 @@ export const ConfigSchema = z.object({
    */
   aiGradingRateLimitDollars: z.number().default(10),
   /**
+   * Infrastructure fee applied to AI grading API costs, expressed as a decimal.
+   * For example, 0.2 means a 20% markup on raw API costs.
+   */
+  aiGradingInfrastructureFeePercent: z.number().min(0).max(1).default(0.2),
+  /**
+   * Maximum dollar amount an admin can add to a credit pool in a single adjustment.
+   */
+  aiGradingCreditPoolMaxAddDollars: z.number().default(10_000),
+  /**
+   * Maximum dollar amount an admin can deduct from a credit pool in a single adjustment.
+   */
+  aiGradingCreditPoolMaxDeductDollars: z.number().default(10_000),
+  /**
    * The hourly spending rate limit for AI question generation, in US dollars.
    * Accounts for both input and output tokens.
    */
   aiQuestionGenerationRateLimitDollars: z.number().default(1),
+  /**
+   * OpenAI credentials for administrator tasks like AI-assisted course request review.
+   */
+  administratorOpenAiApiKey: z.string().nullable().default(null),
+  administratorOpenAiOrganization: z.string().nullable().default(null),
   requireTermsAcceptance: z.boolean().default(false),
   pyroscopeEnabled: z.boolean().default(false),
   pyroscopeServerAddress: z.string().nullable().default(null),
