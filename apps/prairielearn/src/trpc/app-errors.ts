@@ -1,5 +1,4 @@
-import { TRPCError } from '@trpc/server';
-import type { TRPCDefaultErrorShape, TRPC_ERROR_CODE_KEY } from '@trpc/server';
+import { type TRPCDefaultErrorShape, TRPCError, type TRPC_ERROR_CODE_KEY } from '@trpc/server';
 
 /**
  * Typed application-level errors for tRPC procedures.
