@@ -10,7 +10,10 @@ import {
   type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
 } from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
-import { fillInstanceQuestionColumnEntries } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import {
+  calculateAiGradingStats,
+  fillInstanceQuestionColumnEntries,
+} from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   deleteAiGradingJobs,
   setAiGradingMode,
@@ -21,6 +24,7 @@ import { aiInstanceQuestionGrouping } from '../../../ee/lib/ai-instance-question
 import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../../lib/id.js';
+import * as manualGrading from '../../../lib/manualGrading.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
@@ -265,6 +269,84 @@ const setRequiresManualGradingMutation = t.procedure
     });
   });
 
+// TODO: This mutation duplicates the one in trpc/instanceQuestion/manual-grading.ts.
+// Extract the shared logic into a helper so both routers call the same implementation.
+const modifyRubricSettingsMutation = t.procedure
+  .use(requireCourseInstancePermissionEdit)
+  .input(
+    z.object({
+      useRubric: z.boolean(),
+      replaceAutoPoints: z.boolean(),
+      startingPoints: z.number(),
+      minPoints: z.number(),
+      maxExtraPoints: z.number(),
+      tagForManualGrading: z.boolean().default(false),
+      graderGuidelines: z.string().nullable(),
+      rubricItems: z
+        .array(
+          z.object({
+            id: z.string().optional(),
+            order: z.number(),
+            points: z.number(),
+            description: z.string(),
+            explanation: z.string().nullable().optional(),
+            graderNote: z.string().nullable().optional(),
+            alwaysShowToStudents: z.boolean(),
+          }),
+        )
+        .default([]),
+    }),
+  )
+  .mutation(async (opts) => {
+    const { assessment, assessment_question, authn_user } = opts.ctx;
+
+    await manualGrading.updateAssessmentQuestionRubric({
+      assessment,
+      assessment_question_id: assessment_question.id,
+      use_rubric: opts.input.useRubric,
+      replace_auto_points: opts.input.replaceAutoPoints,
+      starting_points: opts.input.startingPoints,
+      min_points: opts.input.minPoints,
+      max_extra_points: opts.input.maxExtraPoints,
+      rubric_items: opts.input.rubricItems.map((item) => ({
+        id: item.id,
+        order: item.order,
+        points: item.points,
+        description: item.description,
+        explanation: item.explanation,
+        grader_note: item.graderNote,
+        always_show_to_students: item.alwaysShowToStudents,
+      })),
+      tag_for_manual_grading: opts.input.tagForManualGrading,
+      grader_guidelines: opts.input.graderGuidelines,
+      authn_user_id: authn_user.id,
+    });
+
+    const rubricData = await manualGrading.selectRubricData({
+      assessment_question,
+    });
+
+    const aiGradingEnabled = await run(async () =>
+      features.enabled('ai-grading', {
+        institution_id: opts.ctx.course.institution_id,
+        course_id: opts.ctx.course.id,
+        course_instance_id: opts.ctx.course_instance.id,
+        user_id: authn_user.id,
+      }),
+    );
+
+    const aiGradingStats =
+      aiGradingEnabled && assessment_question.ai_grading_mode
+        ? await calculateAiGradingStats(assessment_question)
+        : null;
+
+    return {
+      rubricData,
+      modifiedAt: new Date().toISOString(),
+      aiGradingStats,
+    };
+  });
+
 export const manualGradingAssessmentQuestionRouter = t.router({
   instances: instancesQuery,
   setAiGradingMode: setAiGradingModeMutation,
@@ -274,6 +356,7 @@ export const manualGradingAssessmentQuestionRouter = t.router({
   aiGradeInstanceQuestions: aiGradeInstanceQuestionMutation,
   setAssignedGrader: setAssignedGraderMutation,
   setRequiresManualGrading: setRequiresManualGradingMutation,
+  modifyRubricSettings: modifyRubricSettingsMutation,
 });
 
 export type ManualGradingAssessmentQuestionRouter = typeof manualGradingAssessmentQuestionRouter;

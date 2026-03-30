@@ -1,7 +1,7 @@
-import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 
-import { RubricSettings } from '../../../components/RubricSettings.js';
+import { RubricSettings, type RubricSettingsPayload } from '../../../components/RubricSettings.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 import { createInstanceQuestionTrpcClient } from '../../../trpc/instanceQuestion/client.js';
@@ -103,6 +103,10 @@ function ManualGradingInstanceQuestionPageInner({
 
   const [rubricSettingsOpen, setRubricSettingsOpen] = useState(false);
 
+  const toggleAiGradingMutation = useMutation(
+    trpc.manualGrading.toggleAiGradingMode.mutationOptions(),
+  );
+
   const handleRubricSaved = useCallback(
     (_data: { rubric_data: RubricData | null; modifiedAt: string }) => {
       void queryClient.invalidateQueries({
@@ -110,6 +114,17 @@ function ManualGradingInstanceQuestionPageInner({
       });
     },
     [queryClient, trpc],
+  );
+
+  const { mutateAsync: submitRubricSettings } = useMutation(
+    trpc.manualGrading.modifyRubricSettings.mutationOptions(),
+  );
+
+  const handleSubmitRubricSettings = useCallback(
+    async (payload: RubricSettingsPayload) => {
+      return submitRubricSettings(payload);
+    },
+    [submitRubricSettings],
   );
 
   return (
@@ -154,9 +169,7 @@ function ManualGradingInstanceQuestionPageInner({
         </nav>
 
         {aiGradingEnabled && (
-          <form method="POST" className="card px-3 py-2 mb-0">
-            <input type="hidden" name="__action" value="toggle_ai_grading_mode" />
-            <input type="hidden" name="__csrf_token" value={csrfToken} />
+          <div className="card px-3 py-2 mb-0">
             <div className="form-check form-switch mb-0">
               <input
                 className="form-check-input"
@@ -164,15 +177,20 @@ function ManualGradingInstanceQuestionPageInner({
                 role="switch"
                 id="switchCheckDefault"
                 defaultChecked={aiGradingMode}
-                onChange={(e) => {
-                  setTimeout(() => e.target.form?.submit(), 150);
+                disabled={toggleAiGradingMutation.isPending}
+                onChange={() => {
+                  toggleAiGradingMutation.mutate(undefined, {
+                    onSuccess: () => {
+                      window.location.reload();
+                    },
+                  });
                 }}
               />
               <label className="form-check-label" htmlFor="switchCheckDefault">
                 <i className="bi bi-stars" /> AI grading mode
               </label>
             </div>
-          </form>
+          </div>
         )}
       </div>
 
@@ -181,11 +199,11 @@ function ManualGradingInstanceQuestionPageInner({
           hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
           assessmentQuestion={rubricData.assessmentQuestion}
           rubricData={rubricData.rubricData}
-          csrfToken={csrfToken}
           aiGradingStats={rubricData.aiGradingStats}
           context={gradingContext.rubricSettingsContext}
           settingsOpen={rubricSettingsOpen}
           onRubricSaved={handleRubricSaved}
+          onSubmitSettings={handleSubmitRubricSettings}
           onToggleSettingsOpen={() => setRubricSettingsOpen((prev) => !prev)}
         />
       </div>

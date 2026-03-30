@@ -33,17 +33,17 @@ export function GradingPointsInput({
 }) {
   const [editEnabled, setEditEnabled] = useState(false);
   const percentage = pointsToPercentage(points, scaleMaxPoints);
+  const pointsInputId = `${type}-score-value-input-points-${context}`;
+  const percentageInputId = `${type}-score-value-input-percentage-${context}`;
+  const showPointsInput = !usePercentage && (showInput || editEnabled);
+  const showPercentageInput = showPercentage && usePercentage && (showInput || editEnabled);
 
   return (
     <div className="mb-3">
       <span className="w-100">
-        {!usePercentage && (
-          <label htmlFor={`${type}-score-value-input-points-${context}`}>{typeLabel} Points:</label>
-        )}
+        {!usePercentage && <label htmlFor={pointsInputId}>{typeLabel} Points:</label>}
         {showPercentage && usePercentage && (
-          <label htmlFor={`${type}-score-value-input-percentage-${context}`}>
-            {typeLabel} Score:
-          </label>
+          <label htmlFor={percentageInputId}>{typeLabel} Score:</label>
         )}
         <span className="float-end">
           {!showInput && !editEnabled && (
@@ -78,14 +78,13 @@ export function GradingPointsInput({
           </div>
         </span>
       </span>
-      {!usePercentage && (showInput || editEnabled) && (
+      {showPointsInput && (
         <div className="input-group">
           <input
             type="number"
             step="any"
-            id={`${type}-score-value-input-points-${context}`}
+            id={pointsInputId}
             className="form-control"
-            name={`score_${type}_points`}
             value={roundPoints(points)}
             disabled={disabled}
             required
@@ -94,14 +93,13 @@ export function GradingPointsInput({
           <span className="input-group-text">/ {scaleMaxPoints}</span>
         </div>
       )}
-      {showPercentage && usePercentage && (showInput || editEnabled) && (
+      {showPercentageInput && (
         <div className="input-group">
           <input
             type="number"
             step="any"
-            id={`${type}-score-value-input-percentage-${context}`}
+            id={percentageInputId}
             className="form-control"
-            name={`score_${type}_percent`}
             value={percentage}
             disabled={disabled}
             required

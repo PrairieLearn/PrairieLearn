@@ -2,12 +2,11 @@ import { useMemo, useRef, useState } from 'react';
 import { Alert, Collapse, Modal, Overlay, Popover } from 'react-bootstrap';
 import { z } from 'zod';
 
-import { downloadAsJSON, executeScripts, parseHTMLElement } from '@prairielearn/browser-utils';
+import { downloadAsJSON } from '@prairielearn/browser-utils';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
-import { mathjaxTypeset } from '../lib/client/mathjax.js';
 import type { StaffAssessmentQuestion } from '../lib/client/safe-db-types.js';
 import type { RubricItem } from '../lib/db-types.js';
 import type { RenderedRubricItem, RubricData } from '../lib/manualGrading.types.js';
@@ -44,24 +43,49 @@ const ExportedRubricDataSchema = z.object({
 
 type ExportedRubricData = z.infer<typeof ExportedRubricDataSchema>;
 
+export interface RubricSettingsPayload {
+  useRubric: boolean;
+  replaceAutoPoints: boolean;
+  startingPoints: number;
+  minPoints: number;
+  maxExtraPoints: number;
+  tagForManualGrading: boolean;
+  graderGuidelines: string | null;
+  rubricItems: {
+    id?: string;
+    order: number;
+    points: number;
+    description: string;
+    explanation?: string | null;
+    graderNote?: string | null;
+    alwaysShowToStudents: boolean;
+  }[];
+}
+
+export interface RubricSettingsResponse {
+  rubricData: RubricData | null;
+  modifiedAt: string;
+  aiGradingStats: AiGradingGeneralStats | null;
+}
+
 export function RubricSettings({
   hasCourseInstancePermissionEdit,
   assessmentQuestion,
   rubricData,
-  csrfToken,
   aiGradingStats,
   context,
   onRubricSaved,
+  onSubmitSettings,
   settingsOpen,
   onToggleSettingsOpen,
 }: {
   hasCourseInstancePermissionEdit: boolean;
   assessmentQuestion: StaffAssessmentQuestion;
   rubricData: RubricData | null;
-  csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
   context: Record<string, any>;
   onRubricSaved?: (data: { rubric_data: RubricData | null; modifiedAt: string }) => void;
+  onSubmitSettings: (payload: RubricSettingsPayload) => Promise<RubricSettingsResponse>;
   settingsOpen: boolean;
   onToggleSettingsOpen: () => void;
 }) {
@@ -108,7 +132,6 @@ export function RubricSettings({
   const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
   const rubricFileRef = useRef<HTMLInputElement>(null);
   const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData?.rubric));
-  const [modifiedAt, setModifiedAt] = useState<Date | null>(rubricData?.rubric.modified_at ?? null);
   const [copyPopoverTarget, setCopyPopoverTarget] = useState<HTMLElement | null>(null);
 
   // Also define default for rubric-related variables
@@ -390,105 +413,69 @@ export function RubricSettings({
     );
   };
 
+  const buildPayload = (use_rubric: boolean): RubricSettingsPayload => ({
+    useRubric: use_rubric,
+    replaceAutoPoints,
+    startingPoints,
+    minPoints: minPoints ?? 0,
+    maxExtraPoints: maxExtraPoints ?? 0,
+    tagForManualGrading: tagForGrading,
+    graderGuidelines,
+    rubricItems: rubricItems.map((it, idx) => ({
+      id: it.rubric_item.id,
+      order: idx,
+      points: it.rubric_item.points ?? 0,
+      description: it.rubric_item.description,
+      explanation: it.rubric_item.explanation,
+      graderNote: it.rubric_item.grader_note,
+      alwaysShowToStudents: it.rubric_item.always_show_to_students,
+    })),
+  });
+
+  const handleSaveResponse = (data: RubricSettingsResponse) => {
+    onRubricSaved?.({ rubric_data: data.rubricData, modifiedAt: data.modifiedAt });
+
+    // Since we are preserving the temporary rubric item selection in the instance question page, the page is not refreshed
+    // after saving. Suppose we start with setting A, and update it to B and save it. Ideally we would expect a "Discard changes"
+    // to reset to B instead of A. We are updating the default values with B so "Discard changes" would reset correctly.
+    const savedRubricData = data.rubricData;
+    const rubric = savedRubricData?.rubric ?? null;
+    const rubricItemsWithSelectionCount = savedRubricData?.rubric_items ?? [];
+    const rubricItemsWithDisagreementCount = data.aiGradingStats?.rubric_stats ?? {};
+    const rubricItemDataMerged = rubricItemsWithSelectionCount.map((item) => ({
+      ...item,
+      disagreement_count:
+        item.rubric_item.id in rubricItemsWithDisagreementCount
+          ? rubricItemsWithDisagreementCount[item.rubric_item.id]
+          : null,
+    }));
+
+    defaultRubricItemsRef.current = rubricItemDataMerged;
+    defaultReplaceAutoPointsRef.current =
+      rubric?.replace_auto_points ?? !assessmentQuestion.max_manual_points;
+    defaultStartingPointsRef.current = rubric?.starting_points ?? 0;
+    defaultMinPointsRef.current = rubric?.min_points ?? 0;
+    defaultMaxExtraPointsRef.current = rubric?.max_extra_points ?? 0;
+    defaultGraderGuidelinesRef.current = rubric?.grader_guidelines ?? '';
+    setWasUsingRubric(Boolean(rubric));
+    onCancel();
+  };
+
   const submitSettings = async (use_rubric: boolean) => {
     if (use_rubric && !reportInputValidity()) {
       return;
     }
 
-    const payload = {
-      __csrf_token: csrfToken,
-      __action: 'modify_rubric_settings',
-      use_rubric,
-      modified_at: modifiedAt?.toISOString() ?? '',
-      replace_auto_points: replaceAutoPoints,
-      starting_points: startingPoints,
-      min_points: minPoints,
-      max_extra_points: maxExtraPoints,
-      grader_guidelines: graderGuidelines,
-      rubric_items: rubricItems.map((it, idx) => ({
-        id: it.rubric_item.id,
-        order: idx,
-        points: it.rubric_item.points,
-        description: it.rubric_item.description,
-        explanation: it.rubric_item.explanation,
-        grader_note: it.rubric_item.grader_note,
-        always_show_to_students: it.rubric_item.always_show_to_students,
-      })),
-      tag_for_manual_grading: tagForGrading,
-    };
-
-    const res = await fetch(window.location.pathname, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      let data: { err: any };
-      try {
-        data = (await res.json()) ?? {};
-      } catch {
-        data = { err: `Error: ${res.statusText}` };
-      }
-      if (data.err) {
-        return setSettingsError(data.err);
-      }
-    }
-    // Need to handle response separated for assessment question and instance question pages
-    const contentType = res.headers.get('content-type') || '';
-
-    if (contentType.includes('application/json')) {
-      const data = await res.json();
-
-      if (data.submissionPanel && data.submissionId) {
-        const oldSubmission = document.getElementById(`submission-${data.submissionId}`);
-        if (oldSubmission) {
-          const newSubmission = parseHTMLElement(document, data.submissionPanel);
-          oldSubmission.replaceWith(newSubmission);
-          executeScripts(newSubmission);
-          await mathjaxTypeset([newSubmission]);
-        }
-      }
-
-      onRubricSaved?.({ rubric_data: data.rubric_data, modifiedAt: data.modifiedAt });
-
-      // Since we are preserving the temporary rubric item selection in the instance question page, the page is not refreshed
-      // after saving. Suppose we start with setting A, and update it to B and save it. Ideally we would expect a "Discard changes"
-      // to reset to B instead of A. We are updating the default values with B so "Discard changes" would reset correctly.
-      const rubricData = data.rubric_data as RubricData | null;
-      const rubric = rubricData?.rubric ?? null;
-      const rubricItemsWithSelectionCount = rubricData?.rubric_items ?? [];
-      const rubricItemsWithDisagreementCount = data.aiGradingStats?.rubric_stats ?? {};
-      const rubricItemDataMerged = rubricItemsWithSelectionCount.map((item) => ({
-        ...item,
-        disagreement_count:
-          item.rubric_item.id in rubricItemsWithDisagreementCount
-            ? rubricItemsWithDisagreementCount[item.rubric_item.id]
-            : null,
-      }));
-
-      defaultRubricItemsRef.current = rubricItemDataMerged;
-      defaultReplaceAutoPointsRef.current =
-        rubric?.replace_auto_points ?? !assessmentQuestion.max_manual_points;
-      defaultStartingPointsRef.current = rubric?.starting_points ?? 0;
-      defaultMinPointsRef.current = rubric?.min_points ?? 0;
-      defaultMaxExtraPointsRef.current = rubric?.max_extra_points ?? 0;
-      defaultGraderGuidelinesRef.current = rubric?.grader_guidelines ?? '';
-      setWasUsingRubric(Boolean(rubric));
-      setModifiedAt(rubric ? new Date(rubric.modified_at) : null);
-      onCancel();
-    } else {
-      window.location.replace(res.url);
+    try {
+      const data = await onSubmitSettings(buildPayload(use_rubric));
+      handleSaveResponse(data);
+    } catch (err: any) {
+      setSettingsError(err?.message ?? 'An error occurred');
     }
   };
 
   return (
     <div id="rubric-editor" className="card overflow-hidden mb-3">
-      <input type="hidden" name="__csrf_token" value={csrfToken} />
-      <input type="hidden" name="__action" value="modify_rubric_settings" />
-      <input type="hidden" name="modified_at" value={modifiedAt?.toISOString() ?? ''} />
-      <input type="hidden" name="starting_points" value={startingPoints} />
-      <input type="hidden" name="max_extra_points" value={maxExtraPoints ?? ''} />
-      <input type="hidden" name="min_points" value={minPoints ?? ''} />
       <div className="card-header collapsible-card-header d-flex align-items-center">
         <h2>Rubric settings</h2>
         <button

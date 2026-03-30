@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
@@ -26,7 +26,10 @@ import {
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
-import { RubricSettings } from '../../../../components/RubricSettings.js';
+import {
+  RubricSettings,
+  type RubricSettingsPayload,
+} from '../../../../components/RubricSettings.js';
 import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
 import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
 import {
@@ -246,6 +249,14 @@ export function AssessmentQuestionTable({
   const [showDeleteAiGradingModal, setShowDeleteAiGradingModal] = useState(false);
   const [showDeleteAiGroupingsModal, setShowDeleteAiGroupingsModal] = useState(false);
   const [rubricSettingsOpen, setRubricSettingsOpen] = useState(false);
+
+  const { mutateAsync: submitRubricSettings } = useMutation(
+    trpc.modifyRubricSettings.mutationOptions(),
+  );
+  const handleSubmitRubricSettings = useCallback(
+    async (payload: RubricSettingsPayload) => submitRubricSettings(payload),
+    [submitRubricSettings],
+  );
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const queryClientInstance = useQueryClient();
@@ -652,7 +663,6 @@ export function AssessmentQuestionTable({
           hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
           assessmentQuestion={assessmentQuestion}
           rubricData={rubricData}
-          csrfToken={csrfToken}
           aiGradingStats={aiGradingStats}
           context={{
             course_short_name: course.short_name,
@@ -661,6 +671,7 @@ export function AssessmentQuestionTable({
             question_qid: questionQid,
           }}
           settingsOpen={rubricSettingsOpen}
+          onSubmitSettings={handleSubmitRubricSettings}
           onToggleSettingsOpen={() => setRubricSettingsOpen((prev) => !prev)}
         />
       </div>

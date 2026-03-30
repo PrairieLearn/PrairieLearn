@@ -4,7 +4,7 @@ import superjson from 'superjson';
 
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-export function createContext({ res }: CreateExpressContextOptions) {
+export function createContext({ req, res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'instructor-instance-question'>;
 
   return {
@@ -19,6 +19,7 @@ export function createContext({ res }: CreateExpressContextOptions) {
     instance_question: locals.instance_question,
     urlPrefix: locals.urlPrefix,
     authz_data: locals.authz_data,
+    session: req.session,
   };
 }
 
@@ -33,6 +34,16 @@ export const requireCourseInstancePermissionView = t.middleware(async (opts) => 
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: 'Access denied (must be a student data viewer)',
+    });
+  }
+  return opts.next();
+});
+
+export const requireCourseInstancePermissionEdit = t.middleware(async (opts) => {
+  if (!opts.ctx.authz_data.has_course_instance_permission_edit) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Access denied (must be a student data editor)',
     });
   }
   return opts.next();

@@ -1,3 +1,4 @@
+import { useMutation } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Dropdown } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
@@ -12,9 +13,11 @@ import {
   getAutoScaleMax,
   getManualScaleMax,
   percentageToPoints,
+  pointsToPercentage,
   roundPoints,
 } from '../../../lib/gradingMath.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
+import { useTRPC } from '../../../trpc/instanceQuestion/context.js';
 
 import { GradingPointsInput, TotalPointsDisplay } from './GradingPointsSection.js';
 import { RubricInputSection } from './RubricInputSection.js';
@@ -27,6 +30,8 @@ interface GradingFormValues {
   adjustPoints: number;
   usePercentage: boolean;
   selectedRubricItemIds: string[];
+  skipGradedSubmissions: boolean;
+  showSubmissionsAssignedToMeOnly: boolean;
 }
 
 export function GradingForm({
@@ -96,6 +101,8 @@ export function GradingForm({
             .filter(([, item]) => item.score)
             .map(([id]) => id)
         : [],
+      skipGradedSubmissions,
+      showSubmissionsAssignedToMeOnly,
     },
   });
 
@@ -118,7 +125,7 @@ export function GradingForm({
   } | null>(selectedInstanceQuestionGroupProp);
 
   const feedbackRef = useRef<HTMLTextAreaElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
 
   // Compute rubric-derived manual points
   const computedManualPoints = run(() => {
@@ -277,6 +284,92 @@ export function GradingForm({
     }
   };
 
+  const trpc = useTRPC();
+  const gradeMutation = useMutation(trpc.manualGrading.addManualGrade.mutationOptions());
+  const skipMutation = useMutation(trpc.manualGrading.nextInstanceQuestion.mutationOptions());
+  const reassignMutation = useMutation(trpc.manualGrading.reassignGrader.mutationOptions());
+
+  const isMutating =
+    gradeMutation.isPending || skipMutation.isPending || reassignMutation.isPending;
+
+  const getPreferences = () => {
+    const values = getValues();
+    return {
+      skipGradedSubmissions: values.skipGradedSubmissions,
+      showSubmissionsAssignedToMeOnly: values.showSubmissionsAssignedToMeOnly,
+    };
+  };
+
+  type GradeAction =
+    | 'add_manual_grade'
+    | 'add_manual_grade_for_instance_question_group_ungraded'
+    | 'add_manual_grade_for_instance_question_group';
+
+  const handleGrade = (action: GradeAction) => {
+    const values = getValues();
+
+    const checkedIssueIds = formRef.current
+      ? Array.from(
+          formRef.current.querySelectorAll<HTMLInputElement>(
+            'input[name="unsafe_issue_ids_close"]:checked',
+          ),
+        ).map((el) => el.value)
+      : [];
+
+    gradeMutation.mutate(
+      {
+        action,
+        submissionId,
+        modifiedAt: new Date(modifiedAt),
+        usePercentage: values.usePercentage,
+        scoreManualPoints: values.usePercentage ? null : roundPoints(effectiveManualPoints),
+        scoreManualPercent: values.usePercentage
+          ? pointsToPercentage(effectiveManualPoints, manualScaleMax)
+          : null,
+        scoreAutoPoints: values.usePercentage ? null : values.autoPoints,
+        scoreAutoPercent: values.usePercentage
+          ? pointsToPercentage(values.autoPoints, autoScaleMax)
+          : null,
+        scoreManualAdjustPoints: rubricData ? values.adjustPoints : null,
+        selectedRubricItemIds: values.selectedRubricItemIds,
+        submissionNote: feedbackRef.current?.value ?? null,
+        issueIdsToClose: checkedIssueIds,
+        ...getPreferences(),
+      },
+      {
+        onSuccess: (result) => {
+          if (result.conflict) {
+            window.location.href =
+              pageUrls.instanceQuestionBaseUrl + `?conflict_grading_job_id=${result.gradingJobId}`;
+            return;
+          }
+          if (result.nextUrl) {
+            window.location.href = result.nextUrl;
+          }
+        },
+      },
+    );
+  };
+
+  const handleSkip = () => {
+    skipMutation.mutate(getPreferences(), {
+      onSuccess: (nextUrl) => {
+        window.location.href = nextUrl;
+      },
+    });
+  };
+
+  const handleReassign = (action: string) => {
+    reassignMutation.mutate(
+      { action, ...getPreferences() },
+      {
+        onSuccess: (nextUrl) => {
+          window.location.href = nextUrl;
+        },
+      },
+    );
+  };
+
   const showSkipGradedSubmissionsButton = !disabled && context === 'main';
   const showAssignedToMeButton = !disabled && context === 'main';
 
@@ -314,26 +407,7 @@ export function GradingForm({
   const hasAutoPoints = maxAutoPoints > 0 || autoPoints > 0;
 
   return (
-    <form
-      ref={formRef}
-      name="manual-grading-form"
-      method="POST"
-      action={pageUrls.instanceQuestionBaseUrl}
-    >
-      <input type="hidden" name="__csrf_token" value={csrfToken} />
-      <input type="hidden" name="modified_at" value={modifiedAt} />
-      <input type="hidden" name="submission_id" value={submissionId} />
-      {/* Hidden inputs for computed values when rubric is active */}
-      {rubricData && (
-        <>
-          <input
-            type="hidden"
-            name="score_manual_points"
-            value={roundPoints(effectiveManualPoints)}
-          />
-          <input type="hidden" name="score_manual_adjust_points" value={adjustPoints} />
-        </>
-      )}
+    <div ref={formRef} data-testid="manual-grading-form">
       <ul className="list-group list-group-flush">
         {maxPoints > 0 && (
           <li className="list-group-item d-flex justify-content-center">
@@ -535,15 +609,14 @@ export function GradingForm({
         <li className="list-group-item d-flex align-items-center justify-content-end flex-wrap gap-2">
           <div>
             <div className="form-check">
-              {showSkipGradedSubmissionsButton ? (
+              {showSkipGradedSubmissionsButton && (
                 <>
                   <input
                     id={`skip_graded_submissions_${context}`}
                     type="checkbox"
                     className="form-check-input"
-                    name="skip_graded_submissions"
-                    value="true"
-                    defaultChecked={skipGradedSubmissions}
+                    checked={watch('skipGradedSubmissions')}
+                    onChange={(e) => setValue('skipGradedSubmissions', e.target.checked)}
                   />
                   <label
                     className="form-check-label"
@@ -552,24 +625,17 @@ export function GradingForm({
                     Skip graded submissions
                   </label>
                 </>
-              ) : (
-                <input
-                  type="hidden"
-                  name="skip_graded_submissions"
-                  value={skipGradedSubmissions ? 'true' : 'false'}
-                />
               )}
             </div>
             <div className="form-check">
-              {showAssignedToMeButton ? (
+              {showAssignedToMeButton && (
                 <>
                   <input
                     id={`show_submissions_assigned_to_me_only_${context}`}
                     type="checkbox"
                     className="form-check-input"
-                    name="show_submissions_assigned_to_me_only"
-                    value="true"
-                    defaultChecked={showSubmissionsAssignedToMeOnly}
+                    checked={watch('showSubmissionsAssignedToMeOnly')}
+                    onChange={(e) => setValue('showSubmissionsAssignedToMeOnly', e.target.checked)}
                   />
                   <label
                     className="form-check-label"
@@ -578,12 +644,6 @@ export function GradingForm({
                     Skip submissions not assigned to me
                   </label>
                 </>
-              ) : (
-                <input
-                  type="hidden"
-                  name="show_submissions_assigned_to_me_only"
-                  value={showSubmissionsAssignedToMeOnly ? 'true' : 'false'}
-                />
               )}
             </div>
           </div>
@@ -597,37 +657,36 @@ export function GradingForm({
                     style={{ display: 'inline-flex' }}
                   >
                     <button
-                      type="submit"
+                      type="button"
                       className="btn btn-primary"
-                      name="__action"
-                      value="add_manual_grade"
+                      disabled={isMutating}
+                      onClick={() => handleGrade('add_manual_grade')}
                     >
-                      Grade
+                      {isMutating ? 'Grading...' : 'Grade'}
                     </button>
                     <Dropdown.Toggle variant="primary" split />
                     <Dropdown.Menu align="end">
                       <Dropdown.Item
                         as="button"
-                        type="submit"
-                        name="__action"
-                        value="add_manual_grade"
+                        type="button"
+                        onClick={() => handleGrade('add_manual_grade')}
                       >
                         This instance question
                       </Dropdown.Item>
                       <Dropdown.Divider />
                       <Dropdown.Item
                         as="button"
-                        type="submit"
-                        name="__action"
-                        value="add_manual_grade_for_instance_question_group_ungraded"
+                        type="button"
+                        onClick={() =>
+                          handleGrade('add_manual_grade_for_instance_question_group_ungraded')
+                        }
                       >
                         All ungraded instance questions in submission group
                       </Dropdown.Item>
                       <Dropdown.Item
                         as="button"
-                        type="submit"
-                        name="__action"
-                        value="add_manual_grade_for_instance_question_group"
+                        type="button"
+                        onClick={() => handleGrade('add_manual_grade_for_instance_question_group')}
                       >
                         All instance questions in submission group
                       </Dropdown.Item>
@@ -639,21 +698,21 @@ export function GradingForm({
                 )}
                 <button
                   id="grade-button"
-                  type="submit"
+                  type="button"
                   className={`btn btn-primary ${selectedGroup ? 'd-none' : ''}`}
-                  name="__action"
-                  value="add_manual_grade"
+                  disabled={isMutating}
+                  onClick={() => handleGrade('add_manual_grade')}
                 >
-                  Grade
+                  {isMutating ? 'Grading...' : 'Grade'}
                 </button>
               </>
             )}
             <Dropdown as="div" className="btn-group">
               <button
-                type="submit"
+                type="button"
                 className="btn btn-secondary"
-                name="__action"
-                value="next_instance_question"
+                disabled={isMutating}
+                onClick={handleSkip}
               >
                 {skipText}
               </button>
@@ -665,26 +724,23 @@ export function GradingForm({
                       <Dropdown.Item
                         key={grader.id}
                         as="button"
-                        type="submit"
-                        name="__action"
-                        value={`reassign_${grader.id}`}
+                        type="button"
+                        onClick={() => handleReassign(grader.id)}
                       >
                         Assign to: {grader.name} ({grader.uid})
                       </Dropdown.Item>
                     ))}
                     <Dropdown.Item
                       as="button"
-                      type="submit"
-                      name="__action"
-                      value="reassign_nobody"
+                      type="button"
+                      onClick={() => handleReassign('nobody')}
                     >
                       Tag for grading without assigned grader
                     </Dropdown.Item>
                     <Dropdown.Item
                       as="button"
-                      type="submit"
-                      name="__action"
-                      value="reassign_graded"
+                      type="button"
+                      onClick={() => handleReassign('graded')}
                     >
                       Tag as graded (keep current grade)
                     </Dropdown.Item>
@@ -695,6 +751,6 @@ export function GradingForm({
           </span>
         </li>
       </ul>
-    </form>
+    </div>
   );
 }

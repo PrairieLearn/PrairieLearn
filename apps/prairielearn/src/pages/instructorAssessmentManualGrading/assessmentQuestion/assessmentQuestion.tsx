@@ -257,10 +257,11 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
     // TODO: parse req.body with Zod
-    if (req.accepts('html') && req.body.__action !== 'modify_rubric_settings') {
+    if (req.accepts('html')) {
       throw new error.HttpStatusError(406, 'Not Acceptable');
     }
 
+    // TODO: Convert edit_question_points to a tRPC mutation.
     if (req.body.__action === 'edit_question_points') {
       const result = await manualGrading.updateInstanceQuestionScore({
         assessment: res.locals.assessment,
@@ -282,25 +283,6 @@ router.post(
         });
       } else {
         res.sendStatus(204);
-      }
-    } else if (req.body.__action === 'modify_rubric_settings') {
-      try {
-        await manualGrading.updateAssessmentQuestionRubric({
-          assessment: res.locals.assessment,
-          assessment_question_id: res.locals.assessment_question.id,
-          use_rubric: req.body.use_rubric,
-          replace_auto_points: req.body.replace_auto_points,
-          starting_points: req.body.starting_points,
-          min_points: req.body.min_points,
-          max_extra_points: req.body.max_extra_points,
-          rubric_items: req.body.rubric_items,
-          tag_for_manual_grading: req.body.tag_for_manual_grading,
-          grader_guidelines: req.body.grader_guidelines,
-          authn_user_id: res.locals.authn_user.id,
-        });
-        res.redirect(req.originalUrl);
-      } catch (err) {
-        res.status(500).send({ err: String(err) });
       }
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
