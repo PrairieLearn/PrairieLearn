@@ -36,8 +36,8 @@ rm /root/.local/bin/uv # Uninstall the outdated uv binary.
 
 make deps
 
-echo "[session-start] Starting postgres..."
-scripts/start_postgres.sh
+# echo "[session-start] Starting postgres..."
+# scripts/start_postgres.sh
 echo "[session-start] Starting redis..."
 scripts/start_redis.sh
 echo "[session-start] Starting s3rver..."
