@@ -2004,7 +2004,7 @@ function checkInvalidSharedAssessments(courseData: CourseData): void {
       if (containsNonPublicQuestions) {
         infofile.addError(
           assessment,
-          'Assessiment is publicly shared but contains questions which are not publicly shared',
+          'Assessment is publicly shared but contains questions which are not publicly shared',
         );
       }
     }
