@@ -55,15 +55,6 @@ WHERE
 RETURNING
   *;
 
--- BLOCK get_transferable_balance_for_refund
-SELECT
-  credit_transferable_milli_dollars
-FROM
-  course_instances
-WHERE
-  id = $course_instance_id
-FOR UPDATE;
-
 -- BLOCK update_ai_grading_credit_checkout_session_data
 UPDATE ai_grading_credit_checkout_sessions
 SET

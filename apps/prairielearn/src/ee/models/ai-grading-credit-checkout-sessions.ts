@@ -1,5 +1,4 @@
 import type Stripe from 'stripe';
-import { z } from 'zod';
 
 import {
   execute,
@@ -13,7 +12,10 @@ import {
   type AiGradingCreditCheckoutSession,
   AiGradingCreditCheckoutSessionSchema,
 } from '../../lib/db-types.js';
-import { adjustCreditPool } from '../../models/ai-grading-credit-pool.js';
+import {
+  adjustCreditPool,
+  selectCreditPoolForUpdate,
+} from '../../models/ai-grading-credit-pool.js';
 import { insertAuditEvent } from '../../models/audit-event.js';
 import { getStripeClient } from '../lib/billing/stripe.js';
 
@@ -92,6 +94,9 @@ export async function processCreditPurchase({
   stripeSession: Stripe.Checkout.Session;
 }): Promise<void> {
   await runInTransactionAsync(async () => {
+    // Keep lock order parent -> child to avoid deadlocks with FK cascade paths.
+    await selectCreditPoolForUpdate(localSession.course_instance_id);
+
     const claimed = await markCheckoutSessionCompleted(stripeSession.id);
     if (!claimed) return;
 
@@ -178,6 +183,9 @@ export async function refundCreditPurchase({
   await stripe.refunds.create({ payment_intent: paymentIntentId }, { idempotencyKey });
 
   await runInTransactionAsync(async () => {
+    // Keep lock order parent -> child to avoid deadlocks with FK cascade paths.
+    const pool = await selectCreditPoolForUpdate(session.course_instance_id);
+
     const marked = await queryOptionalRow(
       sql.mark_ai_grading_credit_checkout_session_refunded,
       { id: checkout_session_id },
@@ -188,11 +196,6 @@ export async function refundCreditPurchase({
     }
 
     // Cap the deduction at the available transferable balance so it never goes negative.
-    const pool = await queryRow(
-      sql.get_transferable_balance_for_refund,
-      { course_instance_id: session.course_instance_id },
-      z.object({ credit_transferable_milli_dollars: z.coerce.number() }),
-    );
     const deductAmount = Math.min(
       session.amount_milli_dollars,
       pool.credit_transferable_milli_dollars,

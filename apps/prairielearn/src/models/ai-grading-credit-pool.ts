@@ -36,7 +36,7 @@ export async function selectCreditPool(course_instance_id: string): Promise<Cred
  * row). We call this immediately before ai_grading_jobs insert so FOR UPDATE is
  * taken first and no lock upgrade cycle is created.
  */
-async function selectCreditPoolForUpdate(course_instance_id: string): Promise<CreditPool> {
+export async function selectCreditPoolForUpdate(course_instance_id: string): Promise<CreditPool> {
   return await queryRow(
     sql.select_credit_pool_for_update,
     { course_instance_id },
