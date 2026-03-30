@@ -1,4 +1,3 @@
-import { createTRPCClient, httpLink } from '@trpc/client';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import superjson from 'superjson';
@@ -7,7 +6,6 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { b64EncodeUnicode } from '../lib/base64-util.js';
-import { getAssessmentQuestionTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { InstanceQuestionSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
@@ -15,7 +13,7 @@ import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
-import type { AssessmentQuestionRouter } from '../trpc/assessmentQuestion/trpc.js';
+import { createAssessmentQuestionTrpcClient } from '../trpc/assessmentQuestion/client.js';
 
 import {
   type User,
@@ -166,19 +164,13 @@ async function createTrpcClient(assessmentQuestionUrl: string) {
   );
   if (!match) throw new Error(`Cannot parse assessment question URL: ${assessmentQuestionUrl}`);
   const [, courseInstanceId, assessmentId, assessmentQuestionId] = match;
-  const trpcUrl = `${pageUrl.origin}${getAssessmentQuestionTrpcUrl({ courseInstanceId, assessmentId, assessmentQuestionId })}`;
 
-  return createTRPCClient<AssessmentQuestionRouter>({
-    links: [
-      httpLink({
-        url: trpcUrl,
-        headers: {
-          'X-TRPC': 'true',
-          'X-CSRF-Token': trpcCsrfToken,
-        },
-        transformer: superjson,
-      }),
-    ],
+  return createAssessmentQuestionTrpcClient({
+    csrfToken: trpcCsrfToken,
+    courseInstanceId,
+    assessmentId,
+    assessmentQuestionId,
+    urlBase: pageUrl.origin,
   });
 }
 
