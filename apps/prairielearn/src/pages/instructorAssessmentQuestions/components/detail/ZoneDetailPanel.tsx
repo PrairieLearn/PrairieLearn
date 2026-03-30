@@ -2,7 +2,10 @@ import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
-import { EnumAssessmentToolSchema } from '../../../../schemas/infoAssessment.js';
+import {
+  type EnumAssessmentTool,
+  EnumAssessmentToolSchema,
+} from '../../../../schemas/infoAssessment.js';
 import type { DetailState, ZoneAssessmentForm } from '../../types.js';
 import {
   coerceToBoolean,
@@ -25,7 +28,9 @@ import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
 import { InheritableCheckboxField } from './InheritableCheckboxField.js';
 
-interface ZoneFormData {
+type ToolFormFields = Record<`tool_${EnumAssessmentTool}`, boolean | undefined>;
+
+interface ZoneFormData extends ToolFormFields {
   title: string;
   maxPoints?: number;
   numberChoose?: number;
@@ -35,7 +40,6 @@ interface ZoneFormData {
   advanceScorePerc?: number;
   gradeRateMinutes?: number;
   allowRealTimeGrading?: boolean;
-  [toolField: `tool_${string}`]: boolean | undefined;
 }
 
 export function ZoneDetailPanel({
@@ -71,6 +75,7 @@ export function ZoneDetailPanel({
         zone.tools?.[tool] != null ? zone.tools[tool].enabled : undefined,
       ]),
     ),
+    tool_calculator: zone.tools?.calculator?.enabled,
   };
 
   const {
