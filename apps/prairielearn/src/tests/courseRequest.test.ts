@@ -14,17 +14,19 @@ const baseUrl = `${siteUrl}/pl`;
 const coursesAdminUrl = `${baseUrl}/administrator/courses`;
 const courseRequestsAdminUrl = `${baseUrl}/administrator/courseRequests`;
 
-const trpcCsrfToken = generatePrefixCsrfToken(
-  { url: '/pl/administrator/trpc', authn_user_id: '1' },
-  config.secretKey,
-);
-const trpcClient = createAdministratorTrpcClient({
-  csrfToken: trpcCsrfToken,
-  urlPrefix: baseUrl,
-});
-
 describe('Course requests', { timeout: 60_000 }, function () {
+  let trpcClient: ReturnType<typeof createAdministratorTrpcClient>;
+
   beforeAll(helperServer.before());
+  beforeAll(() => {
+    trpcClient = createAdministratorTrpcClient({
+      csrfToken: generatePrefixCsrfToken(
+        { url: '/pl/administrator/trpc', authn_user_id: '1' },
+        config.secretKey,
+      ),
+      urlBase: siteUrl,
+    });
+  });
   afterAll(helperServer.after);
 
   let courseRequestId: string;

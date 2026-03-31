@@ -547,9 +547,16 @@ export const ConfigSchema = z.object({
     ),
   features: z.record(z.string(), z.boolean()).default({}),
   /**
-   * Determines if QIDs of shared questions being imported should be validated.
-   * Turn off in dev mode to enable successful syncs when you don't have access
-   * to imported questions. Must be true in production for data integrity.
+   * Determines if sharing validation should be performed. In essence checks
+   * that:
+   * - courses that use sharing configuration have the sharing feature enabled.
+   * - imported questions actually exist in the system.
+   * - shared questions are not renamed, deleted or have their sharing
+   *   configuration changed in a way that would break sharing.
+   *
+   * Turned off in dev mode by default to enable successful syncs where imported
+   * questions or sharing names may not exist in the local database. Must be
+   * true in production for data integrity.
    */
   checkSharingOnSync: z.boolean().default(false),
   /**

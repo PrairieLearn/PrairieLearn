@@ -13,6 +13,7 @@ import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
 import { useTRPC } from '../../../trpc/courseInstance/context.js';
+import type { StudentLabelError } from '../../../trpc/courseInstance/student-labels.js';
 import { MAX_LABEL_UIDS } from '../instructorStudentsLabels.types.js';
 
 export type LabelModifyModalData =
@@ -125,7 +126,7 @@ export function LabelModifyModal({
     });
   };
 
-  const appError = getAppError<'studentLabels.upsert'>(saveMutation.error);
+  const appError = getAppError<StudentLabelError['Upsert']>(saveMutation.error);
 
   function renderMutationError() {
     if (!appError) return null;
@@ -146,7 +147,7 @@ export function LabelModifyModal({
             </a>
           </Alert>
         );
-      case 'UNKNOWN':
+      case 'BASIC':
         return (
           <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
             {appError.message}
