@@ -183,10 +183,10 @@ describe('Instructor student labels page', () => {
       assert.fail('Expected error for duplicate name');
     } catch (err) {
       assert.instanceOf(err, TRPCClientError);
-      const data = (err as TRPCClientError<CourseInstanceRouter>).data as
-        | { appError?: { code: string } }
-        | undefined;
-      assert.equal(data?.appError?.code, 'LABEL_NAME_TAKEN');
+      assert.include(
+        (err as TRPCClientError<CourseInstanceRouter>).message,
+        'A label with this name already exists',
+      );
     }
 
     try {
@@ -326,10 +326,10 @@ describe('Instructor student labels page', () => {
       assert.fail('Expected error for duplicate name');
     } catch (err) {
       assert.instanceOf(err, TRPCClientError);
-      const data = (err as TRPCClientError<CourseInstanceRouter>).data as
-        | { appError?: { code: string } }
-        | undefined;
-      assert.equal(data?.appError?.code, 'LABEL_NAME_TAKEN');
+      assert.include(
+        (err as TRPCClientError<CourseInstanceRouter>).message,
+        'A label with this name already exists',
+      );
     }
   });
 
