@@ -109,7 +109,7 @@ export function ZoneDetailPanel({
 
   const handleSave = useCallback(
     (data: ZoneFormData) => {
-      const tools: Record<string, { enabled: boolean }> = {};
+      const tools: Partial<Record<EnumAssessmentTool, { enabled: boolean }>> = {};
       let hasToolOverride = false;
       for (const tool of EnumAssessmentToolSchema.options) {
         const value = coerceToBoolean(data[`tool_${tool}`]);
