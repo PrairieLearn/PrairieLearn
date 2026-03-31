@@ -14,6 +14,7 @@ import { type TRPCDefaultErrorShape, TRPCError, type TRPC_ERROR_CODE_KEY } from 
 
 export interface AppErrorBase {
   code: string;
+  message: string;
 }
 
 type Values<T> = T[keyof T];
@@ -78,7 +79,7 @@ class AppError extends TRPCError {
     public readonly meta: AppErrorBase,
     trpcCode: TRPC_ERROR_CODE_KEY = 'BAD_REQUEST',
   ) {
-    super({ code: trpcCode, message: meta.code });
+    super({ code: trpcCode, message: meta.message });
   }
 }
 
@@ -90,15 +91,17 @@ class AppError extends TRPCError {
  *
  * @example
  * export interface WidgetError {
- *   Update: { code: 'NAME_TAKEN'; name: string } | { code: 'SYNC_FAILED'; id: string };
- *   Delete: { code: 'SYNC_FAILED'; id: string };
+ *   Update:
+ *     | { code: 'NAME_TAKEN'; message: string; name: string }
+ *     | { code: 'SYNC_FAILED'; message: string; id: string };
+ *   Delete: { code: 'SYNC_FAILED'; message: string; id: string };
  * }
  *
  * // Procedure-specific: all errors for Update
- * throwAppError<WidgetError['Update']>({ code: 'NAME_TAKEN', name });
+ * throwAppError<WidgetError['Update']>({ code: 'NAME_TAKEN', message: 'A widget with this name already exists', name });
  *
  * // Error map: only errors shared across ALL procedures (SYNC_FAILED)
- * throwAppError<WidgetError>({ code: 'SYNC_FAILED', id });
+ * throwAppError<WidgetError>({ code: 'SYNC_FAILED', message: 'Failed to sync widget', id });
  */
 export function throwAppError<T>(
   meta: ResolveError<T>,

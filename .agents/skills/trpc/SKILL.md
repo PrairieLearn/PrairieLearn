@@ -60,7 +60,8 @@ The CSRF token is generated server-side with `generatePrefixCsrfToken` using the
 
 - **Default to plain `TRPCError`** with a human-readable message. Use `throwAppError` only when the client needs structured metadata or must take structurally different actions per error code.
 - **Every subrouter** exports an error interface (empty if no typed errors). See `trpc/courseInstance/student-labels.ts` (typed) and `trpc/administrator/courses.ts` (empty).
-- **Client must always** use `getAppError<ErrorType>(mutation.error)` — never access raw errors directly. Always handle the `'BASIC'` fallback code. Never pass raw mutation/query errors as props; pass the resolved `AppError<T>` instead.
+- **Every error variant must include `message: string`** — a human-readable message for display to users. The `message` is part of the error meta (defined in `AppErrorBase`), not a separate parameter.
+- **Client must always** use `getAppError<ErrorType>(mutation.error)` — never access raw errors directly. Always handle the `'UNKNOWN'` fallback code (for untyped errors). Never pass raw mutation/query errors as props; pass the resolved `AppError<T>` instead.
 - See `pages/instructorStudentsLabels/components/LabelModifyModal.tsx` (typed client) and `pages/administratorCourses/administratorCourses.html.tsx` (plain client) for examples.
 
 ## Testing

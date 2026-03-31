@@ -40,9 +40,9 @@ import {
 
 export interface StudentLabelError {
   Upsert:
-    | { code: 'LABEL_NAME_TAKEN'; name: string }
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
-  Destroy: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+    | { code: 'LABEL_NAME_TAKEN'; message: string; name: string }
+    | { code: 'SYNC_JOB_FAILED'; message: string; jobSequenceId: string };
+  Destroy: { code: 'SYNC_JOB_FAILED'; message: string; jobSequenceId: string };
 }
 
 function getCourseInstanceContainer(coursePath: string, shortName: string) {
@@ -157,12 +157,20 @@ const upsert = t.procedure
             });
           }
           if (studentLabels.some((l, i) => i !== labelIndex && l.name === name)) {
-            throwAppError<StudentLabelError['Upsert']>({ code: 'LABEL_NAME_TAKEN', name });
+            throwAppError<StudentLabelError['Upsert']>({
+              code: 'LABEL_NAME_TAKEN',
+              message: 'A label with this name already exists',
+              name,
+            });
           }
           studentLabels[labelIndex] = { uuid: studentLabels[labelIndex].uuid, name, color };
         } else {
           if (studentLabels.some((l) => l.name === name)) {
-            throwAppError<StudentLabelError['Upsert']>({ code: 'LABEL_NAME_TAKEN', name });
+            throwAppError<StudentLabelError['Upsert']>({
+              code: 'LABEL_NAME_TAKEN',
+              message: 'A label with this name already exists',
+              name,
+            });
           }
           studentLabels.push({ uuid: labelUuid, name, color });
         }
@@ -185,6 +193,7 @@ const upsert = t.procedure
     if (!saveResult.success) {
       throwAppError<StudentLabelError>({
         code: 'SYNC_JOB_FAILED',
+        message: saveResult.error,
         jobSequenceId: saveResult.jobSequenceId,
       });
     }
@@ -303,6 +312,7 @@ const destroy = t.procedure
     if (!saveResult.success) {
       throwAppError<StudentLabelError>({
         code: 'SYNC_JOB_FAILED',
+        message: saveResult.error,
         jobSequenceId: saveResult.jobSequenceId,
       });
     }
