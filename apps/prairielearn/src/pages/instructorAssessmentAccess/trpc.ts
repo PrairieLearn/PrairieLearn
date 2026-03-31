@@ -1,14 +1,17 @@
-import crypto from 'node:crypto';
+import * as path from 'path';
 
 import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
-import stableStringify from 'fast-json-stable-stringify';
+import fs from 'fs-extra';
 import superjson from 'superjson';
 import { z } from 'zod';
 
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
+import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
+import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import {
   type EnrollmentAccessControlRuleData,
@@ -28,7 +31,7 @@ import {
   MAX_ACCESS_CONTROL_RULES,
   MAX_ENROLLMENT_RULES,
 } from '../../schemas/accessControl.js';
-import { syncAccessControl, validateRule } from '../../sync/fromDisk/accessControl.js';
+import { validateRule } from '../../sync/fromDisk/accessControl.js';
 
 import { fetchAllAccessControlRules } from './rules.js';
 
@@ -41,6 +44,7 @@ export function createContext({ res }: CreateExpressContextOptions) {
     assessment: locals.assessment,
     authz_data: locals.authz_data,
     authn_user: locals.authn_user,
+    user: locals.user,
   };
 }
 
@@ -188,6 +192,61 @@ const EnrollmentRuleInputSchema = z.object({
   ruleJson: AccessControlJsonInputSchema,
 });
 
+function isNonEmptyObject(value: unknown): boolean {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.keys(value).length > 0
+  );
+}
+
+/**
+ * Cleans access control rules for writing to infoAssessment.json on disk.
+ * Removes empty objects/arrays and omits listBeforeRelease: false on the main rule.
+ */
+export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): object[] {
+  return rules.map((rule, index) => {
+    const clean: Record<string, unknown> = {};
+
+    if (rule.labels && rule.labels.length > 0) {
+      clean.labels = rule.labels;
+    }
+
+    if (index === 0 && rule.listBeforeRelease === true) {
+      clean.listBeforeRelease = true;
+    }
+
+    if (isNonEmptyObject(rule.dateControl)) {
+      clean.dateControl = rule.dateControl;
+    }
+
+    if (rule.integrations && isNonEmptyObject(rule.integrations)) {
+      clean.integrations = rule.integrations;
+    }
+
+    if (isNonEmptyObject(rule.afterComplete)) {
+      clean.afterComplete = rule.afterComplete;
+    }
+
+    return clean;
+  });
+}
+
+/**
+ * Reads infoAssessment.json from disk, merges in the given access control
+ * rules, and returns the formatted JSON string ready for FileModifyEditor.
+ */
+async function buildAccessControlFileContents(
+  assessmentPath: string,
+  rules: AccessControlJson[],
+): Promise<string> {
+  const diskContents = await fs.readFile(assessmentPath, 'utf8');
+  const assessmentJson = JSON.parse(diskContents);
+  assessmentJson.accessControl = cleanAccessControlRulesForDisk(rules);
+  return formatJsonWithPrettier(JSON.stringify(assessmentJson));
+}
+
 const saveAllRules = t.procedure
   .use(requireEnhancedAccessControl)
   .use(requireCourseInstancePermissionEdit)
@@ -200,89 +259,125 @@ const saveAllRules = t.procedure
   )
   .mutation(async (opts) => {
     const { rules, enrollmentRules, origHash } = opts.input;
-    const courseInstanceId = opts.ctx.course_instance.id;
-    const assessmentId = opts.ctx.assessment.id;
 
-    return runInTransactionAsync(async () => {
-      await lockAssessment(opts.ctx.assessment);
-      const currentRules = await fetchAllAccessControlRules(opts.ctx.assessment);
-      const currentHash = computeHash(currentRules);
+    const enhancedEnabled = await features.enabled('enhanced-access-control', {
+      institution_id: opts.ctx.course.institution_id,
+      course_id: opts.ctx.course.id,
+      course_instance_id: opts.ctx.course_instance.id,
+    });
+    if (!enhancedEnabled) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Enhanced access control is not enabled for this course.',
+      });
+    }
 
-      if (currentHash !== origHash) {
+    // Validate main rules before writing to disk
+    const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
+    for (const [index, rule] of rulesToSync.entries()) {
+      const targetType = index === 0 ? 'none' : 'student_label';
+      const ruleError = validateRule(rule, targetType);
+      if (ruleError) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
+      }
+    }
+
+    // Build the updated file contents and write to disk via FileModifyEditor
+    // (handles git commit + sync to DB).
+    const assessmentDir = path.join(
+      opts.ctx.course.path,
+      'courseInstances',
+      opts.ctx.course_instance.short_name!,
+      'assessments',
+      opts.ctx.assessment.tid!,
+    );
+    const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
+    const formattedJson = await buildAccessControlFileContents(assessmentPath, rulesToSync);
+
+    const editor = new FileModifyEditor({
+      locals: {
+        authz_data: opts.ctx.authz_data,
+        course: opts.ctx.course,
+        user: opts.ctx.user,
+      },
+      container: {
+        rootPath: assessmentDir,
+        invalidRootPaths: [],
+      },
+      filePath: assessmentPath,
+      editContents: b64EncodeUnicode(formattedJson),
+      origHash,
+    });
+
+    const serverJob = await editor.prepareServerJob();
+    try {
+      await editor.executeWithServerJob(serverJob);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('Another user made changes')) {
         throw new TRPCError({
           code: 'CONFLICT',
           message:
             'The access control rules have been modified since you loaded this page. Please refresh and try again.',
         });
       }
+      throw err;
+    }
 
-      const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
-      for (const [index, rule] of rulesToSync.entries()) {
-        const targetType = index === 0 ? 'none' : 'student_label';
-        const ruleError = validateRule(rule, targetType);
-        if (ruleError) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
-        }
-      }
-      await syncAccessControl(courseInstanceId, assessmentId, rulesToSync);
+    // Enrollment rules continue writing directly to DB (they are per-student
+    // overrides, not stored in infoAssessment.json).
+    if (enrollmentRules !== undefined) {
+      await runInTransactionAsync(async () => {
+        await lockAssessment(opts.ctx.assessment);
 
-      // Only process enrollment rule deletions when enrollmentRules is explicitly
-      // provided. When omitted, leave existing enrollment rules untouched.
-      if (enrollmentRules !== undefined) {
+        // Determine which enrollment rules to delete
+        const currentRules = await fetchAllAccessControlRules(opts.ctx.assessment);
         const existingIds = new Set(
           currentRules.filter((r) => r.ruleType === 'enrollment').map((r) => r.id),
         );
         const submittedIds = new Set(enrollmentRules.filter((r) => r.id).map((r) => r.id));
         const idsToDelete = [...existingIds].filter((id) => !submittedIds.has(id));
         await deleteEnrollmentAccessControlsByIds(idsToDelete, opts.ctx.assessment);
-      }
 
-      if (enrollmentRules !== undefined && enrollmentRules.length > 0) {
-        const allEnrollmentIds = new Set(enrollmentRules.flatMap((r) => r.enrollmentIds));
-        if (allEnrollmentIds.size > 0) {
-          const validCount = await validateEnrollmentIdsInCourseInstance(
-            allEnrollmentIds,
-            opts.ctx.course_instance,
-          );
-          if (validCount !== allEnrollmentIds.size) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: 'One or more enrollment IDs do not belong to this course instance.',
-            });
+        if (enrollmentRules.length > 0) {
+          const allEnrollmentIds = new Set(enrollmentRules.flatMap((r) => r.enrollmentIds));
+          if (allEnrollmentIds.size > 0) {
+            const validCount = await validateEnrollmentIdsInCourseInstance(
+              allEnrollmentIds,
+              opts.ctx.course_instance,
+            );
+            if (validCount !== allEnrollmentIds.size) {
+              throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'One or more enrollment IDs do not belong to this course instance.',
+              });
+            }
+          }
+
+          // TODO: Add audit logging for enrollment rule changes. Label/main rules
+          // are tracked in git; only enrollment rules need separate audit logs.
+          for (const enrollmentRule of enrollmentRules) {
+            const ruleError = validateRule(enrollmentRule.ruleJson, 'enrollment');
+            if (ruleError) {
+              throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
+            }
+
+            const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
+            if (enrollmentRule.id) {
+              ruleData.id = enrollmentRule.id;
+            }
+            await syncEnrollmentAccessControl(
+              opts.ctx.assessment,
+              ruleData,
+              enrollmentRule.enrollmentIds,
+            );
           }
         }
+      });
+    }
 
-        for (const enrollmentRule of enrollmentRules) {
-          const ruleError = validateRule(enrollmentRule.ruleJson, 'enrollment');
-          if (ruleError) {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
-          }
-
-          const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
-          if (enrollmentRule.id) {
-            ruleData.id = enrollmentRule.id;
-          }
-          await syncEnrollmentAccessControl(
-            opts.ctx.assessment,
-            ruleData,
-            enrollmentRule.enrollmentIds,
-          );
-        }
-      }
-
-      // TODO: Add audit logging for enrollment rule changes. Label/main rules
-      // are tracked in git; only enrollment rules need separate audit logs.
-
-      const newRules = await fetchAllAccessControlRules(opts.ctx.assessment);
-      const newHash = computeHash(newRules);
-
-      return { newHash };
-    });
+    const newHash = (await getOriginalHash(assessmentPath)) ?? '';
+    return { newHash };
   });
-
-export function computeHash(rules: object[]): string {
-  return crypto.createHash('sha256').update(stableStringify(rules)).digest('hex');
-}
 
 export const accessControlRouter = t.router({
   students,

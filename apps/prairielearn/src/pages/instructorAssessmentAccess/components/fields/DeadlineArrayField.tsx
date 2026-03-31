@@ -14,15 +14,6 @@ import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
 import { getDeadlineRange, getUserTimezone } from '../utils/dateUtils.js';
 
-interface DeadlineArrayInputProps {
-  type: 'early' | 'late';
-  fieldArrayName: string;
-  idPrefix: string;
-  releaseDate: string | null | undefined;
-  dueDate: string | null | undefined;
-  deadlines: DeadlineEntry[];
-}
-
 function DeadlineArrayInput({
   type,
   fieldArrayName,
@@ -30,7 +21,14 @@ function DeadlineArrayInput({
   releaseDate,
   dueDate,
   deadlines,
-}: DeadlineArrayInputProps) {
+}: {
+  type: 'early' | 'late';
+  fieldArrayName: string;
+  idPrefix: string;
+  releaseDate: string | null | undefined;
+  dueDate: string | null | undefined;
+  deadlines: DeadlineEntry[];
+}) {
   const { register } = useFormContext<AccessControlFormData>();
   const userTimezone = getUserTimezone();
   const isEarly = type === 'early';
@@ -239,11 +237,7 @@ function DeadlineArrayInput({
   );
 }
 
-interface MainDeadlineArrayFieldProps {
-  type: 'early' | 'late';
-}
-
-export function MainDeadlineArrayField({ type }: MainDeadlineArrayFieldProps) {
+export function MainDeadlineArrayField({ type }: { type: 'early' | 'late' }) {
   const isEarly = type === 'early';
   const fieldName = isEarly ? 'mainRule.earlyDeadlines' : 'mainRule.lateDeadlines';
 
@@ -275,12 +269,13 @@ export function MainDeadlineArrayField({ type }: MainDeadlineArrayFieldProps) {
   );
 }
 
-interface OverrideDeadlineArrayFieldProps {
+export function OverrideDeadlineArrayField({
+  index,
+  type,
+}: {
   index: number;
   type: 'early' | 'late';
-}
-
-export function OverrideDeadlineArrayField({ index, type }: OverrideDeadlineArrayFieldProps) {
+}) {
   const isEarly = type === 'early';
   const fieldPath = isEarly ? 'earlyDeadlines' : 'lateDeadlines';
   const label = isEarly ? 'Early deadlines' : 'Late deadlines';

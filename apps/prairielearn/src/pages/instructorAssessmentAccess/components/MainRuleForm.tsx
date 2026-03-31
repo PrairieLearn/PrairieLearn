@@ -8,11 +8,11 @@ import { MainDateControlForm } from './DateControlForm.js';
 import { IntegrationsSection } from './IntegrationsSection.js';
 import type { AccessControlFormData } from './types.js';
 
-interface MainRuleFormProps {
+export function MainRuleForm({
+  courseInstance: _courseInstance,
+}: {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
-}
-
-export function MainRuleForm({ courseInstance: _courseInstance }: MainRuleFormProps) {
+}) {
   const { register } = useFormContext<AccessControlFormData>();
 
   const releaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
