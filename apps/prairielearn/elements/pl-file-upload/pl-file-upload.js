@@ -1,3 +1,5 @@
+const reject = require('lodash/reject');
+
 (() => {
   function escapeFileName(name) {
     return name
@@ -207,8 +209,10 @@
       this.pendingFileDownloads.delete(name);
       this.failedFileDownloads.delete(name);
 
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onabort = reject;
         reader.onload = (e) => {
           const dataUrl = e.target.result;
 
