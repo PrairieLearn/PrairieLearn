@@ -156,10 +156,10 @@ The same logic applies to `hideScore` / `showScoreAgainDate` (there is no "hide 
 
 ### Other fields
 
-| Field               | Type    | Default | Description                                                                                                                           |
-| ------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`              | string  |         | A descriptive name for the rule (for display in the UI).                                                                              |
-| `listBeforeRelease` | boolean | `false` | Defaults only. If `true`, the assessment title is shown on the Assessments page before the release date, but students cannot open it. |
+| Field               | Type    | Default | Description                                                                                                                                                      |
+| ------------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`              | string  |         | A descriptive name for the rule (for display in the UI).                                                                                                         |
+| `listBeforeRelease` | boolean | `false` | Only valid on the first entry (defaults). If `true`, the assessment title is shown on the Assessments page before the release date, but students cannot open it. |
 
 ## Student labels and overrides
 
