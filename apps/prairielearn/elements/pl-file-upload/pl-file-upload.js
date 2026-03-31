@@ -108,7 +108,7 @@
             // the result.
             if (this.pendingFileDownloads.has(file)) {
               const blob = await res.blob();
-              this.addFileFromBlob(file, blob.size, blob, true);
+              await this.addFileFromBlob(file, blob.size, blob, true);
             }
           } catch (e) {
             console.error(e);
@@ -130,7 +130,7 @@
             input.multiple = true;
             input.classList.add('d-none');
             input.addEventListener('change', () => {
-              this.addFiles(input.files);
+              this.addFiles(input.files); // no await
             });
             dropzone.append(input);
           }
@@ -160,7 +160,7 @@
           dropzone.classList.remove('dz-drag-hover');
           if (event.dataTransfer?.types.includes('Files')) {
             event.preventDefault();
-            this.addFiles(event.dataTransfer.files);
+            this.addFiles(event.dataTransfer.files); // no await
           }
         });
       });
@@ -168,7 +168,7 @@
       this.renderFileList();
     }
 
-    addFiles(/** @type {FileList} */ fileList) {
+    async addFiles(/** @type {FileList} */ fileList) {
       for (const file of fileList) {
         // fuzzy case match
         const fileNameLowerCase = file.name.toLowerCase();
@@ -191,7 +191,7 @@
           continue;
         }
 
-        this.addFileFromBlob(acceptedFileName, file.size, file, false);
+        await this.addFileFromBlob(acceptedFileName, file.size, file, false);
       }
     }
 
@@ -207,40 +207,44 @@
       this.pendingFileDownloads.delete(name);
       this.failedFileDownloads.delete(name);
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target.result;
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const dataUrl = e.target.result;
 
-        // Extract base64 data from the data URL. The data URL format is
-        // "data:<mime>;base64,<data>". For empty files, some browsers (e.g.
-        // Chrome) return just "data:" with no comma, while others (e.g.
-        // Firefox) return "data:...;base64," with an empty string after
-        // the comma. We check for both cases.
-        const commaSplitIdx = dataUrl.indexOf(',');
-        const base64FileData = commaSplitIdx === -1 ? '' : dataUrl.slice(commaSplitIdx + 1);
+          // Extract base64 data from the data URL. The data URL format is
+          // "data:<mime>;base64,<data>". For empty files, some browsers (e.g.
+          // Chrome) return just "data:" with no comma, while others (e.g.
+          // Firefox) return "data:...;base64," with an empty string after
+          // the comma. We check for both cases.
+          const commaSplitIdx = dataUrl.indexOf(',');
+          const base64FileData = commaSplitIdx === -1 ? '' : dataUrl.slice(commaSplitIdx + 1);
 
-        if (!base64FileData) {
-          this.addWarningMessage(
-            `<strong>${escapeFileName(name)}</strong> is empty, ignoring file.`,
-          );
+          if (!base64FileData) {
+            this.addWarningMessage(
+              `<strong>${escapeFileName(name)}</strong> is empty, ignoring file.`,
+            );
+            this.renderFileList();
+            resolve();
+            return;
+          }
+
+          this.saveSubmittedFile(name, size, isFromDownload ? null : new Date(), base64FileData);
+          this.refreshRequiredRegex();
           this.renderFileList();
-          return;
-        }
 
-        this.saveSubmittedFile(name, size, isFromDownload ? null : new Date(), base64FileData);
-        this.refreshRequiredRegex();
-        this.renderFileList();
+          if (!isFromDownload) {
+            // Ensure that students see a prompt if they try to navigate away
+            // from the page without saving the form. This check is initially
+            // disabled because we don't want students to see the prompt if they
+            // haven't actually made any changes.
+            this.element.find('input[type="hidden"]').removeAttr('data-disable-unload-check');
+          }
+          resolve();
+        };
 
-        if (!isFromDownload) {
-          // Ensure that students see a prompt if they try to navigate away
-          // from the page without saving the form. This check is initially
-          // disabled because we don't want students to see the prompt if they
-          // haven't actually made any changes.
-          this.element.find('input[type="hidden"]').removeAttr('data-disable-unload-check');
-        }
-      };
-
-      reader.readAsDataURL(blob);
+        reader.readAsDataURL(blob);
+      });
     }
 
     /**
