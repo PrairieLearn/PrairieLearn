@@ -353,6 +353,8 @@ const saveAllRules = t.procedure
             }
           }
 
+          // TODO: Add audit logging for enrollment rule changes. Label/main rules
+          // are tracked in git; only enrollment rules need separate audit logs.
           for (const enrollmentRule of enrollmentRules) {
             const ruleError = validateRule(enrollmentRule.ruleJson, 'enrollment');
             if (ruleError) {
