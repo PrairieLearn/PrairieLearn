@@ -123,16 +123,18 @@
     initializeTemplate() {
       this.element.find('.upload-dropzone').each((_, /** @type {HTMLElement} */ dropzone) => {
         dropzone.addEventListener('click', () => {
-          const input =
-            dropzone.querySelector('input[type="file"]') || document.createElement('input');
-          input.type = 'file';
-          input.value = null; // Clear the input so that the change event will fire even if the same file is selected
-          input.multiple = true;
-          input.classList.add('d-none');
-          input.addEventListener('change', () => {
-            this.addFiles(input.files);
-          });
-          dropzone.append(input);
+          let input = dropzone.querySelector('input[type="file"]');
+          if (input == null) {
+            input = document.createElement('input');
+            input.type = 'file';
+            input.value = null; // Clear the input so that the change event will fire even if the same file is selected
+            input.multiple = true;
+            input.classList.add('d-none');
+            input.addEventListener('change', () => {
+              this.addFiles(input.files);
+            });
+            dropzone.append(input);
+          }
           input.click();
         });
 
