@@ -292,20 +292,6 @@ const tdStyle = {
   paddingBottom: '0.5rem',
 };
 
-interface RuleSummaryCardProps {
-  rule: RuleData;
-  isMainRule: boolean;
-  title: string;
-  editUrl?: string;
-  onEdit?: () => void;
-  courseInstanceId: string;
-  displayTimezone: string;
-  errors?: string[];
-  onEditStudentLabels?: () => void;
-  onRemove?: () => void;
-  dragHandleProps?: Record<string, unknown>;
-}
-
 export function RuleSummaryCard({
   rule,
   isMainRule,
@@ -318,7 +304,19 @@ export function RuleSummaryCard({
   errors,
   onEditStudentLabels,
   dragHandleProps,
-}: RuleSummaryCardProps) {
+}: {
+  rule: RuleData;
+  isMainRule: boolean;
+  title: string;
+  editUrl?: string;
+  onEdit?: () => void;
+  courseInstanceId: string;
+  displayTimezone: string;
+  errors?: string[];
+  onEditStudentLabels?: () => void;
+  onRemove?: () => void;
+  dragHandleProps?: Record<string, unknown>;
+}) {
   const effectiveVerbosity: SummaryVerbosity = isMainRule ? 'compact' : 'verbose';
   const summaryItems = generateRuleSummary(rule, effectiveVerbosity);
   const dateTableRows = generateDateTableRows(rule, displayTimezone, effectiveVerbosity);

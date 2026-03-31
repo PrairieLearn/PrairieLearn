@@ -1,11 +1,7 @@
 import { OverrideAfterCompleteForm } from './AfterCompleteForm.js';
 import { OverrideDateControlForm } from './DateControlForm.js';
 
-interface OverrideRuleContentProps {
-  index: number;
-}
-
-export function OverrideRuleContent({ index }: OverrideRuleContentProps) {
+export function OverrideRuleContent({ index }: { index: number }) {
   return (
     <div className="mb-3">
       <OverrideDateControlForm

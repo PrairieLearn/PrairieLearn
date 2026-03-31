@@ -20,17 +20,6 @@ import {
 } from './RuleSummary.js';
 import type { MainRuleData, OverrideData } from './types.js';
 
-interface SortableOverrideCardProps {
-  id: string;
-  override: OverrideData;
-  title: string;
-  courseInstanceId: string;
-  displayTimezone: string;
-  errors?: string[];
-  onEdit: () => void;
-  onRemove: () => void;
-}
-
 function SortableOverrideCard({
   id,
   override,
@@ -40,7 +29,16 @@ function SortableOverrideCard({
   errors,
   onEdit,
   onRemove,
-}: SortableOverrideCardProps) {
+}: {
+  id: string;
+  override: OverrideData;
+  title: string;
+  courseInstanceId: string;
+  displayTimezone: string;
+  errors?: string[];
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
   });
@@ -108,7 +106,20 @@ function MainRuleSummaryContent({
   );
 }
 
-interface AccessControlSummaryProps {
+export function AccessControlSummary({
+  mainRule,
+  overrides,
+  getOverrideName,
+  mainRuleErrors,
+  getOverrideErrors,
+  onAddOverride,
+  onRemoveOverride,
+  onMoveOverride,
+  onEditMainRule,
+  onEditOverride,
+  courseInstanceId,
+  displayTimezone,
+}: {
   mainRule: MainRuleData;
   overrides: OverrideData[];
   /** Get the display name for an override by index */
@@ -125,22 +136,7 @@ interface AccessControlSummaryProps {
   /** Course instance ID for building URLs */
   courseInstanceId: string;
   displayTimezone: string;
-}
-
-export function AccessControlSummary({
-  mainRule,
-  overrides,
-  getOverrideName,
-  mainRuleErrors,
-  getOverrideErrors,
-  onAddOverride,
-  onRemoveOverride,
-  onMoveOverride,
-  onEditMainRule,
-  onEditOverride,
-  courseInstanceId,
-  displayTimezone,
-}: AccessControlSummaryProps) {
+}) {
   const dndId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),

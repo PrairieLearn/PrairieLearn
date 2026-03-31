@@ -6,13 +6,15 @@ import { parseUniqueValuesFromString } from '../../../../lib/string-util.js';
 import { useTRPCClient } from '../../utils/trpc-context.js';
 import type { IndividualTarget } from '../types.js';
 
-interface StudentSearchInputProps {
+export function StudentSearchInput({
+  excludedUids,
+  onSelect,
+  onClose,
+}: {
   excludedUids: Set<string>;
   onSelect: (students: IndividualTarget[]) => void;
   onClose: () => void;
-}
-
-export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentSearchInputProps) {
+}) {
   const trpcClient = useTRPCClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [uidInput, setUidInput] = useState('');
