@@ -289,14 +289,14 @@ test.describe('Assessment questions', () => {
     ]);
   });
 
-  test.describe('hw16-editorTest alt group mutations', () => {
+  test.describe('hw16-editorTest alt pool mutations', () => {
     const assessmentTid = 'hw16-editorTest';
 
     test.beforeEach(async ({ testCoursePath }) => {
       await resetAssessmentFromTemplate({ assessmentTid, testCoursePath });
     });
 
-    test('can add an alternative to an alt group and save', async ({
+    test('can add an alternative to an alt pool and save', async ({
       page,
       testCoursePath,
       courseInstance,
@@ -333,10 +333,10 @@ test.describe('Assessment questions', () => {
       const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
       const savedAssessment = JSON.parse(savedContent);
 
-      const altGroupBlock = savedAssessment.zones[2].questions[1];
-      expect(altGroupBlock.numberChoose).toBe(1);
-      expect(altGroupBlock.alternatives).toHaveLength(3);
-      expect(altGroupBlock.alternatives[2].id).toBe('addNumbers');
+      const altPoolBlock = savedAssessment.zones[2].questions[1];
+      expect(altPoolBlock.numberChoose).toBe(1);
+      expect(altPoolBlock.alternatives).toHaveLength(3);
+      expect(altPoolBlock.alternatives[2].id).toBe('addNumbers');
     });
 
     test('revalidates number to choose when alternatives are deleted from the tree', async ({
@@ -358,7 +358,7 @@ test.describe('Assessment questions', () => {
       const numberChooseInput = page.getByLabel('Number to choose');
       await numberChooseInput.clear();
       await numberChooseInput.fill('2');
-      const warningText = 'Number to choose exceeds the number of alternatives in this group.';
+      const warningText = 'Number to choose exceeds the number of alternatives in this pool.';
       await expect(page.getByText(warningText)).not.toBeVisible();
 
       await page

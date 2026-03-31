@@ -26,6 +26,7 @@ import {
   type AccessControlJson,
   AccessControlJsonSchema,
   MAX_ACCESS_CONTROL_RULES,
+  MAX_ENROLLMENT_RULES,
 } from '../../schemas/accessControl.js';
 import { syncAccessControl, validateRule } from '../../sync/fromDisk/accessControl.js';
 
@@ -69,18 +70,37 @@ const requireCourseInstancePermissionEdit = t.middleware(async (opts) => {
   return opts.next();
 });
 
-const students = t.procedure.use(requireCourseInstancePermissionView).query(async (opts) => {
-  const rows = await selectUsersAndEnrollmentsForCourseInstance(opts.ctx.course_instance);
-  return rows
-    .filter((r) => r.enrollment.status === 'joined' && r.user != null)
-    .map((r) => ({
-      id: r.enrollment.id,
-      uid: r.user!.uid,
-      name: r.user!.name,
-    }));
+const requireEnhancedAccessControl = t.middleware(async (opts) => {
+  const enabled = await features.enabled('enhanced-access-control', {
+    institution_id: opts.ctx.course.institution_id,
+    course_id: opts.ctx.course.id,
+    course_instance_id: opts.ctx.course_instance.id,
+  });
+  if (!enabled) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Enhanced access control is not enabled for this course.',
+    });
+  }
+  return opts.next();
 });
 
+const students = t.procedure
+  .use(requireEnhancedAccessControl)
+  .use(requireCourseInstancePermissionView)
+  .query(async (opts) => {
+    const rows = await selectUsersAndEnrollmentsForCourseInstance(opts.ctx.course_instance);
+    return rows
+      .filter((r) => r.enrollment.status === 'joined' && r.user != null)
+      .map((r) => ({
+        id: r.enrollment.id,
+        uid: r.user!.uid,
+        name: r.user!.name,
+      }));
+  });
+
 const validateUids = t.procedure
+  .use(requireEnhancedAccessControl)
   .use(requireCourseInstancePermissionView)
   .input(z.object({ uids: z.array(z.string()) }))
   .query(async (opts) => {
@@ -108,14 +128,17 @@ const validateUids = t.procedure
     });
   });
 
-const studentLabels = t.procedure.use(requireCourseInstancePermissionView).query(async (opts) => {
-  const labels = await selectStudentLabelsInCourseInstance(opts.ctx.course_instance);
-  return labels.map((label) => ({
-    id: label.id,
-    name: label.name,
-    color: label.color,
-  }));
-});
+const studentLabels = t.procedure
+  .use(requireEnhancedAccessControl)
+  .use(requireCourseInstancePermissionView)
+  .query(async (opts) => {
+    const labels = await selectStudentLabelsInCourseInstance(opts.ctx.course_instance);
+    return labels.map((label) => ({
+      id: label.id,
+      name: label.name,
+      color: label.color,
+    }));
+  });
 
 function formJsonToEnrollmentRuleData(
   rule: AccessControlJson & { id?: string },
@@ -166,11 +189,12 @@ const EnrollmentRuleInputSchema = z.object({
 });
 
 const saveAllRules = t.procedure
+  .use(requireEnhancedAccessControl)
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
       rules: z.array(AccessControlJsonInputSchema).max(MAX_ACCESS_CONTROL_RULES),
-      enrollmentRules: z.array(EnrollmentRuleInputSchema).optional(),
+      enrollmentRules: z.array(EnrollmentRuleInputSchema).max(MAX_ENROLLMENT_RULES).optional(),
       origHash: z.string(),
     }),
   )
@@ -178,20 +202,6 @@ const saveAllRules = t.procedure
     const { rules, enrollmentRules, origHash } = opts.input;
     const courseInstanceId = opts.ctx.course_instance.id;
     const assessmentId = opts.ctx.assessment.id;
-
-    if (rules.slice(1).some((rule) => rule.listBeforeRelease !== undefined)) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'listBeforeRelease can only be specified on the main rule.',
-      });
-    }
-
-    if (enrollmentRules?.some((rule) => rule.ruleJson.listBeforeRelease !== undefined)) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'listBeforeRelease can only be specified on the main rule.',
-      });
-    }
 
     return runInTransactionAsync(async () => {
       await lockAssessment(opts.ctx.assessment);
@@ -207,8 +217,9 @@ const saveAllRules = t.procedure
       }
 
       const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
-      for (const rule of rulesToSync) {
-        const ruleError = validateRule(rule);
+      for (const [index, rule] of rulesToSync.entries()) {
+        const targetType = index === 0 ? 'none' : 'student_label';
+        const ruleError = validateRule(rule, targetType);
         if (ruleError) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
         }
@@ -227,18 +238,6 @@ const saveAllRules = t.procedure
       }
 
       if (enrollmentRules !== undefined && enrollmentRules.length > 0) {
-        const enhancedEnabled = await features.enabled('enhanced-access-control', {
-          institution_id: opts.ctx.course.institution_id,
-          course_id: opts.ctx.course.id,
-          course_instance_id: opts.ctx.course_instance.id,
-        });
-        if (!enhancedEnabled) {
-          throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: 'Enhanced access control is not enabled for this course.',
-          });
-        }
-
         const allEnrollmentIds = new Set(enrollmentRules.flatMap((r) => r.enrollmentIds));
         if (allEnrollmentIds.size > 0) {
           const validCount = await validateEnrollmentIdsInCourseInstance(
@@ -254,7 +253,7 @@ const saveAllRules = t.procedure
         }
 
         for (const enrollmentRule of enrollmentRules) {
-          const ruleError = validateRule(enrollmentRule.ruleJson);
+          const ruleError = validateRule(enrollmentRule.ruleJson, 'enrollment');
           if (ruleError) {
             throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
           }

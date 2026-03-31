@@ -5,7 +5,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import {
   checkInstructorLegitimacy,
-  suggestPrefixFromEmailDomain,
+  suggestInstitutionPrefix,
 } from '../../lib/course-request-ai.js';
 import {
   createCourseFromRequest,
@@ -16,6 +16,7 @@ import {
 } from '../../lib/course-request.js';
 import { checkCoursePathExists, checkCourseRepositoryExists } from '../../lib/course.js';
 
+import { normalizeCoursePathInput } from './course-path.js';
 import { requireAdministrator, t } from './init.js';
 
 const deny = t.procedure
@@ -60,6 +61,8 @@ const createCourse = t.procedure
   )
   .output(z.object({ jobSequenceId: z.string() }))
   .mutation(async ({ input, ctx }) => {
+    const normalizedPath = normalizeCoursePathInput(input.path);
+
     const repoExists = await checkCourseRepositoryExists(input.repoShortName);
     if (repoExists) {
       throw new TRPCError({
@@ -68,7 +71,7 @@ const createCourse = t.procedure
       });
     }
 
-    const pathExists = await checkCoursePathExists(input.path);
+    const pathExists = await checkCoursePathExists(normalizedPath);
     if (pathExists) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
@@ -82,7 +85,7 @@ const createCourse = t.procedure
       title: input.title,
       institutionId: input.institutionId,
       displayTimezone: input.displayTimezone,
-      path: input.path,
+      path: normalizedPath,
       repoShortName: input.repoShortName,
       githubUser: input.githubUser.trim().length > 0 ? input.githubUser.trim() : null,
       authnUser: ctx.authn_user,
@@ -90,7 +93,20 @@ const createCourse = t.procedure
     return { jobSequenceId };
   });
 
-const checkInstructorLegitimacyQuery = t.procedure
+const SourcesSchema = z
+  .array(z.object({ url: z.string().url(), title: z.string().optional() }))
+  .transform((sources) =>
+    sources.filter((s) => {
+      try {
+        const parsed = new URL(s.url);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    }),
+  );
+
+const checkInstructorLegitimacyProcedure = t.procedure
   .use(requireAdministrator)
   .input(z.object({ courseRequestId: IdSchema }))
   .output(
@@ -98,18 +114,7 @@ const checkInstructorLegitimacyQuery = t.procedure
       summary: z.string(),
       confidence: z.enum(['high', 'medium', 'low']),
       legitimate: z.boolean(),
-      sources: z
-        .array(z.object({ url: z.string().url(), title: z.string().optional() }))
-        .transform((sources) =>
-          sources.filter((s) => {
-            try {
-              const parsed = new URL(s.url);
-              return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-            } catch {
-              return false;
-            }
-          }),
-        ),
+      sources: SourcesSchema,
     }),
   )
   .query(async ({ input }) => {
@@ -127,7 +132,7 @@ const checkInstructorLegitimacyQuery = t.procedure
     });
   });
 
-const selectInstitutionPrefixQuery = t.procedure
+const selectInstitutionPrefixProcedure = t.procedure
   .use(requireAdministrator)
   .input(z.object({ institutionId: IdSchema }))
   .output(
@@ -140,38 +145,34 @@ const selectInstitutionPrefixQuery = t.procedure
     return { prefix: row?.prefix ?? null };
   });
 
-const suggestPrefixFromEmailQuery = t.procedure
+const suggestInstitutionPrefixProcedure = t.procedure
   .use(requireAdministrator)
-  .input(z.object({ institutionName: z.string(), emailDomain: z.string() }))
+  .input(
+    z.object({
+      institutionLongName: z.string(),
+      institutionShortName: z.string(),
+      emailDomain: z.string(),
+    }),
+  )
   .output(
     z.object({
       prefix: z.string(),
       reasoning: z.string(),
-      sources: z
-        .array(z.object({ url: z.string().url(), title: z.string().optional() }))
-        .transform((sources) =>
-          sources.filter((s) => {
-            try {
-              const parsed = new URL(s.url);
-              return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-            } catch {
-              return false;
-            }
-          }),
-        ),
+      sources: SourcesSchema,
     }),
   )
   .query(async ({ input }) => {
-    return await suggestPrefixFromEmailDomain({
+    return await suggestInstitutionPrefix({
+      institutionLongName: input.institutionLongName,
+      institutionShortName: input.institutionShortName,
       emailDomain: input.emailDomain,
-      institutionName: input.institutionName,
     });
   });
 
 export const administratorCourseRequestsRouter = t.router({
-  checkInstructorLegitimacyQuery,
-  selectInstitutionPrefixQuery,
-  suggestPrefixFromEmailQuery,
+  checkInstructorLegitimacy: checkInstructorLegitimacyProcedure,
+  selectInstitutionPrefix: selectInstitutionPrefixProcedure,
+  suggestInstitutionPrefix: suggestInstitutionPrefixProcedure,
   deny,
   updateNote,
   createCourse,
