@@ -22,7 +22,6 @@ import {
   selectInstanceQuestionsForManualGrading,
   updateInstanceQuestions,
 } from '../../pages/instructorAssessmentManualGrading/assessmentQuestion/queries.js';
-import { throwAppError } from '../app-errors.js';
 
 import {
   requireCourseInstancePermissionEdit,
@@ -30,10 +29,7 @@ import {
   t,
 } from './init.js';
 
-export interface ManualGradingError {
-  AiGradeInstanceQuestions: { code: 'MODEL_NOT_AVAILABLE' };
-  SetAssignedGrader: { code: 'GRADER_NOT_AUTHORIZED' };
-}
+export interface ManualGradingError {}
 
 const requireAiGradingFeature = t.middleware(async (opts) => {
   const enabled = await features.enabled('ai-grading', {
@@ -149,8 +145,9 @@ const aiGradeInstanceQuestionsMutation = t.procedure
     });
 
     if (!aiGradingModelSelectionEnabled && opts.input.model_id !== DEFAULT_AI_GRADING_MODEL) {
-      throwAppError<ManualGradingError['AiGradeInstanceQuestions']>({
-        code: 'MODEL_NOT_AVAILABLE',
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'AI grading model selection is not available. The default model must be used.',
       });
     }
 
@@ -191,7 +188,10 @@ const setAssignedGraderMutation = t.procedure
         authzData: opts.ctx.authz_data,
       });
       if (!courseStaff.some((staff) => idsEqual(staff.id, assigned_grader))) {
-        throwAppError<ManualGradingError['SetAssignedGrader']>({ code: 'GRADER_NOT_AUTHORIZED' });
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'The assigned grader does not have Student Data Editor permission.',
+        });
       }
     }
 

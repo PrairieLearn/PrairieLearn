@@ -1,18 +1,21 @@
 import * as path from 'path';
 
+import { TRPCError } from '@trpc/server';
+
 import { analyzeCourseInstanceAssessments } from '../../lib/assessment-access-control/migration.js';
-import { throwAppError } from '../app-errors.js';
 
 import { requireCoursePermissionEdit, t } from './init.js';
 
-export interface InstanceAdminSettingsError {
-  AnalyzeAccessControl: { code: 'NO_SHORT_NAME' };
-}
+export interface InstanceAdminSettingsError {}
 
 const analyzeAccessControl = t.procedure.use(requireCoursePermissionEdit).query(async (opts) => {
   const shortName = opts.ctx.course_instance.short_name;
   if (!shortName) {
-    throwAppError<InstanceAdminSettingsError['AnalyzeAccessControl']>({ code: 'NO_SHORT_NAME' });
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message:
+        'This course instance does not have a short name, so access control rules cannot be analyzed.',
+    });
   }
   const courseInstancePath = path.join(opts.ctx.course.path, 'courseInstances', shortName);
   return analyzeCourseInstanceAssessments(courseInstancePath);

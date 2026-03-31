@@ -20,39 +20,8 @@ import type { Timezone } from '../../lib/timezone.shared.js';
 import { createAdministratorTrpcClient } from '../../trpc/administrator/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/administrator/context.js';
 import type { AdminCourseError } from '../../trpc/administrator/courses.js';
-import type { AppErrorBase } from '../../trpc/app-errors.js';
 
 import type { CourseWithInstitution } from './administratorCourses.shared.js';
-
-function CourseErrorAlert<T extends AppErrorBase>({
-  error,
-  onDismiss,
-}: {
-  error: unknown;
-  onDismiss: () => void;
-}) {
-  const appError = getAppError<T>(error);
-  if (!appError) return null;
-
-  const message = (() => {
-    switch (appError.code) {
-      case 'REPOSITORY_EXISTS':
-        return 'A course with this repository already exists.';
-      case 'PATH_EXISTS':
-        return 'A course with this path already exists.';
-      case 'CONFIRMATION_MISMATCH':
-        return 'Confirmation did not match the expected value.';
-      default:
-        return appError.message;
-    }
-  })();
-
-  return (
-    <Alert variant="danger" dismissible onClose={onDismiss}>
-      {message}
-    </Alert>
-  );
-}
 
 interface InsertCourseFormData extends CourseFormFieldValues {
   branch: string;
@@ -273,6 +242,8 @@ function CourseDeleteForm({
     },
   });
 
+  const appError = getAppError<AdminCourseError>(mutation.error);
+
   const onSubmit = (data: DeleteCourseFormData) => {
     mutation.mutate(
       { courseId: row.course.id, confirmShortName: data.short_name },
@@ -300,10 +271,11 @@ function CourseDeleteForm({
           </div>
         )}
       </div>
-      <CourseErrorAlert<AdminCourseError['Delete']>
-        error={mutation.error}
-        onDismiss={() => mutation.reset()}
-      />
+      {appError && (
+        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+          {appError.message}
+        </Alert>
+      )}
       <div className="d-flex justify-content-end gap-2">
         <button type="button" className="btn btn-secondary gap-2" onClick={onCancel}>
           Cancel
@@ -335,6 +307,7 @@ function CourseInsertModal({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courses.insert.mutationOptions());
+  const appError = getAppError<AdminCourseError>(mutation.error);
 
   const methods = useForm<InsertCourseFormData>({
     mode: 'onSubmit',
@@ -411,10 +384,11 @@ function CourseInsertModal({
                 </div>
               )}
             </div>
-            <CourseErrorAlert<AdminCourseError['Insert']>
-              error={mutation.error}
-              onDismiss={() => mutation.reset()}
-            />
+            {appError && (
+              <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+                {appError.message}
+              </Alert>
+            )}
           </Modal.Body>
           <Modal.Footer>
             <button type="button" className="btn btn-secondary" onClick={onCancel}>
@@ -493,6 +467,7 @@ function CourseUpdateColumnForm({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courses.updateColumn.mutationOptions());
+  const appError = getAppError<AdminCourseError>(mutation.error);
 
   const {
     register,
@@ -538,10 +513,11 @@ function CourseUpdateColumnForm({
         />
         {errors.value && <div className="invalid-feedback">{errors.value.message}</div>}
       </div>
-      <CourseErrorAlert<AdminCourseError['UpdateColumn']>
-        error={mutation.error}
-        onDismiss={() => mutation.reset()}
-      />
+      {appError && (
+        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+          {appError.message}
+        </Alert>
+      )}
       <div className="d-flex justify-content-end gap-2">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel

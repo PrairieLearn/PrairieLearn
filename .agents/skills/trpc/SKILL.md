@@ -56,16 +56,12 @@ See any existing scope (e.g. `trpc/assessment/`) for the exact boilerplate. The 
 
 The CSRF token is generated server-side with `generatePrefixCsrfToken` using the scope's URL helper from `lib/client/url.ts`, passed as a prop to the hydrated component, and sent by the tRPC client as an `X-CSRF-Token` header. The Express CSRF middleware validates it before the request reaches the tRPC router.
 
-## Typed errors
+## Errors
 
-tRPC doesn't natively support typed errors. This codebase uses `throwAppError` (server, from `trpc/app-errors.ts`) and `getAppError` (client, from `lib/client/errors.ts`).
-
-1. Define an error interface in the subrouter file, keyed by procedure name.
-2. Throw with `throwAppError<MyError['ProcedureName']>({ code: '...' })`. Optional second arg is a tRPC error code (default `'BAD_REQUEST'`, use `'CONFLICT'` for hash mismatches, etc.).
-3. Handle on the client with `getAppError<MyError['ProcedureName']>(error)` — always handle the `'UNKNOWN'` fallback code.
-4. Pass the resolved `AppError` (the return value of `getAppError`) to child components rather than the raw mutation error. Use the `AppError<T>` type from `lib/client/errors.ts` for the prop type.
-
-See `trpc/assessment/access-control.ts` (server) and `lib/client/errors.ts` (client) for complete examples.
+- **Default to plain `TRPCError`** with a human-readable message. Use `throwAppError` only when the client needs structured metadata or must take structurally different actions per error code.
+- **Every subrouter** exports an error interface (empty if no typed errors). See `trpc/courseInstance/student-labels.ts` (typed) and `trpc/administrator/courses.ts` (empty).
+- **Client must always** use `getAppError<ErrorType>(mutation.error)` — never access raw errors directly. Always handle the `'BASIC'` fallback code. Never pass raw mutation/query errors as props; pass the resolved `AppError<T>` instead.
+- See `pages/instructorStudentsLabels/components/LabelModifyModal.tsx` (typed client) and `pages/administratorCourses/administratorCourses.html.tsx` (plain client) for examples.
 
 ## Testing
 

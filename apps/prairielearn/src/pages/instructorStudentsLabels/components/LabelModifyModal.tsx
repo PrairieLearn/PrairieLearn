@@ -147,7 +147,7 @@ export function LabelModifyModal({
             </a>
           </Alert>
         );
-      case 'UNKNOWN':
+      case 'BASIC':
         return (
           <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
             {appError.message}

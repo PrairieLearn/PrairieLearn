@@ -52,7 +52,7 @@ export function LabelDeleteModal({
             </a>
           </Alert>
         );
-      case 'UNKNOWN':
+      case 'BASIC':
         return (
           <Alert variant="danger" dismissible onClose={() => deleteMutation.reset()}>
             {appError.message}

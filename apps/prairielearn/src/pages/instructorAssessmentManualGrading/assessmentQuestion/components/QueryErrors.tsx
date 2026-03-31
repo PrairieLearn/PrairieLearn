@@ -1,22 +1,21 @@
 import type { UseMutationResult } from '@tanstack/react-query';
 import Alert from 'react-bootstrap/Alert';
 
-import { getAppError } from '../../../../lib/client/errors.js';
-import type { AppErrorBase } from '../../../../trpc/app-errors.js';
+import { type AppError, getAppError } from '../../../../lib/client/errors.js';
 
-export function QueryErrors<T extends AppErrorBase = AppErrorBase>({
+export function QueryErrors<T>({
   queries,
   messages = {},
 }: {
   queries: UseMutationResult<any, any, any>[];
-  messages?: Partial<Record<T['code'], string>>;
+  messages?: Partial<Record<AppError<T>['code'], string>>;
 }) {
   return queries.map((query, index) => {
     if (!query.isError) return null;
 
-    const appError = getAppError(query.error);
+    const appError = getAppError<T>(query.error);
     const message = appError
-      ? (messages[appError.code as T['code']] ?? appError.message)
+      ? (messages[appError.code as AppError<T>['code']] ?? appError.message)
       : 'An unknown error occurred.';
 
     return (
