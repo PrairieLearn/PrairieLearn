@@ -127,7 +127,6 @@
           if (input == null) {
             input = document.createElement('input');
             input.type = 'file';
-            input.value = null; // Clear the input so that the change event will fire even if the same file is selected
             input.multiple = true;
             input.classList.add('d-none');
             input.addEventListener('change', () => {
@@ -135,6 +134,7 @@
             });
             dropzone.append(input);
           }
+          input.value = null; // Clear the input so that the change event will fire even if the same file is selected
           input.click();
         });
 
