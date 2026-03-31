@@ -1,24 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 
-import type { AccessControlJson } from '../../../schemas/accessControl.js';
-
-interface AccessControlIndividual {
-  enrollmentId: string;
-  uid: string;
-  name: string | null;
-}
-
-export interface AccessControlJsonWithId extends AccessControlJson {
-  /** Database ID (undefined for new/unsaved rules) */
-  id?: string;
-  /** Database rule number for sorting */
-  number?: number;
-  /** Rule type: 'student_label' for label-based rules, 'enrollment' for individual student rules, 'none' for rules without specific targeting */
-  ruleType?: 'student_label' | 'enrollment' | 'none' | null;
-  individuals?: AccessControlIndividual[];
-  /** Student label details (id, name, color) from the database, used for rendering colored badges. */
-  labelDetails?: { id: string; name: string; color: string }[];
-}
+import type { AccessControlJsonWithId } from '../../../models/assessment-access-control-rules.js';
 
 /** Field names that belong to the date control section of an access control rule. */
 export const DATE_CONTROL_FIELD_NAMES = [

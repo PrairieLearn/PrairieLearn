@@ -7,6 +7,7 @@ import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
 import { SplitPane } from '../../../components/SplitPane.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
+import type { AccessControlJsonWithId } from '../../../models/assessment-access-control-rules.js';
 
 import { AccessControlSummary } from './AccessControlSummary.js';
 import { MainRuleForm } from './MainRuleForm.js';
@@ -14,7 +15,6 @@ import { OverrideRuleContent } from './OverrideRuleContent.js';
 import { AppliesToField } from './fields/AppliesToField.js';
 import {
   type AccessControlFormData,
-  type AccessControlJsonWithId,
   createDefaultOverrideFormData,
   formDataToJson,
   jsonToMainRuleFormData,

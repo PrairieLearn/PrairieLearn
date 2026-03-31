@@ -2,15 +2,16 @@ import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
-import { getAppError } from '../../../lib/client/errors.js';
+import { type AppError, getAppError } from '../../../lib/client/errors.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
+import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
+import type { AccessControlJsonWithId } from '../../../models/assessment-access-control-rules.js';
 import type { AccessControlError } from '../../../trpc/assessment/access-control.js';
 import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
 
 import { AccessControlForm } from './AccessControlForm.js';
-import type { AccessControlJsonWithId } from './types.js';
 
 interface AssessmentAccessControlProps {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
@@ -55,7 +56,7 @@ function AssessmentAccessControlInner({
     });
   };
 
-  const saveError = getAppError<AccessControlError>(saveMutation.error);
+  const saveError = getAppError<AccessControlError['SaveAllRules']>(saveMutation.error);
 
   return (
     <div style={{ height: '100%' }} data-split-pane-page>
@@ -65,9 +66,11 @@ function AssessmentAccessControlInner({
         </Alert>
       )}
       {saveError && (
-        <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
-          {saveError.message}
-        </Alert>
+        <SaveErrorAlert
+          appError={saveError}
+          courseInstanceId={courseInstance.id}
+          onDismiss={() => saveMutation.reset()}
+        />
       )}
 
       <AccessControlForm
@@ -78,6 +81,34 @@ function AssessmentAccessControlInner({
       />
     </div>
   );
+}
+
+function SaveErrorAlert({
+  appError,
+  courseInstanceId,
+  onDismiss,
+}: {
+  appError: AppError<AccessControlError['SaveAllRules']>;
+  courseInstanceId: string;
+  onDismiss: () => void;
+}) {
+  switch (appError.code) {
+    case 'SYNC_JOB_FAILED':
+      return (
+        <Alert variant="danger" dismissible onClose={onDismiss}>
+          {appError.message}{' '}
+          <a href={getCourseInstanceJobSequenceUrl(courseInstanceId, appError.jobSequenceId)}>
+            View job logs
+          </a>
+        </Alert>
+      );
+    case 'BASIC':
+      return (
+        <Alert variant="danger" dismissible onClose={onDismiss}>
+          {appError.message}
+        </Alert>
+      );
+  }
 }
 
 export function AssessmentAccessControl(props: AssessmentAccessControlProps) {

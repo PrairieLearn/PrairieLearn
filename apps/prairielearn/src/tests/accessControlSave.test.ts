@@ -9,11 +9,8 @@ import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { computeHash, selectAccessControlRules } from '../models/assessment-access-control-rules.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import {
-  computeHash,
-  fetchAllAccessControlRules,
-} from '../pages/instructorAssessmentAccess/rules.js';
 import type { AccessControlJsonInput } from '../schemas/accessControl.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
@@ -82,7 +79,7 @@ describe('Access control save via tRPC', () => {
       course_instance_id: '1',
       tid: 'hw19-accessControlUi',
     });
-    const rules = await fetchAllAccessControlRules(assessment);
+    const rules = await selectAccessControlRules(assessment);
     return computeHash(rules);
   }
 
