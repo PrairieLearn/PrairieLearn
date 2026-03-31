@@ -288,7 +288,8 @@ export function TanstackTable<RowDataModel>({
               style={{
                 display: 'grid',
                 zIndex: 1,
-                borderBottom: 'var(--bs-border-width) solid black',
+                borderBottom: 'var(--bs-border-width) solid rgba(0, 0, 0, 0.15)',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
               }}
             >
               <tr
