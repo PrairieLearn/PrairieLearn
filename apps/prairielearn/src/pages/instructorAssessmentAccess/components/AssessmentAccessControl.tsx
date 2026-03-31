@@ -58,25 +58,25 @@ function AssessmentAccessControlInner({
 
   const saveError = getAppError<AccessControlError['SaveAllRules']>(saveMutation.error);
 
+  const alert = saveMutation.isSuccess ? (
+    <Alert variant="success" dismissible onClose={() => saveMutation.reset()}>
+      Access control updated successfully.
+    </Alert>
+  ) : saveError ? (
+    <SaveErrorAlert
+      appError={saveError}
+      courseInstanceId={courseInstance.id}
+      onDismiss={() => saveMutation.reset()}
+    />
+  ) : null;
+
   return (
     <div style={{ height: '100%' }} data-split-pane-page>
-      {saveMutation.isSuccess && (
-        <Alert variant="success" dismissible onClose={() => saveMutation.reset()}>
-          Access control updated successfully.
-        </Alert>
-      )}
-      {saveError && (
-        <SaveErrorAlert
-          appError={saveError}
-          courseInstanceId={courseInstance.id}
-          onDismiss={() => saveMutation.reset()}
-        />
-      )}
-
       <AccessControlForm
         courseInstance={courseInstance}
         initialData={initialData}
         isSaving={saveMutation.isPending}
+        alert={alert}
         onSubmit={handleFormSubmit}
       />
     </div>

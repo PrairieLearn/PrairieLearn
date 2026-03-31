@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
@@ -81,11 +81,13 @@ export function AccessControlForm({
   onSubmit,
   courseInstance,
   isSaving = false,
+  alert,
 }: {
   initialData?: AccessControlJsonWithId[];
   onSubmit: (data: AccessControlJsonWithId[]) => void;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   isSaving?: boolean;
+  alert?: ReactNode;
 }) {
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
   const deleteModal = useModalState<{ index: number; name: string }>();
@@ -275,6 +277,7 @@ export function AccessControlForm({
           rightHeaderAction={rightHeaderAction}
           left={
             <div className="split-pane__left-body p-3">
+              {alert}
               <AccessControlSummary
                 courseInstanceId={courseInstance.id}
                 displayTimezone={courseInstance.display_timezone}
