@@ -1250,6 +1250,8 @@ function buildRubricToolsWithExecute({
 
     revertRubric: tool({
       ...AI_GRADING_TOOLS.revertRubric,
+      // TODO: This should be a message ID instead of a snapshot.
+      // Have the LLM pass in the message ID to revert to. The tool takes care of the rest.
       execute: async ({ snapshot: snapshotJson }) =>
         rubricMutex.run(async () => {
           job.info(`Tool: revertRubric — input snapshot: ${snapshotJson}`);
@@ -1465,19 +1467,21 @@ async function gradeOneSubmissionWithDecision({
   });
 
   // Decision schema: grade OR propose_rubric_changes
-  // All fields must be required (not optional) for OpenAI strict mode.
-  // Use nullable instead of optional for conditional fields.
+  // OpenAI strict mode requires ALL properties in `required` and does not
+  // support nullable ZodObjects correctly. So we always require rubric_items
+  // and proposed_changes. When decision is "grade", proposed_changes should
+  // be an empty string. When decision is "propose_rubric_changes", all
+  // rubric items should be set to false.
   const DecisionSchema = z.object({
     decision: z.enum(['grade', 'propose_rubric_changes']),
     explanation: z.string().describe(explanationDescription),
-    rubric_items: RubricGradingItemsSchema.nullable().describe(
-      'Required when decision is "grade" (mark each rubric item as true/false). Set to null when decision is "propose_rubric_changes".',
+    rubric_items: RubricGradingItemsSchema.describe(
+      'When decision is "grade", mark each rubric item as true/false. When decision is "propose_rubric_changes", set all items to false.',
     ),
     proposed_changes: z
       .string()
-      .nullable()
       .describe(
-        'Required when decision is "propose_rubric_changes" (describe the proposed changes). Set to null when decision is "grade".',
+        'When decision is "propose_rubric_changes", describe the proposed changes. When decision is "grade", set to an empty string.',
       ),
   });
 
@@ -1508,17 +1512,12 @@ async function gradeOneSubmissionWithDecision({
       decision: {
         decision: 'propose_rubric_changes',
         explanation: result.explanation,
-        proposed_changes: result.proposed_changes ?? '',
+        proposed_changes: result.proposed_changes,
       },
     };
   }
 
   // decision === 'grade' — save the grading result
-  if (!result.rubric_items) {
-    logger.error('Grade decision missing rubric_items');
-    return { success: false, decision: null };
-  }
-
   logger.info(`Parsed response: ${JSON.stringify(result, null, 2)}`);
   const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
     ai_rubric_items: result.rubric_items,

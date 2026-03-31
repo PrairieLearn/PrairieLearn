@@ -420,10 +420,16 @@ export function extractSubmissionImages({
 export function sanitizeSchemaKey(description: string): string {
   // eslint-disable-next-line no-control-regex -- intentionally stripping control characters
   const CONTROL_CHARS = /[\x00-\x1f\x7f]/g;
-  return description
-    .replaceAll('\\', '\\\\') // escape backslashes first
-    .replaceAll('"', "'") // replace double quotes with single quotes
-    .replaceAll(CONTROL_CHARS, ''); // strip control characters
+  return (
+    description
+      .replaceAll('\\', '\\\\') // escape backslashes first
+      // Replace all forms of double quotes (ASCII + Unicode smart quotes)
+      .replaceAll('"', "'")
+      .replaceAll('\u201C', "'") // left double quotation mark
+      .replaceAll('\u201D', "'") // right double quotation mark
+      .replaceAll('\u201E', "'") // double low-9 quotation mark
+      .replaceAll(CONTROL_CHARS, '')
+  ); // strip control characters
 }
 
 export function parseAiRubricItems({

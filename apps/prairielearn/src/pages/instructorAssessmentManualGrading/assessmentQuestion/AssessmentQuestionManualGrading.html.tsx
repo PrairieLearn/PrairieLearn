@@ -591,6 +591,7 @@ function InlineGradingProgress({
     numTotal: number;
     failureMessage?: string;
   } | null>(null);
+  const [timedOut, setTimedOut] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
@@ -599,6 +600,12 @@ function InlineGradingProgress({
     const socket = io('/server-job-progress');
     socketRef.current = socket;
 
+    // If no progress data arrives within 5 seconds, assume the job already
+    // finished (e.g. viewing a past conversation). Show a static completed state.
+    const timeout = window.setTimeout(() => {
+      setTimedOut(true);
+    }, 5000);
+
     socket.emit(
       'joinServerJobProgress',
       {
@@ -606,7 +613,11 @@ function InlineGradingProgress({
         job_sequence_token: jobSequenceToken,
       },
       (response: ProgressUpdateMessage) => {
-        if (!response.has_progress_data) return;
+        clearTimeout(timeout);
+        if (!response.has_progress_data) {
+          setTimedOut(true);
+          return;
+        }
         setProgress({
           numComplete: response.num_complete,
           numFailed: response.num_failed,
@@ -621,6 +632,7 @@ function InlineGradingProgress({
 
     socket.on('serverJobProgressUpdate', (msg: ProgressUpdateMessage) => {
       if (msg.job_sequence_id !== jobSequenceId || !msg.has_progress_data) return;
+      clearTimeout(timeout);
       setProgress({
         numComplete: msg.num_complete,
         numFailed: msg.num_failed,
@@ -633,9 +645,20 @@ function InlineGradingProgress({
     });
 
     return () => {
+      clearTimeout(timeout);
       socket.disconnect();
     };
   }, [jobSequenceId, jobSequenceToken]);
+
+  // If timed out with no progress data, show a static completed state
+  if (!progress && timedOut) {
+    return (
+      <div className="d-flex align-items-center gap-2 py-2">
+        <i className="bi bi-check-circle-fill text-success" />
+        <span className="small fw-medium text-muted">AI grading completed</span>
+      </div>
+    );
+  }
 
   if (!progress) {
     return (
@@ -930,6 +953,7 @@ function AssessmentQuestionManualGradingInner({
   const [rubricDataState, setRubricDataState] = useState(initialRubricData);
   const [aiGradingStatsState, setAiGradingStatsState] = useState(aiGradingStats);
   const [isGradingInProgress, setIsGradingInProgress] = useState(false);
+  const isGradingInProgressRef = useRef(false);
   const addOngoingJobSequenceRef = useRef<
     ((jobSequenceId: string, jobSequenceToken: string) => void) | null
   >(null);
@@ -1021,7 +1045,10 @@ function AssessmentQuestionManualGradingInner({
         if (rubricModified) {
           setHasGeneratedRubric(true);
           hasGeneratedRubricRef.current = true;
-          triggerOpenRubricEditor();
+          // Don't scroll to rubric while grading is in progress
+          if (!isGradingInProgressRef.current) {
+            triggerOpenRubricEditor();
+          }
           refreshRubricData();
 
           void queryClient.invalidateQueries({
@@ -1036,6 +1063,7 @@ function AssessmentQuestionManualGradingInner({
 
   const handleGradingComplete = useCallback(() => {
     setIsGradingInProgress(false);
+    isGradingInProgressRef.current = false;
     refreshRubricData();
     void queryClient.invalidateQueries({
       queryKey: trpc.instances.queryKey(),
@@ -1180,7 +1208,7 @@ function AssessmentQuestionManualGradingInner({
           assessment={assessment}
           assessmentQuestion={assessmentQuestion}
           questionQid={questionQid}
-          aiGradingMode={aiGradingMode}
+          aiGradingMode={aiGradingMode || isGradingInProgress}
           aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
           rubricData={rubricDataState}
           rubricEditingDisabled={isGenerating}
@@ -1408,6 +1436,7 @@ function AssessmentQuestionManualGradingInner({
                 disabled={isGradingInProgress || isGenerating}
                 onClick={() => {
                   setIsGradingInProgress(true);
+                  isGradingInProgressRef.current = true;
                   currentPhaseRef.current = 'edit';
                   void sendMessage({ text: 'Start AI grading' });
                 }}
