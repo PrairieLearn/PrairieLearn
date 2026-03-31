@@ -20,13 +20,18 @@ jobs:
           pr-message: |
             Thanks for your first pull request to PrairieLearn! Here are a few things to keep in mind:
 
-            - Make sure you've read the [contributing guide](https://github.com/PrairieLearn/PrairieLearn/blob/master/CONTRIBUTING.md) and the [dev guide](https://docs.prairielearn.com/dev-guide/).
+            - Make sure you've read the [contributing guide](https://github.com/PrairieLearn/PrairieLearn/blob/master/CONTRIBUTING.md)
+            - Make sure you disclose all AI assistance used in your PR.
+            - If you are fixing a bug, make sure you include test cases, and steps for reproducing the issue/fix (videos/links preferred!).
+            - If you are adding a new feature, make sure you include documentation and tests.
             - Our CLA bot will ask you to sign a [contributor license agreement](https://github.com/PrairieLearn/cla) if you haven't already.
             - A maintainer will need to approve CI workflows for your PR. This is normal for first-time contributors.
-            - If you get stuck, feel free to ask questions here or in the `#pl-dev` channel on [Slack](https://prairielearn.com/slack).
+            - Feel free to ask questions here or in the `#pl-dev` channel on [Slack](https://prairielearn.com/slack).
 
             We appreciate your contribution!
           issue-message: |
-            Thanks for opening your first issue on PrairieLearn! A maintainer will take a look soon.
-
-            In the meantime, if you have questions or want to discuss further, feel free to join the `#pl-dev` channel on [Slack](https://prairielearn.com/slack).
+            Thanks for opening your first issue on PrairieLearn! Here are a few things to keep in mind:
+            
+            - If opening a bug report and haven't discussed it in `#pl-help` channel on [Slack](https://prairielearn.com/slack), consider doing so before opening the issue to make sure it's a valid bug.
+            - Make sure you include steps for reproducing the issue, and a PrairieLearn URL we can view the issue on (if applicable).
+            - If opening a feature request, make sure to explain what problem you are trying to solve (to avoid the [XY problem](https://en.wikipedia.org/wiki/XY_problem)).
