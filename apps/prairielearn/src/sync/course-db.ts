@@ -1159,9 +1159,6 @@ export function validateAccessControlArray({
   const warnings: string[] = [];
 
   if (accessControlJsonArray.length === 0) {
-    warnings.push(
-      'accessControl array is empty. Add at least one rule or remove the accessControl key.',
-    );
     return { errors, warnings };
   }
 
@@ -1360,7 +1357,7 @@ function validateAssessment({
   }
 
   // Check assessment access rules.
-  assessment.allowAccess.forEach((rule) => {
+  (assessment.allowAccess ?? []).forEach((rule) => {
     const dateErrors = checkAllowAccessDates(rule);
 
     if ('active' in rule && rule.active === false && 'credit' in rule && rule.credit !== 0) {
@@ -1375,7 +1372,7 @@ function validateAssessment({
   // only show certain warnings for course instances which are accessible
   // either now or any time in the future.
   if (!courseInstanceExpired) {
-    assessment.allowAccess.forEach((rule) => {
+    (assessment.allowAccess ?? []).forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
 
       if (rule.examUuid && rule.mode === 'Public') {
@@ -1659,6 +1656,12 @@ function validateAssessment({
         );
       });
     });
+  }
+
+  if (rawAssessment.allowAccess != null && rawAssessment.accessControl != null) {
+    errors.push(
+      'Cannot use both "allowAccess" and "accessControl". Use "accessControl" for new assessments.',
+    );
   }
 
   // Validate access control rules if defined

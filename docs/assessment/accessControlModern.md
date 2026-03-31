@@ -668,11 +668,18 @@ Below are common legacy patterns and their modern equivalents.
 
     ```json
     {
-      "accessControl": [{}]
+      "accessControl": [
+        {
+          "dateControl": {
+            "releaseDate": "1970-01-01T00:00:00",
+            "dueDate": "2099-12-31T23:59:59"
+          }
+        }
+      ]
     }
     ```
 
-    With no `dateControl` (or no `releaseDate`), the assessment grants 0% credit. To make an assessment always open with 100% credit, set a `releaseDate` in the past and a `dueDate` far in the future.
+    A `releaseDate` in the past and a `dueDate` far in the future ensures the assessment is always open with 100% credit. Without a `dateControl` (or without a `releaseDate`), the assessment grants 0% credit.
 
 ### View-only after close
 
