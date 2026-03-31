@@ -34,11 +34,12 @@ nvm alias default 24
 (cd /tmp && uv pip install --system --reinstall uv)
 rm /root/.local/bin/uv # Uninstall the outdated uv binary.
 
-timeout 120 make deps || echo "[session-start] WARNING: make deps timed out or failed"
+timeout 180 make deps || echo "[session-start] WARNING: make deps timed out or failed"
 
-scripts/start_postgres.sh
-scripts/start_redis.sh
-scripts/start_s3rver.sh
+make start-postgres
+make start-redis
+# Starting s3rver in the session startup hook causes issues, so we wait to start it until
+# `make dev` is run.
 
 # Playwright blocks downloads from within a remote Claude Code environment,
 # so we need to symlink the already-installed version to the expected location.
