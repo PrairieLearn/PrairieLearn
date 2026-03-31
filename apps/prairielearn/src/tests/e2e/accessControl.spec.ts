@@ -1,9 +1,13 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
 import type { Locator, Page } from '@playwright/test';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { AssessmentAccessControlRuleSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
+import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { syncCourse } from '../helperCourse.js';
 
@@ -19,6 +23,18 @@ async function getAccessControlRecords(assessmentId: string) {
     { assessment_id: assessmentId },
     AssessmentAccessControlRuleSchema,
   );
+}
+
+async function readAssessmentJson(testCoursePath: string) {
+  const filePath = path.join(
+    testCoursePath,
+    'courseInstances',
+    'Sp15',
+    'assessments',
+    ASSESSMENT_TID,
+    'infoAssessment.json',
+  );
+  return JSON.parse(await fs.readFile(filePath, 'utf8'));
 }
 
 async function navigateToAccessPage(page: Page, courseInstanceId: string, assessmentId: string) {
@@ -44,9 +60,21 @@ function getOverrideCard(page: Page, labelText: string): Locator {
 }
 
 test.describe('Access control UI', () => {
-  // Re-sync before each test to reset the assessment back to its on-disk state,
-  // so that mutations from one test don't leak into the next.
+  // Restore the original infoAssessment.json and re-sync before each test so
+  // that mutations from one test (which are committed to git by FileModifyEditor)
+  // don't leak into the next.
   test.beforeEach(async ({ testCoursePath }) => {
+    const relativePath = path.join(
+      'courseInstances',
+      'Sp15',
+      'assessments',
+      ASSESSMENT_TID,
+      'infoAssessment.json',
+    );
+    await fs.copyFile(
+      path.join(TEST_COURSE_PATH, relativePath),
+      path.join(testCoursePath, relativePath),
+    );
     await features.enable('enhanced-access-control');
     await syncCourse(testCoursePath);
   });
@@ -72,6 +100,7 @@ test.describe('Access control UI', () => {
   test('can add a student-label override, configure it, and save', async ({
     page,
     courseInstance,
+    testCoursePath,
   }) => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
@@ -113,9 +142,16 @@ test.describe('Access control UI', () => {
     const records = await getAccessControlRecords(assessment.id);
     const overrides = records.filter((r) => r.number > 0);
     expect(overrides.length).toBe(2); // Section A + Extra time
+
+    // Verify disk: accessControl array has 3 rules (main + 2 overrides)
+    const json = await readAssessmentJson(testCoursePath);
+    expect(json.accessControl).toHaveLength(3);
+    const overrideLabels = json.accessControl.slice(1).map((r: { labels: string[] }) => r.labels);
+    expect(overrideLabels).toContainEqual(['Section A']);
+    expect(overrideLabels).toContainEqual(['Extra time']);
   });
 
-  test('can delete an override', async ({ page, courseInstance }) => {
+  test('can delete an override', async ({ page, courseInstance, testCoursePath }) => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
       tid: ASSESSMENT_TID,
@@ -149,11 +185,17 @@ test.describe('Access control UI', () => {
     const records = await getAccessControlRecords(assessment.id);
     const overrideCount = records.filter((r) => r.number > 0).length;
     expect(overrideCount).toBe(initialOverrideCount - 1);
+
+    // Verify disk: accessControl array has only 1 rule (main, no overrides)
+    const json = await readAssessmentJson(testCoursePath);
+    expect(json.accessControl).toHaveLength(1);
+    expect(json.accessControl[0].labels).toBeUndefined();
   });
 
   test('can edit override with duration and question visibility', async ({
     page,
     courseInstance,
+    testCoursePath,
   }) => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
@@ -198,5 +240,13 @@ test.describe('Access control UI', () => {
     const sectionARule = records.find((r) => r.number > 0);
     expect(sectionARule?.date_control_duration_minutes).toBe(60);
     expect(sectionARule?.after_complete_hide_questions).toBe(true);
+
+    // Verify disk: Section A override has duration and afterComplete
+    const json = await readAssessmentJson(testCoursePath);
+    const sectionAJson = json.accessControl.find((r: { labels?: string[] }) =>
+      r.labels?.includes('Section A'),
+    );
+    expect(sectionAJson.dateControl.durationMinutes).toBe(60);
+    expect(sectionAJson.afterComplete.hideQuestions).toBe(true);
   });
 });

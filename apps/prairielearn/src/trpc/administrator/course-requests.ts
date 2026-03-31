@@ -15,6 +15,7 @@ import {
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
 import { checkCoursePathExists, checkCourseRepositoryExists } from '../../lib/course.js';
+import { checkGithubRepositoryExists } from '../../lib/github.js';
 
 import { normalizeCoursePathInput } from './course-path.js';
 import { requireAdministrator, t } from './init.js';
@@ -44,13 +45,9 @@ const createCourse = t.procedure
   .input(
     z.object({
       courseRequestId: IdSchema,
-      shortName: z
-        .string()
-        .min(1, 'Short name is required')
-        .regex(
-          /^[A-Z]+ [A-Z0-9]+$/,
-          'The course rubric and number should be a series of letters, followed by a space, followed by a series of numbers and/or letters.',
-        ),
+      // No format validation — admins may need to deviate from the standard
+      // "RUBRIC NUMBER" pattern for non-standard department codes.
+      shortName: z.string().min(1, 'Short name is required'),
       title: z.string().min(1, 'Title is required').max(75, 'Title must be at most 75 characters'),
       institutionId: IdSchema,
       displayTimezone: z.string().min(1, 'Timezone is required'),
@@ -68,6 +65,15 @@ const createCourse = t.procedure
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'A course with this repository already exists.',
+      });
+    }
+
+    const githubRepoExists = await checkGithubRepositoryExists(input.repoShortName);
+    if (githubRepoExists) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message:
+          'A GitHub repository with this name already exists. This can happen if a repository was previously renamed.',
       });
     }
 
