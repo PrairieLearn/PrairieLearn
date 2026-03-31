@@ -226,7 +226,6 @@ export default [
   },
   globalIgnores([
     '.venv/*',
-    '.yarn/*',
     'docs/*',
     'node_modules/*',
     'testCourse',

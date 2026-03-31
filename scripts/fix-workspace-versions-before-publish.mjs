@@ -5,7 +5,7 @@
 // https://github.com/changesets/action/issues/246
 // To work around that, we'll manually resolve any `workspace:` version ranges
 // with this tool prior to publishing. If/when changesets adds native support for
-// publishing with Yarn 3, we can remove this script.
+// publishing with pnpm workspaces, we can remove this script.
 //
 // We'll only support the `workspace:^` range, which is the only one we
 // generally want to use.
@@ -19,12 +19,15 @@ const DEPENDENCY_TYPES = ['dependencies', 'devDependencies', 'peerDependencies']
 
 const exec = util.promisify(cp.exec);
 
-const rawWorkspaces = await exec('yarn workspaces list --json', { encoding: 'utf8' });
-const workspaces = rawWorkspaces.stdout
-  .trim()
-  .split('\n')
-  .map((line) => JSON.parse(line))
-  .filter((workspace) => workspace.location !== '.');
+const rawWorkspaces = await exec('pnpm list --recursive --json --depth -1', { encoding: 'utf8' });
+const allWorkspaces = JSON.parse(rawWorkspaces.stdout);
+const rootDir = process.cwd();
+const workspaces = allWorkspaces
+  .filter((workspace) => workspace.path !== rootDir)
+  .map((workspace) => ({
+    name: workspace.name,
+    location: path.relative(rootDir, workspace.path),
+  }));
 
 // Get the version of each workspace package.
 const workspaceVersions = new Map();

@@ -5,26 +5,26 @@
     "apps/*",
     "packages/*"
   ],
-  "packageManager": "yarn@4.12.0",
+  "packageManager": "pnpm@10.14.0",
   "engines": {
     "node": ">=24.0.0"
   },
   "scripts": {
-    "dev": "yarn workspace @prairielearn/prairielearn dev",
-    "dev-bun": "yarn workspace @prairielearn/prairielearn dev:bun",
-    "dev-vite": "yarn workspace @prairielearn/prairielearn dev:vite",
-    "dev-workspace-host": "yarn workspace @prairielearn/workspace-host dev",
-    "grader-host-dev": "yarn workspace @prairielearn/grader-host dev",
-    "grader-host-start": "yarn workspace @prairielearn/grader-host start",
-    "migrate": "yarn workspace @prairielearn/prairielearn start --migrate-and-exit",
-    "migrate-dev": "yarn workspace @prairielearn/prairielearn dev:no-watch --migrate-and-exit",
-    "refresh-workspace-hosts": "yarn workspace @prairielearn/prairielearn start --refresh-workspace-hosts-and-exit",
-    "refresh-workspace-hosts-dev": "yarn workspace @prairielearn/prairielearn dev:no-watch --refresh-workspace-hosts-and-exit",
+    "dev": "pnpm --filter @prairielearn/prairielearn dev",
+    "dev-bun": "pnpm --filter @prairielearn/prairielearn dev:bun",
+    "dev-vite": "pnpm --filter @prairielearn/prairielearn dev:vite",
+    "dev-workspace-host": "pnpm --filter @prairielearn/workspace-host dev",
+    "grader-host-dev": "pnpm --filter @prairielearn/grader-host dev",
+    "grader-host-start": "pnpm --filter @prairielearn/grader-host start",
+    "migrate": "pnpm --filter @prairielearn/prairielearn start --migrate-and-exit",
+    "migrate-dev": "pnpm --filter @prairielearn/prairielearn dev:no-watch --migrate-and-exit",
+    "refresh-workspace-hosts": "pnpm --filter @prairielearn/prairielearn start --refresh-workspace-hosts-and-exit",
+    "refresh-workspace-hosts-dev": "pnpm --filter @prairielearn/prairielearn dev:no-watch --refresh-workspace-hosts-and-exit",
     "release": "turbo run build && node scripts/fix-workspace-versions-before-publish.mjs && changeset publish --no-git-tag",
-    "start": "yarn workspace @prairielearn/prairielearn start",
-    "start-workspace-host": "yarn workspace @prairielearn/workspace-host start",
+    "start": "pnpm --filter @prairielearn/prairielearn start",
+    "start-workspace-host": "pnpm --filter @prairielearn/workspace-host start",
     "test": "vitest run --coverage",
-    "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn"
+    "version": "changeset version && pnpm install --no-frozen-lockfile"
   },
   "dependencies": {
     "@types/tar-stream": "^3.1.4",
@@ -62,8 +62,10 @@
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   },
-  "resolutions": {
-    "notebookjs/jsdom": "^28.0.0",
-    "typescript-cp/tar": "*"
+  "pnpm": {
+    "overrides": {
+      "notebookjs>jsdom": "^28.0.0",
+      "typescript-cp>tar": "*"
+    }
   }
 }

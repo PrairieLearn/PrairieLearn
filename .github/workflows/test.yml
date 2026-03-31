@@ -76,7 +76,7 @@ jobs:
       - name: Run executor smoke test
         run: |
           docker run --rm prairielearn/executor:latest \
-            yarn workspace @prairielearn/prairielearn run test:executor-smoke-test
+            pnpm --filter @prairielearn/prairielearn test:executor-smoke-test
         timeout-minutes: 5
 
       - name: Create a temporary directory for host files
@@ -172,25 +172,23 @@ jobs:
 
           sudo systemctl restart postgresql.service
 
+      - uses: pnpm/action-setup@v4
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
           node-version: '24'
-          cache: 'yarn'
+          cache: 'pnpm'
       - name: Cache node-gyp headers
         uses: actions/cache@v5
         with:
           path: ~/.cache/node-gyp
           key: node-gyp-${{ runner.os }}
       - name: Preinstall node-gyp headers
-        run: yarn dlx node-gyp install
+        run: pnpm dlx node-gyp install
       - name: Install Node dependencies
         run: |
-          yarn install --immutable --inline-builds
-          yarn playwright install chromium --with-deps
-        env:
-          # Disable hardened mode to eke out a little more speed.
-          YARN_ENABLE_HARDENED_MODE: 0
+          pnpm install --frozen-lockfile
+          pnpm playwright install chromium --with-deps
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -226,13 +224,13 @@ jobs:
       - name: Vitest suite
         run: |
           make start-support
-          yarn test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+          pnpm test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           SHARDED_TESTS: true
 
       - name: Playwright suite
         run: |
-          yarn workspace @prairielearn/prairielearn run test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+          pnpm --filter @prairielearn/prairielearn test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
 
       - name: Upload Vitest blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
@@ -260,16 +258,14 @@ jobs:
       - uses: actions/checkout@v6
         with:
           show-progress: false
+      - uses: pnpm/action-setup@v4
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
           node-version: '24'
-          cache: 'yarn'
-      - name: Set up Yarn
-        # We only install the dependencies in the root workspace to avoid
-        # installing dependencies that won't be used.
-        # Note that this means playwright is installed in the root workspace, not the prairielearn workspace.
-        run: yarn workspaces focus prairielearn
+          cache: 'pnpm'
+      - name: Install Node dependencies
+        run: pnpm install
       - name: Download Vitest blob reports from GitHub Actions Artifacts
         uses: actions/download-artifact@v8
         with:
@@ -278,7 +274,7 @@ jobs:
           merge-multiple: true
 
       - name: Merge Vitest reports
-        run: yarn vitest --watch=false --merge-reports --coverage
+        run: pnpm vitest --watch=false --merge-reports --coverage
       - name: Download Playwright blob reports from GitHub Actions Artifacts
         uses: actions/download-artifact@v8
         with:
@@ -286,7 +282,7 @@ jobs:
           pattern: playwright-blob-report-*
           merge-multiple: true
       - name: Merge Playwright reports
-        run: yarn playwright merge-reports --reporter html,github apps/prairielearn/test-results/blob-report
+        run: pnpm playwright merge-reports --reporter html,github apps/prairielearn/test-results/blob-report
       - name: Upload JavaScript coverage report to Codecov
         uses: codecov/codecov-action@v5.5.2
         with:

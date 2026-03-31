@@ -171,7 +171,7 @@ export function prairielearn(
   // Default ignores
   return [
     ...configs,
-    globalIgnores(['.yarn/*', 'node_modules/*', 'dist/*', 'coverage/*', ...ignores]),
+    globalIgnores(['node_modules/*', 'dist/*', 'coverage/*', ...ignores]),
   ];
 }
 

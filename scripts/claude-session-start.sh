@@ -46,7 +46,7 @@ rm /root/.local/bin/uv # Uninstall the outdated uv binary.
 # Run commands independently for better timeout control
 make python-deps
 setup_succeeded=true
-time timeout 120 yarn || setup_succeeded=false
+time timeout 120 pnpm install || setup_succeeded=false
 
 # Start the support services.
 make start-postgres

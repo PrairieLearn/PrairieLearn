@@ -57,20 +57,20 @@ Typechecking:
 
 Linting:
 
-- Individual files: `yarn eslint --fix path/to/file.ts`. Prefer using a skill / LSP / MCP for this to improve performance.
+- Individual files: `pnpm eslint --fix path/to/file.ts`. Prefer using a skill / LSP / MCP for this to improve performance.
 - All files: `make lint-js`
 - Check for dead code with `make check-dependencies`.
 
 Formatting:
 
-- Individual files: `yarn prettier --write path/to/file.ts`
+- Individual files: `pnpm prettier --write path/to/file.ts`
 - All files: `make format-js`
 
 ### Python
 
 Typechecking:
 
-- Individual files: `yarn pyright path/to/file.py`. Prefer using a skill / LSP / MCP for this to improve performance.
+- Individual files: `pnpm pyright path/to/file.py`. Prefer using a skill / LSP / MCP for this to improve performance.
 - All files: `make typecheck-python`
 
 Linting:
@@ -85,7 +85,7 @@ Formatting:
 
 ### Other tools / languages (e.g. SQL, Markdown, Shell)
 
-SQL, shell, markdown, and JSON files should also be formatted with `yarn prettier --write path/to/file.{sql,sh,md,json}`.
+SQL, shell, markdown, and JSON files should also be formatted with `pnpm prettier --write path/to/file.{sql,sh,md,json}`.
 Reference the Makefile for commands to format/lint/typecheck other tools / languages.
 
 ## Database and schema changes
@@ -152,12 +152,12 @@ Integration and unit tests are written with Vitest. End-to-end tests are written
 
 Individual tests:
 
-- For integration and unit tests, use `yarn test path/to/file.test.ts` from the root directory.
-- For end-to-end tests, use `yarn test:e2e path/to/integration.spec.ts` from the root directory.
+- For integration and unit tests, use `pnpm test path/to/file.test.ts` from the root directory.
+- For end-to-end tests, use `pnpm test:e2e path/to/integration.spec.ts` from the root directory.
 
 Avoid running the entire test suite unless necessary, as it can be time-consuming. However, if you must:
 
-- To run all TypeScript tests, use `yarn test` from the root directory
+- To run all TypeScript tests, use `pnpm test` from the root directory
 
 Tests expect Postgres, Redis, and an S3-compatible store to be running, and usually they already are. If you suspect that they're not, run `make start-support` from the root directory.
 
