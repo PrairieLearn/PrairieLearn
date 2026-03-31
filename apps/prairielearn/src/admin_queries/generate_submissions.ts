@@ -219,30 +219,34 @@ async function processQuestion(
   const { question, instance_question, user, question_course, assessment_question } =
     instanceQuestion;
   const maxAutoPoints = assessment_question.max_auto_points ?? 0;
+  const mode: 'save-only' | 'save-and-grade' | 'external' = !ctx.shouldGrade
+    ? 'save-only'
+    : question.grading_method === 'External'
+      ? 'external'
+      : 'save-and-grade';
 
-  if (!ctx.shouldGrade) {
-    return processSaveOnly(instanceQuestion, ctx);
-  }
-
-  if (question.grading_method === 'External') {
-    return processExternalQuestion(instanceQuestion, ctx);
-  }
-
-  // Auto-graded or manual-only: submit and grade up to maxAttempts times.
-  // For manual-only questions gradeVariant is a no-op, so the loop runs
-  // once and manual points are assigned in finalizeQuestion.
   let currentIq: InstanceQuestion = instance_question;
   let attempts = 0;
   let lastSubmissionId: string | null = null;
   let testType: TestType = ctx.testType === 'random' ? 'correct' : ctx.testType;
   let alreadySatisfied = false;
 
-  for (let attempt = 0; attempt < ctx.maxAttempts; attempt++) {
-    if (!currentIq.open || currentIq.status === 'complete') {
+  for (let i = 0; i < ctx.maxAttempts; i++) {
+    // For save-only, break on any complete question. For grading modes,
+    // Homework uses a max-points check instead of the status check.
+    if (!currentIq.open) {
       alreadySatisfied = true;
       break;
     }
     if (
+      currentIq.status === 'complete' &&
+      (mode === 'save-only' || ctx.assessment.type !== 'Homework')
+    ) {
+      alreadySatisfied = true;
+      break;
+    }
+    if (
+      mode !== 'save-only' &&
       ctx.assessment.type === 'Homework' &&
       maxAutoPoints > 0 &&
       (currentIq.auto_points ?? 0) >= maxAutoPoints
@@ -264,144 +268,41 @@ async function processQuestion(
     testType = currentTestType;
     if (hasFatalIssue) break;
 
-    lastSubmissionId = await saveAndGradeSubmission(
-      submissionData,
-      variant,
-      question,
-      ctx.assessmentCourse,
-      true,
-      true,
-    );
-    attempts++;
-
-    if (maxAutoPoints === 0) break;
-
-    const iqRow = await queryOptionalRow(
-      sql.select_instance_question_by_id,
-      { instance_question_id: instance_question.id },
-      InstanceQuestionSchema,
-    );
-    if (!iqRow) break;
-    currentIq = iqRow;
-  }
-
-  return { attempts, lastSubmissionId, testType, alreadySatisfied };
-}
-
-async function processSaveOnly(
-  instanceQuestion: InstanceQuestionQuery,
-  ctx: SharedContext,
-): Promise<QuestionResult> {
-  const { question, instance_question, user, question_course } = instanceQuestion;
-
-  let currentIq: InstanceQuestion = instance_question;
-  let attempts = 0;
-  let lastSubmissionId: string | null = null;
-  let testType: TestType = ctx.testType === 'random' ? 'correct' : ctx.testType;
-  let alreadySatisfied = false;
-
-  for (let attempt = 0; attempt < ctx.maxAttempts; attempt++) {
-    if (!currentIq.open || currentIq.status === 'complete') {
-      alreadySatisfied = true;
-      break;
-    }
-
-    const { submissionData, variant, hasFatalIssue, currentTestType } =
-      await createVariantAndSubmissionData({
+    if (mode === 'save-and-grade') {
+      lastSubmissionId = await saveAndGradeSubmission(
+        submissionData,
+        variant,
         question,
-        instance_question: currentIq,
-        user,
-        question_course,
-        courseInstance: ctx.courseInstance,
-        assessmentCourse: ctx.assessmentCourse,
-        test_type: ctx.testType,
-      });
-    testType = currentTestType;
-    if (hasFatalIssue) break;
-
-    const { submission_id } = await saveSubmission(
-      submissionData,
-      variant,
-      question,
-      ctx.assessmentCourse,
-    );
-    lastSubmissionId = submission_id;
-    attempts++;
-
-    const iqRow = await queryOptionalRow(
-      sql.select_instance_question_by_id,
-      { instance_question_id: instance_question.id },
-      InstanceQuestionSchema,
-    );
-    if (!iqRow) break;
-    currentIq = iqRow;
-  }
-
-  return { attempts, lastSubmissionId, testType, alreadySatisfied };
-}
-
-async function processExternalQuestion(
-  instanceQuestion: InstanceQuestionQuery,
-  ctx: SharedContext,
-): Promise<QuestionResult> {
-  const { question, instance_question, user, question_course, assessment_question } =
-    instanceQuestion;
-  const maxAutoPoints = assessment_question.max_auto_points ?? 0;
-
-  // External grading: save a submission without triggering the external
-  // grader, then assign full auto points directly.
-  let currentIq: InstanceQuestion = instance_question;
-  let attempts = 0;
-  let lastSubmissionId: string | null = null;
-  let testType: TestType = ctx.testType === 'random' ? 'correct' : ctx.testType;
-  let alreadySatisfied = false;
-
-  for (let attempt = 0; attempt < ctx.maxAttempts; attempt++) {
-    if (!currentIq.open || currentIq.status === 'complete') {
-      alreadySatisfied = true;
-      break;
-    }
-    if (
-      ctx.assessment.type === 'Homework' &&
-      maxAutoPoints > 0 &&
-      (currentIq.auto_points ?? 0) >= maxAutoPoints
-    ) {
-      alreadySatisfied = true;
-      break;
-    }
-
-    const { submissionData, variant, hasFatalIssue, currentTestType } =
-      await createVariantAndSubmissionData({
+        ctx.assessmentCourse,
+        true,
+        true,
+      );
+    } else {
+      const { submission_id } = await saveSubmission(
+        submissionData,
+        variant,
         question,
-        instance_question: currentIq,
-        user,
-        question_course,
-        courseInstance: ctx.courseInstance,
-        assessmentCourse: ctx.assessmentCourse,
-        test_type: ctx.testType,
-      });
-    testType = currentTestType;
-    if (hasFatalIssue) break;
+        ctx.assessmentCourse,
+      );
+      lastSubmissionId = submission_id;
 
-    const { submission_id } = await saveSubmission(
-      submissionData,
-      variant,
-      question,
-      ctx.assessmentCourse,
-    );
-    lastSubmissionId = submission_id;
+      // External grading: assign auto points directly instead of triggering
+      // the external grader.
+      if (mode === 'external' && maxAutoPoints > 0 && currentTestType !== 'invalid') {
+        await updateInstanceQuestionScore({
+          assessment: ctx.assessment,
+          instance_question_id: instance_question.id,
+          submission_id,
+          check_modified_at: null,
+          score: { auto_score_perc: currentTestType === 'correct' ? 100 : 0 },
+          authn_user_id: user.id,
+        });
+      }
+    }
     attempts++;
 
-    if (maxAutoPoints > 0 && currentTestType !== 'invalid') {
-      await updateInstanceQuestionScore({
-        assessment: ctx.assessment,
-        instance_question_id: instance_question.id,
-        submission_id,
-        check_modified_at: null,
-        score: { auto_score_perc: currentTestType === 'correct' ? 100 : 0 },
-        authn_user_id: user.id,
-      });
-    }
+    // For manual-only questions, gradeVariant is a no-op so one attempt suffices.
+    if (mode === 'save-and-grade' && maxAutoPoints === 0) break;
 
     const iqRow = await queryOptionalRow(
       sql.select_instance_question_by_id,
@@ -422,7 +323,12 @@ async function finalizeQuestion(
 ): Promise<FinalizedInstanceQuestion> {
   const maxManualPoints = instanceQuestion.assessment_question.max_manual_points ?? 0;
 
-  if (ctx.shouldGrade && maxManualPoints > 0 && result.lastSubmissionId !== null) {
+  if (
+    ctx.shouldGrade &&
+    maxManualPoints > 0 &&
+    result.lastSubmissionId !== null &&
+    result.testType !== 'invalid'
+  ) {
     await updateInstanceQuestionScore({
       assessment: ctx.assessment,
       instance_question_id: instanceQuestion.instance_question.id,
