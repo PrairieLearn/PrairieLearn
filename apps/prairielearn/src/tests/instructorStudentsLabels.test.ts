@@ -183,7 +183,9 @@ describe('Instructor student labels page', () => {
       assert.fail('Expected error for duplicate name');
     } catch (err) {
       assert.instanceOf(err, TRPCClientError);
-      const data = (err as TRPCClientError<CourseInstanceRouter>).data as any;
+      const data = (err as TRPCClientError<CourseInstanceRouter>).data as
+        | { appError?: { code: string } }
+        | undefined;
       assert.equal(data?.appError?.code, 'LABEL_NAME_TAKEN');
     }
 
@@ -324,7 +326,9 @@ describe('Instructor student labels page', () => {
       assert.fail('Expected error for duplicate name');
     } catch (err) {
       assert.instanceOf(err, TRPCClientError);
-      const data = (err as TRPCClientError<CourseInstanceRouter>).data as any;
+      const data = (err as TRPCClientError<CourseInstanceRouter>).data as
+        | { appError?: { code: string } }
+        | undefined;
       assert.equal(data?.appError?.code, 'LABEL_NAME_TAKEN');
     }
   });

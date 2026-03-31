@@ -27,9 +27,7 @@ type ResolveAppError<T> = T extends AppErrorBase
  *   }
  * }
  */
-export type AppError<T> =
-  | (ResolveAppError<T> & { message: string })
-  | { code: 'UNKNOWN'; message: string };
+export type AppError<T> = ResolveAppError<T> | { code: 'UNKNOWN'; message: string };
 
 /**
  * Extracts a typed app-level error from a tRPC error, narrowed to the
