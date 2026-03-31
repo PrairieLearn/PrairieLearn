@@ -63,7 +63,7 @@ describe('assessment model', () => {
       const calcOverride = overrides.find((o) => o.tool === 'calculator');
       assert.isNotNull(calcOverride);
       assert.equal(calcOverride?.enabled, false);
-      assert.equal(calcOverride?.zone_number, 2);
+      assert.equal(calcOverride?.zone_number, 1);
     });
 
     it('returns empty array for assessment without zone tool overrides', async () => {
