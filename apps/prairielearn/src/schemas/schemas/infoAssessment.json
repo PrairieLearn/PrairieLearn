@@ -51,8 +51,7 @@
       "type": "array",
       "items": {
         "$ref": "#/definitions/AssessmentAccessRuleJsonSchema"
-      },
-      "default": []
+      }
     },
     "accessControl": {
       "description": "Access control settings for the assessment.",

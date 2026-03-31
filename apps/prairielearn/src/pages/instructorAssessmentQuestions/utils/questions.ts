@@ -12,7 +12,7 @@ import type {
 } from '../../../lib/client/safe-db-types.js';
 import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import type { QuestionPointsJson, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
-import type { QuestionByQidResult } from '../trpc.js';
+import type { QuestionByQidResult } from '../../../trpc/assessment/assessment-questions.js';
 import type {
   AssessmentForPicker,
   CourseQuestionForPicker,

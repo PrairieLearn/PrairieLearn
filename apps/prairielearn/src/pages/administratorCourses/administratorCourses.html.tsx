@@ -12,12 +12,14 @@ import {
   useInstitutionPrefix,
 } from '../../components/AdminstratorCourseFormFields.js';
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
+import { getAppError } from '../../lib/client/errors.js';
 import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import type { CourseRequestRow } from '../../lib/course-request.js';
 import type { Timezone } from '../../lib/timezone.shared.js';
 import { createAdministratorTrpcClient } from '../../trpc/administrator/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/administrator/context.js';
+import type { AdminCourseError } from '../../trpc/administrator/courses.js';
 
 import type { CourseWithInstitution } from './administratorCourses.shared.js';
 
@@ -240,6 +242,8 @@ function CourseDeleteForm({
     },
   });
 
+  const appError = getAppError<AdminCourseError>(mutation.error);
+
   const onSubmit = (data: DeleteCourseFormData) => {
     mutation.mutate(
       { courseId: row.course.id, confirmShortName: data.short_name },
@@ -267,9 +271,9 @@ function CourseDeleteForm({
           </div>
         )}
       </div>
-      {mutation.isError && (
+      {appError && (
         <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-          {mutation.error.message}
+          {appError.message}
         </Alert>
       )}
       <div className="d-flex justify-content-end gap-2">
@@ -303,6 +307,7 @@ function CourseInsertModal({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courses.insert.mutationOptions());
+  const appError = getAppError<AdminCourseError>(mutation.error);
 
   const methods = useForm<InsertCourseFormData>({
     mode: 'onSubmit',
@@ -379,9 +384,9 @@ function CourseInsertModal({
                 </div>
               )}
             </div>
-            {mutation.isError && (
+            {appError && (
               <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-                {mutation.error.message}
+                {appError.message}
               </Alert>
             )}
           </Modal.Body>
@@ -462,6 +467,7 @@ function CourseUpdateColumnForm({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courses.updateColumn.mutationOptions());
+  const appError = getAppError<AdminCourseError>(mutation.error);
 
   const {
     register,
@@ -507,9 +513,9 @@ function CourseUpdateColumnForm({
         />
         {errors.value && <div className="invalid-feedback">{errors.value.message}</div>}
       </div>
-      {mutation.isError && (
+      {appError && (
         <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-          {mutation.error.message}
+          {appError.message}
         </Alert>
       )}
       <div className="d-flex justify-content-end gap-2">
