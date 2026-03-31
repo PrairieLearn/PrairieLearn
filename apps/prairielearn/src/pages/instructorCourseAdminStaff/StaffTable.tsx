@@ -1,7 +1,9 @@
 import {
   type ColumnFiltersState,
   type Header,
+  type RowSelectionState,
   type SortingState,
+  type Table,
   type Updater,
   createColumnHelper,
   getCoreRowModel,
@@ -10,15 +12,18 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useMemo, useState } from 'react';
-import { Button } from 'react-bootstrap';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Button, Modal } from 'react-bootstrap';
+import { useDebouncedCallback } from 'use-debounce';
 
 import {
   CategoricalColumnFilter,
+  ColumnManager,
   NuqsAdapter,
   OverlayTrigger,
-  TanstackTableCard,
+  TanstackTable,
   parseAsSortingState,
+  useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
 import type { CourseInstance } from '../../lib/db-types.js';
@@ -39,6 +44,50 @@ const ROLE_DESCRIPTIONS: Record<CourseRole, string> = {
   Owner:
     'Can see all questions, course instances, and assessments. Can see and close issues. Can see, download, and edit all code and configuration files. Can sync course files to and from the GitHub repository. Can add and remove course staff and can change access roles.',
 };
+
+function IndeterminateCheckbox({
+  checked,
+  indeterminate,
+  disabled,
+  onChange,
+  'aria-label': ariaLabel,
+}: {
+  checked: boolean;
+  indeterminate: boolean;
+  disabled?: boolean;
+  onChange: () => void;
+  'aria-label': string;
+}) {
+  const checkboxRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (checkboxRef.current) {
+      checkboxRef.current.indeterminate = indeterminate;
+    }
+  }, [indeterminate]);
+
+  return (
+    <input
+      ref={checkboxRef}
+      type="checkbox"
+      checked={checked}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      onChange={onChange}
+    />
+  );
+}
+
+function SelectAllCheckbox({ table }: { table: Table<CourseUsersRow> }) {
+  return (
+    <IndeterminateCheckbox
+      checked={table.getIsAllPageRowsSelected()}
+      indeterminate={table.getIsSomePageRowsSelected()}
+      aria-label="Select all staff"
+      onChange={() => table.toggleAllPageRowsSelected()}
+    />
+  );
+}
 
 const columnHelper = createColumnHelper<CourseUsersRow>();
 
@@ -79,11 +128,12 @@ function CoursePermissionCell({
     <OverlayTrigger
       show={show}
       trigger="click"
-      placement="auto"
+      placement="right"
       popover={{
         props: {
           id: `course-permission-popover-${courseUser.user.id}`,
-          className: 'popover-wide popover-scrollable',
+          className: 'popover-scrollable',
+          style: { maxWidth: '400px' },
         },
         header: 'Change course content access',
         body: (
@@ -164,11 +214,12 @@ function CourseInstanceAccessCell({
     <OverlayTrigger
       show={show}
       trigger="click"
-      placement="auto"
+      placement="bottom"
       popover={{
         props: {
           id: `ci-permission-popover-${courseUser.user.id}-${courseInstance.id}`,
-          className: 'popover-wide popover-scrollable',
+          className: 'popover-scrollable',
+          style: { maxWidth: '400px' },
         },
         header: `Change student data access for ${courseInstance.short_name}`,
         body: (
@@ -285,150 +336,6 @@ function RemoveStaffCell({
         data-testid="remove-staff-button"
       >
         <i className="fa fa-times" /> Remove
-      </Button>
-    </OverlayTrigger>
-  );
-}
-
-function RemoveAllStudentDataAccessButton({ csrfToken }: { csrfToken: string }) {
-  const [show, setShow] = useState(false);
-  return (
-    <OverlayTrigger
-      show={show}
-      trigger="click"
-      placement="auto"
-      popover={{
-        props: { id: 'remove-all-student-data-access-popover', className: 'popover-wide' },
-        header: 'Remove all student data access',
-        body: (
-          <form method="POST">
-            <input type="hidden" name="__action" value="remove_all_student_data_access" />
-            <input type="hidden" name="__csrf_token" value={csrfToken} />
-            <div className="mb-3">
-              <p className="form-text">
-                Taking this action will remove all student data access from all users (but will
-                leave these users on the course staff).
-              </p>
-            </div>
-            <div className="text-end">
-              <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
-                Cancel
-              </button>
-              <button type="submit" className="btn btn-danger ms-2">
-                Remove all student data access
-              </button>
-            </div>
-          </form>
-        ),
-      }}
-      rootClose
-      onToggle={setShow}
-    >
-      <Button
-        type="button"
-        variant="light"
-        size="sm"
-        aria-label="Remove all student data access"
-        data-testid="remove-all-student-data-access-button"
-      >
-        <i className="fas fa-eye-slash" aria-hidden="true" />
-        <span className="d-none d-sm-inline"> Remove all student data access</span>
-      </Button>
-    </OverlayTrigger>
-  );
-}
-
-function DeleteNoAccessButton({ csrfToken }: { csrfToken: string }) {
-  const [show, setShow] = useState(false);
-  return (
-    <OverlayTrigger
-      show={show}
-      trigger="click"
-      placement="auto"
-      popover={{
-        props: { id: 'delete-no-access-popover', className: 'popover-wide' },
-        header: 'Delete users with no access',
-        body: (
-          <form method="POST">
-            <input type="hidden" name="__action" value="delete_no_access" />
-            <input type="hidden" name="__csrf_token" value={csrfToken} />
-            <div className="mb-3">
-              <p className="form-text">
-                Taking this action will remove every user from course staff who has neither course
-                content access nor student data access.
-              </p>
-            </div>
-            <div className="text-end">
-              <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
-                Cancel
-              </button>
-              <button type="submit" className="btn btn-danger ms-2">
-                Delete users with no access
-              </button>
-            </div>
-          </form>
-        ),
-      }}
-      rootClose
-      onToggle={setShow}
-    >
-      <Button
-        type="button"
-        variant="light"
-        size="sm"
-        aria-label="Delete users with no access"
-        data-testid="delete-users-with-no-access-button"
-      >
-        <i className="fas fa-recycle" aria-hidden="true" />
-        <span className="d-none d-sm-inline"> Delete users with no access</span>
-      </Button>
-    </OverlayTrigger>
-  );
-}
-
-function DeleteNonOwnersButton({ csrfToken }: { csrfToken: string }) {
-  const [show, setShow] = useState(false);
-  return (
-    <OverlayTrigger
-      show={show}
-      trigger="click"
-      placement="auto"
-      popover={{
-        props: { id: 'delete-non-owners-popover', className: 'popover-wide' },
-        header: 'Delete non-owners',
-        body: (
-          <form method="POST">
-            <input type="hidden" name="__action" value="delete_non_owners" />
-            <input type="hidden" name="__csrf_token" value={csrfToken} />
-            <div className="mb-3">
-              <p className="form-text">
-                Taking this action will remove every user from course staff who is not a course
-                content Owner.
-              </p>
-            </div>
-            <div className="text-end">
-              <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
-                Cancel
-              </button>
-              <button type="submit" className="btn btn-danger ms-2">
-                Delete non-owners
-              </button>
-            </div>
-          </form>
-        ),
-      }}
-      rootClose
-      onToggle={setShow}
-    >
-      <Button
-        type="button"
-        variant="light"
-        size="sm"
-        aria-label="Delete non-owners"
-        data-testid="delete-non-owners-button"
-      >
-        <i className="fas fa-users-slash" aria-hidden="true" />
-        <span className="d-none d-sm-inline"> Delete non-owners</span>
       </Button>
     </OverlayTrigger>
   );
@@ -556,6 +463,235 @@ function AddUsersButton({
   );
 }
 
+function BulkDeleteModal({
+  show,
+  onHide,
+  selectedUsers,
+  csrfToken,
+}: {
+  show: boolean;
+  onHide: () => void;
+  selectedUsers: CourseUsersRow[];
+  csrfToken: string;
+}) {
+  return (
+    <Modal show={show} onHide={onHide}>
+      <Modal.Header closeButton>
+        <Modal.Title>Remove selected staff</Modal.Title>
+      </Modal.Header>
+      <form method="POST">
+        <Modal.Body>
+          <input type="hidden" name="__action" value="bulk_course_permissions_delete" />
+          <input type="hidden" name="__csrf_token" value={csrfToken} />
+          {selectedUsers.map((u) => (
+            <input key={u.user.id} type="hidden" name="user_ids" value={u.user.id} />
+          ))}
+          <p>
+            Are you sure you want to remove{' '}
+            <strong>
+              {selectedUsers.length} {selectedUsers.length === 1 ? 'user' : 'users'}
+            </strong>{' '}
+            from the course staff?
+          </p>
+          <ul className="mb-0" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+            {selectedUsers.map((u) => (
+              <li key={u.user.id}>{u.user.name ?? u.user.uid}</li>
+            ))}
+          </ul>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={onHide}>
+            Cancel
+          </Button>
+          <Button variant="danger" type="submit">
+            Remove {selectedUsers.length} {selectedUsers.length === 1 ? 'user' : 'users'}
+          </Button>
+        </Modal.Footer>
+      </form>
+    </Modal>
+  );
+}
+
+function BulkEditAccessModal({
+  show,
+  onHide,
+  selectedUsers,
+  courseInstances,
+  csrfToken,
+}: {
+  show: boolean;
+  onHide: () => void;
+  selectedUsers: CourseUsersRow[];
+  courseInstances: CourseInstance[];
+  csrfToken: string;
+}) {
+  const [courseRole, setCourseRole] = useState('');
+  const [instanceRoles, setInstanceRoles] = useState<Record<string, string>>({});
+
+  const handleInstanceRoleChange = (ciId: string, role: string) => {
+    setInstanceRoles((prev) => ({ ...prev, [ciId]: role }));
+  };
+
+  const configuredInstances = Object.entries(instanceRoles).filter(([, role]) => role !== '');
+  const hasChanges = courseRole !== '' || configuredInstances.length > 0;
+
+  return (
+    <Modal show={show} size="lg" onHide={onHide}>
+      <Modal.Header closeButton>
+        <Modal.Title>Edit access</Modal.Title>
+      </Modal.Header>
+      <form method="POST">
+        <Modal.Body>
+          <input type="hidden" name="__action" value="bulk_edit_access" />
+          <input type="hidden" name="__csrf_token" value={csrfToken} />
+          {selectedUsers.map((u) => (
+            <input key={u.user.id} type="hidden" name="user_ids" value={u.user.id} />
+          ))}
+          <input type="hidden" name="course_role" value={courseRole} />
+          {configuredInstances.map(([ciId, role]) => (
+            <span key={ciId}>
+              <input type="hidden" name="course_instance_ids" value={ciId} />
+              <input type="hidden" name="course_instance_roles" value={role} />
+            </span>
+          ))}
+          <p>
+            Edit access for{' '}
+            <strong>
+              {selectedUsers.length} {selectedUsers.length === 1 ? 'user' : 'users'}
+            </strong>
+            :
+          </p>
+
+          <h6 className="font-weight-bolder">Course content access</h6>
+          <select
+            className="form-select form-select-sm mb-3"
+            value={courseRole}
+            onChange={(e) => setCourseRole(e.target.value)}
+          >
+            <option value="">No change</option>
+            {COURSE_ROLE_VALUES.map((role) => (
+              <option key={role} value={role}>
+                {role}
+              </option>
+            ))}
+          </select>
+
+          {courseInstances.length > 0 && (
+            <>
+              <h6 className="font-weight-bolder">Student data access</h6>
+              <div className="table-responsive" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                <table className="table table-sm align-middle mb-0">
+                  {/* <thead>
+                    <tr>
+                      <th>Course instance</th>
+                      <th style={{ width: '220px' }}>Access level</th>
+                    </tr>
+                  </thead> */}
+                  <tbody>
+                    {courseInstances.map((ci) => (
+                      <tr key={ci.id}>
+                        <td>{ci.short_name}</td>
+                        <td>
+                          <select
+                            className="form-select form-select-sm"
+                            value={instanceRoles[ci.id] ?? ''}
+                            onChange={(e) => handleInstanceRoleChange(ci.id, e.target.value)}
+                          >
+                            <option value="">No change</option>
+                            <option value="None">None (remove access)</option>
+                            <option value="Student Data Viewer">Student data viewer</option>
+                            <option value="Student Data Editor">Student data editor</option>
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={onHide}>
+            Cancel
+          </Button>
+          <Button variant="primary" type="submit" disabled={!hasChanges}>
+            Save changes
+          </Button>
+        </Modal.Footer>
+      </form>
+    </Modal>
+  );
+}
+
+function SelectionToolbar({
+  selectedUsers,
+  csrfToken,
+  courseInstances,
+  isAdministrator,
+  authnUserId,
+  userId,
+}: {
+  selectedUsers: CourseUsersRow[];
+  csrfToken: string;
+  courseInstances: CourseInstance[];
+  isAdministrator: boolean;
+  authnUserId: string;
+  userId: string;
+}) {
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showEditAccessModal, setShowEditAccessModal] = useState(false);
+
+  // Filter out users that can't be modified (current user / owners unless admin)
+  const deletableUsers = selectedUsers.filter(
+    (u) => (u.user.id !== authnUserId && u.user.id !== userId) || isAdministrator,
+  );
+
+  const modifiableUsers = selectedUsers.filter(
+    (u) => (u.user.id !== authnUserId && u.user.id !== userId) || isAdministrator,
+  );
+
+  return (
+    <>
+      <div className="d-flex align-items-center gap-2">
+        <span className="text-muted small">{selectedUsers.length} selected</span>
+        <Button
+          variant="outline-primary"
+          size="sm"
+          disabled={modifiableUsers.length === 0}
+          onClick={() => setShowEditAccessModal(true)}
+        >
+          <i className="fa fa-pen me-1" />
+          Edit access
+        </Button>
+        <Button
+          variant="outline-danger"
+          size="sm"
+          disabled={deletableUsers.length === 0}
+          onClick={() => setShowDeleteModal(true)}
+        >
+          <i className="fa fa-trash-alt me-1" />
+          Delete
+        </Button>
+      </div>
+
+      <BulkDeleteModal
+        show={showDeleteModal}
+        selectedUsers={deletableUsers}
+        csrfToken={csrfToken}
+        onHide={() => setShowDeleteModal(false)}
+      />
+      <BulkEditAccessModal
+        show={showEditAccessModal}
+        selectedUsers={modifiableUsers}
+        courseInstances={courseInstances}
+        csrfToken={csrfToken}
+        onHide={() => setShowEditAccessModal(false)}
+      />
+    </>
+  );
+}
+
 function AccessLevelsTable() {
   return (
     <div className="table-responsive">
@@ -627,6 +763,27 @@ function StaffTableInner({
     'role',
     parseAsArrayOf(parseAsStringLiteral(COURSE_ROLE_VALUES)).withDefault([]),
   );
+  const [selectedIds, setSelectedIds] = useQueryState(
+    'selected',
+    parseAsArrayOf(parseAsString).withDefault([]),
+  );
+  const rowSelection = useMemo<RowSelectionState>(
+    () => Object.fromEntries(selectedIds.map((id) => [id, true])),
+    [selectedIds],
+  );
+  const setRowSelection = useMemo(
+    () => (updaterOrValue: RowSelectionState | ((prev: RowSelectionState) => RowSelectionState)) => {
+      const newSelection =
+        typeof updaterOrValue === 'function' ? updaterOrValue(rowSelection) : updaterOrValue;
+      void setSelectedIds(
+        Object.entries(newSelection)
+          .filter(([, selected]) => selected)
+          .map(([id]) => id),
+      );
+    },
+    [rowSelection, setSelectedIds],
+  );
+  const { createCheckboxProps } = useShiftClickCheckbox<CourseUsersRow>();
 
   const columnFilters = useMemo<ColumnFiltersState>(() => {
     const filters: ColumnFiltersState = [];
@@ -648,11 +805,46 @@ function StaffTableInner({
 
   const columns = useMemo(
     () => [
+      columnHelper.display({
+        id: 'select',
+        header: ({ table }) => <SelectAllCheckbox table={table} />,
+        cell: ({ row, table }) => {
+          const uid = row.original.user.uid;
+          return (
+            <input
+              type="checkbox"
+              aria-label={`Select ${uid}`}
+              {...createCheckboxProps(row, table)}
+            />
+          );
+        },
+        size: 40,
+        minSize: 40,
+        maxSize: 40,
+        enableSorting: false,
+        enableHiding: false,
+      }),
       columnHelper.accessor((row) => row.user.uid, {
         id: 'uid',
         header: 'UID',
         size: 200,
         enableGlobalFilter: true,
+        cell: (info) => (
+          <span
+            role="button"
+            tabIndex={0}
+            style={{ cursor: 'pointer' }}
+            onClick={() => info.row.toggleSelected()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                info.row.toggleSelected();
+              }
+            }}
+          >
+            {info.getValue()}
+          </span>
+        ),
       }),
       columnHelper.accessor((row) => row.user.name ?? '', {
         id: 'user_name',
@@ -661,12 +853,27 @@ function StaffTableInner({
         enableGlobalFilter: true,
         cell: (info) => {
           const name = info.row.original.user.name;
-          return name ?? <span className="text-danger">Unknown user</span>;
+          return (
+            <span
+              role="button"
+              tabIndex={0}
+              style={{ cursor: 'pointer' }}
+              onClick={() => info.row.toggleSelected()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  info.row.toggleSelected();
+                }
+              }}
+            >
+              {name ?? <span className="text-danger">Unknown user</span>}
+            </span>
+          );
         },
       }),
       columnHelper.accessor((row) => row.course_permission.course_role, {
         id: 'course_role',
-        header: 'Course content access',
+        header: 'Course content',
         size: 210,
         enableGlobalFilter: false,
         meta: { label: 'Course content access' },
@@ -692,6 +899,7 @@ function StaffTableInner({
           size: 150,
           enableGlobalFilter: false,
           enableSorting: false,
+          enableHiding: true,
           cell: (info) => (
             <CourseInstanceAccessCell
               courseUser={info.row.original}
@@ -713,23 +921,25 @@ function StaffTableInner({
           ) : null,
       }),
     ],
-    [authnUserId, userId, isAdministrator, csrfToken, courseInstances],
+    [authnUserId, userId, isAdministrator, csrfToken, courseInstances, createCheckboxProps],
   );
 
   const table = useReactTable({
     data: courseUsers,
     columns,
     columnResizeMode: 'onChange',
-    enableHiding: false,
+    enableRowSelection: true,
     getRowId: (row) => row.user.id,
     state: {
       sorting,
       columnFilters,
       globalFilter,
+      rowSelection,
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: handleColumnFiltersChange,
+    onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -740,6 +950,8 @@ function StaffTableInner({
       enableHiding: false,
     },
   });
+
+  const selectedUsers = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
 
   const hasUnknownUsers = courseUsers.some((u) => u.user.name == null);
 
@@ -758,9 +970,16 @@ function StaffTableInner({
 
   const headerButtons = (
     <>
-      <RemoveAllStudentDataAccessButton csrfToken={csrfToken} />
-      <DeleteNoAccessButton csrfToken={csrfToken} />
-      <DeleteNonOwnersButton csrfToken={csrfToken} />
+      {selectedUsers.length > 0 && (
+        <SelectionToolbar
+          selectedUsers={selectedUsers}
+          csrfToken={csrfToken}
+          courseInstances={courseInstances}
+          isAdministrator={isAdministrator}
+          authnUserId={authnUserId}
+          userId={userId}
+        />
+      )}
       <AddUsersButton
         csrfToken={csrfToken}
         uidsLimit={uidsLimit}
@@ -769,23 +988,58 @@ function StaffTableInner({
     </>
   );
 
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [searchInputValue, setSearchInputValue] = useState(() => globalFilter);
+  const debouncedSetFilter = useDebouncedCallback((value: string) => {
+    table.setGlobalFilter(value);
+  }, 150);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
+        if (searchInputRef.current && searchInputRef.current !== document.activeElement) {
+          searchInputRef.current.focus();
+          event.preventDefault();
+        }
+      }
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  const displayedCount = table.getRowModel().rows.length;
+  const totalCount = table.getCoreRowModel().rows.length;
+
   return (
     <div className="d-flex flex-column h-100">
-      <TanstackTableCard
-        table={table}
-        title="Staff"
-        singularLabel="user"
-        pluralLabel="users"
-        headerButtons={headerButtons}
-        globalFilter={{ placeholder: 'Search by UID or name...' }}
-        tableOptions={{
-          filters,
-          rowHeight: 72,
-        }}
-        className="flex-grow-1 mb-0"
-        style={{ minHeight: 0 }}
-      />
-      <div className="small flex-shrink-0 border-top p-3">
+      <div className="d-flex flex-row flex-wrap align-items-center gap-2 pb-2">
+        <div className="position-relative" style={{ maxWidth: 'min(400px, 100%)' }}>
+          <input
+            ref={searchInputRef}
+            type="text"
+            className="form-control pl-ui-tanstack-table-search-input pl-ui-tanstack-table-focusable-shadow"
+            aria-label="Search by UID or name..."
+            placeholder="Search by UID or name..."
+            value={searchInputValue}
+            autoComplete="off"
+            onInput={(e) => {
+              const value = e.currentTarget.value;
+              setSearchInputValue(value);
+              debouncedSetFilter(value);
+            }}
+          />
+        </div>
+        <ColumnManager table={table} buttonText="Course Instances" />
+        <div className="text-muted text-nowrap small">
+          Showing {displayedCount} of {totalCount} {totalCount === 1 ? 'user' : 'users'}
+        </div>
+        <div className="d-flex flex-wrap align-items-center gap-2 ms-auto">{headerButtons}</div>
+      </div>
+      <style>{'.staff-table td { align-items: center; }'}</style>
+      <div className="staff-table flex-grow-1" style={{ minHeight: 0 }}>
+        <TanstackTable table={table} title="Staff" filters={filters} rowHeight={72} />
+      </div>
+      <div className="small flex-shrink-0 border-top pt-3">
         {hasUnknownUsers && (
           <p className="alert alert-warning">
             Users with name &quot;<span className="text-danger">Unknown user</span>&quot; either

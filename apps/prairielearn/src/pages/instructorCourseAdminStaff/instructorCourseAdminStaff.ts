@@ -20,11 +20,8 @@ import {
   selectCourseInstancesWithStaffAccess,
 } from '../../models/course-instances.js';
 import {
-  deleteAllCourseInstancePermissionsForCourse,
   deleteCourseInstancePermissions,
   deleteCoursePermissions,
-  deleteCoursePermissionsForNonOwners,
-  deleteCoursePermissionsForUsersWithoutAccess,
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
   updateCourseInstancePermissionsRole,
@@ -419,26 +416,144 @@ ${given_cp_and_cip.join(',\n')}
         authn_user_id: res.locals.authz_data.authn_user.id,
       });
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'delete_non_owners') {
-      debug('Delete non-owners');
-      await deleteCoursePermissionsForNonOwners({
-        course_id: res.locals.course.id,
-        authn_user_id: res.locals.authz_data.authn_user.id,
-      });
+    } else if (req.body.__action === 'bulk_course_permissions_delete') {
+      const userIds: string[] = Array.isArray(req.body.user_ids)
+        ? req.body.user_ids
+        : [req.body.user_ids];
+
+      if (userIds.length === 0) {
+        throw new error.HttpStatusError(400, 'No users selected');
+      }
+
+      for (const userId of userIds) {
+        if (idsEqual(userId, res.locals.user.id) && !res.locals.authz_data.is_administrator) {
+          throw new error.HttpStatusError(
+            403,
+            'Owners cannot remove themselves from the course staff',
+          );
+        }
+        if (idsEqual(userId, res.locals.authn_user.id) && !res.locals.authz_data.is_administrator) {
+          throw new error.HttpStatusError(
+            403,
+            'Owners cannot remove themselves from the course staff even if they are emulating another user',
+          );
+        }
+
+        await deleteCoursePermissions({
+          course_id: res.locals.course.id,
+          user_id: userId,
+          authn_user_id: res.locals.authz_data.authn_user.id,
+        });
+      }
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'delete_no_access') {
-      debug('Delete users with no access');
-      await deleteCoursePermissionsForUsersWithoutAccess({
-        course_id: res.locals.course.id,
-        authn_user_id: res.locals.authz_data.authn_user.id,
-      });
-      res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'remove_all_student_data_access') {
-      debug('Remove all student data access');
-      await deleteAllCourseInstancePermissionsForCourse({
-        course_id: res.locals.course.id,
-        authn_user_id: res.locals.authz_data.authn_user.id,
-      });
+    } else if (req.body.__action === 'bulk_edit_access') {
+      const userIds: string[] = Array.isArray(req.body.user_ids)
+        ? req.body.user_ids
+        : [req.body.user_ids];
+
+      if (userIds.length === 0) {
+        throw new error.HttpStatusError(400, 'No users selected');
+      }
+
+      // Handle course role change if specified
+      const courseRole = req.body.course_role;
+      if (courseRole && courseRole !== '') {
+        if (!['None', 'Previewer', 'Viewer', 'Editor', 'Owner'].includes(courseRole)) {
+          throw new error.HttpStatusError(400, `Invalid requested course role: ${courseRole}`);
+        }
+
+        for (const userId of userIds) {
+          if (idsEqual(userId, res.locals.user.id) && !res.locals.authz_data.is_administrator) {
+            throw new error.HttpStatusError(
+              403,
+              'Owners cannot change their own course content access',
+            );
+          }
+          if (
+            idsEqual(userId, res.locals.authn_user.id) &&
+            !res.locals.authz_data.is_administrator
+          ) {
+            throw new error.HttpStatusError(
+              403,
+              'Owners cannot change their own course content access even if they are emulating another user',
+            );
+          }
+
+          await updateCoursePermissionsRole({
+            course_id: res.locals.course.id,
+            user_id: userId,
+            course_role: courseRole,
+            authn_user_id: res.locals.authz_data.authn_user.id,
+          });
+        }
+      }
+
+      // Handle course instance role changes if specified
+      const rawCiIds = req.body.course_instance_ids;
+      const rawCiRoles = req.body.course_instance_roles;
+      if (rawCiIds) {
+        const courseInstanceIds: string[] = Array.isArray(rawCiIds) ? rawCiIds : [rawCiIds];
+        const courseInstanceRoles: string[] = Array.isArray(rawCiRoles) ? rawCiRoles : [rawCiRoles];
+
+        if (courseInstanceIds.length !== courseInstanceRoles.length) {
+          throw new error.HttpStatusError(400, 'Mismatched course instance ids and roles');
+        }
+
+        const accessibleInstances = await selectCourseInstancesWithStaffAccess({
+          course,
+          authzData,
+          requiredRole: ['Owner'],
+        });
+
+        for (let i = 0; i < courseInstanceIds.length; i++) {
+          const ciId = courseInstanceIds[i];
+          const role = courseInstanceRoles[i] as
+            | 'None'
+            | 'Student Data Viewer'
+            | 'Student Data Editor';
+
+          if (!accessibleInstances.some((ci) => idsEqual(ci.id, ciId))) {
+            throw new error.HttpStatusError(400, 'Invalid requested course instance');
+          }
+
+          if (!['None', 'Student Data Viewer', 'Student Data Editor'].includes(role)) {
+            throw new error.HttpStatusError(
+              400,
+              `Invalid requested course instance role: ${role}`,
+            );
+          }
+
+          for (const userId of userIds) {
+            if (role === 'None') {
+              await deleteCourseInstancePermissions({
+                course_id: course.id,
+                user_id: userId,
+                course_instance_id: ciId,
+                authn_user_id: authzData.authn_user.id,
+              });
+            } else {
+              try {
+                await insertCourseInstancePermissions({
+                  course_id: res.locals.course.id,
+                  user_id: userId,
+                  course_instance_id: ciId,
+                  course_instance_role: role,
+                  authn_user_id: res.locals.authz_data.authn_user.id,
+                });
+              } catch {
+                await updateCourseInstancePermissionsRole({
+                  course_id: course.id,
+                  user_id: userId,
+                  course_instance_id: ciId,
+                  course_instance_role: role,
+                  authn_user_id: authzData.authn_user.id,
+                });
+              }
+            }
+          }
+        }
+      }
+
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
