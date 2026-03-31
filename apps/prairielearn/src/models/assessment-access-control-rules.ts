@@ -64,7 +64,7 @@ export interface EnrollmentAccessControlRuleData {
   lateDeadlines: { date: string; credit: number }[];
 }
 
-export type AccessControlTargetType = 'none' | 'student_label' | 'enrollment';
+type AccessControlTargetType = 'none' | 'student_label' | 'enrollment';
 
 const DeadlineArraySchema = z.array(z.object({ date: z.string(), credit: z.number() })).nullable();
 
