@@ -22,6 +22,7 @@ import {
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectOrInsertUserByUid } from '../../models/user.js';
+import { cleanAccessControlRulesForDisk } from '../../pages/instructorAssessmentAccess/trpc.js';
 import { type AccessControlJsonInput } from '../../schemas/accessControl.js';
 import * as helperDb from '../helperDb.js';
 
@@ -2077,5 +2078,46 @@ describe('Access control syncing', () => {
       assert.isOk(main);
       assert.deepEqual(main.prairietestExams, [{ uuid: TEST_EXAM_UUID, readOnly: true }]);
     });
+  });
+});
+
+describe('cleanAccessControlRulesForDisk', () => {
+  it('omits listBeforeRelease: false and empty objects from output', () => {
+    const rules: AccessControlJsonInput[] = [
+      { listBeforeRelease: false, dateControl: {}, afterComplete: {} },
+    ];
+
+    const cleaned = cleanAccessControlRulesForDisk(rules);
+
+    assert.equal(cleaned.length, 1);
+    assert.notProperty(cleaned[0], 'listBeforeRelease');
+    assert.notProperty(cleaned[0], 'dateControl');
+    assert.notProperty(cleaned[0], 'afterComplete');
+  });
+
+  it('preserves listBeforeRelease: true on the main rule only', () => {
+    const rules: AccessControlJsonInput[] = [
+      makeAccessControlRule({ listBeforeRelease: true }),
+      makeAccessControlRule({ listBeforeRelease: true }),
+    ];
+
+    const cleaned = cleanAccessControlRulesForDisk(rules);
+
+    assert.equal((cleaned[0] as any).listBeforeRelease, true);
+    assert.notProperty(cleaned[1], 'listBeforeRelease');
+  });
+
+  it('includes non-empty dateControl and afterComplete', () => {
+    const rules: AccessControlJsonInput[] = [
+      makeAccessControlRule({
+        dateControl: { dueDate: '2024-04-01T23:59:00' },
+        afterComplete: { hideQuestions: true },
+      }),
+    ];
+
+    const cleaned = cleanAccessControlRulesForDisk(rules);
+
+    assert.deepEqual((cleaned[0] as any).dateControl, { dueDate: '2024-04-01T23:59:00' });
+    assert.deepEqual((cleaned[0] as any).afterComplete, { hideQuestions: true });
   });
 });

@@ -7,21 +7,19 @@ import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
 import { getLatestEarlyDeadlineDate, getUserTimezone } from '../utils/dateUtils.js';
 
-interface DueDateInputProps {
-  value: string | null;
-  onChange: (value: string | null) => void;
-  idPrefix: string;
-  releaseDate: string | null | undefined;
-  earlyDeadlines: DeadlineEntry[] | undefined;
-}
-
 function DueDateInput({
   value,
   onChange,
   idPrefix,
   releaseDate,
   earlyDeadlines,
-}: DueDateInputProps) {
+}: {
+  value: string | null;
+  onChange: (value: string | null) => void;
+  idPrefix: string;
+  releaseDate: string | null | undefined;
+  earlyDeadlines: DeadlineEntry[] | undefined;
+}) {
   const userTimezone = getUserTimezone();
 
   const getCreditPeriodText = () => {
