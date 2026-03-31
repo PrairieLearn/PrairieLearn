@@ -5,17 +5,15 @@ import { Button, Form, ListGroup, Spinner } from 'react-bootstrap';
 import { useTRPCClient } from '../../utils/trpc-context.js';
 import type { StudentLabelTarget } from '../types.js';
 
-interface StudentLabelSearchInputProps {
-  excludedStudentLabelIds: Set<string>;
-  onSelect: (studentLabels: StudentLabelTarget[]) => void;
-  onClose: () => void;
-}
-
 export function StudentLabelSearchInput({
   excludedStudentLabelIds,
   onSelect,
   onClose,
-}: StudentLabelSearchInputProps) {
+}: {
+  excludedStudentLabelIds: Set<string>;
+  onSelect: (studentLabels: StudentLabelTarget[]) => void;
+  onClose: () => void;
+}) {
   const trpcClient = useTRPCClient();
   const [filter, setFilter] = useState('');
   const [selectedStudentLabels, setSelectedStudentLabels] = useState<Set<string>>(() => new Set());

@@ -28,7 +28,7 @@ import {
   InstructorAssessmentAccessNew,
 } from './instructorAssessmentAccess.html.js';
 import { fetchAllAccessControlRules } from './rules.js';
-import { accessControlRouter, computeHash, createContext } from './trpc.js';
+import { accessControlRouter, createContext } from './trpc.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -65,7 +65,8 @@ router.get(
 
     if (enhancedAccessControlEnabled && res.locals.assessment.modern_access_control) {
       const jsonRules = await fetchAllAccessControlRules(res.locals.assessment);
-      const origHash = computeHash(jsonRules);
+      const assessmentPath = getAssessmentPath(res.locals);
+      const origHash = (await getOriginalHash(assessmentPath)) ?? '';
       const trpcCsrfToken = generatePrefixCsrfToken(
         {
           url: req.originalUrl.split('?')[0].replace(/\/$/, '') + '/trpc',

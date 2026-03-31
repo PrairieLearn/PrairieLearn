@@ -5,13 +5,15 @@ import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData } from '../types.js';
 
-interface DurationInputProps {
+function DurationInput({
+  value,
+  onChange,
+  idPrefix,
+}: {
   value: number | null;
   onChange: (value: number | null) => void;
   idPrefix: string;
-}
-
-function DurationInput({ value, onChange, idPrefix }: DurationInputProps) {
+}) {
   return (
     <Form.Group>
       <Form.Check

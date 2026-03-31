@@ -351,19 +351,3 @@ export async function syncAllAccessControl(
 
   return errors;
 }
-
-/**
- * Syncs access control rules for a single assessment.
- * Throws on validation errors.
- */
-export async function syncAccessControl(
-  courseInstanceId: string,
-  assessmentId: string,
-  accessControlRules: AccessControlJson[],
-): Promise<void> {
-  const errors = await syncAllAccessControl(courseInstanceId, [
-    { assessmentId, rules: accessControlRules },
-  ]);
-  const error = errors.get(assessmentId);
-  if (error) throw new Error(error);
-}
