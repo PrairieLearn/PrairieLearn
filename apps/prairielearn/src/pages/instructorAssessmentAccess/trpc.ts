@@ -99,6 +99,10 @@ const students = t.procedure
       }));
   });
 
+// Data-leakage audit: the underlying SQL query joins enrollments on
+// course_instance_id, so only users enrolled in this CI are returned.
+// UIDs with no enrollment produce a generic "not found" response that
+// does not reveal whether the user exists elsewhere.
 const validateUids = t.procedure
   .use(requireEnhancedAccessControl)
   .use(requireCourseInstancePermissionView)
