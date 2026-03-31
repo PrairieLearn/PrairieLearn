@@ -428,6 +428,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     elif result == "invalid":
         if file_names:
             # Submit with a required file missing to test validation
+            # The remaining files are still submitted
             missing_file = file_names[0]
             submitted_names = file_names[1:]
             files = []
