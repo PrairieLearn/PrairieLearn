@@ -86,6 +86,11 @@ WHERE
     $target_types::enum_assessment_access_control_target_type[]
   )
 ORDER BY
+  CASE aacr.target_type
+    WHEN 'none' THEN 0
+    WHEN 'student_label' THEN 1
+    WHEN 'enrollment' THEN 2
+  END,
   aacr.number;
 
 -- BLOCK delete_enrollment_rules_by_ids
