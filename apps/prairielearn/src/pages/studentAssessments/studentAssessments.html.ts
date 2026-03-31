@@ -17,10 +17,13 @@ import {
 import { type ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const StudentAssessmentsRowSchema = z.object({
+  assessment_id: AssessmentSchema.shape.id,
   multiple_instance_header: z.boolean(),
   assessment_number: AssessmentSchema.shape.number,
   title: AssessmentSchema.shape.title,
   team_work: AssessmentSchema.shape.team_work.nullable(),
+  modern_access_control: AssessmentSchema.shape.modern_access_control,
+  authorized: z.boolean(),
   assessment_set_name: AssessmentSetSchema.shape.name,
   assessment_set_color: AssessmentSetSchema.shape.color,
   label: z.string(),
@@ -34,6 +37,7 @@ export const StudentAssessmentsRowSchema = z.object({
   link: z.string(),
   start_new_assessment_group: z.boolean(),
   assessment_group_heading: z.string(),
+  show_before_release: z.boolean().optional(),
 });
 type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowSchema>;
 
@@ -90,25 +94,33 @@ export function StudentAssessments({
                       </span>
                     </td>
                     <td class="align-middle">
-                      ${row.multiple_instance_header ||
-                      (!row.active && row.assessment_instance_id == null)
-                        ? row.title
-                        : html`
-                            <a href="${urlPrefix}${row.link}">
-                              ${row.title}
-                              ${row.team_work
-                                ? html`<i class="fas fa-users" aria-hidden="true"></i>`
-                                : ''}
-                            </a>
-                          `}
+                      ${row.show_before_release
+                        ? html`<span class="text-muted">${row.title}</span>`
+                        : row.multiple_instance_header ||
+                            (!row.active && row.assessment_instance_id == null)
+                          ? row.title
+                          : html`
+                              <a href="${urlPrefix}${row.link}">
+                                ${row.title}
+                                ${row.team_work
+                                  ? html`<i class="fas fa-users" aria-hidden="true"></i>`
+                                  : ''}
+                              </a>
+                            `}
                     </td>
                     <td class="text-center align-middle">
-                      ${row.assessment_instance_open !== false
-                        ? row.credit_date_string
-                        : 'Assessment closed.'}
-                      ${StudentAccessRulesPopover({
-                        accessRules: row.access_rules,
-                      })}
+                      ${row.show_before_release
+                        ? html`<span class="text-muted">Not yet open</span>`
+                        : row.credit_date_string === 'None'
+                          ? ''
+                          : row.assessment_instance_open !== false
+                            ? row.credit_date_string
+                            : 'Assessment closed.'}
+                      ${row.modern_access_control
+                        ? ''
+                        : StudentAccessRulesPopover({
+                            accessRules: row.access_rules,
+                          })}
                     </td>
                     <td class="text-center align-middle">
                       ${row.multiple_instance_header

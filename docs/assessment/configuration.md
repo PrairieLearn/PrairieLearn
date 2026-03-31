@@ -212,6 +212,7 @@ If a question alternative list is specified, some of these questions are first s
 | `triesPerVariant`      | integer         | The maximum number of attempts allowed for each question variant (on Homeworks). (Optional; default `1`)                                                                                                                                                                                                                                                         |
 | `allowRealTimeGrading` | boolean         | Whether to allow real-time grading for this question (Exams only). (Optional; default `true`)                                                                                                                                                                                                                                                                    |
 | `forceMaxPoints`       | boolean         | Whether to force all students to receive maximum points. See [Regrading](regrading.md). (Optional; default `false`)                                                                                                                                                                                                                                              |
+| `preferences`          | object          | Override values for the question's [preferences](../question/preferences.md). Keys must match the preference names defined in the question's `info.json`. (Optional; default: use question defaults)                                                                                                                                                             |
 
 Slot specification details are in the [format specification for `infoAssessment.json`](../schemas/infoAssessment.md)
 
@@ -951,7 +952,7 @@ Real-time grading can be disabled for an entire assessment:
 }
 ```
 
-It can also be disabled for specific zones, alternative groups, or questions by adding `"allowRealTimeGrading": false` to the relevant part of the `infoAssessment.json` file. For example, the following configuration disables real-time grading for the second zone only:
+It can also be disabled for specific zones, alternative pools, or questions by adding `"allowRealTimeGrading": false` to the relevant part of the `infoAssessment.json` file. For example, the following configuration disables real-time grading for the second zone only:
 
 ```json title="infoAssessment.json"
 {

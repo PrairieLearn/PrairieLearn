@@ -9,12 +9,13 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
+import { getCourseInstanceTrpcUrl, getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
@@ -100,6 +101,14 @@ router.get(
 
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
 
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      {
+        url: getCourseInstanceTrpcUrl(courseInstance.id),
+        authn_user_id: res.locals.authn_user.id,
+      },
+      config.secretKey,
+    );
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -114,6 +123,7 @@ router.get(
             <Hydrate>
               <InstructorInstanceAdminSettings
                 csrfToken={__csrf_token}
+                trpcCsrfToken={trpcCsrfToken}
                 urlPrefix={urlPrefix}
                 navPage={navPage}
                 canEdit={canEdit}
@@ -168,6 +178,8 @@ router.post(
         self_enrollment_enabled,
         self_enrollment_use_enrollment_code,
         course_instance_permission,
+        access_control_strategy,
+        preserve_incompatible,
       } = z
         .object({
           short_name: z.string().trim(),
@@ -177,6 +189,8 @@ router.post(
           self_enrollment_enabled: z.boolean(),
           self_enrollment_use_enrollment_code: z.boolean(),
           course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
+          access_control_strategy: z.enum(['migrate', 'keep', 'wipe']).optional().default('wipe'),
+          preserve_incompatible: z.boolean().optional().default(false),
         })
         .parse(req.body);
 
@@ -262,6 +276,10 @@ router.post(
         metadataOverrides: {
           publishing: resolvedPublishing,
           selfEnrollment: resolvedSelfEnrollment,
+        },
+        accessControlMigration: {
+          strategy: access_control_strategy,
+          preserveIncompatible: preserve_incompatible,
         },
       });
 

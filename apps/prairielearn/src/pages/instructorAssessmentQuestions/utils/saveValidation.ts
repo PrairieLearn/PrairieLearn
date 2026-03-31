@@ -24,7 +24,7 @@ function zoneHasStructuralValidationError(zone: ZoneAssessmentForm, zoneIndex: n
   return false;
 }
 
-function altGroupHasStructuralValidationError(question: ZoneQuestionBlockForm): boolean {
+function altPoolHasStructuralValidationError(question: ZoneQuestionBlockForm): boolean {
   if (question.numberChoose == null) {
     return false;
   }
@@ -34,13 +34,13 @@ function altGroupHasStructuralValidationError(question: ZoneQuestionBlockForm): 
 
 export function getStructuralSaveValidationErrorKind(
   zones: ZoneAssessmentForm[],
-): 'zone' | 'altGroup' | undefined {
+): 'zone' | 'altPool' | undefined {
   if (zones.some(zoneHasStructuralValidationError)) {
     return 'zone';
   }
 
-  if (zones.some((zone) => zone.questions.some(altGroupHasStructuralValidationError))) {
-    return 'altGroup';
+  if (zones.some((zone) => zone.questions.some(altPoolHasStructuralValidationError))) {
+    return 'altPool';
   }
 
   return undefined;
