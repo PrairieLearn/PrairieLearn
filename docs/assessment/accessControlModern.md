@@ -41,7 +41,6 @@ Below is a complete skeleton showing all available fields. All fields are option
 {
   "accessControl": [
     {
-      "name": "Defaults",
       "listBeforeRelease": false,
       "dateControl": {
         "releaseDate": "2025-01-15T00:00:01",
@@ -69,7 +68,6 @@ Below is a complete skeleton showing all available fields. All fields are option
       }
     },
     {
-      "name": "Extended time students",
       "labels": ["Extended time"],
       "dateControl": {
         "dueDate": "2025-02-22T23:59:59",
@@ -158,7 +156,6 @@ The same logic applies to `hideScore` / `showScoreAgainDate` (there is no "hide 
 
 | Field               | Type    | Default | Description                                                                                                                                                      |
 | ------------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`              | string  |         | A descriptive name for the rule (for display in the UI).                                                                                                         |
 | `listBeforeRelease` | boolean | `false` | Only valid on the first entry (defaults). If `true`, the assessment title is shown on the Assessments page before the release date, but students cannot open it. |
 
 ## Student labels and overrides
