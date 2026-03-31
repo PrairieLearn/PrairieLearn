@@ -57,10 +57,6 @@ router.get(
       `/pl/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`,
       host,
     ).href;
-    const publicLink = new URL(
-      `/pl/public/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}/questions`,
-      host,
-    ).href;
     const infoAssessmentPath = encodePath(
       path.join(
         'courseInstances',
@@ -89,7 +85,6 @@ router.get(
         assessmentGHLink,
         tids,
         studentLink,
-        publicLink,
         infoAssessmentPath,
         assessmentSets,
         assessmentModules,
@@ -203,6 +198,119 @@ router.post(
           assessmentInfo.honorCode,
           req.body.honor_code?.replaceAll('\r\n', '\n').trim(),
           '',
+        );
+      }
+
+      // Scoring
+      const maxPointsRaw = req.body.max_points?.trim();
+      if (maxPointsRaw !== '' && maxPointsRaw !== undefined) {
+        const maxPointsNum = Number(maxPointsRaw);
+        if (Number.isNaN(maxPointsNum) || maxPointsNum < 0) {
+          throw new error.HttpStatusError(400, 'Maximum points must be a non-negative number');
+        }
+        assessmentInfo.maxPoints = propertyValueWithDefault(
+          assessmentInfo.maxPoints,
+          maxPointsNum,
+          (v: unknown) => v == null,
+        );
+      } else {
+        assessmentInfo.maxPoints = propertyValueWithDefault(
+          assessmentInfo.maxPoints,
+          undefined,
+          (v: unknown) => v == null,
+        );
+      }
+
+      const maxBonusPointsRaw = req.body.max_bonus_points?.trim();
+      if (maxBonusPointsRaw !== '' && maxBonusPointsRaw !== undefined) {
+        const maxBonusPointsNum = Number(maxBonusPointsRaw);
+        if (Number.isNaN(maxBonusPointsNum) || maxBonusPointsNum < 0) {
+          throw new error.HttpStatusError(
+            400,
+            'Maximum bonus points must be a non-negative number',
+          );
+        }
+        assessmentInfo.maxBonusPoints = propertyValueWithDefault(
+          assessmentInfo.maxBonusPoints,
+          maxBonusPointsNum,
+          (v: unknown) => v == null || v === 0,
+        );
+      } else {
+        assessmentInfo.maxBonusPoints = propertyValueWithDefault(
+          assessmentInfo.maxBonusPoints,
+          undefined,
+          (v: unknown) => v == null || v === 0,
+        );
+      }
+
+      if (res.locals.assessment.type === 'Homework') {
+        assessmentInfo.constantQuestionValue = propertyValueWithDefault(
+          assessmentInfo.constantQuestionValue,
+          req.body.constant_question_value === 'on',
+          false,
+        );
+      }
+
+      // Question behaviour
+      assessmentInfo.shuffleQuestions = propertyValueWithDefault(
+        assessmentInfo.shuffleQuestions,
+        req.body.shuffle_questions === 'on',
+        res.locals.assessment.type === 'Exam',
+      );
+
+      if (res.locals.assessment.type === 'Exam') {
+        const advanceScorePercRaw = req.body.advance_score_perc?.trim();
+        if (advanceScorePercRaw !== '' && advanceScorePercRaw !== undefined) {
+          const advanceScorePercNum = Number(advanceScorePercRaw);
+          if (
+            Number.isNaN(advanceScorePercNum) ||
+            advanceScorePercNum < 0 ||
+            advanceScorePercNum > 100
+          ) {
+            throw new error.HttpStatusError(
+              400,
+              'Advance score threshold must be between 0 and 100',
+            );
+          }
+          assessmentInfo.advanceScorePerc = propertyValueWithDefault(
+            assessmentInfo.advanceScorePerc,
+            advanceScorePercNum,
+            (v: unknown) => v == null || v === 0,
+          );
+        } else {
+          assessmentInfo.advanceScorePerc = propertyValueWithDefault(
+            assessmentInfo.advanceScorePerc,
+            undefined,
+            (v: unknown) => v == null || v === 0,
+          );
+        }
+      }
+
+      // Grading
+      if (res.locals.assessment.type === 'Exam') {
+        assessmentInfo.allowRealTimeGrading = propertyValueWithDefault(
+          assessmentInfo.allowRealTimeGrading,
+          req.body.allow_real_time_grading === 'on',
+          true,
+        );
+      }
+
+      const gradeRateMinutesRaw = req.body.grade_rate_minutes?.trim();
+      if (gradeRateMinutesRaw !== '' && gradeRateMinutesRaw !== undefined) {
+        const gradeRateMinutesNum = Number(gradeRateMinutesRaw);
+        if (Number.isNaN(gradeRateMinutesNum) || gradeRateMinutesNum < 0) {
+          throw new error.HttpStatusError(400, 'Grade rate minutes must be a non-negative number');
+        }
+        assessmentInfo.gradeRateMinutes = propertyValueWithDefault(
+          assessmentInfo.gradeRateMinutes,
+          gradeRateMinutesNum,
+          (v: unknown) => v == null || v === 0,
+        );
+      } else {
+        assessmentInfo.gradeRateMinutes = propertyValueWithDefault(
+          assessmentInfo.gradeRateMinutes,
+          undefined,
+          (v: unknown) => v == null || v === 0,
         );
       }
 
