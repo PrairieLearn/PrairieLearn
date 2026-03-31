@@ -2079,6 +2079,7 @@ describe('Access control syncing', () => {
       assert.deepEqual(main.prairietestExams, [{ uuid: TEST_EXAM_UUID, readOnly: true }]);
     });
   });
+
 });
 
 describe('cleanAccessControlRulesForDisk', () => {
