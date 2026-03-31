@@ -45,6 +45,8 @@ const createCourse = t.procedure
   .input(
     z.object({
       courseRequestId: IdSchema,
+      // No format validation — admins may need to deviate from the standard
+      // "RUBRIC NUMBER" pattern for non-standard department codes.
       shortName: z.string().min(1, 'Short name is required'),
       title: z.string().min(1, 'Title is required').max(75, 'Title must be at most 75 characters'),
       institutionId: IdSchema,
