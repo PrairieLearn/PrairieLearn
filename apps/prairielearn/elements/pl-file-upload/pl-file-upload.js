@@ -244,7 +244,7 @@
             // from the page without saving the form. This check is initially
             // disabled because we don't want students to see the prompt if they
             // haven't actually made any changes.
-            this.element.find('input[type="hidden"]').removeAttr('data-disable-unload-check');
+            this.element.find('input[type="hidden"]').removeAttr('data-skip-unload-check');
           }
           resolve();
         };
