@@ -63,6 +63,7 @@ tRPC doesn't natively support typed errors. This codebase uses `throwAppError` (
 1. Define an error interface in the subrouter file, keyed by procedure name.
 2. Throw with `throwAppError<MyError['ProcedureName']>({ code: '...' })`. Optional second arg is a tRPC error code (default `'BAD_REQUEST'`, use `'CONFLICT'` for hash mismatches, etc.).
 3. Handle on the client with `getAppError<MyError['ProcedureName']>(error)` — always handle the `'UNKNOWN'` fallback code.
+4. Pass the resolved `AppError` (the return value of `getAppError`) to child components rather than the raw mutation error. Use the `AppError<T>` type from `lib/client/errors.ts` for the prop type.
 
 See `trpc/assessment/access-control.ts` (server) and `lib/client/errors.ts` (client) for complete examples.
 
