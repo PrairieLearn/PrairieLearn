@@ -2,6 +2,7 @@
   min-height: 15ex;
   background-color: #fafdff;
   border: 2px dashed #0087f7;
+  cursor: pointer;
 }
 .pl-file-upload-container .upload-dropzone.dz-drag-hover {
   background-color: #d9edf7;
