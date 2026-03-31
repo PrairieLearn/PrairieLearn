@@ -192,7 +192,7 @@ Not all fields behave the same way during cascading:
 | ---------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------- |
 | `dateControl.*` sub-fields   | Override replaces individual sub-fields; unset sub-fields inherit from main | Later override replaces; unset fields kept from earlier |
 | `afterComplete.*` sub-fields | Same as `dateControl`                                                       | Same as `dateControl`                                   |
-| `listBeforeRelease`          | Only valid on the first entry (defaults)                                    | Not applicable                                          |
+| `listBeforeRelease`          | Cannot be overridden                                                        | Not applicable                                          |
 
 ### Override examples
 
