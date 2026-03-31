@@ -121,46 +121,76 @@
      * Initializes the file upload zone on the question.
      */
     initializeTemplate() {
-      const $dropTarget = this.element.find('.upload-dropzone');
+      this.element.find('.upload-dropzone').each((_, /** @type {HTMLElement} */ dropzone) => {
+        dropzone.addEventListener('click', () => {
+          const input =
+            document.querySelector('input[type="file"]') || document.createElement('input');
+          input.type = 'file';
+          input.value = null; // Clear the input so that the change event will fire even if the same file is selected
+          input.multiple = true;
+          input.classList.add('d-none');
+          input.addEventListener('change', () => {
+            this.addFiles(input.files);
+          });
+          this.element.append(input);
+          input.click();
+        });
 
-      $dropTarget.dropzone({
-        url: '/none',
-        autoProcessQueue: false,
-        accept: (file, done) => {
-          // fuzzy case match
-          const fileNameLowerCase = file.name.toLowerCase();
-          if (this.findAcceptedFileName(fileNameLowerCase)) {
-            return done();
+        dropzone.addEventListener('dragenter', (event) => {
+          if (event.dataTransfer?.types.includes('Files')) {
+            event.preventDefault();
+            dropzone.classList.add('dz-drag-hover');
           }
-          return done('invalid file');
-        },
-        addedfile: (file) => {
-          const existingFileSize = this.files.reduce((prev, next) => prev + next.size, 0);
-          if (existingFileSize + file.size > this.maxFileSizeMB * 1024 * 1024) {
-            this.addWarningMessage(
-              `Combined file size of new file and existing files (<strong>${
-                Math.round((existingFileSize + file.size) / 1024 / 10.24) / 100
-              } MB</strong>) is greater than maximum file size of ${this.maxFileSizeMB} MB.`,
-            );
-            return;
+        });
+        dropzone.addEventListener('dragleave', () => {
+          dropzone.classList.remove('dz-drag-hover');
+        });
+
+        dropzone.addEventListener('dragover', (event) => {
+          if (event.dataTransfer?.types.includes('Files')) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'copy';
+            dropzone.classList.add('dz-drag-hover');
           }
+        });
 
-          // fuzzy case match
-          const fileNameLowerCase = file.name.toLowerCase();
-          const acceptedFileName = this.findAcceptedFileName(fileNameLowerCase);
-
-          if (acceptedFileName === null) {
-            this.addWarningMessage(
-              `<strong>${escapeFileName(file.name)}</strong> did not match any accepted file for this question.`,
-            );
-            return;
+        dropzone.addEventListener('drop', (event) => {
+          dropzone.classList.remove('dz-drag-hover');
+          if (event.dataTransfer?.types.includes('Files')) {
+            event.preventDefault();
+            this.addFiles(event.dataTransfer.files);
           }
-
-          this.addFileFromBlob(acceptedFileName, file.size, file, false);
-        },
+        });
       });
 
       this.renderFileList();
+    }
+
+    addFiles(/** @type {FileList} */ fileList) {
+      for (const file of fileList) {
+        // fuzzy case match
+        const fileNameLowerCase = file.name.toLowerCase();
+        const acceptedFileName = this.findAcceptedFileName(fileNameLowerCase);
+
+        if (acceptedFileName === null) {
+          this.addWarningMessage(
+            `<strong>${escapeFileName(file.name)}</strong> did not match any accepted file for this question.`,
+          );
+          continue;
+        }
+
+        const existingFileSize = this.files.reduce((prev, next) => prev + next.size, 0);
+        if (existingFileSize + file.size > this.maxFileSizeMB * 1024 * 1024) {
+          this.addWarningMessage(
+            `Combined file size of new file and existing files (<strong>${
+              Math.round((existingFileSize + file.size) / 1024 / 10.24) / 100
+            } MB</strong>) is greater than maximum file size of ${this.maxFileSizeMB} MB.`,
+          );
+          continue;
+        }
+
+        this.addFileFromBlob(acceptedFileName, file.size, file, false);
+      }
     }
 
     /**
@@ -168,7 +198,7 @@
      * @type {[type]}
      */
     syncFilesToHiddenInput() {
-      this.element.find('input').val(JSON.stringify(this.files));
+      this.element.find('input[type="hidden"]').val(JSON.stringify(this.files));
     }
 
     addFileFromBlob(name, size, blob, isFromDownload) {
@@ -204,7 +234,7 @@
           // from the page without saving the form. This check is initially
           // disabled because we don't want students to see the prompt if they
           // haven't actually made any changes.
-          this.element.find('input').removeAttr('data-disable-unload-check');
+          this.element.find('input[type="hidden"]').removeAttr('data-disable-unload-check');
         }
       };
 
