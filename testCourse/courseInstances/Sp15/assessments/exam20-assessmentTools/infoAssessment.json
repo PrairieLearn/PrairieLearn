@@ -7,13 +7,13 @@
   "number": "20",
   "zones": [
     {
-      "title": "Zone without tool overrides",
+      "title": "Zone with tool overrides",
+      "tools": { "calculator": { "enabled": false } },
       "questions": [{ "id": "addNumbers", "autoPoints": 10 }]
     },
     {
-      "title": "Zone with tool overrides",
-      "questions": [{ "id": "partialCredit3", "autoPoints": 10 }],
-      "tools": { "calculator": { "enabled": false } }
+      "title": "Zone without tool overrides",
+      "questions": [{ "id": "partialCredit3", "autoPoints": 10 }]
     }
   ],
   "tools": { "calculator": { "enabled": true } }

@@ -90,8 +90,8 @@ test.describe('Assessment tools', () => {
     testCoursePath,
     courseInstance,
   }) => {
-    // Template has calculator=true at assessment level and Zone 1 has no tool overrides,
-    // so Zone 1 inherits calculator=true from the assessment.
+    // Template has calculator=true at assessment level and Zone 2 has no tool overrides,
+    // so Zone 2 inherits calculator=true from the assessment.
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
       tid: assessmentTid,
@@ -119,14 +119,14 @@ test.describe('Assessment tools', () => {
     await expect(async () => {
       const hiddenZones = await page.locator('input[name="zones"]').inputValue();
       const parsedZones = JSON.parse(hiddenZones);
-      expect(parsedZones[0].tools?.calculator?.enabled).toBe(false);
+      expect(parsedZones[1].tools?.calculator?.enabled).toBe(false);
     }).toPass({ timeout: 5000 });
 
     await page.getByRole('button', { name: 'Save and sync' }).click();
     await expect(page.getByText('Assessment questions updated successfully')).toBeVisible();
 
     const savedAssessment = await readInfoAssessment(testCoursePath);
-    expect(savedAssessment.zones[0].tools.calculator.enabled).toBe(false);
+    expect(savedAssessment.zones[1].tools.calculator.enabled).toBe(false);
     // Assessment-level tool should remain unchanged
     expect(savedAssessment.tools.calculator.enabled).toBe(true);
   });
