@@ -11,6 +11,15 @@ fi
 
 cd "$CLAUDE_PROJECT_DIR"
 
+SETUP_DONE_MARKER="/tmp/.claude-session-setup-done"
+
+# On resume, just ensure services are running.
+if [ -f "$SETUP_DONE_MARKER" ]; then
+    make start-postgres
+    make start-redis
+    exit 0
+fi
+
 # Make PostgreSQL binaries available system-wide (needed by start_postgres.sh
 # which runs commands as the postgres user via su).
 # TODO: Once start_postgres.sh is updated to use `gosu`, we can remove this.
@@ -36,6 +45,7 @@ rm /root/.local/bin/uv # Uninstall the outdated uv binary.
 
 time timeout 120 make deps
 
+# Start the support services.
 make start-postgres
 make start-redis
 # Starting s3rver in the session startup hook causes issues, so we wait to start it until
@@ -60,3 +70,5 @@ if [ -f "$PW_BROWSERS_JSON" ]; then
         fi
     fi
 fi
+
+touch "$SETUP_DONE_MARKER"
