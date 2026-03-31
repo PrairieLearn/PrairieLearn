@@ -11,11 +11,11 @@ WITH
       gc.assessment_id = $assessment_id
   )
 SELECT
-  TO_JSONB(iq.*) AS instance_question,
-  TO_JSONB(q.*) AS question,
-  TO_JSONB(u.*) AS user,
-  TO_JSONB(c.*) AS question_course,
-  TO_JSONB(aq.*) AS assessment_question
+  to_jsonb(iq.*) AS instance_question,
+  to_jsonb(q.*) AS question,
+  to_jsonb(u.*) AS user,
+  to_jsonb(c.*) AS question_course,
+  to_jsonb(aq.*) AS assessment_question
 FROM
   assessment_instances AS ai
   JOIN instance_questions AS iq ON ai.id = iq.assessment_instance_id
