@@ -164,8 +164,6 @@ export function AccessControlSummary({
       <p className="text-muted">
         The <strong>main rule</strong> defines default access settings for all students. Add{' '}
         <strong>overrides</strong> below to customize settings for specific students or groups.
-        Overrides cascade: each override layers on top of previous ones, and only the settings you
-        explicitly configure are changed.
       </p>
 
       <section className="mb-4">
@@ -248,9 +246,9 @@ export function AccessControlSummary({
 
         <div className="rounded p-3 mt-3" style={{ backgroundColor: 'var(--bs-tertiary-bg)' }}>
           <p className="text-body-secondary small mb-0">
-            When a student matches multiple overrides, individual overrides take priority over
-            student label overrides. Each override inherits all settings from the main rule — only
-            explicitly overridden fields are changed.
+            If a student matches multiple overrides, individual student overrides take priority over
+            student label overrides. Within each section, overrides lower in the list take priority
+            over those higher up.
           </p>
         </div>
       </section>
