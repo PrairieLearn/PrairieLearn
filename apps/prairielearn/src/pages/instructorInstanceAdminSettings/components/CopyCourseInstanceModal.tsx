@@ -143,8 +143,7 @@ export function CopyCourseInstanceModal({
     const valid = await trigger(['short_name', 'long_name']);
     if (!valid) return;
 
-    const analysis = analysisQuery.data;
-    if (analysis?.hasLegacyRules) {
+    if (analysisQuery.data?.hasLegacyRules) {
       setStep('access-control');
     } else {
       void handleSubmit((data) => copyMutation.mutate(data))();
@@ -210,7 +209,11 @@ export function CopyCourseInstanceModal({
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" disabled={isPending}>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isPending || (step === 'settings' && analysisQuery.isLoading)}
+            >
               {isPending
                 ? 'Copying...'
                 : step === 'settings' && analysisQuery.data?.hasLegacyRules
