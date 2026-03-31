@@ -3,11 +3,8 @@ name: Welcome first-time contributors
 on:
   pull_request_target:
     types: [opened]
-  issues:
-    types: [opened]
 
 permissions:
-  issues: write
   pull-requests: write
 
 jobs:
@@ -29,9 +26,3 @@ jobs:
             - Feel free to ask questions here or in the `#pl-dev` channel on [Slack](https://prairielearn.com/slack).
 
             We appreciate your contribution!
-          issue-message: |
-            Thanks for opening your first issue on PrairieLearn! Here are a few things to keep in mind:
-
-            - If opening a bug report and haven't discussed it in `#pl-help` channel on [Slack](https://prairielearn.com/slack), consider doing so before opening the issue to make sure it's a valid bug.
-            - Make sure you include steps for reproducing the issue, and a PrairieLearn URL we can view the issue on (if applicable).
-            - If opening a feature request, make sure to explain what problem you are trying to solve (to avoid the [XY problem](https://en.wikipedia.org/wiki/XY_problem)).
