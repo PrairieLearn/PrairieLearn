@@ -111,6 +111,7 @@ interface QuestionResult {
   attempts: number;
   lastSubmissionId: string | null;
   testType: TestType;
+  gradable: boolean;
   /**
    * True when no submissions were needed because the question was already
    * complete/closed or had already reached max points. Distinguishes "nothing
@@ -229,6 +230,7 @@ async function processQuestion(
   let attempts = 0;
   let lastSubmissionId: string | null = null;
   let testType: TestType = ctx.testType === 'random' ? 'correct' : ctx.testType;
+  let gradable = false;
   let alreadySatisfied = false;
 
   for (let i = 0; i < ctx.maxAttempts; i++) {
@@ -255,17 +257,23 @@ async function processQuestion(
       break;
     }
 
-    const { submissionData, variant, hasFatalIssue, currentTestType } =
-      await createVariantAndSubmissionData({
-        question,
-        instance_question: currentIq,
-        user,
-        question_course,
-        courseInstance: ctx.courseInstance,
-        assessmentCourse: ctx.assessmentCourse,
-        test_type: ctx.testType,
-      });
+    const {
+      submissionData,
+      variant,
+      hasFatalIssue,
+      currentTestType,
+      gradable: isGradable,
+    } = await createVariantAndSubmissionData({
+      question,
+      instance_question: currentIq,
+      user,
+      question_course,
+      courseInstance: ctx.courseInstance,
+      assessmentCourse: ctx.assessmentCourse,
+      test_type: ctx.testType,
+    });
     testType = currentTestType;
+    gradable = isGradable;
     if (hasFatalIssue) break;
 
     if (mode === 'save-and-grade') {
@@ -288,7 +296,7 @@ async function processQuestion(
 
       // External grading: assign auto points directly instead of triggering
       // the external grader.
-      if (mode === 'external' && maxAutoPoints > 0 && currentTestType !== 'invalid') {
+      if (mode === 'external' && maxAutoPoints > 0 && gradable) {
         await updateInstanceQuestionScore({
           assessment: ctx.assessment,
           instance_question_id: instance_question.id,
@@ -313,7 +321,7 @@ async function processQuestion(
     currentIq = iqRow;
   }
 
-  return { attempts, lastSubmissionId, testType, alreadySatisfied };
+  return { attempts, lastSubmissionId, testType, gradable, alreadySatisfied };
 }
 
 async function finalizeQuestion(
@@ -327,7 +335,7 @@ async function finalizeQuestion(
     ctx.shouldGrade &&
     maxManualPoints > 0 &&
     result.lastSubmissionId !== null &&
-    result.testType !== 'invalid'
+    result.gradable
   ) {
     await updateInstanceQuestionScore({
       assessment: ctx.assessment,
@@ -433,5 +441,6 @@ async function createVariantAndSubmissionData({
     variant,
     hasFatalIssue,
     currentTestType,
+    gradable: data.gradable,
   };
 }
