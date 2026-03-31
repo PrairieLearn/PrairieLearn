@@ -45,7 +45,8 @@ rm /root/.local/bin/uv # Uninstall the outdated uv binary.
 
 # Run commands independently for better timeout control
 make python-deps
-time timeout 120 yarn || true
+setup_succeeded=true
+time timeout 120 yarn || setup_succeeded=false
 
 # Start the support services.
 make start-postgres
@@ -73,5 +74,8 @@ if [ -f "$PW_BROWSERS_JSON" ]; then
     fi
 fi
 
-time timeout 120 make build || true
-touch "$SETUP_DONE_MARKER"
+time timeout 120 make build || setup_succeeded=false
+
+if [ "$setup_succeeded" = true ]; then
+    touch "$SETUP_DONE_MARKER"
+fi
