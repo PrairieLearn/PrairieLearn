@@ -313,6 +313,10 @@ function mainRuleToJson(rule: MainRuleData, displayTimezone: string): AccessCont
       // timestamp so the assessment is open now (matching the course-instance
       // publishing pattern). Truncate to minutes to satisfy the datetime-local
       // schema.
+      // NOTE: Ideally we'd round to start-of-day for aesthetics, but naive
+      // datetime strings are cast to timestamptz using the Postgres server
+      // timezone (not the course instance timezone), so midnight would display
+      // as an offset time after round-tripping through the DB.
       output.dateControl.releaseDate = Temporal.Now.zonedDateTimeISO(displayTimezone)
         .toPlainDateTime()
         .toString({ smallestUnit: 'minute' });
