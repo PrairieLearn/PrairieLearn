@@ -1058,6 +1058,7 @@ function PreferenceField({
           className="form-select form-select-sm"
           id={id}
           value={String(currentValue)}
+          aria-describedby={`${id}-help`}
           onChange={(e) => setOverride(e.target.value === 'true')}
         >
           <option value="true">true</option>
@@ -1078,6 +1079,7 @@ function PreferenceField({
           className="form-select form-select-sm"
           id={id}
           value={String(currentValue)}
+          aria-describedby={`${id}-help`}
           onChange={(e) => {
             const val = e.target.value;
             setOverride(schema.type === 'number' ? Number(val) : val);
@@ -1104,6 +1106,7 @@ function PreferenceField({
         step={schema.type === 'number' ? 'any' : undefined}
         className="form-control form-control-sm"
         id={id}
+        aria-describedby={`${id}-help`}
         defaultValue={String(currentValue)}
         onBlur={(e) => {
           const val = e.target.value.trim();
