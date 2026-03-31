@@ -553,7 +553,7 @@ export const QuestionSettingsForm = ({
                       <th>Name</th>
                       <th style={{ width: '7rem' }}>Type</th>
                       <th>Default</th>
-                      <th>Allowed values</th>
+                      <th>Values</th>
                       {canEdit && <th style={{ width: '2.5rem' }} />}
                     </tr>
                   </thead>
@@ -1276,7 +1276,7 @@ function EnumInput({
           </span>
         ))}
         {enumValues.length === 0 && !adding && (
-          <span className="badge bg-light text-muted border-0">Any value</span>
+          <span className="badge bg-light text-muted border border-transparent">Any</span>
         )}
         {canEdit &&
           (adding ? (
@@ -1308,7 +1308,7 @@ function EnumInput({
               onClick={startAdding}
             >
               <i className="bi bi-plus" aria-hidden="true" />
-              Add value
+              {enumValues.length === 0 ? 'Restrict' : ''}
             </button>
           ))}
       </div>
