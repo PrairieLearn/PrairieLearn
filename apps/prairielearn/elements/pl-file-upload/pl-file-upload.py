@@ -5,6 +5,7 @@ import hashlib
 import json
 import random
 import re
+import string
 from io import StringIO
 
 import chevron
@@ -358,22 +359,31 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
 def generate_filename_from_pattern(pattern: str) -> str:
     """Generate a plausible filename from a glob pattern for testing."""
+    bracket_star = "__BRACKET_STAR__"
+    bracket_question_mark = "__BRACKET_QUESTION_MARK__"
 
     def replace_bracket(m: re.Match[str]) -> str:
         content = m.group(1)
         if content.startswith("!"):
             # Negated class: find a character that satisfies the constraint
             bracket_pattern = "[" + content + "]"
-            for c in "abcdefghijklmnopqrstuvwxyz0123456789":
+            for c in string.ascii_letters + string.digits + "_-":
                 if fnmatch.fnmatch(c, bracket_pattern):
                     return c
             return "x"
-        return content[0]
+        char = content[0]
+        if char == "*":
+            return bracket_star
+        if char == "?":
+            return bracket_question_mark
+        return char
 
     result = re.sub(r"\[([^\]]+)\]", replace_bracket, pattern)
     result = result.replace("**", "test_file")
     result = result.replace("*", "test_file")
     result = result.replace("?", "x")
+    result = result.replace(bracket_star, "*")
+    result = result.replace(bracket_question_mark, "?")
     return result
 
 
@@ -414,7 +424,14 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             + [generate_filename_from_pattern(p) for p in selected_opt_file_patterns]
         )
         if not all_names:
-            return
+            if opt_file_names:
+                all_names = [random.choice(opt_file_names)]
+            elif opt_file_patterns:
+                all_names = [
+                    generate_filename_from_pattern(random.choice(opt_file_patterns))
+                ]
+            else:
+                return
 
         files = []
         for name in all_names:

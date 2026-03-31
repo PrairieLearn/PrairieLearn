@@ -1,3 +1,4 @@
+import fnmatch
 import hashlib
 import importlib
 
@@ -111,20 +112,27 @@ def test_glob_to_regex_errors(glob_pattern: str) -> None:
         ("*.py", "test_file.py"),
         ("test_?.txt", "test_x.txt"),
         ("data[0-9].csv", "data0.csv"),
+        ("file[a-z].txt", "filea.txt"),
         ("report.pdf", "report.pdf"),
         ("*", "test_file"),
         ("**", "test_file"),
         ("**.py", "test_file.py"),
         ("???.log", "xxx.log"),
+        ("test.[ch]", "test.c"),
         ("[abc]_file.txt", "a_file.txt"),
         ("[!a]*.txt", "btest_file.txt"),
         ("[!abc]_file.txt", "d_file.txt"),
         ("[!!]test.txt", "atest.txt"),
+        ("[!a-z0-9].txt", "A.txt"),
+        ("[*].txt", "*.txt"),
+        ("[?].txt", "?.txt"),
+        ("[*?].txt", "*.txt"),
     ],
 )
 def test_generate_filename_from_pattern(pattern: str, expected_output: str) -> None:
     output = file_upload.generate_filename_from_pattern(pattern)
     assert output == expected_output
+    assert fnmatch.fnmatch(output, pattern)
 
 
 # Function must be backward compatible (i.e., if only file-names is defined, it should
