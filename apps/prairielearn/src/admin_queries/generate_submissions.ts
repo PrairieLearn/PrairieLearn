@@ -111,12 +111,19 @@ interface QuestionResult {
   attempts: number;
   lastSubmissionId: string | null;
   testType: TestType;
+  /**
+   * True when no submissions were needed because the question was already
+   * complete/closed or had already reached max points. Distinguishes "nothing
+   * to do" from "failed to generate" so that allSucceeded treats reruns correctly.
+   */
+  alreadySatisfied: boolean;
 }
 
 interface FinalizedInstanceQuestion {
   instanceQuestion: InstanceQuestionQuery;
   attempts: number;
   testType: TestType;
+  alreadySatisfied: boolean;
   finalInstanceQuestion: InstanceQuestion;
 }
 
@@ -176,7 +183,8 @@ export default async function ({
       }
 
       const allSucceeded = results.every(
-        (r) => r.attempts > 0 && r.finalInstanceQuestion.status !== 'invalid',
+        (r) =>
+          (r.attempts > 0 || r.alreadySatisfied) && r.finalInstanceQuestion.status !== 'invalid',
       );
       let closed = false;
 
@@ -227,14 +235,19 @@ async function processQuestion(
   let attempts = 0;
   let lastSubmissionId: string | null = null;
   let testType: TestType = ctx.testType === 'random' ? 'correct' : ctx.testType;
+  let alreadySatisfied = false;
 
   for (let attempt = 0; attempt < ctx.maxAttempts; attempt++) {
-    if (!currentIq.open || currentIq.status === 'complete') break;
+    if (!currentIq.open || currentIq.status === 'complete') {
+      alreadySatisfied = true;
+      break;
+    }
     if (
       ctx.assessment.type === 'Homework' &&
       maxAutoPoints > 0 &&
       (currentIq.auto_points ?? 0) >= maxAutoPoints
     ) {
+      alreadySatisfied = true;
       break;
     }
 
@@ -272,7 +285,7 @@ async function processQuestion(
     currentIq = iqRow;
   }
 
-  return { attempts, lastSubmissionId, testType };
+  return { attempts, lastSubmissionId, testType, alreadySatisfied };
 }
 
 async function processSaveOnly(
@@ -281,29 +294,50 @@ async function processSaveOnly(
 ): Promise<QuestionResult> {
   const { question, instance_question, user, question_course } = instanceQuestion;
 
-  const { submissionData, variant, hasFatalIssue, currentTestType } =
-    await createVariantAndSubmissionData({
-      question,
-      instance_question,
-      user,
-      question_course,
-      courseInstance: ctx.courseInstance,
-      assessmentCourse: ctx.assessmentCourse,
-      test_type: ctx.testType,
-    });
+  let currentIq: InstanceQuestion = instance_question;
+  let attempts = 0;
+  let lastSubmissionId: string | null = null;
+  let testType: TestType = ctx.testType === 'random' ? 'correct' : ctx.testType;
+  let alreadySatisfied = false;
 
-  if (hasFatalIssue) {
-    return { attempts: 0, lastSubmissionId: null, testType: currentTestType };
+  for (let attempt = 0; attempt < ctx.maxAttempts; attempt++) {
+    if (!currentIq.open || currentIq.status === 'complete') {
+      alreadySatisfied = true;
+      break;
+    }
+
+    const { submissionData, variant, hasFatalIssue, currentTestType } =
+      await createVariantAndSubmissionData({
+        question,
+        instance_question: currentIq,
+        user,
+        question_course,
+        courseInstance: ctx.courseInstance,
+        assessmentCourse: ctx.assessmentCourse,
+        test_type: ctx.testType,
+      });
+    testType = currentTestType;
+    if (hasFatalIssue) break;
+
+    const { submission_id } = await saveSubmission(
+      submissionData,
+      variant,
+      question,
+      ctx.assessmentCourse,
+    );
+    lastSubmissionId = submission_id;
+    attempts++;
+
+    const iqRow = await queryOptionalRow(
+      sql.select_instance_question_by_id,
+      { instance_question_id: instance_question.id },
+      InstanceQuestionSchema,
+    );
+    if (!iqRow) break;
+    currentIq = iqRow;
   }
 
-  const { submission_id } = await saveSubmission(
-    submissionData,
-    variant,
-    question,
-    ctx.assessmentCourse,
-  );
-
-  return { attempts: 1, lastSubmissionId: submission_id, testType: currentTestType };
+  return { attempts, lastSubmissionId, testType, alreadySatisfied };
 }
 
 async function processExternalQuestion(
@@ -316,40 +350,69 @@ async function processExternalQuestion(
 
   // External grading: save a submission without triggering the external
   // grader, then assign full auto points directly.
-  const { submissionData, variant, hasFatalIssue, currentTestType } =
-    await createVariantAndSubmissionData({
+  let currentIq: InstanceQuestion = instance_question;
+  let attempts = 0;
+  let lastSubmissionId: string | null = null;
+  let testType: TestType = ctx.testType === 'random' ? 'correct' : ctx.testType;
+  let alreadySatisfied = false;
+
+  for (let attempt = 0; attempt < ctx.maxAttempts; attempt++) {
+    if (!currentIq.open || currentIq.status === 'complete') {
+      alreadySatisfied = true;
+      break;
+    }
+    if (
+      ctx.assessment.type === 'Homework' &&
+      maxAutoPoints > 0 &&
+      (currentIq.auto_points ?? 0) >= maxAutoPoints
+    ) {
+      alreadySatisfied = true;
+      break;
+    }
+
+    const { submissionData, variant, hasFatalIssue, currentTestType } =
+      await createVariantAndSubmissionData({
+        question,
+        instance_question: currentIq,
+        user,
+        question_course,
+        courseInstance: ctx.courseInstance,
+        assessmentCourse: ctx.assessmentCourse,
+        test_type: ctx.testType,
+      });
+    testType = currentTestType;
+    if (hasFatalIssue) break;
+
+    const { submission_id } = await saveSubmission(
+      submissionData,
+      variant,
       question,
-      instance_question,
-      user,
-      question_course,
-      courseInstance: ctx.courseInstance,
-      assessmentCourse: ctx.assessmentCourse,
-      test_type: ctx.testType,
-    });
+      ctx.assessmentCourse,
+    );
+    lastSubmissionId = submission_id;
+    attempts++;
 
-  if (hasFatalIssue) {
-    return { attempts: 0, lastSubmissionId: null, testType: currentTestType };
+    if (maxAutoPoints > 0 && currentTestType !== 'invalid') {
+      await updateInstanceQuestionScore({
+        assessment: ctx.assessment,
+        instance_question_id: instance_question.id,
+        submission_id,
+        check_modified_at: null,
+        score: { auto_score_perc: currentTestType === 'correct' ? 100 : 0 },
+        authn_user_id: user.id,
+      });
+    }
+
+    const iqRow = await queryOptionalRow(
+      sql.select_instance_question_by_id,
+      { instance_question_id: instance_question.id },
+      InstanceQuestionSchema,
+    );
+    if (!iqRow) break;
+    currentIq = iqRow;
   }
 
-  const { submission_id } = await saveSubmission(
-    submissionData,
-    variant,
-    question,
-    ctx.assessmentCourse,
-  );
-
-  if (maxAutoPoints > 0 && currentTestType !== 'invalid') {
-    await updateInstanceQuestionScore({
-      assessment: ctx.assessment,
-      instance_question_id: instance_question.id,
-      submission_id,
-      check_modified_at: null,
-      score: { auto_score_perc: currentTestType === 'correct' ? 100 : 0 },
-      authn_user_id: user.id,
-    });
-  }
-
-  return { attempts: 1, lastSubmissionId: submission_id, testType: currentTestType };
+  return { attempts, lastSubmissionId, testType, alreadySatisfied };
 }
 
 async function finalizeQuestion(
@@ -380,6 +443,7 @@ async function finalizeQuestion(
     instanceQuestion,
     attempts: result.attempts,
     testType: result.testType,
+    alreadySatisfied: result.alreadySatisfied,
     finalInstanceQuestion,
   };
 }
