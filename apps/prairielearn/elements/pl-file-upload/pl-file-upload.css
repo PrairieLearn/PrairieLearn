@@ -4,9 +4,18 @@
   border: 2px dashed #0087f7;
   cursor: pointer;
 }
+
 .pl-file-upload-container .upload-dropzone.dz-drag-hover {
   background-color: #d9edf7;
   border-style: solid;
+}
+
+.pl-file-upload-container .upload-dropzone * {
+  /* Prevent child elements from receiving drag and drop events (dragleave,
+  dragenter) that should be restricted to the parent dropzone. Since they're
+  part of a button, there is no harm in them losing events that will be
+  handled by the parent anyway. */
+  pointer-events: none;
 }
 
 .pl-file-upload-container .file-status-icon {
