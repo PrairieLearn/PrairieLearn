@@ -1,5 +1,3 @@
-const reject = require('lodash/reject');
-
 (() => {
   function escapeFileName(name) {
     return name
@@ -183,7 +181,11 @@ const reject = require('lodash/reject');
           continue;
         }
 
-        const existingFileSize = this.files.reduce((prev, next) => prev + next.size, 0);
+        const existingFileSize = this.files
+          // Don't count the size of the existing file with the same name, since
+          // we're replacing it
+          .filter((f) => f.name !== acceptedFileName)
+          .reduce((prev, next) => prev + next.size, 0);
         if (existingFileSize + file.size > this.maxFileSizeMB * 1024 * 1024) {
           this.addWarningMessage(
             `Combined file size of new file and existing files (<strong>${
