@@ -21,14 +21,6 @@ import {
   jsonToOverrideFormData,
 } from './types.js';
 
-interface AccessControlFormProps {
-  initialData?: AccessControlJsonWithId[];
-  onSubmit: (data: AccessControlJsonWithId[]) => void;
-  courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
-  assessmentType?: 'Exam' | 'Homework';
-  isSaving?: boolean;
-}
-
 const defaultInitialData: AccessControlJsonWithId[] = [];
 
 /**
@@ -89,7 +81,12 @@ export function AccessControlForm({
   onSubmit,
   courseInstance,
   isSaving = false,
-}: AccessControlFormProps) {
+}: {
+  initialData?: AccessControlJsonWithId[];
+  onSubmit: (data: AccessControlJsonWithId[]) => void;
+  courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
+  isSaving?: boolean;
+}) {
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
   const deleteModal = useModalState<{ index: number; name: string }>();
 
@@ -236,7 +233,7 @@ export function AccessControlForm({
   const rightPanel =
     selectedRule?.type === 'main' ? (
       <div className="p-3">
-        <MainRuleForm courseInstance={courseInstance} />
+        <MainRuleForm />
       </div>
     ) : selectedRule?.type === 'override' ? (
       (() => {
