@@ -37,8 +37,8 @@ import { type AdministratorQueryResult, type AdministratorQuerySpecs } from './l
 
 export const specs: AdministratorQuerySpecs = {
   description:
-    'Generates submissions, grades, and optionally closes assessment instances for an assessment. Handles auto-graded, externally-graded, and manually-graded questions.',
-  enabled: config.devMode,
+    'Generates submissions for an assessment. Optionally grades submissions and closes assessment instances. Handles auto-graded, externally-graded, and manually-graded questions.',
+  enabled: config.devMode, // This query is dangerous in production environments, so it is only enabled in dev mode
   params: [
     {
       name: 'assessment_id',
@@ -50,9 +50,14 @@ export const specs: AdministratorQuerySpecs = {
       default: 'random',
     },
     {
+      name: 'grade',
+      description: 'Whether to grade submissions ("true" or "false")',
+      default: 'true',
+    },
+    {
       name: 'max_attempts',
       description: 'Maximum number of submission attempts per question (integer)',
-      default: '10',
+      default: '1',
     },
     {
       name: 'close',
@@ -93,15 +98,12 @@ const InstanceQuestionQuerySchema = z.object({
 });
 type InstanceQuestionQuery = z.infer<typeof InstanceQuestionQuerySchema>;
 
-const InstanceQuestionRefetchSchema = z.object({
-  instance_question: InstanceQuestionSchema,
-});
-
 interface SharedContext {
   assessment: Assessment;
   courseInstance: CourseInstance;
   assessmentCourse: Course;
   testType: TestType | 'random';
+  shouldGrade: boolean;
   maxAttempts: number;
 }
 
@@ -123,11 +125,13 @@ const CONCURRENCY = 5;
 export default async function ({
   assessment_id,
   test_type,
+  grade: grade_str,
   max_attempts: max_attempts_str,
   close: close_str,
 }: {
   assessment_id: string;
   test_type: TestType | 'random';
+  grade: string;
   max_attempts: string;
   close: string;
 }): Promise<AdministratorQueryResult> {
@@ -143,7 +147,8 @@ export default async function ({
     courseInstance,
     assessmentCourse,
     testType: test_type,
-    maxAttempts: Number.isNaN(parsed) ? 10 : parsed,
+    shouldGrade: grade_str !== 'false',
+    maxAttempts: Number.isNaN(parsed) ? 1 : parsed,
   };
   const shouldClose = close_str === 'true';
 
@@ -207,6 +212,10 @@ async function processQuestion(
     instanceQuestion;
   const maxAutoPoints = assessment_question.max_auto_points ?? 0;
 
+  if (!ctx.shouldGrade) {
+    return processSaveOnly(instanceQuestion, ctx);
+  }
+
   if (question.grading_method === 'External') {
     return processExternalQuestion(instanceQuestion, ctx);
   }
@@ -257,13 +266,44 @@ async function processQuestion(
     const iqRow = await queryOptionalRow(
       sql.select_instance_question_by_id,
       { instance_question_id: instance_question.id },
-      InstanceQuestionRefetchSchema,
+      InstanceQuestionSchema,
     );
     if (!iqRow) break;
-    currentIq = iqRow.instance_question;
+    currentIq = iqRow;
   }
 
   return { attempts, lastSubmissionId, testType };
+}
+
+async function processSaveOnly(
+  instanceQuestion: InstanceQuestionQuery,
+  ctx: SharedContext,
+): Promise<QuestionResult> {
+  const { question, instance_question, user, question_course } = instanceQuestion;
+
+  const { submissionData, variant, hasFatalIssue, currentTestType } =
+    await createVariantAndSubmissionData({
+      question,
+      instance_question,
+      user,
+      question_course,
+      courseInstance: ctx.courseInstance,
+      assessmentCourse: ctx.assessmentCourse,
+      test_type: ctx.testType,
+    });
+
+  if (hasFatalIssue) {
+    return { attempts: 0, lastSubmissionId: null, testType: currentTestType };
+  }
+
+  const { submission_id } = await saveSubmission(
+    submissionData,
+    variant,
+    question,
+    ctx.assessmentCourse,
+  );
+
+  return { attempts: 1, lastSubmissionId: submission_id, testType: currentTestType };
 }
 
 async function processExternalQuestion(
@@ -319,7 +359,7 @@ async function finalizeQuestion(
 ): Promise<FinalizedInstanceQuestion> {
   const maxManualPoints = instanceQuestion.assessment_question.max_manual_points ?? 0;
 
-  if (maxManualPoints > 0 && result.lastSubmissionId !== null) {
+  if (ctx.shouldGrade && maxManualPoints > 0 && result.lastSubmissionId !== null) {
     await updateInstanceQuestionScore({
       assessment: ctx.assessment,
       instance_question_id: instanceQuestion.instance_question.id,
@@ -330,17 +370,17 @@ async function finalizeQuestion(
     });
   }
 
-  const refetchedRow = await queryRow(
+  const finalInstanceQuestion = await queryRow(
     sql.select_instance_question_by_id,
     { instance_question_id: instanceQuestion.instance_question.id },
-    InstanceQuestionRefetchSchema,
+    InstanceQuestionSchema,
   );
 
   return {
     instanceQuestion,
     attempts: result.attempts,
     testType: result.testType,
-    finalInstanceQuestion: refetchedRow.instance_question,
+    finalInstanceQuestion,
   };
 }
 

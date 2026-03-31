@@ -33,7 +33,7 @@ WHERE
 
 -- BLOCK select_instance_question_by_id
 SELECT
-  TO_JSONB(iq.*) AS instance_question
+  iq.*
 FROM
   instance_questions AS iq
 WHERE

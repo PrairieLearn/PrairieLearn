@@ -3,6 +3,7 @@ import csv
 import fnmatch
 import hashlib
 import json
+import random
 import re
 from io import StringIO
 
@@ -400,11 +401,17 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     result = data["test_type"]
 
     if result in {"correct", "incorrect"}:
+        selected_opt_file_names = random.sample(
+            opt_file_names, random.randint(0, len(opt_file_names))
+        )
+        selected_opt_file_patterns = random.sample(
+            opt_file_patterns, random.randint(0, len(opt_file_patterns))
+        )
         all_names = (
             file_names
-            + opt_file_names
+            + selected_opt_file_names
             + [generate_filename_from_pattern(p) for p in file_patterns]
-            + [generate_filename_from_pattern(p) for p in opt_file_patterns]
+            + [generate_filename_from_pattern(p) for p in selected_opt_file_patterns]
         )
         if not all_names:
             return
@@ -419,5 +426,28 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["raw_submitted_answers"][answer_name] = json.dumps(files)
 
     elif result == "invalid":
-        data["raw_submitted_answers"][answer_name] = ""
-        add_format_error(answer_name, data, "No submitted answer for file upload.")
+        if file_names:
+            # Submit with a required file missing to test validation
+            missing_file = file_names[0]
+            submitted_names = file_names[1:]
+            files = []
+            for name in submitted_names:
+                content = base64.b64encode(f"Test invalid for {name}".encode()).decode(
+                    "utf-8"
+                )
+                files.append({"name": name, "contents": content})
+            for p in file_patterns:
+                name = generate_filename_from_pattern(p)
+                content = base64.b64encode(f"Test invalid for {name}".encode()).decode(
+                    "utf-8"
+                )
+                files.append({"name": name, "contents": content})
+            data["raw_submitted_answers"][answer_name] = json.dumps(files)
+            add_format_error(
+                answer_name,
+                data,
+                f"The following required files were missing: {missing_file}",
+            )
+        else:
+            data["raw_submitted_answers"][answer_name] = ""
+            add_format_error(answer_name, data, "No submitted answer for file upload.")
