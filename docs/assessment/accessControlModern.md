@@ -192,7 +192,7 @@ Not all fields behave the same way during cascading:
 | ---------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------- |
 | `dateControl.*` sub-fields   | Override replaces individual sub-fields; unset sub-fields inherit from main | Later override replaces; unset fields kept from earlier |
 | `afterComplete.*` sub-fields | Same as `dateControl`                                                       | Same as `dateControl`                                   |
-| `listBeforeRelease`          | Defaults only                                                               | Not applicable                                          |
+| `listBeforeRelease`          | Only valid on the first entry (defaults)                                    | Not applicable                                          |
 
 ### Override examples
 
@@ -250,7 +250,7 @@ Not all fields behave the same way during cascading:
 
 | Student                     | Due date | Duration | Explanation                                                                            |
 | --------------------------- | -------- | -------- | -------------------------------------------------------------------------------------- |
-| Default                     | Feb 15   | 60 min   | Defaults only                                                                          |
+| Default                     | Feb 15   | 60 min   | No overrides matched                                                                   |
 | Section B only              | Feb 20   | 60 min   | Section B override replaces `dueDate`; `durationMinutes` inherited from defaults       |
 | Extended time only          | Feb 15   | 90 min   | Extended time override replaces `durationMinutes`; `dueDate` inherited from defaults   |
 | Section B AND Extended time | Feb 20   | 90 min   | Both overrides cascade: Section B sets `dueDate`, Extended time sets `durationMinutes` |
