@@ -5,13 +5,17 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
-import { getOriginalHash } from '../lib/editors.js';
 import { features } from '../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { createAccessControlTrpcClient } from '../pages/instructorAssessmentAccess/utils/trpc-client.js';
+import {
+  computeHash,
+  fetchAllAccessControlRules,
+} from '../pages/instructorAssessmentAccess/rules.js';
 import type { AccessControlJsonInput } from '../schemas/accessControl.js';
+import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import {
   type CourseRepoFixture,
@@ -36,7 +40,6 @@ function makeRule(overrides: Partial<AccessControlJsonInput> = {}): AccessContro
 describe('Access control save via tRPC', () => {
   let courseRepo: CourseRepoFixture;
   let assessmentId: string;
-  let trpcUrl: string;
 
   beforeAll(async () => {
     courseRepo = await createCourseRepoFixture(TEST_COURSE_PATH);
@@ -49,21 +52,38 @@ describe('Access control save via tRPC', () => {
       tid: 'hw19-accessControlUi',
     });
     assessmentId = assessment.id;
-    trpcUrl = `${siteUrl}/pl/course_instance/1/instructor/assessment/${assessmentId}/access/trpc`;
   });
 
   afterAll(helperServer.after);
 
   async function createClient() {
     const user = await getConfiguredUser();
+    const trpcPath = getAssessmentTrpcUrl({
+      courseInstanceId: '1',
+      assessmentId,
+    });
     const csrfToken = generatePrefixCsrfToken(
       {
-        url: `/pl/course_instance/1/instructor/assessment/${assessmentId}/access/trpc`,
+        url: trpcPath,
         authn_user_id: user.id,
       },
       config.secretKey,
     );
-    return createAccessControlTrpcClient(csrfToken, trpcUrl);
+    return createAssessmentTrpcClient({
+      csrfToken,
+      courseInstanceId: '1',
+      assessmentId,
+      urlBase: siteUrl,
+    });
+  }
+
+  async function getOrigHash() {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'hw19-accessControlUi',
+    });
+    const rules = await fetchAllAccessControlRules(assessment);
+    return computeHash(rules);
   }
 
   function assessmentPath() {
@@ -79,7 +99,7 @@ describe('Access control save via tRPC', () => {
 
   test.sequential('saves rules to disk and syncs to DB', async () => {
     const client = await createClient();
-    const origHash = (await getOriginalHash(assessmentPath()))!;
+    const origHash = await getOrigHash();
 
     const rules: AccessControlJsonInput[] = [
       makeRule({ listBeforeRelease: true }),
@@ -89,7 +109,7 @@ describe('Access control save via tRPC', () => {
       }),
     ];
 
-    const result = await client.saveAllRules.mutate({ rules, origHash });
+    const result = await client.accessControl.saveAllRules.mutate({ rules, origHash });
     assert.isString(result.newHash);
     assert.notEqual(result.newHash, origHash);
 
@@ -111,13 +131,13 @@ describe('Access control save via tRPC', () => {
 
   test.sequential('omits listBeforeRelease: false and empty objects from disk', async () => {
     const client = await createClient();
-    const origHash = (await getOriginalHash(assessmentPath()))!;
+    const origHash = await getOrigHash();
 
     const rules: AccessControlJsonInput[] = [
       { listBeforeRelease: false, dateControl: {}, afterComplete: {} },
     ];
 
-    const result = await client.saveAllRules.mutate({ rules, origHash });
+    const result = await client.accessControl.saveAllRules.mutate({ rules, origHash });
     assert.isString(result.newHash);
 
     const fileContent = await fs.readFile(assessmentPath(), 'utf8');

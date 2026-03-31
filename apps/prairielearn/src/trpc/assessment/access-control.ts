@@ -22,7 +22,10 @@ import {
   validateEnrollmentIdsInCourseInstance,
 } from '../../models/enrollment.js';
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
-import { fetchAllAccessControlRules } from '../../pages/instructorAssessmentAccess/rules.js';
+import {
+  computeHash,
+  fetchAllAccessControlRules,
+} from '../../pages/instructorAssessmentAccess/rules.js';
 import {
   type AccessControlJson,
   AccessControlJsonSchema,
@@ -237,7 +240,7 @@ const saveAllRules = t.procedure
       });
     }
 
-    // Validate main rules before writing to disk
+    // Validate all rules before writing anything to disk or DB.
     const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
     for (const [index, rule] of rulesToSync.entries()) {
       const targetType = index === 0 ? 'none' : 'student_label';
@@ -245,6 +248,41 @@ const saveAllRules = t.procedure
       if (ruleError) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
       }
+    }
+
+    if (enrollmentRules !== undefined && enrollmentRules.length > 0) {
+      const allEnrollmentIds = new Set(enrollmentRules.flatMap((r) => r.enrollmentIds));
+      if (allEnrollmentIds.size > 0) {
+        const validCount = await validateEnrollmentIdsInCourseInstance(
+          allEnrollmentIds,
+          opts.ctx.course_instance,
+        );
+        if (validCount !== allEnrollmentIds.size) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'One or more enrollment IDs do not belong to this course instance.',
+          });
+        }
+      }
+
+      for (const enrollmentRule of enrollmentRules) {
+        const ruleError = validateRule(enrollmentRule.ruleJson, 'enrollment');
+        if (ruleError) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
+        }
+      }
+    }
+
+    // Optimistic concurrency check: verify the full rule set (file + enrollment)
+    // hasn't changed since the page was loaded.
+    const currentRules = await fetchAllAccessControlRules(opts.ctx.assessment);
+    const currentHash = computeHash(currentRules);
+    if (currentHash !== origHash) {
+      throw new TRPCError({
+        code: 'CONFLICT',
+        message:
+          'The access control rules have been modified since you loaded this page. Please refresh and try again.',
+      });
     }
 
     // Build the updated file contents and write to disk via FileModifyEditor
@@ -258,12 +296,13 @@ const saveAllRules = t.procedure
     );
     const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
     const formattedJson = await buildAccessControlFileContents(assessmentPath, rulesToSync);
+    const currentFileHash = (await getOriginalHash(assessmentPath)) ?? '';
 
     const editor = new FileModifyEditor({
       locals: {
         authz_data: opts.ctx.authz_data,
         course: opts.ctx.course,
-        user: opts.ctx.user,
+        user: opts.ctx.authn_user,
       },
       container: {
         rootPath: assessmentDir,
@@ -271,31 +310,19 @@ const saveAllRules = t.procedure
       },
       filePath: assessmentPath,
       editContents: b64EncodeUnicode(formattedJson),
-      origHash,
+      origHash: currentFileHash,
     });
 
     const serverJob = await editor.prepareServerJob();
-    try {
-      await editor.executeWithServerJob(serverJob);
-    } catch (err) {
-      if (err instanceof Error && err.message.includes('Another user made changes')) {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message:
-            'The access control rules have been modified since you loaded this page. Please refresh and try again.',
-        });
-      }
-      throw err;
-    }
+    await editor.executeWithServerJob(serverJob);
 
-    // Enrollment rules continue writing directly to DB (they are per-student
+    // Enrollment rules are written directly to DB (they are per-student
     // overrides, not stored in infoAssessment.json).
     if (enrollmentRules !== undefined) {
       await runInTransactionAsync(async () => {
         await lockAssessment(opts.ctx.assessment);
 
         // Determine which enrollment rules to delete
-        const currentRules = await fetchAllAccessControlRules(opts.ctx.assessment);
         const existingIds = new Set(
           currentRules.filter((r) => r.ruleType === 'enrollment').map((r) => r.id),
         );
@@ -304,28 +331,9 @@ const saveAllRules = t.procedure
         await deleteEnrollmentAccessControlsByIds(idsToDelete, opts.ctx.assessment);
 
         if (enrollmentRules.length > 0) {
-          const allEnrollmentIds = new Set(enrollmentRules.flatMap((r) => r.enrollmentIds));
-          if (allEnrollmentIds.size > 0) {
-            const validCount = await validateEnrollmentIdsInCourseInstance(
-              allEnrollmentIds,
-              opts.ctx.course_instance,
-            );
-            if (validCount !== allEnrollmentIds.size) {
-              throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: 'One or more enrollment IDs do not belong to this course instance.',
-              });
-            }
-          }
-
           // TODO: Add audit logging for enrollment rule changes. Label/main rules
           // are tracked in git; only enrollment rules need separate audit logs.
           for (const enrollmentRule of enrollmentRules) {
-            const ruleError = validateRule(enrollmentRule.ruleJson, 'enrollment');
-            if (ruleError) {
-              throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
-            }
-
             const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
             if (enrollmentRule.id) {
               ruleData.id = enrollmentRule.id;
@@ -340,8 +348,8 @@ const saveAllRules = t.procedure
       });
     }
 
-    const newHash = (await getOriginalHash(assessmentPath)) ?? '';
-    return { newHash };
+    const newRules = await fetchAllAccessControlRules(opts.ctx.assessment);
+    return { newHash: computeHash(newRules) };
   });
 
 export const accessControlRouter = t.router({

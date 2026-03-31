@@ -22,8 +22,8 @@ import {
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectOrInsertUserByUid } from '../../models/user.js';
-import { cleanAccessControlRulesForDisk } from '../../pages/instructorAssessmentAccess/trpc.js';
 import { type AccessControlJsonInput } from '../../schemas/accessControl.js';
+import { cleanAccessControlRulesForDisk } from '../../trpc/assessment/access-control.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';

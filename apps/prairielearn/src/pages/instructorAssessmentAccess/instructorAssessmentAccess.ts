@@ -20,12 +20,13 @@ import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
+
 import {
   AssessmentAccessRulesSchema,
   InstructorAssessmentAccess,
   InstructorAssessmentAccessNew,
 } from './instructorAssessmentAccess.html.js';
-import { fetchAllAccessControlRules } from './rules.js';
+import { computeHash, fetchAllAccessControlRules } from './rules.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -53,8 +54,7 @@ router.get(
 
     if (enhancedAccessControlEnabled && res.locals.assessment.modern_access_control) {
       const jsonRules = await fetchAllAccessControlRules(res.locals.assessment);
-      const assessmentPath = getAssessmentPath(res.locals);
-      const origHash = (await getOriginalHash(assessmentPath)) ?? '';
+      const origHash = computeHash(jsonRules);
       const trpcCsrfToken = generatePrefixCsrfToken(
         {
           url: getAssessmentTrpcUrl({
