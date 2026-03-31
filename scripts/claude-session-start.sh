@@ -34,7 +34,7 @@ nvm alias default 24
 (cd /tmp && uv pip install --system --reinstall uv)
 rm /root/.local/bin/uv # Uninstall the outdated uv binary.
 
-timeout 180 make deps || echo "[session-start] WARNING: make deps timed out or failed"
+time timeout 120 make deps
 
 make start-postgres
 make start-redis
