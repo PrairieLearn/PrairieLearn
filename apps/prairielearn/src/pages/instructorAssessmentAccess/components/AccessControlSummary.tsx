@@ -252,9 +252,9 @@ export function AccessControlSummary({
 
         <div className="rounded p-3 mt-3" style={{ backgroundColor: 'var(--bs-tertiary-bg)' }}>
           <p className="text-body-secondary small mb-0">
-            Overrides are applied in order from top to bottom. Student label overrides are evaluated
-            first, then individual overrides (which take priority). Each override inherits all
-            settings from the ones above it — only explicitly overridden fields are changed.
+            When a student matches multiple overrides, individual overrides take priority over
+            student label overrides. Each override inherits all settings from the main rule — only
+            explicitly overridden fields are changed.
           </p>
         </div>
       </section>
