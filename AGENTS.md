@@ -41,6 +41,7 @@ Frequently used packages:
 - NEVER rebase unless specifically requested, always use merge commits.
 - ALWAYS create pull requests as drafts unless specifically requested.
 - When creating pull requests, follow the PR template in `.github/PULL_REQUEST_TEMPLATE.md`.
+- In Claude Code remote sessions, if the target branch is not `master`, commit and push directly to the parent/target branch instead of creating a separate feature branch.
 
 ## Building, type checking, and linting
 
