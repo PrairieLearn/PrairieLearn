@@ -31,7 +31,12 @@ function DurationInput({
             placeholder="Duration in minutes"
             min="1"
             value={value}
-            onChange={({ currentTarget }) => onChange(Number(currentTarget.value) || null)}
+            onChange={({ currentTarget }) => {
+              const num = Number(currentTarget.value);
+              if (Number.isFinite(num) && num > 0) {
+                onChange(num);
+              }
+            }}
           />
           <InputGroup.Text>minutes</InputGroup.Text>
         </InputGroup>

@@ -1,5 +1,5 @@
 import { Button, Card, Col, Form, Row } from 'react-bootstrap';
-import { type Path, useController, useWatch } from 'react-hook-form';
+import { useController, useWatch } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
@@ -348,11 +348,17 @@ export function OverrideAfterCompleteForm({
     name: 'mainRule.scoreVisibility',
   });
 
-  const { field: qvField } = useController({
-    name: `overrides.${index}.questionVisibility` as Path<AccessControlFormData>,
+  const { field: qvField } = useController<
+    AccessControlFormData,
+    `overrides.${number}.questionVisibility`
+  >({
+    name: `overrides.${index}.questionVisibility`,
   });
-  const { field: svField } = useController({
-    name: `overrides.${index}.scoreVisibility` as Path<AccessControlFormData>,
+  const { field: svField } = useController<
+    AccessControlFormData,
+    `overrides.${number}.scoreVisibility`
+  >({
+    name: `overrides.${index}.scoreVisibility`,
   });
 
   const {
@@ -380,7 +386,7 @@ export function OverrideAfterCompleteForm({
           onRemoveOverride={removeQvOverride}
         >
           <QuestionVisibilityInput
-            value={qvField.value as QuestionVisibilityValue}
+            value={qvField.value}
             idPrefix={`overrides-${index}`}
             onChange={qvField.onChange}
           />
@@ -398,7 +404,7 @@ export function OverrideAfterCompleteForm({
           onRemoveOverride={removeSvOverride}
         >
           <ScoreVisibilityInput
-            value={svField.value as ScoreVisibilityValue}
+            value={svField.value}
             idPrefix={`overrides-${index}`}
             onChange={svField.onChange}
           />

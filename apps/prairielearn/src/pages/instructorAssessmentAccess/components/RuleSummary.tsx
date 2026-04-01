@@ -139,12 +139,13 @@ export function generateDateTableRows(
       visibilityParts.push('Closed');
     }
 
-    const qv = rule.questionVisibility;
-    if (qv.hideQuestions) {
+    if (
+      isOverrideFieldActive(rule, 'questionVisibility') &&
+      rule.questionVisibility.hideQuestions
+    ) {
       visibilityParts.push('Questions hidden');
     }
-    const sv = rule.scoreVisibility;
-    if (sv.hideScore) {
+    if (isOverrideFieldActive(rule, 'scoreVisibility') && rule.scoreVisibility.hideScore) {
       visibilityParts.push('Score hidden');
     }
 
@@ -297,23 +298,19 @@ export function RuleSummaryCard({
   isMainRule,
   title,
   onRemove,
-  editUrl,
   onEdit,
   courseInstanceId,
   displayTimezone,
   errors,
-  onEditStudentLabels,
   dragHandleProps,
 }: {
   rule: RuleData;
   isMainRule: boolean;
   title: string;
-  editUrl?: string;
   onEdit?: () => void;
   courseInstanceId: string;
   displayTimezone: string;
   errors?: string[];
-  onEditStudentLabels?: () => void;
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
 }) {
@@ -370,20 +367,11 @@ export function RuleSummaryCard({
           )}
         </div>
         <div className="d-flex gap-2 flex-shrink-0">
-          {onEditStudentLabels && (
-            <Button variant="outline-secondary" size="sm" onClick={onEditStudentLabels}>
-              <i className="bi bi-people me-1" /> Student labels
-            </Button>
-          )}
-          {onEdit ? (
+          {onEdit && (
             <Button variant="outline-primary" size="sm" onClick={onEdit}>
               <i className="bi bi-pencil me-1" /> Edit
             </Button>
-          ) : editUrl ? (
-            <a href={editUrl} className="btn btn-outline-primary btn-sm">
-              <i className="bi bi-pencil me-1" /> Edit
-            </a>
-          ) : null}
+          )}
           {onRemove && (
             <Button variant="outline-danger" size="sm" onClick={onRemove}>
               <i className="bi bi-trash me-1" /> Remove

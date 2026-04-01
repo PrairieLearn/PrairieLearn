@@ -18,14 +18,14 @@ export function IntegrationsSection() {
 
   const addIntegration = (key: string) => {
     if (key === 'prairieTest') {
-      setValue('mainRule.prairieTestEnabled', true);
+      setValue('mainRule.prairieTestEnabled', true, { shouldDirty: true });
     }
   };
 
   const removeIntegration = (key: string) => {
     if (key === 'prairieTest') {
-      setValue('mainRule.prairieTestEnabled', false);
-      setValue('mainRule.prairieTestExams', []);
+      setValue('mainRule.prairieTestEnabled', false, { shouldDirty: true });
+      setValue('mainRule.prairieTestExams', [], { shouldDirty: true });
     }
   };
 
