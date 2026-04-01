@@ -86,16 +86,16 @@ test: test-js test-python
 test-js: start-support
 	@pnpm test
 test-prairielearn-docker-smoke-tests: start-support
-	@pnpm --filter @prairielearn/prairielearntest:docker-smoke-tests
+	@pnpm --filter @prairielearn/prairielearn test:docker-smoke-tests
 test-prairielearn-dist: start-support build
-	@pnpm --filter @prairielearn/prairielearntest:dist
+	@pnpm --filter @prairielearn/prairielearn test:dist
 test-python:
 	@uv run pytest
 	@uv run coverage xml -o ./apps/prairielearn/python/coverage.xml
 test-prairielearn: start-support
-	@pnpm --filter @prairielearn/prairielearntest
+	@pnpm --filter @prairielearn/prairielearn test
 test-e2e: start-support
-	@pnpm --filter @prairielearn/prairielearntest:e2e
+	@pnpm --filter @prairielearn/prairielearn test:e2e
 
 check-dependencies:
 	@pnpm depcruise apps/*/src apps/*/assets packages/*/src

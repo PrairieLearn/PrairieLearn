@@ -66,6 +66,19 @@
     "overrides": {
       "notebookjs>jsdom": "^28.0.0",
       "typescript-cp>tar": "*"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@datadog/pprof",
+      "@prairielearn/bind-mount",
+      "@reteps/tree-sitter-htmlmustache",
+      "core-js",
+      "cpu-features",
+      "dtrace-provider",
+      "esbuild",
+      "protobufjs",
+      "sharp",
+      "ssh2",
+      "unrs-resolver"
+    ]
   }
 }
