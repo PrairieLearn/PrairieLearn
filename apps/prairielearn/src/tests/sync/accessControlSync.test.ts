@@ -497,7 +497,7 @@ describe('Access control syncing', () => {
       assert.isNotNull(assessment.sync_errors);
       assert.match(
         assessment.sync_errors,
-        /listBeforeRelease can only be specified on the main rule/,
+        /listBeforeRelease can only be specified on the defaults/,
       );
     });
   });
@@ -1511,7 +1511,7 @@ describe('Access control syncing', () => {
         assert.isTrue(
           assessment.errors.some((error) =>
             error.includes(
-              'integrations can only be specified on the main rule (the rule without labels)',
+              'integrations can only be specified on the defaults (the first element, without labels)',
             ),
           ),
           'Should have specific error about integrations on non-main rule',

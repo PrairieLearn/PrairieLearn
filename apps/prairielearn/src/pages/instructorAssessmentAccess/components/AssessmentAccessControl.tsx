@@ -102,7 +102,7 @@ function SaveErrorAlert({
           </a>
         </Alert>
       );
-    case 'BASIC':
+    case 'UNKNOWN':
       return (
         <Alert variant="danger" dismissible onClose={onDismiss}>
           {appError.message}

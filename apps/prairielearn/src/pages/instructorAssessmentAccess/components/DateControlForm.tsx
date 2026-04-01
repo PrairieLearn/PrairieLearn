@@ -83,7 +83,7 @@ export function MainDateControlForm({
 export function OverrideDateControlForm({
   index,
   title = 'Date control',
-  description = 'Override date settings from the main rule by clicking "Override" on individual fields',
+  description = 'Override date settings from the defaults by clicking "Override" on individual fields',
 }: {
   index: number;
   title?: string;

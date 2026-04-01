@@ -28,6 +28,7 @@ import {
   MAX_ACCESS_CONTROL_RULES,
   MAX_ENROLLMENT_RULES,
 } from '../../schemas/accessControl.js';
+import { validateAccessControlArray } from '../../sync/course-db.js';
 import { validateRule } from '../../sync/fromDisk/accessControl.js';
 import { throwAppError } from '../app-errors.js';
 
@@ -215,6 +216,15 @@ const saveAllRules = t.procedure
 
     // Validate all rules before writing anything to disk or DB.
     const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
+
+    // Validate array-level invariants (exactly one main rule, must be first).
+    const { errors: arrayErrors } = validateAccessControlArray({
+      accessControlJsonArray: rulesToSync,
+    });
+    if (arrayErrors.length > 0) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: arrayErrors[0] });
+    }
+
     for (const [index, rule] of rulesToSync.entries()) {
       const targetType = index === 0 ? 'none' : 'student_label';
       const ruleError = validateRule(rule, targetType);
@@ -246,6 +256,20 @@ const saveAllRules = t.procedure
       }
     }
 
+    // Build the assessment file path and capture the current file hash BEFORE
+    // the concurrency check. This ensures that if another save completes between
+    // the hash check and the FileModifyEditor lock, the editor will detect the
+    // file change and reject the write (closing the TOCTOU window).
+    const assessmentDir = path.join(
+      opts.ctx.course.path,
+      'courseInstances',
+      opts.ctx.course_instance.short_name!,
+      'assessments',
+      opts.ctx.assessment.tid!,
+    );
+    const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
+    const currentFileHash = (await getOriginalHash(assessmentPath)) ?? '';
+
     // Optimistic concurrency check: verify the full rule set (file + enrollment)
     // hasn't changed since the page was loaded.
     const currentRules = await selectAccessControlRules(opts.ctx.assessment);
@@ -260,16 +284,6 @@ const saveAllRules = t.procedure
 
     // Write updated access control rules to infoAssessment.json on disk
     // (handles git commit + sync to DB).
-    const assessmentDir = path.join(
-      opts.ctx.course.path,
-      'courseInstances',
-      opts.ctx.course_instance.short_name!,
-      'assessments',
-      opts.ctx.assessment.tid!,
-    );
-    const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
-    const currentFileHash = (await getOriginalHash(assessmentPath)) ?? '';
-
     const saveResult = await saveJsonFile({
       applyChanges: (jsonContents) => {
         jsonContents.accessControl = cleanAccessControlRulesForDisk(rulesToSync);
@@ -292,6 +306,7 @@ const saveAllRules = t.procedure
     if (!saveResult.success) {
       throwAppError<AccessControlError['SaveAllRules']>({
         code: 'SYNC_JOB_FAILED',
+        message: 'Failed to save access control rules',
         jobSequenceId: saveResult.jobSequenceId,
       });
     }

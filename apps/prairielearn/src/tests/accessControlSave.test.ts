@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 
 import fs from 'fs-extra';
-import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
@@ -147,5 +147,63 @@ describe('Access control save via tRPC', () => {
     assert.notProperty(parsed.accessControl[0], 'listBeforeRelease');
     assert.notProperty(parsed.accessControl[0], 'dateControl');
     assert.notProperty(parsed.accessControl[0], 'afterComplete');
+  });
+
+  test.sequential('rejects save with stale origHash', async () => {
+    const client = await createClient();
+    const staleHash = await getOrigHash();
+
+    // First save succeeds and changes the hash.
+    await client.accessControl.saveAllRules.mutate({
+      rules: [makeRule()],
+      origHash: staleHash,
+    });
+
+    // Second save with the same (now stale) hash must fail.
+    await expect(
+      client.accessControl.saveAllRules.mutate({
+        rules: [makeRule({ dateControl: { dueDate: '2024-05-01T23:59:00' } })],
+        origHash: staleHash,
+      }),
+    ).rejects.toThrow(/modified since you loaded/);
+  });
+
+  test.sequential('rejects save with no main rule', async () => {
+    const client = await createClient();
+    const origHash = await getOrigHash();
+
+    await expect(
+      client.accessControl.saveAllRules.mutate({
+        rules: [{ labels: ['Section A'], dateControl: { dueDate: '2024-04-01T23:59:00' } }],
+        origHash,
+      }),
+    ).rejects.toThrow(/No defaults found/);
+  });
+
+  test.sequential('rejects save with multiple defaults entries', async () => {
+    const client = await createClient();
+    const origHash = await getOrigHash();
+
+    await expect(
+      client.accessControl.saveAllRules.mutate({
+        rules: [makeRule(), makeRule()],
+        origHash,
+      }),
+    ).rejects.toThrow(/defaults entries/);
+  });
+
+  test.sequential('rejects save with defaults not first', async () => {
+    const client = await createClient();
+    const origHash = await getOrigHash();
+
+    await expect(
+      client.accessControl.saveAllRules.mutate({
+        rules: [
+          { labels: ['Section A'], dateControl: { dueDate: '2024-04-01T23:59:00' } },
+          makeRule(),
+        ],
+        origHash,
+      }),
+    ).rejects.toThrow(/defaults.*must be the first element/);
   });
 });
