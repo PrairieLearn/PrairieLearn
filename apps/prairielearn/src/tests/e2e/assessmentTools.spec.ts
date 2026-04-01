@@ -5,6 +5,8 @@ import type { Page } from '@playwright/test';
 
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
+import { selectCourseByShortName } from '../../models/course.js';
+import { selectQuestionByQid } from '../../models/question.js';
 import { syncCourse } from '../helperCourse.js';
 
 import { expect, test } from './fixtures.js';
@@ -129,5 +131,49 @@ test.describe('Assessment tools', () => {
     expect(savedAssessment.zones[1].tools.calculator.enabled).toBe(false);
     // Assessment-level tool should remain unchanged
     expect(savedAssessment.tools.calculator.enabled).toBe(true);
+  });
+});
+
+test.describe('Calculator keyboard input', () => {
+  test('accepts keyboard input on first open with empty localStorage', async ({
+    page,
+    courseInstance,
+  }) => {
+    const course = await selectCourseByShortName('QA 101');
+    const question = await selectQuestionByQid({ qid: 'addNumbers', course_id: course.id });
+    const previewUrl = `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`;
+
+    await page.goto(previewUrl);
+
+    // Clear calculator localStorage to simulate a first-time open.
+    const storageKey = await page.locator('#calculatorDrawer').getAttribute('data-storage-key');
+    await page.evaluate((key) => localStorage.removeItem(key!), storageKey);
+    await page.reload();
+
+    // Open the calculator via the toggle button (the empty-localStorage path).
+    await page.locator('#calculatorDrawerToggle').click();
+    await expect(page.locator('#calculatorDrawer')).toHaveClass(/open/);
+
+    // Click the math field and type via the keyboard.
+    const input = page.locator('#calculator-input');
+    await input.click();
+    await page.keyboard.type('1+2');
+
+    // Verify the input received the keystrokes.
+    await expect(async () => {
+      const value = await input.evaluate((el) => (el as HTMLElement & { value: string }).value);
+      expect(value).toContain('1');
+      expect(value).toContain('2');
+    }).toPass({ timeout: 5000 });
+
+    // Submit and verify the result.
+    await page.keyboard.press('Enter');
+    const historyOutput = page.locator('#history-panel .history-output .history-text').first();
+    await expect(async () => {
+      const value = await historyOutput.evaluate(
+        (el) => (el as HTMLElement & { value: string }).value,
+      );
+      expect(value).toContain('3');
+    }).toPass({ timeout: 5000 });
   });
 });
