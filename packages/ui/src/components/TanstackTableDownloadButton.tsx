@@ -1,5 +1,4 @@
 import type { Table } from '@tanstack/react-table';
-import type React from 'react';
 
 import { downloadAsCSV, downloadAsJSON } from '@prairielearn/browser-utils';
 
@@ -16,7 +15,6 @@ export interface TanstackTableDownloadButtonProps<RowDataModel> {
   singularLabel: string;
   pluralLabel: string;
   hasSelection: boolean;
-  additionalMenuItems?: React.ReactNode;
 }
 /**
  * @param params
@@ -29,7 +27,6 @@ export interface TanstackTableDownloadButtonProps<RowDataModel> {
  * @param params.singularLabel - The singular label for a single row in the table, e.g. "student"
  * @param params.pluralLabel - The plural label for multiple rows in the table, e.g. "students"
  * @param params.hasSelection - Whether the table has selection enabled
- * @param params.additionalMenuItems - Additional menu items to render at the end of the dropdown
  */
 export function TanstackTableDownloadButton<RowDataModel>({
   table,
@@ -38,7 +35,6 @@ export function TanstackTableDownloadButton<RowDataModel>({
   singularLabel,
   pluralLabel,
   hasSelection,
-  additionalMenuItems,
 }: TanstackTableDownloadButtonProps<RowDataModel>) {
   const allRows = table.getCoreRowModel().rows.map((row) => row.original);
   const allRowsJSON = allRows.map(mapRowToData).filter((row) => row !== null);
@@ -153,7 +149,6 @@ export function TanstackTableDownloadButton<RowDataModel>({
             {filteredRowsJSON.length}) as JSON
           </button>
         </li>
-        {additionalMenuItems}
       </ul>
     </div>
   );
