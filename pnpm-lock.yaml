@@ -2295,6 +2295,9 @@ importers:
       '@types/pg-cursor':
         specifier: ^2.7.2
         version: 2.7.2
+      debug:
+        specifier: ^4.4.3
+        version: 4.4.3(supports-color@5.5.0)
       es-toolkit:
         specifier: ^1.45.1
         version: 1.45.1
