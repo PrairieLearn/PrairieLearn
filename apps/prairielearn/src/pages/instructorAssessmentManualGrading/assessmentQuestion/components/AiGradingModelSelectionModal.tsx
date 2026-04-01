@@ -17,7 +17,7 @@ import {
   formatMilliDollars,
 } from '../../../../lib/ai-grading-credits.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
-import { useTRPC } from '../utils/trpc-context.js';
+import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
 export type AiGradingModelSelectionModalState =
@@ -392,7 +392,7 @@ export function AiGradingModelSelectionModal({
 
   const trpc = useTRPC();
   const modalDataQuery = useQuery({
-    ...trpc.getAiGradingModalData.queryOptions({
+    ...trpc.manualGrading.getAiGradingModalData.queryOptions({
       selection: modalState ? getSelection(modalState) : 'all',
     }),
     enabled: modalState != null,

@@ -1,10 +1,9 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { execute } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { getAvailableAiGradingProviders } from '../../ee/lib/ai-grading/ai-grading-credentials.js';
+import { estimateAiGradingCost } from '../../ee/lib/ai-grading/ai-grading-cost-estimation.js';
 import {
   AI_GRADING_MODELS,
   AI_GRADING_MODEL_IDS,
@@ -16,9 +15,11 @@ import { deleteAiGradingJobs, setAiGradingMode } from '../../ee/lib/ai-grading/a
 import { aiGrade } from '../../ee/lib/ai-grading/ai-grading.js';
 import { deleteAiInstanceQuestionGroups } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
+import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../lib/id.js';
+import { selectCreditPool } from '../../models/ai-grading-credit-pool.js';
 import { selectCourseInstanceGraderStaff } from '../../models/course-instances.js';
 import { InstanceQuestionRowWithAIGradingStatsSchema } from '../../pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
 import {
@@ -129,6 +130,52 @@ const aiGroupInstanceQuestionsMutation = t.procedure
     return { job_sequence_id, job_sequence_token };
   });
 
+const getAiGradingModalDataQuery = t.procedure
+  .use(requireCourseInstancePermissionEdit)
+  .use(requireAiGradingFeature)
+  .input(
+    z.object({
+      selection: z.union([z.literal('all'), z.literal('human_graded'), z.string().array()]),
+    }),
+  )
+  .query(async (opts) => {
+    const mode = Array.isArray(opts.input.selection) ? 'selected' : opts.input.selection;
+    const selected_instance_question_ids = Array.isArray(opts.input.selection)
+      ? opts.input.selection
+      : undefined;
+
+    const costEstimate = await estimateAiGradingCost({
+      assessment_question: opts.ctx.assessment_question,
+      question: opts.ctx.question,
+      course: opts.ctx.course,
+      urlPrefix: opts.ctx.urlPrefix,
+      mode,
+      selected_instance_question_ids,
+    });
+
+    const using_custom_api_keys = opts.ctx.course_instance.ai_grading_use_custom_api_keys;
+    const credit_pool = using_custom_api_keys
+      ? null
+      : await selectCreditPool(opts.ctx.course_instance.id);
+
+    const model_pricing: Record<string, { input: number; output: number }> = {};
+    for (const model of AI_GRADING_MODELS) {
+      const pricing = config.costPerMillionTokens[model.modelId];
+      model_pricing[model.modelId] = { input: pricing.input, output: pricing.output };
+    }
+
+    return {
+      num_to_grade: costEstimate.num_to_grade,
+      avg_input_tokens_per_submission: costEstimate.avg_input_tokens_per_submission,
+      estimated_output_tokens: costEstimate.estimated_output_tokens,
+      estimated_reasoning_tokens: costEstimate.estimated_reasoning_tokens,
+      credit_pool,
+      model_pricing,
+      infrastructure_fee_percent: config.aiGradingInfrastructureFeePercent,
+      using_custom_api_keys,
+    };
+  });
+
 const aiGradeInstanceQuestionsMutation = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .use(requireAiGradingFeature)
@@ -154,28 +201,6 @@ const aiGradeInstanceQuestionsMutation = t.procedure
       });
     }
 
-    // Validate that the selected model's provider has a configured API key.
-    const modelConfig = AI_GRADING_MODELS.find((m) => m.modelId === opts.input.model_id);
-    if (!modelConfig) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: `Unknown model: ${opts.input.model_id}`,
-      });
-    }
-    const availableProviders = await getAvailableAiGradingProviders(opts.ctx.course_instance);
-    if (!availableProviders.includes(modelConfig.provider)) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: `No API key configured for provider: ${modelConfig.provider}`,
-      });
-    }
-
-    // Persist the selected model as the user's preference for this assessment question.
-    await execute(
-      'UPDATE assessment_questions SET ai_grading_last_selected_model = $model_id WHERE id = $id',
-      { model_id: opts.input.model_id, id: opts.ctx.assessment_question.id },
-    );
-
     const job_sequence_id = await aiGrade({
       question: opts.ctx.question,
       course: opts.ctx.course,
@@ -195,7 +220,6 @@ const aiGradeInstanceQuestionsMutation = t.procedure
         return opts.input.selection;
       }),
     });
-
     const job_sequence_token = generateJobSequenceToken(job_sequence_id);
     return { job_sequence_id, job_sequence_token };
   });
@@ -256,6 +280,7 @@ export const manualGradingRouter = t.router({
   deleteAiGradingJobs: deleteAiGradingJobsMutation,
   deleteAiInstanceQuestionGroupings: deleteAiInstanceQuestionGroupingsMutation,
   aiGroupInstanceQuestions: aiGroupInstanceQuestionsMutation,
+  getAiGradingModalData: getAiGradingModalDataQuery,
   aiGradeInstanceQuestions: aiGradeInstanceQuestionsMutation,
   setAssignedGrader: setAssignedGraderMutation,
   setRequiresManualGrading: setRequiresManualGradingMutation,
