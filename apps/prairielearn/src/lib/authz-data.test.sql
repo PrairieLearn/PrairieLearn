@@ -98,74 +98,70 @@ WITH
       (1007, 'normaluser@host.com', 100, NULL),
       (1008, 'ltiuserci15@host.com', 100, 15),
       (1009, 'ltiuserci12@host.com', 100, 12)
-  ),
-  setup_ciars AS (
-    INSERT INTO
-      course_instance_access_rules (
-        id,
-        course_instance_id,
-        number,
-        uids,
-        start_date,
-        end_date,
-        institution
-      )
-    VALUES
-      (
-        21,
-        11,
-        1,
-        '{"person1@host.com", "person2@host.com"}',
-        '2010-01-01 00:00:00-00',
-        '2010-12-31 23:59:59-00',
-        'Any'
-      ),
-      (
-        22,
-        12,
-        1,
-        NULL,
-        '2011-01-01 00:00:00-00',
-        '2011-12-31 23:59:59-00',
-        'school'
-      ),
-      (
-        23,
-        13,
-        1,
-        NULL,
-        '2012-01-01 00:00:00-00',
-        '2012-12-31 23:59:59-00',
-        'notInDb'
-      ),
-      (24, 14, 1, NULL, NULL, NULL, NULL),
-      (
-        25,
-        15,
-        1,
-        NULL,
-        '2013-01-01 00:00:00-00',
-        '2013-12-31 23:59:59-00',
-        'LTI'
-      ),
-      (
-        26,
-        16,
-        1,
-        NULL,
-        NULL,
-        '2014-12-31 23:59:59-00',
-        'Any'
-      ),
-      (
-        27,
-        17,
-        1,
-        NULL,
-        '2015-01-01 00:00:00-00',
-        NULL,
-        'school'
-      )
   )
-SELECT
-  TRUE;
+INSERT INTO
+  course_instance_access_rules (
+    id,
+    course_instance_id,
+    number,
+    uids,
+    start_date,
+    end_date,
+    institution
+  )
+VALUES
+  (
+    21,
+    11,
+    1,
+    '{"person1@host.com", "person2@host.com"}',
+    '2010-01-01 00:00:00-00',
+    '2010-12-31 23:59:59-00',
+    'Any'
+  ),
+  (
+    22,
+    12,
+    1,
+    NULL,
+    '2011-01-01 00:00:00-00',
+    '2011-12-31 23:59:59-00',
+    'school'
+  ),
+  (
+    23,
+    13,
+    1,
+    NULL,
+    '2012-01-01 00:00:00-00',
+    '2012-12-31 23:59:59-00',
+    'notInDb'
+  ),
+  (24, 14, 1, NULL, NULL, NULL, NULL),
+  (
+    25,
+    15,
+    1,
+    NULL,
+    '2013-01-01 00:00:00-00',
+    '2013-12-31 23:59:59-00',
+    'LTI'
+  ),
+  (
+    26,
+    16,
+    1,
+    NULL,
+    NULL,
+    '2014-12-31 23:59:59-00',
+    'Any'
+  ),
+  (
+    27,
+    17,
+    1,
+    NULL,
+    '2015-01-01 00:00:00-00',
+    NULL,
+    'school'
+  );

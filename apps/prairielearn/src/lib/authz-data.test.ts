@@ -296,187 +296,171 @@ describe('checkCourseInstanceLegacyAccess', () => {
     await execute(sql.setup_check_course_instance_legacy_access_tests);
   });
 
-  async function checkLegacyAccess({
-    courseInstanceId,
-    userId,
-    reqDate,
-  }: {
-    courseInstanceId: string;
-    userId: string;
-    reqDate: string;
-  }) {
-    return await checkCourseInstanceLegacyAccess({
-      course_instance_id: courseInstanceId,
-      user_id: userId,
-      req_date: new Date(reqDate),
-    });
-  }
-
   it('passes if all parameters match', async () => {
-    const result = await checkLegacyAccess({
-      courseInstanceId: '11',
-      userId: '1000',
-      reqDate: '2010-07-07T06:06:06Z',
+    const result = await checkCourseInstanceLegacyAccess({
+      course_instance_id: '11',
+      user_id: '1000',
+      req_date: new Date('2010-07-07T06:06:06Z'),
     });
 
     assert.isTrue(result);
   });
 
   it('fails if uid from school institution is not in the list', async () => {
-    const result = await checkLegacyAccess({
-      courseInstanceId: '11',
-      userId: '1003',
-      reqDate: '2010-07-07T06:06:06Z',
+    const result = await checkCourseInstanceLegacyAccess({
+      course_instance_id: '11',
+      user_id: '1003',
+      req_date: new Date('2010-07-07T06:06:06Z'),
     });
 
     assert.isFalse(result);
   });
 
   it('fails if uid from host institution is not in the list', async () => {
-    const result = await checkLegacyAccess({
-      courseInstanceId: '11',
-      userId: '1004',
-      reqDate: '2010-07-07T06:06:06Z',
+    const result = await checkCourseInstanceLegacyAccess({
+      course_instance_id: '11',
+      user_id: '1004',
+      req_date: new Date('2010-07-07T06:06:06Z'),
     });
 
     assert.isFalse(result);
   });
 
   it('fails if date is before start_date', async () => {
-    const result = await checkLegacyAccess({
-      courseInstanceId: '11',
-      userId: '1000',
-      reqDate: '2007-07-07T06:06:06Z',
+    const result = await checkCourseInstanceLegacyAccess({
+      course_instance_id: '11',
+      user_id: '1000',
+      req_date: new Date('2007-07-07T06:06:06Z'),
     });
 
     assert.isFalse(result);
   });
 
   it('fails if date is after end_date', async () => {
-    const result = await checkLegacyAccess({
-      courseInstanceId: '11',
-      userId: '1000',
-      reqDate: '2017-07-07T06:06:06Z',
+    const result = await checkCourseInstanceLegacyAccess({
+      course_instance_id: '11',
+      user_id: '1000',
+      req_date: new Date('2017-07-07T06:06:06Z'),
     });
 
     assert.isFalse(result);
   });
 
   it('passes if institution matches', async () => {
-    const result = await checkLegacyAccess({
-      courseInstanceId: '12',
-      userId: '1002',
-      reqDate: '2011-07-07T06:06:06Z',
+    const result = await checkCourseInstanceLegacyAccess({
+      course_instance_id: '12',
+      user_id: '1002',
+      req_date: new Date('2011-07-07T06:06:06Z'),
     });
 
     assert.isTrue(result);
   });
 
   it('fails if institution specified and does not match', async () => {
-    const result = await checkLegacyAccess({
-      courseInstanceId: '12',
-      userId: '1005',
-      reqDate: '2011-07-07T06:06:06Z',
+    const result = await checkCourseInstanceLegacyAccess({
+      course_instance_id: '12',
+      user_id: '1005',
+      req_date: new Date('2011-07-07T06:06:06Z'),
     });
 
     assert.isFalse(result);
   });
 
   it('fails if institution specified in rule is not in the database', async () => {
-    const result = await checkLegacyAccess({
-      courseInstanceId: '13',
-      userId: '1005',
-      reqDate: '2012-07-07T06:06:06Z',
+    const result = await checkCourseInstanceLegacyAccess({
+      course_instance_id: '13',
+      user_id: '1005',
+      req_date: new Date('2012-07-07T06:06:06Z'),
     });
 
     assert.isFalse(result);
   });
 
   it('passes if user matches the default course institution for a null institution rule', async () => {
-    const result = await checkLegacyAccess({
-      courseInstanceId: '14',
-      userId: '1006',
-      reqDate: '2013-07-07T06:06:06Z',
+    const result = await checkCourseInstanceLegacyAccess({
+      course_instance_id: '14',
+      user_id: '1006',
+      req_date: new Date('2013-07-07T06:06:06Z'),
     });
 
     assert.isTrue(result);
   });
 
   it('fails if user does not match the default course institution for a null institution rule', async () => {
-    const result = await checkLegacyAccess({
-      courseInstanceId: '14',
-      userId: '1002',
-      reqDate: '2013-07-07T06:06:06Z',
+    const result = await checkCourseInstanceLegacyAccess({
+      course_instance_id: '14',
+      user_id: '1002',
+      req_date: new Date('2013-07-07T06:06:06Z'),
     });
 
     assert.isFalse(result);
   });
 
   it('fails if institution is LTI and user was not created with a course instance', async () => {
-    const result = await checkLegacyAccess({
-      courseInstanceId: '15',
-      userId: '1007',
-      reqDate: '2013-07-07T06:06:06Z',
+    const result = await checkCourseInstanceLegacyAccess({
+      course_instance_id: '15',
+      user_id: '1007',
+      req_date: new Date('2013-07-07T06:06:06Z'),
     });
 
     assert.isFalse(result);
   });
 
   it('passes if institution is LTI and user was created with the correct course instance', async () => {
-    const result = await checkLegacyAccess({
-      courseInstanceId: '15',
-      userId: '1008',
-      reqDate: '2013-07-07T06:06:06Z',
+    const result = await checkCourseInstanceLegacyAccess({
+      course_instance_id: '15',
+      user_id: '1008',
+      req_date: new Date('2013-07-07T06:06:06Z'),
     });
 
     assert.isTrue(result);
   });
 
   it('fails if institution is LTI and user was created with a different course instance', async () => {
-    const result = await checkLegacyAccess({
-      courseInstanceId: '15',
-      userId: '1009',
-      reqDate: '2013-07-07T06:06:06Z',
+    const result = await checkCourseInstanceLegacyAccess({
+      course_instance_id: '15',
+      user_id: '1009',
+      req_date: new Date('2013-07-07T06:06:06Z'),
     });
 
     assert.isFalse(result);
   });
 
   it('fails if date is after end_date and LTI matches', async () => {
-    const result = await checkLegacyAccess({
-      courseInstanceId: '15',
-      userId: '1008',
-      reqDate: '2017-07-07T06:06:06Z',
+    const result = await checkCourseInstanceLegacyAccess({
+      course_instance_id: '15',
+      user_id: '1008',
+      req_date: new Date('2017-07-07T06:06:06Z'),
     });
 
     assert.isFalse(result);
   });
 
   it('passes when rule has no uids list', async () => {
-    const result = await checkLegacyAccess({
-      courseInstanceId: '12',
-      userId: '1002',
-      reqDate: '2011-07-07T06:06:06Z',
+    const result = await checkCourseInstanceLegacyAccess({
+      course_instance_id: '12',
+      user_id: '1002',
+      req_date: new Date('2011-07-07T06:06:06Z'),
     });
 
     assert.isTrue(result);
   });
 
   it('passes when rule has no start_date', async () => {
-    const result = await checkLegacyAccess({
-      courseInstanceId: '16',
-      userId: '1004',
-      reqDate: '2014-01-07T06:06:06Z',
+    const result = await checkCourseInstanceLegacyAccess({
+      course_instance_id: '16',
+      user_id: '1004',
+      req_date: new Date('2014-01-07T06:06:06Z'),
     });
 
     assert.isTrue(result);
   });
 
   it('passes when rule has no end_date', async () => {
-    const result = await checkLegacyAccess({
-      courseInstanceId: '17',
-      userId: '1002',
-      reqDate: '2016-07-07T06:06:06Z',
+    const result = await checkCourseInstanceLegacyAccess({
+      course_instance_id: '17',
+      user_id: '1002',
+      req_date: new Date('2016-07-07T06:06:06Z'),
     });
 
     assert.isTrue(result);
