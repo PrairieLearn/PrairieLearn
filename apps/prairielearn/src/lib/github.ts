@@ -38,6 +38,27 @@ function getGithubClient() {
 }
 
 /**
+ * Checks whether a repository already exists on GitHub. This catches cases
+ * that can't be detected from the database alone, such as GitHub redirects
+ * from renamed repositories.
+ */
+export async function checkGithubRepositoryExists(repoName: string): Promise<boolean> {
+  const client = getGithubClient();
+  if (client === null) return false;
+
+  try {
+    await client.repos.get({
+      owner: config.githubCourseOwner,
+      repo: repoName,
+    });
+    return true;
+  } catch (err: any) {
+    if (err.status === 404) return false;
+    throw err;
+  }
+}
+
+/**
  * Creates a new, empty repository.
  * @param client Octokit client
  * @param repo Name of the new repository to create

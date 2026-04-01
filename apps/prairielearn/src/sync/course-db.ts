@@ -28,6 +28,8 @@ import {
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
+  validateRuleCreditMonotonicity,
+  validateRuleDateOrdering,
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
@@ -289,7 +291,7 @@ export async function loadFullCourse(
     };
   }
 
-  const courseInfo = await loadCourseInfo({
+  const course = await loadCourseInfo({
     courseId,
     coursePath,
     assessmentSetsInUse,
@@ -297,11 +299,22 @@ export async function loadFullCourse(
     sharingEnabled,
   });
 
-  return {
-    course: courseInfo,
-    questions,
-    courseInstances,
-  };
+  const courseData = { course, questions, courseInstances };
+
+  // These checks are done regardless of whether sharing is enabled or not,
+  // since they primarily check for the correctness of sharing attributes. If a
+  // local environment doesn't have sharing enabled, these issues are still
+  // validated to ensure that, when the course moves to a production environment
+  // where sharing is enabled, these issues are caught and can be resolved
+  // before they cause problems in production. The checks update the courseData
+  // directly by adding sync errors to the relevant info files, which will then
+  // be emitted as part of the normal sync results.
+  checkInvalidSharingSetAdditions(courseData);
+  checkInvalidSharedAssessments(courseData);
+  checkInvalidSharedCourseInstances(courseData);
+  checkInvalidDraftQuestionSharing(courseData);
+
+  return courseData;
 }
 
 function writeErrorsAndWarningsForInfoFileIfNeeded<T>(
@@ -1155,15 +1168,17 @@ export function validateAccessControlArray({
   );
 
   if (mainRules.length === 0) {
-    errors.push('No main rule found. The first rule must apply to everyone.');
+    errors.push('No defaults found. The first element of accessControl must apply to everyone.');
   } else if (mainRules.length > 1) {
-    errors.push(`Found ${mainRules.length} main rules. Only one rule should apply to everyone.`);
+    errors.push(
+      `Found ${mainRules.length} defaults entries. Only one element of accessControl should apply to everyone.`,
+    );
   } else {
     // The DB constraint `check_first_rule_is_none` requires the main rule at index 0
     const firstRule = accessControlJsonArray[0];
     const isFirstRuleMain = firstRule.labels == null || firstRule.labels.length === 0;
     if (!isFirstRuleMain) {
-      errors.push('The main rule (without labels) must be the first rule in the array.');
+      errors.push('The defaults (without labels) must be the first element in the array.');
     }
   }
 
@@ -1201,12 +1216,22 @@ export function validateAccessControlArray({
 
     const isMainRule = rule.labels == null || rule.labels.length === 0;
     if (!isMainRule && rule.integrations != null) {
-      errors.push('integrations can only be specified on the main rule (the rule without labels).');
+      errors.push(
+        'integrations can only be specified on the defaults (the first element, without labels).',
+      );
     }
     if (!isMainRule && rule.listBeforeRelease !== undefined) {
       errors.push(
-        'listBeforeRelease can only be specified on the main rule (the rule without labels).',
+        'listBeforeRelease can only be specified on the defaults (the first element, without labels).',
       );
+    }
+
+    const dateErrors = validateRuleDateOrdering(rule);
+    errors.push(...dateErrors);
+    // Credit monotonicity assumes deadlines are chronological; skip if dates
+    // are out of order to avoid misleading "not monotonically decreasing" errors.
+    if (dateErrors.length === 0) {
+      errors.push(...validateRuleCreditMonotonicity(rule));
     }
   }
 
@@ -1336,7 +1361,7 @@ function validateAssessment({
   }
 
   // Check assessment access rules.
-  assessment.allowAccess.forEach((rule) => {
+  (assessment.allowAccess ?? []).forEach((rule) => {
     const dateErrors = checkAllowAccessDates(rule);
 
     if ('active' in rule && rule.active === false && 'credit' in rule && rule.credit !== 0) {
@@ -1351,7 +1376,7 @@ function validateAssessment({
   // only show certain warnings for course instances which are accessible
   // either now or any time in the future.
   if (!courseInstanceExpired) {
-    assessment.allowAccess.forEach((rule) => {
+    (assessment.allowAccess ?? []).forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
 
       if (rule.examUuid && rule.mode === 'Public') {
@@ -1388,10 +1413,10 @@ function validateAssessment({
   };
   assessment.zones.forEach((zone) => {
     zone.questions.map((zoneQuestion) => {
-      const effectiveAlternativeGroupAllowRealTimeGrading =
+      const effectiveAlternativePoolAllowRealTimeGrading =
         zoneQuestion.allowRealTimeGrading ?? zone.allowRealTimeGrading ?? allowRealTimeGrading;
 
-      // We'll normalize either single questions or alternative groups
+      // We'll normalize either single questions or alternative pools
       // to make validation easier
       let alternatives: (QuestionPointsJson & { allowRealTimeGrading: boolean })[] = [];
       if (zoneQuestion.alternatives && zoneQuestion.id) {
@@ -1399,7 +1424,7 @@ function validateAssessment({
       }
       if (zoneQuestion.alternatives && zoneQuestion.preferences) {
         errors.push(
-          'Cannot specify "preferences" on an alternative group. Set "preferences" on each alternative instead.',
+          'Cannot specify "preferences" on an alternative pool. Set "preferences" on each alternative instead.',
         );
       }
       if (zoneQuestion.alternatives) {
@@ -1412,7 +1437,7 @@ function validateAssessment({
             autoPoints: alternative.autoPoints ?? zoneQuestion.autoPoints,
             manualPoints: alternative.manualPoints ?? zoneQuestion.manualPoints,
             allowRealTimeGrading:
-              alternative.allowRealTimeGrading ?? effectiveAlternativeGroupAllowRealTimeGrading,
+              alternative.allowRealTimeGrading ?? effectiveAlternativePoolAllowRealTimeGrading,
           };
         });
       } else if (zoneQuestion.id) {
@@ -1424,7 +1449,7 @@ function validateAssessment({
             maxAutoPoints: zoneQuestion.maxAutoPoints,
             autoPoints: zoneQuestion.autoPoints,
             manualPoints: zoneQuestion.manualPoints,
-            allowRealTimeGrading: effectiveAlternativeGroupAllowRealTimeGrading,
+            allowRealTimeGrading: effectiveAlternativePoolAllowRealTimeGrading,
           },
         ];
       } else {
@@ -1635,6 +1660,12 @@ function validateAssessment({
         );
       });
     });
+  }
+
+  if (rawAssessment.allowAccess != null && rawAssessment.accessControl != null) {
+    errors.push(
+      'Cannot use both "allowAccess" and "accessControl". Use "accessControl" for new assessments.',
+    );
   }
 
   // Validate access control rules if defined
@@ -1929,4 +1960,89 @@ async function loadAssessments({
       `UUID "${uuid}" is used in other assessments in this course instance: ${ids.join(', ')}`,
   );
   return assessments;
+}
+
+function checkInvalidDraftQuestionSharing(courseData: CourseData): void {
+  for (const [qid, question] of Object.entries(courseData.questions)) {
+    if (!isDraftQid(qid)) continue;
+
+    if (question.data?.sharingSets && question.data.sharingSets.length > 0) {
+      infofile.addError(question, 'Draft questions cannot be added to sharing sets.');
+    }
+
+    if (question.data?.sharePublicly || question.data?.shareSourcePublicly) {
+      infofile.addError(question, 'Draft questions cannot be publicly shared.');
+    }
+  }
+}
+
+function checkInvalidSharedCourseInstances(courseData: CourseData): void {
+  for (const courseInstance of Object.values(courseData.courseInstances)) {
+    if (!courseInstance.courseInstance.data?.shareSourcePublicly) continue;
+    const hasNonPubliclySharedAssessments = Object.values(courseInstance.assessments).some(
+      (assessment) => !infofile.hasErrors(assessment) && !assessment.data?.shareSourcePublicly,
+    );
+    if (hasNonPubliclySharedAssessments) {
+      infofile.addError(
+        courseInstance.courseInstance,
+        'Course instance is publicly shared but contains assessments which are not publicly shared',
+      );
+    }
+  }
+}
+
+function checkInvalidSharedAssessments(courseData: CourseData): void {
+  for (const courseInstanceKey in courseData.courseInstances) {
+    const courseInstance = courseData.courseInstances[courseInstanceKey];
+    for (const tid in courseInstance.assessments) {
+      const assessment = courseInstance.assessments[tid];
+      if (!assessment.data?.shareSourcePublicly) {
+        continue;
+      }
+      const containsNonPublicQuestions = assessment.data.zones
+        .flatMap((zone) => zone.questions)
+        .flatMap((question) => [question.id, ...(question.alternatives?.map((a) => a.id) || [])])
+        .filter(
+          (qid): qid is string =>
+            qid != null &&
+            qid in courseData.questions &&
+            !infofile.hasErrors(courseData.questions[qid]),
+        )
+        .map((qid) => courseData.questions[qid].data)
+        .some((infoJson) => infoJson && !infoJson.sharePublicly && !infoJson.shareSourcePublicly);
+      if (containsNonPublicQuestions) {
+        infofile.addError(
+          assessment,
+          'Assessment is publicly shared but contains questions which are not publicly shared',
+        );
+      }
+    }
+  }
+}
+
+function checkInvalidSharingSetAdditions(courseData: CourseData): void {
+  // If infoCourse.json has errors, we may be missing the sharing sets or they
+  // may be malformed, so skip this check to avoid confusing errors about
+  // sharing sets not existing.
+  if (infofile.hasErrors(courseData.course)) return;
+  const sharingSetNames = new Set((courseData.course.data?.sharingSets || []).map((ss) => ss.name));
+
+  for (const qid in courseData.questions) {
+    const question = courseData.questions[qid];
+    const questionSharingSets = question.data?.sharingSets || [];
+    const invalidSharingSets = questionSharingSets.filter(
+      (sharingSet) => !sharingSetNames.has(sharingSet),
+    );
+    if (invalidSharingSets.length === 1) {
+      infofile.addError(
+        question,
+        `Sharing set ${invalidSharingSets[0]} does not exist in this course`,
+      );
+    } else if (invalidSharingSets.length > 1) {
+      infofile.addError(
+        question,
+        `Sharing sets ${invalidSharingSets.join(', ')} do not exist in this course`,
+      );
+    }
+  }
 }

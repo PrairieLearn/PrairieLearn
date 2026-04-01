@@ -23,6 +23,7 @@ import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectOrInsertUserByUid } from '../../models/user.js';
 import { type AccessControlJsonInput } from '../../schemas/accessControl.js';
+import { cleanAccessControlRulesForDisk } from '../../trpc/assessment/access-control.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
@@ -496,7 +497,7 @@ describe('Access control syncing', () => {
       assert.isNotNull(assessment.sync_errors);
       assert.match(
         assessment.sync_errors,
-        /listBeforeRelease can only be specified on the main rule/,
+        /listBeforeRelease can only be specified on the defaults/,
       );
     });
   });
@@ -1409,7 +1410,7 @@ describe('Access control syncing', () => {
           dueDate: '2024-03-21T23:59:00',
           earlyDeadlines: [
             { date: '2024-03-18T23:59:00', credit: 120 },
-            { date: '2024-03-18T23:59:00', credit: 80 },
+            { date: '2024-03-18T23:59:00', credit: 110 },
           ],
         },
       });
@@ -1510,7 +1511,7 @@ describe('Access control syncing', () => {
         assert.isTrue(
           assessment.errors.some((error) =>
             error.includes(
-              'integrations can only be specified on the main rule (the rule without labels)',
+              'integrations can only be specified on the defaults (the first element, without labels)',
             ),
           ),
           'Should have specific error about integrations on non-main rule',
@@ -2077,5 +2078,46 @@ describe('Access control syncing', () => {
       assert.isOk(main);
       assert.deepEqual(main.prairietestExams, [{ uuid: TEST_EXAM_UUID, readOnly: true }]);
     });
+  });
+});
+
+describe('cleanAccessControlRulesForDisk', () => {
+  it('omits listBeforeRelease: false and empty objects from output', () => {
+    const rules: AccessControlJsonInput[] = [
+      { listBeforeRelease: false, dateControl: {}, afterComplete: {} },
+    ];
+
+    const cleaned = cleanAccessControlRulesForDisk(rules);
+
+    assert.equal(cleaned.length, 1);
+    assert.notProperty(cleaned[0], 'listBeforeRelease');
+    assert.notProperty(cleaned[0], 'dateControl');
+    assert.notProperty(cleaned[0], 'afterComplete');
+  });
+
+  it('preserves listBeforeRelease: true on the main rule only', () => {
+    const rules: AccessControlJsonInput[] = [
+      makeAccessControlRule({ listBeforeRelease: true }),
+      makeAccessControlRule({ listBeforeRelease: true }),
+    ];
+
+    const cleaned = cleanAccessControlRulesForDisk(rules);
+
+    assert.equal((cleaned[0] as any).listBeforeRelease, true);
+    assert.notProperty(cleaned[1], 'listBeforeRelease');
+  });
+
+  it('includes non-empty dateControl and afterComplete', () => {
+    const rules: AccessControlJsonInput[] = [
+      makeAccessControlRule({
+        dateControl: { dueDate: '2024-04-01T23:59:00' },
+        afterComplete: { hideQuestions: true },
+      }),
+    ];
+
+    const cleaned = cleanAccessControlRulesForDisk(rules);
+
+    assert.deepEqual((cleaned[0] as any).dateControl, { dueDate: '2024-04-01T23:59:00' });
+    assert.deepEqual((cleaned[0] as any).afterComplete, { hideQuestions: true });
   });
 });

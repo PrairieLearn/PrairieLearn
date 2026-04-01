@@ -1,6 +1,4 @@
-import { TRPCError, initTRPC } from '@trpc/server';
-import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
-import superjson from 'superjson';
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { run } from '@prairielearn/run';
@@ -9,63 +7,30 @@ import {
   AI_GRADING_MODEL_IDS,
   type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
-} from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
-import { fillInstanceQuestionColumnEntries } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+} from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
+import { fillInstanceQuestionColumnEntries } from '../../ee/lib/ai-grading/ai-grading-stats.js';
+import { deleteAiGradingJobs, setAiGradingMode } from '../../ee/lib/ai-grading/ai-grading-util.js';
+import { aiGrade } from '../../ee/lib/ai-grading/ai-grading.js';
+import { deleteAiInstanceQuestionGroups } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
+import { aiInstanceQuestionGrouping } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
+import { features } from '../../lib/features/index.js';
+import { generateJobSequenceToken } from '../../lib/generateJobSequenceToken.js';
+import { idsEqual } from '../../lib/id.js';
+import { selectCourseInstanceGraderStaff } from '../../models/course-instances.js';
+import { InstanceQuestionRowWithAIGradingStatsSchema } from '../../pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
 import {
-  deleteAiGradingJobs,
-  setAiGradingMode,
-} from '../../../ee/lib/ai-grading/ai-grading-util.js';
-import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
-import { deleteAiInstanceQuestionGroups } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
-import { aiInstanceQuestionGrouping } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
-import { features } from '../../../lib/features/index.js';
-import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
-import { idsEqual } from '../../../lib/id.js';
-import type { ResLocalsForPage } from '../../../lib/res-locals.js';
-import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
+  selectInstanceQuestionsForManualGrading,
+  updateInstanceQuestions,
+} from '../../pages/instructorAssessmentManualGrading/assessmentQuestion/queries.js';
 
-import { InstanceQuestionRowWithAIGradingStatsSchema } from './assessmentQuestion.types.js';
-import { selectInstanceQuestionsForManualGrading, updateInstanceQuestions } from './queries.js';
+import {
+  requireCourseInstancePermissionEdit,
+  requireCourseInstancePermissionView,
+  t,
+} from './init.js';
 
-export function createContext({ res }: CreateExpressContextOptions) {
-  const locals = res.locals as ResLocalsForPage<'instructor-assessment-question'>;
+export interface ManualGradingError {}
 
-  return {
-    user: locals.authz_data.user,
-    authn_user: locals.authz_data.authn_user,
-    course: locals.course,
-    course_instance: locals.course_instance,
-    assessment: locals.assessment,
-    question: locals.question,
-    assessment_question: locals.assessment_question,
-    urlPrefix: locals.urlPrefix,
-    authz_data: locals.authz_data,
-  };
-}
-
-type TRPCContext = Awaited<ReturnType<typeof createContext>>;
-
-const t = initTRPC.context<TRPCContext>().create({
-  transformer: superjson,
-});
-
-/**
- * Middleware that checks if the user has course instance edit permission.
- * Required for all mutations that modify data.
- */
-const requireCourseInstancePermissionEdit = t.middleware(async (opts) => {
-  if (!opts.ctx.authz_data.has_course_instance_permission_edit) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Access denied (must be a student data editor)',
-    });
-  }
-  return opts.next();
-});
-
-/**
- * Middleware that checks if the AI grading feature is enabled.
- */
 const requireAiGradingFeature = t.middleware(async (opts) => {
   const enabled = await features.enabled('ai-grading', {
     institution_id: opts.ctx.course.institution_id,
@@ -83,16 +48,10 @@ const requireAiGradingFeature = t.middleware(async (opts) => {
   return opts.next();
 });
 
-const instancesQuery = t.procedure
+const instances = t.procedure
+  .use(requireCourseInstancePermissionView)
   .output(z.array(InstanceQuestionRowWithAIGradingStatsSchema))
   .query(async (opts) => {
-    if (!opts.ctx.authz_data.has_course_instance_permission_view) {
-      throw new TRPCError({
-        code: 'FORBIDDEN',
-        message: 'Access denied (must be a student data viewer)',
-      });
-    }
-
     const instance_questions = await selectInstanceQuestionsForManualGrading({
       assessment: opts.ctx.assessment,
       assessment_question: opts.ctx.assessment_question,
@@ -167,7 +126,7 @@ const aiGroupInstanceQuestionsMutation = t.procedure
     return { job_sequence_id, job_sequence_token };
   });
 
-const aiGradeInstanceQuestionMutation = t.procedure
+const aiGradeInstanceQuestionsMutation = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .use(requireAiGradingFeature)
   .input(
@@ -187,8 +146,8 @@ const aiGradeInstanceQuestionMutation = t.procedure
 
     if (!aiGradingModelSelectionEnabled && opts.input.model_id !== DEFAULT_AI_GRADING_MODEL) {
       throw new TRPCError({
-        code: 'FORBIDDEN',
-        message: `AI grading model selection not available. Must use default model: ${DEFAULT_AI_GRADING_MODEL}`,
+        code: 'BAD_REQUEST',
+        message: 'AI grading model selection is not available. The default model must be used.',
       });
     }
 
@@ -231,7 +190,7 @@ const setAssignedGraderMutation = t.procedure
       if (!courseStaff.some((staff) => idsEqual(staff.id, assigned_grader))) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Assigned grader does not have Student Data Editor permission',
+          message: 'The assigned grader does not have Student Data Editor permission.',
         });
       }
     }
@@ -265,15 +224,13 @@ const setRequiresManualGradingMutation = t.procedure
     });
   });
 
-export const manualGradingAssessmentQuestionRouter = t.router({
-  instances: instancesQuery,
+export const manualGradingRouter = t.router({
+  instances,
   setAiGradingMode: setAiGradingModeMutation,
   deleteAiGradingJobs: deleteAiGradingJobsMutation,
   deleteAiInstanceQuestionGroupings: deleteAiInstanceQuestionGroupingsMutation,
   aiGroupInstanceQuestions: aiGroupInstanceQuestionsMutation,
-  aiGradeInstanceQuestions: aiGradeInstanceQuestionMutation,
+  aiGradeInstanceQuestions: aiGradeInstanceQuestionsMutation,
   setAssignedGrader: setAssignedGraderMutation,
   setRequiresManualGrading: setRequiresManualGradingMutation,
 });
-
-export type ManualGradingAssessmentQuestionRouter = typeof manualGradingAssessmentQuestionRouter;
