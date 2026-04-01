@@ -177,10 +177,10 @@ describe('Access control save via tRPC', () => {
         rules: [{ labels: ['Section A'], dateControl: { dueDate: '2024-04-01T23:59:00' } }],
         origHash,
       }),
-    ).rejects.toThrow(/No main rule found/);
+    ).rejects.toThrow(/No defaults found/);
   });
 
-  test.sequential('rejects save with multiple main rules', async () => {
+  test.sequential('rejects save with multiple defaults entries', async () => {
     const client = await createClient();
     const origHash = await getOrigHash();
 
@@ -189,10 +189,10 @@ describe('Access control save via tRPC', () => {
         rules: [makeRule(), makeRule()],
         origHash,
       }),
-    ).rejects.toThrow(/main rules/);
+    ).rejects.toThrow(/defaults entries/);
   });
 
-  test.sequential('rejects save with main rule not first', async () => {
+  test.sequential('rejects save with defaults not first', async () => {
     const client = await createClient();
     const origHash = await getOrigHash();
 
@@ -204,6 +204,6 @@ describe('Access control save via tRPC', () => {
         ],
         origHash,
       }),
-    ).rejects.toThrow(/must be the first rule/);
+    ).rejects.toThrow(/defaults.*must be the first element/);
   });
 });
