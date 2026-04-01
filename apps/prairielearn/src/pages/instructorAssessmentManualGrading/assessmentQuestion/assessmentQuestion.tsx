@@ -47,6 +47,8 @@ import { handleTrpcError } from '../../../lib/trpc.js';
 import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
+import { createContext } from '../../../trpc/assessmentQuestion/init.js';
+import { manualGradingRouter } from '../../../trpc/assessmentQuestion/manual-grading.js';
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
 import { selectInstanceQuestionsForManualGrading } from './queries.js';
@@ -527,7 +529,7 @@ router.get(
 router.use(
   '/trpc',
   trpcExpress.createExpressMiddleware({
-    router: manualGradingAssessmentQuestionRouter,
+    router: manualGradingRouter,
     createContext,
     onError: handleTrpcError,
   }),
