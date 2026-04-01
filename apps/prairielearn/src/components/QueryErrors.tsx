@@ -1,7 +1,7 @@
 import type { UseMutationResult } from '@tanstack/react-query';
 import Alert from 'react-bootstrap/Alert';
 
-import { type AppError, getAppError } from '../../../../lib/client/errors.js';
+import { type AppError, getAppError } from '../lib/client/errors.js';
 
 export function QueryErrors<T>({
   queries,

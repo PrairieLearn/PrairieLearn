@@ -26,6 +26,7 @@ import {
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
+import { QueryErrors } from '../../../../components/QueryErrors.js';
 import {
   RubricSettings,
   type RubricSettingsPayload,
@@ -62,7 +63,6 @@ import { type useManualGradingActions } from '../utils/useManualGradingActions.j
 
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
-import { QueryErrors } from './QueryErrors.js';
 import { RubricItemsFilter } from './RubricItemsFilter.js';
 
 const DEFAULT_SORT: SortingState = [];

@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { QueryErrors } from '../../../components/QueryErrors.js';
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { mathjaxTypeset } from '../../../lib/client/mathjax.js';
 import type { StaffInstanceQuestionGroup, StaffUser } from '../../../lib/client/safe-db-types.js';
@@ -18,6 +19,7 @@ import {
 } from '../../../lib/gradingMath.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 import { useTRPC } from '../../../trpc/instanceQuestion/context.js';
+import type { ManualGradingError } from '../../../trpc/instanceQuestion/manual-grading.js';
 
 import { GradingPointsInput, TotalPointsDisplay } from './GradingPointsSection.js';
 import { RubricInputSection } from './RubricInputSection.js';
@@ -408,6 +410,7 @@ export function GradingForm({
 
   return (
     <div ref={formRef} data-testid="manual-grading-form">
+      <QueryErrors<ManualGradingError> queries={[gradeMutation, skipMutation, reassignMutation]} />
       <ul className="list-group list-group-flush">
         {maxPoints > 0 && (
           <li className="list-group-item d-flex justify-content-center">

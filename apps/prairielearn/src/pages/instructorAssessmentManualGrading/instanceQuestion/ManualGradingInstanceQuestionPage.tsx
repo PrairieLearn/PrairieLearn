@@ -1,11 +1,13 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 
+import { QueryErrors } from '../../../components/QueryErrors.js';
 import { RubricSettings, type RubricSettingsPayload } from '../../../components/RubricSettings.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 import { createInstanceQuestionTrpcClient } from '../../../trpc/instanceQuestion/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/instanceQuestion/context.js';
+import type { ManualGradingError } from '../../../trpc/instanceQuestion/manual-grading.js';
 import type { GradingContextData, RubricQueryData } from '../../../trpc/instanceQuestion/trpc.js';
 
 import { InstanceQuestionGradingPanel } from './InstanceQuestionGradingPanel.js';
@@ -157,6 +159,8 @@ function ManualGradingInstanceQuestionPageInner({
           instance.
         </div>
       )}
+
+      <QueryErrors<ManualGradingError> queries={[toggleAiGradingMutation]} />
 
       <div className="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
         <nav aria-label="breadcrumb">

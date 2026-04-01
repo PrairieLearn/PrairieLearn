@@ -138,18 +138,6 @@ export function getManualGradingUrl({
   return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/manual_grading`;
 }
 
-export function getManualGradingAssessmentQuestionUrl({
-  courseInstanceId,
-  assessmentId,
-  assessmentQuestionId,
-}: {
-  courseInstanceId: string;
-  assessmentId: string;
-  assessmentQuestionId: string;
-}): string {
-  return `${getManualGradingUrl({ courseInstanceId, assessmentId })}/assessment_question/${assessmentQuestionId}`;
-}
-
 export function getManualGradingInstanceQuestionUrl({
   courseInstanceId,
   assessmentId,
