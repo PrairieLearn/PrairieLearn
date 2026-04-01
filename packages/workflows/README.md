@@ -115,12 +115,12 @@ await cancelWorkflow(run.id);
 
 The `status` field controls what the engine does next:
 
-| Status                | Engine behavior                                       |
-| --------------------- | ----------------------------------------------------- |
-| `'continue'`          | Persist state, call `takeStep` again immediately      |
-| `'waiting_for_input'` | Persist state, pause until `continueWorkflow` called  |
-| `'completed'`         | Persist state, mark run as finished                   |
-| `'error'`             | Persist state + `error_message`, mark run as failed   |
+| Status                | Engine behavior                                      |
+| --------------------- | ---------------------------------------------------- |
+| `'continue'`          | Persist state, call `takeStep` again immediately     |
+| `'waiting_for_input'` | Persist state, pause until `continueWorkflow` called |
+| `'completed'`         | Persist state, mark run as finished                  |
+| `'error'`             | Persist state + `error_message`, mark run as failed  |
 
 ### Crash recovery
 
