@@ -254,8 +254,8 @@ export function AccessControlSummary({
 
         <div className="rounded p-3 mt-3" style={{ backgroundColor: 'var(--bs-tertiary-bg)' }}>
           <p className="text-body-secondary small mb-0">
-            If a student matches multiple overrides, enrollment overrides take priority over student
-            label overrides. Within each section, overrides lower in the list take priority over
+            If a student matches multiple overrides, enrolled student overrides take priority over
+            student label overrides. Within each section, overrides lower in the list take priority over
             those higher up.
           </p>
         </div>
