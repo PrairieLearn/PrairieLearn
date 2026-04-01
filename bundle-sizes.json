@@ -270,9 +270,9 @@
     "brotli": 170626
   },
   "scripts/esm-bundles/hydrated-components/HomeCards.ts": {
-    "raw": 962347,
+    "raw": 962355,
     "gzip": 282334,
-    "brotli": 243947
+    "brotli": 243969
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentQuestionsTableLegacy.ts": {
     "raw": 637074,
