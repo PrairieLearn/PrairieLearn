@@ -360,23 +360,14 @@ export function generateOverrideFieldItems(
 function OverrideFieldsList({ items }: { items: OverrideFieldItem[] }) {
   if (items.length === 0) return null;
   return (
-    <table className="table table-sm mb-0">
-      <tbody>
-        {items.map((item) => (
-          <tr key={item.label}>
-            <td
-              className="ps-3 border-0 text-body-secondary fw-medium"
-              style={{ ...tdStyle, whiteSpace: 'nowrap', width: '1%' }}
-            >
-              {item.label}
-            </td>
-            <td className="border-0" style={tdStyle}>
-              {item.value}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="d-flex flex-column gap-1">
+      {items.map((item) => (
+        <div key={item.label}>
+          <span className="text-body-secondary fw-medium me-2">{item.label}</span>
+          {item.value}
+        </div>
+      ))}
+    </div>
   );
 }
 
