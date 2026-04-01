@@ -95,7 +95,7 @@ export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
             type="radio"
             id={`${namePrefix}-target-enrollment`}
             name={`${namePrefix}-target-type`}
-            label="Enrolled students"
+            label="Specific students"
             checked={currentTargetType === 'enrollment'}
             onChange={() => handleTargetTypeChange('enrollment')}
           />
@@ -103,7 +103,7 @@ export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
             type="radio"
             id={`${namePrefix}-target-student-label`}
             name={`${namePrefix}-target-type`}
-            label="Student labels"
+            label="Students by label"
             checked={currentTargetType === 'student_label'}
             onChange={() => handleTargetTypeChange('student_label')}
           />
