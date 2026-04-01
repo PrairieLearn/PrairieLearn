@@ -1,6 +1,3 @@
-import crypto from 'node:crypto';
-
-import stableStringify from 'fast-json-stable-stringify';
 import { z } from 'zod';
 
 import { callScalar, execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
@@ -188,7 +185,7 @@ function dbBaseRowToAccessControlJson(
   };
 }
 
-function dbRowToAccessControlJson(
+export function dbRowToAccessControlJson(
   row: z.infer<typeof RuleRowSchema>,
 ): AccessControlJsonWithRequiredId {
   const base = dbBaseRowToAccessControlJson(row);
@@ -208,7 +205,7 @@ function dbRowToAccessControlJson(
 
   const labelDetails = row.labels ?? [];
   const integrations: AccessControlJson['integrations'] = {};
-  if (row.prairietest_exams) {
+  if (row.prairietest_exams && row.prairietest_exams.length > 0) {
     integrations.prairieTest = {
       exams: row.prairietest_exams.map((e) => ({
         examUuid: e.uuid,
@@ -235,10 +232,6 @@ export async function selectAccessControlRules(
     RuleRowSchema,
   );
   return rows.map(dbRowToAccessControlJson);
-}
-
-export function computeHash(rules: object[]): string {
-  return crypto.createHash('sha256').update(stableStringify(rules)).digest('hex');
 }
 
 /**

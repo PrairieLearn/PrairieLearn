@@ -18,12 +18,10 @@ import { config } from '../../lib/config.js';
 import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { computeStableHash } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
-import {
-  computeHash,
-  selectAccessControlRules,
-} from '../../models/assessment-access-control-rules.js';
+import { selectAccessControlRules } from '../../models/assessment-access-control-rules.js';
 
 import {
   AssessmentAccessRulesSchema,
@@ -57,7 +55,7 @@ router.get(
 
     if (enhancedAccessControlEnabled && res.locals.assessment.modern_access_control) {
       const jsonRules = await selectAccessControlRules(res.locals.assessment);
-      const origHash = computeHash(jsonRules);
+      const origHash = computeStableHash(jsonRules);
       const trpcCsrfToken = generatePrefixCsrfToken(
         {
           url: getAssessmentTrpcUrl({

@@ -8,9 +8,9 @@ import { runInTransactionAsync } from '@prairielearn/postgres';
 import { saveJsonFile } from '../../lib/editorUtil.js';
 import { getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
+import { computeStableHash } from '../../lib/json.js';
 import {
   type EnrollmentAccessControlRuleData,
-  computeHash,
   deleteEnrollmentAccessControlsByIds,
   selectAccessControlRules,
   syncEnrollmentAccessControl,
@@ -273,7 +273,7 @@ const saveAllRules = t.procedure
     // Optimistic concurrency check: verify the full rule set (file + enrollment)
     // hasn't changed since the page was loaded.
     const currentRules = await selectAccessControlRules(opts.ctx.assessment);
-    const currentHash = computeHash(currentRules);
+    const currentHash = computeStableHash(currentRules);
     if (currentHash !== origHash) {
       throw new TRPCError({
         code: 'CONFLICT',
@@ -300,13 +300,12 @@ const saveAllRules = t.procedure
         rootPath: assessmentDir,
         invalidRootPaths: [],
       },
-      errorMessage: 'Failed to save access control rules',
     });
 
     if (!saveResult.success) {
       throwAppError<AccessControlError>({
         code: 'SYNC_JOB_FAILED',
-        message: saveResult.error,
+        message: 'Failed to save access control rules',
         jobSequenceId: saveResult.jobSequenceId,
       });
     }
@@ -344,7 +343,7 @@ const saveAllRules = t.procedure
     }
 
     const newRules = await selectAccessControlRules(opts.ctx.assessment);
-    return { newHash: computeHash(newRules) };
+    return { newHash: computeStableHash(newRules) };
   });
 
 export const accessControlRouter = t.router({

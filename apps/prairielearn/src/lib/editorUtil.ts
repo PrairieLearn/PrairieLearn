@@ -109,17 +109,13 @@ export async function saveJsonFile<T extends Record<string, unknown>>({
   origHash,
   locals,
   container,
-  errorMessage,
 }: {
   applyChanges: (jsonContents: T) => T;
   jsonPath: string;
   origHash: string;
   locals: { authz_data: AuthzData; course: Course; user: User };
   container: { rootPath: string; invalidRootPaths: string[] };
-  errorMessage: string;
-}): Promise<
-  { success: true; origHash: string } | { success: false; error: string; jobSequenceId: string }
-> {
+}): Promise<{ success: true; origHash: string } | { success: false; jobSequenceId: string }> {
   const jsonContents = await fs.readJson(jsonPath);
   const modifiedJsonContents = applyChanges(jsonContents);
   const formattedJson = await formatJsonWithPrettier(JSON.stringify(modifiedJsonContents));
@@ -138,7 +134,6 @@ export async function saveJsonFile<T extends Record<string, unknown>>({
   } catch {
     return {
       success: false,
-      error: errorMessage,
       jobSequenceId: serverJob.jobSequenceId,
     };
   }
@@ -147,7 +142,6 @@ export async function saveJsonFile<T extends Record<string, unknown>>({
   if (newHash === null) {
     return {
       success: false,
-      error: 'Failed to get original hash',
       jobSequenceId: serverJob.jobSequenceId,
     };
   }

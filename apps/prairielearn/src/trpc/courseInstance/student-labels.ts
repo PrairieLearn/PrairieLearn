@@ -181,7 +181,6 @@ const upsert = t.procedure
         'infoCourseInstance.json',
       ),
       container: getCourseInstanceContainer(course.path, course_instance.short_name!),
-      errorMessage: 'Failed to save course instance configuration',
       origHash: origHash ?? '',
       locals,
     });
@@ -189,7 +188,7 @@ const upsert = t.procedure
     if (!saveResult.success) {
       throwAppError<StudentLabelError>({
         code: 'SYNC_JOB_FAILED',
-        message: saveResult.error,
+        message: 'Failed to save course instance configuration',
         jobSequenceId: saveResult.jobSequenceId,
       });
     }
@@ -300,7 +299,6 @@ const destroy = t.procedure
         'infoCourseInstance.json',
       ),
       container: getCourseInstanceContainer(course.path, course_instance.short_name!),
-      errorMessage: 'Failed to save course instance configuration',
       origHash: origHash ?? '',
       locals,
     });
@@ -308,7 +306,7 @@ const destroy = t.procedure
     if (!saveResult.success) {
       throwAppError<StudentLabelError>({
         code: 'SYNC_JOB_FAILED',
-        message: saveResult.error,
+        message: 'Failed to save course instance configuration',
         jobSequenceId: saveResult.jobSequenceId,
       });
     }
