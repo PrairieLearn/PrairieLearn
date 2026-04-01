@@ -2,9 +2,9 @@ import crypto from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { slash } from '@vitest/utils/helpers';
+import { dirname, relative, resolve } from 'node:path';
+
 import ignore from 'ignore';
-import { dirname, relative, resolve } from 'pathe';
 import { defineConfig, mergeConfig } from 'vitest/config';
 import { BaseSequencer, type TestSpecification } from 'vitest/node';
 
@@ -90,7 +90,7 @@ class CustomSequencer extends BaseSequencer {
         );
       })
       .map((spec) => {
-        const fullPath = resolve(slash(config.root), slash(spec.moduleId));
+        const fullPath = resolve(config.root.replace(/\\/g, '/'), spec.moduleId.replace(/\\/g, '/'));
         const specPath = fullPath?.slice(config.root.length);
         return {
           spec,
