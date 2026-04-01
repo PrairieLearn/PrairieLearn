@@ -39,8 +39,8 @@ interface PrairieTestExam {
   readOnly?: boolean;
 }
 
-export interface IndividualTarget {
-  enrollmentId?: string;
+export interface EnrollmentTarget {
+  enrollmentId: string;
   uid: string;
   name: string | null;
 }
@@ -51,11 +51,11 @@ export interface StudentLabelTarget {
   color?: string;
 }
 
-export type TargetType = 'individual' | 'student_label';
+export type TargetType = 'enrollment' | 'student_label';
 
 export interface AppliesTo {
   targetType: TargetType;
-  individuals: IndividualTarget[];
+  enrollments: EnrollmentTarget[];
   studentLabels: StudentLabelTarget[];
 }
 
@@ -174,10 +174,10 @@ export function jsonToOverrideFormData(
   const ac = json.afterComplete;
 
   let appliesTo: AppliesTo;
-  if (json.ruleType === 'enrollment' && json.individuals && json.individuals.length > 0) {
+  if (json.ruleType === 'enrollment' && json.enrollments && json.enrollments.length > 0) {
     appliesTo = {
-      targetType: 'individual',
-      individuals: json.individuals.map((i) => ({
+      targetType: 'enrollment',
+      enrollments: json.enrollments.map((i) => ({
         enrollmentId: i.enrollmentId,
         uid: i.uid,
         name: i.name,
@@ -187,7 +187,7 @@ export function jsonToOverrideFormData(
   } else {
     appliesTo = {
       targetType: 'student_label',
-      individuals: [],
+      enrollments: [],
       studentLabels: json.labelDetails
         ? json.labelDetails.map((l) => ({ studentLabelId: l.id, name: l.name, color: l.color }))
         : (json.labels ?? []).map((name: string) => ({ studentLabelId: '', name })),
@@ -291,11 +291,10 @@ function mainRuleToJson(rule: MainRuleData, displayTimezone: string): AccessCont
     if (rule.releaseDate) {
       output.dateControl.releaseDate = rule.releaseDate;
     } else {
-      // "Released immediately" with dates configured: persist as the current
-      // timestamp so the assessment is open now (matching the course-instance
-      // publishing pattern). Truncate to minutes to satisfy the datetime-local
-      // schema.
+      // "Released immediately": persist as start-of-day in the course instance
+      // timezone so the assessment is open now with a clean display timestamp.
       output.dateControl.releaseDate = Temporal.Now.zonedDateTimeISO(displayTimezone)
+        .startOfDay()
         .toPlainDateTime()
         .toString({ smallestUnit: 'minute' });
     }
@@ -383,13 +382,9 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
     }
   }
 
-  if (rule.appliesTo.targetType === 'individual') {
+  if (rule.appliesTo.targetType === 'enrollment') {
     output.ruleType = 'enrollment';
-    output.individuals = rule.appliesTo.individuals.map((ind) => ({
-      enrollmentId: ind.enrollmentId ?? '',
-      uid: ind.uid,
-      name: ind.name,
-    }));
+    output.enrollments = rule.appliesTo.enrollments;
   }
 
   return output;
@@ -409,8 +404,8 @@ export function createDefaultOverrideFormData(): OverrideData {
   return {
     trackingId: crypto.randomUUID(),
     appliesTo: {
-      targetType: 'individual',
-      individuals: [],
+      targetType: 'enrollment',
+      enrollments: [],
       studentLabels: [],
     },
     overriddenFields: [],

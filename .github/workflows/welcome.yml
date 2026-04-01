@@ -11,10 +11,15 @@ jobs:
   welcome:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/first-interaction@v3
+      # This is pinned to v1.3.0 and all updates have been disabled for it.
+      # There are incompatibilities with v2 and v3 of the action that don't work
+      # well for us.
+      # See: https://github.com/actions/first-interaction/issues/365 and https://github.com/actions/first-interaction/pull/404
+      # There is no equivalent popular action that does a similar thing as far as @reteps can tell.
+      - uses: actions/first-interaction@v1.3.0
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          pr_message: |
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-message: |
             Thanks for your first pull request to PrairieLearn! Here are a few things to keep in mind:
 
             - Make sure you've read the [contributing guide](https://github.com/PrairieLearn/PrairieLearn/blob/master/CONTRIBUTING.md)

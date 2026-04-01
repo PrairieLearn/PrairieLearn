@@ -12,7 +12,7 @@ import type { AccessControlJson } from '../schemas/accessControl.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-interface AccessControlIndividual {
+interface AccessControlEnrollment {
   enrollmentId: string;
   uid: string;
   name: string | null;
@@ -25,7 +25,7 @@ export interface AccessControlJsonWithId extends AccessControlJson {
   number?: number;
   /** Rule type: 'student_label' for label-based rules, 'enrollment' for individual student rules, 'none' for rules without specific targeting */
   ruleType?: 'student_label' | 'enrollment' | 'none' | null;
-  individuals?: AccessControlIndividual[];
+  enrollments?: AccessControlEnrollment[];
   /** Student label details (id, name, color) from the database, used for rendering colored badges. */
   labelDetails?: { id: string; name: string; color: string }[];
 }
@@ -195,7 +195,7 @@ export function dbRowToAccessControlJson(
     return {
       ...base,
       ruleType: 'enrollment',
-      individuals: (row.enrollments ?? []).map((e) => ({
+      enrollments: (row.enrollments ?? []).map((e) => ({
         enrollmentId: e.enrollment_id,
         uid: e.uid,
         name: e.name,
