@@ -20,7 +20,6 @@ import { type z } from 'zod';
 import {
   AccessTokenSchema as RawAccessTokenSchema,
   AiGradingMessageSchema as RawAiGradingMessageSchema,
-  AlternativeGroupSchema as RawAlternativeGroupSchema,
   AlternativePoolSchema as RawAlternativePoolSchema,
   AssessmentAccessControlRuleSchema as RawAssessmentAccessControlRuleSchema,
   AssessmentInstanceSchema as RawAssessmentInstanceSchema,

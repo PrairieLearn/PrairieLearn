@@ -1564,7 +1564,7 @@ async function gradeOneSubmissionWithDecision({
       });
 
       await updateCourseInstanceUsagesForAiGradingResponses({
-        gradingJobId: grading_job_id,
+        courseInstanceId: context.courseInstance.id,
         authnUserId: context.authnUserId,
         model: modelId,
         finalGradingResponse: response,
@@ -1609,7 +1609,7 @@ async function gradeOneSubmissionWithDecision({
       });
 
       await updateCourseInstanceUsagesForAiGradingResponses({
-        gradingJobId,
+        courseInstanceId: context.courseInstance.id,
         authnUserId: context.authnUserId,
         model: modelId,
         finalGradingResponse: response,

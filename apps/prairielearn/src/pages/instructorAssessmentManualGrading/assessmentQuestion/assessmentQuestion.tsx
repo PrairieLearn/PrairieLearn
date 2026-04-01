@@ -533,7 +533,6 @@ router.use(
   }),
 );
 
-
 router.post(
   '/',
   typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {

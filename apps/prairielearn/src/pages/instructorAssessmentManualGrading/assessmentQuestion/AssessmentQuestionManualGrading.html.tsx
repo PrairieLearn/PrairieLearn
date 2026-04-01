@@ -1035,7 +1035,7 @@ function AssessmentQuestionManualGradingInner({
         refreshRubricData();
 
         void queryClient.invalidateQueries({
-          queryKey: trpc.instances.queryKey(),
+          queryKey: trpc.manualGrading.instances.queryKey(),
         });
         return;
       }
@@ -1052,7 +1052,7 @@ function AssessmentQuestionManualGradingInner({
           refreshRubricData();
 
           void queryClient.invalidateQueries({
-            queryKey: trpc.instances.queryKey(),
+            queryKey: trpc.manualGrading.instances.queryKey(),
           });
         }
       }
@@ -1066,9 +1066,9 @@ function AssessmentQuestionManualGradingInner({
     isGradingInProgressRef.current = false;
     refreshRubricData();
     void queryClient.invalidateQueries({
-      queryKey: trpc.instances.queryKey(),
+      queryKey: trpc.manualGrading.instances.queryKey(),
     });
-  }, [queryClient, trpc.instances, refreshRubricData]);
+  }, [queryClient, trpc.manualGrading.instances, refreshRubricData]);
 
   // Scan messages for startAiGrading tool outputs and register them with
   // the table's server job progress tracker so the standard progress bar appears.
@@ -1236,7 +1236,7 @@ function AssessmentQuestionManualGradingInner({
             setConflictModalState(null);
             // Refetch the table data to show the latest state.
             void queryClient.invalidateQueries({
-              queryKey: trpc.instances.queryKey(),
+              queryKey: trpc.manualGrading.instances.queryKey(),
             });
           }}
         />
