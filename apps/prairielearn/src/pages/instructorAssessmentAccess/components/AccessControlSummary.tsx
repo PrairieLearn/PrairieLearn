@@ -100,7 +100,12 @@ function MainRuleSummaryContent({
       )}
 
       {dateTableRows.length === 0 && summaryItems.length === 0 && (
-        <p className="text-body-secondary mb-0">No specific settings configured</p>
+        <div
+          className="rounded text-center py-3 text-body-secondary"
+          style={{ border: '1px dashed var(--bs-border-color)' }}
+        >
+          No dates or deadlines configured.
+        </div>
       )}
     </div>
   );
@@ -161,14 +166,14 @@ export function AccessControlSummary({
 
   return (
     <div>
-      <p className="text-muted">
-        The <strong>main rule</strong> defines default access settings for all students. Add{' '}
-        <strong>overrides</strong> below to customize settings for specific students or groups.
-      </p>
-
       <section className="mb-4">
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h5 className="mb-0">Main rule</h5>
+          <div>
+            <h5 className="mb-0">Defaults</h5>
+            <small className="text-body-secondary">
+              Access settings that apply to all students by default.
+            </small>
+          </div>
           <Button variant="outline-primary" size="sm" onClick={onEditMainRule}>
             <i className="bi bi-pencil me-1" /> Edit
           </Button>
@@ -189,17 +194,20 @@ export function AccessControlSummary({
 
       <section>
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h5 className="mb-0">Overrides</h5>
+          <div>
+            <h5 className="mb-0">Overrides</h5>
+            <small className="text-body-secondary">
+              Customize settings for specific students or groups. Fields not overridden are
+              inherited from the defaults.
+            </small>
+          </div>
           <Button variant="primary" size="sm" onClick={onAddOverride}>
             <i className="bi bi-plus-lg me-1" /> Add override
           </Button>
         </div>
 
         {overrides.length === 0 ? (
-          <p className="text-muted">
-            No overrides configured. Overrides allow you to customize access rules for specific
-            groups of students.
-          </p>
+          <p className="text-muted">No overrides configured.</p>
         ) : (
           <DndContext
             id={dndId}
