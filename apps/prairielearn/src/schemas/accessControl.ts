@@ -135,7 +135,7 @@ export const AccessControlJsonSchema = z
       .boolean()
       .optional()
       .describe(
-        'Main rule only. Whether to list the assessment title before the release date. Students can see the title but cannot open the assessment. Defaults to false.',
+        'Only valid on the first entry (defaults). Whether to list the assessment title before the release date. Students can see the title but cannot open the assessment. Defaults to false.',
       ),
 
     dateControl: DateControlJsonSchema,
