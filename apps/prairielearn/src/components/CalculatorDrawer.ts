@@ -278,7 +278,12 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                 title="decimal or fractional"
               >
                 <span class="toggle-label">dec</span>
-                <input class="form-check-input mx-1" type="checkbox" id="displayModeSwitch" aria-label="Toggle decimal or fractional display" />
+                <input
+                  class="form-check-input mx-1"
+                  type="checkbox"
+                  id="displayModeSwitch"
+                  aria-label="Toggle decimal or fractional display"
+                />
                 <span class="toggle-label">frac</span>
               </div>
 
@@ -289,7 +294,12 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                 title="radian or degree"
               >
                 <span class="toggle-label">rad</span>
-                <input class="form-check-input mx-1" type="checkbox" id="angleModeSwitch" aria-label="Toggle radian or degree mode" />
+                <input
+                  class="form-check-input mx-1"
+                  type="checkbox"
+                  id="angleModeSwitch"
+                  aria-label="Toggle radian or degree mode"
+                />
                 <span class="toggle-label">deg</span>
               </div>
             </div>
@@ -384,7 +394,12 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
               <div class="btn-row d-flex">
                 <button name="backspace" type="button" class="btn btn-light" aria-label="Backspace">
                   <i class="bi bi-backspace"></i></button
-                ><button name="calculate" type="button" class="btn btn-success" aria-label="Calculate">
+                ><button
+                  name="calculate"
+                  type="button"
+                  class="btn btn-success"
+                  aria-label="Calculate"
+                >
                   <i class="bi bi-arrow-return-left"></i>
                 </button>
               </div>
@@ -448,7 +463,12 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
               <button name="right" type="button" class="btn btn-light" aria-label="Move right">
                 <i class="bi bi-arrow-right"></i>
               </button>
-              <button name="calculate" type="button" class="btn btn-success btn-wide" aria-label="Calculate">
+              <button
+                name="calculate"
+                type="button"
+                class="btn btn-success btn-wide"
+                aria-label="Calculate"
+              >
                 <i class="bi bi-arrow-return-left"></i>
               </button>
             </div>
@@ -526,7 +546,12 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                 </button>
               </div>
               <div class="btn-row d-flex">
-                <button name="calculate" type="button" class="btn btn-success" aria-label="Calculate">
+                <button
+                  name="calculate"
+                  type="button"
+                  class="btn btn-success"
+                  aria-label="Calculate"
+                >
                   <i class="bi bi-arrow-return-left"></i>
                 </button>
               </div>
