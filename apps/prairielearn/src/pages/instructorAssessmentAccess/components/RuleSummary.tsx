@@ -239,9 +239,9 @@ function generateOverrideFieldItems(
   displayTimezone: string,
 ): OverrideFieldItem[] {
   const items: OverrideFieldItem[] = [];
-  const of = new Set(rule.overriddenFields);
+  const overriddenFields = new Set(rule.overriddenFields);
 
-  if (of.has('releaseDate')) {
+  if (overriddenFields.has('releaseDate')) {
     items.push({
       label: 'Release date',
       value: rule.releaseDate
@@ -250,43 +250,43 @@ function generateOverrideFieldItems(
     });
   }
 
-  if (of.has('earlyDeadlines')) {
+  if (overriddenFields.has('earlyDeadlines')) {
     items.push(...formatDeadlineEntries(rule.earlyDeadlines, displayTimezone, 'Early'));
   }
 
-  if (of.has('dueDate')) {
+  if (overriddenFields.has('dueDate')) {
     items.push({
       label: 'Due date',
       value: rule.dueDate ? formatDate(new Date(rule.dueDate), displayTimezone) : 'No due date',
     });
   }
 
-  if (of.has('lateDeadlines')) {
+  if (overriddenFields.has('lateDeadlines')) {
     items.push(...formatDeadlineEntries(rule.lateDeadlines, displayTimezone, 'Late'));
   }
 
-  if (of.has('afterLastDeadline') && rule.afterLastDeadline) {
+  if (overriddenFields.has('afterLastDeadline') && rule.afterLastDeadline) {
     items.push({
       label: 'After last deadline',
       value: formatAfterLastDeadline(rule.afterLastDeadline),
     });
   }
 
-  if (of.has('durationMinutes')) {
+  if (overriddenFields.has('durationMinutes')) {
     items.push({
       label: 'Time limit',
       value: rule.durationMinutes !== null ? `${rule.durationMinutes} minutes` : 'No time limit',
     });
   }
 
-  if (of.has('password')) {
+  if (overriddenFields.has('password')) {
     items.push({
       label: 'Password',
       value: rule.password ? 'Password protected' : 'No password',
     });
   }
 
-  if (of.has('questionVisibility')) {
+  if (overriddenFields.has('questionVisibility')) {
     const qv = rule.questionVisibility;
     if (qv.hideQuestions) {
       if (qv.showAgainDate && qv.hideAgainDate) {
@@ -313,7 +313,7 @@ function generateOverrideFieldItems(
     }
   }
 
-  if (of.has('scoreVisibility')) {
+  if (overriddenFields.has('scoreVisibility')) {
     const sv = rule.scoreVisibility;
     if (sv.hideScore) {
       if (sv.showAgainDate) {
