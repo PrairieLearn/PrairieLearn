@@ -44,10 +44,10 @@ export function validateRule(
 ): string | null {
   if (targetType !== 'none') {
     if (rule.listBeforeRelease !== undefined) {
-      return 'listBeforeRelease can only be specified on the main rule.';
+      return 'listBeforeRelease can only be specified on the defaults.';
     }
     if (rule.integrations != null) {
-      return 'integrations can only be specified on the main rule.';
+      return 'integrations can only be specified on the defaults.';
     }
   }
 
