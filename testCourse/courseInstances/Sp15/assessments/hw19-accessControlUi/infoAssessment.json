@@ -5,17 +5,8 @@
   "set": "Homework",
   "number": "19",
   "accessControl": [
-    {
-      "listBeforeRelease": true,
-      "dateControl": {
-        "afterLastDeadline": { "allowSubmissions": true, "credit": 52 }
-      },
-      "afterComplete": { "hideQuestions": false, "hideScore": false }
-    },
-    {
-      "labels": ["Section A"],
-      "dateControl": { "dueDate": "2026-01-28T18:14" }
-    }
+    { "listBeforeRelease": true, "afterComplete": { "hideQuestions": false, "hideScore": false } },
+    { "labels": ["Section A"], "dateControl": { "dueDate": "2026-01-28T20:15:00" } }
   ],
   "zones": [
     { "title": "Access Control Test Zone", "questions": [{ "id": "addNumbers", "points": 1 }] }

@@ -1,18 +1,12 @@
 import { Form } from 'react-bootstrap';
 import { useFormContext, useWatch } from 'react-hook-form';
 
-import type { PageContext } from '../../../lib/client/page-context.js';
-
 import { MainAfterCompleteForm } from './AfterCompleteForm.js';
 import { MainDateControlForm } from './DateControlForm.js';
 import { IntegrationsSection } from './IntegrationsSection.js';
 import type { AccessControlFormData } from './types.js';
 
-interface MainRuleFormProps {
-  courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
-}
-
-export function MainRuleForm({ courseInstance: _courseInstance }: MainRuleFormProps) {
+export function MainRuleForm() {
   const { register } = useFormContext<AccessControlFormData>();
 
   const releaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({

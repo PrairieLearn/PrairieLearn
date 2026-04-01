@@ -38,7 +38,6 @@ export async function init() {
       'users_select_or_insert_lti.sql',
       'users_is_instructor_in_course_instance.sql',
       'users_get_displayed_role.sql',
-      'grading_jobs_stats_day.sql',
       'grader_loads_current.sql',
       'server_loads_current.sql',
       'server_usage_current.sql',

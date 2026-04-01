@@ -76,23 +76,23 @@ export function findZoneByTrackingId(
 }
 
 /**
- * Finds an alternative group by its trackingId across all zones.
- * Returns the alternative group, parent zone, and their indices.
+ * Finds an alternative pool by its trackingId across all zones.
+ * Returns the alternative pool, parent zone, and their indices.
  */
-export function findAltGroupByTrackingId(
+export function findAltPoolByTrackingId(
   zones: ZoneAssessmentForm[],
   trackingId: string,
 ): {
   zone: ZoneAssessmentForm;
   zoneIndex: number;
-  altGroup: ZoneQuestionBlockForm;
-  altGroupIndex: number;
+  altPool: ZoneQuestionBlockForm;
+  altPoolIndex: number;
 } | null {
   for (let zoneIndex = 0; zoneIndex < zones.length; zoneIndex++) {
     const zone = zones[zoneIndex];
-    const altGroupIndex = zone.questions.findIndex((q) => q.trackingId === trackingId);
-    if (altGroupIndex !== -1) {
-      return { zone, zoneIndex, altGroup: zone.questions[altGroupIndex], altGroupIndex };
+    const altPoolIndex = zone.questions.findIndex((q) => q.trackingId === trackingId);
+    if (altPoolIndex !== -1) {
+      return { zone, zoneIndex, altPool: zone.questions[altPoolIndex], altPoolIndex };
     }
   }
   return null;
@@ -226,12 +226,12 @@ export function getInitialSelectedZoneItem(
         return zone ? { type: 'zone', zoneTrackingId: zone.trackingId } : null;
       }
 
-      const altGroupMatch = /^z:(\d+):(\d+)$/.exec(preselection);
-      if (altGroupMatch) {
-        const zone = zones.at(Number(altGroupMatch[1]));
-        const altGroup = zone?.questions.at(Number(altGroupMatch[2]));
-        return altGroup?.alternatives
-          ? { type: 'altGroup', questionTrackingId: altGroup.trackingId }
+      const altPoolMatch = /^z:(\d+):(\d+)$/.exec(preselection);
+      if (altPoolMatch) {
+        const zone = zones.at(Number(altPoolMatch[1]));
+        const altPool = zone?.questions.at(Number(altPoolMatch[2]));
+        return altPool?.alternatives
+          ? { type: 'altPool', questionTrackingId: altPool.trackingId }
           : null;
       }
       return null;

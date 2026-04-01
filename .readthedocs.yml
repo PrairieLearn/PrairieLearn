@@ -6,12 +6,17 @@ build:
   tools:
     python: '3.13'
   jobs:
+    pre_create_environment:
+      - asdf plugin add uv
+      - asdf install uv latest
+      - asdf global uv latest
+    create_environment:
+      - uv venv $READTHEDOCS_VIRTUALENV_PATH
+    install:
+      - UV_PROJECT_ENVIRONMENT=$READTHEDOCS_VIRTUALENV_PATH uv sync --frozen --group docs
     pre_build:
       - curl -fsSL https://d2lang.com/install.sh | sh -s --
       - cp $HOME/.local/bin/d2 $READTHEDOCS_VIRTUALENV_PATH/bin/d2
-    install:
-      - pip install -U pip
-      - pip install --group docs
 
 mkdocs:
   configuration: mkdocs.yml

@@ -491,7 +491,7 @@ describe('Editing assessment questions', () => {
     },
   );
 
-  test.sequential('add alternative group with multiple alternatives', async () => {
+  test.sequential('add alternative pool with multiple alternatives', async () => {
     const { csrfToken, origHash } = await getRequestData();
 
     const response = await fetch(
@@ -533,7 +533,7 @@ describe('Editing assessment questions', () => {
     );
   });
 
-  test.sequential('verify alternative group was added', async () => {
+  test.sequential('verify alternative pool was added', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     assert.equal(assessmentInfo.zones.length, 1);
     assert.equal(assessmentInfo.zones[0].questions.length, 1);
@@ -550,7 +550,7 @@ describe('Editing assessment questions', () => {
     assert.equal(assessmentInfo.zones[0].questions[0].alternatives[1].points, 15);
   });
 
-  test.sequential('modify alternative points in alternative group', async () => {
+  test.sequential('modify alternative points in alternative pool', async () => {
     const { csrfToken, origHash } = await getRequestData();
 
     const response = await fetch(

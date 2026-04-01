@@ -12,96 +12,83 @@ import { MainPasswordField, OverridePasswordField } from './fields/PasswordField
 import { MainReleaseDateField, OverrideReleaseDateField } from './fields/ReleaseDateField.js';
 import type { AccessControlFormData } from './types.js';
 
-interface MainDateControlFormProps {
-  title?: string;
-  description?: string;
-}
-
 export function MainDateControlForm({
   title = 'Date control',
   description = 'Control access and credit to your assessment based on a schedule',
-}: MainDateControlFormProps) {
+}: {
+  title?: string;
+  description?: string;
+}) {
   const { register } = useFormContext<AccessControlFormData>();
 
   const dateControlEnabled = useWatch<AccessControlFormData, 'mainRule.dateControlEnabled'>({
     name: 'mainRule.dateControlEnabled',
   });
 
-  const dueDate = useWatch<AccessControlFormData, 'mainRule.dueDate'>({
-    name: 'mainRule.dueDate',
-  });
-
-  const hasAnyDateControl = dueDate !== null;
-
   return (
-    <Card className="mb-4">
-      <Card.Header>
-        <Form.Check
-          type="checkbox"
-          id="mainRule-date-control-enabled"
-          label={title}
-          {...register('mainRule.dateControlEnabled')}
-          aria-describedby="mainRule-date-control-help"
-        />
-        <Form.Text id="mainRule-date-control-help" className="text-muted">
-          {description}
-        </Form.Text>
-      </Card.Header>
-      <Card.Body
-        style={{
-          opacity: dateControlEnabled ? 1 : 0.5,
-          pointerEvents: dateControlEnabled ? 'auto' : 'none',
-        }}
-        aria-disabled={!dateControlEnabled ? true : undefined}
-      >
-        <div className="mb-3">
-          <MainReleaseDateField />
-        </div>
-        <div className="mb-3">
-          <MainDeadlineArrayField type="early" />
-        </div>
-        <div className="mb-3">
-          <MainDueDateField />
-        </div>
-        <div className="mb-4">
-          <MainDeadlineArrayField type="late" />
-        </div>
-
-        {hasAnyDateControl && (
-          <>
-            <hr className="my-4" />
+    <>
+      <Card className="mb-4">
+        <Card.Header>
+          <Form.Check
+            type="checkbox"
+            id="mainRule-date-control-enabled"
+            label={title}
+            {...register('mainRule.dateControlEnabled')}
+            aria-describedby="mainRule-date-control-help"
+          />
+          <Form.Text id="mainRule-date-control-help" className="text-muted">
+            {description}
+          </Form.Text>
+        </Card.Header>
+        {dateControlEnabled ? (
+          <Card.Body>
             <div className="mb-3">
-              <MainAfterLastDeadlineField />
+              <MainReleaseDateField />
             </div>
-          </>
+            <div className="mb-3">
+              <MainDeadlineArrayField type="early" />
+            </div>
+            <div className="mb-3">
+              <MainDueDateField />
+            </div>
+            <div className="mb-4">
+              <MainDeadlineArrayField type="late" />
+            </div>
+          </Card.Body>
+        ) : (
+          <Card.Body>
+            <p className="text-body-secondary mb-0">
+              Enable date control to configure release dates, due dates, and deadlines.
+            </p>
+          </Card.Body>
         )}
+      </Card>
 
-        <hr className="my-4" />
+      <div className="mb-3">
+        <MainAfterLastDeadlineField />
+      </div>
 
-        <Row className="mb-3 gy-3">
-          <Col md={6}>
-            <MainDurationField />
-          </Col>
-          <Col md={6}>
-            <MainPasswordField />
-          </Col>
-        </Row>
-      </Card.Body>
-    </Card>
+      <Row className="mb-3 gy-3">
+        <Col md={6}>
+          <MainDurationField />
+        </Col>
+        <Col md={6}>
+          <MainPasswordField />
+        </Col>
+      </Row>
+    </>
   );
-}
-
-interface OverrideDateControlFormProps {
-  index: number;
-  title?: string;
-  description?: string;
 }
 
 export function OverrideDateControlForm({
   index,
   title = 'Date control',
-  description = 'Override date settings from the main rule by clicking "Override" on individual fields',
-}: OverrideDateControlFormProps) {
+  description = 'Override date settings from the defaults by clicking "Override" on individual fields',
+}: {
+  index: number;
+  title?: string;
+  description?: string;
+}) {
   return (
     <Card className="mb-4">
       <Card.Header>
