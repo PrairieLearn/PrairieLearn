@@ -1,16 +1,22 @@
-import type { ModelMessage } from 'ai';
 import mustache from 'mustache';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { logger } from '@prairielearn/logger';
 
-import type { AssessmentQuestion, Course, Question } from '../../../lib/db-types.js';
+import type {
+  AssessmentQuestion,
+  Course,
+  CourseInstance,
+  EnumAiGradingProvider,
+  Question,
+} from '../../../lib/db-types.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
 
+import { resolveAiGradingKeys } from './ai-grading-credentials.js';
 import { DEFAULT_AI_GRADING_MODEL } from './ai-grading-models.shared.js';
+import { countInputTokensForProvider, countInputTokensLocal } from './ai-grading-token-counting.js';
 import {
   filterInstanceQuestionsByMode,
   generatePrompt,
@@ -18,62 +24,20 @@ import {
   selectLastVariantAndSubmission,
 } from './ai-grading-util.js';
 
-// --- Token estimation constants ---
-// These are approximate values that may need empirical tuning.
+// --- Output token estimation constants ---
+// These are empirically tuned values for estimating output token usage.
 
-/** Approximate number of characters per token for code/HTML-heavy content. */
-const CHARS_PER_TOKEN = 3;
-
-/**
- * Approximate number of tokens consumed by a single image in the prompt.
- * TODO: Empirically derive this from past student submissions for `pl-image-capture`.
- */
-const INPUT_TOKENS_PER_IMAGE = 1000;
+/** Approximate number of characters per output token for code/HTML-heavy content. */
+const CHARS_PER_OUTPUT_TOKEN = 3.04;
 
 /** Average character length of the explanation field in the AI grading output. */
-const AVG_EXPLANATION_LENGTH = 4000;
-
-/** Average character length of the feedback field in the numeric scoring output. */
-const AVG_FEEDBACK_LENGTH = 2000;
+const AVG_EXPLANATION_LENGTH = 2259;
 
 /**
  * Multiplier applied to input tokens to estimate reasoning token usage.
  * Reasoning tokens scale with input complexity and are priced at the output rate.
  */
-const REASONING_INPUT_MULTIPLIER = 0.5;
-
-function estimateTokensFromMessages(messages: ModelMessage[]): {
-  tokens: number;
-  textTokens: number;
-  imageTokens: number;
-  imageCount: number;
-  totalTextLength: number;
-} {
-  let totalTextLength = 0;
-  let imageCount = 0;
-  for (const msg of messages) {
-    if (typeof msg.content === 'string') {
-      totalTextLength += msg.content.length;
-    } else if (Array.isArray(msg.content)) {
-      for (const part of msg.content) {
-        if (part.type === 'text') {
-          totalTextLength += part.text.length;
-        } else if (part.type === 'image') {
-          imageCount++;
-        }
-      }
-    }
-  }
-  const textTokens = Math.ceil(totalTextLength / CHARS_PER_TOKEN);
-  const imageTokens = imageCount * INPUT_TOKENS_PER_IMAGE;
-  return {
-    tokens: textTokens + imageTokens,
-    textTokens,
-    imageTokens,
-    imageCount,
-    totalTextLength,
-  };
-}
+const REASONING_INPUT_MULTIPLIER = 1;
 
 /**
  * Estimates the output token count based on the grading result structure
@@ -89,30 +53,14 @@ function estimateOutputTokens(rubricItemDescriptions: string[]): number {
       explanation: explanationPlaceholder,
       rubric_items: Object.fromEntries(rubricItemDescriptions.map((desc) => [desc, false])),
     });
-    const totalTokens = Math.ceil(rubricOutputJson.length / CHARS_PER_TOKEN);
-    logger.info('Cost estimation: output token estimate (rubric)', {
-      rubric_item_count: rubricItemDescriptions.length,
-      avg_explanation_length: AVG_EXPLANATION_LENGTH,
-      rubric_json_length: rubricOutputJson.length,
-      total_output_tokens: totalTokens,
-    });
-    return totalTokens;
+    return Math.ceil(rubricOutputJson.length / CHARS_PER_OUTPUT_TOKEN);
   }
-  // Numeric scoring: { "explanation": "...", "feedback": "...", "score": N }
-  const feedbackPlaceholder = 'x'.repeat(AVG_FEEDBACK_LENGTH);
+  // Numeric scoring: { "explanation": "...", "score": N }
   const numericOutputJson = JSON.stringify({
     explanation: explanationPlaceholder,
-    feedback: feedbackPlaceholder,
     score: 0,
   });
-  const totalTokens = Math.ceil(numericOutputJson.length / CHARS_PER_TOKEN);
-  logger.info('Cost estimation: output token estimate (numeric)', {
-    avg_explanation_length: AVG_EXPLANATION_LENGTH,
-    avg_feedback_length: AVG_FEEDBACK_LENGTH,
-    numeric_json_length: numericOutputJson.length,
-    total_output_tokens: totalTokens,
-  });
-  return totalTokens;
+  return Math.ceil(numericOutputJson.length / CHARS_PER_OUTPUT_TOKEN);
 }
 
 export async function estimateAiGradingCost({
@@ -132,7 +80,7 @@ export async function estimateAiGradingCost({
   selected_instance_question_ids?: string[];
 }): Promise<{
   num_to_grade: number;
-  avg_input_tokens_per_submission: number;
+  avg_input_tokens: number;
   estimated_output_tokens: number;
   estimated_reasoning_tokens: number;
 }> {
@@ -156,141 +104,257 @@ export async function estimateAiGradingCost({
   if (num_to_grade === 0) {
     return {
       num_to_grade: 0,
-      avg_input_tokens_per_submission: 0,
+      avg_input_tokens: 0,
       estimated_output_tokens,
       estimated_reasoning_tokens: 0,
     };
   }
 
-  // Randomly sort and take the first 20 submissions to estimate token counts.
+  /** Maximum number of submissions to sample for token estimation. */
+  const MAX_SAMPLE_SIZE = 10;
+
   const shuffled = [...filtered_instance_questions].sort(() => Math.random() - 0.5);
-  const sampled = shuffled.slice(0, Math.min(20, num_to_grade));
+  const sampled = shuffled.slice(0, Math.min(MAX_SAMPLE_SIZE, num_to_grade));
 
   const question_course = await getQuestionCourse(question, course);
 
-  let totalInputTokens = 0;
-  let successCount = 0;
+  // Render prompts and count tokens locally for all sampled submissions in parallel.
+  const results = await Promise.all(
+    sampled.map(async (instance_question) => {
+      try {
+        const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
 
-  for (const instance_question of sampled) {
-    try {
-      const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
+        const locals = {
+          ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
+          questionRenderContext: 'ai_grading',
+        };
 
-      const locals = {
-        ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
-        questionRenderContext: 'ai_grading',
-      };
+        const questionModule = questionServers.getModule(question.type);
 
-      const questionModule = questionServers.getModule(question.type);
+        const render_question_results = await questionModule.render({
+          renderSelection: { question: true, submissions: false, answer: true },
+          variant,
+          question,
+          submission: null,
+          submissions: [],
+          course: question_course,
+          locals,
+        });
 
-      const render_question_results = await questionModule.render({
-        renderSelection: { question: true, submissions: false, answer: true },
-        variant,
-        question,
-        submission: null,
-        submissions: [],
-        course: question_course,
-        locals,
-      });
+        if (render_question_results.courseIssues.length > 0) {
+          return null;
+        }
 
-      if (render_question_results.courseIssues.length > 0) {
-        logger.error(
-          `Cost estimation: rendering issues for instance question ${instance_question.id}`,
-          render_question_results.courseIssues,
-        );
-        continue;
+        const questionPrompt = render_question_results.data.questionHtml;
+        const questionAnswer = render_question_results.data.answerHtml;
+
+        const render_submission_results = await questionModule.render({
+          renderSelection: { question: false, submissions: true, answer: false },
+          variant,
+          question,
+          submission,
+          submissions: [submission],
+          course: question_course,
+          locals,
+        });
+
+        const submission_text = render_submission_results.data.submissionHtmls[0];
+
+        // Apply mustache rendering to rubric items (same as in aiGrade).
+        const renderedRubricItems = rubric_items.map((item) => {
+          const mustacheParams = {
+            correct_answers: submission.true_answer ?? {},
+            params: submission.params ?? {},
+            submitted_answers: submission.submitted_answer,
+          };
+          return {
+            ...item,
+            description: mustache.render(item.description, mustacheParams),
+            explanation: item.explanation
+              ? mustache.render(item.explanation, mustacheParams)
+              : null,
+            grader_note: item.grader_note
+              ? mustache.render(item.grader_note, mustacheParams)
+              : null,
+          };
+        });
+
+        const messages = await generatePrompt({
+          questionPrompt,
+          questionAnswer,
+          submission_text,
+          submitted_answer: submission.submitted_answer,
+          rubric_items: renderedRubricItems,
+          grader_guidelines: rubric?.grader_guidelines ?? null,
+          params: variant.params ?? {},
+          true_answer: variant.true_answer ?? {},
+          model_id: DEFAULT_AI_GRADING_MODEL,
+        });
+
+        return await countInputTokensLocal(messages);
+      } catch {
+        return null;
       }
+    }),
+  );
 
-      const questionPrompt = render_question_results.data.questionHtml;
-      const questionAnswer = render_question_results.data.answerHtml;
+  const successful = results.filter((r): r is number => r !== null);
 
-      const render_submission_results = await questionModule.render({
-        renderSelection: { question: false, submissions: true, answer: false },
-        variant,
-        question,
-        submission,
-        submissions: [submission],
-        course: question_course,
-        locals,
-      });
-
-      const submission_text = render_submission_results.data.submissionHtmls[0];
-
-      // Apply mustache rendering to rubric items (same as in aiGrade).
-      const renderedRubricItems = rubric_items.map((item) => {
-        const mustacheParams = {
-          correct_answers: submission.true_answer ?? {},
-          params: submission.params ?? {},
-          submitted_answers: submission.submitted_answer,
-        };
-        return {
-          ...item,
-          description: mustache.render(item.description, mustacheParams),
-          explanation: item.explanation ? mustache.render(item.explanation, mustacheParams) : null,
-          grader_note: item.grader_note ? mustache.render(item.grader_note, mustacheParams) : null,
-        };
-      });
-
-      const messages = await generatePrompt({
-        questionPrompt,
-        questionAnswer,
-        submission_text,
-        submitted_answer: submission.submitted_answer,
-        rubric_items: renderedRubricItems,
-        grader_guidelines: rubric?.grader_guidelines ?? null,
-        params: variant.params ?? {},
-        true_answer: variant.true_answer ?? {},
-        model_id: DEFAULT_AI_GRADING_MODEL,
-      });
-
-      const { tokens, textTokens, imageTokens, imageCount, totalTextLength } =
-        estimateTokensFromMessages(messages);
-      logger.info('Cost estimation: input token estimate for submission', {
-        instance_question_id: instance_question.id,
-        total_text_length: totalTextLength,
-        text_tokens: textTokens,
-        image_count: imageCount,
-        image_tokens: imageTokens,
-        total_input_tokens: tokens,
-      });
-      totalInputTokens += tokens;
-      successCount++;
-    } catch (err) {
-      logger.error(
-        `Cost estimation: failed to estimate tokens for instance question ${instance_question.id}`,
-        err,
-      );
-    }
-  }
-
-  if (successCount === 0) {
+  if (successful.length === 0) {
     throw new HttpStatusError(
       500,
       `Cost estimation failed: all ${sampled.length} sampled submissions failed to render for assessment question ${assessment_question.id}`,
     );
   }
 
-  const avg_input_tokens_per_submission = Math.ceil(totalInputTokens / successCount);
-  const estimated_reasoning_tokens = Math.ceil(
-    avg_input_tokens_per_submission * REASONING_INPUT_MULTIPLIER,
-  );
-
-  logger.info('Cost estimation: summary', {
-    assessment_question_id: assessment_question.id,
-    num_to_grade,
-    sampled_count: sampled.length,
-    success_count: successCount,
-    total_input_tokens_sampled: totalInputTokens,
-    avg_input_tokens_per_submission,
-    estimated_output_tokens,
-    estimated_reasoning_tokens,
-    has_rubric: rubric_items.length > 0,
-    rubric_item_count: rubric_items.length,
-  });
+  const totalTokens = successful.reduce((sum, r) => sum + r, 0);
+  const avg_input_tokens = Math.ceil(totalTokens / successful.length);
+  const estimated_reasoning_tokens = Math.ceil(avg_input_tokens * REASONING_INPUT_MULTIPLIER);
 
   return {
     num_to_grade,
-    avg_input_tokens_per_submission,
+    avg_input_tokens,
     estimated_output_tokens,
     estimated_reasoning_tokens,
   };
+}
+
+/**
+ * Counts input tokens for a specific provider by sampling submissions and
+ * calling the provider's native token counting API. Only called on explicit
+ * user intent (e.g. hovering/selecting a provider in the modal) to avoid
+ * sending student data to providers the instructor hasn't chosen.
+ */
+export async function countTokensForProvider({
+  assessment_question,
+  question,
+  course,
+  course_instance,
+  urlPrefix,
+  mode,
+  selected_instance_question_ids,
+  provider,
+}: {
+  assessment_question: AssessmentQuestion;
+  question: Question;
+  course: Course;
+  course_instance: CourseInstance;
+  urlPrefix: string;
+  mode: 'all' | 'human_graded' | 'selected';
+  selected_instance_question_ids?: string[];
+  provider: EnumAiGradingProvider;
+}): Promise<{
+  avg_input_tokens: number;
+  estimated_reasoning_tokens: number;
+}> {
+  const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion({
+    assessment_question_id: assessment_question.id,
+  });
+
+  const filtered_instance_questions = await filterInstanceQuestionsByMode(
+    all_instance_questions,
+    mode,
+    selected_instance_question_ids,
+  );
+
+  if (filtered_instance_questions.length === 0) {
+    return { avg_input_tokens: 0, estimated_reasoning_tokens: 0 };
+  }
+
+  const MAX_SAMPLE_SIZE = 10;
+  const shuffled = [...filtered_instance_questions].sort(() => Math.random() - 0.5);
+  const sampled = shuffled.slice(0, Math.min(MAX_SAMPLE_SIZE, filtered_instance_questions.length));
+
+  const question_course = await getQuestionCourse(question, course);
+  const apiKeys = await resolveAiGradingKeys(course_instance);
+  const apiKey =
+    provider === 'openai'
+      ? (apiKeys.openai?.apiKey ?? null)
+      : provider === 'google'
+        ? (apiKeys.google?.apiKey ?? null)
+        : (apiKeys.anthropic?.apiKey ?? null);
+
+  const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
+
+  const results = await Promise.all(
+    sampled.map(async (instance_question) => {
+      try {
+        const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
+
+        const locals = {
+          ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
+          questionRenderContext: 'ai_grading',
+        };
+
+        const questionModule = questionServers.getModule(question.type);
+
+        const render_question_results = await questionModule.render({
+          renderSelection: { question: true, submissions: false, answer: true },
+          variant,
+          question,
+          submission: null,
+          submissions: [],
+          course: question_course,
+          locals,
+        });
+
+        if (render_question_results.courseIssues.length > 0) return null;
+
+        const render_submission_results = await questionModule.render({
+          renderSelection: { question: false, submissions: true, answer: false },
+          variant,
+          question,
+          submission,
+          submissions: [submission],
+          course: question_course,
+          locals,
+        });
+
+        const renderedRubricItems = rubric_items.map((item) => {
+          const mustacheParams = {
+            correct_answers: submission.true_answer ?? {},
+            params: submission.params ?? {},
+            submitted_answers: submission.submitted_answer,
+          };
+          return {
+            ...item,
+            description: mustache.render(item.description, mustacheParams),
+            explanation: item.explanation
+              ? mustache.render(item.explanation, mustacheParams)
+              : null,
+            grader_note: item.grader_note
+              ? mustache.render(item.grader_note, mustacheParams)
+              : null,
+          };
+        });
+
+        const messages = await generatePrompt({
+          questionPrompt: render_question_results.data.questionHtml,
+          questionAnswer: render_question_results.data.answerHtml,
+          submission_text: render_submission_results.data.submissionHtmls[0],
+          submitted_answer: submission.submitted_answer,
+          rubric_items: renderedRubricItems,
+          grader_guidelines: rubric?.grader_guidelines ?? null,
+          params: variant.params ?? {},
+          true_answer: variant.true_answer ?? {},
+          model_id: DEFAULT_AI_GRADING_MODEL,
+        });
+
+        return await countInputTokensForProvider(messages, provider, apiKey);
+      } catch {
+        return null;
+      }
+    }),
+  );
+
+  const successful = results.filter((r): r is number => r !== null);
+
+  if (successful.length === 0) {
+    return { avg_input_tokens: 0, estimated_reasoning_tokens: 0 };
+  }
+
+  const avg_input_tokens = Math.ceil(successful.reduce((sum, r) => sum + r, 0) / successful.length);
+  const estimated_reasoning_tokens = Math.ceil(avg_input_tokens * REASONING_INPUT_MULTIPLIER);
+
+  return { avg_input_tokens, estimated_reasoning_tokens };
 }

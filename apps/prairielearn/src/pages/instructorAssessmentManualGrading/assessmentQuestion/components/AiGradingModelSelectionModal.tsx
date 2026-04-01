@@ -8,6 +8,7 @@ import { assertNever } from '@prairielearn/utils';
 
 import {
   AI_GRADING_MODELS,
+  AI_GRADING_MODEL_PROVIDERS,
   AI_GRADING_PROVIDER_DISPLAY_NAMES,
   AI_GRADING_PROVIDER_SUBLABELS,
   type AiGradingModelId,
@@ -58,48 +59,48 @@ function getTitle(modalState: AiGradingModelSelectionModalState): string {
   }
 }
 
-/** Margin of error multiplier applied to cost estimates to account for estimation inaccuracy. */
-const COST_ESTIMATE_MARGIN = 1.2;
-
 /**
  * Estimates the total cost for grading all submissions with a given model.
  *
  * Formula:
- *   cost_per_submission = (avg_input_tokens * input_price
+ *   cost_per_submission = (input_tokens * input_price
  *                        + estimated_output_tokens * output_price
  *                        + estimated_reasoning_tokens * output_price) / 1e6
  *   raw_cost = cost_per_submission * num_to_grade
- *   total = ceil(raw_cost * (1 + infrastructure_fee_percent / 100) * 1000 * COST_ESTIMATE_MARGIN)
+ *   total = ceil(raw_cost * (1 + infrastructure_fee_percent / 100) * 1000)
  *
  * Where:
- * - avg_input_tokens is sampled from up to 20 submissions
+ * - input_tokens are from local tiktoken or provider-specific API counts
  * - estimated_output_tokens is derived from the expected JSON output structure
- * - estimated_reasoning_tokens = avg_input_tokens * REASONING_INPUT_MULTIPLIER (0.5)
- * - COST_ESTIMATE_MARGIN (1.2) adds a 20% buffer for estimation error
+ * - estimated_reasoning_tokens = input_tokens * 1.0
  * - Result is in milli-dollars (1/1000th of a dollar)
  */
 function estimateTotalCostForModel(
   modelId: string,
   data: {
-    avg_input_tokens_per_submission: number;
+    avg_input_tokens: number;
     estimated_output_tokens: number;
     estimated_reasoning_tokens: number;
     model_pricing: Record<string, { input: number; output: number }>;
     infrastructure_fee_percent: number;
   },
+  providerOverride: { avg_input_tokens: number; estimated_reasoning_tokens: number } | null,
   numToGrade: number,
 ): number | null {
-  if (data.avg_input_tokens_per_submission <= 0) return null;
+  const inputTokens = providerOverride?.avg_input_tokens ?? data.avg_input_tokens;
+  const reasoningTokens =
+    providerOverride?.estimated_reasoning_tokens ?? data.estimated_reasoning_tokens;
+  if (inputTokens <= 0) return null;
   const pricing = data.model_pricing[modelId];
   const costPerSubmissionDollars =
-    (data.avg_input_tokens_per_submission * pricing.input) / 1e6 +
+    (inputTokens * pricing.input) / 1e6 +
     (data.estimated_output_tokens * pricing.output) / 1e6 +
-    (data.estimated_reasoning_tokens * pricing.output) / 1e6;
+    (reasoningTokens * pricing.output) / 1e6;
   return Math.ceil(
     calculateCostWithFeeMilliDollars(
       costPerSubmissionDollars * numToGrade,
       data.infrastructure_fee_percent,
-    ) * COST_ESTIMATE_MARGIN,
+    ),
   );
 }
 
@@ -128,10 +129,12 @@ function ProviderSelector({
   activeProvider,
   availableProviders,
   onSelect,
+  onHover,
 }: {
   activeProvider: EnumAiGradingProvider;
   availableProviders: EnumAiGradingProvider[];
   onSelect: (provider: EnumAiGradingProvider) => void;
+  onHover: (provider: EnumAiGradingProvider) => void;
 }) {
   const providers = Object.keys(AI_GRADING_PROVIDER_DISPLAY_NAMES) as EnumAiGradingProvider[];
 
@@ -143,12 +146,16 @@ function ProviderSelector({
           const isActive = activeProvider === provider;
           const isAvailable = availableProviders.includes(provider);
           const providerOption = (
+            // eslint-disable-next-line jsx-a11y-x/no-noninteractive-element-interactions -- label wraps a radio input
             <label
               className={clsx('border rounded-3 px-3 py-2 h-100 d-block mb-0', {
                 'border-primary bg-primary bg-opacity-10': isActive,
                 'opacity-50': !isAvailable,
               })}
               style={{ cursor: isAvailable ? 'pointer' : 'default' }}
+              onMouseEnter={() => {
+                if (isAvailable) onHover(provider);
+              }}
             >
               <input
                 type="radio"
@@ -193,6 +200,7 @@ function ModelSelector({
   selectedModel,
   availableProviders,
   data,
+  providerTokenOverrides,
   numToGrade,
   onSelect,
 }: {
@@ -200,13 +208,16 @@ function ModelSelector({
   selectedModel: AiGradingModelId;
   availableProviders: EnumAiGradingProvider[];
   data: {
-    avg_input_tokens_per_submission: number;
+    avg_input_tokens: number;
     estimated_output_tokens: number;
     estimated_reasoning_tokens: number;
     model_pricing: Record<string, { input: number; output: number }>;
     infrastructure_fee_percent: number;
     using_custom_api_keys: boolean;
   } | null;
+  providerTokenOverrides: Partial<
+    Record<EnumAiGradingProvider, { avg_input_tokens: number; estimated_reasoning_tokens: number }>
+  >;
   numToGrade: number;
   onSelect: (modelId: AiGradingModelId) => void;
 }) {
@@ -224,8 +235,10 @@ function ModelSelector({
         {providerModels.map((model) => {
           const isSelected = selectedModel === model.modelId;
           const isAvailable = availableProviders.includes(model.provider);
+          const provider = AI_GRADING_MODEL_PROVIDERS[model.modelId];
+          const override = providerTokenOverrides[provider] ?? null;
           const costMilliDollars = data
-            ? estimateTotalCostForModel(model.modelId, data, numToGrade)
+            ? estimateTotalCostForModel(model.modelId, data, override, numToGrade)
             : null;
 
           return (
@@ -390,13 +403,66 @@ export function AiGradingModelSelectionModal({
     AI_GRADING_MODELS.find((m) => m.modelId === defaultModel)?.provider ?? 'openai';
   const [activeProvider, setActiveProvider] = useState<EnumAiGradingProvider>(defaultProvider);
 
+  // Track which providers the user has shown intent to use (hover or select).
+  // The lazy token count query is only enabled for these providers.
+  const [requestedProviders, setRequestedProviders] = useState<Set<EnumAiGradingProvider>>(
+    () => new Set([defaultProvider]),
+  );
+
   const trpc = useTRPC();
+  const selection = modalState ? getSelection(modalState) : 'all';
+
   const modalDataQuery = useQuery({
-    ...trpc.manualGrading.getAiGradingModalData.queryOptions({
-      selection: modalState ? getSelection(modalState) : 'all',
-    }),
+    ...trpc.manualGrading.getAiGradingModalData.queryOptions({ selection }),
     enabled: modalState != null,
   });
+
+  // Lazy provider-specific token count queries — one per requested provider.
+  const providerTokenOverrides: Partial<
+    Record<EnumAiGradingProvider, { avg_input_tokens: number; estimated_reasoning_tokens: number }>
+  > = {};
+
+  const openaiQuery = useQuery({
+    ...trpc.manualGrading.getProviderTokenCount.queryOptions({
+      selection,
+      provider: 'openai',
+    }),
+    enabled: modalState != null && requestedProviders.has('openai'),
+  });
+  if (openaiQuery.data) providerTokenOverrides.openai = openaiQuery.data;
+
+  const googleQuery = useQuery({
+    ...trpc.manualGrading.getProviderTokenCount.queryOptions({
+      selection,
+      provider: 'google',
+    }),
+    enabled: modalState != null && requestedProviders.has('google'),
+  });
+  if (googleQuery.data) providerTokenOverrides.google = googleQuery.data;
+
+  const anthropicQuery = useQuery({
+    ...trpc.manualGrading.getProviderTokenCount.queryOptions({
+      selection,
+      provider: 'anthropic',
+    }),
+    enabled: modalState != null && requestedProviders.has('anthropic'),
+  });
+  if (anthropicQuery.data) providerTokenOverrides.anthropic = anthropicQuery.data;
+
+  const handleProviderIntent = useCallback((provider: EnumAiGradingProvider) => {
+    setRequestedProviders((prev) => {
+      if (prev.has(provider)) return prev;
+      return new Set([...prev, provider]);
+    });
+  }, []);
+
+  const handleProviderSelect = useCallback(
+    (provider: EnumAiGradingProvider) => {
+      handleProviderIntent(provider);
+      setActiveProvider(provider);
+    },
+    [handleProviderIntent],
+  );
 
   const handleClose = useCallback(() => {
     setSelectedModel(defaultModel);
@@ -429,8 +495,11 @@ export function AiGradingModelSelectionModal({
   const data = modalDataQuery.data;
   const numToGrade = data?.num_to_grade ?? modalState?.numToGrade ?? 0;
 
+  const selectedProvider = AI_GRADING_MODEL_PROVIDERS[selectedModel];
+  const selectedOverride = providerTokenOverrides[selectedProvider] ?? null;
+
   const selectedCostMilliDollars = data
-    ? estimateTotalCostForModel(selectedModel, data, numToGrade)
+    ? estimateTotalCostForModel(selectedModel, data, selectedOverride, numToGrade)
     : null;
 
   const projectedBalance =
@@ -467,7 +536,8 @@ export function AiGradingModelSelectionModal({
           <ProviderSelector
             activeProvider={activeProvider}
             availableProviders={availableProviders}
-            onSelect={setActiveProvider}
+            onSelect={handleProviderSelect}
+            onHover={handleProviderIntent}
           />
 
           <ModelSelector
@@ -477,7 +547,7 @@ export function AiGradingModelSelectionModal({
             data={
               data
                 ? {
-                    avg_input_tokens_per_submission: data.avg_input_tokens_per_submission,
+                    avg_input_tokens: data.avg_input_tokens,
                     estimated_output_tokens: data.estimated_output_tokens,
                     estimated_reasoning_tokens: data.estimated_reasoning_tokens,
                     model_pricing: data.model_pricing,
@@ -486,6 +556,7 @@ export function AiGradingModelSelectionModal({
                   }
                 : null
             }
+            providerTokenOverrides={providerTokenOverrides}
             numToGrade={numToGrade}
             onSelect={setSelectedModel}
           />
