@@ -1014,6 +1014,9 @@ importers:
       '@types/byline':
         specifier: ^4.2.36
         version: 4.2.36
+      '@types/cookie':
+        specifier: ^0.6.0 <1
+        version: 0.6.0
       '@types/cookie-parser':
         specifier: ^1.4.10
         version: 1.4.10(@types/express@4.17.25)
