@@ -428,8 +428,7 @@ export const AssessmentJsonSchema = z
       .describe(
         'List of access rules for the assessment. Access is permitted if any access rule is satisfied.',
       )
-      .optional()
-      .default([]),
+      .optional(),
     accessControl: z
       .array(AccessControlJsonSchema)
       .describe('Access control settings for the assessment.')

@@ -567,11 +567,11 @@ describe('Credit monotonicity validation', () => {
 });
 
 describe('Empty accessControl array', () => {
-  it('should warn when accessControl array is empty', () => {
+  it('should accept an empty accessControl array without warnings', () => {
     const result = validateAccessControlArray({
       accessControlJsonArray: [],
     });
     assert.deepEqual(result.errors, []);
-    assert.isTrue(result.warnings.some((w) => w.includes('accessControl array is empty')));
+    assert.deepEqual(result.warnings, []);
   });
 });

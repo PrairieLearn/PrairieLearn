@@ -120,7 +120,7 @@ earlyDeadline (110%)    dueDate (100%)    lateDeadline (80%)
 - **Between `releaseDate` and the first deadline**: Credit is the first entry's value (the highest credit in the timeline).
 - **Between each pair of deadlines**: Credit is the later deadline's value.
 - **After the last deadline**: Credit is `afterLastDeadline.credit` (default 0%).
-- **No `dateControl` or no `releaseDate`**: 0% credit, not active.
+- **No `dateControl` or no `releaseDate`**: The assessment is listed on the Assessments page but is not active — students cannot start it or submit answers.
 
 ### `integrations`
 
@@ -668,11 +668,18 @@ Below are common legacy patterns and their modern equivalents.
 
     ```json
     {
-      "accessControl": [{}]
+      "accessControl": [
+        {
+          "dateControl": {
+            "releaseDate": "1970-01-01T00:00:00",
+            "dueDate": "2099-12-31T23:59:59"
+          }
+        }
+      ]
     }
     ```
 
-    With no `dateControl` (or no `releaseDate`), the assessment grants 0% credit. To make an assessment always open with 100% credit, set a `releaseDate` in the past and a `dueDate` far in the future.
+    A `releaseDate` in the past and a `dueDate` far in the future ensures the assessment is always open with 100% credit. Without a `dateControl`, the assessment is listed but not active — students cannot start it or submit answers.
 
 ### View-only after close
 

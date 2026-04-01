@@ -65,6 +65,7 @@ export function LabelModifyModal({
     register,
     handleSubmit,
     setError,
+    reset,
     formState: { errors },
     watch,
   } = useForm<LabelFormValues>({
@@ -206,6 +207,7 @@ export function LabelModifyModal({
       onExited={() => {
         setStage({ type: 'editing' });
         saveMutation.reset();
+        reset();
         onExited?.();
       }}
     >

@@ -149,9 +149,7 @@ function DeadlineArrayInput({
               addDeadline();
             } else {
               // Remove all deadlines
-              for (let i = deadlineFields.length - 1; i >= 0; i--) {
-                removeDeadline(i);
-              }
+              removeDeadline();
             }
           }}
         />

@@ -85,7 +85,6 @@ export function AccessControlForm({
   initialData?: AccessControlJsonWithId[];
   onSubmit: (data: AccessControlJsonWithId[]) => void;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
-  assessmentType?: 'Exam' | 'Homework';
   isSaving?: boolean;
 }) {
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
@@ -234,7 +233,7 @@ export function AccessControlForm({
   const rightPanel =
     selectedRule?.type === 'main' ? (
       <div className="p-3">
-        <MainRuleForm courseInstance={courseInstance} />
+        <MainRuleForm />
       </div>
     ) : selectedRule?.type === 'override' ? (
       (() => {
