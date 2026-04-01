@@ -41,12 +41,13 @@ Frequently used packages:
 - NEVER rebase unless specifically requested, always use merge commits.
 - ALWAYS create pull requests as drafts unless specifically requested.
 - When creating pull requests, follow the PR template in `.github/PULL_REQUEST_TEMPLATE.md`.
+- In Claude Code remote sessions, if the target branch is not `master`, commit and push directly to the parent/target branch instead of creating a separate feature branch.
 
 ## Building, type checking, and linting
 
 When working on a task, you should typecheck / lint / format individual files as you go. When you are done, you should typecheck / lint / format all changed files.
 
-Run `make format-changed` from the root directory to format all changed files (staged + unstaged + untracked) compared to HEAD. This is useful for formatting all your work-in-progress changes.
+Run `make format-changed` from the root directory to format all files changed on the current branch compared to the default branch, including committed, staged, unstaged, and untracked changes.
 
 ### TypeScript
 
@@ -123,7 +124,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 
 ### Library usage conventions
 
-- Use `tRPC + @trpc/tanstack-react-query` for new client/server communication. When interacting with existing REST APIs, use `@tanstack/react-query`.
+- Use `tRPC + @trpc/tanstack-react-query` for new client/server communication. When interacting with existing REST APIs, use `@tanstack/react-query`. See the [`trpc` skill](./.agents/skills/trpc/SKILL.md) for conventions on authorization scopes, file structure, and client-side patterns.
 - Use `react-hook-form` for form handling.
 - Prefer `extractPageContext(res.locals, ...)` over accessing `res.locals` properties directly in route handlers. This provides better type safety and ensures consistent access patterns.
 - Use `nuqs` for URL query state in hydrated components. Use `NuqsAdapter` from `@prairielearn/ui` and pass the search string from the router. See `pages/home/` for an example.
@@ -133,7 +134,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 - Information about the current user, course instance, course, etc. is stored in `res.locals` in route handlers. Types for `res.locals` are defined in `apps/prairielearn/src/lib/res-locals.ts`.
 - NEVER use `as any` casts in TypeScript code to avoid type errors.
 - Don't add extra defensive checks or try/catch blocks that are abnormal for that area of the codebase (especially if called by trusted / validated codepaths).
-- Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file.
+- Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file. Comments should explain _why_, not _what_ — if a comment just restates the code, remove it.
 - Always check for existing model functions in `apps/prairielearn/src/models/` or lib functions before writing one-off database queries.
 - Express request handlers must always either send a response (either by calling `res.send`/etc. or throwing an error) or explicitly pass control by calling `next(...)`.
 - DO NOT re-export functions or types from other modules for convenience or backward compatibility within applications (e.g. `export { bar } from 'foo'` in `apps/*`). When moving a function to a new module, update all callers to import from the new location directly. Package-level barrel exports in `packages/*/src/index.ts` are expected and should be used to provide a clean public API.
@@ -184,7 +185,7 @@ Inline `PageLayout` directly in the Express route handler rather than creating w
 
 - A file at `./foo.tsx` should be imported as `./foo.js` from other files.
 - Use `clsx` in React components.
-- Inline prop definitions for components if they are not used outside of the component.
+- Define component props directly in the function signature (e.g., `function Foo({ a, b }: { a: string; b: number })`) instead of declaring a separate named interface. Exception: if the props type is used by multiple components or exported, a named interface is fine.
 - Pass `res.locals` to `getPageContext` to get information about the course instance / authentication state.
 - If you hydrate a component with `Hydrate`, you must register the component with `registerHydratedComponent` in a file in `apps/prairielearn/assets/scripts/esm-bundles/hydrated-components`.
 - Don't use `useMemo` for cheap computations. Use `run` from `@prairielearn/run` instead (an IIFE helper that executes a function immediately).

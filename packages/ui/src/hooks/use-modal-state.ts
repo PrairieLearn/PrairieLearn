@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 /**
  * A hook to manage the state of a modal dialog that's rendered with a certain set of data.
@@ -11,15 +11,14 @@ import { useState } from 'react';
 export function useModalState<T>(initialData: T | null = null) {
   const [show, setShow] = useState<boolean>(false);
   const [data, setData] = useState<T | null>(initialData);
-  return {
-    show,
-    data,
-    showWithData: (data: T) => {
-      setData(data);
-      setShow(true);
-    },
-    hide: () => setShow(false),
-    onHide: () => setShow(false),
-    onExited: () => setData(null),
-  };
+
+  const showWithData = useCallback((data: T) => {
+    setData(data);
+    setShow(true);
+  }, []);
+
+  const hide = useCallback(() => setShow(false), []);
+  const onExited = useCallback(() => setData(null), []);
+
+  return { show, data, showWithData, hide, onHide: hide, onExited };
 }

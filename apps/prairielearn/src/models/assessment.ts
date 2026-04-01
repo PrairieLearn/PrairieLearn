@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   type CursorIterator,
+  execute,
   loadSqlEquiv,
   queryCursor,
   queryOptionalRow,
@@ -130,6 +131,13 @@ export async function selectAssessments({
     { course_instance_id },
     AssessmentRowSchema,
   );
+}
+
+/**
+ * Acquires a row-level lock on the assessment. Must be called within a transaction.
+ */
+export async function lockAssessment(assessment: Assessment): Promise<void> {
+  await execute(sql.lock_assessment_row, { assessment_id: assessment.id });
 }
 
 export function selectAssessmentsCursor({

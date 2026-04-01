@@ -1,5 +1,6 @@
 import { type ZodSchema, z } from 'zod';
 
+import { AccessControlJsonSchema } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
 
 export const EnumAssessmentToolSchema = z.enum(['calculator']);
@@ -176,6 +177,7 @@ export const AssessmentAccessRuleJsonSchema = z
     'An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.',
   );
 
+export type AssessmentAccessRuleJson = z.input<typeof AssessmentAccessRuleJsonSchema>;
 export const PointsSingleJsonSchema = z.number().gte(0).describe('A single point value.');
 
 export const PointsListJsonSchema = z
@@ -248,7 +250,7 @@ export type QuestionAlternativeJson = z.infer<typeof QuestionAlternativeJsonSche
 export type QuestionAlternativeJsonInput = z.input<typeof QuestionAlternativeJsonSchema>;
 
 // 'Block' is used to signify that this can either be a single question, or
-// a container for multiple question alternatives.
+// a container for multiple question alternatives (an "alternative pool").
 export const ZoneQuestionBlockJsonSchema = QuestionPointsJsonSchema.extend({
   comment: CommentJsonSchema.optional(),
   points: PointsJsonSchema.optional(),
@@ -267,7 +269,7 @@ export const ZoneQuestionBlockJsonSchema = QuestionPointsJsonSchema.extend({
     .number()
     .int()
     .gte(0)
-    .describe('Number of questions to choose from this group.')
+    .describe('Number of questions to choose from this pool.')
     .optional(),
   triesPerVariant: z
     .number()
@@ -426,8 +428,11 @@ export const AssessmentJsonSchema = z
       .describe(
         'List of access rules for the assessment. Access is permitted if any access rule is satisfied.',
       )
-      .optional()
-      .default([]),
+      .optional(),
+    accessControl: z
+      .array(AccessControlJsonSchema)
+      .describe('Access control settings for the assessment.')
+      .optional(),
     text: z.string().describe('HTML text shown on the assessment overview page.').optional(),
     maxPoints: z
       .number()
