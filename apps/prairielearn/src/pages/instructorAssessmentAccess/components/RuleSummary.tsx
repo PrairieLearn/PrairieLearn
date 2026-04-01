@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import { Alert, Button, Card } from 'react-bootstrap';
 
 import { formatDate } from '@prairielearn/formatter';
@@ -54,7 +55,7 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
         visibilityParts.push('(listed before release)');
       }
       rows.push({
-        date: formatDate(new Date(releaseDate), displayTimezone),
+        date: formatDate(Temporal.PlainDateTime.from(releaseDate), displayTimezone),
         label: 'Release',
         credit: '100%',
         visibility: visibilityParts.join(' '),
@@ -71,7 +72,7 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
     earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
       if (deadline.date) {
         rows.push({
-          date: formatDate(new Date(deadline.date), displayTimezone),
+          date: formatDate(Temporal.PlainDateTime.from(deadline.date), displayTimezone),
           label: `Early ${index + 1}`,
           credit: `${deadline.credit}%`,
           visibility: 'Open',
@@ -81,7 +82,7 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
 
     if (dueDate) {
       rows.push({
-        date: formatDate(new Date(dueDate), displayTimezone),
+        date: formatDate(Temporal.PlainDateTime.from(dueDate), displayTimezone),
         label: 'Due',
         credit: '100%',
         visibility: 'Due',
@@ -98,7 +99,7 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
     lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
       if (deadline.date) {
         rows.push({
-          date: formatDate(new Date(deadline.date), displayTimezone),
+          date: formatDate(Temporal.PlainDateTime.from(deadline.date), displayTimezone),
           label: `Late ${index + 1}`,
           credit: `${deadline.credit}%`,
           visibility: 'Open',
