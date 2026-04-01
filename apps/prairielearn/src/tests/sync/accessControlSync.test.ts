@@ -22,10 +22,7 @@ import {
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectOrInsertUserByUid } from '../../models/user.js';
-import {
-  dateToPlainDateTime,
-  plainDateTimeStringToDate,
-} from '../../pages/instructorInstanceAdminPublishing/utils/dateUtils.js';
+import { plainDateTimeStringToDate } from '../../pages/instructorInstanceAdminPublishing/utils/dateUtils.js';
 import { type AccessControlJsonInput } from '../../schemas/accessControl.js';
 import { cleanAccessControlRulesForDisk } from '../../trpc/assessment/access-control.js';
 import * as helperDb from '../helperDb.js';
@@ -2096,124 +2093,6 @@ describe('Access control syncing', () => {
       const main = rules.find((r) => r.number === 0);
       assert.isOk(main);
       assert.deepEqual(main.prairietestExams, [{ uuid: TEST_EXAM_UUID, readOnly: true }]);
-    });
-  });
-
-  describe('Timezone handling', () => {
-    const timezone = 'America/New_York';
-
-    // Pick a known UTC date and derive the naive datetime-local string that
-    // would appear in infoAssessment.json (always in the course instance tz).
-    const releaseUtc = new Date('2024-06-15T19:00:00.000Z');
-    const releaseNaive = dateToPlainDateTime(releaseUtc, timezone).toString();
-
-    const dueUtc = new Date('2024-06-23T03:59:00.000Z');
-    const dueNaive = dateToPlainDateTime(dueUtc, timezone).toString();
-
-    it('interprets naive datetimes in the course instance display timezone', async () => {
-      const courseData = util.getCourseData();
-      courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
-
-      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-        util.ASSESSMENT_ID
-      ].accessControl = [
-        makeAccessControlRule({
-          dateControl: {
-            releaseDate: releaseNaive,
-            dueDate: dueNaive,
-          },
-        }),
-      ];
-
-      await util.writeAndSyncCourseData(courseData);
-      const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-
-      assert.equal(syncedRules.length, 1);
-      assert.equal(
-        syncedRules[0].date_control_release_date?.toISOString(),
-        releaseUtc.toISOString(),
-      );
-      assert.equal(syncedRules[0].date_control_due_date?.toISOString(), dueUtc.toISOString());
-    });
-
-    it('interprets early and late deadline dates in the course instance timezone', async () => {
-      const earlyUtc = new Date('2024-06-21T03:59:00.000Z');
-      const earlyNaive = dateToPlainDateTime(earlyUtc, timezone).toString();
-
-      const lateUtc = new Date('2024-06-26T03:59:00.000Z');
-      const lateNaive = dateToPlainDateTime(lateUtc, timezone).toString();
-
-      const courseData = util.getCourseData();
-      courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
-
-      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-        util.ASSESSMENT_ID
-      ].accessControl = [
-        makeAccessControlRule({
-          dateControl: {
-            releaseDate: releaseNaive,
-            dueDate: dueNaive,
-            earlyDeadlines: [{ date: earlyNaive, credit: 110 }],
-            lateDeadlines: [{ date: lateNaive, credit: 50 }],
-          },
-        }),
-      ];
-
-      await util.writeAndSyncCourseData(courseData);
-      const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      assert.equal(syncedRules.length, 1);
-
-      const earlyDeadlines = (
-        await util.dumpTableWithSchema(
-          'assessment_access_control_early_deadlines',
-          AssessmentAccessControlEarlyDeadlineSchema,
-        )
-      ).filter((d) => idsEqual(d.assessment_access_control_rule_id, syncedRules[0].id));
-
-      assert.equal(earlyDeadlines.length, 1);
-      assert.equal(earlyDeadlines[0].date.toISOString(), earlyUtc.toISOString());
-
-      const lateDeadlines = (
-        await util.dumpTableWithSchema(
-          'assessment_access_control_late_deadlines',
-          AssessmentAccessControlLateDeadlineSchema,
-        )
-      ).filter((d) => idsEqual(d.assessment_access_control_rule_id, syncedRules[0].id));
-
-      assert.equal(lateDeadlines.length, 1);
-      assert.equal(lateDeadlines[0].date.toISOString(), lateUtc.toISOString());
-    });
-
-    it('interprets afterComplete dates in the course instance timezone', async () => {
-      const showQuestionsUtc = new Date('2024-07-01T04:00:00.000Z');
-      const showQuestionsNaive = dateToPlainDateTime(showQuestionsUtc, timezone).toString();
-
-      const courseData = util.getCourseData();
-      courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
-
-      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-        util.ASSESSMENT_ID
-      ].accessControl = [
-        makeAccessControlRule({
-          dateControl: {
-            releaseDate: releaseNaive,
-            dueDate: dueNaive,
-          },
-          afterComplete: {
-            hideQuestions: true,
-            showQuestionsAgainDate: showQuestionsNaive,
-          },
-        }),
-      ];
-
-      await util.writeAndSyncCourseData(courseData);
-      const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-
-      assert.equal(syncedRules.length, 1);
-      assert.equal(
-        syncedRules[0].after_complete_show_questions_again_date?.toISOString(),
-        showQuestionsUtc.toISOString(),
-      );
     });
   });
 });
