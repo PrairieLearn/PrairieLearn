@@ -583,7 +583,7 @@ function InlineGradingProgress({
 }: {
   jobSequenceId: string;
   jobSequenceToken: string;
-  onComplete: () => void;
+  onComplete: (paused?: boolean) => void;
 }) {
   const [progress, setProgress] = useState<{
     numComplete: number;
@@ -592,18 +592,28 @@ function InlineGradingProgress({
     failureMessage?: string;
   } | null>(null);
   const [timedOut, setTimedOut] = useState(false);
+  const [jobFinished, setJobFinished] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
+  const completedRef = useRef(false);
 
   useEffect(() => {
     const socket = io('/server-job-progress');
     socketRef.current = socket;
 
+    const markComplete = (paused?: boolean) => {
+      if (!completedRef.current) {
+        completedRef.current = true;
+        onCompleteRef.current(paused);
+      }
+    };
+
     // If no progress data arrives within 5 seconds, assume the job already
     // finished (e.g. viewing a past conversation). Show a static completed state.
     const timeout = window.setTimeout(() => {
       setTimedOut(true);
+      markComplete();
     }, 5000);
 
     socket.emit(
@@ -616,6 +626,7 @@ function InlineGradingProgress({
         clearTimeout(timeout);
         if (!response.has_progress_data) {
           setTimedOut(true);
+          markComplete();
           return;
         }
         setProgress({
@@ -624,8 +635,10 @@ function InlineGradingProgress({
           numTotal: response.num_total,
           failureMessage: response.job_failure_message,
         });
-        if (response.num_complete >= response.num_total) {
-          onCompleteRef.current();
+        const isPausedResponse = response.job_failure_message?.startsWith('Paused:');
+        if (response.num_complete >= response.num_total || isPausedResponse) {
+          if (isPausedResponse) setJobFinished(true);
+          markComplete(isPausedResponse);
         }
       },
     );
@@ -639,8 +652,11 @@ function InlineGradingProgress({
         numTotal: msg.num_total,
         failureMessage: msg.job_failure_message,
       });
-      if (msg.num_complete >= msg.num_total) {
-        onCompleteRef.current();
+      // Complete when all submissions done OR when grading was paused for proposals
+      const isPaused = msg.job_failure_message?.startsWith('Paused:');
+      if (msg.num_complete >= msg.num_total || isPaused) {
+        if (isPaused) setJobFinished(true);
+        markComplete(isPaused);
       }
     });
 
@@ -671,7 +687,8 @@ function InlineGradingProgress({
     );
   }
 
-  const isComplete = progress.numComplete >= progress.numTotal;
+  const isPaused = jobFinished && progress.numComplete < progress.numTotal;
+  const isComplete = progress.numComplete >= progress.numTotal || isPaused;
   const numSucceeded = progress.numComplete - progress.numFailed;
   const progressPercent =
     progress.numTotal > 0 ? Math.round((progress.numComplete / progress.numTotal) * 100) : 0;
@@ -684,11 +701,14 @@ function InlineGradingProgress({
             <span className="visually-hidden">Loading...</span>
           </div>
         )}
-        {isComplete && <i className="bi bi-check-circle-fill text-success" />}
+        {isComplete && !isPaused && <i className="bi bi-check-circle-fill text-success" />}
+        {isPaused && <i className="bi bi-pause-circle-fill text-warning" />}
         <span className="small fw-medium">
-          {isComplete
-            ? `AI grading complete: ${numSucceeded} graded${progress.numFailed > 0 ? `, ${progress.numFailed} failed` : ''}`
-            : `Grading ${progress.numComplete}/${progress.numTotal} submissions...`}
+          {isPaused
+            ? `AI grading paused: ${numSucceeded}/${progress.numTotal} graded — rubric change proposed`
+            : isComplete
+              ? `AI grading complete: ${numSucceeded} graded${progress.numFailed > 0 ? `, ${progress.numFailed} failed` : ''}`
+              : `Grading ${progress.numComplete}/${progress.numTotal} submissions...`}
         </span>
       </div>
       <div className="progress" style={{ height: '6px' }}>
@@ -702,7 +722,9 @@ function InlineGradingProgress({
         />
       </div>
       {progress.failureMessage && (
-        <div className="text-danger small mt-1">{progress.failureMessage}</div>
+        <div className={`small mt-1 ${progress.numFailed > 0 ? 'text-danger' : 'text-warning'}`}>
+          {progress.failureMessage}
+        </div>
       )}
     </div>
   );
@@ -765,7 +787,7 @@ function MessageParts({
   onGradingComplete,
 }: {
   parts: UIMessage['parts'];
-  onGradingComplete?: () => void;
+  onGradingComplete?: (paused?: boolean) => void;
 }) {
   return (
     <>
@@ -954,6 +976,7 @@ function AssessmentQuestionManualGradingInner({
   const [aiGradingStatsState, setAiGradingStatsState] = useState(aiGradingStats);
   const [isGradingInProgress, setIsGradingInProgress] = useState(false);
   const isGradingInProgressRef = useRef(false);
+  const [hasRemainingSubmissions, setHasRemainingSubmissions] = useState(false);
   const addOngoingJobSequenceRef = useRef<
     ((jobSequenceId: string, jobSequenceToken: string) => void) | null
   >(null);
@@ -1061,14 +1084,27 @@ function AssessmentQuestionManualGradingInner({
 
   const isGenerating = status === 'streaming' || status === 'submitted';
 
-  const handleGradingComplete = useCallback(() => {
-    setIsGradingInProgress(false);
-    isGradingInProgressRef.current = false;
-    refreshRubricData();
-    void queryClient.invalidateQueries({
-      queryKey: trpc.manualGrading.instances.queryKey(),
-    });
-  }, [queryClient, trpc.manualGrading.instances, refreshRubricData]);
+  const handleGradingComplete = useCallback(
+    (paused?: boolean) => {
+      setIsGradingInProgress(false);
+      isGradingInProgressRef.current = false;
+      setHasRemainingSubmissions(paused === true);
+      refreshRubricData();
+      void queryClient.invalidateQueries({
+        queryKey: trpc.manualGrading.instances.queryKey(),
+      });
+
+      // When grading pauses due to proposals, automatically send a message
+      // so the agent presents the proposed rubric changes for review
+      if (paused) {
+        currentPhaseRef.current = 'edit';
+        void sendMessage({
+          text: 'Grading paused.',
+        });
+      }
+    },
+    [queryClient, trpc.manualGrading.instances, refreshRubricData, sendMessage],
+  );
 
   // Scan messages for startAiGrading tool outputs and register them with
   // the table's server job progress tracker so the standard progress bar appears.
@@ -1438,7 +1474,9 @@ function AssessmentQuestionManualGradingInner({
                   setIsGradingInProgress(true);
                   isGradingInProgressRef.current = true;
                   currentPhaseRef.current = 'edit';
-                  void sendMessage({ text: 'Start AI grading' });
+                  void sendMessage({
+                    text: hasRemainingSubmissions ? 'Continue AI grading' : 'Start AI grading',
+                  });
                 }}
               >
                 {isGradingInProgress ? (
@@ -1453,7 +1491,7 @@ function AssessmentQuestionManualGradingInner({
                 ) : (
                   <>
                     <i className="bi bi-play-fill me-1" />
-                    Start AI grading
+                    {hasRemainingSubmissions ? 'Continue AI grading' : 'Start AI grading'}
                   </>
                 )}
               </button>

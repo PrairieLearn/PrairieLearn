@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 
-import { createOpenAI } from '@ai-sdk/openai';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import {
   type LanguageModel,
   type ModelMessage,
@@ -22,7 +22,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
-import { resumeWorkflow } from '@prairielearn/workflows';
+import { getWorkflowRun, resumeWorkflow } from '@prairielearn/workflows';
 import { IdSchema } from '@prairielearn/zod';
 
 import { logResponseUsage } from '../../../lib/ai-util.js';
@@ -67,20 +67,19 @@ import type { AIGradingLog, AIGradingLogger } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const AGENTIC_AI_GRADING_MODEL: AiGradingModelId = 'gpt-5.4';
+const AGENTIC_AI_GRADING_MODEL: AiGradingModelId = 'gemini-3-flash-preview';
 
 // ---------------------------------------------------------------------------
 // Model
 // ---------------------------------------------------------------------------
 
 function getAgenticGradingModel(): { model: LanguageModel; modelId: AiGradingModelId } {
-  assert(config.aiGradingOpenAiApiKey, 'AI grading OpenAI API key is not configured');
-  const openai = createOpenAI({
-    apiKey: config.aiGradingOpenAiApiKey,
-    organization: config.aiGradingOpenAiOrganization ?? undefined,
+  assert(config.aiGradingGoogleApiKey, 'AI grading Google API key is not configured');
+  const google = createGoogleGenerativeAI({
+    apiKey: config.aiGradingGoogleApiKey,
   });
   const modelId = AGENTIC_AI_GRADING_MODEL;
-  return { model: openai(modelId), modelId };
+  return { model: google(modelId), modelId };
 }
 
 // ---------------------------------------------------------------------------
@@ -342,7 +341,7 @@ const AI_GRADING_TOOLS = {
   }),
   startAiGrading: tool({
     description:
-      'Start AI grading of student submissions using the current rubric. This triggers the grading workflow.',
+      'Start or continue AI grading of student submissions using the current rubric. If grading was previously paused due to a rubric change proposal, this will resume from where it left off.',
     inputSchema: z.object({}),
     outputSchema: z.string(),
   }),
@@ -393,7 +392,8 @@ const RUBRIC_EDITING_AGENT_SYSTEM_PROMPT = [
   'When referring to rubric items, use the rubric_item_id (database ID) from getRubric, not display indices.',
   'Users may refer to items by their display number (1-based), so map those to the correct rubric_item_id.',
   'If the user asks to revert, their message will contain a JSON snapshot. Call the revertRubric tool with that snapshot string exactly as provided.',
-  'If the user asks to start AI grading, call the startAiGrading tool.',
+  'If the user asks to start or continue AI grading, call the startAiGrading tool. It automatically resumes from where it left off if grading was paused.',
+  'When AI grading pauses due to rubric change proposals, you will receive the proposals in the conversation context. Present them clearly and concisely to the instructor. Do NOT make any rubric changes until the instructor explicitly accepts or asks for modifications. Do NOT reference specific numeric answers, variable values, or other randomized content from student submissions — describe patterns and approaches generically. End by asking the instructor if they want to accept, reject, or modify the proposed changes.',
   'IMPORTANT: After making changes, check the point_validation in the getRubric response. If there are errors, fix them immediately by adjusting items or settings.',
   'You may temporarily go outside valid point ranges during multi-step edits, but you must correct any validation errors before finishing.',
   'Rubric items are binary: full credit or no credit. Account for nuances by creating separate items.',
@@ -1291,15 +1291,34 @@ function buildRubricToolsWithExecute({
     startAiGrading: tool({
       ...AI_GRADING_TOOLS.startAiGrading,
       execute: async () => {
-        job.info('Tool: startAiGrading — starting agentic grading');
+        // Check if we're resuming from a previous pause
+        let resumeIndex = 0;
+        if (workflowRunId) {
+          const workflowRun = await getWorkflowRun(workflowRunId);
+          const state = workflowRun.state;
+          if (typeof state.grading_resume_index === 'number') {
+            resumeIndex = state.grading_resume_index;
+          }
+        }
+
+        job.info(
+          resumeIndex > 0
+            ? `Tool: startAiGrading — continuing agentic grading from index ${resumeIndex}`
+            : 'Tool: startAiGrading — starting agentic grading',
+        );
 
         if (workflowRunId) {
-          await resumeWorkflow(workflowRunId, { action: 'start_grading' });
+          await resumeWorkflow(workflowRunId, {
+            action: 'start_grading',
+            grading_proposals: [],
+            grading_resume_index: undefined,
+          });
         }
 
         const jobSequenceId = await startAgenticGrading({
           context,
           workflowRunId,
+          startIndex: resumeIndex,
         });
 
         const jobSequenceToken = generateJobSequenceToken(jobSequenceId);
@@ -1308,7 +1327,10 @@ function buildRubricToolsWithExecute({
           status: 'grading_started',
           job_sequence_id: jobSequenceId,
           job_sequence_token: jobSequenceToken,
-          message: 'AI grading started. Progress is shown below.',
+          message:
+            resumeIndex > 0
+              ? `AI grading resumed from submission ${resumeIndex + 1}. Progress is shown below.`
+              : 'AI grading started. Progress is shown below.',
         });
       },
     }),
@@ -1322,17 +1344,23 @@ function buildRubricToolsWithExecute({
 const AGENTIC_GRADING_SYSTEM_PROMPT = [
   'You are a lead teaching assistant for a course.',
   'You will be shown a student submission and the current grading rubric.',
+  '',
   'You have two options:',
-  '1. GRADE: If the rubric adequately covers this submission, grade it by selecting which rubric items apply.',
+  '1. GRADE: If you have no suggested changes, grade this submission by marking which rubric items apply.',
   '2. PROPOSE_RUBRIC_CHANGES: If you notice the rubric is missing important criteria, has ambiguous items, or needs modification based on this submission, propose specific changes.',
-  'Your primary goal is NOT just to grade, but to ensure the rubric is robust, clear, comprehensive, and allows for consistent grading by other TAs.',
-  'The current rubric is a draft. It may be underspecified.',
+  '',
   'Questions students received were programmatically generated and randomized. Avoid hardcoding randomized quantities and final solutions.',
   'This rubric should work for any random variant of the question.',
-  'Rubric items cannot have partial credit: they are either fully awarded or not awarded at all.',
-  'When proposing changes, describe them concisely so the instructor can make a quick decision.',
+  'Rubric items cannot have partial credit: they are either fully awarded or not awarded at all. Account for this in your rubric design.',
+  '',
+  'Your primary goal is NOT just to grade, but to ensure the rubric is robust, clear, comprehensive, and allows for consistent grading by other TAs.',
+  'The current rubric is a draft. It may be underspecified.',
+  "Make your decision based on whether the rubric adequately covers this submission's content.",
+  '',
+  'When proposing changes, provide a concise explanation of why the change is needed so the instructor can make a quick decision.',
+  'You may suggest additions (new items), edits (modifications to existing items), or deletions.',
   'IMPORTANT: All text MUST be written entirely in English.',
-].join(' ');
+].join('\n');
 
 const PARALLEL_AGENTIC_GRADING_LIMIT = 20;
 
@@ -1638,9 +1666,11 @@ async function gradeOneSubmissionWithDecision({
 export async function startAgenticGrading({
   context,
   workflowRunId,
+  startIndex = 0,
 }: {
   context: AiGradingAgentContext;
   workflowRunId: string | null;
+  startIndex?: number;
 }): Promise<string> {
   if (!context.assessmentQuestion.max_manual_points) {
     throw new Error(
@@ -1665,9 +1695,10 @@ export async function startAgenticGrading({
     assessment_question_id: context.assessmentQuestion.id,
   });
 
+  // Mark items before startIndex as already complete
   let itemStatuses = instanceQuestions.reduce(
-    (acc, iq) => {
-      acc[iq.id] = JobItemStatus.queued;
+    (acc, iq, idx) => {
+      acc[iq.id] = idx < startIndex ? JobItemStatus.complete : JobItemStatus.queued;
       return acc;
     },
     {} as Record<string, JobItemStatus>,
@@ -1675,7 +1706,7 @@ export async function startAgenticGrading({
 
   await emitServerJobProgressUpdate({
     job_sequence_id: serverJob.jobSequenceId,
-    num_complete: 0,
+    num_complete: startIndex,
     num_failed: 0,
     num_total: instanceQuestions.length,
     item_statuses: itemStatuses,
@@ -1708,14 +1739,17 @@ export async function startAgenticGrading({
     }
 
     job.info(`Using model ${modelId} for agentic AI grading.`);
-    job.info(`Found ${instanceQuestions.length} submissions to grade!`);
+    job.info(
+      `Found ${instanceQuestions.length} submissions to grade${startIndex > 0 ? ` (resuming from index ${startIndex})` : ''}!`,
+    );
 
-    let numComplete = 0;
+    let numComplete = startIndex;
     let numFailed = 0;
     let batchSize = 1;
     let consecutiveNoProposals = 0;
-    let batchStart = 0;
+    let batchStart = startIndex;
     const allProposals: string[] = [];
+    let pausedAtIndex: number | null = null;
 
     while (batchStart < instanceQuestions.length) {
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- mutated in async callback
@@ -1819,6 +1853,12 @@ export async function startAgenticGrading({
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- mutated in async callback
       if (batchHadProposals) {
         consecutiveNoProposals = 0;
+        // Pause grading when a proposal occurs so the instructor can review
+        pausedAtIndex = batchEnd;
+        job.info(
+          `Proposal detected — pausing grading at submission ${batchEnd}/${instanceQuestions.length} for instructor review.`,
+        );
+        break;
       } else {
         consecutiveNoProposals++;
         if (consecutiveNoProposals >= 3 && batchSize < PARALLEL_AGENTIC_GRADING_LIMIT) {
@@ -1843,9 +1883,32 @@ export async function startAgenticGrading({
       }
     }
 
+    // Emit final progress
+    const isPaused = pausedAtIndex != null;
+    const progressMessage = isPaused
+      ? `Paused: ${allProposals.length} proposal(s) need review. ${instanceQuestions.length - (pausedAtIndex ?? 0)} submissions remaining.`
+      : allProposals.length > 0
+        ? `${allProposals.length} submission(s) flagged for rubric review.`
+        : undefined;
+    await emitServerJobProgressUpdate({
+      job_sequence_id: serverJob.jobSequenceId,
+      num_complete: isPaused ? numComplete : instanceQuestions.length,
+      num_failed: numFailed,
+      num_total: instanceQuestions.length,
+      item_statuses: itemStatuses,
+      job_failure_message:
+        numFailed > 0
+          ? 'Errors occurred while AI grading, see output for details'
+          : progressMessage,
+    });
+
     // Transition workflow back to rubric editing
     if (workflowRunId) {
-      await resumeWorkflow(workflowRunId, { action: 'grading_complete' });
+      await resumeWorkflow(workflowRunId, {
+        action: 'grading_complete',
+        proposals: allProposals,
+        grading_resume_index: pausedAtIndex,
+      });
     }
   });
 
@@ -2063,6 +2126,37 @@ export async function editRubric(
       role: 'user',
       content: '[END OF PAST CONVERSATION HISTORY]',
     });
+  }
+
+  // Inject pending rubric change proposals from the workflow state
+  if (workflowRunId) {
+    const workflowRun = await getWorkflowRun(workflowRunId);
+    const state = workflowRun.state;
+    const proposals = state.grading_proposals as string[] | undefined;
+    if (proposals && proposals.length > 0) {
+      const resumeIndex = state.grading_resume_index as number | undefined;
+      messages.push({
+        role: 'user',
+        content: [
+          '[SYSTEM: AI grading was paused because the grader proposed rubric changes for the following submissions.',
+          resumeIndex != null
+            ? `Grading paused at submission ${resumeIndex}. There are remaining submissions to grade.`
+            : '',
+          '',
+          'Proposals from the grader:',
+          ...proposals.map((p, i) => `--- Proposal ${i + 1} ---\n${p}`),
+          '',
+          'INSTRUCTIONS: Present these proposals to the instructor in a clear, concise summary.',
+          'Explain WHY the grader thinks the rubric should change based on what it saw in submissions.',
+          'Do NOT make any rubric changes yet — wait for the instructor to accept, reject, or give feedback.',
+          'Do NOT reference specific numeric answers, variable values, or other randomized content from submissions.',
+          'Keep your summary to 2-3 sentences per proposal.',
+          'End by asking the instructor if they want to accept, reject, or modify the proposed changes.]',
+        ]
+          .filter(Boolean)
+          .join('\n'),
+      });
+    }
   }
 
   // Add current instruction

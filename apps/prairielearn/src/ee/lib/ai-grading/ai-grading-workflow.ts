@@ -38,10 +38,15 @@ interface AiGradingState {
   submission_index?: number;
   total_submissions?: number;
   graded_count?: number;
+  /** Proposals from agentic grading */
+  grading_proposals?: string[];
+  /** Index to resume grading from after a proposal pause */
+  grading_resume_index?: number;
   /** User input (merged via resumeWorkflow) */
   action?: string;
   message?: string;
   user_suggestion?: string;
+  proposals?: string[];
 }
 
 function getState(context: WorkflowStepContext): AiGradingState {
@@ -207,10 +212,22 @@ async function takeStep(context: WorkflowStepContext): Promise<StepResult> {
       const action = state.action;
 
       if (action === 'grading_complete') {
-        logger.info('AI grading complete, returning to rubric editing');
+        const proposals = (state as AiGradingState & { proposals?: string[] }).proposals;
+        // grading_resume_index is set when grading paused due to proposals
+        const resumeIndex = (state as AiGradingState & { grading_resume_index?: number })
+          .grading_resume_index;
+        logger.info(
+          `AI grading complete${proposals?.length ? ` with ${proposals.length} proposal(s)` : ''}${resumeIndex != null ? ` (paused at index ${resumeIndex})` : ''}, returning to rubric editing`,
+        );
         return result(
           'rubric_setup',
-          { ...state, step: 'rubric_editing', action: undefined },
+          {
+            ...state,
+            step: 'rubric_editing',
+            action: undefined,
+            grading_proposals: proposals ?? [],
+            grading_resume_index: resumeIndex,
+          },
           'waiting_for_input',
         );
       }
