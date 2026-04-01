@@ -31,7 +31,7 @@ RUN make python-deps-core
 #
 # Finally, we copy `packages/bind-mount/` since this package contains native
 # code that will be built during the install process.
-COPY --parents pnpm-lock.yaml pnpm-workspace.yaml package.json apps/*/package.json packages/*/package.json packages/bind-mount/ /PrairieLearn/
+COPY --parents pnpm-lock.yaml pnpm-workspace.yaml package.json apps/*/package.json packages/*/package.json packages/bind-mount/ packages/*/bin/ /PrairieLearn/
 
 # Install Node dependencies.
 #
