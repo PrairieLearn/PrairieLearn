@@ -1,0 +1,452 @@
+import crypto from 'node:crypto';
+
+import { type PoolConfig } from 'pg';
+
+import { logger } from '@prairielearn/logger';
+import { type PoolClient, PostgresPool, loadSqlEquiv } from '@prairielearn/postgres';
+
+import {
+  type StepResult,
+  type WorkflowDefinition,
+  type WorkflowLogger,
+  type WorkflowRun,
+  WorkflowRunSchema,
+  type WorkflowRunStatus,
+} from './workflows.types.js';
+
+const sql = loadSqlEquiv(import.meta.url);
+
+const pool = new PostgresPool();
+
+const registeredWorkflows = new Map<string, WorkflowDefinition<any>>();
+const instanceId = crypto.randomUUID();
+
+let cronInterval: NodeJS.Timeout | null = null;
+
+/**
+ * Initializes the workflow engine by creating a dedicated database connection
+ * pool. The `workflow_runs` table must already exist (created via a migration
+ * in `apps/prairielearn/src/migrations/`). Must be called before any other
+ * workflow functions.
+ *
+ * Uses a separate pool from the application's default pool to avoid deadlocks,
+ * since workflows may hold soft locks for extended periods.
+ *
+ * @param pgConfig - Postgres connection configuration.
+ * @param idleErrorHandler - Called when an idle client emits an error.
+ */
+export async function init(
+  pgConfig: PoolConfig,
+  idleErrorHandler: (error: Error, client: PoolClient) => void,
+): Promise<void> {
+  await pool.initAsync(pgConfig, idleErrorHandler);
+}
+
+/**
+ * Shuts down the workflow engine by stopping the crash-recovery cron loop
+ * (if running) and closing the database connection pool.
+ */
+export async function close(): Promise<void> {
+  await stopCronLoop();
+  await pool.closeAsync();
+}
+
+/**
+ * Registers a workflow definition so the engine knows how to execute it.
+ * Must be called at application startup before any runs of this type are
+ * started or resumed. Each `type` can only be registered once.
+ *
+ * @param definition - The workflow definition including a unique `type` string
+ * and a `takeStep` function that implements the workflow's domain logic.
+ * Throws if a workflow with the same `type` is already registered.
+ */
+export function registerWorkflow<TState extends Record<string, unknown>>(
+  definition: WorkflowDefinition<TState>,
+): void {
+  if (registeredWorkflows.has(definition.type)) {
+    throw new Error(`Workflow type '${definition.type}' is already registered`);
+  }
+  registeredWorkflows.set(definition.type, definition);
+}
+
+/**
+ * Creates a new workflow run and begins executing its step loop asynchronously.
+ * Returns the newly created run immediately (with status `'running'`); the
+ * step loop continues in the background.
+ *
+ * @param type - The registered workflow type identifier.
+ * @param opts - Options for creating the workflow run.
+ * @param opts.initialState - The starting state passed to the first `takeStep` call.
+ * @param opts.context - Opaque domain-specific metadata (e.g. `{ assessment_question_id: 42 }`)
+ * stored alongside the run for querying; the engine never inspects this value.
+ * @param opts.phase - Optional initial phase label for display/debugging.
+ * @returns The persisted workflow run record. Throws if no workflow is registered.
+ */
+export async function startWorkflow<TState extends Record<string, unknown>>(
+  type: string,
+  opts: {
+    initialState: TState;
+    context?: Record<string, unknown>;
+    phase?: string;
+  },
+): Promise<WorkflowRun<TState>> {
+  const definition = registeredWorkflows.get(type);
+  if (!definition) {
+    throw new Error(`No workflow registered for type '${type}'`);
+  }
+
+  const result = await pool.queryRow(
+    sql.insert_run,
+    {
+      type,
+      status: 'running',
+      phase: opts.phase ?? null,
+      state: JSON.stringify(opts.initialState),
+      context: JSON.stringify(opts.context ?? {}),
+    },
+    WorkflowRunSchema,
+  );
+
+  const run = result as WorkflowRun<TState>;
+
+  // Start executing the workflow asynchronously
+  executeWorkflow(run.id, definition).catch((err) => {
+    logger.error(`Failed to execute workflow ${run.id}`, err);
+  });
+
+  return run;
+}
+
+/**
+ * Resumes execution of a workflow that is in `'running'` status but not
+ * currently being executed (e.g. after a server crash). Acquires the soft
+ * lock and re-enters the step loop from the last persisted state.
+ *
+ * Primarily used internally by the crash-recovery cron, but can be called
+ * directly if needed.
+ *
+ * @param runId - The ID of the workflow run to resume. Throws if the run is not
+ * in `'running'` status or no workflow is registered for its type.
+ */
+export async function resumeWorkflow(runId: string): Promise<void> {
+  const run = await getWorkflowRun(runId);
+  if (run.status !== 'running') {
+    throw new Error(
+      `Cannot resume workflow ${runId}: status is '${run.status}', expected 'running'`,
+    );
+  }
+
+  const definition = registeredWorkflows.get(run.type);
+  if (!definition) {
+    throw new Error(`No workflow registered for type '${run.type}'`);
+  }
+
+  await executeWorkflow(runId, definition);
+}
+
+/**
+ * Cancels a workflow run by setting its status to `'canceled'`, clearing any
+ * soft lock, and recording `completed_at`. Has no effect on runs that are
+ * already in a terminal state (`'completed'`, `'error'`, `'canceled'`).
+ *
+ * If the workflow is currently being executed by another server, the running
+ * loop will observe the status change on its next iteration and exit.
+ *
+ * @param runId - The ID of the workflow run to cancel. Throws if the run is
+ * not found or is already in a terminal state.
+ */
+export async function cancelWorkflow(runId: string): Promise<void> {
+  const result = await pool.queryAsync(sql.cancel_run, { id: runId });
+  if (result.rowCount === 0) {
+    throw new Error(`Cannot cancel workflow ${runId}: not found or already in a terminal state`);
+  }
+}
+
+/**
+ * Provides human-in-the-loop input to a paused workflow. Merges `stateUpdate`
+ * into the run's existing state (shallow JSON merge via `||` in Postgres),
+ * transitions the status from `'waiting_for_input'` back to `'running'`, and
+ * resumes the step loop asynchronously.
+ *
+ * @param runId - The ID of the workflow run to continue.
+ * @param stateUpdate - Partial state to merge into the existing run state.
+ * Typically contains user-provided input that the next `takeStep` call
+ * will read (e.g. `{ approved_rubric: true }`). Throws if the run is not
+ * found or not in `'waiting_for_input'` status.
+ */
+export async function continueWorkflow<TState extends Record<string, unknown>>(
+  runId: string,
+  stateUpdate: Partial<TState>,
+): Promise<void> {
+  const result = await pool.queryAsync(sql.continue_run, {
+    id: runId,
+    state_update: JSON.stringify(stateUpdate),
+  });
+
+  if (result.rowCount === 0) {
+    throw new Error(
+      `Cannot continue workflow ${runId}: not found or not in 'waiting_for_input' status`,
+    );
+  }
+
+  const run = await getWorkflowRun(runId);
+  const definition = registeredWorkflows.get(run.type);
+  if (!definition) {
+    throw new Error(`No workflow registered for type '${run.type}'`);
+  }
+
+  // Resume execution asynchronously
+  executeWorkflow(runId, definition).catch((err) => {
+    logger.error(`Failed to resume workflow ${runId} after continue`, err);
+  });
+}
+
+/**
+ * Fetches a workflow run by its ID.
+ *
+ * @param runId - The ID of the workflow run.
+ * @returns The full workflow run record with state cast to `TState`. Throws
+ * if no run exists with the given ID.
+ */
+export async function getWorkflowRun<TState extends Record<string, unknown>>(
+  runId: string,
+): Promise<WorkflowRun<TState>> {
+  return (await pool.queryRow(
+    sql.select_run_by_id,
+    { id: runId },
+    WorkflowRunSchema,
+  )) as WorkflowRun<TState>;
+}
+
+/**
+ * Finds the most recent active workflow run (status `'running'` or
+ * `'waiting_for_input'`) that matches the given type and whose `context`
+ * contains all key-value pairs in `contextFilter` (uses Postgres `@>`
+ * containment).
+ *
+ * Useful for checking whether a workflow is already in progress for a
+ * particular entity before starting a new one.
+ *
+ * @param type - The registered workflow type identifier.
+ * @param contextFilter - Key-value pairs that must be present in the run's
+ * `context` column (e.g. `{ assessment_question_id: 42 }`).
+ * @returns The matching run, or `null` if none is active.
+ */
+export async function getActiveWorkflowRun<TState extends Record<string, unknown>>(
+  type: string,
+  contextFilter: Record<string, unknown>,
+): Promise<WorkflowRun<TState> | null> {
+  return (await pool.queryOptionalRow(
+    sql.select_active_run,
+    {
+      type,
+      context_filter: JSON.stringify(contextFilter),
+    },
+    WorkflowRunSchema,
+  )) as WorkflowRun<TState> | null;
+}
+
+async function executeWorkflow<TState extends Record<string, unknown>>(
+  runId: string,
+  definition: WorkflowDefinition<TState>,
+): Promise<void> {
+  // Acquire lock
+  const lockResult = await pool.queryAsync(sql.acquire_lock, {
+    id: runId,
+    locked_by: instanceId,
+  });
+
+  if (lockResult.rowCount === 0) {
+    logger.info(`Could not acquire lock for workflow ${runId}, skipping`);
+    return;
+  }
+
+  const abortController = new AbortController();
+
+  // Start heartbeat
+  const heartbeatInterval = setInterval(async () => {
+    try {
+      await pool.queryAsync(sql.update_heartbeat, {
+        id: runId,
+        locked_by: instanceId,
+      });
+    } catch (err) {
+      logger.error(`Failed to update heartbeat for workflow ${runId}`, err);
+    }
+  }, 30_000);
+
+  try {
+    // Execute step loop
+
+    while (true) {
+      // Read current run state from DB
+      const currentRun = await getWorkflowRun<TState>(runId);
+
+      if (currentRun.status !== 'running') {
+        break;
+      }
+
+      const workflowLogger = createLogger(runId, instanceId);
+
+      let stepResult: StepResult<TState>;
+      try {
+        stepResult = await definition.takeStep({
+          run: currentRun,
+          logger: workflowLogger,
+          signal: abortController.signal,
+        });
+      } catch (err) {
+        // Step threw an error - persist error state
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        await persistStep(runId, instanceId, {
+          state: currentRun.state,
+          status: 'error',
+          error_message: errorMessage,
+        });
+        break;
+      }
+
+      // Map 'continue' to 'running' for DB storage
+      const dbStatus: WorkflowRunStatus =
+        stepResult.status === 'continue' ? 'running' : stepResult.status;
+
+      const updated = await persistStep(runId, instanceId, {
+        state: stepResult.state,
+        status: dbStatus,
+        phase: stepResult.phase,
+        error_message: stepResult.error_message,
+      });
+
+      if (!updated || stepResult.status !== 'continue') {
+        break;
+      }
+    }
+  } finally {
+    // Stop heartbeat and release lock
+    clearInterval(heartbeatInterval);
+    abortController.abort();
+    await pool.queryAsync(sql.release_lock, { id: runId, locked_by: instanceId }).catch((err) => {
+      logger.error(`Failed to release lock for workflow ${runId}`, err);
+    });
+  }
+}
+
+async function persistStep<TState extends Record<string, unknown>>(
+  runId: string,
+  lockedBy: string,
+  result: {
+    state: TState;
+    status: WorkflowRunStatus;
+    phase?: string;
+    error_message?: string;
+  },
+): Promise<boolean> {
+  // Read current output to preserve it
+  const current = await getWorkflowRun(runId);
+  const updateResult = await pool.queryAsync(sql.update_step, {
+    id: runId,
+    locked_by: lockedBy,
+    state: JSON.stringify(result.state),
+    status: result.status,
+    phase: result.phase ?? null,
+    error_message: result.error_message ?? null,
+    output: current.output,
+  });
+  // Returns false if the row was not updated (e.g. run was canceled or lock was lost)
+  return (updateResult.rowCount ?? 0) > 0;
+}
+
+function createLogger(runId: string, lockedBy: string): WorkflowLogger {
+  return {
+    info(msg: string) {
+      const line = `[INFO] ${msg}\n`;
+      logger.info(`Workflow ${runId}: ${msg}`);
+      pool
+        .queryAsync(sql.append_output, { id: runId, locked_by: lockedBy, text: line })
+        .catch((err) => {
+          logger.error(`Failed to append log output for workflow ${runId}`, err);
+        });
+    },
+    error(msg: string) {
+      const line = `[ERROR] ${msg}\n`;
+      logger.error(`Workflow ${runId}: ${msg}`);
+      pool
+        .queryAsync(sql.append_output, { id: runId, locked_by: lockedBy, text: line })
+        .catch((err) => {
+          logger.error(`Failed to append log output for workflow ${runId}`, err);
+        });
+    },
+  };
+}
+
+/**
+ * Starts a periodic background loop that recovers abandoned workflow runs.
+ * On each tick it finds runs that are `'running'` but have either a stale
+ * heartbeat (> 2 minutes old, indicating the executing server crashed) or
+ * no lock at all, and calls {@link resumeWorkflow} on each.
+ *
+ * Should be called once at application startup, after {@link init}.
+ *
+ * @param opts - Options.
+ * @param opts.intervalMs - How often to check for stale runs, in milliseconds
+ * (defaults to 60,000). Throws if the cron loop is already running.
+ */
+export function startCronLoop(opts?: { intervalMs?: number }): void {
+  const intervalMs = opts?.intervalMs ?? 60_000;
+
+  if (cronInterval) {
+    throw new Error('Cron loop is already running');
+  }
+
+  cronInterval = setInterval(async () => {
+    try {
+      await recoverStaleRuns();
+    } catch (err) {
+      logger.error('Failed to recover stale workflow runs', err);
+    }
+  }, intervalMs);
+}
+
+/**
+ * Stops the crash-recovery cron loop started by {@link startCronLoop}.
+ * Safe to call even if the loop is not running (no-op in that case).
+ */
+export async function stopCronLoop(): Promise<void> {
+  if (cronInterval) {
+    clearInterval(cronInterval);
+    cronInterval = null;
+  }
+}
+
+async function recoverStaleRuns(): Promise<void> {
+  // Find runs with stale heartbeats (locked but heartbeat > 2 minutes ago)
+  const staleRuns = await pool.queryRows(sql.select_stale_runs, {}, WorkflowRunSchema);
+
+  for (const run of staleRuns) {
+    logger.info(`Recovering stale workflow run ${run.id} (type: ${run.type})`);
+    try {
+      await resumeWorkflow(run.id);
+    } catch (err) {
+      logger.error(`Failed to recover workflow ${run.id}`, err);
+    }
+  }
+
+  // Also pick up runs that are 'running' but have no lock (e.g., server crashed before locking)
+  const unlockedRuns = await pool.queryRows(
+    sql.select_unlocked_running_runs,
+    {},
+    WorkflowRunSchema,
+  );
+
+  for (const run of unlockedRuns) {
+    const definition = registeredWorkflows.get(run.type);
+    if (!definition) continue;
+
+    logger.info(`Resuming unlocked workflow run ${run.id} (type: ${run.type})`);
+    try {
+      await executeWorkflow(run.id, definition);
+    } catch (err) {
+      logger.error(`Failed to resume unlocked workflow ${run.id}`, err);
+    }
+  }
+}

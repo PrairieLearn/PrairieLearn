@@ -244,8 +244,8 @@ export const AssessmentAccessControlRuleSchema = z.object({
   list_before_release: z.boolean().nullable(),
   number: z.number(),
 
-  // Target type: 'none' for main rule (applies to all), 'enrollment' for individual students, 'student_label' for labels
-  target_type: z.enum(['none', 'enrollment', 'student_label']),
+  // Target type: 'none' for main rule (applies to all), 'student_label' for labels, 'enrollment' for individual students
+  target_type: z.enum(['none', 'student_label', 'enrollment']),
 });
 export type AssessmentAccessControlRule = z.infer<typeof AssessmentAccessControlRuleSchema>;
 
@@ -1718,6 +1718,24 @@ export const ZoneSchema = z.object({
 });
 export type Zone = z.infer<typeof ZoneSchema>;
 
+export const WorkflowRunSchema = z.object({
+  completed_at: DateFromISOString.nullable(),
+  context: z.record(z.unknown()),
+  created_at: DateFromISOString,
+  error_message: z.string().nullable(),
+  heartbeat_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  locked_at: DateFromISOString.nullable(),
+  locked_by: z.string().nullable(),
+  output: z.string(),
+  phase: z.string().nullable(),
+  state: z.record(z.unknown()),
+  status: z.string(),
+  type: z.string(),
+  updated_at: DateFromISOString,
+});
+export type WorkflowRun = z.infer<typeof WorkflowRunSchema>;
+
 // *******************************************************************************
 // Miscellaneous schemas.
 // *******************************************************************************
@@ -1831,6 +1849,7 @@ export const TableNames = [
   'workspace_host_logs',
   'workspace_hosts',
   'workspace_logs',
+  'workflow_runs',
   'workspaces',
   'zones',
 ] as const;
