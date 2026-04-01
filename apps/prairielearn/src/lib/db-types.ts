@@ -245,7 +245,7 @@ export const AssessmentAccessControlRuleSchema = z.object({
   number: z.number(),
 
   // Target type: 'none' for main rule (applies to all), 'enrollment' for individual students, 'student_label' for labels
-  target_type: z.enum(['none', 'enrollment', 'student_label']),
+  target_type: z.enum(['none', 'student_label', 'enrollment']),
 });
 export type AssessmentAccessControlRule = z.infer<typeof AssessmentAccessControlRuleSchema>;
 
