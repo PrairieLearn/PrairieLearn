@@ -31,7 +31,7 @@ const baseOverride: OverrideData = {
   trackingId: 'o-base',
   appliesTo: {
     targetType: 'enrollment',
-    enrollments: [{ uid: 'a@b.com', name: 'A' }],
+    enrollments: [{ enrollmentId: 'e-0', uid: 'a@b.com', name: 'A' }],
     studentLabels: [],
   },
   overriddenFields: [],
@@ -161,7 +161,7 @@ describe('formDataToJson', () => {
           trackingId: 'override-1',
           appliesTo: {
             targetType: 'enrollment',
-            enrollments: [{ uid: 'user@example.com', name: 'Test User' }],
+            enrollments: [{ enrollmentId: 'e-2', uid: 'user@example.com', name: 'Test User' }],
             studentLabels: [],
           },
           overriddenFields: [

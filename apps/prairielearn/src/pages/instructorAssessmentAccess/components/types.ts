@@ -58,7 +58,7 @@ interface PrairieTestExam {
 }
 
 export interface EnrollmentTarget {
-  enrollmentId?: string;
+  enrollmentId: string;
   uid: string;
   name: string | null;
 }
@@ -403,11 +403,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
 
   if (rule.appliesTo.targetType === 'enrollment') {
     output.ruleType = 'enrollment';
-    output.enrollments = rule.appliesTo.enrollments.map((e) => ({
-      enrollmentId: e.enrollmentId ?? '',
-      uid: e.uid,
-      name: e.name,
-    }));
+    output.enrollments = rule.appliesTo.enrollments;
   }
 
   return output;

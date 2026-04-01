@@ -57,12 +57,12 @@ export function StudentSearchInput({
 
   const handleAddValidated = () => {
     const validStudents = validatedUids
-      .filter((r) => r.id && r.enrolled && !excludedUids.has(r.uid))
-      .map((r) => ({
-        enrollmentId: r.id ?? undefined,
-        uid: r.uid,
-        name: r.name,
-      }));
+      .map((r) => {
+        if (!r.id || !r.enrolled || excludedUids.has(r.uid)) return null;
+        return { enrollmentId: r.id, uid: r.uid, name: r.name };
+      })
+      .filter((s) => !!s);
+
     if (validStudents.length > 0) {
       onSelect(validStudents);
       setUidInput('');
