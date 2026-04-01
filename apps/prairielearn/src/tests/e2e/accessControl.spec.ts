@@ -86,7 +86,7 @@ test.describe('Access control UI', () => {
     });
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
-    await expect(page.getByRole('heading', { name: 'Main rule' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Defaults' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Overrides' })).toBeVisible();
     await expect(page.getByRole('button', { name: /Add override/i })).toBeVisible();
 
@@ -170,7 +170,7 @@ test.describe('Access control UI', () => {
     // Confirm deletion in modal
     const modal = getVisibleModal(page);
     await expect(modal).toBeVisible();
-    await expect(modal.getByText('Delete override rule')).toBeVisible();
+    await expect(modal.getByText('Delete override')).toBeVisible();
     await modal.getByRole('button', { name: 'Delete' }).click();
     await expect(modal).not.toBeVisible();
 

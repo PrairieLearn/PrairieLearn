@@ -11,10 +11,10 @@ jobs:
   welcome:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/first-interaction@v1
+      - uses: actions/first-interaction@v3
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          pr-message: |
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          pr_message: |
             Thanks for your first pull request to PrairieLearn! Here are a few things to keep in mind:
 
             - Make sure you've read the [contributing guide](https://github.com/PrairieLearn/PrairieLearn/blob/master/CONTRIBUTING.md)
