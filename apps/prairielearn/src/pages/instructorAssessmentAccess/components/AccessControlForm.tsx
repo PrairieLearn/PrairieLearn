@@ -131,7 +131,7 @@ export function AccessControlForm({
 
   const addOverride = () => {
     const newOverride = createDefaultOverrideFormData();
-    // Individual overrides are inserted before student-label overrides
+    // Enrollment overrides are inserted before student-label overrides
     const firstLabelIndex = watchedData.overrides.findIndex(
       (o) => o.appliesTo.targetType === 'student_label',
     );
@@ -177,14 +177,14 @@ export function AccessControlForm({
       }
       return `Overrides for ${studentLabels[0].name}, ${studentLabels[1].name}, and ${studentLabels.length - 2} others`;
     } else {
-      const individuals = appliesTo.individuals;
-      if (individuals.length === 0) return `Override ${index + 1}`;
-      const getName = (ind: (typeof individuals)[0]) => ind.name || ind.uid;
-      if (individuals.length === 1) return `Overrides for ${getName(individuals[0])}`;
-      if (individuals.length === 2) {
-        return `Overrides for ${getName(individuals[0])} and ${getName(individuals[1])}`;
+      const enrollments = appliesTo.enrollments;
+      if (enrollments.length === 0) return `Override ${index + 1}`;
+      const getName = (e: (typeof enrollments)[0]) => e.name || e.uid;
+      if (enrollments.length === 1) return `Overrides for ${getName(enrollments[0])}`;
+      if (enrollments.length === 2) {
+        return `Overrides for ${getName(enrollments[0])} and ${getName(enrollments[1])}`;
       }
-      return `Overrides for ${getName(individuals[0])}, ${getName(individuals[1])}, and ${individuals.length - 2} others`;
+      return `Overrides for ${getName(enrollments[0])}, ${getName(enrollments[1])}, and ${enrollments.length - 2} others`;
     }
   };
 
@@ -242,8 +242,8 @@ export function AccessControlForm({
         }
         const override = watchedData.overrides[selectedRule.index];
         const hasNoTargets =
-          (override.appliesTo.targetType === 'individual' &&
-            override.appliesTo.individuals.length === 0) ||
+          (override.appliesTo.targetType === 'enrollment' &&
+            override.appliesTo.enrollments.length === 0) ||
           (override.appliesTo.targetType === 'student_label' &&
             override.appliesTo.studentLabels.length === 0);
         return (

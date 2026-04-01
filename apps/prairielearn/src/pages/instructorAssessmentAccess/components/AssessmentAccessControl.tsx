@@ -42,9 +42,9 @@ function AssessmentAccessControlInner({
     const jsonRules = data.filter((r) => r.ruleType !== 'enrollment');
     const enrollmentRules = data
       .filter((r) => r.ruleType === 'enrollment')
-      .map(({ ruleType: _, individuals, ...ruleJson }) => ({
+      .map(({ ruleType: _, enrollments, ...ruleJson }) => ({
         id: ruleJson.id,
-        enrollmentIds: (individuals ?? []).map((i) => i.enrollmentId),
+        enrollmentIds: (enrollments ?? []).map((e) => e.enrollmentId),
         ruleJson,
       }));
 

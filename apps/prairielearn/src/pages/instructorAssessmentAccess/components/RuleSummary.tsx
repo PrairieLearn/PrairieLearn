@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import { Alert, Button, Card } from 'react-bootstrap';
 
 import { formatDate } from '@prairielearn/formatter';
@@ -32,11 +33,7 @@ interface DateTableRow {
   visibility: string;
 }
 
-export function generateDateTableRows(
-  rule: RuleData,
-  displayTimezone: string,
-  verbosity: SummaryVerbosity = 'compact',
-): DateTableRow[] {
+export function generateDateTableRows(rule: RuleData, displayTimezone: string): DateTableRow[] {
   const rows: DateTableRow[] = [];
 
   // For main rule: check dateControlEnabled flag
@@ -47,26 +44,24 @@ export function generateDateTableRows(
     : DATE_CONTROL_FIELD_NAMES.some((f) => isOverrideFieldActive(rule, f));
 
   if (isDateControlEnabled) {
-    const entries: (DateTableRow & { timestamp: number })[] = [];
-
     const releaseDate = rule.releaseDate;
     const dueDate = rule.dueDate;
     const earlyDeadlines = rule.earlyDeadlines;
     const lateDeadlines = rule.lateDeadlines;
 
+    // Build rows in logical order: release, early deadlines, due date, late deadlines.
     if (releaseDate) {
       const visibilityParts: string[] = ['Assessment opens'];
       if (isMain && rule.listBeforeRelease) {
         visibilityParts.push('(listed before release)');
       }
-      entries.push({
-        date: releaseDate,
-        timestamp: new Date(releaseDate).getTime(),
+      rows.push({
+        date: formatDate(Temporal.PlainDateTime.from(releaseDate), displayTimezone),
         label: 'Release',
         credit: '100%',
         visibility: visibilityParts.join(' '),
       });
-    } else if (releaseDate === null && verbosity === 'verbose') {
+    } else if (releaseDate === null) {
       rows.push({
         date: 'Released immediately',
         label: '',
@@ -77,9 +72,8 @@ export function generateDateTableRows(
 
     earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
       if (deadline.date) {
-        entries.push({
-          date: deadline.date,
-          timestamp: new Date(deadline.date).getTime(),
+        rows.push({
+          date: formatDate(Temporal.PlainDateTime.from(deadline.date), displayTimezone),
           label: `Early ${index + 1}`,
           credit: `${deadline.credit}%`,
           visibility: 'Open',
@@ -88,17 +82,16 @@ export function generateDateTableRows(
     });
 
     if (dueDate) {
-      entries.push({
-        date: dueDate,
-        timestamp: new Date(dueDate).getTime(),
+      rows.push({
+        date: formatDate(Temporal.PlainDateTime.from(dueDate), displayTimezone),
         label: 'Due',
         credit: '100%',
         visibility: 'Due',
       });
-    } else if (dueDate === null && verbosity === 'verbose') {
+    } else if (dueDate === null) {
       rows.push({
         date: 'No due date',
-        label: '',
+        label: 'Due',
         credit: '100%',
         visibility: 'Open',
       });
@@ -106,26 +99,14 @@ export function generateDateTableRows(
 
     lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
       if (deadline.date) {
-        entries.push({
-          date: deadline.date,
-          timestamp: new Date(deadline.date).getTime(),
+        rows.push({
+          date: formatDate(Temporal.PlainDateTime.from(deadline.date), displayTimezone),
           label: `Late ${index + 1}`,
           credit: `${deadline.credit}%`,
           visibility: 'Open',
         });
       }
     });
-
-    entries.sort((a, b) => a.timestamp - b.timestamp);
-
-    for (const entry of entries) {
-      rows.push({
-        date: formatDate(new Date(entry.date), displayTimezone),
-        label: entry.label,
-        credit: entry.credit,
-        visibility: entry.visibility,
-      });
-    }
   }
 
   // afterLastDeadline is shown regardless of dateControlEnabled since it can
@@ -481,7 +462,7 @@ export function RuleSummaryCard({
     : [];
 
   const students =
-    overrideRule?.appliesTo.targetType === 'individual' ? overrideRule.appliesTo.individuals : [];
+    overrideRule?.appliesTo.targetType === 'enrollment' ? overrideRule.appliesTo.enrollments : [];
 
   const studentLabels =
     overrideRule?.appliesTo.targetType === 'student_label'
@@ -583,14 +564,10 @@ export function RuleSummaryCard({
           <div className="mb-2">
             <span className="text-body-secondary">Applies to: </span>
             {students.map((student, idx) => (
-              <span key={student.enrollmentId ?? student.uid}>
-                {student.enrollmentId ? (
-                  <a href={getStudentEnrollmentUrl(courseInstanceId, student.enrollmentId)}>
-                    {student.name ?? student.uid}
-                  </a>
-                ) : (
-                  <span>{student.name ?? student.uid}</span>
-                )}
+              <span key={student.enrollmentId}>
+                <a href={getStudentEnrollmentUrl(courseInstanceId, student.enrollmentId)}>
+                  {student.name ?? student.uid}
+                </a>
                 {idx < students.length - 1 && ', '}
               </span>
             ))}
