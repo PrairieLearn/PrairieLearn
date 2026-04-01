@@ -29,3 +29,6 @@ CREATE INDEX IF NOT EXISTS workflow_runs_type_status_idx ON workflow_runs (type,
 CREATE INDEX IF NOT EXISTS workflow_runs_status_running_idx ON workflow_runs (status, heartbeat_at)
 WHERE
   status = 'running';
+
+-- GIN index for context containment queries used by getActiveWorkflowRun.
+CREATE INDEX IF NOT EXISTS workflow_runs_context_idx ON workflow_runs USING gin (context);

@@ -341,8 +341,6 @@ async function persistStep<TState extends Record<string, unknown>>(
     error_message?: string;
   },
 ): Promise<boolean> {
-  // Read current output to preserve it
-  const current = await getWorkflowRun(runId);
   const updateResult = await pool.queryAsync(sql.update_step, {
     id: runId,
     locked_by: lockedBy,
@@ -350,7 +348,6 @@ async function persistStep<TState extends Record<string, unknown>>(
     status: result.status,
     phase: result.phase ?? null,
     error_message: result.error_message ?? null,
-    output: current.output,
   });
   // Returns false if the row was not updated (e.g. run was canceled or lock was lost)
   return (updateResult.rowCount ?? 0) > 0;

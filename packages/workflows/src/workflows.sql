@@ -77,7 +77,6 @@ SET
   status = $status,
   phase = $phase,
   error_message = $error_message,
-  output = $output,
   updated_at = now(),
   completed_at = CASE
     WHEN $status IN ('completed', 'error', 'canceled') THEN now()
