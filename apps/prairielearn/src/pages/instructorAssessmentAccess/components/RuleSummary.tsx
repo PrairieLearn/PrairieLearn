@@ -421,14 +421,10 @@ export function RuleSummaryCard({
           <div className="mb-2">
             <span className="text-body-secondary">Applies to: </span>
             {students.map((student, idx) => (
-              <span key={student.enrollmentId ?? student.uid}>
-                {student.enrollmentId ? (
-                  <a href={getStudentEnrollmentUrl(courseInstanceId, student.enrollmentId)}>
-                    {student.name ?? student.uid}
-                  </a>
-                ) : (
-                  <span>{student.name ?? student.uid}</span>
-                )}
+              <span key={student.enrollmentId}>
+                <a href={getStudentEnrollmentUrl(courseInstanceId, student.enrollmentId)}>
+                  {student.name ?? student.uid}
+                </a>
                 {idx < students.length - 1 && ', '}
               </span>
             ))}
