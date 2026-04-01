@@ -26,7 +26,7 @@ updates:
     ignore:
       # See note in welcome.yml for more details on this.
       - dependency-name: 'actions/first-interaction'
-        versions: ['*']
+        versions: ['>=2']
     groups:
       github-actions:
         patterns:
