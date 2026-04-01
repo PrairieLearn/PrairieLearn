@@ -70,26 +70,25 @@ function getTitle(modalState: AiGradingModelSelectionModalState): string {
  *   total = ceil(raw_cost * (1 + infrastructure_fee_percent / 100) * 1000)
  *
  * Where:
- * - input_tokens are from local tiktoken or provider-specific API counts
+ * - input_tokens are per-provider estimates from local tiktoken + image formulas
  * - estimated_output_tokens is derived from the expected JSON output structure
  * - estimated_reasoning_tokens = input_tokens * 1.0
  * - Result is in milli-dollars (1/1000th of a dollar)
  */
 function estimateTotalCostForModel(
-  modelId: string,
+  modelId: AiGradingModelId,
   data: {
-    avg_input_tokens: number;
+    avg_input_tokens: Partial<Record<EnumAiGradingProvider, number>>;
     estimated_output_tokens: number;
-    estimated_reasoning_tokens: number;
+    estimated_reasoning_tokens: Partial<Record<EnumAiGradingProvider, number>>;
     model_pricing: Record<string, { input: number; output: number }>;
     infrastructure_fee_percent: number;
   },
-  providerOverride: { avg_input_tokens: number; estimated_reasoning_tokens: number } | null,
   numToGrade: number,
 ): number | null {
-  const inputTokens = providerOverride?.avg_input_tokens ?? data.avg_input_tokens;
-  const reasoningTokens =
-    providerOverride?.estimated_reasoning_tokens ?? data.estimated_reasoning_tokens;
+  const provider = AI_GRADING_MODEL_PROVIDERS[modelId];
+  const inputTokens = data.avg_input_tokens[provider] ?? 0;
+  const reasoningTokens = data.estimated_reasoning_tokens[provider] ?? 0;
   if (inputTokens <= 0) return null;
   const pricing = data.model_pricing[modelId];
   const costPerSubmissionDollars =
@@ -129,12 +128,10 @@ function ProviderSelector({
   activeProvider,
   availableProviders,
   onSelect,
-  onHover,
 }: {
   activeProvider: EnumAiGradingProvider;
   availableProviders: EnumAiGradingProvider[];
   onSelect: (provider: EnumAiGradingProvider) => void;
-  onHover: (provider: EnumAiGradingProvider) => void;
 }) {
   const providers = Object.keys(AI_GRADING_PROVIDER_DISPLAY_NAMES) as EnumAiGradingProvider[];
 
@@ -146,16 +143,12 @@ function ProviderSelector({
           const isActive = activeProvider === provider;
           const isAvailable = availableProviders.includes(provider);
           const providerOption = (
-            // eslint-disable-next-line jsx-a11y-x/no-noninteractive-element-interactions -- label wraps a radio input
             <label
               className={clsx('border rounded-3 px-3 py-2 h-100 d-block mb-0', {
                 'border-primary bg-primary bg-opacity-10': isActive,
                 'opacity-50': !isAvailable,
               })}
               style={{ cursor: isAvailable ? 'pointer' : 'default' }}
-              onMouseEnter={() => {
-                if (isAvailable) onHover(provider);
-              }}
             >
               <input
                 type="radio"
@@ -200,7 +193,6 @@ function ModelSelector({
   selectedModel,
   availableProviders,
   data,
-  providerTokenOverrides,
   numToGrade,
   onSelect,
 }: {
@@ -208,16 +200,13 @@ function ModelSelector({
   selectedModel: AiGradingModelId;
   availableProviders: EnumAiGradingProvider[];
   data: {
-    avg_input_tokens: number;
+    avg_input_tokens: Partial<Record<EnumAiGradingProvider, number>>;
     estimated_output_tokens: number;
-    estimated_reasoning_tokens: number;
+    estimated_reasoning_tokens: Partial<Record<EnumAiGradingProvider, number>>;
     model_pricing: Record<string, { input: number; output: number }>;
     infrastructure_fee_percent: number;
     using_custom_api_keys: boolean;
   } | null;
-  providerTokenOverrides: Partial<
-    Record<EnumAiGradingProvider, { avg_input_tokens: number; estimated_reasoning_tokens: number }>
-  >;
   numToGrade: number;
   onSelect: (modelId: AiGradingModelId) => void;
 }) {
@@ -235,10 +224,8 @@ function ModelSelector({
         {providerModels.map((model) => {
           const isSelected = selectedModel === model.modelId;
           const isAvailable = availableProviders.includes(model.provider);
-          const provider = AI_GRADING_MODEL_PROVIDERS[model.modelId];
-          const override = providerTokenOverrides[provider] ?? null;
           const costMilliDollars = data
-            ? estimateTotalCostForModel(model.modelId, data, override, numToGrade)
+            ? estimateTotalCostForModel(model.modelId, data, numToGrade)
             : null;
 
           return (
@@ -403,12 +390,6 @@ export function AiGradingModelSelectionModal({
     AI_GRADING_MODELS.find((m) => m.modelId === defaultModel)?.provider ?? 'openai';
   const [activeProvider, setActiveProvider] = useState<EnumAiGradingProvider>(defaultProvider);
 
-  // Track which providers the user has shown intent to use (hover or select).
-  // The lazy token count query is only enabled for these providers.
-  const [requestedProviders, setRequestedProviders] = useState<Set<EnumAiGradingProvider>>(
-    () => new Set([defaultProvider]),
-  );
-
   const trpc = useTRPC();
   const selection = modalState ? getSelection(modalState) : 'all';
 
@@ -416,53 +397,6 @@ export function AiGradingModelSelectionModal({
     ...trpc.manualGrading.getAiGradingModalData.queryOptions({ selection }),
     enabled: modalState != null,
   });
-
-  // Lazy provider-specific token count queries — one per requested provider.
-  const providerTokenOverrides: Partial<
-    Record<EnumAiGradingProvider, { avg_input_tokens: number; estimated_reasoning_tokens: number }>
-  > = {};
-
-  const openaiQuery = useQuery({
-    ...trpc.manualGrading.getProviderTokenCount.queryOptions({
-      selection,
-      provider: 'openai',
-    }),
-    enabled: modalState != null && requestedProviders.has('openai'),
-  });
-  if (openaiQuery.data) providerTokenOverrides.openai = openaiQuery.data;
-
-  const googleQuery = useQuery({
-    ...trpc.manualGrading.getProviderTokenCount.queryOptions({
-      selection,
-      provider: 'google',
-    }),
-    enabled: modalState != null && requestedProviders.has('google'),
-  });
-  if (googleQuery.data) providerTokenOverrides.google = googleQuery.data;
-
-  const anthropicQuery = useQuery({
-    ...trpc.manualGrading.getProviderTokenCount.queryOptions({
-      selection,
-      provider: 'anthropic',
-    }),
-    enabled: modalState != null && requestedProviders.has('anthropic'),
-  });
-  if (anthropicQuery.data) providerTokenOverrides.anthropic = anthropicQuery.data;
-
-  const handleProviderIntent = useCallback((provider: EnumAiGradingProvider) => {
-    setRequestedProviders((prev) => {
-      if (prev.has(provider)) return prev;
-      return new Set([...prev, provider]);
-    });
-  }, []);
-
-  const handleProviderSelect = useCallback(
-    (provider: EnumAiGradingProvider) => {
-      handleProviderIntent(provider);
-      setActiveProvider(provider);
-    },
-    [handleProviderIntent],
-  );
 
   const handleClose = useCallback(() => {
     setSelectedModel(defaultModel);
@@ -495,11 +429,8 @@ export function AiGradingModelSelectionModal({
   const data = modalDataQuery.data;
   const numToGrade = data?.num_to_grade ?? modalState?.numToGrade ?? 0;
 
-  const selectedProvider = AI_GRADING_MODEL_PROVIDERS[selectedModel];
-  const selectedOverride = providerTokenOverrides[selectedProvider] ?? null;
-
   const selectedCostMilliDollars = data
-    ? estimateTotalCostForModel(selectedModel, data, selectedOverride, numToGrade)
+    ? estimateTotalCostForModel(selectedModel, data, numToGrade)
     : null;
 
   const projectedBalance =
@@ -536,8 +467,7 @@ export function AiGradingModelSelectionModal({
           <ProviderSelector
             activeProvider={activeProvider}
             availableProviders={availableProviders}
-            onSelect={handleProviderSelect}
-            onHover={handleProviderIntent}
+            onSelect={setActiveProvider}
           />
 
           <ModelSelector
@@ -556,7 +486,6 @@ export function AiGradingModelSelectionModal({
                   }
                 : null
             }
-            providerTokenOverrides={providerTokenOverrides}
             numToGrade={numToGrade}
             onSelect={setSelectedModel}
           />

@@ -3,10 +3,7 @@ import { z } from 'zod';
 
 import { run } from '@prairielearn/run';
 
-import {
-  countTokensForProvider,
-  estimateAiGradingCost,
-} from '../../ee/lib/ai-grading/ai-grading-cost-estimation.js';
+import { estimateAiGradingCost } from '../../ee/lib/ai-grading/ai-grading-cost-estimation.js';
 import {
   AI_GRADING_MODELS,
   AI_GRADING_MODEL_IDS,
@@ -144,9 +141,9 @@ const getAiGradingModalDataQuery = t.procedure
   .output(
     z.object({
       num_to_grade: z.number(),
-      avg_input_tokens: z.number(),
+      avg_input_tokens: z.record(z.enum(['openai', 'google', 'anthropic']), z.number()),
       estimated_output_tokens: z.number(),
-      estimated_reasoning_tokens: z.number(),
+      estimated_reasoning_tokens: z.record(z.enum(['openai', 'google', 'anthropic']), z.number()),
       credit_pool: z
         .object({
           credit_transferable_milli_dollars: z.number(),
@@ -192,39 +189,6 @@ const getAiGradingModalDataQuery = t.procedure
       infrastructure_fee_percent: config.aiGradingInfrastructureFeePercent,
       using_custom_api_keys,
     };
-  });
-
-const getProviderTokenCountQuery = t.procedure
-  .use(requireCourseInstancePermissionEdit)
-  .use(requireAiGradingFeature)
-  .input(
-    z.object({
-      selection: z.union([z.literal('all'), z.literal('human_graded'), z.string().array()]),
-      provider: z.enum(['openai', 'google', 'anthropic']),
-    }),
-  )
-  .output(
-    z.object({
-      avg_input_tokens: z.number(),
-      estimated_reasoning_tokens: z.number(),
-    }),
-  )
-  .query(async (opts) => {
-    const mode = Array.isArray(opts.input.selection) ? 'selected' : opts.input.selection;
-    const selected_instance_question_ids = Array.isArray(opts.input.selection)
-      ? opts.input.selection
-      : undefined;
-
-    return await countTokensForProvider({
-      assessment_question: opts.ctx.assessment_question,
-      question: opts.ctx.question,
-      course: opts.ctx.course,
-      course_instance: opts.ctx.course_instance,
-      urlPrefix: opts.ctx.urlPrefix,
-      mode,
-      selected_instance_question_ids,
-      provider: opts.input.provider,
-    });
   });
 
 const aiGradeInstanceQuestionsMutation = t.procedure
@@ -332,7 +296,6 @@ export const manualGradingRouter = t.router({
   deleteAiInstanceQuestionGroupings: deleteAiInstanceQuestionGroupingsMutation,
   aiGroupInstanceQuestions: aiGroupInstanceQuestionsMutation,
   getAiGradingModalData: getAiGradingModalDataQuery,
-  getProviderTokenCount: getProviderTokenCountQuery,
   aiGradeInstanceQuestions: aiGradeInstanceQuestionsMutation,
   setAssignedGrader: setAssignedGraderMutation,
   setRequiresManualGrading: setRequiresManualGradingMutation,

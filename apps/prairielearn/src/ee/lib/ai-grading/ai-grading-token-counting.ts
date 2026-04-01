@@ -1,12 +1,17 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { ModelMessage } from 'ai';
-import { encodingForModel } from 'js-tiktoken';
+import { type TiktokenEncoding, encodingForModel } from 'js-tiktoken';
 import sharp from 'sharp';
 
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 
-// --- OpenAI image token constants (from OpenAI vision pricing docs, detail: 'high') ---
+// ---------------------------------------------------------------------------
+// OpenAI image token constants
+// Source: https://platform.openai.com/docs/guides/vision#calculating-costs
+// Formula (detail: 'high'):
+//   1. Scale so longest side <= 2048 px.
+//   2. Scale so shortest side <= 768 px.
+//   3. Tile into 512×512 blocks; tokens = 170 * tiles + 85.
+// ---------------------------------------------------------------------------
 
 /** Maximum pixels on the longest side before scaling. */
 const OPENAI_MAX_LONG_SIDE = 2048;
@@ -14,22 +19,52 @@ const OPENAI_MAX_LONG_SIDE = 2048;
 const OPENAI_MAX_SHORT_SIDE = 768;
 /** Tile size in pixels for the token grid. */
 const OPENAI_TILE_SIZE = 512;
-/** Tokens consumed per 512x512 tile. */
+/** Tokens consumed per 512×512 tile. */
 const OPENAI_TOKENS_PER_TILE = 170;
 /** Fixed base token cost added to every image. */
 const OPENAI_IMAGE_BASE_TOKENS = 85;
 
-/** Fallback character-to-token ratio used when a provider API is unavailable. */
+// ---------------------------------------------------------------------------
+// Google image token constant
+// Source: https://ai.google.dev/gemini-api/docs/tokens#image-tokens
+// All images are charged a flat 258 tokens regardless of resolution.
+// ---------------------------------------------------------------------------
+
+const GOOGLE_TOKENS_PER_IMAGE = 258;
+
+// ---------------------------------------------------------------------------
+// Anthropic image token constants
+// Source: https://docs.anthropic.com/en/docs/build-with-claude/vision#image-costs
+// Formula: scale so no side exceeds 1568 px, then tokens = ceil(width * height / 750).
+// ---------------------------------------------------------------------------
+
+const ANTHROPIC_MAX_IMAGE_SIDE = 1568;
+const ANTHROPIC_TOKENS_DIVISOR = 750;
+
+// ---------------------------------------------------------------------------
+// Tiktoken encoding mapping per provider
+// We use different tiktoken encodings to better approximate each provider's
+// native tokenizer.
+//
+// - OpenAI: o200k_base is the native encoding for GPT-4o family.
+// - Google: SentencePiece with ~256k vocab; o200k_base is the closest match.
+// - Anthropic: BPE with ~100k vocab; cl100k_base (GPT-4/3.5) is closer.
+// ---------------------------------------------------------------------------
+
+const PROVIDER_TIKTOKEN_ENCODING: Record<EnumAiGradingProvider, TiktokenEncoding> = {
+  openai: 'o200k_base',
+  google: 'o200k_base',
+  anthropic: 'cl100k_base',
+};
+
+/** Fallback character-to-token ratio used when tiktoken fails. */
 const FALLBACK_CHARS_PER_TOKEN = 3.04;
 /** Fallback per-image token estimate when dimensions cannot be determined. */
 const FALLBACK_TOKENS_PER_IMAGE = 1000;
 
 /**
  * Computes the OpenAI token cost for a single image based on its pixel dimensions.
- * Implements the official OpenAI vision pricing formula for `detail: 'high'`:
- *   1. Scale so the longest side fits within 2048 px.
- *   2. Scale so the shortest side fits within 768 px.
- *   3. Tile into 512×512 blocks; each tile costs 170 tokens plus a base of 85.
+ * Source: https://platform.openai.com/docs/guides/vision#calculating-costs
  */
 export function computeOpenAiImageTokens(width: number, height: number): number {
   // Step 1: Scale so longest side <= 2048
@@ -51,45 +86,40 @@ export function computeOpenAiImageTokens(width: number, height: number): number 
 }
 
 /**
- * Counts input tokens locally using `js-tiktoken` (OpenAI-compatible tokenizer).
- * No external API calls are made — safe to call without data privacy concerns.
+ * Computes the Google token cost for a single image.
+ * Source: https://ai.google.dev/gemini-api/docs/tokens#image-tokens
  */
-export async function countInputTokensLocal(messages: ModelMessage[]): Promise<number> {
-  return countOpenAiTokens(messages);
+function computeGoogleImageTokens(): number {
+  return GOOGLE_TOKENS_PER_IMAGE;
 }
 
 /**
- * Counts input tokens for a specific provider using its native API.
+ * Computes the Anthropic token cost for a single image based on its pixel dimensions.
+ * Source: https://docs.anthropic.com/en/docs/build-with-claude/vision#image-costs
+ */
+function computeAnthropicImageTokens(width: number, height: number): number {
+  if (Math.max(width, height) > ANTHROPIC_MAX_IMAGE_SIDE) {
+    const scale = ANTHROPIC_MAX_IMAGE_SIDE / Math.max(width, height);
+    width = Math.floor(width * scale);
+    height = Math.floor(height * scale);
+  }
+  return Math.max(1, Math.ceil((width * height) / ANTHROPIC_TOKENS_DIVISOR));
+}
+
+/**
+ * Counts input tokens for a specific provider using local computation only.
+ * Text tokens are counted with a tiktoken encoding that approximates the
+ * provider's native tokenizer. Image tokens use provider-specific formulas.
  *
- * - **OpenAI**: local `js-tiktoken` (no API call needed).
- * - **Google**: `@google/generative-ai` SDK `countTokens()` (handles text + images).
- * - **Anthropic**: `@anthropic-ai/sdk` `messages.countTokens()` (handles text + images).
- *
- * Only called on user intent (e.g. hovering a provider) to avoid sending
- * student submission data to providers the instructor hasn't selected.
+ * No external API calls are made.
  */
 export async function countInputTokensForProvider(
   messages: ModelMessage[],
   provider: EnumAiGradingProvider,
-  apiKey: string | null,
 ): Promise<number> {
-  switch (provider) {
-    case 'openai':
-      return countOpenAiTokens(messages);
-    case 'google':
-      return countGoogleTokens(messages, apiKey);
-    case 'anthropic':
-      return countAnthropicTokens(messages, apiKey);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// OpenAI: local tokenizer + image dimension formula
-// ---------------------------------------------------------------------------
-
-async function countOpenAiTokens(messages: ModelMessage[]): Promise<number> {
   try {
-    const enc = encodingForModel('gpt-4o');
+    const encoding = PROVIDER_TIKTOKEN_ENCODING[provider];
+    const enc = encodingForModel(encoding as Parameters<typeof encodingForModel>[0]);
     let totalTokens = 0;
 
     for (const msg of messages) {
@@ -100,184 +130,47 @@ async function countOpenAiTokens(messages: ModelMessage[]): Promise<number> {
           if (part.type === 'text') {
             totalTokens += enc.encode(part.text).length;
           } else if (part.type === 'image') {
-            totalTokens += await getOpenAiImageTokens(part);
+            totalTokens += await getImageTokensForProvider(part, provider);
           }
         }
       }
-      // Per-message overhead (role, delimiters) — OpenAI charges ~4 tokens per message.
+      // Per-message overhead (role, delimiters).
       totalTokens += 4;
     }
 
     return totalTokens;
-  } catch (err) {
-    void err;
+  } catch {
     return estimateFallbackTokens(messages);
   }
 }
 
-async function getOpenAiImageTokens(part: { type: 'image'; image: unknown }): Promise<number> {
+/**
+ * Returns the image token count for a given provider. For OpenAI and Anthropic
+ * this depends on pixel dimensions (read via sharp). For Google it's a flat cost.
+ */
+async function getImageTokensForProvider(
+  part: { type: 'image'; image: unknown },
+  provider: EnumAiGradingProvider,
+): Promise<number> {
+  if (provider === 'google') {
+    return computeGoogleImageTokens();
+  }
+
+  // OpenAI and Anthropic both need image dimensions.
   try {
     const imageData = part.image;
     const buffer =
       typeof imageData === 'string' ? Buffer.from(imageData, 'base64') : (imageData as Buffer);
     const metadata = await sharp(buffer).metadata();
     if (metadata.width && metadata.height) {
-      return computeOpenAiImageTokens(metadata.width, metadata.height);
+      return provider === 'openai'
+        ? computeOpenAiImageTokens(metadata.width, metadata.height)
+        : computeAnthropicImageTokens(metadata.width, metadata.height);
     }
     return FALLBACK_TOKENS_PER_IMAGE;
   } catch {
     return FALLBACK_TOKENS_PER_IMAGE;
   }
-}
-
-// ---------------------------------------------------------------------------
-// Google: @google/generative-ai SDK countTokens()
-// ---------------------------------------------------------------------------
-
-async function countGoogleTokens(messages: ModelMessage[], apiKey: string | null): Promise<number> {
-  if (!apiKey) {
-    return estimateFallbackTokens(messages);
-  }
-
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-
-    const contents = convertMessagesToGeminiContents(messages);
-    const systemInstruction = extractSystemInstruction(messages);
-
-    const result = await model.countTokens({
-      contents,
-      ...(systemInstruction ? { systemInstruction } : {}),
-    });
-
-    return result.totalTokens;
-  } catch (err) {
-    void err;
-    return estimateFallbackTokens(messages);
-  }
-}
-
-function extractSystemInstruction(messages: ModelMessage[]): string | undefined {
-  const systemMessages = messages.filter((m) => m.role === 'system');
-  if (systemMessages.length === 0) return undefined;
-  return systemMessages
-    .map((m) => (typeof m.content === 'string' ? m.content : ''))
-    .filter(Boolean)
-    .join('\n');
-}
-
-function convertMessagesToGeminiContents(messages: ModelMessage[]): {
-  role: string;
-  parts: ({ text: string } | { inlineData: { mimeType: string; data: string } })[];
-}[] {
-  return messages
-    .filter((m) => m.role !== 'system')
-    .map((msg) => {
-      const role = msg.role === 'assistant' ? 'model' : 'user';
-      const parts: ({ text: string } | { inlineData: { mimeType: string; data: string } })[] = [];
-
-      if (typeof msg.content === 'string') {
-        parts.push({ text: msg.content });
-      } else if (Array.isArray(msg.content)) {
-        for (const part of msg.content) {
-          if (part.type === 'text') {
-            parts.push({ text: part.text });
-          } else if (part.type === 'image') {
-            const data = typeof part.image === 'string' ? part.image : '';
-            parts.push({
-              inlineData: {
-                mimeType:
-                  'mediaType' in part && typeof part.mediaType === 'string'
-                    ? part.mediaType
-                    : 'image/jpeg',
-                data,
-              },
-            });
-          }
-        }
-      }
-
-      return { role, parts };
-    });
-}
-
-// ---------------------------------------------------------------------------
-// Anthropic: @anthropic-ai/sdk messages.countTokens()
-// ---------------------------------------------------------------------------
-
-async function countAnthropicTokens(
-  messages: ModelMessage[],
-  apiKey: string | null,
-): Promise<number> {
-  if (!apiKey) {
-    return estimateFallbackTokens(messages);
-  }
-
-  try {
-    const client = new Anthropic({ apiKey });
-
-    const { system, convertedMessages } = convertMessagesToAnthropicFormat(messages);
-
-    const result = await client.messages.countTokens({
-      model: 'claude-haiku-4-5-20251001',
-      messages: convertedMessages,
-      ...(system ? { system } : {}),
-    });
-
-    return result.input_tokens;
-  } catch (err) {
-    void err;
-    return estimateFallbackTokens(messages);
-  }
-}
-
-function convertMessagesToAnthropicFormat(messages: ModelMessage[]): {
-  system: string | undefined;
-  convertedMessages: Anthropic.MessageCreateParams['messages'];
-} {
-  const systemMessages = messages.filter((m) => m.role === 'system');
-  const system = systemMessages
-    .map((m) => (typeof m.content === 'string' ? m.content : ''))
-    .filter(Boolean)
-    .join('\n');
-
-  const convertedMessages: Anthropic.MessageCreateParams['messages'] = messages
-    .filter((m) => m.role !== 'system')
-    .map((msg) => {
-      const role = msg.role === 'assistant' ? 'assistant' : 'user';
-
-      if (typeof msg.content === 'string') {
-        return { role, content: msg.content };
-      }
-
-      const blocks: Anthropic.ContentBlockParam[] = [];
-      if (Array.isArray(msg.content)) {
-        for (const part of msg.content) {
-          if (part.type === 'text') {
-            blocks.push({ type: 'text', text: part.text });
-          } else if (part.type === 'image') {
-            const data = typeof part.image === 'string' ? part.image : '';
-            const mediaType =
-              'mediaType' in part && typeof part.mediaType === 'string'
-                ? part.mediaType
-                : 'image/jpeg';
-            blocks.push({
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: mediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
-                data,
-              },
-            });
-          }
-        }
-      }
-
-      return { role, content: blocks };
-    });
-
-  return { system: system || undefined, convertedMessages };
 }
 
 // ---------------------------------------------------------------------------
