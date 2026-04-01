@@ -48,7 +48,7 @@ importers:
         version: link:packages/eslint-config
       '@reteps/tree-sitter-htmlmustache':
         specifier: ^0.7.1
-        version: 0.7.1
+        version: 0.7.1(node-addon-api@8.7.0)
       '@typescript/native-preview':
         specifier: ^7.0.0-dev.20260305.1
         version: 7.0.0-dev.20260305.1
@@ -79,6 +79,9 @@ importers:
       markdownlint-cli2:
         specifier: ^0.21.0
         version: 0.21.0
+      node-addon-api:
+        specifier: ^8.2.2
+        version: 8.7.0
       prettier:
         specifier: 3.8.1
         version: 3.8.1
@@ -893,6 +896,9 @@ importers:
       serve-favicon:
         specifier: ^2.5.1
         version: 2.5.1
+      serve-static:
+        specifier: ^1.16.3
+        version: 1.16.3
       sharp:
         specifier: ^0.34.5
         version: 0.34.5
@@ -9221,6 +9227,10 @@ packages:
     resolution: {integrity: sha512-8Ofs/AUQh8MaEcrlq5xOX0CQ9ypTF5dl78mjlMNfOK08fzpgTHQRQPBxcPlEtIw0yRpws+Zo/3r+5WRby7u3Gg==}
     engines: {node: '>= 0.6'}
 
+  node-addon-api@8.7.0:
+    resolution: {integrity: sha512-9MdFxmkKaOYVTV+XVRG8ArDwwQ77XIgIPyKASB1k3JPq3M8fGQQQE3YpMOrKm6g//Ktx8ivZr8xo1Qmtqub+GA==}
+    engines: {node: ^18 || ^20 || >= 21}
+
   node-domexception@1.0.0:
     resolution: {integrity: sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ==}
     engines: {node: '>=10.5.0'}
@@ -14727,12 +14737,14 @@ snapshots:
 
   '@reteps/dockerfmt@0.3.6': {}
 
-  '@reteps/tree-sitter-htmlmustache@0.7.1':
+  '@reteps/tree-sitter-htmlmustache@0.7.1(node-addon-api@8.7.0)':
     dependencies:
       chalk: 5.6.2
       editorconfig: 3.0.2
       vscode-languageserver-textdocument: 1.0.12
       web-tree-sitter: 0.26.6
+    optionalDependencies:
+      node-addon-api: 8.7.0
 
   '@rollup/rollup-android-arm-eabi@4.59.0':
     optional: true
@@ -19469,6 +19481,8 @@ snapshots:
   negotiator@0.6.3: {}
 
   negotiator@1.0.0: {}
+
+  node-addon-api@8.7.0: {}
 
   node-domexception@1.0.0: {}
 
