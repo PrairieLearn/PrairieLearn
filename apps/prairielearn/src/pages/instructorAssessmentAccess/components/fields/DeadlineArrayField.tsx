@@ -188,13 +188,14 @@ function DeadlineArrayInput({
             </div>
             <div className="d-flex gap-2 align-items-center">
               <label
-                className="form-label text-body-secondary mt-2 ml-auto"
+                className="form-label text-body-secondary mt-2 ms-auto"
                 htmlFor={`${idPrefix}-${type}-deadline-${index}-credit`}
               >
                 Credit
               </label>
               <InputGroup style={{ width: 'auto', flex: '0 0 auto' }}>
                 <Form.Control
+                  id={`${idPrefix}-${type}-deadline-${index}-credit`}
                   type="number"
                   style={{ width: '5rem' }}
                   aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} credit percentage`}
