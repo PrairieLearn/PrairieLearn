@@ -2301,15 +2301,6 @@ importers:
 
   packages/postgres:
     dependencies:
-      '@types/debug':
-        specifier: ^4.1.12
-        version: 4.1.12
-      '@types/pg':
-        specifier: ^8.18.0
-        version: 8.18.0
-      '@types/pg-cursor':
-        specifier: ^2.7.2
-        version: 2.7.2
       debug:
         specifier: ^4.4.3
         version: 4.4.3(supports-color@5.5.0)
@@ -2338,12 +2329,21 @@ importers:
       '@prairielearn/tsconfig':
         specifier: workspace:^
         version: link:../tsconfig
+      '@types/debug':
+        specifier: ^4.1.12
+        version: 4.1.12
       '@types/multipipe':
         specifier: ^3.0.5
         version: 3.0.5
       '@types/node':
         specifier: ^24.11.0
         version: 24.11.0
+      '@types/pg':
+        specifier: ^8.18.0
+        version: 8.18.0
+      '@types/pg-cursor':
+        specifier: ^2.7.2
+        version: 2.7.2
       '@typescript/native-preview':
         specifier: ^7.0.0-dev.20260305.1
         version: 7.0.0-dev.20260305.1
