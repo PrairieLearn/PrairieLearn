@@ -7,9 +7,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
 
 import { getQuestionCreateUrl, getQuestionUrl } from '../../../../lib/client/url.js';
-import type { QuestionByQidResult } from '../../trpc.js';
+import type { QuestionByQidResult } from '../../../../trpc/assessment/assessment-questions.js';
+import { useTRPC } from '../../../../trpc/assessment/context.js';
 import type { CourseQuestionForPicker } from '../../types.js';
-import { useTRPC } from '../../utils/trpc-context.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
 import { QuestionTopicTagBadges } from '../QuestionTopicTagBadges.js';
 
@@ -69,7 +69,10 @@ export function QuestionPickerPanel({
   const hasSlash = sharedQuestionMode && debouncedSearchQuery.includes('/');
 
   const sharedQuestionQuery = useQuery({
-    ...trpc.questionByQid.queryOptions({ qid: debouncedSearchQuery }, { enabled: hasSlash }),
+    ...trpc.assessmentQuestions.questionByQid.queryOptions(
+      { qid: debouncedSearchQuery },
+      { enabled: hasSlash },
+    ),
     retry: false,
   });
 

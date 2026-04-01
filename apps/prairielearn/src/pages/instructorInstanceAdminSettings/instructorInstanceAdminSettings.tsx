@@ -1,7 +1,6 @@
 import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
-import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -16,7 +15,7 @@ import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstance
 import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
+import { getCourseInstanceTrpcUrl, getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
@@ -34,7 +33,6 @@ import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
-import { handleTrpcError } from '../../lib/trpc.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import { insertCourseInstancePermissions } from '../../models/course-permissions.js';
@@ -43,19 +41,9 @@ import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 import { SettingsFormBodySchema } from './instructorInstanceAdminSettings.types.js';
-import { createContext, settingsRouter } from './trpc.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-router.use(
-  '/trpc',
-  trpcExpress.createExpressMiddleware({
-    router: settingsRouter,
-    createContext,
-    onError: handleTrpcError,
-  }),
-);
 
 router.get(
   '/',
@@ -115,7 +103,7 @@ router.get(
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
-        url: req.originalUrl.split('?')[0].replace(/\/$/, '') + '/trpc',
+        url: getCourseInstanceTrpcUrl(courseInstance.id),
         authn_user_id: res.locals.authn_user.id,
       },
       config.secretKey,
