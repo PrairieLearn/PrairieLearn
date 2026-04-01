@@ -79,6 +79,18 @@ interface TestContext {
   __csrf_token: string;
 }
 
+/**
+ * Extract the CSRF token from the navbar's hidden span. This works for
+ * hydrated React pages where forms are rendered client-side.
+ */
+function extractCSRFToken(context: TestContext, $: cheerio.CheerioAPI): string {
+  const csrfToken = $('span[id=test_csrf_token]').text();
+  assert.isString(csrfToken);
+  assert.isNotEmpty(csrfToken);
+  context.__csrf_token = csrfToken;
+  return csrfToken;
+}
+
 function runTest(context: TestContext) {
   context.pageUrl = `${context.baseUrl}/course_admin/staff`;
   context.userId = '2';
@@ -158,11 +170,7 @@ function runTest(context: TestContext) {
       headers,
     });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      'button[data-testid="add-users-button"]',
-    );
+    extractCSRFToken(context, response.$);
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -184,11 +192,7 @@ function runTest(context: TestContext) {
       headers,
     });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      'button[data-testid="add-users-button"]',
-    );
+    extractCSRFToken(context, response.$);
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -210,11 +214,7 @@ function runTest(context: TestContext) {
       headers,
     });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFToken(
-      context,
-      response.$,
-      'form[name=student-data-access-add-3]',
-    );
+    extractCSRFToken(context, response.$);
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -233,11 +233,7 @@ function runTest(context: TestContext) {
   test.sequential('can delete user', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      '#course-permission-button-3',
-    );
+    extractCSRFToken(context, response.$);
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -257,13 +253,12 @@ function runTest(context: TestContext) {
       headers,
     });
     assert.isTrue(response.ok);
-    const __csrf_token = response.$('span[id=test_csrf_token]').text();
-    assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
+    extractCSRFToken(context, response.$);
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
         __action: 'course_permissions_delete',
-        __csrf_token,
+        __csrf_token: context.__csrf_token,
         user_id: '2',
       }),
       headers,
@@ -275,11 +270,7 @@ function runTest(context: TestContext) {
   test.sequential('can change course role', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      '#course-permission-button-4',
-    );
+    extractCSRFToken(context, response.$);
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -300,13 +291,12 @@ function runTest(context: TestContext) {
       headers,
     });
     assert.isTrue(response.ok);
-    const __csrf_token = response.$('span[id=test_csrf_token]').text();
-    assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
+    extractCSRFToken(context, response.$);
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
         __action: 'course_permissions_update_role',
-        __csrf_token,
+        __csrf_token: context.__csrf_token,
         user_id: context.userId,
         course_role: 'None',
       }),
@@ -324,13 +314,12 @@ function runTest(context: TestContext) {
       headers,
     });
     assert.isTrue(response.ok);
-    const __csrf_token = response.$('span[id=test_csrf_token]').text();
-    assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
+    extractCSRFToken(context, response.$);
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
         __action: 'course_permissions_delete',
-        __csrf_token,
+        __csrf_token: context.__csrf_token,
         user_id: context.userId,
       }),
       headers,
@@ -349,13 +338,12 @@ function runTest(context: TestContext) {
         headers,
       });
       assert.isTrue(response.ok);
-      const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
+      extractCSRFToken(context, response.$);
       response = await helperClient.fetchCheerio(context.pageUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'course_permissions_update_role',
-          __csrf_token,
+          __csrf_token: context.__csrf_token,
           user_id: context.userId,
           course_role: 'None',
         }),
@@ -371,11 +359,7 @@ function runTest(context: TestContext) {
       headers,
     });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      'button[data-testid="add-users-button"]',
-    );
+    extractCSRFToken(context, response.$);
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -396,11 +380,7 @@ function runTest(context: TestContext) {
       headers,
     });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFToken(
-      context,
-      response.$,
-      'form[name=student-data-access-add-3]',
-    );
+    extractCSRFToken(context, response.$);
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -419,11 +399,7 @@ function runTest(context: TestContext) {
   test.sequential('can update course instance permission', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      '#course-instance-permission-button-3-1',
-    );
+    extractCSRFToken(context, response.$);
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -440,16 +416,12 @@ function runTest(context: TestContext) {
     await checkPermissions(users);
   });
 
-  test.sequential('can add course instance permission', async () => {
+  test.sequential('can add course instance permission for another user', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFToken(
-      context,
-      response.$,
-      'form[name=student-data-access-add-5]',
-    );
+    extractCSRFToken(context, response.$);
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -468,11 +440,7 @@ function runTest(context: TestContext) {
   test.sequential('can delete course instance permission', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      '#course-instance-permission-button-5-1',
-    );
+    extractCSRFToken(context, response.$);
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -489,22 +457,23 @@ function runTest(context: TestContext) {
     await checkPermissions(users);
   });
 
-  test.sequential('can delete all course instance permissions', async () => {
+  test.sequential('can bulk edit student data access', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      'button[data-testid="remove-all-student-data-access-button"]',
-    );
+    extractCSRFToken(context, response.$);
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      body: new URLSearchParams({
-        __action: 'remove_all_student_data_access',
-        __csrf_token: context.__csrf_token,
-      }),
+      body: new URLSearchParams([
+        ['__action', 'bulk_edit_access'],
+        ['__csrf_token', context.__csrf_token],
+        ['user_ids', '3'],
+        ['user_ids', '5'],
+        ['course_role', ''],
+        ['course_instance_ids', '1'],
+        ['course_instance_roles', 'None'],
+      ]),
       headers,
     });
     assert.isTrue(response.ok);
@@ -512,16 +481,12 @@ function runTest(context: TestContext) {
     await checkPermissions(users);
   });
 
-  test.sequential('can add course instance permission', async () => {
+  test.sequential('can add back course instance permission', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFToken(
-      context,
-      response.$,
-      'form[name=student-data-access-add-5]',
-    );
+    extractCSRFToken(context, response.$);
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -538,45 +503,66 @@ function runTest(context: TestContext) {
   });
 
   test.sequential('can delete users with no access', async () => {
+    // At this point staff03 (id=3) has course_role=None and no instance access.
+    // Delete staff03 individually.
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      'button[data-testid="delete-users-with-no-access-button"]',
-    );
+    extractCSRFToken(context, response.$);
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
-        __action: 'delete_no_access',
+        __action: 'course_permissions_delete',
         __csrf_token: context.__csrf_token,
+        user_id: '3',
       }),
       headers,
     });
     assert.isTrue(response.ok);
     updatePermissions(users, 'staff03@example.com', null, null);
+
+    // Also delete new_user. Look up their user_id first.
+    const newUserRow = await sqldb.queryOptionalRow(
+      'SELECT id FROM users WHERE uid = $1;',
+      [new_user],
+      z.object({ id: z.string() }),
+    );
+    if (newUserRow) {
+      response = await helperClient.fetchCheerio(context.pageUrl, {
+        headers,
+      });
+      assert.isTrue(response.ok);
+      extractCSRFToken(context, response.$);
+      response = await helperClient.fetchCheerio(context.pageUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'course_permissions_delete',
+          __csrf_token: context.__csrf_token,
+          user_id: newUserRow.id,
+        }),
+        headers,
+      });
+      assert.isTrue(response.ok);
+    }
     updatePermissions(users, new_user, null, null);
     await checkPermissions(users);
   });
 
-  test.sequential('can delete non-owners', async () => {
+  test.sequential('can bulk delete non-owners via bulk_course_permissions_delete', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      'button[data-testid="delete-non-owners-button"]',
-    );
+    extractCSRFToken(context, response.$);
+    // Delete staff05 (non-owner) via bulk delete
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      body: new URLSearchParams({
-        __action: 'delete_non_owners',
-        __csrf_token: context.__csrf_token,
-      }),
+      body: new URLSearchParams([
+        ['__action', 'bulk_course_permissions_delete'],
+        ['__csrf_token', context.__csrf_token],
+        ['user_ids', '5'],
+      ]),
       headers,
     });
     assert.isTrue(response.ok);
@@ -584,22 +570,18 @@ function runTest(context: TestContext) {
     await checkPermissions(users);
   });
 
-  test.sequential('can change course role', async () => {
+  test.sequential('can change course role via bulk edit', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      '#course-permission-button-4',
-    );
+    extractCSRFToken(context, response.$);
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      body: new URLSearchParams({
-        __action: 'course_permissions_update_role',
-        __csrf_token: context.__csrf_token,
-        user_id: '4',
-        course_role: 'Editor',
-      }),
+      body: new URLSearchParams([
+        ['__action', 'bulk_edit_access'],
+        ['__csrf_token', context.__csrf_token],
+        ['user_ids', '4'],
+        ['course_role', 'Editor'],
+      ]),
       headers,
     });
     assert.isTrue(response.ok);
