@@ -1,4 +1,3 @@
-import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import z from 'zod';
 
@@ -23,20 +22,19 @@ import {
   StaffInstanceQuestionGroupSchema,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
+import { getAssessmentQuestionTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getJobSequenceIds } from '../../../lib/server-jobs.js';
-import { handleTrpcError } from '../../../lib/trpc.js';
 import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
 import { selectInstanceQuestionsForManualGrading } from './queries.js';
-import { createContext, manualGradingAssessmentQuestionRouter } from './trpc.js';
 
 const router = Router();
 
@@ -120,10 +118,13 @@ router.get(
     const hasCourseInstancePermissionEdit = authz_data.has_course_instance_permission_edit ?? false;
     const search = getUrl(req).search;
 
-    // Generate a prefix-based CSRF token for tRPC requests
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
-        url: req.originalUrl.split('?')[0] + '/trpc',
+        url: getAssessmentQuestionTrpcUrl({
+          courseInstanceId: res.locals.course_instance.id,
+          assessmentId: res.locals.assessment.id,
+          assessmentQuestionId: res.locals.assessment_question.id,
+        }),
         authn_user_id: res.locals.authn_user.id,
       },
       config.secretKey,
@@ -238,15 +239,6 @@ router.get(
         use_instance_question_groups,
       }),
     );
-  }),
-);
-
-router.use(
-  '/trpc',
-  trpcExpress.createExpressMiddleware({
-    router: manualGradingAssessmentQuestionRouter,
-    createContext,
-    onError: handleTrpcError,
   }),
 );
 

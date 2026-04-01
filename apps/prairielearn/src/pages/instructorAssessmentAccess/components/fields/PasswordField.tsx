@@ -6,13 +6,15 @@ import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData } from '../types.js';
 
-interface PasswordInputProps {
+function PasswordInput({
+  value,
+  onChange,
+  idPrefix,
+}: {
   value: string | null;
   onChange: (value: string | null) => void;
   idPrefix: string;
-}
-
-function PasswordInput({ value, onChange, idPrefix }: PasswordInputProps) {
+}) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (

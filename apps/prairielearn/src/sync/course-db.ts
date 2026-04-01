@@ -1159,9 +1159,6 @@ export function validateAccessControlArray({
   const warnings: string[] = [];
 
   if (accessControlJsonArray.length === 0) {
-    warnings.push(
-      'accessControl array is empty. Add at least one rule or remove the accessControl key.',
-    );
     return { errors, warnings };
   }
 
@@ -1171,15 +1168,17 @@ export function validateAccessControlArray({
   );
 
   if (mainRules.length === 0) {
-    errors.push('No main rule found. The first rule must apply to everyone.');
+    errors.push('No defaults found. The first element of accessControl must apply to everyone.');
   } else if (mainRules.length > 1) {
-    errors.push(`Found ${mainRules.length} main rules. Only one rule should apply to everyone.`);
+    errors.push(
+      `Found ${mainRules.length} defaults entries. Only one element of accessControl should apply to everyone.`,
+    );
   } else {
     // The DB constraint `check_first_rule_is_none` requires the main rule at index 0
     const firstRule = accessControlJsonArray[0];
     const isFirstRuleMain = firstRule.labels == null || firstRule.labels.length === 0;
     if (!isFirstRuleMain) {
-      errors.push('The main rule (without labels) must be the first rule in the array.');
+      errors.push('The defaults (without labels) must be the first element in the array.');
     }
   }
 
@@ -1217,11 +1216,13 @@ export function validateAccessControlArray({
 
     const isMainRule = rule.labels == null || rule.labels.length === 0;
     if (!isMainRule && rule.integrations != null) {
-      errors.push('integrations can only be specified on the main rule (the rule without labels).');
+      errors.push(
+        'integrations can only be specified on the defaults (the first element, without labels).',
+      );
     }
     if (!isMainRule && rule.listBeforeRelease !== undefined) {
       errors.push(
-        'listBeforeRelease can only be specified on the main rule (the rule without labels).',
+        'listBeforeRelease can only be specified on the defaults (the first element, without labels).',
       );
     }
 
@@ -1360,7 +1361,7 @@ function validateAssessment({
   }
 
   // Check assessment access rules.
-  assessment.allowAccess.forEach((rule) => {
+  (assessment.allowAccess ?? []).forEach((rule) => {
     const dateErrors = checkAllowAccessDates(rule);
 
     if ('active' in rule && rule.active === false && 'credit' in rule && rule.credit !== 0) {
@@ -1375,7 +1376,7 @@ function validateAssessment({
   // only show certain warnings for course instances which are accessible
   // either now or any time in the future.
   if (!courseInstanceExpired) {
-    assessment.allowAccess.forEach((rule) => {
+    (assessment.allowAccess ?? []).forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
 
       if (rule.examUuid && rule.mode === 'Public') {
@@ -1659,6 +1660,12 @@ function validateAssessment({
         );
       });
     });
+  }
+
+  if (rawAssessment.allowAccess != null && rawAssessment.accessControl != null) {
+    errors.push(
+      'Cannot use both "allowAccess" and "accessControl". Use "accessControl" for new assessments.',
+    );
   }
 
   // Validate access control rules if defined

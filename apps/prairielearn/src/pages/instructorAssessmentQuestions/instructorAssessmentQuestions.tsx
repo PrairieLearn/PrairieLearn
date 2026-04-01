@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
@@ -16,22 +15,20 @@ import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
 import { compiledScriptTag, compiledStylesheetTag } from '../../lib/assets.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { handleTrpcError } from '../../lib/trpc.js';
 import { getUrl } from '../../lib/url.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { AssessmentQuestionsEditor } from './components/AssessmentEditor.js';
 import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
-import { assessmentQuestionsRouter, createContext } from './trpc.js';
 import { serializeZonesForJson } from './utils/dataTransform.js';
 import { buildHierarchicalAssessment } from './utils/questions.js';
-import { buildTrpcUrl } from './utils/trpc-url.js';
 
 const router = Router();
 
@@ -95,7 +92,10 @@ router.get(
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
-        url: buildTrpcUrl(req.originalUrl),
+        url: getAssessmentTrpcUrl({
+          courseInstanceId: res.locals.course_instance.id,
+          assessmentId: res.locals.assessment.id,
+        }),
         authn_user_id: res.locals.authn_user.id,
       },
       config.secretKey,
@@ -176,15 +176,6 @@ router.get(
         ),
       }),
     );
-  }),
-);
-
-router.use(
-  '/trpc',
-  trpcExpress.createExpressMiddleware({
-    router: assessmentQuestionsRouter,
-    createContext,
-    onError: handleTrpcError,
   }),
 );
 

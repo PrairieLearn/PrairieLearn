@@ -28,8 +28,8 @@ import {
 import { getStudentLabelsWithUserData } from '../../pages/instructorStudentsLabels/queries.js';
 import { ColorJsonSchema } from '../../schemas/infoCourse.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
+import { throwAppError } from '../app-errors.js';
 
-import { type StudentLabelErrors, throwAppError } from './app-errors.js';
 import {
   requireCourseInstancePermissionEdit,
   requireCourseInstancePermissionView,
@@ -37,6 +37,13 @@ import {
   selectStudentLabelByIdOrNotFound,
   t,
 } from './init.js';
+
+export interface StudentLabelError {
+  Upsert:
+    | { code: 'LABEL_NAME_TAKEN'; name: string }
+    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  Destroy: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+}
 
 function getCourseInstanceContainer(coursePath: string, shortName: string) {
   const rootPath = path.join(coursePath, 'courseInstances', shortName);
@@ -150,12 +157,12 @@ const upsert = t.procedure
             });
           }
           if (studentLabels.some((l, i) => i !== labelIndex && l.name === name)) {
-            throwAppError<StudentLabelErrors>({ code: 'LABEL_NAME_TAKEN', name });
+            throwAppError<StudentLabelError['Upsert']>({ code: 'LABEL_NAME_TAKEN', name });
           }
           studentLabels[labelIndex] = { uuid: studentLabels[labelIndex].uuid, name, color };
         } else {
           if (studentLabels.some((l) => l.name === name)) {
-            throwAppError<StudentLabelErrors>({ code: 'LABEL_NAME_TAKEN', name });
+            throwAppError<StudentLabelError['Upsert']>({ code: 'LABEL_NAME_TAKEN', name });
           }
           studentLabels.push({ uuid: labelUuid, name, color });
         }
@@ -176,7 +183,7 @@ const upsert = t.procedure
     });
 
     if (!saveResult.success) {
-      throwAppError<StudentLabelErrors>({
+      throwAppError<StudentLabelError>({
         code: 'SYNC_JOB_FAILED',
         jobSequenceId: saveResult.jobSequenceId,
       });
@@ -294,7 +301,7 @@ const destroy = t.procedure
     });
 
     if (!saveResult.success) {
-      throwAppError<StudentLabelErrors>({
+      throwAppError<StudentLabelError>({
         code: 'SYNC_JOB_FAILED',
         jobSequenceId: saveResult.jobSequenceId,
       });

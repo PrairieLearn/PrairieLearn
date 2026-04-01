@@ -47,6 +47,8 @@ import type {
 } from '../../../../lib/client/safe-db-types.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
 import type { RubricData } from '../../../../lib/manualGrading.types.js';
+import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
+import type { ManualGradingError } from '../../../../trpc/assessmentQuestion/manual-grading.js';
 import {
   GRADING_STATUS_VALUES,
   type GradingStatusValue,
@@ -56,7 +58,6 @@ import {
 import { type ColumnId, createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
-import { useTRPC } from '../utils/trpc-context.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
 import type { ConflictModalState } from './GradingConflictModal.js';
@@ -251,7 +252,7 @@ export function AssessmentQuestionTable({
   const [rubricSettingsOpen, setRubricSettingsOpen] = useState(false);
 
   const { mutateAsync: submitRubricSettings } = useMutation(
-    trpc.modifyRubricSettings.mutationOptions(),
+    trpc.manualGrading.modifyRubricSettings.mutationOptions(),
   );
   const handleSubmitRubricSettings = useCallback(
     async (payload: RubricSettingsPayload) => submitRubricSettings(payload),
@@ -267,7 +268,7 @@ export function AssessmentQuestionTable({
     error: instanceQuestionsError,
     isError: isInstanceQuestionsError,
   } = useQuery({
-    ...trpc.instances.queryOptions(),
+    ...trpc.manualGrading.instances.queryOptions(),
     staleTime: Infinity,
     initialData: initialInstanceQuestionsInfo,
   });
@@ -410,7 +411,7 @@ export function AssessmentQuestionTable({
       // instance question grading data (e.g. AI agreements, grading status)
       // may have changed.
       void queryClientInstance.invalidateQueries({
-        queryKey: trpc.instances.queryKey(),
+        queryKey: trpc.manualGrading.instances.queryKey(),
       });
     },
   });
@@ -432,7 +433,7 @@ export function AssessmentQuestionTable({
         scrollRef,
         onEditPointsSuccess: () => {
           void queryClientInstance.invalidateQueries({
-            queryKey: trpc.instances.queryKey(),
+            queryKey: trpc.manualGrading.instances.queryKey(),
           });
         },
         onEditPointsConflict: (conflictDetailsUrl: string) => {
@@ -452,7 +453,7 @@ export function AssessmentQuestionTable({
       createCheckboxProps,
       scrollRef,
       queryClientInstance,
-      trpc.instances,
+      trpc.manualGrading.instances,
       onSetConflictModalState,
     ],
   );
@@ -691,7 +692,7 @@ export function AssessmentQuestionTable({
           onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
         />
       )}
-      <QueryErrors
+      <QueryErrors<ManualGradingError>
         queries={[
           deleteAiGradingJobsMutation,
           deleteAiGroupingsMutation,
@@ -729,7 +730,9 @@ export function AssessmentQuestionTable({
           className="mb-3"
           dismissible
           onClose={() => {
-            void queryClientInstance.refetchQueries({ queryKey: trpc.instances.queryKey() });
+            void queryClientInstance.refetchQueries({
+              queryKey: trpc.manualGrading.instances.queryKey(),
+            });
           }}
         >
           <strong>Error loading instance questions:</strong> {instanceQuestionsError.message}

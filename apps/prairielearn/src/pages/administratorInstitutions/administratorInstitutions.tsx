@@ -13,13 +13,13 @@ import {
   AdminInstitutionSchema,
   StaffAuthnProviderSchema,
 } from '../../lib/client/safe-db-types.js';
+import { getAdministratorTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { AuthnProviderSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 
 import { AdministratorInstitutionsTable } from './components/AdministratorInstitutionsTable.js';
-import { administratorInstitutionsTrpcRouter } from './trpc.js';
 
 const InstitutionRowSchema = z.object({
   institution: AdminInstitutionSchema,
@@ -29,12 +29,10 @@ const InstitutionRowSchema = z.object({
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-router.use('/trpc', administratorInstitutionsTrpcRouter);
-
 router.get(
   '/',
   asyncHandler(async (_req, res) => {
-    const { urlPrefix, authn_user } = extractPageContext(res.locals, {
+    const { authn_user } = extractPageContext(res.locals, {
       pageType: 'plain',
       accessType: 'instructor',
       withAuthzData: false,
@@ -51,7 +49,7 @@ router.get(
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
-        url: `${urlPrefix}/administrator/institutions/trpc`,
+        url: getAdministratorTrpcUrl(),
         authn_user_id: authn_user.id,
       },
       config.secretKey,
