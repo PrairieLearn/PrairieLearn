@@ -85,7 +85,6 @@ export function AccessControlForm({
   initialData?: AccessControlJsonWithId[];
   onSubmit: (data: AccessControlJsonWithId[]) => void;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
-  assessmentType?: 'Exam' | 'Homework';
   isSaving?: boolean;
 }) {
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
@@ -215,7 +214,7 @@ export function AccessControlForm({
 
   const rightTitle =
     selectedRule?.type === 'main'
-      ? 'Main rule'
+      ? 'Defaults'
       : selectedRule?.type === 'override'
         ? getOverrideName(selectedRule.index)
         : undefined;
@@ -234,7 +233,7 @@ export function AccessControlForm({
   const rightPanel =
     selectedRule?.type === 'main' ? (
       <div className="p-3">
-        <MainRuleForm courseInstance={courseInstance} />
+        <MainRuleForm />
       </div>
     ) : selectedRule?.type === 'override' ? (
       (() => {
@@ -256,7 +255,7 @@ export function AccessControlForm({
               </Alert>
             )}
             <p className="text-muted">
-              Fields that are not overridden inherit their values from the main rule and any earlier
+              Fields that are not overridden inherit their values from the defaults and any earlier
               overrides. Click "Override" on a field to set a custom value for this group.
             </p>
             <AppliesToField namePrefix={`overrides.${selectedRule.index}`} />
@@ -321,7 +320,7 @@ export function AccessControlForm({
 
       <Modal show={deleteModal.show} onHide={deleteModal.hide}>
         <Modal.Header closeButton>
-          <Modal.Title>Delete override rule</Modal.Title>
+          <Modal.Title>Delete override</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           Are you sure you want to delete &quot;{deleteModal.data?.name ?? ''}&quot;? This action
