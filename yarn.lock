@@ -5308,6 +5308,7 @@ __metadata:
     pg: "npm:^8.20.0"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
+    typescript-cp: "npm:^0.1.9"
     vitest: "npm:^4.0.18"
     zod: "npm:^3.25.76"
   languageName: unknown
