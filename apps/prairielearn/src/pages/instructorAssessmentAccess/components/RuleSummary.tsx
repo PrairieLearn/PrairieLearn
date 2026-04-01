@@ -306,21 +306,52 @@ export function generateOverrideFieldItems(
   }
 
   if (of.has('questionVisibility')) {
-    items.push({
-      label: 'Question visibility',
-      value: rule.questionVisibility.hideQuestions
-        ? 'Questions hidden after completion'
-        : 'Questions visible after completion',
-    });
+    const qv = rule.questionVisibility;
+    if (qv.hideQuestions) {
+      if (qv.showAgainDate && qv.hideAgainDate) {
+        items.push({
+          label: 'Question visibility',
+          value: `Hidden, shown again ${formatDate(new Date(qv.showAgainDate), displayTimezone)}, hidden again ${formatDate(new Date(qv.hideAgainDate), displayTimezone)}`,
+        });
+      } else if (qv.showAgainDate) {
+        items.push({
+          label: 'Question visibility',
+          value: `Hidden, shown again ${formatDate(new Date(qv.showAgainDate), displayTimezone)}`,
+        });
+      } else {
+        items.push({
+          label: 'Question visibility',
+          value: 'Questions hidden after completion',
+        });
+      }
+    } else {
+      items.push({
+        label: 'Question visibility',
+        value: 'Questions visible after completion',
+      });
+    }
   }
 
   if (of.has('scoreVisibility')) {
-    items.push({
-      label: 'Score visibility',
-      value: rule.scoreVisibility.hideScore
-        ? 'Score hidden after completion'
-        : 'Score visible after completion',
-    });
+    const sv = rule.scoreVisibility;
+    if (sv.hideScore) {
+      if (sv.showAgainDate) {
+        items.push({
+          label: 'Score visibility',
+          value: `Hidden, shown again ${formatDate(new Date(sv.showAgainDate), displayTimezone)}`,
+        });
+      } else {
+        items.push({
+          label: 'Score visibility',
+          value: 'Score hidden after completion',
+        });
+      }
+    } else {
+      items.push({
+        label: 'Score visibility',
+        value: 'Score visible after completion',
+      });
+    }
   }
 
   return items;
@@ -329,28 +360,23 @@ export function generateOverrideFieldItems(
 function OverrideFieldsList({ items }: { items: OverrideFieldItem[] }) {
   if (items.length === 0) return null;
   return (
-    <div
-      className="border rounded overflow-hidden"
-      style={{ borderColor: 'var(--bs-border-color)' }}
-    >
-      <table className="table table-sm mb-0">
-        <tbody>
-          {items.map((item) => (
-            <tr key={item.label}>
-              <td
-                className="ps-3 border-0 text-body-secondary fw-medium"
-                style={{ ...tdStyle, whiteSpace: 'nowrap', width: '1%' }}
-              >
-                {item.label}
-              </td>
-              <td className="border-0" style={tdStyle}>
-                {item.value}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <table className="table table-sm mb-0">
+      <tbody>
+        {items.map((item) => (
+          <tr key={item.label}>
+            <td
+              className="ps-3 border-0 text-body-secondary fw-medium"
+              style={{ ...tdStyle, whiteSpace: 'nowrap', width: '1%' }}
+            >
+              {item.label}
+            </td>
+            <td className="border-0" style={tdStyle}>
+              {item.value}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -526,17 +552,7 @@ export function RuleSummaryCard({
           </Alert>
         )}
 
-        {overrideFieldItems.length > 0 && (
-          <div className="mb-2">
-            <div
-              className="text-body-secondary fw-semibold mb-2"
-              style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}
-            >
-              Overridden fields
-            </div>
-            <OverrideFieldsList items={overrideFieldItems} />
-          </div>
-        )}
+        {overrideFieldItems.length > 0 && <OverrideFieldsList items={overrideFieldItems} />}
 
         {dateTableRows.length > 0 && (
           <div className="mb-2">
