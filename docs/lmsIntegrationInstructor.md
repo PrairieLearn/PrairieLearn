@@ -63,7 +63,7 @@ assessment with a Canvas assignment. There are two ways to do this:
 
 ### Sending grades from PrairieLearn to Canvas
 
-To send grades you first need to link the PrairieLearn assessment with a Canvas assignment, as described above. After doing this, go to your PrairieLearn assessment, select the "LMS connections" tab, and then click "Send grades". Grades are always sent as percentage scores out of 100. These are the percentage "Score" values that PrairieLearn shows on the "Gradebook" page and the "Students" tab inside each assessment. Canvas will scale those percentages to the total points configured in the Canvas assignment.
+To send grades you first need to link the PrairieLearn assessment with a Canvas assignment, as described above. After doing this, go to your course instance's "LMS connections" tab, and then click "Send grades" for the linked assessment. Grades are always sent as percentage scores out of 100. These are the percentage "Score" values that PrairieLearn shows on the "Gradebook" page and the "Students" tab inside each assessment. Canvas will scale those percentages to the total points configured in the Canvas assignment.
 
 If you receive errors about students not being found in the course, check that your Canvas course is published before sending grades.
 
