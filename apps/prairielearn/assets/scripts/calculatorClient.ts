@@ -791,21 +791,18 @@ function initDrawerUI(
   function openDrawer() {
     fab.classList.remove('visible');
     drawer.classList.add('open');
-    drawer.removeAttribute('aria-hidden');
     setIsOpen(true);
     drawer.querySelector<MathfieldElement>('#calculator-input')?.focus();
   }
 
   function collapseDrawer() {
     drawer.classList.remove('open');
-    drawer.setAttribute('aria-hidden', 'true');
     fab.classList.add('visible');
     setIsOpen(false);
   }
 
   function dismissCalculator() {
     drawer.classList.remove('open');
-    drawer.setAttribute('aria-hidden', 'true');
     fab.classList.remove('visible');
     setIsOpen(false);
   }
@@ -971,7 +968,6 @@ onDocumentReady(() => {
     initIfNeeded();
     fab.classList.remove('visible');
     drawer.classList.add('no-transition', 'open');
-    drawer.removeAttribute('aria-hidden');
     // Remove the no-transition class after the browser has painted the open state
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
