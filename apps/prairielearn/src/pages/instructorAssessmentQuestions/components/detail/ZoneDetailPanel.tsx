@@ -188,12 +188,6 @@ export function ZoneDetailPanel({
           Number to choose or best questions exceeds the number of questions in this zone.
         </div>
       )}
-      {mixedToolsWarning && (
-        <div className="sticky-top alert alert-warning small mb-3" role="alert">
-          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
-          {mixedToolsWarning}
-        </div>
-      )}
       <div className="text-muted small">
         {zoneQuestionCount} choosable question{zoneQuestionCount !== 1 ? 's' : ''} in zone
       </div>
@@ -311,6 +305,12 @@ export function ZoneDetailPanel({
       </Wrapper>
 
       <DetailSectionHeader>Tools</DetailSectionHeader>
+      {mixedToolsWarning && (
+        <div className="alert alert-warning small mb-3" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+          {mixedToolsWarning}
+        </div>
+      )}
       <Wrapper className={clsx(!editMode && 'mb-0')}>
         {EnumAssessmentToolSchema.options.map((tool) => {
           const toolLabel = tool[0].toUpperCase() + tool.slice(1);
