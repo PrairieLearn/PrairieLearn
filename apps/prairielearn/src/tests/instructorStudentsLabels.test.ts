@@ -1,12 +1,12 @@
 import * as path from 'path';
 
-import { TRPCClientError } from '@trpc/client';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { queryOptionalRow, queryRows } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { getAppError } from '../lib/client/errors.js';
 import { config } from '../lib/config.js';
 import { EnrollmentSchema } from '../lib/db-types.js';
 import { getOriginalHash } from '../lib/editors.js';
@@ -23,7 +23,7 @@ import {
 } from '../models/student-label.js';
 import { getStudentLabelsWithUserData } from '../pages/instructorStudentsLabels/queries.js';
 import { createCourseInstanceTrpcClient } from '../trpc/courseInstance/client.js';
-import type { CourseInstanceRouter } from '../trpc/courseInstance/trpc.js';
+import type { StudentLabelError } from '../trpc/courseInstance/student-labels.js';
 
 import * as helperClient from './helperClient.js';
 import {
@@ -182,8 +182,9 @@ describe('Instructor student labels page', () => {
       });
       assert.fail('Expected error for duplicate name');
     } catch (err) {
-      assert.instanceOf(err, TRPCClientError);
-      assert.include((err as TRPCClientError<CourseInstanceRouter>).message, 'LABEL_NAME_TAKEN');
+      const appError = getAppError<StudentLabelError['Upsert']>(err);
+      assert.isNotNull(appError);
+      assert.include(appError.message, 'A label with this name already exists');
     }
 
     try {
@@ -195,7 +196,7 @@ describe('Instructor student labels page', () => {
       });
       assert.fail('Expected error for empty name');
     } catch (err) {
-      assert.instanceOf(err, TRPCClientError);
+      assert.isNotNull(getAppError<StudentLabelError['Upsert']>(err));
     }
   });
 
@@ -322,8 +323,9 @@ describe('Instructor student labels page', () => {
       });
       assert.fail('Expected error for duplicate name');
     } catch (err) {
-      assert.instanceOf(err, TRPCClientError);
-      assert.include((err as TRPCClientError<CourseInstanceRouter>).message, 'LABEL_NAME_TAKEN');
+      const appError = getAppError<StudentLabelError['Upsert']>(err);
+      assert.isNotNull(appError);
+      assert.include(appError.message, 'A label with this name already exists');
     }
   });
 
@@ -357,7 +359,7 @@ describe('Instructor student labels page', () => {
       });
       assert.fail('Expected error for non-existent label');
     } catch (err) {
-      assert.instanceOf(err, TRPCClientError);
+      assert.isNotNull(getAppError<StudentLabelError['Destroy']>(err));
     }
   });
 

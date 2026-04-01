@@ -23,6 +23,11 @@ updates:
     schedule:
       interval: monthly
     rebase-strategy: disabled
+    groups:
+      github-actions:
+        patterns:
+          - 'actions/*'
+          - 'docker/*'
 
   - package-ecosystem: npm
     directories:
