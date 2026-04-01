@@ -8,21 +8,19 @@ import type { IndividualTarget, StudentLabelTarget, TargetType } from '../types.
 import { StudentLabelSearchInput } from './StudentLabelSearchInput.js';
 import { StudentSearchInput } from './StudentSearchInput.js';
 
-interface AddTargetPopoverProps {
-  targetType: TargetType;
-  excludedStudentLabelIds: Set<string>;
-  excludedUids: Set<string>;
-  onSelectStudentLabels: (studentLabels: StudentLabelTarget[]) => void;
-  onSelectStudents: (students: IndividualTarget[]) => void;
-}
-
 export function AddTargetPopover({
   targetType,
   excludedStudentLabelIds,
   excludedUids,
   onSelectStudentLabels,
   onSelectStudents,
-}: AddTargetPopoverProps) {
+}: {
+  targetType: TargetType;
+  excludedStudentLabelIds: Set<string>;
+  excludedUids: Set<string>;
+  onSelectStudentLabels: (studentLabels: StudentLabelTarget[]) => void;
+  onSelectStudents: (students: IndividualTarget[]) => void;
+}) {
   const [show, setShow] = useState(false);
 
   const handleClose = () => setShow(false);

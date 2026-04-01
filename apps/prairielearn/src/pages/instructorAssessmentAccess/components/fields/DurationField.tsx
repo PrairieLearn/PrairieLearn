@@ -5,13 +5,15 @@ import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData } from '../types.js';
 
-interface DurationInputProps {
+function DurationInput({
+  value,
+  onChange,
+  idPrefix,
+}: {
   value: number | null;
   onChange: (value: number | null) => void;
   idPrefix: string;
-}
-
-function DurationInput({ value, onChange, idPrefix }: DurationInputProps) {
+}) {
   return (
     <Form.Group>
       <Form.Check
@@ -29,7 +31,12 @@ function DurationInput({ value, onChange, idPrefix }: DurationInputProps) {
             placeholder="Duration in minutes"
             min="1"
             value={value}
-            onChange={({ currentTarget }) => onChange(Number(currentTarget.value) || null)}
+            onChange={({ currentTarget }) => {
+              const num = Number(currentTarget.value);
+              if (Number.isFinite(num) && num > 0) {
+                onChange(num);
+              }
+            }}
           />
           <InputGroup.Text>minutes</InputGroup.Text>
         </InputGroup>

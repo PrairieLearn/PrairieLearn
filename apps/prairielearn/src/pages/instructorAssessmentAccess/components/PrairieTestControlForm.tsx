@@ -3,11 +3,7 @@ import { get, useFieldArray, useFormContext, useFormState } from 'react-hook-for
 
 import type { AccessControlFormData } from './types.js';
 
-interface PrairieTestControlFormProps {
-  onRemove?: () => void;
-}
-
-export function PrairieTestControlForm({ onRemove }: PrairieTestControlFormProps) {
+export function PrairieTestControlForm({ onRemove }: { onRemove?: () => void }) {
   const { register } = useFormContext<AccessControlFormData>();
 
   const {

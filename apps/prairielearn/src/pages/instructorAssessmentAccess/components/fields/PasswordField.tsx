@@ -6,13 +6,15 @@ import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData } from '../types.js';
 
-interface PasswordInputProps {
+function PasswordInput({
+  value,
+  onChange,
+  idPrefix,
+}: {
   value: string | null;
   onChange: (value: string | null) => void;
   idPrefix: string;
-}
-
-function PasswordInput({ value, onChange, idPrefix }: PasswordInputProps) {
+}) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -31,10 +33,14 @@ function PasswordInput({ value, onChange, idPrefix }: PasswordInputProps) {
               passwords before the server does. */}
           <Form.Control
             type={showPassword ? 'text' : 'password'}
+            autoComplete="off"
+            data-form-type="other"
+            data-lpignore="true"
             aria-label="Assessment password"
             placeholder="Password"
             value={value}
             minLength={1}
+            data-1p-ignore
             required
             onChange={({ currentTarget }) => onChange(currentTarget.value)}
           />

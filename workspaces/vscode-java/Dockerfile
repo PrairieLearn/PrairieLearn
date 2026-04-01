@@ -11,15 +11,15 @@ USER coder
 # functionality and is significantly smaller in size. Also, code-server is using
 # the wrong version of the extension (see
 # https://github.com/coder/code-server/discussions/7613).
-RUN curl -fsSL https://open-vsx.org/api/redhat/java/1.52.0/file/redhat.java-1.52.0.vsix -o /tmp/redhat.java-1.52.0.vsix && \
-  echo "57eb9f5bc4606299711516be0482e9d659a2b64b43b9cacdd0586c058d730266  /tmp/redhat.java-1.52.0.vsix" | sha256sum -c - && \
+RUN curl -fsSL https://open-vsx.org/api/redhat/java/1.53.0/file/redhat.java-1.53.0.vsix -o /tmp/redhat.java-1.53.0.vsix && \
+  echo "e2030557ab8ca44c6a6605b070f60bc4e9c724142d4f4d8b63756a7f344ba1a4  /tmp/redhat.java-1.53.0.vsix" | sha256sum -c - && \
   code-server --disable-telemetry --force --verbose \
   # Java language support
-  --install-extension /tmp/redhat.java-1.52.0.vsix \
+  --install-extension /tmp/redhat.java-1.53.0.vsix \
   # Java debugger
   --install-extension vscjava.vscode-java-debug \
   # Support for JUnit testing
   --install-extension vscjava.vscode-java-test \
   # Java projects view
   --install-extension vscjava.vscode-java-dependency \
-  && rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs /tmp/redhat.java-1.52.0.vsix
+  && rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs /tmp/redhat.java-1.53.0.vsix

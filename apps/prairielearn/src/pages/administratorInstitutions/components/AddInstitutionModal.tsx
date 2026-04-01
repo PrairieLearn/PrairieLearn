@@ -8,7 +8,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { StaffAuthnProvider } from '../../../lib/client/safe-db-types.js';
 import { type Timezone, formatTimezone } from '../../../lib/timezone.shared.js';
-import { useTRPC } from '../utils/trpc-context.js';
+import { useTRPC } from '../../../trpc/administrator/context.js';
 
 interface AddInstitutionFormData {
   short_name: string;
@@ -32,7 +32,7 @@ export function AddInstitutionModal({
   aiSecretsConfigured: boolean;
 }) {
   const trpc = useTRPC();
-  const mutation = useMutation(trpc.addInstitution.mutationOptions());
+  const mutation = useMutation(trpc.institutions.addInstitution.mutationOptions());
 
   const defaultCheckedIds = supportedAuthenticationProviders
     .filter((p) => p.name === 'Google' || p.name === 'Azure')
@@ -68,7 +68,7 @@ export function AddInstitutionModal({
   };
 
   const timezoneQuery = useQuery({
-    ...trpc.suggestTimezoneQuery.queryOptions({ institutionName, emailDomain }),
+    ...trpc.institutions.suggestTimezone.queryOptions({ institutionName, emailDomain }),
     enabled: false,
   });
 

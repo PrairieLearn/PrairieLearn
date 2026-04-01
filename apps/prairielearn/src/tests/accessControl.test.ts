@@ -4,6 +4,8 @@ import {
   type AccessControlJson,
   type AccessControlJsonInput,
   AccessControlJsonSchema,
+  validateRuleCreditMonotonicity,
+  validateRuleDateOrdering,
 } from '../schemas/accessControl.js';
 import { validateAccessControlArray } from '../sync/course-db.js';
 
@@ -186,8 +188,8 @@ describe('Main rule requirement', () => {
 
     assert.isTrue(result.errors.length > 0, 'Expected error when no main rule exists');
     assert.isTrue(
-      result.errors.some((err) => err.includes('No main rule found')),
-      `Expected "No main rule found" error, but got: ${result.errors.join(', ')}`,
+      result.errors.some((err) => err.includes('No defaults found')),
+      `Expected "No defaults found" error, but got: ${result.errors.join(', ')}`,
     );
   });
 
@@ -216,8 +218,8 @@ describe('Main rule requirement', () => {
 
     assert.isTrue(result.errors.length > 0, 'Expected error when multiple main rules exist');
     assert.isTrue(
-      result.errors.some((err) => err.includes('Found 2 main rules')),
-      `Expected "Found 2 main rules" error, but got: ${result.errors.join(', ')}`,
+      result.errors.some((err) => err.includes('Found 2 defaults entries')),
+      `Expected "Found 2 defaults entries" error, but got: ${result.errors.join(', ')}`,
     );
   });
 
@@ -411,5 +413,165 @@ describe('Exam UUID validation', () => {
     });
 
     assert.isTrue(result.success);
+  });
+});
+
+describe('Date ordering validation', () => {
+  it('should reject release date after due date', () => {
+    const rule: AccessControlJson = AccessControlJsonSchema.parse({
+      dateControl: {
+        releaseDate: '2024-03-25T00:00:00',
+        dueDate: '2024-03-20T00:00:00',
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.isTrue(errors.some((e) => e.includes('Release date must be before due date')));
+  });
+
+  it('should reject early deadline after due date', () => {
+    const rule: AccessControlJson = AccessControlJsonSchema.parse({
+      dateControl: {
+        dueDate: '2024-03-20T00:00:00',
+        earlyDeadlines: [{ date: '2024-03-25T00:00:00', credit: 120 }],
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.isTrue(errors.some((e) => e.includes('must be before the due date')));
+  });
+
+  it('should reject late deadline before due date', () => {
+    const rule: AccessControlJson = AccessControlJsonSchema.parse({
+      dateControl: {
+        dueDate: '2024-03-20T00:00:00',
+        lateDeadlines: [{ date: '2024-03-18T00:00:00', credit: 80 }],
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.isTrue(errors.some((e) => e.includes('must be after the due date')));
+  });
+
+  it('should reject out-of-order early deadlines', () => {
+    const rule: AccessControlJson = AccessControlJsonSchema.parse({
+      dateControl: {
+        earlyDeadlines: [
+          { date: '2024-03-18T00:00:00', credit: 130 },
+          { date: '2024-03-15T00:00:00', credit: 120 },
+        ],
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.isTrue(errors.some((e) => e.includes('chronological order')));
+  });
+
+  it('should reject out-of-order late deadlines', () => {
+    const rule: AccessControlJson = AccessControlJsonSchema.parse({
+      dateControl: {
+        lateDeadlines: [
+          { date: '2024-03-28T00:00:00', credit: 80 },
+          { date: '2024-03-25T00:00:00', credit: 50 },
+        ],
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.isTrue(errors.some((e) => e.includes('chronological order')));
+  });
+
+  it('should reject showQuestionsAgainDate after hideQuestionsAgainDate', () => {
+    const rule: AccessControlJson = AccessControlJsonSchema.parse({
+      afterComplete: {
+        showQuestionsAgainDate: '2024-03-30T00:00:00',
+        hideQuestionsAgainDate: '2024-03-25T00:00:00',
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.isTrue(errors.some((e) => e.includes('showQuestionsAgainDate must be before')));
+  });
+
+  it('should accept valid date ordering', () => {
+    const rule: AccessControlJson = AccessControlJsonSchema.parse({
+      dateControl: {
+        releaseDate: '2024-03-10T00:00:00',
+        dueDate: '2024-03-20T00:00:00',
+        earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 120 }],
+        lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.deepEqual(errors, []);
+  });
+});
+
+describe('Credit monotonicity validation', () => {
+  it('should reject early deadline credit below 100%', () => {
+    const rule: AccessControlJson = AccessControlJsonSchema.parse({
+      dateControl: {
+        earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 80 }],
+      },
+    });
+    const errors = validateRuleCreditMonotonicity(rule);
+    assert.isTrue(errors.some((e) => e.includes('at least 100%')));
+  });
+
+  it('should reject increasing early deadline credits', () => {
+    const rule: AccessControlJson = AccessControlJsonSchema.parse({
+      dateControl: {
+        earlyDeadlines: [
+          { date: '2024-03-12T00:00:00', credit: 110 },
+          { date: '2024-03-15T00:00:00', credit: 130 },
+        ],
+      },
+    });
+    const errors = validateRuleCreditMonotonicity(rule);
+    assert.isTrue(errors.some((e) => e.includes('monotonically decreasing')));
+  });
+
+  it('should reject late deadline credit at or above 100%', () => {
+    const rule: AccessControlJson = AccessControlJsonSchema.parse({
+      dateControl: {
+        lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 100 }],
+      },
+    });
+    const errors = validateRuleCreditMonotonicity(rule);
+    assert.isTrue(errors.some((e) => e.includes('less than 100%')));
+  });
+
+  it('should reject increasing late deadline credits', () => {
+    const rule: AccessControlJson = AccessControlJsonSchema.parse({
+      dateControl: {
+        lateDeadlines: [
+          { date: '2024-03-25T00:00:00', credit: 50 },
+          { date: '2024-03-28T00:00:00', credit: 80 },
+        ],
+      },
+    });
+    const errors = validateRuleCreditMonotonicity(rule);
+    assert.isTrue(errors.some((e) => e.includes('monotonically decreasing')));
+  });
+
+  it('should accept valid credit values', () => {
+    const rule: AccessControlJson = AccessControlJsonSchema.parse({
+      dateControl: {
+        earlyDeadlines: [
+          { date: '2024-03-12T00:00:00', credit: 130 },
+          { date: '2024-03-15T00:00:00', credit: 110 },
+        ],
+        lateDeadlines: [
+          { date: '2024-03-25T00:00:00', credit: 80 },
+          { date: '2024-03-28T00:00:00', credit: 50 },
+        ],
+      },
+    });
+    const errors = validateRuleCreditMonotonicity(rule);
+    assert.deepEqual(errors, []);
+  });
+});
+
+describe('Empty accessControl array', () => {
+  it('should accept an empty accessControl array without warnings', () => {
+    const result = validateAccessControlArray({
+      accessControlJsonArray: [],
+    });
+    assert.deepEqual(result.errors, []);
+    assert.deepEqual(result.warnings, []);
   });
 });
