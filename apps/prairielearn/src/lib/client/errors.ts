@@ -1,16 +1,14 @@
 import { TRPCClientError } from '@trpc/client';
 
-import type { AppErrorBase } from '../../trpc/app-errors.js';
-
 /**
  * Resolves the error type for client-side use:
  * - Direct error type (has `code`): use as-is.
  * - Error map interface: union of all procedure error types.
  * - Empty error map: `never`, yielding only `'UNKNOWN'`.
  */
-type ResolveAppError<T> = T extends AppErrorBase
+type ResolveAppError<T> = T extends { code: string }
   ? T
-  : T[keyof T] extends AppErrorBase
+  : T[keyof T] extends { code: string }
     ? T[keyof T]
     : never;
 
@@ -27,7 +25,9 @@ type ResolveAppError<T> = T extends AppErrorBase
  *   }
  * }
  */
-export type AppError<T> = ResolveAppError<T> | { code: 'UNKNOWN'; message: string };
+export type AppError<T> =
+  | (ResolveAppError<T> & { message: string })
+  | { code: 'UNKNOWN'; message: string };
 
 /**
  * Extracts a typed app-level error from a tRPC error, narrowed to the

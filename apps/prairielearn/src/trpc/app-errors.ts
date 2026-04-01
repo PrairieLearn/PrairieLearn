@@ -12,7 +12,7 @@ import { type TRPCDefaultErrorShape, TRPCError, type TRPC_ERROR_CODE_KEY } from 
  * infrastructure: `AppError`, `throwAppError`, and `appErrorFormatter`.
  */
 
-export interface AppErrorBase {
+interface AppErrorBase {
   code: string;
   message: string;
 }
@@ -44,7 +44,7 @@ type SharedProcedureErrors<Map> =
  * - Direct error type (has `code`): use as-is.
  * - Error map interface (keyed by procedure): compute shared errors.
  */
-type ResolveError<T> = T extends AppErrorBase ? T : SharedProcedureErrors<T>;
+type ResolveError<T> = T extends { code: string } ? T : SharedProcedureErrors<T>;
 
 interface AppErrorShape extends TRPCDefaultErrorShape {
   data: TRPCDefaultErrorShape['data'] & { appError?: AppErrorBase };
@@ -92,9 +92,9 @@ class AppError extends TRPCError {
  * @example
  * export interface WidgetError {
  *   Update:
- *     | { code: 'NAME_TAKEN'; message: string; name: string }
- *     | { code: 'SYNC_FAILED'; message: string; id: string };
- *   Delete: { code: 'SYNC_FAILED'; message: string; id: string };
+ *     | { code: 'NAME_TAKEN'; name: string }
+ *     | { code: 'SYNC_FAILED'; id: string };
+ *   Delete: { code: 'SYNC_FAILED'; id: string };
  * }
  *
  * // Procedure-specific: all errors for Update
@@ -104,8 +104,8 @@ class AppError extends TRPCError {
  * throwAppError<WidgetError>({ code: 'SYNC_FAILED', message: 'Failed to sync widget', id });
  */
 export function throwAppError<T>(
-  meta: ResolveError<T>,
+  meta: ResolveError<T> & { message: string },
   trpcCode: TRPC_ERROR_CODE_KEY = 'BAD_REQUEST',
 ): never {
-  throw new AppError(meta as AppErrorBase, trpcCode);
+  throw new AppError(meta as unknown as AppErrorBase, trpcCode);
 }
