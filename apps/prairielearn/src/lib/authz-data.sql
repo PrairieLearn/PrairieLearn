@@ -78,7 +78,7 @@ SELECT
     SELECT
       *
     FROM
-      course_instance_access_rules
+      course_instance_access_rules AS ciar
     WHERE
       ciar.course_instance_id = ci.id
       AND (
