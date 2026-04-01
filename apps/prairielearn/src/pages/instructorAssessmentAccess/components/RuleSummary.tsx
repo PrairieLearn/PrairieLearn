@@ -6,6 +6,7 @@ import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 
 import {
+  type AfterLastDeadlineValue,
   DATE_CONTROL_FIELD_NAMES,
   type DeadlineEntry,
   type MainRuleData,
@@ -220,6 +221,139 @@ export function generateRuleSummary(
   return items;
 }
 
+interface OverrideFieldItem {
+  label: string;
+  value: string;
+}
+
+function formatDeadlineEntries(
+  deadlines: DeadlineEntry[],
+  displayTimezone: string,
+  labelPrefix: string,
+): OverrideFieldItem[] {
+  return deadlines
+    .filter((d) => d.date)
+    .map((d, i) => ({
+      label:
+        deadlines.length === 1 ? `${labelPrefix} deadline` : `${labelPrefix} deadline ${i + 1}`,
+      value: `${formatDate(new Date(d.date), displayTimezone)} (${d.credit}% credit)`,
+    }));
+}
+
+function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): string {
+  const parts: string[] = [];
+  if (afterLastDeadline.credit !== undefined) {
+    parts.push(`${afterLastDeadline.credit}% credit`);
+  }
+  if (afterLastDeadline.allowSubmissions) {
+    parts.push('submissions allowed');
+  } else {
+    parts.push('closed');
+  }
+  return parts.join(', ');
+}
+
+export function generateOverrideFieldItems(
+  rule: OverrideData,
+  displayTimezone: string,
+): OverrideFieldItem[] {
+  const items: OverrideFieldItem[] = [];
+  const of = new Set(rule.overriddenFields);
+
+  if (of.has('releaseDate')) {
+    items.push({
+      label: 'Release date',
+      value: rule.releaseDate
+        ? formatDate(new Date(rule.releaseDate), displayTimezone)
+        : 'Released immediately',
+    });
+  }
+
+  if (of.has('earlyDeadlines')) {
+    items.push(...formatDeadlineEntries(rule.earlyDeadlines, displayTimezone, 'Early'));
+  }
+
+  if (of.has('dueDate')) {
+    items.push({
+      label: 'Due date',
+      value: rule.dueDate ? formatDate(new Date(rule.dueDate), displayTimezone) : 'No due date',
+    });
+  }
+
+  if (of.has('lateDeadlines')) {
+    items.push(...formatDeadlineEntries(rule.lateDeadlines, displayTimezone, 'Late'));
+  }
+
+  if (of.has('afterLastDeadline') && rule.afterLastDeadline) {
+    items.push({
+      label: 'After last deadline',
+      value: formatAfterLastDeadline(rule.afterLastDeadline),
+    });
+  }
+
+  if (of.has('durationMinutes')) {
+    items.push({
+      label: 'Time limit',
+      value: rule.durationMinutes !== null ? `${rule.durationMinutes} minutes` : 'No time limit',
+    });
+  }
+
+  if (of.has('password')) {
+    items.push({
+      label: 'Password',
+      value: rule.password ? 'Password protected' : 'No password',
+    });
+  }
+
+  if (of.has('questionVisibility')) {
+    items.push({
+      label: 'Question visibility',
+      value: rule.questionVisibility.hideQuestions
+        ? 'Questions hidden after completion'
+        : 'Questions visible after completion',
+    });
+  }
+
+  if (of.has('scoreVisibility')) {
+    items.push({
+      label: 'Score visibility',
+      value: rule.scoreVisibility.hideScore
+        ? 'Score hidden after completion'
+        : 'Score visible after completion',
+    });
+  }
+
+  return items;
+}
+
+function OverrideFieldsList({ items }: { items: OverrideFieldItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div
+      className="border rounded overflow-hidden"
+      style={{ borderColor: 'var(--bs-border-color)' }}
+    >
+      <table className="table table-sm mb-0">
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.label}>
+              <td
+                className="ps-3 border-0 text-body-secondary fw-medium"
+                style={{ ...tdStyle, whiteSpace: 'nowrap', width: '1%' }}
+              >
+                {item.label}
+              </td>
+              <td className="border-0" style={tdStyle}>
+                {item.value}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function CreditBadge({ credit }: { credit: string }) {
   const numericValue = Number.parseInt(credit, 10);
   let className: string;
@@ -314,11 +448,13 @@ export function RuleSummaryCard({
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
 }) {
-  const effectiveVerbosity: SummaryVerbosity = isMainRule ? 'compact' : 'verbose';
-  const summaryItems = generateRuleSummary(rule, effectiveVerbosity);
-  const dateTableRows = generateDateTableRows(rule, displayTimezone, effectiveVerbosity);
-
   const overrideRule = !isMainRule ? (rule as OverrideData) : null;
+
+  const summaryItems = isMainRule ? generateRuleSummary(rule, 'compact') : [];
+  const dateTableRows = isMainRule ? generateDateTableRows(rule, displayTimezone, 'compact') : [];
+  const overrideFieldItems = overrideRule
+    ? generateOverrideFieldItems(overrideRule, displayTimezone)
+    : [];
 
   const students =
     overrideRule?.appliesTo.targetType === 'individual' ? overrideRule.appliesTo.individuals : [];
@@ -390,6 +526,18 @@ export function RuleSummaryCard({
           </Alert>
         )}
 
+        {overrideFieldItems.length > 0 && (
+          <div className="mb-2">
+            <div
+              className="text-body-secondary fw-semibold mb-2"
+              style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+            >
+              Overridden fields
+            </div>
+            <OverrideFieldsList items={overrideFieldItems} />
+          </div>
+        )}
+
         {dateTableRows.length > 0 && (
           <div className="mb-2">
             <div
@@ -435,9 +583,12 @@ export function RuleSummaryCard({
           </div>
         )}
 
-        {dateTableRows.length === 0 && summaryItems.length === 0 && students.length === 0 && (
-          <p className="text-body-secondary mb-0">No specific settings configured</p>
-        )}
+        {overrideFieldItems.length === 0 &&
+          dateTableRows.length === 0 &&
+          summaryItems.length === 0 &&
+          students.length === 0 && (
+            <p className="text-body-secondary mb-0">No specific settings configured</p>
+          )}
       </Card.Body>
     </Card>
   );
