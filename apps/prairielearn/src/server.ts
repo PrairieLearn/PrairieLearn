@@ -1009,7 +1009,7 @@ export async function initExpress(): Promise<Express> {
     ],
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/instance_question/:instance_question_id(\\d+)/trpc',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_question/:instance_question_id(\\d+)/trpc',
     [
       (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
       instanceQuestionTrpcRouter,

@@ -3,9 +3,10 @@ import type { CreateExpressContextOptions } from '@trpc/server/adapters/express'
 import superjson from 'superjson';
 
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import { appErrorFormatter } from '../app-errors.js';
 
 export function createContext({ req, res }: CreateExpressContextOptions) {
-  const locals = res.locals as ResLocalsForPage<'instructor-instance-question'>;
+  const locals = res.locals as ResLocalsForPage<'instance-question'>;
 
   return {
     user: locals.authz_data.user,
@@ -20,6 +21,7 @@ export function createContext({ req, res }: CreateExpressContextOptions) {
     urlPrefix: locals.urlPrefix,
     authz_data: locals.authz_data,
     session: req.session,
+    locals,
   };
 }
 
@@ -27,6 +29,7 @@ export type TRPCContext = Awaited<ReturnType<typeof createContext>>;
 
 export const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,
+  errorFormatter: appErrorFormatter,
 });
 
 export const requireCourseInstancePermissionView = t.middleware(async (opts) => {

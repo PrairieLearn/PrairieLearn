@@ -15,6 +15,7 @@ import {
   selectInstanceQuestionGroups,
   updateManualInstanceQuestionGroup,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
+import { getInstanceQuestionTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
@@ -137,7 +138,10 @@ router.get(
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
-        url: req.originalUrl.split('?')[0] + '/trpc',
+        url: getInstanceQuestionTrpcUrl({
+          courseInstanceId: res.locals.course_instance.id,
+          instanceQuestionId: res.locals.instance_question.id,
+        }),
         authn_user_id: res.locals.authn_user.id,
       },
       config.secretKey,

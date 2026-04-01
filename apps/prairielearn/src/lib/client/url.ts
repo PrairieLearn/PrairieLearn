@@ -126,6 +126,52 @@ export function getQuestionCreateUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/course_admin/questions/create`;
 }
 
+// Manual grading URLs
+
+export function getManualGradingUrl({
+  courseInstanceId,
+  assessmentId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+}): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/manual_grading`;
+}
+
+export function getManualGradingAssessmentQuestionUrl({
+  courseInstanceId,
+  assessmentId,
+  assessmentQuestionId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  assessmentQuestionId: string;
+}): string {
+  return `${getManualGradingUrl({ courseInstanceId, assessmentId })}/assessment_question/${assessmentQuestionId}`;
+}
+
+export function getManualGradingInstanceQuestionUrl({
+  courseInstanceId,
+  assessmentId,
+  instanceQuestionId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  instanceQuestionId: string;
+}): string {
+  return `${getManualGradingUrl({ courseInstanceId, assessmentId })}/instance_question/${instanceQuestionId}`;
+}
+
+export function getAssessmentInstancesUrl({
+  courseInstanceId,
+  assessmentId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+}): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/instances`;
+}
+
 // tRPC scope URLs
 
 export function getAdministratorTrpcUrl(): string {
@@ -156,4 +202,14 @@ export function getAssessmentQuestionTrpcUrl({
   assessmentQuestionId: string;
 }): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/assessment_question/${assessmentQuestionId}/trpc`;
+}
+
+export function getInstanceQuestionTrpcUrl({
+  courseInstanceId,
+  instanceQuestionId,
+}: {
+  courseInstanceId: string;
+  instanceQuestionId: string;
+}): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/instance_question/${instanceQuestionId}/trpc`;
 }

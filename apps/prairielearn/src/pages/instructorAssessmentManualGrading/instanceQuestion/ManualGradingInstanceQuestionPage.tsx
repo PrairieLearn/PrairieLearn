@@ -15,6 +15,8 @@ interface ManualGradingInstanceQuestionPageProps {
   initialRubricData: RubricQueryData;
   initialGradingContext: GradingContextData;
   trpcCsrfToken: string;
+  courseInstanceId: string;
+  instanceQuestionId: string;
   csrfToken: string;
   pageUrls: InstanceQuestionPageUrls;
   hasCourseInstancePermissionEdit: boolean;
@@ -40,6 +42,8 @@ export function ManualGradingInstanceQuestionPage({
   initialRubricData,
   initialGradingContext,
   trpcCsrfToken,
+  courseInstanceId,
+  instanceQuestionId,
   ...rest
 }: ManualGradingInstanceQuestionPageProps) {
   const [queryClient] = useState(
@@ -48,7 +52,13 @@ export function ManualGradingInstanceQuestionPage({
         defaultOptions: { queries: { refetchOnWindowFocus: false } },
       }),
   );
-  const [trpcClient] = useState(() => createInstanceQuestionTrpcClient(trpcCsrfToken));
+  const [trpcClient] = useState(() =>
+    createInstanceQuestionTrpcClient({
+      csrfToken: trpcCsrfToken,
+      courseInstanceId,
+      instanceQuestionId,
+    }),
+  );
 
   return (
     <QueryClientProviderDebug client={queryClient}>
@@ -65,7 +75,10 @@ export function ManualGradingInstanceQuestionPage({
 
 ManualGradingInstanceQuestionPage.displayName = 'ManualGradingInstanceQuestionPage';
 
-type InnerProps = Omit<ManualGradingInstanceQuestionPageProps, 'trpcCsrfToken'>;
+type InnerProps = Omit<
+  ManualGradingInstanceQuestionPageProps,
+  'trpcCsrfToken' | 'courseInstanceId' | 'instanceQuestionId'
+>;
 
 function ManualGradingInstanceQuestionPageInner({
   initialRubricData,

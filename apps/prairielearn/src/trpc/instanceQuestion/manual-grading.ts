@@ -25,6 +25,8 @@ import {
   t,
 } from './init.js';
 
+export interface ManualGradingError {}
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function getAiGradingEnabled(ctx: TRPCContext): Promise<boolean> {

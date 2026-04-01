@@ -261,6 +261,8 @@ export function InstanceQuestion({
           initialRubricData={initialRubricData}
           initialGradingContext={initialGradingContext}
           trpcCsrfToken={trpcCsrfToken}
+          courseInstanceId={resLocals.course_instance.id}
+          instanceQuestionId={resLocals.instance_question.id}
           csrfToken={__csrf_token}
           pageUrls={pageUrls}
           hasCourseInstancePermissionEdit={resLocals.authz_data.has_course_instance_permission_edit}

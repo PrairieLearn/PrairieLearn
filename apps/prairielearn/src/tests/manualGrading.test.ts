@@ -1,11 +1,17 @@
-import { createTRPCClient, httpLink } from '@trpc/client';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
-import superjson from 'superjson';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import {
+  getAssessmentInstancesUrl,
+  getAssessmentQuestionTrpcUrl,
+  getInstanceQuestionTrpcUrl,
+  getManualGradingInstanceQuestionUrl,
+  getManualGradingUrl,
+} from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { InstanceQuestionSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
@@ -14,7 +20,7 @@ import {
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
 import { createAssessmentQuestionTrpcClient } from '../trpc/assessmentQuestion/client.js';
-import type { InstanceQuestionRouter } from '../trpc/instanceQuestion/trpc.js';
+import { createInstanceQuestionTrpcClient } from '../trpc/instanceQuestion/client.js';
 
 import {
   type User,
@@ -103,6 +109,8 @@ function getLatestSubmissionStatus($: cheerio.CheerioAPI): string {
 }
 
 let iqUrl: string, iqId: string | number;
+let assessmentId: string;
+let assessmentQuestionId: string;
 let instancesAssessmentUrl: string;
 let manualGradingAssessmentUrl: string;
 let manualGradingAssessmentQuestionUrl: string;
@@ -114,53 +122,64 @@ let feedback_note: string;
 let rubric_items: RubricItem[] | undefined;
 let selected_rubric_items: number[] | undefined;
 
-async function createInstanceQuestionTrpcClient(iqPageUrl: string) {
-  const pageResponse = await fetch(iqPageUrl);
-  const pageHtml = await pageResponse.text();
-  const $ = cheerio.load(pageHtml);
+function getAuthnUserId(): string {
+  const staff = mockStaff.find((s) => s.authUid === config.authUid);
+  return staff?.id ?? '1';
+}
 
-  const dataScript = $(
-    'script[data-component-props][data-component="ManualGradingInstanceQuestionPage"]',
-  );
-  const propsJson = dataScript.text();
-  const props = superjson.parse<{
-    trpcCsrfToken: string;
-    initialRubricData: { modifiedAt: string };
-    initialGradingContext: { submissionId: string };
-  }>(propsJson);
-
-  const client = createTRPCClient<InstanceQuestionRouter>({
-    links: [
-      httpLink({
-        url: iqPageUrl + '/trpc',
-        headers: {
-          'X-TRPC': 'true',
-          'X-CSRF-Token': props.trpcCsrfToken,
-        },
-        transformer: superjson,
+function createIQClient() {
+  const csrfToken = generatePrefixCsrfToken(
+    {
+      url: getInstanceQuestionTrpcUrl({
+        courseInstanceId: '1',
+        instanceQuestionId: String(iqId),
       }),
-    ],
+      authn_user_id: getAuthnUserId(),
+    },
+    config.secretKey,
+  );
+  return createInstanceQuestionTrpcClient({
+    csrfToken,
+    courseInstanceId: '1',
+    instanceQuestionId: String(iqId),
+    urlBase: siteUrl,
   });
+}
 
-  return {
-    client,
-    submissionId: props.initialGradingContext.submissionId,
-    modifiedAt: props.initialRubricData.modifiedAt,
-  };
+function createAQClient() {
+  const csrfToken = generatePrefixCsrfToken(
+    {
+      url: getAssessmentQuestionTrpcUrl({
+        courseInstanceId: '1',
+        assessmentId,
+        assessmentQuestionId,
+      }),
+      authn_user_id: getAuthnUserId(),
+    },
+    config.secretKey,
+  );
+  return createAssessmentQuestionTrpcClient({
+    csrfToken,
+    courseInstanceId: '1',
+    assessmentId,
+    assessmentQuestionId,
+    urlBase: siteUrl,
+  });
 }
 
 async function submitGradeForm(
   method: 'rubric' | 'points' | 'percentage' = 'rubric',
 ): Promise<void> {
-  const { client, submissionId, modifiedAt } =
-    await createInstanceQuestionTrpcClient(manualGradingIQUrl);
+  const client = createIQClient();
+  const rubricData = await client.manualGrading.rubricData.query();
+  const gradingContext = await client.manualGrading.gradingContext.query();
 
   const usePercentage = method === 'percentage';
 
   await client.manualGrading.addManualGrade.mutate({
     action: 'add_manual_grade',
-    submissionId,
-    modifiedAt: new Date(modifiedAt),
+    submissionId: gradingContext.submissionId,
+    modifiedAt: new Date(rubricData.modifiedAt),
     usePercentage,
     scoreManualPoints: usePercentage ? null : score_points,
     scoreManualPercent: usePercentage ? score_percent : null,
@@ -179,46 +198,15 @@ async function submitGradeForm(
   });
 }
 
-async function createTrpcClient(assessmentQuestionUrl: string) {
-  // Fetch the page to get the CSRF token from hydration data
-  const pageResponse = await fetch(assessmentQuestionUrl);
-  const pageHtml = await pageResponse.text();
-  const $ = cheerio.load(pageHtml);
-
-  // Extract trpcCsrfToken from the hydration data
-  const dataScript = $(
-    'script[data-component-props][data-component="AssessmentQuestionManualGrading"]',
-  );
-  const propsJson = dataScript.text();
-  const props = superjson.parse<{ trpcCsrfToken: string }>(propsJson);
-  const trpcCsrfToken = props.trpcCsrfToken;
-
-  // Extract IDs from the manual grading page URL to construct the scope-level tRPC URL.
-  const pageUrl = new URL(assessmentQuestionUrl);
-  const match = pageUrl.pathname.match(
-    /\/pl\/course_instance\/(\d+)\/instructor\/assessment\/(\d+)\/manual_grading\/assessment_question\/(\d+)/,
-  );
-  if (!match) throw new Error(`Cannot parse assessment question URL: ${assessmentQuestionUrl}`);
-  const [, courseInstanceId, assessmentId, assessmentQuestionId] = match;
-
-  return createAssessmentQuestionTrpcClient({
-    csrfToken: trpcCsrfToken,
-    courseInstanceId,
-    assessmentId,
-    assessmentQuestionId,
-    urlBase: pageUrl.origin,
-  });
-}
-
-async function loadInstances(assessmentQuestionUrl: string) {
-  const client = await createTrpcClient(assessmentQuestionUrl);
+async function loadInstances() {
+  const client = createAQClient();
   return await client.manualGrading.instances.query();
 }
 
 function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void {
   test.sequential('manual grading page for instance question lists updated values', async () => {
     setUser(defaultUser);
-    const { client } = await createInstanceQuestionTrpcClient(manualGradingIQUrl);
+    const client = createIQClient();
     const gradingContext = await client.manualGrading.gradingContext.query();
     assert.closeTo(gradingContext.manualPoints, score_points, 0.01);
     assert.equal(gradingContext.submissionFeedback, feedback_note);
@@ -226,7 +214,7 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
 
   test.sequential('manual grading page for assessment question lists updated values', async () => {
     setUser(defaultUser);
-    const instanceList = await loadInstances(manualGradingAssessmentQuestionUrl);
+    const instanceList = await loadInstances();
     assert.lengthOf(instanceList, 1);
     assert.equal(instanceList[0].instance_question.id, iqId);
     assert.isNotOk(instanceList[0].instance_question.requires_manual_grading);
@@ -351,7 +339,7 @@ function checkSettingsResults(
   grader_guidelines: string,
 ): void {
   test.sequential('rubric settings should update with new values', async () => {
-    const { client } = await createInstanceQuestionTrpcClient(manualGradingIQUrl);
+    const client = createIQClient();
     const data = await client.manualGrading.rubricData.query();
     const rubric = data.rubricData?.rubric;
     assert.isDefined(rubric);
@@ -424,7 +412,7 @@ async function submitRubricSettings({
   rubric_items: RubricItem[];
   grader_guidelines?: string;
 }) {
-  const { client } = await createInstanceQuestionTrpcClient(manualGradingIQUrl);
+  const client = createIQClient();
   await client.manualGrading.modifyRubricSettings.mutate({
     useRubric: true,
     replaceAutoPoints: replace_auto_points,
@@ -455,8 +443,11 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       course_instance_id: '1',
       tid: 'hw9-internalExternalManual',
     });
-    manualGradingAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessment.id}/manual_grading`;
-    instancesAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessment.id}/instances`;
+    assessmentId = assessment.id;
+    manualGradingAssessmentUrl =
+      siteUrl + getManualGradingUrl({ courseInstanceId: '1', assessmentId });
+    instancesAssessmentUrl =
+      siteUrl + getAssessmentInstancesUrl({ courseInstanceId: '1', assessmentId });
   });
 
   beforeAll(async () => {
@@ -487,7 +478,13 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       test.sequential('load page as student', async () => {
         iqUrl = await loadHomeworkQuestionUrl(mockStudents[0]);
         iqId = parseInstanceQuestionId(iqUrl);
-        manualGradingIQUrl = `${manualGradingAssessmentUrl}/instance_question/${iqId}`;
+        manualGradingIQUrl =
+          siteUrl +
+          getManualGradingInstanceQuestionUrl({
+            courseInstanceId: '1',
+            assessmentId,
+            instanceQuestionId: String(iqId),
+          });
 
         const instanceQuestion = await sqldb.queryRow(
           sql.get_instance_question,
@@ -537,10 +534,13 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         const nextButton = row.find('.btn:contains("next submission")');
         assert.equal(nextButton.length, 1);
 
-        // Extract URLs from the HTML to verify they're correct
+        // Extract URLs and IDs from the HTML
         const questionLink = row.find('td:first-child a').attr('href');
         assert(questionLink);
         manualGradingAssessmentQuestionUrl = siteUrl + questionLink;
+        const aqMatch = questionLink.match(/assessment_question\/(\d+)/);
+        assert(aqMatch);
+        assessmentQuestionId = aqMatch[1];
         const nextUngradedLink = nextButton.attr('href');
         assert(nextUngradedLink);
         manualGradingNextUngradedUrl = siteUrl + nextUngradedLink;
@@ -562,7 +562,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         'manual grading page for assessment question should list one instance',
         async () => {
           setUser(defaultUser);
-          const instanceList = await loadInstances(manualGradingAssessmentQuestionUrl);
+          const instanceList = await loadInstances();
           assert.lengthOf(instanceList, 1);
           assert.equal(instanceList[0].instance_question.id, iqId);
           assert.isOk(instanceList[0].instance_question.requires_manual_grading);
@@ -652,7 +652,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
     describe('Assigning grading to staff members', () => {
       test.sequential('tag question to specific grader', async () => {
         setUser(defaultUser);
-        const client = await createTrpcClient(manualGradingAssessmentQuestionUrl);
+        const client = createAQClient();
         await client.manualGrading.setAssignedGrader.mutate({
           assigned_grader: mockStaff[0].id!,
           instance_question_ids: [iqId.toString()],
@@ -663,7 +663,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         'manual grading page for assessment question should list tagged grader',
         async () => {
           setUser(defaultUser);
-          const instanceList = await loadInstances(manualGradingAssessmentQuestionUrl);
+          const instanceList = await loadInstances();
           assert(instanceList);
           assert.lengthOf(instanceList, 1);
           assert.equal(instanceList[0].instance_question.id, iqId);
@@ -1075,7 +1075,13 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       test.sequential('load page as student', async () => {
         iqUrl = await loadHomeworkQuestionUrl(mockStudents[0]);
         iqId = parseInstanceQuestionId(iqUrl);
-        manualGradingIQUrl = `${manualGradingAssessmentUrl}/instance_question/${iqId}`;
+        manualGradingIQUrl =
+          siteUrl +
+          getManualGradingInstanceQuestionUrl({
+            courseInstanceId: '1',
+            assessmentId,
+            instanceQuestionId: String(iqId),
+          });
 
         const instanceQuestion = await sqldb.queryRow(
           sql.get_instance_question,
@@ -1134,10 +1140,13 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         const count = row.find('td[data-testid="iq-to-grade-count"]').text().replaceAll(/\s/g, '');
         assert.equal(count, '1/1');
 
-        // Extract URLs from the HTML to verify they're correct
+        // Extract URLs and IDs from the HTML
         const questionLink = row.find('td:first-child a').attr('href');
         assert(questionLink);
         manualGradingAssessmentQuestionUrl = siteUrl + questionLink;
+        const aqMatch = questionLink.match(/assessment_question\/(\d+)/);
+        assert(aqMatch);
+        assessmentQuestionId = aqMatch[1];
 
         // The "next submission" button only shows if the current user has questions assigned to them
         // or if there are unassigned questions. The current user, "defaultUser",
@@ -1164,7 +1173,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         'manual grading page for assessment question should list one instance',
         async () => {
           setUser(defaultUser);
-          const instanceList = await loadInstances(manualGradingAssessmentQuestionUrl);
+          const instanceList = await loadInstances();
           assert.lengthOf(instanceList, 1);
           assert.equal(instanceList[0].instance_question.id, iqId);
           assert.isOk(instanceList[0].instance_question.requires_manual_grading);
