@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { Alert, Badge, Button, Form, ListGroup, Spinner, Tab, Tabs } from 'react-bootstrap';
 
 import { parseUniqueValuesFromString } from '../../../../lib/string-util.js';
-import { useTRPCClient } from '../../../../trpc/assessment/context.js';
+import { useTRPC, useTRPCClient } from '../../../../trpc/assessment/context.js';
 import type { EnrollmentTarget } from '../types.js';
 
 export function StudentSearchInput({
@@ -15,25 +15,21 @@ export function StudentSearchInput({
   onSelect: (students: EnrollmentTarget[]) => void;
   onClose: () => void;
 }) {
+  const trpc = useTRPC();
   const trpcClient = useTRPCClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [uidInput, setUidInput] = useState('');
-  const [validatedUids, setValidatedUids] = useState<
-    { id: string | null; uid: string; name: string | null; enrolled: boolean; notFound: boolean }[]
-  >([]);
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(() => new Set());
 
-  const { data: allStudents, isLoading: isLoadingStudents } = useQuery({
-    queryKey: ['all-students'],
-    queryFn: () => trpcClient.accessControl.students.query(),
-  });
+  const { data: allStudents, isLoading: isLoadingStudents } = useQuery(
+    trpc.accessControl.students.queryOptions(),
+  );
 
   const validateMutation = useMutation({
     mutationFn: (uids: string[]) => trpcClient.accessControl.validateUids.query({ uids }),
-    onSuccess: (results) => {
-      setValidatedUids(results);
-    },
   });
+
+  const validatedUids = validateMutation.data ?? [];
 
   const filteredStudents = useMemo(() => {
     if (!allStudents) return [];
@@ -66,7 +62,7 @@ export function StudentSearchInput({
     if (validStudents.length > 0) {
       onSelect(validStudents);
       setUidInput('');
-      setValidatedUids([]);
+      validateMutation.reset();
       onClose();
     }
   };
@@ -197,7 +193,7 @@ export function StudentSearchInput({
             value={uidInput}
             onChange={({ currentTarget }) => {
               setUidInput(currentTarget.value);
-              setValidatedUids([]);
+              validateMutation.reset();
             }}
           />
 
