@@ -17,6 +17,7 @@ import {
 } from '../../utils/formHelpers.js';
 import {
   computeZoneQuestionCount,
+  getZoneMixedToolsWarning,
   getZonePointsMismatch,
   hasZoneChooseExceedsCount,
   validatePositiveInteger,
@@ -44,6 +45,7 @@ interface ZoneFormData extends ToolFormFields {
 
 export function ZoneDetailPanel({
   zone,
+  zones,
   zoneIndex,
   idPrefix,
   state,
@@ -51,6 +53,7 @@ export function ZoneDetailPanel({
   onFormValidChange,
 }: {
   zone: ZoneAssessmentForm;
+  zones: ZoneAssessmentForm[];
   zoneIndex: number;
   idPrefix: string;
   state: DetailState;
@@ -169,6 +172,7 @@ export function ZoneDetailPanel({
 
   const zonePointsMismatch = getZonePointsMismatch(zone, assessmentType);
   const zoneChooseExceeds = hasZoneChooseExceedsCount(zone);
+  const mixedToolsWarning = getZoneMixedToolsWarning(zones, assessmentToolDefaults);
 
   return (
     <div className="p-3">
@@ -182,6 +186,12 @@ export function ZoneDetailPanel({
         <div className="alert alert-warning small mb-3" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
           Number to choose or best questions exceeds the number of questions in this zone.
+        </div>
+      )}
+      {mixedToolsWarning && (
+        <div className="sticky-top alert alert-warning small mb-3" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+          {mixedToolsWarning}
         </div>
       )}
       <div className="text-muted small">
