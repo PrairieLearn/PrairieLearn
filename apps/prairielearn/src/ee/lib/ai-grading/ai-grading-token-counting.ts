@@ -1,5 +1,5 @@
 import type { ModelMessage } from 'ai';
-import { type TiktokenEncoding, encodingForModel } from 'js-tiktoken';
+import { type TiktokenEncoding, getEncoding } from 'js-tiktoken';
 import sharp from 'sharp';
 
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
@@ -119,7 +119,7 @@ export async function countInputTokensForProvider(
 ): Promise<number> {
   try {
     const encoding = PROVIDER_TIKTOKEN_ENCODING[provider];
-    const enc = encodingForModel(encoding as Parameters<typeof encodingForModel>[0]);
+    const enc = getEncoding(encoding);
     let totalTokens = 0;
 
     for (const msg of messages) {

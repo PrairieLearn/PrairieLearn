@@ -390,6 +390,16 @@ export function AiGradingModelSelectionModal({
     AI_GRADING_MODELS.find((m) => m.modelId === defaultModel)?.provider ?? 'openai';
   const [activeProvider, setActiveProvider] = useState<EnumAiGradingProvider>(defaultProvider);
 
+  const handleProviderSelect = useCallback((provider: EnumAiGradingProvider) => {
+    setActiveProvider(provider);
+    // Auto-select the first model from the new provider so selectedModel
+    // always belongs to the active provider.
+    const firstModelForProvider = AI_GRADING_MODELS.find((m) => m.provider === provider);
+    if (firstModelForProvider) {
+      setSelectedModel(firstModelForProvider.modelId);
+    }
+  }, []);
+
   const trpc = useTRPC();
   const selection = modalState ? getSelection(modalState) : 'all';
 
@@ -467,7 +477,7 @@ export function AiGradingModelSelectionModal({
           <ProviderSelector
             activeProvider={activeProvider}
             availableProviders={availableProviders}
-            onSelect={setActiveProvider}
+            onSelect={handleProviderSelect}
           />
 
           <ModelSelector
