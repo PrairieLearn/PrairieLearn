@@ -304,9 +304,9 @@ const saveAllRules = t.procedure
     });
 
     if (!saveResult.success) {
-      throwAppError<AccessControlError['SaveAllRules']>({
+      throwAppError<AccessControlError>({
         code: 'SYNC_JOB_FAILED',
-        message: 'Failed to save access control rules',
+        message: saveResult.error,
         jobSequenceId: saveResult.jobSequenceId,
       });
     }
