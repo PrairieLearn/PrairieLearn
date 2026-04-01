@@ -3,16 +3,18 @@ import { useMemo, useState } from 'react';
 import { Alert, Badge, Button, Form, ListGroup, Spinner, Tab, Tabs } from 'react-bootstrap';
 
 import { parseUniqueValuesFromString } from '../../../../lib/string-util.js';
-import { useTRPCClient } from '../../utils/trpc-context.js';
+import { useTRPCClient } from '../../../../trpc/assessment/context.js';
 import type { IndividualTarget } from '../types.js';
 
-interface StudentSearchInputProps {
+export function StudentSearchInput({
+  excludedUids,
+  onSelect,
+  onClose,
+}: {
   excludedUids: Set<string>;
   onSelect: (students: IndividualTarget[]) => void;
   onClose: () => void;
-}
-
-export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentSearchInputProps) {
+}) {
   const trpcClient = useTRPCClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [uidInput, setUidInput] = useState('');
@@ -23,11 +25,11 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
 
   const { data: allStudents, isLoading: isLoadingStudents } = useQuery({
     queryKey: ['all-students'],
-    queryFn: () => trpcClient.students.query(),
+    queryFn: () => trpcClient.accessControl.students.query(),
   });
 
   const validateMutation = useMutation({
-    mutationFn: (uids: string[]) => trpcClient.validateUids.query({ uids }),
+    mutationFn: (uids: string[]) => trpcClient.accessControl.validateUids.query({ uids }),
     onSuccess: (results) => {
       setValidatedUids(results);
     },

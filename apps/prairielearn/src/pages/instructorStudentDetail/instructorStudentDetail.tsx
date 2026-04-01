@@ -11,9 +11,9 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffAuditEventSchema, StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
+import { getCourseInstanceBaseUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
-import { getCourseInstanceUrl } from '../../lib/url.js';
 import { selectAuditEventsByEnrollmentId } from '../../models/audit-event.js';
 import {
   deleteEnrollment,
@@ -45,7 +45,7 @@ router.get(
       accessType: 'instructor',
     });
     const { urlPrefix, course_instance: courseInstance } = pageContext;
-    const courseInstanceUrl = getCourseInstanceUrl(courseInstance.id);
+    const courseInstanceUrl = getCourseInstanceBaseUrl(courseInstance.id);
 
     const trpcUrl = `/pl/course_instance/${courseInstance.id}/instructor/trpc`;
     const trpcCsrfToken = generatePrefixCsrfToken(

@@ -2,11 +2,12 @@ import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
+import { getAppError } from '../../../lib/client/errors.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import { getAssessmentAccessUrl } from '../../../lib/client/url.js';
-import { createAccessControlTrpcClient } from '../utils/trpc-client.js';
-import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
+import type { AccessControlError } from '../../../trpc/assessment/access-control.js';
+import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
+import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
 
 import { AccessControlForm } from './AccessControlForm.js';
 import type { AccessControlJsonWithId } from './types.js';
@@ -29,7 +30,7 @@ function AssessmentAccessControlInner({
   const trpc = useTRPC();
 
   const saveMutation = useMutation(
-    trpc.saveAllRules.mutationOptions({
+    trpc.accessControl.saveAllRules.mutationOptions({
       onSuccess: (result) => {
         setOrigHash(result.newHash);
         void queryClient.invalidateQueries();
@@ -54,6 +55,8 @@ function AssessmentAccessControlInner({
     });
   };
 
+  const saveError = getAppError<AccessControlError>(saveMutation.error);
+
   return (
     <div style={{ height: '100%' }} data-split-pane-page>
       {saveMutation.isSuccess && (
@@ -61,11 +64,9 @@ function AssessmentAccessControlInner({
           Access control updated successfully.
         </Alert>
       )}
-      {saveMutation.isError && (
+      {saveError && (
         <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
-          {saveMutation.error instanceof Error
-            ? saveMutation.error.message
-            : 'Failed to save access control'}
+          {saveError.message}
         </Alert>
       )}
 
@@ -81,13 +82,13 @@ function AssessmentAccessControlInner({
 
 export function AssessmentAccessControl(props: AssessmentAccessControlProps) {
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => {
-    const accessUrl = getAssessmentAccessUrl({
+  const [trpcClient] = useState(() =>
+    createAssessmentTrpcClient({
+      csrfToken: props.csrfToken,
       courseInstanceId: props.courseInstance.id,
       assessmentId: props.assessmentId,
-    });
-    return createAccessControlTrpcClient(props.csrfToken, `${accessUrl}/trpc`);
-  });
+    }),
+  );
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>

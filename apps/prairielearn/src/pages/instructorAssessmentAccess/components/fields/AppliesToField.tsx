@@ -20,11 +20,7 @@ import type {
 
 import { AddTargetPopover } from './AddTargetPopover.js';
 
-interface AppliesToFieldProps {
-  namePrefix: NamePrefix;
-}
-
-export function AppliesToField({ namePrefix }: AppliesToFieldProps) {
+export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
   const { setValue } = useFormContext<AccessControlFormData>();
 
   const appliesTo = useWatch({

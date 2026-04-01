@@ -1,5 +1,5 @@
 import { Button, Card, Col, Form, Row } from 'react-bootstrap';
-import { type Path, useController, useWatch } from 'react-hook-form';
+import { useController, useWatch } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
@@ -31,13 +31,15 @@ function getHideScoreMode(value: ScoreVisibilityValue): HideScoreMode {
   return 'hide_score_until_date';
 }
 
-interface QuestionVisibilityInputProps {
+function QuestionVisibilityInput({
+  value,
+  onChange,
+  idPrefix,
+}: {
   value: QuestionVisibilityValue;
   onChange: (value: QuestionVisibilityValue) => void;
   idPrefix: string;
-}
-
-function QuestionVisibilityInput({ value, onChange, idPrefix }: QuestionVisibilityInputProps) {
+}) {
   const hideQuestionsMode = getHideQuestionsMode(value);
 
   return (
@@ -159,13 +161,15 @@ function QuestionVisibilityInput({ value, onChange, idPrefix }: QuestionVisibili
   );
 }
 
-interface ScoreVisibilityInputProps {
+function ScoreVisibilityInput({
+  value,
+  onChange,
+  idPrefix,
+}: {
   value: ScoreVisibilityValue;
   onChange: (value: ScoreVisibilityValue) => void;
   idPrefix: string;
-}
-
-function ScoreVisibilityInput({ value, onChange, idPrefix }: ScoreVisibilityInputProps) {
+}) {
   const hideScoreMode = getHideScoreMode(value);
 
   return (
@@ -253,17 +257,15 @@ const infoPopoverConfig = {
   props: { id: 'after-complete-info-popover' },
 };
 
-interface AfterCompleteCardProps {
-  title?: string;
-  description?: string;
-  children: React.ReactNode;
-}
-
 function AfterCompleteCard({
   title = 'After completion behavior',
   description = 'Configure what happens after students complete the assessment',
   children,
-}: AfterCompleteCardProps) {
+}: {
+  title?: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
   return (
     <Card className="mb-4">
       <Card.Header>
@@ -346,11 +348,17 @@ export function OverrideAfterCompleteForm({
     name: 'mainRule.scoreVisibility',
   });
 
-  const { field: qvField } = useController({
-    name: `overrides.${index}.questionVisibility` as Path<AccessControlFormData>,
+  const { field: qvField } = useController<
+    AccessControlFormData,
+    `overrides.${number}.questionVisibility`
+  >({
+    name: `overrides.${index}.questionVisibility`,
   });
-  const { field: svField } = useController({
-    name: `overrides.${index}.scoreVisibility` as Path<AccessControlFormData>,
+  const { field: svField } = useController<
+    AccessControlFormData,
+    `overrides.${number}.scoreVisibility`
+  >({
+    name: `overrides.${index}.scoreVisibility`,
   });
 
   const {
@@ -378,7 +386,7 @@ export function OverrideAfterCompleteForm({
           onRemoveOverride={removeQvOverride}
         >
           <QuestionVisibilityInput
-            value={qvField.value as QuestionVisibilityValue}
+            value={qvField.value}
             idPrefix={`overrides-${index}`}
             onChange={qvField.onChange}
           />
@@ -396,7 +404,7 @@ export function OverrideAfterCompleteForm({
           onRemoveOverride={removeSvOverride}
         >
           <ScoreVisibilityInput
-            value={svField.value as ScoreVisibilityValue}
+            value={svField.value}
             idPrefix={`overrides-${index}`}
             onChange={svField.onChange}
           />
