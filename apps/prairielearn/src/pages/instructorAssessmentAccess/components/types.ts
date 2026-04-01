@@ -309,11 +309,10 @@ function mainRuleToJson(rule: MainRuleData, displayTimezone: string): AccessCont
     if (rule.releaseDate) {
       output.dateControl.releaseDate = rule.releaseDate;
     } else {
-      // "Released immediately" with dates configured: persist as the current
-      // timestamp so the assessment is open now (matching the course-instance
-      // publishing pattern). Truncate to minutes to satisfy the datetime-local
-      // schema.
+      // "Released immediately": persist as start-of-day in the course instance
+      // timezone so the assessment is open now with a clean display timestamp.
       output.dateControl.releaseDate = Temporal.Now.zonedDateTimeISO(displayTimezone)
+        .startOfDay()
         .toPlainDateTime()
         .toString({ smallestUnit: 'minute' });
     }

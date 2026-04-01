@@ -26,7 +26,9 @@ router.get(
     });
     const rows = await selectAllCourseRequests();
     const institutions = await selectAllInstitutions();
-    const availableTimezones = await getCanonicalTimezones();
+    const availableTimezones = await getCanonicalTimezones(
+      institutions.map((i) => i.display_timezone),
+    );
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
         url: `${urlPrefix}/administrator/trpc`,
