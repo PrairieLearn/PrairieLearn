@@ -10,7 +10,7 @@
   "engines": {
     "node": ">=24.0.0"
   },
-  "bin": "dist/cli.js",
+  "bin": "bin/cli.js",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsgo",
