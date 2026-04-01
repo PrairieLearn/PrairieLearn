@@ -321,7 +321,7 @@ export function RuleSummaryCard({
   const overrideRule = !isMainRule ? (rule as OverrideData) : null;
 
   const students =
-    overrideRule?.appliesTo.targetType === 'individual' ? overrideRule.appliesTo.individuals : [];
+    overrideRule?.appliesTo.targetType === 'enrollment' ? overrideRule.appliesTo.enrollments : [];
 
   const studentLabels =
     overrideRule?.appliesTo.targetType === 'student_label'

@@ -4,7 +4,7 @@ import { Alert, Badge, Button, Form, ListGroup, Spinner, Tab, Tabs } from 'react
 
 import { parseUniqueValuesFromString } from '../../../../lib/string-util.js';
 import { useTRPCClient } from '../../../../trpc/assessment/context.js';
-import type { IndividualTarget } from '../types.js';
+import type { EnrollmentTarget } from '../types.js';
 
 export function StudentSearchInput({
   excludedUids,
@@ -12,7 +12,7 @@ export function StudentSearchInput({
   onClose,
 }: {
   excludedUids: Set<string>;
-  onSelect: (students: IndividualTarget[]) => void;
+  onSelect: (students: EnrollmentTarget[]) => void;
   onClose: () => void;
 }) {
   const trpcClient = useTRPCClient();

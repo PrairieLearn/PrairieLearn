@@ -184,7 +184,7 @@ function dbEnrollmentRowToAccessControlJson(
   return {
     ...base,
     ruleType: 'enrollment',
-    individuals: (row.enrollments ?? []).map((e) => ({
+    enrollments: (row.enrollments ?? []).map((e) => ({
       enrollmentId: e.enrollment_id,
       uid: e.uid,
       name: e.name,

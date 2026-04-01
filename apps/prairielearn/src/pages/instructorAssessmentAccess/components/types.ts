@@ -2,7 +2,7 @@ import { Temporal } from '@js-temporal/polyfill';
 
 import type { AccessControlJson } from '../../../schemas/accessControl.js';
 
-interface AccessControlIndividual {
+interface AccessControlEnrollment {
   enrollmentId: string;
   uid: string;
   name: string | null;
@@ -15,7 +15,7 @@ export interface AccessControlJsonWithId extends AccessControlJson {
   number?: number;
   /** Rule type: 'student_label' for label-based rules, 'enrollment' for individual student rules, 'none' for rules without specific targeting */
   ruleType?: 'student_label' | 'enrollment' | 'none' | null;
-  individuals?: AccessControlIndividual[];
+  enrollments?: AccessControlEnrollment[];
   /** Student label details (id, name, color) from the database, used for rendering colored badges. */
   labelDetails?: { id: string; name: string; color: string }[];
 }
@@ -57,7 +57,7 @@ interface PrairieTestExam {
   readOnly?: boolean;
 }
 
-export interface IndividualTarget {
+export interface EnrollmentTarget {
   enrollmentId?: string;
   uid: string;
   name: string | null;
@@ -69,11 +69,11 @@ export interface StudentLabelTarget {
   color?: string;
 }
 
-export type TargetType = 'individual' | 'student_label';
+export type TargetType = 'enrollment' | 'student_label';
 
 export interface AppliesTo {
   targetType: TargetType;
-  individuals: IndividualTarget[];
+  enrollments: EnrollmentTarget[];
   studentLabels: StudentLabelTarget[];
 }
 
@@ -192,10 +192,10 @@ export function jsonToOverrideFormData(
   const ac = json.afterComplete;
 
   let appliesTo: AppliesTo;
-  if (json.ruleType === 'enrollment' && json.individuals && json.individuals.length > 0) {
+  if (json.ruleType === 'enrollment' && json.enrollments && json.enrollments.length > 0) {
     appliesTo = {
-      targetType: 'individual',
-      individuals: json.individuals.map((i) => ({
+      targetType: 'enrollment',
+      enrollments: json.enrollments.map((i) => ({
         enrollmentId: i.enrollmentId,
         uid: i.uid,
         name: i.name,
@@ -205,7 +205,7 @@ export function jsonToOverrideFormData(
   } else {
     appliesTo = {
       targetType: 'student_label',
-      individuals: [],
+      enrollments: [],
       studentLabels: json.labelDetails
         ? json.labelDetails.map((l) => ({ studentLabelId: l.id, name: l.name, color: l.color }))
         : (json.labels ?? []).map((name: string) => ({ studentLabelId: '', name })),
@@ -401,12 +401,12 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
     }
   }
 
-  if (rule.appliesTo.targetType === 'individual') {
+  if (rule.appliesTo.targetType === 'enrollment') {
     output.ruleType = 'enrollment';
-    output.individuals = rule.appliesTo.individuals.map((ind) => ({
-      enrollmentId: ind.enrollmentId ?? '',
-      uid: ind.uid,
-      name: ind.name,
+    output.enrollments = rule.appliesTo.enrollments.map((e) => ({
+      enrollmentId: e.enrollmentId ?? '',
+      uid: e.uid,
+      name: e.name,
     }));
   }
 
@@ -427,8 +427,8 @@ export function createDefaultOverrideFormData(): OverrideData {
   return {
     trackingId: crypto.randomUUID(),
     appliesTo: {
-      targetType: 'individual',
-      individuals: [],
+      targetType: 'enrollment',
+      enrollments: [],
       studentLabels: [],
     },
     overriddenFields: [],
