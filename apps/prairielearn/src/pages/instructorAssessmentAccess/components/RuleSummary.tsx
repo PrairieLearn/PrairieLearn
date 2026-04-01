@@ -253,7 +253,7 @@ function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): str
   return parts.join(', ');
 }
 
-export function generateOverrideFieldItems(
+function generateOverrideFieldItems(
   rule: OverrideData,
   displayTimezone: string,
 ): OverrideFieldItem[] {
