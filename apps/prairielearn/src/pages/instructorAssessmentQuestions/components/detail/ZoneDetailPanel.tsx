@@ -172,7 +172,7 @@ export function ZoneDetailPanel({
 
   const zonePointsMismatch = getZonePointsMismatch(zone, assessmentType);
   const zoneChooseExceeds = hasZoneChooseExceedsCount(zone);
-  const mixedToolsWarning = getZoneMixedToolsWarning(zones, assessmentToolDefaults);
+  const mixedToolsWarning = getZoneMixedToolsWarning({ zone, zones, assessmentToolDefaults });
 
   return (
     <div className="p-3">
@@ -305,12 +305,6 @@ export function ZoneDetailPanel({
       </Wrapper>
 
       <DetailSectionHeader>Tools</DetailSectionHeader>
-      {mixedToolsWarning && (
-        <div className="alert alert-warning small mb-3" role="alert">
-          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
-          {mixedToolsWarning}
-        </div>
-      )}
       <Wrapper className={clsx(!editMode && 'mb-0')}>
         {EnumAssessmentToolSchema.options.map((tool) => {
           const toolLabel = tool[0].toUpperCase() + tool.slice(1);
@@ -347,6 +341,12 @@ export function ZoneDetailPanel({
           );
         })}
       </Wrapper>
+      {mixedToolsWarning && (
+        <div className="alert alert-warning small mb-3" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+          {mixedToolsWarning}
+        </div>
+      )}
 
       <AdvancedFields
         register={register}

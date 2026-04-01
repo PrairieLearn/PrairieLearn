@@ -578,14 +578,18 @@ export function getSharedTopic(
 
 /**
  * Returns a warning message if a tool is enabled in an earlier zone but
- * disabled in a later zone. Students who keep a browser tab open from
- * the earlier zone can still use the tool, so the restriction is not
- * actually enforced.
+ * disabled in a later zone. Students have access to tools in previous
+ * zones regardless, so the zone restriction is not actually enforced.
  */
-export function getZoneMixedToolsWarning(
-  zones: ZoneAssessmentForm[],
-  assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>,
-): string | null {
+export function getZoneMixedToolsWarning({
+  zone: currentZone,
+  zones,
+  assessmentToolDefaults,
+}: {
+  zone: ZoneAssessmentForm;
+  zones: ZoneAssessmentForm[];
+  assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
+}): string | null {
   if (zones.length < 2) return null;
 
   for (const tool of EnumAssessmentToolSchema.options) {
@@ -596,9 +600,9 @@ export function getZoneMixedToolsWarning(
       const effectiveValue = zone.tools?.[tool]?.enabled ?? defaultValue;
       if (effectiveValue) {
         seenEnabled = true;
-      } else if (seenEnabled) {
+      } else if (seenEnabled && currentZone.trackingId === zone.trackingId) {
         const toolLabel = tool[0].toUpperCase() + tool.slice(1);
-        return `${toolLabel} is enabled in an earlier zone but disabled in a later zone. Students who keep a browser tab open from the earlier zone can still access the tool, so disabling it in later zones is not enforced.`;
+        return `${toolLabel} is enabled in an earlier zone but disabled in this zone.`;
       }
     }
   }
