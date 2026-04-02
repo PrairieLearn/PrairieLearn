@@ -153,6 +153,15 @@ export default [
   },
 
   {
+    files: ['apps/prairielearn/src/trpc/**/*.ts'],
+    rules: {
+      // We use empty object types for typed errors in tRPC subrouters.
+      // This is intended to force the client to reference the error type.
+      '@typescript-eslint/no-empty-object-type': ['error', { allowInterfaces: 'always' }],
+    },
+  },
+
+  {
     files: ['apps/prairielearn/src/models/**/*'],
     rules: {
       'no-restricted-imports': [

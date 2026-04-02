@@ -103,19 +103,13 @@ export function getAdministratorCourseRequestsUrl({ urlPrefix }: { urlPrefix: st
   return `${urlPrefix}/administrator/courseRequests`;
 }
 
+export function getCourseInstanceBaseUrl(courseInstanceId: string): string {
+  return `/pl/course_instance/${courseInstanceId}`;
+}
+
 type QuestionUrlParts =
   | { courseInstanceId: string; courseId?: undefined }
   | { courseInstanceId?: undefined; courseId: string };
-
-export function getAssessmentAccessUrl({
-  courseInstanceId,
-  assessmentId,
-}: {
-  courseInstanceId: string;
-  assessmentId: string;
-}): string {
-  return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/access`;
-}
 
 export function getQuestionUrl({
   courseInstanceId,
@@ -130,4 +124,36 @@ export function getQuestionUrl({
 
 export function getQuestionCreateUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/course_admin/questions/create`;
+}
+
+// tRPC scope URLs
+
+export function getAdministratorTrpcUrl(): string {
+  return '/pl/administrator/trpc';
+}
+
+export function getCourseInstanceTrpcUrl(courseInstanceId: string): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/trpc`;
+}
+
+export function getAssessmentTrpcUrl({
+  courseInstanceId,
+  assessmentId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+}): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/trpc`;
+}
+
+export function getAssessmentQuestionTrpcUrl({
+  courseInstanceId,
+  assessmentId,
+  assessmentQuestionId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  assessmentQuestionId: string;
+}): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/assessment_question/${assessmentQuestionId}/trpc`;
 }

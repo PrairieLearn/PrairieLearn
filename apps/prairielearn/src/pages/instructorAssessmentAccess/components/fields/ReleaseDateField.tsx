@@ -5,13 +5,15 @@ import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData } from '../types.js';
 
-interface ReleaseDateInputProps {
+function ReleaseDateInput({
+  value,
+  onChange,
+  idPrefix,
+}: {
   value: string | null;
   onChange: (value: string | null) => void;
   idPrefix: string;
-}
-
-function ReleaseDateInput({ value, onChange, idPrefix }: ReleaseDateInputProps) {
+}) {
   return (
     <Form.Group>
       <div className="mb-2">

@@ -25,6 +25,10 @@ docker-compose.override.yml
 ### tmux
 .tmux.conf
 
+### Claude Code
+.claude/commands/
+.claude/settings.local.json
+
 ## Backup files
 
 ### vi

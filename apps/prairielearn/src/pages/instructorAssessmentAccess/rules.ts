@@ -1,3 +1,6 @@
+import crypto from 'node:crypto';
+
+import stableStringify from 'fast-json-stable-stringify';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
@@ -219,4 +222,8 @@ export async function fetchAllAccessControlRules(
     fetchEnrollmentRules(assessment),
   ]);
   return [...jsonRules, ...enrollmentRules];
+}
+
+export function computeHash(rules: object[]): string {
+  return crypto.createHash('sha256').update(stableStringify(rules)).digest('hex');
 }

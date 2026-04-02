@@ -15,6 +15,8 @@ import type {
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
+import { createAssessmentQuestionTrpcClient } from '../../../trpc/assessmentQuestion/client.js';
+import { TRPCProvider, useTRPC } from '../../../trpc/assessmentQuestion/context.js';
 
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
 import { AiGradingUnavailableModal } from './components/AiGradingUnavailableModal.js';
@@ -24,8 +26,6 @@ import {
   GradingConflictModal,
 } from './components/GradingConflictModal.js';
 import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
-import { createManualGradingTrpcClient } from './utils/trpc-client.js';
-import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
 
 interface AssessmentQuestionManualGradingProps {
@@ -190,7 +190,7 @@ function AssessmentQuestionManualGradingInner({
           setConflictModalState(null);
           // Refetch the table data to show the latest state.
           void queryClient.invalidateQueries({
-            queryKey: trpc.instances.queryKey(),
+            queryKey: trpc.manualGrading.instances.queryKey(),
           });
         }}
       />
@@ -210,7 +210,14 @@ export function AssessmentQuestionManualGrading({
   ...innerProps
 }: AssessmentQuestionManualGradingProps) {
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => createManualGradingTrpcClient(trpcCsrfToken));
+  const [trpcClient] = useState(() =>
+    createAssessmentQuestionTrpcClient({
+      csrfToken: trpcCsrfToken,
+      courseInstanceId: innerProps.courseInstance.id,
+      assessmentId: innerProps.assessment.id,
+      assessmentQuestionId: innerProps.assessmentQuestion.id,
+    }),
+  );
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
