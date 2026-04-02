@@ -586,9 +586,8 @@ const tdStyle = {
   paddingBottom: '0.5rem',
 };
 
-export function RuleSummaryCard({
+export function OverrideRuleSummaryCard({
   rule,
-  isMainRule,
   title,
   onRemove,
   onEdit,
@@ -597,8 +596,7 @@ export function RuleSummaryCard({
   errors,
   dragHandleProps,
 }: {
-  rule: RuleData;
-  isMainRule: boolean;
+  rule: OverrideData;
   title: string;
   onEdit?: () => void;
   courseInstanceId: string;
@@ -607,24 +605,15 @@ export function RuleSummaryCard({
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
 }) {
-  const overrideRule = !isMainRule ? (rule as OverrideData) : null;
+  const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone);
 
-  const summaryItems = isMainRule ? generateRuleSummary(rule, displayTimezone, 'compact') : [];
-  const dateTableRows = isMainRule ? generateDateTableRows(rule, displayTimezone) : [];
-  const overrideFieldItems = overrideRule
-    ? generateOverrideFieldItems(overrideRule, displayTimezone)
-    : [];
-
-  const students =
-    overrideRule?.appliesTo.targetType === 'enrollment' ? overrideRule.appliesTo.enrollments : [];
+  const students = rule.appliesTo.targetType === 'enrollment' ? rule.appliesTo.enrollments : [];
 
   const studentLabels =
-    overrideRule?.appliesTo.targetType === 'student_label'
-      ? overrideRule.appliesTo.studentLabels
-      : [];
+    rule.appliesTo.targetType === 'student_label' ? rule.appliesTo.studentLabels : [];
 
   return (
-    <Card className="mb-3" data-testid={isMainRule ? undefined : 'override-card'}>
+    <Card className="mb-3" data-testid="override-card">
       <Card.Header className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
         <div className="d-flex align-items-center gap-2 flex-wrap">
           {dragHandleProps && (
@@ -652,11 +641,9 @@ export function RuleSummaryCard({
             </>
           ) : (
             <>
-              {overrideRule && (
-                <span className="d-inline-flex align-items-center gap-1 text-body-secondary small">
-                  <i className="bi bi-person" aria-hidden="true" />
-                </span>
-              )}
+              <span className="d-inline-flex align-items-center gap-1 text-body-secondary small">
+                <i className="bi bi-person" aria-hidden="true" />
+              </span>
               <strong>{title}</strong>
             </>
           )}
@@ -687,33 +674,6 @@ export function RuleSummaryCard({
 
         {overrideFieldItems.length > 0 && <OverrideFieldsList items={overrideFieldItems} />}
 
-        {dateTableRows.length > 0 && (
-          <div className="mb-2">
-            <div
-              className="text-body-secondary fw-semibold mb-2"
-              style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}
-            >
-              Deadlines
-            </div>
-            <DateTableView rows={dateTableRows} />
-          </div>
-        )}
-
-        {summaryItems.length > 0 && (
-          <div className="d-flex flex-wrap gap-2 mb-3">
-            {summaryItems.map((item) => (
-              <span
-                key={item.key}
-                className="d-inline-flex align-items-center gap-1 border rounded-pill px-3 py-1"
-                style={{ fontSize: '0.875rem' }}
-              >
-                <i className={`bi ${item.icon}`} aria-hidden="true" />
-                {item.text}
-              </span>
-            ))}
-          </div>
-        )}
-
         {students.length > 0 && (
           <div className="mb-2">
             <span className="text-body-secondary">Applies to: </span>
@@ -728,12 +688,9 @@ export function RuleSummaryCard({
           </div>
         )}
 
-        {overrideFieldItems.length === 0 &&
-          dateTableRows.length === 0 &&
-          summaryItems.length === 0 &&
-          students.length === 0 && (
-            <p className="text-body-secondary mb-0">No specific settings configured</p>
-          )}
+        {overrideFieldItems.length === 0 && students.length === 0 && (
+          <p className="text-body-secondary mb-0">No specific settings configured</p>
+        )}
       </Card.Body>
     </Card>
   );
