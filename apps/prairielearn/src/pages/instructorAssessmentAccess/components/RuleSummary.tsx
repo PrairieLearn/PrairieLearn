@@ -7,6 +7,7 @@ import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 
 import {
+  type AfterLastDeadlineValue,
   DATE_CONTROL_FIELD_NAMES,
   type DeadlineEntry,
   type MainRuleData,
@@ -201,6 +202,169 @@ export function generateRuleSummary(
   return items;
 }
 
+interface OverrideFieldItem {
+  label: string;
+  value: string;
+}
+
+function formatDeadlineEntries(
+  deadlines: DeadlineEntry[],
+  displayTimezone: string,
+  labelPrefix: string,
+): OverrideFieldItem[] {
+  const filtered = deadlines.filter((d) => d.date);
+  return filtered.map((d, i) => ({
+    label: filtered.length === 1 ? `${labelPrefix} deadline` : `${labelPrefix} deadline ${i + 1}`,
+    value: `${formatDate(Temporal.PlainDateTime.from(d.date), displayTimezone)} (${d.credit}% credit)`,
+  }));
+}
+
+function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): string {
+  const parts: string[] = [];
+  if (afterLastDeadline.credit !== undefined) {
+    parts.push(`${afterLastDeadline.credit}% credit`);
+  }
+  if (afterLastDeadline.allowSubmissions) {
+    parts.push('submissions allowed');
+  } else {
+    parts.push('closed');
+  }
+  return parts.join(', ');
+}
+
+function generateOverrideFieldItems(
+  rule: OverrideData,
+  displayTimezone: string,
+): OverrideFieldItem[] {
+  const items: OverrideFieldItem[] = [];
+  const overriddenFields = new Set(rule.overriddenFields);
+
+  if (overriddenFields.has('releaseDate')) {
+    items.push({
+      label: 'Release date',
+      value: rule.releaseDate
+        ? formatDate(Temporal.PlainDateTime.from(rule.releaseDate), displayTimezone)
+        : 'Released immediately',
+    });
+  }
+
+  if (overriddenFields.has('earlyDeadlines')) {
+    const earlyItems = formatDeadlineEntries(rule.earlyDeadlines, displayTimezone, 'Early');
+    items.push(
+      ...(earlyItems.length > 0 ? earlyItems : [{ label: 'Early deadlines', value: 'None' }]),
+    );
+  }
+
+  if (overriddenFields.has('dueDate')) {
+    items.push({
+      label: 'Due date',
+      value: rule.dueDate
+        ? formatDate(Temporal.PlainDateTime.from(rule.dueDate), displayTimezone)
+        : 'No due date',
+    });
+  }
+
+  if (overriddenFields.has('lateDeadlines')) {
+    const lateItems = formatDeadlineEntries(rule.lateDeadlines, displayTimezone, 'Late');
+    items.push(
+      ...(lateItems.length > 0 ? lateItems : [{ label: 'Late deadlines', value: 'None' }]),
+    );
+  }
+
+  if (overriddenFields.has('afterLastDeadline')) {
+    items.push({
+      label: 'After last deadline',
+      value: rule.afterLastDeadline ? formatAfterLastDeadline(rule.afterLastDeadline) : 'None',
+    });
+  }
+
+  if (overriddenFields.has('durationMinutes')) {
+    items.push({
+      label: 'Time limit',
+      value: rule.durationMinutes !== null ? `${rule.durationMinutes} minutes` : 'No time limit',
+    });
+  }
+
+  if (overriddenFields.has('password')) {
+    items.push({
+      label: 'Password',
+      value: rule.password ? 'Password protected' : 'No password',
+    });
+  }
+
+  if (overriddenFields.has('questionVisibility')) {
+    const qv = rule.questionVisibility;
+    if (qv.hideQuestions) {
+      if (qv.showAgainDate && qv.hideAgainDate) {
+        items.push({
+          label: 'Question visibility',
+          value: `Hidden, shown again ${formatDate(Temporal.PlainDateTime.from(qv.showAgainDate), displayTimezone)}, hidden again ${formatDate(Temporal.PlainDateTime.from(qv.hideAgainDate), displayTimezone)}`,
+        });
+      } else if (qv.showAgainDate) {
+        items.push({
+          label: 'Question visibility',
+          value: `Hidden, shown again ${formatDate(Temporal.PlainDateTime.from(qv.showAgainDate), displayTimezone)}`,
+        });
+      } else {
+        items.push({
+          label: 'Question visibility',
+          value: 'Questions hidden after completion',
+        });
+      }
+    } else {
+      items.push({
+        label: 'Question visibility',
+        value: 'Questions visible after completion',
+      });
+    }
+  }
+
+  if (overriddenFields.has('scoreVisibility')) {
+    const sv = rule.scoreVisibility;
+    if (sv.hideScore) {
+      if (sv.showAgainDate) {
+        items.push({
+          label: 'Score visibility',
+          value: `Hidden, shown again ${formatDate(Temporal.PlainDateTime.from(sv.showAgainDate), displayTimezone)}`,
+        });
+      } else {
+        items.push({
+          label: 'Score visibility',
+          value: 'Score hidden after completion',
+        });
+      }
+    } else {
+      items.push({
+        label: 'Score visibility',
+        value: 'Score visible after completion',
+      });
+    }
+  }
+
+  return items;
+}
+
+function OverrideFieldsList({ items }: { items: OverrideFieldItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <table className="table table-sm table-borderless mb-0">
+      <tbody>
+        {items.map((item) => (
+          <tr key={item.label}>
+            <td
+              className="text-body-secondary fw-medium p-0 pe-3 pb-1"
+              style={{ whiteSpace: 'nowrap', width: '1%' }}
+            >
+              {item.label}
+            </td>
+            <td className="p-0 pb-1">{item.value}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 function CreditBadge({ credit }: { credit: string }) {
   const numericValue = Number.parseInt(credit, 10);
   let className: string;
@@ -295,11 +459,13 @@ export function RuleSummaryCard({
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
 }) {
-  const effectiveVerbosity: SummaryVerbosity = isMainRule ? 'compact' : 'verbose';
-  const summaryItems = generateRuleSummary(rule, effectiveVerbosity);
-  const dateTableRows = generateDateTableRows(rule, displayTimezone);
-
   const overrideRule = !isMainRule ? (rule as OverrideData) : null;
+
+  const summaryItems = isMainRule ? generateRuleSummary(rule, 'compact') : [];
+  const dateTableRows = isMainRule ? generateDateTableRows(rule, displayTimezone) : [];
+  const overrideFieldItems = overrideRule
+    ? generateOverrideFieldItems(overrideRule, displayTimezone)
+    : [];
 
   const students =
     overrideRule?.appliesTo.targetType === 'enrollment' ? overrideRule.appliesTo.enrollments : [];
@@ -371,6 +537,8 @@ export function RuleSummaryCard({
           </Alert>
         )}
 
+        {overrideFieldItems.length > 0 && <OverrideFieldsList items={overrideFieldItems} />}
+
         {dateTableRows.length > 0 && (
           <div className="mb-2">
             <div
@@ -412,9 +580,12 @@ export function RuleSummaryCard({
           </div>
         )}
 
-        {dateTableRows.length === 0 && summaryItems.length === 0 && students.length === 0 && (
-          <p className="text-body-secondary mb-0">No specific settings configured</p>
-        )}
+        {overrideFieldItems.length === 0 &&
+          dateTableRows.length === 0 &&
+          summaryItems.length === 0 &&
+          students.length === 0 && (
+            <p className="text-body-secondary mb-0">No specific settings configured</p>
+          )}
       </Card.Body>
     </Card>
   );
