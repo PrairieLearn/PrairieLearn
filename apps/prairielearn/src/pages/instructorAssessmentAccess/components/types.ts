@@ -283,8 +283,11 @@ export function jsonToOverrideFormData(
 function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   const output: AccessControlJsonWithId = {
     id: rule.id,
-    listBeforeRelease: rule.listBeforeRelease,
   };
+
+  if (rule.listBeforeRelease) {
+    output.listBeforeRelease = true;
+  }
 
   if (rule.dateControlEnabled) {
     output.dateControl = {};
@@ -311,18 +314,27 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
     };
   }
 
-  output.afterComplete = {
-    hideQuestions: rule.questionVisibility.hideQuestions,
-  };
-  if (rule.questionVisibility.showAgainDate) {
-    output.afterComplete.showQuestionsAgainDate = rule.questionVisibility.showAgainDate;
-  }
-  if (rule.questionVisibility.hideAgainDate) {
-    output.afterComplete.hideQuestionsAgainDate = rule.questionVisibility.hideAgainDate;
-  }
-  output.afterComplete.hideScore = rule.scoreVisibility.hideScore;
-  if (rule.scoreVisibility.showAgainDate) {
-    output.afterComplete.showScoreAgainDate = rule.scoreVisibility.showAgainDate;
+  // Only write afterComplete when values differ from defaults
+  // (hideQuestions: true, hideScore: false).
+  const qv = rule.questionVisibility;
+  const sv = rule.scoreVisibility;
+  const hasNonDefaultAfterComplete =
+    !qv.hideQuestions || qv.showAgainDate || qv.hideAgainDate || sv.hideScore || sv.showAgainDate;
+
+  if (hasNonDefaultAfterComplete) {
+    output.afterComplete = {
+      hideQuestions: qv.hideQuestions,
+    };
+    if (qv.showAgainDate) {
+      output.afterComplete.showQuestionsAgainDate = qv.showAgainDate;
+    }
+    if (qv.hideAgainDate) {
+      output.afterComplete.hideQuestionsAgainDate = qv.hideAgainDate;
+    }
+    output.afterComplete.hideScore = sv.hideScore;
+    if (sv.showAgainDate) {
+      output.afterComplete.showScoreAgainDate = sv.showAgainDate;
+    }
   }
 
   return output;
