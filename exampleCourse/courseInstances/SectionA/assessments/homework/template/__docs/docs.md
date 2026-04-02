@@ -48,4 +48,4 @@ and have unlimited attempts to complete the question successfully. This is desir
 
 ![Unlimited retry attempts for a single question variant](./one-variant-unlimited-attempts.png)
 
-**Question 6** from [demo homework assessment](https://us.prairielearn.com/pl/course_instance/4970/assessment/2316937) asks students to apply knowledge from a given topic to contruct the solution of a "real-world" problem. Students have unlimited attempts to submit the correct solution for full credit.
+**Question 6** from [demo homework assessment](https://us.prairielearn.com/pl/course_instance/4970/assessment/2316937) asks students to apply knowledge from a given topic to construct the solution of a "real-world" problem. Students have unlimited attempts to submit the correct solution for full credit.
