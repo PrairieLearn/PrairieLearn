@@ -139,8 +139,8 @@ export function getFilenames(locals: ResLocalsForPage<'assessment'>) {
     finalFilesZipFilename: prefix + 'final_files.zip',
     bestFilesZipFilename: prefix + 'best_files.zip',
     allFilesZipFilename: prefix + 'all_files.zip',
-    canvasScoresCsvFilename: prefix + 'canvas_scores.csv',
-    canvasPointsCsvFilename: prefix + 'canvas_points.csv',
+    canvasScoresCsvFilename: prefix + 'scores_for_canvas.csv',
+    canvasPointsCsvFilename: prefix + 'points_for_canvas.csv',
   };
   if (locals.assessment.team_work) {
     filenames.groupsCsvFilename = prefix + 'groups.csv';

@@ -73,7 +73,12 @@ async function assertDownloadSucceeds(url: string, filename: string): Promise<vo
   assert.equal(res.status, 200, `Failed to download ${filename}`);
   if (filename.endsWith('.csv')) {
     const data = csvParse<any>(await res.text(), { columns: true, cast: true });
-    assert.isAtLeast(data.length, 1, `CSV file ${filename} should have at least one row`);
+    // Canvas CSV exports filter to students only, so they may have 0 rows in test environments
+    // where the only user is staff.
+    const allowEmpty = filename.includes('_for_canvas');
+    if (!allowEmpty) {
+      assert.isAtLeast(data.length, 1, `CSV file ${filename} should have at least one row`);
+    }
   } else if (filename.endsWith('.zip')) {
     const zip = await unzipper.Open.buffer(Buffer.from(await res.arrayBuffer()));
     assert.isAtLeast(zip.files.length, 1, `ZIP file ${filename} should have at least one file`);
