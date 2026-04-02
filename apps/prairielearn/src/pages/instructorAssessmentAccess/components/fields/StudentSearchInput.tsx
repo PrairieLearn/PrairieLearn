@@ -3,35 +3,33 @@ import { useMemo, useState } from 'react';
 import { Alert, Badge, Button, Form, ListGroup, Spinner, Tab, Tabs } from 'react-bootstrap';
 
 import { parseUniqueValuesFromString } from '../../../../lib/string-util.js';
-import { useTRPCClient } from '../../utils/trpc-context.js';
-import type { IndividualTarget } from '../types.js';
+import { useTRPC, useTRPCClient } from '../../../../trpc/assessment/context.js';
+import type { EnrollmentTarget } from '../types.js';
 
-interface StudentSearchInputProps {
+export function StudentSearchInput({
+  excludedUids,
+  onSelect,
+  onClose,
+}: {
   excludedUids: Set<string>;
-  onSelect: (students: IndividualTarget[]) => void;
+  onSelect: (students: EnrollmentTarget[]) => void;
   onClose: () => void;
-}
-
-export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentSearchInputProps) {
+}) {
+  const trpc = useTRPC();
   const trpcClient = useTRPCClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [uidInput, setUidInput] = useState('');
-  const [validatedUids, setValidatedUids] = useState<
-    { id: string | null; uid: string; name: string | null; enrolled: boolean; notFound: boolean }[]
-  >([]);
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(() => new Set());
 
-  const { data: allStudents, isLoading: isLoadingStudents } = useQuery({
-    queryKey: ['all-students'],
-    queryFn: () => trpcClient.students.query(),
-  });
+  const { data: allStudents, isLoading: isLoadingStudents } = useQuery(
+    trpc.accessControl.students.queryOptions(),
+  );
 
   const validateMutation = useMutation({
-    mutationFn: (uids: string[]) => trpcClient.validateUids.query({ uids }),
-    onSuccess: (results) => {
-      setValidatedUids(results);
-    },
+    mutationFn: (uids: string[]) => trpcClient.accessControl.validateUids.query({ uids }),
   });
+
+  const validatedUids = validateMutation.data ?? [];
 
   const filteredStudents = useMemo(() => {
     if (!allStudents) return [];
@@ -55,16 +53,16 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
 
   const handleAddValidated = () => {
     const validStudents = validatedUids
-      .filter((r) => r.id && r.enrolled && !excludedUids.has(r.uid))
-      .map((r) => ({
-        enrollmentId: r.id ?? undefined,
-        uid: r.uid,
-        name: r.name,
-      }));
+      .map((r) => {
+        if (!r.id || !r.enrolled || excludedUids.has(r.uid)) return null;
+        return { enrollmentId: r.id, uid: r.uid, name: r.name };
+      })
+      .filter((s) => !!s);
+
     if (validStudents.length > 0) {
       onSelect(validStudents);
       setUidInput('');
-      setValidatedUids([]);
+      validateMutation.reset();
       onClose();
     }
   };
@@ -195,7 +193,7 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
             value={uidInput}
             onChange={({ currentTarget }) => {
               setUidInput(currentTarget.value);
-              setValidatedUids([]);
+              validateMutation.reset();
             }}
           />
 

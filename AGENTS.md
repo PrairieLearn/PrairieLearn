@@ -41,6 +41,7 @@ Frequently used packages:
 - NEVER rebase unless specifically requested, always use merge commits.
 - ALWAYS create pull requests as drafts unless specifically requested.
 - When creating pull requests, follow the PR template in `.github/PULL_REQUEST_TEMPLATE.md`.
+- In Claude Code remote sessions, if the target branch is not `master`, commit and push directly to the parent/target branch instead of creating a separate feature branch.
 
 ## Building, type checking, and linting
 
@@ -123,7 +124,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 
 ### Library usage conventions
 
-- Use `tRPC + @trpc/tanstack-react-query` for new client/server communication. When interacting with existing REST APIs, use `@tanstack/react-query`.
+- Use `tRPC + @trpc/tanstack-react-query` for new client/server communication. When interacting with existing REST APIs, use `@tanstack/react-query`. See the [`trpc` skill](./.agents/skills/trpc/SKILL.md) for conventions on authorization scopes, file structure, and client-side patterns.
 - Use `react-hook-form` for form handling.
 - Prefer `extractPageContext(res.locals, ...)` over accessing `res.locals` properties directly in route handlers. This provides better type safety and ensures consistent access patterns.
 - Use `nuqs` for URL query state in hydrated components. Use `NuqsAdapter` from `@prairielearn/ui` and pass the search string from the router. See `pages/home/` for an example.
@@ -184,7 +185,7 @@ Inline `PageLayout` directly in the Express route handler rather than creating w
 
 - A file at `./foo.tsx` should be imported as `./foo.js` from other files.
 - Use `clsx` in React components.
-- Inline prop definitions for components if they are not used outside of the component.
+- Define component props directly in the function signature (e.g., `function Foo({ a, b }: { a: string; b: number })`) instead of declaring a separate named interface. Exception: if the props type is used by multiple components or exported, a named interface is fine.
 - Pass `res.locals` to `getPageContext` to get information about the course instance / authentication state.
 - If you hydrate a component with `Hydrate`, you must register the component with `registerHydratedComponent` in a file in `apps/prairielearn/assets/scripts/esm-bundles/hydrated-components`.
 - Don't use `useMemo` for cheap computations. Use `run` from `@prairielearn/run` instead (an IIFE helper that executes a function immediately).

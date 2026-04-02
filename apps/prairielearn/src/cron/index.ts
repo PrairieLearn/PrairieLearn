@@ -67,11 +67,6 @@ export async function init() {
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalErrorAbandonedJobsSec,
     },
     {
-      name: 'sendExternalGraderStats',
-      module: await import('./sendExternalGraderStats.js'),
-      intervalSec: 'daily',
-    },
-    {
       name: 'serverLoad',
       module: await import('./serverLoad.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalServerLoadSec,

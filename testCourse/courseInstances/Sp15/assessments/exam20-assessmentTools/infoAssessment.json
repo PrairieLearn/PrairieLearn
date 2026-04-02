@@ -1,0 +1,20 @@
+{
+  "uuid": "2fed90ac-05ea-458a-905f-1bd3835f2a94",
+  "allowAccess": [{ "credit": 100 }],
+  "type": "Exam",
+  "title": "Exam with assessment tools",
+  "set": "Exam",
+  "number": "20",
+  "zones": [
+    {
+      "title": "Zone with tool overrides",
+      "tools": { "calculator": { "enabled": false } },
+      "questions": [{ "id": "addNumbers", "autoPoints": 10 }]
+    },
+    {
+      "title": "Zone without tool overrides",
+      "questions": [{ "id": "partialCredit3", "autoPoints": 10 }]
+    }
+  ],
+  "tools": { "calculator": { "enabled": true } }
+}

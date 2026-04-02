@@ -441,6 +441,8 @@ export function serializeZonesForJson(zones: ZoneAssessmentJson[]): ZoneAssessme
       // Preserve as-is: stripping `true` would change behavior when the
       // assessment-level default is `false`, since sync inherits zone → assessment.
       allowRealTimeGrading: zone.allowRealTimeGrading,
+      // Preserve zone-level tool overrides as-is.
+      tools: zone.tools,
       // For some reason, comment gets set to the empty string if it's not set.
       comment: zone.comment || undefined,
       canSubmit: propertyValueWithDefault(undefined, zone.canSubmit, isEmptyArray),

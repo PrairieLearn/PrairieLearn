@@ -28,8 +28,8 @@ import {
 import { getStudentLabelsWithUserData } from '../../pages/instructorStudentsLabels/queries.js';
 import { ColorJsonSchema } from '../../schemas/infoCourse.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
+import { throwAppError } from '../app-errors.js';
 
-import { type StudentLabelErrors, throwAppError } from './app-errors.js';
 import {
   requireCourseInstancePermissionEdit,
   requireCourseInstancePermissionView,
@@ -37,6 +37,11 @@ import {
   selectStudentLabelByIdOrNotFound,
   t,
 } from './init.js';
+
+export interface StudentLabelError {
+  Upsert: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  Destroy: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+}
 
 function getCourseInstanceContainer(coursePath: string, shortName: string) {
   const rootPath = path.join(coursePath, 'courseInstances', shortName);
@@ -150,12 +155,18 @@ const upsert = t.procedure
             });
           }
           if (studentLabels.some((l, i) => i !== labelIndex && l.name === name)) {
-            throwAppError<StudentLabelErrors>({ code: 'LABEL_NAME_TAKEN', name });
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'A label with this name already exists',
+            });
           }
           studentLabels[labelIndex] = { uuid: studentLabels[labelIndex].uuid, name, color };
         } else {
           if (studentLabels.some((l) => l.name === name)) {
-            throwAppError<StudentLabelErrors>({ code: 'LABEL_NAME_TAKEN', name });
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'A label with this name already exists',
+            });
           }
           studentLabels.push({ uuid: labelUuid, name, color });
         }
@@ -170,14 +181,14 @@ const upsert = t.procedure
         'infoCourseInstance.json',
       ),
       container: getCourseInstanceContainer(course.path, course_instance.short_name!),
-      errorMessage: 'Failed to save course instance configuration',
       origHash: origHash ?? '',
       locals,
     });
 
     if (!saveResult.success) {
-      throwAppError<StudentLabelErrors>({
+      throwAppError<StudentLabelError>({
         code: 'SYNC_JOB_FAILED',
+        message: 'Failed to save course instance configuration',
         jobSequenceId: saveResult.jobSequenceId,
       });
     }
@@ -288,14 +299,14 @@ const destroy = t.procedure
         'infoCourseInstance.json',
       ),
       container: getCourseInstanceContainer(course.path, course_instance.short_name!),
-      errorMessage: 'Failed to save course instance configuration',
       origHash: origHash ?? '',
       locals,
     });
 
     if (!saveResult.success) {
-      throwAppError<StudentLabelErrors>({
+      throwAppError<StudentLabelError>({
         code: 'SYNC_JOB_FAILED',
+        message: 'Failed to save course instance configuration',
         jobSequenceId: saveResult.jobSequenceId,
       });
     }

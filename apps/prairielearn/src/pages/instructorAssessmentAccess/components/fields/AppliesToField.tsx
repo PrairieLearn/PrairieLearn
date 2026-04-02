@@ -13,26 +13,22 @@ import type { NamePrefix } from '../hooks/fieldNames.js';
 import type {
   AccessControlFormData,
   AppliesTo,
-  IndividualTarget,
+  EnrollmentTarget,
   StudentLabelTarget,
   TargetType,
 } from '../types.js';
 
 import { AddTargetPopover } from './AddTargetPopover.js';
 
-interface AppliesToFieldProps {
-  namePrefix: NamePrefix;
-}
-
-export function AppliesToField({ namePrefix }: AppliesToFieldProps) {
+export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
   const { setValue } = useFormContext<AccessControlFormData>();
 
   const appliesTo = useWatch({
     name: `${namePrefix}.appliesTo` as Path<AccessControlFormData>,
   });
 
-  const { append: appendIndividual, remove: removeIndividual } = useFieldArray({
-    name: `${namePrefix}.appliesTo.individuals` as FieldArrayPath<AccessControlFormData>,
+  const { append: appendEnrollment, remove: removeEnrollment } = useFieldArray({
+    name: `${namePrefix}.appliesTo.enrollments` as FieldArrayPath<AccessControlFormData>,
   });
 
   const { append: appendStudentLabel, remove: removeStudentLabel } = useFieldArray({
@@ -44,7 +40,7 @@ export function AppliesToField({ namePrefix }: AppliesToFieldProps) {
       `${namePrefix}.appliesTo` as Path<AccessControlFormData>,
       {
         targetType: newType,
-        individuals: [],
+        enrollments: [],
         studentLabels: [],
       } as never,
       { shouldDirty: true },
@@ -57,27 +53,27 @@ export function AppliesToField({ namePrefix }: AppliesToFieldProps) {
     }
   };
 
-  const handleAddStudents = (students: IndividualTarget[]) => {
+  const handleAddStudents = (students: EnrollmentTarget[]) => {
     for (const student of students) {
-      appendIndividual(student);
+      appendEnrollment(student);
     }
   };
 
   // appliesTo may be undefined during initial render
   const typedAppliesTo = appliesTo as AppliesTo | undefined;
-  const currentTargetType = typedAppliesTo?.targetType ?? 'individual';
-  const individuals = typedAppliesTo?.individuals ?? [];
+  const currentTargetType = typedAppliesTo?.targetType ?? 'enrollment';
+  const enrollments = typedAppliesTo?.enrollments ?? [];
   const studentLabels = typedAppliesTo?.studentLabels ?? [];
 
-  const individualChipItems = individuals.map((s) => ({ id: s.uid, label: s.name ?? s.uid }));
+  const enrollmentChipItems = enrollments.map((s) => ({ id: s.uid, label: s.name ?? s.uid }));
   const studentLabelChipItems = studentLabels.map((sl) => ({
     id: sl.studentLabelId,
     label: sl.name,
   }));
 
-  const handleRemoveIndividualByUid = (uid: string) => {
-    const index = individuals.findIndex((s) => s.uid === uid);
-    if (index !== -1) removeIndividual(index);
+  const handleRemoveEnrollmentByUid = (uid: string) => {
+    const index = enrollments.findIndex((s) => s.uid === uid);
+    if (index !== -1) removeEnrollment(index);
   };
   const handleRemoveStudentLabelById = (studentLabelId: string) => {
     const index = studentLabels.findIndex((sl) => sl.studentLabelId === studentLabelId);
@@ -85,7 +81,7 @@ export function AppliesToField({ namePrefix }: AppliesToFieldProps) {
   };
 
   const excludedStudentLabelIds = new Set(studentLabels.map((sl) => sl.studentLabelId));
-  const excludedUids = new Set(individuals.map((i) => i.uid));
+  const excludedUids = new Set(enrollments.map((i) => i.uid));
 
   return (
     <Card className="mb-3">
@@ -97,29 +93,29 @@ export function AppliesToField({ namePrefix }: AppliesToFieldProps) {
           <legend className="visually-hidden">Target type</legend>
           <Form.Check
             type="radio"
-            id={`${namePrefix}-target-individual`}
+            id={`${namePrefix}-target-enrollment`}
             name={`${namePrefix}-target-type`}
-            label="Individual students"
-            checked={currentTargetType === 'individual'}
-            onChange={() => handleTargetTypeChange('individual')}
+            label="Specific students"
+            checked={currentTargetType === 'enrollment'}
+            onChange={() => handleTargetTypeChange('enrollment')}
           />
           <Form.Check
             type="radio"
             id={`${namePrefix}-target-student-label`}
             name={`${namePrefix}-target-type`}
-            label="Student labels"
+            label="Students by label"
             checked={currentTargetType === 'student_label'}
             onChange={() => handleTargetTypeChange('student_label')}
           />
         </fieldset>
 
         <div className="d-flex flex-wrap align-items-center gap-1">
-          {currentTargetType === 'individual' ? (
+          {currentTargetType === 'enrollment' ? (
             <ChipGroup
-              items={individualChipItems}
+              items={enrollmentChipItems}
               label="Selected students"
               emptyMessage="No students selected"
-              onRemove={handleRemoveIndividualByUid}
+              onRemove={handleRemoveEnrollmentByUid}
             />
           ) : (
             <ChipGroup
@@ -138,8 +134,8 @@ export function AppliesToField({ namePrefix }: AppliesToFieldProps) {
             onSelectStudents={handleAddStudents}
           />
 
-          {currentTargetType === 'individual' && individuals.length > 0 && (
-            <Button variant="outline-secondary" size="sm" onClick={() => removeIndividual()}>
+          {currentTargetType === 'enrollment' && enrollments.length > 0 && (
+            <Button variant="outline-secondary" size="sm" onClick={() => removeEnrollment()}>
               Remove all
             </Button>
           )}

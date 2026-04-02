@@ -25,15 +25,6 @@ function getMode(value: AfterLastDeadlineValue | null): AfterLastDeadlineMode {
   return 'partial_credit';
 }
 
-interface AfterLastDeadlineInputProps {
-  value: AfterLastDeadlineValue | null;
-  onChange: (value: AfterLastDeadlineValue | null) => void;
-  idPrefix: string;
-  dueDate: string | null | undefined;
-  lateDeadlines: DeadlineEntry[] | undefined;
-  creditFieldPath: string;
-}
-
 function AfterLastDeadlineInput({
   value,
   onChange,
@@ -41,7 +32,14 @@ function AfterLastDeadlineInput({
   dueDate,
   lateDeadlines,
   creditFieldPath,
-}: AfterLastDeadlineInputProps) {
+}: {
+  value: AfterLastDeadlineValue | null;
+  onChange: (value: AfterLastDeadlineValue | null) => void;
+  idPrefix: string;
+  dueDate: string | null | undefined;
+  lateDeadlines: DeadlineEntry[] | undefined;
+  creditFieldPath: string;
+}) {
   const { register } = useFormContext<AccessControlFormData>();
   const userTimezone = getUserTimezone();
   const { errors } = useFormState();

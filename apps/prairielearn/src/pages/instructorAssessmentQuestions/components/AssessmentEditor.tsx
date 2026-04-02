@@ -26,7 +26,9 @@ import type {
   StaffCourseInstance,
 } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import type { EnumAssessmentTool, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
+import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
 import type {
   DetailActions,
   DetailState,
@@ -53,8 +55,6 @@ import {
   toEditorMetadata,
 } from '../utils/questions.js';
 import { getStructuralSaveValidationErrorKind } from '../utils/saveValidation.js';
-import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
-import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 import { useAssessmentEditor } from '../utils/useAssessmentEditor.js';
 import {
   findAltPoolByTrackingId,
@@ -135,6 +135,7 @@ interface AssessmentEditorInnerProps {
   questionRows: StaffAssessmentQuestionRow[];
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
+  assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   canEdit: boolean;
@@ -152,6 +153,7 @@ function AssessmentEditorInner({
   questionRows,
   jsonZones,
   assessment,
+  assessmentToolDefaults,
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   canEdit,
@@ -165,7 +167,8 @@ function AssessmentEditorInner({
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const questionByQidMutation = useMutation({
-    mutationFn: (qid: string) => queryClient.fetchQuery(trpc.questionByQid.queryOptions({ qid })),
+    mutationFn: (qid: string) =>
+      queryClient.fetchQuery(trpc.assessmentQuestions.questionByQid.queryOptions({ qid })),
   });
 
   const [_preselection, setPreselection] = useQueryState('selected', parseAsString.withDefault(''));
@@ -279,7 +282,7 @@ function AssessmentEditorInner({
   const resetModal = useModalState<string>(null);
 
   const courseQuestionsQuery = useQuery({
-    ...trpc.courseQuestions.queryOptions(),
+    ...trpc.assessmentQuestions.courseQuestions.queryOptions(),
     enabled: editMode,
   });
   const courseQuestions = courseQuestionsQuery.data ?? [];
@@ -891,6 +894,7 @@ function AssessmentEditorInner({
       assessmentType: assessment.type,
       constantQuestionValue: assessment.constant_question_value ?? false,
       assessmentDefaults,
+      assessmentToolDefaults,
       courseInstanceId: courseInstance.id,
       courseId: course.id,
       hasCoursePermissionPreview,
@@ -902,6 +906,7 @@ function AssessmentEditorInner({
       assessment.type,
       assessment.constant_question_value,
       assessmentDefaults,
+      assessmentToolDefaults,
       courseInstance.id,
       course.id,
       hasCoursePermissionPreview,
@@ -1153,7 +1158,13 @@ export function AssessmentQuestionsEditor({
   ...innerProps
 }: AssessmentEditorProps) {
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => createAssessmentQuestionsTrpcClient(trpcCsrfToken));
+  const [trpcClient] = useState(() =>
+    createAssessmentTrpcClient({
+      csrfToken: trpcCsrfToken,
+      courseInstanceId: innerProps.courseInstance.id,
+      assessmentId: innerProps.assessment.id,
+    }),
+  );
 
   return (
     <NuqsAdapter search={search}>

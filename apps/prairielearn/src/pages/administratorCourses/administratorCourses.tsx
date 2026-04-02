@@ -29,7 +29,9 @@ router.get(
     });
     const course_requests = await selectPendingCourseRequests();
     const institutions = await selectAllInstitutions();
-    const availableTimezones = await getCanonicalTimezones();
+    const availableTimezones = await getCanonicalTimezones(
+      institutions.map((i) => i.display_timezone),
+    );
     const courses = await sqldb.queryRows(sql.select_courses, CourseWithInstitutionSchema);
     const trpcCsrfToken = generatePrefixCsrfToken(
       {

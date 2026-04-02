@@ -4,6 +4,7 @@ import { AccessControlJsonSchema } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
 
 export const EnumAssessmentToolSchema = z.enum(['calculator']);
+export type EnumAssessmentTool = z.infer<typeof EnumAssessmentToolSchema>;
 
 function uniqueArray<T extends ZodSchema>(schema: T) {
   return z.array(schema).refine((items) => new Set(items).size === items.length, {
@@ -428,8 +429,7 @@ export const AssessmentJsonSchema = z
       .describe(
         'List of access rules for the assessment. Access is permitted if any access rule is satisfied.',
       )
-      .optional()
-      .default([]),
+      .optional(),
     accessControl: z
       .array(AccessControlJsonSchema)
       .describe('Access control settings for the assessment.')

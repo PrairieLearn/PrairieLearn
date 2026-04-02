@@ -14,6 +14,8 @@ import {
 import { normalizeCoursePathInput } from './course-path.js';
 import { requireAdministrator, t } from './init.js';
 
+export interface AdminCourseError {}
+
 const insert = t.procedure
   .use(requireAdministrator)
   .input(
@@ -77,7 +79,7 @@ const deleteCourseProcedure = t.procedure
     if (input.confirmShortName !== course.short_name) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
-        message: `Confirmation did not match expected value of "${course.short_name}"`,
+        message: 'Confirmation did not match the expected value.',
       });
     }
 
