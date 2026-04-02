@@ -44,7 +44,7 @@ router.get(
         navContext: {
           type: 'administrator',
           page: 'admin',
-          subPage: 'courses',
+          subPage: 'courseRequests',
         },
         options: {
           fullWidth: true,

@@ -138,7 +138,9 @@ export function AdministratorCourseFormFields({
 
   const prefixReady = prefixState.status !== 'loading';
   const expectedRepoShortName =
-    prefixReady && shortName.trim() ? buildRepoShortName(effectivePrefix, shortName) : null;
+    prefixReady && shortName.trim() && effectivePrefix != null
+      ? buildRepoShortName(effectivePrefix, shortName)
+      : null;
   const repoMatchesShortName =
     !expectedRepoShortName || !repositoryShortName || repositoryShortName === expectedRepoShortName;
 
