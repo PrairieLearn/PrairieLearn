@@ -2,6 +2,8 @@ import type { ImagePart, ModelMessage } from 'ai';
 import { type TiktokenEncoding, getEncoding } from 'js-tiktoken';
 import sharp from 'sharp';
 
+import { logger } from '@prairielearn/logger';
+
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
@@ -25,6 +27,18 @@ const PROVIDER_TIKTOKEN_ENCODING: Record<EnumAiGradingProvider, TiktokenEncoding
   anthropic: 'cl100k_base',
 };
 
+/** Fallback character-to-token ratio used when local tokenization fails. */
+const FALLBACK_CHARS_PER_TOKEN = 3.04;
+/** Fallback per-image token estimate when dimensions cannot be determined. */
+const FALLBACK_TOKENS_PER_IMAGE = 1000;
+
+export interface TokenCountDetails {
+  tokenCount: number;
+  usedFallback: boolean;
+  imageFallbackCount: number;
+  failedEvenFallback: boolean;
+}
+
 /**
  * Counts input tokens for a specific model using local computation only.
  * Text tokens are counted with a tiktoken encoding that approximates the
@@ -38,39 +52,100 @@ export async function countInputTokensForModel(
   messages: ModelMessage[],
   modelId: AiGradingModelId,
 ): Promise<number> {
-  const provider = AI_GRADING_MODEL_PROVIDERS[modelId];
-  const encoding = PROVIDER_TIKTOKEN_ENCODING[provider];
-  const enc = getEncoding(encoding);
-  let totalTokens = 0;
-
-  for (const msg of messages) {
-    if (typeof msg.content === 'string') {
-      totalTokens += enc.encode(msg.content).length;
-    } else if (Array.isArray(msg.content)) {
-      for (const part of msg.content) {
-        if (part.type === 'text') {
-          totalTokens += enc.encode(part.text).length;
-        } else if (part.type === 'image') {
-          totalTokens += await getImageTokensForModel(part, modelId);
-        }
-      }
-    }
-    // Per-message overhead (role, delimiters).
-    totalTokens += 4;
-  }
-
-  return totalTokens;
+  const details = await countInputTokensForModelWithDetails(messages, modelId);
+  return details.tokenCount;
 }
 
-async function getImageTokensForModel(part: ImagePart, modelId: AiGradingModelId): Promise<number> {
-  const imageData = part.image;
-  const buffer =
-    typeof imageData === 'string' ? Buffer.from(imageData, 'base64') : (imageData as Buffer);
-  const metadata = await sharp(buffer).metadata();
-  if (!metadata.width || !metadata.height) {
-    throw new Error('Could not determine image dimensions');
+/**
+ * Counts input tokens and returns details about whether any fallback path was used.
+ */
+export async function countInputTokensForModelWithDetails(
+  messages: ModelMessage[],
+  modelId: AiGradingModelId,
+): Promise<TokenCountDetails> {
+  try {
+    const provider = AI_GRADING_MODEL_PROVIDERS[modelId];
+    const encoding = PROVIDER_TIKTOKEN_ENCODING[provider];
+    const enc = getEncoding(encoding);
+    let totalTokens = 0;
+    let imageFallbackCount = 0;
+
+    for (const msg of messages) {
+      if (typeof msg.content === 'string') {
+        totalTokens += enc.encode(msg.content).length;
+      } else if (Array.isArray(msg.content)) {
+        for (const part of msg.content) {
+          if (part.type === 'text') {
+            totalTokens += enc.encode(part.text).length;
+          } else if (part.type === 'image') {
+            const imageTokenResult = await getImageTokensForModel(part, modelId);
+            totalTokens += imageTokenResult.tokenCount;
+            if (imageTokenResult.usedFallback) {
+              imageFallbackCount += 1;
+            }
+          }
+        }
+      }
+      // Per-message overhead (role, delimiters).
+      totalTokens += 4;
+    }
+
+    return {
+      tokenCount: totalTokens,
+      usedFallback: imageFallbackCount > 0,
+      imageFallbackCount,
+      failedEvenFallback: false,
+    };
+  } catch (err) {
+    logger.error('AI grading token counting failed; using fallback estimate', {
+      model_id: modelId,
+      err,
+    });
+    try {
+      return {
+        tokenCount: estimateFallbackTokens(messages),
+        usedFallback: true,
+        imageFallbackCount: 0,
+        failedEvenFallback: false,
+      };
+    } catch (fallbackErr) {
+      logger.error('AI grading token counting failed even fallback estimate', {
+        model_id: modelId,
+        err: fallbackErr,
+      });
+      return {
+        tokenCount: 0,
+        usedFallback: true,
+        imageFallbackCount: 0,
+        failedEvenFallback: true,
+      };
+    }
   }
-  return getImageTokenCountForModel(metadata.width, metadata.height, modelId);
+}
+
+async function getImageTokensForModel(
+  part: ImagePart,
+  modelId: AiGradingModelId,
+): Promise<{ tokenCount: number; usedFallback: boolean }> {
+  try {
+    const imageData = part.image;
+    const buffer =
+      typeof imageData === 'string' ? Buffer.from(imageData, 'base64') : (imageData as Buffer);
+    const metadata = await sharp(buffer).metadata();
+    if (!metadata.width || !metadata.height) {
+      return { tokenCount: FALLBACK_TOKENS_PER_IMAGE, usedFallback: true };
+    }
+    return {
+      tokenCount: getImageTokenCountForModel(metadata.width, metadata.height, modelId),
+      usedFallback: false,
+    };
+  } catch (err) {
+    logger.error('AI grading image token counting failed; using image fallback estimate', {
+      model_id: modelId,
+      err,
+    });
+    return { tokenCount: FALLBACK_TOKENS_PER_IMAGE, usedFallback: true };
+  }
 }
 
 function getImageTokenCountForModel(
@@ -228,4 +303,27 @@ export function computeAnthropicImageTokens(width: number, height: number): numb
   }
 
   return Math.max(1, Math.ceil((width * height) / ANTHROPIC_TOKENS_DIVISOR));
+}
+
+function estimateFallbackTokens(messages: ModelMessage[]): number {
+  let totalTextLength = 0;
+  let imageCount = 0;
+
+  for (const msg of messages) {
+    if (typeof msg.content === 'string') {
+      totalTextLength += msg.content.length;
+    } else if (Array.isArray(msg.content)) {
+      for (const part of msg.content) {
+        if (part.type === 'text') {
+          totalTextLength += part.text.length;
+        } else if (part.type === 'image') {
+          imageCount++;
+        }
+      }
+    }
+  }
+
+  return (
+    Math.ceil(totalTextLength / FALLBACK_CHARS_PER_TOKEN) + imageCount * FALLBACK_TOKENS_PER_IMAGE
+  );
 }

@@ -404,6 +404,7 @@ export function AiGradingModelSelectionModal({
   const modalDataQuery = useQuery({
     ...trpc.manualGrading.getAiGradingModalData.queryOptions({ selection }),
     enabled: modalState != null,
+    retry: false,
   });
 
   const handleClose = useCallback(() => {
