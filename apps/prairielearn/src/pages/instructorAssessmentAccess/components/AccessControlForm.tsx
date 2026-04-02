@@ -294,10 +294,16 @@ export function AccessControlForm({
                   onMoveOverride={moveOverride}
                   onEditMainRule={() => setSelectedRule({ type: 'main' })}
                   onClearMainRule={() =>
-                    reset({
-                      mainRule: jsonToMainRuleFormData({}, displayTimezone),
-                      overrides: watch('overrides'),
-                    })
+                    reset(
+                      {
+                        mainRule: jsonToMainRuleFormData({}, displayTimezone),
+                        overrides: watch('overrides'),
+                      },
+                      {
+                        // Keep original defaults so the form stays dirty and the save button enables.
+                        keepDefaultValues: true,
+                      },
+                    )
                   }
                   onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
                 />
