@@ -1,4 +1,3 @@
-import { Temporal } from '@js-temporal/polyfill';
 import { Col, Form, Row } from 'react-bootstrap';
 import { useFormContext, useWatch } from 'react-hook-form';
 
@@ -12,6 +11,7 @@ import { MainDurationField, OverrideDurationField } from './fields/DurationField
 import { MainPasswordField, OverridePasswordField } from './fields/PasswordField.js';
 import { MainReleaseDateField, OverrideReleaseDateField } from './fields/ReleaseDateField.js';
 import type { AccessControlFormData } from './types.js';
+import { startOfDayDatetime } from './utils/dateUtils.js';
 
 export function MainDateControlForm({
   title = 'Date control',
@@ -40,11 +40,10 @@ export function MainDateControlForm({
           onChange={(e) => {
             void dateControlRegistration.onChange(e);
             if (e.target.checked && !getValues('mainRule.releaseDate')) {
-              setValue(
-                'mainRule.releaseDate',
-                Temporal.Now.plainDateISO().toPlainDateTime().toString({ smallestUnit: 'minute' }),
-                { shouldDirty: true, shouldValidate: true },
-              );
+              setValue('mainRule.releaseDate', startOfDayDatetime(), {
+                shouldDirty: true,
+                shouldValidate: true,
+              });
             }
           }}
         />

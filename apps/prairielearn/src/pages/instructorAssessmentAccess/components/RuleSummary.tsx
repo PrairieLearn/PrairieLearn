@@ -69,7 +69,7 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
       });
     } else if (releaseDate === null) {
       rows.push({
-        date: 'Released immediately',
+        date: 'Released',
         label: '',
         credit: '100%',
         visibility: 'Assessment opens',
@@ -338,21 +338,23 @@ function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): str
 function generateOverrideFieldItems(
   rule: OverrideData,
   displayTimezone: string,
+  mainRuleReleaseDate?: string,
 ): OverrideFieldItem[] {
   const items: OverrideFieldItem[] = [];
   const overriddenFields = new Set(rule.overriddenFields);
 
   if (overriddenFields.has('releaseDate')) {
+    const resolvedDate = rule.releaseDate || mainRuleReleaseDate;
     items.push({
       label: 'Release date',
-      value: rule.releaseDate ? (
+      value: resolvedDate ? (
         <FriendlyDate
-          date={Temporal.PlainDateTime.from(rule.releaseDate)}
+          date={Temporal.PlainDateTime.from(resolvedDate)}
           timezone={displayTimezone}
           tooltip
         />
       ) : (
-        'Released immediately'
+        'Released'
       ),
     });
   }
@@ -595,6 +597,7 @@ export function OverrideRuleSummaryCard({
   displayTimezone,
   errors,
   dragHandleProps,
+  mainRuleReleaseDate,
 }: {
   rule: OverrideData;
   title: string;
@@ -604,8 +607,9 @@ export function OverrideRuleSummaryCard({
   errors?: string[];
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
+  mainRuleReleaseDate?: string;
 }) {
-  const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone);
+  const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone, mainRuleReleaseDate);
 
   const students = rule.appliesTo.targetType === 'enrollment' ? rule.appliesTo.enrollments : [];
 

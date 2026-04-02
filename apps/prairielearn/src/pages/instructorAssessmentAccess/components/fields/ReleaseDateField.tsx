@@ -5,9 +5,14 @@ import { type Path, useController, useWatch } from 'react-hook-form';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData } from '../types.js';
+import { startOfDayDatetime, tomorrowDate } from '../utils/dateUtils.js';
 
 function todayLocalDatetime(): string {
-  return Temporal.Now.plainDateISO().toPlainDateTime().toString({ smallestUnit: 'minute' });
+  return startOfDayDatetime();
+}
+
+function tomorrowLocalDatetime(): string {
+  return startOfDayDatetime(tomorrowDate());
 }
 
 function isReleasedNow(value: string): boolean {
@@ -55,7 +60,7 @@ function MainReleaseDateInput({
           checked={!released}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
-              onChange('');
+              onChange(tomorrowLocalDatetime());
             }
           }}
         />
@@ -64,6 +69,7 @@ function MainReleaseDateInput({
         <>
           <Form.Control
             type="datetime-local"
+            step={1}
             aria-label="Release date"
             aria-invalid={!!error}
             aria-errormessage={error ? 'mainRule-release-date-error' : undefined}
@@ -110,13 +116,14 @@ function OverrideReleaseDateInput({
           label="Released after date"
           checked={value !== null}
           onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange('');
+            if (currentTarget.checked) onChange(tomorrowLocalDatetime());
           }}
         />
       </div>
       {value !== null && (
         <Form.Control
           type="datetime-local"
+          step={1}
           aria-label="Release date"
           value={value}
           onChange={({ currentTarget }) => onChange(currentTarget.value)}

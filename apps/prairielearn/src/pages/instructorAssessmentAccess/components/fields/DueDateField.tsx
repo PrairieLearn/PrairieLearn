@@ -6,7 +6,11 @@ import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
-import { getLatestEarlyDeadlineDate, getUserTimezone } from '../utils/dateUtils.js';
+import {
+  endOfDayDatetime,
+  getLatestEarlyDeadlineDate,
+  getUserTimezone,
+} from '../utils/dateUtils.js';
 
 function DueDateInput({
   value,
@@ -86,11 +90,17 @@ function DueDateInput({
           checked={value !== null}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
-              const defaultDueDate = Temporal.Now.plainDateISO()
-                .add({ weeks: 1 })
-                .toPlainDateTime({ hour: 23, minute: 59 })
-                .toString({ smallestUnit: 'minute' });
-              onChange(defaultDueDate);
+              // eslint-disable-next-line unicorn/prefer-array-find -- findLast unavailable in target lib
+              const latestEarlyDate = earlyDeadlines?.filter((d) => d.date).pop()?.date;
+              let baseDate: Temporal.PlainDate;
+              if (latestEarlyDate) {
+                baseDate = Temporal.PlainDateTime.from(latestEarlyDate).toPlainDate();
+              } else if (releaseDate) {
+                baseDate = Temporal.PlainDateTime.from(releaseDate).toPlainDate();
+              } else {
+                baseDate = Temporal.Now.plainDateISO();
+              }
+              onChange(endOfDayDatetime(baseDate.add({ weeks: 1 })));
             }
           }}
         />
@@ -99,6 +109,7 @@ function DueDateInput({
         <>
           <Form.Control
             type="datetime-local"
+            step={1}
             aria-label="Due date"
             aria-invalid={!!error}
             aria-errormessage={error ? `${idPrefix}-due-date-error` : undefined}

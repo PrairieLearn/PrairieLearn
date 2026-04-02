@@ -118,7 +118,7 @@ function toLocalDatetimeValue<T extends string | null | undefined>(
     return Temporal.Instant.from(value)
       .toZonedDateTimeISO(displayTimezone)
       .toPlainDateTime()
-      .toString({ smallestUnit: 'minute' }) as T;
+      .toString({ smallestUnit: 'second' }) as T;
   }
   return value;
 }

@@ -10,6 +10,7 @@ import type {
   QuestionVisibilityValue,
   ScoreVisibilityValue,
 } from './types.js';
+import { endOfDayDatetime, startOfDayDatetime, tomorrowDate } from './utils/dateUtils.js';
 
 type HideQuestionsMode =
   | 'show_questions'
@@ -87,7 +88,12 @@ function QuestionVisibilityInput({
           checked={hideQuestionsMode === 'hide_questions_between_dates'}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
-              onChange({ hideQuestions: true, showAgainDate: '', hideAgainDate: '' });
+              const tomorrow = tomorrowDate();
+              onChange({
+                hideQuestions: true,
+                showAgainDate: startOfDayDatetime(tomorrow),
+                hideAgainDate: endOfDayDatetime(tomorrow.add({ weeks: 2 })),
+              });
             }
           }}
         />
@@ -106,6 +112,7 @@ function QuestionVisibilityInput({
                 <Form.Control
                   id={`${idPrefix}-show-questions-between-start`}
                   type="datetime-local"
+                  step={1}
                   value={value.showAgainDate ?? ''}
                   onChange={({ currentTarget }) =>
                     onChange({
@@ -123,6 +130,7 @@ function QuestionVisibilityInput({
                 <Form.Control
                   id={`${idPrefix}-hide-questions-between-end`}
                   type="datetime-local"
+                  step={1}
                   value={value.hideAgainDate ?? ''}
                   onChange={({ currentTarget }) =>
                     onChange({
@@ -144,7 +152,10 @@ function QuestionVisibilityInput({
           label="Show questions after date"
           checked={hideQuestionsMode === 'hide_questions_until_date'}
           onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange({ hideQuestions: true, showAgainDate: '' });
+            if (currentTarget.checked) {
+              const tomorrow = tomorrowDate();
+              onChange({ hideQuestions: true, showAgainDate: startOfDayDatetime(tomorrow) });
+            }
           }}
         />
         {hideQuestionsMode === 'hide_questions_until_date' && (
@@ -157,6 +168,7 @@ function QuestionVisibilityInput({
             <Form.Control
               id={`${idPrefix}-show-questions-date`}
               type="datetime-local"
+              step={1}
               aria-label="Show questions on"
               value={value.showAgainDate ?? ''}
               onChange={({ currentTarget }) =>
@@ -229,7 +241,10 @@ function ScoreVisibilityInput({
           label="Hide score until date"
           checked={hideScoreMode === 'hide_score_until_date'}
           onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange({ hideScore: true, showAgainDate: '' });
+            if (currentTarget.checked) {
+              const tomorrow = tomorrowDate();
+              onChange({ hideScore: true, showAgainDate: startOfDayDatetime(tomorrow) });
+            }
           }}
         />
         {hideScoreMode === 'hide_score_until_date' && (
@@ -242,6 +257,7 @@ function ScoreVisibilityInput({
             <Form.Control
               id={`${idPrefix}-show-score-date`}
               type="datetime-local"
+              step={1}
               aria-label="Show score again on"
               value={value.showAgainDate ?? ''}
               onChange={({ currentTarget }) =>

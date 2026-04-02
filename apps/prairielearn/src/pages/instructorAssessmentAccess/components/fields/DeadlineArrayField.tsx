@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import { Button, Form, InputGroup } from 'react-bootstrap';
 import {
   type Path,
@@ -12,7 +13,7 @@ import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
-import { getDeadlineRange, getUserTimezone } from '../utils/dateUtils.js';
+import { endOfDayDatetime, getDeadlineRange, getUserTimezone } from '../utils/dateUtils.js';
 
 function DeadlineArrayInput({
   type,
@@ -131,7 +132,25 @@ function DeadlineArrayInput({
   };
 
   const addDeadline = () => {
-    appendDeadline({ date: '', credit: isEarly ? 101 : 99 });
+    let defaultDate = '';
+    const lastDeadlineDate =
+      deadlineFields.length > 0 ? deadlineFields[deadlineFields.length - 1].date : '';
+
+    if (lastDeadlineDate) {
+      const lastDate = Temporal.PlainDateTime.from(lastDeadlineDate).toPlainDate();
+      defaultDate = endOfDayDatetime(lastDate.add({ weeks: 1 }));
+    } else if (isEarly && dueDate) {
+      const dueDatePlain = Temporal.PlainDateTime.from(dueDate).toPlainDate();
+      defaultDate = endOfDayDatetime(dueDatePlain.subtract({ days: 1 }));
+    } else if (isEarly && releaseDate) {
+      const releasePlain = Temporal.PlainDateTime.from(releaseDate).toPlainDate();
+      defaultDate = endOfDayDatetime(releasePlain.add({ weeks: 1 }));
+    } else if (!isEarly && dueDate) {
+      const dueDatePlain = Temporal.PlainDateTime.from(dueDate).toPlainDate();
+      defaultDate = endOfDayDatetime(dueDatePlain.add({ weeks: 1 }));
+    }
+
+    appendDeadline({ date: defaultDate, credit: isEarly ? 101 : 99 });
   };
 
   const label = isEarly ? 'Early deadlines' : 'Late deadlines';
@@ -164,6 +183,7 @@ function DeadlineArrayInput({
             <div className="flex-grow-1">
               <Form.Control
                 type="datetime-local"
+                step={1}
                 aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} date`}
                 aria-invalid={!!getDateError(index)}
                 aria-errormessage={
