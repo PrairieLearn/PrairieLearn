@@ -24,7 +24,6 @@ export function createChunkSplitLink({
     'X-TRPC': 'true',
     'X-CSRF-Token': csrfToken,
   };
-  console.log('chunkPaths', chunkPaths);
   const chunkPathSet: ReadonlySet<string> = new Set(chunkPaths);
 
   return splitLink({
