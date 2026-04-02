@@ -1,7 +1,7 @@
 import { useChat } from '@ai-sdk/react';
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { DefaultChatTransport, type ToolUIPart, type UIMessage } from 'ai';
-import { type ReactNode, useCallback, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Modal } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
@@ -630,27 +630,35 @@ function MessageParts({ parts }: { parts: UIMessage['parts'] }) {
   );
 }
 
-function triggerOpenRubricEditor() {
-  const scrollToRubricEditor = () => {
-    const rubricEditorElement = document.getElementById('rubric-editor');
-    if (!rubricEditorElement) return;
+/**
+ * Ensure the rubric settings panel is open. Uses direct class manipulation
+ * instead of clicking the Bootstrap toggle to avoid accordion animations
+ * that cause flickering during rapid tool call updates.
+ */
+function ensureRubricEditorOpen() {
+  const collapseEl = document.getElementById('rubric-setting');
+  if (!collapseEl) return;
 
-    rubricEditorElement.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    });
-  };
-
-  const rubricSettingsToggleButton = document.querySelector<HTMLButtonElement>(
-    '#rubric-editor [data-bs-target="#rubric-setting"]',
-  );
-  if (rubricSettingsToggleButton?.classList.contains('collapsed')) {
-    rubricSettingsToggleButton.click();
-    window.setTimeout(scrollToRubricEditor, 250);
-    return;
+  if (!collapseEl.classList.contains('show')) {
+    collapseEl.classList.add('show');
+    const toggleButton = document.querySelector<HTMLButtonElement>(
+      '#rubric-editor [data-bs-target="#rubric-setting"]',
+    );
+    if (toggleButton) {
+      toggleButton.classList.remove('collapsed');
+      toggleButton.setAttribute('aria-expanded', 'true');
+    }
   }
+}
 
-  scrollToRubricEditor();
+function scrollToRubricEditor() {
+  const rubricEditorElement = document.getElementById('rubric-editor');
+  if (!rubricEditorElement) return;
+
+  rubricEditorElement.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  });
 }
 
 function hasMutations(parts: UIMessage['parts']): boolean {
@@ -829,8 +837,9 @@ function AssessmentQuestionManualGradingInner({
       if (phase === 'generate') {
         setHasGeneratedRubric(true);
         hasGeneratedRubricRef.current = true;
-        triggerOpenRubricEditor();
         refreshRubricData();
+        ensureRubricEditorOpen();
+        scrollToRubricEditor();
 
         void queryClient.invalidateQueries({
           queryKey: trpc.manualGrading.instances.queryKey(),
@@ -843,8 +852,9 @@ function AssessmentQuestionManualGradingInner({
         if (rubricModified) {
           setHasGeneratedRubric(true);
           hasGeneratedRubricRef.current = true;
-          triggerOpenRubricEditor();
           refreshRubricData();
+          ensureRubricEditorOpen();
+          scrollToRubricEditor();
 
           void queryClient.invalidateQueries({
             queryKey: trpc.manualGrading.instances.queryKey(),
@@ -855,6 +865,28 @@ function AssessmentQuestionManualGradingInner({
   });
 
   const isGenerating = status === 'streaming' || status === 'submitted';
+
+  // Refresh rubric data in real-time as mutation tool calls complete during streaming.
+  const completedMutationCountRef = useRef(0);
+  useEffect(() => {
+    let count = 0;
+    for (const message of messages) {
+      for (const part of message.parts) {
+        if (
+          isToolPart(part) &&
+          MUTATION_TOOL_TYPES.has(part.type) &&
+          part.state === 'output-available'
+        ) {
+          count++;
+        }
+      }
+    }
+    if (count > completedMutationCountRef.current) {
+      completedMutationCountRef.current = count;
+      refreshRubricData();
+      ensureRubricEditorOpen();
+    }
+  }, [messages, refreshRubricData]);
 
   const isAiGradingAvailable = (assessmentQuestion.max_manual_points ?? 0) > 0;
 
