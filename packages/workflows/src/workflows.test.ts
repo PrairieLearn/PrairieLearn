@@ -68,6 +68,10 @@ describe('@prairielearn/workflows', () => {
       "CREATE INDEX IF NOT EXISTS workflow_runs_status_running_idx ON workflow_runs (status, heartbeat_at) WHERE status = 'running'",
       {},
     );
+    await testPool.queryAsync(
+      'CREATE INDEX IF NOT EXISTS workflow_runs_context_idx ON workflow_runs USING gin (context)',
+      {},
+    );
   });
 
   afterAll(async () => {
@@ -298,9 +302,6 @@ describe('@prairielearn/workflows', () => {
 
       const run = await startWorkflow(type, { initialState: {} });
       await waitForStatus(run.id, 'completed');
-
-      // Give async log writes a moment to complete
-      await sleep(100);
 
       const finalRun = await getWorkflowRun(run.id);
       assert.include(finalRun.output, '[INFO] test message');
