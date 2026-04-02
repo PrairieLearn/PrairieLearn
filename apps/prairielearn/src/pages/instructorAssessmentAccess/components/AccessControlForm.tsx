@@ -24,6 +24,12 @@ import {
 const defaultInitialData: AccessControlJsonWithId[] = [];
 
 /**
+ * Use an initial width of 560px for the right panel, to accomodate fitting
+ * deadline override inputs onto a single line.
+ */
+const accessControlFormInitialRightWidth = 560;
+
+/**
  * Maps react-hook-form error field keys to human-friendly labels.
  * Keys at any depth in the error object are matched.
  */
@@ -273,7 +279,7 @@ export function AccessControlForm({
           rightCollapsed={selectedRule == null ? true : undefined}
           rightTitle={rightTitle}
           rightHeaderAction={rightHeaderAction}
-          initialRightWidth={560}
+          initialRightWidth={accessControlFormInitialRightWidth}
           left={
             <div className="split-pane__left-body p-3">
               <AccessControlSummary
