@@ -50,6 +50,25 @@ const CourseRequestRowSchema = z.object({
 });
 export type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
 
+const SimilarCourseOwnerSchema = z.object({
+  name: z.string().nullable(),
+  uid: z.string(),
+});
+
+const SimilarCourseSchema = z.object({
+  id: IdSchema,
+  short_name: z.string(),
+  title: z.string(),
+  path: z.string().nullable(),
+  institution_short_name: z.string(),
+  owners: z.array(SimilarCourseOwnerSchema),
+});
+export type SimilarCourse = z.infer<typeof SimilarCourseSchema>;
+
+export async function findSimilarCourses({ shortName }: { shortName: string }) {
+  return await queryRows(sql.find_similar_courses, { short_name: shortName }, SimilarCourseSchema);
+}
+
 async function selectCourseRequests(show_all: boolean) {
   return await queryRows(sql.select_course_requests, { show_all }, CourseRequestRowSchema);
 }

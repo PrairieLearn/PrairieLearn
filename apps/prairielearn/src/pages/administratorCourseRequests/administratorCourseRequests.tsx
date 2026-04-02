@@ -7,7 +7,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
-import { selectAllCourseRequests } from '../../lib/course-request.js';
+import { selectAllCourseRequests, selectPendingCourseRequests } from '../../lib/course-request.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { selectAllInstitutions } from '../../models/institution.js';
@@ -24,7 +24,8 @@ router.get(
       accessType: 'instructor',
       withAuthzData: false,
     });
-    const rows = await selectAllCourseRequests();
+    const showAll = req.query.status === 'all';
+    const rows = showAll ? await selectAllCourseRequests() : await selectPendingCourseRequests();
     const institutions = await selectAllInstitutions();
     const availableTimezones = await getCanonicalTimezones(
       institutions.map((i) => i.display_timezone),
@@ -58,6 +59,7 @@ router.get(
               trpcCsrfToken={trpcCsrfToken}
               urlPrefix={urlPrefix}
               aiSecretsConfigured={!!config.administratorOpenAiApiKey}
+              showAll={showAll}
             />
           </Hydrate>
         ),

@@ -10,6 +10,7 @@ import {
 import {
   createCourseFromRequest,
   denyCourseRequest,
+  findSimilarCourses,
   selectCourseRequestById,
   selectInstitutionPrefix,
   updateCourseRequestNote,
@@ -177,10 +178,37 @@ const suggestInstitutionPrefixProcedure = t.procedure
     });
   });
 
+const findSimilarCoursesProcedure = t.procedure
+  .use(requireAdministrator)
+  .input(z.object({ shortName: z.string().min(1) }))
+  .query(async ({ input }) => {
+    return await findSimilarCourses({ shortName: input.shortName });
+  });
+
+const checkConflictsProcedure = t.procedure
+  .use(requireAdministrator)
+  .input(
+    z.object({
+      repoShortName: z.string().min(1),
+      path: z.string().min(1),
+    }),
+  )
+  .query(async ({ input }) => {
+    const normalizedPath = normalizeCoursePathInput(input.path);
+    const [repoExistsInDb, repoExistsOnGithub, pathExists] = await Promise.all([
+      checkCourseRepositoryExists(input.repoShortName),
+      checkGithubRepositoryExists(input.repoShortName),
+      checkCoursePathExists(normalizedPath),
+    ]);
+    return { repoExistsInDb, repoExistsOnGithub, pathExists };
+  });
+
 export const administratorCourseRequestsRouter = t.router({
   checkInstructorLegitimacy: checkInstructorLegitimacyProcedure,
   selectInstitutionPrefix: selectInstitutionPrefixProcedure,
   suggestInstitutionPrefix: suggestInstitutionPrefixProcedure,
+  findSimilarCourses: findSimilarCoursesProcedure,
+  checkConflicts: checkConflictsProcedure,
   deny,
   updateNote,
   createCourse,

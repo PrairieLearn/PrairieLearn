@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { memo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Alert, Dropdown, Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
@@ -10,10 +10,19 @@ import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 import { getAppError } from '../lib/client/errors.js';
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
 import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
-import type { CourseRequestRow } from '../lib/course-request.js';
+import type { CourseRequestRow, SimilarCourse } from '../lib/course-request.js';
 import { type Timezone } from '../lib/timezone.shared.js';
 import { useTRPC } from '../trpc/administrator/context.js';
 import type { AdminCourseRequestError } from '../trpc/administrator/course-requests.js';
+
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(timer);
+  }, [value, delayMs]);
+  return debounced;
+}
 
 import {
   AdministratorCourseFormFields,
@@ -54,7 +63,7 @@ export function CourseRequestsTable({
         {!showAll && (
           <a
             className="btn btn-sm btn-light ms-auto"
-            href={getAdministratorCourseRequestsUrl({ urlPrefix })}
+            href={getAdministratorCourseRequestsUrl({ urlPrefix, showAll: true })}
           >
             <i className="fa fa-search" aria-hidden="true" />
             <span className="d-none d-sm-inline">View all</span>
@@ -368,6 +377,33 @@ function CourseRequestApproveModalContent({
   const institutionId = methods.watch('institution_id');
   const prefixState = useInstitutionPrefix(institutionId, institutions);
 
+  const shortName = methods.watch('short_name');
+  const repositoryShortName = methods.watch('repository_short_name');
+  const coursePath = methods.watch('path');
+
+  const debouncedShortName = useDebouncedValue(shortName, 500);
+  const debouncedRepoShortName = useDebouncedValue(repositoryShortName, 500);
+  const debouncedPath = useDebouncedValue(coursePath, 500);
+
+  const similarCoursesQuery = useQuery({
+    ...trpc.courseRequests.findSimilarCourses.queryOptions({
+      shortName: debouncedShortName,
+    }),
+    enabled: debouncedShortName.trim().length > 0,
+  });
+
+  const conflictsQuery = useQuery({
+    ...trpc.courseRequests.checkConflicts.queryOptions({
+      repoShortName: debouncedRepoShortName,
+      path: debouncedPath,
+    }),
+    enabled: debouncedRepoShortName.trim().length > 0 && debouncedPath.trim().length > 0,
+  });
+
+  const conflicts = conflictsQuery.data;
+  const hasHardBlockers =
+    conflicts?.repoExistsInDb || conflicts?.repoExistsOnGithub || conflicts?.pathExists;
+
   const onSubmit = (data: CourseRequestApproveFormData) => {
     mutation.mutate(
       {
@@ -543,6 +579,7 @@ function CourseRequestApproveModalContent({
               </div>
             </div>
           </div>
+          <SimilarCoursesAlert courses={similarCoursesQuery.data ?? []} urlPrefix={urlPrefix} />
           <AdministratorCourseFormFields
             institutions={institutions}
             availableTimezones={availableTimezones}
@@ -552,6 +589,7 @@ function CourseRequestApproveModalContent({
             aiSecretsConfigured={aiSecretsConfigured}
             autoFilledInstitutionId={autoFilledInstitutionId}
           />
+          <ConflictsAlert conflicts={conflicts} />
           <div className="mb-3">
             <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
               GitHub username
@@ -576,13 +614,92 @@ function CourseRequestApproveModalContent({
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={isSubmitting || mutation.isPending || prefixState.status === 'loading'}
+            disabled={
+              isSubmitting ||
+              mutation.isPending ||
+              prefixState.status === 'loading' ||
+              hasHardBlockers
+            }
           >
             Create course
           </button>
         </Modal.Footer>
       </form>
     </FormProvider>
+  );
+}
+
+function SimilarCoursesAlert({
+  courses,
+  urlPrefix,
+}: {
+  courses: SimilarCourse[];
+  urlPrefix: string;
+}) {
+  if (courses.length === 0) return null;
+
+  return (
+    <Alert variant="warning" className="mb-3">
+      <Alert.Heading as="h6" className="mb-1">
+        <i className="fa fa-exclamation-triangle" aria-hidden="true" /> Existing courses with
+        matching short name
+      </Alert.Heading>
+      <small>Consider adding the requester as staff on an existing course instead.</small>
+      <ul className="mb-0 mt-2 small">
+        {courses.map((course) => (
+          <li key={course.id}>
+            <a href={`${urlPrefix}/course/${course.id}`} target="_blank" rel="noreferrer">
+              {course.short_name}: {course.title}
+            </a>{' '}
+            ({course.institution_short_name})
+            {course.owners.length > 0 && (
+              <span className="text-muted">
+                {' '}
+                &mdash; Owners: {course.owners.map((o) => o.uid).join(', ')}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </Alert>
+  );
+}
+
+function ConflictsAlert({
+  conflicts,
+}: {
+  conflicts:
+    | { repoExistsInDb: boolean; repoExistsOnGithub: boolean; pathExists: boolean }
+    | undefined;
+}) {
+  if (!conflicts) return null;
+
+  const messages: string[] = [];
+  if (conflicts.repoExistsInDb) {
+    messages.push('A course with this repository name already exists in the database.');
+  }
+  if (conflicts.repoExistsOnGithub) {
+    messages.push(
+      'A GitHub repository with this name already exists. This can happen if a repository was previously renamed.',
+    );
+  }
+  if (conflicts.pathExists) {
+    messages.push('A course with this path already exists.');
+  }
+
+  if (messages.length === 0) return null;
+
+  return (
+    <Alert variant="danger" className="mb-3">
+      <Alert.Heading as="h6" className="mb-1">
+        <i className="fa fa-times-circle" aria-hidden="true" /> Conflicts detected
+      </Alert.Heading>
+      <ul className="mb-0 small">
+        {messages.map((msg) => (
+          <li key={msg}>{msg}</li>
+        ))}
+      </ul>
+    </Alert>
   );
 }
 

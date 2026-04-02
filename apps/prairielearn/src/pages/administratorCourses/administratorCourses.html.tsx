@@ -1,6 +1,6 @@
 import { QueryClient, useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { memo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 
@@ -113,14 +113,39 @@ function CoursesCard({
   aiSecretsConfigured: boolean;
 }) {
   const [showAddCourseModal, setShowAddCourseModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredCourses = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return courses;
+    return courses.filter((row) => {
+      const fields = [
+        row.course.short_name,
+        row.course.title,
+        row.course.path,
+        row.course.repository,
+        row.institution.short_name,
+      ];
+      return fields.some((f) => f?.toLowerCase().includes(term));
+    });
+  }, [courses, searchTerm]);
 
   return (
     <div id="courses" className="card mb-4">
-      <div className="card-header bg-primary text-white d-flex align-items-center">
+      <div className="card-header bg-primary text-white d-flex align-items-center gap-2">
         <h2>Courses</h2>
+        <input
+          type="search"
+          className="form-control form-control-sm ms-auto"
+          style={{ maxWidth: '300px' }}
+          placeholder="Search courses..."
+          aria-label="Search courses"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
         <button
           type="button"
-          className="btn btn-sm btn-light ms-auto"
+          className="btn btn-sm btn-light flex-shrink-0"
           aria-label="Add course"
           onClick={() => setShowAddCourseModal(true)}
         >
@@ -152,7 +177,7 @@ function CoursesCard({
             </tr>
           </thead>
           <tbody>
-            {courses.map((row) => (
+            {filteredCourses.map((row) => (
               <CourseRow key={row.course.id} row={row} />
             ))}
           </tbody>

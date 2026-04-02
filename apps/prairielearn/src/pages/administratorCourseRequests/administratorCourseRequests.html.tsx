@@ -17,6 +17,7 @@ export function AdministratorCourseRequests({
   trpcCsrfToken,
   urlPrefix,
   aiSecretsConfigured,
+  showAll,
 }: {
   rows: CourseRequestRow[];
   institutions: AdminInstitution[];
@@ -25,13 +26,14 @@ export function AdministratorCourseRequests({
   trpcCsrfToken: string;
   urlPrefix: string;
   aiSecretsConfigured: boolean;
+  showAll: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => createAdministratorTrpcClient({ csrfToken: trpcCsrfToken }));
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <h1 className="visually-hidden">All course requests</h1>
+        <h1 className="visually-hidden">{showAll ? 'All' : 'Pending'} course requests</h1>
         <CourseRequestsTable
           rows={rows}
           institutions={institutions}
@@ -39,7 +41,7 @@ export function AdministratorCourseRequests({
           coursesRoot={coursesRoot}
           urlPrefix={urlPrefix}
           aiSecretsConfigured={aiSecretsConfigured}
-          showAll
+          showAll={showAll}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>

@@ -124,6 +124,37 @@ ORDER BY
 LIMIT
   1;
 
+-- BLOCK find_similar_courses
+SELECT
+  c.id,
+  c.short_name,
+  c.title,
+  c.path,
+  i.short_name AS institution_short_name,
+  coalesce(
+    (
+      SELECT
+        jsonb_agg(jsonb_build_object('name', u.name, 'uid', u.uid))
+      FROM
+        course_permissions AS cp
+        JOIN users AS u ON u.id = cp.user_id
+      WHERE
+        cp.course_id = c.id
+        AND cp.course_role = 'Owner'
+    ),
+    '[]'::jsonb
+  ) AS owners
+FROM
+  courses AS c
+  JOIN institutions AS i ON i.id = c.institution_id
+WHERE
+  c.deleted_at IS NULL
+  AND c.short_name ILIKE $short_name
+ORDER BY
+  c.short_name ASC
+LIMIT
+  20;
+
 -- BLOCK select_course_request_by_id
 WITH
   select_course_request_jobs AS (
