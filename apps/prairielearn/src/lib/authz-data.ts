@@ -78,6 +78,8 @@ export async function checkCourseInstanceLegacyAccess({
   userId: string;
   reqDate: Date;
 }) {
+  // Quick return to avoid hitting the database if there are no course instance ids to check.
+  if (courseInstanceIds.length === 0) return [];
   return await sqldb.queryScalars(
     sql.check_course_instance_legacy_access,
     { course_instance_ids: courseInstanceIds, user_id: userId, req_date: reqDate },
