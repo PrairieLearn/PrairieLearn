@@ -646,7 +646,10 @@ export async function deleteAiGradingJobs({
     );
 
     // Get unique assessment_instance_ids while still in transaction
-    const uniqueIds = [...new Set(iqs.map((iq) => iq.assessment_instance_id))].sort();
+    // Sort numerically to ensure deterministic lock ordering (e.g., "1", "2", "10" not "1", "10", "2")
+    const uniqueIds = [...new Set(iqs.map((iq) => iq.assessment_instance_id))].sort(
+      (a, b) => Number(a) - Number(b),
+    );
     return { iqs, uniqueIds };
   });
 
