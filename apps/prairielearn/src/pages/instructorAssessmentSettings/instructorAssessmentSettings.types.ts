@@ -20,6 +20,7 @@ export const SettingsFormBodySchema = z.object({
   advance_score_perc: z.number().nullable(),
   allow_real_time_grading: z.boolean(),
   grade_rate_minutes: z.number().nullable(),
+  tools: z.record(z.string(), z.boolean()).optional(),
 });
 
 export type SettingsFormValues = z.infer<typeof SettingsFormBodySchema>;

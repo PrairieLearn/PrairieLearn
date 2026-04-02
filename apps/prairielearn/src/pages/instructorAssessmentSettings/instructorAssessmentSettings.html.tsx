@@ -11,6 +11,7 @@ import { getAppError } from '../../lib/client/errors.js';
 import type { PageContext } from '../../lib/client/page-context.js';
 import type { StaffAssessmentModule, StaffAssessmentSet } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import type { AssessmentToolsConfig } from '../../lib/editors.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 import type { AssessmentSettingsError } from '../../trpc/assessment/assessment-settings.js';
@@ -37,6 +38,7 @@ export function InstructorAssessmentSettings({
   courseInstanceId,
   assessmentId,
   isDevMode,
+  assessmentTools,
 }: {
   trpcCsrfToken: string;
   urlPrefix: string;
@@ -55,6 +57,7 @@ export function InstructorAssessmentSettings({
   courseInstanceId: string;
   assessmentId: string;
   isDevMode: boolean;
+  assessmentTools: AssessmentToolsConfig;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -82,6 +85,7 @@ export function InstructorAssessmentSettings({
           infoAssessmentPath={infoAssessmentPath}
           assessmentSets={assessmentSets}
           assessmentModules={assessmentModules}
+          assessmentTools={assessmentTools}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -104,6 +108,7 @@ function InstructorAssessmentSettingsInner({
   infoAssessmentPath,
   assessmentSets,
   assessmentModules,
+  assessmentTools,
 }: {
   urlPrefix: string;
   canEdit: boolean;
@@ -118,6 +123,7 @@ function InstructorAssessmentSettingsInner({
   infoAssessmentPath: string;
   assessmentSets: StaffAssessmentSet[];
   assessmentModules: StaffAssessmentModule[];
+  assessmentTools: AssessmentToolsConfig;
 }) {
   const trpc = useTRPC();
   const [origHash, setOrigHash] = useState(initialOrigHash);
@@ -149,6 +155,7 @@ function InstructorAssessmentSettingsInner({
     advance_score_perc: assessment.advance_score_perc,
     allow_real_time_grading: assessment.json_allow_real_time_grading !== false,
     grade_rate_minutes: assessment.json_grade_rate_minutes,
+    tools: Object.fromEntries(assessmentTools.map(({ name, enabled }) => [name, enabled])),
   };
 
   const {
@@ -223,7 +230,6 @@ function InstructorAssessmentSettingsInner({
       </Modal>
 
       <form name="edit-assessment-settings-form" onSubmit={handleSubmit(onFormSubmit)}>
-        {/* General */}
         <div className="card mb-4">
           <div className="card-body">
             <div className="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
@@ -459,7 +465,6 @@ function InstructorAssessmentSettingsInner({
           </div>
         </div>
 
-        {/* Scoring */}
         <div className="card mb-4">
           <div className="card-body">
             <h2 className="h5 card-title">Scoring</h2>
@@ -530,7 +535,6 @@ function InstructorAssessmentSettingsInner({
           </div>
         </div>
 
-        {/* Question behaviour */}
         <div className="card mb-4">
           <div className="card-body">
             <h2 className="h5 card-title">Question behaviour</h2>
@@ -587,7 +591,6 @@ function InstructorAssessmentSettingsInner({
           </div>
         </div>
 
-        {/* Grading */}
         <div className="card mb-4">
           <div className="card-body">
             <h2 className="h5 card-title">Grading</h2>
@@ -640,7 +643,6 @@ function InstructorAssessmentSettingsInner({
           </div>
         </div>
 
-        {/* Student options */}
         <div className="card mb-4">
           <div className="card-body">
             <h2 className="h5 card-title">Student options</h2>
@@ -757,7 +759,33 @@ function InstructorAssessmentSettingsInner({
           </div>
         </div>
 
-        {/* Save / Cancel */}
+        <div className="card mb-4">
+          <div className="card-body">
+            <h2 className="h5 card-title mb-1">Tools</h2>
+            <p className="text-muted small mb-3">
+              Tools available to students during this assessment.
+            </p>
+            {assessmentTools.map(({ name, label, enabled }) => (
+              <div key={name} className="form-check mb-3">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id={`tool_${name}`}
+                  disabled={!canEdit}
+                  defaultChecked={enabled}
+                  {...register(`tools.${name}`)}
+                />
+                <label className="form-check-label" htmlFor={`tool_${name}`}>
+                  {label}
+                </label>
+                <div className="small text-muted">
+                  Enable the {name} tool for students taking this assessment.
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {saveMutation.isSuccess && (
           <Alert variant="success" dismissible onClose={() => saveMutation.reset()}>
             Assessment updated successfully.

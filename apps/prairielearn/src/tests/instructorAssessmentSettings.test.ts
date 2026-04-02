@@ -8,11 +8,13 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { getAppError } from '../lib/client/errors.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { AssessmentSchema } from '../lib/db-types.js';
 import { getOriginalHash } from '../lib/editors.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
+import type { AssessmentSettingsError } from '../trpc/assessment/assessment-settings.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import {
@@ -310,7 +312,9 @@ describe('Editing assessment settings', () => {
         });
         assert.fail('Expected mutation to throw');
       } catch (err: unknown) {
-        assert.include(String(err), 'SYNC_JOB_FAILED');
+        const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
+        assert.isNotNull(appError);
+        assert.equal(appError.code, 'SYNC_JOB_FAILED');
       }
     },
   );
@@ -351,7 +355,9 @@ describe('Editing assessment settings', () => {
         });
         assert.fail('Expected mutation to throw');
       } catch (err: unknown) {
-        assert.include(String(err), 'INVALID_SHORT_NAME');
+        const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
+        assert.isNotNull(appError);
+        assert.equal(appError.code, 'INVALID_SHORT_NAME');
       }
     },
   );

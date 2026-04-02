@@ -20,6 +20,10 @@ import {
 } from '../../lib/editors.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { validateShortName } from '../../lib/short-name.js';
+import {
+  type AssessmentJsonInput,
+  EnumAssessmentToolSchema,
+} from '../../schemas/infoAssessment.js';
 import { throwAppError } from '../app-errors.js';
 
 import { requireCoursePermissionEdit, t } from './init.js';
@@ -28,10 +32,10 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export interface AssessmentSettingsError {
   UpdateAssessment:
-    | { code: 'INVALID_SHORT_NAME'; reason: string }
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
-  CopyAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
-  DeleteAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+    | { code: 'INVALID_SHORT_NAME'; message: string }
+    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string; message: string };
+  CopyAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string; message: string };
+  DeleteAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string; message: string };
 }
 
 const updateAssessment = t.procedure
@@ -58,6 +62,7 @@ const updateAssessment = t.procedure
       allow_real_time_grading: z.boolean(),
       grade_rate_minutes: z.number().nullable(),
       origHash: z.string(),
+      tools: z.record(z.string(), z.boolean()).optional(),
     }),
   )
   .mutation(async ({ input, ctx }) => {
@@ -83,7 +88,7 @@ const updateAssessment = t.procedure
     if (!shortNameValidation.valid) {
       throwAppError<AssessmentSettingsError['UpdateAssessment']>({
         code: 'INVALID_SHORT_NAME',
-        reason: shortNameValidation.lowercaseMessage,
+        message: shortNameValidation.lowercaseMessage,
       });
     }
 
@@ -95,7 +100,10 @@ const updateAssessment = t.procedure
       assessment.tid!,
     );
 
-    const assessmentInfo = JSON.parse(await fs.readFile(infoAssessmentPath, 'utf8'));
+    const assessmentInfo: AssessmentJsonInput = JSON.parse(
+      await fs.readFile(infoAssessmentPath, 'utf8'),
+    );
+
     assessmentInfo.title = input.title;
     assessmentInfo.set = input.set;
     assessmentInfo.number = input.number;
@@ -114,6 +122,23 @@ const updateAssessment = t.procedure
       input.allow_personal_notes,
       true,
     );
+
+    assessmentInfo.tools = assessmentInfo.tools ?? {};
+    for (const tool of EnumAssessmentToolSchema.options) {
+      const enabled = input.tools?.[tool] ?? false;
+      // Only update the tool if it was already defined in the assessmentInfo
+      // or if it's being enabled. This prevents accidentally adding new tools
+      // to the assessmentInfo when editing an existing assessment that doesn't
+      // have those tools configured.
+      if (tool in assessmentInfo.tools || enabled) {
+        assessmentInfo.tools[tool] = { ...assessmentInfo.tools[tool], enabled };
+      }
+    }
+    // If no tools are configured, delete the tools property to avoid storing an empty object.
+    if (Object.keys(assessmentInfo.tools).length === 0) {
+      delete assessmentInfo.tools;
+    }
+
     if (assessment.type === 'Exam') {
       assessmentInfo.multipleInstance = propertyValueWithDefault(
         assessmentInfo.multipleInstance,
@@ -223,6 +248,7 @@ const updateAssessment = t.procedure
     } catch {
       throwAppError<AssessmentSettingsError['UpdateAssessment']>({
         code: 'SYNC_JOB_FAILED',
+        message: 'Failed to update assessment',
         jobSequenceId: serverJob.jobSequenceId,
       });
     }
@@ -250,6 +276,7 @@ const copyAssessment = t.procedure.use(requireCoursePermissionEdit).mutation(asy
   } catch {
     throwAppError<AssessmentSettingsError['CopyAssessment']>({
       code: 'SYNC_JOB_FAILED',
+      message: 'Failed to copy assessment',
       jobSequenceId: serverJob.jobSequenceId,
     });
   }
@@ -273,6 +300,7 @@ const deleteAssessment = t.procedure.use(requireCoursePermissionEdit).mutation(a
   } catch {
     throwAppError<AssessmentSettingsError['DeleteAssessment']>({
       code: 'SYNC_JOB_FAILED',
+      message: 'Failed to delete assessment',
       jobSequenceId: serverJob.jobSequenceId,
     });
   }
