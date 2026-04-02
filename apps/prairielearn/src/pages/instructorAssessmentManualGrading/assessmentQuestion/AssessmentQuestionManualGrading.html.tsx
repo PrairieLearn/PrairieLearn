@@ -630,27 +630,6 @@ function MessageParts({ parts }: { parts: UIMessage['parts'] }) {
   );
 }
 
-/**
- * Ensure the rubric settings panel is open. Uses direct class manipulation
- * instead of clicking the Bootstrap toggle to avoid accordion animations
- * that cause flickering during rapid tool call updates.
- */
-function ensureRubricEditorOpen() {
-  const collapseEl = document.getElementById('rubric-setting');
-  if (!collapseEl) return;
-
-  if (!collapseEl.classList.contains('show')) {
-    collapseEl.classList.add('show');
-    const toggleButton = document.querySelector<HTMLButtonElement>(
-      '#rubric-editor [data-bs-target="#rubric-setting"]',
-    );
-    if (toggleButton) {
-      toggleButton.classList.remove('collapsed');
-      toggleButton.setAttribute('aria-expanded', 'true');
-    }
-  }
-}
-
 function scrollToRubricEditor() {
   const rubricEditorElement = document.getElementById('rubric-editor');
   if (!rubricEditorElement) return;
@@ -838,7 +817,6 @@ function AssessmentQuestionManualGradingInner({
         setHasGeneratedRubric(true);
         hasGeneratedRubricRef.current = true;
         refreshRubricData();
-        ensureRubricEditorOpen();
         scrollToRubricEditor();
 
         void queryClient.invalidateQueries({
@@ -853,7 +831,6 @@ function AssessmentQuestionManualGradingInner({
           setHasGeneratedRubric(true);
           hasGeneratedRubricRef.current = true;
           refreshRubricData();
-          ensureRubricEditorOpen();
           scrollToRubricEditor();
 
           void queryClient.invalidateQueries({
@@ -884,7 +861,6 @@ function AssessmentQuestionManualGradingInner({
     if (count > completedMutationCountRef.current) {
       completedMutationCountRef.current = count;
       refreshRubricData();
-      ensureRubricEditorOpen();
     }
   }, [messages, refreshRubricData]);
 

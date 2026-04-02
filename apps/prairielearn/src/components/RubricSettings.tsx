@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Overlay, Popover } from 'react-bootstrap';
 import { z } from 'zod';
 
@@ -115,6 +115,22 @@ export function RubricSettings({
   const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData?.rubric));
   const [modifiedAt, setModifiedAt] = useState<Date | null>(rubricData?.rubric.modified_at ?? null);
   const [copyPopoverTarget, setCopyPopoverTarget] = useState<HTMLElement | null>(null);
+
+  // Keep rubric settings panel open while AI is editing
+  useEffect(() => {
+    if (!rubricEditingDisabled) return;
+    const collapseEl = document.getElementById('rubric-setting');
+    if (!collapseEl || collapseEl.classList.contains('show')) return;
+
+    collapseEl.classList.add('show');
+    const toggleButton = document.querySelector<HTMLButtonElement>(
+      '#rubric-editor [data-bs-target="#rubric-setting"]',
+    );
+    if (toggleButton) {
+      toggleButton.classList.remove('collapsed');
+      toggleButton.setAttribute('aria-expanded', 'true');
+    }
+  }, [rubricEditingDisabled]);
 
   // Also define default for rubric-related variables
   const defaultRubricItemsRef = useRef<RubricItemData[]>(rubricItemDataMerged);
