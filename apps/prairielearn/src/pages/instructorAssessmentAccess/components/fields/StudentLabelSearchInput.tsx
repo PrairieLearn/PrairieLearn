@@ -19,7 +19,7 @@ export function StudentLabelSearchInput({
   const [selectedStudentLabels, setSelectedStudentLabels] = useState<Set<string>>(() => new Set());
 
   const { data: studentLabels, isLoading } = useQuery({
-    queryKey: ['access-control-student-labels', trpcClient.accessControl.studentLabels],
+    queryKey: ['access-control-student-labels'],
     queryFn: () => trpcClient.accessControl.studentLabels.query(),
   });
 
