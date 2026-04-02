@@ -282,7 +282,7 @@ function StudentsCard({
   );
 
   const { data: studentLabels = initialStudentLabels } = useQuery({
-    queryKey: ['student-labels', courseInstance.id],
+    queryKey: ['student-labels', courseInstance.id, trpcClient.studentLabels.listDefinitions, setOrigHash],
     queryFn: async () => {
       const result = await trpcClient.studentLabels.listDefinitions.query();
       setOrigHash(result.origHash);
