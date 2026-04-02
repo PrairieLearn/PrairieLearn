@@ -23,6 +23,11 @@ const NO_RESTRICTED_SYNTAX = [
     message: 'Use a default import instead of a namespace import for fs-extra',
     selector: 'ImportDeclaration[source.value="fs-extra"]:has(ImportNamespaceSpecifier)',
   },
+  {
+    // Forbid `snake_case` props.
+    message: 'Props with snake_case names are forbidden.',
+    selector: 'JSXAttribute[name.name=/_/]',
+  },
 ];
 
 export default [
