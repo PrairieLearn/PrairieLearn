@@ -22,7 +22,6 @@ import {
   updateCourseCommitHash,
 } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
-import { EnumAssessmentToolSchema } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
@@ -2490,22 +2489,3 @@ export class MultiEditor extends Editor {
 }
 
 export type AssessmentToolsConfig = { name: string; label: string; enabled: boolean }[];
-
-export async function getAssessmentToolsConfig(
-  infoAssessmentPath: string,
-): Promise<AssessmentToolsConfig> {
-  let toolsConfig: Record<string, any> = {};
-  try {
-    const raw = await fs.readFile(infoAssessmentPath, 'utf8');
-    const assessmentInfo = JSON.parse(raw);
-    toolsConfig = assessmentInfo.tools ?? {};
-  } catch (err: any) {
-    if (err.code !== 'ENOENT') throw err;
-  }
-
-  return EnumAssessmentToolSchema.options.map((tool) => ({
-    name: tool,
-    label: tool.charAt(0).toUpperCase() + tool.slice(1),
-    enabled: toolsConfig[tool]?.enabled === true,
-  }));
-}

@@ -17,9 +17,9 @@ import {
   AssessmentCopyEditor,
   AssessmentDeleteEditor,
   AssessmentRenameEditor,
+  type AssessmentToolsConfig,
   FileModifyEditor,
   MultiEditor,
-  getAssessmentToolsConfig,
   getOriginalHash,
 } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
@@ -29,6 +29,7 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
+import { selectAssessmentToolDefaults } from '../../models/assessment.js';
 import {
   type AssessmentJsonInput,
   EnumAssessmentToolSchema,
@@ -77,10 +78,17 @@ router.get(
     );
     const fullInfoAssessmentPath = path.join(res.locals.course.path, infoAssessmentPath);
 
-    // TODO: both getOriginalHash and getAssessmentToolsConfig read and parse the infoAssessment.json file, optimize to only read once
     const origHash = (await getOriginalHash(fullInfoAssessmentPath)) ?? '';
 
-    const assessmentTools = await getAssessmentToolsConfig(fullInfoAssessmentPath);
+    const toolDefaultRows = await selectAssessmentToolDefaults({
+      assessment_id: res.locals.assessment.id,
+    });
+    const enabledTools = new Set(toolDefaultRows.filter((r) => r.enabled).map((r) => r.tool));
+    const assessmentTools: AssessmentToolsConfig = EnumAssessmentToolSchema.options.map((tool) => ({
+      name: tool,
+      label: tool.charAt(0).toUpperCase() + tool.slice(1),
+      enabled: enabledTools.has(tool),
+    }));
 
     const assessmentGHLink = courseRepoContentUrl(
       res.locals.course,
