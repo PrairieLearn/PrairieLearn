@@ -303,9 +303,6 @@ describe('@prairielearn/workflows', () => {
       const run = await startWorkflow(type, { initialState: {} });
       await waitForStatus(run.id, 'completed');
 
-      // Give async log writes a moment to complete
-      await sleep(100);
-
       const finalRun = await getWorkflowRun(run.id);
       assert.include(finalRun.output, '[INFO] test message');
       assert.include(finalRun.output, '[ERROR] error message');

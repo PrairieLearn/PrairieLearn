@@ -109,6 +109,9 @@ UPDATE workflow_runs
 SET
   state = state || $state_update::jsonb,
   status = 'running',
+  locked_by = NULL,
+  locked_at = NULL,
+  heartbeat_at = NULL,
   updated_at = now()
 WHERE
   id = $id
@@ -141,5 +144,4 @@ SET
   output = output || $text,
   updated_at = now()
 WHERE
-  id = $id
-  AND locked_by = $locked_by;
+  id = $id;

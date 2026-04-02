@@ -286,7 +286,7 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
         break;
       }
 
-      const workflowLogger = createLogger(runId, instanceId);
+      const workflowLogger = createLogger(runId);
 
       let stepResult: StepResult<TState>;
       try {
@@ -296,7 +296,8 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
           signal: abortController.signal,
         });
       } catch (err) {
-        // Step threw an error - persist error state
+        // Flush any logs the step produced before recording the error.
+        await workflowLogger.flush();
         const errorMessage = err instanceof Error ? err.message : String(err);
         await persistStep(runId, instanceId, {
           state: currentRun.state,
@@ -305,6 +306,10 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
         });
         break;
       }
+
+      // Flush buffered log lines before persisting step state, while we
+      // still hold the lock so the write is guaranteed to succeed.
+      await workflowLogger.flush();
 
       // Map 'continue' to 'running' for DB storage
       const dbStatus: WorkflowRunStatus =
@@ -353,25 +358,32 @@ async function persistStep<TState extends Record<string, unknown>>(
   return (updateResult.rowCount ?? 0) > 0;
 }
 
-function createLogger(runId: string, lockedBy: string): WorkflowLogger {
+/**
+ * Creates a workflow logger that buffers log lines in memory and flushes
+ * them to the database synchronously within the step loop (before lock
+ * release). This avoids the race where async fire-and-forget writes land
+ * after the lock is released and get silently dropped.
+ */
+function createLogger(runId: string): WorkflowLogger & { flush(): Promise<void> } {
+  const buffer: string[] = [];
+
   return {
     info(msg: string) {
-      const line = `[INFO] ${msg}\n`;
       logger.info(`Workflow ${runId}: ${msg}`);
-      pool
-        .queryAsync(sql.append_output, { id: runId, locked_by: lockedBy, text: line })
-        .catch((err) => {
-          logger.error(`Failed to append log output for workflow ${runId}`, err);
-        });
+      buffer.push(`[INFO] ${msg}\n`);
     },
     error(msg: string) {
-      const line = `[ERROR] ${msg}\n`;
       logger.error(`Workflow ${runId}: ${msg}`);
-      pool
-        .queryAsync(sql.append_output, { id: runId, locked_by: lockedBy, text: line })
-        .catch((err) => {
-          logger.error(`Failed to append log output for workflow ${runId}`, err);
-        });
+      buffer.push(`[ERROR] ${msg}\n`);
+    },
+    async flush() {
+      if (buffer.length === 0) return;
+      const text = buffer.splice(0).join('');
+      try {
+        await pool.queryAsync(sql.append_output, { id: runId, text });
+      } catch (err) {
+        logger.error(`Failed to append log output for workflow ${runId}`, err);
+      }
     },
   };
 }
