@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import { Form } from 'react-bootstrap';
 import { type Path, useController, useWatch } from 'react-hook-form';
 
@@ -84,7 +85,13 @@ function DueDateInput({
           label="Due on date"
           checked={value !== null}
           onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange('');
+            if (currentTarget.checked) {
+              const defaultDueDate = Temporal.Now.plainDateISO()
+                .add({ weeks: 1 })
+                .toPlainDateTime({ hour: 23, minute: 59 })
+                .toString({ smallestUnit: 'minute' });
+              onChange(defaultDueDate);
+            }
           }}
         />
       </div>
