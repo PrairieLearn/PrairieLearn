@@ -1,3 +1,5 @@
+import { performance } from 'node:perf_hooks';
+
 import type { ImagePart, ModelMessage } from 'ai';
 import { type TiktokenEncoding, getEncoding } from 'js-tiktoken';
 import sharp from 'sharp';
@@ -37,6 +39,21 @@ export interface TokenCountDetails {
   usedFallback: boolean;
   imageFallbackCount: number;
   failedEvenFallback: boolean;
+  timing_ms: TokenCountTimingBreakdown;
+}
+
+export interface TokenCountTimingBreakdown {
+  total_ms: number;
+  get_encoding_ms: number;
+  text_encode_ms: number;
+  image_token_count_ms: number;
+  image_metadata_ms: number;
+  image_formula_ms: number;
+  fallback_estimate_ms: number;
+}
+
+function elapsedMs(start: number): number {
+  return Math.round((performance.now() - start) * 10) / 10;
 }
 
 /**
@@ -63,22 +80,39 @@ export async function countInputTokensForModelWithDetails(
   messages: ModelMessage[],
   modelId: AiGradingModelId,
 ): Promise<TokenCountDetails> {
+  const tokenCountStartTime = performance.now();
+  let get_encoding_ms = 0;
+  let text_encode_ms = 0;
+  let image_token_count_ms = 0;
+  let image_metadata_ms = 0;
+  let image_formula_ms = 0;
+
   try {
     const provider = AI_GRADING_MODEL_PROVIDERS[modelId];
     const encoding = PROVIDER_TIKTOKEN_ENCODING[provider];
+    const getEncodingStartTime = performance.now();
     const enc = getEncoding(encoding);
+    get_encoding_ms = elapsedMs(getEncodingStartTime);
     let totalTokens = 0;
     let imageFallbackCount = 0;
 
     for (const msg of messages) {
       if (typeof msg.content === 'string') {
+        const textEncodeStartTime = performance.now();
         totalTokens += enc.encode(msg.content).length;
+        text_encode_ms += elapsedMs(textEncodeStartTime);
       } else if (Array.isArray(msg.content)) {
         for (const part of msg.content) {
           if (part.type === 'text') {
+            const textEncodeStartTime = performance.now();
             totalTokens += enc.encode(part.text).length;
+            text_encode_ms += elapsedMs(textEncodeStartTime);
           } else if (part.type === 'image') {
+            const imageTokenStartTime = performance.now();
             const imageTokenResult = await getImageTokensForModel(part, modelId);
+            image_token_count_ms += elapsedMs(imageTokenStartTime);
+            image_metadata_ms += imageTokenResult.metadata_ms;
+            image_formula_ms += imageTokenResult.formula_ms;
             totalTokens += imageTokenResult.tokenCount;
             if (imageTokenResult.usedFallback) {
               imageFallbackCount += 1;
@@ -95,18 +129,37 @@ export async function countInputTokensForModelWithDetails(
       usedFallback: imageFallbackCount > 0,
       imageFallbackCount,
       failedEvenFallback: false,
+      timing_ms: {
+        total_ms: elapsedMs(tokenCountStartTime),
+        get_encoding_ms: Math.round(get_encoding_ms * 10) / 10,
+        text_encode_ms: Math.round(text_encode_ms * 10) / 10,
+        image_token_count_ms: Math.round(image_token_count_ms * 10) / 10,
+        image_metadata_ms: Math.round(image_metadata_ms * 10) / 10,
+        image_formula_ms: Math.round(image_formula_ms * 10) / 10,
+        fallback_estimate_ms: 0,
+      },
     };
   } catch (err) {
     logger.error('AI grading token counting failed; using fallback estimate', {
       model_id: modelId,
       err,
     });
+    const fallbackStartTime = performance.now();
     try {
       return {
         tokenCount: estimateFallbackTokens(messages),
         usedFallback: true,
         imageFallbackCount: 0,
         failedEvenFallback: false,
+        timing_ms: {
+          total_ms: elapsedMs(tokenCountStartTime),
+          get_encoding_ms: Math.round(get_encoding_ms * 10) / 10,
+          text_encode_ms: Math.round(text_encode_ms * 10) / 10,
+          image_token_count_ms: Math.round(image_token_count_ms * 10) / 10,
+          image_metadata_ms: Math.round(image_metadata_ms * 10) / 10,
+          image_formula_ms: Math.round(image_formula_ms * 10) / 10,
+          fallback_estimate_ms: elapsedMs(fallbackStartTime),
+        },
       };
     } catch (fallbackErr) {
       logger.error('AI grading token counting failed even fallback estimate', {
@@ -118,6 +171,15 @@ export async function countInputTokensForModelWithDetails(
         usedFallback: true,
         imageFallbackCount: 0,
         failedEvenFallback: true,
+        timing_ms: {
+          total_ms: elapsedMs(tokenCountStartTime),
+          get_encoding_ms: Math.round(get_encoding_ms * 10) / 10,
+          text_encode_ms: Math.round(text_encode_ms * 10) / 10,
+          image_token_count_ms: Math.round(image_token_count_ms * 10) / 10,
+          image_metadata_ms: Math.round(image_metadata_ms * 10) / 10,
+          image_formula_ms: Math.round(image_formula_ms * 10) / 10,
+          fallback_estimate_ms: elapsedMs(fallbackStartTime),
+        },
       };
     }
   }
@@ -126,25 +188,40 @@ export async function countInputTokensForModelWithDetails(
 async function getImageTokensForModel(
   part: ImagePart,
   modelId: AiGradingModelId,
-): Promise<{ tokenCount: number; usedFallback: boolean }> {
+): Promise<{ tokenCount: number; usedFallback: boolean; metadata_ms: number; formula_ms: number }> {
   try {
     const imageData = part.image;
+    const metadataStartTime = performance.now();
     const buffer =
       typeof imageData === 'string' ? Buffer.from(imageData, 'base64') : (imageData as Buffer);
     const metadata = await sharp(buffer).metadata();
+    const metadata_ms = elapsedMs(metadataStartTime);
     if (!metadata.width || !metadata.height) {
-      return { tokenCount: FALLBACK_TOKENS_PER_IMAGE, usedFallback: true };
+      return {
+        tokenCount: FALLBACK_TOKENS_PER_IMAGE,
+        usedFallback: true,
+        metadata_ms,
+        formula_ms: 0,
+      };
     }
+    const formulaStartTime = performance.now();
     return {
       tokenCount: getImageTokenCountForModel(metadata.width, metadata.height, modelId),
       usedFallback: false,
+      metadata_ms,
+      formula_ms: elapsedMs(formulaStartTime),
     };
   } catch (err) {
     logger.error('AI grading image token counting failed; using image fallback estimate', {
       model_id: modelId,
       err,
     });
-    return { tokenCount: FALLBACK_TOKENS_PER_IMAGE, usedFallback: true };
+    return {
+      tokenCount: FALLBACK_TOKENS_PER_IMAGE,
+      usedFallback: true,
+      metadata_ms: 0,
+      formula_ms: 0,
+    };
   }
 }
 
