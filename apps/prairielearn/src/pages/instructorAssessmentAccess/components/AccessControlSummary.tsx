@@ -121,6 +121,7 @@ export function AccessControlSummary({
   onRemoveOverride,
   onMoveOverride,
   onEditMainRule,
+  onClearMainRule,
   onEditOverride,
   courseInstanceId,
   displayTimezone,
@@ -136,6 +137,8 @@ export function AccessControlSummary({
   onMoveOverride: (fromIndex: number, toIndex: number) => void;
   /** Callback when main rule edit is requested */
   onEditMainRule: () => void;
+  /** Callback when main rule reset is requested */
+  onClearMainRule: () => void;
   /** Callback when an override edit is requested */
   onEditOverride: (index: number) => void;
   /** Course instance ID for building URLs */
@@ -174,9 +177,14 @@ export function AccessControlSummary({
               Access settings that apply to all students by default.
             </small>
           </div>
-          <Button variant="outline-primary" size="sm" onClick={onEditMainRule}>
-            <i className="bi bi-pencil me-1" /> Edit
-          </Button>
+          <div className="d-flex gap-2">
+            <Button variant="outline-primary" size="sm" onClick={onEditMainRule}>
+              <i className="bi bi-pencil me-1" /> Edit
+            </Button>
+            <Button variant="outline-danger" size="sm" onClick={onClearMainRule}>
+              <i className="bi bi-x-lg me-1" /> Clear
+            </Button>
+          </div>
         </div>
 
         {mainRuleErrors && mainRuleErrors.length > 0 && (

@@ -95,7 +95,7 @@ export function AccessControlForm({
   const displayTimezone = courseInstance.display_timezone;
   const mainRule = initialData[0]
     ? jsonToMainRuleFormData(initialData[0], displayTimezone)
-    : jsonToMainRuleFormData({ listBeforeRelease: false }, displayTimezone);
+    : jsonToMainRuleFormData({}, displayTimezone);
   const overrides = initialData.slice(1).map((o) => jsonToOverrideFormData(o, displayTimezone));
 
   const methods = useForm<AccessControlFormData>({
@@ -290,6 +290,12 @@ export function AccessControlForm({
                 onRemoveOverride={handleDeleteClick}
                 onMoveOverride={moveOverride}
                 onEditMainRule={() => setSelectedRule({ type: 'main' })}
+                onClearMainRule={() =>
+                  reset({
+                    mainRule: jsonToMainRuleFormData({}, displayTimezone),
+                    overrides: watch('overrides'),
+                  })
+                }
                 onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
               />
 

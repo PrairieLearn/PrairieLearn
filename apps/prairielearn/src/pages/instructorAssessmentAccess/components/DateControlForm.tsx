@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import { Card, Col, Form, Row } from 'react-bootstrap';
 import { useFormContext, useWatch } from 'react-hook-form';
 
@@ -19,11 +20,13 @@ export function MainDateControlForm({
   title?: string;
   description?: string;
 }) {
-  const { register } = useFormContext<AccessControlFormData>();
+  const { register, setValue, getValues } = useFormContext<AccessControlFormData>();
 
   const dateControlEnabled = useWatch<AccessControlFormData, 'mainRule.dateControlEnabled'>({
     name: 'mainRule.dateControlEnabled',
   });
+
+  const dateControlRegistration = register('mainRule.dateControlEnabled');
 
   return (
     <>
@@ -33,7 +36,17 @@ export function MainDateControlForm({
             type="checkbox"
             id="mainRule-date-control-enabled"
             label={title}
-            {...register('mainRule.dateControlEnabled')}
+            {...dateControlRegistration}
+            onChange={(e) => {
+              dateControlRegistration.onChange(e);
+              if (e.target.checked && !getValues('mainRule.releaseDate')) {
+                setValue(
+                  'mainRule.releaseDate',
+                  Temporal.Now.plainDateISO().toPlainDateTime().toString({ smallestUnit: 'minute' }),
+                  { shouldDirty: true, shouldValidate: true },
+                );
+              }
+            }}
             aria-describedby="mainRule-date-control-help"
           />
           <Form.Text id="mainRule-date-control-help" className="text-muted">

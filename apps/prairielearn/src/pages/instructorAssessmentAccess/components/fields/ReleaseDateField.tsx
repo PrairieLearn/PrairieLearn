@@ -10,6 +10,34 @@ function todayLocalDatetime(): string {
   return Temporal.Now.plainDateISO().toPlainDateTime().toString({ smallestUnit: 'minute' });
 }
 
+function MainReleaseDateInput({
+  value,
+  onChange,
+  error,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+}) {
+  return (
+    <>
+      <Form.Control
+        type="datetime-local"
+        aria-label="Release date"
+        aria-invalid={!!error}
+        aria-errormessage={error ? 'mainRule-release-date-error' : undefined}
+        value={value}
+        onChange={({ currentTarget }) => onChange(currentTarget.value)}
+      />
+      {error && (
+        <Form.Text id="mainRule-release-date-error" className="text-danger" role="alert">
+          {error}
+        </Form.Text>
+      )}
+    </>
+  );
+}
+
 function OverrideReleaseDateInput({
   value,
   onChange,
@@ -56,8 +84,22 @@ function OverrideReleaseDateInput({
 }
 
 export function MainReleaseDateField() {
-  const { field } = useController<AccessControlFormData, 'mainRule.releaseDate'>({
+  const dateControlEnabled = useWatch<AccessControlFormData, 'mainRule.dateControlEnabled'>({
+    name: 'mainRule.dateControlEnabled',
+  });
+
+  const {
+    field,
+    fieldState: { error },
+  } = useController<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
+    rules: {
+      validate: (value) => {
+        if (!dateControlEnabled) return true;
+        if (!value) return 'Release date is required';
+        return true;
+      },
+    },
   });
 
   return (
@@ -72,12 +114,7 @@ export function MainReleaseDateField() {
           Today
         </Button>
       </div>
-      <Form.Control
-        type="datetime-local"
-        aria-label="Release date"
-        value={field.value ?? ''}
-        onChange={({ currentTarget }) => field.onChange(currentTarget.value || null)}
-      />
+      <MainReleaseDateInput value={field.value} onChange={field.onChange} error={error?.message} />
     </div>
   );
 }

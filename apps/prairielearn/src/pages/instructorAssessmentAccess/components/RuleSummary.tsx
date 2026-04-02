@@ -1,8 +1,8 @@
 import { Temporal } from '@js-temporal/polyfill';
+import type { ReactNode } from 'react';
 import { Alert, Button, Card } from 'react-bootstrap';
 
-import { formatDate } from '@prairielearn/formatter';
-
+import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 
@@ -27,7 +27,7 @@ function isOverrideFieldActive(rule: RuleData, fieldName: string): boolean {
 }
 
 interface DateTableRow {
-  date: string;
+  date: ReactNode;
   label: string;
   credit: string;
   visibility: string;
@@ -56,7 +56,13 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
         visibilityParts.push('(listed before release)');
       }
       rows.push({
-        date: formatDate(Temporal.PlainDateTime.from(releaseDate), displayTimezone),
+        date: (
+          <FriendlyDate
+            date={Temporal.PlainDateTime.from(releaseDate)}
+            timezone={displayTimezone}
+            tooltip
+          />
+        ),
         label: 'Release',
         credit: '100%',
         visibility: visibilityParts.join(' '),
@@ -73,7 +79,13 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
     earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
       if (deadline.date) {
         rows.push({
-          date: formatDate(Temporal.PlainDateTime.from(deadline.date), displayTimezone),
+          date: (
+            <FriendlyDate
+              date={Temporal.PlainDateTime.from(deadline.date)}
+              timezone={displayTimezone}
+              tooltip
+            />
+          ),
           label: `Early ${index + 1}`,
           credit: `${deadline.credit}%`,
           visibility: 'Open',
@@ -83,7 +95,13 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
 
     if (dueDate) {
       rows.push({
-        date: formatDate(Temporal.PlainDateTime.from(dueDate), displayTimezone),
+        date: (
+          <FriendlyDate
+            date={Temporal.PlainDateTime.from(dueDate)}
+            timezone={displayTimezone}
+            tooltip
+          />
+        ),
         label: 'Due',
         credit: '100%',
         visibility: 'Due',
@@ -100,7 +118,13 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
     lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
       if (deadline.date) {
         rows.push({
-          date: formatDate(Temporal.PlainDateTime.from(deadline.date), displayTimezone),
+          date: (
+            <FriendlyDate
+              date={Temporal.PlainDateTime.from(deadline.date)}
+              timezone={displayTimezone}
+              tooltip
+            />
+          ),
           label: `Late ${index + 1}`,
           credit: `${deadline.credit}%`,
           visibility: 'Open',
@@ -204,7 +228,7 @@ export function generateRuleSummary(
 
 interface OverrideFieldItem {
   label: string;
-  value: string;
+  value: ReactNode;
 }
 
 function formatDeadlineEntries(
@@ -215,7 +239,16 @@ function formatDeadlineEntries(
   const filtered = deadlines.filter((d) => d.date);
   return filtered.map((d, i) => ({
     label: filtered.length === 1 ? `${labelPrefix} deadline` : `${labelPrefix} deadline ${i + 1}`,
-    value: `${formatDate(Temporal.PlainDateTime.from(d.date), displayTimezone)} (${d.credit}% credit)`,
+    value: (
+      <>
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(d.date)}
+          timezone={displayTimezone}
+          tooltip
+        />{' '}
+        ({d.credit}% credit)
+      </>
+    ),
   }));
 }
 
@@ -242,9 +275,15 @@ function generateOverrideFieldItems(
   if (overriddenFields.has('releaseDate')) {
     items.push({
       label: 'Release date',
-      value: rule.releaseDate
-        ? formatDate(Temporal.PlainDateTime.from(rule.releaseDate), displayTimezone)
-        : 'Released immediately',
+      value: rule.releaseDate ? (
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(rule.releaseDate)}
+          timezone={displayTimezone}
+          tooltip
+        />
+      ) : (
+        'Released immediately'
+      ),
     });
   }
 
@@ -258,9 +297,15 @@ function generateOverrideFieldItems(
   if (overriddenFields.has('dueDate')) {
     items.push({
       label: 'Due date',
-      value: rule.dueDate
-        ? formatDate(Temporal.PlainDateTime.from(rule.dueDate), displayTimezone)
-        : 'No due date',
+      value: rule.dueDate ? (
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(rule.dueDate)}
+          timezone={displayTimezone}
+          tooltip
+        />
+      ) : (
+        'No due date'
+      ),
     });
   }
 
@@ -298,12 +343,36 @@ function generateOverrideFieldItems(
       if (qv.showAgainDate && qv.hideAgainDate) {
         items.push({
           label: 'Question visibility',
-          value: `Hidden, shown again ${formatDate(Temporal.PlainDateTime.from(qv.showAgainDate), displayTimezone)}, hidden again ${formatDate(Temporal.PlainDateTime.from(qv.hideAgainDate), displayTimezone)}`,
+          value: (
+            <>
+              Hidden, shown again{' '}
+              <FriendlyDate
+                date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+                timezone={displayTimezone}
+                tooltip
+              />
+              , hidden again{' '}
+              <FriendlyDate
+                date={Temporal.PlainDateTime.from(qv.hideAgainDate)}
+                timezone={displayTimezone}
+                tooltip
+              />
+            </>
+          ),
         });
       } else if (qv.showAgainDate) {
         items.push({
           label: 'Question visibility',
-          value: `Hidden, shown again ${formatDate(Temporal.PlainDateTime.from(qv.showAgainDate), displayTimezone)}`,
+          value: (
+            <>
+              Hidden, shown again{' '}
+              <FriendlyDate
+                date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+                timezone={displayTimezone}
+                tooltip
+              />
+            </>
+          ),
         });
       } else {
         items.push({
@@ -325,7 +394,16 @@ function generateOverrideFieldItems(
       if (sv.showAgainDate) {
         items.push({
           label: 'Score visibility',
-          value: `Hidden, shown again ${formatDate(Temporal.PlainDateTime.from(sv.showAgainDate), displayTimezone)}`,
+          value: (
+            <>
+              Hidden, shown again{' '}
+              <FriendlyDate
+                date={Temporal.PlainDateTime.from(sv.showAgainDate)}
+                timezone={displayTimezone}
+                tooltip
+              />
+            </>
+          ),
         });
       } else {
         items.push({

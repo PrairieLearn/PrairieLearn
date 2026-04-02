@@ -65,7 +65,7 @@ export interface MainRuleData {
   trackingId: string;
   listBeforeRelease: boolean;
   dateControlEnabled: boolean;
-  releaseDate: string | null;
+  releaseDate: string;
   dueDate: string | null;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
@@ -118,7 +118,7 @@ function toLocalDatetimeValue<T extends string | null | undefined>(
     return Temporal.Instant.from(value)
       .toZonedDateTimeISO(displayTimezone)
       .toPlainDateTime()
-      .toString({ smallestUnit: 'second' }) as T;
+      .toString({ smallestUnit: 'minute' }) as T;
   }
   return value;
 }
@@ -139,7 +139,7 @@ export function jsonToMainRuleFormData(
       dc?.dueDate != null ||
       (dc?.earlyDeadlines?.length ?? 0) > 0 ||
       (dc?.lateDeadlines?.length ?? 0) > 0,
-    releaseDate: toLocalDatetimeValue(dc?.releaseDate, displayTimezone) ?? null,
+    releaseDate: toLocalDatetimeValue(dc?.releaseDate, displayTimezone) ?? '',
     dueDate: toLocalDatetimeValue(dc?.dueDate, displayTimezone) ?? null,
     earlyDeadlines: (dc?.earlyDeadlines ?? []).map((d) => ({
       ...d,
@@ -280,7 +280,7 @@ export function jsonToOverrideFormData(
   };
 }
 
-function mainRuleToJson(rule: MainRuleData, displayTimezone: string): AccessControlJsonWithId {
+function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   const output: AccessControlJsonWithId = {
     id: rule.id,
     listBeforeRelease: rule.listBeforeRelease,
@@ -288,16 +288,7 @@ function mainRuleToJson(rule: MainRuleData, displayTimezone: string): AccessCont
 
   if (rule.dateControlEnabled) {
     output.dateControl = {};
-    if (rule.releaseDate) {
-      output.dateControl.releaseDate = rule.releaseDate;
-    } else {
-      // "Released immediately": persist as start-of-day in the course instance
-      // timezone so the assessment is open now with a clean display timestamp.
-      output.dateControl.releaseDate = Temporal.Now.zonedDateTimeISO(displayTimezone)
-        .startOfDay()
-        .toPlainDateTime()
-        .toString({ smallestUnit: 'minute' });
-    }
+    if (rule.releaseDate) output.dateControl.releaseDate = rule.releaseDate;
     if (rule.dueDate) output.dateControl.dueDate = rule.dueDate;
     if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (rule.lateDeadlines.length > 0) output.dateControl.lateDeadlines = rule.lateDeadlines;
@@ -395,7 +386,7 @@ export function formDataToJson(
   displayTimezone: string,
 ): AccessControlJsonWithId[] {
   return [
-    mainRuleToJson(formData.mainRule, displayTimezone),
+    mainRuleToJson(formData.mainRule),
     ...formData.overrides.map(overrideToJson),
   ];
 }

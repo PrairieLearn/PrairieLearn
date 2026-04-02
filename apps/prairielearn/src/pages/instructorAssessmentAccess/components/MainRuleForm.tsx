@@ -18,7 +18,7 @@ export function MainRuleForm() {
     defaultValue: [],
   });
 
-  const hasDateRelease = releaseDate !== null;
+  const hasDateRelease = releaseDate !== '';
 
   const hasPrairieTestRelease = prairieTestExams.length > 0;
 
