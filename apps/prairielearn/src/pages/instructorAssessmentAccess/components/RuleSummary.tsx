@@ -250,7 +250,10 @@ function generateOverrideFieldItems(
   }
 
   if (overriddenFields.has('earlyDeadlines')) {
-    items.push(...formatDeadlineEntries(rule.earlyDeadlines, displayTimezone, 'Early'));
+    const earlyItems = formatDeadlineEntries(rule.earlyDeadlines, displayTimezone, 'Early');
+    items.push(
+      ...(earlyItems.length > 0 ? earlyItems : [{ label: 'Early deadlines', value: 'None' }]),
+    );
   }
 
   if (overriddenFields.has('dueDate')) {
@@ -263,13 +266,16 @@ function generateOverrideFieldItems(
   }
 
   if (overriddenFields.has('lateDeadlines')) {
-    items.push(...formatDeadlineEntries(rule.lateDeadlines, displayTimezone, 'Late'));
+    const lateItems = formatDeadlineEntries(rule.lateDeadlines, displayTimezone, 'Late');
+    items.push(
+      ...(lateItems.length > 0 ? lateItems : [{ label: 'Late deadlines', value: 'None' }]),
+    );
   }
 
-  if (overriddenFields.has('afterLastDeadline') && rule.afterLastDeadline) {
+  if (overriddenFields.has('afterLastDeadline')) {
     items.push({
       label: 'After last deadline',
-      value: formatAfterLastDeadline(rule.afterLastDeadline),
+      value: rule.afterLastDeadline ? formatAfterLastDeadline(rule.afterLastDeadline) : 'None',
     });
   }
 
