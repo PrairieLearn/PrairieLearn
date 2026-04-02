@@ -692,7 +692,7 @@ function persistedMessagesToInitialMessages(
   persistedMessages: StaffAiGradingMessage[],
 ): RubricChatMessage[] {
   return persistedMessages
-    .filter((m) => m.status === 'completed')
+    .filter((m) => m.status === 'completed' || m.status === 'streaming')
     .map((m) => ({
       id: m.id,
       role: m.role,

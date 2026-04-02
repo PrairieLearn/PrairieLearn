@@ -327,8 +327,8 @@ const RUBRIC_GENERATION_AGENT_SYSTEM_PROMPT = [
   'For positive grading: min_points should match the minimum attainable score, and question_max_points + max_extra_points should match the maximum attainable score.',
   'For negative grading: starting_points is near the max, items subtract points down to min_points.',
   'You cannot change the assessment question point values — those are fixed by the instructor.',
-  'After generating and optionally refining the rubric, briefly summarize your reasoning.',
-  'A detailed diff of all rubric changes will be automatically shown to the user after your message, so do NOT list individual item changes — focus on your rationale and any important decisions.',
+  'After generating and optionally refining the rubric, respond with 1-2 short sentences.',
+  'A detailed diff of all rubric changes is automatically shown to the user, so do NOT list or describe individual items or changes. Keep your response extremely brief.',
   'IMPORTANT: All rubric text (descriptions, explanations, grader notes, guidelines) MUST be written entirely in English. Do not use any non-English characters, including Chinese, Japanese, or other non-Latin scripts.',
 ].join(' ');
 
@@ -349,8 +349,7 @@ const RUBRIC_EDITING_AGENT_SYSTEM_PROMPT = [
   'Rubric items are binary: full credit or no credit. Account for nuances by creating separate items.',
   'Questions students received were programmatically generated and randomized. Avoid hardcoding randomized quantities and final solutions.',
   'You cannot change the assessment question point values — those are fixed by the instructor.',
-  'After making changes, respond briefly to explain your reasoning.',
-  'A detailed diff of all rubric changes will be automatically shown to the user after your message, so do NOT list individual item changes — focus on your rationale and any important decisions.',
+  'After making changes, respond with 1-2 short sentences. The user already sees the rubric and a detailed diff of changes, so do NOT list or describe individual items or changes. Keep your response extremely brief.',
   'IMPORTANT: All rubric text (descriptions, explanations, grader notes, guidelines) MUST be written entirely in English. Do not use any non-English characters, including Chinese, Japanese, or other non-Latin scripts.',
 ].join(' ');
 

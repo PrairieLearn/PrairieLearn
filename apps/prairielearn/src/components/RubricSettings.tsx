@@ -785,6 +785,7 @@ export function RubricSettings({
               <thead>
                 <tr className="table-light fw-bold">
                   <td style={{ width: '1px' }} />
+                  <td style={{ width: '1px' }}>#</td>
                   <td>Points</td>
                   <td>Description</td>
                   <td>Detailed explanation</td>
@@ -798,6 +799,7 @@ export function RubricSettings({
                   rubricItems.map((it, idx) => (
                     <RubricRow
                       key={it.rubric_item.id ?? `row-${idx}`}
+                      itemNumber={idx + 1}
                       item={it}
                       showAiGradingStats={showAiGradingStats}
                       submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
@@ -812,7 +814,7 @@ export function RubricSettings({
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7}>
+                    <td colSpan={8}>
                       <em>
                         This question does not have any rubric items! Click "Add item" below to add
                         some
@@ -1028,6 +1030,7 @@ export function RubricSettings({
 }
 
 function RubricRow({
+  itemNumber,
   item,
   showAiGradingStats,
   submissionCount,
@@ -1039,6 +1042,7 @@ function RubricRow({
   onDragOver,
   hasCourseInstancePermissionEdit,
 }: {
+  itemNumber: number;
   item: RubricItemData;
   showAiGradingStats: boolean;
   submissionCount: number;
@@ -1126,6 +1130,10 @@ function RubricRow({
             />
           </>
         )}
+      </td>
+
+      <td className="align-middle text-muted text-center" style={{ width: '1px' }}>
+        {itemNumber}
       </td>
 
       <td className="align-middle">
