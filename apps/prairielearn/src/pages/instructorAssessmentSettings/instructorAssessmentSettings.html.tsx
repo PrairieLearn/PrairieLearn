@@ -435,7 +435,7 @@ function InstructorAssessmentSettingsInner({
                 Text
               </label>
               <textarea
-                className="form-control js-textarea-autosize"
+                className="form-control"
                 id="text"
                 aria-describedby="text-help"
                 disabled={!canEdit}
@@ -740,7 +740,7 @@ function InstructorAssessmentSettingsInner({
                       Custom honor code
                     </label>
                     <textarea
-                      className="form-control js-textarea-autosize"
+                      className="form-control"
                       id="honor_code"
                       aria-describedby="honor-code-help"
                       disabled={!canEdit}
