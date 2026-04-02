@@ -1,4 +1,4 @@
-import type { AnyRouter, ProcedureType, TRPCError } from '@trpc/server';
+import type { AnyProcedure, AnyRouter, ProcedureType, TRPCError, TRPCRouterRecord } from '@trpc/server';
 import { getHTTPStatusCodeFromError } from '@trpc/server/http';
 import { sampleSize } from 'es-toolkit';
 import type { Request } from 'express';
@@ -12,15 +12,22 @@ import * as Sentry from '@prairielearn/sentry';
  * Use this to derive chunk-server paths at runtime instead of maintaining a
  * manual list.
  */
-export function getRouterPaths(router: AnyRouter, prefix = ''): string[] {
+export function getRouterPaths(router: AnyRouter): string[] {
+  return getRecordPaths(router._def.record);
+}
+
+function isProcedure(value: AnyProcedure | TRPCRouterRecord): value is AnyProcedure {
+  return '_def' in value && 'procedure' in (value as AnyProcedure)._def;
+}
+
+function getRecordPaths(record: TRPCRouterRecord, prefix = ''): string[] {
   const paths: string[] = [];
-  for (const [key, value] of Object.entries(router._def.record)) {
+  for (const [key, value] of Object.entries(record)) {
     const fullPath = prefix ? `${prefix}.${key}` : key;
-    const def = (value as Record<string, unknown>)._def as Record<string, unknown> | undefined;
-    if (def?.router) {
-      paths.push(...getRouterPaths(value as AnyRouter, fullPath));
-    } else {
+    if (isProcedure(value)) {
       paths.push(fullPath);
+    } else {
+      paths.push(...getRecordPaths(value, fullPath));
     }
   }
   return paths;
