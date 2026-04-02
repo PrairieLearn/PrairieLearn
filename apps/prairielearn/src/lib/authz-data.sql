@@ -81,7 +81,7 @@ FROM
   JOIN users AS u ON (u.id = $user_id)
   JOIN institutions AS i ON (i.id = u.institution_id)
 WHERE
-  ci.id = ANY ($course_instance_id::BIGINT[])
+  ci.id = ANY ($course_instance_ids::BIGINT[])
   AND EXISTS (
     SELECT
       *
@@ -109,7 +109,7 @@ WHERE
         OR ciar.institution = 'Any'
         OR (
           ciar.institution = 'LTI'
-          AND u.lti_course_instance_id = $course_instance_id
+          AND u.lti_course_instance_id = ci.id
         )
         OR (
           ciar.institution != 'LTI'
