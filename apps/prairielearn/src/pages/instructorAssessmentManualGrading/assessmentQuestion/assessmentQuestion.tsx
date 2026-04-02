@@ -1,4 +1,6 @@
-import { JsonToSseTransformStream, type ModelMessage } from 'ai';
+import { Readable } from 'node:stream';
+
+import { JsonToSseTransformStream, UI_MESSAGE_STREAM_HEADERS } from 'ai';
 import { Router } from 'express';
 import z from 'zod';
 
@@ -6,28 +8,31 @@ import * as error from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
-import { cancelWorkflow, getActiveWorkflowRun, startWorkflow } from '@prairielearn/workflows';
+import {
+  cancelWorkflow,
+  continueWorkflow,
+  getActiveWorkflowRun,
+  startWorkflow,
+} from '@prairielearn/workflows';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
-import {
-  type createRubricAgent,
-  editRubric,
-  finalizeAssistantMessage,
-  generateRubric,
-} from '../../../ee/lib/ai-grading/ai-grading-agent.js';
+import { prepareAgentMessages } from '../../../ee/lib/ai-grading/ai-grading-agent.js';
 import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
 import {
   calculateAiGradingStats,
   fillInstanceQuestionColumnEntries,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import { getAiGradingStreamContext, registerSseStream } from '../../../ee/lib/ai-grading/redis.js';
 import {
   selectAssessmentQuestionHasInstanceQuestionGroups,
   selectInstanceQuestionGroups,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import {
+  cancelLatestStreamingAiGradingMessage,
   deleteAiGradingMessages,
   selectAiGradingMessages,
+  selectLatestStreamingAiGradingMessage,
 } from '../../../ee/models/ai-grading-message.js';
 import { extractPageContext } from '../../../lib/client/page-context.js';
 import {
@@ -38,10 +43,8 @@ import {
 import { getAssessmentQuestionTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
-import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import { type ServerJob, createServerJob, getJobSequenceIds } from '../../../lib/server-jobs.js';
 import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
@@ -90,28 +93,6 @@ router.get(
       unfilledInstanceQuestionInfo,
       res.locals.assessment_question,
     );
-
-    const initialOngoingJobSequenceTokens = await run(async () => {
-      if (!aiGradingEnabled) {
-        return null;
-      }
-
-      const ongoingJobSequenceIds = await getJobSequenceIds({
-        assessment_question_id: res.locals.assessment_question.id,
-        status: 'Running',
-        type: 'ai_grading',
-      });
-
-      const jobSequenceTokens = ongoingJobSequenceIds.reduce(
-        (acc, jobSequenceId) => {
-          acc[jobSequenceId] = generateJobSequenceToken(jobSequenceId);
-          return acc;
-        },
-        {} as Record<string, string>,
-      );
-
-      return jobSequenceTokens;
-    });
 
     const {
       authz_data,
@@ -210,7 +191,6 @@ router.get(
                     ? await calculateAiGradingStats(assessment_question)
                     : null
                 }
-                initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
                 numOpenInstances={num_open_instances}
                 isDevMode={process.env.NODE_ENV === 'development'}
                 questionTitle={question.title ?? ''}
@@ -291,164 +271,129 @@ router.post(
       throw new error.HttpStatusError(400, 'Invalid or missing phase');
     }
 
-    const userMessage = typeof req.body.message === 'string' ? req.body.message.trim() : '';
+    const userMessage =
+      phase === 'generate'
+        ? 'Generate a new rubric.'
+        : typeof req.body.message === 'string'
+          ? req.body.message.trim()
+          : '';
     if (phase === 'edit' && userMessage.length === 0) {
       throw new error.HttpStatusError(400, 'No message provided');
     }
 
-    const workflowRun = await getActiveWorkflowRun('ai_grading', {
+    // Get or create workflow
+    let workflowRun = await getActiveWorkflowRun('ai_grading', {
       assessment_question_id: assessment_question.id,
     });
 
-    const workflowRunId = workflowRun?.id ?? null;
+    if (!workflowRun) {
+      workflowRun = await startWorkflow('ai_grading', {
+        context: {
+          assessment_question_id: assessment_question.id,
+          assessment_id: assessment.id,
+          course_id: res.locals.course.id,
+          course_instance_id: res.locals.course_instance.id,
+          question_id: question.id,
+          url_prefix: urlPrefix,
+          authn_user_id: res.locals.authn_user.id,
+          user_id: res.locals.user.id,
+          has_course_instance_permission_edit:
+            authz_data.has_course_instance_permission_edit ?? false,
+        },
+        initialState: { step: 'awaiting_input' },
+        phase: 'rubric_setup',
+      });
+    }
 
-    const serverJob = await createServerJob({
-      courseId: res.locals.course.id,
-      courseInstanceId: res.locals.course_instance.id,
-      assessmentId: assessment.id,
+    // Insert messages into DB to get message_id (needed as Redis stream key)
+    const { messageRow } = await prepareAgentMessages({
+      phase,
+      userMessage,
       assessmentQuestionId: assessment_question.id,
-      userId: res.locals.user.id,
       authnUserId: res.locals.authn_user.id,
-      type: 'ai_grading',
-      description: phase === 'generate' ? 'Generate rubric with AI' : 'Edit rubric with AI',
-      reportErrorsToSentry: true,
+      workflowRunId: workflowRun.id,
     });
 
-    const agentContext = {
-      assessment,
-      assessmentQuestion: assessment_question,
-      course: res.locals.course,
-      courseInstance: res.locals.course_instance,
-      question,
-      urlPrefix,
-      authnUserId: res.locals.authn_user.id,
-      userId: res.locals.user.id,
-      hasCourseInstancePermissionEdit: authz_data.has_course_instance_permission_edit ?? false,
-    };
-
+    // Create SSE stream and register with Redis BEFORE continuing the workflow.
+    // This avoids a race condition: continueWorkflow starts takeStep async,
+    // so the stream must exist before we try to resume it.
     const sseStream = new JsonToSseTransformStream();
+    registerSseStream(messageRow.id, sseStream);
+    const streamContext = await getAiGradingStreamContext();
+    await streamContext.createNewResumableStream(messageRow.id, () => sseStream.readable);
 
-    const runAgent = async (
-      agent: ReturnType<typeof createRubricAgent>,
-      messageId: string,
-      modelId: string,
-      promptArg: { prompt: string } | { messages: ModelMessage[] },
-      job: ServerJob,
-    ) => {
-      const agentRes = await agent.stream(promptArg);
-
-      let finalParts: unknown[] = [];
-      const errorState = { hasError: false };
-
-      const uiStream = agentRes.toUIMessageStream({
-        generateMessageId: () => messageId,
-        messageMetadata: ({ part }) => {
-          if (part.type === 'start') {
-            return {
-              job_sequence_id: serverJob.jobSequenceId,
-              status: 'streaming',
-              phase,
-              workflow_run_id: workflowRunId,
-            };
-          }
-          if (part.type === 'finish') {
-            return {
-              job_sequence_id: serverJob.jobSequenceId,
-              status: errorState.hasError ? 'errored' : 'completed',
-              phase,
-              rubric_modified: true,
-              workflow_run_id: workflowRunId,
-            };
-          }
-        },
-        onFinish: async ({ responseMessage }) => {
-          finalParts = responseMessage.parts;
-        },
-        onError(err): string {
-          errorState.hasError = true;
-          if (err instanceof Error) {
-            job.error(err.message);
-          }
-          return String(err);
-        },
-      });
-
-      await uiStream.pipeTo(sseStream.writable);
-
-      const totalUsage = await agentRes.totalUsage.then(
-        (usage) => usage,
-        () => ({ inputTokens: 0, outputTokens: 0 }),
-      );
-
-      job.info('Total usage: ' + JSON.stringify(totalUsage));
-
-      const finalStatus = errorState.hasError ? 'errored' : 'completed';
-
-      await finalizeAssistantMessage({
-        messageId,
-        status: finalStatus,
-        parts: finalParts,
-        modelId,
-        usage: {
-          inputTokens: totalUsage.inputTokens ?? 0,
-          outputTokens: totalUsage.outputTokens ?? 0,
-        },
-      });
-    };
-
-    const promise = serverJob.execute(async (job) => {
-      job.info(`AI grading chat request — phase: ${phase}, workflow: ${workflowRunId}`);
-
-      if (phase === 'generate') {
-        const { agent, messageRow, modelId } = await generateRubric(
-          agentContext,
-          job,
-          serverJob.jobSequenceId,
-          workflowRunId,
-        );
-
-        await runAgent(agent, messageRow.id, modelId, { prompt: 'Generate a new rubric.' }, job);
-
-        if (!workflowRunId) {
-          await startWorkflow('ai_grading', {
-            context: { assessment_question_id: assessment_question.id },
-            initialState: { step: 'rubric_ready', rubric_exists: true },
-            phase: 'rubric_setup',
-          });
-        }
-      } else {
-        const persistedMessages = await selectAiGradingMessages(assessment_question.id);
-        job.info('Instruction: ' + userMessage);
-
-        const { agent, messageRow, modelId, messages } = await editRubric(
-          agentContext,
-          userMessage,
-          persistedMessages,
-          job,
-          serverJob.jobSequenceId,
-          workflowRunId,
-        );
-
-        await runAgent(agent, messageRow.id, modelId, { messages }, job);
-      }
+    // Continue workflow → triggers takeStep('agent_running') asynchronously.
+    // takeStep will find the pre-created SSE stream via takeSseStream().
+    await continueWorkflow(workflowRun.id, {
+      step: 'agent_running',
+      phase,
+      user_message: userMessage,
+      message_id: messageRow.id,
     });
 
-    void promise;
+    // Resume the Redis stream (already registered above, so this won't be null)
+    const stream = await streamContext.resumeExistingStream(messageRow.id);
 
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
+    if (!stream) {
+      res.status(204).send();
+      return;
+    }
 
-    const reader = sseStream.readable.getReader();
-    const pump = async () => {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        res.write(value);
-      }
-      res.end();
-    };
-    void pump();
+    Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
+      res.setHeader(key, value);
+    });
+    Readable.fromWeb(stream as never).pipe(res);
+  }),
+);
+
+router.get(
+  '/chat/stream',
+  typedAsyncHandler<'instructor-assessment-question'>(async (_req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
+
+    const { assessment_question } = extractPageContext(res.locals, {
+      pageType: 'assessmentQuestion',
+      accessType: 'instructor',
+    });
+
+    const latestMessage = await selectLatestStreamingAiGradingMessage(assessment_question.id);
+
+    if (!latestMessage) {
+      res.status(204).send();
+      return;
+    }
+
+    const streamContext = await getAiGradingStreamContext();
+    const stream = await streamContext.resumeExistingStream(latestMessage.id);
+
+    if (!stream) {
+      res.status(204).send();
+      return;
+    }
+
+    Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
+      res.setHeader(key, value);
+    });
+    Readable.fromWeb(stream as never).pipe(res);
+  }),
+);
+
+router.post(
+  '/chat/cancel',
+  typedAsyncHandler<'instructor-assessment-question'>(async (_req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
+    }
+
+    const { assessment_question } = extractPageContext(res.locals, {
+      pageType: 'assessmentQuestion',
+      accessType: 'instructor',
+    });
+
+    await cancelLatestStreamingAiGradingMessage(assessment_question.id);
+    res.status(200).json({ success: true });
   }),
 );
 

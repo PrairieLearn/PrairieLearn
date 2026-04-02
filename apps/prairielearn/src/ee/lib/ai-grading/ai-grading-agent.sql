@@ -24,7 +24,6 @@ VALUES
 INSERT INTO
   ai_grading_messages (
     assessment_question_id,
-    job_sequence_id,
     phase,
     model,
     status,
@@ -34,7 +33,6 @@ INSERT INTO
 VALUES
   (
     $assessment_question_id,
-    $job_sequence_id,
     $phase::enum_ai_grading_message_phase,
     $model,
     'streaming',
@@ -58,3 +56,21 @@ SET
   updated_at = NOW()
 WHERE
   id = $id;
+
+-- BLOCK select_message_status
+SELECT
+  status
+FROM
+  ai_grading_messages
+WHERE
+  id = $id;
+
+-- BLOCK cancel_latest_streaming_message
+UPDATE ai_grading_messages
+SET
+  status = 'canceled',
+  updated_at = NOW()
+WHERE
+  assessment_question_id = $assessment_question_id
+  AND status = 'streaming'
+  AND role = 'assistant';

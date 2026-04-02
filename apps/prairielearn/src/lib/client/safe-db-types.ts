@@ -49,7 +49,6 @@ import {
 /** AI Grading Messages */
 export const RawStaffAiGradingMessageSchema = RawAiGradingMessageSchema.pick({
   id: true,
-  job_sequence_id: true,
   parts: true,
   phase: true,
   role: true,

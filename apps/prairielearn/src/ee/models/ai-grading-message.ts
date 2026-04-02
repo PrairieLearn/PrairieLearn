@@ -1,4 +1,4 @@
-import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
 import { AiGradingMessageSchema } from '../../lib/db-types.js';
 
@@ -14,6 +14,20 @@ export async function selectAiGradingMessages(assessmentQuestionId: string) {
 
 export async function deleteAiGradingMessages(assessmentQuestionId: string) {
   await execute(sql.delete_ai_grading_messages, {
+    assessment_question_id: assessmentQuestionId,
+  });
+}
+
+export async function selectLatestStreamingAiGradingMessage(assessmentQuestionId: string) {
+  return await queryOptionalRow(
+    sql.select_latest_streaming_ai_grading_message,
+    { assessment_question_id: assessmentQuestionId },
+    AiGradingMessageSchema,
+  );
+}
+
+export async function cancelLatestStreamingAiGradingMessage(assessmentQuestionId: string) {
+  await execute(sql.cancel_latest_streaming_ai_grading_message, {
     assessment_question_id: assessmentQuestionId,
   });
 }

@@ -1,7 +1,7 @@
 import { useChat } from '@ai-sdk/react';
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { DefaultChatTransport, type ToolUIPart, type UIMessage } from 'ai';
-import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useRef, useState } from 'react';
 import { Alert, Button, Modal } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
@@ -51,7 +51,6 @@ interface AssessmentQuestionManualGradingProps {
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
-  initialOngoingJobSequenceTokens: Record<string, string> | null;
   numOpenInstances: number;
   search: string;
   isDevMode: boolean;
@@ -70,7 +69,7 @@ type AssessmentQuestionManualGradingInnerProps = Omit<
 type RubricPhase = 'generate' | 'edit';
 
 type RubricChatMessage = UIMessage<{
-  job_sequence_id?: string;
+  workflow_run_id?: string;
   status?: 'streaming' | 'completed' | 'errored';
   phase?: RubricPhase;
   rubric_modified?: boolean;
@@ -717,7 +716,7 @@ function persistedMessagesToInitialMessages(
         return part as UIMessage['parts'][0];
       }),
       metadata: {
-        job_sequence_id: m.job_sequence_id ?? undefined,
+        workflow_run_id: m.workflow_run_id ?? undefined,
         status: m.status as 'streaming' | 'completed' | 'errored',
         phase: m.phase as RubricPhase,
       },
@@ -741,7 +740,6 @@ function AssessmentQuestionManualGradingInner({
   instanceQuestionGroups,
   courseStaff,
   aiGradingStats,
-  initialOngoingJobSequenceTokens,
   numOpenInstances,
   questionTitle,
   questionNumber,
@@ -792,9 +790,13 @@ function AssessmentQuestionManualGradingInner({
 
   const { messages, setMessages, sendMessage, status } = useChat<RubricChatMessage>({
     messages: persistedMessagesToInitialMessages(initialChatMessages),
+    resume: true,
     transport: new DefaultChatTransport({
       api: chatUrl,
       headers: { 'X-CSRF-Token': chatCsrfToken },
+      prepareReconnectToStreamRequest: () => ({
+        api: `${chatUrl}/stream`,
+      }),
       prepareSendMessagesRequest: ({ messages: chatMsgs, headers, body }) => {
         const lastMessage = chatMsgs[chatMsgs.length - 1];
         let messageText =
@@ -853,17 +855,6 @@ function AssessmentQuestionManualGradingInner({
   });
 
   const isGenerating = status === 'streaming' || status === 'submitted';
-
-  const jobSequenceByMessageId = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const m of messages) {
-      const jsId = m.metadata?.job_sequence_id;
-      if (jsId) {
-        map.set(m.id, jsId);
-      }
-    }
-    return map;
-  }, [messages]);
 
   const isAiGradingAvailable = (assessmentQuestion.max_manual_points ?? 0) > 0;
 
@@ -961,8 +952,8 @@ function AssessmentQuestionManualGradingInner({
           courseStaff={courseStaff}
           aiGradingStats={aiGradingStatsState}
           mutations={mutations}
-          initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
           availableAiGradingProviders={availableAiGradingProviders}
+          rubricEditingDisabled={isGenerating}
           onSetGroupInfoModalState={setGroupInfoModalState}
           onSetConflictModalState={setConflictModalState}
         />
@@ -992,24 +983,29 @@ function AssessmentQuestionManualGradingInner({
 
       {aiGradingEnabled && (
         <div className="d-flex flex-column bg-light border rounded" style={{ width: 480 }}>
-          <div className="d-flex justify-content-between align-items-center p-3 pb-0">
-            <span className="fw-bold small">AI assistant</span>
-            {messages.length > 0 && (
+          {messages.length > 0 && (
+            <div className="d-flex justify-content-end p-3 pb-0">
               <button
                 type="button"
                 className="btn btn-outline-secondary btn-sm"
                 disabled={isGenerating}
-                aria-label="Clear chat history"
                 onClick={() => setShowClearConfirm(true)}
               >
-                <i className="bi bi-trash" />
+                Reset conversation history
               </button>
-            )}
-          </div>
+            </div>
+          )}
           <div className="flex-grow-1 overflow-auto p-3">
+            {messages.length === 0 && !isGenerating && (
+              <div className="d-flex flex-column align-items-center justify-content-center h-100 text-center text-muted">
+                <i className="bi bi-stars" style={{ fontSize: '2rem' }} />
+                <div className="fw-bold mt-2">AI Assistant</div>
+                <div className="small mt-1">
+                  Generate a rubric or speak with the assistant to edit your rubric.
+                </div>
+              </div>
+            )}
             {messages.map((message) => {
-              const jobSequenceId = jobSequenceByMessageId.get(message.id);
-
               if (message.role === 'user') {
                 const textContent = message.parts
                   .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
@@ -1118,16 +1114,6 @@ function AssessmentQuestionManualGradingInner({
                         {message.id.slice(0, 8)}
                       </span>
                     </div>
-                  )}
-                  {jobSequenceId && (
-                    <a
-                      className="small"
-                      href={`${urlPrefix}/jobSequence/${jobSequenceId}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      View job logs
-                    </a>
                   )}
                 </div>
               );

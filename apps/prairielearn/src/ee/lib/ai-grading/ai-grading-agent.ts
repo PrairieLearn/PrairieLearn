@@ -12,7 +12,7 @@ import {
 } from 'ai';
 import z from 'zod';
 
-import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalScalar, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import {
@@ -22,6 +22,7 @@ import {
   type AssessmentQuestion,
   type Course,
   type CourseInstance,
+  EnumAiQuestionGenerationMessageStatusSchema,
   type Question,
 } from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -678,13 +679,11 @@ async function insertUserMessage({
 
 async function insertInitialAssistantMessage({
   assessmentQuestionId,
-  jobSequenceId,
   phase,
   modelId,
   workflowRunId,
 }: {
   assessmentQuestionId: string;
-  jobSequenceId: string;
   phase: 'generate' | 'edit';
   modelId: string;
   workflowRunId?: string | null;
@@ -693,7 +692,6 @@ async function insertInitialAssistantMessage({
     sql.insert_initial_assistant_message,
     {
       assessment_question_id: assessmentQuestionId,
-      job_sequence_id: jobSequenceId,
       phase,
       model: modelId,
       workflow_run_id: workflowRunId ?? null,
@@ -1210,14 +1208,31 @@ export function createRubricAgent({
   model,
   workflowRunId: _workflowRunId,
   job,
+  messageId,
 }: {
   phase: 'generate' | 'edit';
   context: AiGradingAgentContext;
   model: LanguageModel;
   workflowRunId: string | null;
   job: JobLogger;
+  messageId: string;
 }) {
   const allTools = buildRubricToolsWithExecute({ context, model, job });
+
+  const cancellationState = { wasCanceled: false };
+
+  const checkCancellation = async () => {
+    const status = await queryOptionalScalar(
+      sql.select_message_status,
+      { id: messageId },
+      EnumAiQuestionGenerationMessageStatusSchema,
+    );
+    if (status === 'canceled') {
+      cancellationState.wasCanceled = true;
+      return true;
+    }
+    return false;
+  };
 
   const agent = new ToolLoopAgent({
     model,
@@ -1225,7 +1240,7 @@ export function createRubricAgent({
       phase === 'generate'
         ? RUBRIC_GENERATION_AGENT_SYSTEM_PROMPT
         : RUBRIC_EDITING_AGENT_SYSTEM_PROMPT,
-    stopWhen: [stepCountIs(15)],
+    stopWhen: [stepCountIs(15), checkCancellation],
     prepareStep: async () => {
       if (phase === 'generate') {
         return {
@@ -1264,7 +1279,7 @@ export function createRubricAgent({
     tools: allTools,
   });
 
-  return agent;
+  return { agent, cancellationState };
 }
 
 // ---------------------------------------------------------------------------
@@ -1310,43 +1325,65 @@ export async function restoreRubricFromSnapshot({
   });
 }
 
+/**
+ * Insert user + assistant messages into DB without creating the agent.
+ * Used by the route handler to get the message_id before continuing the workflow.
+ */
+export async function prepareAgentMessages({
+  phase,
+  userMessage,
+  assessmentQuestionId,
+  authnUserId,
+  workflowRunId,
+}: {
+  phase: 'generate' | 'edit';
+  userMessage: string;
+  assessmentQuestionId: string;
+  authnUserId: string;
+  workflowRunId: string;
+}) {
+  await insertUserMessage({
+    assessmentQuestionId,
+    authnUserId,
+    phase,
+    text: userMessage,
+    workflowRunId,
+  });
+
+  const { modelId } = getAgenticGradingModel();
+
+  const messageRow = await insertInitialAssistantMessage({
+    assessmentQuestionId,
+    phase,
+    modelId,
+    workflowRunId,
+  });
+
+  return { messageRow, modelId };
+}
+
 export async function generateRubric(
   context: AiGradingAgentContext,
   job: JobLogger,
-  jobSequenceId: string,
-  workflowRunId?: string | null,
+  workflowRunId: string,
+  messageId: string,
 ) {
   if (!context.hasCourseInstancePermissionEdit) {
     throw new Error('Access denied (must be a student data editor)');
   }
 
-  await insertUserMessage({
-    assessmentQuestionId: context.assessmentQuestion.id,
-    authnUserId: context.authnUserId,
-    phase: 'generate',
-    text: 'Generate a new rubric.',
-    workflowRunId,
-  });
-
   const { model, modelId } = getAgenticGradingModel();
 
-  const messageRow = await insertInitialAssistantMessage({
-    assessmentQuestionId: context.assessmentQuestion.id,
-    jobSequenceId,
-    phase: 'generate',
-    modelId,
-    workflowRunId,
-  });
-
-  const agent = createRubricAgent({
+  const { agent, cancellationState } = createRubricAgent({
     phase: 'generate',
     context,
     model,
-    workflowRunId: workflowRunId ?? null,
+    workflowRunId,
     job,
+    messageId,
   });
 
-  return { agent, messageRow, modelId };
+  return { agent, cancellationState, modelId };
 }
 
 export async function editRubric(
@@ -1354,33 +1391,18 @@ export async function editRubric(
   instruction: string,
   persistedMessages: AiGradingMessage[],
   job: JobLogger,
-  jobSequenceId: string,
-  workflowRunId?: string | null,
+  workflowRunId: string,
+  messageId: string,
 ) {
-  await insertUserMessage({
-    assessmentQuestionId: context.assessmentQuestion.id,
-    authnUserId: context.authnUserId,
-    phase: 'edit',
-    text: instruction,
-    workflowRunId,
-  });
-
   const { model, modelId } = getAgenticGradingModel();
 
-  const messageRow = await insertInitialAssistantMessage({
-    assessmentQuestionId: context.assessmentQuestion.id,
-    jobSequenceId,
-    phase: 'edit',
-    modelId,
-    workflowRunId,
-  });
-
-  const agent = createRubricAgent({
+  const { agent, cancellationState } = createRubricAgent({
     phase: 'edit',
     context,
     model,
-    workflowRunId: workflowRunId ?? null,
+    workflowRunId,
     job,
+    messageId,
   });
 
   // Build conversation context from persisted messages
@@ -1416,5 +1438,5 @@ export async function editRubric(
     content: instruction,
   });
 
-  return { agent, messageRow, modelId, messages };
+  return { agent, cancellationState, modelId, messages };
 }

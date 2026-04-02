@@ -1,3 +1,5 @@
+import { JsonToSseTransformStream, type ModelMessage } from 'ai';
+
 import {
   type StepResult,
   type WorkflowStepContext,
@@ -5,44 +7,160 @@ import {
 } from '@prairielearn/workflows';
 
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { selectAssessmentQuestionById } from '../../../models/assessment-question.js';
+import { selectAssessmentById } from '../../../models/assessment.js';
+import { selectCourseInstanceById } from '../../../models/course-instances.js';
+import { selectCourseById } from '../../../models/course.js';
+import { selectQuestionById } from '../../../models/question.js';
+import { selectAiGradingMessages } from '../../models/ai-grading-message.js';
+
+import {
+  type AiGradingAgentContext,
+  editRubric,
+  finalizeAssistantMessage,
+  generateRubric,
+} from './ai-grading-agent.js';
+import { getAiGradingStreamContext, takeSseStream } from './redis.js';
 
 /**
- * AI Grading Workflow State Machine (Rubric Editing Only)
+ * AI Grading Workflow — Rubric Editing
  *
- * Phase 1: rubric_setup
- *   - rubric_check → check if rubric exists
- *   - initialize_prompt → no rubric, waiting for user (generate? skip?)
- *   - generating_rubric → AI generates rubric
- *   - rubric_ready → rubric loaded, user confirms or edits
- *   - rubric_editing → user is editing, waiting for edit instruction
+ * The agent runs INSIDE takeStep for true fault tolerance.
+ * Streaming to the client uses Redis-backed resumable streams.
+ *
+ * Steps:
+ *   rubric_check → check if rubric exists → awaiting_input | rubric_ready
+ *   awaiting_input → waiting for user to send a message
+ *   agent_running → runs LLM agent, streams via Redis, finalizes message
+ *   rubric_ready → rubric exists, waiting for next edit
  */
 
 interface AiGradingState {
   step: string;
+  phase?: 'generate' | 'edit';
   rubric_exists?: boolean;
-  rubric_id?: string;
-  assessment_question_id?: string;
-  /** User input (merged via continueWorkflow) */
-  action?: string;
-  message?: string;
+  message_id?: string;
+  user_message?: string;
+}
+
+interface AiGradingContext {
+  assessment_question_id: string;
+  assessment_id: string;
+  course_id: string;
+  course_instance_id: string;
+  question_id: string;
+  url_prefix: string;
+  authn_user_id: string;
+  user_id: string;
+  has_course_instance_permission_edit: boolean;
 }
 
 function getState(context: WorkflowStepContext<Record<string, unknown>>): AiGradingState {
   return context.run.state as unknown as AiGradingState;
 }
 
+function getContext(context: WorkflowStepContext<Record<string, unknown>>): AiGradingContext {
+  return context.run.context as unknown as AiGradingContext;
+}
+
 function result(
   phase: string,
   state: AiGradingState,
   status: StepResult<Record<string, unknown>>['status'],
-  extras?: { error_message?: string },
 ): StepResult<Record<string, unknown>> {
   return {
     phase,
     state: state as unknown as Record<string, unknown>,
     status,
-    ...extras,
   };
+}
+
+async function reconstructAgentContext(ctx: AiGradingContext): Promise<AiGradingAgentContext> {
+  const [assessment, assessmentQuestion, course, courseInstance, question] = await Promise.all([
+    selectAssessmentById(ctx.assessment_id),
+    selectAssessmentQuestionById(ctx.assessment_question_id),
+    selectCourseById(ctx.course_id),
+    selectCourseInstanceById(ctx.course_instance_id),
+    selectQuestionById(ctx.question_id),
+  ]);
+  return {
+    assessment,
+    assessmentQuestion,
+    course,
+    courseInstance,
+    question,
+    urlPrefix: ctx.url_prefix,
+    authnUserId: ctx.authn_user_id,
+    userId: ctx.user_id,
+    hasCourseInstancePermissionEdit: ctx.has_course_instance_permission_edit,
+  };
+}
+
+async function runAgentWithStreaming(
+  agent: any,
+  cancellationState: { wasCanceled: boolean },
+  messageId: string,
+  modelId: string,
+  promptArg: { prompt: string } | { messages: ModelMessage[] },
+  sseStream: JsonToSseTransformStream,
+  workflowRunId: string,
+  phase: 'generate' | 'edit',
+) {
+  const agentRes = await agent.stream(promptArg);
+  let finalParts: unknown[] = [];
+  const errorState = { hasError: false };
+
+  const uiStream = agentRes.toUIMessageStream({
+    generateMessageId: () => messageId,
+    messageMetadata: ({ part }: { part: { type: string } }) => {
+      if (part.type === 'start') {
+        return { workflow_run_id: workflowRunId, status: 'streaming', phase };
+      }
+      if (part.type === 'finish') {
+        return {
+          workflow_run_id: workflowRunId,
+          status: cancellationState.wasCanceled
+            ? 'canceled'
+            : errorState.hasError
+              ? 'errored'
+              : 'completed',
+          phase,
+          rubric_modified: true,
+        };
+      }
+    },
+    onFinish: async ({ responseMessage }: { responseMessage: { parts: unknown[] } }) => {
+      finalParts = responseMessage.parts;
+    },
+    onError(err: unknown): string {
+      errorState.hasError = true;
+      return String(err);
+    },
+  });
+
+  await uiStream.pipeTo(sseStream.writable);
+
+  const totalUsage = await agentRes.totalUsage.then(
+    (usage: { inputTokens?: number; outputTokens?: number }) => usage,
+    () => ({ inputTokens: 0, outputTokens: 0 }),
+  );
+
+  const finalStatus = cancellationState.wasCanceled
+    ? 'canceled'
+    : errorState.hasError
+      ? 'errored'
+      : 'completed';
+
+  await finalizeAssistantMessage({
+    messageId,
+    status: finalStatus === 'canceled' ? 'errored' : finalStatus,
+    parts: finalParts,
+    modelId,
+    usage: {
+      inputTokens: totalUsage.inputTokens ?? 0,
+      outputTokens: totalUsage.outputTokens ?? 0,
+    },
+  });
 }
 
 async function takeStep(
@@ -54,9 +172,9 @@ async function takeStep(
   switch (state.step) {
     case 'rubric_check': {
       logger.info('Checking if rubric exists');
-      const assessmentQuestionId = context.run.context.assessment_question_id as string;
+      const ctx = getContext(context);
       const rubricData = await manualGrading.selectRubricData({
-        assessment_question: { id: assessmentQuestionId } as Parameters<
+        assessment_question: { id: ctx.assessment_question_id } as Parameters<
           typeof manualGrading.selectRubricData
         >[0]['assessment_question'],
       });
@@ -69,82 +187,133 @@ async function takeStep(
           'waiting_for_input',
         );
       } else {
-        logger.info('No rubric found, prompting user');
+        logger.info('No rubric found, awaiting input');
         return result(
           'rubric_setup',
-          { ...state, step: 'initialize_prompt', rubric_exists: false },
+          { ...state, step: 'awaiting_input', rubric_exists: false },
           'waiting_for_input',
         );
       }
     }
 
-    case 'initialize_prompt': {
-      const action = state.action;
-
-      if (action === 'generate') {
-        return result(
-          'rubric_setup',
-          { ...state, step: 'generating_rubric', action: undefined },
-          'continue',
-        );
-      }
-
-      if (action === 'skip') {
-        return result(
-          'rubric_setup',
-          { ...state, step: 'rubric_ready', action: undefined },
-          'waiting_for_input',
-        );
-      }
-
-      return result('rubric_setup', { ...state, step: 'initialize_prompt' }, 'waiting_for_input');
+    case 'awaiting_input': {
+      return result('rubric_setup', state, 'waiting_for_input');
     }
 
-    case 'generating_rubric': {
-      // The actual rubric generation is triggered by the route handler.
-      // When we reach this step, transition to rubric_ready.
-      logger.info('Rubric generation step — transitioning to rubric_ready');
+    case 'agent_running': {
+      const ctx = getContext(context);
+      const messageId = state.message_id;
+      const phase = state.phase;
+
+      if (!messageId || !phase) {
+        return {
+          phase: 'rubric_setup',
+          state: { ...state, step: 'rubric_ready' } as unknown as Record<string, unknown>,
+          status: 'error',
+          error_message: 'Missing message_id or phase in agent_running step',
+        };
+      }
+
+      logger.info(`Running agent — phase: ${phase}, message: ${messageId}`);
+
+      // Crash recovery: if there's already a streaming message that isn't ours,
+      // finalize it as errored before starting fresh
+      const { selectLatestStreamingAiGradingMessage } =
+        await import('../../models/ai-grading-message.js');
+      const existingStreaming = await selectLatestStreamingAiGradingMessage(
+        ctx.assessment_question_id,
+      );
+      if (existingStreaming && existingStreaming.id !== messageId) {
+        logger.info(`Finalizing stale streaming message ${existingStreaming.id} as errored`);
+        await finalizeAssistantMessage({
+          messageId: existingStreaming.id,
+          status: 'errored',
+          parts: [],
+          modelId: existingStreaming.model ?? 'unknown',
+          usage: { inputTokens: 0, outputTokens: 0 },
+        });
+      }
+
+      const agentContext = await reconstructAgentContext(ctx);
+
+      // Use the pre-created SSE stream from the route handler (normal flow).
+      // For crash recovery (no pre-created stream), create a new one.
+      let sseStream = takeSseStream(messageId);
+      if (!sseStream) {
+        logger.info('No pre-created stream found (crash recovery?), creating new stream');
+        sseStream = new JsonToSseTransformStream();
+        const streamContext = await getAiGradingStreamContext();
+        await streamContext.createNewResumableStream(messageId, () => sseStream!.readable);
+      }
+
+      if (phase === 'generate') {
+        const { agent, cancellationState, modelId } = await generateRubric(
+          agentContext,
+          logger,
+          context.run.id,
+          messageId,
+        );
+
+        await runAgentWithStreaming(
+          agent,
+          cancellationState,
+          messageId,
+          modelId,
+          { prompt: 'Generate a new rubric.' },
+          sseStream,
+          context.run.id,
+          phase,
+        );
+      } else {
+        const persistedMessages = await selectAiGradingMessages(ctx.assessment_question_id);
+
+        const { agent, cancellationState, modelId, messages } = await editRubric(
+          agentContext,
+          state.user_message ?? '',
+          persistedMessages,
+          logger,
+          context.run.id,
+          messageId,
+        );
+
+        await runAgentWithStreaming(
+          agent,
+          cancellationState,
+          messageId,
+          modelId,
+          { messages },
+          sseStream,
+          context.run.id,
+          phase,
+        );
+      }
+
+      logger.info('Agent completed, returning to rubric_ready');
       return result(
         'rubric_setup',
-        { ...state, step: 'rubric_ready', rubric_exists: true },
+        {
+          step: 'rubric_ready',
+          rubric_exists: true,
+          // Clear transient fields
+          message_id: undefined,
+          user_message: undefined,
+          phase: undefined,
+        },
         'waiting_for_input',
       );
     }
 
     case 'rubric_ready': {
-      const action = state.action;
-
-      if (action === 'edit') {
-        return result(
-          'rubric_setup',
-          { ...state, step: 'rubric_editing', action: undefined },
-          'waiting_for_input',
-        );
-      }
-
-      // No action yet — stay waiting
-      return result('rubric_setup', { ...state, step: 'rubric_ready' }, 'waiting_for_input');
-    }
-
-    case 'rubric_editing': {
-      const action = state.action;
-
-      if (action === 'edit_complete') {
-        return result(
-          'rubric_setup',
-          { ...state, step: 'rubric_ready', action: undefined },
-          'waiting_for_input',
-        );
-      }
-
-      // Stay waiting for edit instruction
-      return result('rubric_setup', { ...state, step: 'rubric_editing' }, 'waiting_for_input');
+      return result('rubric_setup', state, 'waiting_for_input');
     }
 
     default: {
-      return result(context.run.phase ?? 'rubric_setup', state, 'error', {
+      return {
+        phase: context.run.phase ?? 'rubric_setup',
+        state: state as unknown as Record<string, unknown>,
+        status: 'error',
         error_message: `Unknown step: ${state.step}`,
-      });
+      };
     }
   }
 }

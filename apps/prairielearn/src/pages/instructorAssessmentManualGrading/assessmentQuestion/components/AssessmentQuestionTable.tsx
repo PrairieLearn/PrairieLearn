@@ -86,8 +86,8 @@ interface AssessmentQuestionTableProps {
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
-  initialOngoingJobSequenceTokens: Record<string, string> | null;
   availableAiGradingProviders: EnumAiGradingProvider[];
+  rubricEditingDisabled?: boolean;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: ReturnType<typeof useManualGradingActions>;
@@ -178,8 +178,8 @@ export function AssessmentQuestionTable({
   course,
   courseInstance,
   aiGradingStats,
-  initialOngoingJobSequenceTokens,
   availableAiGradingProviders,
+  rubricEditingDisabled,
   onSetGroupInfoModalState,
   onSetConflictModalState,
   mutations,
@@ -393,7 +393,7 @@ export function AssessmentQuestionTable({
 
   const serverJobProgress = useServerJobProgress({
     enabled: aiGradingMode,
-    initialOngoingJobSequenceTokens,
+    initialOngoingJobSequenceTokens: null,
     onProgressChange: () => {
       // Refresh the displayed table data when server job progress updates, since
       // instance question grading data (e.g. AI agreements, grading status)
@@ -649,11 +649,13 @@ export function AssessmentQuestionTable({
     <>
       <div className="mb-3">
         <RubricSettings
+          key={`${rubricData?.rubric?.id ?? 'no-rubric'}-${rubricData?.rubric?.modified_at ?? ''}`}
           hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
           assessmentQuestion={assessmentQuestion}
           rubricData={rubricData}
           csrfToken={csrfToken}
           aiGradingStats={aiGradingStats}
+          rubricEditingDisabled={rubricEditingDisabled}
           context={{
             course_short_name: course.short_name,
             course_instance_short_name: courseInstance.short_name,
