@@ -2,10 +2,10 @@
 
 math-field.pl-calculator-input::part(menu-toggle),
 math-field.pl-calculator-output::part(menu-toggle),
-math-field.history-text::part(menu-toggle),
+math-field.pl-calculator-history-text::part(menu-toggle),
 math-field.pl-calculator-input::part(virtual-keyboard-toggle),
 math-field.pl-calculator-output::part(virtual-keyboard-toggle),
-math-field.history-text::part(virtual-keyboard-toggle) {
+math-field.pl-calculator-history-text::part(virtual-keyboard-toggle) {
   display: none;
 }
 
@@ -256,7 +256,7 @@ math-field.pl-calculator-output:focus {
   background-color: var(--bs-tertiary-bg);
 }
 
-math-field.history-text {
+math-field.pl-calculator-history-text {
   height: auto;
   font-size: inherit;
   border: 0;
@@ -266,7 +266,7 @@ math-field.history-text {
   pointer-events: none;
 }
 
-math-field.history-text:focus {
+math-field.pl-calculator-history-text:focus {
   outline: none;
 }
 

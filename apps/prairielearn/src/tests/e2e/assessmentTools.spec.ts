@@ -168,7 +168,7 @@ test.describe('Calculator keyboard input', () => {
 
     // Submit and verify the result.
     await page.keyboard.press('Enter');
-    const historyOutput = page.locator('#history-panel .history-output .history-text').first();
+    const historyOutput = page.locator('#history-panel .history-output .pl-calculator-history-text').first();
     await expect(async () => {
       const value = await historyOutput.evaluate(
         (el) => (el as HTMLElement & { value: string }).value,
