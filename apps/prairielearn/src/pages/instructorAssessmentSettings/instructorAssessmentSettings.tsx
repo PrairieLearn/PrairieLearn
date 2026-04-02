@@ -107,6 +107,9 @@ router.get(
           page: 'assessment',
           subPage: 'settings',
         },
+        options: {
+          contentPadding: false,
+        },
         content: (
           <Hydrate>
             <InstructorAssessmentSettings

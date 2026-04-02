@@ -230,7 +230,7 @@ function InstructorAssessmentSettingsInner({
       </Modal>
 
       <form name="edit-assessment-settings-form" onSubmit={handleSubmit(onFormSubmit)}>
-        <div className="card mb-4">
+        <div className="card m-4">
           <div className="card-body">
             <div className="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
               <div>
@@ -465,7 +465,7 @@ function InstructorAssessmentSettingsInner({
           </div>
         </div>
 
-        <div className="card mb-4">
+        <div className="card m-4 mt-0">
           <div className="card-body">
             <h2 className="h5 card-title">Scoring</h2>
             <p className="text-muted small">
@@ -535,7 +535,7 @@ function InstructorAssessmentSettingsInner({
           </div>
         </div>
 
-        <div className="card mb-4">
+        <div className="card m-4 mt-0">
           <div className="card-body">
             <h2 className="h5 card-title">Question behaviour</h2>
             <p className="text-muted small">Control how questions are presented and navigated.</p>
@@ -591,14 +591,14 @@ function InstructorAssessmentSettingsInner({
           </div>
         </div>
 
-        <div className="card mb-4">
+        <div className="card m-4 mt-0">
           <div className="card-body">
             <h2 className="h5 card-title">Grading</h2>
             <p className="text-muted small">
               Configure grading behaviour and submission rate limits.
             </p>
             {assessment.type === 'Exam' && (
-              <div className="form-check mb-3">
+              <div className="form-check mb-3 pb-3 border-bottom">
                 <input
                   className="form-check-input"
                   type="checkbox"
@@ -616,7 +616,7 @@ function InstructorAssessmentSettingsInner({
                 </div>
               </div>
             )}
-            <div className={assessment.type === 'Exam' ? 'border-top pt-3' : ''}>
+            <div>
               <label className="form-label" htmlFor="grade_rate_minutes">
                 Grade rate minutes
               </label>
@@ -643,7 +643,7 @@ function InstructorAssessmentSettingsInner({
           </div>
         </div>
 
-        <div className="card mb-4">
+        <div className="card m-4 mt-0">
           <div className="card-body">
             <h2 className="h5 card-title">Student options</h2>
             <p className="text-muted small">Control what students can do during the assessment.</p>
@@ -759,7 +759,7 @@ function InstructorAssessmentSettingsInner({
           </div>
         </div>
 
-        <div className="card mb-4">
+        <div className="card m-4 mt-0">
           <div className="card-body">
             <h2 className="h5 card-title mb-1">Tools</h2>
             <p className="text-muted small mb-3">
@@ -786,38 +786,51 @@ function InstructorAssessmentSettingsInner({
           </div>
         </div>
 
-        {saveMutation.isSuccess && (
-          <Alert variant="success" dismissible onClose={() => saveMutation.reset()}>
-            Assessment updated successfully.
-          </Alert>
-        )}
-        {appError && (
-          <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
-            {appError.message}
-          </Alert>
-        )}
-
         {canEdit && (
-          <div className="d-flex gap-2 mb-4">
-            <button
-              id="save-button"
-              type="submit"
-              className="btn btn-primary"
-              disabled={!isDirty || isSubmitting || saveMutation.isPending}
-            >
-              {saveMutation.isPending ? 'Saving...' : 'Save'}
-            </button>
-            <button
-              id="cancel-button"
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => {
-                reset();
-                saveMutation.reset();
-              }}
-            >
-              Cancel
-            </button>
+          <div className="position-sticky bottom-0 z-3 bg-body-glass border-top">
+            {saveMutation.isSuccess && (
+              <Alert
+                className="mb-0 rounded-0 border-start-0 border-end-0 border-bottom"
+                variant="success"
+                dismissible
+                onClose={() => saveMutation.reset()}
+              >
+                Assessment updated successfully.
+              </Alert>
+            )}
+            {appError && (
+              <Alert
+                className="mb-0 rounded-0 border-start-0 border-end-0 border-bottom"
+                variant="danger"
+                dismissible
+                onClose={() => saveMutation.reset()}
+              >
+                {appError.message}
+              </Alert>
+            )}
+            <div className="d-flex justify-content-end">
+              <div className="d-flex gap-2 p-4">
+                <button
+                  id="cancel-button"
+                  type="button"
+                  className="btn btn-secondary min-wi"
+                  onClick={() => {
+                    reset();
+                    saveMutation.reset();
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  id="save-button"
+                  type="submit"
+                  className="btn btn-primary btn-wide w-100"
+                  disabled={!isDirty || isSubmitting || saveMutation.isPending}
+                >
+                  {saveMutation.isPending ? 'Saving...' : 'Save assessment'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </form>
