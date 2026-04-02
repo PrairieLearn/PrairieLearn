@@ -1,4 +1,10 @@
-import type { AnyProcedure, AnyRouter, ProcedureType, TRPCError, TRPCRouterRecord } from '@trpc/server';
+import type {
+  AnyProcedure,
+  AnyRouter,
+  ProcedureType,
+  TRPCError,
+  TRPCRouterRecord,
+} from '@trpc/server';
 import { getHTTPStatusCodeFromError } from '@trpc/server/http';
 import { sampleSize } from 'es-toolkit';
 import type { Request } from 'express';
@@ -9,8 +15,7 @@ import * as Sentry from '@prairielearn/sentry';
 
 /**
  * Recursively extracts all dot-separated procedure paths from a tRPC router.
- * Use this to derive chunk-server paths at runtime instead of maintaining a
- * manual list.
+ * tRPC has no built-in way to get all procedure paths from a router, so we need to recursively traverse the router record.
  */
 export function getRouterPaths(router: AnyRouter): string[] {
   return getRecordPaths(router._def.record);
