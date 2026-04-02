@@ -1,11 +1,16 @@
-import { Form } from 'react-bootstrap';
+import { Temporal } from '@js-temporal/polyfill';
+import { Button, Form } from 'react-bootstrap';
 import { type Path, useController, useWatch } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData } from '../types.js';
 
-function ReleaseDateInput({
+function todayLocalDatetime(): string {
+  return Temporal.Now.plainDateISO().toPlainDateTime().toString({ smallestUnit: 'minute' });
+}
+
+function OverrideReleaseDateInput({
   value,
   onChange,
   idPrefix,
@@ -57,8 +62,22 @@ export function MainReleaseDateField() {
 
   return (
     <div>
-      <strong>Release date</strong>
-      <ReleaseDateInput value={field.value} idPrefix="mainRule" onChange={field.onChange} />
+      <div className="d-flex align-items-center gap-2 mb-2">
+        <strong>Release date</strong>
+        <Button
+          size="sm"
+          variant="outline-secondary"
+          onClick={() => field.onChange(todayLocalDatetime())}
+        >
+          Today
+        </Button>
+      </div>
+      <Form.Control
+        type="datetime-local"
+        aria-label="Release date"
+        value={field.value ?? ''}
+        onChange={({ currentTarget }) => field.onChange(currentTarget.value || null)}
+      />
     </div>
   );
 }
@@ -85,7 +104,7 @@ export function OverrideReleaseDateField({ index }: { index: number }) {
       }}
       onRemoveOverride={removeOverride}
     >
-      <ReleaseDateInput
+      <OverrideReleaseDateInput
         value={field.value as string | null}
         idPrefix={`overrides-${index}`}
         onChange={field.onChange}

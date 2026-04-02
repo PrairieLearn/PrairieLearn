@@ -210,6 +210,15 @@ interface CreditResult {
   timeLimitMin: number | null;
 }
 
+/**
+ * Outcome of PrairieTest access resolution. Used as a discriminated union so
+ * the main resolver can handle each case linearly without nested control flow.
+ */
+type PrairieTestOutcome =
+  | { action: 'deny'; result: AccessControlResolverResult }
+  | { action: 'grant'; examAccessEnd: Date; credit: number; active: boolean }
+  | { action: 'continue' };
+
 function computeCredit(
   dateControl: RuntimeDateControl | undefined,
   date: Date,
@@ -413,6 +422,77 @@ function formatCreditDateString(
   return 'None';
 }
 
+/**
+ * PrairieTest exam-mode access control.
+ *
+ * Core invariants (matching legacy `check_assessment_access_rule` sproc):
+ * - Student in Exam mode + assessment has PT exams → must have valid reservation
+ * - Student in Exam mode + assessment has NO PT exams → deny access
+ * - Student NOT in Exam mode + assessment has PT exams → deny access
+ * - Valid reservation = user has pt_reservation whose exam UUID matches a configured exam
+ *
+ * When the assessment is past its close date (`assessmentClosed`), PT gating is
+ * skipped so the normal closed-assessment behavior applies instead of showing
+ * "Not yet open" indefinitely.
+ */
+function resolvePrairieTestAccess({
+  prairieTestExams,
+  prairieTestReservations,
+  authzMode,
+  listBeforeRelease,
+  assessmentClosed,
+}: {
+  prairieTestExams: { uuid: string; readOnly: boolean }[];
+  prairieTestReservations: PrairieTestReservation[];
+  authzMode: EnumMode | null;
+  listBeforeRelease: boolean;
+  assessmentClosed: boolean;
+}): PrairieTestOutcome {
+  const hasPrairieTestExams = prairieTestExams.length > 0;
+
+  if (!hasPrairieTestExams) {
+    // No PT exams configured but student is in PrairieTest exam mode → deny.
+    if (authzMode === 'Exam') {
+      return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
+    }
+    return { action: 'continue' };
+  }
+
+  // Not in exam mode — student cannot access a PT-gated assessment.
+  if (authzMode !== 'Exam') {
+    if (assessmentClosed) return { action: 'continue' };
+    if (listBeforeRelease) {
+      return { action: 'deny', result: { ...UNAUTHORIZED_RESULT, showBeforeRelease: true } };
+    }
+    return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
+  }
+
+  // In Exam mode — find a matching reservation.
+  const matchedExam = prairieTestExams.find((exam) =>
+    prairieTestReservations.some((r) => r.examUuid === exam.uuid),
+  );
+
+  if (matchedExam) {
+    // Valid reservation found — grant PT access with full credit.
+    const matchingReservation = prairieTestReservations.find(
+      (r) => r.examUuid === matchedExam.uuid,
+    )!;
+    return {
+      action: 'grant',
+      examAccessEnd: matchingReservation.accessEnd,
+      credit: 100,
+      active: !matchedExam.readOnly,
+    };
+  }
+
+  // No matching reservation — deny unless the assessment is closed.
+  if (assessmentClosed) return { action: 'continue' };
+  if (listBeforeRelease) {
+    return { action: 'deny', result: { ...UNAUTHORIZED_RESULT, showBeforeRelease: true } };
+  }
+  return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
+}
+
 export function resolveAccessControl(
   input: AccessControlResolverInput,
 ): AccessControlResolverResult {
@@ -488,71 +568,25 @@ export function resolveAccessControl(
 
   let creditResult = computeCredit(effectiveRule.dateControl, date, effectiveRule, authzMode);
 
-  // PrairieTest exam-mode access control.
-  //
-  // This logic is equivalent to the legacy `check_assessment_access_rule` sproc
-  // (lines 39-75) with two additions:
-  // - Multiple PT exams per rule (legacy only supported one exam_uuid per rule)
-  // - read_only exam support (sets active=false for view-only access)
-  //
-  // Core invariants (matching legacy behavior):
-  // - Student in Exam mode + assessment has PT exams → must have valid reservation
-  // - Student in Exam mode + assessment has NO PT exams → deny access
-  // - Student NOT in Exam mode + assessment has PT exams → deny access
-  // - Valid reservation = user has pt_reservation where now ∈ [access_start, access_end]
-  //   and reservation's exam UUID matches one of the configured exams
-  //
-  // In the legacy system, exam_uuid was per-rule (each assessment_access_rule had
-  // its own exam_uuid column). In the modern system, PT exams are configured only
-  // on the main rule (number=0) and are effectively assessment-level.
-  const prairieTestExams = mainRuleInput.prairietestExams;
-  const hasPrairieTestExams = prairieTestExams.length > 0;
-  let examAccessEnd: Date | null = null;
-
-  if (hasPrairieTestExams) {
-    // When the assessment is past its close date (has a release date, is past
-    // release, and is no longer active), skip the PT access check so the normal
-    // closed-assessment behavior applies instead of showing "Not yet open".
-    const assessmentClosed =
+  // Resolve PrairieTest access. This is separated from the main flow to keep
+  // the resolver linear: it either denies early, grants PT credit overrides,
+  // or continues with the normal date-control-based result.
+  const ptOutcome = resolvePrairieTestAccess({
+    prairieTestExams: mainRuleInput.prairietestExams,
+    prairieTestReservations,
+    authzMode,
+    listBeforeRelease: effectiveRule.listBeforeRelease ?? false,
+    assessmentClosed:
       !!effectiveRule.dateControl?.releaseDate &&
       !creditResult.beforeRelease &&
-      !creditResult.active;
+      !creditResult.active,
+  });
+  if (ptOutcome.action === 'deny') return ptOutcome.result;
 
-    // Exam-only rule: must be in exam mode with PrairieTest reason
-    if (authzMode !== 'Exam') {
-      if (!assessmentClosed) {
-        if (effectiveRule.listBeforeRelease) {
-          return { ...UNAUTHORIZED_RESULT, showBeforeRelease: true };
-        }
-        return { ...UNAUTHORIZED_RESULT };
-      }
-      // Assessment is closed — fall through to normal result computation.
-    } else {
-      const matchedExam = prairieTestExams.find((exam) =>
-        prairieTestReservations.some((r) => r.examUuid === exam.uuid),
-      );
-      if (!matchedExam) {
-        if (!assessmentClosed) {
-          if (effectiveRule.listBeforeRelease) {
-            return { ...UNAUTHORIZED_RESULT, showBeforeRelease: true };
-          }
-          return { ...UNAUTHORIZED_RESULT };
-        }
-        // Assessment is closed — fall through to normal result computation.
-      } else {
-        const matchingReservation = prairieTestReservations.find(
-          (r) => r.examUuid === matchedExam.uuid,
-        )!;
-        examAccessEnd = matchingReservation.accessEnd;
-
-        // PrairieTest controls access — always grant full credit.
-        // readOnly exams set active=false so students can view but not submit.
-        creditResult = { ...creditResult, credit: 100, active: !matchedExam.readOnly };
-      }
-    }
-  } else if (authzMode === 'Exam') {
-    // No PrairieTest exams configured but student is in PrairieTest exam mode
-    return { ...UNAUTHORIZED_RESULT };
+  let examAccessEnd: Date | null = null;
+  if (ptOutcome.action === 'grant') {
+    creditResult = { ...creditResult, credit: ptOutcome.credit, active: ptOutcome.active };
+    examAccessEnd = ptOutcome.examAccessEnd;
   }
 
   const timeLimitMin = creditResult.timeLimitMin;

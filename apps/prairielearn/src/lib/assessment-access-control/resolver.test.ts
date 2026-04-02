@@ -1431,6 +1431,31 @@ describe('resolveAccessControl', () => {
       }
     });
 
+    it('grants access via PT reservation even when assessment is past close date', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Exam',
+        rules: [
+          {
+            ...makeMainRule({
+              dateControl: {
+                releaseDate: '2025-01-01T00:00:00Z',
+                dueDate: '2025-02-01T00:00:00Z',
+              },
+            }),
+            prairietestExams: [ptExam],
+          },
+        ],
+        prairieTestReservations: [
+          { examUuid: 'pt-exam-1', accessEnd: new Date('2025-04-01T00:00:00Z') },
+        ],
+      });
+      expect(result.authorized).toBe(true);
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(true);
+      expect(result.showBeforeRelease).toBe(false);
+    });
+
     it('still shows "before release" for PT assessment that is open but student lacks access', () => {
       // When a PT-gated assessment has date controls and is within its open
       // period, students without PT access should still see "Not yet open".

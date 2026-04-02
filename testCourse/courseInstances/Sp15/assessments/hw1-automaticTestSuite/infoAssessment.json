@@ -5,7 +5,6 @@
   "set": "Homework",
   "number": "1",
   "module": "Module1",
-  "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
       "questions": [
@@ -27,6 +26,12 @@
         { "id": "partialCredit6_no_partial", "autoPoints": 3, "maxAutoPoints": 8 },
         { "id": "brokenGrading", "autoPoints": 2, "maxAutoPoints": 4 }
       ]
+    }
+  ],
+  "accessControl": [
+    {
+      "dateControl": { "releaseDate": "2026-04-02T00:00:00" },
+      "afterComplete": { "hideQuestions": true, "hideScore": false }
     }
   ]
 }

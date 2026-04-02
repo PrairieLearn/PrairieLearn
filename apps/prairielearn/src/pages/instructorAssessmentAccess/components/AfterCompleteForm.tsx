@@ -63,9 +63,11 @@ function QuestionVisibilityInput({
             if (currentTarget.checked) onChange({ hideQuestions: true });
           }}
         />
-        <Form.Text className="text-muted ms-4 mb-1 d-block">
-          Questions will never be visible after completion
-        </Form.Text>
+        {hideQuestionsMode === 'hide_questions_forever' && (
+          <Form.Text className="text-muted ms-4 mb-1 d-block">
+            Questions will never be visible after completion
+          </Form.Text>
+        )}
 
         <Form.Check
           type="radio"
@@ -77,9 +79,11 @@ function QuestionVisibilityInput({
             if (currentTarget.checked) onChange({ hideQuestions: false });
           }}
         />
-        <Form.Text className="text-muted ms-4 mb-1 d-block">
-          Students can see questions and answers immediately after completing the assessment
-        </Form.Text>
+        {hideQuestionsMode === 'show_questions' && (
+          <Form.Text className="text-muted ms-4 mb-1 d-block">
+            Students can see questions and answers immediately after completing the assessment
+          </Form.Text>
+        )}
 
         <Form.Check
           type="radio"
@@ -93,9 +97,11 @@ function QuestionVisibilityInput({
             }
           }}
         />
-        <Form.Text className="text-muted ms-4 mb-1 d-block">
-          Questions will be visible between these dates, hidden before and after
-        </Form.Text>
+        {hideQuestionsMode === 'hide_questions_between_dates' && (
+          <Form.Text className="text-muted ms-4 mb-1 d-block">
+            Questions will be visible between these dates, hidden before and after
+          </Form.Text>
+        )}
         {hideQuestionsMode === 'hide_questions_between_dates' && (
           <div className="ms-4 mt-2">
             <Row className="mb-2 gy-3">
@@ -147,9 +153,11 @@ function QuestionVisibilityInput({
             if (currentTarget.checked) onChange({ hideQuestions: true, showAgainDate: '' });
           }}
         />
-        <Form.Text className="text-muted ms-4 mb-1 d-block">
-          Questions will be hidden after completion and become visible on this date
-        </Form.Text>
+        {hideQuestionsMode === 'hide_questions_until_date' && (
+          <Form.Text className="text-muted ms-4 mb-1 d-block">
+            Questions will be hidden after completion and become visible on this date
+          </Form.Text>
+        )}
         {hideQuestionsMode === 'hide_questions_until_date' && (
           <div className="ms-4 mt-2">
             <Form.Control
@@ -192,9 +200,11 @@ function ScoreVisibilityInput({
             if (currentTarget.checked) onChange({ hideScore: false });
           }}
         />
-        <Form.Text className="text-muted ms-4 mb-1 d-block">
-          Students can see their score immediately after completing the assessment
-        </Form.Text>
+        {hideScoreMode === 'show_score' && (
+          <Form.Text className="text-muted ms-4 mb-1 d-block">
+            Students can see their score immediately after completing the assessment
+          </Form.Text>
+        )}
 
         <Form.Check
           type="radio"
@@ -206,9 +216,11 @@ function ScoreVisibilityInput({
             if (currentTarget.checked) onChange({ hideScore: true });
           }}
         />
-        <Form.Text className="text-muted ms-4 mb-1 d-block">
-          Score will never be visible after completion
-        </Form.Text>
+        {hideScoreMode === 'hide_score_forever' && (
+          <Form.Text className="text-muted ms-4 mb-1 d-block">
+            Score will never be visible after completion
+          </Form.Text>
+        )}
 
         <Form.Check
           type="radio"
@@ -220,9 +232,11 @@ function ScoreVisibilityInput({
             if (currentTarget.checked) onChange({ hideScore: true, showAgainDate: '' });
           }}
         />
-        <Form.Text className="text-muted ms-4 mb-1 d-block">
-          Score will be hidden after completion and become visible again on this date
-        </Form.Text>
+        {hideScoreMode === 'hide_score_until_date' && (
+          <Form.Text className="text-muted ms-4 mb-1 d-block">
+            Score will be hidden after completion and become visible again on this date
+          </Form.Text>
+        )}
         {hideScoreMode === 'hide_score_until_date' && (
           <div className="ms-4 mt-2">
             <Form.Control
