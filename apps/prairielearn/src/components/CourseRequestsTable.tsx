@@ -15,6 +15,14 @@ import { type Timezone } from '../lib/timezone.shared.js';
 import { useTRPC } from '../trpc/administrator/context.js';
 import type { AdminCourseRequestError } from '../trpc/administrator/course-requests.js';
 
+import {
+  AdministratorCourseFormFields,
+  type CourseFormFieldValues,
+  buildRepoShortName,
+  useInstitutionPrefix,
+} from './AdminstratorCourseFormFields.js';
+import { JobStatus } from './JobStatus.js';
+
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -23,14 +31,6 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
   }, [value, delayMs]);
   return debounced;
 }
-
-import {
-  AdministratorCourseFormFields,
-  type CourseFormFieldValues,
-  buildRepoShortName,
-  useInstitutionPrefix,
-} from './AdminstratorCourseFormFields.js';
-import { JobStatus } from './JobStatus.js';
 
 interface CourseRequestApproveFormData extends CourseFormFieldValues {
   github_user: string;
