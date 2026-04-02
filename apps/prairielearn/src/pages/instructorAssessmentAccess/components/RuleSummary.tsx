@@ -456,7 +456,7 @@ export function RuleSummaryCard({
   const overrideRule = !isMainRule ? (rule as OverrideData) : null;
 
   const summaryItems = isMainRule ? generateRuleSummary(rule, 'compact') : [];
-  const dateTableRows = isMainRule ? generateDateTableRows(rule, displayTimezone, 'compact') : [];
+  const dateTableRows = isMainRule ? generateDateTableRows(rule, displayTimezone) : [];
   const overrideFieldItems = overrideRule
     ? generateOverrideFieldItems(overrideRule, displayTimezone)
     : [];
