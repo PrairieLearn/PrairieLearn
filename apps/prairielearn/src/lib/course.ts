@@ -262,3 +262,25 @@ export async function checkCoursePathExists(path: string, excludeCourseId?: stri
   );
   return result;
 }
+
+const ConflictingCourseSchema = z.object({
+  id: IdSchema,
+  short_name: z.string(),
+  title: z.string(),
+});
+export type ConflictingCourse = z.infer<typeof ConflictingCourseSchema>;
+
+export async function findCourseByRepositoryName(
+  repoName: string,
+): Promise<ConflictingCourse | null> {
+  const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
+  return await sqldb.queryOptionalRow(
+    sql.find_by_course_request_repository_name,
+    { repoName: escapedRepoName },
+    ConflictingCourseSchema,
+  );
+}
+
+export async function findCourseByPath(path: string): Promise<ConflictingCourse | null> {
+  return await sqldb.queryOptionalRow(sql.find_by_course_path, { path }, ConflictingCourseSchema);
+}

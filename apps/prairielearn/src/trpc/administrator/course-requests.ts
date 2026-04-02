@@ -10,12 +10,16 @@ import {
 import {
   createCourseFromRequest,
   denyCourseRequest,
-  findSimilarCourses,
   selectCourseRequestById,
   selectInstitutionPrefix,
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
-import { checkCoursePathExists, checkCourseRepositoryExists } from '../../lib/course.js';
+import {
+  checkCoursePathExists,
+  checkCourseRepositoryExists,
+  findCourseByPath,
+  findCourseByRepositoryName,
+} from '../../lib/course.js';
 import { checkGithubRepositoryExists } from '../../lib/github.js';
 
 import { normalizeCoursePathInput } from './course-path.js';
@@ -178,13 +182,6 @@ const suggestInstitutionPrefixProcedure = t.procedure
     });
   });
 
-const findSimilarCoursesProcedure = t.procedure
-  .use(requireAdministrator)
-  .input(z.object({ shortName: z.string().min(1) }))
-  .query(async ({ input }) => {
-    return await findSimilarCourses({ shortName: input.shortName });
-  });
-
 const checkConflictsProcedure = t.procedure
   .use(requireAdministrator)
   .input(
@@ -195,19 +192,18 @@ const checkConflictsProcedure = t.procedure
   )
   .query(async ({ input }) => {
     const normalizedPath = normalizeCoursePathInput(input.path);
-    const [repoExistsInDb, repoExistsOnGithub, pathExists] = await Promise.all([
-      checkCourseRepositoryExists(input.repoShortName),
+    const [repoCourse, repoExistsOnGithub, pathCourse] = await Promise.all([
+      findCourseByRepositoryName(input.repoShortName),
       checkGithubRepositoryExists(input.repoShortName),
-      checkCoursePathExists(normalizedPath),
+      findCourseByPath(normalizedPath),
     ]);
-    return { repoExistsInDb, repoExistsOnGithub, pathExists };
+    return { repoCourse, repoExistsOnGithub, pathCourse };
   });
 
 export const administratorCourseRequestsRouter = t.router({
   checkInstructorLegitimacy: checkInstructorLegitimacyProcedure,
   selectInstitutionPrefix: selectInstitutionPrefixProcedure,
   suggestInstitutionPrefix: suggestInstitutionPrefixProcedure,
-  findSimilarCourses: findSimilarCoursesProcedure,
   checkConflicts: checkConflictsProcedure,
   deny,
   updateNote,

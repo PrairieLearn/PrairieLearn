@@ -10,7 +10,7 @@ import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 import { getAppError } from '../lib/client/errors.js';
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
 import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
-import type { CourseRequestRow, SimilarCourse } from '../lib/course-request.js';
+import type { CourseRequestRow } from '../lib/course-request.js';
 import { type Timezone } from '../lib/timezone.shared.js';
 import { useTRPC } from '../trpc/administrator/context.js';
 import type { AdminCourseRequestError } from '../trpc/administrator/course-requests.js';
@@ -377,20 +377,11 @@ function CourseRequestApproveModalContent({
   const institutionId = methods.watch('institution_id');
   const prefixState = useInstitutionPrefix(institutionId, institutions);
 
-  const shortName = methods.watch('short_name');
   const repositoryShortName = methods.watch('repository_short_name');
   const coursePath = methods.watch('path');
 
-  const debouncedShortName = useDebouncedValue(shortName, 500);
   const debouncedRepoShortName = useDebouncedValue(repositoryShortName, 500);
   const debouncedPath = useDebouncedValue(coursePath, 500);
-
-  const similarCoursesQuery = useQuery({
-    ...trpc.courseRequests.findSimilarCourses.queryOptions({
-      shortName: debouncedShortName,
-    }),
-    enabled: debouncedShortName.trim().length > 0,
-  });
 
   const conflictsQuery = useQuery({
     ...trpc.courseRequests.checkConflicts.queryOptions({
@@ -401,8 +392,11 @@ function CourseRequestApproveModalContent({
   });
 
   const conflicts = conflictsQuery.data;
-  const hasHardBlockers =
-    conflicts?.repoExistsInDb || conflicts?.repoExistsOnGithub || conflicts?.pathExists;
+  const hasHardBlockers = !!(
+    conflicts?.repoCourse ||
+    conflicts?.repoExistsOnGithub ||
+    conflicts?.pathCourse
+  );
 
   const onSubmit = (data: CourseRequestApproveFormData) => {
     mutation.mutate(
@@ -579,7 +573,6 @@ function CourseRequestApproveModalContent({
               </div>
             </div>
           </div>
-          <SimilarCoursesAlert courses={similarCoursesQuery.data ?? []} urlPrefix={urlPrefix} />
           <AdministratorCourseFormFields
             institutions={institutions}
             availableTimezones={availableTimezones}
@@ -589,7 +582,7 @@ function CourseRequestApproveModalContent({
             aiSecretsConfigured={aiSecretsConfigured}
             autoFilledInstitutionId={autoFilledInstitutionId}
           />
-          <ConflictsAlert conflicts={conflicts} />
+          <ConflictsAlert conflicts={conflicts} urlPrefix={urlPrefix} />
           <div className="mb-3">
             <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
               GitHub username
@@ -629,65 +622,23 @@ function CourseRequestApproveModalContent({
   );
 }
 
-function SimilarCoursesAlert({
-  courses,
-  urlPrefix,
-}: {
-  courses: SimilarCourse[];
-  urlPrefix: string;
-}) {
-  if (courses.length === 0) return null;
-
-  return (
-    <Alert variant="warning" className="mb-3">
-      <Alert.Heading as="h6" className="mb-1">
-        <i className="fa fa-exclamation-triangle" aria-hidden="true" /> Existing courses with
-        matching short name
-      </Alert.Heading>
-      <small>Consider adding the requester as staff on an existing course instead.</small>
-      <ul className="mb-0 mt-2 small">
-        {courses.map((course) => (
-          <li key={course.id}>
-            <a href={`${urlPrefix}/course/${course.id}`} target="_blank" rel="noreferrer">
-              {course.short_name}: {course.title}
-            </a>{' '}
-            ({course.institution_short_name})
-            {course.owners.length > 0 && (
-              <span className="text-muted">
-                {' '}
-                &mdash; Owners: {course.owners.map((o) => o.uid).join(', ')}
-              </span>
-            )}
-          </li>
-        ))}
-      </ul>
-    </Alert>
-  );
-}
-
 function ConflictsAlert({
   conflicts,
+  urlPrefix,
 }: {
   conflicts:
-    | { repoExistsInDb: boolean; repoExistsOnGithub: boolean; pathExists: boolean }
+    | {
+        repoCourse: { id: string; short_name: string; title: string } | null;
+        repoExistsOnGithub: boolean;
+        pathCourse: { id: string; short_name: string; title: string } | null;
+      }
     | undefined;
+  urlPrefix: string;
 }) {
   if (!conflicts) return null;
 
-  const messages: string[] = [];
-  if (conflicts.repoExistsInDb) {
-    messages.push('A course with this repository name already exists in the database.');
-  }
-  if (conflicts.repoExistsOnGithub) {
-    messages.push(
-      'A GitHub repository with this name already exists. This can happen if a repository was previously renamed.',
-    );
-  }
-  if (conflicts.pathExists) {
-    messages.push('A course with this path already exists.');
-  }
-
-  if (messages.length === 0) return null;
+  const hasConflicts = conflicts.repoCourse || conflicts.repoExistsOnGithub || conflicts.pathCourse;
+  if (!hasConflicts) return null;
 
   return (
     <Alert variant="danger" className="mb-3">
@@ -695,9 +646,36 @@ function ConflictsAlert({
         <i className="fa fa-times-circle" aria-hidden="true" /> Conflicts detected
       </Alert.Heading>
       <ul className="mb-0 small">
-        {messages.map((msg) => (
-          <li key={msg}>{msg}</li>
-        ))}
+        {conflicts.repoCourse && (
+          <li>
+            A course with this repository name already exists:{' '}
+            <a
+              href={`${urlPrefix}/course/${conflicts.repoCourse.id}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {conflicts.repoCourse.short_name}: {conflicts.repoCourse.title}
+            </a>
+          </li>
+        )}
+        {conflicts.repoExistsOnGithub && (
+          <li>
+            A GitHub repository with this name already exists. This can happen if a repository was
+            previously renamed.
+          </li>
+        )}
+        {conflicts.pathCourse && (
+          <li>
+            A course with this path already exists:{' '}
+            <a
+              href={`${urlPrefix}/course/${conflicts.pathCourse.id}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {conflicts.pathCourse.short_name}: {conflicts.pathCourse.title}
+            </a>
+          </li>
+        )}
       </ul>
     </Alert>
   );
