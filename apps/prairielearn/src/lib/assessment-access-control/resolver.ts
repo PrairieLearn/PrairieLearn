@@ -84,7 +84,9 @@ export interface AccessControlResolverResult {
    * not accessible. This happens when `listBeforeRelease` is set on the rule
    * AND either the current date is before the release date, there is no
    * release date configured, or the assessment is PT-gated and the student
-   * lacks access. Distinct from the raw `listBeforeRelease` config input.
+   * lacks access (but only while the assessment is still open — closed
+   * assessments are not shown as "before release"). Distinct from the raw
+   * `listBeforeRelease` config input.
    */
   showBeforeRelease: boolean;
 }
@@ -508,32 +510,46 @@ export function resolveAccessControl(
   let examAccessEnd: Date | null = null;
 
   if (hasPrairieTestExams) {
+    // When the assessment is past its close date (has a release date, is past
+    // release, and is no longer active), skip the PT access check so the normal
+    // closed-assessment behavior applies instead of showing "Not yet open".
+    const assessmentClosed =
+      !!effectiveRule.dateControl?.releaseDate &&
+      !creditResult.beforeRelease &&
+      !creditResult.active;
+
     // Exam-only rule: must be in exam mode with PrairieTest reason
     if (authzMode !== 'Exam') {
-      if (effectiveRule.listBeforeRelease) {
-        return { ...UNAUTHORIZED_RESULT, authorized: true, showBeforeRelease: true };
+      if (!assessmentClosed) {
+        if (effectiveRule.listBeforeRelease) {
+          return { ...UNAUTHORIZED_RESULT, showBeforeRelease: true };
+        }
+        return { ...UNAUTHORIZED_RESULT };
       }
-      return { ...UNAUTHORIZED_RESULT };
-    }
+      // Assessment is closed — fall through to normal result computation.
+    } else {
+      const matchedExam = prairieTestExams.find((exam) =>
+        prairieTestReservations.some((r) => r.examUuid === exam.uuid),
+      );
+      if (!matchedExam) {
+        if (!assessmentClosed) {
+          if (effectiveRule.listBeforeRelease) {
+            return { ...UNAUTHORIZED_RESULT, showBeforeRelease: true };
+          }
+          return { ...UNAUTHORIZED_RESULT };
+        }
+        // Assessment is closed — fall through to normal result computation.
+      } else {
+        const matchingReservation = prairieTestReservations.find(
+          (r) => r.examUuid === matchedExam.uuid,
+        )!;
+        examAccessEnd = matchingReservation.accessEnd;
 
-    const matchedExam = prairieTestExams.find((exam) =>
-      prairieTestReservations.some((r) => r.examUuid === exam.uuid),
-    );
-    if (!matchedExam) {
-      if (effectiveRule.listBeforeRelease) {
-        return { ...UNAUTHORIZED_RESULT, authorized: true, showBeforeRelease: true };
+        // PrairieTest controls access — always grant full credit.
+        // readOnly exams set active=false so students can view but not submit.
+        creditResult = { ...creditResult, credit: 100, active: !matchedExam.readOnly };
       }
-      return { ...UNAUTHORIZED_RESULT };
     }
-
-    const matchingReservation = prairieTestReservations.find(
-      (r) => r.examUuid === matchedExam.uuid,
-    )!;
-    examAccessEnd = matchingReservation.accessEnd;
-
-    // PrairieTest controls access — always grant full credit.
-    // readOnly exams set active=false so students can view but not submit.
-    creditResult = { ...creditResult, credit: 100, active: !matchedExam.readOnly };
   } else if (authzMode === 'Exam') {
     // No PrairieTest exams configured but student is in PrairieTest exam mode
     return { ...UNAUTHORIZED_RESULT };
