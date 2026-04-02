@@ -1,69 +1,102 @@
 import path from 'node:path';
 
 import fs from 'fs-extra';
-import * as tmp from 'tmp-promise';
-import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
+import { withDir } from 'tmp-promise';
+import { assert, describe, expect, it } from 'vitest';
 
 import { getAssessmentToolsConfig } from './editors.js';
 
 describe('getAssessmentToolsConfig', () => {
-  let tmpDir: tmp.DirectoryResult;
-
-  beforeAll(async () => {
-    tmpDir = await tmp.dir({ unsafeCleanup: true });
-  });
-
-  afterAll(async () => {
-    await tmpDir.cleanup();
-  });
-
   it('returns all tools disabled when file does not exist', async () => {
-    const result = await getAssessmentToolsConfig(path.join(tmpDir.path, 'nonexistent.json'));
-    assert.deepEqual(result, [{ name: 'calculator', label: 'Calculator', enabled: false }]);
+    await withDir(
+      async ({ path: dir }) => {
+        const result = await getAssessmentToolsConfig(path.join(dir, 'nonexistent.json'));
+        assert.deepEqual(result, [{ name: 'calculator', label: 'Calculator', enabled: false }]);
+      },
+      { unsafeCleanup: true },
+    );
   });
 
   it('returns all tools disabled when file has no tools key', async () => {
-    const filePath = path.join(tmpDir.path, 'no-tools.json');
-    await fs.writeJson(filePath, { uuid: 'test', type: 'Exam' });
+    await withDir(
+      async ({ path: dir }) => {
+        const filePath = path.join(dir, 'no-tools.json');
+        await fs.writeJson(filePath, { uuid: 'test', type: 'Exam' });
 
-    const result = await getAssessmentToolsConfig(filePath);
-    assert.deepEqual(result, [{ name: 'calculator', label: 'Calculator', enabled: false }]);
+        const result = await getAssessmentToolsConfig(filePath);
+        assert.deepEqual(result, [{ name: 'calculator', label: 'Calculator', enabled: false }]);
+      },
+      { unsafeCleanup: true },
+    );
   });
 
   it('returns enabled tools from config', async () => {
-    const filePath = path.join(tmpDir.path, 'with-tools.json');
-    await fs.writeJson(filePath, {
-      uuid: 'test',
-      type: 'Exam',
-      tools: { calculator: { enabled: true } },
-    });
+    await withDir(
+      async ({ path: dir }) => {
+        const filePath = path.join(dir, 'with-tools.json');
+        await fs.writeJson(filePath, {
+          uuid: 'test',
+          type: 'Exam',
+          tools: { calculator: { enabled: true } },
+        });
 
-    const result = await getAssessmentToolsConfig(filePath);
-    assert.deepEqual(result, [{ name: 'calculator', label: 'Calculator', enabled: true }]);
+        const result = await getAssessmentToolsConfig(filePath);
+        assert.deepEqual(result, [{ name: 'calculator', label: 'Calculator', enabled: true }]);
+      },
+      { unsafeCleanup: true },
+    );
   });
 
   it('returns disabled tools from config', async () => {
-    const filePath = path.join(tmpDir.path, 'disabled-tools.json');
-    await fs.writeJson(filePath, {
-      uuid: 'test',
-      type: 'Exam',
-      tools: { calculator: { enabled: false } },
-    });
+    await withDir(
+      async ({ path: dir }) => {
+        const filePath = path.join(dir, 'disabled-tools.json');
+        await fs.writeJson(filePath, {
+          uuid: 'test',
+          type: 'Exam',
+          tools: { calculator: { enabled: false } },
+        });
 
-    const result = await getAssessmentToolsConfig(filePath);
-    assert.deepEqual(result, [{ name: 'calculator', label: 'Calculator', enabled: false }]);
+        const result = await getAssessmentToolsConfig(filePath);
+        assert.deepEqual(result, [{ name: 'calculator', label: 'Calculator', enabled: false }]);
+      },
+      { unsafeCleanup: true },
+    );
   });
 
   it('returns tools disabled when tools key is empty object', async () => {
-    const filePath = path.join(tmpDir.path, 'empty-tools.json');
-    await fs.writeJson(filePath, { uuid: 'test', type: 'Exam', tools: {} });
+    await withDir(
+      async ({ path: dir }) => {
+        const filePath = path.join(dir, 'empty-tools.json');
+        await fs.writeJson(filePath, { uuid: 'test', type: 'Exam', tools: {} });
 
-    const result = await getAssessmentToolsConfig(filePath);
-    assert.deepEqual(result, [{ name: 'calculator', label: 'Calculator', enabled: false }]);
+        const result = await getAssessmentToolsConfig(filePath);
+        assert.deepEqual(result, [{ name: 'calculator', label: 'Calculator', enabled: false }]);
+      },
+      { unsafeCleanup: true },
+    );
+  });
+
+  it('returns all tools disabled when file contains malformed JSON', async () => {
+    await withDir(
+      async ({ path: dir }) => {
+        const filePath = path.join(dir, 'malformed.json');
+        await fs.writeFile(filePath, '{ invalid json !!!');
+
+        const result = await getAssessmentToolsConfig(filePath);
+        assert.deepEqual(result, [{ name: 'calculator', label: 'Calculator', enabled: false }]);
+      },
+      { unsafeCleanup: true },
+    );
   });
 
   it('throws on non-ENOENT errors', async () => {
-    // Use a directory path instead of a file to trigger a non-ENOENT read error
-    await expect(getAssessmentToolsConfig(tmpDir.path)).rejects.toThrow();
+    await withDir(
+      async ({ path: dir }) => {
+        // Use a directory path instead of a file to trigger a non-ENOENT read error
+        await expect(getAssessmentToolsConfig(dir)).rejects.toThrow();
+      },
+      { unsafeCleanup: true },
+    );
   });
 });
