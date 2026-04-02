@@ -207,6 +207,10 @@ router.post(
           assessmentInfo.tools[tool] = { ...assessmentInfo.tools[tool], enabled };
         }
       }
+      // If no tools are configured, delete the tools property to avoid storing an empty object.
+      if (Object.keys(assessmentInfo.tools).length === 0) {
+        delete assessmentInfo.tools;
+      }
 
       if (res.locals.assessment.type === 'Exam') {
         assessmentInfo.multipleInstance = propertyValueWithDefault(

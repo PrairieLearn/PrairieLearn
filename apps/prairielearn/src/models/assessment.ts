@@ -137,6 +137,7 @@ export async function selectZoneToolOverrides({ assessment_id }: { assessment_id
 export async function selectAssessmentToolDefaults({ assessment_id }: { assessment_id: string }) {
   return queryRows(
     sql.select_assessment_tools,
+    // assessment_id and zone_id are exclusive, so we can use null for zone_id to get assessment-level tools.
     { assessment_id, zone_id: null },
     AssessmentToolSchema,
   );

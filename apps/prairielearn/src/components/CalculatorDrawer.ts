@@ -149,6 +149,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
               </div>
               <div
                 class="history-row history-output d-flex align-items-center gap-2 text-body-secondary ps-4 pe-2 small"
+                data-testid="history-output"
               >
                 <math-field
                   theme="light"
