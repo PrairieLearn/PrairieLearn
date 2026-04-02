@@ -123,4 +123,48 @@ describe('checkSignedTokenPrefix', () => {
     assert.isFalse(checkSignedTokenPrefix('invalid', TEST_DATA, SECRET_KEY));
     assert.isFalse(checkSignedTokenPrefix('', TEST_DATA, SECRET_KEY));
   });
+
+  it('validates multi-prefix token against any matching prefix', () => {
+    const token = generatePrefixCsrfToken({ urls: ['/a', '/b'], authn_user_id: '123' }, SECRET_KEY);
+
+    assert.isTrue(checkSignedTokenPrefix(token, { url: '/a', authn_user_id: '123' }, SECRET_KEY));
+    assert.isTrue(
+      checkSignedTokenPrefix(token, { url: '/a/foo', authn_user_id: '123' }, SECRET_KEY),
+    );
+    assert.isTrue(checkSignedTokenPrefix(token, { url: '/b', authn_user_id: '123' }, SECRET_KEY));
+    assert.isTrue(
+      checkSignedTokenPrefix(token, { url: '/b/bar', authn_user_id: '123' }, SECRET_KEY),
+    );
+  });
+
+  it('rejects multi-prefix token when request URL matches no prefix', () => {
+    const token = generatePrefixCsrfToken({ urls: ['/a', '/b'], authn_user_id: '123' }, SECRET_KEY);
+
+    assert.isFalse(
+      checkSignedTokenPrefix(token, { url: '/c/foo', authn_user_id: '123' }, SECRET_KEY),
+    );
+    // Partial match without slash boundary is rejected.
+    assert.isFalse(
+      checkSignedTokenPrefix(token, { url: '/abc', authn_user_id: '123' }, SECRET_KEY),
+    );
+  });
+
+  it('rejects multi-prefix token when user ID does not match', () => {
+    const token = generatePrefixCsrfToken({ urls: ['/a', '/b'], authn_user_id: '123' }, SECRET_KEY);
+
+    assert.isFalse(
+      checkSignedTokenPrefix(token, { url: '/a/foo', authn_user_id: '456' }, SECRET_KEY),
+    );
+  });
+
+  it('validates single-element urls array', () => {
+    const token = generatePrefixCsrfToken({ urls: ['/only'], authn_user_id: '123' }, SECRET_KEY);
+
+    assert.isTrue(
+      checkSignedTokenPrefix(token, { url: '/only/path', authn_user_id: '123' }, SECRET_KEY),
+    );
+    assert.isFalse(
+      checkSignedTokenPrefix(token, { url: '/other', authn_user_id: '123' }, SECRET_KEY),
+    );
+  });
 });

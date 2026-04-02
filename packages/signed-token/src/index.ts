@@ -123,13 +123,16 @@ export function checkSignedToken(
 }
 
 /**
- * Generates a CSRF token that is valid for a URL prefix instead of an exact URL.
+ * Generates a CSRF token that is valid for one or more URL prefixes.
  * This is useful for tRPC and similar APIs where a single token should be valid
  * for all sub-routes under a prefix (e.g., `/foo/bar/trpc` is valid for
  * `/foo/bar/trpc/getUser` and `/foo/bar/trpc/updateUser`).
+ *
+ * When multiple prefixes are needed (e.g., a tRPC scope split across `/trpc`
+ * and `/trpc-chunk` for different server targets), pass `urls` instead of `url`.
  */
 export function generatePrefixCsrfToken(
-  data: { url: string; authn_user_id: string },
+  data: { url: string; authn_user_id: string } | { urls: string[]; authn_user_id: string },
   secretKey: string,
 ) {
   return generateSignedToken({ ...data, type: 'prefix' }, secretKey);
@@ -171,15 +174,20 @@ export function checkSignedTokenPrefix(
     return false;
   }
 
-  // Verify the request URL starts with the token's prefix URL.
-  // We treat the prefix as implicitly ending with a trailing slash, so
+  // Verify the request URL starts with one of the token's prefix URLs.
+  // We treat each prefix as implicitly ending with a trailing slash, so
   // `/test` matches `/test`, `/test/`, and `/test/nested`, but NOT `/testy`.
-  const prefixUrl = tokenData.url;
+  const prefixUrls: string[] = tokenData.urls ?? [tokenData.url];
   const requestUrl = requestData.url;
-  const normalizedPrefix = prefixUrl.endsWith('/') ? prefixUrl : prefixUrl + '/';
-  if (requestUrl !== prefixUrl && !requestUrl.startsWith(normalizedPrefix)) {
+
+  const matched = prefixUrls.some((prefixUrl) => {
+    const normalizedPrefix = prefixUrl.endsWith('/') ? prefixUrl : prefixUrl + '/';
+    return requestUrl === prefixUrl || requestUrl.startsWith(normalizedPrefix);
+  });
+
+  if (!matched) {
     debug(
-      `checkSignedTokenPrefix(): FAIL - URL prefix mismatch: ${requestUrl} does not start with ${prefixUrl}`,
+      `checkSignedTokenPrefix(): FAIL - URL prefix mismatch: ${requestUrl} does not match any of [${prefixUrls.join(', ')}]`,
     );
     return false;
   }
