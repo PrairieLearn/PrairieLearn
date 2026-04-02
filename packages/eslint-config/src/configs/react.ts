@@ -11,6 +11,9 @@ const eslintReactConfig = eslintReact.configs['recommended-typescript'] as {
   settings?: TSESLint.FlatConfig.Settings;
 };
 
+const disableConflictReactHooksConfig =
+  eslintReact.configs['disable-conflict-eslint-plugin-react-hooks'];
+
 /**
  * React, React hooks, accessibility, and related rules.
  */
@@ -25,9 +28,8 @@ export function reactConfig(): TSESLint.FlatConfig.ConfigArray {
       },
 
       rules: {
-        // React hooks
-        'react-hooks/exhaustive-deps': 'error',
-        'react-hooks/rules-of-hooks': 'error',
+        // https://www.eslint-react.xyz/docs/migrating-from-eslint-plugin-react-hooks#migration-preset
+        ...disableConflictReactHooksConfig.rules,
 
         // react-you-might-not-need-an-effect rules as errors
         ...Object.fromEntries(

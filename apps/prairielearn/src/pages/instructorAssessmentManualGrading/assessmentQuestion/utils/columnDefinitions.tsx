@@ -90,7 +90,10 @@ export function createColumns({
   onEditPointsConflict,
   scrollRef,
 }: CreateColumnsParams) {
-  const renderPointsCell = (row: InstanceQuestionRow, field: 'manual_points' | 'auto_points' | 'points') => (
+  const renderPointsCell = (
+    row: InstanceQuestionRow,
+    field: 'manual_points' | 'auto_points' | 'points',
+  ) => (
     <PointsWithEditButton
       row={row}
       field={field}
