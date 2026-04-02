@@ -30,8 +30,8 @@ const defaultMainRule: MainRuleData = {
 const baseOverride: OverrideData = {
   trackingId: 'o-base',
   appliesTo: {
-    targetType: 'individual',
-    individuals: [{ uid: 'a@b.com', name: 'A' }],
+    targetType: 'enrollment',
+    enrollments: [{ enrollmentId: 'e-0', uid: 'a@b.com', name: 'A' }],
     studentLabels: [],
   },
   overriddenFields: [],
@@ -93,7 +93,7 @@ describe('formDataToJson', () => {
       trackingId: 'o-5',
       appliesTo: {
         targetType: 'student_label',
-        individuals: [],
+        enrollments: [],
         studentLabels: [
           { studentLabelId: '1', name: 'label-a' },
           { studentLabelId: '2', name: 'label-b' },
@@ -104,23 +104,23 @@ describe('formDataToJson', () => {
     const overrideJson = formDataToJson(buildFormData(override), TEST_TIMEZONE)[1];
     expect(overrideJson.labels).toEqual(['label-a', 'label-b']);
     expect(overrideJson.ruleType).toBeUndefined();
-    expect(overrideJson.individuals).toBeUndefined();
+    expect(overrideJson.enrollments).toBeUndefined();
   });
 
-  it('serializes individual appliesTo with ruleType and individuals', () => {
+  it('serializes enrollment appliesTo with ruleType and enrollments', () => {
     const override: OverrideData = {
       ...baseOverride,
       trackingId: 'o-6',
       appliesTo: {
-        targetType: 'individual',
-        individuals: [{ enrollmentId: 'e-1', uid: 'user@test.com', name: 'Test User' }],
+        targetType: 'enrollment',
+        enrollments: [{ enrollmentId: 'e-1', uid: 'user@test.com', name: 'Test User' }],
         studentLabels: [],
       },
     };
 
     const overrideJson = formDataToJson(buildFormData(override), TEST_TIMEZONE)[1];
     expect(overrideJson.ruleType).toBe('enrollment');
-    expect(overrideJson.individuals).toEqual([
+    expect(overrideJson.enrollments).toEqual([
       { enrollmentId: 'e-1', uid: 'user@test.com', name: 'Test User' },
     ]);
     expect(overrideJson.labels).toBeUndefined();
@@ -160,8 +160,8 @@ describe('formDataToJson', () => {
           ...baseOverride,
           trackingId: 'override-1',
           appliesTo: {
-            targetType: 'individual',
-            individuals: [{ uid: 'user@example.com', name: 'Test User' }],
+            targetType: 'enrollment',
+            enrollments: [{ enrollmentId: 'e-2', uid: 'user@example.com', name: 'Test User' }],
             studentLabels: [],
           },
           overriddenFields: [
