@@ -1,10 +1,11 @@
 /* #region Math field overrides */
 
-math-field::part(menu-toggle) {
-  display: none;
-}
-
-math-field::part(virtual-keyboard-toggle) {
+math-field.pl-calculator-input::part(menu-toggle),
+math-field.pl-calculator-output::part(menu-toggle),
+math-field.history-text::part(menu-toggle),
+math-field.pl-calculator-input::part(virtual-keyboard-toggle),
+math-field.pl-calculator-output::part(virtual-keyboard-toggle),
+math-field.history-text::part(virtual-keyboard-toggle) {
   display: none;
 }
 
