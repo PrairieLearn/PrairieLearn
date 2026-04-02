@@ -35,7 +35,7 @@ export function GradingPromptInput({
         ref={textareaRef}
         className="form-control"
         rows={2}
-        placeholder={disabled ? 'Generate a rubric first...' : 'Ask the AI to edit the rubric...'}
+        placeholder="Message the AI assistant..."
         value={value}
         disabled={disabled || isGenerating}
         onChange={(e) => onChange(e.target.value)}

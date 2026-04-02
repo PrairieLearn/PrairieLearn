@@ -31,6 +31,7 @@ import {
 } from './components/GradingConflictModal.js';
 import { GradingPromptInput } from './components/GradingPromptInput.js';
 import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
+import { MemoizedMarkdown } from './components/MemoizedMarkdown.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
 
 interface AssessmentQuestionManualGradingProps {
@@ -617,8 +618,8 @@ function MessageParts({ parts }: { parts: UIMessage['parts'] }) {
         } else if (part.type === 'text') {
           if (!part.text) return null;
           return (
-            <div key={key} style={{ whiteSpace: 'pre-wrap' }}>
-              {part.text}
+            <div key={key} className="markdown-body">
+              <MemoizedMarkdown content={part.text} />
             </div>
           );
         } else if (part.type === 'step-start') {
@@ -1162,7 +1163,7 @@ function AssessmentQuestionManualGradingInner({
             )}
             <GradingPromptInput
               value={chatInput}
-              disabled={!hasGeneratedRubric}
+              disabled={false}
               isGenerating={isGenerating}
               onChange={setChatInput}
               onSubmit={(text) => {
