@@ -74,7 +74,7 @@ function MainRuleSummaryContent({
   displayTimezone: string;
 }) {
   const summaryItems = generateRuleSummary(rule, 'compact');
-  const dateTableRows = generateDateTableRows(rule, displayTimezone, 'compact');
+  const dateTableRows = generateDateTableRows(rule, displayTimezone);
 
   return (
     <div>
@@ -100,7 +100,12 @@ function MainRuleSummaryContent({
       )}
 
       {dateTableRows.length === 0 && summaryItems.length === 0 && (
-        <p className="text-body-secondary mb-0">No specific settings configured</p>
+        <div
+          className="rounded text-center py-3 text-body-secondary"
+          style={{ border: '1px dashed var(--bs-border-color)' }}
+        >
+          No dates or deadlines configured.
+        </div>
       )}
     </div>
   );
@@ -151,7 +156,7 @@ export function AccessControlSummary({
     const newIndex = sortableIds.indexOf(String(over.id));
     if (oldIndex === -1 || newIndex === -1) return;
 
-    // Prevent reordering across override types (individual must stay before student_label)
+    // Prevent reordering across override types (enrollment must stay before student_label)
     if (overrides[oldIndex].appliesTo.targetType !== overrides[newIndex].appliesTo.targetType) {
       return;
     }
@@ -161,14 +166,14 @@ export function AccessControlSummary({
 
   return (
     <div>
-      <p className="text-muted">
-        The <strong>main rule</strong> defines default access settings for all students. Add{' '}
-        <strong>overrides</strong> below to customize settings for specific students or groups.
-      </p>
-
       <section className="mb-4">
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h5 className="mb-0">Main rule</h5>
+          <div>
+            <h5 className="mb-0">Defaults</h5>
+            <small className="text-body-secondary">
+              Access settings that apply to all students by default.
+            </small>
+          </div>
           <Button variant="outline-primary" size="sm" onClick={onEditMainRule}>
             <i className="bi bi-pencil me-1" /> Edit
           </Button>
@@ -189,17 +194,20 @@ export function AccessControlSummary({
 
       <section>
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h5 className="mb-0">Overrides</h5>
+          <div>
+            <h5 className="mb-0">Overrides</h5>
+            <small className="text-body-secondary">
+              Customize settings for specific students or groups. Fields not overridden are
+              inherited from the defaults.
+            </small>
+          </div>
           <Button variant="primary" size="sm" onClick={onAddOverride}>
             <i className="bi bi-plus-lg me-1" /> Add override
           </Button>
         </div>
 
         {overrides.length === 0 ? (
-          <p className="text-muted">
-            No overrides configured. Overrides allow you to customize access rules for specific
-            groups of students.
-          </p>
+          <p className="text-muted">No overrides configured.</p>
         ) : (
           <DndContext
             id={dndId}
@@ -209,17 +217,17 @@ export function AccessControlSummary({
           >
             <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
               {overrides.map((override, index) => {
-                const isFirstIndividual =
-                  index === 0 && override.appliesTo.targetType === 'individual';
+                const isFirstEnrollment =
+                  index === 0 && override.appliesTo.targetType === 'enrollment';
                 const isFirstLabel =
                   override.appliesTo.targetType === 'student_label' &&
                   (index === 0 || overrides[index - 1].appliesTo.targetType !== 'student_label');
 
                 return (
                   <Fragment key={sortableIds[index]}>
-                    {isFirstIndividual && (
+                    {isFirstEnrollment && (
                       <small className="text-muted fw-semibold d-block mb-2">
-                        Overrides for individual students
+                        Student-specific overrides
                       </small>
                     )}
                     {isFirstLabel && (
@@ -246,7 +254,7 @@ export function AccessControlSummary({
 
         <div className="rounded p-3 mt-3" style={{ backgroundColor: 'var(--bs-tertiary-bg)' }}>
           <p className="text-body-secondary small mb-0">
-            If a student matches multiple overrides, individual student overrides take priority over
+            If a student matches multiple overrides, student-specific overrides take priority over
             student label overrides. Within each section, overrides lower in the list take priority
             over those higher up.
           </p>

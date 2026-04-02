@@ -12,13 +12,13 @@ The modern access control system uses a structured `accessControl` array in `inf
 
 ## `accessControl` format
 
-The `accessControl` field is an array of rules in `infoAssessment.json`:
+The `accessControl` field is an array of entries in `infoAssessment.json`:
 
 ```json
 {
   "accessControl": [
     {
-      /* main rule — applies to all students, sets defaults */
+      /* defaults — applies to all students */
     },
     {
       /* override — targets specific students via labels */
@@ -30,8 +30,8 @@ The `accessControl` field is an array of rules in `infoAssessment.json`:
 }
 ```
 
-- The **first element** (index 0) is the **main rule**. It applies to all students and sets the default behavior for the assessment.
-- **Subsequent elements** are **overrides**. Each override targets specific students using [student labels](#student-labels-and-overrides) or individual enrollments (configured via the UI), and can change any subset of the main rule's fields except `listBeforeRelease`.
+- The **first element** (index 0) is the **defaults**. It applies to all students and sets the default behavior for the assessment.
+- **Subsequent elements** are **overrides**. Each override targets specific students using [student labels](#student-labels-and-overrides) or individual enrollments (configured via the UI), and can change any subset of the defaults' fields except `listBeforeRelease`.
 
 ### Full JSON skeleton
 
@@ -41,7 +41,6 @@ Below is a complete skeleton showing all available fields. All fields are option
 {
   "accessControl": [
     {
-      "name": "Main rule",
       "listBeforeRelease": false,
       "dateControl": {
         "releaseDate": "2025-01-15T00:00:01",
@@ -69,7 +68,6 @@ Below is a complete skeleton showing all available fields. All fields are option
       }
     },
     {
-      "name": "Extended time students",
       "labels": ["Extended time"],
       "dateControl": {
         "dueDate": "2025-02-22T23:59:59",
@@ -80,7 +78,7 @@ Below is a complete skeleton showing all available fields. All fields are option
 }
 ```
 
-## Main rule fields
+## Defaults fields
 
 ### `dateControl`
 
@@ -156,10 +154,9 @@ The same logic applies to `hideScore` / `showScoreAgainDate` (there is no "hide 
 
 ### Other fields
 
-| Field               | Type    | Default | Description                                                                                                                            |
-| ------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`              | string  |         | A descriptive name for the rule (for display in the UI).                                                                               |
-| `listBeforeRelease` | boolean | `false` | Main rule only. If `true`, the assessment title is shown on the Assessments page before the release date, but students cannot open it. |
+| Field               | Type    | Default | Description                                                                                                                                                      |
+| ------------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `listBeforeRelease` | boolean | `false` | Only valid on the first entry (defaults). If `true`, the assessment title is shown on the Assessments page before the release date, but students cannot open it. |
 
 ## Student labels and overrides
 
@@ -169,19 +166,19 @@ Student labels are groups of students defined at the course instance level (on t
 
 ### What are overrides?
 
-Overrides are rules after the main rule in the `accessControl` array. Each override targets specific students using the `labels` field (in JSON) or individual enrollments (configured via the UI). Overrides only set the fields they want to change — unset fields are inherited from the main rule.
+Overrides are entries after the defaults in the `accessControl` array. Each override targets specific students using the `labels` field (in JSON) or individual enrollments (configured via the UI). Overrides only set the fields they want to change — unset fields are inherited from the defaults.
 
 ### How overrides stack (the cascade)
 
 When a student accesses an assessment, the system resolves which rule applies using the following algorithm:
 
-1. **Start with the main rule** (the first element, which applies to everyone).
+1. **Start with the defaults** (the first element, which applies to everyone).
 2. **Find all matching overrides** for this student:
    - A label-based override matches if the student has _any_ of the listed labels.
    - An enrollment-based override matches if the student is specifically listed.
 3. **Sort matching overrides**: label-based overrides first, then enrollment-based overrides. Within the same type, overrides are processed in array order.
 4. **Cascade matching overrides together**: Process the matching overrides in order. Each subsequent override's explicitly-set fields replace the previous ones. Fields not set by a later override are kept from earlier ones.
-5. **Merge the cascaded result onto the main rule**: The cascaded override's fields replace the main rule's fields where set. Unset fields fall through to the main rule's values.
+5. **Merge the cascaded result onto the defaults**: The cascaded override's fields replace the defaults' fields where set. Unset fields fall through to the defaults' values.
 
 **Why enrollment overrides come last**: Enrollment-based overrides (targeting individual students) are more specific than label-based ones. By processing them last, they get final say — an individual student override always wins over a label-based one.
 
@@ -195,7 +192,7 @@ Not all fields behave the same way during cascading:
 | ---------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------- |
 | `dateControl.*` sub-fields   | Override replaces individual sub-fields; unset sub-fields inherit from main | Later override replaces; unset fields kept from earlier |
 | `afterComplete.*` sub-fields | Same as `dateControl`                                                       | Same as `dateControl`                                   |
-| `listBeforeRelease`          | Main rule only                                                              | Not applicable                                          |
+| `listBeforeRelease`          | Cannot be overridden                                                        | Not applicable                                          |
 
 ### Override examples
 
@@ -221,7 +218,7 @@ Not all fields behave the same way during cascading:
 ```
 
 - **All students**: due Feb 15.
-- **Students with "Extended time" label**: due Feb 22. The override replaces `dueDate` but inherits `releaseDate` from the main rule.
+- **Students with "Extended time" label**: due Feb 22. The override replaces `dueDate` but inherits `releaseDate` from the defaults.
 
 #### Example 2: Two label overrides stacking
 
@@ -253,9 +250,9 @@ Not all fields behave the same way during cascading:
 
 | Student                     | Due date | Duration | Explanation                                                                            |
 | --------------------------- | -------- | -------- | -------------------------------------------------------------------------------------- |
-| Default                     | Feb 15   | 60 min   | Main rule only                                                                         |
-| Section B only              | Feb 20   | 60 min   | Section B override replaces `dueDate`; `durationMinutes` inherited from main           |
-| Extended time only          | Feb 15   | 90 min   | Extended time override replaces `durationMinutes`; `dueDate` inherited from main       |
+| Default                     | Feb 15   | 60 min   | No overrides matched                                                                   |
+| Section B only              | Feb 20   | 60 min   | Section B override replaces `dueDate`; `durationMinutes` inherited from defaults       |
+| Extended time only          | Feb 15   | 90 min   | Extended time override replaces `durationMinutes`; `dueDate` inherited from defaults   |
 | Section B AND Extended time | Feb 20   | 90 min   | Both overrides cascade: Section B sets `dueDate`, Extended time sets `durationMinutes` |
 
 ## Examples
@@ -384,7 +381,7 @@ Students must be checked in via PrairieTest. Time limits and scheduling are mana
 }
 ```
 
-Students with the "Extended time" label get a later due date (Feb 22 instead of Feb 15) and more time (90 minutes instead of 60). All other settings — release date, `afterComplete` configuration — are inherited from the main rule.
+Students with the "Extended time" label get a later due date (Feb 22 instead of Feb 15) and more time (90 minutes instead of 60). All other settings — release date, `afterComplete` configuration — are inherited from the defaults.
 
 ## Migration from legacy `allowAccess`
 
