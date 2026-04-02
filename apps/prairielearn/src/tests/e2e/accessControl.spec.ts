@@ -46,7 +46,7 @@ async function navigateToAccessPage(page: Page, courseInstanceId: string, assess
 
 /** Returns the split-pane detail panel used for editing rules. */
 function getDetailPanel(page: Page): Locator {
-  return page.locator('#split-pane-detail');
+  return page.locator('#pl-ui-split-pane-detail');
 }
 
 /** Returns the currently visible modal dialog (e.g. delete confirmation). */

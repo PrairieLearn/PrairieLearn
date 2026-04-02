@@ -3,9 +3,8 @@ import { useState } from 'react';
 import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
-import { OverlayTrigger, useModalState } from '@prairielearn/ui';
+import { OverlayTrigger, SplitPane, useModalState } from '@prairielearn/ui';
 
-import { SplitPane } from '../../../components/SplitPane.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 
 import { AccessControlSummary } from './AccessControlSummary.js';
@@ -276,51 +275,55 @@ export function AccessControlForm({
       <Form style={{ height: '100%' }} onSubmit={handleSubmit(handleFormSubmit)}>
         <SplitPane
           forceOpen={selectedRule}
-          rightCollapsed={selectedRule == null ? true : undefined}
-          rightTitle={rightTitle}
-          rightHeaderAction={rightHeaderAction}
-          initialRightWidth={accessControlFormInitialRightWidth}
-          left={
-            <div className="split-pane__left-body p-3">
-              <AccessControlSummary
-                courseInstanceId={courseInstance.id}
-                displayTimezone={courseInstance.display_timezone}
-                getOverrideName={getOverrideName}
-                mainRule={watchedData.mainRule}
-                overrides={watchedData.overrides}
-                mainRuleErrors={mainRuleErrors}
-                getOverrideErrors={getOverrideErrors}
-                onAddOverride={addOverride}
-                onRemoveOverride={handleDeleteClick}
-                onMoveOverride={moveOverride}
-                onEditMainRule={() => setSelectedRule({ type: 'main' })}
-                onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
-              />
+          left={{
+            content: (
+              <div className="p-3">
+                <AccessControlSummary
+                  courseInstanceId={courseInstance.id}
+                  displayTimezone={courseInstance.display_timezone}
+                  getOverrideName={getOverrideName}
+                  mainRule={watchedData.mainRule}
+                  overrides={watchedData.overrides}
+                  mainRuleErrors={mainRuleErrors}
+                  getOverrideErrors={getOverrideErrors}
+                  onAddOverride={addOverride}
+                  onRemoveOverride={handleDeleteClick}
+                  onMoveOverride={moveOverride}
+                  onEditMainRule={() => setSelectedRule({ type: 'main' })}
+                  onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
+                />
 
-              <div className="d-flex gap-2 mt-3">
-                {saveDisabledReason ? (
-                  <OverlayTrigger
-                    tooltip={{ props: { id: 'save-tooltip' }, body: saveDisabledReason }}
-                  >
-                    <span className="d-inline-block">{saveButton}</span>
-                  </OverlayTrigger>
-                ) : (
-                  saveButton
-                )}
-                {isDirty && (
-                  <button
-                    className="btn btn-sm btn-outline-secondary"
-                    type="button"
-                    disabled={isSaving}
-                    onClick={() => reset()}
-                  >
-                    Cancel
-                  </button>
-                )}
+                <div className="d-flex gap-2 mt-3">
+                  {saveDisabledReason ? (
+                    <OverlayTrigger
+                      tooltip={{ props: { id: 'save-tooltip' }, body: saveDisabledReason }}
+                    >
+                      <span className="d-inline-block">{saveButton}</span>
+                    </OverlayTrigger>
+                  ) : (
+                    saveButton
+                  )}
+                  {isDirty && (
+                    <button
+                      className="btn btn-sm btn-outline-secondary"
+                      type="button"
+                      disabled={isSaving}
+                      onClick={() => reset()}
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          }
-          right={rightPanel}
+            ),
+          }}
+          right={{
+            content: rightPanel,
+            title: rightTitle,
+            headerAction: rightHeaderAction,
+            collapsed: selectedRule == null ? true : undefined,
+            initialWidth: accessControlFormInitialRightWidth,
+          }}
           onClose={() => setSelectedRule(null)}
         />
       </Form>

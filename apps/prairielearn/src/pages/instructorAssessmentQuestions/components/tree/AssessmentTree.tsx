@@ -50,7 +50,7 @@ export function AssessmentTree({
           {editControls}
         </div>
       </div>
-      <div className="split-pane__left-body">
+      <div className="overflow-auto flex-grow-1" style={{ minHeight: 0 }}>
         <SortableContext
           items={zones.map((z) => z.trackingId)}
           strategy={verticalListSortingStrategy}
