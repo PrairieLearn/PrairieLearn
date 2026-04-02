@@ -228,7 +228,7 @@ function AssessmentEditorInner({
           return null;
       }
     });
-    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    // eslint-disable-next-line @eslint-react/set-state-in-effect
     void setPreselection(next);
   }, [selectedItem, zones, setPreselection]);
 
@@ -269,7 +269,7 @@ function AssessmentEditorInner({
   // mounted form will report its own validity, while persisted tree-state
   // invariants are checked separately from `zones`.
   useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, react-you-might-not-need-an-effect/no-chain-state-updates, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, react-you-might-not-need-an-effect/no-chain-state-updates, @eslint-react/set-state-in-effect
     setSelectedFormHasErrors(false);
   }, [selectedItem]);
 
