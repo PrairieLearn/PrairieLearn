@@ -602,7 +602,7 @@ export function getZoneMixedToolsWarning({
         seenEnabled = true;
       } else if (seenEnabled && currentZone.trackingId === zone.trackingId) {
         const toolLabel = tool[0].toUpperCase() + tool.slice(1);
-        return `${toolLabel} is enabled in an earlier zone but disabled in this zone.`;
+        return `${toolLabel} is enabled in an earlier zone so students can still access it from earlier questions.`;
       }
     }
   }
