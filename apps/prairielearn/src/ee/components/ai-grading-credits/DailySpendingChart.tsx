@@ -1,4 +1,5 @@
 import type { XAXisComponentOption, YAXisComponentOption } from 'echarts';
+import { useMemo } from 'react';
 
 import { type HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 
@@ -7,6 +8,8 @@ import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 
 export type GroupByOption = 'none' | 'user' | 'assessment' | 'question';
 
+const FALLBACK_FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
+
 export function DailySpendingChart({
   data,
   groupedData,
@@ -14,11 +17,14 @@ export function DailySpendingChart({
   data: { date: Date; spending_milli_dollars: number }[];
   groupedData?: { date: Date; group_label: string; spending_milli_dollars: number }[];
 }) {
-  if (data.length === 0) return null;
+  const bootstrapFont = useMemo(
+    () =>
+      getComputedStyle(document.documentElement).getPropertyValue('--bs-body-font-family') ||
+      FALLBACK_FONT,
+    [],
+  );
 
-  const bootstrapFont =
-    getComputedStyle(document.documentElement).getPropertyValue('--bs-body-font-family') ||
-    'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
+  if (data.length === 0) return null;
 
   const dates = data.map((d) => new Date(d.date).toISOString().slice(0, 10));
 

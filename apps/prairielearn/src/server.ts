@@ -2335,6 +2335,7 @@ if (shouldStartServer) {
 
     if (isEnterprise() && config.hasAzure) {
       const { getAzureStrategy } = await import('./ee/auth/azure/index.js');
+      // eslint-disable-next-line @eslint-react/error-boundaries -- Not React; this is passport.use()
       passport.use(getAzureStrategy());
     }
 

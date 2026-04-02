@@ -199,6 +199,14 @@ export default [
     },
   },
   {
+    files: ['apps/prairielearn/src/tests/e2e/**/*'],
+    rules: {
+      // Playwright's `use()` fixture function is misidentified as React's `use` hook.
+      '@eslint-react/error-boundaries': 'off',
+      '@eslint-react/rules-of-hooks': 'off',
+    },
+  },
+  {
     files: ['**/*.html', '**/*.mustache'],
     languageOptions: {
       parser: htmlParser,
