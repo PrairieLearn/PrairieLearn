@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { Card, Col, Form, Row } from 'react-bootstrap';
+import { Col, Form, Row } from 'react-bootstrap';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import {
@@ -29,12 +29,12 @@ export function MainDateControlForm({
   const dateControlRegistration = register('mainRule.dateControlEnabled');
 
   return (
-    <Card className="mb-4">
-      <Card.Header>
+    <div className="mb-4">
+      <div className="section-header mb-3">
         <Form.Check
           type="checkbox"
           id="mainRule-date-control-enabled"
-          label={title}
+          label={<span className="h5 mb-0">{title}</span>}
           {...dateControlRegistration}
           aria-describedby="mainRule-date-control-help"
           onChange={(e) => {
@@ -51,9 +51,9 @@ export function MainDateControlForm({
         <Form.Text id="mainRule-date-control-help" className="text-muted">
           {description}
         </Form.Text>
-      </Card.Header>
+      </div>
       {dateControlEnabled ? (
-        <Card.Body>
+        <div className="mt-3">
           <div className="mb-3">
             <MainReleaseDateField />
           </div>
@@ -79,15 +79,13 @@ export function MainDateControlForm({
               <MainPasswordField />
             </Col>
           </Row>
-        </Card.Body>
+        </div>
       ) : (
-        <Card.Body>
-          <p className="text-body-secondary mb-0">
-            Enable date control to configure release dates, due dates, and deadlines.
-          </p>
-        </Card.Body>
+        <p className="text-body-secondary mt-2 mb-0">
+          Enable date control to configure release dates, due dates, and deadlines.
+        </p>
       )}
-    </Card>
+    </div>
   );
 }
 
@@ -101,38 +99,36 @@ export function OverrideDateControlForm({
   description?: string;
 }) {
   return (
-    <Card className="mb-4">
-      <Card.Header>
-        <div>{title}</div>
+    <div className="mb-4">
+      <div className="section-header mb-3">
+        <h5 className="mb-0">{title}</h5>
         <Form.Text className="text-muted">{description}</Form.Text>
-      </Card.Header>
-      <Card.Body>
-        <div className="mb-3">
-          <OverrideReleaseDateField index={index} />
-        </div>
-        <div className="mb-3">
-          <OverrideDeadlineArrayField index={index} type="early" />
-        </div>
-        <div className="mb-3">
-          <OverrideDueDateField index={index} />
-        </div>
-        <div className="mb-4">
-          <OverrideDeadlineArrayField index={index} type="late" />
-        </div>
+      </div>
+      <div className="mb-3">
+        <OverrideReleaseDateField index={index} />
+      </div>
+      <div className="mb-3">
+        <OverrideDeadlineArrayField index={index} type="early" />
+      </div>
+      <div className="mb-3">
+        <OverrideDueDateField index={index} />
+      </div>
+      <div className="mb-4">
+        <OverrideDeadlineArrayField index={index} type="late" />
+      </div>
 
-        <div className="mb-3">
-          <OverrideAfterLastDeadlineField index={index} />
-        </div>
+      <div className="mb-3">
+        <OverrideAfterLastDeadlineField index={index} />
+      </div>
 
-        <Row className="mb-3 gy-3">
-          <Col md={6}>
-            <OverrideDurationField index={index} />
-          </Col>
-          <Col md={6}>
-            <OverridePasswordField index={index} />
-          </Col>
-        </Row>
-      </Card.Body>
-    </Card>
+      <Row className="mb-3 gy-3">
+        <Col md={6}>
+          <OverrideDurationField index={index} />
+        </Col>
+        <Col md={6}>
+          <OverridePasswordField index={index} />
+        </Col>
+      </Row>
+    </div>
   );
 }

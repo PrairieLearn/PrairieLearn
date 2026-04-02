@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Card, Form } from 'react-bootstrap';
+import { Form } from 'react-bootstrap';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import { PrairieTestControlForm } from './PrairieTestControlForm.js';
@@ -24,31 +24,32 @@ export function IntegrationsSection() {
   }, [prairieTestEnabled, getValues, setValue]);
 
   return (
-    <Card className="mb-4">
-      <Card.Header>
-        <Form.Check
-          type="checkbox"
-          id="mainRule-prairietest-enabled"
-          label="PrairieTest"
-          defaultChecked={prairieTestEnabled}
-          {...prairieTestRegistration}
-          aria-describedby="mainRule-prairietest-help"
-          onChange={(e) => {
-            void prairieTestRegistration.onChange(e);
-            if (!e.target.checked) {
-              setValue('mainRule.prairieTestExams', [], { shouldDirty: true });
-            }
-          }}
-        />
-        <Form.Text id="mainRule-prairietest-help" className="text-muted">
-          Control access to your assessment through PrairieTest exams
-        </Form.Text>
-      </Card.Header>
+    <div className="mb-4">
+      <div className="section-header mb-3">
+        <h5 className="mb-0">Integrations</h5>
+      </div>
+      <Form.Check
+        type="checkbox"
+        id="mainRule-prairietest-enabled"
+        label={<strong>PrairieTest</strong>}
+        defaultChecked={prairieTestEnabled}
+        {...prairieTestRegistration}
+        aria-describedby="mainRule-prairietest-help"
+        onChange={(e) => {
+          void prairieTestRegistration.onChange(e);
+          if (!e.target.checked) {
+            setValue('mainRule.prairieTestExams', [], { shouldDirty: true });
+          }
+        }}
+      />
+      <Form.Text id="mainRule-prairietest-help" className="text-muted">
+        Control access to your assessment through PrairieTest exams
+      </Form.Text>
       {prairieTestEnabled && (
-        <Card.Body>
+        <div className="mt-3">
           <PrairieTestControlForm />
-        </Card.Body>
+        </div>
       )}
-    </Card>
+    </div>
   );
 }

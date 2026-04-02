@@ -594,7 +594,7 @@ export function RuleSummaryCard({
         <div className="d-flex gap-2 flex-shrink-0">
           {onEdit && (
             <Button variant="outline-primary" size="sm" onClick={onEdit}>
-              <i className="bi bi-pencil me-1" /> Edit
+              <i className="bi bi-pencil me-1" /> Details
             </Button>
           )}
           {onRemove && (

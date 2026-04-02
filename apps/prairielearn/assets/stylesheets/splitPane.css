@@ -100,6 +100,17 @@
   display: none;
 }
 
+/* ── Section headers (banded) ─────────────────────────────────────────── */
+
+.split-pane__right-body .section-header {
+  background-color: var(--bs-tertiary-bg);
+  border-top: var(--bs-border-width) solid var(--bs-border-color);
+  border-bottom: var(--bs-border-width) solid var(--bs-border-color);
+  margin-left: -1rem;
+  margin-right: -1rem;
+  padding: 0.5rem 1rem;
+}
+
 /* ── Narrow viewport overrides ────────────────────────────────────────── */
 
 @media (max-width: 768px) {

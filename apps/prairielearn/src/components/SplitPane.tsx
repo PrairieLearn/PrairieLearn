@@ -10,9 +10,9 @@ import {
 
 import { useResizeHandle } from '@prairielearn/ui';
 
-const DEFAULT_RIGHT_WIDTH = 360;
+const DEFAULT_RIGHT_WIDTH = 500;
 const MIN_RIGHT_WIDTH = 280;
-const MAX_RIGHT_WIDTH = 600;
+const MAX_RIGHT_WIDTH = 900;
 const MIN_LEFT_WIDTH = 400;
 const SEPARATOR_WIDTH = 4;
 const NARROW_CONTAINER_BREAKPOINT = MIN_LEFT_WIDTH + MIN_RIGHT_WIDTH + SEPARATOR_WIDTH;

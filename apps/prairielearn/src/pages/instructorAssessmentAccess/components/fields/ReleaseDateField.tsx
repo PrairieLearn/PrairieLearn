@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { Button, Form } from 'react-bootstrap';
+import { Form } from 'react-bootstrap';
 import { type Path, useController, useWatch } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
@@ -8,6 +8,17 @@ import type { AccessControlFormData } from '../types.js';
 
 function todayLocalDatetime(): string {
   return Temporal.Now.plainDateISO().toPlainDateTime().toString({ smallestUnit: 'minute' });
+}
+
+function isReleasedNow(value: string): boolean {
+  if (!value) return true;
+  try {
+    const release = Temporal.PlainDateTime.from(value);
+    const now = Temporal.Now.plainDateTimeISO();
+    return Temporal.PlainDateTime.compare(release, now) <= 0;
+  } catch {
+    return true;
+  }
 }
 
 function MainReleaseDateInput({
@@ -19,22 +30,54 @@ function MainReleaseDateInput({
   onChange: (value: string) => void;
   error?: string;
 }) {
+  const released = isReleasedNow(value);
+
   return (
-    <>
-      <Form.Control
-        type="datetime-local"
-        aria-label="Release date"
-        aria-invalid={!!error}
-        aria-errormessage={error ? 'mainRule-release-date-error' : undefined}
-        value={value}
-        onChange={({ currentTarget }) => onChange(currentTarget.value)}
-      />
-      {error && (
-        <Form.Text id="mainRule-release-date-error" className="text-danger" role="alert">
-          {error}
-        </Form.Text>
+    <Form.Group>
+      <div className="mb-2">
+        <Form.Check
+          type="radio"
+          name="mainRule-releaseMode"
+          id="mainRule-release-now"
+          label="Released"
+          checked={released}
+          onChange={({ currentTarget }) => {
+            if (currentTarget.checked) {
+              onChange(todayLocalDatetime());
+            }
+          }}
+        />
+        <Form.Check
+          type="radio"
+          name="mainRule-releaseMode"
+          id="mainRule-release-scheduled"
+          label="Scheduled for release"
+          checked={!released}
+          onChange={({ currentTarget }) => {
+            if (currentTarget.checked) {
+              onChange('');
+            }
+          }}
+        />
+      </div>
+      {!released && (
+        <>
+          <Form.Control
+            type="datetime-local"
+            aria-label="Release date"
+            aria-invalid={!!error}
+            aria-errormessage={error ? 'mainRule-release-date-error' : undefined}
+            value={value}
+            onChange={({ currentTarget }) => onChange(currentTarget.value)}
+          />
+          {error && (
+            <Form.Text id="mainRule-release-date-error" className="text-danger" role="alert">
+              {error}
+            </Form.Text>
+          )}
+        </>
       )}
-    </>
+    </Form.Group>
   );
 }
 
@@ -104,16 +147,7 @@ export function MainReleaseDateField() {
 
   return (
     <div>
-      <div className="d-flex align-items-center gap-2 mb-2">
-        <strong>Release date</strong>
-        <Button
-          size="sm"
-          variant="outline-secondary"
-          onClick={() => field.onChange(todayLocalDatetime())}
-        >
-          Today
-        </Button>
-      </div>
+      <strong className="d-block mb-2">Release date</strong>
       <MainReleaseDateInput value={field.value} error={error?.message} onChange={field.onChange} />
     </div>
   );

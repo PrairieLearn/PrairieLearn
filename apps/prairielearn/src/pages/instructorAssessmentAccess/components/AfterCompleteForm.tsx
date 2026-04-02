@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Col, Form, Row } from 'react-bootstrap';
+import { Alert, Button, Col, Form, Row } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -46,12 +46,6 @@ function QuestionVisibilityInput({
 
   return (
     <Form.Group>
-      {hasPrairieTest && hideQuestionsMode === 'show_questions' && (
-        <Alert variant="warning" className="mb-2">
-          Showing questions after completion is not recommended when PrairieTest exams are
-          connected. Students may be able to view exam content when their assessment is closed.
-        </Alert>
-      )}
       <div className="mb-2">
         <Form.Check
           type="radio"
@@ -172,6 +166,12 @@ function QuestionVisibilityInput({
           </div>
         )}
       </div>
+      {hasPrairieTest && hideQuestionsMode === 'show_questions' && (
+        <Alert variant="warning" className="mb-0">
+          Showing questions after completion is not recommended when PrairieTest exams are
+          connected. Students may be able to view exam content when their assessment is closed.
+        </Alert>
+      )}
     </Form.Group>
   );
 }
@@ -288,10 +288,10 @@ function AfterCompleteCard({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="mb-4">
-      <Card.Header>
+    <div className="mb-4">
+      <div className="section-header mb-3">
         <div className="d-flex align-items-center">
-          <span>{title}</span>
+          <h5 className="mb-0">{title}</h5>
           <OverlayTrigger trigger="click" placement="auto" popover={infoPopoverConfig}>
             <Button
               variant="link"
@@ -304,11 +304,9 @@ function AfterCompleteCard({
           </OverlayTrigger>
         </div>
         <Form.Text className="text-muted">{description}</Form.Text>
-      </Card.Header>
-      <Card.Body>
-        <Row className="gy-3">{children}</Row>
-      </Card.Body>
-    </Card>
+      </div>
+      <Row className="gy-3">{children}</Row>
+    </div>
   );
 }
 
