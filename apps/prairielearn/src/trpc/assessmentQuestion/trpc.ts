@@ -18,6 +18,8 @@ const assessmentQuestionChunkRouter = t.router({
   manualGrading: manualGradingChunkRouter,
 });
 
+export type AssessmentQuestionChunkRouter = typeof assessmentQuestionChunkRouter;
+
 // This gives the client a single type covering all procedures
 // while the actual HTTP traffic is split across two endpoints
 // by splitLink in client.ts.
