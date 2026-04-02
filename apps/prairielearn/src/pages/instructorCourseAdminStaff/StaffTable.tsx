@@ -1,5 +1,6 @@
 import {
   type ColumnFiltersState,
+  type ColumnPinningState,
   type Header,
   type RowSelectionState,
   type SortingState,
@@ -14,14 +15,13 @@ import {
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Modal } from 'react-bootstrap';
-import { useDebouncedCallback } from 'use-debounce';
 
 import {
   CategoricalColumnFilter,
-  ColumnManager,
   NuqsAdapter,
   OverlayTrigger,
-  TanstackTable,
+  TanstackTableCard,
+  parseAsColumnPinningState,
   parseAsSortingState,
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
@@ -92,6 +92,7 @@ function SelectAllCheckbox({ table }: { table: Table<CourseUsersRow> }) {
 const columnHelper = createColumnHelper<CourseUsersRow>();
 
 const DEFAULT_SORT: SortingState = [{ id: 'uid', desc: false }];
+const DEFAULT_PINNING: ColumnPinningState = { left: ['select', 'uid'], right: [] };
 
 interface StaffTableInnerProps {
   csrfToken: string;
@@ -102,6 +103,31 @@ interface StaffTableInnerProps {
   isAdministrator: boolean;
   uidsLimit: number;
   githubAccessLink: string | null;
+}
+
+function courseRoleColor(role: CourseRole): string {
+  switch (role) {
+    case 'None':
+      return 'secondary';
+    case 'Previewer':
+    case 'Viewer':
+      return 'primary';
+    case 'Editor':
+      return 'success';
+    case 'Owner':
+      return 'dark';
+  }
+}
+
+function instanceRoleColor(role: InstanceRole): string {
+  switch (role) {
+    case 'None':
+      return 'secondary';
+    case 'Student Data Viewer':
+      return 'primary';
+    case 'Student Data Editor':
+      return 'success';
+  }
 }
 
 function CoursePermissionCell({
@@ -118,9 +144,12 @@ function CoursePermissionCell({
 
   if (!canChangeCourseRole) {
     return (
-      <Button variant="outline-primary" size="sm" disabled>
+      <span
+        className={`btn btn-sm bg-${courseRoleColor(currentRole)}-subtle text-${courseRoleColor(currentRole)}-emphasis disabled`}
+        style={{ width: 85 }}
+      >
         {currentRole}
-      </Button>
+      </span>
     );
   }
 
@@ -179,9 +208,13 @@ function CoursePermissionCell({
       rootClose
       onToggle={setShow}
     >
-      <Button type="button" variant="outline-primary" size="sm" className="dropdown-toggle">
+      <button
+        type="button"
+        className={`btn btn-sm bg-${courseRoleColor(currentRole)}-subtle text-${courseRoleColor(currentRole)}-emphasis dropdown-toggle`}
+        style={{ width: 85 }}
+      >
         {currentRole}
-      </Button>
+      </button>
     </OverlayTrigger>
   );
 }
@@ -276,67 +309,13 @@ function CourseInstanceAccessCell({
       rootClose
       onToggle={setShow}
     >
-      <Button type="button" variant="outline-primary" size="sm" className="dropdown-toggle">
-        {INSTANCE_ROLE_LABELS[currentRole]}
-      </Button>
-    </OverlayTrigger>
-  );
-}
-
-function RemoveStaffCell({
-  courseUser,
-  csrfToken,
-}: {
-  courseUser: CourseUsersRow;
-  csrfToken: string;
-}) {
-  const [show, setShow] = useState(false);
-  const displayName = courseUser.user.name ?? courseUser.user.uid;
-
-  return (
-    <OverlayTrigger
-      show={show}
-      trigger="click"
-      placement="auto"
-      popover={{
-        props: {
-          id: `remove-staff-popover-${courseUser.user.id}`,
-          className: 'popover-wide',
-        },
-        header: `Remove ${displayName}`,
-        body: (
-          <form method="POST">
-            <input type="hidden" name="__action" value="course_permissions_delete" />
-            <input type="hidden" name="__csrf_token" value={csrfToken} />
-            <input type="hidden" name="user_id" value={courseUser.user.id} />
-            <div className="mb-3">
-              <p className="form-text">
-                Taking this action will remove {displayName} from course staff.
-              </p>
-            </div>
-            <div className="text-end">
-              <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
-                Cancel
-              </button>
-              <button type="submit" className="btn btn-danger ms-2">
-                Remove
-              </button>
-            </div>
-          </form>
-        ),
-      }}
-      rootClose
-      onToggle={setShow}
-    >
-      <Button
+      <button
         type="button"
-        variant="outline-dark"
-        size="sm"
-        aria-label={`Remove ${displayName}`}
-        data-testid="remove-staff-button"
+        className={`btn btn-sm bg-${instanceRoleColor(currentRole)}-subtle text-${instanceRoleColor(currentRole)}-emphasis dropdown-toggle`}
+        style={{ width: 85 }}
       >
-        <i className="fa fa-times" /> Remove
-      </Button>
+        {INSTANCE_ROLE_LABELS[currentRole]}
+      </button>
     </OverlayTrigger>
   );
 }
@@ -654,9 +633,9 @@ function SelectionToolbar({
   return (
     <>
       <div className="d-flex align-items-center gap-2">
-        <span className="text-muted small">{selectedUsers.length} selected</span>
+        <span className="text-white small">{selectedUsers.length} selected</span>
         <Button
-          variant="outline-primary"
+          variant="light"
           size="sm"
           disabled={modifiableUsers.length === 0}
           onClick={() => setShowEditAccessModal(true)}
@@ -665,7 +644,7 @@ function SelectionToolbar({
           Edit access
         </Button>
         <Button
-          variant="outline-danger"
+          variant="danger"
           size="sm"
           disabled={deletableUsers.length === 0}
           onClick={() => setShowDeleteModal(true)}
@@ -763,6 +742,10 @@ function StaffTableInner({
     'role',
     parseAsArrayOf(parseAsStringLiteral(COURSE_ROLE_VALUES)).withDefault([]),
   );
+  const [columnPinning, setColumnPinning] = useQueryState(
+    'frozen',
+    parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
+  );
   const [selectedIds, setSelectedIds] = useQueryState(
     'selected',
     parseAsArrayOf(parseAsString).withDefault([]),
@@ -772,15 +755,16 @@ function StaffTableInner({
     [selectedIds],
   );
   const setRowSelection = useMemo(
-    () => (updaterOrValue: RowSelectionState | ((prev: RowSelectionState) => RowSelectionState)) => {
-      const newSelection =
-        typeof updaterOrValue === 'function' ? updaterOrValue(rowSelection) : updaterOrValue;
-      void setSelectedIds(
-        Object.entries(newSelection)
-          .filter(([, selected]) => selected)
-          .map(([id]) => id),
-      );
-    },
+    () =>
+      (updaterOrValue: RowSelectionState | ((prev: RowSelectionState) => RowSelectionState)) => {
+        const newSelection =
+          typeof updaterOrValue === 'function' ? updaterOrValue(rowSelection) : updaterOrValue;
+        void setSelectedIds(
+          Object.entries(newSelection)
+            .filter(([, selected]) => selected)
+            .map(([id]) => id),
+        );
+      },
     [rowSelection, setSelectedIds],
   );
   const { createCheckboxProps } = useShiftClickCheckbox<CourseUsersRow>();
@@ -827,7 +811,7 @@ function StaffTableInner({
       columnHelper.accessor((row) => row.user.uid, {
         id: 'uid',
         header: 'UID',
-        size: 200,
+        size: 220,
         enableGlobalFilter: true,
         cell: (info) => (
           <span
@@ -849,7 +833,7 @@ function StaffTableInner({
       columnHelper.accessor((row) => row.user.name ?? '', {
         id: 'user_name',
         header: 'Name',
-        size: 220,
+        size: 180,
         enableGlobalFilter: true,
         cell: (info) => {
           const name = info.row.original.user.name;
@@ -866,7 +850,17 @@ function StaffTableInner({
                 }
               }}
             >
-              {name ?? <span className="text-danger">Unknown user</span>}
+              {name ?? (
+                <OverlayTrigger
+                  placement="top"
+                  tooltip={{
+                    body: 'Users with name "Unknown user" either have never logged in or have an incorrect UID.',
+                    props: { id: `staff-unknown-user-tooltip-${info.row.original.user.id}` },
+                  }}
+                >
+                  <span className="text-danger">Unknown user</span>
+                </OverlayTrigger>
+              )}
             </span>
           );
         },
@@ -874,7 +868,7 @@ function StaffTableInner({
       columnHelper.accessor((row) => row.course_permission.course_role, {
         id: 'course_role',
         header: 'Course content',
-        size: 210,
+        size: 190,
         enableGlobalFilter: false,
         meta: { label: 'Course content access' },
         filterFn: (row, _columnId, filterValues: CourseRole[]) => {
@@ -882,44 +876,38 @@ function StaffTableInner({
           return filterValues.includes(row.original.course_permission.course_role!);
         },
         cell: (info) => (
-          <CoursePermissionCell
-            courseUser={info.row.original}
-            canChangeCourseRole={
-              (info.row.original.user.id !== authnUserId && info.row.original.user.id !== userId) ||
-              isAdministrator
-            }
-            csrfToken={csrfToken}
-          />
+          <div className="text-center">
+            <CoursePermissionCell
+              courseUser={info.row.original}
+              canChangeCourseRole={
+                (info.row.original.user.id !== authnUserId &&
+                  info.row.original.user.id !== userId) ||
+                isAdministrator
+              }
+              csrfToken={csrfToken}
+            />
+          </div>
         ),
       }),
       ...courseInstances.map((ci) =>
         columnHelper.display({
           id: `ci_${ci.id}`,
           header: ci.short_name ?? `Instance ${ci.id}`,
-          size: 150,
+          size: 120,
           enableGlobalFilter: false,
           enableSorting: false,
           enableHiding: true,
           cell: (info) => (
-            <CourseInstanceAccessCell
-              courseUser={info.row.original}
-              courseInstance={ci}
-              csrfToken={csrfToken}
-            />
+            <div className="text-center">
+              <CourseInstanceAccessCell
+                courseUser={info.row.original}
+                courseInstance={ci}
+                csrfToken={csrfToken}
+              />
+            </div>
           ),
         }),
       ),
-      columnHelper.display({
-        id: 'actions',
-        header: 'Actions',
-        size: 130,
-        enableGlobalFilter: false,
-        enableSorting: false,
-        cell: (info) =>
-          info.row.original.course_permission.course_role !== 'Owner' || isAdministrator ? (
-            <RemoveStaffCell courseUser={info.row.original} csrfToken={csrfToken} />
-          ) : null,
-      }),
     ],
     [authnUserId, userId, isAdministrator, csrfToken, courseInstances, createCheckboxProps],
   );
@@ -934,26 +922,30 @@ function StaffTableInner({
       sorting,
       columnFilters,
       globalFilter,
+      columnPinning,
       rowSelection,
+    },
+    initialState: {
+      columnPinning: DEFAULT_PINNING,
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: handleColumnFiltersChange,
+    onColumnPinningChange: setColumnPinning,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     defaultColumn: {
+      minSize: 100,
       size: 150,
-      maxSize: 600,
+      maxSize: 500,
       enableSorting: true,
       enableHiding: false,
     },
   });
 
   const selectedUsers = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
-
-  const hasUnknownUsers = courseUsers.some((u) => u.user.name == null);
 
   const filters = useMemo(
     () => ({
@@ -988,64 +980,23 @@ function StaffTableInner({
     </>
   );
 
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const [searchInputValue, setSearchInputValue] = useState(() => globalFilter);
-  const debouncedSetFilter = useDebouncedCallback((value: string) => {
-    table.setGlobalFilter(value);
-  }, 150);
-
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
-        if (searchInputRef.current && searchInputRef.current !== document.activeElement) {
-          searchInputRef.current.focus();
-          event.preventDefault();
-        }
-      }
-    }
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, []);
-
-  const displayedCount = table.getRowModel().rows.length;
-  const totalCount = table.getCoreRowModel().rows.length;
-
   return (
     <div className="d-flex flex-column h-100">
-      <div className="d-flex flex-row flex-wrap align-items-center gap-2 pb-2">
-        <div className="position-relative" style={{ maxWidth: 'min(400px, 100%)' }}>
-          <input
-            ref={searchInputRef}
-            type="text"
-            className="form-control pl-ui-tanstack-table-search-input pl-ui-tanstack-table-focusable-shadow"
-            aria-label="Search by UID or name..."
-            placeholder="Search by UID or name..."
-            value={searchInputValue}
-            autoComplete="off"
-            onInput={(e) => {
-              const value = e.currentTarget.value;
-              setSearchInputValue(value);
-              debouncedSetFilter(value);
-            }}
-          />
-        </div>
-        <ColumnManager table={table} buttonText="Course Instances" />
-        <div className="text-muted text-nowrap small">
-          Showing {displayedCount} of {totalCount} {totalCount === 1 ? 'user' : 'users'}
-        </div>
-        <div className="d-flex flex-wrap align-items-center gap-2 ms-auto">{headerButtons}</div>
-      </div>
       <style>{'.staff-table td { align-items: center; }'}</style>
       <div className="staff-table flex-grow-1" style={{ minHeight: 0 }}>
-        <TanstackTable table={table} title="Staff" filters={filters} rowHeight={72} />
+        <TanstackTableCard
+          table={table}
+          title="Staff"
+          className="h-100"
+          singularLabel="user"
+          pluralLabel="users"
+          globalFilter={{ placeholder: 'Search by UID or name...' }}
+          tableOptions={{ filters, rowHeight: 72 }}
+          columnManager={{ buttonText: 'Course instances' }}
+          headerButtons={headerButtons}
+        />
       </div>
       <div className="small flex-shrink-0 border-top pt-3">
-        {hasUnknownUsers && (
-          <p className="alert alert-warning">
-            Users with name &quot;<span className="text-danger">Unknown user</span>&quot; either
-            have never logged in or have an incorrect UID.
-          </p>
-        )}
         <details>
           <summary>Recommended access levels</summary>
           <AccessLevelsTable />
