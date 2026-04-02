@@ -519,6 +519,7 @@ export function TanstackTableCard<RowDataModel>({
   columnManager?: {
     buttons?: ReactNode;
     topContent?: ReactNode;
+    buttonText?: string;
   };
   globalFilter: {
     placeholder: string;
@@ -610,7 +611,7 @@ export function TanstackTableCard<RowDataModel>({
           )}
         </div>
         <div className="d-flex flex-wrap flex-row align-items-center gap-2">
-          <ColumnManager table={table} topContent={columnManager?.topContent} />
+          <ColumnManager table={table} topContent={columnManager?.topContent} buttonText={columnManager?.buttonText} />
           {columnManager?.buttons}
         </div>
         <div className="ms-auto text-muted text-nowrap">
