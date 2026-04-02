@@ -621,11 +621,10 @@ export async function deleteAiGradingJobs({
   // was added primarily to facilitate demos at ASEE 2025. It may not behave completely
   // correctly in call cases; see the TODOs in the SQL query for more details.
   //
-  // TODO: we should add locking here. Specifically, we should process each
-  // assessment instance + instance question one at a time in separate
-  // transactions so that we don't need to lock all relevant assessment instances
-  // and assessment questions at once.
-  const iqs = await runInTransactionAsync(async () => {
+  // Process each assessment_instance in a separate transaction to avoid deadlocks.
+  // This ensures consistent lock ordering (assessment_instances first, then submissions)
+  // matching the worker path, preventing circular wait conditions.
+  const uniqueAssessmentInstanceIds = await runInTransactionAsync(async () => {
     const iqs = await queryRows(
       sql.delete_ai_grading_jobs,
       {
@@ -646,18 +645,26 @@ export async function deleteAiGradingJobs({
       }),
     );
 
-    for (const iq of iqs) {
+    // Get unique assessment_instance_ids while still in transaction
+    const uniqueIds = [...new Set(iqs.map((iq) => iq.assessment_instance_id))].sort();
+    return { iqs, uniqueIds };
+  });
+
+  const { iqs, uniqueIds: assessment_instance_ids } = uniqueAssessmentInstanceIds;
+
+  // Process each assessment_instance in a separate transaction to maintain lock ordering
+  // This prevents deadlocks by ensuring we lock assessment_instances before any submissions
+  for (const assessment_instance_id of assessment_instance_ids) {
+    await runInTransactionAsync(async () => {
       await updateAssessmentInstanceGrade({
-        assessment_instance_id: iq.assessment_instance_id,
+        assessment_instance_id,
         // We use the user who is performing the deletion.
         authn_user_id,
         credit: 100,
         allowDecrease: true,
       });
-    }
-
-    return iqs;
-  });
+    });
+  }
 
   // Important: this is done outside of the above transaction so that we don't
   // hold a database connection open while we do network calls.
