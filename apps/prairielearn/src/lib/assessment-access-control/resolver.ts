@@ -80,11 +80,11 @@ export interface AccessControlResolverResult {
    */
   examAccessEnd: Date | null;
   /**
-   * Resolved visibility flag: true when the raw `listBeforeRelease` config
-   * flag is set on the rule AND the current date is actually before the
-   * release date. This is distinct from the raw `listBeforeRelease` property
-   * on the rule JSON — that property is config input, while this is the
-   * computed "should we show this assessment right now?" decision.
+   * Resolved visibility flag: true when the assessment should be listed but
+   * not accessible. This happens when `listBeforeRelease` is set on the rule
+   * AND either the current date is before the release date, there is no
+   * release date configured, or the assessment is PT-gated and the student
+   * lacks access. Distinct from the raw `listBeforeRelease` config input.
    */
   showBeforeRelease: boolean;
 }
@@ -510,6 +510,9 @@ export function resolveAccessControl(
   if (hasPrairieTestExams) {
     // Exam-only rule: must be in exam mode with PrairieTest reason
     if (authzMode !== 'Exam') {
+      if (effectiveRule.listBeforeRelease) {
+        return { ...UNAUTHORIZED_RESULT, authorized: true, showBeforeRelease: true };
+      }
       return { ...UNAUTHORIZED_RESULT };
     }
 
@@ -517,6 +520,9 @@ export function resolveAccessControl(
       prairieTestReservations.some((r) => r.examUuid === exam.uuid),
     );
     if (!matchedExam) {
+      if (effectiveRule.listBeforeRelease) {
+        return { ...UNAUTHORIZED_RESULT, authorized: true, showBeforeRelease: true };
+      }
       return { ...UNAUTHORIZED_RESULT };
     }
 
@@ -536,7 +542,7 @@ export function resolveAccessControl(
   const timeLimitMin = creditResult.timeLimitMin;
 
   const showClosedAssessment = resolveVisibility(
-    effectiveRule.afterComplete?.hideQuestions,
+    effectiveRule.afterComplete?.hideQuestions ?? true,
     effectiveRule.afterComplete?.showQuestionsAgainDate,
     effectiveRule.afterComplete?.hideQuestionsAgainDate,
     date,
@@ -550,10 +556,11 @@ export function resolveAccessControl(
   );
 
   // Resolve the raw `listBeforeRelease` config flag into a concrete
-  // `showBeforeRelease` boolean: true only when we're actually before the
-  // release date AND the flag is set on the rule.
+  // `showBeforeRelease` boolean: true when the flag is set AND either we're
+  // before the release date or there is no release date configured.
   const showBeforeRelease =
-    creditResult.beforeRelease && (effectiveRule.listBeforeRelease ?? false);
+    (effectiveRule.listBeforeRelease ?? false) &&
+    (creditResult.beforeRelease || !effectiveRule.dateControl?.releaseDate);
 
   // If the assessment is before its release date and showBeforeRelease is false,
   // the student should not see or access it at all.

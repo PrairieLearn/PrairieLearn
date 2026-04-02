@@ -949,12 +949,32 @@ describe('resolveAccessControl', () => {
   });
 
   describe('after-complete visibility', () => {
-    it('shows assessment when hideQuestions is not set', () => {
+    it('hides questions by default when hideQuestions is not set', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [makeMainRule({})],
       });
+      expect(result.showClosedAssessment).toBe(false);
+    });
+
+    it('shows questions when hideQuestions is explicitly false', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            afterComplete: { hideQuestions: false },
+          }),
+        ],
+      });
       expect(result.showClosedAssessment).toBe(true);
+    });
+
+    it('still shows score by default when afterComplete is undefined', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [makeMainRule({})],
+      });
+      expect(result.showClosedAssessmentScore).toBe(true);
     });
 
     it('hides assessment when hideQuestions is true', () => {
@@ -1242,6 +1262,7 @@ describe('resolveAccessControl', () => {
       {
         label: 'ignores showScoreAgainDate when hideScore is false',
         afterComplete: { hideScore: false, showScoreAgainDate: '2025-06-01T00:00:00Z' },
+        expectedAssessment: false,
         expectedScore: true,
       },
       {
@@ -1272,18 +1293,18 @@ describe('resolveAccessControl', () => {
   });
 
   describe('showBeforeRelease edge cases', () => {
-    it('lists assessment normally when listBeforeRelease set without dateControl', () => {
+    it('shows before release when listBeforeRelease set without dateControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [makeMainRule({ listBeforeRelease: true })],
       });
-      // No dateControl → no release date concept → assessment just listed
+      // No dateControl → no release mechanism → perpetually "before release"
       expect(result.authorized).toBe(true);
-      // Not "before release" since there's no release
-      expect(result.showBeforeRelease).toBe(false);
+      expect(result.showBeforeRelease).toBe(true);
+      expect(result.active).toBe(false);
     });
 
-    it('lists assessment normally when dateControl has no releaseDate', () => {
+    it('shows before release when dateControl has no releaseDate', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -1295,9 +1316,68 @@ describe('resolveAccessControl', () => {
           }),
         ],
       });
-      // dateControl exists but no releaseDate → always available
+      // dateControl exists but no releaseDate → perpetually "before release"
+      expect(result.authorized).toBe(true);
+      expect(result.showBeforeRelease).toBe(true);
+      expect(result.active).toBe(false);
+    });
+
+    it('does not show before release without listBeforeRelease and no dateControl', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [makeMainRule({})],
+      });
       expect(result.authorized).toBe(true);
       expect(result.showBeforeRelease).toBe(false);
+    });
+  });
+
+  describe('showBeforeRelease with PrairieTest', () => {
+    const ptExam = { uuid: 'pt-exam-1', readOnly: false };
+
+    it('lists PT assessment when listBeforeRelease set and not in exam mode', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [{ ...makeMainRule({ listBeforeRelease: true }), prairietestExams: [ptExam] }],
+      });
+      // Not in exam mode but listBeforeRelease → listed but not accessible
+      expect(result.authorized).toBe(true);
+      expect(result.showBeforeRelease).toBe(true);
+      expect(result.active).toBe(false);
+    });
+
+    it('hides PT assessment when listBeforeRelease false and not in exam mode', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
+      });
+      expect(result.authorized).toBe(false);
+    });
+
+    it('lists PT assessment when listBeforeRelease set and no matching reservation', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Exam',
+        rules: [{ ...makeMainRule({ listBeforeRelease: true }), prairietestExams: [ptExam] }],
+        prairieTestReservations: [
+          { examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
+        ],
+      });
+      expect(result.authorized).toBe(true);
+      expect(result.showBeforeRelease).toBe(true);
+      expect(result.active).toBe(false);
+    });
+
+    it('hides PT assessment when listBeforeRelease false and no matching reservation', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Exam',
+        rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
+        prairieTestReservations: [
+          { examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
+        ],
+      });
+      expect(result.authorized).toBe(false);
     });
   });
 });

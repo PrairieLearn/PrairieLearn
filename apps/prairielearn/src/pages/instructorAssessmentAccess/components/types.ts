@@ -155,7 +155,7 @@ export function jsonToMainRuleFormData(
     prairieTestEnabled: (json.integrations?.prairieTest?.exams?.length ?? 0) > 0,
     prairieTestExams: json.integrations?.prairieTest?.exams ?? [],
     questionVisibility: {
-      hideQuestions: ac?.hideQuestions ?? false,
+      hideQuestions: ac?.hideQuestions ?? true,
       showAgainDate: toLocalDatetimeValue(ac?.showQuestionsAgainDate, displayTimezone) ?? undefined,
       hideAgainDate: toLocalDatetimeValue(ac?.hideQuestionsAgainDate, displayTimezone) ?? undefined,
     },
@@ -244,7 +244,7 @@ export function jsonToOverrideFormData(
     overriddenFields.push('password');
   }
 
-  let questionVisibility: QuestionVisibilityValue = { hideQuestions: false };
+  let questionVisibility: QuestionVisibilityValue = { hideQuestions: true };
   if (ac?.hideQuestions !== undefined) {
     questionVisibility = {
       hideQuestions: ac.hideQuestions,
@@ -416,7 +416,7 @@ export function createDefaultOverrideFormData(): OverrideData {
     afterLastDeadline: null,
     durationMinutes: null,
     password: null,
-    questionVisibility: { hideQuestions: false },
+    questionVisibility: { hideQuestions: true },
     scoreVisibility: { hideScore: false },
   };
 }

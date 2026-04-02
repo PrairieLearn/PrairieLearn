@@ -23,7 +23,7 @@ const defaultMainRule: MainRuleData = {
   password: 'secret',
   prairieTestEnabled: false,
   prairieTestExams: [],
-  questionVisibility: { hideQuestions: false },
+  questionVisibility: { hideQuestions: true },
   scoreVisibility: { hideScore: false },
 };
 
@@ -42,13 +42,41 @@ const baseOverride: OverrideData = {
   afterLastDeadline: null,
   durationMinutes: null,
   password: null,
-  questionVisibility: { hideQuestions: false },
+  questionVisibility: { hideQuestions: true },
   scoreVisibility: { hideScore: false },
 };
 
 function buildFormData(override: OverrideData): AccessControlFormData {
   return { mainRule: defaultMainRule, overrides: [override] };
 }
+
+describe('jsonToMainRuleFormData', () => {
+  it('defaults hideQuestions to true when afterComplete is not configured', () => {
+    const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
+    expect(mainRule.questionVisibility.hideQuestions).toBe(true);
+  });
+
+  it('defaults hideScore to false when afterComplete is not configured', () => {
+    const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
+    expect(mainRule.scoreVisibility.hideScore).toBe(false);
+  });
+
+  it('preserves hideQuestions: false when explicitly set in JSON', () => {
+    const mainRule = jsonToMainRuleFormData(
+      { afterComplete: { hideQuestions: false } },
+      TEST_TIMEZONE,
+    );
+    expect(mainRule.questionVisibility.hideQuestions).toBe(false);
+  });
+
+  it('preserves hideQuestions: true when explicitly set in JSON', () => {
+    const mainRule = jsonToMainRuleFormData(
+      { afterComplete: { hideQuestions: true } },
+      TEST_TIMEZONE,
+    );
+    expect(mainRule.questionVisibility.hideQuestions).toBe(true);
+  });
+});
 
 describe('formDataToJson', () => {
   it('defaults listBeforeRelease to false when omitted from the main rule JSON', () => {
