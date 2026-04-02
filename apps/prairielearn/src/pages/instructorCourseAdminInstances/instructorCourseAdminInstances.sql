@@ -7,6 +7,7 @@ FROM
   JOIN enrollments AS e ON (e.course_instance_id = ci.id)
 WHERE
   ci.course_id = $course_id
+  AND e.status = 'joined'
   AND NOT users_is_instructor_in_course_instance (e.user_id, e.course_instance_id)
 GROUP BY
   ci.id;

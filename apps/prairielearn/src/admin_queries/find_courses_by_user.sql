@@ -24,7 +24,10 @@ WITH
         'Student' AS role
       FROM
         selected_users AS u
-        JOIN enrollments AS e ON (e.user_id = u.id)
+        JOIN enrollments AS e ON (
+          e.user_id = u.id
+          AND e.status = 'joined'
+        )
         JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
         JOIN courses AS c ON (c.id = ci.course_id)
         JOIN institutions AS i ON (i.id = c.institution_id)

@@ -129,6 +129,7 @@ WITH
                 LEFT JOIN enrollments AS e ON (
                   ou.id = e.user_id
                   AND e.course_instance_id = $course_instance_id
+                  AND e.status = 'joined'
                 )
               WHERE
                 ogu.team_id = s.team_id
@@ -157,6 +158,7 @@ WITH
       JOIN enrollments e ON e.id = sle.enrollment_id
     WHERE
       e.course_instance_id = $course_instance_id
+      AND e.status = 'joined'
     GROUP BY
       sle.enrollment_id
   )
@@ -174,6 +176,7 @@ FROM
   LEFT JOIN enrollments AS e ON (
     e.user_id = u.id
     AND e.course_instance_id = $course_instance_id
+    AND e.status = 'joined'
   )
   LEFT JOIN user_scores AS s ON (u.id = s.user_id)
   LEFT JOIN student_label_agg sla ON sla.enrollment_id = e.id
