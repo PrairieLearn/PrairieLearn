@@ -465,4 +465,14 @@ describe('checkCourseInstanceLegacyAccess', () => {
 
     assert.deepEqual(result, ['17']);
   });
+
+  it('filters a list of course instances', async () => {
+    const result = await checkCourseInstanceLegacyAccess({
+      courseInstanceIds: ['11', '12', '13', '14', '15', '16', '17'],
+      userId: '1002',
+      reqDate: new Date('2011-07-07T06:06:06Z'),
+    });
+
+    assert.deepEqual(result.sort(), ['12', '16']);
+  });
 });
