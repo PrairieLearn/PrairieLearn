@@ -2369,6 +2369,10 @@ if (shouldStartServer) {
     // with long-running workflow soft locks.
     await workflows.init(pgConfig, idleErrorHandler);
 
+    const { registerAiGradingWorkflow } =
+      await import('./ee/lib/ai-grading/ai-grading-workflow.js');
+    registerAiGradingWorkflow();
+
     logger.verbose('Successfully connected to database');
 
     if (argv['refresh-workspace-hosts-and-exit']) {

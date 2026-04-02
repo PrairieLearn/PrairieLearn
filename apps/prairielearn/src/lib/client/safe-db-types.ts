@@ -19,6 +19,7 @@ import { type z } from 'zod';
 
 import {
   AccessTokenSchema as RawAccessTokenSchema,
+  AiGradingMessageSchema as RawAiGradingMessageSchema,
   AlternativePoolSchema as RawAlternativePoolSchema,
   AssessmentAccessControlRuleSchema as RawAssessmentAccessControlRuleSchema,
   AssessmentInstanceSchema as RawAssessmentInstanceSchema,
@@ -44,6 +45,20 @@ import {
   UserSchema as RawUserSchema,
   ZoneSchema as RawZoneSchema,
 } from '../db-types.js';
+
+/** AI Grading Messages */
+export const RawStaffAiGradingMessageSchema = RawAiGradingMessageSchema.pick({
+  id: true,
+  job_sequence_id: true,
+  parts: true,
+  phase: true,
+  role: true,
+  status: true,
+  workflow_run_id: true,
+});
+export const StaffAiGradingMessageSchema =
+  RawStaffAiGradingMessageSchema.brand<'StaffAiGradingMessage'>();
+export type StaffAiGradingMessage = z.infer<typeof StaffAiGradingMessageSchema>;
 
 /** Access Tokens */
 export const RawUserAccessTokenSchema = RawAccessTokenSchema.pick({

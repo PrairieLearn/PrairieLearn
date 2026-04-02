@@ -4861,6 +4861,7 @@ __metadata:
     "@prairielearn/ui": "workspace:^"
     "@prairielearn/utils": "workspace:^"
     "@prairielearn/vite-plugin-express": "workspace:^"
+    "@prairielearn/workflows": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@prairielearn/zod": "workspace:^"
     "@pyroscope/nodejs": "npm:^0.4.10"
@@ -5295,7 +5296,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/workflows@workspace:packages/workflows":
+"@prairielearn/workflows@workspace:^, @prairielearn/workflows@workspace:packages/workflows":
   version: 0.0.0-use.local
   resolution: "@prairielearn/workflows@workspace:packages/workflows"
   dependencies:
