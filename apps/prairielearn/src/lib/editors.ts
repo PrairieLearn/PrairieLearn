@@ -2487,3 +2487,5 @@ export class MultiEditor extends Editor {
     };
   }
 }
+
+export type AssessmentToolsConfig = { name: string; label: string; enabled: boolean }[];

@@ -9,6 +9,7 @@ import { QRCodeModalHtml } from '../../components/QRCodeModal.js';
 import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
+import { type AssessmentToolsConfig } from '../../lib/editors.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { SHORT_NAME_PATTERN } from '../../lib/short-name.js';
 
@@ -23,6 +24,7 @@ export function InstructorAssessmentSettings({
   assessmentSets,
   assessmentModules,
   canEdit,
+  assessmentTools,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
   origHash: string;
@@ -34,6 +36,7 @@ export function InstructorAssessmentSettings({
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
   canEdit: boolean;
+  assessmentTools: AssessmentToolsConfig;
 }) {
   return PageLayout({
     resLocals,
@@ -304,6 +307,25 @@ ${resLocals.assessment.honor_code}</textarea
                   </div>
                 `
               : ''}
+            <h2 class="h4">Tools</h2>
+            ${assessmentTools.map(
+              ({ name, label, enabled }) => html`
+                <div class="mb-3 form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="tool_${name}"
+                    name="tool_${name}"
+                    ${canEdit ? '' : 'disabled'}
+                    ${enabled ? 'checked' : ''}
+                  />
+                  <label class="form-check-label" for="tool_${name}"> ${label} </label>
+                  <div class="small text-muted">
+                    Enable the ${name} tool for students taking this assessment.
+                  </div>
+                </div>
+              `,
+            )}
             ${StudentLinkSharingHtml({
               studentLink,
               studentLinkMessage: 'The link that students will use to access this assessment.',

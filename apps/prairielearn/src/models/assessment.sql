@@ -133,3 +133,14 @@ ORDER BY
   aset.number,
   a.order_by,
   a.id;
+
+-- BLOCK select_zone_tool_overrides
+SELECT
+  z.number AS zone_number,
+  at.tool,
+  at.enabled
+FROM
+  assessment_tools AS at
+  JOIN zones AS z ON (at.zone_id = z.id)
+WHERE
+  z.assessment_id = $assessment_id;
