@@ -23,7 +23,6 @@ import {
 import { useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 
-import { downloadAsCSV } from '@prairielearn/browser-utils';
 import {
   CategoricalColumnFilter,
   MultiSelectColumnFilter,
@@ -52,6 +51,7 @@ import {
   GradebookRowSchema,
 } from '../instructorGradebook.types.js';
 
+import { CanvasCsvModal } from './CanvasCsvModal.js';
 import { EditScoreButton } from './EditScoreModal.js';
 
 const DEFAULT_SORT: SortingState = [{ id: 'uid', desc: false }];
@@ -533,29 +533,10 @@ function GradebookTable({
     },
   });
 
-  function downloadCanvasCsv(rows: GradebookRow[], filename: string) {
-    const header = [
-      'Student',
-      'ID',
-      'SIS User ID',
-      'SIS Login ID',
-      'Section',
-      ...courseAssessments.map((a) => a.label),
-    ];
-    const data = rows.map((row) => [
-      row.user_name,
-      row.uid,
-      null,
-      null,
-      null,
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      ...courseAssessments.map((a) => row.scores[a.assessment_id]?.score_perc ?? null),
-    ]);
-    downloadAsCSV(header, data, filename);
-  }
-
   const allRows = table.getCoreRowModel().rows.map((row) => row.original);
   const filteredRows = table.getRowModel().rows.map((row) => row.original);
+
+  const [canvasCsvTarget, setCanvasCsvTarget] = useState<'all' | 'filtered' | null>(null);
 
   const canvasCsvMenuItems = (
     <>
@@ -568,7 +549,7 @@ function GradebookTable({
           type="button"
           role="menuitem"
           disabled={allRows.length === 0}
-          onClick={() => downloadCanvasCsv(allRows, `${filenameBase}_canvas.csv`)}
+          onClick={() => setCanvasCsvTarget('all')}
         >
           All users' grades ({allRows.length}) as Canvas CSV
         </button>
@@ -579,7 +560,7 @@ function GradebookTable({
           type="button"
           role="menuitem"
           disabled={filteredRows.length === 0}
-          onClick={() => downloadCanvasCsv(filteredRows, `${filenameBase}_canvas_filtered.csv`)}
+          onClick={() => setCanvasCsvTarget('filtered')}
         >
           Filtered users' grades ({filteredRows.length}) as Canvas CSV
         </button>
@@ -652,6 +633,13 @@ function GradebookTable({
           filters,
           scrollRef: tableRef,
         }}
+      />
+      <CanvasCsvModal
+        show={canvasCsvTarget != null}
+        courseAssessments={courseAssessments}
+        rows={canvasCsvTarget === 'filtered' ? filteredRows : allRows}
+        filename={`${filenameBase}_canvas${canvasCsvTarget === 'filtered' ? '_filtered' : ''}.csv`}
+        onHide={() => setCanvasCsvTarget(null)}
       />
     </>
   );

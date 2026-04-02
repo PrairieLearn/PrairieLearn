@@ -139,6 +139,8 @@ export function getFilenames(locals: ResLocalsForPage<'assessment'>) {
     finalFilesZipFilename: prefix + 'final_files.zip',
     bestFilesZipFilename: prefix + 'best_files.zip',
     allFilesZipFilename: prefix + 'all_files.zip',
+    canvasScoresCsvFilename: prefix + 'canvas_scores.csv',
+    canvasPointsCsvFilename: prefix + 'canvas_points.csv',
   };
   if (locals.assessment.team_work) {
     filenames.groupsCsvFilename = prefix + 'groups.csv';
@@ -587,6 +589,43 @@ router.get(
         only_highest: false,
         group_work: true,
       });
+    } else if (
+      req.params.filename === filenames.canvasScoresCsvFilename ||
+      req.params.filename === filenames.canvasPointsCsvFilename
+    ) {
+      const isPoints = req.params.filename === filenames.canvasPointsCsvFilename;
+      const canvasColumns: Columns = [
+        ['Student', 'name'],
+        ['ID', 'uid'],
+        ['SIS User ID', 'sis_user_id'],
+        ['SIS Login ID', 'sis_login_id'],
+        ['Section', 'section'],
+        [assessmentName, isPoints ? 'points' : 'score_perc'],
+      ];
+      const cursor = await sqldb.queryCursor(
+        sql.select_assessment_instances,
+        {
+          assessment_id: res.locals.assessment.id,
+          highest_score: true,
+          group_work: false,
+        },
+        z.unknown(),
+      );
+
+      res.attachment(req.params.filename);
+      await pipeline(
+        cursor.stream(100),
+        stringifyWithColumns(canvasColumns, (record: any) => {
+          if (record.role !== 'Student') return null;
+          return {
+            ...record,
+            sis_user_id: null,
+            sis_login_id: null,
+            section: null,
+          };
+        }),
+        res,
+      );
     } else {
       throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }
