@@ -29,67 +29,65 @@ export function MainDateControlForm({
   const dateControlRegistration = register('mainRule.dateControlEnabled');
 
   return (
-    <>
-      <Card className="mb-4">
-        <Card.Header>
-          <Form.Check
-            type="checkbox"
-            id="mainRule-date-control-enabled"
-            label={title}
-            {...dateControlRegistration}
-            onChange={(e) => {
-              dateControlRegistration.onChange(e);
-              if (e.target.checked && !getValues('mainRule.releaseDate')) {
-                setValue(
-                  'mainRule.releaseDate',
-                  Temporal.Now.plainDateISO().toPlainDateTime().toString({ smallestUnit: 'minute' }),
-                  { shouldDirty: true, shouldValidate: true },
-                );
-              }
-            }}
-            aria-describedby="mainRule-date-control-help"
-          />
-          <Form.Text id="mainRule-date-control-help" className="text-muted">
-            {description}
-          </Form.Text>
-        </Card.Header>
-        {dateControlEnabled ? (
-          <Card.Body>
-            <div className="mb-3">
-              <MainReleaseDateField />
-            </div>
-            <div className="mb-3">
-              <MainDeadlineArrayField type="early" />
-            </div>
-            <div className="mb-3">
-              <MainDueDateField />
-            </div>
-            <div className="mb-4">
-              <MainDeadlineArrayField type="late" />
-            </div>
-          </Card.Body>
-        ) : (
-          <Card.Body>
-            <p className="text-body-secondary mb-0">
-              Enable date control to configure release dates, due dates, and deadlines.
-            </p>
-          </Card.Body>
-        )}
-      </Card>
+    <Card className="mb-4">
+      <Card.Header>
+        <Form.Check
+          type="checkbox"
+          id="mainRule-date-control-enabled"
+          label={title}
+          {...dateControlRegistration}
+          aria-describedby="mainRule-date-control-help"
+          onChange={(e) => {
+            void dateControlRegistration.onChange(e);
+            if (e.target.checked && !getValues('mainRule.releaseDate')) {
+              setValue(
+                'mainRule.releaseDate',
+                Temporal.Now.plainDateISO().toPlainDateTime().toString({ smallestUnit: 'minute' }),
+                { shouldDirty: true, shouldValidate: true },
+              );
+            }
+          }}
+        />
+        <Form.Text id="mainRule-date-control-help" className="text-muted">
+          {description}
+        </Form.Text>
+      </Card.Header>
+      {dateControlEnabled ? (
+        <Card.Body>
+          <div className="mb-3">
+            <MainReleaseDateField />
+          </div>
+          <div className="mb-3">
+            <MainDeadlineArrayField type="early" />
+          </div>
+          <div className="mb-3">
+            <MainDueDateField />
+          </div>
+          <div className="mb-3">
+            <MainDeadlineArrayField type="late" />
+          </div>
 
-      <div className="mb-3">
-        <MainAfterLastDeadlineField />
-      </div>
+          <div className="mb-3">
+            <MainAfterLastDeadlineField />
+          </div>
 
-      <Row className="mb-3 gy-3">
-        <Col md={6}>
-          <MainDurationField />
-        </Col>
-        <Col md={6}>
-          <MainPasswordField />
-        </Col>
-      </Row>
-    </>
+          <Row className="mb-3 gy-3">
+            <Col md={6}>
+              <MainDurationField />
+            </Col>
+            <Col md={6}>
+              <MainPasswordField />
+            </Col>
+          </Row>
+        </Card.Body>
+      ) : (
+        <Card.Body>
+          <p className="text-body-secondary mb-0">
+            Enable date control to configure release dates, due dates, and deadlines.
+          </p>
+        </Card.Body>
+      )}
+    </Card>
   );
 }
 

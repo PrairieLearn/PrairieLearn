@@ -114,7 +114,7 @@ export function MainReleaseDateField() {
           Today
         </Button>
       </div>
-      <MainReleaseDateInput value={field.value} onChange={field.onChange} error={error?.message} />
+      <MainReleaseDateInput value={field.value} error={error?.message} onChange={field.onChange} />
     </div>
   );
 }

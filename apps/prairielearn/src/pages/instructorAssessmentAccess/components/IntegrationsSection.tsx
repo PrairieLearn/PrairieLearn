@@ -1,59 +1,54 @@
-import { Dropdown } from 'react-bootstrap';
+import { useEffect } from 'react';
+import { Card, Form } from 'react-bootstrap';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import { PrairieTestControlForm } from './PrairieTestControlForm.js';
 import type { AccessControlFormData } from './types.js';
 
 export function IntegrationsSection() {
-  const { setValue } = useFormContext<AccessControlFormData>();
+  const { register, setValue, getValues } = useFormContext<AccessControlFormData>();
 
   const prairieTestEnabled = useWatch<AccessControlFormData, 'mainRule.prairieTestEnabled'>({
     name: 'mainRule.prairieTestEnabled',
   });
 
-  const availableIntegrations = [
-    { key: 'prairieTest' as const, label: 'PrairieTest', added: prairieTestEnabled },
-  ];
-  const unadded = availableIntegrations.filter((i) => !i.added);
+  const prairieTestRegistration = register('mainRule.prairieTestEnabled');
 
-  const addIntegration = (key: string) => {
-    if (key === 'prairieTest') {
-      setValue('mainRule.prairieTestEnabled', true, { shouldDirty: true });
+  // When PT is enabled and there are no exams, auto-add one empty entry.
+  useEffect(() => {
+    if (prairieTestEnabled && getValues('mainRule.prairieTestExams').length === 0) {
+      setValue('mainRule.prairieTestExams', [{ examUuid: '', readOnly: false }], {
+        shouldDirty: true,
+      });
     }
-  };
-
-  const removeIntegration = (key: string) => {
-    if (key === 'prairieTest') {
-      setValue('mainRule.prairieTestEnabled', false, { shouldDirty: true });
-      setValue('mainRule.prairieTestExams', [], { shouldDirty: true });
-    }
-  };
+  }, [prairieTestEnabled, getValues, setValue]);
 
   return (
-    <div className="mb-4">
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h6 className="mb-0">Integrations</h6>
-        {unadded.length > 0 && (
-          <Dropdown>
-            <Dropdown.Toggle size="sm" variant="outline-primary">
-              <i className="bi bi-plus-circle me-1" aria-hidden="true" /> Add integration
-            </Dropdown.Toggle>
-            <Dropdown.Menu>
-              {unadded.map((i) => (
-                <Dropdown.Item key={i.key} onClick={() => addIntegration(i.key)}>
-                  {i.label}
-                </Dropdown.Item>
-              ))}
-            </Dropdown.Menu>
-          </Dropdown>
-        )}
-      </div>
-
-      {prairieTestEnabled ? (
-        <PrairieTestControlForm onRemove={() => removeIntegration('prairieTest')} />
-      ) : (
-        <p className="text-muted">No integrations configured.</p>
+    <Card className="mb-4">
+      <Card.Header>
+        <Form.Check
+          type="checkbox"
+          id="mainRule-prairietest-enabled"
+          label="PrairieTest"
+          defaultChecked={prairieTestEnabled}
+          {...prairieTestRegistration}
+          aria-describedby="mainRule-prairietest-help"
+          onChange={(e) => {
+            void prairieTestRegistration.onChange(e);
+            if (!e.target.checked) {
+              setValue('mainRule.prairieTestExams', [], { shouldDirty: true });
+            }
+          }}
+        />
+        <Form.Text id="mainRule-prairietest-help" className="text-muted">
+          Control access to your assessment through PrairieTest exams
+        </Form.Text>
+      </Card.Header>
+      {prairieTestEnabled && (
+        <Card.Body>
+          <PrairieTestControlForm />
+        </Card.Body>
       )}
-    </div>
+    </Card>
   );
 }
