@@ -74,7 +74,15 @@ WHERE
 
 -- BLOCK check_course_instance_legacy_access
 SELECT
-  EXISTS (
+  ci.id
+FROM
+  course_instances AS ci
+  JOIN courses AS c ON (c.id = ci.course_id)
+  JOIN users AS u ON (u.id = $user_id)
+  JOIN institutions AS i ON (i.id = u.institution_id)
+WHERE
+  ci.id = ANY ($course_instance_id::BIGINT[])
+  AND EXISTS (
     SELECT
       *
     FROM
@@ -108,11 +116,4 @@ SELECT
           AND i.short_name = ciar.institution
         )
       )
-  )
-FROM
-  course_instances AS ci
-  JOIN courses AS c ON (c.id = ci.course_id)
-  JOIN users AS u ON (u.id = $user_id)
-  JOIN institutions AS i ON (i.id = u.institution_id)
-WHERE
-  ci.id = $course_instance_id;
+  );

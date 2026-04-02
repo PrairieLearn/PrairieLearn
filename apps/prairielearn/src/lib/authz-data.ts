@@ -5,6 +5,7 @@ import z from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { withBrand } from '@prairielearn/utils';
+import { IdSchema } from '@prairielearn/zod';
 
 import { selectLatestPublishingExtensionByEnrollment } from '../models/course-instance-publishing-extensions.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
@@ -69,18 +70,18 @@ export const CourseOrInstanceOverridesSchema = z.object({
 type CourseOrInstanceOverrides = z.infer<typeof CourseOrInstanceOverridesSchema>;
 
 export async function checkCourseInstanceLegacyAccess({
-  course_instance_id,
-  user_id,
-  req_date,
+  courseInstanceIds,
+  userId,
+  reqDate,
 }: {
-  course_instance_id: string;
-  user_id: string;
-  req_date: Date;
+  courseInstanceIds: string[];
+  userId: string;
+  reqDate: Date;
 }) {
-  return await sqldb.queryScalar(
+  return await sqldb.queryScalars(
     sql.check_course_instance_legacy_access,
-    { course_instance_id, user_id, req_date },
-    z.boolean(),
+    { course_instance_ids: courseInstanceIds, user_id: userId, req_date: reqDate },
+    IdSchema,
   );
 }
 
@@ -268,11 +269,14 @@ export async function constructCourseOrInstanceContext({
                 req_date,
               );
             }
-            const has_student_access = await checkCourseInstanceLegacyAccess({
-              course_instance_id: rawAuthzData.course_instance.id,
-              user_id: user.id,
-              req_date,
+            const courseInstanceIdsWithAccess = await checkCourseInstanceLegacyAccess({
+              courseInstanceIds: [rawAuthzData.course_instance.id],
+              userId: user.id,
+              reqDate: req_date,
             });
+            const has_student_access = courseInstanceIdsWithAccess.includes(
+              rawAuthzData.course_instance.id,
+            );
             return {
               has_student_access,
               has_student_access_with_enrollment:

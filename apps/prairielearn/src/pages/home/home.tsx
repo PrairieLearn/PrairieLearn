@@ -1,4 +1,3 @@
-import { filterLimit } from 'async';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
@@ -75,17 +74,21 @@ router.get(
       StudentHomePageCourseSchema,
     );
 
-    const studentCourses = await filterLimit(allStudentCourses, 5, async (entry) => {
+    const legacyCourseInstancesWithAccess = await checkCourseInstanceLegacyAccess({
+      courseInstanceIds: allStudentCourses
+        .filter((entry) => !entry.course_instance.modern_publishing)
+        .map((entry) => entry.course_instance.id),
+      userId: res.locals.authn_user.id,
+      reqDate: res.locals.req_date,
+    });
+
+    const studentCourses = allStudentCourses.filter((entry) => {
       // Filter out courses where user also has instructor access.
       if (instructorCourses.some((course) => idsEqual(course.id, entry.course_id))) return false;
 
       // Legacy courses must be filtered using access rules
       if (!entry.course_instance.modern_publishing) {
-        return await checkCourseInstanceLegacyAccess({
-          course_instance_id: entry.course_instance.id,
-          user_id: res.locals.authn_user.id,
-          req_date: res.locals.req_date,
-        });
+        return legacyCourseInstancesWithAccess.includes(entry.course_instance.id);
       }
 
       // For modern publishing courses, check access dates
