@@ -224,13 +224,20 @@ const setRequiresManualGradingMutation = t.procedure
     });
   });
 
-export const manualGradingRouter = t.router({
+// Main-server procedures: database-only operations that don't execute question code.
+export const manualGradingMainRouter = t.router({
   instances,
   setAiGradingMode: setAiGradingModeMutation,
   deleteAiGradingJobs: deleteAiGradingJobsMutation,
   deleteAiInstanceQuestionGroupings: deleteAiInstanceQuestionGroupingsMutation,
-  aiGroupInstanceQuestions: aiGroupInstanceQuestionsMutation,
-  aiGradeInstanceQuestions: aiGradeInstanceQuestionsMutation,
   setAssignedGrader: setAssignedGraderMutation,
   setRequiresManualGrading: setRequiresManualGradingMutation,
+});
+
+// Chunk-server procedures: these call questionServers.getModule().render() to
+// execute question code, so they must run on chunk servers which have the
+// question files available. The ALB routes /trpc-chunk to chunk servers.
+export const manualGradingChunkRouter = t.router({
+  aiGroupInstanceQuestions: aiGroupInstanceQuestionsMutation,
+  aiGradeInstanceQuestions: aiGradeInstanceQuestionsMutation,
 });

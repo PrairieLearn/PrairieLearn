@@ -3,16 +3,37 @@ import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import { handleTrpcError } from '../../lib/trpc.js';
 
 import { createContext, t } from './init.js';
-import { manualGradingRouter } from './manual-grading.js';
+import { manualGradingChunkRouter, manualGradingMainRouter } from './manual-grading.js';
 
-export const assessmentQuestionRouter = t.router({
-  manualGrading: manualGradingRouter,
+// Main-server router: DB-only procedures.
+// Mounted at .../assessment_question/:aqid/trpc
+const assessmentQuestionMainRouter = t.router({
+  manualGrading: manualGradingMainRouter,
 });
 
-export type AssessmentQuestionRouter = typeof assessmentQuestionRouter;
+// Chunk-server router: procedures that execute question code.
+// Mounted at .../assessment_question/:aqid/trpc-chunk
+// The ALB routes /trpc-chunk requests to chunk servers.
+const assessmentQuestionChunkRouter = t.router({
+  manualGrading: manualGradingChunkRouter,
+});
+
+// This gives the client a single type covering all procedures
+// while the actual HTTP traffic is split across two endpoints
+// by splitLink in client.ts.
+const _assessmentQuestionCombinedRouter = t.router({
+  manualGrading: t.mergeRouters(manualGradingMainRouter, manualGradingChunkRouter),
+});
+export type AssessmentQuestionRouter = typeof _assessmentQuestionCombinedRouter;
 
 export const assessmentQuestionTrpcRouter = createExpressMiddleware({
-  router: assessmentQuestionRouter,
+  router: assessmentQuestionMainRouter,
+  createContext,
+  onError: handleTrpcError,
+});
+
+export const assessmentQuestionTrpcChunkRouter = createExpressMiddleware({
+  router: assessmentQuestionChunkRouter,
   createContext,
   onError: handleTrpcError,
 });

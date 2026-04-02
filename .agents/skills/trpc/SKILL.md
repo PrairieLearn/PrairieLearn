@@ -27,6 +27,28 @@ tRPC routers are mounted per authorization scope, not per page. Each scope has i
 
 Do **not** create per-page tRPC routers.
 
+## Main vs. chunk server routing
+
+Some procedures execute question code (via `questionServers.getModule().render()`) and must run on **chunk servers**, which have the question files available. The ALB routes requests based on URL path:
+
+- `.../trpc` → main servers (database-only procedures)
+- `.../trpc-chunk` → chunk servers (question code execution)
+
+When a scope has both types of procedures, split the subrouter into two exports (e.g., `manualGradingMainRouter` and `manualGradingChunkRouter`). In the scope's `trpc.ts`, create separate Express middlewares for each and a combined type via `t.mergeRouters` for the client:
+
+```ts
+const combined = t.router({
+  manualGrading: t.mergeRouters(manualGradingMainRouter, manualGradingChunkRouter),
+});
+export type AssessmentQuestionRouter = typeof combined;
+```
+
+On the client, use `splitLink` from `@trpc/client` with an explicit set of chunk procedure paths (`CHUNK_PROCEDURE_PATHS` in `client.ts`). Keep this set in sync with the chunk router definition.
+
+A single multi-prefix CSRF token covers both endpoints — use `generatePrefixCsrfToken({ urls: [trpcUrl, trpcChunkUrl], ... })` instead of `{ url }`. This avoids threading two tokens through the component tree.
+
+See `trpc/assessmentQuestion/` for the reference implementation.
+
 ## File structure
 
 Every scope directory contains: `init.ts`, `trpc.ts`, `client.ts`, `context.ts`, plus one `*.ts` file per subrouter and optional `*.sql` files for scope-specific queries. All routers use `superjson` as the transformer in both `init.ts` and `client.ts`.

@@ -91,7 +91,10 @@ import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
 import { administratorTrpcRouter } from './trpc/administrator/trpc.js';
 import { assessmentTrpcRouter } from './trpc/assessment/trpc.js';
-import { assessmentQuestionTrpcRouter } from './trpc/assessmentQuestion/trpc.js';
+import {
+  assessmentQuestionTrpcChunkRouter,
+  assessmentQuestionTrpcRouter,
+} from './trpc/assessmentQuestion/trpc.js';
 import { courseInstanceTrpcRouter } from './trpc/courseInstance/trpc.js';
 
 process.on('warning', (e) => console.warn(e));
@@ -846,6 +849,12 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/assessment_question/:assessment_question_id(\\d+)/trpc',
     assessmentQuestionTrpcRouter,
+  );
+  // Chunk-server tRPC endpoint for procedures that execute question code
+  // (AI grading). The ALB routes /trpc-chunk to chunk servers.
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/assessment_question/:assessment_question_id(\\d+)/trpc-chunk',
+    assessmentQuestionTrpcChunkRouter,
   );
   app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/,

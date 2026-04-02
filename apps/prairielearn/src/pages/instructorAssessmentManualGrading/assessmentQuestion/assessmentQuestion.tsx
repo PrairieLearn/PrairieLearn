@@ -22,7 +22,10 @@ import {
   StaffInstanceQuestionGroupSchema,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
-import { getAssessmentQuestionTrpcUrl } from '../../../lib/client/url.js';
+import {
+  getAssessmentQuestionTrpcChunkUrl,
+  getAssessmentQuestionTrpcUrl,
+} from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
@@ -118,13 +121,17 @@ router.get(
     const hasCourseInstancePermissionEdit = authz_data.has_course_instance_permission_edit ?? false;
     const search = getUrl(req).search;
 
+    const trpcUrlArgs = {
+      courseInstanceId: res.locals.course_instance.id,
+      assessmentId: res.locals.assessment.id,
+      assessmentQuestionId: res.locals.assessment_question.id,
+    };
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
-        url: getAssessmentQuestionTrpcUrl({
-          courseInstanceId: res.locals.course_instance.id,
-          assessmentId: res.locals.assessment.id,
-          assessmentQuestionId: res.locals.assessment_question.id,
-        }),
+        urls: [
+          getAssessmentQuestionTrpcUrl(trpcUrlArgs),
+          getAssessmentQuestionTrpcChunkUrl(trpcUrlArgs),
+        ],
         authn_user_id: res.locals.authn_user.id,
       },
       config.secretKey,

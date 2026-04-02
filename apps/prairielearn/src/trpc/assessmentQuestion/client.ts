@@ -1,9 +1,22 @@
-import { createTRPCClient, httpLink } from '@trpc/client';
+import { createTRPCClient, httpLink, splitLink } from '@trpc/client';
 import superjson from 'superjson';
 
-import { getAssessmentQuestionTrpcUrl } from '../../lib/client/url.js';
+import {
+  getAssessmentQuestionTrpcChunkUrl,
+  getAssessmentQuestionTrpcUrl,
+} from '../../lib/client/url.js';
 
 import type { AssessmentQuestionRouter } from './trpc.js';
+
+/**
+ * Procedure paths that must be routed to chunk servers because they
+ * execute question code (via questionServers.getModule().render()).
+ * Keep in sync with manualGradingChunkRouter in manual-grading.ts.
+ */
+const CHUNK_PROCEDURE_PATHS = new Set([
+  'manualGrading.aiGroupInstanceQuestions',
+  'manualGrading.aiGradeInstanceQuestions',
+]);
 
 export function createAssessmentQuestionTrpcClient({
   csrfToken,
@@ -18,15 +31,27 @@ export function createAssessmentQuestionTrpcClient({
   assessmentQuestionId: string;
   urlBase?: string;
 }) {
+  const urlArgs = { courseInstanceId, assessmentId, assessmentQuestionId };
+  const commonHeaders = {
+    'X-TRPC': 'true',
+    'X-CSRF-Token': csrfToken,
+  };
+
   return createTRPCClient<AssessmentQuestionRouter>({
     links: [
-      httpLink({
-        url: `${urlBase}${getAssessmentQuestionTrpcUrl({ courseInstanceId, assessmentId, assessmentQuestionId })}`,
-        headers: {
-          'X-TRPC': 'true',
-          'X-CSRF-Token': csrfToken,
-        },
-        transformer: superjson,
+      splitLink({
+        // Route AI grading procedures to chunk servers via /trpc-chunk.
+        condition: (op) => CHUNK_PROCEDURE_PATHS.has(op.path),
+        true: httpLink({
+          url: `${urlBase}${getAssessmentQuestionTrpcChunkUrl(urlArgs)}`,
+          headers: commonHeaders,
+          transformer: superjson,
+        }),
+        false: httpLink({
+          url: `${urlBase}${getAssessmentQuestionTrpcUrl(urlArgs)}`,
+          headers: commonHeaders,
+          transformer: superjson,
+        }),
       }),
     ],
   });
