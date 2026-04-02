@@ -318,7 +318,7 @@ def test_initially_placed_validation_failure(
 
 
 @pytest.mark.parametrize(
-    ("options", "answer_options_list", "error"),
+    ("options", "answer_options_list"),
     [
         (
             {
@@ -339,7 +339,7 @@ def test_initially_placed_validation_failure(
     ],
 )
 def test_initially_placed_validation(
-    options: dict, answer_options_list: list[dict], error: str
+    options: dict, answer_options_list: list[dict]
 ) -> None:
     """Tests valid pl-answer initially-placed option failure"""
     tags_html = "\n".join(

@@ -345,9 +345,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         editable = data["editable"]
 
         all_blocks = data["params"][answer_name]
-        initially_placed_blocks = [
-            block for block in all_blocks if block["initially_placed"]
-        ]
+        initially_placed_blocks = sorted(
+            [block for block in all_blocks if block["initially_placed"]],
+            key=lambda x: x["index"],
+        )
 
         # We aren't allowed to mutate the `data` object during render, so we'll
         # make a deep copy of the submitted answer so we can update indentation
