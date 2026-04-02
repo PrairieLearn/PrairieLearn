@@ -1,6 +1,6 @@
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
 
-import { handleTrpcError } from '../../lib/trpc.js';
+import { getRouterPaths, handleTrpcError } from '../../lib/trpc.js';
 
 import { createContext, t } from './init.js';
 import { manualGradingChunkRouter, manualGradingMainRouter } from './manual-grading.js';
@@ -18,7 +18,8 @@ const assessmentQuestionChunkRouter = t.router({
   manualGrading: manualGradingChunkRouter,
 });
 
-export type AssessmentQuestionChunkRouter = typeof assessmentQuestionChunkRouter;
+/** Procedure paths that must be routed to chunk servers. Derived from the chunk router at runtime. */
+export const assessmentQuestionChunkPaths = getRouterPaths(assessmentQuestionChunkRouter);
 
 // This gives the client a single type covering all procedures
 // while the actual HTTP traffic is split across two endpoints

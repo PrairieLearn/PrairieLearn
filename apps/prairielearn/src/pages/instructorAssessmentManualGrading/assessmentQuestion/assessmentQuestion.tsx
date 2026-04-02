@@ -35,6 +35,7 @@ import { getJobSequenceIds } from '../../../lib/server-jobs.js';
 import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
+import { assessmentQuestionChunkPaths } from '../../../trpc/assessmentQuestion/trpc.js';
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
 import { selectInstanceQuestionsForManualGrading } from './queries.js';
@@ -196,6 +197,7 @@ router.get(
                 questionTitle={question.title ?? ''}
                 questionNumber={Number(number_in_alternative_group)}
                 availableAiGradingProviders={availableAiGradingProviders}
+                chunkPaths={assessmentQuestionChunkPaths}
               />
             </Hydrate>
           </>

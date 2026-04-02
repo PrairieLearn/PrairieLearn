@@ -1,4 +1,4 @@
-import type { ProcedureType, TRPCError } from '@trpc/server';
+import type { AnyRouter, ProcedureType, TRPCError } from '@trpc/server';
 import { getHTTPStatusCodeFromError } from '@trpc/server/http';
 import { sampleSize } from 'es-toolkit';
 import type { Request } from 'express';
@@ -6,6 +6,25 @@ import type { Request } from 'express';
 import { formatErrorStackSafe } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
+
+/**
+ * Recursively extracts all dot-separated procedure paths from a tRPC router.
+ * Use this to derive chunk-server paths at runtime instead of maintaining a
+ * manual list.
+ */
+export function getRouterPaths(router: AnyRouter, prefix = ''): string[] {
+  const paths: string[] = [];
+  for (const [key, value] of Object.entries(router._def.record)) {
+    const fullPath = prefix ? `${prefix}.${key}` : key;
+    const def = (value as Record<string, unknown>)._def as Record<string, unknown> | undefined;
+    if (def?.router) {
+      paths.push(...getRouterPaths(value as AnyRouter, fullPath));
+    } else {
+      paths.push(fullPath);
+    }
+  }
+  return paths;
+}
 
 /**
  * Reimplements error handling from `pages/error/error.ts` for tRPC errors.

@@ -6,33 +6,32 @@ import {
   getAssessmentQuestionTrpcUrl,
 } from '../../lib/client/url.js';
 
-import type { AssessmentQuestionChunkRouter, AssessmentQuestionRouter } from './trpc.js';
+import type { AssessmentQuestionRouter } from './trpc.js';
 
 export function createAssessmentQuestionTrpcClient({
   csrfToken,
   courseInstanceId,
   assessmentId,
   assessmentQuestionId,
+  chunkPaths,
   urlBase = '',
 }: {
   csrfToken: string;
   courseInstanceId: string;
   assessmentId: string;
   assessmentQuestionId: string;
+  chunkPaths: readonly string[];
   urlBase?: string;
 }) {
   const urlArgs = { courseInstanceId, assessmentId, assessmentQuestionId };
 
   return createTRPCClient<AssessmentQuestionRouter>({
     links: [
-      createChunkSplitLink<AssessmentQuestionChunkRouter>()({
+      createChunkSplitLink({
         mainUrl: `${urlBase}${getAssessmentQuestionTrpcUrl(urlArgs)}`,
         chunkUrl: `${urlBase}${getAssessmentQuestionTrpcChunkUrl(urlArgs)}`,
         csrfToken,
-        chunkPaths: [
-          'manualGrading.aiGroupInstanceQuestions',
-          'manualGrading.aiGradeInstanceQuestions',
-        ],
+        chunkPaths,
       }),
     ],
   });

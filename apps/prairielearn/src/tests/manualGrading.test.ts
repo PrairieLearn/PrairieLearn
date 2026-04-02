@@ -14,6 +14,7 @@ import {
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
 import { createAssessmentQuestionTrpcClient } from '../trpc/assessmentQuestion/client.js';
+import { assessmentQuestionChunkPaths } from '../trpc/assessmentQuestion/trpc.js';
 
 import {
   type User,
@@ -170,6 +171,7 @@ async function createTrpcClient(assessmentQuestionUrl: string) {
     courseInstanceId,
     assessmentId,
     assessmentQuestionId,
+    chunkPaths: assessmentQuestionChunkPaths,
     urlBase: pageUrl.origin,
   });
 }

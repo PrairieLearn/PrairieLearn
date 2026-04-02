@@ -53,11 +53,12 @@ interface AssessmentQuestionManualGradingProps {
   questionTitle: string;
   questionNumber: number;
   availableAiGradingProviders: EnumAiGradingProvider[];
+  chunkPaths: string[];
 }
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
   AssessmentQuestionManualGradingProps,
-  'search' | 'isDevMode' | 'trpcCsrfToken'
+  'search' | 'isDevMode' | 'trpcCsrfToken' | 'chunkPaths'
 >;
 
 function AssessmentQuestionManualGradingInner({
@@ -207,6 +208,7 @@ export function AssessmentQuestionManualGrading({
   search,
   isDevMode,
   trpcCsrfToken,
+  chunkPaths,
   ...innerProps
 }: AssessmentQuestionManualGradingProps) {
   const [queryClient] = useState(() => new QueryClient());
@@ -216,6 +218,7 @@ export function AssessmentQuestionManualGrading({
       courseInstanceId: innerProps.courseInstance.id,
       assessmentId: innerProps.assessment.id,
       assessmentQuestionId: innerProps.assessmentQuestion.id,
+      chunkPaths,
     }),
   );
   return (
