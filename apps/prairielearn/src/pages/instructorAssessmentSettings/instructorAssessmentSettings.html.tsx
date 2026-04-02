@@ -1,577 +1,798 @@
-import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/react';
+import { QueryClient, useMutation } from '@tanstack/react-query';
+import clsx from 'clsx';
+import { useState } from 'react';
+import { Alert, Button, Form, InputGroup, Modal } from 'react-bootstrap';
+import { useForm } from 'react-hook-form';
 
-import { GitHubButtonHtml } from '../../components/GitHubButton.js';
-import { Modal } from '../../components/Modal.js';
-import { PageLayout } from '../../components/PageLayout.js';
-import { QRCodeModalHtml } from '../../components/QRCodeModal.js';
+import { GitHubButton } from '../../components/GitHubButton.js';
+import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
 import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
-import { compiledScriptTag } from '../../lib/assets.js';
-import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import { SHORT_NAME_PATTERN } from '../../lib/short-name.js';
+import { getAppError } from '../../lib/client/errors.js';
+import type { PageContext } from '../../lib/client/page-context.js';
+import type { StaffAssessmentModule, StaffAssessmentSet } from '../../lib/client/safe-db-types.js';
+import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import { validateShortName } from '../../lib/short-name.js';
+import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
+import type { AssessmentSettingsError } from '../../trpc/assessment/assessment-settings.js';
+import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
+import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
+
+import type { SettingsFormValues } from './instructorAssessmentSettings.types.js';
 
 export function InstructorAssessmentSettings({
-  resLocals,
-  origHash,
+  trpcCsrfToken,
+  urlPrefix,
+  canEdit,
+  origHash: initialOrigHash,
+  assessment,
+  assessmentSet,
+  hasCoursePermissionView,
   assessmentGHLink,
   tids,
   studentLink,
+  publicLink,
   infoAssessmentPath,
   assessmentSets,
   assessmentModules,
-  canEdit,
+  courseInstanceId,
+  assessmentId,
+  isDevMode,
 }: {
-  resLocals: ResLocalsForPage<'assessment'>;
+  trpcCsrfToken: string;
+  urlPrefix: string;
+  canEdit: boolean;
   origHash: string;
+  assessment: PageContext<'assessment', 'instructor'>['assessment'];
+  assessmentSet: PageContext<'assessment', 'instructor'>['assessment_set'];
+  hasCoursePermissionView: boolean;
   assessmentGHLink: string | null;
   tids: string[];
   studentLink: string;
+  publicLink: string;
   infoAssessmentPath: string;
-  assessmentSets: AssessmentSet[];
-  assessmentModules: AssessmentModule[];
-  canEdit: boolean;
+  assessmentSets: StaffAssessmentSet[];
+  assessmentModules: StaffAssessmentModule[];
+  courseInstanceId: string;
+  assessmentId: string;
+  isDevMode: boolean;
 }) {
-  return PageLayout({
-    resLocals,
-    pageTitle: 'Settings',
-    navContext: {
-      type: 'instructor',
-      page: 'assessment',
-      subPage: 'settings',
-    },
-    headContent: html` ${compiledScriptTag('instructorAssessmentSettingsClient.ts')} `,
-    content: html`
-      ${QRCodeModalHtml({
-        id: 'studentLinkModal',
-        title: 'Student link QR code',
-        content: studentLink,
-      })}
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() =>
+    createAssessmentTrpcClient({
+      csrfToken: trpcCsrfToken,
+      courseInstanceId,
+      assessmentId,
+    }),
+  );
 
-      <!-- Actions bar -->
-      <div class="card mb-4">
-        <div class="card-body d-flex flex-wrap align-items-center gap-2">
-          ${canEdit
-            ? html`
-                <form name="copy-assessment-form" method="POST" class="d-inline">
-                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <button
-                    type="submit"
-                    name="__action"
-                    value="copy_assessment"
-                    class="btn btn-sm btn-outline-secondary"
-                  >
-                    <i class="bi bi-copy" aria-hidden="true"></i> Copy assessment
-                  </button>
-                </form>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-danger"
-                  data-bs-toggle="modal"
-                  data-bs-target="#deleteAssessmentModal"
-                >
-                  <i class="bi bi-trash" aria-hidden="true"></i> Delete assessment
-                </button>
-                ${Modal({
-                  id: 'deleteAssessmentModal',
-                  title: 'Delete assessment',
-                  body: html`
-                    <p>
-                      Are you sure you want to delete the assessment
-                      <strong>${resLocals.assessment.tid}</strong>?
-                    </p>
-                  `,
-                  footer: html`
-                    <input type="hidden" name="__action" value="delete_assessment" />
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                      Cancel
-                    </button>
-                    <button type="submit" class="btn btn-danger">Delete</button>
-                  `,
-                })}
-              `
-            : ''}
-          <div class="d-flex align-items-center gap-2 ms-auto">
-            <button
-              type="button"
-              class="btn btn-sm btn-outline-secondary"
-              data-bs-toggle="modal"
-              data-bs-target="#studentLinkModal"
-            >
-              <i class="bi bi-link-45deg" aria-hidden="true"></i> Student link
-            </button>
-            ${GitHubButtonHtml(assessmentGHLink)}
-            ${resLocals.authz_data.has_course_permission_view
-              ? canEdit
-                ? html`
+  return (
+    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <InstructorAssessmentSettingsInner
+          urlPrefix={urlPrefix}
+          canEdit={canEdit}
+          initialOrigHash={initialOrigHash}
+          assessment={assessment}
+          assessmentSet={assessmentSet}
+          hasCoursePermissionView={hasCoursePermissionView}
+          assessmentGHLink={assessmentGHLink}
+          tids={tids}
+          studentLink={studentLink}
+          publicLink={publicLink}
+          infoAssessmentPath={infoAssessmentPath}
+          assessmentSets={assessmentSets}
+          assessmentModules={assessmentModules}
+        />
+      </TRPCProvider>
+    </QueryClientProviderDebug>
+  );
+}
+
+InstructorAssessmentSettings.displayName = 'InstructorAssessmentSettings';
+
+function InstructorAssessmentSettingsInner({
+  urlPrefix,
+  canEdit,
+  initialOrigHash,
+  assessment,
+  assessmentSet,
+  hasCoursePermissionView,
+  assessmentGHLink,
+  tids,
+  studentLink,
+  publicLink,
+  infoAssessmentPath,
+  assessmentSets,
+  assessmentModules,
+}: {
+  urlPrefix: string;
+  canEdit: boolean;
+  initialOrigHash: string;
+  assessment: PageContext<'assessment', 'instructor'>['assessment'];
+  assessmentSet: PageContext<'assessment', 'instructor'>['assessment_set'];
+  hasCoursePermissionView: boolean;
+  assessmentGHLink: string | null;
+  tids: string[];
+  studentLink: string;
+  publicLink: string;
+  infoAssessmentPath: string;
+  assessmentSets: StaffAssessmentSet[];
+  assessmentModules: StaffAssessmentModule[];
+}) {
+  const trpc = useTRPC();
+  const [origHash, setOrigHash] = useState(initialOrigHash);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const tidSet = new Set(tids);
+
+  const currentModuleName =
+    assessmentModules.find((m) => m.id === assessment.assessment_module_id)?.name ??
+    assessmentModules[0]?.name;
+
+  const defaultValues: SettingsFormValues = {
+    aid: assessment.tid ?? '',
+    title: assessment.title ?? '',
+    set: assessmentSet.name,
+    number: assessment.number,
+    module: currentModuleName,
+    text: assessment.text ?? '',
+    allow_issue_reporting: assessment.allow_issue_reporting ?? true,
+    allow_personal_notes: assessment.allow_personal_notes,
+    multiple_instance: assessment.multiple_instance,
+    auto_close: assessment.auto_close ?? true,
+    require_honor_code: assessment.require_honor_code ?? true,
+    honor_code: assessment.honor_code ?? '',
+    max_points: assessment.max_points,
+    max_bonus_points: assessment.max_bonus_points,
+    constant_question_value: assessment.constant_question_value ?? false,
+    shuffle_questions: assessment.shuffle_questions ?? assessment.type === 'Exam',
+    advance_score_perc: assessment.advance_score_perc,
+    allow_real_time_grading: assessment.json_allow_real_time_grading !== false,
+    grade_rate_minutes: assessment.json_grade_rate_minutes,
+  };
+
+  const {
+    register,
+    reset,
+    watch,
+    handleSubmit,
+    formState: { isDirty, errors, isSubmitting },
+  } = useForm<SettingsFormValues>({
+    mode: 'onChange',
+    defaultValues,
+  });
+
+  const saveMutation = useMutation(trpc.assessmentSettings.updateAssessment.mutationOptions());
+  const copyMutation = useMutation(trpc.assessmentSettings.copyAssessment.mutationOptions());
+  const deleteMutation = useMutation(trpc.assessmentSettings.deleteAssessment.mutationOptions());
+
+  const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(saveMutation.error);
+  const copyError = getAppError<AssessmentSettingsError['CopyAssessment']>(copyMutation.error);
+  const deleteError = getAppError<AssessmentSettingsError['DeleteAssessment']>(
+    deleteMutation.error,
+  );
+
+  const onFormSubmit = (data: SettingsFormValues) => {
+    saveMutation.mutate(
+      { ...data, origHash },
+      {
+        onSuccess: (result) => {
+          setOrigHash(result.origHash);
+          reset(data);
+        },
+      },
+    );
+  };
+
+  const requireHonorCode = watch('require_honor_code');
+
+  return (
+    <>
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Delete assessment</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {deleteError && (
+            <Alert variant="danger" dismissible onClose={() => deleteMutation.reset()}>
+              {deleteError.message}
+            </Alert>
+          )}
+          <p>
+            Are you sure you want to delete the assessment <strong>{assessment.tid}</strong>?
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            disabled={deleteMutation.isPending}
+            onClick={() =>
+              deleteMutation.mutate(undefined, {
+                onSuccess: () => {
+                  window.location.href = `${urlPrefix}/instance_admin/assessments`;
+                },
+              })
+            }
+          >
+            {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <form name="edit-assessment-settings-form" onSubmit={handleSubmit(onFormSubmit)}>
+        {/* General */}
+        <div className="card mb-4">
+          <div className="card-body">
+            <div className="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
+              <div>
+                <h2 className="h5 card-title mb-1">General</h2>
+                <p className="text-muted small mb-0">
+                  Identity and classification for this assessment.
+                </p>
+              </div>
+              <div className="d-flex flex-wrap align-items-center gap-2">
+                {canEdit && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline-secondary"
+                      disabled={copyMutation.isPending}
+                      onClick={() =>
+                        copyMutation.mutate(undefined, {
+                          onSuccess: (result) => {
+                            window.location.href = `${urlPrefix}/assessment/${result.assessmentId}/settings`;
+                          },
+                        })
+                      }
+                    >
+                      <i className="bi bi-copy" aria-hidden="true" />{' '}
+                      {copyMutation.isPending ? 'Copying...' : 'Copy assessment'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline-danger"
+                      onClick={() => setShowDeleteModal(true)}
+                    >
+                      <i className="bi bi-trash" aria-hidden="true" /> Delete assessment
+                    </Button>
+                  </>
+                )}
+                <GitHubButton gitHubLink={assessmentGHLink} />
+                {hasCoursePermissionView &&
+                  (canEdit ? (
                     <a
                       data-testid="edit-assessment-configuration-link"
-                      class="btn btn-sm btn-outline-secondary"
-                      href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                        .id}/file_edit/${infoAssessmentPath}"
+                      className="btn btn-sm btn-outline-secondary"
+                      href={encodePathNoNormalize(
+                        `${urlPrefix}/assessment/${assessment.id}/file_edit/${infoAssessmentPath}`,
+                      )}
                     >
-                      <i class="bi bi-code-slash" aria-hidden="true"></i> Edit JSON
+                      <i className="bi bi-code-slash" aria-hidden="true" /> Edit JSON
                     </a>
-                  `
-                : html`
+                  ) : (
                     <a
-                      class="btn btn-sm btn-outline-secondary"
-                      href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                        .id}/file_view/${infoAssessmentPath}"
+                      className="btn btn-sm btn-outline-secondary"
+                      href={`${urlPrefix}/assessment/${assessment.id}/file_view/${infoAssessmentPath}`}
                     >
-                      <i class="bi bi-code-slash" aria-hidden="true"></i> View JSON
+                      <i className="bi bi-code-slash" aria-hidden="true" /> View JSON
                     </a>
-                  `
-              : ''}
-          </div>
-        </div>
-      </div>
-
-      <form name="edit-assessment-settings-form" method="POST">
-        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-        <input type="hidden" name="orig_hash" value="${origHash}" />
-
-        <!-- General -->
-        <div class="card mb-4">
-          <div class="card-body">
-            <h2 class="h5 card-title">General</h2>
-            <p class="text-muted small">Identity and classification for this assessment.</p>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label" for="aid">Short name</label>
-                <input
-                  type="text"
-                  class="form-control font-monospace"
-                  id="aid"
-                  name="aid"
-                  value="${resLocals.assessment.tid}"
-                  pattern="${
-                    // TODO: if/when this page is converted to React, use `validateShortName`
-                    // from `../../lib/short-name.js` with react-hook-form to provide more specific
-                    // validation feedback (e.g., "cannot start with a slash").
-                    SHORT_NAME_PATTERN
-                  }|${
-                    // NOTE: this will not be compatible with browsers, as it was only
-                    // just added to modern browsers as of January 2025. If/when this
-                    // page is converted to React, we should use a custom validation
-                    // function instead of the `pattern` attribute to enforce this.
-                    // @ts-expect-error -- https://github.com/microsoft/TypeScript/issues/61321
-                    RegExp.escape(resLocals.assessment.tid)
-                  }"
-                  data-other-values="${tids.join(',')}"
-                  ${canEdit ? '' : 'disabled'}
-                />
-                <small class="form-text text-muted">
-                  ${renderHtml(<AssessmentShortNameDescription />)}
-                </small>
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label" for="type">Type</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="type"
-                  name="type"
-                  value="${resLocals.assessment.type}"
-                  disabled
-                />
-                <small class="form-text text-muted"> Homework or Exam. </small>
+                  ))}
               </div>
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="title">Title</label>
+            {copyError && (
+              <Alert variant="danger" dismissible onClose={() => copyMutation.reset()}>
+                {copyError.message}
+              </Alert>
+            )}
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label className="form-label" htmlFor="aid">
+                  Short name
+                </label>
+                <input
+                  type="text"
+                  className={clsx('form-control font-monospace', errors.aid && 'is-invalid')}
+                  id="aid"
+                  aria-invalid={errors.aid ? 'true' : 'false'}
+                  aria-describedby="aid-help"
+                  {...(errors.aid ? { 'aria-errormessage': 'aid-error' } : {})}
+                  disabled={!canEdit}
+                  defaultValue={defaultValues.aid}
+                  {...register('aid', {
+                    required: 'Short name is required',
+                    validate: {
+                      shortName: (value) => {
+                        const result = validateShortName(value, defaultValues.aid);
+                        return result.valid || result.message;
+                      },
+                      duplicate: (value) => {
+                        if (tidSet.has(value) && value !== defaultValues.aid) {
+                          return 'This ID is already in use';
+                        }
+                        return true;
+                      },
+                    },
+                  })}
+                />
+                {errors.aid && (
+                  <div id="aid-error" className="invalid-feedback">
+                    {errors.aid.message}
+                  </div>
+                )}
+                <small id="aid-help" className="form-text text-muted">
+                  <AssessmentShortNameDescription />
+                </small>
+              </div>
+              <div className="col-md-6 mb-3">
+                <label className="form-label" htmlFor="type">
+                  Type
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="type"
+                  aria-describedby="type-help"
+                  value={assessment.type}
+                  disabled
+                  readOnly
+                />
+                <small id="type-help" className="form-text text-muted">
+                  Homework or Exam.
+                </small>
+              </div>
+            </div>
+            <div className="mb-3">
+              <label className="form-label" htmlFor="title">
+                Title
+              </label>
               <input
                 type="text"
-                class="form-control"
+                className="form-control"
                 id="title"
-                name="title"
-                value="${resLocals.assessment.title}"
-                ${canEdit ? '' : 'disabled'}
+                aria-describedby="title-help"
+                disabled={!canEdit}
+                defaultValue={defaultValues.title}
+                {...register('title')}
               />
-              <small class="form-text text-muted"> The title of the assessment. </small>
+              <small id="title-help" className="form-text text-muted">
+                The title of the assessment.
+              </small>
             </div>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label" for="set">Set</label>
-                <select class="form-select" id="set" name="set" ${canEdit ? '' : 'disabled'}>
-                  ${assessmentSets.map(
-                    (set) => html`
-                      <option
-                        value="${set.name}"
-                        ${resLocals.assessment_set.id === set.id ? 'selected' : ''}
-                      >
-                        ${set.name}
-                      </option>
-                    `,
-                  )}
-                </select>
-                <small class="form-text text-muted">
-                  The
-                  <a href="${resLocals.urlPrefix}/course_admin/sets">assessment set</a>
-                  this assessment belongs to.
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label className="form-label" htmlFor="set">
+                  Set
+                </label>
+                <Form.Select
+                  id="set"
+                  aria-describedby="set-help"
+                  disabled={!canEdit}
+                  defaultValue={defaultValues.set}
+                  {...register('set')}
+                >
+                  {assessmentSets.map((set) => (
+                    <option key={set.id} value={set.name}>
+                      {set.name}
+                    </option>
+                  ))}
+                </Form.Select>
+                <small id="set-help" className="form-text text-muted">
+                  The <a href={`${urlPrefix}/course_admin/sets`}>assessment set</a> this assessment
+                  belongs to.
                 </small>
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label" for="number">Number</label>
+              <div className="col-md-6 mb-3">
+                <label className="form-label" htmlFor="number">
+                  Number
+                </label>
                 <input
                   type="text"
-                  class="form-control"
+                  className="form-control"
                   id="number"
-                  name="number"
-                  value="${resLocals.assessment.number}"
-                  ${canEdit ? '' : 'disabled'}
+                  aria-describedby="number-help"
+                  disabled={!canEdit}
+                  defaultValue={defaultValues.number}
+                  {...register('number')}
                 />
-                <small class="form-text text-muted">
+                <small id="number-help" className="form-text text-muted">
                   The number of the assessment within the set.
                 </small>
               </div>
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="module">Module</label>
-              <select class="form-select" id="module" name="module" ${canEdit ? '' : 'disabled'}>
-                ${assessmentModules.map(
-                  (module) => html`
-                    <option
-                      value="${module.name}"
-                      ${resLocals.assessment_module?.id === module.id ? 'selected' : ''}
-                    >
-                      ${module.name}
-                    </option>
-                  `,
-                )}
-              </select>
-              <small class="form-text text-muted">
-                The
-                <a href="${resLocals.urlPrefix}/course_admin/modules">module</a>
-                this assessment belongs to.
+            <div className="mb-3">
+              <label className="form-label" htmlFor="module">
+                Module
+              </label>
+              <Form.Select
+                id="module"
+                aria-describedby="module-help"
+                disabled={!canEdit}
+                defaultValue={defaultValues.module}
+                {...register('module')}
+              >
+                {assessmentModules.map((mod) => (
+                  <option key={mod.id} value={mod.name}>
+                    {mod.name}
+                  </option>
+                ))}
+              </Form.Select>
+              <small id="module-help" className="form-text text-muted">
+                The <a href={`${urlPrefix}/course_admin/modules`}>module</a> this assessment belongs
+                to.
               </small>
             </div>
-            <div class="mb-0">
-              <label class="form-label" for="text">Text</label>
+            <div className="mb-3">
+              <label className="form-label" htmlFor="text">
+                Text
+              </label>
               <textarea
-                class="form-control js-textarea-autosize"
+                className="form-control js-textarea-autosize"
                 id="text"
-                name="text"
-                ${canEdit ? '' : 'disabled'}
-              >
-                    ${resLocals.assessment.text}</textarea
-              >
-              <small class="form-text text-muted">
+                aria-describedby="text-help"
+                disabled={!canEdit}
+                defaultValue={defaultValues.text}
+                {...register('text')}
+              />
+              <small id="text-help" className="form-text text-muted">
                 HTML text shown on the assessment overview page.
               </small>
             </div>
+
+            <StudentLinkSharing
+              studentLink={studentLink}
+              studentLinkMessage="The link that students will use to access this assessment."
+            />
+
+            <p className="form-label">Sharing</p>
+            {assessment.share_source_publicly ? (
+              <PublicLinkSharing
+                publicLink={publicLink}
+                sharingMessage="This assessment's source is publicly shared."
+                publicLinkMessage="The link that other instructors can use to view this assessment."
+              />
+            ) : (
+              <p className="form-text text-muted">This assessment is not being shared.</p>
+            )}
           </div>
         </div>
 
-        <!-- Scoring -->
-        <div class="card mb-4">
-          <div class="card-body">
-            <h2 class="h5 card-title">Scoring</h2>
-            <p class="text-muted small">Configure how points are calculated for this assessment.</p>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label" for="max_points">Maximum points</label>
+        {/* Scoring */}
+        <div className="card mb-4">
+          <div className="card-body">
+            <h2 className="h5 card-title">Scoring</h2>
+            <p className="text-muted small">
+              Configure how points are calculated for this assessment.
+            </p>
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label className="form-label" htmlFor="max_points">
+                  Maximum points
+                </label>
                 <input
                   type="number"
-                  class="form-control"
+                  className="form-control"
                   id="max_points"
-                  name="max_points"
-                  value="${resLocals.assessment.max_points ?? ''}"
+                  aria-describedby="max-points-help"
                   placeholder="Auto (sum of zones)"
                   min="0"
                   step="any"
-                  ${canEdit ? '' : 'disabled'}
+                  disabled={!canEdit}
+                  defaultValue={defaultValues.max_points ?? ''}
+                  {...register('max_points', { valueAsNumber: true })}
                 />
-                <small class="form-text text-muted"> Points needed for 100% score. </small>
+                <small id="max-points-help" className="form-text text-muted">
+                  Points needed for 100% score.
+                </small>
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label" for="max_bonus_points">Bonus points</label>
+              <div className="col-md-6 mb-3">
+                <label className="form-label" htmlFor="max_bonus_points">
+                  Bonus points
+                </label>
                 <input
                   type="number"
-                  class="form-control"
+                  className="form-control"
                   id="max_bonus_points"
-                  name="max_bonus_points"
-                  value="${resLocals.assessment.max_bonus_points ?? ''}"
+                  aria-describedby="max-bonus-points-help"
                   placeholder="0"
                   min="0"
                   step="any"
-                  ${canEdit ? '' : 'disabled'}
+                  disabled={!canEdit}
+                  defaultValue={defaultValues.max_bonus_points ?? ''}
+                  {...register('max_bonus_points', { valueAsNumber: true })}
                 />
-                <small class="form-text text-muted">
+                <small id="max-bonus-points-help" className="form-text text-muted">
                   Maximum additional points beyond the maximum.
                 </small>
               </div>
             </div>
-            ${resLocals.assessment.type === 'Homework'
-              ? html`
-                  <div class="form-check border-top pt-3">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      id="constant_question_value"
-                      name="constant_question_value"
-                      ${canEdit ? '' : 'disabled'}
-                      ${resLocals.assessment.constant_question_value ? 'checked' : ''}
-                    />
-                    <label class="form-check-label" for="constant_question_value">
-                      Constant question value
-                    </label>
-                    <div class="small text-muted">
-                      Disable retry penalty &mdash; questions keep full value regardless of
-                      attempts.
-                    </div>
-                  </div>
-                `
-              : ''}
+            {assessment.type === 'Homework' && (
+              <div className="form-check border-top pt-3">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="constant_question_value"
+                  aria-describedby="constant-question-value-help"
+                  disabled={!canEdit}
+                  defaultChecked={defaultValues.constant_question_value}
+                  {...register('constant_question_value')}
+                />
+                <label className="form-check-label" htmlFor="constant_question_value">
+                  Constant question value
+                </label>
+                <div id="constant-question-value-help" className="small text-muted">
+                  Disable retry penalty &mdash; questions keep full value regardless of attempts.
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        <!-- Question behaviour -->
-        <div class="card mb-4">
-          <div class="card-body">
-            <h2 class="h5 card-title">Question behaviour</h2>
-            <p class="text-muted small">Control how questions are presented and navigated.</p>
-            <div class="form-check mb-3">
+        {/* Question behaviour */}
+        <div className="card mb-4">
+          <div className="card-body">
+            <h2 className="h5 card-title">Question behaviour</h2>
+            <p className="text-muted small">Control how questions are presented and navigated.</p>
+            <div className="form-check mb-3">
               <input
-                class="form-check-input"
+                className="form-check-input"
                 type="checkbox"
                 id="shuffle_questions"
-                name="shuffle_questions"
-                ${canEdit ? '' : 'disabled'}
-                ${resLocals.assessment.shuffle_questions ? 'checked' : ''}
+                aria-describedby="shuffle-questions-help"
+                disabled={!canEdit}
+                defaultChecked={defaultValues.shuffle_questions}
+                {...register('shuffle_questions')}
               />
-              <label class="form-check-label" for="shuffle_questions"> Shuffle questions </label>
-              <div class="small text-muted">
-                Randomize question order within zones.
-                ${resLocals.assessment.type === 'Exam'
+              <label className="form-check-label" htmlFor="shuffle_questions">
+                Shuffle questions
+              </label>
+              <div id="shuffle-questions-help" className="small text-muted">
+                Randomize question order within zones.{' '}
+                {assessment.type === 'Exam'
                   ? 'Enabled by default for exams.'
                   : 'Disabled by default for homework.'}
               </div>
             </div>
-            ${resLocals.assessment.type === 'Exam'
-              ? html`
-                  <div class="border-top pt-3">
-                    <label class="form-label" for="advance_score_perc">
-                      Advance score threshold
-                    </label>
-                    <div class="row">
-                      <div class="col-md-4">
-                        <div class="input-group">
-                          <input
-                            type="number"
-                            class="form-control"
-                            id="advance_score_perc"
-                            name="advance_score_perc"
-                            min="0"
-                            max="100"
-                            step="1"
-                            value="${resLocals.assessment.advance_score_perc ?? 0}"
-                            ${canEdit ? '' : 'disabled'}
-                          />
-                          <span class="input-group-text">%</span>
-                        </div>
-                      </div>
-                    </div>
-                    <small class="form-text text-muted">
-                      Minimum score percentage to unlock the next question.
-                    </small>
+            {assessment.type === 'Exam' && (
+              <div className="border-top pt-3">
+                <label className="form-label" htmlFor="advance_score_perc">
+                  Advance score threshold
+                </label>
+                <div className="row">
+                  <div className="col-md-4">
+                    <InputGroup>
+                      <input
+                        type="number"
+                        className="form-control"
+                        id="advance_score_perc"
+                        aria-describedby="advance-score-perc-help"
+                        min="0"
+                        max="100"
+                        step="1"
+                        disabled={!canEdit}
+                        defaultValue={defaultValues.advance_score_perc ?? 0}
+                        {...register('advance_score_perc', { valueAsNumber: true })}
+                      />
+                      <InputGroup.Text>%</InputGroup.Text>
+                    </InputGroup>
                   </div>
-                `
-              : ''}
+                </div>
+                <small id="advance-score-perc-help" className="form-text text-muted">
+                  Minimum score percentage to unlock the next question.
+                </small>
+              </div>
+            )}
           </div>
         </div>
 
-        <!-- Grading -->
-        <div class="card mb-4">
-          <div class="card-body">
-            <h2 class="h5 card-title">Grading</h2>
-            <p class="text-muted small">Configure grading behaviour and submission rate limits.</p>
-            ${resLocals.assessment.type === 'Exam'
-              ? html`
-                  <div class="form-check mb-3">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      id="allow_real_time_grading"
-                      name="allow_real_time_grading"
-                      ${canEdit ? '' : 'disabled'}
-                      ${resLocals.assessment.json_allow_real_time_grading !== false
-                        ? 'checked'
-                        : ''}
-                    />
-                    <label class="form-check-label" for="allow_real_time_grading">
-                      Allow real-time grading
-                    </label>
-                    <div class="small text-muted">
-                      Allow students to grade submissions during the assessment. Enabled by default.
-                    </div>
-                  </div>
-                `
-              : ''}
-            <div class="${resLocals.assessment.type === 'Exam' ? 'border-top pt-3' : ''}">
-              <label class="form-label" for="grade_rate_minutes">Grade rate minutes</label>
-              <div class="row">
-                <div class="col-md-4">
+        {/* Grading */}
+        <div className="card mb-4">
+          <div className="card-body">
+            <h2 className="h5 card-title">Grading</h2>
+            <p className="text-muted small">
+              Configure grading behaviour and submission rate limits.
+            </p>
+            {assessment.type === 'Exam' && (
+              <div className="form-check mb-3">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="allow_real_time_grading"
+                  aria-describedby="allow-real-time-grading-help"
+                  disabled={!canEdit}
+                  defaultChecked={defaultValues.allow_real_time_grading}
+                  {...register('allow_real_time_grading')}
+                />
+                <label className="form-check-label" htmlFor="allow_real_time_grading">
+                  Allow real-time grading
+                </label>
+                <div id="allow-real-time-grading-help" className="small text-muted">
+                  Allow students to grade submissions during the assessment. Enabled by default.
+                </div>
+              </div>
+            )}
+            <div className={assessment.type === 'Exam' ? 'border-top pt-3' : ''}>
+              <label className="form-label" htmlFor="grade_rate_minutes">
+                Grade rate minutes
+              </label>
+              <div className="row">
+                <div className="col-md-4">
                   <input
                     type="number"
-                    class="form-control"
+                    className="form-control"
                     id="grade_rate_minutes"
-                    name="grade_rate_minutes"
-                    value="${resLocals.assessment.json_grade_rate_minutes ?? ''}"
+                    aria-describedby="grade-rate-minutes-help"
                     placeholder="0"
                     min="0"
                     step="any"
-                    ${canEdit ? '' : 'disabled'}
+                    disabled={!canEdit}
+                    defaultValue={defaultValues.grade_rate_minutes ?? ''}
+                    {...register('grade_rate_minutes', { valueAsNumber: true })}
                   />
                 </div>
               </div>
-              <small class="form-text text-muted">
+              <small id="grade-rate-minutes-help" className="form-text text-muted">
                 Minimum time in minutes between graded submissions to the same question.
               </small>
             </div>
           </div>
         </div>
 
-        <!-- Student options -->
-        <div class="card mb-4">
-          <div class="card-body">
-            <h2 class="h5 card-title">Student options</h2>
-            <p class="text-muted small">Control what students can do during the assessment.</p>
-            <div class="form-check mb-3">
+        {/* Student options */}
+        <div className="card mb-4">
+          <div className="card-body">
+            <h2 className="h5 card-title">Student options</h2>
+            <p className="text-muted small">Control what students can do during the assessment.</p>
+            <div className="form-check mb-3">
               <input
-                class="form-check-input"
+                className="form-check-input"
                 type="checkbox"
                 id="allow_issue_reporting"
-                name="allow_issue_reporting"
-                ${canEdit ? '' : 'disabled'}
-                ${resLocals.assessment.allow_issue_reporting ? 'checked' : ''}
+                aria-describedby="allow-issue-reporting-help"
+                disabled={!canEdit}
+                defaultChecked={defaultValues.allow_issue_reporting}
+                {...register('allow_issue_reporting')}
               />
-              <label class="form-check-label" for="allow_issue_reporting">
+              <label className="form-check-label" htmlFor="allow_issue_reporting">
                 Allow issue reporting
               </label>
-              <div class="small text-muted">
+              <div id="allow-issue-reporting-help" className="small text-muted">
                 Allow students to report issues for assessment questions.
               </div>
             </div>
-            <div class="form-check mb-3">
+            <div className="form-check mb-3">
               <input
-                class="form-check-input"
+                className="form-check-input"
                 type="checkbox"
                 id="allow_personal_notes"
-                name="allow_personal_notes"
-                ${canEdit ? '' : 'disabled'}
-                ${resLocals.assessment.allow_personal_notes ? 'checked' : ''}
+                aria-describedby="allow-personal-notes-help"
+                disabled={!canEdit}
+                defaultChecked={defaultValues.allow_personal_notes}
+                {...register('allow_personal_notes')}
               />
-              <label class="form-check-label" for="allow_personal_notes">
+              <label className="form-check-label" htmlFor="allow_personal_notes">
                 Allow personal notes
               </label>
-              <div class="small text-muted">
+              <div id="allow-personal-notes-help" className="small text-muted">
                 Allow students to upload personal notes for this assessment.
               </div>
             </div>
-            ${resLocals.assessment.type === 'Exam'
-              ? html`
-                  <div class="form-check mb-3">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      id="multiple_instance"
-                      name="multiple_instance"
-                      ${canEdit ? '' : 'disabled'}
-                      ${resLocals.assessment.multiple_instance ? 'checked' : ''}
-                    />
-                    <label class="form-check-label" for="multiple_instance">
-                      Multiple instances
+            {assessment.type === 'Exam' && (
+              <>
+                <div className="form-check mb-3">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="multiple_instance"
+                    aria-describedby="multiple-instance-help"
+                    disabled={!canEdit}
+                    defaultChecked={defaultValues.multiple_instance}
+                    {...register('multiple_instance')}
+                  />
+                  <label className="form-check-label" htmlFor="multiple_instance">
+                    Multiple instances
+                  </label>
+                  <div id="multiple-instance-help" className="small text-muted">
+                    Allow students to create additional instances of the assessment.
+                  </div>
+                </div>
+                <div className="form-check mb-3">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="auto_close"
+                    aria-describedby="auto-close-help"
+                    disabled={!canEdit}
+                    defaultChecked={defaultValues.auto_close}
+                    {...register('auto_close')}
+                  />
+                  <label className="form-check-label" htmlFor="auto_close">
+                    Auto close
+                  </label>
+                  <div id="auto-close-help" className="small text-muted">
+                    Automatically close the assessment after 6 hours of inactivity.
+                  </div>
+                </div>
+                <div className="form-check mb-3">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="require_honor_code"
+                    aria-describedby="require-honor-code-help"
+                    disabled={!canEdit}
+                    defaultChecked={defaultValues.require_honor_code}
+                    {...register('require_honor_code')}
+                  />
+                  <label className="form-check-label" htmlFor="require_honor_code">
+                    Require honor code
+                  </label>
+                  <div id="require-honor-code-help" className="small text-muted">
+                    Require students to accept an honor code before starting the exam.
+                  </div>
+                </div>
+                {requireHonorCode && (
+                  <div className="mb-0">
+                    <label className="form-label" htmlFor="honor_code">
+                      Custom honor code
                     </label>
-                    <div class="small text-muted">
-                      Allow students to create additional instances of the assessment.
-                    </div>
-                  </div>
-                  <div class="form-check mb-3">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      id="auto_close"
-                      name="auto_close"
-                      ${canEdit ? '' : 'disabled'}
-                      ${resLocals.assessment.auto_close ? 'checked' : ''}
-                    />
-                    <label class="form-check-label" for="auto_close"> Auto close </label>
-                    <div class="small text-muted">
-                      Automatically close the assessment after 6 hours of inactivity.
-                    </div>
-                  </div>
-                  <div class="form-check mb-3">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      id="require_honor_code"
-                      name="require_honor_code"
-                      ${canEdit ? '' : 'disabled'}
-                      ${resLocals.assessment.require_honor_code ? 'checked' : ''}
-                    />
-                    <label class="form-check-label" for="require_honor_code">
-                      Require honor code
-                    </label>
-                    <div class="small text-muted">
-                      Require students to accept an honor code before starting the exam.
-                    </div>
-                  </div>
-                  <div
-                    class="mb-0"
-                    id="honor_code_group"
-                    ${resLocals.assessment.require_honor_code ? '' : 'hidden'}
-                  >
-                    <label class="form-label" for="honor_code">Custom honor code</label>
                     <textarea
-                      class="form-control js-textarea-autosize"
+                      className="form-control js-textarea-autosize"
                       id="honor_code"
-                      name="honor_code"
-                      ${canEdit ? '' : 'disabled'}
-                    >
-${resLocals.assessment.honor_code}</textarea
-                    >
-                    <small class="form-text text-muted">
+                      aria-describedby="honor-code-help"
+                      disabled={!canEdit}
+                      defaultValue={defaultValues.honor_code}
+                      {...register('honor_code')}
+                    />
+                    <small id="honor-code-help" className="form-text text-muted">
                       Custom honor code text shown to students before starting the exam. Supports
-                      Markdown formatting. Use <code>{{user_name}}</code> to include the student's
-                      name. Leave blank for the default honor code.
+                      Markdown formatting. Use <code>{'{{user_name}}'}</code> to include the
+                      student's name. Leave blank for the default honor code.
                     </small>
                   </div>
-                `
-              : ''}
+                )}
+              </>
+            )}
           </div>
         </div>
 
-        ${canEdit
-          ? html`
-              <!-- Sticky save bar -->
-              <div style="position: sticky; bottom: 0; margin-bottom: -1rem;">
-                <div
-                  style="height: 2rem; background: linear-gradient(to bottom, rgba(255,255,255,0), white); pointer-events: none;"
-                ></div>
-                <div class="d-flex gap-2 pb-3" style="background-color: white;">
-                  <button
-                    id="save-button"
-                    type="submit"
-                    class="btn btn-primary"
-                    name="__action"
-                    value="update_assessment"
-                  >
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-secondary"
-                    onclick="window.location.reload()"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            `
-          : ''}
+        {/* Save / Cancel */}
+        {saveMutation.isSuccess && (
+          <Alert variant="success" dismissible onClose={() => saveMutation.reset()}>
+            Assessment updated successfully.
+          </Alert>
+        )}
+        {appError && (
+          <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
+            {appError.message}
+          </Alert>
+        )}
+
+        {canEdit && (
+          <div className="d-flex gap-2 mb-4">
+            <button
+              id="save-button"
+              type="submit"
+              className="btn btn-primary"
+              disabled={!isDirty || isSubmitting || saveMutation.isPending}
+            >
+              {saveMutation.isPending ? 'Saving...' : 'Save'}
+            </button>
+            <button
+              id="cancel-button"
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => {
+                reset();
+                saveMutation.reset();
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </form>
-    `,
-  });
+    </>
+  );
 }
