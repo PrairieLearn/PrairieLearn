@@ -1,4 +1,4 @@
-import { filterSeries } from 'async';
+import { filterLimit } from 'async';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
@@ -75,7 +75,7 @@ router.get(
       StudentHomePageCourseSchema,
     );
 
-    const studentCourses = await filterSeries(allStudentCourses, async (entry) => {
+    const studentCourses = await filterLimit(allStudentCourses, 5, async (entry) => {
       // Filter out courses where user also has instructor access.
       if (instructorCourses.some((course) => idsEqual(course.id, entry.course_id))) return false;
 
