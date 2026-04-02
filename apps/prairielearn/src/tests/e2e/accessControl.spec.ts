@@ -114,8 +114,8 @@ test.describe('Access control UI', () => {
     const panel = getDetailPanel(page);
     await expect(panel).toBeVisible();
 
-    // Select "Student labels" radio in "Applies to"
-    await panel.getByLabel('Student labels').check();
+    // Select "Students by label" radio in "Applies to"
+    await panel.getByLabel('Students by label').check();
 
     // Click "Add student labels" button to open the popover
     await panel.getByRole('button', { name: /Add student labels/i }).click();
