@@ -12,15 +12,13 @@ import { MainPasswordField, OverridePasswordField } from './fields/PasswordField
 import { MainReleaseDateField, OverrideReleaseDateField } from './fields/ReleaseDateField.js';
 import type { AccessControlFormData } from './types.js';
 
-interface MainDateControlFormProps {
-  title?: string;
-  description?: string;
-}
-
 export function MainDateControlForm({
   title = 'Date control',
   description = 'Control access and credit to your assessment based on a schedule',
-}: MainDateControlFormProps) {
+}: {
+  title?: string;
+  description?: string;
+}) {
   const { register } = useFormContext<AccessControlFormData>();
 
   const dateControlEnabled = useWatch<AccessControlFormData, 'mainRule.dateControlEnabled'>({
@@ -82,17 +80,15 @@ export function MainDateControlForm({
   );
 }
 
-interface OverrideDateControlFormProps {
-  index: number;
-  title?: string;
-  description?: string;
-}
-
 export function OverrideDateControlForm({
   index,
   title = 'Date control',
-  description = 'Override date settings from the main rule by clicking "Override" on individual fields',
-}: OverrideDateControlFormProps) {
+  description = 'Override date settings from the defaults by clicking "Override" on individual fields',
+}: {
+  index: number;
+  title?: string;
+  description?: string;
+}) {
   return (
     <Card className="mb-4">
       <Card.Header>
