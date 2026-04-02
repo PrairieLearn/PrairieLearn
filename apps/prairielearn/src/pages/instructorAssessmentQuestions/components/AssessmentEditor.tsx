@@ -26,7 +26,7 @@ import type {
   StaffCourseInstance,
 } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import type { EnumAssessmentTool, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
 import type {
@@ -135,6 +135,7 @@ interface AssessmentEditorInnerProps {
   questionRows: StaffAssessmentQuestionRow[];
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
+  assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   canEdit: boolean;
@@ -152,6 +153,7 @@ function AssessmentEditorInner({
   questionRows,
   jsonZones,
   assessment,
+  assessmentToolDefaults,
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   canEdit,
@@ -892,6 +894,7 @@ function AssessmentEditorInner({
       assessmentType: assessment.type,
       constantQuestionValue: assessment.constant_question_value ?? false,
       assessmentDefaults,
+      assessmentToolDefaults,
       courseInstanceId: courseInstance.id,
       courseId: course.id,
       hasCoursePermissionPreview,
@@ -903,6 +906,7 @@ function AssessmentEditorInner({
       assessment.type,
       assessment.constant_question_value,
       assessmentDefaults,
+      assessmentToolDefaults,
       courseInstance.id,
       course.id,
       hasCoursePermissionPreview,
