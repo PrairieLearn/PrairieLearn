@@ -212,13 +212,12 @@ function formatDeadlineEntries(
   displayTimezone: string,
   labelPrefix: string,
 ): OverrideFieldItem[] {
-  return deadlines
-    .filter((d) => d.date)
-    .map((d, i) => ({
-      label:
-        deadlines.length === 1 ? `${labelPrefix} deadline` : `${labelPrefix} deadline ${i + 1}`,
-      value: `${formatDate(new Date(d.date), displayTimezone)} (${d.credit}% credit)`,
-    }));
+  const filtered = deadlines.filter((d) => d.date);
+  return filtered.map((d, i) => ({
+    label:
+      filtered.length === 1 ? `${labelPrefix} deadline` : `${labelPrefix} deadline ${i + 1}`,
+    value: `${formatDate(Temporal.PlainDateTime.from(d.date), displayTimezone)} (${d.credit}% credit)`,
+  }));
 }
 
 function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): string {
@@ -245,7 +244,7 @@ function generateOverrideFieldItems(
     items.push({
       label: 'Release date',
       value: rule.releaseDate
-        ? formatDate(new Date(rule.releaseDate), displayTimezone)
+        ? formatDate(Temporal.PlainDateTime.from(rule.releaseDate), displayTimezone)
         : 'Released immediately',
     });
   }
@@ -257,7 +256,9 @@ function generateOverrideFieldItems(
   if (overriddenFields.has('dueDate')) {
     items.push({
       label: 'Due date',
-      value: rule.dueDate ? formatDate(new Date(rule.dueDate), displayTimezone) : 'No due date',
+      value: rule.dueDate
+        ? formatDate(Temporal.PlainDateTime.from(rule.dueDate), displayTimezone)
+        : 'No due date',
     });
   }
 
@@ -292,12 +293,12 @@ function generateOverrideFieldItems(
       if (qv.showAgainDate && qv.hideAgainDate) {
         items.push({
           label: 'Question visibility',
-          value: `Hidden, shown again ${formatDate(new Date(qv.showAgainDate), displayTimezone)}, hidden again ${formatDate(new Date(qv.hideAgainDate), displayTimezone)}`,
+          value: `Hidden, shown again ${formatDate(Temporal.PlainDateTime.from(qv.showAgainDate), displayTimezone)}, hidden again ${formatDate(Temporal.PlainDateTime.from(qv.hideAgainDate), displayTimezone)}`,
         });
       } else if (qv.showAgainDate) {
         items.push({
           label: 'Question visibility',
-          value: `Hidden, shown again ${formatDate(new Date(qv.showAgainDate), displayTimezone)}`,
+          value: `Hidden, shown again ${formatDate(Temporal.PlainDateTime.from(qv.showAgainDate), displayTimezone)}`,
         });
       } else {
         items.push({
@@ -319,7 +320,7 @@ function generateOverrideFieldItems(
       if (sv.showAgainDate) {
         items.push({
           label: 'Score visibility',
-          value: `Hidden, shown again ${formatDate(new Date(sv.showAgainDate), displayTimezone)}`,
+          value: `Hidden, shown again ${formatDate(Temporal.PlainDateTime.from(sv.showAgainDate), displayTimezone)}`,
         });
       } else {
         items.push({
