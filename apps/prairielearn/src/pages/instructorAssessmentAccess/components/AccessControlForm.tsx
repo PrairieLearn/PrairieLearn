@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
@@ -7,6 +7,7 @@ import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
 import { SplitPane } from '../../../components/SplitPane.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
+import type { AccessControlJsonWithId } from '../../../models/assessment-access-control-rules.js';
 
 import { AccessControlSummary } from './AccessControlSummary.js';
 import { MainRuleForm } from './MainRuleForm.js';
@@ -14,7 +15,6 @@ import { OverrideRuleContent } from './OverrideRuleContent.js';
 import { AppliesToField } from './fields/AppliesToField.js';
 import {
   type AccessControlFormData,
-  type AccessControlJsonWithId,
   createDefaultOverrideFormData,
   formDataToJson,
   jsonToMainRuleFormData,
@@ -81,11 +81,13 @@ export function AccessControlForm({
   onSubmit,
   courseInstance,
   isSaving = false,
+  alert,
 }: {
   initialData?: AccessControlJsonWithId[];
   onSubmit: (data: AccessControlJsonWithId[]) => void;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   isSaving?: boolean;
+  alert?: ReactNode;
 }) {
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
   const deleteModal = useModalState<{ index: number; name: string }>();
@@ -131,7 +133,7 @@ export function AccessControlForm({
 
   const addOverride = () => {
     const newOverride = createDefaultOverrideFormData();
-    // Individual overrides are inserted before student-label overrides
+    // Enrollment overrides are inserted before student-label overrides
     const firstLabelIndex = watchedData.overrides.findIndex(
       (o) => o.appliesTo.targetType === 'student_label',
     );
@@ -177,14 +179,14 @@ export function AccessControlForm({
       }
       return `Overrides for ${studentLabels[0].name}, ${studentLabels[1].name}, and ${studentLabels.length - 2} others`;
     } else {
-      const individuals = appliesTo.individuals;
-      if (individuals.length === 0) return `Override ${index + 1}`;
-      const getName = (ind: (typeof individuals)[0]) => ind.name || ind.uid;
-      if (individuals.length === 1) return `Overrides for ${getName(individuals[0])}`;
-      if (individuals.length === 2) {
-        return `Overrides for ${getName(individuals[0])} and ${getName(individuals[1])}`;
+      const enrollments = appliesTo.enrollments;
+      if (enrollments.length === 0) return `Override ${index + 1}`;
+      const getName = (e: (typeof enrollments)[0]) => e.name || e.uid;
+      if (enrollments.length === 1) return `Overrides for ${getName(enrollments[0])}`;
+      if (enrollments.length === 2) {
+        return `Overrides for ${getName(enrollments[0])} and ${getName(enrollments[1])}`;
       }
-      return `Overrides for ${getName(individuals[0])}, ${getName(individuals[1])}, and ${individuals.length - 2} others`;
+      return `Overrides for ${getName(enrollments[0])}, ${getName(enrollments[1])}, and ${enrollments.length - 2} others`;
     }
   };
 
@@ -214,7 +216,7 @@ export function AccessControlForm({
 
   const rightTitle =
     selectedRule?.type === 'main'
-      ? 'Main rule'
+      ? 'Defaults'
       : selectedRule?.type === 'override'
         ? getOverrideName(selectedRule.index)
         : undefined;
@@ -242,8 +244,8 @@ export function AccessControlForm({
         }
         const override = watchedData.overrides[selectedRule.index];
         const hasNoTargets =
-          (override.appliesTo.targetType === 'individual' &&
-            override.appliesTo.individuals.length === 0) ||
+          (override.appliesTo.targetType === 'enrollment' &&
+            override.appliesTo.enrollments.length === 0) ||
           (override.appliesTo.targetType === 'student_label' &&
             override.appliesTo.studentLabels.length === 0);
         return (
@@ -255,7 +257,7 @@ export function AccessControlForm({
               </Alert>
             )}
             <p className="text-muted">
-              Fields that are not overridden inherit their values from the main rule and any earlier
+              Fields that are not overridden inherit their values from the defaults and any earlier
               overrides. Click "Override" on a field to set a custom value for this group.
             </p>
             <AppliesToField namePrefix={`overrides.${selectedRule.index}`} />
@@ -275,6 +277,7 @@ export function AccessControlForm({
           rightHeaderAction={rightHeaderAction}
           left={
             <div className="split-pane__left-body p-3">
+              {alert}
               <AccessControlSummary
                 courseInstanceId={courseInstance.id}
                 displayTimezone={courseInstance.display_timezone}
@@ -320,7 +323,7 @@ export function AccessControlForm({
 
       <Modal show={deleteModal.show} onHide={deleteModal.hide}>
         <Modal.Header closeButton>
-          <Modal.Title>Delete override rule</Modal.Title>
+          <Modal.Title>Delete override</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           Are you sure you want to delete &quot;{deleteModal.data?.name ?? ''}&quot;? This action

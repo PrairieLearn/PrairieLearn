@@ -313,7 +313,7 @@ export abstract class Editor {
               // an unreasonable amount of time and causing a 504 when we fail
               // to respond to the request in time, we'll use a relatively short
               // timeout to fail the push if it takes too long.
-              cancelSignal: AbortSignal.timeout(10_000),
+              cancelSignal: AbortSignal.timeout(30_000),
             });
             job.data.saveSucceeded = true;
 
@@ -337,7 +337,7 @@ export abstract class Editor {
               env: gitEnv,
               // As with `git push` above, we'll use a timeout here to avoid
               // long delays during GitHub incidents resulting in 504 errors.
-              cancelSignal: AbortSignal.timeout(10_000),
+              cancelSignal: AbortSignal.timeout(30_000),
             });
 
             // This will both discard the commit we made locally and also pull
@@ -352,7 +352,7 @@ export abstract class Editor {
                 cwd: this.course.path,
                 env: gitEnv,
                 // See above `git push` attempt for an explanation of this timeout.
-                cancelSignal: AbortSignal.timeout(10_000),
+                cancelSignal: AbortSignal.timeout(30_000),
               });
               job.data.saveSucceeded = true;
             } finally {

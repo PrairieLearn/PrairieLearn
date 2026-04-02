@@ -39,9 +39,7 @@ import {
 } from './init.js';
 
 export interface StudentLabelError {
-  Upsert:
-    | { code: 'LABEL_NAME_TAKEN'; name: string }
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  Upsert: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   Destroy: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
 
@@ -157,12 +155,18 @@ const upsert = t.procedure
             });
           }
           if (studentLabels.some((l, i) => i !== labelIndex && l.name === name)) {
-            throwAppError<StudentLabelError['Upsert']>({ code: 'LABEL_NAME_TAKEN', name });
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'A label with this name already exists',
+            });
           }
           studentLabels[labelIndex] = { uuid: studentLabels[labelIndex].uuid, name, color };
         } else {
           if (studentLabels.some((l) => l.name === name)) {
-            throwAppError<StudentLabelError['Upsert']>({ code: 'LABEL_NAME_TAKEN', name });
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'A label with this name already exists',
+            });
           }
           studentLabels.push({ uuid: labelUuid, name, color });
         }
@@ -177,7 +181,6 @@ const upsert = t.procedure
         'infoCourseInstance.json',
       ),
       container: getCourseInstanceContainer(course.path, course_instance.short_name!),
-      errorMessage: 'Failed to save course instance configuration',
       origHash: origHash ?? '',
       locals,
     });
@@ -185,6 +188,7 @@ const upsert = t.procedure
     if (!saveResult.success) {
       throwAppError<StudentLabelError>({
         code: 'SYNC_JOB_FAILED',
+        message: 'Failed to save course instance configuration',
         jobSequenceId: saveResult.jobSequenceId,
       });
     }
@@ -295,7 +299,6 @@ const destroy = t.procedure
         'infoCourseInstance.json',
       ),
       container: getCourseInstanceContainer(course.path, course_instance.short_name!),
-      errorMessage: 'Failed to save course instance configuration',
       origHash: origHash ?? '',
       locals,
     });
@@ -303,6 +306,7 @@ const destroy = t.procedure
     if (!saveResult.success) {
       throwAppError<StudentLabelError>({
         code: 'SYNC_JOB_FAILED',
+        message: 'Failed to save course instance configuration',
         jobSequenceId: saveResult.jobSequenceId,
       });
     }
