@@ -73,7 +73,7 @@ function MainRuleSummaryContent({
   rule: MainRuleData;
   displayTimezone: string;
 }) {
-  const summaryItems = generateRuleSummary(rule, 'compact');
+  const summaryItems = generateRuleSummary(rule, displayTimezone, 'compact');
   const dateTableRows = generateDateTableRows(rule, displayTimezone);
 
   return (
@@ -88,7 +88,7 @@ function MainRuleSummaryContent({
         <div className="d-flex flex-wrap gap-2">
           {summaryItems.map((item) => (
             <span
-              key={item.text}
+              key={item.key}
               className="d-inline-flex align-items-center gap-1 border rounded-pill px-3 py-1"
               style={{ fontSize: '0.875rem' }}
             >

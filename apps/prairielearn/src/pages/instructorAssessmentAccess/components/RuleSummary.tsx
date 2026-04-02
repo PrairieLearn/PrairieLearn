@@ -167,12 +167,14 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
 }
 
 interface SummaryItem {
+  key: string;
   icon: string;
-  text: string;
+  text: ReactNode;
 }
 
 export function generateRuleSummary(
   rule: RuleData,
+  displayTimezone: string,
   verbosity: SummaryVerbosity = 'compact',
 ): SummaryItem[] {
   const items: SummaryItem[] = [];
@@ -180,23 +182,24 @@ export function generateRuleSummary(
   if (isOverrideFieldActive(rule, 'durationMinutes')) {
     const durationMinutes = rule.durationMinutes;
     if (durationMinutes !== null) {
-      items.push({ icon: 'bi-clock', text: `${durationMinutes} minutes` });
+      items.push({ key: 'duration', icon: 'bi-clock', text: `${durationMinutes} minutes` });
     } else if (verbosity === 'verbose') {
-      items.push({ icon: 'bi-clock', text: 'No time limit' });
+      items.push({ key: 'duration', icon: 'bi-clock', text: 'No time limit' });
     }
   }
 
   if (isOverrideFieldActive(rule, 'password')) {
     const password = rule.password;
     if (password !== null && password !== '') {
-      items.push({ icon: 'bi-lock', text: 'Password protected' });
+      items.push({ key: 'password', icon: 'bi-lock', text: 'Password protected' });
     } else if (verbosity === 'verbose') {
-      items.push({ icon: 'bi-unlock', text: 'No password' });
+      items.push({ key: 'password', icon: 'bi-unlock', text: 'No password' });
     }
   }
 
   if (isMainRuleData(rule) && rule.prairieTestEnabled && rule.prairieTestExams.length > 0) {
     items.push({
+      key: 'prairietest',
       icon: 'bi-pc-display',
       text: `${rule.prairieTestExams.length} PrairieTest ${rule.prairieTestExams.length === 1 ? 'exam' : 'exams'}`,
     });
@@ -207,18 +210,85 @@ export function generateRuleSummary(
   if (!hasAfterLastDeadline) {
     if (isOverrideFieldActive(rule, 'questionVisibility')) {
       const qv = rule.questionVisibility;
-      if (qv.hideQuestions) {
-        items.push({ icon: 'bi-eye-slash', text: 'Questions hidden after completion' });
+      if (!qv.hideQuestions) {
+        items.push({
+          key: 'question-visibility',
+          icon: 'bi-eye',
+          text: 'Questions visible after completion',
+        });
+      } else if (qv.showAgainDate && qv.hideAgainDate) {
+        items.push({
+          key: 'question-visibility',
+          icon: 'bi-eye-slash',
+          text: (
+            <>
+              Questions hidden after completion, shown{' '}
+              <FriendlyDate
+                date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+                timezone={displayTimezone}
+                tooltip
+              />
+              {' – '}
+              <FriendlyDate
+                date={Temporal.PlainDateTime.from(qv.hideAgainDate)}
+                timezone={displayTimezone}
+                tooltip
+              />
+            </>
+          ),
+        });
+      } else if (qv.showAgainDate) {
+        items.push({
+          key: 'question-visibility',
+          icon: 'bi-eye-slash',
+          text: (
+            <>
+              Questions hidden after completion until{' '}
+              <FriendlyDate
+                date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+                timezone={displayTimezone}
+                tooltip
+              />
+            </>
+          ),
+        });
       } else if (verbosity === 'verbose') {
-        items.push({ icon: 'bi-eye', text: 'Questions visible after completion' });
+        items.push({
+          key: 'question-visibility',
+          icon: 'bi-eye-slash',
+          text: 'Questions hidden after completion',
+        });
       }
     }
     if (isOverrideFieldActive(rule, 'scoreVisibility')) {
       const sv = rule.scoreVisibility;
-      if (sv.hideScore) {
-        items.push({ icon: 'bi-eye-slash', text: 'Score hidden after completion' });
+      if (sv.hideScore && sv.showAgainDate) {
+        items.push({
+          key: 'score-visibility',
+          icon: 'bi-eye-slash',
+          text: (
+            <>
+              Score hidden after completion until{' '}
+              <FriendlyDate
+                date={Temporal.PlainDateTime.from(sv.showAgainDate)}
+                timezone={displayTimezone}
+                tooltip
+              />
+            </>
+          ),
+        });
+      } else if (sv.hideScore) {
+        items.push({
+          key: 'score-visibility',
+          icon: 'bi-eye-slash',
+          text: 'Score hidden after completion',
+        });
       } else if (verbosity === 'verbose') {
-        items.push({ icon: 'bi-eye', text: 'Score visible after completion' });
+        items.push({
+          key: 'score-visibility',
+          icon: 'bi-eye',
+          text: 'Score visible after completion',
+        });
       }
     }
   }
@@ -539,7 +609,7 @@ export function RuleSummaryCard({
 }) {
   const overrideRule = !isMainRule ? (rule as OverrideData) : null;
 
-  const summaryItems = isMainRule ? generateRuleSummary(rule, 'compact') : [];
+  const summaryItems = isMainRule ? generateRuleSummary(rule, displayTimezone, 'compact') : [];
   const dateTableRows = isMainRule ? generateDateTableRows(rule, displayTimezone) : [];
   const overrideFieldItems = overrideRule
     ? generateOverrideFieldItems(overrideRule, displayTimezone)
@@ -633,7 +703,7 @@ export function RuleSummaryCard({
           <div className="d-flex flex-wrap gap-2 mb-3">
             {summaryItems.map((item) => (
               <span
-                key={item.text}
+                key={item.key}
                 className="d-inline-flex align-items-center gap-1 border rounded-pill px-3 py-1"
                 style={{ fontSize: '0.875rem' }}
               >
