@@ -25,6 +25,7 @@ export function SplitPane({
   rightCollapsed: rightCollapsedProp,
   forceOpen,
   onClose,
+  initialRightWidth = DEFAULT_RIGHT_WIDTH,
 }: {
   left: ReactNode;
   right: ReactNode;
@@ -36,6 +37,8 @@ export function SplitPane({
   forceOpen?: unknown;
   /** Called when the user closes the detail panel via the X button. */
   onClose?: () => void;
+  /** Initial width (px) of the right panel; clamped by min/max and available space. */
+  initialRightWidth?: number;
 }) {
   const [manualCollapsed, setManualCollapsed] = useState(!forceOpen);
   const prevForceOpenRef = useRef(forceOpen);
@@ -70,7 +73,7 @@ export function SplitPane({
       : MAX_RIGHT_WIDTH;
 
   const { width: rightWidth, separatorProps } = useResizeHandle({
-    initialWidth: DEFAULT_RIGHT_WIDTH,
+    initialWidth: initialRightWidth,
     minWidth: MIN_RIGHT_WIDTH,
     maxWidth: dynamicMaxWidth,
     ariaLabel: 'Resize panel',
