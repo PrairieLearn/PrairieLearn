@@ -16,9 +16,8 @@ import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
-import { NuqsAdapter, OverlayTrigger, useModalState } from '@prairielearn/ui';
+import { NuqsAdapter, OverlayTrigger, SplitPane, useModalState } from '@prairielearn/ui';
 
-import { SplitPane } from '../../../components/SplitPane.js';
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
 import type {
   StaffAssessment,
@@ -1064,57 +1063,61 @@ function AssessmentEditorInner({
         >
           <SplitPane
             forceOpen={selectedItem}
-            rightCollapsed={selectedItem == null ? true : undefined}
-            rightTitle={rightTitle}
-            rightHeaderAction={rightHeaderAction}
-            left={
-              <AssessmentTree
-                zones={zones}
-                state={treeState}
-                actions={treeActions}
-                isAllExpanded={isAllExpanded}
-                switchViewUrl={switchViewUrl}
-                editControls={
-                  <EditModeToolbar
-                    csrfToken={csrfToken}
-                    origHash={origHash}
-                    zones={zonesForSave}
-                    editMode={editMode}
-                    canEdit={canEdit && !!origHash}
-                    setEditMode={setEditMode}
-                    saveButtonDisabled={saveButtonDisabled}
-                    saveButtonDisabledReason={saveButtonDisabledReason}
-                    onSubmit={disableBeforeUnload}
-                    onCancel={() => {
-                      dispatch({ type: 'RESET' });
-                      setEditMode(false);
-                    }}
-                  />
-                }
-                onAddZone={handleAddZone}
-                onViewTypeChange={setViewType}
-                onToggleExpandCollapse={toggleExpandCollapse}
-              />
-            }
-            right={
-              <DetailPanel
-                selectedItem={selectedItem}
-                zones={zones}
-                questionMetadata={questionMetadata}
-                state={detailState}
-                actions={detailActions}
-                courseQuestions={courseQuestions}
-                courseQuestionsLoading={courseQuestionsQuery.isLoading}
-                questionsInAssessment={questionsInAssessment}
-                disabledQids={disabledQids}
-                currentChangeQid={currentChangeQid}
-                currentAssessmentId={assessment.id}
-                isPickingQuestion={questionByQidMutation.isPending}
-                pickerError={questionByQidMutation.error}
-                questionSharingEnabled={questionSharingEnabled}
-                consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
-              />
-            }
+            left={{
+              content: (
+                <AssessmentTree
+                  zones={zones}
+                  state={treeState}
+                  actions={treeActions}
+                  isAllExpanded={isAllExpanded}
+                  switchViewUrl={switchViewUrl}
+                  editControls={
+                    <EditModeToolbar
+                      csrfToken={csrfToken}
+                      origHash={origHash}
+                      zones={zonesForSave}
+                      editMode={editMode}
+                      canEdit={canEdit && !!origHash}
+                      setEditMode={setEditMode}
+                      saveButtonDisabled={saveButtonDisabled}
+                      saveButtonDisabledReason={saveButtonDisabledReason}
+                      onSubmit={disableBeforeUnload}
+                      onCancel={() => {
+                        dispatch({ type: 'RESET' });
+                        setEditMode(false);
+                      }}
+                    />
+                  }
+                  onAddZone={handleAddZone}
+                  onViewTypeChange={setViewType}
+                  onToggleExpandCollapse={toggleExpandCollapse}
+                />
+              ),
+            }}
+            right={{
+              content: (
+                <DetailPanel
+                  selectedItem={selectedItem}
+                  zones={zones}
+                  questionMetadata={questionMetadata}
+                  state={detailState}
+                  actions={detailActions}
+                  courseQuestions={courseQuestions}
+                  courseQuestionsLoading={courseQuestionsQuery.isLoading}
+                  questionsInAssessment={questionsInAssessment}
+                  disabledQids={disabledQids}
+                  currentChangeQid={currentChangeQid}
+                  currentAssessmentId={assessment.id}
+                  isPickingQuestion={questionByQidMutation.isPending}
+                  pickerError={questionByQidMutation.error}
+                  questionSharingEnabled={questionSharingEnabled}
+                  consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
+                />
+              ),
+              title: rightTitle,
+              headerAction: rightHeaderAction,
+              collapsed: selectedItem == null ? true : undefined,
+            }}
             onClose={() => setSelectedItem(null)}
           />
         </div>
