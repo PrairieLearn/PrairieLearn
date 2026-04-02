@@ -70,6 +70,7 @@ WITH
         enrollments
       WHERE
         course_instance_id = $course_instance_id
+        AND status = 'joined'
     )
     UNION
     (
