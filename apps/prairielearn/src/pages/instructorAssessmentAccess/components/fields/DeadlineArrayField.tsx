@@ -160,7 +160,7 @@ function DeadlineArrayInput({
 
       {deadlineFields.map((deadlineField, index) => (
         <div key={deadlineField.id} className="mb-3">
-          <div className="d-flex gap-2 mb-1 flex-column">
+          <div className="d-flex gap-2 mb-1 flex-wrap">
             <div className="flex-grow-1">
               <Form.Control
                 type="datetime-local"
