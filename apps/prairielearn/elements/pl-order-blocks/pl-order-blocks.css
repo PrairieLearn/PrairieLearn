@@ -116,8 +116,8 @@ div.pl-order-blocks-header {
   align-items: center;
 }
 
-.is-invalid .pl-order-blocks-header {
-  margin-right: -36px;
+.pl-order-blocks-container.is-invalid {
+  padding-right: 0;
 }
 
 .pl-order-blocks-feedback-icon {

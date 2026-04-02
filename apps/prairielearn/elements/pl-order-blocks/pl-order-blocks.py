@@ -340,9 +340,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     grading_method = order_blocks_options.grading_method
 
     score = data["partial_scores"].get(answer_name, {"score": None}).get("score", None)
+    score_params = {}
     if score is not None:
         try:
             score = float(score * 100)
+            if score >= 100:
+                score_params["correct"] = True
+            elif score > 0:
+                score_params["partially_correct"] = math.floor(score)
+            else:
+                score_params["incorrect"] = True
         except Exception as exc:
             raise ValueError(
                 f"invalid score: {data['partial_scores'][answer_name].get('score', 0)}"
@@ -414,13 +421,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "editable": editable,
             "block_layout": "pl-order-blocks-horizontal" if inline else "",
         }
-        if score is not None:
-            if score >= 100:
-                html_params["correct"] = True
-            elif score > 0:
-                html_params["partially_correct"] = math.floor(score)
-            else:
-                html_params["incorrect"] = True
+        html_params.update(score_params)
 
         with open("pl-order-blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
@@ -469,13 +470,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else "pl-order-blocks-right"
             ),
         }
-        if score is not None:
-            if score >= 100:
-                html_params["correct"] = True
-            elif score > 0:
-                html_params["partially_correct"] = math.floor(score)
-            else:
-                html_params["incorrect"] = True
+        html_params.update(score_params)
 
         with open("pl-order-blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
