@@ -145,9 +145,15 @@ const getAiGradingModalDataQuery = t.procedure
   .output(
     z.object({
       num_to_grade: z.number(),
-      avg_input_tokens: z.record(z.enum(['openai', 'google', 'anthropic']), z.number()),
+      avg_input_tokens: z.record(
+        z.enum(AI_GRADING_MODEL_IDS as [AiGradingModelId, ...AiGradingModelId[]]),
+        z.number(),
+      ),
       estimated_output_tokens: z.number(),
-      estimated_reasoning_tokens: z.record(z.enum(['openai', 'google', 'anthropic']), z.number()),
+      estimated_reasoning_tokens: z.record(
+        z.enum(AI_GRADING_MODEL_IDS as [AiGradingModelId, ...AiGradingModelId[]]),
+        z.number(),
+      ),
       credit_pool: z
         .object({
           credit_transferable_milli_dollars: z.number(),

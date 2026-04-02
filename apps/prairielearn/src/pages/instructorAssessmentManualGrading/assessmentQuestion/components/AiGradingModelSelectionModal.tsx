@@ -8,7 +8,6 @@ import { assertNever } from '@prairielearn/utils';
 
 import {
   AI_GRADING_MODELS,
-  AI_GRADING_MODEL_PROVIDERS,
   AI_GRADING_PROVIDER_DISPLAY_NAMES,
   AI_GRADING_PROVIDER_SUBLABELS,
   type AiGradingModelId,
@@ -70,7 +69,7 @@ function getTitle(modalState: AiGradingModelSelectionModalState): string {
  *   total = ceil(raw_cost * (1 + infrastructure_fee_percent / 100) * 1000)
  *
  * Where:
- * - input_tokens are per-provider estimates from local tiktoken + image formulas
+ * - input_tokens are per-model estimates from local tiktoken + image formulas
  * - estimated_output_tokens is derived from the expected JSON output structure
  * - estimated_reasoning_tokens = input_tokens * 1.0
  * - Result is in milli-dollars (1/1000th of a dollar)
@@ -78,17 +77,16 @@ function getTitle(modalState: AiGradingModelSelectionModalState): string {
 function estimateTotalCostForModel(
   modelId: AiGradingModelId,
   data: {
-    avg_input_tokens: Partial<Record<EnumAiGradingProvider, number>>;
+    avg_input_tokens: Partial<Record<AiGradingModelId, number>>;
     estimated_output_tokens: number;
-    estimated_reasoning_tokens: Partial<Record<EnumAiGradingProvider, number>>;
+    estimated_reasoning_tokens: Partial<Record<AiGradingModelId, number>>;
     model_pricing: Record<string, { input: number; output: number }>;
     infrastructure_fee_percent: number;
   },
   numToGrade: number,
 ): number | null {
-  const provider = AI_GRADING_MODEL_PROVIDERS[modelId];
-  const inputTokens = data.avg_input_tokens[provider] ?? 0;
-  const reasoningTokens = data.estimated_reasoning_tokens[provider] ?? 0;
+  const inputTokens = data.avg_input_tokens[modelId] ?? 0;
+  const reasoningTokens = data.estimated_reasoning_tokens[modelId] ?? 0;
   if (inputTokens <= 0) return null;
   const pricing = data.model_pricing[modelId];
   const costPerSubmissionDollars =
@@ -200,9 +198,9 @@ function ModelSelector({
   selectedModel: AiGradingModelId;
   availableProviders: EnumAiGradingProvider[];
   data: {
-    avg_input_tokens: Partial<Record<EnumAiGradingProvider, number>>;
+    avg_input_tokens: Partial<Record<AiGradingModelId, number>>;
     estimated_output_tokens: number;
-    estimated_reasoning_tokens: Partial<Record<EnumAiGradingProvider, number>>;
+    estimated_reasoning_tokens: Partial<Record<AiGradingModelId, number>>;
     model_pricing: Record<string, { input: number; output: number }>;
     infrastructure_fee_percent: number;
     using_custom_api_keys: boolean;

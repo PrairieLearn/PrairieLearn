@@ -858,7 +858,7 @@ export async function aiGrade({
         }
       } else {
         // OpenAI will take the property descriptions into account. See the
-        // examples here: https://platform.openai.com/docs/guides/structured-outputs
+        // examples here: https://developers.openai.com/api/docs/guides/structured-outputs
         const GradingResultSchema = z.object({
           explanation: z.string().describe(explanationDescription),
           feedback: z

@@ -2,19 +2,18 @@ import mustache from 'mustache';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import type {
-  AssessmentQuestion,
-  Course,
-  EnumAiGradingProvider,
-  Question,
-} from '../../../lib/db-types.js';
+import type { AssessmentQuestion, Course, Question } from '../../../lib/db-types.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
 
-import { DEFAULT_AI_GRADING_MODEL } from './ai-grading-models.shared.js';
-import { countInputTokensForProvider } from './ai-grading-token-counting.js';
+import {
+  AI_GRADING_MODELS,
+  type AiGradingModelId,
+  DEFAULT_AI_GRADING_MODEL,
+} from './ai-grading-models.shared.js';
+import { countInputTokensForModel } from './ai-grading-token-counting.js';
 import {
   filterInstanceQuestionsByMode,
   generatePrompt,
@@ -61,7 +60,7 @@ function estimateOutputTokens(rubricItemDescriptions: string[]): number {
   return Math.ceil(numericOutputJson.length / CHARS_PER_OUTPUT_TOKEN);
 }
 
-const PROVIDERS: EnumAiGradingProvider[] = ['openai', 'google', 'anthropic'];
+const MODEL_IDS = AI_GRADING_MODELS.map((model) => model.modelId);
 
 export async function estimateAiGradingCost({
   assessment_question,
@@ -80,9 +79,9 @@ export async function estimateAiGradingCost({
   selected_instance_question_ids?: string[];
 }): Promise<{
   num_to_grade: number;
-  avg_input_tokens: Record<EnumAiGradingProvider, number>;
+  avg_input_tokens: Record<AiGradingModelId, number>;
   estimated_output_tokens: number;
-  estimated_reasoning_tokens: Record<EnumAiGradingProvider, number>;
+  estimated_reasoning_tokens: Record<AiGradingModelId, number>;
 }> {
   const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion({
     assessment_question_id: assessment_question.id,
@@ -101,8 +100,8 @@ export async function estimateAiGradingCost({
     rubric_items.map((item) => item.description),
   );
 
-  const zeroTokens = { openai: 0, google: 0, anthropic: 0 } as Record<
-    EnumAiGradingProvider,
+  const zeroTokens = Object.fromEntries(MODEL_IDS.map((modelId) => [modelId, 0])) as Record<
+    AiGradingModelId,
     number
   >;
 
@@ -123,7 +122,7 @@ export async function estimateAiGradingCost({
 
   const question_course = await getQuestionCourse(question, course);
 
-  // Render prompts and count tokens for all providers for each sampled submission.
+  // Render prompts and count tokens for all models for each sampled submission.
   const results = await Promise.all(
     sampled.map(async (instance_question) => {
       try {
@@ -196,21 +195,21 @@ export async function estimateAiGradingCost({
           model_id: DEFAULT_AI_GRADING_MODEL,
         });
 
-        // Count tokens for all three providers in parallel.
-        const [openai, google, anthropic] = await Promise.all([
-          countInputTokensForProvider(messages, 'openai'),
-          countInputTokensForProvider(messages, 'google'),
-          countInputTokensForProvider(messages, 'anthropic'),
-        ]);
+        const tokenEntries = await Promise.all(
+          AI_GRADING_MODELS.map(async (model) => {
+            const tokenCount = await countInputTokensForModel(messages, model.modelId);
+            return [model.modelId, tokenCount] as const;
+          }),
+        );
 
-        return { openai, google, anthropic };
+        return Object.fromEntries(tokenEntries) as Record<AiGradingModelId, number>;
       } catch {
         return null;
       }
     }),
   );
 
-  const successful = results.filter((r): r is Record<EnumAiGradingProvider, number> => r !== null);
+  const successful = results.filter((r): r is Record<AiGradingModelId, number> => r !== null);
 
   if (successful.length === 0) {
     throw new HttpStatusError(
@@ -219,14 +218,14 @@ export async function estimateAiGradingCost({
     );
   }
 
-  const avg_input_tokens = {} as Record<EnumAiGradingProvider, number>;
-  const estimated_reasoning_tokens = {} as Record<EnumAiGradingProvider, number>;
+  const avg_input_tokens = {} as Record<AiGradingModelId, number>;
+  const estimated_reasoning_tokens = {} as Record<AiGradingModelId, number>;
 
-  for (const provider of PROVIDERS) {
-    const total = successful.reduce((sum, r) => sum + r[provider], 0);
+  for (const modelId of MODEL_IDS) {
+    const total = successful.reduce((sum, r) => sum + r[modelId], 0);
     const avg = Math.ceil(total / successful.length);
-    avg_input_tokens[provider] = avg;
-    estimated_reasoning_tokens[provider] = Math.ceil(avg * REASONING_INPUT_MULTIPLIER);
+    avg_input_tokens[modelId] = avg;
+    estimated_reasoning_tokens[modelId] = Math.ceil(avg * REASONING_INPUT_MULTIPLIER);
   }
 
   return {
