@@ -214,8 +214,7 @@ function formatDeadlineEntries(
 ): OverrideFieldItem[] {
   const filtered = deadlines.filter((d) => d.date);
   return filtered.map((d, i) => ({
-    label:
-      filtered.length === 1 ? `${labelPrefix} deadline` : `${labelPrefix} deadline ${i + 1}`,
+    label: filtered.length === 1 ? `${labelPrefix} deadline` : `${labelPrefix} deadline ${i + 1}`,
     value: `${formatDate(Temporal.PlainDateTime.from(d.date), displayTimezone)} (${d.credit}% credit)`,
   }));
 }
