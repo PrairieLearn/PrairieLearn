@@ -34,7 +34,7 @@ export function MainDateControlForm({
         <Form.Check
           type="checkbox"
           id="mainRule-date-control-enabled"
-          label={<span className="h5 mb-0">{title}</span>}
+          label={<strong>{title}</strong>}
           {...dateControlRegistration}
           aria-describedby="mainRule-date-control-help"
           onChange={(e) => {
@@ -101,7 +101,7 @@ export function OverrideDateControlForm({
   return (
     <div className="mb-4">
       <div className="section-header mb-3">
-        <h5 className="mb-0">{title}</h5>
+        <strong>{title}</strong>
         <Form.Text className="text-muted">{description}</Form.Text>
       </div>
       <div className="mb-3">

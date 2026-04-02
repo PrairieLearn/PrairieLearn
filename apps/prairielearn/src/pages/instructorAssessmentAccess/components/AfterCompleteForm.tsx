@@ -291,7 +291,7 @@ function AfterCompleteCard({
     <div className="mb-4">
       <div className="section-header mb-3">
         <div className="d-flex align-items-center">
-          <h5 className="mb-0">{title}</h5>
+          <strong>{title}</strong>
           <OverlayTrigger trigger="click" placement="auto" popover={infoPopoverConfig}>
             <Button
               variant="link"

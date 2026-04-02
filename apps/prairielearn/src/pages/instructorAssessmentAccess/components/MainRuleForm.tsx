@@ -30,7 +30,7 @@ export function MainRuleForm() {
       <MainAfterCompleteForm />
       <div className="mb-4">
         <div className="d-flex align-items-center section-header mb-3">
-          <h5 className="mb-0">Before release</h5>
+          <strong>Before release</strong>
           <OverlayTrigger trigger="click" placement="auto" popover={beforeReleasePopoverConfig}>
             <Button
               variant="link"

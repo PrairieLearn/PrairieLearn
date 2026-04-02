@@ -111,6 +111,12 @@
   padding: 0.5rem 1rem;
 }
 
+/* First section-header at top of right body: collapse gap and hide
+   redundant top border (right-header already has a bottom border). */
+.split-pane__right-body > * > :first-child > .section-header:first-child {
+  border-top: 0;
+}
+
 /* ── Narrow viewport overrides ────────────────────────────────────────── */
 
 @media (max-width: 768px) {

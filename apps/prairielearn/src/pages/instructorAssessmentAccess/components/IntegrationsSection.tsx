@@ -26,7 +26,7 @@ export function IntegrationsSection() {
   return (
     <div className="mb-4">
       <div className="section-header mb-3">
-        <h5 className="mb-0">Integrations</h5>
+        <strong>Integrations</strong>
       </div>
       <Form.Check
         type="checkbox"

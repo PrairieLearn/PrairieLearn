@@ -234,7 +234,7 @@ export function AccessControlForm({
 
   const rightPanel =
     selectedRule?.type === 'main' ? (
-      <div className="p-3">
+      <div className="px-3 pb-3">
         <MainRuleForm />
       </div>
     ) : selectedRule?.type === 'override' ? (
