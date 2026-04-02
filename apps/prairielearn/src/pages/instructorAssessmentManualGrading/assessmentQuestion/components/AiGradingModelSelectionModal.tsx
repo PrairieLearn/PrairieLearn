@@ -505,6 +505,17 @@ export function AiGradingModelSelectionModal({
             </div>
           )}
 
+          {modalDataQuery.isError && (
+            <Alert variant="danger" className="mt-3 mb-0">
+              <div className="d-flex align-items-center justify-content-between">
+                <span>Failed to estimate costs. Please try again.</span>
+                <Button variant="outline-danger" size="sm" onClick={() => modalDataQuery.refetch()}>
+                  Retry
+                </Button>
+              </div>
+            </Alert>
+          )}
+
           {data && !data.using_custom_api_keys && data.credit_pool != null && (
             <BalanceEstimatedChangeSummary
               currentBalance={data.credit_pool.total_milli_dollars}
