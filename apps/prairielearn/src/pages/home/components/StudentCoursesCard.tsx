@@ -88,7 +88,7 @@ export function StudentCoursesCard({
                     <div className="d-flex align-items-center justify-content-between gap-2">
                       <div>
                         <span className="fw-semibold">
-                          {entry.course_short_name}: {entry.course_title},
+                          {entry.course_short_name}: {entry.course_title},{' '}
                           {entry.course_instance.long_name}
                         </span>
                         <span className="ms-2 badge bg-warning text-dark">Invitation</span>
@@ -123,7 +123,7 @@ export function StudentCoursesCard({
                   <td className="align-middle">
                     <div className="d-flex align-items-center justify-content-between gap-2">
                       <a href={`${urlPrefix}/course_instance/${entry.course_instance.id}`}>
-                        {entry.course_short_name}: {entry.course_title},
+                        {entry.course_short_name}: {entry.course_title},{' '}
                         {entry.course_instance.long_name}
                       </a>
                       <button

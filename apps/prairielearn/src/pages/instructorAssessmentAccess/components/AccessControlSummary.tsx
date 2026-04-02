@@ -74,7 +74,7 @@ function MainRuleSummaryContent({
   displayTimezone: string;
 }) {
   const summaryItems = generateRuleSummary(rule, 'compact');
-  const dateTableRows = generateDateTableRows(rule, displayTimezone, 'compact');
+  const dateTableRows = generateDateTableRows(rule, displayTimezone);
 
   return (
     <div>
@@ -156,7 +156,7 @@ export function AccessControlSummary({
     const newIndex = sortableIds.indexOf(String(over.id));
     if (oldIndex === -1 || newIndex === -1) return;
 
-    // Prevent reordering across override types (individual must stay before student_label)
+    // Prevent reordering across override types (enrollment must stay before student_label)
     if (overrides[oldIndex].appliesTo.targetType !== overrides[newIndex].appliesTo.targetType) {
       return;
     }
@@ -217,17 +217,17 @@ export function AccessControlSummary({
           >
             <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
               {overrides.map((override, index) => {
-                const isFirstIndividual =
-                  index === 0 && override.appliesTo.targetType === 'individual';
+                const isFirstEnrollment =
+                  index === 0 && override.appliesTo.targetType === 'enrollment';
                 const isFirstLabel =
                   override.appliesTo.targetType === 'student_label' &&
                   (index === 0 || overrides[index - 1].appliesTo.targetType !== 'student_label');
 
                 return (
                   <Fragment key={sortableIds[index]}>
-                    {isFirstIndividual && (
+                    {isFirstEnrollment && (
                       <small className="text-muted fw-semibold d-block mb-2">
-                        Overrides for individual students
+                        Student-specific overrides
                       </small>
                     )}
                     {isFirstLabel && (
@@ -254,7 +254,7 @@ export function AccessControlSummary({
 
         <div className="rounded p-3 mt-3" style={{ backgroundColor: 'var(--bs-tertiary-bg)' }}>
           <p className="text-body-secondary small mb-0">
-            If a student matches multiple overrides, individual student overrides take priority over
+            If a student matches multiple overrides, student-specific overrides take priority over
             student label overrides. Within each section, overrides lower in the list take priority
             over those higher up.
           </p>

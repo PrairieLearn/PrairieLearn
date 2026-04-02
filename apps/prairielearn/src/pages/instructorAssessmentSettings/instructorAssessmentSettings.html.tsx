@@ -11,6 +11,7 @@ import { getAppError } from '../../lib/client/errors.js';
 import type { PageContext } from '../../lib/client/page-context.js';
 import type { StaffAssessmentModule, StaffAssessmentSet } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import type { AssessmentToolsConfig } from '../../lib/editors.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 import type { AssessmentSettingsError } from '../../trpc/assessment/assessment-settings.js';
@@ -37,6 +38,7 @@ export function InstructorAssessmentSettings({
   courseInstanceId,
   assessmentId,
   isDevMode,
+  assessmentTools,
 }: {
   trpcCsrfToken: string;
   urlPrefix: string;
@@ -55,6 +57,7 @@ export function InstructorAssessmentSettings({
   courseInstanceId: string;
   assessmentId: string;
   isDevMode: boolean;
+  assessmentTools: AssessmentToolsConfig;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -82,6 +85,7 @@ export function InstructorAssessmentSettings({
           infoAssessmentPath={infoAssessmentPath}
           assessmentSets={assessmentSets}
           assessmentModules={assessmentModules}
+          assessmentTools={assessmentTools}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -104,6 +108,7 @@ function InstructorAssessmentSettingsInner({
   infoAssessmentPath,
   assessmentSets,
   assessmentModules,
+  assessmentTools,
 }: {
   urlPrefix: string;
   canEdit: boolean;
@@ -118,6 +123,7 @@ function InstructorAssessmentSettingsInner({
   infoAssessmentPath: string;
   assessmentSets: StaffAssessmentSet[];
   assessmentModules: StaffAssessmentModule[];
+  assessmentTools: AssessmentToolsConfig;
 }) {
   const trpc = useTRPC();
   const [origHash, setOrigHash] = useState(initialOrigHash);
@@ -142,6 +148,7 @@ function InstructorAssessmentSettingsInner({
     auto_close: assessment.auto_close ?? true,
     require_honor_code: assessment.require_honor_code ?? true,
     honor_code: assessment.honor_code ?? '',
+    tools: Object.fromEntries(assessmentTools.map(({ name, enabled }) => [name, enabled])),
   };
 
   const {
@@ -464,6 +471,26 @@ function InstructorAssessmentSettingsInner({
               </small>
             </div>
           )}
+
+          <h2 className="h4">Tools</h2>
+          {assessmentTools.map(({ name, label, enabled }) => (
+            <div key={name} className="mb-3 form-check">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id={`tool_${name}`}
+                disabled={!canEdit}
+                defaultChecked={enabled}
+                {...register(`tools.${name}`)}
+              />
+              <label className="form-check-label" htmlFor={`tool_${name}`}>
+                {label}
+              </label>
+              <div className="small text-muted">
+                Enable the {name} tool for students taking this assessment.
+              </div>
+            </div>
+          ))}
 
           <StudentLinkSharing
             studentLink={studentLink}

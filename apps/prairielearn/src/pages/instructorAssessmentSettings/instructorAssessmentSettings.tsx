@@ -14,11 +14,13 @@ import {
   StaffAssessmentSetSchema,
 } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
-import { getOriginalHash } from '../../lib/editors.js';
+import { type AssessmentToolsConfig, getOriginalHash } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
+import { selectAssessmentToolDefaults } from '../../models/assessment.js';
+import { EnumAssessmentToolSchema } from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentSettings } from './instructorAssessmentSettings.html.js';
 
@@ -71,6 +73,16 @@ router.get(
 
     const origHash = (await getOriginalHash(fullInfoAssessmentPath)) ?? '';
 
+    const toolDefaultRows = await selectAssessmentToolDefaults({
+      assessment_id: res.locals.assessment.id,
+    });
+    const enabledTools = new Set(toolDefaultRows.filter((r) => r.enabled).map((r) => r.tool));
+    const assessmentTools: AssessmentToolsConfig = EnumAssessmentToolSchema.options.map((tool) => ({
+      name: tool,
+      label: tool.charAt(0).toUpperCase() + tool.slice(1),
+      enabled: enabledTools.has(tool),
+    }));
+
     const assessmentGHLink = courseRepoContentUrl(
       course,
       `courseInstances/${course_instance.short_name}/assessments/${assessment.tid}`,
@@ -115,6 +127,7 @@ router.get(
               courseInstanceId={String(course_instance.id)}
               assessmentId={String(assessment.id)}
               isDevMode={config.devMode}
+              assessmentTools={assessmentTools}
             />
           </Hydrate>
         ),

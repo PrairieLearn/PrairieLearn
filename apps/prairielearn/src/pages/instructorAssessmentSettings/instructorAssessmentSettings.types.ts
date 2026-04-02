@@ -13,6 +13,7 @@ export const SettingsFormBodySchema = z.object({
   auto_close: z.boolean(),
   require_honor_code: z.boolean(),
   honor_code: z.string().optional(),
+  tools: z.record(z.string(), z.boolean()).optional(),
 });
 
 export type SettingsFormValues = z.infer<typeof SettingsFormBodySchema>;

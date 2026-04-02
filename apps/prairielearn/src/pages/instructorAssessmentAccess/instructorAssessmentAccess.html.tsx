@@ -13,9 +13,9 @@ import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import type { AccessControlJsonWithId } from '../../models/assessment-access-control-rules.js';
 
 import { AssessmentAccessControl } from './components/AssessmentAccessControl.js';
-import type { AccessControlJsonWithId } from './components/types.js';
 
 export const AssessmentAccessRulesSchema = z.object({
   mode: z.string(),

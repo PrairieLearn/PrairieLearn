@@ -3,7 +3,7 @@ import { Button } from 'react-bootstrap';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import type { IndividualTarget, StudentLabelTarget, TargetType } from '../types.js';
+import type { EnrollmentTarget, StudentLabelTarget, TargetType } from '../types.js';
 
 import { StudentLabelSearchInput } from './StudentLabelSearchInput.js';
 import { StudentSearchInput } from './StudentSearchInput.js';
@@ -19,7 +19,7 @@ export function AddTargetPopover({
   excludedStudentLabelIds: Set<string>;
   excludedUids: Set<string>;
   onSelectStudentLabels: (studentLabels: StudentLabelTarget[]) => void;
-  onSelectStudents: (students: IndividualTarget[]) => void;
+  onSelectStudents: (students: EnrollmentTarget[]) => void;
 }) {
   const [show, setShow] = useState(false);
 
