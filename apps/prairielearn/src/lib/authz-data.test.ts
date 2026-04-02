@@ -475,4 +475,14 @@ describe('checkCourseInstanceLegacyAccess', () => {
 
     assert.deepEqual(result.sort(), ['12', '16']);
   });
+
+  it('return an empty list if no course instances provided', async () => {
+    const result = await checkCourseInstanceLegacyAccess({
+      courseInstanceIds: [],
+      userId: '1002',
+      reqDate: new Date('2011-07-07T06:06:06Z'),
+    });
+
+    assert.deepEqual(result, []);
+  });
 });
