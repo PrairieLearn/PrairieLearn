@@ -380,6 +380,12 @@ export async function gradeVariant({
     check_submission_id,
     ignoreRealTimeGradingDisabled,
   );
+
+  const allSubmissions = await sqldb.queryRows(
+    sql.select_submissions_all_variants,
+    { instance_question_id: variant.instance_question_id },
+    SubmissionSchema
+  );
   if (submission == null) return;
 
   if (!ignoreGradeRateLimit && variant.instance_question_id != null) {
@@ -415,6 +421,7 @@ export async function gradeVariant({
     const questionModule = questionServers.getModule(question.type);
     const { courseIssues, data } = await questionModule.grade(
       submission,
+      allSubmissions,
       variant,
       question,
       question_course,

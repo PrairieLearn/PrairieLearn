@@ -18,6 +18,8 @@ import {
   type CourseInstance,
   type Question,
   type QuestionPreferenceValuesSchema,
+  type Submission,
+  SubmissionSchema,
   type Variant,
   VariantSchema,
 } from './db-types.js';
@@ -61,11 +63,13 @@ export async function makeVariant({
   course,
   variant_seed: variant_seed_option,
   preferences = {},
+  instance_question_id = null,
 }: {
   question: Question;
   course: Course;
   variant_seed?: string | null;
   preferences?: Record<string, string | number | boolean>;
+  instance_question_id?: string | null;
 }): Promise<{
   courseIssues: (Error & { fatal?: boolean; data?: any })[];
   variant: VariantCreationData;
@@ -107,11 +111,21 @@ export async function makeVariant({
     );
   }
 
+  let allSubmissions: Submission[] = [];
+  if (instance_question_id) {
+    allSubmissions = await sqldb.queryRows(
+      sql.select_submissions_all_variants,
+      { instance_question_id },
+      SubmissionSchema,
+    );
+  }
+
   if (!variant.broken) {
     const { courseIssues: prepareCourseIssues, data } = await questionModule.prepare(
       question,
       course,
       variant,
+      allSubmissions,
     );
     courseIssues.push(...prepareCourseIssues);
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
@@ -268,6 +282,7 @@ async function makeAndInsertVariant({
     course: question_course,
     variant_seed: options.variant_seed,
     preferences,
+    instance_question_id,
   });
 
   const variant = await sqldb.runInTransactionAsync(async () => {

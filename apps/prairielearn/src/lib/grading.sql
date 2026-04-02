@@ -46,6 +46,18 @@ ORDER BY
 LIMIT
   1;
 
+-- BLOCK select_submissions_all_variants
+SELECT
+  s.*
+FROM
+  submissions AS s
+  JOIN variants AS v ON (v.id = s.variant_id)
+WHERE
+  v.instance_question_id = $instance_question_id
+ORDER BY
+  s.date DESC,
+  s.id DESC;
+
 -- BLOCK update_variant_true_answer
 WITH
   updated_variant AS (

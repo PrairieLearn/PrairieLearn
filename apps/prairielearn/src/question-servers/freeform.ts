@@ -859,6 +859,7 @@ export async function prepare(
   question: Question,
   course: Course,
   variant: PrepareVariant,
+  allSubmissions: Submission[],
 ): QuestionServerReturnValue<PrepareResultData> {
   return instrumented('freeform.prepare', async () => {
     if (variant.broken) throw new Error('attempted to prepare broken variant');
@@ -867,6 +868,7 @@ export async function prepare(
 
     const data = {
       // These should never be null, but that can't be encoded in the schema.
+      allSubmissions,
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
@@ -1619,6 +1621,7 @@ export async function parse(
 
 export async function grade(
   submission: Submission,
+  allSubmissions: Submission[],
   variant: Variant,
   question: Question,
   question_course: Course,
@@ -1634,6 +1637,7 @@ export async function grade(
       // use the submission's values when grading.
       //
       // These should never be null, but that can't be encoded in the schema.
+      allSubmissions,
       params: submission.params ?? {},
       correct_answers: submission.true_answer ?? {},
       submitted_answers: submission.submitted_answer ?? {},

@@ -84,6 +84,7 @@ export interface QuestionServer {
     question: Question,
     course: Course,
     variant: PrepareVariant,
+    allSubmissions: Submission[],
   ) => QuestionServerReturnValue<PrepareResultData>;
   render: (params: {
     renderSelection: RenderSelection;
@@ -102,6 +103,7 @@ export interface QuestionServer {
   ) => QuestionServerReturnValue<ParseResultData>;
   grade: (
     submission: Submission,
+    allSubmissions: Submission[],
     variant: Variant,
     question: Question,
     course: Course,
@@ -128,6 +130,7 @@ export type ElementExtensionJsonExtension = ElementExtensionJson & {
 // This data object changes over the lifetime of the question grading process.
 // That is why many fields are optional, as they are only present in later phases.
 export interface ExecutionData {
+  allSubmissions?: any;
   params: Record<string, any>;
   correct_answers: Record<string, unknown>;
   variant_seed: number;
