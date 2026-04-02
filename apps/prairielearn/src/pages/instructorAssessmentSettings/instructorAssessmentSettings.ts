@@ -17,6 +17,7 @@ import {
   AssessmentCopyEditor,
   AssessmentDeleteEditor,
   AssessmentRenameEditor,
+  type AssessmentToolsConfig,
   FileModifyEditor,
   MultiEditor,
   getOriginalHash,
@@ -28,6 +29,11 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
+import { selectAssessmentToolDefaults } from '../../models/assessment.js';
+import {
+  type AssessmentJsonInput,
+  EnumAssessmentToolSchema,
+} from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentSettings } from './instructorAssessmentSettings.html.js';
 
@@ -74,6 +80,16 @@ router.get(
 
     const origHash = (await getOriginalHash(fullInfoAssessmentPath)) ?? '';
 
+    const toolDefaultRows = await selectAssessmentToolDefaults({
+      assessment_id: res.locals.assessment.id,
+    });
+    const enabledTools = new Set(toolDefaultRows.filter((r) => r.enabled).map((r) => r.tool));
+    const assessmentTools: AssessmentToolsConfig = EnumAssessmentToolSchema.options.map((tool) => ({
+      name: tool,
+      label: tool.charAt(0).toUpperCase() + tool.slice(1),
+      enabled: enabledTools.has(tool),
+    }));
+
     const assessmentGHLink = courseRepoContentUrl(
       res.locals.course,
       `courseInstances/${res.locals.course_instance.short_name}/assessments/${res.locals.assessment.tid}`,
@@ -94,6 +110,7 @@ router.get(
         assessmentSets,
         assessmentModules,
         canEdit,
+        assessmentTools,
       }),
     );
   }),
@@ -101,6 +118,7 @@ router.get(
 
 router.post(
   '/',
+  // TODO: typedAsyncHandler should type req.body
   typedAsyncHandler<'assessment'>(async (req, res) => {
     if (req.body.__action === 'copy_assessment') {
       const editor = new AssessmentCopyEditor({
@@ -164,7 +182,9 @@ router.post(
 
       const paths = getPaths(undefined, res.locals);
 
-      const assessmentInfo = JSON.parse(await fs.readFile(infoAssessmentPath, 'utf8'));
+      const assessmentInfo: AssessmentJsonInput = JSON.parse(
+        await fs.readFile(infoAssessmentPath, 'utf8'),
+      );
       assessmentInfo.title = req.body.title;
       assessmentInfo.set = req.body.set;
       assessmentInfo.number = req.body.number;
@@ -183,6 +203,23 @@ router.post(
         req.body.allow_personal_notes === 'on',
         true,
       );
+
+      assessmentInfo.tools = assessmentInfo.tools ?? {};
+      for (const tool of EnumAssessmentToolSchema.options) {
+        const enabled = req.body[`tool_${tool}`] === 'on';
+        // Only update the tool if it was already defined in the assessmentInfo
+        // or if it's being enabled. This prevents accidentally adding new tools
+        // to the assessmentInfo when editing an existing assessment that doesn't
+        // have those tools configured.
+        if (tool in assessmentInfo.tools || enabled) {
+          assessmentInfo.tools[tool] = { ...assessmentInfo.tools[tool], enabled };
+        }
+      }
+      // If no tools are configured, delete the tools property to avoid storing an empty object.
+      if (Object.keys(assessmentInfo.tools).length === 0) {
+        delete assessmentInfo.tools;
+      }
+
       if (res.locals.assessment.type === 'Exam') {
         assessmentInfo.multipleInstance = propertyValueWithDefault(
           assessmentInfo.multipleInstance,
