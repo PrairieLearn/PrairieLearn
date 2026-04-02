@@ -1,7 +1,7 @@
 import type { XAXisComponentOption, YAXisComponentOption } from 'echarts';
-import { useMemo } from 'react';
 
 import { type HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { EChart, axisTooltipFormatter } from '../../../components/EChart.js';
 import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
@@ -17,14 +17,13 @@ export function DailySpendingChart({
   data: { date: Date; spending_milli_dollars: number }[];
   groupedData?: { date: Date; group_label: string; spending_milli_dollars: number }[];
 }) {
-  const bootstrapFont = useMemo(
+  if (data.length === 0) return null;
+
+  const bootstrapFont = run(
     () =>
       getComputedStyle(document.documentElement).getPropertyValue('--bs-body-font-family') ||
       FALLBACK_FONT,
-    [],
   );
-
-  if (data.length === 0) return null;
 
   const dates = data.map((d) => new Date(d.date).toISOString().slice(0, 10));
 
