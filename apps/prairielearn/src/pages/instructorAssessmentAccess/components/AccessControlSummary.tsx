@@ -208,7 +208,7 @@ export function AccessControlSummary({
             <h5 className="mb-0">Overrides</h5>
             <small className="text-body-secondary">
               Customize settings for specific students or groups. Fields not overridden are
-              inherited from the defaults.
+              inherited from the defaults and any earlier overrides.
             </small>
           </div>
           <Button variant="primary" size="sm" onClick={onAddOverride}>

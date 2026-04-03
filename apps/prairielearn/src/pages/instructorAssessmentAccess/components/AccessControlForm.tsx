@@ -260,10 +260,6 @@ export function AccessControlForm({
                 rule to take effect.
               </Alert>
             )}
-            <p className="text-muted">
-              Fields that are not overridden inherit their values from the defaults and any earlier
-              overrides. Click "Override" on a field to set a custom value for this group.
-            </p>
             <AppliesToField namePrefix={`overrides.${selectedRule.index}`} />
             <OverrideRuleContent index={selectedRule.index} />
           </div>
