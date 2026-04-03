@@ -3,7 +3,7 @@ import { type ReactNode, useState } from 'react';
 import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
-import { OverlayTrigger, SplitPane, useModalState } from '@prairielearn/ui';
+import { OverlayTrigger, SplitPane, StickyActionBar, useModalState } from '@prairielearn/ui';
 
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type { AccessControlJsonWithId } from '../../../models/assessment-access-control-rules.js';
@@ -292,56 +292,61 @@ export function AccessControlForm({
           forceOpen={selectedRule}
           left={{
             content: (
-              <div className="p-3">
-                {alert}
-                <AccessControlSummary
-                  courseInstanceId={courseInstance.id}
-                  displayTimezone={courseInstance.display_timezone}
-                  getOverrideName={getOverrideName}
-                  mainRule={watchedData.mainRule}
-                  overrides={watchedData.overrides}
-                  mainRuleErrors={mainRuleErrors}
-                  getOverrideErrors={getOverrideErrors}
-                  onAddOverride={addOverride}
-                  onRemoveOverride={handleDeleteClick}
-                  onMoveOverride={moveOverride}
-                  onEditMainRule={() => setSelectedRule({ type: 'main' })}
-                  onClearMainRule={() =>
-                    reset(
-                      {
-                        mainRule: jsonToMainRuleFormData({}, displayTimezone),
-                        overrides: watch('overrides'),
-                      },
-                      {
-                        // Keep original defaults so the form stays dirty and the save button enables.
-                        keepDefaultValues: true,
-                      },
-                    )
-                  }
-                  onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
-                />
-                <div className="d-flex gap-2 mt-3">
-                  {saveDisabledReason ? (
-                    <OverlayTrigger
-                      tooltip={{ props: { id: 'save-tooltip' }, body: saveDisabledReason }}
-                    >
-                      <span className="d-inline-block">{saveButton}</span>
-                    </OverlayTrigger>
-                  ) : (
-                    saveButton
-                  )}
-                  {isDirty && (
-                    <button
-                      className="btn btn-sm btn-outline-secondary"
-                      type="button"
-                      disabled={isSaving}
-                      onClick={() => reset()}
-                    >
-                      Cancel
-                    </button>
-                  )}
+              <>
+                <div className="p-3">
+                  {alert}
+                  <AccessControlSummary
+                    courseInstanceId={courseInstance.id}
+                    displayTimezone={courseInstance.display_timezone}
+                    getOverrideName={getOverrideName}
+                    mainRule={watchedData.mainRule}
+                    overrides={watchedData.overrides}
+                    mainRuleErrors={mainRuleErrors}
+                    getOverrideErrors={getOverrideErrors}
+                    onAddOverride={addOverride}
+                    onRemoveOverride={handleDeleteClick}
+                    onMoveOverride={moveOverride}
+                    onEditMainRule={() => setSelectedRule({ type: 'main' })}
+                    onClearMainRule={() =>
+                      reset(
+                        {
+                          mainRule: jsonToMainRuleFormData({}, displayTimezone),
+                          overrides: watch('overrides'),
+                        },
+                        {
+                          // Keep original defaults so the form stays dirty and the save button enables.
+                          keepDefaultValues: true,
+                        },
+                      )
+                    }
+                    onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
+                  />
                 </div>
-              </div>
+                <StickyActionBar
+                  message={isDirty ? 'You have unsaved changes' : 'No unsaved changes'}
+                  actions={
+                    <>
+                      <button
+                        className="btn btn-sm btn-outline-secondary"
+                        type="button"
+                        disabled={isSaving || !isDirty}
+                        onClick={() => reset()}
+                      >
+                        Cancel
+                      </button>
+                      {saveDisabledReason ? (
+                        <OverlayTrigger
+                          tooltip={{ props: { id: 'save-tooltip' }, body: saveDisabledReason }}
+                        >
+                          <span className="d-inline-block">{saveButton}</span>
+                        </OverlayTrigger>
+                      ) : (
+                        saveButton
+                      )}
+                    </>
+                  }
+                />
+              </>
             ),
           }}
           right={{
