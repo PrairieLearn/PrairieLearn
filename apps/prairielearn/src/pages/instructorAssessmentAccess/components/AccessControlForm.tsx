@@ -181,7 +181,8 @@ export function AccessControlForm({
       if (studentLabels.length === 2) {
         return `Overrides for ${studentLabels[0].name} and ${studentLabels[1].name}`;
       }
-      return `Overrides for ${studentLabels[0].name}, ${studentLabels[1].name}, and ${studentLabels.length - 2} others`;
+      const remaining = studentLabels.length - 2;
+      return `Overrides for ${studentLabels[0].name}, ${studentLabels[1].name}, and ${remaining} ${remaining === 1 ? 'other' : 'others'}`;
     } else {
       const enrollments = appliesTo.enrollments;
       if (enrollments.length === 0) return `Override ${index + 1}`;
@@ -190,7 +191,8 @@ export function AccessControlForm({
       if (enrollments.length === 2) {
         return `Overrides for ${getName(enrollments[0])} and ${getName(enrollments[1])}`;
       }
-      return `Overrides for ${getName(enrollments[0])}, ${getName(enrollments[1])}, and ${enrollments.length - 2} others`;
+      const remaining = enrollments.length - 2;
+      return `Overrides for ${getName(enrollments[0])}, ${getName(enrollments[1])}, and ${remaining} ${remaining === 1 ? 'other' : 'others'}`;
     }
   };
 
