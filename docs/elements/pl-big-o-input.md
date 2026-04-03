@@ -37,7 +37,7 @@ This leads to a few limitations/behaviors that should be considered when using m
 
 - Sympy views`x*y` and `y*x` as different expressions, thus students will not be told whether their expression is unsimplified (e.g. `n^(1+1)`).
 - Expressions with mixed lower order terms which would evaluate to a constant when the limit is taken with equal growth rates will give the feedback that the student has included "lower order terms" instead of the mathematically possible "additional constant factors" (e.g., `x^2+2xy+y^2` over `x^2+y^2`).
-- Some expressions (usually with nested exponentials & factorials) will have unsolvable limits with Sympy, and cannot give correct parital feedback. If you require such expressions it is recommended to use `pl-symbolic-input` instead, which will only check for equality.
+- Some expressions (usually with nested exponentials & factorials) will have unsolvable limits with Sympy, and cannot give correct partial feedback. If you require such expressions it is recommended to use `pl-symbolic-input` instead, which will only check for equality.
 - Big-O expressions with many variables will be slower, and if multiple instances of 7-variable Big-O inputs exist, the question may timeout.
 
 ## Example implementations
