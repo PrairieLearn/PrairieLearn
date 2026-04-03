@@ -621,8 +621,8 @@ router.get(
       let maxPoints = res.locals.assessment.max_points;
       if (isPoints && maxPoints == null) {
         const row = await sqldb.queryOptionalRow(
-          'SELECT max_points FROM assessment_instances WHERE assessment_id = $1 AND max_points IS NOT NULL LIMIT 1',
-          [res.locals.assessment.id],
+          sql.select_assessment_instance_max_points,
+          { assessment_id: res.locals.assessment.id },
           z.object({ max_points: z.number() }),
         );
         maxPoints = row?.max_points ?? null;
