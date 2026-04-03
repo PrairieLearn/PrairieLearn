@@ -620,12 +620,11 @@ router.get(
       // Fall back to the instance-level max_points from any assessment instance.
       let maxPoints = res.locals.assessment.max_points;
       if (isPoints && maxPoints == null) {
-        const row = await sqldb.queryOptionalRow(
+        maxPoints = await sqldb.queryOptionalScalar(
           sql.select_assessment_instance_max_points,
           { assessment_id: res.locals.assessment.id },
-          z.object({ max_points: z.number() }),
+          z.number(),
         );
-        maxPoints = row?.max_points ?? null;
       }
 
       const pointsPossibleRow = {
