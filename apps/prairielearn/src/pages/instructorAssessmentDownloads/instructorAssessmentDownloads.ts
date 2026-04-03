@@ -647,7 +647,7 @@ router.get(
             }
           })(),
         ),
-        stringifyWithColumns(canvasColumns, (record: any) => {
+        stringifyWithColumns(canvasColumns, (record) => {
           // Points Possible row passes through as-is (no role field).
           if (!record.role) return record;
           if (record.role !== 'Student') return null;
