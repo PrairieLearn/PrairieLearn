@@ -273,7 +273,21 @@ export function AccessControlForm({
 
   return (
     <FormProvider {...methods}>
-      <Form style={{ height: '100%' }} onSubmit={handleSubmit(handleFormSubmit)}>
+      <Form
+        style={{ height: '100%' }}
+        onSubmit={handleSubmit(handleFormSubmit)}
+        // Prevent Enter from submitting the form on inputs like date fields.
+        onKeyDown={(e) => {
+          if (
+            e.key === 'Enter' &&
+            e.target instanceof HTMLElement &&
+            e.target.tagName !== 'BUTTON' &&
+            e.target.tagName !== 'TEXTAREA'
+          ) {
+            e.preventDefault();
+          }
+        }}
+      >
         <SplitPane
           forceOpen={selectedRule}
           left={{
