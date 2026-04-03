@@ -594,8 +594,7 @@ router.get(
       req.params.filename === filenames.canvasPointsCsvFilename
     ) {
       const isPoints = req.params.filename === filenames.canvasPointsCsvFilename;
-      const assessmentLabel =
-        res.locals.assessment_set.abbreviation + res.locals.assessment.number;
+      const assessmentLabel = res.locals.assessment_set.abbreviation + res.locals.assessment.number;
       const canvasColumns: Columns = [
         ['Student', 'name'],
         ['ID', 'uid'],
