@@ -106,7 +106,7 @@ function MainRuleSummaryContent({
           className="rounded text-center py-3 text-body-secondary"
           style={{ border: '1px dashed var(--bs-border-color)' }}
         >
-          No dates or deadlines configured.
+          No access settings configured.
         </div>
       )}
     </div>
@@ -217,7 +217,12 @@ export function AccessControlSummary({
         </div>
 
         {overrides.length === 0 ? (
-          <p className="text-muted">No overrides configured.</p>
+          <div
+            className="rounded text-center py-3 text-body-secondary"
+            style={{ border: '1px dashed var(--bs-border-color)' }}
+          >
+            No overrides configured.
+          </div>
         ) : (
           <DndContext
             id={dndId}
