@@ -172,13 +172,8 @@ export function AccessControlSummary({
   return (
     <div>
       <section className="mb-4">
-        <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
-          <div>
-            <h5 className="mb-0">Defaults</h5>
-            <small className="text-body-secondary">
-              Access settings that apply to all students by default.
-            </small>
-          </div>
+        <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
+          <h5 className="mb-0">Defaults</h5>
           <div className="d-flex gap-2">
             <Button variant="outline-primary" size="sm" onClick={onEditMainRule}>
               <i className="bi bi-pencil me-1" /> Edit
@@ -188,6 +183,9 @@ export function AccessControlSummary({
             </Button>
           </div>
         </div>
+        <small className="text-body-secondary d-block mb-3">
+          Access settings that apply to all students by default.
+        </small>
 
         {mainRuleErrors && mainRuleErrors.length > 0 && (
           <div className="alert alert-danger mb-3">
@@ -203,18 +201,16 @@ export function AccessControlSummary({
       </section>
 
       <section>
-        <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
-          <div>
-            <h5 className="mb-0">Overrides</h5>
-            <small className="text-body-secondary">
-              Customize settings for specific students or groups. Fields not overridden are
-              inherited from the defaults and any earlier overrides.
-            </small>
-          </div>
+        <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
+          <h5 className="mb-0">Overrides</h5>
           <Button variant="primary" size="sm" onClick={onAddOverride}>
             <i className="bi bi-plus-lg me-1" /> Add override
           </Button>
         </div>
+        <small className="text-body-secondary d-block mb-3">
+          Customize settings for specific students or groups. Fields not overridden are inherited
+          from the defaults and any earlier overrides.
+        </small>
 
         {overrides.length === 0 ? (
           <div
