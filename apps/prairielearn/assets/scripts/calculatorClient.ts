@@ -251,7 +251,9 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const result = resolveAnsAndEvaluate(items, domIndex, displayMode);
     if (result) {
       const outputField = ensureElement(
-        historyItemEl.querySelector<MathfieldElement>('.history-output .history-text'),
+        historyItemEl.querySelector<MathfieldElement>(
+          '.history-output .pl-calculator-history-text',
+        ),
       );
       outputField.value = `=${result.displayed}`;
     }
@@ -667,12 +669,16 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
     // Set input text
     const inputRow = ensureElement(clone.querySelector<HTMLElement>('.history-input'));
-    const inputField = ensureElement(inputRow.querySelector<MathfieldElement>('.history-text'));
+    const inputField = ensureElement(
+      inputRow.querySelector<MathfieldElement>('.pl-calculator-history-text'),
+    );
     inputField.value = input;
 
     // Set output text
     const outputRow = ensureElement(clone.querySelector<HTMLElement>('.history-output'));
-    const outputField = ensureElement(outputRow.querySelector<MathfieldElement>('.history-text'));
+    const outputField = ensureElement(
+      outputRow.querySelector<MathfieldElement>('.pl-calculator-history-text'),
+    );
     outputField.value = `=${displayed}`;
 
     // Only show rad/deg badge if expression contains trig functions
