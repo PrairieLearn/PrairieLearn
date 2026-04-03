@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Button from 'react-bootstrap/Button';
-import Form from 'react-bootstrap/Form';
 import Modal from 'react-bootstrap/Modal';
 
 import { downloadAsCSV } from '@prairielearn/browser-utils';
+import { Radio, RadioGroup } from '@prairielearn/ui';
 
 import type { CourseAssessmentRow, GradebookRow } from '../instructorGradebook.types.js';
 
@@ -207,7 +207,7 @@ function CanvasCsvModalContent({
             // max points are computed dynamically (e.g., Exams with randomized
             // zones). Fall back to the instance-level max_points from the
             // first student who has a score for this assessment.
-             
+
             const scoreWithMax = validRows.find(
               (r) => r.scores[a.assessment_id]?.max_points != null,
             );
@@ -273,22 +273,10 @@ function CanvasCsvModalContent({
         </div>
 
         <h6>Score format</h6>
-        <Form.Check
-          type="radio"
-          id="score-format-percentage"
-          name="scoreFormat"
-          label="Percentage score (0–100)"
-          checked={scoreFormat === 'percentage'}
-          onChange={() => setScoreFormat('percentage')}
-        />
-        <Form.Check
-          type="radio"
-          id="score-format-points-original"
-          name="scoreFormat"
-          label="Original point values"
-          checked={scoreFormat === 'points_original'}
-          onChange={() => setScoreFormat('points_original')}
-        />
+        <RadioGroup value={scoreFormat} onChange={setScoreFormat}>
+          <Radio value="percentage">Percentage score (0–100)</Radio>
+          <Radio value="points_original">Original point values</Radio>
+        </RadioGroup>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onHide}>
