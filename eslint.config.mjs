@@ -54,6 +54,8 @@ export default [
       '@html-eslint': html,
     },
     rules: {
+      // This has false positives in our codebase.
+      '@eslint-react/jsx-no-leaked-semicolon': 'off',
       // Use the recommended rules for HTML.
       ...Object.fromEntries(
         Object.keys(html.rules).map((value) => ['@html-eslint/' + value, 'error']),
