@@ -180,6 +180,7 @@ function CanvasCsvModalContent({
             // first student who has a score for this assessment.
 
             const scoreWithMax = validRows.find(
+              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
               (r) => r.scores[a.assessment_id]?.max_points != null,
             );
 
