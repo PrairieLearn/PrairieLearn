@@ -1,5 +1,8 @@
 import random
 
+import schemdraw
+import schemdraw.elements as elm
+
 
 def generate(data):
     V = random.randint(12, 40)
@@ -12,35 +15,29 @@ def generate(data):
     C = random.randint(5, 15)
     data["params"]["C"] = C
 
-    # total energy
-    data["correct_answers"]["charge"] = C * V
+    # total charge
+    data["correct_answers"]["charge"] = f"{C * V} uC"
 
-    # data for plotting
-    pA = [60, 60]
-    L = 300
-    h = 120
+    with schemdraw.Drawing(show=False) as d:
+        d += elm.Switch().up().label("A")
+        d += elm.Battery().right().label(f"{V} V")
+        d += elm.Resistor().right().label(f"{R1} $\\Omega$")
+        d += elm.Line().down()
 
-    pB = [pA[0] + L / 2, pA[1]]
-    pC = [pA[0] + L, pA[1]]
-    pD = [pA[0] + L, pA[1] + h]
-    pE = [pA[0] + 4 / 5 * L, pA[1] + h]
-    pF = [pA[0], pA[1] + h]
-    pG = [pA[0] + 1 / 5 * L, pB[1] + h]
-    pH = [pE[0], pE[1] - h / 4]
-    pI = [pE[0], pE[1] + h / 4]
-    pJ = [pG[0], pG[1] - h / 4]
-    pK = [pG[0], pG[1] + h / 4]
-    pL = [pF[0] + L / 2, pG[1] - h / 4]
+        d.push()
+        d += elm.Line().up().length(1.5)
+        d += elm.Resistor().left().label(f"{R2} $\\Omega$")
+        d += elm.Switch().left().label("B")
+        d += elm.Line().down().length(1.5)
+        d.pop()
 
-    data["params"]["pA"] = pA
-    data["params"]["pB"] = pB
-    data["params"]["pC"] = pC
-    data["params"]["pD"] = pD
-    data["params"]["pE"] = pE
-    data["params"]["pF"] = pF
-    data["params"]["pG"] = pG
-    data["params"]["pH"] = pH
-    data["params"]["pI"] = pI
-    data["params"]["pJ"] = pJ
-    data["params"]["pK"] = pK
-    data["params"]["pL"] = pL
+        d += elm.Line().down().length(1.5)
+        d += elm.Line().left().length(1.5)
+        d += elm.Capacitor().left().label(f"{C} $\\mu$F")
+        d += elm.Line().left().length(1.5)
+        d += elm.Line().up().length(1.5)
+
+        svg_bytes = d.get_imagedata("svg")
+        data["params"]["circuit_svg"] = (
+            svg_bytes.decode("utf-8") if isinstance(svg_bytes, bytes) else svg_bytes
+        )
