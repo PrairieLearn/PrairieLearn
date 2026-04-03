@@ -152,40 +152,48 @@ function DeadlineArrayInput({
 
   const addDeadline = () => {
     let candidateDate: Temporal.PlainDate | null = null;
-    const lastDeadlineDate =
-      deadlineFields.length > 0 ? deadlineFields[deadlineFields.length - 1].date : '';
 
-    if (lastDeadlineDate) {
-      const lastDate = Temporal.PlainDateTime.from(lastDeadlineDate).toPlainDate();
-      candidateDate = lastDate.add({ weeks: 1 });
-    } else if (isEarly && dueDate) {
-      const dueDatePlain = Temporal.PlainDateTime.from(dueDate).toPlainDate();
-      candidateDate = dueDatePlain.subtract({ days: 1 });
-    } else if (isEarly && releaseDate) {
-      const releasePlain = Temporal.PlainDateTime.from(releaseDate).toPlainDate();
-      candidateDate = releasePlain.add({ weeks: 1 });
-    } else if (!isEarly && dueDate) {
-      const dueDatePlain = Temporal.PlainDateTime.from(dueDate).toPlainDate();
-      candidateDate = dueDatePlain.add({ weeks: 1 });
+    // Find the last deadline that has an actual date value — earlier entries
+    // may be empty if the user hasn't filled them in yet.
+    let lastFilledDate = '';
+    for (let i = deadlineFields.length - 1; i >= 0; i--) {
+      if (deadlineFields[i].date) {
+        lastFilledDate = deadlineFields[i].date;
+        break;
+      }
     }
 
-    // For early deadlines, cap at dueDate - 1 day. If the candidate overshoots,
-    // try the midpoint between the last deadline and the due date instead.
-    if (candidateDate && isEarly && dueDate) {
+    if (isEarly && dueDate) {
+      // Early deadlines must be before the due date. To leave room for
+      // additional deadlines, place the new one at min(anchor + 1 week,
+      // midpoint to maxDate) — this uses natural spacing when there's
+      // plenty of room and compresses when the window is tight.
       const maxDate = Temporal.PlainDateTime.from(dueDate).toPlainDate().subtract({ days: 1 });
-      if (Temporal.PlainDate.compare(candidateDate, maxDate) >= 0) {
-        if (lastDeadlineDate) {
-          const lastDate = Temporal.PlainDateTime.from(lastDeadlineDate).toPlainDate();
-          const daysUntilDue = lastDate.until(maxDate).days;
-          if (daysUntilDue > 0) {
-            candidateDate = lastDate.add({ days: Math.ceil(daysUntilDue / 2) });
-          } else {
-            candidateDate = null;
-          }
-        } else {
-          candidateDate = maxDate;
-        }
+      const anchor = lastFilledDate
+        ? Temporal.PlainDateTime.from(lastFilledDate).toPlainDate()
+        : releaseDate
+          ? Temporal.PlainDateTime.from(releaseDate).toPlainDate()
+          : Temporal.Now.plainDateISO();
+
+      const daysToMax = anchor.until(maxDate).days;
+      if (daysToMax > 0) {
+        const weekOut = anchor.add({ weeks: 1 });
+        const midpoint = anchor.add({ days: Math.ceil(daysToMax / 2) });
+        candidateDate = Temporal.PlainDate.compare(weekOut, midpoint) <= 0 ? weekOut : midpoint;
       }
+      // If daysToMax <= 0, no room — candidateDate stays null → empty field
+    } else if (isEarly && releaseDate) {
+      // No due date constraint — just space 1 week after anchor.
+      const anchor = lastFilledDate
+        ? Temporal.PlainDateTime.from(lastFilledDate).toPlainDate()
+        : Temporal.PlainDateTime.from(releaseDate).toPlainDate();
+      candidateDate = anchor.add({ weeks: 1 });
+    } else if (!isEarly && dueDate) {
+      // Late deadlines have no upper bound — 1 week spacing works.
+      const anchor = lastFilledDate
+        ? Temporal.PlainDateTime.from(lastFilledDate).toPlainDate()
+        : Temporal.PlainDateTime.from(dueDate).toPlainDate();
+      candidateDate = anchor.add({ weeks: 1 });
     }
 
     const defaultDate = candidateDate ? endOfDayDatetime(candidateDate) : '';
