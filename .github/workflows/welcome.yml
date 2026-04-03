@@ -22,7 +22,7 @@ jobs:
           pr-message: |
             :wave: Thanks for your first pull request to PrairieLearn! Here are a few things to keep in mind:
 
-            - **Make sure you disclose any AI assistance used.** If you fail to do so, your PR may be rejected.
+            - **Make sure you disclose if any AI assistance was used, and the extent of its use.** If you fail to do so, your PR may be rejected.
             - Make sure you've read the [contributing guide](https://github.com/PrairieLearn/PrairieLearn/blob/master/CONTRIBUTING.md)
             - Feel free to ask questions here or in the `#pl-dev` channel on [Slack](https://prairielearn.com/slack).
             - Please briefly introduce yourself, including if/how you are using PrairieLearn and the context of your contribution.
