@@ -296,6 +296,14 @@ function stringifyWithColumns(columns: Columns, transform?: (record: any) => any
   });
 }
 
+async function* prependToStream(
+  firstRow: unknown,
+  source: AsyncIterable<unknown>,
+): AsyncGenerator<unknown> {
+  yield firstRow;
+  yield* source;
+}
+
 async function sendInstancesCsv(
   res: Response,
   req: Request,
@@ -595,8 +603,7 @@ router.get(
       req.params.filename === filenames.canvasPointsCsvFilename
     ) {
       const isPoints = req.params.filename === filenames.canvasPointsCsvFilename;
-      const assessmentName =
-        res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
+      const assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
       const scoreKey = isPoints ? 'points' : 'score_perc';
       const canvasColumns: Columns = [
         ['Student', 'name'],
@@ -625,17 +632,9 @@ router.get(
         [scoreKey]: isPoints ? res.locals.assessment.max_points : 100,
       };
 
-      async function* prependRow(
-        firstRow: unknown,
-        source: AsyncIterable<unknown>,
-      ): AsyncGenerator<unknown> {
-        yield firstRow;
-        yield* source;
-      }
-
       res.attachment(req.params.filename);
       await pipeline(
-        Readable.from(prependRow(pointsPossibleRow, cursor.stream(100))),
+        Readable.from(prependToStream(pointsPossibleRow, cursor.stream(100))),
         stringifyWithColumns(canvasColumns, (record: any) => {
           // Points Possible row passes through as-is (no role field).
           if (!record.role) return record;

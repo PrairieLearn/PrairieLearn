@@ -5,6 +5,7 @@ SELECT
   aset.number AS assessment_set_number,
   aset.id AS assessment_set_id,
   aset.color,
+  aset.name AS assessment_set_name,
   aset.heading AS assessment_set_heading,
   (aset.abbreviation || a.number) AS label,
   a.max_points

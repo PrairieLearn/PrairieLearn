@@ -188,9 +188,7 @@ function CanvasCsvModalContent({
       'SIS User ID',
       'SIS Login ID',
       'Section',
-      ...selectedAssessments.map(
-        (a) => `${a.assessment_set_heading} ${a.assessment_number}`,
-      ),
+      ...selectedAssessments.map((a) => `${a.assessment_set_name} ${a.assessment_number}`),
     ];
 
     const pointsPossibleRow = [
