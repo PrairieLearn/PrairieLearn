@@ -141,6 +141,7 @@ function CoursePermissionCell({
 }) {
   const [show, setShow] = useState(false);
   const currentRole = courseUser.course_permission.course_role!;
+  const [selectedRole, setSelectedRole] = useState<CourseRole>(currentRole);
 
   if (!canChangeCourseRole) {
     return (
@@ -170,11 +171,6 @@ function CoursePermissionCell({
             <input type="hidden" name="__action" value="course_permissions_update_role" />
             <input type="hidden" name="__csrf_token" value={csrfToken} />
             <input type="hidden" name="user_id" value={courseUser.user.id} />
-            <p className="d-none d-sm-block">
-              Users with course content access can see aggregate student data (e.g., mean scores),
-              but cannot see the names or scores of individual students without also having student
-              data access to a particular course instance.
-            </p>
             {COURSE_ROLE_VALUES.map((role) => (
               <div key={role} className="form-check">
                 <input
@@ -183,17 +179,18 @@ function CoursePermissionCell({
                   name="course_role"
                   value={role}
                   id={`course-permission-input-${courseUser.user.id}-${role}`}
-                  defaultChecked={currentRole === role}
+                  checked={selectedRole === role}
+                  onChange={() => setSelectedRole(role)}
                 />
                 <label
                   className="form-check-label"
                   htmlFor={`course-permission-input-${courseUser.user.id}-${role}`}
                 >
-                  <h6>{role}</h6>
-                  <p className="small text-muted d-none d-sm-block">{ROLE_DESCRIPTIONS[role]}</p>
+                  {role}
                 </label>
               </div>
             ))}
+            <p className="small text-muted mt-2 mb-0">{ROLE_DESCRIPTIONS[selectedRole]}</p>
             <div className="mt-3 text-end">
               <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
                 Cancel
@@ -228,6 +225,14 @@ const INSTANCE_ROLE_LABELS: Record<InstanceRole, string> = {
   'Student Data Editor': 'Editor',
 };
 
+const INSTANCE_ROLE_DESCRIPTIONS: Record<InstanceRole, string> = {
+  None: 'Cannot see any student data for this course instance.',
+  'Student Data Viewer':
+    'Can see all assessments, questions, and issues. Can view student data but cannot make changes.',
+  'Student Data Editor':
+    'Can see all assessments, questions, and issues. Can view and edit student data, including grading.',
+};
+
 function CourseInstanceAccessCell({
   courseUser,
   courseInstance,
@@ -242,6 +247,7 @@ function CourseInstanceAccessCell({
   );
   const currentRole: InstanceRole = existingRole?.course_instance_role ?? 'None';
   const [show, setShow] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<InstanceRole>(currentRole);
 
   return (
     <OverlayTrigger
@@ -269,15 +275,7 @@ function CourseInstanceAccessCell({
             <input type="hidden" name="__csrf_token" value={csrfToken} />
             <input type="hidden" name="user_id" value={courseUser.user.id} />
             <input type="hidden" name="course_instance_id" value={courseInstance.id} />
-            <p className="d-none d-sm-block">
-              Users with student data access can see all assessments in the course instance{' '}
-              <code>{courseInstance.short_name}</code>, can see all questions, and can see issues.
-              They cannot see any code or configuration files, or close issues, without also having
-              course content access.
-            </p>
-            {INSTANCE_ROLE_VALUES.filter(
-              (role) => !(role === 'None' && currentRole === 'None'),
-            ).map((role) => (
+            {INSTANCE_ROLE_VALUES.map((role) => (
               <div key={role} className="form-check">
                 <input
                   className="form-check-input"
@@ -285,16 +283,20 @@ function CourseInstanceAccessCell({
                   name="course_instance_role"
                   value={role}
                   id={`ci-permission-input-${courseUser.user.id}-${courseInstance.id}-${role}`}
-                  defaultChecked={currentRole === role}
+                  checked={selectedRole === role}
+                  onChange={() => setSelectedRole(role)}
                 />
                 <label
                   className="form-check-label"
                   htmlFor={`ci-permission-input-${courseUser.user.id}-${courseInstance.id}-${role}`}
                 >
-                  <h6>{INSTANCE_ROLE_LABELS[role]}</h6>
+                  {INSTANCE_ROLE_LABELS[role]}
                 </label>
               </div>
             ))}
+            <p className="small text-muted mt-2 mb-0">
+              {INSTANCE_ROLE_DESCRIPTIONS[selectedRole]}
+            </p>
             <div className="mt-3 text-end">
               <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
                 Cancel
