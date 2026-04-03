@@ -152,8 +152,9 @@ export function TanstackTableDownloadButton<RowDataModel>({
             {filteredRowsJSON.length}) as JSON
           </button>
         </li>
-        {additionalMenuItems?.map((item, i) => (
-          <li key={i} role="presentation">
+        {additionalMenuItems?.map((item, index) => (
+          // eslint-disable-next-line @eslint-react/no-array-index-key
+          <li key={index} role="presentation">
             {item}
           </li>
         ))}
