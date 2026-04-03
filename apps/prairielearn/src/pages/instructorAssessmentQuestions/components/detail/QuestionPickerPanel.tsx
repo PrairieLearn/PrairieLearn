@@ -4,6 +4,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { TRPCClientError } from '@trpc/client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { run } from '@prairielearn/run';
 import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
 
 import { getQuestionCreateUrl, getQuestionUrl } from '../../../../lib/client/url.js';
@@ -289,7 +290,7 @@ export function QuestionPickerPanel({
               Searching...
             </div>
           ) : sharedQuestionQuery.data ? (
-            (() => {
+            run(() => {
               const result = sharedQuestionQuery.data;
               const qid = `@${result.course.sharing_name}/${result.question.qid}`;
               const hasTitle = !!result.question.title?.trim();
@@ -343,7 +344,7 @@ export function QuestionPickerPanel({
                   </div>
                 </div>
               );
-            })()
+            })
           ) : sharedQuestionQuery.isError ? (
             sharedQuestionQuery.error instanceof TRPCClientError &&
             sharedQuestionQuery.error.data?.code === 'NOT_FOUND' ? (
