@@ -1,4 +1,4 @@
-import { useEffect, useRef, type InputHTMLAttributes } from 'react';
+import { type InputHTMLAttributes, useEffect, useRef } from 'react';
 
 export interface IndeterminateCheckboxProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
