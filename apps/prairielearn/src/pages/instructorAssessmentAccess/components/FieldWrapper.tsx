@@ -26,7 +26,7 @@ export function FieldWrapper({
   /** Optional: content to display in the header row next to the Remove override button */
   headerContent?: ReactNode;
 }) {
-  const cardStyle = isOverridden ? {} : { border: '2px dashed #dee2e6' };
+  const cardStyle = isOverridden ? {} : { border: '2px dashed var(--bs-border-color)' };
 
   return (
     <Card style={cardStyle}>

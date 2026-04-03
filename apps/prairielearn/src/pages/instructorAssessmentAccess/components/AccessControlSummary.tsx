@@ -104,7 +104,7 @@ function MainRuleSummaryContent({
       {dateTableRows.length === 0 && summaryItems.length === 0 && (
         <div
           className="rounded text-center py-3 text-body-secondary"
-          style={{ border: '1px dashed var(--bs-border-color)' }}
+          style={{ border: '2px dashed var(--bs-border-color)' }}
         >
           No access settings configured.
         </div>
@@ -215,7 +215,7 @@ export function AccessControlSummary({
         {overrides.length === 0 ? (
           <div
             className="rounded text-center py-3 text-body-secondary"
-            style={{ border: '1px dashed var(--bs-border-color)' }}
+            style={{ border: '2px dashed var(--bs-border-color)' }}
           >
             No overrides configured.
           </div>
