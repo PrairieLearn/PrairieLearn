@@ -201,8 +201,19 @@ function CanvasCsvModalContent({
         switch (scoreFormat) {
           case 'percentage':
             return 100;
-          case 'points_original':
-            return a.max_points;
+          case 'points_original': {
+            if (a.max_points != null) return a.max_points;
+            // The assessment-level max_points is null for assessments whose
+            // max points are computed dynamically (e.g., Exams with randomized
+            // zones). Fall back to the instance-level max_points from the
+            // first student who has a score for this assessment.
+             
+            const scoreWithMax = validRows.find(
+              (r) => r.scores[a.assessment_id]?.max_points != null,
+            );
+
+            return scoreWithMax?.scores[a.assessment_id]?.max_points ?? null;
+          }
         }
       }),
     ];

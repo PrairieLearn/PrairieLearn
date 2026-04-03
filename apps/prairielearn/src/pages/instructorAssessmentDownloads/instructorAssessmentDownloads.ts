@@ -623,13 +623,26 @@ router.get(
         z.unknown(),
       );
 
+      // The assessment-level max_points is null for assessments whose max
+      // points are computed dynamically (e.g., Exams with randomized zones).
+      // Fall back to the instance-level max_points from any assessment instance.
+      let maxPoints = res.locals.assessment.max_points;
+      if (isPoints && maxPoints == null) {
+        const row = await sqldb.queryOptionalRow(
+          'SELECT max_points FROM assessment_instances WHERE assessment_id = $1 AND max_points IS NOT NULL LIMIT 1',
+          [res.locals.assessment.id],
+          z.object({ max_points: z.number() }),
+        );
+        maxPoints = row?.max_points ?? null;
+      }
+
       const pointsPossibleRow = {
         name: '    Points Possible',
         id_col: null,
         sis_user_id: null,
         sis_login_id: null,
         section: null,
-        [scoreKey]: isPoints ? res.locals.assessment.max_points : 100,
+        [scoreKey]: isPoints ? maxPoints : 100,
       };
 
       res.attachment(req.params.filename);

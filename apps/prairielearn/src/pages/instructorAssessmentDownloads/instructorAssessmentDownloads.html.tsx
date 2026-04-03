@@ -304,8 +304,7 @@ export function InstructorAssessmentDownloads({
                 </td>
                 <td>
                   Total points for each student, formatted for import into Canvas. Points range from
-                  0 to the maximum for this assessment. Ensure that the maximum points configured
-                  for the assignment in Canvas match the maximum points in PrairieLearn.
+                  0 to the maximum for this assessment (or higher if bonus credit was given).
                 </td>
               </tr>
               <tr>
