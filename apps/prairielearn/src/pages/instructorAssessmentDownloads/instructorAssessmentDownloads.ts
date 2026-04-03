@@ -647,8 +647,8 @@ router.get(
           })(),
         ),
         stringifyWithColumns(canvasColumns, (record) => {
-          // Points Possible row passes through as-is (no role field).
-          if (!record.role) return record;
+          // Points Possible row passes through as-is.
+          if (record.name === pointsPossibleRow.name) return record;
           if (record.role !== 'Student') return null;
           return {
             ...record,
