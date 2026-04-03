@@ -950,7 +950,6 @@ function StaffTableInner({
 
   return (
     <div className="d-flex flex-column h-100">
-      <style>{'.staff-table td { align-items: center; }'}</style>
       <div className="staff-table flex-grow-1" style={{ minHeight: 0 }}>
         <TanstackTableCard
           table={table}

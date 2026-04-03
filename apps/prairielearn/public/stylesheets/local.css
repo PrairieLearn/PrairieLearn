@@ -476,3 +476,7 @@ input.form-check-input:disabled {
 .markdown-body > :last-child {
   margin-bottom: 0;
 }
+
+.staff-table td {
+  align-items: center;
+}
