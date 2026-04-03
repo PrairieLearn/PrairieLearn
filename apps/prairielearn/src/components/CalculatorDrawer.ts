@@ -123,7 +123,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
               <div class="history-row history-input d-flex align-items-center gap-2 ps-2 pe-2">
                 <math-field
                   theme="light"
-                  class="history-text flex-grow-1 force-light"
+                  class="pl-calculator-history-text flex-grow-1 force-light"
                   contenteditable="false"
                 ></math-field>
                 <button
@@ -153,7 +153,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
               >
                 <math-field
                   theme="light"
-                  class="history-text force-light"
+                  class="pl-calculator-history-text force-light"
                   contenteditable="false"
                 ></math-field>
                 <button
