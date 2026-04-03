@@ -91,7 +91,7 @@ describe('formDataToJson', () => {
       trackingId: 'o-1',
     };
 
-    const result = formDataToJson(buildFormData(override), TEST_TIMEZONE);
+    const result = formDataToJson(buildFormData(override));
     expect(result[1].dateControl).toBeUndefined();
   });
 
@@ -104,7 +104,7 @@ describe('formDataToJson', () => {
       password: 'pw',
     };
 
-    const result = formDataToJson(buildFormData(override), TEST_TIMEZONE);
+    const result = formDataToJson(buildFormData(override));
     const dc = result[1].dateControl!;
     expect(dc.dueDate).toBe('2025-05-01T00:00:00Z');
     expect(dc.password).toBe('pw');
@@ -129,7 +129,7 @@ describe('formDataToJson', () => {
       },
     };
 
-    const overrideJson = formDataToJson(buildFormData(override), TEST_TIMEZONE)[1];
+    const overrideJson = formDataToJson(buildFormData(override))[1];
     expect(overrideJson.labels).toEqual(['label-a', 'label-b']);
     expect(overrideJson.ruleType).toBeUndefined();
     expect(overrideJson.enrollments).toBeUndefined();
@@ -146,7 +146,7 @@ describe('formDataToJson', () => {
       },
     };
 
-    const overrideJson = formDataToJson(buildFormData(override), TEST_TIMEZONE)[1];
+    const overrideJson = formDataToJson(buildFormData(override))[1];
     expect(overrideJson.ruleType).toBe('enrollment');
     expect(overrideJson.enrollments).toEqual([
       { enrollmentId: 'e-1', uid: 'user@test.com', name: 'Test User' },
@@ -163,7 +163,7 @@ describe('formDataToJson', () => {
       scoreVisibility: { hideScore: true },
     };
 
-    const overrideJson = formDataToJson(buildFormData(override), TEST_TIMEZONE)[1];
+    const overrideJson = formDataToJson(buildFormData(override))[1];
     expect(overrideJson.afterComplete).toBeDefined();
     expect(overrideJson.afterComplete!.hideQuestions).toBe(true);
     expect(overrideJson.afterComplete!.showQuestionsAgainDate).toBe('2025-06-01T00:00:00Z');
@@ -176,7 +176,7 @@ describe('formDataToJson', () => {
       trackingId: 'o-8',
     };
 
-    const overrideJson = formDataToJson(buildFormData(override), TEST_TIMEZONE)[1];
+    const overrideJson = formDataToJson(buildFormData(override))[1];
     expect(overrideJson.afterComplete).toBeUndefined();
   });
 
@@ -212,7 +212,7 @@ describe('formDataToJson', () => {
       ],
     };
 
-    const result = formDataToJson(formData, TEST_TIMEZONE);
+    const result = formDataToJson(formData);
     const overrideJson = result[1];
 
     expect(overrideJson.dateControl).toBeDefined();
