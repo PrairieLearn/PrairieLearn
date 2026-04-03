@@ -101,6 +101,7 @@ body.pl-ui-no-user-select {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
   padding: 0.5rem 1rem;
   border-bottom: var(--bs-border-width) solid var(--bs-border-color);
   flex-shrink: 0;

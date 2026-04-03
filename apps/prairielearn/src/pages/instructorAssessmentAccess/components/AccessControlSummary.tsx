@@ -172,7 +172,7 @@ export function AccessControlSummary({
   return (
     <div>
       <section className="mb-4">
-        <div className="d-flex justify-content-between align-items-center mb-3">
+        <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
           <div>
             <h5 className="mb-0">Defaults</h5>
             <small className="text-body-secondary">
@@ -203,7 +203,7 @@ export function AccessControlSummary({
       </section>
 
       <section>
-        <div className="d-flex justify-content-between align-items-center mb-3">
+        <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
           <div>
             <h5 className="mb-0">Overrides</h5>
             <small className="text-body-secondary">
