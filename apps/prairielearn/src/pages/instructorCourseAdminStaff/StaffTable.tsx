@@ -320,6 +320,112 @@ function CourseInstanceAccessCell({
   );
 }
 
+function AddUsersModal({
+  show,
+  onHide,
+  csrfToken,
+  uidsLimit,
+  courseInstances,
+}: {
+  show: boolean;
+  onHide: () => void;
+  csrfToken: string;
+  uidsLimit: number;
+  courseInstances: CourseInstance[];
+}) {
+  return (
+    <Modal show={show} onHide={onHide}>
+      <Modal.Header closeButton>
+        <Modal.Title>Add users</Modal.Title>
+      </Modal.Header>
+      <form method="POST">
+        <Modal.Body>
+          <input type="hidden" name="__action" value="course_permissions_insert_by_user_uids" />
+          <input type="hidden" name="__csrf_token" value={csrfToken} />
+          <p className="form-text">
+            Use this form to add users to the course staff. Any UIDs of users who are already on the
+            course staff will have their permissions updated only if the new permissions are higher
+            than their existing permissions. All new users will be given the same access to course
+            content and to student data.
+          </p>
+          <div className="mb-3">
+            <label className="form-label" htmlFor="addUsersInputUid">
+              UIDs:
+            </label>
+            <textarea
+              className="form-control"
+              id="addUsersInputUid"
+              name="uid"
+              placeholder="staff1@example.com, staff2@example.com"
+              aria-describedby="addUsersInputUidHelp"
+              required
+            />
+            <small id="addUsersInputUidHelp" className="form-text text-muted">
+              Enter up to {uidsLimit} UIDs separated by commas, semicolons, or whitespace.
+            </small>
+          </div>
+          <div className="mb-3">
+            <label className="form-label" htmlFor="addUsersInputCourseRole">
+              Course content access for all new users:
+            </label>
+            <select
+              className="form-select form-select-sm"
+              id="addUsersInputCourseRole"
+              name="course_role"
+              required
+            >
+              <option value="None" defaultValue="None">
+                None
+              </option>
+              <option value="Previewer">Previewer</option>
+              <option value="Viewer">Viewer</option>
+              <option value="Editor">Editor</option>
+              <option value="Owner">Owner</option>
+            </select>
+          </div>
+          {courseInstances.length > 0 && (
+            <div className="mb-3">
+              <label className="form-label" htmlFor="addUsersInputCourseInstance">
+                Student data access for all new users:
+              </label>
+              <div className="input-group">
+                <select
+                  className="form-select form-select-sm"
+                  id="addUsersInputCourseInstance"
+                  name="course_instance_id"
+                >
+                  <option value="">None</option>
+                  {courseInstances.map((ci) => (
+                    <option key={ci.id} value={ci.id}>
+                      {ci.short_name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  className="form-select form-select-sm"
+                  id="addUsersInputCourseInstanceRole"
+                  name="course_instance_role"
+                >
+                  <option value="Student Data Viewer">Viewer</option>
+                  <option value="Student Data Editor">Editor</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={onHide}>
+            Cancel
+          </Button>
+          <Button variant="primary" type="submit">
+            Add users
+          </Button>
+        </Modal.Footer>
+      </form>
+    </Modal>
+  );
+}
+
 function AddUsersButton({
   csrfToken,
   uidsLimit,
@@ -331,114 +437,26 @@ function AddUsersButton({
 }) {
   const [show, setShow] = useState(false);
   return (
-    <OverlayTrigger
-      show={show}
-      trigger="click"
-      placement="auto"
-      popover={{
-        props: { id: 'add-users-popover', className: 'popover-wide' },
-        header: 'Add users',
-        body: (
-          <form method="POST">
-            <input type="hidden" name="__action" value="course_permissions_insert_by_user_uids" />
-            <input type="hidden" name="__csrf_token" value={csrfToken} />
-            <div className="mb-3">
-              <p className="form-text">
-                Use this form to add users to the course staff. Any UIDs of users who are already on
-                the course staff will have their permissions updated only if the new permissions are
-                higher than their existing permissions. All new users will be given the same access
-                to course content and to student data.
-              </p>
-            </div>
-            <div className="mb-3">
-              <label className="form-label" htmlFor="addUsersInputUid">
-                UIDs:
-              </label>
-              <textarea
-                className="form-control"
-                id="addUsersInputUid"
-                name="uid"
-                placeholder="staff1@example.com, staff2@example.com"
-                aria-describedby="addUsersInputUidHelp"
-                required
-              />
-              <small id="addUsersInputUidHelp" className="form-text text-muted">
-                Enter up to {uidsLimit} UIDs separated by commas, semicolons, or whitespace.
-              </small>
-            </div>
-            <div className="mb-3">
-              <label className="form-label" htmlFor="addUsersInputCourseRole">
-                Course content access for all new users:
-              </label>
-              <select
-                className="form-select form-select-sm"
-                id="addUsersInputCourseRole"
-                name="course_role"
-                required
-              >
-                <option value="None" defaultValue="None">
-                  None
-                </option>
-                <option value="Previewer">Previewer</option>
-                <option value="Viewer">Viewer</option>
-                <option value="Editor">Editor</option>
-                <option value="Owner">Owner</option>
-              </select>
-            </div>
-            {courseInstances.length > 0 && (
-              <div className="mb-3">
-                <label className="form-label" htmlFor="addUsersInputCourseInstance">
-                  Student data access for all new users:
-                </label>
-                <div className="input-group">
-                  <select
-                    className="form-select form-select-sm"
-                    id="addUsersInputCourseInstance"
-                    name="course_instance_id"
-                  >
-                    <option value="">None</option>
-                    {courseInstances.map((ci) => (
-                      <option key={ci.id} value={ci.id}>
-                        {ci.short_name}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    className="form-select form-select-sm"
-                    id="addUsersInputCourseInstanceRole"
-                    name="course_instance_role"
-                  >
-                    <option value="Student Data Viewer">Viewer</option>
-                    <option value="Student Data Editor">Editor</option>
-                  </select>
-                </div>
-              </div>
-            )}
-            <div className="text-end">
-              <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
-                Cancel
-              </button>
-              <button type="submit" className="btn btn-primary ms-2">
-                Add users
-              </button>
-            </div>
-          </form>
-        ),
-      }}
-      rootClose
-      onToggle={setShow}
-    >
+    <>
       <Button
         type="button"
         variant="light"
         size="sm"
         aria-label="Add users"
         data-testid="add-users-button"
+        onClick={() => setShow(true)}
       >
         <i className="fas fa-users" aria-hidden="true" />
         <span className="d-none d-sm-inline"> Add users</span>
       </Button>
-    </OverlayTrigger>
+      <AddUsersModal
+        show={show}
+        onHide={() => setShow(false)}
+        csrfToken={csrfToken}
+        uidsLimit={uidsLimit}
+        courseInstances={courseInstances}
+      />
+    </>
   );
 }
 
@@ -668,58 +686,6 @@ function SelectionToolbar({
         onHide={() => setShowEditAccessModal(false)}
       />
     </>
-  );
-}
-
-function AccessLevelsTable() {
-  return (
-    <div className="table-responsive">
-      <table
-        className="table table-striped table-sm border mb-0"
-        style={{ maxWidth: '45em' }}
-        aria-label="Recommended access levels"
-      >
-        <thead>
-          <tr>
-            <th>Role</th>
-            <th className="text-center">Course content access</th>
-            <th className="text-center">Student data access</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Instructor</td>
-            <td className="text-center">Course content owner</td>
-            <td className="text-center">Student data editor</td>
-          </tr>
-          <tr>
-            <td>TAs developing course content</td>
-            <td className="text-center">Course content editor</td>
-            <td className="text-center">Student data editor</td>
-          </tr>
-          <tr>
-            <td>Student content developers (not TAs)</td>
-            <td className="text-center">Course content editor</td>
-            <td className="text-center">None</td>
-          </tr>
-          <tr>
-            <td>TAs involved in grading</td>
-            <td className="text-center">None</td>
-            <td className="text-center">Student data editor</td>
-          </tr>
-          <tr>
-            <td>Other TAs</td>
-            <td className="text-center">None</td>
-            <td className="text-center">Student data viewer</td>
-          </tr>
-          <tr>
-            <td>Instructors from other classes</td>
-            <td className="text-center">Course content viewer</td>
-            <td className="text-center">None</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
   );
 }
 
@@ -997,10 +963,9 @@ function StaffTableInner({
         />
       </div>
       <div className="small flex-shrink-0 border-top pt-3">
-        <details>
-          <summary>Recommended access levels</summary>
-          <AccessLevelsTable />
-        </details>
+        <a href="https://docs.prairielearn.com/course/#course-staff" target="_blank" rel="noreferrer">
+          Learn more about content and student data access levels
+        </a>
         {githubAccessLink && (
           <div className="alert alert-info mt-3">
             The settings above do not affect access to the course&apos;s Git repository. To change
