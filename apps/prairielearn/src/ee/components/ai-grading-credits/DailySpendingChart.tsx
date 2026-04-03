@@ -17,6 +17,7 @@ export function DailySpendingChart({
   if (data.length === 0) return null;
 
   const bootstrapFont =
+    // eslint-disable-next-line @eslint-react/purity -- reading a stable CSS variable, not a side effect
     getComputedStyle(document.documentElement).getPropertyValue('--bs-body-font-family') ||
     'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
 
