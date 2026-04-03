@@ -47,6 +47,10 @@ export {
   type FilterDropdownProps,
 } from './components/FilterDropdown.js';
 export {
+  IndeterminateCheckbox,
+  type IndeterminateCheckboxProps,
+} from './components/IndeterminateCheckbox.js';
+export {
   RadioGroup,
   Radio,
   type RadioGroupProps,

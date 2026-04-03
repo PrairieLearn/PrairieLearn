@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 
 import { downloadAsCSV } from '@prairielearn/browser-utils';
-import { Radio, RadioGroup } from '@prairielearn/ui';
+import { IndeterminateCheckbox, Radio, RadioGroup } from '@prairielearn/ui';
 
 import type { CourseAssessmentRow, GradebookRow } from '../instructorGradebook.types.js';
 
@@ -27,26 +27,18 @@ function AssessmentGroupCheckbox({
   onToggleAssessment: (assessmentId: string) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const checkboxRef = useRef<HTMLInputElement>(null);
 
   const allSelected = group.assessments.every((a) => selectedIds.has(a.assessment_id.toString()));
   const someSelected =
     !allSelected && group.assessments.some((a) => selectedIds.has(a.assessment_id.toString()));
 
-  useEffect(() => {
-    if (checkboxRef.current) {
-      checkboxRef.current.indeterminate = someSelected;
-    }
-  }, [someSelected]);
-
   return (
     <div className="d-flex flex-column">
       <div className="px-2 py-1 d-flex align-items-center">
-        <input
-          ref={checkboxRef}
-          type="checkbox"
+        <IndeterminateCheckbox
           className="form-check-input flex-shrink-0"
           checked={allSelected}
+          indeterminate={someSelected}
           aria-label={`Toggle all assessments in '${group.heading}'`}
           onChange={() => onToggleGroup(group.setId, !allSelected)}
         />
