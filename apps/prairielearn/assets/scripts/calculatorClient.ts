@@ -507,7 +507,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     lpar: '(',
     rpar: ')',
     assign: '\\coloneqq',
-    mul: '\\times',
+    mul: '\\cdot',
     minus: '-',
     plus: '+',
     'dec-point': '.',
