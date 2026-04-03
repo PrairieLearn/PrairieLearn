@@ -7,15 +7,13 @@ import {
   UserSchema,
 } from '../../lib/db-types.js';
 
-export const CourseInstanceRoleRowSchema = z.object({
+const CourseInstanceRoleRowSchema = z.object({
   id: CourseInstanceSchema.shape.id,
   short_name: CourseInstanceSchema.shape.short_name,
   course_instance_permission_id: CourseInstancePermissionSchema.shape.id,
   course_instance_role: CourseInstancePermissionSchema.shape.course_instance_role,
   course_instance_role_formatted: z.string(),
 });
-export type CourseInstanceRoleRow = z.infer<typeof CourseInstanceRoleRowSchema>;
-
 export const CourseUsersRowSchema = z.object({
   user: UserSchema,
   course_permission: CoursePermissionSchema,

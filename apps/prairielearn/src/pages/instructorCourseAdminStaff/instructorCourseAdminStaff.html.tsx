@@ -5,9 +5,7 @@ import type { CourseInstance } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 import { StaffTable } from './StaffTable.js';
-import { type CourseUsersRow, CourseUsersRowSchema } from './instructorCourseAdminStaff.types.js';
-
-export { CourseUsersRowSchema };
+import type { CourseUsersRow } from './instructorCourseAdminStaff.types.js';
 
 export function InstructorCourseAdminStaff({
   resLocals,
