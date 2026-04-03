@@ -295,7 +295,7 @@ const infoPopoverConfig = {
 };
 
 function AfterCompleteCard({
-  title = 'After completion behavior',
+  title = 'After completion',
   description = 'Configure what happens after students complete the assessment',
   children,
 }: {

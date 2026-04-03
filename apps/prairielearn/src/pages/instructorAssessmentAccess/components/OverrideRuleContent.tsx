@@ -12,7 +12,7 @@ export function OverrideRuleContent({ index }: { index: number }) {
 
       <OverrideAfterCompleteForm
         index={index}
-        title="After completion behavior"
+        title="After completion"
         description="Configure what happens after students complete the assessment"
       />
     </div>

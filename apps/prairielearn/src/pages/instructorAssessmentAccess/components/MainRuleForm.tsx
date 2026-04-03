@@ -27,7 +27,6 @@ export function MainRuleForm() {
     <>
       <MainDateControlForm />
       <IntegrationsSection />
-      <MainAfterCompleteForm />
       <div className="mb-4">
         <div className="d-flex align-items-center section-header mb-3">
           <strong>Before release</strong>
@@ -53,6 +52,7 @@ export function MainRuleForm() {
           Students can see the assessment title before release
         </Form.Text>
       </div>
+      <MainAfterCompleteForm />
     </>
   );
 }
