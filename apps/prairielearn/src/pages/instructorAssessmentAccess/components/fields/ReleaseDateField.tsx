@@ -154,7 +154,7 @@ export function MainReleaseDateField() {
 
   return (
     <div>
-      <strong className="d-block mb-2">Release date</strong>
+      <strong className="d-block mb-2">Release</strong>
       <MainReleaseDateInput value={field.value} error={error?.message} onChange={field.onChange} />
     </div>
   );
@@ -174,8 +174,8 @@ export function OverrideReleaseDateField({ index }: { index: number }) {
   return (
     <FieldWrapper
       isOverridden={isOverridden}
-      label="Release date"
-      headerContent={<strong>Release date</strong>}
+      label="Release"
+      headerContent={<strong>Release</strong>}
       onOverride={() => {
         field.onChange(mainValue);
         addOverride();

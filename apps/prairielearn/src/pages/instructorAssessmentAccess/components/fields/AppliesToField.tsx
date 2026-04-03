@@ -9,6 +9,7 @@ import {
 
 import { ChipGroup } from '@prairielearn/ui';
 
+import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import type { NamePrefix } from '../hooks/fieldNames.js';
 import type {
   AccessControlFormData,
@@ -66,10 +67,6 @@ export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
   const studentLabels = typedAppliesTo?.studentLabels ?? [];
 
   const enrollmentChipItems = enrollments.map((s) => ({ id: s.uid, label: s.name ?? s.uid }));
-  const studentLabelChipItems = studentLabels.map((sl) => ({
-    id: sl.studentLabelId,
-    label: sl.name,
-  }));
 
   const handleRemoveEnrollmentByUid = (uid: string) => {
     const index = enrollments.findIndex((s) => s.uid === uid);
@@ -117,13 +114,24 @@ export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
               emptyMessage="No students selected"
               onRemove={handleRemoveEnrollmentByUid}
             />
+          ) : studentLabels.length === 0 ? (
+            <span className="text-muted small">No student labels selected</span>
           ) : (
-            <ChipGroup
-              items={studentLabelChipItems}
-              label="Selected student labels"
-              emptyMessage="No student labels selected"
-              onRemove={handleRemoveStudentLabelById}
-            />
+            studentLabels.map((sl) => (
+              <StudentLabelBadge
+                key={sl.studentLabelId}
+                label={{ name: sl.name, color: sl.color ?? 'gray1' }}
+              >
+                <button
+                  type="button"
+                  className="btn p-0 lh-1"
+                  aria-label={`Remove label "${sl.name}"`}
+                  onClick={() => handleRemoveStudentLabelById(sl.studentLabelId)}
+                >
+                  <i className="bi bi-x text-danger" aria-hidden="true" />
+                </button>
+              </StudentLabelBadge>
+            ))
           )}
 
           <AddTargetPopover

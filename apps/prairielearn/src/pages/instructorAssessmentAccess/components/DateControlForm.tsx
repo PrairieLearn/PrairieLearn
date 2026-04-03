@@ -100,7 +100,7 @@ export function OverrideDateControlForm({
   return (
     <div className="mb-4">
       <div className="section-header mb-3">
-        <strong>{title}</strong>
+        <strong className="d-block">{title}</strong>
         <Form.Text className="text-muted">{description}</Form.Text>
       </div>
       <div className="mb-3">
