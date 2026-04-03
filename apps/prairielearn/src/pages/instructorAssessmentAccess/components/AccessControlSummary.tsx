@@ -201,21 +201,15 @@ export function AccessControlSummary({
       </section>
 
       <section>
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <div>
-            <h5 className="mb-0">Overrides</h5>
-            <small className="text-body-secondary">
-              Customize settings for specific students or groups. Fields not overridden are
-              inherited from the defaults and any earlier overrides.
-            </small>
-          </div>
+        <div className="d-flex justify-content-between align-items-center mb-1">
+          <h5 className="mb-0">Overrides</h5>
           <Button variant="primary" size="sm" onClick={onAddOverride}>
             <i className="bi bi-plus-lg me-1" /> Add override
           </Button>
         </div>
         <small className="text-body-secondary d-block mb-3">
           Customize settings for specific students or groups. Fields not overridden are inherited
-          from the defaults.
+          from the defaults and any earlier overrides.
         </small>
 
         {overrides.length === 0 ? (
