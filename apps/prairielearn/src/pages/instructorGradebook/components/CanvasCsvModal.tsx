@@ -3,7 +3,7 @@ import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 
 import { downloadAsCSV } from '@prairielearn/browser-utils';
-import { IndeterminateCheckbox, Radio, RadioGroup } from '@prairielearn/ui';
+import { ExpandableCheckboxGroup, Radio, RadioGroup } from '@prairielearn/ui';
 
 import type { CourseAssessmentRow, GradebookRow } from '../instructorGradebook.types.js';
 
@@ -26,57 +26,36 @@ function AssessmentGroupCheckbox({
   onToggleGroup: (setId: string, selected: boolean) => void;
   onToggleAssessment: (assessmentId: string) => void;
 }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
   const allSelected = group.assessments.every((a) => selectedIds.has(a.assessment_id.toString()));
   const someSelected =
     !allSelected && group.assessments.some((a) => selectedIds.has(a.assessment_id.toString()));
 
   return (
-    <div className="d-flex flex-column">
-      <div className="px-2 py-1 d-flex align-items-center">
-        <IndeterminateCheckbox
-          className="form-check-input flex-shrink-0"
-          checked={allSelected}
-          indeterminate={someSelected}
-          aria-label={`Toggle all assessments in '${group.heading}'`}
-          onChange={() => onToggleGroup(group.setId, !allSelected)}
-        />
-        <button
-          type="button"
-          className="btn btn-link text-decoration-none text-reset w-100 text-start d-flex align-items-center justify-content-between ps-2 py-0 pe-0"
-          aria-expanded={isExpanded}
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          <span className="fw-bold text-truncate">{group.heading}</span>
-          <i
-            className={`bi ms-2 text-muted ${isExpanded ? 'bi-chevron-down' : 'bi-chevron-right'}`}
-            aria-hidden="true"
-          />
-        </button>
-      </div>
-      {isExpanded && (
-        <div className="ps-3 border-start ms-3 mb-1">
-          {group.assessments.map((assessment) => {
-            const id = assessment.assessment_id.toString();
-            return (
-              <div key={id} className="px-2 py-1">
-                <label className="form-check d-flex align-items-stretch">
-                  <input
-                    type="checkbox"
-                    className="form-check-input"
-                    checked={selectedIds.has(id)}
-                    aria-label={`Include '${assessment.label}' in export`}
-                    onChange={() => onToggleAssessment(id)}
-                  />
-                  <span className="form-check-label ms-2">{assessment.label}</span>
-                </label>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+    <ExpandableCheckboxGroup
+      label={group.heading}
+      checked={allSelected}
+      indeterminate={someSelected}
+      aria-label={`Toggle all assessments in '${group.heading}'`}
+      onToggle={() => onToggleGroup(group.setId, !allSelected)}
+    >
+      {group.assessments.map((assessment) => {
+        const id = assessment.assessment_id.toString();
+        return (
+          <div key={id} className="px-2 py-1">
+            <label className="form-check d-flex align-items-stretch">
+              <input
+                type="checkbox"
+                className="form-check-input"
+                checked={selectedIds.has(id)}
+                aria-label={`Include '${assessment.label}' in export`}
+                onChange={() => onToggleAssessment(id)}
+              />
+              <span className="form-check-label ms-2">{assessment.label}</span>
+            </label>
+          </div>
+        );
+      })}
+    </ExpandableCheckboxGroup>
   );
 }
 

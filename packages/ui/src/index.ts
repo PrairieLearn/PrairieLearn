@@ -47,6 +47,10 @@ export {
   type FilterDropdownProps,
 } from './components/FilterDropdown.js';
 export {
+  ExpandableCheckboxGroup,
+  type ExpandableCheckboxGroupProps,
+} from './components/ExpandableCheckboxGroup.js';
+export {
   IndeterminateCheckbox,
   type IndeterminateCheckboxProps,
 } from './components/IndeterminateCheckbox.js';

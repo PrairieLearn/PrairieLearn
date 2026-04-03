@@ -2,4 +2,4 @@
 '@prairielearn/ui': minor
 ---
 
-Add `RadioGroup`, `Radio`, and `IndeterminateCheckbox` components
+Add `RadioGroup`, `Radio`, `IndeterminateCheckbox`, and `ExpandableCheckboxGroup` components
