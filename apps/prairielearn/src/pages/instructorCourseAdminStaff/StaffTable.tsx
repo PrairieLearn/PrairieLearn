@@ -140,7 +140,7 @@ function CoursePermissionCell({
   csrfToken: string;
 }) {
   const [show, setShow] = useState(false);
-  const currentRole = courseUser.course_permission.course_role!;
+  const currentRole = courseUser.course_permission.course_role ?? 'None';
   const [selectedRole, setSelectedRole] = useState<CourseRole>(currentRole);
 
   if (!canChangeCourseRole) {
@@ -372,11 +372,10 @@ function AddUsersModal({
               className="form-select form-select-sm"
               id="addUsersInputCourseRole"
               name="course_role"
+              defaultValue="None"
               required
             >
-              <option value="None" defaultValue="None">
-                None
-              </option>
+              <option value="None">None</option>
               <option value="Previewer">Previewer</option>
               <option value="Viewer">Viewer</option>
               <option value="Editor">Editor</option>
@@ -559,9 +558,12 @@ function BulkEditAccessModal({
             :
           </p>
 
-          <h6 className="font-weight-bolder">Course content access</h6>
+          <h6 className="font-weight-bolder" id="course-role-label">
+            Course content access
+          </h6>
           <select
             className="form-select form-select-sm mb-3"
+            aria-labelledby="course-role-label"
             value={courseRole}
             onChange={(e) => setCourseRole(e.target.value)}
           >

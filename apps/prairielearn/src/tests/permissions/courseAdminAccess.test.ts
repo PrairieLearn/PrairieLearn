@@ -524,28 +524,26 @@ function runTest(context: TestContext) {
     updatePermissions(users, 'staff03@example.com', null, null);
 
     // Also delete new_user. Look up their user_id first.
-    const newUserRow = await sqldb.queryOptionalRow(
+    const newUserRow = await sqldb.queryRow(
       'SELECT id FROM users WHERE uid = $1;',
       [new_user],
       z.object({ id: z.string() }),
     );
-    if (newUserRow) {
-      response = await helperClient.fetchCheerio(context.pageUrl, {
-        headers,
-      });
-      assert.isTrue(response.ok);
-      extractCSRFToken(context, response.$);
-      response = await helperClient.fetchCheerio(context.pageUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'course_permissions_delete',
-          __csrf_token: context.__csrf_token,
-          user_id: newUserRow.id,
-        }),
-        headers,
-      });
-      assert.isTrue(response.ok);
-    }
+    response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
+    assert.isTrue(response.ok);
+    extractCSRFToken(context, response.$);
+    response = await helperClient.fetchCheerio(context.pageUrl, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'course_permissions_delete',
+        __csrf_token: context.__csrf_token,
+        user_id: newUserRow.id,
+      }),
+      headers,
+    });
+    assert.isTrue(response.ok);
     updatePermissions(users, new_user, null, null);
     await checkPermissions(users);
   });
