@@ -75,6 +75,11 @@ def grade_o_expression(
         ) < sympy.sympify(0):
             return (0.0, NEGATIVE_FEEDBACK)
 
+        # Sympy only has single variable limits, so we check all permutations of variable limits and determine the most likely result.
+        # In cases where we have equal growth rates, The limit can evaluate to a constant along the diagonals (e.g. x^2 + y ^2 / (x^2 + xy + y^2)),
+        #   we state lower orders terms feedback instead. This is also a side effect of multivariate Big-O being ill-defined.
+        # But in the context of big-O grading, it's unlikely that these cases will affect a student's understanding of what they got wrong.
+        # None of this is an issue if the variable list is of length 1, as there is only one possible limit to evaluate.
         limit_res = []
         for perm in itertools.permutations(var_list):
             limit = sym_true / sym_sub
@@ -98,7 +103,7 @@ def grade_o_expression(
             return (0.5, LOWER_ORDER_TERMS_FEEDBACK)
         else:
             return (0.5, CONSTANT_FACTORS_FEEDBACK)
-    # There's a chance that some fringe function inputs cannot have their sign evalutated
+    # There's a chance that some fringe function inputs cannot have their sign evalutated.
     # We need to catch NotImplementedError because of this.
     except (TypeError, NotImplementedError):
         return (0.0, TYPE_ERROR_FEEDBACK)

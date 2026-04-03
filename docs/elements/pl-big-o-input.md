@@ -30,6 +30,16 @@ Gives automated feedback in the case of improper asymptotic input.
 Correct answers must be specified as strings with Python syntax (e.g., `n**2`, `2**n`, `n * log(n)`), with
 the same syntax as [`pl-symbolic-input`](pl-symbolic-input.md). Up to 7 variables are supported.
 
+### Multivariate Limitations
+
+The backend to evaluating Big-O statements and providing feedback takes the limit of the student's answer against the correct answer using Sympy. Sympy only supports single varible limits, so the best approximation is to evaluate all unidirectional limits in every nested order.
+This leads to a few limitations/behaviors that should be considered when using multiple variables:
+
+- Sympy views`x*y` and `y*x` as different expressions, thus students will not be told whether their expression is unsimplified (e.g. `n^(1+1)`).
+- Expressions with mixed lower order terms which would evaluate to a constant when the limit is taken with equal growth rates will give the feedback that the student has included "lower order terms" instead of the mathematically possible "additional constant factors" (e.g., `x^2+2xy+y^2` over `x^2+y^2`).
+- Some expressions (usually with nested exponentials & factorials) will have unsolvable limits with Sympy, and cannot give correct parital feedback. If you require such expressions it is recommended to use `pl-symbolic-input` instead, which will only check for equality.
+- Big-O expressions with many variables will be slower, and if multiple instances of 7-variable Big-O inputs exist, the question may timeout.
+
 ## Example implementations
 
 - [element/bigOInput]
