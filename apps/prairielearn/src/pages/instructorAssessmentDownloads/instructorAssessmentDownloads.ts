@@ -296,14 +296,6 @@ function stringifyWithColumns(columns: Columns, transform?: (record: any) => any
   });
 }
 
-async function* prependToStream(
-  firstRow: unknown,
-  source: AsyncIterable<unknown>,
-): AsyncGenerator<unknown> {
-  yield firstRow;
-  yield* source;
-}
-
 async function sendInstancesCsv(
   res: Response,
   req: Request,
@@ -647,7 +639,14 @@ router.get(
 
       res.attachment(req.params.filename);
       await pipeline(
-        Readable.from(prependToStream(pointsPossibleRow, cursor.stream(100))),
+        Readable.from(
+          (async function* () {
+            yield pointsPossibleRow;
+            for await (const row of cursor.stream(100)) {
+              yield row;
+            }
+          })(),
+        ),
         stringifyWithColumns(canvasColumns, (record: any) => {
           // Points Possible row passes through as-is (no role field).
           if (!record.role) return record;
