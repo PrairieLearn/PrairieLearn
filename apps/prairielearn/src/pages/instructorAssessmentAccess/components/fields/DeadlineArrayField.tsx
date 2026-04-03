@@ -327,7 +327,7 @@ export function MainDeadlineArrayField({ type }: { type: 'early' | 'late' }) {
     name: fieldName as Path<AccessControlFormData>,
   }) as DeadlineEntry[] | undefined;
 
-  const shouldShow = isEarly ? releaseDate !== null : dueDate !== null && !!dueDate;
+  const shouldShow = isEarly || (dueDate !== null && !!dueDate);
 
   if (!shouldShow) return null;
 

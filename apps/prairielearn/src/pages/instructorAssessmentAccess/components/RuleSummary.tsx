@@ -555,8 +555,9 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={`${row.date}-${row.label}-${row.credit}-${row.visibility}`}>
+          {rows.map((row, index) => (
+            // eslint-disable-next-line @eslint-react/no-array-index-key
+            <tr key={`${row.label}-${index}-${row.credit}-${row.visibility}`}>
               <td className="ps-3 border-0" style={tdStyle}>
                 {row.label && <span className="text-body-secondary me-1">{row.label}:</span>}
                 {row.date}
