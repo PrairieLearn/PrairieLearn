@@ -517,10 +517,7 @@ ${given_cp_and_cip.join(',\n')}
           }
 
           if (!['None', 'Student Data Viewer', 'Student Data Editor'].includes(role)) {
-            throw new error.HttpStatusError(
-              400,
-              `Invalid requested course instance role: ${role}`,
-            );
+            throw new error.HttpStatusError(400, `Invalid requested course instance role: ${role}`);
           }
 
           for (const userId of userIds) {

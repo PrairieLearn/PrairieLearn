@@ -611,7 +611,11 @@ export function TanstackTableCard<RowDataModel>({
           )}
         </div>
         <div className="d-flex flex-wrap flex-row align-items-center gap-2">
-          <ColumnManager table={table} topContent={columnManager?.topContent} buttonText={columnManager?.buttonText} />
+          <ColumnManager
+            table={table}
+            topContent={columnManager?.topContent}
+            buttonText={columnManager?.buttonText}
+          />
           {columnManager?.buttons}
         </div>
         <div className="ms-auto text-muted text-nowrap">

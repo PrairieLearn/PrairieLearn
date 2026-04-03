@@ -294,9 +294,7 @@ function CourseInstanceAccessCell({
                 </label>
               </div>
             ))}
-            <p className="small text-muted mt-2 mb-0">
-              {INSTANCE_ROLE_DESCRIPTIONS[selectedRole]}
-            </p>
+            <p className="small text-muted mt-2 mb-0">{INSTANCE_ROLE_DESCRIPTIONS[selectedRole]}</p>
             <div className="mt-3 text-end">
               <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
                 Cancel
@@ -452,11 +450,11 @@ function AddUsersButton({
         <span className="d-none d-sm-inline"> Add users</span>
       </Button>
       <AddUsersModal
-        show={show}
-        onHide={() => setShow(false)}
         csrfToken={csrfToken}
-        uidsLimit={uidsLimit}
         courseInstances={courseInstances}
+        show={show}
+        uidsLimit={uidsLimit}
+        onHide={() => setShow(false)}
       />
     </>
   );
@@ -964,7 +962,11 @@ function StaffTableInner({
         />
       </div>
       <div className="small flex-shrink-0 border-top pt-3 text-end">
-        <a href="https://docs.prairielearn.com/course/#course-staff" target="_blank" rel="noreferrer">
+        <a
+          href="https://docs.prairielearn.com/course/#course-staff"
+          target="_blank"
+          rel="noreferrer"
+        >
           Learn more about content and student data access levels{' '}
           <i className="bi bi-chevron-right" aria-hidden="true" />
         </a>
