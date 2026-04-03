@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import { type ReactNode, useState } from 'react';
-import { Alert, Button, Form, Modal } from 'react-bootstrap';
+import { Button, Form, Modal } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
 import { OverlayTrigger, SplitPane, StickyActionBar, useModalState } from '@prairielearn/ui';
@@ -246,20 +246,8 @@ export function AccessControlForm({
         if (selectedRule.index >= watchedData.overrides.length) {
           return null;
         }
-        const override = watchedData.overrides[selectedRule.index];
-        const hasNoTargets =
-          (override.appliesTo.targetType === 'enrollment' &&
-            override.appliesTo.enrollments.length === 0) ||
-          (override.appliesTo.targetType === 'student_label' &&
-            override.appliesTo.studentLabels.length === 0);
         return (
-          <div className="p-3">
-            {hasNoTargets && (
-              <Alert variant="warning">
-                This override has no targets. Add at least one student or student label for this
-                rule to take effect.
-              </Alert>
-            )}
+          <div className="px-3 pb-3">
             <AppliesToField namePrefix={`overrides.${selectedRule.index}`} />
             <OverrideRuleContent index={selectedRule.index} />
           </div>

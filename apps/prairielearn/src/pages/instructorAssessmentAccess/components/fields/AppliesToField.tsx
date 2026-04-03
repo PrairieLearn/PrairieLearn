@@ -1,4 +1,4 @@
-import { Button, Form } from 'react-bootstrap';
+import { Alert, Button, Form } from 'react-bootstrap';
 import {
   type FieldArrayPath,
   type Path,
@@ -83,11 +83,19 @@ export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
   const excludedStudentLabelIds = new Set(studentLabels.map((sl) => sl.studentLabelId));
   const excludedUids = new Set(enrollments.map((i) => i.uid));
 
+  const hasNoTargets = enrollments.length === 0 && studentLabels.length === 0;
+
   return (
     <div className="mb-4">
       <div className="section-header mb-3">
         <strong>Applies to</strong>
       </div>
+      {hasNoTargets && (
+        <Alert variant="warning">
+          This override has no targets. Add at least one student or student label for this rule to
+          take effect.
+        </Alert>
+      )}
       <fieldset className="mb-3">
         <legend className="visually-hidden">Target type</legend>
         <Form.Check
