@@ -962,9 +962,10 @@ function StaffTableInner({
           headerButtons={headerButtons}
         />
       </div>
-      <div className="small flex-shrink-0 border-top pt-3">
+      <div className="small flex-shrink-0 border-top pt-3 text-end">
         <a href="https://docs.prairielearn.com/course/#course-staff" target="_blank" rel="noreferrer">
-          Learn more about content and student data access levels
+          Learn more about content and student data access levels{' '}
+          <i className="bi bi-chevron-right" aria-hidden="true" />
         </a>
         {githubAccessLink && (
           <div className="alert alert-info mt-3">
