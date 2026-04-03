@@ -290,8 +290,9 @@ export function InstructorAssessmentDownloads({
                   >
                 </td>
                 <td>
-                  Percentage scores for each student, formatted for import into Canvas. Scores range
-                  from 0 to 100 (or higher if bonus credit was given).
+                  Percentage scores for each student, formatted for import into Canvas. Only users
+                  with the Student role are included. Scores range from 0 to 100 (or higher if bonus
+                  credit was given).
                 </td>
               </tr>
               <tr>
@@ -303,8 +304,9 @@ export function InstructorAssessmentDownloads({
                   >
                 </td>
                 <td>
-                  Total points for each student, formatted for import into Canvas. Points range from
-                  0 to the maximum for this assessment (or higher if bonus credit was given).
+                  Total points for each student, formatted for import into Canvas. Only users with
+                  the Student role are included. Points range from 0 to the maximum for this
+                  assessment (or higher if bonus credit was given).
                 </td>
               </tr>
               <tr>

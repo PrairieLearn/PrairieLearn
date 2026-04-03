@@ -251,6 +251,7 @@ function CanvasCsvModalContent({
         <Modal.Title>Export Canvas CSV</Modal.Title>
       </Modal.Header>
       <Modal.Body>
+        <p className="text-muted small">Only users with the Student role are included.</p>
         <h6>Assessments to include</h6>
         <div className="mb-2 d-flex gap-2">
           <Button variant="link" size="sm" className="p-0" onClick={handleSelectAll}>
