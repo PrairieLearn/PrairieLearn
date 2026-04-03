@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Modal from 'react-bootstrap/Modal';
@@ -189,28 +188,49 @@ function CanvasCsvModalContent({
       'SIS User ID',
       'SIS Login ID',
       'Section',
-      ...selectedAssessments.map((a) => a.label),
+      ...selectedAssessments.map(
+        (a) => `${a.assessment_set_heading} ${a.assessment_number}`,
+      ),
     ];
 
-    const data = validRows.map((row) => [
-      row.user_name,
-      row.uid,
+    const pointsPossibleRow = [
+      '    Points Possible',
+      null,
       null,
       null,
       null,
       ...selectedAssessments.map((a) => {
-        const scoreData = row.scores[a.assessment_id];
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        if (!scoreData) return null;
-
         switch (scoreFormat) {
           case 'percentage':
-            return scoreData.score_perc ?? null;
+            return 100;
           case 'points_original':
-            return scoreData.points ?? null;
+            return a.max_points;
         }
       }),
-    ]);
+    ];
+
+    const data = [
+      pointsPossibleRow,
+      ...validRows.map((row) => [
+        row.user_name,
+        null,
+        null,
+        row.uid,
+        null,
+        ...selectedAssessments.map((a) => {
+          const scoreData = row.scores[a.assessment_id];
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          if (!scoreData) return null;
+
+          switch (scoreFormat) {
+            case 'percentage':
+              return scoreData.score_perc ?? null;
+            case 'points_original':
+              return scoreData.points ?? null;
+          }
+        }),
+      ]),
+    ];
 
     downloadAsCSV(header, data, filename);
     onHide();
@@ -260,13 +280,6 @@ function CanvasCsvModalContent({
           checked={scoreFormat === 'points_original'}
           onChange={() => setScoreFormat('points_original')}
         />
-        {scoreFormat === 'points_original' && (
-          <Alert variant="warning" className="mt-2 mb-0">
-            <i className="bi bi-exclamation-triangle-fill me-2" aria-hidden="true" />
-            Ensure that the maximum points configured for each assignment in Canvas match those in
-            PrairieLearn. Mismatched maximums will cause Canvas to calculate incorrect percentages.
-          </Alert>
-        )}
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onHide}>

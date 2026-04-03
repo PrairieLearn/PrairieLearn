@@ -1,3 +1,4 @@
+import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
 import archiver from 'archiver';
@@ -594,14 +595,16 @@ router.get(
       req.params.filename === filenames.canvasPointsCsvFilename
     ) {
       const isPoints = req.params.filename === filenames.canvasPointsCsvFilename;
-      const assessmentLabel = res.locals.assessment_set.abbreviation + res.locals.assessment.number;
+      const assessmentName =
+        res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
+      const scoreKey = isPoints ? 'points' : 'score_perc';
       const canvasColumns: Columns = [
         ['Student', 'name'],
-        ['ID', 'uid'],
+        ['ID', 'id_col'],
         ['SIS User ID', 'sis_user_id'],
         ['SIS Login ID', 'sis_login_id'],
         ['Section', 'section'],
-        [assessmentLabel, isPoints ? 'points' : 'score_perc'],
+        [assessmentName, scoreKey],
       ];
       const cursor = await sqldb.queryCursor(
         sql.select_assessment_instances,
@@ -613,15 +616,35 @@ router.get(
         z.unknown(),
       );
 
+      const pointsPossibleRow = {
+        name: '    Points Possible',
+        id_col: null,
+        sis_user_id: null,
+        sis_login_id: null,
+        section: null,
+        [scoreKey]: isPoints ? res.locals.assessment.max_points : 100,
+      };
+
+      async function* prependRow(
+        firstRow: unknown,
+        source: AsyncIterable<unknown>,
+      ): AsyncGenerator<unknown> {
+        yield firstRow;
+        yield* source;
+      }
+
       res.attachment(req.params.filename);
       await pipeline(
-        cursor.stream(100),
+        Readable.from(prependRow(pointsPossibleRow, cursor.stream(100))),
         stringifyWithColumns(canvasColumns, (record: any) => {
+          // Points Possible row passes through as-is (no role field).
+          if (!record.role) return record;
           if (record.role !== 'Student') return null;
           return {
             ...record,
+            id_col: null,
             sis_user_id: null,
-            sis_login_id: null,
+            sis_login_id: record.uid,
             section: null,
           };
         }),
