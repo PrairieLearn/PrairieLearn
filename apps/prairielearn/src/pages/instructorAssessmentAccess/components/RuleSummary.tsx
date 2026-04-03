@@ -540,15 +540,24 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
       <table className="table table-sm mb-0">
         <thead>
           <tr>
-            <th className="fw-semibold text-body-secondary text-nowrap border-bottom ps-3" style={thStyle}>
+            <th
+              className="fw-semibold text-body-secondary text-nowrap border-bottom ps-3"
+              style={thStyle}
+            >
               <i className="bi bi-calendar3 me-1" aria-hidden="true" />
               Date
             </th>
-            <th className="fw-semibold text-body-secondary text-nowrap border-bottom" style={thStyle}>
+            <th
+              className="fw-semibold text-body-secondary text-nowrap border-bottom"
+              style={thStyle}
+            >
               <i className="bi bi-percent me-1" aria-hidden="true" />
               Credit
             </th>
-            <th className="fw-semibold text-body-secondary text-nowrap border-bottom" style={thStyle}>
+            <th
+              className="fw-semibold text-body-secondary text-nowrap border-bottom"
+              style={thStyle}
+            >
               <i className="bi bi-eye me-1" aria-hidden="true" />
               Visibility
             </th>

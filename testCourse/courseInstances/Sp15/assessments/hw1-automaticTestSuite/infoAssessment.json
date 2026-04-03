@@ -5,6 +5,7 @@
   "set": "Homework",
   "number": "1",
   "module": "Module1",
+  "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
       "questions": [
@@ -27,6 +28,5 @@
         { "id": "brokenGrading", "autoPoints": 2, "maxAutoPoints": 4 }
       ]
     }
-  ],
-  "accessControl": [{ "afterComplete": { "hideQuestions": true, "hideScore": false } }]
+  ]
 }
