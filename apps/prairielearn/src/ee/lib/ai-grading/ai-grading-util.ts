@@ -655,17 +655,16 @@ export async function deleteAiGradingJobs({
 
   const { iqs, uniqueIds: assessment_instance_ids } = uniqueAssessmentInstanceIds;
 
-  // Process each assessment_instance in a separate transaction to maintain lock ordering
+  // Process each assessment_instance separately to maintain lock ordering
   // This prevents deadlocks by ensuring we lock assessment_instances before any submissions
+  // Note: updateAssessmentInstanceGrade already runs in its own transaction
   for (const assessment_instance_id of assessment_instance_ids) {
-    await runInTransactionAsync(async () => {
-      await updateAssessmentInstanceGrade({
-        assessment_instance_id,
-        // We use the user who is performing the deletion.
-        authn_user_id,
-        credit: 100,
-        allowDecrease: true,
-      });
+    await updateAssessmentInstanceGrade({
+      assessment_instance_id,
+      // We use the user who is performing the deletion.
+      authn_user_id,
+      credit: 100,
+      allowDecrease: true,
     });
   }
 
