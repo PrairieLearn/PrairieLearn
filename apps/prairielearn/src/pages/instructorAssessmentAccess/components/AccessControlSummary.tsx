@@ -181,7 +181,7 @@ export function AccessControlSummary({
           </div>
           <div className="d-flex gap-2">
             <Button variant="outline-primary" size="sm" onClick={onEditMainRule}>
-              <i className="bi bi-pencil me-1" /> Details
+              <i className="bi bi-pencil me-1" /> Edit
             </Button>
             <Button variant="outline-danger" size="sm" onClick={onClearMainRule}>
               <i className="bi bi-trash me-1" /> Clear

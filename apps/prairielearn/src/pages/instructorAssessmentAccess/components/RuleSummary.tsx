@@ -656,7 +656,7 @@ export function OverrideRuleSummaryCard({
         <div className="d-flex gap-2 flex-shrink-0">
           {onEdit && (
             <Button variant="outline-primary" size="sm" onClick={onEdit}>
-              <i className="bi bi-pencil me-1" /> Details
+              <i className="bi bi-pencil me-1" /> Edit
             </Button>
           )}
           {onRemove && (
