@@ -132,8 +132,7 @@ export function AccessControlForm({
   const watchedData = watch();
 
   const handleFormSubmit = (data: AccessControlFormData) => {
-    const jsonOutput = formDataToJson(data, displayTimezone);
-    onSubmit(jsonOutput);
+    onSubmit(formDataToJson(data));
   };
 
   const addOverride = () => {

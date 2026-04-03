@@ -393,10 +393,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
   return output;
 }
 
-export function formDataToJson(
-  formData: AccessControlFormData,
-  displayTimezone: string,
-): AccessControlJsonWithId[] {
+export function formDataToJson(formData: AccessControlFormData): AccessControlJsonWithId[] {
   return [mainRuleToJson(formData.mainRule), ...formData.overrides.map(overrideToJson)];
 }
 
