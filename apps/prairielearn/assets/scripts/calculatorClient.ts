@@ -251,7 +251,9 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const result = resolveAnsAndEvaluate(items, domIndex, displayMode);
     if (result) {
       const outputField = ensureElement(
-        historyItemEl.querySelector<MathfieldElement>('.history-output .history-text'),
+        historyItemEl.querySelector<MathfieldElement>(
+          '.history-output .pl-calculator-history-text',
+        ),
       );
       outputField.value = `=${result.displayed}`;
     }
@@ -667,12 +669,16 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
     // Set input text
     const inputRow = ensureElement(clone.querySelector<HTMLElement>('.history-input'));
-    const inputField = ensureElement(inputRow.querySelector<MathfieldElement>('.history-text'));
+    const inputField = ensureElement(
+      inputRow.querySelector<MathfieldElement>('.pl-calculator-history-text'),
+    );
     inputField.value = input;
 
     // Set output text
     const outputRow = ensureElement(clone.querySelector<HTMLElement>('.history-output'));
-    const outputField = ensureElement(outputRow.querySelector<MathfieldElement>('.history-text'));
+    const outputField = ensureElement(
+      outputRow.querySelector<MathfieldElement>('.pl-calculator-history-text'),
+    );
     outputField.value = `=${displayed}`;
 
     // Only show rad/deg badge if expression contains trig functions
@@ -791,21 +797,18 @@ function initDrawerUI(
   function openDrawer() {
     fab.classList.remove('visible');
     drawer.classList.add('open');
-    drawer.removeAttribute('inert');
     setIsOpen(true);
     drawer.querySelector<MathfieldElement>('#calculator-input')?.focus();
   }
 
   function collapseDrawer() {
     drawer.classList.remove('open');
-    drawer.setAttribute('inert', '');
     fab.classList.add('visible');
     setIsOpen(false);
   }
 
   function dismissCalculator() {
     drawer.classList.remove('open');
-    drawer.setAttribute('inert', '');
     fab.classList.remove('visible');
     setIsOpen(false);
   }
@@ -971,7 +974,6 @@ onDocumentReady(() => {
     initIfNeeded();
     fab.classList.remove('visible');
     drawer.classList.add('no-transition', 'open');
-    drawer.removeAttribute('inert');
     // Remove the no-transition class after the browser has painted the open state
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {

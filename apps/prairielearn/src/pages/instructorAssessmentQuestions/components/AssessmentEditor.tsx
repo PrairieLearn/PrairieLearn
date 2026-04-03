@@ -16,9 +16,8 @@ import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
-import { NuqsAdapter, OverlayTrigger, useModalState } from '@prairielearn/ui';
+import { NuqsAdapter, OverlayTrigger, SplitPane, useModalState } from '@prairielearn/ui';
 
-import { SplitPane } from '../../../components/SplitPane.js';
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
 import type {
   StaffAssessment,
@@ -26,7 +25,7 @@ import type {
   StaffCourseInstance,
 } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import type { EnumAssessmentTool, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
 import type {
@@ -135,6 +134,7 @@ interface AssessmentEditorInnerProps {
   questionRows: StaffAssessmentQuestionRow[];
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
+  assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   canEdit: boolean;
@@ -152,6 +152,7 @@ function AssessmentEditorInner({
   questionRows,
   jsonZones,
   assessment,
+  assessmentToolDefaults,
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   canEdit,
@@ -892,6 +893,7 @@ function AssessmentEditorInner({
       assessmentType: assessment.type,
       constantQuestionValue: assessment.constant_question_value ?? false,
       assessmentDefaults,
+      assessmentToolDefaults,
       courseInstanceId: courseInstance.id,
       courseId: course.id,
       hasCoursePermissionPreview,
@@ -903,6 +905,7 @@ function AssessmentEditorInner({
       assessment.type,
       assessment.constant_question_value,
       assessmentDefaults,
+      assessmentToolDefaults,
       courseInstance.id,
       course.id,
       hasCoursePermissionPreview,
@@ -1060,57 +1063,61 @@ function AssessmentEditorInner({
         >
           <SplitPane
             forceOpen={selectedItem}
-            rightCollapsed={selectedItem == null ? true : undefined}
-            rightTitle={rightTitle}
-            rightHeaderAction={rightHeaderAction}
-            left={
-              <AssessmentTree
-                zones={zones}
-                state={treeState}
-                actions={treeActions}
-                isAllExpanded={isAllExpanded}
-                switchViewUrl={switchViewUrl}
-                editControls={
-                  <EditModeToolbar
-                    csrfToken={csrfToken}
-                    origHash={origHash}
-                    zones={zonesForSave}
-                    editMode={editMode}
-                    canEdit={canEdit && !!origHash}
-                    setEditMode={setEditMode}
-                    saveButtonDisabled={saveButtonDisabled}
-                    saveButtonDisabledReason={saveButtonDisabledReason}
-                    onSubmit={disableBeforeUnload}
-                    onCancel={() => {
-                      dispatch({ type: 'RESET' });
-                      setEditMode(false);
-                    }}
-                  />
-                }
-                onAddZone={handleAddZone}
-                onViewTypeChange={setViewType}
-                onToggleExpandCollapse={toggleExpandCollapse}
-              />
-            }
-            right={
-              <DetailPanel
-                selectedItem={selectedItem}
-                zones={zones}
-                questionMetadata={questionMetadata}
-                state={detailState}
-                actions={detailActions}
-                courseQuestions={courseQuestions}
-                courseQuestionsLoading={courseQuestionsQuery.isLoading}
-                questionsInAssessment={questionsInAssessment}
-                disabledQids={disabledQids}
-                currentChangeQid={currentChangeQid}
-                currentAssessmentId={assessment.id}
-                isPickingQuestion={questionByQidMutation.isPending}
-                pickerError={questionByQidMutation.error}
-                questionSharingEnabled={questionSharingEnabled}
-                consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
-              />
-            }
+            left={{
+              content: (
+                <AssessmentTree
+                  zones={zones}
+                  state={treeState}
+                  actions={treeActions}
+                  isAllExpanded={isAllExpanded}
+                  switchViewUrl={switchViewUrl}
+                  editControls={
+                    <EditModeToolbar
+                      csrfToken={csrfToken}
+                      origHash={origHash}
+                      zones={zonesForSave}
+                      editMode={editMode}
+                      canEdit={canEdit && !!origHash}
+                      setEditMode={setEditMode}
+                      saveButtonDisabled={saveButtonDisabled}
+                      saveButtonDisabledReason={saveButtonDisabledReason}
+                      onSubmit={disableBeforeUnload}
+                      onCancel={() => {
+                        dispatch({ type: 'RESET' });
+                        setEditMode(false);
+                      }}
+                    />
+                  }
+                  onAddZone={handleAddZone}
+                  onViewTypeChange={setViewType}
+                  onToggleExpandCollapse={toggleExpandCollapse}
+                />
+              ),
+            }}
+            right={{
+              content: (
+                <DetailPanel
+                  selectedItem={selectedItem}
+                  zones={zones}
+                  questionMetadata={questionMetadata}
+                  state={detailState}
+                  actions={detailActions}
+                  courseQuestions={courseQuestions}
+                  courseQuestionsLoading={courseQuestionsQuery.isLoading}
+                  questionsInAssessment={questionsInAssessment}
+                  disabledQids={disabledQids}
+                  currentChangeQid={currentChangeQid}
+                  currentAssessmentId={assessment.id}
+                  isPickingQuestion={questionByQidMutation.isPending}
+                  pickerError={questionByQidMutation.error}
+                  questionSharingEnabled={questionSharingEnabled}
+                  consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
+                />
+              ),
+              title: rightTitle,
+              headerAction: rightHeaderAction,
+              collapsed: selectedItem == null ? true : undefined,
+            }}
             onClose={() => setSelectedItem(null)}
           />
         </div>

@@ -80,14 +80,28 @@ async function createEmptyRepository(client: Octokit, repo: string) {
  * @param contents Raw contents of the file, stored as a string.
  */
 async function addFileToRepo(client: Octokit, repo: string, path: string, contents: string) {
-  await client.repos.createOrUpdateFileContents({
-    owner: config.githubCourseOwner,
-    repo,
-    path,
-    message: `Update ${path}`,
-    // Add a trailing newline to the contents.
-    content: Buffer.from(contents + '\n', 'ascii').toString('base64'),
-  });
+  const maxRetries = 5;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await client.repos.createOrUpdateFileContents({
+        owner: config.githubCourseOwner,
+        repo,
+        path,
+        message: `Update ${path}`,
+        // Add a trailing newline to the contents.
+        content: Buffer.from(contents + '\n', 'ascii').toString('base64'),
+      });
+      return;
+    } catch (err: any) {
+      // GitHub may return 404 briefly after repository creation due to
+      // eventual consistency. Retry with exponential backoff.
+      if (err.status === 404 && attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
 }
 
 /**
