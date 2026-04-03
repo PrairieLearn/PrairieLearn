@@ -48,7 +48,7 @@
     "globby": "^16.2.0",
     "htmlhint": "^1.9.2",
     "ignore": "^7.0.5",
-    "knip": "^6.2.0",
+    "knip": "^6.3.0",
     "linkinator": "^7.6.1",
     "markdownlint-cli2": "^0.22.0",
     "prettier": "3.8.1",
@@ -63,7 +63,7 @@
     "vitest": "^4.1.2"
   },
   "resolutions": {
-    "notebookjs/jsdom": "^28.0.0",
+    "notebookjs/jsdom": "*",
     "typescript-cp/tar": "*"
   }
 }
