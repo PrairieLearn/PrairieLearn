@@ -63,6 +63,9 @@
     "vitest": "^4.1.2"
   },
   "resolutions": {
+    "@sa11y/common/axe-core": "^4",
+    "@sa11y/format/axe-core": "^4",
+    "markdownlint-cli2/smol-toml": "^1",
     "notebookjs/jsdom": "*",
     "typescript-cp/tar": "*"
   }

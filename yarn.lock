@@ -11114,14 +11114,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axe-core@npm:4.11.1":
-  version: 4.11.1
-  resolution: "axe-core@npm:4.11.1"
-  checksum: 10c0/1e6997454b61c7c9a4d740f395952835dcf87f2c04fd81577217d68634d197d602c224f9e8f17b22815db4c117a2519980cfc8911fc0027c54a6d8ebca47c6a7
-  languageName: node
-  linkType: hard
-
-"axe-core@npm:^4.10.2, axe-core@npm:^4.11.2":
+"axe-core@npm:^4, axe-core@npm:^4.10.2, axe-core@npm:^4.11.2":
   version: 4.11.2
   resolution: "axe-core@npm:4.11.2"
   checksum: 10c0/606ec10fce83d918a09b571309899bd396ff32485e7513444419e85ab3944f59f3ab46387a6f6b15c796dba9c5dc41007646b00f971f8f27fcc80ba92539ab25
@@ -20657,14 +20650,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"smol-toml@npm:1.6.0":
-  version: 1.6.0
-  resolution: "smol-toml@npm:1.6.0"
-  checksum: 10c0/baf33bb6cd914d481329e31998a12829cd126541458ba400791212c80f1245d5b27dac04a56a52c02b287d2a494f1628c05fc19643286b258b2e0bb9fe67747c
-  languageName: node
-  linkType: hard
-
-"smol-toml@npm:^1.6.1":
+"smol-toml@npm:^1, smol-toml@npm:^1.6.1":
   version: 1.6.1
   resolution: "smol-toml@npm:1.6.1"
   checksum: 10c0/511a78722f99c7616fdb46af708de3d7e81434b5a3d58061166da73f28bfc6cae4f0cd04683f60515b9c490cd10152fce72287c960b337419c0299cc1f0f2a22
