@@ -858,9 +858,7 @@ function StaffTableInner({
       ...courseInstances.map((ci) =>
         columnHelper.display({
           id: `ci_${ci.id}`,
-          header: () => (
-            <code>{ci.short_name ?? `Instance ${ci.id}`}</code>
-          ),
+          header: () => <code>{ci.short_name ?? `Instance ${ci.id}`}</code>,
           size: 120,
           enableGlobalFilter: false,
           enableSorting: false,
