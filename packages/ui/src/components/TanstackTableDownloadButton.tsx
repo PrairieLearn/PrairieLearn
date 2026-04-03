@@ -15,7 +15,7 @@ export interface TanstackTableDownloadButtonProps<RowDataModel> {
   singularLabel: string;
   pluralLabel: string;
   hasSelection: boolean;
-  additionalMenuItems?: React.ReactNode;
+  additionalMenuItems?: React.ReactNode[];
 }
 /**
  * @param params
@@ -152,7 +152,11 @@ export function TanstackTableDownloadButton<RowDataModel>({
             {filteredRowsJSON.length}) as JSON
           </button>
         </li>
-        {additionalMenuItems}
+        {additionalMenuItems?.map((item, i) => (
+          <li key={i} role="presentation">
+            {item}
+          </li>
+        ))}
       </ul>
     </div>
   );

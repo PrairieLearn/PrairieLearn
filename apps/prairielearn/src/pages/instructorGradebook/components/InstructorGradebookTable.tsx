@@ -538,35 +538,29 @@ function GradebookTable({
 
   const [canvasCsvTarget, setCanvasCsvTarget] = useState<'all' | 'filtered' | null>(null);
 
-  const canvasCsvMenuItems = (
-    <>
-      <li role="presentation">
-        <hr className="dropdown-divider" />
-      </li>
-      <li role="presentation">
-        <button
-          className="dropdown-item"
-          type="button"
-          role="menuitem"
-          disabled={allRows.length === 0}
-          onClick={() => setCanvasCsvTarget('all')}
-        >
-          All users' grades ({allRows.length}) as Canvas CSV
-        </button>
-      </li>
-      <li role="presentation">
-        <button
-          className="dropdown-item"
-          type="button"
-          role="menuitem"
-          disabled={filteredRows.length === 0}
-          onClick={() => setCanvasCsvTarget('filtered')}
-        >
-          Filtered users' grades ({filteredRows.length}) as Canvas CSV
-        </button>
-      </li>
-    </>
-  );
+  const canvasCsvMenuItems = [
+    <hr key="divider" className="dropdown-divider" />,
+    <button
+      key="all"
+      className="dropdown-item"
+      type="button"
+      role="menuitem"
+      disabled={allRows.length === 0}
+      onClick={() => setCanvasCsvTarget('all')}
+    >
+      All users' grades ({allRows.length}) as Canvas CSV
+    </button>,
+    <button
+      key="filtered"
+      className="dropdown-item"
+      type="button"
+      role="menuitem"
+      disabled={filteredRows.length === 0}
+      onClick={() => setCanvasCsvTarget('filtered')}
+    >
+      Filtered users' grades ({filteredRows.length}) as Canvas CSV
+    </button>,
+  ];
 
   return (
     <>
