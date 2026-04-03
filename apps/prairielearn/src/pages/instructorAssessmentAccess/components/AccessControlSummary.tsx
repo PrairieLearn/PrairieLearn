@@ -106,7 +106,7 @@ function MainRuleSummaryContent({
           className="rounded text-center py-3 text-body-secondary"
           style={{ border: '1px dashed var(--bs-border-color)' }}
         >
-          No dates or deadlines configured.
+          No access settings configured.
         </div>
       )}
     </div>
@@ -201,8 +201,14 @@ export function AccessControlSummary({
       </section>
 
       <section>
-        <div className="d-flex justify-content-between align-items-center mb-1">
-          <h5 className="mb-0">Overrides</h5>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h5 className="mb-0">Overrides</h5>
+            <small className="text-body-secondary">
+              Customize settings for specific students or groups. Fields not overridden are
+              inherited from the defaults and any earlier overrides.
+            </small>
+          </div>
           <Button variant="primary" size="sm" onClick={onAddOverride}>
             <i className="bi bi-plus-lg me-1" /> Add override
           </Button>
@@ -213,7 +219,12 @@ export function AccessControlSummary({
         </small>
 
         {overrides.length === 0 ? (
-          <p className="text-muted">No overrides configured.</p>
+          <div
+            className="rounded text-center py-3 text-body-secondary"
+            style={{ border: '1px dashed var(--bs-border-color)' }}
+          >
+            No overrides configured.
+          </div>
         ) : (
           <DndContext
             id={dndId}
