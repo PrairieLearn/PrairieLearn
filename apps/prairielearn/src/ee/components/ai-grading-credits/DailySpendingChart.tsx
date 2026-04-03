@@ -1,14 +1,11 @@
 import type { XAXisComponentOption, YAXisComponentOption } from 'echarts';
 
 import { type HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
-import { run } from '@prairielearn/run';
 
 import { EChart, axisTooltipFormatter } from '../../../components/EChart.js';
 import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 
 export type GroupByOption = 'none' | 'user' | 'assessment' | 'question';
-
-const FALLBACK_FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
 
 export function DailySpendingChart({
   data,
@@ -19,11 +16,10 @@ export function DailySpendingChart({
 }) {
   if (data.length === 0) return null;
 
-  const bootstrapFont = run(
-    () =>
-      getComputedStyle(document.documentElement).getPropertyValue('--bs-body-font-family') ||
-      FALLBACK_FONT,
-  );
+  const bootstrapFont =
+    // eslint-disable-next-line @eslint-react/purity -- reading a stable CSS variable, not a side effect
+    getComputedStyle(document.documentElement).getPropertyValue('--bs-body-font-family') ||
+    'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
 
   const dates = data.map((d) => new Date(d.date).toISOString().slice(0, 10));
 
