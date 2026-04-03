@@ -98,38 +98,28 @@ export function OverrideDateControlForm({
   description?: string;
 }) {
   return (
-    <div className="mb-4">
+    <div>
       <div className="section-header mb-3">
         <div>
           <strong>{title}</strong>
         </div>
         <Form.Text className="text-muted">{description}</Form.Text>
       </div>
-      <div className="mb-3">
+      <div className="d-flex flex-column gap-3">
         <OverrideReleaseDateField index={index} />
-      </div>
-      <div className="mb-3">
         <OverrideDeadlineArrayField index={index} type="early" />
-      </div>
-      <div className="mb-3">
         <OverrideDueDateField index={index} />
-      </div>
-      <div className="mb-4">
         <OverrideDeadlineArrayField index={index} type="late" />
-      </div>
-
-      <div className="mb-3">
         <OverrideAfterLastDeadlineField index={index} />
+        <Row className="gy-3">
+          <Col md={6}>
+            <OverrideDurationField index={index} />
+          </Col>
+          <Col md={6}>
+            <OverridePasswordField index={index} />
+          </Col>
+        </Row>
       </div>
-
-      <Row className="mb-3 gy-3">
-        <Col md={6}>
-          <OverrideDurationField index={index} />
-        </Col>
-        <Col md={6}>
-          <OverridePasswordField index={index} />
-        </Col>
-      </Row>
     </div>
   );
 }

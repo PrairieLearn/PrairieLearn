@@ -29,7 +29,7 @@ export function FieldWrapper({
   const cardStyle = isOverridden ? {} : { border: '2px dashed #dee2e6' };
 
   return (
-    <Card className="mb-3" style={cardStyle}>
+    <Card style={cardStyle}>
       <Card.Body>
         {!isOverridden ? (
           <div className="d-flex justify-content-between align-items-center">

@@ -304,7 +304,7 @@ function AfterCompleteCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mb-4">
+    <div>
       <div className="section-header mb-3">
         <div className="d-flex align-items-center">
           <strong>{title}</strong>
