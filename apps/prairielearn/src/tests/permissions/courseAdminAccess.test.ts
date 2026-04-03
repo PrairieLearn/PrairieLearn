@@ -1,4 +1,4 @@
-import * as cheerio from 'cheerio';
+import type * as cheerio from 'cheerio';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import z from 'zod';
 
