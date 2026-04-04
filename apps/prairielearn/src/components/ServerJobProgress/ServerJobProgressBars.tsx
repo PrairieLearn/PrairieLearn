@@ -189,50 +189,38 @@ function ServerJobProgressInfo({
     };
   }, [statusText, statusIcons, jobStatus]);
 
-  const costText = useMemo(() => {
-    if (!costInfo) return null;
+  const progressSegments = useMemo(() => {
+    const segments: string[] = [];
 
-    const totalFormatted = formatMilliDollars(costInfo.totalCostMilliDollars);
-
-    if (jobStatus === 'inProgress') {
-      const avgText =
-        costInfo.numSuccessfullyGraded > 0
-          ? `Avg: ${formatMilliDollars(Math.round(costInfo.totalCostMilliDollars / costInfo.numSuccessfullyGraded))}/submission`
-          : null;
-      return avgText ? `${avgText} | Total: ${totalFormatted}` : `Total: ${totalFormatted}`;
-    }
-
-    return `Total cost: ${totalFormatted}`;
-  }, [costInfo, jobStatus]);
-
-  const progressInfo = useMemo(() => {
+    // Progress count
     switch (jobStatus) {
-      case 'inProgress':
-        return (
-          <>
-            {`${nums.complete}/${nums.total} ${itemNames}`}
-            <span className="text-danger">{nums.failed > 0 ? ` (${nums.failed} failed)` : ''}</span>
-            {costText ? ` | ${costText}` : ''}
-          </>
-        );
+      case 'inProgress': {
+        const failedSuffix = nums.failed > 0 ? ` (${nums.failed} failed)` : '';
+        segments.push(`${nums.complete}/${nums.total} ${itemNames}${failedSuffix}`);
+        break;
+      }
       case 'failed':
-        return (
-          <>
-            {`${nums.total - nums.failed}/${nums.total} ${itemNames} (${nums.failed} failed)`}
-            {costText ? ` | ${costText}` : ''}
-          </>
+        segments.push(
+          `${nums.total - nums.failed}/${nums.total} ${itemNames} (${nums.failed} failed)`,
         );
+        break;
       case 'complete':
-        return (
-          <>
-            {`${nums.total} ${itemNames}`}
-            {costText ? ` | ${costText}` : ''}
-          </>
-        );
-      default:
-        return <></>;
+        segments.push(`${nums.total} ${itemNames}`);
+        break;
     }
-  }, [jobStatus, nums, itemNames, costText]);
+
+    // Cost info (only when present)
+    if (costInfo) {
+      if (costInfo.numSuccessfullyGraded > 0) {
+        segments.push(
+          `Avg: ${formatMilliDollars(Math.round(costInfo.totalCostMilliDollars / costInfo.numSuccessfullyGraded))}/submission`,
+        );
+      }
+      segments.push(`Total: ${formatMilliDollars(costInfo.totalCostMilliDollars)}`);
+    }
+
+    return segments;
+  }, [jobStatus, nums, itemNames, costInfo]);
 
   return (
     <Alert
@@ -264,8 +252,18 @@ function ServerJobProgressInfo({
           <></>
         )}
 
-        <div className="d-flex flex-wrap align-items-center gap-2 gap-lg-3">
-          <div className="text-muted small">{progressInfo}</div>
+        <div className="d-flex flex-wrap align-items-center gap-0">
+          {progressSegments.map((segment, i) => (
+            <span key={segment} className="text-muted small">
+              {i > 0 ? (
+                <span className="mx-2" aria-hidden="true">
+                  |
+                </span>
+              ) : null}
+              {segment}
+            </span>
+          ))}
+          <span className="mx-2 text-muted small" aria-hidden="true">|</span>
           <a
             href={getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId)}
             className="text-decoration-none small"
