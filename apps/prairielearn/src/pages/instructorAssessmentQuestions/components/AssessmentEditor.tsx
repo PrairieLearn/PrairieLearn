@@ -16,9 +16,8 @@ import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
-import { NuqsAdapter, OverlayTrigger, useModalState } from '@prairielearn/ui';
+import { NuqsAdapter, OverlayTrigger, SplitPane, useModalState } from '@prairielearn/ui';
 
-import { SplitPane } from '../../../components/SplitPane.js';
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
 import type {
   StaffAssessment,
@@ -26,7 +25,9 @@ import type {
   StaffCourseInstance,
 } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import type { EnumAssessmentTool, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
+import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
 import type {
   DetailActions,
   DetailState,
@@ -53,8 +54,6 @@ import {
   toEditorMetadata,
 } from '../utils/questions.js';
 import { getStructuralSaveValidationErrorKind } from '../utils/saveValidation.js';
-import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
-import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 import { useAssessmentEditor } from '../utils/useAssessmentEditor.js';
 import {
   findAltPoolByTrackingId,
@@ -135,6 +134,7 @@ interface AssessmentEditorInnerProps {
   questionRows: StaffAssessmentQuestionRow[];
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
+  assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   canEdit: boolean;
@@ -152,6 +152,7 @@ function AssessmentEditorInner({
   questionRows,
   jsonZones,
   assessment,
+  assessmentToolDefaults,
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   canEdit,
@@ -165,7 +166,8 @@ function AssessmentEditorInner({
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const questionByQidMutation = useMutation({
-    mutationFn: (qid: string) => queryClient.fetchQuery(trpc.questionByQid.queryOptions({ qid })),
+    mutationFn: (qid: string) =>
+      queryClient.fetchQuery(trpc.assessmentQuestions.questionByQid.queryOptions({ qid })),
   });
 
   const [_preselection, setPreselection] = useQueryState('selected', parseAsString.withDefault(''));
@@ -227,7 +229,6 @@ function AssessmentEditorInner({
           return null;
       }
     });
-    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     void setPreselection(next);
   }, [selectedItem, zones, setPreselection]);
 
@@ -268,7 +269,7 @@ function AssessmentEditorInner({
   // mounted form will report its own validity, while persisted tree-state
   // invariants are checked separately from `zones`.
   useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, react-you-might-not-need-an-effect/no-chain-state-updates, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, react-you-might-not-need-an-effect/no-chain-state-updates, @eslint-react/set-state-in-effect
     setSelectedFormHasErrors(false);
   }, [selectedItem]);
 
@@ -279,7 +280,7 @@ function AssessmentEditorInner({
   const resetModal = useModalState<string>(null);
 
   const courseQuestionsQuery = useQuery({
-    ...trpc.courseQuestions.queryOptions(),
+    ...trpc.assessmentQuestions.courseQuestions.queryOptions(),
     enabled: editMode,
   });
   const courseQuestions = courseQuestionsQuery.data ?? [];
@@ -880,7 +881,7 @@ function AssessmentEditorInner({
     // Handlers close over `zones` (updated on dispatch), so `[zones, selectedItem]`
     // correctly captures all change triggers. Listing each handler individually
     // would be redundant and cause unnecessary re-memoization.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
     [zones, selectedItem],
   );
 
@@ -891,6 +892,7 @@ function AssessmentEditorInner({
       assessmentType: assessment.type,
       constantQuestionValue: assessment.constant_question_value ?? false,
       assessmentDefaults,
+      assessmentToolDefaults,
       courseInstanceId: courseInstance.id,
       courseId: course.id,
       hasCoursePermissionPreview,
@@ -902,6 +904,7 @@ function AssessmentEditorInner({
       assessment.type,
       assessment.constant_question_value,
       assessmentDefaults,
+      assessmentToolDefaults,
       courseInstance.id,
       course.id,
       hasCoursePermissionPreview,
@@ -932,7 +935,7 @@ function AssessmentEditorInner({
     // (used by handleQuestionPicked to build metadata), so these deps
     // correctly capture all change triggers. Listing each handler individually
     // would be redundant and cause unnecessary re-memoization.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
     [zones, selectedItem, courseQuestions, handleDismissBanner],
   );
 
@@ -1059,57 +1062,61 @@ function AssessmentEditorInner({
         >
           <SplitPane
             forceOpen={selectedItem}
-            rightCollapsed={selectedItem == null ? true : undefined}
-            rightTitle={rightTitle}
-            rightHeaderAction={rightHeaderAction}
-            left={
-              <AssessmentTree
-                zones={zones}
-                state={treeState}
-                actions={treeActions}
-                isAllExpanded={isAllExpanded}
-                switchViewUrl={switchViewUrl}
-                editControls={
-                  <EditModeToolbar
-                    csrfToken={csrfToken}
-                    origHash={origHash}
-                    zones={zonesForSave}
-                    editMode={editMode}
-                    canEdit={canEdit && !!origHash}
-                    setEditMode={setEditMode}
-                    saveButtonDisabled={saveButtonDisabled}
-                    saveButtonDisabledReason={saveButtonDisabledReason}
-                    onSubmit={disableBeforeUnload}
-                    onCancel={() => {
-                      dispatch({ type: 'RESET' });
-                      setEditMode(false);
-                    }}
-                  />
-                }
-                onAddZone={handleAddZone}
-                onViewTypeChange={setViewType}
-                onToggleExpandCollapse={toggleExpandCollapse}
-              />
-            }
-            right={
-              <DetailPanel
-                selectedItem={selectedItem}
-                zones={zones}
-                questionMetadata={questionMetadata}
-                state={detailState}
-                actions={detailActions}
-                courseQuestions={courseQuestions}
-                courseQuestionsLoading={courseQuestionsQuery.isLoading}
-                questionsInAssessment={questionsInAssessment}
-                disabledQids={disabledQids}
-                currentChangeQid={currentChangeQid}
-                currentAssessmentId={assessment.id}
-                isPickingQuestion={questionByQidMutation.isPending}
-                pickerError={questionByQidMutation.error}
-                questionSharingEnabled={questionSharingEnabled}
-                consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
-              />
-            }
+            left={{
+              content: (
+                <AssessmentTree
+                  zones={zones}
+                  state={treeState}
+                  actions={treeActions}
+                  isAllExpanded={isAllExpanded}
+                  switchViewUrl={switchViewUrl}
+                  editControls={
+                    <EditModeToolbar
+                      csrfToken={csrfToken}
+                      origHash={origHash}
+                      zones={zonesForSave}
+                      editMode={editMode}
+                      canEdit={canEdit && !!origHash}
+                      setEditMode={setEditMode}
+                      saveButtonDisabled={saveButtonDisabled}
+                      saveButtonDisabledReason={saveButtonDisabledReason}
+                      onSubmit={disableBeforeUnload}
+                      onCancel={() => {
+                        dispatch({ type: 'RESET' });
+                        setEditMode(false);
+                      }}
+                    />
+                  }
+                  onAddZone={handleAddZone}
+                  onViewTypeChange={setViewType}
+                  onToggleExpandCollapse={toggleExpandCollapse}
+                />
+              ),
+            }}
+            right={{
+              content: (
+                <DetailPanel
+                  selectedItem={selectedItem}
+                  zones={zones}
+                  questionMetadata={questionMetadata}
+                  state={detailState}
+                  actions={detailActions}
+                  courseQuestions={courseQuestions}
+                  courseQuestionsLoading={courseQuestionsQuery.isLoading}
+                  questionsInAssessment={questionsInAssessment}
+                  disabledQids={disabledQids}
+                  currentChangeQid={currentChangeQid}
+                  currentAssessmentId={assessment.id}
+                  isPickingQuestion={questionByQidMutation.isPending}
+                  pickerError={questionByQidMutation.error}
+                  questionSharingEnabled={questionSharingEnabled}
+                  consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
+                />
+              ),
+              title: rightTitle,
+              headerAction: rightHeaderAction,
+              collapsed: selectedItem == null ? true : undefined,
+            }}
             onClose={() => setSelectedItem(null)}
           />
         </div>
@@ -1153,7 +1160,13 @@ export function AssessmentQuestionsEditor({
   ...innerProps
 }: AssessmentEditorProps) {
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => createAssessmentQuestionsTrpcClient(trpcCsrfToken));
+  const [trpcClient] = useState(() =>
+    createAssessmentTrpcClient({
+      csrfToken: trpcCsrfToken,
+      courseInstanceId: innerProps.courseInstance.id,
+      assessmentId: innerProps.assessment.id,
+    }),
+  );
 
   return (
     <NuqsAdapter search={search}>

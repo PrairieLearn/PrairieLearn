@@ -1,25 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { z } from 'zod';
 
-import type { AccessControlJson } from '../../../schemas/accessControl.js';
-
-export interface AccessControlIndividual {
-  enrollmentId: string;
-  uid: string;
-  name: string | null;
-}
-
-export interface AccessControlJsonWithId extends AccessControlJson {
-  /** Database ID (undefined for new/unsaved rules) */
-  id?: string;
-  /** Database rule number for sorting */
-  number?: number;
-  /** Rule type: 'student_label' for label-based rules, 'enrollment' for individual student rules, 'none' for rules without specific targeting */
-  ruleType?: 'student_label' | 'enrollment' | 'none' | null;
-  individuals?: AccessControlIndividual[];
-  /** Student label details (id, name, color) from the database, used for rendering colored badges. */
-  labelDetails?: { id: string; name: string; color: string }[];
-}
+import type { AccessControlJsonWithId } from '../../../models/assessment-access-control-rules.js';
 
 /** Field names that belong to the date control section of an access control rule. */
 export const DATE_CONTROL_FIELD_NAMES = [
@@ -32,115 +13,95 @@ export const DATE_CONTROL_FIELD_NAMES = [
   'password',
 ] as const;
 
-export const DeadlineEntrySchema = z.object({
-  date: z.string(),
-  credit: z.number(),
-});
+export interface DeadlineEntry {
+  date: string;
+  credit: number;
+}
 
-export const AfterLastDeadlineValueSchema = z.object({
-  allowSubmissions: z.boolean().optional(),
-  credit: z.number().optional(),
-});
+export interface AfterLastDeadlineValue {
+  allowSubmissions?: boolean;
+  credit?: number;
+}
 
-export const QuestionVisibilityValueSchema = z.object({
-  hideQuestions: z.boolean(),
-  showAgainDate: z.string().optional(),
-  hideAgainDate: z.string().optional(),
-});
+export interface QuestionVisibilityValue {
+  hideQuestions: boolean;
+  showAgainDate?: string;
+  hideAgainDate?: string;
+}
 
-export const ScoreVisibilityValueSchema = z.object({
-  hideScore: z.boolean(),
-  showAgainDate: z.string().optional(),
-});
+export interface ScoreVisibilityValue {
+  hideScore: boolean;
+  showAgainDate?: string;
+}
 
-const PrairieTestExamSchema = z.object({
-  examUuid: z.string(),
-  readOnly: z.boolean().optional(),
-});
+interface PrairieTestExam {
+  examUuid: string;
+  readOnly?: boolean;
+}
 
-export const IndividualTargetSchema = z.object({
-  enrollmentId: z.string().optional(),
-  uid: z.string(),
-  name: z.string().nullable(),
-});
+export interface EnrollmentTarget {
+  enrollmentId: string;
+  uid: string;
+  name: string | null;
+}
 
-export const StudentLabelTargetSchema = z.object({
-  studentLabelId: z.string(),
-  name: z.string(),
-  color: z.string().optional(),
-});
+export interface StudentLabelTarget {
+  studentLabelId: string;
+  name: string;
+  color?: string;
+}
 
-export const AppliesToSchema = z.object({
-  targetType: z.enum(['individual', 'student_label']),
-  individuals: z.array(IndividualTargetSchema),
-  studentLabels: z.array(StudentLabelTargetSchema),
-});
+export type TargetType = 'enrollment' | 'student_label';
+
+export interface AppliesTo {
+  targetType: TargetType;
+  enrollments: EnrollmentTarget[];
+  studentLabels: StudentLabelTarget[];
+}
 
 // Main rule: flat fields, null = feature off
-export const MainRuleSchema = z.object({
-  id: z.string().optional(),
-  trackingId: z.string(),
-  listBeforeRelease: z.boolean(),
-  dateControlEnabled: z.boolean(),
-  releaseDate: z.string().nullable(),
-  dueDate: z.string().nullable(),
-  earlyDeadlines: z.array(DeadlineEntrySchema),
-  lateDeadlines: z.array(DeadlineEntrySchema),
-  afterLastDeadline: AfterLastDeadlineValueSchema.nullable(),
-  durationMinutes: z.number().nullable(),
-  password: z.string().nullable(),
-  prairieTestEnabled: z.boolean(),
-  prairieTestExams: z.array(PrairieTestExamSchema),
-  questionVisibility: QuestionVisibilityValueSchema,
-  scoreVisibility: ScoreVisibilityValueSchema,
-});
+export interface MainRuleData {
+  id?: string;
+  trackingId: string;
+  listBeforeRelease: boolean;
+  dateControlEnabled: boolean;
+  releaseDate: string | null;
+  dueDate: string | null;
+  earlyDeadlines: DeadlineEntry[];
+  lateDeadlines: DeadlineEntry[];
+  afterLastDeadline: AfterLastDeadlineValue | null;
+  durationMinutes: number | null;
+  password: string | null;
+  prairieTestEnabled: boolean;
+  prairieTestExams: PrairieTestExam[];
+  questionVisibility: QuestionVisibilityValue;
+  scoreVisibility: ScoreVisibilityValue;
+}
 
 // Override: flat fields. The `overriddenFields` array tracks which fields
 // are overridden vs inherited from the main rule.  We avoid using `undefined`
 // as a sentinel because react-hook-form does not support setting field values
 // to `undefined` (the value silently reverts).
-export const OverrideSchema = z.object({
-  id: z.string().optional(),
-  trackingId: z.string(),
-  appliesTo: AppliesToSchema,
-  overriddenFields: z.array(z.string()),
-  releaseDate: z.string().nullable(),
-  dueDate: z.string().nullable(),
-  earlyDeadlines: z.array(DeadlineEntrySchema),
-  lateDeadlines: z.array(DeadlineEntrySchema),
-  afterLastDeadline: AfterLastDeadlineValueSchema.nullable(),
-  durationMinutes: z.number().nullable(),
-  password: z.string().nullable(),
-  questionVisibility: QuestionVisibilityValueSchema,
-  scoreVisibility: ScoreVisibilityValueSchema,
-});
+export interface OverrideData {
+  id?: string;
+  trackingId: string;
+  appliesTo: AppliesTo;
+  overriddenFields: string[];
+  releaseDate: string | null;
+  dueDate: string | null;
+  earlyDeadlines: DeadlineEntry[];
+  lateDeadlines: DeadlineEntry[];
+  afterLastDeadline: AfterLastDeadlineValue | null;
+  durationMinutes: number | null;
+  password: string | null;
+  questionVisibility: QuestionVisibilityValue;
+  scoreVisibility: ScoreVisibilityValue;
+}
 
-export const AccessControlFormDataSchema = z.object({
-  mainRule: MainRuleSchema,
-  overrides: z.array(OverrideSchema),
-});
-
-export type DeadlineEntry = z.infer<typeof DeadlineEntrySchema>;
-
-export type AfterLastDeadlineValue = z.infer<typeof AfterLastDeadlineValueSchema>;
-
-export type QuestionVisibilityValue = z.infer<typeof QuestionVisibilityValueSchema>;
-
-export type ScoreVisibilityValue = z.infer<typeof ScoreVisibilityValueSchema>;
-
-export type TargetType = z.infer<typeof AppliesToSchema>['targetType'];
-
-export type IndividualTarget = z.infer<typeof IndividualTargetSchema>;
-
-export type StudentLabelTarget = z.infer<typeof StudentLabelTargetSchema>;
-
-export type AppliesTo = z.infer<typeof AppliesToSchema>;
-
-export type MainRuleData = z.infer<typeof MainRuleSchema>;
-
-export type OverrideData = z.infer<typeof OverrideSchema>;
-
-export type AccessControlFormData = z.infer<typeof AccessControlFormDataSchema>;
+export interface AccessControlFormData {
+  mainRule: MainRuleData;
+  overrides: OverrideData[];
+}
 
 /**
  * Convert a date string to a timezone-naive datetime-local value suitable for
@@ -213,10 +174,10 @@ export function jsonToOverrideFormData(
   const ac = json.afterComplete;
 
   let appliesTo: AppliesTo;
-  if (json.ruleType === 'enrollment' && json.individuals && json.individuals.length > 0) {
+  if (json.ruleType === 'enrollment' && json.enrollments && json.enrollments.length > 0) {
     appliesTo = {
-      targetType: 'individual',
-      individuals: json.individuals.map((i) => ({
+      targetType: 'enrollment',
+      enrollments: json.enrollments.map((i) => ({
         enrollmentId: i.enrollmentId,
         uid: i.uid,
         name: i.name,
@@ -226,7 +187,7 @@ export function jsonToOverrideFormData(
   } else {
     appliesTo = {
       targetType: 'student_label',
-      individuals: [],
+      enrollments: [],
       studentLabels: json.labelDetails
         ? json.labelDetails.map((l) => ({ studentLabelId: l.id, name: l.name, color: l.color }))
         : (json.labels ?? []).map((name: string) => ({ studentLabelId: '', name })),
@@ -330,11 +291,10 @@ function mainRuleToJson(rule: MainRuleData, displayTimezone: string): AccessCont
     if (rule.releaseDate) {
       output.dateControl.releaseDate = rule.releaseDate;
     } else {
-      // "Released immediately" with dates configured: persist as the current
-      // timestamp so the assessment is open now (matching the course-instance
-      // publishing pattern). Truncate to minutes to satisfy the datetime-local
-      // schema.
+      // "Released immediately": persist as start-of-day in the course instance
+      // timezone so the assessment is open now with a clean display timestamp.
       output.dateControl.releaseDate = Temporal.Now.zonedDateTimeISO(displayTimezone)
+        .startOfDay()
         .toPlainDateTime()
         .toString({ smallestUnit: 'minute' });
     }
@@ -422,13 +382,9 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
     }
   }
 
-  if (rule.appliesTo.targetType === 'individual') {
+  if (rule.appliesTo.targetType === 'enrollment') {
     output.ruleType = 'enrollment';
-    output.individuals = rule.appliesTo.individuals.map((ind) => ({
-      enrollmentId: ind.enrollmentId ?? '',
-      uid: ind.uid,
-      name: ind.name,
-    }));
+    output.enrollments = rule.appliesTo.enrollments;
   }
 
   return output;
@@ -448,8 +404,8 @@ export function createDefaultOverrideFormData(): OverrideData {
   return {
     trackingId: crypto.randomUUID(),
     appliesTo: {
-      targetType: 'individual',
-      individuals: [],
+      targetType: 'enrollment',
+      enrollments: [],
       studentLabels: [],
     },
     overriddenFields: [],

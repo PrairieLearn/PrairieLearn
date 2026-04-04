@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
@@ -16,22 +15,21 @@ import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
 import { compiledScriptTag, compiledStylesheetTag } from '../../lib/assets.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { handleTrpcError } from '../../lib/trpc.js';
 import { getUrl } from '../../lib/url.js';
+import { selectAssessmentToolDefaults, selectZoneToolOverrides } from '../../models/assessment.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
-import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
+import { type EnumAssessmentTool, ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { AssessmentQuestionsEditor } from './components/AssessmentEditor.js';
 import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
-import { assessmentQuestionsRouter, createContext } from './trpc.js';
 import { serializeZonesForJson } from './utils/dataTransform.js';
 import { buildHierarchicalAssessment } from './utils/questions.js';
-import { buildTrpcUrl } from './utils/trpc-url.js';
 
 const router = Router();
 
@@ -78,6 +76,25 @@ router.get(
     // for doing operations.
     const jsonZones = buildHierarchicalAssessment(res.locals.course, questionRows);
 
+    // Populate zone-level tool overrides from the assessment_tools table.
+    const zoneToolRows = await selectZoneToolOverrides({
+      assessment_id: res.locals.assessment.id,
+    });
+    for (const row of zoneToolRows) {
+      const zone = jsonZones[row.zone_number - 1];
+      zone.tools ??= {};
+      zone.tools[row.tool] = { enabled: row.enabled };
+    }
+
+    // Load assessment-level tool defaults for zone inheritance display.
+    const assessmentToolDefaultRows = await selectAssessmentToolDefaults({
+      assessment_id: res.locals.assessment.id,
+    });
+    const assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>> = {};
+    for (const row of assessmentToolDefaultRows) {
+      assessmentToolDefaults[row.tool] = row.enabled;
+    }
+
     const questionSharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
     const consumePublicQuestionsEnabled = await features.enabledFromLocals(
       'consume-public-questions',
@@ -95,7 +112,10 @@ router.get(
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
-        url: buildTrpcUrl(req.originalUrl),
+        url: getAssessmentTrpcUrl({
+          courseInstanceId: res.locals.course_instance.id,
+          assessmentId: res.locals.assessment.id,
+        }),
         authn_user_id: res.locals.authn_user.id,
       },
       config.secretKey,
@@ -143,6 +163,7 @@ router.get(
                 questionRows={questionRows}
                 jsonZones={jsonZones}
                 assessment={pageContext.assessment}
+                assessmentToolDefaults={assessmentToolDefaults}
                 hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
                 hasCourseInstancePermissionEdit={
                   pageContext.authz_data.has_course_instance_permission_edit ?? false
@@ -176,15 +197,6 @@ router.get(
         ),
       }),
     );
-  }),
-);
-
-router.use(
-  '/trpc',
-  trpcExpress.createExpressMiddleware({
-    router: assessmentQuestionsRouter,
-    createContext,
-    onError: handleTrpcError,
   }),
 );
 

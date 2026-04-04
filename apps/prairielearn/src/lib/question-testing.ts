@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import { ElementType } from 'domelementtype';
+import { isTag } from 'domhandler';
 import { isEqual, pick, range } from 'es-toolkit';
 import jsonStringifySafe from 'json-stringify-safe';
 import { z } from 'zod';
@@ -40,7 +40,7 @@ function extractDynamicFileUrls(html: string, variantId: string): string[] {
   // people might use `srcset`, or use `data-*` attributes for lazy loading or
   // other client-side purposes.
   $('*').each((_, el) => {
-    if (el.type !== ElementType.Tag) return;
+    if (!isTag(el)) return;
     for (const value of Object.values(el.attribs)) {
       const match = value.match(pattern);
       if (match) filenames.add(match[1].trim());

@@ -44,10 +44,10 @@ export function validateRule(
 ): string | null {
   if (targetType !== 'none') {
     if (rule.listBeforeRelease !== undefined) {
-      return 'listBeforeRelease can only be specified on the main rule.';
+      return 'listBeforeRelease can only be specified on the defaults.';
     }
     if (rule.integrations != null) {
-      return 'integrations can only be specified on the main rule.';
+      return 'integrations can only be specified on the defaults.';
     }
   }
 
@@ -350,20 +350,4 @@ export async function syncAllAccessControl(
   );
 
   return errors;
-}
-
-/**
- * Syncs access control rules for a single assessment.
- * Throws on validation errors.
- */
-export async function syncAccessControl(
-  courseInstanceId: string,
-  assessmentId: string,
-  accessControlRules: AccessControlJson[],
-): Promise<void> {
-  const errors = await syncAllAccessControl(courseInstanceId, [
-    { assessmentId, rules: accessControlRules },
-  ]);
-  const error = errors.get(assessmentId);
-  if (error) throw new Error(error);
 }

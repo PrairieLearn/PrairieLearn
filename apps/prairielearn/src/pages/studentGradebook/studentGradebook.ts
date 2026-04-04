@@ -30,7 +30,7 @@ function mapRow(
   raw: StudentGradebookRow,
   prev: StudentGradebookRow | null,
 ): StudentGradebookTableRow {
-  const start_new_set = !prev || raw.assessment_set.id !== prev.assessment_set.id;
+  const start_new_set = raw.assessment_set.id !== prev?.assessment_set.id;
   return {
     assessment_id: raw.assessment.id,
     assessment_instance_id: raw.assessment_instance.id,

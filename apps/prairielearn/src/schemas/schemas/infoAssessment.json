@@ -51,8 +51,7 @@
       "type": "array",
       "items": {
         "$ref": "#/definitions/AssessmentAccessRuleJsonSchema"
-      },
-      "default": []
+      }
     },
     "accessControl": {
       "description": "Access control settings for the assessment.",
@@ -737,7 +736,7 @@
           }
         },
         "listBeforeRelease": {
-          "description": "Main rule only. Whether to list the assessment title before the release date. Students can see the title but cannot open the assessment. Defaults to false.",
+          "description": "Only valid on the first entry (defaults). Whether to list the assessment title before the release date. Students can see the title but cannot open the assessment. Defaults to false.",
           "type": "boolean"
         },
         "dateControl": {

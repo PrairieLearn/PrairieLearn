@@ -7,11 +7,13 @@ import ReactMarkdown from 'react-markdown';
 
 import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
+import { getAppError } from '../lib/client/errors.js';
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
 import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
 import type { CourseRequestRow } from '../lib/course-request.js';
 import { type Timezone } from '../lib/timezone.shared.js';
 import { useTRPC } from '../trpc/administrator/context.js';
+import type { AdminCourseRequestError } from '../trpc/administrator/course-requests.js';
 
 import {
   AdministratorCourseFormFields,
@@ -332,6 +334,7 @@ function CourseRequestApproveModalContent({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.createCourse.mutationOptions());
+  const appError = getAppError<AdminCourseRequestError>(mutation.error);
 
   const userInstitution = institutions.find((i) => i.id === request.user_institution_id);
   const isDefaultInstitution = userInstitution?.short_name === 'Default';
@@ -560,9 +563,9 @@ function CourseRequestApproveModalContent({
               {...register('github_user')}
             />
           </div>
-          {mutation.isError && (
+          {appError && (
             <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {mutation.error.message}
+              {appError.message}
             </Alert>
           )}
         </Modal.Body>
@@ -592,12 +595,13 @@ function CourseRequestDenyForm({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.deny.mutationOptions());
+  const appError = getAppError<AdminCourseRequestError>(mutation.error);
 
   return (
     <>
-      {mutation.isError && (
+      {appError && (
         <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-          {mutation.error.message}
+          {appError.message}
         </Alert>
       )}
       <div className="d-flex justify-content-end gap-2">
@@ -666,6 +670,7 @@ function CourseRequestEditNoteForm({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.updateNote.mutationOptions());
+  const appError = getAppError<AdminCourseRequestError>(mutation.error);
 
   const {
     register,
@@ -708,9 +713,9 @@ function CourseRequestEditNoteForm({
           <i className="fa fa-save" aria-hidden="true" /> Save note
         </button>
       </div>
-      {mutation.isError && (
+      {appError && (
         <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-          {mutation.error.message}
+          {appError.message}
         </Alert>
       )}
     </form>

@@ -188,8 +188,8 @@ describe('Main rule requirement', () => {
 
     assert.isTrue(result.errors.length > 0, 'Expected error when no main rule exists');
     assert.isTrue(
-      result.errors.some((err) => err.includes('No main rule found')),
-      `Expected "No main rule found" error, but got: ${result.errors.join(', ')}`,
+      result.errors.some((err) => err.includes('No defaults found')),
+      `Expected "No defaults found" error, but got: ${result.errors.join(', ')}`,
     );
   });
 
@@ -218,8 +218,8 @@ describe('Main rule requirement', () => {
 
     assert.isTrue(result.errors.length > 0, 'Expected error when multiple main rules exist');
     assert.isTrue(
-      result.errors.some((err) => err.includes('Found 2 main rules')),
-      `Expected "Found 2 main rules" error, but got: ${result.errors.join(', ')}`,
+      result.errors.some((err) => err.includes('Found 2 defaults entries')),
+      `Expected "Found 2 defaults entries" error, but got: ${result.errors.join(', ')}`,
     );
   });
 
@@ -567,11 +567,11 @@ describe('Credit monotonicity validation', () => {
 });
 
 describe('Empty accessControl array', () => {
-  it('should warn when accessControl array is empty', () => {
+  it('should accept an empty accessControl array without warnings', () => {
     const result = validateAccessControlArray({
       accessControlJsonArray: [],
     });
     assert.deepEqual(result.errors, []);
-    assert.isTrue(result.warnings.some((w) => w.includes('accessControl array is empty')));
+    assert.deepEqual(result.warnings, []);
   });
 });

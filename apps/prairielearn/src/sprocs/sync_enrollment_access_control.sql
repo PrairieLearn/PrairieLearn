@@ -13,9 +13,12 @@ DECLARE
     existing_rule_id bigint;
     new_rule_id bigint;
     next_number integer;
+    ci_timezone text;
 BEGIN
     -- Lock the assessment row to serialize concurrent access control modifications.
     PERFORM id FROM assessments WHERE id = syncing_assessment_id FOR NO KEY UPDATE;
+
+    SELECT display_timezone INTO ci_timezone FROM course_instances WHERE id = syncing_course_instance_id;
 
     -- Check if updating an existing rule (rule_data contains 'id')
     existing_rule_id := (rule_data ->> 'id')::bigint;
@@ -25,9 +28,9 @@ BEGIN
         UPDATE assessment_access_control_rules SET
             list_before_release = (rule_data ->> 'list_before_release')::boolean,
             date_control_release_date_overridden = (rule_data ->> 'date_control_release_date_overridden')::boolean,
-            date_control_release_date = (rule_data ->> 'date_control_release_date')::timestamp with time zone,
+            date_control_release_date = input_date(rule_data ->> 'date_control_release_date', ci_timezone),
             date_control_due_date_overridden = (rule_data ->> 'date_control_due_date_overridden')::boolean,
-            date_control_due_date = (rule_data ->> 'date_control_due_date')::timestamp with time zone,
+            date_control_due_date = input_date(rule_data ->> 'date_control_due_date', ci_timezone),
             date_control_early_deadlines_overridden = (rule_data ->> 'date_control_early_deadlines_overridden')::boolean,
             date_control_late_deadlines_overridden = (rule_data ->> 'date_control_late_deadlines_overridden')::boolean,
             date_control_after_last_deadline_allow_submissions = (rule_data ->> 'date_control_after_last_deadline_allow_submissions')::boolean,
@@ -40,12 +43,12 @@ BEGIN
 
             after_complete_hide_questions = (rule_data ->> 'after_complete_hide_questions')::boolean,
             after_complete_show_questions_again_date_overridden = (rule_data ->> 'after_complete_show_questions_again_date_overridden')::boolean,
-            after_complete_show_questions_again_date = (rule_data ->> 'after_complete_show_questions_again_date')::timestamp with time zone,
+            after_complete_show_questions_again_date = input_date(rule_data ->> 'after_complete_show_questions_again_date', ci_timezone),
             after_complete_hide_questions_again_date_overridden = (rule_data ->> 'after_complete_hide_questions_again_date_overridden')::boolean,
-            after_complete_hide_questions_again_date = (rule_data ->> 'after_complete_hide_questions_again_date')::timestamp with time zone,
+            after_complete_hide_questions_again_date = input_date(rule_data ->> 'after_complete_hide_questions_again_date', ci_timezone),
             after_complete_hide_score = (rule_data ->> 'after_complete_hide_score')::boolean,
             after_complete_show_score_again_date_overridden = (rule_data ->> 'after_complete_show_score_again_date_overridden')::boolean,
-            after_complete_show_score_again_date = (rule_data ->> 'after_complete_show_score_again_date')::timestamp with time zone
+            after_complete_show_score_again_date = input_date(rule_data ->> 'after_complete_show_score_again_date', ci_timezone)
         FROM assessments AS a
         WHERE assessment_access_control_rules.id = existing_rule_id
             AND assessment_access_control_rules.assessment_id = syncing_assessment_id
@@ -107,9 +110,9 @@ BEGIN
             'enrollment',
             (rule_data ->> 'list_before_release')::boolean,
             (rule_data ->> 'date_control_release_date_overridden')::boolean,
-            (rule_data ->> 'date_control_release_date')::timestamp with time zone,
+            input_date(rule_data ->> 'date_control_release_date', ci_timezone),
             (rule_data ->> 'date_control_due_date_overridden')::boolean,
-            (rule_data ->> 'date_control_due_date')::timestamp with time zone,
+            input_date(rule_data ->> 'date_control_due_date', ci_timezone),
             (rule_data ->> 'date_control_early_deadlines_overridden')::boolean,
             (rule_data ->> 'date_control_late_deadlines_overridden')::boolean,
             (rule_data ->> 'date_control_after_last_deadline_allow_submissions')::boolean,
@@ -122,12 +125,12 @@ BEGIN
 
             (rule_data ->> 'after_complete_hide_questions')::boolean,
             (rule_data ->> 'after_complete_show_questions_again_date_overridden')::boolean,
-            (rule_data ->> 'after_complete_show_questions_again_date')::timestamp with time zone,
+            input_date(rule_data ->> 'after_complete_show_questions_again_date', ci_timezone),
             (rule_data ->> 'after_complete_hide_questions_again_date_overridden')::boolean,
-            (rule_data ->> 'after_complete_hide_questions_again_date')::timestamp with time zone,
+            input_date(rule_data ->> 'after_complete_hide_questions_again_date', ci_timezone),
             (rule_data ->> 'after_complete_hide_score')::boolean,
             (rule_data ->> 'after_complete_show_score_again_date_overridden')::boolean,
-            (rule_data ->> 'after_complete_show_score_again_date')::timestamp with time zone
+            input_date(rule_data ->> 'after_complete_show_score_again_date', ci_timezone)
         ) RETURNING id INTO new_rule_id;
     END IF;
 
@@ -137,12 +140,12 @@ BEGIN
 
     -- Insert early deadlines
     INSERT INTO assessment_access_control_early_deadlines (assessment_access_control_rule_id, date, credit)
-    SELECT new_rule_id, (d ->> 'date')::timestamp with time zone, (d ->> 'credit')::integer
+    SELECT new_rule_id, input_date(d ->> 'date', ci_timezone), (d ->> 'credit')::integer
     FROM UNNEST(early_deadlines_data) AS d;
 
     -- Insert late deadlines
     INSERT INTO assessment_access_control_late_deadlines (assessment_access_control_rule_id, date, credit)
-    SELECT new_rule_id, (d ->> 'date')::timestamp with time zone, (d ->> 'credit')::integer
+    SELECT new_rule_id, input_date(d ->> 'date', ci_timezone), (d ->> 'credit')::integer
     FROM UNNEST(late_deadlines_data) AS d;
 
     RETURN new_rule_id;

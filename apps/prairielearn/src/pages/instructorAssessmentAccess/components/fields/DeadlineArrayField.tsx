@@ -14,15 +14,6 @@ import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
 import { getDeadlineRange, getUserTimezone } from '../utils/dateUtils.js';
 
-interface DeadlineArrayInputProps {
-  type: 'early' | 'late';
-  fieldArrayName: string;
-  idPrefix: string;
-  releaseDate: string | null | undefined;
-  dueDate: string | null | undefined;
-  deadlines: DeadlineEntry[];
-}
-
 function DeadlineArrayInput({
   type,
   fieldArrayName,
@@ -30,7 +21,14 @@ function DeadlineArrayInput({
   releaseDate,
   dueDate,
   deadlines,
-}: DeadlineArrayInputProps) {
+}: {
+  type: 'early' | 'late';
+  fieldArrayName: string;
+  idPrefix: string;
+  releaseDate: string | null | undefined;
+  dueDate: string | null | undefined;
+  deadlines: DeadlineEntry[];
+}) {
   const { register } = useFormContext<AccessControlFormData>();
   const userTimezone = getUserTimezone();
   const isEarly = type === 'early';
@@ -151,9 +149,7 @@ function DeadlineArrayInput({
               addDeadline();
             } else {
               // Remove all deadlines
-              for (let i = deadlineFields.length - 1; i >= 0; i--) {
-                removeDeadline(i);
-              }
+              removeDeadline();
             }
           }}
         />
@@ -164,7 +160,7 @@ function DeadlineArrayInput({
 
       {deadlineFields.map((deadlineField, index) => (
         <div key={deadlineField.id} className="mb-3">
-          <div className="d-flex gap-2 mb-1">
+          <div className="d-flex gap-2 mb-1 flex-wrap">
             <div className="flex-grow-1">
               <Form.Control
                 type="datetime-local"
@@ -190,38 +186,47 @@ function DeadlineArrayInput({
                 </Form.Text>
               )}
             </div>
-            <InputGroup style={{ width: 'auto', flex: '0 0 auto' }}>
-              <Form.Control
-                type="number"
-                style={{ width: '5rem' }}
-                aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} credit percentage`}
-                aria-invalid={!!getCreditError(index)}
-                aria-errormessage={
-                  getCreditError(index)
-                    ? `${idPrefix}-${type}-deadline-${index}-credit-error`
-                    : undefined
-                }
-                placeholder="Credit"
-                min={isEarly ? '101' : '0'}
-                max={isEarly ? '200' : '99'}
-                {...register(
-                  `${fieldArrayName}.${index}.credit` as Parameters<typeof register>[0],
-                  {
-                    valueAsNumber: true,
-                    validate: validateCredit,
-                  },
-                )}
-              />
-              <InputGroup.Text>%</InputGroup.Text>
-            </InputGroup>
-            <Button
-              size="sm"
-              variant="outline-danger"
-              aria-label={`Remove ${isEarly ? 'early' : 'late'} deadline ${index + 1}`}
-              onClick={() => removeDeadline(index)}
-            >
-              <i className="bi bi-trash" aria-hidden="true" />
-            </Button>
+            <div className="d-flex gap-2 align-items-center">
+              <label
+                className="form-label text-body-secondary mt-2 ms-auto"
+                htmlFor={`${idPrefix}-${type}-deadline-${index}-credit`}
+              >
+                Credit
+              </label>
+              <InputGroup style={{ width: 'auto', flex: '0 0 auto' }}>
+                <Form.Control
+                  id={`${idPrefix}-${type}-deadline-${index}-credit`}
+                  type="number"
+                  style={{ width: '5rem' }}
+                  aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} credit percentage`}
+                  aria-invalid={!!getCreditError(index)}
+                  aria-errormessage={
+                    getCreditError(index)
+                      ? `${idPrefix}-${type}-deadline-${index}-credit-error`
+                      : undefined
+                  }
+                  placeholder="Credit"
+                  min={isEarly ? '101' : '0'}
+                  max={isEarly ? '200' : '99'}
+                  {...register(
+                    `${fieldArrayName}.${index}.credit` as Parameters<typeof register>[0],
+                    {
+                      valueAsNumber: true,
+                      validate: validateCredit,
+                    },
+                  )}
+                />
+                <InputGroup.Text>%</InputGroup.Text>
+              </InputGroup>
+              <Button
+                size="sm"
+                variant="outline-danger"
+                aria-label={`Remove ${isEarly ? 'early' : 'late'} deadline ${index + 1}`}
+                onClick={() => removeDeadline(index)}
+              >
+                <i className="bi bi-trash" aria-hidden="true" />
+              </Button>
+            </div>
           </div>
           {getCreditError(index) && (
             <Form.Text
@@ -239,11 +244,7 @@ function DeadlineArrayInput({
   );
 }
 
-interface MainDeadlineArrayFieldProps {
-  type: 'early' | 'late';
-}
-
-export function MainDeadlineArrayField({ type }: MainDeadlineArrayFieldProps) {
+export function MainDeadlineArrayField({ type }: { type: 'early' | 'late' }) {
   const isEarly = type === 'early';
   const fieldName = isEarly ? 'mainRule.earlyDeadlines' : 'mainRule.lateDeadlines';
 
@@ -275,12 +276,13 @@ export function MainDeadlineArrayField({ type }: MainDeadlineArrayFieldProps) {
   );
 }
 
-interface OverrideDeadlineArrayFieldProps {
+export function OverrideDeadlineArrayField({
+  index,
+  type,
+}: {
   index: number;
   type: 'early' | 'late';
-}
-
-export function OverrideDeadlineArrayField({ index, type }: OverrideDeadlineArrayFieldProps) {
+}) {
   const isEarly = type === 'early';
   const fieldPath = isEarly ? 'earlyDeadlines' : 'lateDeadlines';
   const label = isEarly ? 'Early deadlines' : 'Late deadlines';

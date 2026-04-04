@@ -23,7 +23,7 @@
     "@prairielearn/browser-utils": "workspace:^",
     "@prairielearn/run": "workspace:^",
     "@tanstack/react-table": "^8.21.3",
-    "@tanstack/react-virtual": "^3.13.19",
+    "@tanstack/react-virtual": "^3.13.23",
     "@tanstack/table-core": "^8.21.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -34,14 +34,14 @@
     "react-aria-components": "^1.16.0",
     "react-bootstrap": "3.0.0-beta.5",
     "react-dom": "^19.2.4",
-    "use-debounce": "^10.1.0"
+    "use-debounce": "^10.1.1"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.11.0",
+    "@types/node": "^24.12.2",
     "@typescript/native-preview": "^7.0.0-dev.20260305.1",
     "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.2"
   }
 }

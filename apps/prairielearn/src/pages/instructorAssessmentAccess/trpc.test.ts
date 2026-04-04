@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { AccessControlJsonInputSchema } from './trpc.js';
+import { AccessControlJsonInputSchema } from '../../trpc/assessment/access-control.js';
 
 describe('AccessControlJsonInputSchema', () => {
   it('accepts explicit nulls used to clear inherited override fields', () => {

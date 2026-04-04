@@ -22,7 +22,9 @@ import {
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectOrInsertUserByUid } from '../../models/user.js';
+import { plainDateTimeStringToDate } from '../../pages/instructorInstanceAdminPublishing/utils/dateUtils.js';
 import { type AccessControlJsonInput } from '../../schemas/accessControl.js';
+import { cleanAccessControlRulesForDisk } from '../../trpc/assessment/access-control.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
@@ -496,7 +498,7 @@ describe('Access control syncing', () => {
       assert.isNotNull(assessment.sync_errors);
       assert.match(
         assessment.sync_errors,
-        /listBeforeRelease can only be specified on the main rule/,
+        /listBeforeRelease can only be specified on the defaults/,
       );
     });
   });
@@ -1510,7 +1512,7 @@ describe('Access control syncing', () => {
         assert.isTrue(
           assessment.errors.some((error) =>
             error.includes(
-              'integrations can only be specified on the main rule (the rule without labels)',
+              'integrations can only be specified on the defaults (the first element, without labels)',
             ),
           ),
           'Should have specific error about integrations on non-main rule',
@@ -1684,6 +1686,8 @@ describe('Access control syncing', () => {
   });
 
   describe('Round-trip', () => {
+    const timezone = 'America/Chicago';
+
     it('preserves afterLastDeadline.allowSubmissions without credit on override', async () => {
       const courseData = util.getCourseData();
       const groupName = 'Test Group';
@@ -1763,6 +1767,7 @@ describe('Access control syncing', () => {
 
     it('override dateControl round-trips correctly', async () => {
       const courseData = util.getCourseData();
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
       const groupName = 'Test Group';
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
 
@@ -1783,7 +1788,10 @@ describe('Access control syncing', () => {
       const rules = await selectAccessControlRulesForAssessment(assessment);
       const override = rules.find((r) => r.number > 0);
       assert.isOk(override);
-      assert.deepEqual(override.rule.dateControl?.dueDate, new Date('2024-04-01T23:59:00'));
+      assert.deepEqual(
+        override.rule.dateControl?.dueDate,
+        plainDateTimeStringToDate('2024-04-01T23:59:00', timezone),
+      );
     });
 
     it('explicit null override removals round-trip correctly', async () => {
@@ -1894,6 +1902,7 @@ describe('Access control syncing', () => {
 
     it('only configured fields appear in the round-tripped JSON', async () => {
       const courseData = util.getCourseData();
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
       const mainRule: AccessControlJsonInput = {
         dateControl: {
           releaseDate: '2024-03-14T00:01:00',
@@ -1912,8 +1921,8 @@ describe('Access control syncing', () => {
       assert.isOk(main);
       const dc = main.rule.dateControl;
       assert.isOk(dc);
-      assert.deepEqual(dc.releaseDate, new Date('2024-03-14T00:01:00'));
-      assert.deepEqual(dc.dueDate, new Date('2024-03-21T23:59:00'));
+      assert.deepEqual(dc.releaseDate, plainDateTimeStringToDate('2024-03-14T00:01:00', timezone));
+      assert.deepEqual(dc.dueDate, plainDateTimeStringToDate('2024-03-21T23:59:00', timezone));
       // Fields not in the original JSON should be absent
       assert.isUndefined(dc.durationMinutes);
       assert.isUndefined(dc.password);
@@ -1940,6 +1949,7 @@ describe('Access control syncing', () => {
 
     it('all dateControl fields round-trip correctly', async () => {
       const courseData = util.getCourseData();
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
       const mainRule: AccessControlJsonInput = {
         dateControl: {
           releaseDate: '2024-03-14T00:01:00',
@@ -1969,8 +1979,8 @@ describe('Access control syncing', () => {
       assert.isOk(main);
       const dc = main.rule.dateControl;
       assert.isOk(dc);
-      assert.deepEqual(dc.releaseDate, new Date('2024-03-14T00:01:00'));
-      assert.deepEqual(dc.dueDate, new Date('2024-03-21T23:59:00'));
+      assert.deepEqual(dc.releaseDate, plainDateTimeStringToDate('2024-03-14T00:01:00', timezone));
+      assert.deepEqual(dc.dueDate, plainDateTimeStringToDate('2024-03-21T23:59:00', timezone));
       assert.equal(dc.durationMinutes, 90);
       assert.equal(dc.password, 'secret123');
       assert.equal(dc.earlyDeadlines?.length, 1);
@@ -1983,13 +1993,20 @@ describe('Access control syncing', () => {
       const ac = main.rule.afterComplete;
       assert.isOk(ac);
       assert.equal(ac.hideQuestions, true);
-      assert.deepEqual(ac.showQuestionsAgainDate, new Date('2024-04-01T00:00:00'));
+      assert.deepEqual(
+        ac.showQuestionsAgainDate,
+        plainDateTimeStringToDate('2024-04-01T00:00:00', timezone),
+      );
       assert.equal(ac.hideScore, true);
-      assert.deepEqual(ac.showScoreAgainDate, new Date('2024-04-15T00:00:00'));
+      assert.deepEqual(
+        ac.showScoreAgainDate,
+        plainDateTimeStringToDate('2024-04-15T00:00:00', timezone),
+      );
     });
 
     it('override only includes its own configured fields, not inherited ones', async () => {
       const courseData = util.getCourseData();
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
       const groupName = 'Override Group';
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
 
@@ -2020,7 +2037,7 @@ describe('Access control syncing', () => {
       const dc = override.rule.dateControl;
       assert.isOk(dc);
       // Only dueDate was configured on the override
-      assert.deepEqual(dc.dueDate, new Date('2024-04-01T23:59:00'));
+      assert.deepEqual(dc.dueDate, plainDateTimeStringToDate('2024-04-01T23:59:00', timezone));
       // Fields from the main rule should NOT appear on the override's own JSON
       assert.isUndefined(dc.releaseDate);
       assert.isUndefined(dc.durationMinutes);
@@ -2077,5 +2094,46 @@ describe('Access control syncing', () => {
       assert.isOk(main);
       assert.deepEqual(main.prairietestExams, [{ uuid: TEST_EXAM_UUID, readOnly: true }]);
     });
+  });
+});
+
+describe('cleanAccessControlRulesForDisk', () => {
+  it('omits listBeforeRelease: false and empty objects from output', () => {
+    const rules: AccessControlJsonInput[] = [
+      { listBeforeRelease: false, dateControl: {}, afterComplete: {} },
+    ];
+
+    const cleaned = cleanAccessControlRulesForDisk(rules);
+
+    assert.equal(cleaned.length, 1);
+    assert.notProperty(cleaned[0], 'listBeforeRelease');
+    assert.notProperty(cleaned[0], 'dateControl');
+    assert.notProperty(cleaned[0], 'afterComplete');
+  });
+
+  it('preserves listBeforeRelease: true on the main rule only', () => {
+    const rules: AccessControlJsonInput[] = [
+      makeAccessControlRule({ listBeforeRelease: true }),
+      makeAccessControlRule({ listBeforeRelease: true }),
+    ];
+
+    const cleaned = cleanAccessControlRulesForDisk(rules);
+
+    assert.equal((cleaned[0] as any).listBeforeRelease, true);
+    assert.notProperty(cleaned[1], 'listBeforeRelease');
+  });
+
+  it('includes non-empty dateControl and afterComplete', () => {
+    const rules: AccessControlJsonInput[] = [
+      makeAccessControlRule({
+        dateControl: { dueDate: '2024-04-01T23:59:00' },
+        afterComplete: { hideQuestions: true },
+      }),
+    ];
+
+    const cleaned = cleanAccessControlRulesForDisk(rules);
+
+    assert.deepEqual((cleaned[0] as any).dateControl, { dueDate: '2024-04-01T23:59:00' });
+    assert.deepEqual((cleaned[0] as any).afterComplete, { hideQuestions: true });
   });
 });

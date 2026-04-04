@@ -1,14 +1,13 @@
-import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import { z } from 'zod';
 
 import { getSupportedAuthenticationProviders } from '../../lib/authn-providers.js';
-import { suggestTimezone } from '../../lib/course-request-ai.js';
-import { handleTrpcError } from '../../lib/trpc.js';
+import { suggestTimezone as suggestTimezoneImpl } from '../../lib/course-request-ai.js';
 import { updateInstitutionAuthnProviders } from '../../models/institution-authn-provider.js';
 import { insertInstitution } from '../../models/institution.js';
-import { createContext, requireAdministrator, t } from '../../trpc/administrator/init.js';
 
-const suggestTimezoneQuery = t.procedure
+import { requireAdministrator, t } from './init.js';
+
+const suggestTimezone = t.procedure
   .use(requireAdministrator)
   .input(z.object({ institutionName: z.string(), emailDomain: z.string() }))
   .output(
@@ -18,7 +17,7 @@ const suggestTimezoneQuery = t.procedure
     }),
   )
   .query(async ({ input }) => {
-    const { timezone, reasoning } = await suggestTimezone({
+    const { timezone, reasoning } = await suggestTimezoneImpl({
       emailDomain: input.emailDomain,
       institutionName: input.institutionName,
     });
@@ -60,15 +59,7 @@ const addInstitution = t.procedure
     });
   });
 
-const administratorInstitutionsRouter = t.router({
-  suggestTimezoneQuery,
+export const administratorInstitutionsRouter = t.router({
+  suggestTimezone,
   addInstitution,
-});
-
-export type AdministratorInstitutionsRouter = typeof administratorInstitutionsRouter;
-
-export const administratorInstitutionsTrpcRouter = createExpressMiddleware({
-  router: administratorInstitutionsRouter,
-  createContext,
-  onError: handleTrpcError,
 });

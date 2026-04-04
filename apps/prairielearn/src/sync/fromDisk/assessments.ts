@@ -120,7 +120,7 @@ function getParamsForAssessment(
   // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
   // apply only to students. So, we filter out (and ignore) any access rule with a
   // non-empty role that is not Student.
-  const allowAccess = assessment.allowAccess
+  const allowAccess = (assessment.allowAccess ?? [])
     .filter((accessRule) => accessRule.role == null || accessRule.role === 'Student')
     .map((accessRule, index) => {
       return {
@@ -437,10 +437,7 @@ function getParamsForAssessment(
     has_roles: groupRoles.length > 0,
     json_can_view: groups.rolePermissions.canView,
     json_can_submit: groups.rolePermissions.canSubmit,
-    modern_access_control:
-      enhancedAccessControlEnabled &&
-      allowAccess.length === 0 &&
-      (assessment.accessControl?.length ?? 0) > 0,
+    modern_access_control: enhancedAccessControlEnabled && assessment.allowAccess == null,
     allowAccess,
     zones,
     alternativePools,
@@ -519,7 +516,7 @@ export async function sync(
     const uuidAssessmentMap = new Map<string, string[]>();
     Object.entries(assessments).forEach(([tid, assessment]) => {
       if (!assessment.data) return;
-      assessment.data.allowAccess.forEach((allowAccess) => {
+      assessment.data.allowAccess?.forEach((allowAccess) => {
         const { examUuid } = allowAccess;
         if (examUuid) {
           examUuids.add(examUuid);
