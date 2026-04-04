@@ -591,9 +591,24 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     a_tru = []
     if result in ["correct", "incorrect"]:
         if name not in data["correct_answers"]:
-            # No correct answer defined. Generate a dummy answer so the submission is still gradable.
-            # Drawings have no simple correct/incorrect distinction without a reference answer.
-            a_tru = []
+            # No correct answer defined. Submit a point in the center of the
+            # canvas so parse() sees a non-empty list instead of rejecting a
+            # blank submission.
+            width = pl.get_integer_attrib(
+                element, "width", defaults.element_defaults["width"]
+            )
+            height = pl.get_integer_attrib(
+                element, "height", defaults.element_defaults["height"]
+            )
+            a_tru = [
+                {
+                    "id": "dummy",
+                    "gradingName": "pl-point",
+                    "graded": False,
+                    "left": width / 2,
+                    "top": height / 2,
+                }
+            ]
         else:
             a_tru = data["correct_answers"][name]
 
