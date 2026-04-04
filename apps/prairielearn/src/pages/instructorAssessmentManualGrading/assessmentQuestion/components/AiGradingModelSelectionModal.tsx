@@ -8,6 +8,7 @@ import {
   AI_GRADING_MODELS,
   AI_GRADING_PROVIDER_DISPLAY_NAMES,
   AI_GRADING_PROVIDER_SUBLABELS,
+  AI_GRADING_RELATIVE_COSTS,
   type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
 } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
@@ -25,18 +26,6 @@ function getSelection(
 ): 'all' | 'human_graded' | string[] {
   if (state.type === 'selected') return state.ids;
   return state.type;
-}
-
-function getTitle(state: AiGradingModelSelectionModalState): string {
-  if (!state) return 'AI grading';
-  switch (state.type) {
-    case 'all':
-      return 'AI grading';
-    case 'human_graded':
-      return 'AI grading';
-    case 'selected':
-      return 'AI grading';
-  }
 }
 
 /**
@@ -60,131 +49,101 @@ function getDefaultModel(
   return DEFAULT_AI_GRADING_MODEL;
 }
 
-function ProviderSelector({
-  activeProvider,
-  availableProviders,
-  onSelect,
-}: {
-  activeProvider: EnumAiGradingProvider;
-  availableProviders: EnumAiGradingProvider[];
-  onSelect: (provider: EnumAiGradingProvider) => void;
-}) {
-  const providers = Object.keys(AI_GRADING_PROVIDER_DISPLAY_NAMES) as EnumAiGradingProvider[];
+const PROVIDER_ORDER: EnumAiGradingProvider[] = ['openai', 'google', 'anthropic'];
 
-  return (
-    <>
-      <div className="text-muted small fw-semibold mb-2">Provider</div>
-      <div className="row g-2">
-        {providers.map((provider) => {
-          const isActive = activeProvider === provider;
-          const isAvailable = availableProviders.includes(provider);
-          const providerOption = (
-            <label
-              className={clsx('border rounded-3 px-3 py-2 h-100 d-block mb-0', {
-                'border-primary bg-primary bg-opacity-10': isActive,
-                'opacity-50': !isAvailable,
-              })}
-              style={{ cursor: isAvailable ? 'pointer' : 'default' }}
-            >
-              <input
-                type="radio"
-                name="ai-grading-provider"
-                className="visually-hidden"
-                checked={isActive}
-                disabled={!isAvailable}
-                onChange={() => onSelect(provider)}
-              />
-              <div className={clsx('fw-semibold', { 'text-primary': isActive })}>
-                {AI_GRADING_PROVIDER_DISPLAY_NAMES[provider]}
-              </div>
-              <div className="text-muted small">{AI_GRADING_PROVIDER_SUBLABELS[provider]}</div>
-            </label>
-          );
-
-          return (
-            <div key={provider} className="col-12 col-md-4">
-              {isAvailable ? (
-                providerOption
-              ) : (
-                <OverlayTrigger
-                  placement="top"
-                  tooltip={{
-                    props: { id: `provider-tooltip-${provider}` },
-                    body: 'No API key configured',
-                  }}
-                >
-                  {providerOption}
-                </OverlayTrigger>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </>
-  );
-}
-
-function ModelSelector({
-  activeProvider,
+function ModelList({
   selectedModel,
   availableProviders,
   onSelect,
 }: {
-  activeProvider: EnumAiGradingProvider;
   selectedModel: AiGradingModelId;
   availableProviders: EnumAiGradingProvider[];
   onSelect: (modelId: AiGradingModelId) => void;
 }) {
-  const providerModels = AI_GRADING_MODELS.filter((m) => m.provider === activeProvider);
+  const modelsByProvider = PROVIDER_ORDER.map((provider) => ({
+    provider,
+    models: AI_GRADING_MODELS.filter((m) => m.provider === provider),
+  }));
 
   return (
-    <>
-      <div className="d-flex align-items-center justify-content-between mt-3 mb-2">
-        <div className="text-muted small fw-semibold">Model</div>
-      </div>
-      <div className="d-flex flex-column gap-2">
-        {providerModels.map((model) => {
-          const isSelected = selectedModel === model.modelId;
-          const isAvailable = availableProviders.includes(model.provider);
+    <div className="d-flex flex-column gap-3">
+      {modelsByProvider.map(({ provider, models }) => (
+        <div key={provider} className="d-flex flex-column gap-2">
+          <div className="d-flex justify-content-between align-items-baseline">
+            <div>
+              <span className="fw-semibold fs-5">
+                {AI_GRADING_PROVIDER_DISPLAY_NAMES[provider]}
+              </span>
+              <span className="text-muted ms-2">{AI_GRADING_PROVIDER_SUBLABELS[provider]}</span>
+            </div>
+            <span className="text-muted small">
+              Relative cost{' '}
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  props: { id: `cost-tooltip-${provider}` },
+                  body: 'Relative cost compared to the least expensive model, based on standard token usage.',
+                }}
+              >
+                <i className="bi bi-question-circle" aria-hidden="true" />
+              </OverlayTrigger>
+            </span>
+          </div>
+          {models.map((model) => {
+            const isSelected = selectedModel === model.modelId;
+            const isAvailable = availableProviders.includes(model.provider);
 
-          return (
-            <label
-              key={model.modelId}
-              htmlFor={`model-${model.modelId}`}
-              className={clsx('border rounded-3 px-3 py-2 mb-0', {
-                'border-primary bg-primary bg-opacity-10': isSelected,
-                'opacity-50': !isAvailable,
-              })}
-              style={{ cursor: isAvailable ? 'pointer' : 'default' }}
-            >
-              <div className="d-flex align-items-center justify-content-between flex-wrap gap-1">
-                <Form.Check
-                  type="radio"
-                  id={`model-${model.modelId}`}
-                  name="ai-grading-model"
-                  className="mb-0"
-                  disabled={!isAvailable}
-                  checked={isSelected}
-                  label={
-                    <>
-                      <span className="fw-semibold">{model.name}</span>
-                      <span className="text-muted ms-2 small d-none d-sm-inline">
-                        {model.sublabel}
-                      </span>
-                    </>
-                  }
-                  onChange={() => onSelect(model.modelId)}
-                />
-              </div>
-              {/* Sublabel shown below on mobile only, aligned with the radio label text */}
-              <div className="text-muted small d-sm-none" style={{ paddingLeft: '1.75em' }}>
-                {model.sublabel}
-              </div>
-            </label>
-          );
-        })}
-      </div>
-    </>
+            const modelOption = (
+              <label
+                key={model.modelId}
+                htmlFor={`model-${model.modelId}`}
+                className={clsx('border rounded-3 px-3 py-2 mb-0', {
+                  'border-primary bg-primary bg-opacity-10': isSelected,
+                  'opacity-50': !isAvailable,
+                })}
+                style={{ cursor: isAvailable ? 'pointer' : 'default' }}
+              >
+                <div className="d-flex align-items-start justify-content-between gap-1">
+                  <Form.Check
+                    type="radio"
+                    id={`model-${model.modelId}`}
+                    name="ai-grading-model"
+                    className="mb-0"
+                    disabled={!isAvailable}
+                    checked={isSelected}
+                    label={
+                      <div>
+                        <span className="fw-semibold">{model.name}</span>
+                        <div className="text-muted small">{model.sublabel}</div>
+                      </div>
+                    }
+                    onChange={() => onSelect(model.modelId)}
+                  />
+                  <span className="text-muted small text-nowrap mt-1">
+                    {AI_GRADING_RELATIVE_COSTS[model.modelId]}
+                  </span>
+                </div>
+              </label>
+            );
+
+            return isAvailable ? (
+              modelOption
+            ) : (
+              <OverlayTrigger
+                key={model.modelId}
+                placement="top"
+                tooltip={{
+                  props: { id: `model-tooltip-${model.modelId}` },
+                  body: 'No API key configured for this provider',
+                }}
+              >
+                {modelOption}
+              </OverlayTrigger>
+            );
+          })}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -206,26 +165,11 @@ export function AiGradingModelSelectionModal({
   const defaultModel = getDefaultModel(aiGradingLastSelectedModel, availableProviders);
   const [selectedModel, setSelectedModel] = useState<AiGradingModelId>(defaultModel);
 
-  const defaultProvider =
-    AI_GRADING_MODELS.find((m) => m.modelId === defaultModel)?.provider ?? 'openai';
-  const [activeProvider, setActiveProvider] = useState<EnumAiGradingProvider>(defaultProvider);
-
-  const handleProviderSelect = useCallback((provider: EnumAiGradingProvider) => {
-    setActiveProvider(provider);
-    // Auto-select the first model from the new provider so selectedModel
-    // always belongs to the active provider.
-    const firstModelForProvider = AI_GRADING_MODELS.find((m) => m.provider === provider);
-    if (firstModelForProvider) {
-      setSelectedModel(firstModelForProvider.modelId);
-    }
-  }, []);
-
   const handleClose = useCallback(() => {
     setSelectedModel(defaultModel);
-    setActiveProvider(defaultProvider);
     mutation.reset();
     onHide();
-  }, [onHide, mutation, defaultModel, defaultProvider]);
+  }, [onHide, mutation, defaultModel]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -248,8 +192,6 @@ export function AiGradingModelSelectionModal({
     [modalState, selectedModel, mutation, onSuccess, onHide],
   );
 
-  const numToGrade = modalState?.numToGrade ?? 0;
-
   const isSelectedModelAvailable = availableProviders.includes(
     AI_GRADING_MODELS.find((m) => m.modelId === selectedModel)!.provider,
   );
@@ -264,28 +206,15 @@ export function AiGradingModelSelectionModal({
     >
       <form onSubmit={handleSubmit}>
         <Modal.Header closeButton>
-          <Modal.Title>{getTitle(modalState)}</Modal.Title>
+          <Modal.Title>Select grading model</Modal.Title>
         </Modal.Header>
 
         <Modal.Body>
-          <ProviderSelector
-            activeProvider={activeProvider}
-            availableProviders={availableProviders}
-            onSelect={handleProviderSelect}
-          />
-
-          <ModelSelector
-            activeProvider={activeProvider}
+          <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}
             onSelect={setSelectedModel}
           />
-
-          {numToGrade > 0 && (
-            <div className="text-muted small mt-3">
-              {numToGrade} {numToGrade === 1 ? 'submission' : 'submissions'} will be graded.
-            </div>
-          )}
         </Modal.Body>
 
         <Modal.Footer>
@@ -304,7 +233,11 @@ export function AiGradingModelSelectionModal({
                 disabled={mutation.isPending || !isSelectedModelAvailable}
                 type="submit"
               >
-                {mutation.isPending ? 'Submitting...' : 'Grade submissions'}
+                {mutation.isPending
+                  ? 'Submitting...'
+                  : modalState
+                    ? `Grade ${modalState.numToGrade} ${modalState.numToGrade === 1 ? 'submission' : 'submissions'}`
+                    : 'Grade submissions'}
               </Button>
             </div>
             <small className="text-muted my-0 text-end d-block">
