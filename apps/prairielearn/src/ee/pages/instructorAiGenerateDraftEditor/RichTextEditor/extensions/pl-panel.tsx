@@ -55,6 +55,7 @@ export const PlPanel = Node.create({
   },
 
   addNodeView() {
+    // eslint-disable-next-line @eslint-react/component-hook-factories -- TipTap extension pattern
     const PlPanelComponent = (
       props: ReactNodeViewProps<HTMLDivElement> & {
         node: ReactNodeViewProps<HTMLDivElement>['node'] & {
