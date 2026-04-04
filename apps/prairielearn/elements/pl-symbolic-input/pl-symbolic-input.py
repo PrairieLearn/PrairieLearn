@@ -916,30 +916,36 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
     if result in ["correct", "incorrect"]:
         if name not in data["correct_answers"]:
-            # This element cannot test itself. Defer the generation of test inputs to server.py
-            return
-
-        # Get raw correct answer
-        a_tru = data["correct_answers"][name]
-
-        # Parse correct answer based on type
-        if isinstance(a_tru, str):
-            if a_tru != "":
-                a_tru = psu.convert_string_to_sympy(
-                    a_tru,
-                    variables,
-                    allow_complex=allow_complex,
-                    allow_trig_functions=allow_trig,
-                    custom_functions=custom_functions,
-                )
+            # No correct answer defined. Generate a dummy answer so the submission is still gradable.
+            if pl.has_attrib(element, "correct-answer"):
+                a_tru_str = pl.get_string_attrib(element, "correct-answer")
+            elif variables:
+                var = variables[0]
+                a_tru_str = var if result == "correct" else f"-{var}"
+            else:
+                a_tru_str = "x" if result == "correct" else "-x"
         else:
-            a_tru = psu.json_to_sympy(
-                a_tru, allow_complex=allow_complex, allow_trig_functions=allow_trig
-            )
+            # Get raw correct answer
+            a_tru = data["correct_answers"][name]
 
-        if a_tru != "":
-            # Substitute in imaginary unit symbol
-            a_tru_str = str(_replace_imaginary_for_display(a_tru, imaginary_unit))
+            # Parse correct answer based on type
+            if isinstance(a_tru, str):
+                if a_tru != "":
+                    a_tru = psu.convert_string_to_sympy(
+                        a_tru,
+                        variables,
+                        allow_complex=allow_complex,
+                        allow_trig_functions=allow_trig,
+                        custom_functions=custom_functions,
+                    )
+            else:
+                a_tru = psu.json_to_sympy(
+                    a_tru, allow_complex=allow_complex, allow_trig_functions=allow_trig
+                )
+
+            if a_tru != "":
+                # Substitute in imaginary unit symbol
+                a_tru_str = str(_replace_imaginary_for_display(a_tru, imaginary_unit))
 
     if result == "correct":
         if a_tru_str == "":

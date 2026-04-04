@@ -322,8 +322,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     a_tru = None
 
     if result in ["correct", "incorrect"] and name not in data["correct_answers"]:
-        # This element cannot test itself. Defer the generation of test inputs to server.py
-        return
+        # No correct answer defined. Generate a dummy answer so the submission is still gradable.
+        variable = pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT) or "n"
+        a_tru = f"999 * {variable}" if result == "correct" else f"-999 * {variable}"
     elif result in ["correct", "incorrect"]:
         # Get raw correct answer
         a_tru = data["correct_answers"][name]
