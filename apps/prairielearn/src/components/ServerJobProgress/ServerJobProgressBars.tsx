@@ -82,14 +82,7 @@ export function ServerJobsProgressInfo({
             failed: jobProgress.job_failure_message ?? statusTextSafe.failed,
           }}
           itemNames={itemNames}
-          costInfo={
-            jobProgress.total_cost_milli_dollars != null
-              ? {
-                  totalCostMilliDollars: jobProgress.total_cost_milli_dollars,
-                  numSuccessfullyGraded: jobProgress.num_successfully_graded ?? 0,
-                }
-              : undefined
-          }
+          totalCostMilliDollars={jobProgress.total_cost_milli_dollars}
           onDismissCompleteJobSequence={onDismissCompleteJobSequence}
         />
       ))}
@@ -120,9 +113,7 @@ export function ServerJobsProgressInfo({
  * @param params.statusText.complete Text for completed jobs.
  * @param params.statusText.failed Text for failed jobs.
  *
- * @param params.costInfo Optional cost information for AI grading jobs.
- * @param params.costInfo.totalCostMilliDollars Total cost accumulated in milli-dollars.
- * @param params.costInfo.numSuccessfullyGraded Number of submissions that contributed to the cost.
+ * @param params.totalCostMilliDollars Optional running total cost in milli-dollars for the job.
  *
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
  */
@@ -133,7 +124,7 @@ function ServerJobProgressInfo({
   nums,
   statusIcons,
   statusText,
-  costInfo,
+  totalCostMilliDollars,
   onDismissCompleteJobSequence,
 }: {
   jobSequenceId: string;
@@ -154,10 +145,7 @@ function ServerJobProgressInfo({
     complete: string;
     failed: string;
   };
-  costInfo?: {
-    totalCostMilliDollars: number;
-    numSuccessfullyGraded: number;
-  };
+  totalCostMilliDollars?: number;
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
 }) {
   const jobStatus = useMemo(() => {
@@ -193,12 +181,10 @@ function ServerJobProgressInfo({
   const successCount = nums.complete - nums.failed;
 
   const perSubmissionLabel = useMemo(() => {
-    if (!costInfo || costInfo.numSuccessfullyGraded <= 0) return null;
-    const avg = formatMilliDollars(
-      Math.round(costInfo.totalCostMilliDollars / costInfo.numSuccessfullyGraded),
-    );
+    if (totalCostMilliDollars == null || successCount <= 0) return null;
+    const avg = formatMilliDollars(Math.round(totalCostMilliDollars / successCount));
     return `${avg.startsWith('<') ? avg : `~${avg}`}/submission`;
-  }, [costInfo]);
+  }, [totalCostMilliDollars, successCount]);
 
   const progressLabel = useMemo(() => {
     switch (jobStatus) {
@@ -245,7 +231,7 @@ function ServerJobProgressInfo({
         <div className="d-flex flex-wrap align-items-center gap-2 flex-shrink-0 small">
           <span className="text-body-secondary">{progressLabel}</span>
 
-          {costInfo && (
+          {totalCostMilliDollars != null && (
             <>
               <span className="text-body-secondary opacity-50" aria-hidden="true">
                 &middot;
@@ -259,7 +245,7 @@ function ServerJobProgressInfo({
                 </>
               )}
               <span className="text-body-secondary fw-medium">
-                Total: {formatMilliDollars(costInfo.totalCostMilliDollars)}
+                Total: {formatMilliDollars(totalCostMilliDollars)}
               </span>
             </>
           )}

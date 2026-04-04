@@ -36,15 +36,9 @@ export const JobProgressSchema = z.object({
   job_failure_message: z.string().optional(),
   item_statuses: z.record(z.string(), JobItemStatusEnum).optional(),
   /**
-   * Running total cost in milli-dollars for AI grading jobs.
-   * Only present when cost tracking is enabled (platform API keys).
+   * Running total cost in milli-dollars for the server job.
    */
   total_cost_milli_dollars: z.number().nonnegative().optional(),
-  /**
-   * Number of submissions that were successfully graded and contributed to the total cost.
-   * Used to compute average cost per submission on the frontend.
-   */
-  num_successfully_graded: z.number().int().nonnegative().optional(),
 });
 
 export type JobProgress = z.infer<typeof JobProgressSchema>;

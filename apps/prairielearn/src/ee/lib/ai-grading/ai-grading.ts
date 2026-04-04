@@ -1078,7 +1078,6 @@ export async function aiGrade({
     let num_complete = 0;
     let num_failed = 0;
     let total_cost_milli_dollars = 0;
-    let num_successfully_graded = 0;
 
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
     const instance_question_grading_successes = await async.mapLimit(
@@ -1102,9 +1101,7 @@ export async function aiGrade({
           },
         };
 
-        const costFields = trackRateLimitAndCost
-          ? { total_cost_milli_dollars, num_successfully_graded }
-          : {};
+        const costFields = trackRateLimitAndCost ? { total_cost_milli_dollars } : {};
 
         try {
           item_statuses[instance_question.id] = JobItemStatus.in_progress;
@@ -1126,7 +1123,6 @@ export async function aiGrade({
 
           if (gradingResult.success) {
             total_cost_milli_dollars += gradingResult.costMilliDollars;
-            num_successfully_graded += 1;
           } else {
             num_failed += 1;
           }
@@ -1146,7 +1142,7 @@ export async function aiGrade({
             num_total: instance_questions.length,
             item_statuses,
             job_failure_message: rateLimitExceeded ? HOURLY_USAGE_CAP_REACHED_MESSAGE : undefined,
-            ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_successfully_graded } : {}),
+            ...(trackRateLimitAndCost ? { total_cost_milli_dollars } : {}),
           });
           for (const log of logs) {
             switch (log.messageType) {

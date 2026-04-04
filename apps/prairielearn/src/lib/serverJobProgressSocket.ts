@@ -88,7 +88,6 @@ function connection(socket: Socket) {
       job_failure_message: progressData.job_failure_message,
       item_statuses: progressData.item_statuses,
       total_cost_milli_dollars: progressData.total_cost_milli_dollars,
-      num_successfully_graded: progressData.num_successfully_graded,
     } satisfies ProgressUpdateMessage);
   });
 }
