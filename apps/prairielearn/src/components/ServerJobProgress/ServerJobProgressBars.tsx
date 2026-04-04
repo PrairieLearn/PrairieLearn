@@ -189,38 +189,29 @@ function ServerJobProgressInfo({
     };
   }, [statusText, statusIcons, jobStatus]);
 
-  const progressSegments = useMemo(() => {
-    const segments: string[] = [];
+  const progressPercent = nums.total !== 0 ? (nums.complete / nums.total) * 100 : 0;
+  const successCount = nums.complete - nums.failed;
 
-    // Progress count
+  const perSubmissionLabel = useMemo(() => {
+    if (!costInfo || costInfo.numSuccessfullyGraded <= 0) return null;
+    const avg = formatMilliDollars(
+      Math.round(costInfo.totalCostMilliDollars / costInfo.numSuccessfullyGraded),
+    );
+    return `${avg.startsWith('<') ? avg : `~${avg}`}/submission`;
+  }, [costInfo]);
+
+  const progressLabel = useMemo(() => {
     switch (jobStatus) {
       case 'inProgress': {
         const failedSuffix = nums.failed > 0 ? ` (${nums.failed} failed)` : '';
-        segments.push(`${nums.complete}/${nums.total} ${itemNames}${failedSuffix}`);
-        break;
+        return `${nums.complete}/${nums.total} ${itemNames}${failedSuffix}`;
       }
       case 'failed':
-        segments.push(
-          `${nums.total - nums.failed}/${nums.total} ${itemNames} (${nums.failed} failed)`,
-        );
-        break;
+        return `${successCount}/${nums.total} ${itemNames} (${nums.failed} failed)`;
       case 'complete':
-        segments.push(`${nums.total} ${itemNames}`);
-        break;
+        return `${nums.total} ${itemNames}`;
     }
-
-    // Cost info (only when present)
-    if (costInfo) {
-      if (costInfo.numSuccessfullyGraded > 0) {
-        segments.push(
-          `Avg: ${formatMilliDollars(Math.round(costInfo.totalCostMilliDollars / costInfo.numSuccessfullyGraded))}/submission`,
-        );
-      }
-      segments.push(`Total: ${formatMilliDollars(costInfo.totalCostMilliDollars)}`);
-    }
-
-    return segments;
-  }, [jobStatus, nums, itemNames, costInfo]);
+  }, [jobStatus, nums, itemNames, successCount]);
 
   return (
     <Alert
@@ -229,49 +220,61 @@ function ServerJobProgressInfo({
       dismissible={jobStatus === 'complete' || jobStatus === 'failed'}
       onClose={() => onDismissCompleteJobSequence(jobSequenceId)}
     >
-      <div className="d-flex flex-column flex-lg-row align-items-lg-center gap-2 gap-lg-3">
-        <div className="d-flex align-items-center gap-2">
+      <div className="d-flex flex-wrap align-items-center gap-2 gap-lg-3">
+        <div className="d-flex align-items-center gap-2 flex-shrink-0">
           <i className={`bi ${icon} fs-5`} aria-hidden="true" />
           <strong>{text}</strong>
         </div>
 
-        {jobStatus === 'inProgress' ? (
-          <div className="flex-grow-1">
-            <ProgressBar
-              now={
-                nums.total !== 0 // Prevent division by 0
-                  ? (nums.complete / nums.total) * 100
-                  : 0
-              }
-              variant="primary"
-              striped
-              animated
-            />
+        {jobStatus === 'inProgress' && (
+          <div className="flex-grow-1" style={{ flexBasis: '6rem' }}>
+            <ProgressBar style={{ height: '0.5rem' }}>
+              <ProgressBar
+                key="success"
+                now={progressPercent - (nums.total !== 0 ? (nums.failed / nums.total) * 100 : 0)}
+                variant="primary"
+                animated
+              />
+              {nums.failed > 0 && (
+                <ProgressBar key="failed" now={(nums.failed / nums.total) * 100} variant="danger" />
+              )}
+            </ProgressBar>
           </div>
-        ) : (
-          <></>
         )}
 
-        <div className="d-flex flex-wrap align-items-center gap-0">
-          {progressSegments.map((segment, i) => (
-            <span key={segment} className="text-muted small">
-              {i > 0 ? (
-                <span className="mx-2" aria-hidden="true">
-                  |
-                </span>
-              ) : null}
-              {segment}
-            </span>
-          ))}
-          <span className="mx-2 text-muted small" aria-hidden="true">|</span>
+        <div className="d-flex flex-wrap align-items-center gap-2 flex-shrink-0 small">
+          <span className="text-body-secondary">{progressLabel}</span>
+
+          {costInfo && (
+            <>
+              <span className="text-body-secondary opacity-50" aria-hidden="true">
+                &middot;
+              </span>
+              {perSubmissionLabel && (
+                <>
+                  <span className="text-body-secondary">{perSubmissionLabel}</span>
+                  <span className="text-body-secondary opacity-50" aria-hidden="true">
+                    &middot;
+                  </span>
+                </>
+              )}
+              <span className="text-body-secondary fw-medium">
+                Total: {formatMilliDollars(costInfo.totalCostMilliDollars)}
+              </span>
+            </>
+          )}
+
+          <span className="text-body-secondary opacity-50" aria-hidden="true">
+            &middot;
+          </span>
           <a
             href={getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId)}
-            className="text-decoration-none small"
+            className="text-decoration-none"
             target="_blank"
             rel="noreferrer"
             aria-label="View job logs"
           >
-            View logs
+            View logs <i className="bi bi-box-arrow-up-right" style={{ fontSize: '0.7em' }} />
           </a>
         </div>
       </div>
