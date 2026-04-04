@@ -83,6 +83,7 @@ export function ServerJobsProgressInfo({
           }}
           itemNames={itemNames}
           totalCostMilliDollars={jobProgress.total_cost_milli_dollars}
+          numItemsIncurredCost={jobProgress.num_items_incurred_cost}
           onDismissCompleteJobSequence={onDismissCompleteJobSequence}
         />
       ))}
@@ -114,6 +115,7 @@ export function ServerJobsProgressInfo({
  * @param params.statusText.failed Text for failed jobs.
  *
  * @param params.totalCostMilliDollars Optional running total cost in milli-dollars for the job.
+ * @param params.numItemsIncurredCost Optional number of items that incurred cost.
  *
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
  */
@@ -125,6 +127,7 @@ function ServerJobProgressInfo({
   statusIcons,
   statusText,
   totalCostMilliDollars,
+  numItemsIncurredCost,
   onDismissCompleteJobSequence,
 }: {
   jobSequenceId: string;
@@ -146,6 +149,7 @@ function ServerJobProgressInfo({
     failed: string;
   };
   totalCostMilliDollars?: number;
+  numItemsIncurredCost?: number;
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
 }) {
   const jobStatus = useMemo(() => {
@@ -181,10 +185,16 @@ function ServerJobProgressInfo({
   const successCount = nums.complete - nums.failed;
 
   const perSubmissionLabel = useMemo(() => {
-    if (totalCostMilliDollars == null || successCount <= 0) return null;
-    const avg = formatMilliDollars(Math.round(totalCostMilliDollars / successCount));
+    if (
+      totalCostMilliDollars == null ||
+      numItemsIncurredCost == null ||
+      numItemsIncurredCost <= 0
+    ) {
+      return null;
+    }
+    const avg = formatMilliDollars(Math.round(totalCostMilliDollars / numItemsIncurredCost));
     return `${avg.startsWith('<') ? avg : `~${avg}`}/submission`;
-  }, [totalCostMilliDollars, successCount]);
+  }, [totalCostMilliDollars, numItemsIncurredCost]);
 
   const progressLabel = useMemo(() => {
     switch (jobStatus) {

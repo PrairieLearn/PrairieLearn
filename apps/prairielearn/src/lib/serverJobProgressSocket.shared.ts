@@ -36,9 +36,19 @@ export const JobProgressSchema = z.object({
   job_failure_message: z.string().optional(),
   item_statuses: z.record(z.string(), JobItemStatusEnum).optional(),
   /**
-   * Running total cost in milli-dollars for the server job.
+   * Optional cost tracking for the server job. When `total_cost_milli_dollars`
+   * is present, the total cost is displayed. When `num_items_incurred_cost` is
+   * also present, an average cost per item is displayed alongside the total.
+   *
+   * Both fields are optional so that non-cost-tracking jobs are unaffected.
    */
   total_cost_milli_dollars: z.number().nonnegative().optional(),
+  /**
+   * Number of items that incurred cost. This may differ from `num_complete`
+   * because some items may fail before incurring cost, or may incur cost
+   * even if they ultimately fail (e.g. an API call succeeds but persistence fails).
+   */
+  num_items_incurred_cost: z.number().int().nonnegative().optional(),
 });
 
 export type JobProgress = z.infer<typeof JobProgressSchema>;
