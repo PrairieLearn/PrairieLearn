@@ -90,26 +90,21 @@ export function createColumns({
   onEditPointsConflict,
   scrollRef,
 }: CreateColumnsParams) {
-  const PointsCell = ({
-    row,
-    field,
-  }: {
-    row: InstanceQuestionRow;
-    field: 'manual_points' | 'auto_points' | 'points';
-  }) => {
-    return (
-      <PointsWithEditButton
-        row={row}
-        field={field}
-        hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
-        urlPrefix={urlPrefix}
-        csrfToken={csrfToken}
-        scrollRef={scrollRef}
-        onSuccess={onEditPointsSuccess}
-        onConflict={onEditPointsConflict}
-      />
-    );
-  };
+  const renderPointsCell = (
+    row: InstanceQuestionRow,
+    field: 'manual_points' | 'auto_points' | 'points',
+  ) => (
+    <PointsWithEditButton
+      row={row}
+      field={field}
+      hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+      urlPrefix={urlPrefix}
+      csrfToken={csrfToken}
+      scrollRef={scrollRef}
+      onSuccess={onEditPointsSuccess}
+      onConflict={onEditPointsConflict}
+    />
+  );
 
   return [
     columnHelper.display({
@@ -296,7 +291,7 @@ export function createColumns({
     columnHelper.accessor((row) => row.instance_question.auto_points, {
       id: 'auto_points',
       header: 'Auto points',
-      cell: (info) => <PointsCell row={info.row.original} field="auto_points" />,
+      cell: (info) => renderPointsCell(info.row.original, 'auto_points'),
       filterFn: numericColumnFilterFn,
       enableHiding: (assessmentQuestion.max_auto_points ?? 0) > 0,
     }),
@@ -304,7 +299,7 @@ export function createColumns({
     columnHelper.accessor((row) => row.instance_question.manual_points, {
       id: 'manual_points',
       header: 'Manual points',
-      cell: (info) => <PointsCell row={info.row.original} field="manual_points" />,
+      cell: (info) => renderPointsCell(info.row.original, 'manual_points'),
       filterFn: numericColumnFilterFn,
       meta: {
         autoSize: true,
@@ -314,7 +309,7 @@ export function createColumns({
     columnHelper.accessor((row) => row.instance_question.points, {
       id: 'points',
       header: 'Total points',
-      cell: (info) => <PointsCell row={info.row.original} field="points" />,
+      cell: (info) => renderPointsCell(info.row.original, 'points'),
       filterFn: numericColumnFilterFn,
     }),
 
