@@ -585,6 +585,11 @@ export const ConfigSchema = z.object({
    * for instructor credit purchases.
    */
   stripeAiGradingCreditsProductId: z.string().nullable().default(null),
+  /**
+   * Whether Stripe AI grading credit refunds are enabled. When disabled,
+   * refund buttons are hidden and the server rejects all refund requests.
+   */
+  stripeAiGradingCreditsRefundsEnabled: z.boolean().default(false),
   aiGradingOpenAiApiKey: z.string().nullable().default(null),
   aiGradingOpenAiOrganization: z.string().nullable().default(null),
   aiQuestionGenerationOpenAiApiKey: z.string().nullable().default(null),

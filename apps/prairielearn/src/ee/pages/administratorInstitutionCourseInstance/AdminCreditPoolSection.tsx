@@ -15,12 +15,14 @@ export function AdminCreditPoolSection({
   isDeleted,
   maxAddDollars,
   maxDeductDollars,
+  refundsEnabled,
 }: {
   trpcCsrfToken: string;
   useCustomApiKeys: boolean;
   isDeleted: boolean;
   maxAddDollars: number;
   maxDeductDollars: number;
+  refundsEnabled: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => createAdminCreditPoolTrpcClient(trpcCsrfToken));
@@ -33,6 +35,7 @@ export function AdminCreditPoolSection({
           isDeleted={isDeleted}
           maxAddDollars={maxAddDollars}
           maxDeductDollars={maxDeductDollars}
+          refundsEnabled={refundsEnabled}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -46,11 +49,13 @@ function AdminCreditPoolContent({
   isDeleted,
   maxAddDollars,
   maxDeductDollars,
+  refundsEnabled,
 }: {
   useCustomApiKeys: boolean;
   isDeleted: boolean;
   maxAddDollars: number;
   maxDeductDollars: number;
+  refundsEnabled: boolean;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -102,7 +107,7 @@ function AdminCreditPoolContent({
           </>
         }
         isRefunding={refundMutation.isPending}
-        showRefundActions
+        showRefundActions={refundsEnabled}
         onRefund={(checkoutSessionId) =>
           refundMutation.mutate({ checkout_session_id: checkoutSessionId })
         }

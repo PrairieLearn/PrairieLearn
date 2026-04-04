@@ -80,6 +80,11 @@ const refundCreditPurchaseMutation = t.procedure
   .use(requireAiGradingFeature)
   .input(z.object({ checkout_session_id: IdSchema }))
   .mutation(async (opts) => {
+    if (!config.stripeAiGradingCreditsRefundsEnabled) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+      });
+    }
     await refundCreditPurchase({
       checkout_session_id: opts.input.checkout_session_id,
       course_instance_id: opts.ctx.course_instance.id,
