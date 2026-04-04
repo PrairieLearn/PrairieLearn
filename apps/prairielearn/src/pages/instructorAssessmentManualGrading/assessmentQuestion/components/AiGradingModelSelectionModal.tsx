@@ -8,7 +8,6 @@ import {
   AI_GRADING_MODELS,
   AI_GRADING_PROVIDER_DISPLAY_NAMES,
   AI_GRADING_PROVIDER_SUBLABELS,
-  AI_GRADING_RELATIVE_COSTS,
   type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
 } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
@@ -54,10 +53,12 @@ const PROVIDER_ORDER: EnumAiGradingProvider[] = ['openai', 'google', 'anthropic'
 function ModelList({
   selectedModel,
   availableProviders,
+  relativeCosts,
   onSelect,
 }: {
   selectedModel: AiGradingModelId;
   availableProviders: EnumAiGradingProvider[];
+  relativeCosts: Record<string, string>;
   onSelect: (modelId: AiGradingModelId) => void;
 }) {
   const modelsByProvider = PROVIDER_ORDER.map((provider) => ({
@@ -124,7 +125,7 @@ function ModelList({
                       onChange={() => onSelect(model.modelId)}
                     />
                     <span className="text-muted small text-nowrap ms-3">
-                      {AI_GRADING_RELATIVE_COSTS[model.modelId]}
+                      {relativeCosts[model.modelId]}
                     </span>
                   </div>
                 </label>
@@ -157,6 +158,7 @@ export function AiGradingModelSelectionModal({
   mutation,
   availableProviders,
   aiGradingLastSelectedModel,
+  relativeCosts,
   onSuccess,
   onHide,
 }: {
@@ -164,6 +166,7 @@ export function AiGradingModelSelectionModal({
   mutation: ReturnType<typeof useManualGradingActions>['gradeSubmissionsMutation'];
   availableProviders: EnumAiGradingProvider[];
   aiGradingLastSelectedModel: string | null;
+  relativeCosts: Record<string, string>;
   onSuccess: (data: { job_sequence_id: string; job_sequence_token: string }) => void;
   onHide: () => void;
 }) {
@@ -218,6 +221,7 @@ export function AiGradingModelSelectionModal({
           <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}
+            relativeCosts={relativeCosts}
             onSelect={setSelectedModel}
           />
         </Modal.Body>

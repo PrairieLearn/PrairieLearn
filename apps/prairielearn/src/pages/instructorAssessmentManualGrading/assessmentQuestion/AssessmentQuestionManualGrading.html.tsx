@@ -57,6 +57,7 @@ interface AssessmentQuestionManualGradingProps {
   questionTitle: string;
   questionNumber: number;
   availableAiGradingProviders: EnumAiGradingProvider[];
+  aiGradingRelativeCosts: Record<string, string>;
 }
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
@@ -86,6 +87,7 @@ function AssessmentQuestionManualGradingInner({
   questionTitle,
   questionNumber,
   availableAiGradingProviders,
+  aiGradingRelativeCosts,
 }: AssessmentQuestionManualGradingInnerProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -196,6 +198,7 @@ function AssessmentQuestionManualGradingInner({
         mutation={mutations.gradeSubmissionsMutation}
         availableProviders={availableAiGradingProviders}
         aiGradingLastSelectedModel={assessmentQuestion.ai_grading_last_selected_model ?? null}
+        relativeCosts={aiGradingRelativeCosts}
         onSuccess={(data) => {
           setPendingGradingJob(data);
         }}

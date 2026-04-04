@@ -1,44 +1,39 @@
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 
-/**
- * Default per-million-token pricing used to compute relative cost multipliers.
- * These mirror the defaults in config.ts but are duplicated here so this file
- * can be imported on both client and server.
- */
-const MODEL_PRICING: Record<string, { input: number; output: number }> = {
-  'gpt-5-mini-2025-08-07': { input: 0.25, output: 2 },
-  'gpt-5.1-2025-11-13': { input: 1.25, output: 10 },
-  'gemini-2.5-flash': { input: 0.3, output: 2.5 },
-  'gemini-3-flash-preview': { input: 0.5, output: 3 },
-  'gemini-3.1-pro-preview': { input: 2, output: 12 },
-  'claude-haiku-4-5': { input: 1, output: 5 },
-  'claude-sonnet-4-5': { input: 3, output: 15 },
-  'claude-opus-4-5': { input: 5, output: 25 },
-};
-
 const BASELINE_INPUT_TOKENS = 1_000;
 const BASELINE_OUTPUT_TOKENS = 500;
 const BASELINE_REASONING_TOKENS = 200;
 
-function computeRelativeCosts(): Record<string, string> {
+/**
+ * Computes relative cost multipliers for AI grading models given per-model
+ * pricing. Call this on the server where config values are available, then
+ * pass the result to the frontend as a prop.
+ */
+export function computeAiGradingRelativeCosts(
+  pricing: Record<string, { input: number; output: number }>,
+): Record<string, string> {
   const totalOutputTokens = BASELINE_OUTPUT_TOKENS + BASELINE_REASONING_TOKENS;
-  const costs = Object.entries(MODEL_PRICING).map(([modelId, pricing]) => ({
-    modelId,
-    cost: pricing.input * BASELINE_INPUT_TOKENS + pricing.output * totalOutputTokens,
-  }));
-  const minCost = Math.min(...costs.map((c) => c.cost));
+  const models = AI_GRADING_MODELS.map((m) => {
+    const p = pricing[m.modelId];
+    return {
+      modelId: m.modelId,
+      cost: p ? p.input * BASELINE_INPUT_TOKENS + p.output * totalOutputTokens : Infinity,
+    };
+  });
+  const minCost = Math.min(...models.map((m) => m.cost));
   return Object.fromEntries(
-    costs.map(({ modelId, cost }) => {
+    models.map(({ modelId, cost }) => {
       const multiplier = cost / minCost;
       // Truncate to one decimal place (not rounded).
       const truncated = Math.floor(multiplier * 10) / 10;
-      const label = truncated === 1 ? '1x' : `${truncated % 1 === 0 ? truncated.toFixed(0) : truncated.toFixed(1)}x`;
+      const label =
+        truncated === 1
+          ? '1x'
+          : `${truncated % 1 === 0 ? truncated.toFixed(0) : truncated.toFixed(1)}x`;
       return [modelId, label];
     }),
   );
 }
-
-export const AI_GRADING_RELATIVE_COSTS = computeRelativeCosts();
 
 export const AI_GRADING_MODELS = [
   {

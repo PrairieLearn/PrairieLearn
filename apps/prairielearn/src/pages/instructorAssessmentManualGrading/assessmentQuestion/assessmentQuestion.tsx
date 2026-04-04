@@ -9,6 +9,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
+import { computeAiGradingRelativeCosts } from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import {
   calculateAiGradingStats,
   fillInstanceQuestionColumnEntries,
@@ -134,6 +135,10 @@ router.get(
       ? await getAvailableAiGradingProviders(course_instance)
       : [];
 
+    const aiGradingRelativeCosts = aiGradingEnabled
+      ? computeAiGradingRelativeCosts(config.costPerMillionTokens)
+      : {};
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -189,6 +194,7 @@ router.get(
                 questionTitle={question.title ?? ''}
                 questionNumber={Number(number_in_alternative_group)}
                 availableAiGradingProviders={availableAiGradingProviders}
+                aiGradingRelativeCosts={aiGradingRelativeCosts}
               />
             </Hydrate>
           </>
