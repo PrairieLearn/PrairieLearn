@@ -370,7 +370,7 @@ export function AssessmentQuestionTable({
         pendingGradingJob.job_sequence_id,
         pendingGradingJob.job_sequence_token,
       );
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/set-state-in-effect
       setRowSelection({});
       onPendingGradingJobHandled();
     }

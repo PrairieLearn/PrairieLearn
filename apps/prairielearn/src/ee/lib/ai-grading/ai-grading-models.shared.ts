@@ -14,7 +14,7 @@ export function computeAiGradingRelativeCosts(
 ): Record<string, string> {
   const totalOutputTokens = BASELINE_OUTPUT_TOKENS + BASELINE_REASONING_TOKENS;
   const models = AI_GRADING_MODELS.map((m) => {
-    const p = pricing[m.modelId];
+    const p = pricing[m.modelId] as { input: number; output: number } | undefined;
     return {
       modelId: m.modelId,
       cost: p ? p.input * BASELINE_INPUT_TOKENS + p.output * totalOutputTokens : Infinity,
