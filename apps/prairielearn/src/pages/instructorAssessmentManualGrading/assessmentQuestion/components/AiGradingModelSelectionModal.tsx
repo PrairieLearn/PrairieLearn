@@ -66,81 +66,86 @@ function ModelList({
   }));
 
   return (
-    <div className="d-flex flex-column gap-3">
-      {modelsByProvider.map(({ provider, models }) => (
-        <div key={provider} className="d-flex flex-column gap-2">
-          <div className="d-flex justify-content-between align-items-baseline">
+    <div className="d-flex flex-column gap-4">
+      {modelsByProvider.map(({ provider, models }, providerIndex) => (
+        <div key={provider}>
+          <div className="d-flex justify-content-between align-items-baseline mb-2">
             <div>
-              <span className="fw-semibold fs-5">
-                {AI_GRADING_PROVIDER_DISPLAY_NAMES[provider]}
+              <span className="fw-semibold">{AI_GRADING_PROVIDER_DISPLAY_NAMES[provider]}</span>
+              <span className="text-muted ms-2 small">
+                {AI_GRADING_PROVIDER_SUBLABELS[provider]}
               </span>
-              <span className="text-muted ms-2">{AI_GRADING_PROVIDER_SUBLABELS[provider]}</span>
             </div>
-            <span className="text-muted small">
-              Relative cost{' '}
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  props: { id: `cost-tooltip-${provider}` },
-                  body: 'Relative cost compared to the least expensive model, based on standard token usage.',
-                }}
-              >
-                <i className="bi bi-question-circle" aria-hidden="true" />
-              </OverlayTrigger>
-            </span>
+            {providerIndex === 0 && (
+              <span className="text-muted small">
+                Relative cost{' '}
+                <OverlayTrigger
+                  placement="top"
+                  tooltip={{
+                    props: { id: 'cost-tooltip' },
+                    body: 'Relative cost compared to the least expensive model, based on standard token usage.',
+                  }}
+                >
+                  <i className="bi bi-question-circle" aria-hidden="true" />
+                </OverlayTrigger>
+              </span>
+            )}
           </div>
-          {models.map((model) => {
-            const isSelected = selectedModel === model.modelId;
-            const isAvailable = availableProviders.includes(model.provider);
+          <div className="d-flex flex-column gap-1">
+            {models.map((model) => {
+              const isSelected = selectedModel === model.modelId;
+              const isAvailable = availableProviders.includes(model.provider);
 
-            const modelOption = (
-              <label
-                key={model.modelId}
-                htmlFor={`model-${model.modelId}`}
-                className={clsx('border rounded-3 px-3 py-2 mb-0', {
-                  'border-primary bg-primary bg-opacity-10': isSelected,
-                  'opacity-50': !isAvailable,
-                })}
-                style={{ cursor: isAvailable ? 'pointer' : 'default' }}
-              >
-                <div className="d-flex align-items-start justify-content-between gap-1">
-                  <Form.Check
-                    type="radio"
-                    id={`model-${model.modelId}`}
-                    name="ai-grading-model"
-                    className="mb-0"
-                    disabled={!isAvailable}
-                    checked={isSelected}
-                    label={
-                      <div>
-                        <span className="fw-semibold">{model.name}</span>
-                        <div className="text-muted small">{model.sublabel}</div>
-                      </div>
-                    }
-                    onChange={() => onSelect(model.modelId)}
-                  />
-                  <span className="text-muted small text-nowrap mt-1">
-                    {AI_GRADING_RELATIVE_COSTS[model.modelId]}
-                  </span>
-                </div>
-              </label>
-            );
+              const modelOption = (
+                <label
+                  key={model.modelId}
+                  htmlFor={`model-${model.modelId}`}
+                  className={clsx('rounded-2 px-3 py-2 mb-0 border', {
+                    'border-primary bg-primary bg-opacity-10': isSelected,
+                    'border-transparent': !isSelected && isAvailable,
+                    'opacity-50 border-transparent': !isAvailable,
+                  })}
+                  style={{ cursor: isAvailable ? 'pointer' : 'default' }}
+                >
+                  <div className="d-flex align-items-center justify-content-between">
+                    <Form.Check
+                      type="radio"
+                      id={`model-${model.modelId}`}
+                      name="ai-grading-model"
+                      className="mb-0"
+                      disabled={!isAvailable}
+                      checked={isSelected}
+                      label={
+                        <div>
+                          <span className="fw-medium">{model.name}</span>
+                          <div className="text-muted small">{model.sublabel}</div>
+                        </div>
+                      }
+                      onChange={() => onSelect(model.modelId)}
+                    />
+                    <span className="text-muted small text-nowrap ms-3">
+                      {AI_GRADING_RELATIVE_COSTS[model.modelId]}
+                    </span>
+                  </div>
+                </label>
+              );
 
-            return isAvailable ? (
-              modelOption
-            ) : (
-              <OverlayTrigger
-                key={model.modelId}
-                placement="top"
-                tooltip={{
-                  props: { id: `model-tooltip-${model.modelId}` },
-                  body: 'No API key configured for this provider',
-                }}
-              >
-                {modelOption}
-              </OverlayTrigger>
-            );
-          })}
+              return isAvailable ? (
+                modelOption
+              ) : (
+                <OverlayTrigger
+                  key={model.modelId}
+                  placement="top"
+                  tooltip={{
+                    props: { id: `model-tooltip-${model.modelId}` },
+                    body: 'No API key configured for this provider',
+                  }}
+                >
+                  {modelOption}
+                </OverlayTrigger>
+              );
+            })}
+          </div>
         </div>
       ))}
     </div>
