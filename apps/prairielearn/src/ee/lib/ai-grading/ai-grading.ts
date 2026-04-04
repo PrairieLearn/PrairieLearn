@@ -57,6 +57,13 @@ import { resolveAiGradingKeys } from './ai-grading-credentials.js';
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
+  type SubmissionTokenStats,
+  collectSubmissionStats,
+  computeAggregateStats,
+  logAggregateStats,
+  logTokenStats,
+} from './ai-grading-token-stats.js';
+import {
   addAiGradingCostToIntervalUsage,
   containsImageCapture,
   correctGeminiMalformedRubricGradingJson,
@@ -273,7 +280,7 @@ async function finalizeAiGradingPersistence({
   });
 }
 
-const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
+const PARALLEL_SUBMISSION_GRADING_LIMIT = 10;
 const HOURLY_USAGE_CAP_REACHED_MESSAGE = 'Hourly usage cap reached. Try again later.';
 const INSUFFICIENT_CREDITS_MESSAGE = 'Insufficient AI grading credits.';
 
@@ -480,17 +487,17 @@ export async function aiGrade({
      * all other question rendering operations. In the future, we should limit render concurrency
      * to avoid overwhelming the rendering servers.
      *
-     * @returns A boolean indicating whether grading was successful or not.
+     * @returns An object with success status and optional token stats.
      */
     const gradeInstanceQuestion = async (
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
-    ): Promise<boolean> => {
+    ): Promise<{ success: boolean; stats: SubmissionTokenStats | null }> => {
       if (rateLimitExceeded) {
         logger.error(
           `Skipping instance question ${instance_question.id} since the rate limit has been exceeded.`,
         );
-        return false;
+        return { success: false, stats: null };
       }
 
       // Since other jobs may be concurrently running, we could exceed the rate limit
@@ -506,7 +513,7 @@ export async function aiGrade({
           `Skipping instance question ${instance_question.id} since the rate limit has been exceeded.`,
         );
         rateLimitExceeded = true;
-        return false;
+        return { success: false, stats: null };
       }
 
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -534,7 +541,7 @@ export async function aiGrade({
       if (render_question_results.courseIssues.length > 0) {
         logger.error(render_question_results.courseIssues.toString());
         logger.error('Errors occurred while AI grading, see output for details');
-        return false;
+        return { success: false, stats: null };
       }
       const questionPrompt = render_question_results.data.questionHtml;
       const questionAnswer = render_question_results.data.answerHtml;
@@ -864,6 +871,27 @@ export async function aiGrade({
         for (const item of appliedRubricDescription) {
           logger.info(`- ${item}`);
         }
+
+        const rubricStats = await collectSubmissionStats({
+          instanceQuestionId: instance_question.id,
+          assessmentQuestionId: assessment_question.id,
+          modelId: model_id,
+          prompt: input,
+          submissionTextChars: submission_text.length,
+          questionPromptChars: questionPrompt.length,
+          questionAnswerChars: questionAnswer.length,
+          graderGuidelinesChars: rubric?.grader_guidelines?.length ?? 0,
+          submittedImages,
+          rubricItems: rubric_items,
+          finalGradingUsage: finalGradingResponse.usage,
+          responseObject: finalGradingResponse.object,
+          rotationCorrectionApplied,
+          rotationCorrectionResponses: rotationCorrectionApplied
+            ? { gradingResponseWithRotationIssue, rotationCorrections }
+            : undefined,
+        });
+        logTokenStats(rubricStats, logger);
+        return { success: true, stats: rubricStats };
       } else {
         // OpenAI will take the property descriptions into account. See the
         // examples here: https://platform.openai.com/docs/guides/structured-outputs
@@ -1060,13 +1088,34 @@ export async function aiGrade({
         }
 
         logger.info(`AI score: ${finalGradingResponse.object.score}`);
-      }
 
-      return true;
+        const scoreStats = await collectSubmissionStats({
+          instanceQuestionId: instance_question.id,
+          assessmentQuestionId: assessment_question.id,
+          modelId: model_id,
+          prompt: input,
+          submissionTextChars: submission_text.length,
+          questionPromptChars: questionPrompt.length,
+          questionAnswerChars: questionAnswer.length,
+          graderGuidelinesChars: rubric?.grader_guidelines?.length ?? 0,
+          submittedImages,
+          rubricItems: rubric_items,
+          finalGradingUsage: finalGradingResponse.usage,
+          responseObject: finalGradingResponse.object,
+          rotationCorrectionApplied,
+          rotationCorrectionResponses: rotationCorrectionApplied
+            ? { gradingResponseWithRotationIssue, rotationCorrections }
+            : undefined,
+        });
+        logTokenStats(scoreStats, logger);
+        return { success: true, stats: scoreStats };
+      }
     };
 
     let num_complete = 0;
     let num_failed = 0;
+
+    const allSubmissionStats: SubmissionTokenStats[] = [];
 
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
     const instance_question_grading_successes = await async.mapLimit(
@@ -1101,17 +1150,19 @@ export async function aiGrade({
             job_failure_message: rateLimitExceeded ? HOURLY_USAGE_CAP_REACHED_MESSAGE : undefined,
           });
 
-          const gradingSuccessful = await gradeInstanceQuestion(instance_question, logger);
+          const result = await gradeInstanceQuestion(instance_question, logger);
 
-          item_statuses[instance_question.id] = gradingSuccessful
+          item_statuses[instance_question.id] = result.success
             ? JobItemStatus.complete
             : JobItemStatus.failed;
 
-          if (!gradingSuccessful) {
+          if (!result.success) {
             num_failed += 1;
+          } else if (result.stats) {
+            allSubmissionStats.push(result.stats);
           }
 
-          return gradingSuccessful;
+          return result.success;
         } catch (err: any) {
           logger.error(err);
           item_statuses[instance_question.id] = JobItemStatus.failed;
@@ -1142,6 +1193,11 @@ export async function aiGrade({
         }
       },
     );
+
+    if (allSubmissionStats.length > 0) {
+      const aggregate = computeAggregateStats(allSubmissionStats);
+      logAggregateStats(aggregate, allSubmissionStats, job);
+    }
 
     const error_count = instance_question_grading_successes.filter((success) => !success).length;
 

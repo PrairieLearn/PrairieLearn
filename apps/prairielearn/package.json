@@ -185,6 +185,7 @@
     "jquery-ui-dist": "^1.13.3",
     "jquery-ui-touch-punch": "^0.2.3",
     "js-cookie": "^3.0.5",
+    "js-tiktoken": "^1.0.21",
     "json-stringify-safe": "^5.0.1",
     "klaw": "^4.1.0",
     "lodash": "^4.17.23",
