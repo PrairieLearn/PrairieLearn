@@ -103,7 +103,7 @@ function ModelList({
                   className={clsx('rounded-2 px-3 py-2 mb-0 border', {
                     'border-primary bg-primary bg-opacity-10': isSelected,
                     'border-transparent': !isSelected && isAvailable,
-                    'opacity-50 border-transparent': !isAvailable,
+                    'opacity-75 border-transparent': !isAvailable,
                   })}
                   style={{ cursor: isAvailable ? 'pointer' : 'default' }}
                 >
