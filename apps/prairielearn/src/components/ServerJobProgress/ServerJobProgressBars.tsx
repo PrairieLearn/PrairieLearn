@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Alert, ProgressBar } from 'react-bootstrap';
 
+import { formatMilliDollars } from '../../lib/ai-grading-credits.js';
 import { getCourseInstanceJobSequenceUrl } from '../../lib/client/url.js';
 import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
 
@@ -81,6 +82,14 @@ export function ServerJobsProgressInfo({
             failed: jobProgress.job_failure_message ?? statusTextSafe.failed,
           }}
           itemNames={itemNames}
+          costInfo={
+            jobProgress.total_cost_milli_dollars != null
+              ? {
+                  totalCostMilliDollars: jobProgress.total_cost_milli_dollars,
+                  numSuccessfullyGraded: jobProgress.num_successfully_graded ?? 0,
+                }
+              : undefined
+          }
           onDismissCompleteJobSequence={onDismissCompleteJobSequence}
         />
       ))}
@@ -111,6 +120,10 @@ export function ServerJobsProgressInfo({
  * @param params.statusText.complete Text for completed jobs.
  * @param params.statusText.failed Text for failed jobs.
  *
+ * @param params.costInfo Optional cost information for AI grading jobs.
+ * @param params.costInfo.totalCostMilliDollars Total cost accumulated in milli-dollars.
+ * @param params.costInfo.numSuccessfullyGraded Number of submissions that contributed to the cost.
+ *
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
  */
 function ServerJobProgressInfo({
@@ -120,6 +133,7 @@ function ServerJobProgressInfo({
   nums,
   statusIcons,
   statusText,
+  costInfo,
   onDismissCompleteJobSequence,
 }: {
   jobSequenceId: string;
@@ -139,6 +153,10 @@ function ServerJobProgressInfo({
     inProgress: string;
     complete: string;
     failed: string;
+  };
+  costInfo?: {
+    totalCostMilliDollars: number;
+    numSuccessfullyGraded: number;
   };
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
 }) {
@@ -171,6 +189,22 @@ function ServerJobProgressInfo({
     };
   }, [statusText, statusIcons, jobStatus]);
 
+  const costText = useMemo(() => {
+    if (!costInfo) return null;
+
+    const totalFormatted = formatMilliDollars(costInfo.totalCostMilliDollars);
+
+    if (jobStatus === 'inProgress') {
+      const avgText =
+        costInfo.numSuccessfullyGraded > 0
+          ? `Avg: ${formatMilliDollars(Math.round(costInfo.totalCostMilliDollars / costInfo.numSuccessfullyGraded))}/submission`
+          : null;
+      return avgText ? `${avgText} | Total: ${totalFormatted}` : `Total: ${totalFormatted}`;
+    }
+
+    return `Total cost: ${totalFormatted}`;
+  }, [costInfo, jobStatus]);
+
   const progressInfo = useMemo(() => {
     switch (jobStatus) {
       case 'inProgress':
@@ -178,16 +212,27 @@ function ServerJobProgressInfo({
           <>
             {`${nums.complete}/${nums.total} ${itemNames}`}
             <span className="text-danger">{nums.failed > 0 ? ` (${nums.failed} failed)` : ''}</span>
+            {costText ? ` | ${costText}` : ''}
           </>
         );
       case 'failed':
-        return `${nums.total - nums.failed}/${nums.total} ${itemNames} (${nums.failed} failed)`;
+        return (
+          <>
+            {`${nums.total - nums.failed}/${nums.total} ${itemNames} (${nums.failed} failed)`}
+            {costText ? ` | ${costText}` : ''}
+          </>
+        );
       case 'complete':
-        return `${nums.total} ${itemNames}`;
+        return (
+          <>
+            {`${nums.total} ${itemNames}`}
+            {costText ? ` | ${costText}` : ''}
+          </>
+        );
       default:
         return <></>;
     }
-  }, [jobStatus, nums, itemNames]);
+  }, [jobStatus, nums, itemNames, costText]);
 
   return (
     <Alert

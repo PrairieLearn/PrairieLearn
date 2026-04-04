@@ -485,12 +485,12 @@ export async function aiGrade({
     const gradeInstanceQuestion = async (
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
-    ): Promise<boolean> => {
+    ): Promise<{ success: boolean; costMilliDollars: number }> => {
       if (rateLimitExceeded) {
         logger.error(
           `Skipping instance question ${instance_question.id} since the rate limit has been exceeded.`,
         );
-        return false;
+        return { success: false, costMilliDollars: 0 };
       }
 
       // Since other jobs may be concurrently running, we could exceed the rate limit
@@ -506,7 +506,7 @@ export async function aiGrade({
           `Skipping instance question ${instance_question.id} since the rate limit has been exceeded.`,
         );
         rateLimitExceeded = true;
-        return false;
+        return { success: false, costMilliDollars: 0 };
       }
 
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -534,7 +534,7 @@ export async function aiGrade({
       if (render_question_results.courseIssues.length > 0) {
         logger.error(render_question_results.courseIssues.toString());
         logger.error('Errors occurred while AI grading, see output for details');
-        return false;
+        return { success: false, costMilliDollars: 0 };
       }
       const questionPrompt = render_question_results.data.questionHtml;
       const questionAnswer = render_question_results.data.answerHtml;
@@ -616,6 +616,8 @@ export async function aiGrade({
         promptCacheKey: `assessment_question_${assessment_question.id}`,
         safetyIdentifier: `course_${course.id}`,
       };
+
+      let submissionCostMilliDollars = 0;
 
       if (rubric_items.length > 0) {
         // Dynamically generate the rubric schema based on the rubric items.
@@ -807,6 +809,10 @@ export async function aiGrade({
           authn_user_id,
           job_sequence_id: serverJob.jobSequenceId,
         } satisfies AiGradingPersistenceContext;
+
+        submissionCostMilliDollars = trackRateLimitAndCost
+          ? calculateTotalGradingCostMilliDollars(responsesForPersistence)
+          : 0;
 
         if (shouldUpdateScore) {
           // Requires grading: update instance question score
@@ -1021,6 +1027,10 @@ export async function aiGrade({
           job_sequence_id: serverJob.jobSequenceId,
         } satisfies AiGradingPersistenceContext;
 
+        submissionCostMilliDollars = trackRateLimitAndCost
+          ? calculateTotalGradingCostMilliDollars(responsesForPersistence)
+          : 0;
+
         if (shouldUpdateScore) {
           // Requires grading: update instance question score
           const feedback = finalGradingResponse.object.feedback;
@@ -1062,11 +1072,13 @@ export async function aiGrade({
         logger.info(`AI score: ${finalGradingResponse.object.score}`);
       }
 
-      return true;
+      return { success: true, costMilliDollars: submissionCostMilliDollars };
     };
 
     let num_complete = 0;
     let num_failed = 0;
+    let total_cost_milli_dollars = 0;
+    let num_successfully_graded = 0;
 
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
     const instance_question_grading_successes = await async.mapLimit(
@@ -1090,6 +1102,10 @@ export async function aiGrade({
           },
         };
 
+        const costFields = trackRateLimitAndCost
+          ? { total_cost_milli_dollars, num_successfully_graded }
+          : {};
+
         try {
           item_statuses[instance_question.id] = JobItemStatus.in_progress;
           await emitServerJobProgressUpdate({
@@ -1099,19 +1115,23 @@ export async function aiGrade({
             num_total: instance_questions.length,
             item_statuses,
             job_failure_message: rateLimitExceeded ? HOURLY_USAGE_CAP_REACHED_MESSAGE : undefined,
+            ...costFields,
           });
 
-          const gradingSuccessful = await gradeInstanceQuestion(instance_question, logger);
+          const gradingResult = await gradeInstanceQuestion(instance_question, logger);
 
-          item_statuses[instance_question.id] = gradingSuccessful
+          item_statuses[instance_question.id] = gradingResult.success
             ? JobItemStatus.complete
             : JobItemStatus.failed;
 
-          if (!gradingSuccessful) {
+          if (gradingResult.success) {
+            total_cost_milli_dollars += gradingResult.costMilliDollars;
+            num_successfully_graded += 1;
+          } else {
             num_failed += 1;
           }
 
-          return gradingSuccessful;
+          return gradingResult.success;
         } catch (err: any) {
           logger.error(err);
           item_statuses[instance_question.id] = JobItemStatus.failed;
@@ -1126,6 +1146,7 @@ export async function aiGrade({
             num_total: instance_questions.length,
             item_statuses,
             job_failure_message: rateLimitExceeded ? HOURLY_USAGE_CAP_REACHED_MESSAGE : undefined,
+            ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_successfully_graded } : {}),
           });
           for (const log of logs) {
             switch (log.messageType) {
