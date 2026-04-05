@@ -238,7 +238,7 @@ function ServerJobProgressInfo({
           </div>
         )}
 
-        <div className="d-flex flex-wrap align-items-center gap-2 flex-shrink-0 small">
+        <div className="d-flex flex-wrap align-items-center gap-2 small">
           <span className="text-body-secondary">{progressLabel}</span>
 
           {totalCostMilliDollars != null && (
