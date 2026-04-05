@@ -8,6 +8,7 @@ export {
   continueWorkflow,
   getWorkflowRun,
   getActiveWorkflowRun,
+  appendWorkflowOutput,
   startCronLoop,
   stopCronLoop,
 } from './workflows.js';

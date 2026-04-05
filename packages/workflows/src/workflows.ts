@@ -246,6 +246,15 @@ export async function getActiveWorkflowRun<TState extends Record<string, unknown
   )) as WorkflowRun<TState> | null;
 }
 
+/**
+ * Appends text to a workflow run's `output` column. This can be called from
+ * outside the workflow execution loop (e.g., from a route handler) to write
+ * logs to the workflow run without holding the execution lock.
+ */
+export async function appendWorkflowOutput(runId: string, text: string): Promise<void> {
+  await pool.queryAsync(sql.append_output, { id: runId, text });
+}
+
 async function executeWorkflow<TState extends Record<string, unknown>>(
   runId: string,
   definition: WorkflowDefinition<TState>,
