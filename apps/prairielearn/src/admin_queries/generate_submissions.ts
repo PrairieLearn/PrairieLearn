@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { closeAssessmentInstance } from '../lib/assessment.js';
-import { unsetGradingNeeded } from '../models/assessment-instance.js';
 import { config } from '../lib/config.js';
 import {
   type Assessment,
@@ -24,6 +23,7 @@ import { saveAndGradeSubmission, saveSubmission } from '../lib/grading.js';
 import { updateInstanceQuestionScore } from '../lib/manualGrading.js';
 import { TEST_TYPES, type TestType, createTestSubmissionData } from '../lib/question-testing.js';
 import { ensureVariant } from '../lib/question-variant.js';
+import { unsetGradingNeeded } from '../models/assessment-instance.js';
 import { selectOptionalAssessmentById } from '../models/assessment.js';
 import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
@@ -100,6 +100,7 @@ interface SharedContext {
   testType: TestType | 'random';
   shouldGrade: boolean;
   maxAttempts: number;
+  authnUserId: string;
 }
 
 interface QuestionResult {
@@ -125,19 +126,22 @@ interface FinalizedInstanceQuestion {
 
 const CONCURRENCY = 5;
 
-export default async function ({
-  assessment_id,
-  test_type,
-  grade: grade_str,
-  max_attempts: max_attempts_str,
-  close: close_str,
-}: {
-  assessment_id: string;
-  test_type: TestType | 'random';
-  grade: string;
-  max_attempts: string;
-  close: string;
-}): Promise<AdministratorQueryResult> {
+export default async function (
+  {
+    assessment_id,
+    test_type,
+    grade: grade_str,
+    max_attempts: max_attempts_str,
+    close: close_str,
+  }: {
+    assessment_id: string;
+    test_type: TestType | 'random';
+    grade: string;
+    max_attempts: string;
+    close: string;
+  },
+  { authn_user_id }: { authn_user_id: string },
+): Promise<AdministratorQueryResult> {
   const assessment = await selectOptionalAssessmentById(assessment_id);
   if (!assessment) return { rows: [], columns };
   const courseInstance = await selectOptionalCourseInstanceById(assessment.course_instance_id);
@@ -152,6 +156,7 @@ export default async function ({
     testType: test_type,
     shouldGrade: grade_str !== 'false',
     maxAttempts: Number.isNaN(parsed) ? 1 : parsed,
+    authnUserId: authn_user_id,
   };
   const shouldClose = close_str === 'true';
 
@@ -170,8 +175,6 @@ export default async function ({
     Object.entries(byAssessmentInstance),
     CONCURRENCY,
     async ([assessmentInstanceId, questions]: [string, InstanceQuestionQuery[]]) => {
-      const userId = questions[0].user.id;
-
       const results: FinalizedInstanceQuestion[] = [];
       for (const instanceQuestion of questions) {
         const result = await processQuestion(instanceQuestion, ctx);
@@ -191,7 +194,7 @@ export default async function ({
         // and unset grading_needed directly.
         await closeAssessmentInstance({
           assessment_instance_id: assessmentInstanceId,
-          authn_user_id: userId,
+          authn_user_id: ctx.authnUserId,
           client_fingerprint_id: null,
         });
         await unsetGradingNeeded(assessmentInstanceId);
@@ -295,7 +298,7 @@ async function processQuestion(
           submission_id,
           check_modified_at: null,
           score: { auto_score_perc: currentTestType === 'correct' ? 100 : 0 },
-          authn_user_id: user.id,
+          authn_user_id: ctx.authnUserId,
         });
       }
     }
@@ -335,7 +338,7 @@ async function finalizeQuestion(
       submission_id: result.lastSubmissionId,
       check_modified_at: null,
       score: { manual_score_perc: result.testType === 'correct' ? 100 : 0 },
-      authn_user_id: instanceQuestion.user.id,
+      authn_user_id: ctx.authnUserId,
     });
   }
 

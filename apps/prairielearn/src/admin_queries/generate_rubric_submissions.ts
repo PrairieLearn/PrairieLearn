@@ -129,23 +129,26 @@ const RubricJsonSchema = z.object({
     .min(1),
 });
 
-export default async function ({
-  assessment_id,
-  question_qid,
-  rubric_json,
-  num_items: num_items_str,
-  include_negative_item: include_negative_str,
-  replace_auto_points: replace_auto_points_str,
-  percent_graded: percent_graded_str,
-}: {
-  assessment_id: string;
-  question_qid: string;
-  rubric_json: string;
-  num_items: string;
-  include_negative_item: string;
-  replace_auto_points: string;
-  percent_graded: string;
-}): Promise<AdministratorQueryResult> {
+export default async function (
+  {
+    assessment_id,
+    question_qid,
+    rubric_json,
+    num_items: num_items_str,
+    include_negative_item: include_negative_str,
+    replace_auto_points: replace_auto_points_str,
+    percent_graded: percent_graded_str,
+  }: {
+    assessment_id: string;
+    question_qid: string;
+    rubric_json: string;
+    num_items: string;
+    include_negative_item: string;
+    replace_auto_points: string;
+    percent_graded: string;
+  },
+  { authn_user_id }: { authn_user_id: string },
+): Promise<AdministratorQueryResult> {
   const percentGraded = Math.max(0, Math.min(100, Number.parseInt(percent_graded_str, 10) || 50));
   const assessment = await selectOptionalAssessmentById(assessment_id);
   if (!assessment) return { rows: [{ error: 'Assessment not found' }], columns: ['error'] };
@@ -197,8 +200,6 @@ export default async function ({
     InstanceQuestionQuerySchema,
   );
 
-  const authnUserId = instanceQuestions[0]?.user.id ?? '1';
-
   await updateAssessmentQuestionRubric({
     assessment,
     assessment_question_id: target.assessment_question.id,
@@ -210,7 +211,7 @@ export default async function ({
     rubric_items: rubricConfig.rubric_items,
     tag_for_manual_grading: true,
     grader_guidelines: rubricConfig.grader_guidelines,
-    authn_user_id: authnUserId,
+    authn_user_id,
   });
 
   // Re-fetch the assessment question to get the new rubric_id.
@@ -250,7 +251,7 @@ export default async function ({
       // autoFinishExams doesn't pick up these synthetic submissions.
       await closeAssessmentInstance({
         assessment_instance_id: aiId,
-        authn_user_id: iq.user.id,
+        authn_user_id,
         client_fingerprint_id: null,
       });
       await unsetGradingNeeded(aiId);
@@ -292,7 +293,7 @@ export default async function ({
             adjust_points: 0,
           },
         },
-        authn_user_id: iq.user.id,
+        authn_user_id,
       });
       submissionsGraded++;
     }

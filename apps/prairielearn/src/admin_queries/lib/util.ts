@@ -42,7 +42,10 @@ export async function runLegacySqlAdminQuery(
 
 export async function loadAdminQueryModule(query: string): Promise<{
   specs: AdministratorQuerySpecs;
-  default: (params: Record<string, any>) => Promise<AdministratorQueryResult>;
+  default: (
+    params: Record<string, any>,
+    context: { authn_user_id: string },
+  ) => Promise<AdministratorQueryResult>;
 }> {
   if (query.endsWith('.ts')) query = query.slice(0, -3);
   if (!query.endsWith('.js')) query += '.js';
