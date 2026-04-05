@@ -426,6 +426,8 @@ data["options"]["client_files_course_url"]
 data["options"]["server_files_course_path"]
 ```
 
+The `serverFilesCourse/` directory is also automatically added to the Python path, so you can directly import modules from it in `server.py`. For example, if you have a file `serverFilesCourse/my_utils.py`, you can use `import my_utils` in any question's `server.py`.
+
 ## Generating dynamic files with `file()`
 
 You can dynamically generate file objects in `server.py`. These files never appear physically on the disk. They are generated in `file()` and returned as strings, bytes-like objects, or file-like objects. `file()` has access to the same `data` object as the one created by the `generate()` function, including `data["params"]` and `data["correct_answers"]`. A complete `question.html` and `server.py` example using a dynamically generated `fig.png` looks like:
