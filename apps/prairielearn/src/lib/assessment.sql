@@ -569,13 +569,6 @@ ORDER BY
   iq.id ASC,
   v.date DESC;
 
--- BLOCK unset_grading_needed
-UPDATE assessment_instances AS ai
-SET
-  grading_needed = FALSE
-WHERE
-  ai.id = $assessment_instance_id;
-
 -- BLOCK select_assessments_for_statistics_update
 SELECT
   a.id AS assessment_id

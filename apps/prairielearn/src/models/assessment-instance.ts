@@ -1,4 +1,4 @@
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { type AssessmentInstance, AssessmentInstanceSchema } from '../lib/db-types.js';
 
@@ -12,6 +12,10 @@ export async function selectAssessmentInstanceById(
     { assessment_instance_id },
     AssessmentInstanceSchema,
   );
+}
+
+export async function unsetGradingNeeded(assessment_instance_id: string): Promise<void> {
+  await execute(sql.unset_grading_needed, { assessment_instance_id });
 }
 
 export async function insertGroupAssessmentInstance({

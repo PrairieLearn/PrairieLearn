@@ -4,6 +4,7 @@ import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgre
 import { IdSchema } from '@prairielearn/zod';
 
 import { closeAssessmentInstance } from '../lib/assessment.js';
+import { unsetGradingNeeded } from '../models/assessment-instance.js';
 import { config } from '../lib/config.js';
 import {
   AssessmentQuestionSchema,
@@ -231,11 +232,14 @@ export default async function ({
 
     const aiId = iq.instance_question.assessment_instance_id;
     if (!closedInstanceIds.has(aiId)) {
+      // Close the instance, then immediately clear grading_needed so that
+      // autoFinishExams doesn't pick up these synthetic submissions.
       await closeAssessmentInstance({
         assessment_instance_id: aiId,
         authn_user_id: iq.user.id,
         client_fingerprint_id: null,
       });
+      await unsetGradingNeeded(aiId);
       closedInstanceIds.add(aiId);
     }
   }
@@ -301,6 +305,11 @@ function generateFakeRubric({
 }): RubricConfig {
   const items: RubricItemInput[] = [];
   const positiveCount = includeNegativeItem ? numItems - 1 : numItems;
+  if (positiveCount < 1) {
+    throw new Error(
+      `num_items must be at least ${includeNegativeItem ? 2 : 1} when include_negative_item is ${includeNegativeItem}`,
+    );
+  }
 
   // Generate random weights then scale so positive items sum exactly to maxPoints.
   const rawWeights = Array.from({ length: positiveCount }, () => 0.5 + Math.random());

@@ -6,6 +6,13 @@ FROM
 WHERE
   id = $assessment_instance_id;
 
+-- BLOCK unset_grading_needed
+UPDATE assessment_instances
+SET
+  grading_needed = FALSE
+WHERE
+  id = $assessment_instance_id;
+
 -- BLOCK insert_group_assessment_instance
 INSERT INTO
   assessment_instances (auth_user_id, assessment_id, team_id, number)

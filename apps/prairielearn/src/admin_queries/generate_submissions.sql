@@ -38,10 +38,3 @@ FROM
   instance_questions AS iq
 WHERE
   iq.id = $instance_question_id;
-
--- BLOCK set_assessment_instance_grading_needed
-UPDATE assessment_instances AS ai
-SET
-  grading_needed = $grading_needed
-WHERE
-  ai.id = $assessment_instance_id;

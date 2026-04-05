@@ -2,15 +2,10 @@ import { mapLimit } from 'async';
 import { groupBy } from 'es-toolkit';
 import { z } from 'zod';
 
-import {
-  execute,
-  loadSqlEquiv,
-  queryOptionalRow,
-  queryRow,
-  queryRows,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { closeAssessmentInstance } from '../lib/assessment.js';
+import { unsetGradingNeeded } from '../models/assessment-instance.js';
 import { config } from '../lib/config.js';
 import {
   type Assessment,
@@ -199,10 +194,7 @@ export default async function ({
           authn_user_id: userId,
           client_fingerprint_id: null,
         });
-        await execute(sql.set_assessment_instance_grading_needed, {
-          assessment_instance_id: assessmentInstanceId,
-          grading_needed: false,
-        });
+        await unsetGradingNeeded(assessmentInstanceId);
         closed = true;
       }
 
