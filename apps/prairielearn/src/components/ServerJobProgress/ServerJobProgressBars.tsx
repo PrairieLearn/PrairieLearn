@@ -224,7 +224,7 @@ function ServerJobProgressInfo({
 
         {jobStatus === 'inProgress' && (
           <div className="flex-grow-1" style={{ flexBasis: '6rem' }}>
-            <ProgressBar style={{ height: '0.5rem' }}>
+            <ProgressBar>
               <ProgressBar
                 key="success"
                 now={progressPercent - (nums.total !== 0 ? (nums.failed / nums.total) * 100 : 0)}
