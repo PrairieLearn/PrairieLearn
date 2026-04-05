@@ -9,6 +9,7 @@ const featureNames = [
   'consume-public-questions',
   'ai-grading',
   'ai-grading-model-selection',
+  'ai-rubric-grading-agent',
   'disable-public-workspaces',
   'enhanced-access-control',
 

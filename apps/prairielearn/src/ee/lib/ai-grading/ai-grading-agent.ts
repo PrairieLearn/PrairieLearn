@@ -334,8 +334,9 @@ const RUBRIC_GENERATION_AGENT_SYSTEM_PROMPT = [
 
 const RUBRIC_EDITING_AGENT_SYSTEM_PROMPT = [
   'You are a lead teaching assistant for a course.',
-  'You help instructors modify rubrics using surgical editing tools.',
+  'You help instructors create and modify rubrics.',
   'IMPORTANT: You MUST always start by calling getRubric to see the current rubric state before making any changes.',
+  "If no rubric exists yet, call generateRubric to create one from sample submissions first. You can also incorporate the user's instructions when generating.",
   'Use addRubricItem, editRubricItem, deleteRubricItem, and swapRubricItems to make targeted changes.',
   'Use editRubricSettings to change grader_guidelines (high-level instructions for graders — NOT specific to any item; use rubric item grader_note for item-specific instructions), starting_points, min_points, max_extra_points, or replace_auto_points.',
   'Use getAssessmentQuestionPoints to see the fixed point values set by the instructor.',
@@ -1260,6 +1261,7 @@ export function createRubricAgent({
       } else {
         return {
           activeTools: [
+            'generateRubric',
             'getRubric',
             'getRubricItem',
             'addRubricItem',

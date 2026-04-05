@@ -73,6 +73,10 @@ router.get(
       'ai-grading-model-selection',
       res.locals,
     );
+    const aiRubricAgentEnabled = await features.enabledFromLocals(
+      'ai-rubric-grading-agent',
+      res.locals,
+    );
 
     const rubric_data = await manualGrading.selectRubricData({
       assessment_question: res.locals.assessment_question,
@@ -124,19 +128,21 @@ router.get(
       config.secretKey,
     );
 
-    const chatCsrfToken = generatePrefixCsrfToken(
-      {
-        url: req.originalUrl.split('?')[0] + '/chat',
-        authn_user_id: res.locals.authn_user.id,
-      },
-      config.secretKey,
-    );
+    const chatCsrfToken = aiRubricAgentEnabled
+      ? generatePrefixCsrfToken(
+          {
+            url: req.originalUrl.split('?')[0] + '/chat',
+            authn_user_id: res.locals.authn_user.id,
+          },
+          config.secretKey,
+        )
+      : '';
 
     const availableAiGradingProviders = aiGradingEnabled
       ? await getAvailableAiGradingProviders(course_instance)
       : [];
 
-    const initialChatMessages = aiGradingEnabled
+    const initialChatMessages = aiRubricAgentEnabled
       ? z
           .array(StaffAiGradingMessageSchema)
           .parse(await selectAiGradingMessages(assessment_question.id))
@@ -196,6 +202,7 @@ router.get(
                 questionTitle={question.title ?? ''}
                 questionNumber={Number(number_in_alternative_group)}
                 availableAiGradingProviders={availableAiGradingProviders}
+                aiRubricAgentEnabled={aiRubricAgentEnabled}
                 chatCsrfToken={chatCsrfToken}
                 initialChatMessages={initialChatMessages}
               />
@@ -254,6 +261,9 @@ router.get(
 router.post(
   '/chat',
   typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
+    if (!(await features.enabledFromLocals('ai-rubric-grading-agent', res.locals))) {
+      throw new error.HttpStatusError(403, 'AI rubric grading agent is not enabled');
+    }
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
@@ -349,6 +359,9 @@ router.post(
 router.get(
   '/chat/stream',
   typedAsyncHandler<'instructor-assessment-question'>(async (_req, res) => {
+    if (!(await features.enabledFromLocals('ai-rubric-grading-agent', res.locals))) {
+      throw new error.HttpStatusError(403, 'AI rubric grading agent is not enabled');
+    }
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
@@ -383,6 +396,9 @@ router.get(
 router.post(
   '/chat/cancel',
   typedAsyncHandler<'instructor-assessment-question'>(async (_req, res) => {
+    if (!(await features.enabledFromLocals('ai-rubric-grading-agent', res.locals))) {
+      throw new error.HttpStatusError(403, 'AI rubric grading agent is not enabled');
+    }
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
@@ -400,6 +416,9 @@ router.post(
 router.post(
   '/chat/clear',
   typedAsyncHandler<'instructor-assessment-question'>(async (_req, res) => {
+    if (!(await features.enabledFromLocals('ai-rubric-grading-agent', res.locals))) {
+      throw new error.HttpStatusError(403, 'AI rubric grading agent is not enabled');
+    }
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }

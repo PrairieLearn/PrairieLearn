@@ -58,6 +58,7 @@ interface AssessmentQuestionManualGradingProps {
   questionTitle: string;
   questionNumber: number;
   availableAiGradingProviders: EnumAiGradingProvider[];
+  aiRubricAgentEnabled: boolean;
   chatCsrfToken: string;
   initialChatMessages: StaffAiGradingMessage[];
 }
@@ -732,6 +733,7 @@ function AssessmentQuestionManualGradingInner({
   questionTitle,
   questionNumber,
   availableAiGradingProviders,
+  aiRubricAgentEnabled,
   chatCsrfToken,
   initialChatMessages,
 }: AssessmentQuestionManualGradingInnerProps) {
@@ -770,8 +772,19 @@ function AssessmentQuestionManualGradingInner({
           rubric_data: unknown;
           aiGradingStats: AiGradingGeneralStats | null;
         };
-        setRubricDataState(data.rubric_data as RubricData | null);
+        const newRubricData = data.rubric_data as RubricData | null;
+        setRubricDataState(newRubricData);
         setAiGradingStatsState(data.aiGradingStats);
+
+        // Update hasGeneratedRubric based on whether a rubric exists.
+        // This handles the case where the user deletes the rubric.
+        if (newRubricData != null) {
+          setHasGeneratedRubric(true);
+          hasGeneratedRubricRef.current = true;
+        } else {
+          setHasGeneratedRubric(false);
+          hasGeneratedRubricRef.current = false;
+        }
       })
       .catch(() => {});
   }, [rubricDataUrl, chatCsrfToken]);
@@ -990,7 +1003,7 @@ function AssessmentQuestionManualGradingInner({
         />
       </div>
 
-      {aiGradingEnabled && (
+      {aiRubricAgentEnabled && (
         <div className="d-flex flex-column bg-light border rounded" style={{ width: 480 }}>
           {messages.length > 0 && (
             <div className="d-flex justify-content-end p-3 pb-0">
