@@ -4,7 +4,6 @@ import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgre
 import { IdSchema } from '@prairielearn/zod';
 
 import { closeAssessmentInstance } from '../lib/assessment.js';
-import { unsetGradingNeeded } from '../models/assessment-instance.js';
 import { config } from '../lib/config.js';
 import {
   AssessmentQuestionSchema,
@@ -18,13 +17,18 @@ import {
   UserSchema,
 } from '../lib/db-types.js';
 import { saveSubmission } from '../lib/grading.js';
-import { updateAssessmentQuestionRubric } from '../lib/manualGrading.js';
+import {
+  updateAssessmentQuestionRubric,
+  updateInstanceQuestionScore,
+} from '../lib/manualGrading.js';
 import type { RubricItemInput } from '../lib/manualGrading.types.js';
 import { createTestSubmissionData } from '../lib/question-testing.js';
 import { ensureVariant } from '../lib/question-variant.js';
+import { unsetGradingNeeded } from '../models/assessment-instance.js';
 import { selectOptionalAssessmentById } from '../models/assessment.js';
 import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
+import { selectCompleteRubric } from '../models/rubrics.js';
 
 import { type AdministratorQueryResult, type AdministratorQuerySpecs } from './lib/util.js';
 
@@ -66,6 +70,12 @@ export const specs: AdministratorQuerySpecs = {
         'If true, rubric points replace the total grade. If false, rubric points are added to auto-graded points ("true" or "false")',
       default: 'false',
     },
+    {
+      name: 'percent_graded',
+      description:
+        'Percentage of submissions to randomly grade with the rubric (0-100). Each graded submission gets a random selection of rubric items applied.',
+      default: '50',
+    },
   ],
 };
 
@@ -77,6 +87,7 @@ const columns = [
   'rubric_id',
   'rubric_items',
   'submissions_created',
+  'submissions_graded',
 ] as const;
 
 const AssessmentQuestionQuerySchema = z.object({
@@ -125,6 +136,7 @@ export default async function ({
   num_items: num_items_str,
   include_negative_item: include_negative_str,
   replace_auto_points: replace_auto_points_str,
+  percent_graded: percent_graded_str,
 }: {
   assessment_id: string;
   question_qid: string;
@@ -132,7 +144,9 @@ export default async function ({
   num_items: string;
   include_negative_item: string;
   replace_auto_points: string;
+  percent_graded: string;
 }): Promise<AdministratorQueryResult> {
+  const percentGraded = Math.max(0, Math.min(100, Number.parseInt(percent_graded_str, 10) || 50));
   const assessment = await selectOptionalAssessmentById(assessment_id);
   if (!assessment) return { rows: [{ error: 'Assessment not found' }], columns: ['error'] };
 
@@ -244,6 +258,46 @@ export default async function ({
     }
   }
 
+  // Randomly grade a percentage of submissions using the rubric.
+  let submissionsGraded = 0;
+  if (percentGraded > 0) {
+    const { rubric_items: dbRubricItems } = await selectCompleteRubric(
+      target.assessment_question.id,
+    );
+
+    for (const iq of instanceQuestions) {
+      if (Math.random() * 100 >= percentGraded) continue;
+
+      const submission = await queryOptionalRow(
+        sql.select_existing_submission,
+        { instance_question_id: iq.instance_question.id },
+        z.object({ id: IdSchema }),
+      );
+      if (!submission) continue;
+
+      // Randomly select which rubric items to apply.
+      const appliedRubricItems = dbRubricItems
+        .filter(() => Math.random() < 0.5)
+        .map((item) => ({ rubric_item_id: item.id }));
+
+      await updateInstanceQuestionScore({
+        assessment,
+        instance_question_id: iq.instance_question.id,
+        submission_id: submission.id,
+        check_modified_at: null,
+        score: {
+          manual_rubric_data: {
+            rubric_id: rubricId,
+            applied_rubric_items: appliedRubricItems,
+            adjust_points: 0,
+          },
+        },
+        authn_user_id: iq.user.id,
+      });
+      submissionsGraded++;
+    }
+  }
+
   return {
     rows: [
       {
@@ -252,6 +306,7 @@ export default async function ({
         rubric_id: rubricId,
         rubric_items: rubricConfig.rubric_items.length,
         submissions_created: submissionsCreated,
+        submissions_graded: submissionsGraded,
       },
     ],
     columns,
