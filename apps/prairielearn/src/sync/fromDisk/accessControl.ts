@@ -42,7 +42,11 @@ export function validateRule(
   rule: AccessControlJson,
   targetType: 'none' | 'student_label' | 'enrollment',
 ): string | null {
-  if (targetType !== 'none') {
+  if (targetType === 'none') {
+    if (rule.dateControl && !rule.dateControl.releaseDate) {
+      return 'Release date is required on the defaults when dateControl is specified.';
+    }
+  } else {
     if (rule.listBeforeRelease !== undefined) {
       return 'listBeforeRelease can only be specified on the defaults.';
     }

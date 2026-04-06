@@ -2,6 +2,8 @@ import { Temporal } from '@js-temporal/polyfill';
 import { Form } from 'react-bootstrap';
 import { type Path, useController, useWatch } from 'react-hook-form';
 
+import { formatDateFriendly } from '@prairielearn/formatter';
+
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
@@ -144,7 +146,11 @@ export function MainDueDateField() {
     rules: {
       validate: (value) => {
         if (value && releaseDate && new Date(value) <= new Date(releaseDate)) {
-          return 'Due date must be after release date';
+          const formatted = formatDateFriendly(new Date(releaseDate), getUserTimezone(), {
+            dateOnly: true,
+            includeTz: false,
+          });
+          return `Must be after release date (${formatted})`;
         }
         return true;
       },
@@ -200,7 +206,11 @@ export function OverrideDueDateField({ index }: { index: number }) {
       validate: (value) => {
         const v = value as string | null;
         if (v && effectiveReleaseDate && new Date(v) <= new Date(effectiveReleaseDate)) {
-          return 'Due date must be after release date';
+          const formatted = formatDateFriendly(new Date(effectiveReleaseDate), getUserTimezone(), {
+            dateOnly: true,
+            includeTz: false,
+          });
+          return `Must be after release date (${formatted})`;
         }
         return true;
       },

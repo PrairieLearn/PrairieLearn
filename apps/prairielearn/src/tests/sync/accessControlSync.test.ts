@@ -37,6 +37,20 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 function makeAccessControlRule(
   overrides: Partial<AccessControlJsonInput> = {},
 ): AccessControlJsonInput {
+  if ('dateControl' in overrides) {
+    const { dateControl: dcOverrides, ...rest } = overrides;
+    if (dcOverrides === undefined) {
+      return { ...rest };
+    }
+    return {
+      dateControl: {
+        releaseDate: '2024-03-14T00:01:00',
+        dueDate: '2024-03-21T23:59:00',
+        ...dcOverrides,
+      },
+      ...rest,
+    };
+  }
   return {
     dateControl: {
       releaseDate: '2024-03-14T00:01:00',
@@ -233,12 +247,12 @@ describe('Access control syncing', () => {
     });
 
     it('fields absent from JSON get overridden=false and value=NULL', async () => {
-      const rule = makeAccessControlRule({
+      const rule: AccessControlJsonInput = {
         dateControl: {
           releaseDate: '2024-03-14T00:01:00',
           // dueDate, durationMinutes, password, deadlines all omitted
         },
-      });
+      };
       const syncedRules = await syncRulesAndRead([rule]);
       const row = syncedRules[0];
       assert.isFalse(row.date_control_due_date_overridden);
@@ -394,22 +408,20 @@ describe('Access control syncing', () => {
       assert.isNull(override.after_complete_show_score_again_date);
     });
 
-    it('override with null releaseDate: overridden=true, value=NULL', async () => {
-      const groupName = 'Test Group';
-      const mainRule = makeAccessControlRule();
-      const overrideRule: AccessControlJsonInput = {
-        labels: [groupName],
-        dateControl: {
-          releaseDate: null, // explicitly clear — no date-based access for this group
-        },
-      };
-      const syncedRules = await syncRulesAndRead([mainRule, overrideRule], {
-        studentLabels: [groupName],
-      });
-      const override = syncedRules.find((r) => r.target_type === 'student_label');
-      assert.isOk(override);
-      assert.isTrue(override.date_control_release_date_overridden);
-      assert.isNull(override.date_control_release_date);
+    it('rejects null releaseDate', async () => {
+      // releaseDate: null is rejected by the JSON schema (written to disk).
+      // Use a raw object to bypass TypeScript's type checks.
+      const courseData = util.getCourseData();
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        util.ASSESSMENT_ID
+      ].accessControl = [
+        { dateControl: { releaseDate: null } } as unknown as AccessControlJsonInput,
+      ];
+
+      await util.writeAndSyncCourseData(courseData);
+
+      const assessment = await getAssessment(util.ASSESSMENT_ID);
+      assert.isNotNull(assessment.sync_errors);
     });
   });
 
@@ -655,16 +667,16 @@ describe('Access control syncing', () => {
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName2);
 
       const rule1 = makeAccessControlRule({
-        dateControl: { releaseDate: '2024-03-14T00:01:00', durationMinutes: 60 },
+        dateControl: { durationMinutes: 60 },
       });
-      const rule2 = makeAccessControlRule({
+      const rule2: AccessControlJsonInput = {
         labels: [groupName1],
         dateControl: { durationMinutes: 90 },
-      });
-      const rule3 = makeAccessControlRule({
+      };
+      const rule3: AccessControlJsonInput = {
         labels: [groupName2],
         dateControl: { durationMinutes: 120 },
-      });
+      };
 
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
         util.ASSESSMENT_ID
@@ -2133,7 +2145,10 @@ describe('cleanAccessControlRulesForDisk', () => {
 
     const cleaned = cleanAccessControlRulesForDisk(rules);
 
-    assert.deepEqual((cleaned[0] as any).dateControl, { dueDate: '2024-04-01T23:59:00' });
+    assert.deepEqual((cleaned[0] as any).dateControl, {
+      releaseDate: '2024-03-14T00:01:00',
+      dueDate: '2024-04-01T23:59:00',
+    });
     assert.deepEqual((cleaned[0] as any).afterComplete, { hideQuestions: true });
   });
 });

@@ -10,6 +10,8 @@ import {
   useWatch,
 } from 'react-hook-form';
 
+import { formatDateFriendly } from '@prairielearn/formatter';
+
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
@@ -104,6 +106,9 @@ function DeadlineArrayInput({
     );
   };
 
+  const formatRef = (date: Date) =>
+    formatDateFriendly(date, getUserTimezone(), { dateOnly: true, includeTz: false });
+
   // Read from refs to avoid stale closures — register() captures the validate
   // function once, but these constraint values change over the form's lifetime.
   const validateDate = (value: unknown, index: number) => {
@@ -116,23 +121,25 @@ function DeadlineArrayInput({
 
     if (isEarly) {
       if (currentDueDate && deadlineDate >= currentDueDate) {
-        return 'Early deadline must be before due date';
+        return `Must be before due date (${formatRef(currentDueDate)})`;
       }
       if (index > 0 && currentDeadlines[index - 1]?.date) {
-        if (deadlineDate <= new Date(currentDeadlines[index - 1].date)) {
-          return 'Must be after previous early deadline';
+        const prevDate = new Date(currentDeadlines[index - 1].date);
+        if (deadlineDate <= prevDate) {
+          return `Must be after previous early deadline (${formatRef(prevDate)})`;
         }
       }
       if (currentReleaseDate && deadlineDate < currentReleaseDate) {
-        return 'Must be after release date';
+        return `Must be after release date (${formatRef(currentReleaseDate)})`;
       }
     } else {
       if (currentDueDate && deadlineDate <= currentDueDate) {
-        return 'Late deadline must be after due date';
+        return `Must be after due date (${formatRef(currentDueDate)})`;
       }
       if (index > 0 && currentDeadlines[index - 1]?.date) {
-        if (deadlineDate <= new Date(currentDeadlines[index - 1].date)) {
-          return 'Must be after previous late deadline';
+        const prevDate = new Date(currentDeadlines[index - 1].date);
+        if (deadlineDate <= prevDate) {
+          return `Must be after previous late deadline (${formatRef(prevDate)})`;
         }
       }
     }

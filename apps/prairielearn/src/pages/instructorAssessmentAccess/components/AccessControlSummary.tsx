@@ -11,37 +11,77 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import { Fragment, useId, useMemo } from 'react';
 import { Button } from 'react-bootstrap';
+import { get, useFormState } from 'react-hook-form';
 
 import {
+  type DateFieldErrors,
   DateTableView,
   OverrideRuleSummaryCard,
   generateDateTableRows,
   generateRuleSummary,
 } from './RuleSummary.js';
-import type { MainRuleData, OverrideData } from './types.js';
+import type { AccessControlFormData, DeadlineEntry, MainRuleData, OverrideData } from './types.js';
+
+function useDateFieldErrors(
+  pathPrefix: string,
+  rule: { earlyDeadlines: DeadlineEntry[]; lateDeadlines: DeadlineEntry[] },
+): DateFieldErrors | undefined {
+  const { errors } = useFormState<AccessControlFormData>();
+  const result: DateFieldErrors = {};
+  let hasErrors = false;
+
+  const dueDateMsg: string | undefined = get(errors, `${pathPrefix}.dueDate`)?.message;
+  if (dueDateMsg) {
+    result.dueDate = dueDateMsg;
+    hasErrors = true;
+  }
+
+  const earlyMessages: (string | undefined)[] = [];
+  for (let i = 0; i < rule.earlyDeadlines.length; i++) {
+    const msg: string | undefined = get(errors, `${pathPrefix}.earlyDeadlines.${i}.date`)?.message;
+    if (msg) {
+      earlyMessages[i] = msg;
+      hasErrors = true;
+    }
+  }
+  if (earlyMessages.length > 0) result.earlyDeadlines = earlyMessages;
+
+  const lateMessages: (string | undefined)[] = [];
+  for (let i = 0; i < rule.lateDeadlines.length; i++) {
+    const msg: string | undefined = get(errors, `${pathPrefix}.lateDeadlines.${i}.date`)?.message;
+    if (msg) {
+      lateMessages[i] = msg;
+      hasErrors = true;
+    }
+  }
+  if (lateMessages.length > 0) result.lateDeadlines = lateMessages;
+
+  return hasErrors ? result : undefined;
+}
 
 function SortableOverrideCard({
   id,
+  index,
   override,
   title,
   courseInstanceId,
   displayTimezone,
-  errors,
   onEdit,
   onRemove,
 }: {
   id: string;
+  index: number;
   override: OverrideData;
   title: string;
   courseInstanceId: string;
   displayTimezone: string;
-  errors?: string[];
   onEdit: () => void;
   onRemove: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
   });
+  const fieldErrors = useDateFieldErrors(`overrides.${index}`, override);
 
   const style = {
     opacity: isDragging ? 0.6 : 1,
@@ -56,7 +96,7 @@ function SortableOverrideCard({
         title={title}
         courseInstanceId={courseInstanceId}
         displayTimezone={displayTimezone}
-        errors={errors}
+        fieldErrors={fieldErrors}
         dragHandleProps={{ ...attributes, ...listeners }}
         onEdit={onEdit}
         onRemove={onRemove}
@@ -72,8 +112,9 @@ function MainRuleSummaryContent({
   rule: MainRuleData;
   displayTimezone: string;
 }) {
+  const fieldErrors = useDateFieldErrors('mainRule', rule);
   const summaryItems = generateRuleSummary(rule, displayTimezone);
-  const dateTableRows = generateDateTableRows(rule, displayTimezone);
+  const dateTableRows = generateDateTableRows(rule, displayTimezone, fieldErrors);
 
   return (
     <div>
@@ -114,8 +155,6 @@ export function AccessControlSummary({
   mainRule,
   overrides,
   getOverrideName,
-  mainRuleErrors,
-  getOverrideErrors,
   onAddOverride,
   onRemoveOverride,
   onMoveOverride,
@@ -129,8 +168,6 @@ export function AccessControlSummary({
   overrides: OverrideData[];
   /** Get the display name for an override by index */
   getOverrideName: (index: number) => string;
-  mainRuleErrors?: string[];
-  getOverrideErrors?: (index: number) => string[];
   onAddOverride: () => void;
   onRemoveOverride: (index: number) => void;
   onMoveOverride: (fromIndex: number, toIndex: number) => void;
@@ -184,16 +221,6 @@ export function AccessControlSummary({
           Access settings that apply to all students by default.
         </small>
 
-        {mainRuleErrors && mainRuleErrors.length > 0 && (
-          <div className="alert alert-danger mb-3">
-            <ul className="mb-0">
-              {mainRuleErrors.map((msg) => (
-                <li key={msg}>{msg}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
         <MainRuleSummaryContent rule={mainRule} displayTimezone={displayTimezone} />
       </section>
 
@@ -245,11 +272,11 @@ export function AccessControlSummary({
                     )}
                     <SortableOverrideCard
                       id={sortableIds[index]}
+                      index={index}
                       override={override}
                       title={getOverrideName(index)}
                       courseInstanceId={courseInstanceId}
                       displayTimezone={displayTimezone}
-                      errors={getOverrideErrors?.(index)}
                       onEdit={() => onEditOverride(index)}
                       onRemove={() => onRemoveOverride(index)}
                     />

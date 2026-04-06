@@ -747,15 +747,8 @@
           "additionalProperties": false,
           "properties": {
             "releaseDate": {
-              "description": "Release date as ISO String. If absent or null, no date-based access is granted.",
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/DatetimeLocalStringSchema"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "description": "Release date as ISO String. If absent, no date-based access is granted. On overrides, omit to inherit from defaults.",
+              "$ref": "#/definitions/DatetimeLocalStringSchema"
             },
             "dueDate": {
               "description": "Due date as ISO String",

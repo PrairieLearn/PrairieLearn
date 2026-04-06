@@ -1226,6 +1226,10 @@ export function validateAccessControlArray({
       );
     }
 
+    if (isMainRule && rule.dateControl && !rule.dateControl.releaseDate) {
+      errors.push('Release date is required on the defaults when dateControl is specified.');
+    }
+
     const dateErrors = validateRuleDateOrdering(rule);
     errors.push(...dateErrors);
     // Credit monotonicity assumes deadlines are chronological; skip if dates

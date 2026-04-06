@@ -295,12 +295,6 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
     if (rule.dueDate) output.dateControl.dueDate = rule.dueDate;
     if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (rule.lateDeadlines.length > 0) output.dateControl.lateDeadlines = rule.lateDeadlines;
-  }
-
-  // Non-date fields live under dateControl in the schema but should be
-  // preserved regardless of whether the date control toggle is enabled.
-  if (rule.afterLastDeadline || rule.durationMinutes != null || rule.password) {
-    output.dateControl ??= {};
     if (rule.afterLastDeadline) output.dateControl.afterLastDeadline = rule.afterLastDeadline;
     if (rule.durationMinutes != null) output.dateControl.durationMinutes = rule.durationMinutes;
     if (rule.password) output.dateControl.password = rule.password;
@@ -357,7 +351,8 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
 
   if (hasDateControl) {
     output.dateControl = {};
-    if (of.has('releaseDate')) output.dateControl.releaseDate = rule.releaseDate;
+    if (of.has('releaseDate') && rule.releaseDate)
+      output.dateControl.releaseDate = rule.releaseDate;
     if (of.has('dueDate')) output.dateControl.dueDate = rule.dueDate;
     if (of.has('earlyDeadlines')) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (of.has('lateDeadlines')) output.dateControl.lateDeadlines = rule.lateDeadlines;

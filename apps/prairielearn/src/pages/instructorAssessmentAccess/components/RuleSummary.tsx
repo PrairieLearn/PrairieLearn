@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import type { ReactNode } from 'react';
-import { Alert, Button, Card } from 'react-bootstrap';
+import { Button, Card } from 'react-bootstrap';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
@@ -30,9 +30,23 @@ interface DateTableRow {
   label: string;
   credit: string;
   visibility: string;
+  error?: string;
 }
 
-export function generateDateTableRows(rule: RuleData, displayTimezone: string): DateTableRow[] {
+/**
+ * Maps field paths to their error messages for date-related fields.
+ */
+export interface DateFieldErrors {
+  dueDate?: string;
+  earlyDeadlines?: (string | undefined)[];
+  lateDeadlines?: (string | undefined)[];
+}
+
+export function generateDateTableRows(
+  rule: RuleData,
+  displayTimezone: string,
+  fieldErrors?: DateFieldErrors,
+): DateTableRow[] {
   const rows: DateTableRow[] = [];
 
   // For main rule: check dateControlEnabled flag
@@ -88,6 +102,7 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
           label: `Early ${index + 1}`,
           credit: `${deadline.credit}%`,
           visibility: 'Open',
+          error: fieldErrors?.earlyDeadlines?.[index],
         });
       }
     });
@@ -104,6 +119,7 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
         label: 'Due',
         credit: '100%',
         visibility: 'Due',
+        error: fieldErrors?.dueDate,
       });
     } else if (dueDate === null) {
       rows.push({
@@ -127,6 +143,7 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
           label: `Late ${index + 1}`,
           credit: `${deadline.credit}%`,
           visibility: 'Open',
+          error: fieldErrors?.lateDeadlines?.[index],
         });
       }
     });
@@ -278,26 +295,32 @@ export function generateRuleSummary(rule: RuleData, displayTimezone: string): Su
 interface OverrideFieldItem {
   label: string;
   value: ReactNode;
+  error?: string;
 }
 
 function formatDeadlineEntries(
   deadlines: DeadlineEntry[],
   displayTimezone: string,
   labelPrefix: string,
+  deadlineErrors?: (string | undefined)[],
 ): OverrideFieldItem[] {
-  const filtered = deadlines.filter((d) => d.date);
-  return filtered.map((d, i) => ({
+  const filtered: { entry: DeadlineEntry; originalIndex: number }[] = [];
+  deadlines.forEach((d, i) => {
+    if (d.date) filtered.push({ entry: d, originalIndex: i });
+  });
+  return filtered.map(({ entry, originalIndex }, i) => ({
     label: filtered.length === 1 ? `${labelPrefix} deadline` : `${labelPrefix} deadline ${i + 1}`,
     value: (
       <>
         <FriendlyDate
-          date={Temporal.PlainDateTime.from(d.date)}
+          date={Temporal.PlainDateTime.from(entry.date)}
           timezone={displayTimezone}
           tooltip
         />{' '}
-        ({d.credit}% credit)
+        ({entry.credit}% credit)
       </>
     ),
+    error: deadlineErrors?.[originalIndex],
   }));
 }
 
@@ -317,6 +340,7 @@ function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): str
 function generateOverrideFieldItems(
   rule: OverrideData,
   displayTimezone: string,
+  fieldErrors?: DateFieldErrors,
 ): OverrideFieldItem[] {
   const items: OverrideFieldItem[] = [];
   const overriddenFields = new Set(rule.overriddenFields);
@@ -339,7 +363,12 @@ function generateOverrideFieldItems(
   }
 
   if (overriddenFields.has('earlyDeadlines')) {
-    const earlyItems = formatDeadlineEntries(rule.earlyDeadlines, displayTimezone, 'Early');
+    const earlyItems = formatDeadlineEntries(
+      rule.earlyDeadlines,
+      displayTimezone,
+      'Early',
+      fieldErrors?.earlyDeadlines,
+    );
     items.push(
       ...(earlyItems.length > 0 ? earlyItems : [{ label: 'Early deadlines', value: 'None' }]),
     );
@@ -357,11 +386,17 @@ function generateOverrideFieldItems(
       ) : (
         'No due date'
       ),
+      error: fieldErrors?.dueDate,
     });
   }
 
   if (overriddenFields.has('lateDeadlines')) {
-    const lateItems = formatDeadlineEntries(rule.lateDeadlines, displayTimezone, 'Late');
+    const lateItems = formatDeadlineEntries(
+      rule.lateDeadlines,
+      displayTimezone,
+      'Late',
+      fieldErrors?.lateDeadlines,
+    );
     items.push(
       ...(lateItems.length > 0 ? lateItems : [{ label: 'Late deadlines', value: 'None' }]),
     );
@@ -481,12 +516,29 @@ function OverrideFieldsList({ items }: { items: OverrideFieldItem[] }) {
         {items.map((item) => (
           <tr key={item.label}>
             <td
-              className="text-body-secondary fw-medium p-0 pe-3 pb-1"
-              style={{ whiteSpace: 'nowrap', width: '1%' }}
+              className={`fw-medium p-0 pe-3 pb-1 ${item.error ? 'text-danger' : 'text-body-secondary'}`}
+              style={{
+                whiteSpace: 'nowrap',
+                width: '1%',
+                borderLeft: item.error ? '3px solid var(--bs-danger)' : undefined,
+                paddingLeft: item.error ? '0.5rem' : undefined,
+              }}
             >
               {item.label}
             </td>
-            <td className="p-0 pb-1">{item.value}</td>
+            <td className="p-0 pb-1">
+              {item.error ? (
+                <div>
+                  <span className="text-danger">
+                    <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
+                    {item.value}
+                  </span>
+                  <div className="text-danger small">{item.error}</div>
+                </div>
+              ) : (
+                item.value
+              )}
+            </td>
           </tr>
         ))}
       </tbody>
@@ -546,9 +598,30 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
           {rows.map((row, index) => (
             // eslint-disable-next-line @eslint-react/no-array-index-key
             <tr key={index}>
-              <td className="ps-3 border-0" style={tdStyle}>
-                {row.label && <span className="text-body-secondary me-1">{row.label}:</span>}
-                {row.date}
+              <td
+                className="border-0"
+                style={{
+                  ...tdStyle,
+                  paddingLeft: row.error ? undefined : '1rem',
+                  borderLeft: row.error ? '3px solid var(--bs-danger)' : undefined,
+                }}
+              >
+                {row.label && (
+                  <span className={`me-1 ${row.error ? 'text-danger' : 'text-body-secondary'}`}>
+                    {row.label}:
+                  </span>
+                )}
+                {row.error ? (
+                  <div>
+                    <span className="text-danger">
+                      <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
+                      {row.date}
+                    </span>
+                    <div className="text-danger small">{row.error}</div>
+                  </div>
+                ) : (
+                  row.date
+                )}
               </td>
               <td className="border-0" style={tdStyle}>
                 <CreditBadge credit={row.credit} />
@@ -584,7 +657,7 @@ export function OverrideRuleSummaryCard({
   onEdit,
   courseInstanceId,
   displayTimezone,
-  errors,
+  fieldErrors,
   dragHandleProps,
 }: {
   rule: OverrideData;
@@ -592,11 +665,11 @@ export function OverrideRuleSummaryCard({
   onEdit?: () => void;
   courseInstanceId: string;
   displayTimezone: string;
-  errors?: string[];
+  fieldErrors?: DateFieldErrors;
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
 }) {
-  const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone);
+  const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone, fieldErrors);
 
   const students = rule.appliesTo.targetType === 'enrollment' ? rule.appliesTo.enrollments : [];
 
@@ -653,16 +726,6 @@ export function OverrideRuleSummaryCard({
         </div>
       </Card.Header>
       <Card.Body>
-        {errors && errors.length > 0 && (
-          <Alert variant="danger" className="mb-3">
-            <ul className="mb-0">
-              {errors.map((msg) => (
-                <li key={msg}>{msg}</li>
-              ))}
-            </ul>
-          </Alert>
-        )}
-
         {overrideFieldItems.length > 0 && <OverrideFieldsList items={overrideFieldItems} />}
 
         {students.length > 0 && (

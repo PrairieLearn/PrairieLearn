@@ -28,57 +28,6 @@ const defaultInitialData: AccessControlJsonWithId[] = [];
  */
 const accessControlFormInitialRightWidth = 560;
 
-/**
- * Maps react-hook-form error field keys to human-friendly labels.
- * Keys at any depth in the error object are matched.
- */
-const FIELD_LABELS: Record<string, string> = {
-  examUuid: 'Exam UUID',
-  releaseDate: 'Release date',
-  dueDate: 'Due date',
-  durationMinutes: 'Time limit',
-  password: 'Password',
-};
-
-/**
- * Array field keys that should produce indexed labels like "Early deadline 1".
- * When a numeric index is encountered under one of these keys, the label is
- * built from the array name + 1-based index and used as context for child errors.
- */
-const ARRAY_LABELS: Record<string, string> = {
-  earlyDeadlines: 'Early deadline',
-  lateDeadlines: 'Late deadline',
-  prairieTestExams: 'Exam',
-};
-
-function collectErrorMessages(
-  errors: Record<string, unknown> | undefined,
-  parentKey?: string,
-  parentArrayLabel?: string,
-): string[] {
-  if (!errors) return [];
-  const messages: string[] = [];
-  for (const [key, value] of Object.entries(errors)) {
-    if (value && typeof value === 'object') {
-      const obj = value as Record<string, unknown>;
-      if (typeof obj.message === 'string') {
-        const label = FIELD_LABELS[key] ?? parentKey;
-        messages.push(label ? `${label}: ${obj.message}` : obj.message);
-      } else if (ARRAY_LABELS[key]) {
-        messages.push(...collectErrorMessages(obj, parentKey, ARRAY_LABELS[key]));
-      } else if (parentArrayLabel && /^\d+$/.test(key)) {
-        const indexedLabel = `${parentArrayLabel} ${Number(key) + 1}`;
-        messages.push(...collectErrorMessages(obj, indexedLabel));
-      } else {
-        messages.push(
-          ...collectErrorMessages(obj, FIELD_LABELS[key] ?? parentKey, parentArrayLabel),
-        );
-      }
-    }
-  }
-  return messages;
-}
-
 type SelectedRule = { type: 'main' } | { type: 'override'; index: number } | null;
 
 export function AccessControlForm({
@@ -116,7 +65,7 @@ export function AccessControlForm({
     handleSubmit,
     watch,
     reset,
-    formState: { isDirty, isValid, errors },
+    formState: { isDirty, isValid },
   } = methods;
 
   const {
@@ -195,12 +144,6 @@ export function AccessControlForm({
       return `Overrides for ${getName(enrollments[0])}, ${getName(enrollments[1])}, and ${remaining} ${remaining === 1 ? 'other' : 'others'}`;
     }
   };
-
-  const mainRuleErrors = collectErrorMessages(
-    errors.mainRule as Record<string, unknown> | undefined,
-  );
-  const getOverrideErrors = (index: number): string[] =>
-    collectErrorMessages(errors.overrides?.[index] as Record<string, unknown> | undefined);
 
   const saveDisabledReason = isSaving
     ? 'Saving...'
@@ -287,8 +230,6 @@ export function AccessControlForm({
                     getOverrideName={getOverrideName}
                     mainRule={watchedData.mainRule}
                     overrides={watchedData.overrides}
-                    mainRuleErrors={mainRuleErrors}
-                    getOverrideErrors={getOverrideErrors}
                     onAddOverride={addOverride}
                     onRemoveOverride={handleDeleteClick}
                     onMoveOverride={moveOverride}
