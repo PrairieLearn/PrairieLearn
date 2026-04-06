@@ -660,8 +660,7 @@ function ConflictsAlert({
         {conflicts.githubRepoUrl && (
           <li>
             A GitHub repository with this name already exists. This can happen if a repository was
-            previously renamed.
-            {' '}
+            previously renamed.{' '}
             <a href={conflicts.githubRepoUrl} target="_blank" rel="noreferrer">
               Open repo
             </a>
