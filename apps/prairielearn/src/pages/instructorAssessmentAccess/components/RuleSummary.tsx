@@ -317,23 +317,23 @@ function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): str
 function generateOverrideFieldItems(
   rule: OverrideData,
   displayTimezone: string,
-  mainRuleReleaseDate?: string,
 ): OverrideFieldItem[] {
   const items: OverrideFieldItem[] = [];
   const overriddenFields = new Set(rule.overriddenFields);
 
   if (overriddenFields.has('releaseDate')) {
-    const resolvedDate = rule.releaseDate || mainRuleReleaseDate;
+    // A null/empty release date means "not released" (resolver returns active: false).
+    // TODO: enforce non-null release dates on overrides so this case goes away.
     items.push({
       label: 'Release date',
-      value: resolvedDate ? (
+      value: rule.releaseDate ? (
         <FriendlyDate
-          date={Temporal.PlainDateTime.from(resolvedDate)}
+          date={Temporal.PlainDateTime.from(rule.releaseDate)}
           timezone={displayTimezone}
           tooltip
         />
       ) : (
-        'Released'
+        'Not released'
       ),
     });
   }
@@ -586,7 +586,6 @@ export function OverrideRuleSummaryCard({
   displayTimezone,
   errors,
   dragHandleProps,
-  mainRuleReleaseDate,
 }: {
   rule: OverrideData;
   title: string;
@@ -596,9 +595,8 @@ export function OverrideRuleSummaryCard({
   errors?: string[];
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
-  mainRuleReleaseDate?: string;
 }) {
-  const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone, mainRuleReleaseDate);
+  const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone);
 
   const students = rule.appliesTo.targetType === 'enrollment' ? rule.appliesTo.enrollments : [];
 
