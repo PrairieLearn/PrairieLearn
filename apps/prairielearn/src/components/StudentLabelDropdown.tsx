@@ -31,7 +31,6 @@ export function StudentLabelDropdown({
             return (
               <Dropdown.Item
                 key={label.id}
-                active={isSelected}
                 disabled={disabled}
                 onClick={(e) => {
                   e.preventDefault();
