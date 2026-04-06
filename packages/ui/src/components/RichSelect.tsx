@@ -57,7 +57,7 @@ export function RichSelect<T extends string = string>({
             style={{
               maxHeight: '300px',
               width: minWidth
-                ? `min(${minWidth}px, var(--trigger-width))`
+                ? `max(${minWidth}px, var(--trigger-width))`
                 : 'var(--trigger-width)',
             }}
           >
