@@ -123,7 +123,7 @@
     initializeTemplate() {
       this.element.find('.upload-dropzone').each((_, /** @type {HTMLElement} */ dropzone) => {
         dropzone.addEventListener('click', () => {
-          let input = dropzone.querySelector('input[type="file"]');
+          let input = this.element[0].querySelector('input[type="file"]');
           if (input == null) {
             input = document.createElement('input');
             input.type = 'file';
@@ -132,7 +132,7 @@
             input.addEventListener('change', () => {
               this.addFiles(input.files); // no await
             });
-            dropzone.append(input);
+            this.element[0].append(input);
           }
           input.value = null; // Clear the input so that the change event will fire even if the same file is selected
           input.click();
