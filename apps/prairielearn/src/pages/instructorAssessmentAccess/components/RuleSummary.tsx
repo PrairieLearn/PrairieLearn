@@ -4,7 +4,6 @@ import { Alert, Button, Card } from 'react-bootstrap';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
-import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 
 import {
   type AfterLastDeadlineValue,
@@ -598,8 +597,6 @@ export function OverrideRuleSummaryCard({
 }) {
   const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone);
 
-  const students = rule.appliesTo.targetType === 'enrollment' ? rule.appliesTo.enrollments : [];
-
   const studentLabels =
     rule.appliesTo.targetType === 'student_label' ? rule.appliesTo.studentLabels : [];
 
@@ -665,21 +662,7 @@ export function OverrideRuleSummaryCard({
 
         {overrideFieldItems.length > 0 && <OverrideFieldsList items={overrideFieldItems} />}
 
-        {students.length > 0 && (
-          <div className="mb-2">
-            <span className="text-body-secondary">Applies to: </span>
-            {students.map((student, idx) => (
-              <span key={student.enrollmentId}>
-                <a href={getStudentEnrollmentUrl(courseInstanceId, student.enrollmentId)}>
-                  {student.name ?? student.uid}
-                </a>
-                {idx < students.length - 1 && ', '}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {overrideFieldItems.length === 0 && students.length === 0 && (
+        {overrideFieldItems.length === 0 && (
           <p className="text-body-secondary mb-0">No specific settings configured</p>
         )}
       </Card.Body>

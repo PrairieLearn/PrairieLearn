@@ -109,7 +109,7 @@ function AfterLastDeadlineInput({
           value={mode}
           aria-label="After last deadline"
           id={`${idPrefix}-after-deadline-mode`}
-          maxWidth="300px"
+          minWidth={300}
           onChange={handleModeChange}
         />
       </div>
