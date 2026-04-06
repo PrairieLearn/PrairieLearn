@@ -5,10 +5,49 @@ import ReactMarkdown from 'react-markdown';
 // The approach taken here comes from this part of the AI SDK docs:
 // https://ai-sdk.dev/cookbook/next/markdown-chatbot-with-memoization
 
-const MATH_PATTERN = /\$\$[\s\S]+?\$\$|\$[^\s$](?:[^$]*[^\s$])?\$|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\]/;
+/**
+ * Protect LaTeX math from markdown parsing by replacing math expressions
+ * with unique placeholders. After ReactMarkdown renders, the placeholders
+ * remain in the DOM text and MathJax typesets them on the client.
+ *
+ * We use Unicode private-use-area characters as delimiters for placeholders
+ * so they won't collide with any markdown syntax.
+ */
+function protectMath(text: string): string {
+  const placeholders: string[] = [];
 
-function containsMath(text: string): boolean {
-  return MATH_PATTERN.test(text);
+  const replaced = text
+    // Display math: $$...$$
+    .replace(/\$\$([\s\S]+?)\$\$/g, (_match, content) => {
+      const idx = placeholders.length;
+      placeholders.push(content);
+      return `\uE000DISPLAY${idx}\uE001`;
+    })
+    // Inline math: $...$  (not empty, not starting/ending with space)
+    .replace(/\$([^\s$](?:[^$]*[^\s$])?)\$/g, (_match, content) => {
+      const idx = placeholders.length;
+      placeholders.push(content);
+      return `\uE000INLINE${idx}\uE001`;
+    })
+    // \(...\) inline
+    .replace(/\\\((.+?)\\\)/g, (_match, content) => {
+      const idx = placeholders.length;
+      placeholders.push(content);
+      return `\uE000INLINE${idx}\uE001`;
+    })
+    // \[...\] display
+    .replace(/\\\[([\s\S]+?)\\\]/g, (_match, content) => {
+      const idx = placeholders.length;
+      placeholders.push(content);
+      return `\uE000DISPLAY${idx}\uE001`;
+    });
+
+  // Restore placeholders back to LaTeX delimiters
+  return replaced.replace(/\uE000(DISPLAY|INLINE)(\d+)\uE001/g, (_match, type, idxStr) => {
+    const idx = parseInt(idxStr, 10);
+    const content = placeholders[idx];
+    return type === 'DISPLAY' ? `$$${content}$$` : `$${content}$`;
+  });
 }
 
 function parseMarkdownIntoBlocks(markdown: string): string[] {
@@ -16,18 +55,10 @@ function parseMarkdownIntoBlocks(markdown: string): string[] {
   return tokens.map((token) => token.raw);
 }
 
-/**
- * For blocks containing LaTeX math, render as raw HTML so MathJax can
- * typeset the `$...$` and `$$...$$` delimiters without markdown parser
- * interference. For blocks without math, use ReactMarkdown for proper
- * markdown rendering.
- */
 const MemoizedMarkdownBlock = memo(
   ({ content }: { content: string }) => {
-    if (containsMath(content)) {
-      return <span dangerouslySetInnerHTML={{ __html: content }} />;
-    }
-    return <ReactMarkdown>{content}</ReactMarkdown>;
+    const safeContent = useMemo(() => protectMath(content), [content]);
+    return <ReactMarkdown>{safeContent}</ReactMarkdown>;
   },
   (prevProps, nextProps) => {
     if (prevProps.content !== nextProps.content) return false;
