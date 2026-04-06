@@ -285,7 +285,6 @@ export function AccessControlForm({
                 <div className="p-3">
                   {alert}
                   <AccessControlSummary
-                    courseInstanceId={courseInstance.id}
                     displayTimezone={courseInstance.display_timezone}
                     getOverrideName={getOverrideName}
                     mainRule={watchedData.mainRule}

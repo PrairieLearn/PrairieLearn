@@ -119,7 +119,6 @@ export function AccessControlSummary({
   onEditMainRule,
   onClearMainRule,
   onEditOverride,
-  courseInstanceId,
   displayTimezone,
 }: {
   mainRule: MainRuleData;
@@ -137,8 +136,6 @@ export function AccessControlSummary({
   onClearMainRule: () => void;
   /** Callback when an override edit is requested */
   onEditOverride: (index: number) => void;
-  /** Course instance ID for building URLs */
-  courseInstanceId: string;
   displayTimezone: string;
 }) {
   const dndId = useId();
