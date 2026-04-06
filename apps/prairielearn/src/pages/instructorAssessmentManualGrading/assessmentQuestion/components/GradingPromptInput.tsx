@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function GradingPromptInput({
   value,
@@ -16,6 +16,14 @@ export function GradingPromptInput({
   onStop: () => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isStopping, setIsStopping] = useState(false);
+
+  // Reset isStopping when generation ends
+  useEffect(() => {
+    if (!isGenerating) {
+      setIsStopping(false);
+    }
+  }, [isGenerating]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -43,10 +51,28 @@ export function GradingPromptInput({
       />
       <div className="d-flex justify-content-end">
         {isGenerating ? (
-          <button type="button" className="btn btn-outline-danger btn-sm" onClick={onStop}>
-            <i className="bi bi-stop-fill me-1" />
-            Stop
-          </button>
+          isStopping ? (
+            <button type="button" className="btn btn-outline-secondary btn-sm" disabled>
+              <span
+                className="spinner-border spinner-border-sm me-1"
+                role="status"
+                aria-hidden="true"
+              />
+              Stopping...
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-outline-danger btn-sm"
+              onClick={() => {
+                setIsStopping(true);
+                onStop();
+              }}
+            >
+              <i className="bi bi-stop-fill me-1" />
+              Stop
+            </button>
+          )
         ) : (
           <button
             type="button"

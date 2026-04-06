@@ -419,15 +419,6 @@ function createLogger(runId: string): WorkflowLogger & { flush(): Promise<void> 
 }
 
 /**
- * Appends text to a workflow run's `output` column. This can be called from
- * outside the workflow execution loop (e.g., from a route handler) to write
- * logs to the workflow run without holding the execution lock.
- */
-export async function appendWorkflowOutput(runId: string, text: string): Promise<void> {
-  await pool.queryAsync(sql.append_output, { id: runId, text });
-}
-
-/**
  * Starts a periodic background loop that recovers abandoned workflow runs.
  * On each tick it finds runs that are `'running'` but have either a stale
  * heartbeat (> 2 minutes old, indicating the executing server crashed) or

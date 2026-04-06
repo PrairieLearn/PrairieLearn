@@ -18,33 +18,33 @@ function protectMath(text: string): string {
 
   const replaced = text
     // Display math: $$...$$
-    .replace(/\$\$([\s\S]+?)\$\$/g, (_match, content) => {
+    .replaceAll(/\$\$([\s\S]+?)\$\$/g, (_match, content) => {
       const idx = placeholders.length;
       placeholders.push(content);
       return `\uE000DISPLAY${idx}\uE001`;
     })
     // Inline math: $...$  (not empty, not starting/ending with space)
-    .replace(/\$([^\s$](?:[^$]*[^\s$])?)\$/g, (_match, content) => {
+    .replaceAll(/\$([^\s$](?:[^$]*[^\s$])?)\$/g, (_match, content) => {
       const idx = placeholders.length;
       placeholders.push(content);
       return `\uE000INLINE${idx}\uE001`;
     })
     // \(...\) inline
-    .replace(/\\\((.+?)\\\)/g, (_match, content) => {
+    .replaceAll(/\\\((.+?)\\\)/g, (_match, content) => {
       const idx = placeholders.length;
       placeholders.push(content);
       return `\uE000INLINE${idx}\uE001`;
     })
     // \[...\] display
-    .replace(/\\\[([\s\S]+?)\\\]/g, (_match, content) => {
+    .replaceAll(/\\\[([\s\S]+?)\\\]/g, (_match, content) => {
       const idx = placeholders.length;
       placeholders.push(content);
       return `\uE000DISPLAY${idx}\uE001`;
     });
 
   // Restore placeholders back to LaTeX delimiters
-  return replaced.replace(/\uE000(DISPLAY|INLINE)(\d+)\uE001/g, (_match, type, idxStr) => {
-    const idx = parseInt(idxStr, 10);
+  return replaced.replaceAll(/\uE000(DISPLAY|INLINE)(\d+)\uE001/g, (_match, type, idxStr) => {
+    const idx = Number.parseInt(idxStr, 10);
     const content = placeholders[idx];
     return type === 'DISPLAY' ? `$$${content}$$` : `$${content}$`;
   });

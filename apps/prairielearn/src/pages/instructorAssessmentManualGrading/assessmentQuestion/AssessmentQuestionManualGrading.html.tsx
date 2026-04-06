@@ -2,7 +2,7 @@ import { useChat } from '@ai-sdk/react';
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { DefaultChatTransport, type ToolUIPart, type UIMessage } from 'ai';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Button, Modal } from 'react-bootstrap';
+import { Alert, Button, Modal, Overlay, Popover } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import { NuqsAdapter } from '@prairielearn/ui';
@@ -101,7 +101,11 @@ function ToolCallStatus({
       case 'input-streaming':
       case 'input-available':
         return (
-          <div className="spinner-border spinner-border-sm" role="status">
+          <div
+            className="spinner-grow spinner-grow-sm text-secondary"
+            role="status"
+            style={{ width: '0.5rem', height: '0.5rem' }}
+          >
             <span className="visually-hidden">Loading...</span>
           </div>
         );
@@ -544,11 +548,9 @@ function RubricDiff({ diff }: { diff: RubricDiffResult }) {
 }
 
 function ToolCall({ part }: { part: ToolUIPart }) {
-  if (
-    part.state === 'approval-requested' ||
-    part.state === 'approval-responded' ||
-    part.state === 'output-denied'
-  ) {
+  // Only show completed/errored tool calls — the "Working..." indicator
+  // handles the in-progress state to avoid duplicate loading indicators.
+  if (part.state !== 'output-available' && part.state !== 'output-error') {
     return null;
   }
 
@@ -610,7 +612,21 @@ function MasterRubricDiff({
   return <RubricDiff diff={diff} />;
 }
 
-function MessageParts({ parts }: { parts: UIMessage['parts'] }) {
+function MessageParts({
+  parts,
+  isStreaming,
+}: {
+  parts: UIMessage['parts'];
+  isStreaming?: boolean;
+}) {
+  // Show "Working..." whenever streaming and the last part isn't actively producing text.
+  // Text parts stream character-by-character so they're their own indicator.
+  const lastPart = [...parts].reverse().find(
+    (p) => (p.type === 'text' && p.text) || isToolPart(p),
+  );
+  const isActivelyStreamingText = lastPart?.type === 'text' && lastPart.text;
+  const isWorking = isStreaming && !isActivelyStreamingText;
+
   return (
     <>
       {parts.map((part, index) => {
@@ -629,6 +645,18 @@ function MessageParts({ parts }: { parts: UIMessage['parts'] }) {
         }
         return null;
       })}
+      {isWorking && (
+        <div className="d-flex align-items-center gap-2 small text-muted mt-1">
+          <div
+            className="spinner-grow spinner-grow-sm text-secondary"
+            role="status"
+            style={{ width: '0.5rem', height: '0.5rem' }}
+          >
+            <span className="visually-hidden">Working...</span>
+          </div>
+          Working...
+        </div>
+      )}
     </>
   );
 }
@@ -641,6 +669,72 @@ function scrollToRubricEditor() {
     behavior: 'smooth',
     block: 'start',
   });
+}
+
+function RevertButton({
+  label,
+  disabled,
+  onConfirm,
+}: {
+  label: string;
+  disabled: boolean;
+  onConfirm: () => void;
+}) {
+  const [show, setShow] = useState(false);
+  const targetRef = useRef<HTMLButtonElement>(null);
+
+  return (
+    <>
+      <button
+        ref={targetRef}
+        type="button"
+        className="btn btn-link btn-sm p-0 text-muted"
+        disabled={disabled}
+        onClick={() => setShow((s) => !s)}
+      >
+        <i className="bi bi-arrow-counterclockwise me-1" />
+        {label}
+      </button>
+      <Overlay
+        target={targetRef.current}
+        show={show}
+        placement="top-start"
+        rootClose
+        onHide={() => setShow(false)}
+      >
+        {(props) => (
+          <Popover {...props}>
+            <Popover.Header as="h6">Revert rubric</Popover.Header>
+            <Popover.Body style={{ width: 280 }}>
+              <p className="small text-body-secondary mb-2">
+                This will restore the rubric to this earlier state. You can always revert again to
+                return to the current rubric.
+              </p>
+              <div className="d-flex gap-2">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() => setShow(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary"
+                  onClick={() => {
+                    setShow(false);
+                    onConfirm();
+                  }}
+                >
+                  Revert rubric
+                </button>
+              </div>
+            </Popover.Body>
+          </Popover>
+        )}
+      </Overlay>
+    </>
+  );
 }
 
 function hasMutations(parts: UIMessage['parts']): boolean {
@@ -1083,12 +1177,10 @@ function AssessmentQuestionManualGradingInner({
             )}
             {messages.some((m) => m.role === 'assistant' && hasMutations(m.parts)) && (
               <div className="d-flex justify-content-center mb-3">
-                <button
-                  type="button"
-                  className="btn btn-link btn-sm p-0 text-muted"
+                <RevertButton
+                  label="Revert to initial rubric"
                   disabled={isGenerating}
-                  title="Revert rubric to the state before any AI changes"
-                  onClick={() => {
+                  onConfirm={() => {
                     const firstMutationMsg = messages.find(
                       (m) => m.role === 'assistant' && hasMutations(m.parts),
                     );
@@ -1101,10 +1193,7 @@ function AssessmentQuestionManualGradingInner({
                       text: `[revert:0] Revert the rubric to the initial state:\n${JSON.stringify(beforeSnapshot)}`,
                     });
                   }}
-                >
-                  <i className="bi bi-arrow-counterclockwise me-1" />
-                  Revert to initial state
-                </button>
+                />
               </div>
             )}
             {messages.map((message, msgIndex) => {
@@ -1166,49 +1255,26 @@ function AssessmentQuestionManualGradingInner({
 
               return (
                 <div key={message.id} className="d-flex flex-column gap-1 mb-3">
-                  <MessageParts parts={message.parts} />
+                  <MessageParts parts={message.parts} isStreaming={isGenerating && !isMessageComplete} />
                   <MasterRubricDiff parts={message.parts} isComplete={isMessageComplete} />
                   {isMessageComplete && hasMutations(message.parts) && (
-                    <div className="d-flex align-items-center gap-2">
-                      <button
-                        type="button"
-                        className="btn btn-link btn-sm p-0 text-muted"
-                        disabled={isGenerating}
-                        title={`Restore rubric to the state after message #${messageNumber}`}
-                        onClick={() => {
-                          const afterSnapshot = extractAfterSnapshot(message.parts);
-                          if (!afterSnapshot) return;
+                    <RevertButton
+                      label="Revert to this rubric"
+                      disabled={isGenerating}
+                      onConfirm={() => {
+                        const afterSnapshot = extractAfterSnapshot(message.parts);
+                        if (!afterSnapshot) return;
 
-                          currentPhaseRef.current = 'edit';
-                          void sendMessage({
-                            text: `[revert:${messageNumber}] Revert the rubric to this snapshot:\n${JSON.stringify(afterSnapshot)}`,
-                          });
-                        }}
-                      >
-                        <i className="bi bi-arrow-counterclockwise me-1" />
-                        Revert to #{messageNumber}
-                      </button>
-                    </div>
+                        currentPhaseRef.current = 'edit';
+                        void sendMessage({
+                          text: `[revert:${messageNumber}] Revert the rubric to this snapshot:\n${JSON.stringify(afterSnapshot)}`,
+                        });
+                      }}
+                    />
                   )}
                 </div>
               );
             })}
-            {isGenerating &&
-              (() => {
-                const lastMsg = messages.at(-1);
-                const hasVisibleParts =
-                  lastMsg?.role === 'assistant' &&
-                  lastMsg.parts.some((p) => (p.type === 'text' && p.text) || isToolPart(p));
-                if (hasVisibleParts) return null;
-                return (
-                  <div className="d-flex align-items-center gap-1 small text-muted">
-                    <div className="spinner-border spinner-border-sm" role="status">
-                      <span className="visually-hidden">Working...</span>
-                    </div>
-                    Working...
-                  </div>
-                );
-              })()}
           </div>
           <div className="p-3 border-top">
             {!hasGeneratedRubric && (
