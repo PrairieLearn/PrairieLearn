@@ -417,13 +417,9 @@ function FieldChangeLine({ change }: { change: FieldChange }) {
   );
 }
 
-function RubricDiff({
-  diff,
-  actionSlot,
-}: {
-  diff: RubricDiffResult;
-  actionSlot?: ReactNode;
-}) {
+function RubricDiff({ diff, actionSlot }: { diff: RubricDiffResult; actionSlot?: ReactNode }) {
+  const [expanded, setExpanded] = useState(false);
+
   const hasChanges = diff.items.length > 0 || diff.settingsChanges.length > 0;
   if (!hasChanges) return null;
 
@@ -471,7 +467,6 @@ function RubricDiff({
     }
   };
 
-  const [expanded, setExpanded] = useState(false);
   const changeCount = diff.items.length + diff.settingsChanges.length;
 
   return (
@@ -773,9 +768,6 @@ function hasMutations(parts: UIMessage['parts']): boolean {
   );
 }
 
-/**
- * Extract the "after" snapshot from the last mutation tool output in a message's parts.
- */
 function persistedMessagesToInitialMessages(
   persistedMessages: StaffAiGradingMessage[],
 ): RubricChatMessage[] {
@@ -1236,7 +1228,6 @@ function AssessmentQuestionManualGradingInner({
                 </div>
               );
             })}
-
           </div>
           <div className="p-3 border-top">
             {!hasGeneratedRubric && (
