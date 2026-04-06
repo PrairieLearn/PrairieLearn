@@ -24,7 +24,7 @@ export function IntegrationsSection() {
   }, [prairieTestEnabled, getValues, setValue]);
 
   return (
-    <div className="mb-4">
+    <div>
       <div className="section-header mb-3">
         <strong>Integrations</strong>
       </div>
@@ -46,9 +46,7 @@ export function IntegrationsSection() {
         Control access to your assessment through PrairieTest exams
       </Form.Text>
       {prairieTestEnabled && (
-        <div className="mt-3">
-          <PrairieTestControlForm />
-        </div>
+        <PrairieTestControlForm />
       )}
     </div>
   );

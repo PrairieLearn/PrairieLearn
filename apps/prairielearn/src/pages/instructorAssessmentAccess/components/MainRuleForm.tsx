@@ -24,10 +24,10 @@ export function MainRuleForm() {
   const { register } = useFormContext<AccessControlFormData>();
 
   return (
-    <>
+    <div className="d-flex flex-column gap-3">
       <MainDateControlForm />
       <IntegrationsSection />
-      <div className="mb-4">
+      <div>
         <div className="d-flex align-items-center section-header mb-3">
           <strong>Before release</strong>
           <OverlayTrigger trigger="click" placement="auto" popover={beforeReleasePopoverConfig}>
@@ -53,6 +53,6 @@ export function MainRuleForm() {
         </Form.Text>
       </div>
       <MainAfterCompleteForm />
-    </>
+    </div>
   );
 }
