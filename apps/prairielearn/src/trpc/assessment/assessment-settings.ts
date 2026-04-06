@@ -234,7 +234,10 @@ const copyAssessment = t.procedure.use(requireCoursePermissionEdit).mutation(asy
     IdSchema,
   );
 
-  flash('success', 'Assessment copied successfully. You are now viewing your copy of the assessment.');
+  flash(
+    'success',
+    'Assessment copied successfully. You are now viewing your copy of the assessment.',
+  );
 
   return { assessmentId };
 });
