@@ -603,10 +603,7 @@ router.get(
       const isPoints = req.params.filename === filenames.canvasPointsCsvFilename;
       const assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
       const scoreKey = isPoints ? 'points' : 'score_perc';
-      const canvasColumns: Columns = [
-        ...CANVAS_CSV_FIXED_COLUMNS,
-        [assessmentName, scoreKey],
-      ];
+      const canvasColumns: Columns = [...CANVAS_CSV_FIXED_COLUMNS, [assessmentName, scoreKey]];
       const cursor = await sqldb.queryCursor(
         sql.select_assessment_instances,
         {
