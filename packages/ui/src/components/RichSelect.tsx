@@ -56,9 +56,7 @@ export function RichSelect<T extends string = string>({
             placement="bottom start"
             style={{
               maxHeight: '300px',
-              width: minWidth
-                ? `max(${minWidth}px, var(--trigger-width))`
-                : 'var(--trigger-width)',
+              width: minWidth ? `max(${minWidth}px, var(--trigger-width))` : 'var(--trigger-width)',
             }}
           >
             <ListBox className="list-unstyled m-0" items={listItems}>
