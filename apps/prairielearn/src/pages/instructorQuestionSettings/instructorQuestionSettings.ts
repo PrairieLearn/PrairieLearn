@@ -187,9 +187,21 @@ router.post(
                 enum: z
                   .string()
                   .optional()
-                  .transform((val): string[] => {
+                  .transform((val, ctx): string[] => {
                     if (!val || val === '[]') return [];
-                    return JSON.parse(val) as string[];
+                    try {
+                      const parsed: unknown = JSON.parse(val);
+                      if (Array.isArray(parsed) && parsed.every((v) => typeof v === 'string')) {
+                        return parsed;
+                      }
+                    } catch {
+                      // Fall through to error
+                    }
+                    ctx.addIssue({
+                      code: z.ZodIssueCode.custom,
+                      message: 'Invalid enum format',
+                    });
+                    return z.NEVER;
                   }),
               }),
             )

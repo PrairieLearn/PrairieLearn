@@ -18,7 +18,11 @@ import type {
 import { idsEqual } from '../../../lib/id.js';
 import { validateShortName } from '../../../lib/short-name.js';
 import { coerceToNumber } from '../../instructorAssessmentQuestions/utils/formHelpers.js';
-import type { SelectedAssessments } from '../instructorQuestionSettings.types.js';
+import type {
+  PreferenceField,
+  QuestionSettingsFormValues,
+  SelectedAssessments,
+} from '../instructorQuestionSettings.types.js';
 
 import { PreferencesTable } from './PreferencesTable.js';
 
@@ -59,41 +63,6 @@ function AssessmentBadges({
   );
 }
 
-export interface PreferenceField {
-  name: string;
-  type: 'string' | 'number' | 'boolean';
-  default: string | number | boolean;
-  enum: string[];
-}
-
-export interface QuestionSettingsFormValues {
-  qid: string;
-  title: string;
-  topic: string;
-  tags: string[];
-  grading_method: 'Internal' | 'External' | 'Manual';
-  single_variant: boolean;
-  show_correct_answer: boolean;
-  partial_credit: boolean;
-  workspace_enabled: boolean;
-  workspace_image: string;
-  workspace_port: string;
-  workspace_home: string;
-  workspace_graded_files: string;
-  workspace_args: string;
-  workspace_environment: string;
-  workspace_enable_networking: boolean;
-  workspace_rewrite_url: boolean;
-  preferences: PreferenceField[];
-  /** Tracks the state of the checkbox */
-  external_grading_enabled: boolean;
-  external_grading_image: string;
-  external_grading_entrypoint: string;
-  external_grading_files: string;
-  external_grading_timeout: number | undefined;
-  external_grading_enable_networking: boolean;
-  external_grading_environment: string;
-}
 
 function validateJsonObject(value: string): string | true {
   if (!value || value.trim() === '' || value.trim() === '{}') return true;

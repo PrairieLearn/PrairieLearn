@@ -24,8 +24,10 @@ import {
 } from 'react-hook-form';
 
 import { DragHandle } from '../../instructorAssessmentQuestions/components/tree/DragHandle.js';
-
-import type { PreferenceField, QuestionSettingsFormValues } from './QuestionSettingsForm.js';
+import type {
+  PreferenceField,
+  QuestionSettingsFormValues,
+} from '../instructorQuestionSettings.types.js';
 
 export function PreferencesTable({
   control,
