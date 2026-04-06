@@ -9,7 +9,7 @@ import type { AuthzData } from './authz-data-lib.js';
 import { b64EncodeUnicode } from './base64-util.js';
 import type { Course, User } from './db-types.js';
 import { type FileDetails, type FileMetadata, FileType } from './editorUtil.shared.js';
-import { FileModifyEditor, computeFileContentHash, getOriginalHash } from './editors.js';
+import { FileModifyEditor, computeFileContentHash } from './editors.js';
 import { computeStableHash } from './json.js';
 import { formatJsonWithPrettier } from './prettier.js';
 
@@ -142,7 +142,7 @@ export async function saveJsonFile<T extends Record<string, unknown>>({
 }: {
   applyChanges: (jsonContents: T) => T;
   jsonPath: string;
-  conflictCheck?: {
+  conflictCheck: {
     origHash: string | null;
     scope: (jsonContents: T) => unknown;
   };
@@ -155,7 +155,7 @@ export async function saveJsonFile<T extends Record<string, unknown>>({
   const jsonContents = JSON.parse(rawContents) as T;
 
   // Scoped conflict detection: hash only the section being edited.
-  if (conflictCheck?.origHash) {
+  if (conflictCheck.origHash) {
     const currentHash = computeStableHash(conflictCheck.scope(jsonContents));
     if (currentHash !== conflictCheck.origHash) {
       return { success: false, reason: 'conflict' };
@@ -181,8 +181,6 @@ export async function saveJsonFile<T extends Record<string, unknown>>({
     return { success: false, reason: 'sync_failed', jobSequenceId: serverJob.jobSequenceId };
   }
 
-  const newHash = conflictCheck
-    ? computeStableHash(conflictCheck.scope(modifiedJsonContents))
-    : ((await getOriginalHash(jsonPath)) ?? '');
+  const newHash = computeStableHash(conflictCheck.scope(modifiedJsonContents));
   return { success: true, newHash };
 }
