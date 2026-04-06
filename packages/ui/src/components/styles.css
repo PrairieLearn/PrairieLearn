@@ -180,7 +180,6 @@ body.pl-ui-no-user-select {
   }
 }
 
-
 /* Radio indicator for react-aria Radio, styled to match Bootstrap's form-check-input[type="radio"]. */
 .pl-ui-radio-indicator {
   display: inline-block;
