@@ -316,7 +316,9 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
   return (
     <AfterCompleteCard title={title}>
       <Col md={6}>
-        <Form.Label className="fw-bold">Question visibility</Form.Label>
+        <Form.Label className="fw-bold" htmlFor="mainRule-question-visibility-mode">
+          Question visibility
+        </Form.Label>
         <QuestionVisibilityInput
           value={qvField.value}
           idPrefix="mainRule"
@@ -325,7 +327,9 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
         />
       </Col>
       <Col md={6}>
-        <Form.Label className="fw-bold">Score visibility</Form.Label>
+        <Form.Label className="fw-bold" htmlFor="mainRule-score-visibility-mode">
+          Score visibility
+        </Form.Label>
         <ScoreVisibilityInput
           value={svField.value}
           idPrefix="mainRule"
