@@ -3,6 +3,8 @@ import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
+import { StaffCourseSchema } from '../../lib/client/safe-db-types.js';
+import { config } from '../../lib/config.js';
 import {
   checkInstructorLegitimacy,
   suggestInstitutionPrefix,
@@ -14,13 +16,11 @@ import {
   selectInstitutionPrefix,
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
-import {
-  checkCoursePathExists,
-  checkCourseRepositoryExists,
-  findCourseByPath,
-  findCourseByRepositoryName,
-} from '../../lib/course.js';
 import { checkGithubRepositoryExists } from '../../lib/github.js';
+import {
+  selectOptionalCourseByPath,
+  selectOptionalCourseByRepositoryName,
+} from '../../models/course.js';
 
 import { normalizeCoursePathInput } from './course-path.js';
 import { requireAdministrator, t } from './init.js';
@@ -67,8 +67,8 @@ const createCourse = t.procedure
   .mutation(async ({ input, ctx }) => {
     const normalizedPath = normalizeCoursePathInput(input.path);
 
-    const repoExists = await checkCourseRepositoryExists(input.repoShortName);
-    if (repoExists) {
+    const repoCourse = await selectOptionalCourseByRepositoryName(input.repoShortName);
+    if (repoCourse != null) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'A course with this repository already exists.',
@@ -84,8 +84,8 @@ const createCourse = t.procedure
       });
     }
 
-    const pathExists = await checkCoursePathExists(normalizedPath);
-    if (pathExists) {
+    const pathCourse = await selectOptionalCourseByPath(normalizedPath);
+    if (pathCourse != null) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'A course with this path already exists.',
@@ -190,14 +190,29 @@ const checkConflictsProcedure = t.procedure
       path: z.string().min(1),
     }),
   )
+  .output(
+    z.object({
+      repoCourse: StaffCourseSchema.nullable(),
+      repoExistsOnGithub: z.boolean(),
+      githubRepoUrl: z.string().url().nullable(),
+      pathCourse: StaffCourseSchema.nullable(),
+    }),
+  )
   .query(async ({ input }) => {
     const normalizedPath = normalizeCoursePathInput(input.path);
     const [repoCourse, repoExistsOnGithub, pathCourse] = await Promise.all([
-      findCourseByRepositoryName(input.repoShortName),
+      selectOptionalCourseByRepositoryName(input.repoShortName),
       checkGithubRepositoryExists(input.repoShortName),
-      findCourseByPath(normalizedPath),
+      selectOptionalCourseByPath(normalizedPath),
     ]);
-    return { repoCourse, repoExistsOnGithub, pathCourse };
+    return {
+      repoCourse: repoCourse ? StaffCourseSchema.parse(repoCourse) : null,
+      repoExistsOnGithub,
+      githubRepoUrl: repoExistsOnGithub
+        ? `https://github.com/${config.githubCourseOwner}/${input.repoShortName}`
+        : null,
+      pathCourse: pathCourse ? StaffCourseSchema.parse(pathCourse) : null,
+    };
   });
 
 export const administratorCourseRequestsRouter = t.router({

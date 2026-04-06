@@ -206,17 +206,6 @@ export async function pullAndUpdateCourse({
   return { jobSequenceId: serverJob.jobSequenceId, jobPromise };
 }
 
-export async function checkCourseRepositoryExists(repoName: string) {
-  // Escape SQL LIKE wildcards so they are matched literally.
-  const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
-  const result = await sqldb.queryScalar(
-    sql.exists_by_course_request_repository_name,
-    { repoName: escapedRepoName },
-    z.boolean(),
-  );
-  return result;
-}
-
 /**
  * Extracts the "owner/repo.git" suffix from a Git repository URL,
  * handling both SSH (git@github.com:Org/repo.git) and HTTPS
@@ -261,26 +250,4 @@ export async function checkCoursePathExists(path: string, excludeCourseId?: stri
     z.boolean(),
   );
   return result;
-}
-
-const ConflictingCourseSchema = z.object({
-  id: IdSchema,
-  short_name: z.string(),
-  title: z.string(),
-});
-export type ConflictingCourse = z.infer<typeof ConflictingCourseSchema>;
-
-export async function findCourseByRepositoryName(
-  repoName: string,
-): Promise<ConflictingCourse | null> {
-  const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
-  return await sqldb.queryOptionalRow(
-    sql.find_by_course_request_repository_name,
-    { repoName: escapedRepoName },
-    ConflictingCourseSchema,
-  );
-}
-
-export async function findCourseByPath(path: string): Promise<ConflictingCourse | null> {
-  return await sqldb.queryOptionalRow(sql.find_by_course_path, { path }, ConflictingCourseSchema);
 }

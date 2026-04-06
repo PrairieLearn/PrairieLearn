@@ -77,7 +77,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
       assert.isTrue(response.ok);
 
       // The default view shows pending requests only.
-      const heading = response.$('h2');
+      const heading = response.$('h1');
       assert.include(heading.text(), 'Pending');
 
       const requestCell = response.$(`td:contains("${shortName}")`);
@@ -88,7 +88,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
       const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
-      const heading = response.$('h2');
+      const heading = response.$('h1');
       assert.include(heading.text(), 'All');
 
       const requestCell = response.$(`td:contains("${shortName}")`);

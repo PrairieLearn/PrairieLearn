@@ -99,14 +99,8 @@ export function getAiQuestionGenerationDraftsUrl({ urlPrefix }: { urlPrefix: str
   return `${urlPrefix}/ai_generate_question_drafts`;
 }
 
-export function getAdministratorCourseRequestsUrl({
-  urlPrefix,
-  showAll,
-}: {
-  urlPrefix: string;
-  showAll?: boolean;
-}): string {
-  const base = `${urlPrefix}/administrator/courseRequests`;
+export function getAdministratorCourseRequestsUrl({ showAll }: { showAll?: boolean }): string {
+  const base = '/pl/administrator/courseRequests';
   return showAll ? `${base}?status=all` : base;
 }
 

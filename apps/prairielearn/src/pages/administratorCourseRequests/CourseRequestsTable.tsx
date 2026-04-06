@@ -7,21 +7,20 @@ import ReactMarkdown from 'react-markdown';
 
 import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
-import { getAppError } from '../lib/client/errors.js';
-import type { AdminInstitution } from '../lib/client/safe-db-types.js';
-import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
-import type { CourseRequestRow } from '../lib/course-request.js';
-import { type Timezone } from '../lib/timezone.shared.js';
-import { useTRPC } from '../trpc/administrator/context.js';
-import type { AdminCourseRequestError } from '../trpc/administrator/course-requests.js';
-
 import {
   AdministratorCourseFormFields,
   type CourseFormFieldValues,
   buildRepoShortName,
   useInstitutionPrefix,
-} from './AdminstratorCourseFormFields.js';
-import { JobStatus } from './JobStatus.js';
+} from '../../components/AdminstratorCourseFormFields.js';
+import { JobStatus } from '../../components/JobStatus.js';
+import { getAppError } from '../../lib/client/errors.js';
+import type { AdminInstitution, StaffCourse } from '../../lib/client/safe-db-types.js';
+import { getAdministratorCourseRequestsUrl } from '../../lib/client/url.js';
+import type { CourseRequestRow } from '../../lib/course-request.js';
+import { type Timezone } from '../../lib/timezone.shared.js';
+import { useTRPC } from '../../trpc/administrator/context.js';
+import type { AdminCourseRequestError } from '../../trpc/administrator/course-requests.js';
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -59,11 +58,11 @@ export function CourseRequestsTable({
   return (
     <div className="card mb-4">
       <div className="card-header bg-primary text-white d-flex align-items-center">
-        <h2>{headerPrefix} course requests</h2>
+        <h1 className="h2 mb-0">{headerPrefix} course requests</h1>
         {!showAll && (
           <a
             className="btn btn-sm btn-light ms-auto"
-            href={getAdministratorCourseRequestsUrl({ urlPrefix, showAll: true })}
+            href={getAdministratorCourseRequestsUrl({ showAll: true })}
           >
             <i className="fa fa-search" aria-hidden="true" />
             <span className="d-none d-sm-inline">View all</span>
@@ -628,9 +627,10 @@ function ConflictsAlert({
 }: {
   conflicts:
     | {
-        repoCourse: { id: string; short_name: string; title: string } | null;
+        repoCourse: StaffCourse | null;
         repoExistsOnGithub: boolean;
-        pathCourse: { id: string; short_name: string; title: string } | null;
+        githubRepoUrl: string | null;
+        pathCourse: StaffCourse | null;
       }
     | undefined;
   urlPrefix: string;
@@ -662,6 +662,15 @@ function ConflictsAlert({
           <li>
             A GitHub repository with this name already exists. This can happen if a repository was
             previously renamed.
+            {conflicts.githubRepoUrl && (
+              <>
+                {' '}
+                <a href={conflicts.githubRepoUrl} target="_blank" rel="noreferrer">
+                  Open repo
+                </a>
+                .
+              </>
+            )}
           </li>
         )}
         {conflicts.pathCourse && (

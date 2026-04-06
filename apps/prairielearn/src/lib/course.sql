@@ -18,18 +18,6 @@ WHERE
   cp.course_role = 'Owner'
   AND cp.course_id = $course_id;
 
--- BLOCK exists_by_course_request_repository_name
-SELECT
-  EXISTS (
-    SELECT
-      1
-    FROM
-      courses
-    WHERE
-      repository ILIKE '%/' || $repoName || '.git' ESCAPE '\'
-      AND deleted_at IS NULL
-  ) AS exists;
-
 -- BLOCK exists_by_course_repository
 SELECT
   EXISTS (
@@ -80,29 +68,3 @@ SELECT
       )
       AND deleted_at IS NULL
   ) AS exists;
-
--- BLOCK find_by_course_request_repository_name
-SELECT
-  id,
-  short_name,
-  title
-FROM
-  courses
-WHERE
-  repository ILIKE '%/' || $repoName || '.git' ESCAPE '\'
-  AND deleted_at IS NULL
-LIMIT
-  1;
-
--- BLOCK find_by_course_path
-SELECT
-  id,
-  short_name,
-  title
-FROM
-  courses
-WHERE
-  path = $path
-  AND deleted_at IS NULL
-LIMIT
-  1;
