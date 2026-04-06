@@ -1,8 +1,8 @@
 import { Temporal } from '@js-temporal/polyfill';
+import type { ReactNode } from 'react';
 import { Alert, Button, Card } from 'react-bootstrap';
 
-import { formatDate } from '@prairielearn/formatter';
-
+import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 
@@ -15,7 +15,6 @@ import {
 } from './types.js';
 
 type RuleData = MainRuleData | OverrideData;
-type SummaryVerbosity = 'compact' | 'verbose';
 
 function isMainRuleData(rule: RuleData): rule is MainRuleData {
   return 'dateControlEnabled' in rule;
@@ -27,7 +26,7 @@ function isOverrideFieldActive(rule: RuleData, fieldName: string): boolean {
 }
 
 interface DateTableRow {
-  date: string;
+  date: ReactNode;
   label: string;
   credit: string;
   visibility: string;
@@ -56,14 +55,20 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
         visibilityParts.push('(listed before release)');
       }
       rows.push({
-        date: formatDate(Temporal.PlainDateTime.from(releaseDate), displayTimezone),
+        date: (
+          <FriendlyDate
+            date={Temporal.PlainDateTime.from(releaseDate)}
+            timezone={displayTimezone}
+            tooltip
+          />
+        ),
         label: 'Release',
         credit: '100%',
         visibility: visibilityParts.join(' '),
       });
     } else if (releaseDate === null) {
       rows.push({
-        date: 'Released immediately',
+        date: 'Released',
         label: '',
         credit: '100%',
         visibility: 'Assessment opens',
@@ -73,7 +78,13 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
     earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
       if (deadline.date) {
         rows.push({
-          date: formatDate(Temporal.PlainDateTime.from(deadline.date), displayTimezone),
+          date: (
+            <FriendlyDate
+              date={Temporal.PlainDateTime.from(deadline.date)}
+              timezone={displayTimezone}
+              tooltip
+            />
+          ),
           label: `Early ${index + 1}`,
           credit: `${deadline.credit}%`,
           visibility: 'Open',
@@ -83,7 +94,13 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
 
     if (dueDate) {
       rows.push({
-        date: formatDate(Temporal.PlainDateTime.from(dueDate), displayTimezone),
+        date: (
+          <FriendlyDate
+            date={Temporal.PlainDateTime.from(dueDate)}
+            timezone={displayTimezone}
+            tooltip
+          />
+        ),
         label: 'Due',
         credit: '100%',
         visibility: 'Due',
@@ -100,7 +117,13 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
     lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
       if (deadline.date) {
         rows.push({
-          date: formatDate(Temporal.PlainDateTime.from(deadline.date), displayTimezone),
+          date: (
+            <FriendlyDate
+              date={Temporal.PlainDateTime.from(deadline.date)}
+              timezone={displayTimezone}
+              tooltip
+            />
+          ),
           label: `Late ${index + 1}`,
           credit: `${deadline.credit}%`,
           visibility: 'Open',
@@ -143,36 +166,31 @@ export function generateDateTableRows(rule: RuleData, displayTimezone: string): 
 }
 
 interface SummaryItem {
+  key: string;
   icon: string;
-  text: string;
+  text: ReactNode;
 }
 
-export function generateRuleSummary(
-  rule: RuleData,
-  verbosity: SummaryVerbosity = 'compact',
-): SummaryItem[] {
+export function generateRuleSummary(rule: RuleData, displayTimezone: string): SummaryItem[] {
   const items: SummaryItem[] = [];
 
   if (isOverrideFieldActive(rule, 'durationMinutes')) {
     const durationMinutes = rule.durationMinutes;
     if (durationMinutes !== null) {
-      items.push({ icon: 'bi-clock', text: `${durationMinutes} minutes` });
-    } else if (verbosity === 'verbose') {
-      items.push({ icon: 'bi-clock', text: 'No time limit' });
+      items.push({ key: 'duration', icon: 'bi-clock', text: `${durationMinutes} minutes` });
     }
   }
 
   if (isOverrideFieldActive(rule, 'password')) {
     const password = rule.password;
     if (password !== null && password !== '') {
-      items.push({ icon: 'bi-lock', text: 'Password protected' });
-    } else if (verbosity === 'verbose') {
-      items.push({ icon: 'bi-unlock', text: 'No password' });
+      items.push({ key: 'password', icon: 'bi-lock', text: 'Password protected' });
     }
   }
 
   if (isMainRuleData(rule) && rule.prairieTestEnabled && rule.prairieTestExams.length > 0) {
     items.push({
+      key: 'prairietest',
       icon: 'bi-pc-display',
       text: `${rule.prairieTestExams.length} PrairieTest ${rule.prairieTestExams.length === 1 ? 'exam' : 'exams'}`,
     });
@@ -183,18 +201,73 @@ export function generateRuleSummary(
   if (!hasAfterLastDeadline) {
     if (isOverrideFieldActive(rule, 'questionVisibility')) {
       const qv = rule.questionVisibility;
-      if (qv.hideQuestions) {
-        items.push({ icon: 'bi-eye-slash', text: 'Questions hidden after completion' });
-      } else if (verbosity === 'verbose') {
-        items.push({ icon: 'bi-eye', text: 'Questions visible after completion' });
+      if (!qv.hideQuestions) {
+        items.push({
+          key: 'question-visibility',
+          icon: 'bi-eye',
+          text: 'Questions visible after completion',
+        });
+      } else if (qv.showAgainDate && qv.hideAgainDate) {
+        items.push({
+          key: 'question-visibility',
+          icon: 'bi-eye-slash',
+          text: (
+            <>
+              Questions hidden after completion, shown{' '}
+              <FriendlyDate
+                date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+                timezone={displayTimezone}
+                tooltip
+              />
+              {' – '}
+              <FriendlyDate
+                date={Temporal.PlainDateTime.from(qv.hideAgainDate)}
+                timezone={displayTimezone}
+                tooltip
+              />
+            </>
+          ),
+        });
+      } else if (qv.showAgainDate) {
+        items.push({
+          key: 'question-visibility',
+          icon: 'bi-eye-slash',
+          text: (
+            <>
+              Questions hidden after completion until{' '}
+              <FriendlyDate
+                date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+                timezone={displayTimezone}
+                tooltip
+              />
+            </>
+          ),
+        });
       }
     }
     if (isOverrideFieldActive(rule, 'scoreVisibility')) {
       const sv = rule.scoreVisibility;
-      if (sv.hideScore) {
-        items.push({ icon: 'bi-eye-slash', text: 'Score hidden after completion' });
-      } else if (verbosity === 'verbose') {
-        items.push({ icon: 'bi-eye', text: 'Score visible after completion' });
+      if (sv.hideScore && sv.showAgainDate) {
+        items.push({
+          key: 'score-visibility',
+          icon: 'bi-eye-slash',
+          text: (
+            <>
+              Score hidden after completion until{' '}
+              <FriendlyDate
+                date={Temporal.PlainDateTime.from(sv.showAgainDate)}
+                timezone={displayTimezone}
+                tooltip
+              />
+            </>
+          ),
+        });
+      } else if (sv.hideScore) {
+        items.push({
+          key: 'score-visibility',
+          icon: 'bi-eye-slash',
+          text: 'Score hidden after completion',
+        });
       }
     }
   }
@@ -204,7 +277,7 @@ export function generateRuleSummary(
 
 interface OverrideFieldItem {
   label: string;
-  value: string;
+  value: ReactNode;
 }
 
 function formatDeadlineEntries(
@@ -215,7 +288,16 @@ function formatDeadlineEntries(
   const filtered = deadlines.filter((d) => d.date);
   return filtered.map((d, i) => ({
     label: filtered.length === 1 ? `${labelPrefix} deadline` : `${labelPrefix} deadline ${i + 1}`,
-    value: `${formatDate(Temporal.PlainDateTime.from(d.date), displayTimezone)} (${d.credit}% credit)`,
+    value: (
+      <>
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(d.date)}
+          timezone={displayTimezone}
+          tooltip
+        />{' '}
+        ({d.credit}% credit)
+      </>
+    ),
   }));
 }
 
@@ -240,11 +322,19 @@ function generateOverrideFieldItems(
   const overriddenFields = new Set(rule.overriddenFields);
 
   if (overriddenFields.has('releaseDate')) {
+    // A null/empty release date means "not released" (resolver returns active: false).
+    // TODO: enforce non-null release dates on overrides so this case goes away.
     items.push({
       label: 'Release date',
-      value: rule.releaseDate
-        ? formatDate(Temporal.PlainDateTime.from(rule.releaseDate), displayTimezone)
-        : 'Released immediately',
+      value: rule.releaseDate ? (
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(rule.releaseDate)}
+          timezone={displayTimezone}
+          tooltip
+        />
+      ) : (
+        'Not released'
+      ),
     });
   }
 
@@ -258,9 +348,15 @@ function generateOverrideFieldItems(
   if (overriddenFields.has('dueDate')) {
     items.push({
       label: 'Due date',
-      value: rule.dueDate
-        ? formatDate(Temporal.PlainDateTime.from(rule.dueDate), displayTimezone)
-        : 'No due date',
+      value: rule.dueDate ? (
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(rule.dueDate)}
+          timezone={displayTimezone}
+          tooltip
+        />
+      ) : (
+        'No due date'
+      ),
     });
   }
 
@@ -298,12 +394,36 @@ function generateOverrideFieldItems(
       if (qv.showAgainDate && qv.hideAgainDate) {
         items.push({
           label: 'Question visibility',
-          value: `Hidden, shown again ${formatDate(Temporal.PlainDateTime.from(qv.showAgainDate), displayTimezone)}, hidden again ${formatDate(Temporal.PlainDateTime.from(qv.hideAgainDate), displayTimezone)}`,
+          value: (
+            <>
+              Hidden, shown again{' '}
+              <FriendlyDate
+                date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+                timezone={displayTimezone}
+                tooltip
+              />
+              , hidden again{' '}
+              <FriendlyDate
+                date={Temporal.PlainDateTime.from(qv.hideAgainDate)}
+                timezone={displayTimezone}
+                tooltip
+              />
+            </>
+          ),
         });
       } else if (qv.showAgainDate) {
         items.push({
           label: 'Question visibility',
-          value: `Hidden, shown again ${formatDate(Temporal.PlainDateTime.from(qv.showAgainDate), displayTimezone)}`,
+          value: (
+            <>
+              Hidden, shown again{' '}
+              <FriendlyDate
+                date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+                timezone={displayTimezone}
+                tooltip
+              />
+            </>
+          ),
         });
       } else {
         items.push({
@@ -325,7 +445,16 @@ function generateOverrideFieldItems(
       if (sv.showAgainDate) {
         items.push({
           label: 'Score visibility',
-          value: `Hidden, shown again ${formatDate(Temporal.PlainDateTime.from(sv.showAgainDate), displayTimezone)}`,
+          value: (
+            <>
+              Hidden, shown again{' '}
+              <FriendlyDate
+                date={Temporal.PlainDateTime.from(sv.showAgainDate)}
+                timezone={displayTimezone}
+                tooltip
+              />
+            </>
+          ),
         });
       } else {
         items.push({
@@ -390,23 +519,33 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
       <table className="table table-sm mb-0">
         <thead>
           <tr>
-            <th className="fw-semibold text-body-secondary border-bottom ps-3" style={thStyle}>
+            <th
+              className="fw-semibold text-body-secondary text-nowrap border-bottom ps-3"
+              style={thStyle}
+            >
               <i className="bi bi-calendar3 me-1" aria-hidden="true" />
               Date
             </th>
-            <th className="fw-semibold text-body-secondary border-bottom" style={thStyle}>
+            <th
+              className="fw-semibold text-body-secondary text-nowrap border-bottom"
+              style={thStyle}
+            >
               <i className="bi bi-percent me-1" aria-hidden="true" />
               Credit
             </th>
-            <th className="fw-semibold text-body-secondary border-bottom" style={thStyle}>
+            <th
+              className="fw-semibold text-body-secondary text-nowrap border-bottom"
+              style={thStyle}
+            >
               <i className="bi bi-eye me-1" aria-hidden="true" />
               Visibility
             </th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={`${row.date}-${row.label}-${row.credit}-${row.visibility}`}>
+          {rows.map((row, index) => (
+            // eslint-disable-next-line @eslint-react/no-array-index-key
+            <tr key={index}>
               <td className="ps-3 border-0" style={tdStyle}>
                 {row.label && <span className="text-body-secondary me-1">{row.label}:</span>}
                 {row.date}
