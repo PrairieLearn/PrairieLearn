@@ -58,10 +58,9 @@ export function RichSelect<T extends string = string>({
               {(item) => (
                 <ListBoxItem
                   id={item.id}
-                  className="dropdown-item d-flex align-items-start gap-2 py-2"
+                  className="d-flex align-items-start gap-2 px-3 py-2"
                   style={({ isFocused }) => ({
                     cursor: 'pointer',
-                    whiteSpace: 'normal',
                     backgroundColor: isFocused ? 'var(--bs-primary-bg-subtle)' : undefined,
                   })}
                   textValue={item.label}
@@ -71,7 +70,6 @@ export function RichSelect<T extends string = string>({
                       <input
                         checked={isSelected}
                         className="form-check-input m-0 mt-1"
-                        style={{ flexShrink: 0, width: '1em', height: '1em' }}
                         tabIndex={-1}
                         type="radio"
                         readOnly
