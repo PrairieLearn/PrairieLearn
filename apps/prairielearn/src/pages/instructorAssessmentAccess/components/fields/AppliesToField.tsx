@@ -1,4 +1,5 @@
-import { Alert, Button, Form } from 'react-bootstrap';
+import { useQuery } from '@tanstack/react-query';
+import { Alert, Button, Form, ListGroup } from 'react-bootstrap';
 import {
   type FieldArrayPath,
   type Path,
@@ -7,22 +8,22 @@ import {
   useWatch,
 } from 'react-hook-form';
 
-import { ChipGroup } from '@prairielearn/ui';
-
 import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
+import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
+import { useTRPCClient } from '../../../../trpc/assessment/context.js';
 import type { NamePrefix } from '../hooks/fieldNames.js';
-import type {
-  AccessControlFormData,
-  AppliesTo,
-  EnrollmentTarget,
-  StudentLabelTarget,
-  TargetType,
-} from '../types.js';
+import type { AccessControlFormData, AppliesTo, EnrollmentTarget, TargetType } from '../types.js';
 
-import { AddTargetPopover } from './AddTargetPopover.js';
+import { AddStudentsModal } from './AddStudentsModal.js';
 
 export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
   const { setValue } = useFormContext<AccessControlFormData>();
+  const trpcClient = useTRPCClient();
+
+  const { data: allLabels } = useQuery({
+    queryKey: ['access-control-student-labels'],
+    queryFn: () => trpcClient.accessControl.studentLabels.query(),
+  });
 
   const appliesTo = useWatch({
     name: `${namePrefix}.appliesTo` as Path<AccessControlFormData>,
@@ -48,12 +49,6 @@ export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
     );
   };
 
-  const handleAddStudentLabels = (labels: StudentLabelTarget[]) => {
-    for (const label of labels) {
-      appendStudentLabel(label);
-    }
-  };
-
   const handleAddStudents = (students: EnrollmentTarget[]) => {
     for (const student of students) {
       appendEnrollment(student);
@@ -65,8 +60,6 @@ export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
   const currentTargetType = typedAppliesTo?.targetType ?? 'enrollment';
   const enrollments = typedAppliesTo?.enrollments ?? [];
   const studentLabels = typedAppliesTo?.studentLabels ?? [];
-
-  const enrollmentChipItems = enrollments.map((s) => ({ id: s.uid, label: s.name ?? s.uid }));
 
   const handleRemoveEnrollmentByUid = (uid: string) => {
     const index = enrollments.findIndex((s) => s.uid === uid);
@@ -113,51 +106,87 @@ export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
         />
       </fieldset>
 
-      <div className="d-flex flex-wrap align-items-center gap-1">
+      <div>
         {currentTargetType === 'enrollment' ? (
-          <ChipGroup
-            items={enrollmentChipItems}
-            label="Selected students"
-            emptyMessage="No students selected"
-            onRemove={handleRemoveEnrollmentByUid}
-          />
-        ) : studentLabels.length === 0 ? (
-          <span className="text-muted small">No student labels selected</span>
+          <div>
+            <div className="d-flex gap-2 mb-2">
+              <AddStudentsModal excludedUids={excludedUids} onSelectStudents={handleAddStudents} />
+              {enrollments.length > 0 && (
+                <Button variant="outline-secondary" size="sm" onClick={() => removeEnrollment()}>
+                  Remove all
+                </Button>
+              )}
+            </div>
+            {enrollments.length === 0 ? (
+              <div className="text-muted small border rounded p-3 text-center">
+                No students selected
+              </div>
+            ) : (
+              <ListGroup style={{ maxHeight: '300px', overflow: 'auto' }}>
+                {enrollments.map((s) => (
+                  <ListGroup.Item
+                    key={s.uid}
+                    className="d-flex align-items-center justify-content-between py-2"
+                  >
+                    <div>
+                      <div>{s.name ?? s.uid}</div>
+                      {s.name && <small className="text-muted">{s.uid}</small>}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Remove ${s.name ?? s.uid}`}
+                      onClick={() => handleRemoveEnrollmentByUid(s.uid)}
+                    >
+                      <i className="bi bi-trash text-danger" aria-hidden="true" />
+                    </Button>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            )}
+          </div>
         ) : (
-          studentLabels.map((sl) => (
-            <StudentLabelBadge
-              key={sl.studentLabelId}
-              label={{ name: sl.name, color: sl.color ?? 'gray1' }}
-            >
-              <button
-                type="button"
-                className="btn p-0 lh-1"
-                aria-label={`Remove label "${sl.name}"`}
-                onClick={() => handleRemoveStudentLabelById(sl.studentLabelId)}
-              >
-                <i className="bi bi-x text-danger" aria-hidden="true" />
-              </button>
-            </StudentLabelBadge>
-          ))
-        )}
-
-        <AddTargetPopover
-          targetType={currentTargetType}
-          excludedStudentLabelIds={excludedStudentLabelIds}
-          excludedUids={excludedUids}
-          onSelectStudentLabels={handleAddStudentLabels}
-          onSelectStudents={handleAddStudents}
-        />
-
-        {currentTargetType === 'enrollment' && enrollments.length > 0 && (
-          <Button variant="outline-secondary" size="sm" onClick={() => removeEnrollment()}>
-            Remove all
-          </Button>
-        )}
-        {currentTargetType === 'student_label' && studentLabels.length > 0 && (
-          <Button variant="outline-secondary" size="sm" onClick={() => removeStudentLabel()}>
-            Remove all
-          </Button>
+          <div className="d-flex flex-wrap align-items-center gap-1">
+            {studentLabels.length === 0 ? (
+              <span className="text-muted small">No student labels selected</span>
+            ) : (
+              studentLabels.map((sl) => (
+                <StudentLabelBadge
+                  key={sl.studentLabelId}
+                  label={{ name: sl.name, color: sl.color ?? 'gray1' }}
+                >
+                  <button
+                    type="button"
+                    className="btn p-0 lh-1"
+                    aria-label={`Remove label "${sl.name}"`}
+                    onClick={() => handleRemoveStudentLabelById(sl.studentLabelId)}
+                  >
+                    <i className="bi bi-x text-danger" aria-hidden="true" />
+                  </button>
+                </StudentLabelBadge>
+              ))
+            )}
+            <StudentLabelDropdown
+              labels={allLabels ?? []}
+              selectedIds={excludedStudentLabelIds}
+              onToggle={(label) => {
+                if (excludedStudentLabelIds.has(label.id)) {
+                  handleRemoveStudentLabelById(label.id);
+                } else {
+                  appendStudentLabel({
+                    studentLabelId: label.id,
+                    name: label.name,
+                    color: label.color,
+                  });
+                }
+              }}
+            />
+            {studentLabels.length > 0 && (
+              <Button variant="outline-secondary" size="sm" onClick={() => removeStudentLabel()}>
+                Remove all
+              </Button>
+            )}
+          </div>
         )}
       </div>
     </div>

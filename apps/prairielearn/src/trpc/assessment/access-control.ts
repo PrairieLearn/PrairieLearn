@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
+import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { saveJsonFile } from '../../lib/editorUtil.js';
 import { getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
@@ -105,11 +106,7 @@ const studentLabels = t.procedure
   .use(requireCourseInstancePermissionView)
   .query(async (opts) => {
     const labels = await selectStudentLabelsInCourseInstance(opts.ctx.course_instance);
-    return labels.map((label) => ({
-      id: label.id,
-      name: label.name,
-      color: label.color,
-    }));
+    return labels.map((label) => StaffStudentLabelSchema.parse(label));
   });
 
 function formJsonToEnrollmentRuleData(

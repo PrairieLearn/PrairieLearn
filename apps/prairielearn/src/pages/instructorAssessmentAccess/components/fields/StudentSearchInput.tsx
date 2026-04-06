@@ -118,7 +118,7 @@ export function StudentSearchInput({
     : 0;
 
   return (
-    <div style={{ width: '350px' }}>
+    <div>
       <Tabs className="mb-2" defaultActiveKey="search" fill>
         <Tab eventKey="search" title="Search">
           <Form.Control
@@ -155,7 +155,7 @@ export function StudentSearchInput({
                   </>
                 )}
               </div>
-              <ListGroup style={{ maxHeight: '200px', overflow: 'auto' }}>
+              <ListGroup style={{ maxHeight: '350px', overflow: 'auto' }}>
                 {filteredStudents.map((student) => (
                   <ListGroup.Item
                     key={student.id}
