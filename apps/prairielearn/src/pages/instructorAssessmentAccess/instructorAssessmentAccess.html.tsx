@@ -303,7 +303,7 @@ export function InstructorAssessmentAccessNew({
   initialData,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
-  origHash: string;
+  origHash: string | null;
   trpcCsrfToken: string;
   initialData: AccessControlJsonWithId[];
 }) {

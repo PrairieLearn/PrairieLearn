@@ -57,11 +57,10 @@ router.get(
     if (enhancedAccessControlEnabled && res.locals.assessment.modern_access_control) {
       const jsonRules = await selectAccessControlRules(res.locals.assessment);
       const assessmentPath = getAssessmentPath(res.locals);
-      const origHash =
-        (await computeScopedJsonHash<AssessmentJsonInput>(
-          assessmentPath,
-          (json) => json.accessControl ?? [],
-        )) ?? '';
+      const origHash = await computeScopedJsonHash<AssessmentJsonInput>(
+        assessmentPath,
+        (json) => json.accessControl ?? [],
+      );
       const trpcCsrfToken = generatePrefixCsrfToken(
         {
           url: getAssessmentTrpcUrl({

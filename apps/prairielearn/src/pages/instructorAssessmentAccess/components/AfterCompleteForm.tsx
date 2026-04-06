@@ -272,11 +272,9 @@ const infoPopoverConfig = {
 
 function AfterCompleteCard({
   title = 'After completion',
-  description,
   children,
 }: {
   title?: string;
-  description?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -295,20 +293,13 @@ function AfterCompleteCard({
             </Button>
           </OverlayTrigger>
         </div>
-        {description && <Form.Text className="text-muted">{description}</Form.Text>}
       </div>
       <Row className="gy-3">{children}</Row>
     </div>
   );
 }
 
-export function MainAfterCompleteForm({
-  title,
-  description,
-}: {
-  title?: string;
-  description?: string;
-}) {
+export function MainAfterCompleteForm({ title }: { title?: string }) {
   const { field: qvField } = useController<AccessControlFormData, 'mainRule.questionVisibility'>({
     name: 'mainRule.questionVisibility',
   });
@@ -323,7 +314,7 @@ export function MainAfterCompleteForm({
   const hasPrairieTest = prairieTestExams.length > 0;
 
   return (
-    <AfterCompleteCard title={title} description={description}>
+    <AfterCompleteCard title={title}>
       <Col md={6}>
         <Form.Label className="fw-bold">Question visibility</Form.Label>
         <QuestionVisibilityInput
@@ -348,11 +339,9 @@ export function MainAfterCompleteForm({
 export function OverrideAfterCompleteForm({
   index,
   title,
-  description,
 }: {
   index: number;
   title?: string;
-  description?: string;
 }) {
   const mainQV = useWatch<AccessControlFormData, 'mainRule.questionVisibility'>({
     name: 'mainRule.questionVisibility',
@@ -390,7 +379,7 @@ export function OverrideAfterCompleteForm({
   } = useOverrideField(index, 'scoreVisibility');
 
   return (
-    <AfterCompleteCard title={title} description={description}>
+    <AfterCompleteCard title={title}>
       <Col md={6}>
         <FieldWrapper
           isOverridden={qvOverridden}

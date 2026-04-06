@@ -11,7 +11,7 @@ import {
 import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
-import { useTRPCClient } from '../../../../trpc/assessment/context.js';
+import { useTRPC } from '../../../../trpc/assessment/context.js';
 import type { NamePrefix } from '../hooks/fieldNames.js';
 import type { AccessControlFormData, AppliesTo, EnrollmentTarget, TargetType } from '../types.js';
 
@@ -25,12 +25,11 @@ export function AppliesToField({
   courseInstanceId: string;
 }) {
   const { setValue } = useFormContext<AccessControlFormData>();
-  const trpcClient = useTRPCClient();
+  const trpc = useTRPC();
 
-  const { data: allLabels } = useQuery({
-    queryKey: ['access-control-student-labels'],
-    queryFn: () => trpcClient.accessControl.studentLabels.query(),
-  });
+  const { data: allLabels } = useQuery(
+    trpc.accessControl.studentLabels.queryOptions(),
+  );
 
   const appliesTo = useWatch({
     name: `${namePrefix}.appliesTo` as Path<AccessControlFormData>,

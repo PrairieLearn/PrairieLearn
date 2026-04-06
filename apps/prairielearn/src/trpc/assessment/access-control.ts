@@ -169,7 +169,7 @@ function isNonEmptyObject(value: unknown): boolean {
  * Cleans access control rules for writing to infoAssessment.json on disk.
  * Removes empty objects/arrays and omits listBeforeRelease: false on the main rule.
  */
-export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): object[] {
+export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): AccessControlJson[] {
   return rules.map((rule, index) => {
     const clean: Record<string, unknown> = {};
 
@@ -193,7 +193,7 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): obje
       clean.afterComplete = rule.afterComplete;
     }
 
-    return clean;
+    return clean as AccessControlJson;
   });
 }
 
@@ -204,7 +204,7 @@ const saveAllRules = t.procedure
     z.object({
       rules: z.array(AccessControlJsonInputSchema).max(MAX_ACCESS_CONTROL_RULES),
       enrollmentRules: z.array(EnrollmentRuleInputSchema).max(MAX_ENROLLMENT_RULES).optional(),
-      origHash: z.string(),
+      origHash: z.string().nullable(),
     }),
   )
   .mutation(async (opts) => {
@@ -261,16 +261,14 @@ const saveAllRules = t.procedure
     );
     const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
 
-    // Write updated access control rules to infoAssessment.json on disk
-    // (handles git commit + sync to DB). The conflictCheck scopes the hash
-    // to just the accessControl section so unrelated file changes (e.g. zones)
-    // don't trigger spurious conflicts.
     const saveResult = await saveJsonFile<AssessmentJsonInput>({
       applyChanges: (jsonContents) => {
-        jsonContents.accessControl = cleanAccessControlRulesForDisk(rulesToSync) as any;
+        jsonContents.accessControl = cleanAccessControlRulesForDisk(rulesToSync);
         return jsonContents;
       },
       jsonPath: assessmentPath,
+      // Scope the hash to just the accessControl section so unrelated file
+      // changes (e.g. zones) don't trigger spurious conflicts.
       conflictCheck: {
         origHash,
         scope: (json) => json.accessControl ?? [],

@@ -105,7 +105,11 @@ export async function getFileMetadataForPath(
 }
 
 type SaveJsonFileResult =
-  | { success: true; newHash: string }
+  | {
+      success: true;
+      /** Hash of the scoped section after the write, or full-file hash when no scope is provided. */
+      newHash: string;
+    }
   | { success: false; reason: 'conflict' }
   | { success: false; reason: 'sync_failed'; jobSequenceId: string };
 
@@ -118,7 +122,7 @@ type SaveJsonFileResult =
  */
 export async function computeScopedJsonHash<T extends Record<string, unknown>>(
   jsonPath: string,
-  scope: (json: T) => object | object[],
+  scope: (json: T) => unknown,
 ): Promise<string | null> {
   try {
     const json = (await fs.readJson(jsonPath)) as T;
@@ -139,8 +143,8 @@ export async function saveJsonFile<T extends Record<string, unknown>>({
   applyChanges: (jsonContents: T) => T;
   jsonPath: string;
   conflictCheck?: {
-    origHash: string;
-    scope: (jsonContents: T) => object | object[];
+    origHash: string | null;
+    scope: (jsonContents: T) => unknown;
   };
   locals: { authz_data: AuthzData; course: Course; user: User };
   container: { rootPath: string; invalidRootPaths: string[] };
@@ -151,7 +155,7 @@ export async function saveJsonFile<T extends Record<string, unknown>>({
   const jsonContents = JSON.parse(rawContents) as T;
 
   // Scoped conflict detection: hash only the section being edited.
-  if (conflictCheck) {
+  if (conflictCheck?.origHash) {
     const currentHash = computeStableHash(conflictCheck.scope(jsonContents));
     if (currentHash !== conflictCheck.origHash) {
       return { success: false, reason: 'conflict' };

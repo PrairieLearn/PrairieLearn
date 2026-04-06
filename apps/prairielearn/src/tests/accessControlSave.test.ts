@@ -80,7 +80,7 @@ describe('Access control save via tRPC', () => {
       assessmentPath(),
       (json) => json.accessControl ?? [],
     );
-    return hash ?? '';
+    return hash;
   }
 
   function assessmentPath() {

@@ -186,12 +186,10 @@ const upsert = t.procedure
         'infoCourseInstance.json',
       ),
       container: getCourseInstanceContainer(course.path, course_instance.short_name!),
-      conflictCheck: origHash
-        ? {
-            origHash,
-            scope: (json) => json.studentLabels ?? [],
-          }
-        : undefined,
+      conflictCheck: {
+        origHash,
+        scope: (json) => json.studentLabels ?? [],
+      },
       locals,
     });
 
@@ -316,12 +314,10 @@ const destroy = t.procedure
         'infoCourseInstance.json',
       ),
       container: getCourseInstanceContainer(course.path, course_instance.short_name!),
-      conflictCheck: origHash
-        ? {
-            origHash,
-            scope: (json) => json.studentLabels ?? [],
-          }
-        : undefined,
+      conflictCheck: {
+        origHash,
+        scope: (json) => json.studentLabels ?? [],
+      },
       locals,
     });
 

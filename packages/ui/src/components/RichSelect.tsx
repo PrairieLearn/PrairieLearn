@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { Button, ListBox, ListBoxItem, Popover, Select } from 'react-aria-components';
+import { Button, FieldError, ListBox, ListBoxItem, Popover, Select } from 'react-aria-components';
 
 // This component isn't fully generic yet — it was built for the access control
 // settings UI. The API may change as we identify more use cases.
@@ -16,6 +16,8 @@ export interface RichSelectProps<T extends string = string> {
   onChange: (value: T) => void;
   disabled?: boolean;
   id?: string;
+  placeholder?: string;
+  errorMessage?: string;
   'aria-label'?: string;
   'aria-labelledby'?: string;
   minWidth?: number;
@@ -27,6 +29,8 @@ export function RichSelect<T extends string = string>({
   onChange,
   disabled = false,
   id,
+  placeholder,
+  errorMessage,
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledby,
   minWidth,
@@ -38,6 +42,7 @@ export function RichSelect<T extends string = string>({
     <Select
       selectedKey={value}
       isDisabled={disabled}
+      isInvalid={!!errorMessage}
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledby}
       onSelectionChange={(key) => onChange(key as T)}
@@ -45,11 +50,18 @@ export function RichSelect<T extends string = string>({
       {({ isOpen }) => (
         <>
           <Button
-            className={clsx('form-select text-start', isOpen && 'border-primary shadow-sm')}
+            className={clsx(
+              'form-select text-start',
+              isOpen && 'border-primary shadow-sm',
+              errorMessage && 'is-invalid',
+            )}
             id={id}
           >
-            {selectedLabel}
+            {selectedLabel ?? (
+              <span className="text-muted">{placeholder}</span>
+            )}
           </Button>
+          <FieldError className="invalid-feedback d-block">{errorMessage}</FieldError>
           <Popover
             className="dropdown-menu show py-1 overflow-auto"
             offset={2}
@@ -59,11 +71,11 @@ export function RichSelect<T extends string = string>({
               width: minWidth ? `max(${minWidth}px, var(--trigger-width))` : 'var(--trigger-width)',
             }}
           >
-            <ListBox className="list-unstyled m-0" items={listItems}>
+            <ListBox className="list-unstyled m-0 p-1" items={listItems}>
               {(item) => (
                 <ListBoxItem
                   id={item.id}
-                  className="d-flex align-items-start gap-2 px-3 py-2"
+                  className="d-flex align-items-start gap-2 px-3 py-2 rounded"
                   style={({ isFocused }) => ({
                     cursor: 'pointer',
                     backgroundColor: isFocused ? 'var(--bs-primary-bg-subtle)' : undefined,
