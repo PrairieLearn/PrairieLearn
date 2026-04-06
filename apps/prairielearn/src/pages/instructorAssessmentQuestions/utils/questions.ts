@@ -11,7 +11,12 @@ import type {
   StaffTopic,
 } from '../../../lib/client/safe-db-types.js';
 import type { EnumAssessmentType } from '../../../lib/db-types.js';
-import type { QuestionPointsJson, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import {
+  type EnumAssessmentTool,
+  EnumAssessmentToolSchema,
+  type QuestionPointsJson,
+  type ZoneAssessmentJson,
+} from '../../../schemas/infoAssessment.js';
 import type { QuestionByQidResult } from '../../../trpc/assessment/assessment-questions.js';
 import type {
   AssessmentForPicker,
@@ -568,5 +573,39 @@ export function getSharedTopic(
   if (topics.length === 0) return null;
   const firstName = topics[0].name;
   if (topics.every((t) => t.name === firstName)) return topics[0];
+  return null;
+}
+
+/**
+ * Returns a warning message if a tool is enabled in an earlier zone but
+ * disabled in a later zone. Students have access to tools in previous
+ * zones regardless, so the zone restriction is not actually enforced.
+ */
+export function getZoneMixedToolsWarning({
+  zone: currentZone,
+  zones,
+  assessmentToolDefaults,
+}: {
+  zone: ZoneAssessmentForm;
+  zones: ZoneAssessmentForm[];
+  assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
+}): string | null {
+  if (zones.length < 2) return null;
+
+  for (const tool of EnumAssessmentToolSchema.options) {
+    const defaultValue = assessmentToolDefaults[tool] ?? false;
+
+    let seenEnabled = false;
+    for (const zone of zones) {
+      const effectiveValue = zone.tools?.[tool]?.enabled ?? defaultValue;
+      if (effectiveValue) {
+        seenEnabled = true;
+      } else if (seenEnabled && currentZone.trackingId === zone.trackingId) {
+        const toolLabel = tool[0].toUpperCase() + tool.slice(1);
+        return `${toolLabel} is enabled in an earlier zone so students can still access it from earlier questions.`;
+      }
+    }
+  }
+
   return null;
 }

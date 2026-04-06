@@ -10,15 +10,16 @@ columns
     output: text not null default ''::text
     phase: text
     state: jsonb not null default '{}'::jsonb
-    status: text not null default 'running'::text
+    status: enum_workflow_run_status not null default 'running'::enum_workflow_run_status
     type: text not null
     updated_at: timestamp with time zone not null default now()
 
 indexes
     workflow_runs_pkey: PRIMARY KEY (id) USING btree (id)
     workflow_runs_context_idx: USING gin (context)
-    workflow_runs_status_running_idx: USING btree (status, heartbeat_at) WHERE status = 'running'::text
+    workflow_runs_status_running_idx: USING btree (status, heartbeat_at) WHERE status = 'running'::enum_workflow_run_status
     workflow_runs_type_status_idx: USING btree (type, status)
 
 check constraints
-    workflow_runs_status_check: CHECK (status = ANY (ARRAY['running'::text, 'waiting_for_input'::text, 'completed'::text, 'error'::text, 'canceled'::text]))
+    workflow_runs_context_type_check: CHECK (jsonb_typeof(context) = 'object'::text)
+    workflow_runs_state_type_check: CHECK (jsonb_typeof(state) = 'object'::text)
