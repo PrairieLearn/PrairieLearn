@@ -581,7 +581,6 @@ export function OverrideRuleSummaryCard({
   title,
   onRemove,
   onEdit,
-  courseInstanceId,
   displayTimezone,
   errors,
   dragHandleProps,
@@ -589,7 +588,6 @@ export function OverrideRuleSummaryCard({
   rule: OverrideData;
   title: string;
   onEdit?: () => void;
-  courseInstanceId: string;
   displayTimezone: string;
   errors?: string[];
   onRemove?: () => void;
