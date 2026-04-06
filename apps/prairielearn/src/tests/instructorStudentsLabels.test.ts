@@ -10,7 +10,6 @@ import { getAppError } from '../lib/client/errors.js';
 import { config } from '../lib/config.js';
 import { EnrollmentSchema } from '../lib/db-types.js';
 import { computeScopedJsonHash } from '../lib/editorUtil.js';
-import type { CourseInstanceJsonInput } from '../schemas/infoCourseInstance.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
@@ -23,6 +22,7 @@ import {
   selectStudentLabelsInCourseInstance,
 } from '../models/student-label.js';
 import { getStudentLabelsWithUserData } from '../pages/instructorStudentsLabels/queries.js';
+import type { CourseInstanceJsonInput } from '../schemas/infoCourseInstance.js';
 import { createCourseInstanceTrpcClient } from '../trpc/courseInstance/client.js';
 import type { StudentLabelError } from '../trpc/courseInstance/student-labels.js';
 
