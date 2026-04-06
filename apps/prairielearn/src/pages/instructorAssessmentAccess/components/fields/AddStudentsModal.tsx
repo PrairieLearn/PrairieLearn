@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Modal } from 'react-bootstrap';
+import { Modal } from 'react-bootstrap';
 
 import type { EnrollmentTarget } from '../types.js';
 
@@ -13,21 +13,19 @@ export function AddStudentsModal({
   onSaveStudents: (students: EnrollmentTarget[]) => void;
 }) {
   const [show, setShow] = useState(false);
-  const [currentSelection, setCurrentSelection] = useState<EnrollmentTarget[]>([]);
 
   const handleClose = () => setShow(false);
 
-  const handleSave = () => {
-    onSaveStudents(currentSelection);
-    handleClose();
-  };
-
   return (
     <>
-      <Button variant="outline-secondary" size="sm" onClick={() => setShow(true)}>
+      <button
+        type="button"
+        className="btn btn-outline-secondary btn-sm"
+        onClick={() => setShow(true)}
+      >
         <i className="bi bi-people me-1" aria-hidden="true" />
         Manage students
-      </Button>
+      </button>
       <Modal show={show} centered onHide={handleClose}>
         <Modal.Header closeButton>
           <Modal.Title>Manage students</Modal.Title>
@@ -35,17 +33,10 @@ export function AddStudentsModal({
         <Modal.Body>
           <StudentSearchInput
             initialSelectedUids={selectedUids}
-            onSelectionChange={setCurrentSelection}
+            onSave={onSaveStudents}
+            onClose={handleClose}
           />
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSave}>
-            Done{currentSelection.length > 0 ? ` (${currentSelection.length} selected)` : ''}
-          </Button>
-        </Modal.Footer>
       </Modal>
     </>
   );

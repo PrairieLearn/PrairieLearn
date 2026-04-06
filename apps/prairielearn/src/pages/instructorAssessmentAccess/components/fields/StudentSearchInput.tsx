@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
-import { Form, Spinner } from 'react-bootstrap';
+import { useMemo, useState } from 'react';
+import { Button, Form, Spinner } from 'react-bootstrap';
 
 import { StudentCheckboxList } from '../../../../components/StudentCheckboxList.js';
 import { useTRPC } from '../../../../trpc/assessment/context.js';
@@ -8,10 +8,12 @@ import type { EnrollmentTarget } from '../types.js';
 
 export function StudentSearchInput({
   initialSelectedUids,
-  onSelectionChange,
+  onSave,
+  onClose,
 }: {
   initialSelectedUids: Set<string>;
-  onSelectionChange: (students: EnrollmentTarget[]) => void;
+  onSave: (students: EnrollmentTarget[]) => void;
+  onClose: () => void;
 }) {
   const trpc = useTRPC();
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,14 +31,6 @@ export function StudentSearchInput({
         (student.name?.toLowerCase().includes(query) ?? false),
     );
   }, [allStudents, searchQuery]);
-
-  useEffect(() => {
-    if (!allStudents) return;
-    const selected = allStudents
-      .filter((s) => selectedUids.has(s.uid))
-      .map((s) => ({ enrollmentId: s.id, uid: s.uid, name: s.name }));
-    onSelectionChange(selected);
-  }, [selectedUids, allStudents, onSelectionChange]);
 
   const handleToggleStudent = (uid: string) => {
     setSelectedUids((prev) => {
@@ -60,6 +54,17 @@ export function StudentSearchInput({
   const handleClearAll = () => {
     setSelectedUids(new Set());
   };
+
+  const handleSave = () => {
+    if (!allStudents) return;
+    const selected = allStudents
+      .filter((s) => selectedUids.has(s.uid))
+      .map((s) => ({ enrollmentId: s.id, uid: s.uid, name: s.name }));
+    onSave(selected);
+    onClose();
+  };
+
+  const selectedCount = selectedUids.size;
 
   if (isLoading) {
     return (
@@ -97,6 +102,15 @@ export function StudentSearchInput({
           maxHeight="300px"
         />
       )}
+
+      <div className="d-flex justify-content-end gap-2 mt-3 pt-3 border-top">
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="primary" onClick={handleSave}>
+          Done{selectedCount > 0 ? ` (${selectedCount} selected)` : ''}
+        </Button>
+      </div>
     </div>
   );
 }
