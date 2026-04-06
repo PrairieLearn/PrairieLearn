@@ -111,11 +111,6 @@ export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
           <div>
             <div className="d-flex gap-2 mb-2">
               <AddStudentsModal excludedUids={excludedUids} onSelectStudents={handleAddStudents} />
-              {enrollments.length > 0 && (
-                <Button variant="outline-secondary" size="sm" onClick={() => removeEnrollment()}>
-                  Remove all
-                </Button>
-              )}
             </div>
             {enrollments.length === 0 ? (
               <div className="text-muted small border rounded p-3 text-center">
@@ -146,7 +141,7 @@ export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
             )}
           </div>
         ) : (
-          <div className="d-flex flex-wrap align-items-center gap-1">
+          <div className="d-flex flex-wrap align-items-baseline gap-2">
             {studentLabels.length === 0 ? (
               <span className="text-muted small">No student labels selected</span>
             ) : (
@@ -181,11 +176,6 @@ export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
                 }
               }}
             />
-            {studentLabels.length > 0 && (
-              <Button variant="outline-secondary" size="sm" onClick={() => removeStudentLabel()}>
-                Remove all
-              </Button>
-            )}
           </div>
         )}
       </div>
