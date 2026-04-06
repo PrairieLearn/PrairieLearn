@@ -1241,42 +1241,22 @@ export function createRubricAgent({
         ? RUBRIC_GENERATION_AGENT_SYSTEM_PROMPT
         : RUBRIC_EDITING_AGENT_SYSTEM_PROMPT,
     stopWhen: [stepCountIs(15), checkCancellation],
-    prepareStep: async () => {
-      if (phase === 'generate') {
-        return {
-          activeTools: [
-            'generateRubric',
-            'getRubric',
-            'getRubricItem',
-            'addRubricItem',
-            'editRubricItem',
-            'deleteRubricItem',
-            'swapRubricItems',
-            'editRubricSettings',
-            'getAssessmentQuestionPoints',
-            'getQuestionContent',
-            'getSampleSubmissions',
-          ] as const,
-        };
-      } else {
-        return {
-          activeTools: [
-            'generateRubric',
-            'getRubric',
-            'getRubricItem',
-            'addRubricItem',
-            'editRubricItem',
-            'deleteRubricItem',
-            'swapRubricItems',
-            'editRubricSettings',
-            'getAssessmentQuestionPoints',
-            'getQuestionContent',
-            'getSampleSubmissions',
-            'revertRubric',
-          ] as const,
-        };
-      }
-    },
+    prepareStep: async () => ({
+      activeTools: [
+        'generateRubric',
+        'getRubric',
+        'getRubricItem',
+        'addRubricItem',
+        'editRubricItem',
+        'deleteRubricItem',
+        'swapRubricItems',
+        'editRubricSettings',
+        'getAssessmentQuestionPoints',
+        'getQuestionContent',
+        'getSampleSubmissions',
+        ...(phase === 'edit' ? (['revertRubric'] as const) : []),
+      ] as const,
+    }),
     tools: allTools,
   });
 

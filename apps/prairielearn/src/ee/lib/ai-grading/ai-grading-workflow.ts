@@ -12,7 +12,10 @@ import { selectAssessmentById } from '../../../models/assessment.js';
 import { selectCourseInstanceById } from '../../../models/course-instances.js';
 import { selectCourseById } from '../../../models/course.js';
 import { selectQuestionById } from '../../../models/question.js';
-import { selectAiGradingMessages } from '../../models/ai-grading-message.js';
+import {
+  selectAiGradingMessages,
+  selectLatestStreamingAiGradingMessage,
+} from '../../models/ai-grading-message.js';
 
 import {
   type AiGradingAgentContext,
@@ -218,8 +221,6 @@ async function takeStep(
 
       // Crash recovery: if there's already a streaming message that isn't ours,
       // finalize it as errored before starting fresh
-      const { selectLatestStreamingAiGradingMessage } =
-        await import('../../models/ai-grading-message.js');
       const existingStreaming = await selectLatestStreamingAiGradingMessage(
         ctx.assessment_question_id,
       );

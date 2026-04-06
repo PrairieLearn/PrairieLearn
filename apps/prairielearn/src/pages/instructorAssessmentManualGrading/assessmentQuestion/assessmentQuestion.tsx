@@ -23,7 +23,11 @@ import {
   calculateAiGradingStats,
   fillInstanceQuestionColumnEntries,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
-import { getAiGradingStreamContext, registerSseStream } from '../../../ee/lib/ai-grading/redis.js';
+import {
+  getAiGradingStreamContext,
+  registerSseStream,
+  takeSseStream,
+} from '../../../ee/lib/ai-grading/redis.js';
 import {
   selectAssessmentQuestionHasInstanceQuestionGroups,
   selectInstanceQuestionGroups,
@@ -334,12 +338,17 @@ router.post(
 
     // Continue workflow → triggers takeStep('agent_running') asynchronously.
     // takeStep will find the pre-created SSE stream via takeSseStream().
-    await continueWorkflow(workflowRun.id, {
-      step: 'agent_running',
-      phase,
-      user_message: userMessage,
-      message_id: messageRow.id,
-    });
+    try {
+      await continueWorkflow(workflowRun.id, {
+        step: 'agent_running',
+        phase,
+        user_message: userMessage,
+        message_id: messageRow.id,
+      });
+    } catch (err) {
+      takeSseStream(messageRow.id); // Clean up leaked stream
+      throw err;
+    }
 
     // Resume the Redis stream (already registered above, so this won't be null)
     const stream = await streamContext.resumeExistingStream(messageRow.id);

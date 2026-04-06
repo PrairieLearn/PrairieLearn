@@ -7,6 +7,7 @@ import { Alert, Button, Modal } from 'react-bootstrap';
 import { run } from '@prairielearn/run';
 import { NuqsAdapter } from '@prairielearn/ui';
 
+import { MemoizedMarkdown } from '../../../components/MemoizedMarkdown.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
@@ -31,7 +32,6 @@ import {
 } from './components/GradingConflictModal.js';
 import { GradingPromptInput } from './components/GradingPromptInput.js';
 import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
-import { MemoizedMarkdown } from './components/MemoizedMarkdown.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
 
 interface AssessmentQuestionManualGradingProps {
@@ -752,7 +752,6 @@ function AssessmentQuestionManualGradingInner({
   const [hasGeneratedRubric, setHasGeneratedRubric] = useState(
     initialRubricData != null || hasPersistedGenerateMessage,
   );
-  const hasGeneratedRubricRef = useRef(initialRubricData != null || hasPersistedGenerateMessage);
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
   const [chatInput, setChatInput] = useState('');
@@ -780,10 +779,8 @@ function AssessmentQuestionManualGradingInner({
         // This handles the case where the user deletes the rubric.
         if (newRubricData != null) {
           setHasGeneratedRubric(true);
-          hasGeneratedRubricRef.current = true;
         } else {
           setHasGeneratedRubric(false);
-          hasGeneratedRubricRef.current = false;
         }
       })
       .catch(() => {});
@@ -829,7 +826,7 @@ function AssessmentQuestionManualGradingInner({
 
       if (phase === 'generate') {
         setHasGeneratedRubric(true);
-        hasGeneratedRubricRef.current = true;
+
         refreshRubricData();
         scrollToRubricEditor();
 
@@ -843,7 +840,7 @@ function AssessmentQuestionManualGradingInner({
         const rubricModified = message.metadata?.rubric_modified ?? false;
         if (rubricModified) {
           setHasGeneratedRubric(true);
-          hasGeneratedRubricRef.current = true;
+
           refreshRubricData();
           scrollToRubricEditor();
 
@@ -892,7 +889,6 @@ function AssessmentQuestionManualGradingInner({
       if (response.ok) {
         setMessages([]);
         setHasGeneratedRubric(initialRubricData != null);
-        hasGeneratedRubricRef.current = initialRubricData != null;
       }
     });
   };
