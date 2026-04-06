@@ -64,11 +64,6 @@ function AfterLastDeadlineInput({
 
   return (
     <Form.Group>
-      {!hasLastDeadline && (
-        <Alert variant="warning" className="py-2 mb-2">
-          This setting will have no effect because there is no due date set.
-        </Alert>
-      )}
       <div>
         <strong>After last deadline</strong>
         <br />
@@ -110,6 +105,11 @@ function AfterLastDeadlineInput({
           }}
         />
       </div>
+      {!hasLastDeadline && (
+        <Alert variant="warning" className="py-2 mb-2">
+          This setting will have no effect because there is no due date set.
+        </Alert>
+      )}
 
       {mode === 'partial_credit' && (
         <div className="ms-4">
