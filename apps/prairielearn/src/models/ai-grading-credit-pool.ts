@@ -220,27 +220,28 @@ export async function adjustCreditPool({
         ? before.credit_transferable_milli_dollars
         : before.credit_non_transferable_milli_dollars;
 
-    if (currentBalance + delta_milli_dollars < 0) {
-      throw new Error(
-        `Cannot deduct more than the current ${credit_type.replace('_', '-')} balance of $${(currentBalance / 1000).toFixed(2)}.`,
-      );
-    }
+    // Cap deductions to the current balance so admins can empty the pool
+    // even when the remaining balance is less than the requested deduction.
+    const cappedDelta =
+      currentBalance + delta_milli_dollars < 0 ? -currentBalance : delta_milli_dollars;
+
+    if (cappedDelta === 0) return;
 
     await execute(sql.update_credit_balances, {
       course_instance_id,
       credit_transferable_milli_dollars:
         before.credit_transferable_milli_dollars +
-        (credit_type === 'transferable' ? delta_milli_dollars : 0),
+        (credit_type === 'transferable' ? cappedDelta : 0),
       credit_non_transferable_milli_dollars:
         before.credit_non_transferable_milli_dollars +
-        (credit_type === 'non_transferable' ? delta_milli_dollars : 0),
+        (credit_type === 'non_transferable' ? cappedDelta : 0),
     });
 
     await execute(sql.insert_credit_pool_change, {
       course_instance_id,
       credit_before_milli_dollars: before.total_milli_dollars,
-      credit_after_milli_dollars: before.total_milli_dollars + delta_milli_dollars,
-      delta_milli_dollars,
+      credit_after_milli_dollars: before.total_milli_dollars + cappedDelta,
+      delta_milli_dollars: cappedDelta,
       credit_type,
       reason,
       user_id,
