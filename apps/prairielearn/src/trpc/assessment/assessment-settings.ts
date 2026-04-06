@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
+import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
@@ -232,6 +233,8 @@ const copyAssessment = t.procedure.use(requireCoursePermissionEdit).mutation(asy
     { uuid: editor.uuid, course_instance_id: course_instance.id },
     IdSchema,
   );
+
+  flash('success', 'Assessment copied successfully. You are now viewing your copy of the assessment.');
 
   return { assessmentId };
 });
