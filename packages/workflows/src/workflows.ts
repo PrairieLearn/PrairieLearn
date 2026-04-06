@@ -189,8 +189,8 @@ export async function continueWorkflow<TState extends Record<string, unknown>>(
   //
   // Note: if a type is permanently retired and no server registers it, the
   // run will sit in its current status indefinitely (the cron also skips
-  // unknown types). This is acceptable for now — the logs surface it, and
-  // an admin can manually cancel orphaned runs.
+  // unknown types). TODO: add an admin query or cron job to auto-cancel
+  // runs whose types are no longer registered.
   const run = await getWorkflowRun(runId);
   const definition = registeredWorkflows.get(run.type);
   if (!definition) {
