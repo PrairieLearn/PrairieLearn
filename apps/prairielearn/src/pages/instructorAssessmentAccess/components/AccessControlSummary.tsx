@@ -14,7 +14,7 @@ import { Button } from 'react-bootstrap';
 
 import {
   DateTableView,
-  RuleSummaryCard,
+  OverrideRuleSummaryCard,
   generateDateTableRows,
   generateRuleSummary,
 } from './RuleSummary.js';
@@ -51,9 +51,8 @@ function SortableOverrideCard({
 
   return (
     <div ref={setNodeRef} style={style}>
-      <RuleSummaryCard
+      <OverrideRuleSummaryCard
         rule={override}
-        isMainRule={false}
         title={title}
         courseInstanceId={courseInstanceId}
         displayTimezone={displayTimezone}
