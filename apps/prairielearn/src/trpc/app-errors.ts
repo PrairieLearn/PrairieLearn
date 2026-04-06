@@ -12,8 +12,9 @@ import { type TRPCDefaultErrorShape, TRPCError, type TRPC_ERROR_CODE_KEY } from 
  * infrastructure: `AppError`, `throwAppError`, and `appErrorFormatter`.
  */
 
-export interface AppErrorBase {
+interface AppErrorBase {
   code: string;
+  message: string;
 }
 
 type Values<T> = T[keyof T];
@@ -43,7 +44,7 @@ type SharedProcedureErrors<Map> =
  * - Direct error type (has `code`): use as-is.
  * - Error map interface (keyed by procedure): compute shared errors.
  */
-type ResolveError<T> = T extends AppErrorBase ? T : SharedProcedureErrors<T>;
+type ResolveError<T> = T extends { code: string } ? T : SharedProcedureErrors<T>;
 
 interface AppErrorShape extends TRPCDefaultErrorShape {
   data: TRPCDefaultErrorShape['data'] & { appError?: AppErrorBase };
@@ -78,7 +79,7 @@ class AppError extends TRPCError {
     public readonly meta: AppErrorBase,
     trpcCode: TRPC_ERROR_CODE_KEY = 'BAD_REQUEST',
   ) {
-    super({ code: trpcCode, message: meta.code });
+    super({ code: trpcCode, message: meta.message });
   }
 }
 
@@ -90,19 +91,21 @@ class AppError extends TRPCError {
  *
  * @example
  * export interface WidgetError {
- *   Update: { code: 'NAME_TAKEN'; name: string } | { code: 'SYNC_FAILED'; id: string };
+ *   Update:
+ *     | { code: 'NAME_TAKEN'; name: string }
+ *     | { code: 'SYNC_FAILED'; id: string };
  *   Delete: { code: 'SYNC_FAILED'; id: string };
  * }
  *
  * // Procedure-specific: all errors for Update
- * throwAppError<WidgetError['Update']>({ code: 'NAME_TAKEN', name });
+ * throwAppError<WidgetError['Update']>({ code: 'NAME_TAKEN', message: 'A widget with this name already exists', name });
  *
  * // Error map: only errors shared across ALL procedures (SYNC_FAILED)
- * throwAppError<WidgetError>({ code: 'SYNC_FAILED', id });
+ * throwAppError<WidgetError>({ code: 'SYNC_FAILED', message: 'Failed to sync widget', id });
  */
 export function throwAppError<T>(
-  meta: ResolveError<T>,
+  meta: ResolveError<T> & { message: string },
   trpcCode: TRPC_ERROR_CODE_KEY = 'BAD_REQUEST',
 ): never {
-  throw new AppError(meta as AppErrorBase, trpcCode);
+  throw new AppError(meta as unknown as AppErrorBase, trpcCode);
 }

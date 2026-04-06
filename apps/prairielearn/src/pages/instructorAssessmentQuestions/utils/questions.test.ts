@@ -15,6 +15,7 @@ import {
   computeQuestionTotalPoints,
   computeZonePointTotals,
   computeZoneQuestionCount,
+  getZoneMixedToolsWarning,
   getZonePointsMismatch,
   hasPointsMismatch,
   normalizeQuestionPoints,
@@ -595,6 +596,75 @@ describe('computeZoneQuestionCount', () => {
       },
     ];
     expect(computeZoneQuestionCount(questions as ZoneQuestionBlockForm[])).toBe(3);
+  });
+});
+
+describe('getZoneMixedToolsWarning', () => {
+  function makeZone(
+    trackingId: string,
+    tools?: Record<string, { enabled: boolean }>,
+  ): ZoneAssessmentForm {
+    return { trackingId, questions: [], tools } as unknown as ZoneAssessmentForm;
+  }
+
+  it('returns null for a single zone', () => {
+    const zone = makeZone('z1');
+    expect(
+      getZoneMixedToolsWarning({ zone, zones: [zone], assessmentToolDefaults: {} }),
+    ).toBeNull();
+  });
+
+  it('returns null when all zones inherit the same default', () => {
+    const z1 = makeZone('z1');
+    const z2 = makeZone('z2');
+    const zones = [z1, z2];
+    expect(
+      getZoneMixedToolsWarning({ zone: z2, zones, assessmentToolDefaults: { calculator: true } }),
+    ).toBeNull();
+  });
+
+  it('warns when a tool is enabled in an earlier zone and disabled in a later zone', () => {
+    const z1 = makeZone('z1', { calculator: { enabled: true } });
+    const z2 = makeZone('z2', { calculator: { enabled: false } });
+    const zones = [z1, z2];
+    const result = getZoneMixedToolsWarning({ zone: z2, zones, assessmentToolDefaults: {} });
+    expect(result).toContain('Calculator');
+    expect(result).toContain('earlier zone');
+  });
+
+  it('does not warn for the zone where the tool is enabled', () => {
+    const z1 = makeZone('z1', { calculator: { enabled: true } });
+    const z2 = makeZone('z2', { calculator: { enabled: false } });
+    const zones = [z1, z2];
+    expect(getZoneMixedToolsWarning({ zone: z1, zones, assessmentToolDefaults: {} })).toBeNull();
+  });
+
+  it('returns null when tool is disabled in earlier zone and enabled in later zone', () => {
+    const z1 = makeZone('z1', { calculator: { enabled: false } });
+    const z2 = makeZone('z2', { calculator: { enabled: true } });
+    const zones = [z1, z2];
+    expect(getZoneMixedToolsWarning({ zone: z2, zones, assessmentToolDefaults: {} })).toBeNull();
+  });
+
+  it('warns when assessment default is enabled and a later zone disables it', () => {
+    const z1 = makeZone('z1');
+    const z2 = makeZone('z2', { calculator: { enabled: false } });
+    const zones = [z1, z2];
+    const result = getZoneMixedToolsWarning({
+      zone: z2,
+      zones,
+      assessmentToolDefaults: { calculator: true },
+    });
+    expect(result).toContain('Calculator');
+  });
+
+  it('returns null when assessment default is disabled and no zone enables it', () => {
+    const z1 = makeZone('z1');
+    const z2 = makeZone('z2');
+    const zones = [z1, z2];
+    expect(
+      getZoneMixedToolsWarning({ zone: z2, zones, assessmentToolDefaults: { calculator: false } }),
+    ).toBeNull();
   });
 });
 

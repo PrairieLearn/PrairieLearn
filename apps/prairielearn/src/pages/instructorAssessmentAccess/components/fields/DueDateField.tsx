@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import { Form } from 'react-bootstrap';
 import { type Path, useController, useWatch } from 'react-hook-form';
 
@@ -5,7 +6,11 @@ import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
-import { getLatestEarlyDeadlineDate, getUserTimezone } from '../utils/dateUtils.js';
+import {
+  endOfDayDatetime,
+  getLatestEarlyDeadlineDate,
+  getUserTimezone,
+} from '../utils/dateUtils.js';
 
 function DueDateInput({
   value,
@@ -13,12 +18,14 @@ function DueDateInput({
   idPrefix,
   releaseDate,
   earlyDeadlines,
+  error,
 }: {
   value: string | null;
   onChange: (value: string | null) => void;
   idPrefix: string;
   releaseDate: string | null | undefined;
   earlyDeadlines: DeadlineEntry[] | undefined;
+  error?: string;
 }) {
   const userTimezone = getUserTimezone();
 
@@ -82,7 +89,18 @@ function DueDateInput({
           label="Due on date"
           checked={value !== null}
           onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange('');
+            if (currentTarget.checked) {
+              const latestEarlyDate = earlyDeadlines?.filter((d) => d.date).pop()?.date;
+              let baseDate: Temporal.PlainDate;
+              if (latestEarlyDate) {
+                baseDate = Temporal.PlainDateTime.from(latestEarlyDate).toPlainDate();
+              } else if (releaseDate) {
+                baseDate = Temporal.PlainDateTime.from(releaseDate).toPlainDate();
+              } else {
+                baseDate = Temporal.Now.plainDateISO();
+              }
+              onChange(endOfDayDatetime(baseDate.add({ weeks: 1 })));
+            }
           }}
         />
       </div>
@@ -90,11 +108,19 @@ function DueDateInput({
         <>
           <Form.Control
             type="datetime-local"
+            step={1}
             aria-label="Due date"
+            aria-invalid={!!error}
+            aria-errormessage={error ? `${idPrefix}-due-date-error` : undefined}
             value={value}
             onChange={({ currentTarget }) => onChange(currentTarget.value)}
           />
-          {value && <Form.Text className="text-muted">{getCreditPeriodText()}</Form.Text>}
+          {error && (
+            <Form.Text id={`${idPrefix}-due-date-error`} className="text-danger" role="alert">
+              {error}
+            </Form.Text>
+          )}
+          {!error && value && <Form.Text className="text-muted">{getCreditPeriodText()}</Form.Text>}
         </>
       )}
     </Form.Group>
@@ -102,16 +128,27 @@ function DueDateInput({
 }
 
 export function MainDueDateField() {
-  const { field } = useController<AccessControlFormData, 'mainRule.dueDate'>({
-    name: 'mainRule.dueDate',
-  });
-
   const releaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
   });
 
   const earlyDeadlines = useWatch<AccessControlFormData, 'mainRule.earlyDeadlines'>({
     name: 'mainRule.earlyDeadlines',
+  });
+
+  const {
+    field,
+    fieldState: { error },
+  } = useController<AccessControlFormData, 'mainRule.dueDate'>({
+    name: 'mainRule.dueDate',
+    rules: {
+      validate: (value) => {
+        if (value && releaseDate && new Date(value) <= new Date(releaseDate)) {
+          return 'Due date must be after release date';
+        }
+        return true;
+      },
+    },
   });
 
   return (
@@ -122,6 +159,7 @@ export function MainDueDateField() {
         idPrefix="mainRule"
         releaseDate={releaseDate}
         earlyDeadlines={earlyDeadlines}
+        error={error?.message}
         onChange={field.onChange}
       />
     </div>
@@ -133,13 +171,7 @@ export function OverrideDueDateField({ index }: { index: number }) {
     name: 'mainRule.dueDate',
   });
 
-  const { field } = useController({
-    name: `overrides.${index}.dueDate` as Path<AccessControlFormData>,
-  });
-
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'dueDate');
-
-  const value = field.value as string | null;
 
   const { isOverridden: releaseDateOverridden } = useOverrideField(index, 'releaseDate');
   const releaseDate = useWatch({
@@ -157,6 +189,26 @@ export function OverrideDueDateField({ index }: { index: number }) {
     name: 'mainRule.earlyDeadlines',
   });
 
+  const effectiveReleaseDate = releaseDateOverridden ? releaseDate : mainReleaseDate;
+
+  const {
+    field,
+    fieldState: { error },
+  } = useController({
+    name: `overrides.${index}.dueDate` as Path<AccessControlFormData>,
+    rules: {
+      validate: (value) => {
+        const v = value as string | null;
+        if (v && effectiveReleaseDate && new Date(v) <= new Date(effectiveReleaseDate)) {
+          return 'Due date must be after release date';
+        }
+        return true;
+      },
+    },
+  });
+
+  const value = field.value as string | null;
+
   return (
     <FieldWrapper
       isOverridden={isOverridden}
@@ -171,8 +223,9 @@ export function OverrideDueDateField({ index }: { index: number }) {
       <DueDateInput
         value={value}
         idPrefix={`overrides-${index}`}
-        releaseDate={releaseDateOverridden ? releaseDate : mainReleaseDate}
+        releaseDate={effectiveReleaseDate}
         earlyDeadlines={earlyDeadlinesOverridden ? earlyDeadlines : mainEarlyDeadlines}
+        error={error?.message}
         onChange={field.onChange}
       />
     </FieldWrapper>

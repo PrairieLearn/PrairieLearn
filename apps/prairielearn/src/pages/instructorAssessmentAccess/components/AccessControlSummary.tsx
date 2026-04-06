@@ -14,7 +14,7 @@ import { Button } from 'react-bootstrap';
 
 import {
   DateTableView,
-  RuleSummaryCard,
+  OverrideRuleSummaryCard,
   generateDateTableRows,
   generateRuleSummary,
 } from './RuleSummary.js';
@@ -51,9 +51,8 @@ function SortableOverrideCard({
 
   return (
     <div ref={setNodeRef} style={style}>
-      <RuleSummaryCard
+      <OverrideRuleSummaryCard
         rule={override}
-        isMainRule={false}
         title={title}
         courseInstanceId={courseInstanceId}
         displayTimezone={displayTimezone}
@@ -73,8 +72,8 @@ function MainRuleSummaryContent({
   rule: MainRuleData;
   displayTimezone: string;
 }) {
-  const summaryItems = generateRuleSummary(rule, 'compact');
-  const dateTableRows = generateDateTableRows(rule, displayTimezone, 'compact');
+  const summaryItems = generateRuleSummary(rule, displayTimezone);
+  const dateTableRows = generateDateTableRows(rule, displayTimezone);
 
   return (
     <div>
@@ -88,7 +87,7 @@ function MainRuleSummaryContent({
         <div className="d-flex flex-wrap gap-2">
           {summaryItems.map((item) => (
             <span
-              key={item.text}
+              key={item.key}
               className="d-inline-flex align-items-center gap-1 border rounded-pill px-3 py-1"
               style={{ fontSize: '0.875rem' }}
             >
@@ -102,9 +101,9 @@ function MainRuleSummaryContent({
       {dateTableRows.length === 0 && summaryItems.length === 0 && (
         <div
           className="rounded text-center py-3 text-body-secondary"
-          style={{ border: '1px dashed var(--bs-border-color)' }}
+          style={{ border: '2px dashed var(--bs-border-color)' }}
         >
-          No dates or deadlines configured.
+          No access settings configured.
         </div>
       )}
     </div>
@@ -121,6 +120,7 @@ export function AccessControlSummary({
   onRemoveOverride,
   onMoveOverride,
   onEditMainRule,
+  onClearMainRule,
   onEditOverride,
   courseInstanceId,
   displayTimezone,
@@ -136,6 +136,8 @@ export function AccessControlSummary({
   onMoveOverride: (fromIndex: number, toIndex: number) => void;
   /** Callback when main rule edit is requested */
   onEditMainRule: () => void;
+  /** Callback when main rule reset is requested */
+  onClearMainRule: () => void;
   /** Callback when an override edit is requested */
   onEditOverride: (index: number) => void;
   /** Course instance ID for building URLs */
@@ -156,7 +158,7 @@ export function AccessControlSummary({
     const newIndex = sortableIds.indexOf(String(over.id));
     if (oldIndex === -1 || newIndex === -1) return;
 
-    // Prevent reordering across override types (individual must stay before student_label)
+    // Prevent reordering across override types (enrollment must stay before student_label)
     if (overrides[oldIndex].appliesTo.targetType !== overrides[newIndex].appliesTo.targetType) {
       return;
     }
@@ -167,17 +169,20 @@ export function AccessControlSummary({
   return (
     <div>
       <section className="mb-4">
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <div>
-            <h5 className="mb-0">Defaults</h5>
-            <small className="text-body-secondary">
-              Access settings that apply to all students by default.
-            </small>
+        <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
+          <h5 className="mb-0">Defaults</h5>
+          <div className="d-flex gap-2">
+            <Button variant="outline-primary" size="sm" onClick={onEditMainRule}>
+              <i className="bi bi-pencil me-1" /> Edit
+            </Button>
+            <Button variant="outline-danger" size="sm" onClick={onClearMainRule}>
+              <i className="bi bi-trash me-1" /> Clear
+            </Button>
           </div>
-          <Button variant="outline-primary" size="sm" onClick={onEditMainRule}>
-            <i className="bi bi-pencil me-1" /> Edit
-          </Button>
         </div>
+        <small className="text-body-secondary d-block mb-3">
+          Access settings that apply to all students by default.
+        </small>
 
         {mainRuleErrors && mainRuleErrors.length > 0 && (
           <div className="alert alert-danger mb-3">
@@ -193,21 +198,24 @@ export function AccessControlSummary({
       </section>
 
       <section>
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <div>
-            <h5 className="mb-0">Overrides</h5>
-            <small className="text-body-secondary">
-              Customize settings for specific students or groups. Fields not overridden are
-              inherited from the defaults.
-            </small>
-          </div>
+        <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
+          <h5 className="mb-0">Overrides</h5>
           <Button variant="primary" size="sm" onClick={onAddOverride}>
             <i className="bi bi-plus-lg me-1" /> Add override
           </Button>
         </div>
+        <small className="text-body-secondary d-block mb-3">
+          Customize settings for specific students or groups. Fields not overridden are inherited
+          from the defaults and any earlier overrides.
+        </small>
 
         {overrides.length === 0 ? (
-          <p className="text-muted">No overrides configured.</p>
+          <div
+            className="rounded text-center py-3 text-body-secondary"
+            style={{ border: '2px dashed var(--bs-border-color)' }}
+          >
+            No overrides configured.
+          </div>
         ) : (
           <DndContext
             id={dndId}
@@ -217,17 +225,17 @@ export function AccessControlSummary({
           >
             <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
               {overrides.map((override, index) => {
-                const isFirstIndividual =
-                  index === 0 && override.appliesTo.targetType === 'individual';
+                const isFirstEnrollment =
+                  index === 0 && override.appliesTo.targetType === 'enrollment';
                 const isFirstLabel =
                   override.appliesTo.targetType === 'student_label' &&
                   (index === 0 || overrides[index - 1].appliesTo.targetType !== 'student_label');
 
                 return (
                   <Fragment key={sortableIds[index]}>
-                    {isFirstIndividual && (
+                    {isFirstEnrollment && (
                       <small className="text-muted fw-semibold d-block mb-2">
-                        Overrides for individual students
+                        Student-specific overrides
                       </small>
                     )}
                     {isFirstLabel && (
@@ -254,7 +262,7 @@ export function AccessControlSummary({
 
         <div className="rounded p-3 mt-3" style={{ backgroundColor: 'var(--bs-tertiary-bg)' }}>
           <p className="text-body-secondary small mb-0">
-            If a student matches multiple overrides, individual student overrides take priority over
+            If a student matches multiple overrides, student-specific overrides take priority over
             student label overrides. Within each section, overrides lower in the list take priority
             over those higher up.
           </p>

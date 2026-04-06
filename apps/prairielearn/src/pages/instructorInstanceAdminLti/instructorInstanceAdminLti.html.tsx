@@ -108,7 +108,7 @@ export function InstructorInstanceAdminLti({
             <strong>
               This version of LTI is deprecated.
               ${isEnterprise()
-                ? html`See the "Integrations" tab for more information about newer integration
+                ? html`See the "LMS connections" tab for more information about newer integration
                   methods.`
                 : html`Check with your PrairieLearn admins about newer integration methods.`}
             </strong>

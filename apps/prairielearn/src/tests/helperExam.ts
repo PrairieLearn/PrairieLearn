@@ -44,7 +44,7 @@ const exam1AutomaticTestSuiteQuestions: TestExamQuestion[] = [
   { qid: 'partialCredit3', type: 'Freeform', maxPoints: 13 },
 ];
 
-export const exams: Record<string, TestExam> = {
+const exams: Record<string, TestExam> = {
   'exam1-automaticTestSuite': {
     maxPoints: 94,
     tid: 'exam1-automaticTestSuite',
