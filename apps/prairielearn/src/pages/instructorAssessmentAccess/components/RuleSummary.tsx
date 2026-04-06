@@ -182,26 +182,43 @@ export function generateDateTableRows(
   return rows;
 }
 
-interface SummaryItem {
+export interface SummaryItem {
   key: string;
   icon: string;
   text: ReactNode;
+  error?: string;
 }
 
-export function generateRuleSummary(rule: RuleData, displayTimezone: string): SummaryItem[] {
+export type SummaryItemErrors = Partial<Record<string, string>>;
+
+export function generateRuleSummary(
+  rule: RuleData,
+  displayTimezone: string,
+  itemErrors?: SummaryItemErrors,
+): SummaryItem[] {
   const items: SummaryItem[] = [];
 
   if (isOverrideFieldActive(rule, 'durationMinutes')) {
     const durationMinutes = rule.durationMinutes;
     if (durationMinutes !== null) {
-      items.push({ key: 'duration', icon: 'bi-clock', text: `${durationMinutes} minutes` });
+      items.push({
+        key: 'duration',
+        icon: 'bi-clock',
+        text: `${durationMinutes} minutes`,
+        error: itemErrors?.duration,
+      });
     }
   }
 
   if (isOverrideFieldActive(rule, 'password')) {
     const password = rule.password;
     if (password !== null && password !== '') {
-      items.push({ key: 'password', icon: 'bi-lock', text: 'Password protected' });
+      items.push({
+        key: 'password',
+        icon: 'bi-lock',
+        text: 'Password protected',
+        error: itemErrors?.password,
+      });
     }
   }
 
@@ -210,6 +227,7 @@ export function generateRuleSummary(rule: RuleData, displayTimezone: string): Su
       key: 'prairietest',
       icon: 'bi-pc-display',
       text: `${rule.prairieTestExams.length} PrairieTest ${rule.prairieTestExams.length === 1 ? 'exam' : 'exams'}`,
+      error: itemErrors?.prairietest,
     });
   }
 

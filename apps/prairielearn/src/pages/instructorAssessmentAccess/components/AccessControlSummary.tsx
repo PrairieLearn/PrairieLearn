@@ -9,12 +9,13 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Fragment, useId, useMemo } from 'react';
+import { type ReactNode, Fragment, useId, useMemo } from 'react';
 import { Button } from 'react-bootstrap';
 import { get, useFormState } from 'react-hook-form';
 
 import {
   type DateFieldErrors,
+  type SummaryItemErrors,
   DateTableView,
   OverrideRuleSummaryCard,
   generateDateTableRows,
@@ -105,6 +106,67 @@ function SortableOverrideCard({
   );
 }
 
+function useSummaryItemErrors(pathPrefix: string, rule: MainRuleData): SummaryItemErrors | undefined {
+  const { errors } = useFormState<AccessControlFormData>();
+  const result: SummaryItemErrors = {};
+  let hasErrors = false;
+
+  if (rule.prairieTestEnabled && rule.prairieTestExams.length > 0) {
+    const examErrors: string[] = [];
+    for (let i = 0; i < rule.prairieTestExams.length; i++) {
+      const msg: string | undefined = get(
+        errors,
+        `${pathPrefix}.prairieTestExams.${i}.examUuid`,
+      )?.message;
+      if (msg) examErrors.push(`Exam ${i + 1}: ${msg}`);
+    }
+    if (examErrors.length > 0) {
+      result.prairietest = examErrors.join('; ');
+      hasErrors = true;
+    }
+  }
+
+  return hasErrors ? result : undefined;
+}
+
+function SummaryItemChips({ items }: { items: { key: string; icon: string; text: ReactNode; error?: string }[] }) {
+  if (items.length === 0) return null;
+
+  const errorItems = items.filter((item) => item.error);
+
+  return (
+    <div>
+      {errorItems.length > 0 && (
+        <div className="alert alert-danger py-2 px-3 small mb-2">
+          {errorItems.map((item) => (
+            <div key={item.key}>{item.error}</div>
+          ))}
+        </div>
+      )}
+      <div className="d-flex flex-wrap gap-2">
+        {items.map((item) => (
+          <span
+            key={item.key}
+            className={`d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1 ${
+              item.error
+                ? 'border-danger text-danger border'
+                : 'border'
+            }`}
+            style={{ fontSize: '0.875rem' }}
+          >
+            {item.error ? (
+              <i className="bi bi-exclamation-circle" aria-hidden="true" />
+            ) : (
+              <i className={`bi ${item.icon}`} aria-hidden="true" />
+            )}
+            {item.text}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MainRuleSummaryContent({
   rule,
   displayTimezone,
@@ -113,7 +175,8 @@ function MainRuleSummaryContent({
   displayTimezone: string;
 }) {
   const fieldErrors = useDateFieldErrors('mainRule', rule);
-  const summaryItems = generateRuleSummary(rule, displayTimezone);
+  const itemErrors = useSummaryItemErrors('mainRule', rule);
+  const summaryItems = generateRuleSummary(rule, displayTimezone, itemErrors);
   const dateTableRows = generateDateTableRows(rule, displayTimezone, fieldErrors);
 
   return (
@@ -124,20 +187,7 @@ function MainRuleSummaryContent({
         </div>
       )}
 
-      {summaryItems.length > 0 && (
-        <div className="d-flex flex-wrap gap-2">
-          {summaryItems.map((item) => (
-            <span
-              key={item.key}
-              className="d-inline-flex align-items-center gap-1 border rounded-pill px-3 py-1"
-              style={{ fontSize: '0.875rem' }}
-            >
-              <i className={`bi ${item.icon}`} aria-hidden="true" />
-              {item.text}
-            </span>
-          ))}
-        </div>
-      )}
+      {summaryItems.length > 0 && <SummaryItemChips items={summaryItems} />}
 
       {dateTableRows.length === 0 && summaryItems.length === 0 && (
         <div
