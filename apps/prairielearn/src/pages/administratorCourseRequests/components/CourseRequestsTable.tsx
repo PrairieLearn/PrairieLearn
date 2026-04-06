@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { memo, useEffect, useState } from 'react';
+import { memo, useState } from 'react';
 import { Alert, Dropdown, Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
@@ -21,15 +21,6 @@ import type { CourseRequestRow } from '../../../lib/course-request.js';
 import { type Timezone } from '../../../lib/timezone.shared.js';
 import { useTRPC } from '../../../trpc/administrator/context.js';
 import type { AdminCourseRequestError } from '../../../trpc/administrator/course-requests.js';
-
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(timer);
-  }, [value, delayMs]);
-  return debounced;
-}
 
 interface CourseRequestApproveFormData extends CourseFormFieldValues {
   github_user: string;
@@ -376,28 +367,14 @@ function CourseRequestApproveModalContent({
   const institutionId = methods.watch('institution_id');
   const prefixState = useInstitutionPrefix(institutionId, institutions);
 
-  const repositoryShortName = methods.watch('repository_short_name');
-  const coursePath = methods.watch('path');
-
-  const debouncedRepoShortName = useDebouncedValue(repositoryShortName, 500);
-  const debouncedPath = useDebouncedValue(coursePath, 500);
-
-  const conflictsQuery = useQuery({
-    ...trpc.courseRequests.checkConflicts.queryOptions({
-      repoShortName: debouncedRepoShortName,
-      path: debouncedPath,
-    }),
-    enabled: debouncedRepoShortName.trim().length > 0 && debouncedPath.trim().length > 0,
-  });
-
-  const conflicts = conflictsQuery.data;
-  const hasHardBlockers = !!(
-    conflicts?.repoCourse ||
-    conflicts?.githubRepoUrl ||
-    conflicts?.pathCourse
-  );
+  const [conflicts, setConflicts] = useState<{
+    repoCourse: StaffCourse | null;
+    githubRepoUrl: string | null;
+    pathCourse: StaffCourse | null;
+  } | null>(null);
 
   const onSubmit = (data: CourseRequestApproveFormData) => {
+    setConflicts(null);
     mutation.mutate(
       {
         courseRequestId: request.id,
@@ -410,8 +387,12 @@ function CourseRequestApproveModalContent({
         githubUser: data.github_user,
       },
       {
-        onSuccess: ({ jobSequenceId }) => {
-          window.location.href = `${urlPrefix}/administrator/jobSequence/${jobSequenceId}/`;
+        onSuccess: (result) => {
+          if (result.status === 'conflicts') {
+            setConflicts(result);
+          } else {
+            window.location.href = `${urlPrefix}/administrator/jobSequence/${result.jobSequenceId}/`;
+          }
         },
       },
     );
@@ -606,12 +587,7 @@ function CourseRequestApproveModalContent({
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={
-              isSubmitting ||
-              mutation.isPending ||
-              prefixState.status === 'loading' ||
-              hasHardBlockers
-            }
+            disabled={isSubmitting || mutation.isPending || prefixState.status === 'loading'}
           >
             Create course
           </button>
@@ -625,13 +601,11 @@ function ConflictsAlert({
   conflicts,
   urlPrefix,
 }: {
-  conflicts:
-    | {
-        repoCourse: StaffCourse | null;
-        githubRepoUrl: string | null;
-        pathCourse: StaffCourse | null;
-      }
-    | undefined;
+  conflicts: {
+    repoCourse: StaffCourse | null;
+    githubRepoUrl: string | null;
+    pathCourse: StaffCourse | null;
+  } | null;
   urlPrefix: string;
 }) {
   if (!conflicts) return null;

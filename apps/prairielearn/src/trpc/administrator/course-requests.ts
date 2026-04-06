@@ -1,4 +1,3 @@
-import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
@@ -65,33 +64,35 @@ const createCourse = t.procedure
       githubUser: z.string(),
     }),
   )
-  .output(z.object({ jobSequenceId: z.string() }))
+  .output(
+    z.discriminatedUnion('status', [
+      z.object({ status: z.literal('success'), jobSequenceId: z.string() }),
+      z.object({
+        status: z.literal('conflicts'),
+        repoCourse: NullableStaffCourseSchema,
+        githubRepoUrl: z.string().url().nullable(),
+        pathCourse: NullableStaffCourseSchema,
+      }),
+    ]),
+  )
   .mutation(async ({ input, ctx }) => {
     const normalizedPath = normalizeCoursePathInput(input.path);
 
-    const repoCourse = await selectOptionalCourseByRepositoryName(input.repoShortName);
-    if (repoCourse != null) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'A course with this repository already exists.',
-      });
-    }
+    const [repoCourse, githubRepoExists, pathCourse] = await Promise.all([
+      selectOptionalCourseByRepositoryName(input.repoShortName),
+      checkGithubRepositoryExists(input.repoShortName),
+      selectOptionalCourseByPath(normalizedPath),
+    ]);
 
-    const githubRepoExists = await checkGithubRepositoryExists(input.repoShortName);
-    if (githubRepoExists) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message:
-          'A GitHub repository with this name already exists. This can happen if a repository was previously renamed.',
-      });
-    }
-
-    const pathCourse = await selectOptionalCourseByPath(normalizedPath);
-    if (pathCourse != null) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'A course with this path already exists.',
-      });
+    if (repoCourse != null || githubRepoExists || pathCourse != null) {
+      return {
+        status: 'conflicts' as const,
+        repoCourse: NullableStaffCourseSchema.parse(repoCourse),
+        githubRepoUrl: githubRepoExists
+          ? `https://github.com/${config.githubCourseOwner}/${input.repoShortName}`
+          : null,
+        pathCourse: NullableStaffCourseSchema.parse(pathCourse),
+      };
     }
 
     const jobSequenceId = await createCourseFromRequest({
@@ -105,7 +106,7 @@ const createCourse = t.procedure
       githubUser: input.githubUser.trim().length > 0 ? input.githubUser.trim() : null,
       authnUser: ctx.authn_user,
     });
-    return { jobSequenceId };
+    return { status: 'success' as const, jobSequenceId };
   });
 
 const SourcesSchema = z
@@ -184,42 +185,10 @@ const suggestInstitutionPrefixProcedure = t.procedure
     });
   });
 
-const checkConflictsProcedure = t.procedure
-  .use(requireAdministrator)
-  .input(
-    z.object({
-      repoShortName: z.string().min(1),
-      path: z.string().min(1),
-    }),
-  )
-  .output(
-    z.object({
-      repoCourse: NullableStaffCourseSchema,
-      githubRepoUrl: z.string().url().nullable(),
-      pathCourse: NullableStaffCourseSchema,
-    }),
-  )
-  .query(async ({ input }) => {
-    const normalizedPath = normalizeCoursePathInput(input.path);
-    const [repoCourse, githubRepoExists, pathCourse] = await Promise.all([
-      selectOptionalCourseByRepositoryName(input.repoShortName),
-      checkGithubRepositoryExists(input.repoShortName),
-      selectOptionalCourseByPath(normalizedPath),
-    ]);
-    return {
-      repoCourse: NullableStaffCourseSchema.parse(repoCourse),
-      githubRepoUrl: githubRepoExists
-        ? `https://github.com/${config.githubCourseOwner}/${input.repoShortName}`
-        : null,
-      pathCourse: NullableStaffCourseSchema.parse(pathCourse),
-    };
-  });
-
 export const administratorCourseRequestsRouter = t.router({
   checkInstructorLegitimacy: checkInstructorLegitimacyProcedure,
   selectInstitutionPrefix: selectInstitutionPrefixProcedure,
   suggestInstitutionPrefix: suggestInstitutionPrefixProcedure,
-  checkConflicts: checkConflictsProcedure,
   deny,
   updateNote,
   createCourse,
