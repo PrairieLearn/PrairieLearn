@@ -58,7 +58,7 @@ export function QRCodeModal({
       <Modal.Body>
         <div
           className="d-flex justify-content-center"
-          // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+          // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
           dangerouslySetInnerHTML={{ __html: svg }}
         />
       </Modal.Body>
