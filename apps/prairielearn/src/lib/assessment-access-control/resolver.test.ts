@@ -26,12 +26,7 @@ function toRuntime(json: AccessControlJson): RuntimeAccessControl {
     const { releaseDate, dueDate, ...dcRest } = dateControl;
     result.dateControl = {
       ...dcRest,
-      releaseDate:
-        releaseDate !== undefined
-          ? releaseDate !== null
-            ? new Date(releaseDate)
-            : null
-          : undefined,
+      releaseDate: releaseDate !== undefined ? new Date(releaseDate) : undefined,
       dueDate: dueDate !== undefined ? (dueDate !== null ? new Date(dueDate) : null) : undefined,
     };
   }
