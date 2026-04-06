@@ -26,51 +26,37 @@ export function MainDateControlForm({
     name: 'mainRule.dateControlEnabled',
   });
 
-  const dateControlRegistration = register('mainRule.dateControlEnabled');
-
   return (
-    <div className="mb-4">
+    <div>
       <div className="section-header mb-3">
         <Form.Check
           type="checkbox"
           id="mainRule-date-control-enabled"
           label={<strong>{title}</strong>}
-          {...dateControlRegistration}
+          {...register('mainRule.dateControlEnabled', {
+            onChange: (e) => {
+              if (e.target.checked && !getValues('mainRule.releaseDate')) {
+                setValue('mainRule.releaseDate', startOfDayDatetime(), {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }
+            },
+          })}
           aria-describedby="mainRule-date-control-help"
-          onChange={(e) => {
-            void dateControlRegistration.onChange(e);
-            if (e.target.checked && !getValues('mainRule.releaseDate')) {
-              setValue('mainRule.releaseDate', startOfDayDatetime(), {
-                shouldDirty: true,
-                shouldValidate: true,
-              });
-            }
-          }}
         />
         <Form.Text id="mainRule-date-control-help" className="text-muted">
           {description}
         </Form.Text>
       </div>
       {dateControlEnabled ? (
-        <div className="mt-3">
-          <div className="mb-3">
-            <MainReleaseDateField />
-          </div>
-          <div className="mb-3">
-            <MainDeadlineArrayField type="early" />
-          </div>
-          <div className="mb-3">
-            <MainDueDateField />
-          </div>
-          <div className="mb-3">
-            <MainDeadlineArrayField type="late" />
-          </div>
-
-          <div className="mb-3">
-            <MainAfterLastDeadlineField />
-          </div>
-
-          <Row className="mb-3 gy-3">
+        <div className="d-flex flex-column gap-3">
+          <MainReleaseDateField />
+          <MainDeadlineArrayField type="early" />
+          <MainDueDateField />
+          <MainDeadlineArrayField type="late" />
+          <MainAfterLastDeadlineField />
+          <Row className="gy-3">
             <Col md={6}>
               <MainDurationField />
             </Col>

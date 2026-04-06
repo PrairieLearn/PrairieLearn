@@ -17,23 +17,21 @@ function tomorrowLocalDatetime(): string {
 
 function isReleasedNow(value: string): boolean {
   if (!value) return true;
-  try {
-    const release = Temporal.PlainDateTime.from(value);
-    const now = Temporal.Now.plainDateTimeISO();
-    return Temporal.PlainDateTime.compare(release, now) <= 0;
-  } catch {
-    return true;
-  }
+  const release = Temporal.PlainDateTime.from(value);
+  const now = Temporal.Now.plainDateTimeISO();
+  return Temporal.PlainDateTime.compare(release, now) <= 0;
 }
 
-function MainReleaseDateInput({
+function ReleaseDateInput({
   value,
   onChange,
   error,
+  idPrefix,
 }: {
   value: string;
   onChange: (value: string) => void;
   error?: string;
+  idPrefix: string;
 }) {
   const released = isReleasedNow(value);
 
@@ -42,8 +40,8 @@ function MainReleaseDateInput({
       <div className="mb-2">
         <Form.Check
           type="radio"
-          name="mainRule-releaseMode"
-          id="mainRule-release-now"
+          name={`${idPrefix}-releaseMode`}
+          id={`${idPrefix}-release-now`}
           label="Released"
           checked={released}
           onChange={({ currentTarget }) => {
@@ -54,8 +52,8 @@ function MainReleaseDateInput({
         />
         <Form.Check
           type="radio"
-          name="mainRule-releaseMode"
-          id="mainRule-release-scheduled"
+          name={`${idPrefix}-releaseMode`}
+          id={`${idPrefix}-release-scheduled`}
           label="Scheduled for release"
           checked={!released}
           onChange={({ currentTarget }) => {
@@ -72,62 +70,16 @@ function MainReleaseDateInput({
             step={1}
             aria-label="Release date"
             aria-invalid={!!error}
-            aria-errormessage={error ? 'mainRule-release-date-error' : undefined}
+            aria-errormessage={error ? `${idPrefix}-release-date-error` : undefined}
             value={value}
             onChange={({ currentTarget }) => onChange(currentTarget.value)}
           />
           {error && (
-            <Form.Text id="mainRule-release-date-error" className="text-danger" role="alert">
+            <Form.Text id={`${idPrefix}-release-date-error`} className="text-danger" role="alert">
               {error}
             </Form.Text>
           )}
         </>
-      )}
-    </Form.Group>
-  );
-}
-
-function OverrideReleaseDateInput({
-  value,
-  onChange,
-  idPrefix,
-}: {
-  value: string | null;
-  onChange: (value: string | null) => void;
-  idPrefix: string;
-}) {
-  return (
-    <Form.Group>
-      <div className="mb-2">
-        <Form.Check
-          type="radio"
-          name={`${idPrefix}-releaseMode`}
-          id={`${idPrefix}-release-immediately`}
-          label="Released immediately"
-          checked={value === null}
-          onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange(null);
-          }}
-        />
-        <Form.Check
-          type="radio"
-          name={`${idPrefix}-releaseMode`}
-          id={`${idPrefix}-release-after-date`}
-          label="Released after date"
-          checked={value !== null}
-          onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange(tomorrowLocalDatetime());
-          }}
-        />
-      </div>
-      {value !== null && (
-        <Form.Control
-          type="datetime-local"
-          step={1}
-          aria-label="Release date"
-          value={value}
-          onChange={({ currentTarget }) => onChange(currentTarget.value)}
-        />
       )}
     </Form.Group>
   );
@@ -155,7 +107,12 @@ export function MainReleaseDateField() {
   return (
     <div>
       <strong className="d-block mb-2">Release</strong>
-      <MainReleaseDateInput value={field.value} error={error?.message} onChange={field.onChange} />
+      <ReleaseDateInput
+        value={field.value}
+        error={error?.message}
+        idPrefix="mainRule"
+        onChange={field.onChange}
+      />
     </div>
   );
 }
@@ -177,13 +134,13 @@ export function OverrideReleaseDateField({ index }: { index: number }) {
       label="Release"
       headerContent={<strong>Release</strong>}
       onOverride={() => {
-        field.onChange(mainValue);
+        field.onChange(mainValue || todayLocalDatetime());
         addOverride();
       }}
       onRemoveOverride={removeOverride}
     >
-      <OverrideReleaseDateInput
-        value={field.value as string | null}
+      <ReleaseDateInput
+        value={field.value as string}
         idPrefix={`overrides-${index}`}
         onChange={field.onChange}
       />

@@ -431,7 +431,7 @@ function formatCreditDateString(
  * - Student NOT in Exam mode + assessment has PT exams → deny access
  * - Valid reservation = user has pt_reservation whose exam UUID matches a configured exam
  *
- * When the assessment is past its close date (`assessmentClosed`), PT gating is
+ * When the assessment is past its due date (`assessmentClosed`), PT gating is
  * skipped so the normal closed-assessment behavior applies instead of showing
  * "Not yet open" indefinitely.
  */
@@ -461,9 +461,14 @@ function resolvePrairieTestAccess({
   // Not in exam mode — student cannot access a PT-gated assessment.
   if (authzMode !== 'Exam') {
     if (assessmentClosed) return { action: 'continue' };
+
+    // If `listBeforeRelease` is set, list it, but it should not be accessible.
+    // We ONLY do this outside of Exam mode; when in Exam mode, we only show assessments
+    // that the user can actually access.
     if (listBeforeRelease) {
       return { action: 'deny', result: { ...UNAUTHORIZED_RESULT, showBeforeRelease: true } };
     }
+
     return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
   }
 
@@ -487,9 +492,6 @@ function resolvePrairieTestAccess({
 
   // No matching reservation — deny unless the assessment is closed.
   if (assessmentClosed) return { action: 'continue' };
-  if (listBeforeRelease) {
-    return { action: 'deny', result: { ...UNAUTHORIZED_RESULT, showBeforeRelease: true } };
-  }
   return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
 }
 
