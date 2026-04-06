@@ -1354,7 +1354,7 @@ describe('resolveAccessControl', () => {
       expect(result.authorized).toBe(false);
     });
 
-    it('lists but does not authorize PT assessment when listBeforeRelease set and no matching reservation', () => {
+    it('does not list or authorize PT assessment in exam mode when no matching reservation', () => {
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',
@@ -1364,7 +1364,7 @@ describe('resolveAccessControl', () => {
         ],
       });
       expect(result.authorized).toBe(false);
-      expect(result.showBeforeRelease).toBe(true);
+      expect(result.showBeforeRelease).toBe(false);
       expect(result.active).toBe(false);
     });
 
@@ -1379,6 +1379,7 @@ describe('resolveAccessControl', () => {
       });
       expect(result.authorized).toBe(false);
       expect(result.showBeforeRelease).toBe(false);
+      expect(result.active).toBe(false);
     });
 
     it('does not grant access to PT assessment via listBeforeRelease bypass', () => {
@@ -1396,7 +1397,7 @@ describe('resolveAccessControl', () => {
               : [],
         });
         expect(result.authorized).toBe(false);
-        expect(result.showBeforeRelease).toBe(true);
+        expect(result.showBeforeRelease).toBe(authzMode === 'Public');
         expect(result.credit).toBe(0);
       }
     });
