@@ -1,0 +1,47 @@
+/* Column widths for the preferences table */
+.preferences-col-drag {
+  width: 2rem;
+}
+
+.preferences-col-type {
+  width: 7rem;
+}
+
+.preferences-col-actions {
+  width: 2.5rem;
+}
+
+/* Preference table rows */
+.preferences-row {
+  vertical-align: top;
+}
+
+/* Matches the height of .form-control-sm so non-input cells align with inputs */
+.preferences-cell-align {
+  min-height: calc(1.5em + 0.5rem + 2px);
+}
+
+/* Enum value badges */
+.preferences-enum-badge {
+  max-width: 12rem;
+}
+
+.preferences-enum-remove {
+  font-size: 0.5rem;
+}
+
+/* Inline enum input */
+.preferences-enum-input {
+  width: 8rem;
+  height: 1.5rem;
+  font-size: 0.75rem;
+}
+
+.preferences-enum-add-btn {
+  font-size: 0.75em;
+}
+
+/* ComboBox dropdown items */
+.preferences-combobox-item {
+  white-space: normal;
+}

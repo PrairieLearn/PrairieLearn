@@ -42,6 +42,10 @@ import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
+import {
+  type QuestionPreferencesSchemaJson,
+  validatePreferencesSchema,
+} from '../../schemas/infoQuestion.js';
 
 import { InstructorQuestionSettings } from './instructorQuestionSettings.html.js';
 import {
@@ -180,13 +184,18 @@ router.post(
                 name: z.string().min(1, 'Preference name is required'),
                 type: z.enum(['string', 'number', 'boolean']),
                 default: z.string().min(1, 'Default value is required'),
-                enum: z.string().optional(),
+                enum: z
+                  .string()
+                  .optional()
+                  .transform((val): string[] => {
+                    if (!val || val === '[]') return [];
+                    return JSON.parse(val) as string[];
+                  }),
               }),
             )
             .superRefine((prefs, ctx) => {
               const names = new Set<string>();
-              for (let i = 0; i < prefs.length; i++) {
-                const pref = prefs[i];
+              prefs.forEach((pref, i) => {
                 if (names.has(pref.name)) {
                   ctx.addIssue({
                     code: z.ZodIssueCode.custom,
@@ -195,68 +204,7 @@ router.post(
                   });
                 }
                 names.add(pref.name);
-
-                if (pref.type === 'number') {
-                  const num = Number(pref.default);
-                  if (!Number.isFinite(num)) {
-                    ctx.addIssue({
-                      code: z.ZodIssueCode.custom,
-                      message: 'Default must be a finite number',
-                      path: [i, 'default'],
-                    });
-                  }
-                } else if (pref.type === 'boolean') {
-                  if (pref.default !== 'true' && pref.default !== 'false') {
-                    ctx.addIssue({
-                      code: z.ZodIssueCode.custom,
-                      message: 'Default must be "true" or "false"',
-                      path: [i, 'default'],
-                    });
-                  }
-                }
-
-                if (pref.enum && pref.enum !== '[]') {
-                  let enumValues: string[];
-                  try {
-                    enumValues = JSON.parse(pref.enum);
-                  } catch {
-                    ctx.addIssue({
-                      code: z.ZodIssueCode.custom,
-                      message: 'Invalid enum format',
-                      path: [i, 'enum'],
-                    });
-                    continue;
-                  }
-                  if (
-                    !Array.isArray(enumValues) ||
-                    !enumValues.every((v) => typeof v === 'string')
-                  ) {
-                    ctx.addIssue({
-                      code: z.ZodIssueCode.custom,
-                      message: 'Enum must be an array of strings',
-                      path: [i, 'enum'],
-                    });
-                    continue;
-                  }
-                  if (enumValues.length > 0 && !enumValues.includes(pref.default)) {
-                    ctx.addIssue({
-                      code: z.ZodIssueCode.custom,
-                      message: 'Default must be one of the enum values',
-                      path: [i, 'default'],
-                    });
-                  }
-                  if (
-                    pref.type === 'number' &&
-                    !enumValues.every((v) => Number.isFinite(Number(v)))
-                  ) {
-                    ctx.addIssue({
-                      code: z.ZodIssueCode.custom,
-                      message: 'Enum values must be valid numbers for number type',
-                      path: [i, 'enum'],
-                    });
-                  }
-                }
-              }
+              });
             })
             .default([]),
           external_grading_image: z.string().optional(),
@@ -315,22 +263,31 @@ router.post(
 
       // Build preferences schema from form array
       if (body.preferences.length > 0) {
-        const preferencesSchema: Record<string, any> = {};
+        const preferencesSchema: QuestionPreferencesSchemaJson = {};
         for (const pref of body.preferences) {
-          const entry: any = {
+          const parsedDefault =
+            pref.type === 'number'
+              ? Number(pref.default)
+              : pref.type === 'boolean'
+                ? pref.default === 'true'
+                : pref.default;
+
+          const parsedEnum =
+            pref.enum.length > 0
+              ? pref.type === 'number'
+                ? pref.enum.map(Number)
+                : pref.enum
+              : undefined;
+
+          preferencesSchema[pref.name] = {
             type: pref.type,
-            default:
-              pref.type === 'number'
-                ? Number(pref.default)
-                : pref.type === 'boolean'
-                  ? pref.default === 'true'
-                  : pref.default,
+            default: parsedDefault,
+            ...(parsedEnum && { enum: parsedEnum }),
           };
-          if (pref.enum && pref.enum !== '[]') {
-            const enumValues: string[] = JSON.parse(pref.enum);
-            entry.enum = pref.type === 'number' ? enumValues.map(Number) : enumValues;
-          }
-          preferencesSchema[pref.name] = entry;
+        }
+        const preferenceErrors = validatePreferencesSchema(preferencesSchema);
+        if (preferenceErrors.length > 0) {
+          throw new error.HttpStatusError(400, preferenceErrors.join('; '));
         }
         questionInfo.preferences = preferencesSchema;
       } else {

@@ -1,25 +1,6 @@
-import {
-  DndContext,
-  type DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import clsx from 'clsx';
-import { useMemo, useRef, useState } from 'react';
-import {
-  type FieldArrayWithId,
-  type FieldErrors,
-  type UseFormClearErrors,
-  type UseFormRegister,
-  type UseFormSetValue,
-  type UseFormWatch,
-  useFieldArray,
-  useForm,
-} from 'react-hook-form';
+import { useMemo, useRef } from 'react';
+import { useForm } from 'react-hook-form';
 
 import { ComboBox, type ComboBoxItem, TagPicker } from '@prairielearn/ui';
 
@@ -36,10 +17,10 @@ import type {
 } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 import { validateShortName } from '../../../lib/short-name.js';
-import { DragHandle } from '../../instructorAssessmentQuestions/components/tree/DragHandle.js';
-import { makeDraggableStyle } from '../../instructorAssessmentQuestions/components/tree/dragUtils.js';
 import { coerceToNumber } from '../../instructorAssessmentQuestions/utils/formHelpers.js';
 import type { SelectedAssessments } from '../instructorQuestionSettings.types.js';
+
+import { PreferencesTable } from './PreferencesTable.js';
 
 function AssessmentBadges({
   assessmentsWithQuestion,
@@ -78,14 +59,14 @@ function AssessmentBadges({
   );
 }
 
-interface PreferenceField {
+export interface PreferenceField {
   name: string;
   type: 'string' | 'number' | 'boolean';
   default: string | number | boolean;
   enum: string[];
 }
 
-interface QuestionSettingsFormValues {
+export interface QuestionSettingsFormValues {
   qid: string;
   title: string;
   topic: string;
@@ -213,27 +194,6 @@ export const QuestionSettingsForm = ({
     mode: 'onChange',
     defaultValues,
   });
-
-  const { fields, append, remove, move } = useFieldArray({
-    control,
-    name: 'preferences',
-  });
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor),
-  );
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      const oldIndex = fields.findIndex((f) => f.id === active.id);
-      const newIndex = fields.findIndex((f) => f.id === over.id);
-      if (oldIndex !== -1 && newIndex !== -1) {
-        move(oldIndex, newIndex);
-      }
-    }
-  }
 
   const selectedTopic = watch('topic');
   const selectedTags = watch('tags');
@@ -371,7 +331,7 @@ export const QuestionSettingsForm = ({
                     placeholder="Select a topic"
                     aria-labelledby="topic-label"
                     renderItem={(item) => (
-                      <div style={{ whiteSpace: 'normal' }}>
+                      <div className="preferences-combobox-item">
                         <TopicBadge topic={item.data!} />
                         {item.data!.description && (
                           <div>
@@ -405,7 +365,7 @@ export const QuestionSettingsForm = ({
                     placeholder="Select tags"
                     aria-labelledby="tags-label"
                     renderItem={(item) => (
-                      <div style={{ whiteSpace: 'normal' }}>
+                      <div className="preferences-combobox-item">
                         <TagBadge tag={item.data!} />
                         {!item.data!.implicit && item.data!.description && (
                           <div>
@@ -517,78 +477,15 @@ export const QuestionSettingsForm = ({
         </div>
       </div>
 
-      <div className="mb-3">
-        <h2 className="h4">Preferences</h2>
-        <small className="text-muted d-block mb-3">
-          Define preference fields that can be overridden per assessment. Values are available in{' '}
-          <code>server.py</code> and <code>question.html</code>.{' '}
-          <a
-            href="https://prairielearn.readthedocs.io/en/latest/question/preferences/"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Learn more about preferences
-          </a>
-        </small>
-
-        {fields.length === 0 && (
-          <div className="border rounded p-4 text-center text-muted mb-3">
-            <i className="bi bi-sliders fs-3 d-block mb-2" aria-hidden="true" />
-            No preferences defined
-          </div>
-        )}
-
-        {fields.length > 0 && (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
-              <div className="table-responsive card mb-3">
-                <table className="table table-sm align-middle mb-0" aria-label="Preferences">
-                  <thead>
-                    <tr>
-                      {canEdit && <th style={{ width: '2rem' }} />}
-                      <th>Name</th>
-                      <th style={{ width: '7rem' }}>Type</th>
-                      <th>Default</th>
-                      <th>Values</th>
-                      {canEdit && <th style={{ width: '2.5rem' }} />}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {fields.map((field, index) => (
-                      <PreferenceRow
-                        key={field.id}
-                        field={field}
-                        index={index}
-                        canEdit={canEdit}
-                        register={register}
-                        watch={watch}
-                        setValue={setValue}
-                        errors={errors.preferences?.[index]}
-                        remove={remove}
-                        clearErrors={clearErrors}
-                      />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </SortableContext>
-          </DndContext>
-        )}
-
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-primary"
-          disabled={!canEdit}
-          onClick={() => append({ name: '', type: 'string', default: '', enum: [] })}
-        >
-          <i className="bi bi-plus-lg me-1" aria-hidden="true" />
-          Add preference
-        </button>
-      </div>
+      <PreferencesTable
+        control={control}
+        canEdit={canEdit}
+        register={register}
+        watch={watch}
+        setValue={setValue}
+        clearErrors={clearErrors}
+        errors={errors.preferences}
+      />
 
       <div className="mb-3">
         <div className="form-check">
@@ -1014,304 +911,3 @@ export const QuestionSettingsForm = ({
 };
 
 QuestionSettingsForm.displayName = 'QuestionSettingsForm';
-
-function PreferenceRow({
-  field,
-  index,
-  canEdit,
-  register,
-  watch,
-  setValue,
-  errors,
-  remove,
-  clearErrors,
-}: {
-  field: FieldArrayWithId<QuestionSettingsFormValues, 'preferences', 'id'>;
-  index: number;
-  canEdit: boolean;
-  register: UseFormRegister<QuestionSettingsFormValues>;
-  watch: UseFormWatch<QuestionSettingsFormValues>;
-  setValue: UseFormSetValue<QuestionSettingsFormValues>;
-  errors?: FieldErrors<PreferenceField>;
-  remove: (index: number) => void;
-  clearErrors: UseFormClearErrors<QuestionSettingsFormValues>;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: field.id,
-    disabled: !canEdit,
-  });
-
-  const draggableStyle = makeDraggableStyle({ isDragging, transform, transition });
-  const prefType = watch(`preferences.${index}.type`);
-  const preferenceDefaultValue = watch(`preferences.${index}.default`);
-  const enumValues = watch(`preferences.${index}.enum`);
-  const allPreferences = watch('preferences');
-
-  return (
-    <tr ref={setNodeRef} style={{ ...draggableStyle, verticalAlign: 'top' }}>
-      {canEdit && (
-        <td>
-          <DragHandle attributes={attributes} listeners={listeners} disabled={!canEdit} />
-        </td>
-      )}
-      <td>
-        <input
-          type="text"
-          className={clsx(
-            'form-control form-control-sm font-monospace',
-            errors?.name && 'is-invalid',
-          )}
-          id={`pref-${index}-name`}
-          disabled={!canEdit}
-          placeholder="e.g. show_hints"
-          defaultValue={field.name}
-          aria-invalid={!!errors?.name || undefined}
-          aria-errormessage={errors?.name ? `pref-${index}-name-error` : undefined}
-          {...register(`preferences.${index}.name`, {
-            required: 'Name is required',
-            validate: {
-              unique: (value) => {
-                const duplicates = allPreferences.filter((p, i) => i !== index && p.name === value);
-                return duplicates.length === 0 || 'Name must be unique';
-              },
-            },
-          })}
-        />
-        {errors?.name && (
-          <div id={`pref-${index}-name-error`} className="invalid-feedback">
-            {errors.name.message}
-          </div>
-        )}
-      </td>
-      <td>
-        <select
-          className="form-select form-select-sm"
-          id={`pref-${index}-type`}
-          disabled={!canEdit}
-          defaultValue={field.type}
-          {...register(`preferences.${index}.type`, {
-            onChange: (e) => {
-              setValue(`preferences.${index}.enum`, [], { shouldDirty: true });
-              // Sync react-hook-form's value when switching to boolean: the <select>
-              // shows "true" visually, but the internal value is still the old one.
-              if (e.target.value === 'boolean') {
-                if (preferenceDefaultValue !== 'true' && preferenceDefaultValue !== 'false') {
-                  setValue(`preferences.${index}.default`, 'true');
-                }
-                clearErrors(`preferences.${index}.default`);
-                return;
-              }
-
-              setValue(`preferences.${index}.default`, '', { shouldValidate: false });
-            },
-          })}
-        >
-          <option value="string">String</option>
-          <option value="number">Number</option>
-          <option value="boolean">Boolean</option>
-        </select>
-      </td>
-      <td>
-        {prefType === 'boolean' ? (
-          <select
-            className={clsx('form-select form-select-sm', errors?.default && 'is-invalid')}
-            id={`pref-${index}-default`}
-            disabled={!canEdit}
-            value={String(preferenceDefaultValue)}
-            aria-invalid={!!errors?.default || undefined}
-            aria-errormessage={errors?.default ? `pref-${index}-default-error` : undefined}
-            {...register(`preferences.${index}.default`, {
-              required: 'A default value is required',
-            })}
-          >
-            <option value="true">true</option>
-            <option value="false">false</option>
-          </select>
-        ) : enumValues.length > 0 ? (
-          <select
-            className={clsx('form-select form-select-sm', errors?.default && 'is-invalid')}
-            id={`pref-${index}-default`}
-            disabled={!canEdit}
-            defaultValue={String(field.default)}
-            aria-invalid={!!errors?.default || undefined}
-            aria-errormessage={errors?.default ? `pref-${index}-default-error` : undefined}
-            {...register(`preferences.${index}.default`, {
-              required: 'A default value is required',
-            })}
-          >
-            <option value="" disabled>
-              Select a default
-            </option>
-            {enumValues.map((val) => (
-              <option key={val} value={val}>
-                {val}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <input
-            type={prefType === 'number' ? 'number' : 'text'}
-            step={prefType === 'number' ? 'any' : undefined}
-            className={clsx('form-control form-control-sm', errors?.default && 'is-invalid')}
-            id={`pref-${index}-default`}
-            disabled={!canEdit}
-            defaultValue={String(field.default)}
-            aria-invalid={!!errors?.default || undefined}
-            aria-errormessage={errors?.default ? `pref-${index}-default-error` : undefined}
-            {...register(`preferences.${index}.default`, {
-              required: 'A default value is required',
-              validate: {
-                matchesType: (value) => {
-                  const currentType = watch(`preferences.${index}.type`);
-                  if (currentType === 'number' && Number.isNaN(Number(value))) {
-                    return 'Must be a number';
-                  }
-                  return true;
-                },
-              },
-            })}
-          />
-        )}
-        {errors?.default && (
-          <div id={`pref-${index}-default-error`} className="invalid-feedback">
-            {errors.default.message}
-          </div>
-        )}
-      </td>
-      <td className="align-middle">
-        {prefType === 'boolean' ? (
-          <span className="text-muted small">N/A</span>
-        ) : (
-          <EnumInput
-            index={index}
-            canEdit={canEdit}
-            prefType={prefType}
-            watch={watch}
-            setValue={setValue}
-          />
-        )}
-      </td>
-      {canEdit && (
-        <td>
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-danger"
-            aria-label={`Remove preference ${index + 1}`}
-            onClick={() => remove(index)}
-          >
-            <i className="bi bi-trash" aria-hidden="true" />
-          </button>
-        </td>
-      )}
-    </tr>
-  );
-}
-
-function EnumInput({
-  index,
-  canEdit,
-  prefType,
-  watch,
-  setValue,
-}: {
-  index: number;
-  canEdit: boolean;
-  prefType: string;
-  watch: UseFormWatch<QuestionSettingsFormValues>;
-  setValue: UseFormSetValue<QuestionSettingsFormValues>;
-}) {
-  const [inputValue, setInputValue] = useState('');
-  const [adding, setAdding] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const enumValues = watch(`preferences.${index}.enum`);
-
-  function addValue() {
-    const trimmed = inputValue.trim();
-    if (!trimmed || enumValues.includes(trimmed)) return;
-    setValue(`preferences.${index}.enum`, [...enumValues, trimmed], { shouldDirty: true });
-    setInputValue('');
-  }
-
-  function removeValue(val: string) {
-    setValue(
-      `preferences.${index}.enum`,
-      enumValues.filter((v) => v !== val),
-      { shouldDirty: true },
-    );
-  }
-
-  function startAdding() {
-    setAdding(true);
-    // Focus the input after it renders
-    setTimeout(() => inputRef.current?.focus(), 0);
-  }
-
-  function stopAdding() {
-    addValue();
-    setAdding(false);
-    setInputValue('');
-  }
-
-  return (
-    <div>
-      <input type="hidden" name={`preferences.${index}.enum`} value={JSON.stringify(enumValues)} />
-      <div className="d-flex flex-wrap gap-1 align-items-center">
-        {enumValues.map((val) => (
-          <span
-            key={val}
-            className="badge bg-light text-dark border d-inline-flex align-items-center gap-1"
-            title={val}
-            style={{ maxWidth: '12rem' }}
-          >
-            <span className="text-truncate">{val}</span>
-            {canEdit && (
-              <button
-                type="button"
-                className="btn-close"
-                style={{ fontSize: '0.5rem' }}
-                aria-label={`Remove ${val}`}
-                onClick={() => removeValue(val)}
-              />
-            )}
-          </span>
-        ))}
-        {enumValues.length === 0 && !adding && (
-          <span className="badge bg-light text-muted border border-transparent">Any</span>
-        )}
-        {canEdit &&
-          (adding ? (
-            <input
-              ref={inputRef}
-              type={prefType === 'number' ? 'number' : 'text'}
-              step={prefType === 'number' ? 'any' : undefined}
-              className="form-control form-control-sm"
-              placeholder="Add value"
-              value={inputValue}
-              style={{ width: '8rem', height: '1.5rem', fontSize: '0.75rem' }}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  addValue();
-                } else if (e.key === 'Escape') {
-                  setInputValue('');
-                  setAdding(false);
-                }
-              }}
-              onBlur={stopAdding}
-            />
-          ) : (
-            <button
-              type="button"
-              className="btn btn-xs btn-outline-primary d-inline-flex align-items-center gap-1"
-              style={{ fontSize: '0.75em' }}
-              onClick={startAdding}
-            >
-              <i className="bi bi-plus" aria-hidden="true" />
-              {enumValues.length === 0 ? 'Restrict' : ''}
-            </button>
-          ))}
-      </div>
-    </div>
-  );
-}
