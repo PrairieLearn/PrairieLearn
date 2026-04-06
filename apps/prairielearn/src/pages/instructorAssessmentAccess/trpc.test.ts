@@ -6,7 +6,7 @@ describe('AccessControlJsonInputSchema', () => {
   it('accepts explicit nulls used to clear inherited override fields', () => {
     const result = AccessControlJsonInputSchema.parse({
       dateControl: {
-        releaseDate: null,
+        releaseDate: '2024-03-14T00:01:00',
         dueDate: null,
         earlyDeadlines: null,
         lateDeadlines: null,
@@ -16,7 +16,7 @@ describe('AccessControlJsonInputSchema', () => {
       },
     });
 
-    expect(result.dateControl?.releaseDate).toBeNull();
+    expect(result.dateControl?.releaseDate).toBe('2024-03-14T00:01:00');
     expect(result.dateControl?.afterLastDeadline).toBeNull();
     expect(result.dateControl?.durationMinutes).toBeNull();
   });

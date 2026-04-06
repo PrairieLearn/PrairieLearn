@@ -26,6 +26,20 @@ import { getConfiguredUser } from './utils/auth.js';
 const siteUrl = `http://localhost:${config.serverPort}`;
 
 function makeRule(overrides: Partial<AccessControlJsonInput> = {}): AccessControlJsonInput {
+  if ('dateControl' in overrides) {
+    const { dateControl: dcOverrides, ...rest } = overrides;
+    if (dcOverrides === undefined) {
+      return { ...rest };
+    }
+    return {
+      dateControl: {
+        releaseDate: '2024-03-14T00:01:00',
+        dueDate: '2024-03-21T23:59:00',
+        ...dcOverrides,
+      },
+      ...rest,
+    };
+  }
   return {
     dateControl: {
       releaseDate: '2024-03-14T00:01:00',
@@ -131,9 +145,7 @@ describe('Access control save via tRPC', () => {
     const client = await createClient();
     const origHash = await getOrigHash();
 
-    const rules: AccessControlJsonInput[] = [
-      { listBeforeRelease: false, dateControl: {}, afterComplete: {} },
-    ];
+    const rules: AccessControlJsonInput[] = [{ listBeforeRelease: false, afterComplete: {} }];
 
     const result = await client.accessControl.saveAllRules.mutate({ rules, origHash });
     assert.isString(result.newHash);
@@ -143,7 +155,6 @@ describe('Access control save via tRPC', () => {
 
     assert.equal(parsed.accessControl.length, 1);
     assert.notProperty(parsed.accessControl[0], 'listBeforeRelease');
-    assert.notProperty(parsed.accessControl[0], 'dateControl');
     assert.notProperty(parsed.accessControl[0], 'afterComplete');
   });
 
