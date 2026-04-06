@@ -75,11 +75,7 @@ function ReleaseDateInput({
             onChange={({ currentTarget }) => onChange(currentTarget.value)}
           />
           {error && (
-            <Form.Text
-              id={`${idPrefix}-release-date-error`}
-              className="text-danger"
-              role="alert"
-            >
+            <Form.Text id={`${idPrefix}-release-date-error`} className="text-danger" role="alert">
               {error}
             </Form.Text>
           )}
