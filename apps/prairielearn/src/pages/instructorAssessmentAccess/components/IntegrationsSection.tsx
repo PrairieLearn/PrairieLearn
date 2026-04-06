@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { Form } from 'react-bootstrap';
 import { useFormContext, useWatch } from 'react-hook-form';
 
@@ -6,22 +5,13 @@ import { PrairieTestControlForm } from './PrairieTestControlForm.js';
 import type { AccessControlFormData } from './types.js';
 
 export function IntegrationsSection() {
-  const { register, setValue, getValues } = useFormContext<AccessControlFormData>();
+  const { register, setValue } = useFormContext<AccessControlFormData>();
 
   const prairieTestEnabled = useWatch<AccessControlFormData, 'mainRule.prairieTestEnabled'>({
     name: 'mainRule.prairieTestEnabled',
   });
 
   const prairieTestRegistration = register('mainRule.prairieTestEnabled');
-
-  // When PT is enabled and there are no exams, auto-add one empty entry.
-  useEffect(() => {
-    if (prairieTestEnabled && getValues('mainRule.prairieTestExams').length === 0) {
-      setValue('mainRule.prairieTestExams', [{ examUuid: '', readOnly: false }], {
-        shouldDirty: true,
-      });
-    }
-  }, [prairieTestEnabled, getValues, setValue]);
 
   return (
     <div>
@@ -39,15 +29,19 @@ export function IntegrationsSection() {
           void prairieTestRegistration.onChange(e);
           if (!e.target.checked) {
             setValue('mainRule.prairieTestExams', [], { shouldDirty: true });
+          } else {
+            // Add an initial entry when toggling it on so that the user can immediately
+            // start configuring it without needing to click "Add Exam" first.
+            setValue('mainRule.prairieTestExams', [{ examUuid: '', readOnly: false }], {
+              shouldDirty: true,
+            });
           }
         }}
       />
       <Form.Text id="mainRule-prairietest-help" className="text-muted">
         Control access to your assessment through PrairieTest exams
       </Form.Text>
-      {prairieTestEnabled && (
-        <PrairieTestControlForm />
-      )}
+      {prairieTestEnabled && <PrairieTestControlForm />}
     </div>
   );
 }
