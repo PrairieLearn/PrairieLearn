@@ -329,6 +329,7 @@ const RUBRIC_GENERATION_AGENT_SYSTEM_PROMPT = [
   'You cannot change the assessment question point values — those are fixed by the instructor.',
   'After generating and optionally refining the rubric, respond with 1-2 short sentences.',
   'A detailed diff of all rubric changes is automatically shown to the user, so do NOT list or describe individual items or changes. Keep your response extremely brief.',
+  'Your text responses are rendered as Markdown with MathJax. Use $...$ for inline math and $$...$$ for display math.',
   'IMPORTANT: All rubric text (descriptions, explanations, grader notes, guidelines) MUST be written entirely in English. Do not use any non-English characters, including Chinese, Japanese, or other non-Latin scripts.',
 ].join(' ');
 
@@ -351,6 +352,7 @@ const RUBRIC_EDITING_AGENT_SYSTEM_PROMPT = [
   'Questions students received were programmatically generated and randomized. Avoid hardcoding randomized quantities and final solutions.',
   'You cannot change the assessment question point values — those are fixed by the instructor.',
   'After making changes, respond with 1-2 short sentences. The user already sees the rubric and a detailed diff of changes, so do NOT list or describe individual items or changes. Keep your response extremely brief.',
+  'Your text responses are rendered as Markdown with MathJax. Use $...$ for inline math and $$...$$ for display math.',
   'IMPORTANT: All rubric text (descriptions, explanations, grader notes, guidelines) MUST be written entirely in English. Do not use any non-English characters, including Chinese, Japanese, or other non-Latin scripts.',
 ].join(' ');
 

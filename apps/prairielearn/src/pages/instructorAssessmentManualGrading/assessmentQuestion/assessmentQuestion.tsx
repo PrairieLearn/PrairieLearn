@@ -5,6 +5,7 @@ import { Router } from 'express';
 import z from 'zod';
 
 import * as error from '@prairielearn/error';
+import { html } from '@prairielearn/html';
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
@@ -38,6 +39,7 @@ import {
   selectAiGradingMessages,
   selectLatestStreamingAiGradingMessage,
 } from '../../../ee/models/ai-grading-message.js';
+import { compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { extractPageContext } from '../../../lib/client/page-context.js';
 import {
   StaffAiGradingMessageSchema,
@@ -165,6 +167,16 @@ router.get(
           fullWidth: true,
           pageNote: `Question ${number_in_alternative_group}`,
         },
+        headContent: aiRubricAgentEnabled
+          ? html`
+              <meta
+                name="mathjax-fonts-path"
+                content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
+              />
+              ${compiledScriptTag('mathjaxSetup.ts')}
+              <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
+            `
+          : undefined,
         content: (
           <>
             <AssessmentOpenInstancesAlert

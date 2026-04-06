@@ -9,6 +9,7 @@ import { NuqsAdapter } from '@prairielearn/ui';
 
 import { MemoizedMarkdown } from '../../../components/MemoizedMarkdown.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
+import { mathjaxTypeset } from '../../../lib/client/mathjax.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
   StaffAiGradingMessage,
@@ -648,22 +649,11 @@ function hasMutations(parts: UIMessage['parts']): boolean {
   );
 }
 
-function findSnapshotForRevert(
-  allMessages: RubricChatMessage[],
-  messageText: string,
-): { snapshotJson: string; snapshotId: string } | null {
-  const match = messageText.match(
-    /(?:snapshot|revert\s+(?:to\s+)?(?:snapshot\s+)?)([a-f0-9]{6,})/i,
-  );
-  if (!match) return null;
-  const prefix = match[1];
-
-  const targetMessage = allMessages.find(
-    (m) => m.role === 'assistant' && m.id.startsWith(prefix) && hasMutations(m.parts),
-  );
-  if (!targetMessage) return null;
-
-  for (const part of [...targetMessage.parts].reverse()) {
+/**
+ * Extract the "after" snapshot from the last mutation tool output in a message's parts.
+ */
+function extractAfterSnapshot(parts: UIMessage['parts']): DiffRubricState | null {
+  for (const part of [...parts].reverse()) {
     if (
       !isToolPart(part) ||
       !MUTATION_TOOL_TYPES.has(part.type) ||
@@ -677,17 +667,72 @@ function findSnapshotForRevert(
       const parsed = (typeof raw === 'string' ? JSON.parse(raw) : raw) as {
         after?: DiffRubricState;
       };
-      if (parsed.after) {
-        return {
-          snapshotJson: JSON.stringify(parsed.after),
-          snapshotId: targetMessage.id.slice(0, 8),
-        };
-      }
+      if (parsed.after) return parsed.after;
     } catch {
       continue;
     }
   }
   return null;
+}
+
+/**
+ * Extract the "before" snapshot from the first mutation tool output in a message's parts.
+ */
+function extractBeforeSnapshot(parts: UIMessage['parts']): DiffRubricState | null {
+  for (const part of parts) {
+    if (
+      !isToolPart(part) ||
+      !MUTATION_TOOL_TYPES.has(part.type) ||
+      part.state !== 'output-available'
+    ) {
+      continue;
+    }
+    try {
+      const raw = (part as ToolUIPart & { output?: unknown }).output;
+      if (!raw) continue;
+      const parsed = (typeof raw === 'string' ? JSON.parse(raw) : raw) as {
+        before?: DiffRubricState;
+      };
+      if (parsed.before) return parsed.before;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+function findSnapshotForRevert(
+  allMessages: RubricChatMessage[],
+  messageText: string,
+): { snapshotJson: string; snapshotId: string } | null {
+  // Match "revert:N" pattern (message number) or "snapshot N"
+  const match = messageText.match(/(?:revert:(\d+))|(?:snapshot\s+#?(\d+))/i);
+  if (!match) return null;
+  const messageNumber = Number.parseInt(match[1] ?? match[2], 10);
+  if (isNaN(messageNumber) || messageNumber < 0) return null;
+
+  // Message number 0 means "initial state" — find the before snapshot of the first mutation message
+  if (messageNumber === 0) {
+    for (const m of allMessages) {
+      if (m.role === 'assistant' && hasMutations(m.parts)) {
+        const before = extractBeforeSnapshot(m.parts);
+        if (before) {
+          return { snapshotJson: JSON.stringify(before), snapshotId: '0' };
+        }
+      }
+    }
+    return null;
+  }
+
+  // Message number N (1-based index)
+  const targetMessage = allMessages[messageNumber - 1];
+  if (targetMessage?.role !== 'assistant' || !hasMutations(targetMessage.parts)) {
+    return null;
+  }
+
+  const after = extractAfterSnapshot(targetMessage.parts);
+  if (!after) return null;
+  return { snapshotJson: JSON.stringify(after), snapshotId: String(messageNumber) };
 }
 
 function persistedMessagesToInitialMessages(
@@ -875,6 +920,14 @@ function AssessmentQuestionManualGradingInner({
     }
   }, [messages, refreshRubricData]);
 
+  // Re-run MathJax typesetting when messages change (for LaTeX in chat)
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      void mathjaxTypeset([chatContainerRef.current]);
+    }
+  }, [messages]);
+
   const isAiGradingAvailable = (assessmentQuestion.max_manual_points ?? 0) > 0;
 
   const mutations = useManualGradingActions();
@@ -894,8 +947,8 @@ function AssessmentQuestionManualGradingInner({
   };
 
   return (
-    <div className="d-flex flex-row gap-3" style={{ maxHeight: '80vh' }}>
-      <div className="flex-grow-1" style={{ minWidth: 0, overflowY: 'auto' }}>
+    <div className="d-flex flex-column flex-lg-row gap-3">
+      <div className="flex-grow-1" style={{ minWidth: 0 }}>
         {setAiGradingModeMutation.isError && (
           <Alert
             variant="danger"
@@ -1000,7 +1053,10 @@ function AssessmentQuestionManualGradingInner({
       </div>
 
       {aiRubricAgentEnabled && (
-        <div className="d-flex flex-column bg-light border rounded" style={{ width: 480 }}>
+        <div
+          className="d-flex flex-column bg-light border rounded flex-shrink-0"
+          style={{ width: '100%', maxWidth: 480, height: '70vh' }}
+        >
           {messages.length > 0 && (
             <div className="d-flex justify-content-end p-3 pb-0">
               <button
@@ -1013,17 +1069,47 @@ function AssessmentQuestionManualGradingInner({
               </button>
             </div>
           )}
-          <div className="flex-grow-1 overflow-auto p-3">
+          <div ref={chatContainerRef} className="flex-grow-1 overflow-auto p-3">
             {messages.length === 0 && !isGenerating && (
               <div className="d-flex flex-column align-items-center justify-content-center h-100 text-center text-muted">
                 <i className="bi bi-stars" style={{ fontSize: '2rem' }} />
                 <div className="fw-bold mt-2">AI Assistant</div>
                 <div className="small mt-1">
-                  Generate a rubric or speak with the assistant to edit your rubric.
+                  {hasGeneratedRubric
+                    ? 'Ask the assistant to edit your rubric.'
+                    : 'Generate a rubric or describe what you want to the assistant.'}
                 </div>
               </div>
             )}
-            {messages.map((message) => {
+            {messages.some((m) => m.role === 'assistant' && hasMutations(m.parts)) && (
+              <div className="d-flex justify-content-center mb-3">
+                <button
+                  type="button"
+                  className="btn btn-link btn-sm p-0 text-muted"
+                  disabled={isGenerating}
+                  title="Revert rubric to the state before any AI changes"
+                  onClick={() => {
+                    const firstMutationMsg = messages.find(
+                      (m) => m.role === 'assistant' && hasMutations(m.parts),
+                    );
+                    if (!firstMutationMsg) return;
+                    const beforeSnapshot = extractBeforeSnapshot(firstMutationMsg.parts);
+                    if (!beforeSnapshot) return;
+
+                    currentPhaseRef.current = 'edit';
+                    void sendMessage({
+                      text: `[revert:0] Revert the rubric to the initial state:\n${JSON.stringify(beforeSnapshot)}`,
+                    });
+                  }}
+                >
+                  <i className="bi bi-arrow-counterclockwise me-1" />
+                  Revert to initial state
+                </button>
+              </div>
+            )}
+            {messages.map((message, msgIndex) => {
+              const messageNumber = msgIndex + 1;
+
               if (message.role === 'user') {
                 const textContent = message.parts
                   .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
@@ -1032,7 +1118,7 @@ function AssessmentQuestionManualGradingInner({
                   .join('\n\n');
                 if (!textContent) return null;
 
-                const revertMatch = textContent.match(/^\[revert:([a-f0-9]+)\]/);
+                const revertMatch = textContent.match(/^\[revert:(\d+)\]/);
 
                 return (
                   <div key={message.id} className="d-flex flex-row-reverse mb-3">
@@ -1060,7 +1146,7 @@ function AssessmentQuestionManualGradingInner({
                             <span>
                               Rubric from message{' '}
                               <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                                {revertMatch[1]}
+                                #{revertMatch[1]}
                               </span>
                             </span>
                           </div>
@@ -1088,49 +1174,20 @@ function AssessmentQuestionManualGradingInner({
                         type="button"
                         className="btn btn-link btn-sm p-0 text-muted"
                         disabled={isGenerating}
-                        title="Restore rubric to the state after this message"
+                        title={`Restore rubric to the state after message #${messageNumber}`}
                         onClick={() => {
-                          let afterSnapshot: DiffRubricState | null = null;
-                          for (const part of [...message.parts].reverse()) {
-                            if (
-                              !isToolPart(part) ||
-                              !MUTATION_TOOL_TYPES.has(part.type) ||
-                              part.state !== 'output-available'
-                            ) {
-                              continue;
-                            }
-                            try {
-                              const raw = (part as ToolUIPart & { output?: unknown }).output;
-                              if (!raw) continue;
-                              const parsed = (typeof raw === 'string' ? JSON.parse(raw) : raw) as {
-                                after?: DiffRubricState;
-                              };
-                              if (parsed.after) {
-                                afterSnapshot = parsed.after;
-                                break;
-                              }
-                            } catch {
-                              continue;
-                            }
-                          }
+                          const afterSnapshot = extractAfterSnapshot(message.parts);
                           if (!afterSnapshot) return;
 
                           currentPhaseRef.current = 'edit';
-                          const snapshotId = message.id.slice(0, 8);
                           void sendMessage({
-                            text: `[revert:${snapshotId}] Revert the rubric to this snapshot:\n${JSON.stringify(afterSnapshot)}`,
+                            text: `[revert:${messageNumber}] Revert the rubric to this snapshot:\n${JSON.stringify(afterSnapshot)}`,
                           });
                         }}
                       >
                         <i className="bi bi-arrow-counterclockwise me-1" />
-                        Revert
+                        Revert to #{messageNumber}
                       </button>
-                      <span
-                        className="text-muted user-select-all"
-                        style={{ fontSize: '0.6rem', fontFamily: 'monospace', opacity: 0.5 }}
-                      >
-                        {message.id.slice(0, 8)}
-                      </span>
                     </div>
                   )}
                 </div>
@@ -1182,7 +1239,12 @@ function AssessmentQuestionManualGradingInner({
                 void sendMessage({ text: trimmedText });
                 setChatInput('');
               }}
-              onStop={() => {}}
+              onStop={() => {
+                void fetch(`${chatUrl}/cancel`, {
+                  method: 'POST',
+                  headers: { 'X-CSRF-Token': chatCsrfToken },
+                });
+              }}
             />
           </div>
         </div>
