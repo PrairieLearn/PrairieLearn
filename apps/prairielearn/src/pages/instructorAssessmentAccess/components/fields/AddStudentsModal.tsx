@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Button, Modal, Spinner } from 'react-bootstrap';
 
 import { useTRPC } from '../../../../trpc/assessment/context.js';
@@ -10,9 +10,11 @@ import { StudentSearchInput } from './StudentSearchInput.js';
 export function AddStudentsModal({
   selectedUids: initialSelectedUids,
   onSaveStudents,
+  renderTrigger,
 }: {
   selectedUids: Set<string>;
   onSaveStudents: (students: EnrollmentTarget[]) => void;
+  renderTrigger?: (props: { onClick: () => void }) => ReactNode;
 }) {
   const trpc = useTRPC();
   const [show, setShow] = useState(false);
@@ -43,17 +45,21 @@ export function AddStudentsModal({
 
   return (
     <>
-      <button
-        type="button"
-        className="btn btn-outline-secondary btn-sm"
-        onClick={handleOpen}
-      >
-        <i className="bi bi-people me-1" aria-hidden="true" />
-        Manage students
-      </button>
+      {renderTrigger ? (
+        renderTrigger({ onClick: handleOpen })
+      ) : (
+        <button
+          type="button"
+          className="btn btn-outline-secondary btn-sm"
+          onClick={handleOpen}
+        >
+          <i className="bi bi-people me-1" aria-hidden="true" />
+          Manage students
+        </button>
+      )}
       <Modal show={show} centered onHide={handleClose}>
         <Modal.Header closeButton>
-          <Modal.Title>Manage students</Modal.Title>
+          <Modal.Title>Select students</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {isLoading ? (

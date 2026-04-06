@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { Alert, Button, Form, ListGroup } from 'react-bootstrap';
 import {
   type FieldArrayPath,
@@ -78,17 +79,10 @@ export function AppliesToField({
   const hasNoTargets = enrollments.length === 0 && studentLabels.length === 0;
 
   return (
-    <div className="mb-4">
+    <div className="mb-3">
       <div className="section-header mb-3">
         <strong>Applies to</strong>
       </div>
-      {hasNoTargets && (
-        <Alert variant="warning">
-          This override has no targets. Add at least one{' '}
-          {currentTargetType === 'enrollment' ? 'student' : 'student label'} for this rule to take
-          effect.
-        </Alert>
-      )}
       <fieldset className="mb-3">
         <legend className="visually-hidden">Target type</legend>
         <Form.Check
@@ -111,43 +105,58 @@ export function AppliesToField({
 
       <div>
         {currentTargetType === 'enrollment' ? (
-          <div>
-            <div className="d-flex gap-2 mb-2">
-              <AddStudentsModal selectedUids={excludedUids} onSaveStudents={handleSaveStudents} />
-            </div>
-            {enrollments.length === 0 ? (
-              <div className="text-muted small border rounded p-3 text-center">
-                No students selected
+          <div className="border rounded overflow-hidden">
+            <div
+              className={clsx(
+                'd-flex align-items-center px-3 py-2 bg-body-tertiary',
+                enrollments.length > 0 && 'border-bottom',
+              )}
+            >
+              <span className="small text-muted">
+                {enrollments.length} {enrollments.length === 1 ? 'student' : 'students'}
+              </span>
+              <div className="ms-auto">
+                <AddStudentsModal
+                  selectedUids={excludedUids}
+                  renderTrigger={({ onClick }) => (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="text-decoration-none"
+                      onClick={onClick}
+                    >
+                      Select students…
+                    </Button>
+                  )}
+                  onSaveStudents={handleSaveStudents}
+                />
               </div>
-            ) : (
-              <div className="border rounded overflow-hidden">
-                <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                  <ListGroup variant="flush">
-                    {enrollments.map((s) => (
-                      <ListGroup.Item
-                        key={s.uid}
-                        className="d-flex align-items-center justify-content-between py-2"
+            </div>
+            {enrollments.length > 0 && (
+              <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                <ListGroup variant="flush">
+                  {enrollments.map((s) => (
+                    <ListGroup.Item
+                      key={s.uid}
+                      className="d-flex align-items-center justify-content-between py-2"
+                    >
+                      <div className="d-flex flex-column">
+                        <a href={getStudentEnrollmentUrl(courseInstanceId, s.enrollmentId)}>
+                          {s.uid}
+                        </a>
+                        {s.name && <span className="text-muted small">{s.name}</span>}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={`Remove ${s.name ?? s.uid}`}
+                        onClick={() => handleRemoveEnrollmentByUid(s.uid)}
                       >
-                        <div>
-                          <div>
-                            <a href={getStudentEnrollmentUrl(courseInstanceId, s.enrollmentId)}>
-                              {s.name ?? s.uid}
-                            </a>
-                          </div>
-                          {s.name && <small className="text-muted">{s.uid}</small>}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          aria-label={`Remove ${s.name ?? s.uid}`}
-                          onClick={() => handleRemoveEnrollmentByUid(s.uid)}
-                        >
-                          <i className="bi bi-trash text-danger" aria-hidden="true" />
-                        </Button>
-                      </ListGroup.Item>
-                    ))}
-                  </ListGroup>
-                </div>
+                        <i className="bi bi-trash text-danger" aria-hidden="true" />
+                      </Button>
+                    </ListGroup.Item>
+                  ))}
+                </ListGroup>
               </div>
             )}
           </div>
@@ -190,6 +199,13 @@ export function AppliesToField({
           </div>
         )}
       </div>
+      {hasNoTargets && (
+        <Alert variant="warning" className="mt-3 mb-0">
+          This override has no targets. Add at least one{' '}
+          {currentTargetType === 'enrollment' ? 'student' : 'student label'} for this rule to take
+          effect.
+        </Alert>
+      )}
     </div>
   );
 }
