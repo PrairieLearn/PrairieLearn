@@ -112,6 +112,8 @@ await continueWorkflow(run.id, {
 // Merges the update into state and resumes the step loop
 ```
 
+> **Note:** `continueWorkflow` performs a shallow merge using Postgres `jsonb ||`. Top-level keys in the update replace existing keys, but nested objects are replaced entirely rather than recursively merged. If you need to update a nested value, fetch the current state, merge client-side, and pass the full top-level key.
+
 ### Querying
 
 ```ts

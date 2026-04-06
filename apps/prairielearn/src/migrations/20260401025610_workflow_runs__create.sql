@@ -20,7 +20,9 @@ CREATE TABLE IF NOT EXISTS workflow_runs (
   updated_at timestamptz NOT NULL DEFAULT now(),
   completed_at timestamptz,
   error_message text,
-  output text NOT NULL DEFAULT ''
+  output text NOT NULL DEFAULT '',
+  CONSTRAINT workflow_runs_context_type_check CHECK (jsonb_typeof(context) = 'object'),
+  CONSTRAINT workflow_runs_state_type_check CHECK (jsonb_typeof(state) = 'object')
 );
 
 CREATE INDEX IF NOT EXISTS workflow_runs_type_status_idx ON workflow_runs (type, status);

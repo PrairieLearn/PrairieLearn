@@ -282,10 +282,15 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
   // Start heartbeat
   const heartbeatInterval = setInterval(async () => {
     try {
-      await pool.queryAsync(sql.update_heartbeat, {
+      const result = await pool.queryAsync(sql.update_heartbeat, {
         id: runId,
         locked_by: serverUuid,
       });
+      if (result.rowCount === 0) {
+        logger.warn(`Lost lock ownership for workflow ${runId}, aborting`);
+        abortController.abort();
+        clearInterval(heartbeatInterval);
+      }
     } catch (err) {
       logger.error(`Failed to update heartbeat for workflow ${runId}`, err);
     }
