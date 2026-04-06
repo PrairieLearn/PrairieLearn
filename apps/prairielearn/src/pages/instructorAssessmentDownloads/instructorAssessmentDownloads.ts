@@ -118,6 +118,14 @@ const ManualGradingSubmissionRowSchema = z.object({
 
 type ManualGradingSubmissionRow = z.infer<typeof ManualGradingSubmissionRowSchema>;
 
+const CanvasAssessmentInstanceRowSchema = z.object({
+  uid: UserSchema.shape.uid.nullable(),
+  name: UserSchema.shape.name.nullable(),
+  role: SprocUsersGetDisplayedRoleSchema,
+  score_perc: AssessmentInstanceSchema.shape.score_perc,
+  points: AssessmentInstanceSchema.shape.points,
+});
+
 export function getFilenames(locals: ResLocalsForPage<'assessment'>) {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
@@ -611,7 +619,7 @@ router.get(
           highest_score: true,
           group_work: false,
         },
-        z.unknown(),
+        CanvasAssessmentInstanceRowSchema,
       );
 
       // The assessment-level max_points is null for assessments whose max
