@@ -57,9 +57,7 @@ export function RichSelect<T extends string = string>({
             )}
             id={id}
           >
-            {selectedLabel ?? (
-              <span className="text-muted">{placeholder}</span>
-            )}
+            {selectedLabel ?? <span className="text-muted">{placeholder}</span>}
           </Button>
           <FieldError className="invalid-feedback d-block">{errorMessage}</FieldError>
           <Popover

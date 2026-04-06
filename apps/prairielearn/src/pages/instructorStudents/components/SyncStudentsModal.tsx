@@ -295,12 +295,12 @@ export function SyncStudentsModal({
                     label="Students to add"
                     description="New students will be invited. Blocked or removed students will be re-enrolled."
                     checkboxIdPrefix="sync-add"
+                    renderItemExtra={renderSyncItemBadge}
                     onToggle={toggleAdd}
                     onSelectAll={() =>
                       setSelectedAdds(new Set(preview.toInvite.map((item) => item.uid)))
                     }
                     onDeselectAll={() => setSelectedAdds(new Set())}
-                    renderItemExtra={renderSyncItemBadge}
                   />
                 )}
 
@@ -314,12 +314,12 @@ export function SyncStudentsModal({
                     label="Students to remove"
                     description="Joined students will be removed. Pending invitations will be cancelled."
                     checkboxIdPrefix="sync-remove"
+                    renderItemExtra={renderSyncItemBadge}
                     onToggle={toggleRemoval}
                     onSelectAll={() =>
                       setSelectedRemovals(new Set(allRemovals.map((item) => item.uid)))
                     }
                     onDeselectAll={() => setSelectedRemovals(new Set())}
-                    renderItemExtra={renderSyncItemBadge}
                   />
                 )}
               </div>

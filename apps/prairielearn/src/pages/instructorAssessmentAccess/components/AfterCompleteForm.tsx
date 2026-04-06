@@ -340,13 +340,7 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
   );
 }
 
-export function OverrideAfterCompleteForm({
-  index,
-  title,
-}: {
-  index: number;
-  title?: string;
-}) {
+export function OverrideAfterCompleteForm({ index, title }: { index: number; title?: string }) {
   const mainQV = useWatch<AccessControlFormData, 'mainRule.questionVisibility'>({
     name: 'mainRule.questionVisibility',
   });

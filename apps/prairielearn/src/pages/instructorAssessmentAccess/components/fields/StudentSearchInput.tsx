@@ -94,12 +94,12 @@ export function StudentSearchInput({
         <StudentCheckboxList
           items={filteredStudents}
           selectedUids={selectedUids}
-          onToggle={handleToggleStudent}
-          onSelectAll={handleSelectAll}
-          onDeselectAll={handleClearAll}
           label="Student selection"
           checkboxIdPrefix="student-select"
           maxHeight="300px"
+          onToggle={handleToggleStudent}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleClearAll}
         />
       )}
 

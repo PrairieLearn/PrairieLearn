@@ -27,9 +27,7 @@ export function AppliesToField({
   const { setValue } = useFormContext<AccessControlFormData>();
   const trpc = useTRPC();
 
-  const { data: allLabels } = useQuery(
-    trpc.accessControl.studentLabels.queryOptions(),
-  );
+  const { data: allLabels } = useQuery(trpc.accessControl.studentLabels.queryOptions());
 
   const appliesTo = useWatch({
     name: `${namePrefix}.appliesTo` as Path<AccessControlFormData>,
