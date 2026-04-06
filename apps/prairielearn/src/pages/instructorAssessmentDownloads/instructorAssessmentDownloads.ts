@@ -10,6 +10,12 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  CANVAS_CSV_FIXED_COLUMNS,
+  CANVAS_CSV_POINTS_POSSIBLE_NAME,
+  canvasPointsPossibleValue,
+  canvasStudentRecord,
+} from '../../lib/canvas-csv.js';
+import {
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
   GroupRoleSchema,
@@ -598,11 +604,7 @@ router.get(
       const assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
       const scoreKey = isPoints ? 'points' : 'score_perc';
       const canvasColumns: Columns = [
-        ['Student', 'name'],
-        ['ID', 'id_col'],
-        ['SIS User ID', 'sis_user_id'],
-        ['SIS Login ID', 'sis_login_id'],
-        ['Section', 'section'],
+        ...CANVAS_CSV_FIXED_COLUMNS,
         [assessmentName, scoreKey],
       ];
       const cursor = await sqldb.queryCursor(
@@ -627,13 +629,11 @@ router.get(
         );
       }
 
+      const scoreFormat = isPoints ? 'points' : 'percentage';
       const pointsPossibleRow = {
-        name: 'Points Possible',
-        id_col: null,
-        sis_user_id: null,
-        sis_login_id: null,
-        section: null,
-        [scoreKey]: isPoints ? maxPoints : 100,
+        name: CANVAS_CSV_POINTS_POSSIBLE_NAME,
+        ...canvasStudentRecord({ uid: null }),
+        [scoreKey]: canvasPointsPossibleValue(scoreFormat, maxPoints),
       };
 
       res.attachment(req.params.filename);
@@ -647,16 +647,11 @@ router.get(
           })(),
         ),
         stringifyWithColumns(canvasColumns, (record) => {
-          // Points Possible row passes through as-is.
-          if (record.name === pointsPossibleRow.name) return record;
+          if (record.name === CANVAS_CSV_POINTS_POSSIBLE_NAME) return record;
           if (record.role !== 'Student') return null;
           return {
             ...record,
-            id_col: null,
-            sis_user_id: null,
-            sis_login_id: record.uid,
-            // TODO: implement once we've got singular sections [https://github.com/PrairieLearn/PrairieLearn/issues/13919]
-            section: null,
+            ...canvasStudentRecord(record),
           };
         }),
         res,

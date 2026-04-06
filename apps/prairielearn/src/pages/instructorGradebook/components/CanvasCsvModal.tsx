@@ -5,6 +5,11 @@ import Modal from 'react-bootstrap/Modal';
 import { downloadAsCSV } from '@prairielearn/browser-utils';
 import { ExpandableCheckboxGroup, Radio, RadioGroup } from '@prairielearn/ui';
 
+import {
+  CANVAS_CSV_FIXED_HEADERS,
+  CANVAS_CSV_POINTS_POSSIBLE_NAME,
+  canvasPointsPossibleValue,
+} from '../../../lib/canvas-csv.js';
 import type { CourseAssessmentRow, GradebookRow } from '../instructorGradebook.types.js';
 
 type ScoreFormat = 'percentage' | 'points_original';
@@ -154,39 +159,35 @@ function CanvasCsvModalContent({
   const handleDownload = () => {
     const validRows = rows.filter((row) => row.role === 'Student' && row.user_name != null);
     const header = [
-      'Student',
-      'ID',
-      'SIS User ID',
-      'SIS Login ID',
-      'Section',
+      ...CANVAS_CSV_FIXED_HEADERS,
       ...selectedAssessments.map((a) => `${a.assessment_set_name} ${a.assessment_number}`),
     ];
 
+    const canvasFormat = scoreFormat === 'percentage' ? 'percentage' : 'points';
     const pointsPossibleRow = [
-      'Points Possible',
+      CANVAS_CSV_POINTS_POSSIBLE_NAME,
       null,
       null,
       null,
       null,
       ...selectedAssessments.map((a) => {
-        switch (scoreFormat) {
-          case 'percentage':
-            return 100;
-          case 'points_original': {
-            if (a.max_points != null) return a.max_points;
-            // The assessment-level max_points is null for assessments whose
-            // max points are computed dynamically (e.g., Exams with randomized
-            // zones). Fall back to the instance-level max_points from the
-            // first student who has a score for this assessment.
+        if (scoreFormat === 'percentage') return canvasPointsPossibleValue(canvasFormat, null);
 
-            const scoreWithMax = validRows.find(
-              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-              (r) => r.scores[a.assessment_id]?.max_points != null,
-            );
+        if (a.max_points != null) return canvasPointsPossibleValue(canvasFormat, a.max_points);
+        // The assessment-level max_points is null for assessments whose
+        // max points are computed dynamically (e.g., Exams with randomized
+        // zones). Fall back to the instance-level max_points from the
+        // first student who has a score for this assessment.
 
-            return scoreWithMax?.scores[a.assessment_id]?.max_points ?? null;
-          }
-        }
+        const scoreWithMax = validRows.find(
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          (r) => r.scores[a.assessment_id]?.max_points != null,
+        );
+
+        return canvasPointsPossibleValue(
+          canvasFormat,
+          scoreWithMax?.scores[a.assessment_id]?.max_points ?? null,
+        );
       }),
     ];
 
