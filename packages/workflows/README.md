@@ -19,42 +19,62 @@ workflows.startCronLoop(); // starts crash-recovery polling
 
 Register a workflow by providing a `type` (unique identifier) and a `takeStep` function. The engine calls `takeStep` in a loop — all control flow lives in your step function, not in the engine.
 
+The following example is based on the AI grading workflow, which uses an LLM agent to generate or edit rubrics for manual grading questions. The workflow pauses for human input between steps.
+
 ```ts
 import { registerWorkflow } from '@prairielearn/workflows';
 
-registerWorkflow<{ phase: string; draft?: string; approved?: boolean }>({
-  type: 'report_generation',
+interface AiGradingState {
+  step: string;
+  phase?: 'generate' | 'edit';
+  rubric_exists?: boolean;
+  message_id?: string;
+  user_message?: string;
+}
+
+registerWorkflow<AiGradingState>({
+  type: 'ai_grading',
   async takeStep({ run, logger }) {
-    switch (run.state.phase) {
-      case 'generate': {
-        logger.info('Generating draft report');
-        const draft = await generateReport();
-        return {
-          state: { phase: 'review', draft },
-          status: 'waiting_for_input',
-          phase: 'awaiting-review',
-        };
-      }
-      case 'review': {
-        if (!run.state.approved) {
+    switch (run.state.step) {
+      case 'rubric_check': {
+        logger.info('Checking if rubric exists');
+        const rubricData = await selectRubricData(run.context.assessment_question_id);
+
+        if (rubricData) {
           return {
-            state: run.state,
-            status: 'error',
-            error_message: 'Report was rejected',
+            state: { ...run.state, step: 'rubric_ready', rubric_exists: true },
+            status: 'waiting_for_input',
+            phase: 'rubric_setup',
+          };
+        } else {
+          return {
+            state: { ...run.state, step: 'awaiting_input', rubric_exists: false },
+            status: 'waiting_for_input',
+            phase: 'rubric_setup',
           };
         }
-        await publishReport(run.state.draft!);
+      }
+
+      case 'agent_running': {
+        logger.info(`Running agent — phase: ${run.state.phase}`);
+        // Run the LLM agent, stream results via Redis, finalize the message.
+        await runAgent(run);
         return {
-          state: { ...run.state, phase: 'done' },
-          status: 'completed',
-          phase: 'published',
+          state: { step: 'rubric_ready', rubric_exists: true },
+          status: 'waiting_for_input',
+          phase: 'rubric_setup',
         };
       }
+
+      case 'rubric_ready':
+      case 'awaiting_input':
+        return { state: run.state, status: 'waiting_for_input', phase: 'rubric_setup' };
+
       default:
         return {
           state: run.state,
           status: 'error',
-          error_message: `Unknown phase: ${run.state.phase}`,
+          error_message: `Unknown step: ${run.state.step}`,
         };
     }
   },
@@ -66,9 +86,9 @@ registerWorkflow<{ phase: string; draft?: string; approved?: boolean }>({
 ```ts
 import { startWorkflow } from '@prairielearn/workflows';
 
-const run = await startWorkflow('report_generation', {
-  initialState: { phase: 'generate' },
-  context: { course_id: 1, user_id: 42 },
+const run = await startWorkflow('ai_grading', {
+  initialState: { step: 'rubric_check' },
+  context: { assessment_question_id: '42', course_id: '1' },
 });
 // run.id is the workflow run ID
 // run.status is 'running' — the step loop continues in the background
@@ -83,8 +103,13 @@ When a step returns `status: 'waiting_for_input'`, the workflow pauses. To resum
 ```ts
 import { continueWorkflow } from '@prairielearn/workflows';
 
-await continueWorkflow(run.id, { approved: true });
-// Merges { approved: true } into state and resumes the step loop
+await continueWorkflow(run.id, {
+  step: 'agent_running',
+  phase: 'edit',
+  user_message: 'Add a rubric item for code style',
+  message_id: newMessageId,
+});
+// Merges the update into state and resumes the step loop
 ```
 
 ### Querying
@@ -96,8 +121,8 @@ import { getWorkflowRun, getActiveWorkflowRun } from '@prairielearn/workflows';
 const run = await getWorkflowRun(runId);
 
 // Find the most recent active run matching type + context
-const active = await getActiveWorkflowRun('report_generation', {
-  course_id: 1,
+const active = await getActiveWorkflowRun('ai_grading', {
+  assessment_question_id: '42',
 });
 // Returns null if no active run matches
 ```

@@ -97,6 +97,15 @@ export const EnumQuestionTypeSchema = z.enum([
 ]);
 export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
 
+export const EnumWorkflowRunStatusSchema = z.enum([
+  'running',
+  'waiting_for_input',
+  'completed',
+  'error',
+  'canceled',
+]);
+export type EnumWorkflowRunStatus = z.infer<typeof EnumWorkflowRunStatusSchema>;
+
 // *******************************************************************************
 // Miscellaneous schemas; keep these alphabetized.
 // *******************************************************************************
@@ -1729,7 +1738,7 @@ export const WorkflowRunSchema = z.object({
   output: z.string(),
   phase: z.string().nullable(),
   state: z.record(z.unknown()),
-  status: z.string(),
+  status: EnumWorkflowRunStatusSchema,
   type: z.string(),
   updated_at: DateFromISOString,
 });

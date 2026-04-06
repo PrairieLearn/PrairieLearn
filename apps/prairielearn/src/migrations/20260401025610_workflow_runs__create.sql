@@ -1,15 +1,15 @@
+CREATE TYPE enum_workflow_run_status AS ENUM(
+  'running',
+  'waiting_for_input',
+  'completed',
+  'error',
+  'canceled'
+);
+
 CREATE TABLE IF NOT EXISTS workflow_runs (
   id bigserial PRIMARY KEY,
   type text NOT NULL,
-  status text NOT NULL DEFAULT 'running' CHECK (
-    status IN (
-      'running',
-      'waiting_for_input',
-      'completed',
-      'error',
-      'canceled'
-    )
-  ),
+  status enum_workflow_run_status NOT NULL DEFAULT 'running',
   phase text,
   state jsonb NOT NULL DEFAULT '{}'::jsonb,
   locked_by text,

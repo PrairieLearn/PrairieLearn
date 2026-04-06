@@ -19,7 +19,11 @@ const sql = loadSqlEquiv(import.meta.url);
 const pool = new PostgresPool();
 
 const registeredWorkflows = new Map<string, WorkflowDefinition<any>>();
-const instanceId = crypto.randomUUID();
+// Unique identifier for this server process, used as the soft-lock owner
+// in the `locked_by` column to prevent concurrent execution of the same run.
+const serverUuid = crypto.randomUUID();
+
+const DEFAULT_CRON_INTERVAL_MS = 60_000;
 
 let cronInterval: NodeJS.Timeout | null = null;
 
@@ -178,6 +182,15 @@ export async function continueWorkflow<TState extends Record<string, unknown>>(
   runId: string,
   stateUpdate: Partial<TState>,
 ): Promise<void> {
+  // Verify the workflow definition exists before mutating DB state, so we
+  // don't move the run out of 'waiting_for_input' only to fail on a missing
+  // registration (e.g. deploy mismatch or retired type).
+  const run = await getWorkflowRun(runId);
+  const definition = registeredWorkflows.get(run.type);
+  if (!definition) {
+    throw new Error(`No workflow registered for type '${run.type}'`);
+  }
+
   const result = await pool.queryAsync(sql.continue_run, {
     id: runId,
     state_update: JSON.stringify(stateUpdate),
@@ -187,12 +200,6 @@ export async function continueWorkflow<TState extends Record<string, unknown>>(
     throw new Error(
       `Cannot continue workflow ${runId}: not found or not in 'waiting_for_input' status`,
     );
-  }
-
-  const run = await getWorkflowRun(runId);
-  const definition = registeredWorkflows.get(run.type);
-  if (!definition) {
-    throw new Error(`No workflow registered for type '${run.type}'`);
   }
 
   // Resume execution asynchronously
@@ -262,7 +269,7 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
   // Acquire lock
   const lockResult = await pool.queryAsync(sql.acquire_lock, {
     id: runId,
-    locked_by: instanceId,
+    locked_by: serverUuid,
   });
 
   if (lockResult.rowCount === 0) {
@@ -277,16 +284,18 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
     try {
       await pool.queryAsync(sql.update_heartbeat, {
         id: runId,
-        locked_by: instanceId,
+        locked_by: serverUuid,
       });
     } catch (err) {
       logger.error(`Failed to update heartbeat for workflow ${runId}`, err);
     }
   }, 30_000);
 
+  // The try-finally ensures cleanup (heartbeat, abort signal, DB lock) runs
+  // regardless of how the loop exits. Step errors are caught inside the loop
+  // and persisted to the DB; unexpected errors (e.g. persistStep failure)
+  // propagate to the caller and the crash-recovery cron picks up the run.
   try {
-    // Execute step loop
-
     while (true) {
       // Read current run state from DB
       const currentRun = await getWorkflowRun<TState>(runId);
@@ -308,7 +317,7 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
         // Flush any logs the step produced before recording the error.
         await workflowLogger.flush();
         const errorMessage = err instanceof Error ? err.message : String(err);
-        await persistStep(runId, instanceId, {
+        await persistStep(runId, serverUuid, {
           state: currentRun.state,
           status: 'error',
           error_message: errorMessage,
@@ -324,7 +333,7 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
       const dbStatus: WorkflowRunStatus =
         stepResult.status === 'continue' ? 'running' : stepResult.status;
 
-      const updated = await persistStep(runId, instanceId, {
+      const updated = await persistStep(runId, serverUuid, {
         state: stepResult.state,
         status: dbStatus,
         phase: stepResult.phase,
@@ -339,7 +348,7 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
     // Stop heartbeat and release lock
     clearInterval(heartbeatInterval);
     abortController.abort();
-    await pool.queryAsync(sql.release_lock, { id: runId, locked_by: instanceId }).catch((err) => {
+    await pool.queryAsync(sql.release_lock, { id: runId, locked_by: serverUuid }).catch((err) => {
       logger.error(`Failed to release lock for workflow ${runId}`, err);
     });
   }
@@ -387,6 +396,7 @@ function createLogger(runId: string): WorkflowLogger & { flush(): Promise<void> 
     },
     async flush() {
       if (buffer.length === 0) return;
+      // Drain the buffer and concatenate in one step.
       const text = buffer.splice(0).join('');
       try {
         await pool.queryAsync(sql.append_output, { id: runId, text });
@@ -410,7 +420,7 @@ function createLogger(runId: string): WorkflowLogger & { flush(): Promise<void> 
  * (defaults to 60,000). Throws if the cron loop is already running.
  */
 export function startCronLoop(opts?: { intervalMs?: number }): void {
-  const intervalMs = opts?.intervalMs ?? 60_000;
+  const intervalMs = opts?.intervalMs ?? DEFAULT_CRON_INTERVAL_MS;
 
   if (cronInterval) {
     throw new Error('Cron loop is already running');
