@@ -25,7 +25,8 @@ export interface RadioProps extends Omit<AriaRadioProps, 'className' | 'children
 export function Radio({ children, ...props }: RadioProps) {
   return (
     <AriaRadio {...props} className="form-check">
-      {children}
+      <span className="pl-ui-radio-indicator" aria-hidden="true" />
+      <span className="form-check-label ms-2">{children}</span>
     </AriaRadio>
   );
 }
