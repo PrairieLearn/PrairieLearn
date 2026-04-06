@@ -13,6 +13,7 @@ import {
   StaffAssessmentModuleSchema,
   StaffAssessmentSetSchema,
 } from '../../lib/client/safe-db-types.js';
+import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { type AssessmentToolsConfig, getOriginalHash } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
@@ -74,7 +75,7 @@ router.get(
     const origHash = (await getOriginalHash(fullInfoAssessmentPath)) ?? '';
 
     const toolDefaultRows = await selectAssessmentToolDefaults({
-      assessment_id: res.locals.assessment.id,
+      assessment_id: assessment.id,
     });
     const enabledTools = new Set(toolDefaultRows.filter((r) => r.enabled).map((r) => r.tool));
     const assessmentTools: AssessmentToolsConfig = EnumAssessmentToolSchema.options.map((tool) => ({
@@ -92,7 +93,10 @@ router.get(
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
-        url: `/pl/course_instance/${course_instance.id}/instructor/assessment/${assessment.id}/trpc`,
+        url: getAssessmentTrpcUrl({
+          courseInstanceId: String(course_instance.id),
+          assessmentId: String(assessment.id),
+        }),
         authn_user_id: res.locals.authn_user.id,
       },
       config.secretKey,
