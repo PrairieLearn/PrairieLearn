@@ -1210,14 +1210,18 @@ function buildRubricToolsWithExecute({
             await import('../../models/ai-grading-message.js');
 
           const offset = messageNumber === 0 ? 0 : messageNumber - 1;
-          job.info(`Querying message at offset=${offset} for assessment_question_id=${context.assessmentQuestion.id}`);
+          job.info(
+            `Querying message at offset=${offset} for assessment_question_id=${context.assessmentQuestion.id}`,
+          );
 
           const targetMessage = await selectNthCompletedAiGradingMessage(
             context.assessmentQuestion.id,
             offset,
           );
 
-          job.info(`Retrieved message: id=${targetMessage?.id ?? 'null'}, role=${targetMessage?.role ?? 'null'}, status=${targetMessage?.status ?? 'null'}, has_rubric_snapshot=${targetMessage?.rubric_snapshot != null}`);
+          job.info(
+            `Retrieved message: id=${targetMessage?.id ?? 'null'}, role=${targetMessage?.role ?? 'null'}, status=${targetMessage?.status ?? 'null'}, has_rubric_snapshot=${targetMessage?.rubric_snapshot != null}`,
+          );
 
           if (!targetMessage) {
             const total = await countCompletedAiGradingMessages(context.assessmentQuestion.id);
@@ -1228,7 +1232,9 @@ function buildRubricToolsWithExecute({
           }
 
           const snapshot = targetMessage.rubric_snapshot as DiffRubricState | null;
-          job.info(`Snapshot for message #${messageNumber}: ${snapshot ? JSON.stringify(snapshot).slice(0, 200) + '...' : 'NULL'}`);
+          job.info(
+            `Snapshot for message #${messageNumber}: ${snapshot ? JSON.stringify(snapshot).slice(0, 200) + '...' : 'NULL'}`,
+          );
 
           if (!snapshot) {
             return JSON.stringify({

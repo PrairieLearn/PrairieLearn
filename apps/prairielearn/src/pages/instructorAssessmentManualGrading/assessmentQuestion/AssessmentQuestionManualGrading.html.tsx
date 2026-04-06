@@ -417,7 +417,13 @@ function FieldChangeLine({ change }: { change: FieldChange }) {
   );
 }
 
-function RubricDiff({ diff }: { diff: RubricDiffResult }) {
+function RubricDiff({
+  diff,
+  actionSlot,
+}: {
+  diff: RubricDiffResult;
+  actionSlot?: ReactNode;
+}) {
   const hasChanges = diff.items.length > 0 || diff.settingsChanges.length > 0;
   if (!hasChanges) return null;
 
@@ -465,82 +471,106 @@ function RubricDiff({ diff }: { diff: RubricDiffResult }) {
     }
   };
 
+  const [expanded, setExpanded] = useState(false);
+  const changeCount = diff.items.length + diff.settingsChanges.length;
+
   return (
-    <div className="mt-2 mb-1 d-flex flex-column gap-1" style={{ fontSize: '0.85rem' }}>
-      <div className="fw-semibold text-body-secondary" style={{ fontSize: '0.75rem' }}>
-        Changes
-      </div>
-      {diff.items.map((item) => (
-        <div
-          key={`${item.kind}-${item.index}-${item.description}`}
-          className="rounded px-2 py-1"
-          style={{
-            borderLeft: `3px solid ${borderColor(item.kind)}`,
-            background: bgColor(item.kind),
-          }}
+    <div
+      className="mt-2 mb-1 rounded border"
+      style={{ fontSize: '0.85rem', background: 'rgba(0,0,0,0.015)' }}
+    >
+      <div className="d-flex align-items-center px-2 py-1">
+        <button
+          type="button"
+          className="btn btn-sm p-0 text-start d-flex align-items-center gap-1"
+          style={{ fontSize: '0.75rem', color: '#6c757d' }}
+          onClick={() => setExpanded((e) => !e)}
         >
-          <div className="d-flex align-items-start gap-1 flex-wrap">
-            <div className="d-flex align-items-center gap-1 flex-shrink-0">
-              <i
-                className={`bi ${kindIcon(item.kind)}`}
-                style={{ color: borderColor(item.kind), fontSize: '0.7rem' }}
-                aria-hidden="true"
-              />
-              <span
-                className="fw-semibold"
-                style={{ color: borderColor(item.kind), fontSize: '0.7rem' }}
-              >
-                {kindLabel(item.kind)}
-              </span>
-              <span
-                className="badge rounded-pill bg-light text-dark border"
-                style={{ fontSize: '0.65rem' }}
-              >
-                {item.index}
-              </span>
-            </div>
-            <span style={{ fontSize: '0.8rem', wordBreak: 'break-word', minWidth: 0 }}>
-              {item.description}
-              {(item.kind === 'added' || item.kind === 'removed') && (
-                <span className="text-body-secondary ms-1" style={{ fontSize: '0.75rem' }}>
-                  ({item.points > 0 ? '+' : ''}
-                  {item.points} pts)
+          <i
+            className={`bi bi-chevron-${expanded ? 'down' : 'right'}`}
+            style={{ fontSize: '0.6rem' }}
+          />
+          <span className="fw-semibold">
+            {changeCount} change{changeCount !== 1 ? 's' : ''}
+          </span>
+        </button>
+        {actionSlot && <div className="ms-auto">{actionSlot}</div>}
+      </div>
+      {!expanded ? null : (
+        <div className="d-flex flex-column gap-1 px-2 pb-2">
+          {diff.items.map((item) => (
+            <div
+              key={`${item.kind}-${item.index}-${item.description}`}
+              className="rounded px-2 py-1"
+              style={{
+                borderLeft: `3px solid ${borderColor(item.kind)}`,
+                background: bgColor(item.kind),
+              }}
+            >
+              <div className="d-flex align-items-start gap-1 flex-wrap">
+                <div className="d-flex align-items-center gap-1 flex-shrink-0">
+                  <i
+                    className={`bi ${kindIcon(item.kind)}`}
+                    style={{ color: borderColor(item.kind), fontSize: '0.7rem' }}
+                    aria-hidden="true"
+                  />
+                  <span
+                    className="fw-semibold"
+                    style={{ color: borderColor(item.kind), fontSize: '0.7rem' }}
+                  >
+                    {kindLabel(item.kind)}
+                  </span>
+                  <span
+                    className="badge rounded-pill bg-light text-dark border"
+                    style={{ fontSize: '0.65rem' }}
+                  >
+                    {item.index}
+                  </span>
+                </div>
+                <span style={{ fontSize: '0.8rem', wordBreak: 'break-word', minWidth: 0 }}>
+                  {item.description}
+                  {(item.kind === 'added' || item.kind === 'removed') && (
+                    <span className="text-body-secondary ms-1" style={{ fontSize: '0.75rem' }}>
+                      ({item.points > 0 ? '+' : ''}
+                      {item.points} pts)
+                    </span>
+                  )}
                 </span>
+              </div>
+              {item.fieldChanges.length > 0 && (
+                <div className="d-flex flex-column gap-1 mt-1 ps-3">
+                  {item.fieldChanges.map((change) => (
+                    <FieldChangeLine key={change.field} change={change} />
+                  ))}
+                </div>
               )}
-            </span>
-          </div>
-          {item.fieldChanges.length > 0 && (
-            <div className="d-flex flex-column gap-1 mt-1 ps-3">
-              {item.fieldChanges.map((change) => (
-                <FieldChangeLine key={change.field} change={change} />
-              ))}
+            </div>
+          ))}
+          {diff.settingsChanges.length > 0 && (
+            <div
+              className="rounded px-2 py-1"
+              style={{
+                borderLeft: '3px solid #6c757d',
+                background: 'rgba(108, 117, 125, 0.05)',
+              }}
+            >
+              <div className="d-flex align-items-center gap-1 mb-1">
+                <i
+                  className="bi bi-gear-fill"
+                  style={{ color: '#6c757d', fontSize: '0.7rem' }}
+                  aria-hidden="true"
+                />
+                <span className="fw-semibold" style={{ color: '#6c757d', fontSize: '0.7rem' }}>
+                  Settings
+                </span>
+              </div>
+              <div className="d-flex flex-column gap-1 ps-3">
+                {diff.settingsChanges.map((change) => (
+                  <FieldChangeLine key={change.field} change={change} />
+                ))}
+              </div>
             </div>
           )}
-        </div>
-      ))}
-      {diff.settingsChanges.length > 0 && (
-        <div
-          className="rounded px-2 py-1"
-          style={{
-            borderLeft: '3px solid #6c757d',
-            background: 'rgba(108, 117, 125, 0.05)',
-          }}
-        >
-          <div className="d-flex align-items-center gap-1 mb-1">
-            <i
-              className="bi bi-gear-fill"
-              style={{ color: '#6c757d', fontSize: '0.7rem' }}
-              aria-hidden="true"
-            />
-            <span className="fw-semibold" style={{ color: '#6c757d', fontSize: '0.7rem' }}>
-              Settings
-            </span>
-          </div>
-          <div className="d-flex flex-column gap-1 ps-3">
-            {diff.settingsChanges.map((change) => (
-              <FieldChangeLine key={change.field} change={change} />
-            ))}
-          </div>
         </div>
       )}
     </div>
@@ -567,9 +597,11 @@ function ToolCall({ part }: { part: ToolUIPart }) {
 function MasterRubricDiff({
   parts,
   isComplete,
+  actionSlot,
 }: {
   parts: UIMessage['parts'];
   isComplete: boolean;
+  actionSlot?: ReactNode;
 }) {
   if (!isComplete) return null;
 
@@ -609,7 +641,7 @@ function MasterRubricDiff({
   });
 
   if (!diff) return null;
-  return <RubricDiff diff={diff} />;
+  return <RubricDiff diff={diff} actionSlot={actionSlot} />;
 }
 
 function MessageParts({
@@ -923,7 +955,7 @@ function AssessmentQuestionManualGradingInner({
     }
   }, [messages, refreshRubricData]);
 
-  // Re-run MathJax typesetting when messages change (for LaTeX in chat)
+  // Re-run MathJax typesetting when messages change
   const chatContainerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -1057,45 +1089,65 @@ function AssessmentQuestionManualGradingInner({
 
       {aiRubricAgentEnabled && (
         <div
-          className="d-flex flex-column bg-light border rounded flex-shrink-0"
+          className="d-flex flex-column border rounded flex-shrink-0 overflow-hidden"
           style={{ width: '100%', maxWidth: 480, height: '70vh' }}
         >
-          {messages.length > 0 && (
-            <div className="d-flex justify-content-end p-3 pb-0">
-              <button
-                type="button"
-                className="btn btn-outline-secondary btn-sm"
-                disabled={isGenerating}
-                onClick={() => setShowClearConfirm(true)}
-              >
-                Reset conversation history
-              </button>
-            </div>
-          )}
-          <div ref={chatContainerRef} className="flex-grow-1 overflow-auto p-3">
+          <div className="d-flex align-items-center gap-2 px-3 py-2 border-bottom bg-white">
+            <i className="bi bi-stars text-primary" />
+            <span className="fw-semibold small flex-grow-1">Rubric assistant</span>
+            {messages.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  disabled={
+                    isGenerating ||
+                    !messages.some((m) => m.role === 'assistant' && hasMutations(m.parts))
+                  }
+                  onClick={() => {
+                    const mutationMsgIndices = messages
+                      .map((m, i) => (m.role === 'assistant' && hasMutations(m.parts) ? i : -1))
+                      .filter((i) => i !== -1);
+                    if (mutationMsgIndices.length === 0) return;
+                    const targetIndex =
+                      mutationMsgIndices.length >= 2
+                        ? mutationMsgIndices[mutationMsgIndices.length - 2]
+                        : -1;
+                    const messageNumber = targetIndex === -1 ? 0 : targetIndex + 1;
+                    currentPhaseRef.current = 'edit';
+                    void sendMessage({
+                      text: `Revert to the rubric right after message #${messageNumber}`,
+                    });
+                  }}
+                >
+                  Undo
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  disabled={isGenerating}
+                  onClick={() => setShowClearConfirm(true)}
+                >
+                  Reset
+                </button>
+              </>
+            )}
+          </div>
+          <div ref={chatContainerRef} className="flex-grow-1 overflow-auto p-3 bg-light">
             {messages.length === 0 && !isGenerating && (
               <div className="d-flex flex-column align-items-center justify-content-center h-100 text-center text-muted">
-                <i className="bi bi-stars" style={{ fontSize: '2rem' }} />
-                <div className="fw-bold mt-2">AI Assistant</div>
+                <div
+                  className="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary bg-opacity-10 mb-2"
+                  style={{ width: '3rem', height: '3rem' }}
+                >
+                  <i className="bi bi-stars text-primary" style={{ fontSize: '1.1rem' }} />
+                </div>
+                <div className="fw-semibold">Rubric assistant</div>
                 <div className="small mt-1">
                   {hasGeneratedRubric
                     ? 'Ask the assistant to edit your rubric.'
                     : 'Generate a rubric or describe what you want to the assistant.'}
                 </div>
-              </div>
-            )}
-            {messages.some((m) => m.role === 'assistant' && hasMutations(m.parts)) && (
-              <div className="d-flex justify-content-center mb-3">
-                <RevertButton
-                  label="Revert to initial rubric"
-                  disabled={isGenerating}
-                  onConfirm={() => {
-                    currentPhaseRef.current = 'edit';
-                    void sendMessage({
-                      text: 'Revert to the rubric right after message #0',
-                    });
-                  }}
-                />
               </div>
             )}
             {messages.map((message, msgIndex) => {
@@ -1163,22 +1215,28 @@ function AssessmentQuestionManualGradingInner({
                       isGenerating && !isMessageComplete && msgIndex === messages.length - 1
                     }
                   />
-                  <MasterRubricDiff parts={message.parts} isComplete={isMessageComplete} />
-                  {isMessageComplete && hasMutations(message.parts) && (
-                    <RevertButton
-                      label="Revert to this rubric"
-                      disabled={isGenerating}
-                      onConfirm={() => {
-                        currentPhaseRef.current = 'edit';
-                        void sendMessage({
-                          text: `Revert to the rubric right after message #${messageNumber}`,
-                        });
-                      }}
-                    />
-                  )}
+                  <MasterRubricDiff
+                    parts={message.parts}
+                    isComplete={isMessageComplete}
+                    actionSlot={
+                      isMessageComplete && hasMutations(message.parts) ? (
+                        <RevertButton
+                          label="Revert"
+                          disabled={isGenerating}
+                          onConfirm={() => {
+                            currentPhaseRef.current = 'edit';
+                            void sendMessage({
+                              text: `Revert to the rubric right after message #${messageNumber}`,
+                            });
+                          }}
+                        />
+                      ) : undefined
+                    }
+                  />
                 </div>
               );
             })}
+
           </div>
           <div className="p-3 border-top">
             {!hasGeneratedRubric && (
