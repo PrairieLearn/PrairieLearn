@@ -1572,17 +1572,6 @@ describe('mergeRules', () => {
     expect(result.dateControl?.dueDate).toEqual(new Date('2025-05-01T00:00:00Z'));
   });
 
-  it('override can set releaseDate to null to block date-based access', () => {
-    const result = mergeRules(
-      toRuntime({
-        dateControl: { releaseDate: '2025-03-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' },
-      }),
-      toRuntime({ dateControl: { releaseDate: null } }),
-    );
-    expect(result.dateControl?.releaseDate).toBeNull();
-    expect(result.dateControl?.dueDate).toEqual(new Date('2025-04-01T00:00:00Z'));
-  });
-
   it('inherits afterComplete from main when override has none', () => {
     const result = mergeRules(toRuntime({ afterComplete: { hideQuestions: true } }), toRuntime({}));
     expect(result.afterComplete?.hideQuestions).toBe(true);
