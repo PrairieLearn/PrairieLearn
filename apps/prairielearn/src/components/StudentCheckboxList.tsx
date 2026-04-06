@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import type { ReactNode } from 'react';
 import { Button, Form } from 'react-bootstrap';
 
-export interface StudentCheckboxListItem {
+interface StudentCheckboxListItem {
   uid: string;
   name?: string | null;
 }
