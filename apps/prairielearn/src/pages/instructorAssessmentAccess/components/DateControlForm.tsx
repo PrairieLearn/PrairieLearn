@@ -26,8 +26,6 @@ export function MainDateControlForm({
     name: 'mainRule.dateControlEnabled',
   });
 
-  const dateControlRegistration = register('mainRule.dateControlEnabled');
-
   return (
     <div className="mb-4">
       <div className="section-header mb-3">
@@ -35,17 +33,17 @@ export function MainDateControlForm({
           type="checkbox"
           id="mainRule-date-control-enabled"
           label={<strong>{title}</strong>}
-          {...dateControlRegistration}
+          {...register('mainRule.dateControlEnabled', {
+            onChange: (e) => {
+              if (e.target.checked && !getValues('mainRule.releaseDate')) {
+                setValue('mainRule.releaseDate', startOfDayDatetime(), {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }
+            },
+          })}
           aria-describedby="mainRule-date-control-help"
-          onChange={(e) => {
-            void dateControlRegistration.onChange(e);
-            if (e.target.checked && !getValues('mainRule.releaseDate')) {
-              setValue('mainRule.releaseDate', startOfDayDatetime(), {
-                shouldDirty: true,
-                shouldValidate: true,
-              });
-            }
-          }}
         />
         <Form.Text id="mainRule-date-control-help" className="text-muted">
           {description}

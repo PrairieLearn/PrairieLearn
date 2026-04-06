@@ -17,13 +17,9 @@ function tomorrowLocalDatetime(): string {
 
 function isReleasedNow(value: string): boolean {
   if (!value) return true;
-  try {
-    const release = Temporal.PlainDateTime.from(value);
-    const now = Temporal.Now.plainDateTimeISO();
-    return Temporal.PlainDateTime.compare(release, now) <= 0;
-  } catch {
-    return true;
-  }
+  const release = Temporal.PlainDateTime.from(value);
+  const now = Temporal.Now.plainDateTimeISO();
+  return Temporal.PlainDateTime.compare(release, now) <= 0;
 }
 
 function MainReleaseDateInput({

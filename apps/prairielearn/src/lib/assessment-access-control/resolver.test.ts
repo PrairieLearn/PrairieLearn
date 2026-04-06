@@ -1378,6 +1378,7 @@ describe('resolveAccessControl', () => {
         ],
       });
       expect(result.authorized).toBe(false);
+      expect(result.showBeforeRelease).toBe(false);
     });
 
     it('does not grant access to PT assessment via listBeforeRelease bypass', () => {
@@ -1400,8 +1401,8 @@ describe('resolveAccessControl', () => {
       }
     });
 
-    it('shows closed PT assessment as closed instead of "before release" when past close date', () => {
-      // When a PT-gated assessment has date controls and is past its close
+    it('shows closed PT assessment as closed instead of "before release" when past due date', () => {
+      // When a PT-gated assessment has date controls and is past its due
       // date, it should show as a normal closed assessment rather than "Not
       // yet open" indefinitely.
       for (const authzMode of ['Public', 'Exam'] as const) {
@@ -1431,7 +1432,7 @@ describe('resolveAccessControl', () => {
       }
     });
 
-    it('grants access via PT reservation even when assessment is past close date', () => {
+    it('grants access via PT reservation even when assessment is past due date', () => {
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',
@@ -1447,7 +1448,7 @@ describe('resolveAccessControl', () => {
           },
         ],
         prairieTestReservations: [
-          { examUuid: 'pt-exam-1', accessEnd: new Date('2025-04-01T00:00:00Z') },
+          { examUuid: ptExam.uuid, accessEnd: new Date('2025-04-01T00:00:00Z') },
         ],
       });
       expect(result.authorized).toBe(true);

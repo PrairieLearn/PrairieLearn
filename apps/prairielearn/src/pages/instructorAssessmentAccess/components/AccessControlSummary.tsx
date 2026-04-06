@@ -75,7 +75,7 @@ function MainRuleSummaryContent({
   rule: MainRuleData;
   displayTimezone: string;
 }) {
-  const summaryItems = generateRuleSummary(rule, displayTimezone, 'compact');
+  const summaryItems = generateRuleSummary(rule, displayTimezone);
   const dateTableRows = generateDateTableRows(rule, displayTimezone);
 
   return (

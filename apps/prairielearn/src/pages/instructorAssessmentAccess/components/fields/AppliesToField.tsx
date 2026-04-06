@@ -89,8 +89,9 @@ export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
       </div>
       {hasNoTargets && (
         <Alert variant="warning">
-          This override has no targets. Add at least one student or student label for this rule to
-          take effect.
+          This override has no targets. Add at least one{' '}
+          {currentTargetType === 'enrollment' ? 'student' : 'student label'} for this rule to take
+          effect.
         </Alert>
       )}
       <fieldset className="mb-3">

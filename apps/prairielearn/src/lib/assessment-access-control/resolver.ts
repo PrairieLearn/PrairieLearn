@@ -431,7 +431,7 @@ function formatCreditDateString(
  * - Student NOT in Exam mode + assessment has PT exams → deny access
  * - Valid reservation = user has pt_reservation whose exam UUID matches a configured exam
  *
- * When the assessment is past its close date (`assessmentClosed`), PT gating is
+ * When the assessment is past its due date (`assessmentClosed`), PT gating is
  * skipped so the normal closed-assessment behavior applies instead of showing
  * "Not yet open" indefinitely.
  */
