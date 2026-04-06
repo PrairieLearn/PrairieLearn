@@ -65,6 +65,7 @@ export function DetailPanel({
         <ZoneDetailPanel
           key={zone.trackingId}
           zone={zone}
+          zones={zones}
           zoneIndex={zoneIndex}
           idPrefix={`zone-${zone.trackingId}`}
           state={state}
