@@ -101,6 +101,7 @@ export function AdministratorCourseFormFields({
     !repositoryShortName || /^pl-[a-z0-9]+-[a-z0-9]+$/.test(repositoryShortName);
   const pathMatchesRepo =
     !repositoryShortName || !path || path === `${coursesRoot}/${repositoryShortName}`;
+  const showPathMismatchWarning = !!dirtyFields.path && !pathMatchesRepo;
 
   const institutionAutoFilled =
     autoFilledInstitutionId != null && institutionId === autoFilledInstitutionId;
@@ -390,7 +391,7 @@ export function AdministratorCourseFormFields({
         )}
         {pathAutoFilled && <AutoFilledHint source="selected institution" />}
         <div aria-live="polite" aria-atomic="true">
-          {!pathMatchesRepo && (
+          {showPathMismatchWarning && (
             <div className="form-text text-warning">
               <i className="fa fa-exclamation-triangle" aria-hidden="true" /> Path and repository
               name are out of sync. Expected path to be{' '}
