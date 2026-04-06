@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS ai_grading_messages (
   usage_output_tokens_reasoning INT NOT NULL DEFAULT 0,
   include_in_context BOOLEAN NOT NULL DEFAULT TRUE,
   workflow_run_id BIGINT,
+  rubric_snapshot JSONB,
   CONSTRAINT ai_grading_messages_model_check CHECK (
     (
       role = 'user'

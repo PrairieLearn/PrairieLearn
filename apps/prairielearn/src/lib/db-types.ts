@@ -360,6 +360,7 @@ export const AiGradingMessageSchema = z.object({
   parts: z.array(z.any()),
   phase: EnumAiGradingMessagePhaseSchema,
   role: EnumAiQuestionGenerationMessageRoleSchema,
+  rubric_snapshot: z.any().nullable(),
   status: EnumAiQuestionGenerationMessageStatusSchema,
   updated_at: DateFromISOString,
   usage_input_tokens: z.number(),

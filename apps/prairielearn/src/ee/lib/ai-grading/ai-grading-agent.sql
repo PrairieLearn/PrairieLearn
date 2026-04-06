@@ -7,7 +7,8 @@ INSERT INTO
     parts,
     status,
     role,
-    workflow_run_id
+    workflow_run_id,
+    rubric_snapshot
   )
 VALUES
   (
@@ -17,7 +18,8 @@ VALUES
     $parts::jsonb,
     'completed',
     'user',
-    $workflow_run_id
+    $workflow_run_id,
+    $rubric_snapshot::jsonb
   );
 
 -- BLOCK insert_initial_assistant_message
@@ -53,6 +55,7 @@ SET
   usage_input_tokens_cache_write = $usage_input_tokens_cache_write,
   usage_output_tokens = $usage_output_tokens,
   usage_output_tokens_reasoning = $usage_output_tokens_reasoning,
+  rubric_snapshot = $rubric_snapshot::jsonb,
   updated_at = NOW()
 WHERE
   id = $id;

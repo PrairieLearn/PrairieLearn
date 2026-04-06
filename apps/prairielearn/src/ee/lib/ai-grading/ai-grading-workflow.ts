@@ -19,6 +19,7 @@ import {
 
 import {
   type AiGradingAgentContext,
+  captureRubricSnapshot,
   editRubric,
   finalizeAssistantMessage,
   generateRubric,
@@ -108,6 +109,7 @@ async function runAgentWithStreaming(
   sseStream: JsonToSseTransformStream,
   workflowRunId: string,
   phase: 'generate' | 'edit',
+  assessmentQuestionId: string,
 ) {
   const agentRes = await agent.stream(promptArg);
   let finalParts: unknown[] = [];
@@ -154,6 +156,8 @@ async function runAgentWithStreaming(
       ? 'errored'
       : 'completed';
 
+  const rubricSnapshot = await captureRubricSnapshot(assessmentQuestionId);
+
   await finalizeAssistantMessage({
     messageId,
     status: finalStatus === 'canceled' ? 'errored' : finalStatus,
@@ -163,6 +167,7 @@ async function runAgentWithStreaming(
       inputTokens: totalUsage.inputTokens ?? 0,
       outputTokens: totalUsage.outputTokens ?? 0,
     },
+    rubricSnapshot,
   });
 }
 
@@ -264,6 +269,7 @@ async function takeStep(
           sseStream,
           context.run.id,
           phase,
+          ctx.assessment_question_id,
         );
       } else {
         const persistedMessages = await selectAiGradingMessages(ctx.assessment_question_id);
@@ -286,6 +292,7 @@ async function takeStep(
           sseStream,
           context.run.id,
           phase,
+          ctx.assessment_question_id,
         );
       }
 

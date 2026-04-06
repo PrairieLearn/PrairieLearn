@@ -36,3 +36,39 @@ WHERE
   assessment_question_id = $assessment_question_id
   AND status = 'streaming'
   AND role = 'assistant';
+
+-- BLOCK select_nth_completed_ai_grading_message
+SELECT
+  *
+FROM
+  ai_grading_messages
+WHERE
+  assessment_question_id = $assessment_question_id
+  AND status = 'completed'
+ORDER BY
+  created_at ASC
+LIMIT
+  1
+OFFSET
+  $offset;
+
+-- BLOCK count_completed_ai_grading_messages
+SELECT
+  count(*)::int AS count
+FROM
+  ai_grading_messages
+WHERE
+  assessment_question_id = $assessment_question_id
+  AND status = 'completed';
+
+-- BLOCK select_completed_assistant_ai_grading_messages
+SELECT
+  *
+FROM
+  ai_grading_messages
+WHERE
+  assessment_question_id = $assessment_question_id
+  AND status = 'completed'
+  AND role = 'assistant'
+ORDER BY
+  created_at ASC;

@@ -621,9 +621,7 @@ function MessageParts({
 }) {
   // Show "Working..." whenever streaming and the last part isn't actively producing text.
   // Text parts stream character-by-character so they're their own indicator.
-  const lastPart = [...parts].reverse().find(
-    (p) => (p.type === 'text' && p.text) || isToolPart(p),
-  );
+  const lastPart = [...parts].reverse().find((p) => (p.type === 'text' && p.text) || isToolPart(p));
   const isActivelyStreamingText = lastPart?.type === 'text' && lastPart.text;
   const isWorking = isStreaming && !isActivelyStreamingText;
 
@@ -746,89 +744,6 @@ function hasMutations(parts: UIMessage['parts']): boolean {
 /**
  * Extract the "after" snapshot from the last mutation tool output in a message's parts.
  */
-function extractAfterSnapshot(parts: UIMessage['parts']): DiffRubricState | null {
-  for (const part of [...parts].reverse()) {
-    if (
-      !isToolPart(part) ||
-      !MUTATION_TOOL_TYPES.has(part.type) ||
-      part.state !== 'output-available'
-    ) {
-      continue;
-    }
-    try {
-      const raw = (part as ToolUIPart & { output?: unknown }).output;
-      if (!raw) continue;
-      const parsed = (typeof raw === 'string' ? JSON.parse(raw) : raw) as {
-        after?: DiffRubricState;
-      };
-      if (parsed.after) return parsed.after;
-    } catch {
-      continue;
-    }
-  }
-  return null;
-}
-
-/**
- * Extract the "before" snapshot from the first mutation tool output in a message's parts.
- */
-function extractBeforeSnapshot(parts: UIMessage['parts']): DiffRubricState | null {
-  for (const part of parts) {
-    if (
-      !isToolPart(part) ||
-      !MUTATION_TOOL_TYPES.has(part.type) ||
-      part.state !== 'output-available'
-    ) {
-      continue;
-    }
-    try {
-      const raw = (part as ToolUIPart & { output?: unknown }).output;
-      if (!raw) continue;
-      const parsed = (typeof raw === 'string' ? JSON.parse(raw) : raw) as {
-        before?: DiffRubricState;
-      };
-      if (parsed.before) return parsed.before;
-    } catch {
-      continue;
-    }
-  }
-  return null;
-}
-
-function findSnapshotForRevert(
-  allMessages: RubricChatMessage[],
-  messageText: string,
-): { snapshotJson: string; snapshotId: string } | null {
-  // Match "revert:N" pattern (message number) or "snapshot N"
-  const match = messageText.match(/(?:revert:(\d+))|(?:snapshot\s+#?(\d+))/i);
-  if (!match) return null;
-  const messageNumber = Number.parseInt(match[1] ?? match[2], 10);
-  if (isNaN(messageNumber) || messageNumber < 0) return null;
-
-  // Message number 0 means "initial state" — find the before snapshot of the first mutation message
-  if (messageNumber === 0) {
-    for (const m of allMessages) {
-      if (m.role === 'assistant' && hasMutations(m.parts)) {
-        const before = extractBeforeSnapshot(m.parts);
-        if (before) {
-          return { snapshotJson: JSON.stringify(before), snapshotId: '0' };
-        }
-      }
-    }
-    return null;
-  }
-
-  // Message number N (1-based index)
-  const targetMessage = allMessages[messageNumber - 1];
-  if (targetMessage?.role !== 'assistant' || !hasMutations(targetMessage.parts)) {
-    return null;
-  }
-
-  const after = extractAfterSnapshot(targetMessage.parts);
-  if (!after) return null;
-  return { snapshotJson: JSON.stringify(after), snapshotId: String(messageNumber) };
-}
-
 function persistedMessagesToInitialMessages(
   persistedMessages: StaffAiGradingMessage[],
 ): RubricChatMessage[] {
@@ -936,19 +851,13 @@ function AssessmentQuestionManualGradingInner({
       }),
       prepareSendMessagesRequest: ({ messages: chatMsgs, headers, body }) => {
         const lastMessage = chatMsgs[chatMsgs.length - 1];
-        let messageText =
+        const messageText =
           lastMessage.role === 'user'
             ? (lastMessage.parts as { type: string; text?: string }[])
                 .map((p) => (p.type === 'text' ? (p.text ?? '') : ''))
                 .filter(Boolean)
                 .join('\n\n')
             : '';
-
-        const snapshotMatch = findSnapshotForRevert(messages, messageText);
-        if (snapshotMatch) {
-          messageText += `\n\n[Revert to snapshot ${snapshotMatch.snapshotId}]\nSnapshot data:\n${snapshotMatch.snapshotJson}`;
-          currentPhaseRef.current = 'edit';
-        }
 
         return {
           headers,
@@ -1181,16 +1090,9 @@ function AssessmentQuestionManualGradingInner({
                   label="Revert to initial rubric"
                   disabled={isGenerating}
                   onConfirm={() => {
-                    const firstMutationMsg = messages.find(
-                      (m) => m.role === 'assistant' && hasMutations(m.parts),
-                    );
-                    if (!firstMutationMsg) return;
-                    const beforeSnapshot = extractBeforeSnapshot(firstMutationMsg.parts);
-                    if (!beforeSnapshot) return;
-
                     currentPhaseRef.current = 'edit';
                     void sendMessage({
-                      text: `[revert:0] Revert the rubric to the initial state:\n${JSON.stringify(beforeSnapshot)}`,
+                      text: 'Revert to the rubric right after message #0',
                     });
                   }}
                 />
@@ -1207,7 +1109,9 @@ function AssessmentQuestionManualGradingInner({
                   .join('\n\n');
                 if (!textContent) return null;
 
-                const revertMatch = textContent.match(/^\[revert:(\d+)\]/);
+                const revertMatch = textContent.match(
+                  /Revert to the rubric right after message #(\d+)/,
+                );
 
                 return (
                   <div key={message.id} className="d-flex flex-row-reverse mb-3">
@@ -1234,9 +1138,7 @@ function AssessmentQuestionManualGradingInner({
                             />
                             <span>
                               Rubric from message{' '}
-                              <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                                #{revertMatch[1]}
-                              </span>
+                              <span className="fw-semibold">#{revertMatch[1]}</span>
                             </span>
                           </div>
                         </>
@@ -1255,19 +1157,21 @@ function AssessmentQuestionManualGradingInner({
 
               return (
                 <div key={message.id} className="d-flex flex-column gap-1 mb-3">
-                  <MessageParts parts={message.parts} isStreaming={isGenerating && !isMessageComplete} />
+                  <MessageParts
+                    parts={message.parts}
+                    isStreaming={
+                      isGenerating && !isMessageComplete && msgIndex === messages.length - 1
+                    }
+                  />
                   <MasterRubricDiff parts={message.parts} isComplete={isMessageComplete} />
                   {isMessageComplete && hasMutations(message.parts) && (
                     <RevertButton
                       label="Revert to this rubric"
                       disabled={isGenerating}
                       onConfirm={() => {
-                        const afterSnapshot = extractAfterSnapshot(message.parts);
-                        if (!afterSnapshot) return;
-
                         currentPhaseRef.current = 'edit';
                         void sendMessage({
-                          text: `[revert:${messageNumber}] Revert the rubric to this snapshot:\n${JSON.stringify(afterSnapshot)}`,
+                          text: `Revert to the rubric right after message #${messageNumber}`,
                         });
                       }}
                     />
