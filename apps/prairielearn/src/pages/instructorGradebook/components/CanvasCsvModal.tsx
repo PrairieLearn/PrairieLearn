@@ -163,7 +163,7 @@ function CanvasCsvModalContent({
     ];
 
     const pointsPossibleRow = [
-      '    Points Possible',
+      'Points Possible',
       null,
       null,
       null,

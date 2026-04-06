@@ -628,7 +628,7 @@ router.get(
       }
 
       const pointsPossibleRow = {
-        name: '    Points Possible',
+        name: 'Points Possible',
         id_col: null,
         sis_user_id: null,
         sis_login_id: null,
