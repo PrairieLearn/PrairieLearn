@@ -6,11 +6,11 @@ import type { EnrollmentTarget } from '../types.js';
 import { StudentSearchInput } from './StudentSearchInput.js';
 
 export function AddStudentsModal({
-  excludedUids,
-  onSelectStudents,
+  selectedUids,
+  onSaveStudents,
 }: {
-  excludedUids: Set<string>;
-  onSelectStudents: (students: EnrollmentTarget[]) => void;
+  selectedUids: Set<string>;
+  onSaveStudents: (students: EnrollmentTarget[]) => void;
 }) {
   const [show, setShow] = useState(false);
 
@@ -19,17 +19,17 @@ export function AddStudentsModal({
   return (
     <>
       <Button variant="outline-secondary" size="sm" onClick={() => setShow(true)}>
-        <i className="bi bi-plus me-1" aria-hidden="true" />
-        Add students
+        <i className="bi bi-people me-1" aria-hidden="true" />
+        Manage students
       </Button>
       <Modal show={show} centered onHide={handleClose}>
         <Modal.Header closeButton>
-          <Modal.Title>Add students</Modal.Title>
+          <Modal.Title>Manage students</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <StudentSearchInput
-            excludedUids={excludedUids}
-            onSelect={onSelectStudents}
+            initialSelectedUids={selectedUids}
+            onSave={onSaveStudents}
             onClose={handleClose}
           />
         </Modal.Body>

@@ -19,8 +19,8 @@ export function StudentLabelDropdown({
   return (
     <Dropdown>
       <Dropdown.Toggle variant="outline-primary" size="sm" disabled={disabled}>
-        <i className="bi bi-plus me-1" aria-hidden="true" />
-        Add label
+        <i className="bi bi-tags me-1" aria-hidden="true" />
+        Manage labels
       </Dropdown.Toggle>
       <Dropdown.Menu>
         {labels.length === 0 ? (
@@ -31,26 +31,30 @@ export function StudentLabelDropdown({
             return (
               <Dropdown.Item
                 key={label.id}
+                as="label"
+                htmlFor={`student-label-${label.id}`}
+                className="d-flex align-items-center gap-2"
                 disabled={disabled}
-                onClick={(e) => {
-                  e.preventDefault();
-                  onToggle(label);
-                }}
               >
-                <span className="d-flex align-items-center gap-2">
-                  {label.color && (
-                    <span
-                      className="d-inline-block rounded-circle flex-shrink-0"
-                      style={{
-                        width: '10px',
-                        height: '10px',
-                        backgroundColor: label.color,
-                      }}
-                    />
-                  )}
-                  <span className="flex-grow-1">{label.name}</span>
-                  {isSelected && <i className="bi bi-check" aria-hidden="true" />}
-                </span>
+                <input
+                  type="checkbox"
+                  id={`student-label-${label.id}`}
+                  className="form-check-input mt-0 flex-shrink-0"
+                  checked={isSelected}
+                  disabled={disabled}
+                  onChange={() => onToggle(label)}
+                />
+                {label.color && (
+                  <span
+                    className="d-inline-block rounded-circle flex-shrink-0"
+                    style={{
+                      width: '10px',
+                      height: '10px',
+                      backgroundColor: label.color,
+                    }}
+                  />
+                )}
+                <span>{label.name}</span>
               </Dropdown.Item>
             );
           })

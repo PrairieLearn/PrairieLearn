@@ -805,7 +805,7 @@ function StudentsCard({
                       href={getCourseInstanceStudentLabelsUrl(courseInstance.id)}
                     >
                       <i className="bi bi-gear me-2" />
-                      {authzData.has_course_permission_edit ? 'Manage labels' : 'View labels'}
+                      {authzData.has_course_permission_edit ? 'Edit labels' : 'View labels'}
                     </Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>

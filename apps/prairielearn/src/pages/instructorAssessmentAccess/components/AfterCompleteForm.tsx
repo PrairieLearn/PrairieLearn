@@ -120,6 +120,7 @@ function QuestionVisibilityInput({
           value={hideQuestionsMode}
           aria-label="Question visibility"
           id={`${idPrefix}-question-visibility-mode`}
+          maxWidth="300px"
           onChange={handleModeChange}
         />
       </div>
@@ -224,6 +225,7 @@ function ScoreVisibilityInput({
           value={hideScoreMode}
           aria-label="Score visibility"
           id={`${idPrefix}-score-visibility-mode`}
+          maxWidth="300px"
           onChange={handleModeChange}
         />
       </div>

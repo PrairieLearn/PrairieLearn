@@ -18,6 +18,7 @@ export interface RichSelectProps<T extends string = string> {
   id?: string;
   'aria-label'?: string;
   'aria-labelledby'?: string;
+  maxWidth?: string;
 }
 
 export function RichSelect<T extends string = string>({
@@ -28,6 +29,7 @@ export function RichSelect<T extends string = string>({
   id,
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledby,
+  maxWidth,
 }: RichSelectProps<T>) {
   const selectedLabel = items.find((item) => item.value === value)?.label;
   const listItems = items.map((item) => ({ ...item, id: item.value }));
@@ -52,7 +54,7 @@ export function RichSelect<T extends string = string>({
             className="dropdown-menu show py-1 overflow-auto"
             offset={2}
             placement="bottom start"
-            style={{ maxHeight: '300px', minWidth: 'var(--trigger-width)' }}
+            style={{ maxHeight: '300px', minWidth: 'var(--trigger-width)', maxWidth }}
           >
             <ListBox className="list-unstyled m-0" items={listItems}>
               {(item) => (

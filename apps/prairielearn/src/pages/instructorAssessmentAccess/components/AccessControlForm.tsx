@@ -250,7 +250,10 @@ export function AccessControlForm({
         }
         return (
           <div className="px-3 pb-3">
-            <AppliesToField namePrefix={`overrides.${selectedRule.index}`} />
+            <AppliesToField
+              namePrefix={`overrides.${selectedRule.index}`}
+              courseInstanceId={courseInstance.id}
+            />
             <OverrideRuleContent index={selectedRule.index} />
           </div>
         );

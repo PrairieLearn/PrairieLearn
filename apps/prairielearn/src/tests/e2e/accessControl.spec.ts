@@ -117,8 +117,8 @@ test.describe('Access control UI', () => {
     // Select "Students by label" radio in "Applies to"
     await panel.getByLabel('Students by label').check();
 
-    // Click "Add label" dropdown to open it
-    await panel.getByRole('button', { name: /Add label/i }).click();
+    // Click "Manage labels" dropdown to open it
+    await panel.getByRole('button', { name: /Manage labels/i }).click();
 
     // Select "Extra time" from the dropdown menu
     await page.locator('.dropdown-menu.show').getByText('Extra time').click();

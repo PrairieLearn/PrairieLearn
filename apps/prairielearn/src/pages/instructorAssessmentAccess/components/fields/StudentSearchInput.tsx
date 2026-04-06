@@ -7,19 +7,19 @@ import { useTRPC, useTRPCClient } from '../../../../trpc/assessment/context.js';
 import type { EnrollmentTarget } from '../types.js';
 
 export function StudentSearchInput({
-  excludedUids,
-  onSelect,
+  initialSelectedUids,
+  onSave,
   onClose,
 }: {
-  excludedUids: Set<string>;
-  onSelect: (students: EnrollmentTarget[]) => void;
+  initialSelectedUids: Set<string>;
+  onSave: (students: EnrollmentTarget[]) => void;
   onClose: () => void;
 }) {
   const trpc = useTRPC();
   const trpcClient = useTRPCClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [uidInput, setUidInput] = useState('');
-  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(() => new Set());
+  const [selectedUids, setSelectedUids] = useState<Set<string>>(() => new Set(initialSelectedUids));
 
   const { data: allStudents, isLoading: isLoadingStudents } = useQuery(
     trpc.accessControl.students.queryOptions(),
@@ -34,7 +34,6 @@ export function StudentSearchInput({
   const filteredStudents = useMemo(() => {
     if (!allStudents) return [];
     return allStudents.filter((student) => {
-      if (excludedUids.has(student.uid)) return false;
       if (!searchQuery) return true;
       const query = searchQuery.toLowerCase();
       return (
@@ -42,7 +41,7 @@ export function StudentSearchInput({
         (student.name?.toLowerCase().includes(query) ?? false)
       );
     });
-  }, [allStudents, excludedUids, searchQuery]);
+  }, [allStudents, searchQuery]);
 
   const handleValidate = () => {
     const uids = parseUniqueValuesFromString(uidInput, 500);
@@ -52,70 +51,57 @@ export function StudentSearchInput({
   };
 
   const handleAddValidated = () => {
-    const validStudents = validatedUids
-      .map((r) => {
-        if (!r.id || !r.enrolled || excludedUids.has(r.uid)) return null;
-        return { enrollmentId: r.id, uid: r.uid, name: r.name };
-      })
-      .filter((s) => !!s);
-
-    if (validStudents.length > 0) {
-      onSelect(validStudents);
-      setUidInput('');
-      validateMutation.reset();
-      onClose();
-    }
+    setSelectedUids((prev) => {
+      const newSet = new Set(prev);
+      for (const r of validatedUids) {
+        if (r.id && r.enrolled) newSet.add(r.uid);
+      }
+      return newSet;
+    });
+    setUidInput('');
+    validateMutation.reset();
   };
 
-  const handleToggleStudent = (studentId: string) => {
-    setSelectedStudents((prev) => {
+  const handleToggleStudent = (uid: string) => {
+    setSelectedUids((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(studentId)) {
-        newSet.delete(studentId);
+      if (newSet.has(uid)) {
+        newSet.delete(uid);
       } else {
-        newSet.add(studentId);
+        newSet.add(uid);
       }
       return newSet;
     });
   };
 
   const handleSelectAll = () => {
-    setSelectedStudents((prev) => {
+    setSelectedUids((prev) => {
       const newSet = new Set(prev);
       for (const student of filteredStudents) {
-        newSet.add(student.id);
+        newSet.add(student.uid);
       }
       return newSet;
     });
   };
 
   const handleClearSelection = () => {
-    setSelectedStudents(new Set());
+    setSelectedUids(new Set());
   };
 
-  const handleAddSelected = () => {
+  const handleSave = () => {
     if (!allStudents) return;
-    const studentsToAdd = allStudents
-      .filter((s) => selectedStudents.has(s.id) && !excludedUids.has(s.uid))
-      .map((s) => ({
-        enrollmentId: s.id,
-        uid: s.uid,
-        name: s.name,
-      }));
-    if (studentsToAdd.length > 0) {
-      onSelect(studentsToAdd);
-      setSelectedStudents(new Set());
-      onClose();
-    }
+    const selected = allStudents
+      .filter((s) => selectedUids.has(s.uid))
+      .map((s) => ({ enrollmentId: s.id, uid: s.uid, name: s.name }));
+    onSave(selected);
+    onClose();
   };
 
-  const validCount = validatedUids.filter(
-    (r) => r.id && r.enrolled && !excludedUids.has(r.uid),
+  const newValidCount = validatedUids.filter(
+    (r) => r.id && r.enrolled && !selectedUids.has(r.uid),
   ).length;
 
-  const selectedCount = allStudents
-    ? allStudents.filter((s) => selectedStudents.has(s.id) && !excludedUids.has(s.uid)).length
-    : 0;
+  const selectedCount = selectedUids.size;
 
   return (
     <div>
@@ -145,14 +131,9 @@ export function StudentSearchInput({
                   Select all
                 </Button>
                 {selectedCount > 0 && (
-                  <>
-                    <Button variant="outline-secondary" size="sm" onClick={handleClearSelection}>
-                      Clear
-                    </Button>
-                    <Button variant="primary" size="sm" onClick={handleAddSelected}>
-                      Add {selectedCount} student{selectedCount !== 1 ? 's' : ''}
-                    </Button>
-                  </>
+                  <Button variant="outline-secondary" size="sm" onClick={handleClearSelection}>
+                    Clear
+                  </Button>
                 )}
               </div>
               <ListGroup style={{ maxHeight: '350px', overflow: 'auto' }}>
@@ -160,14 +141,14 @@ export function StudentSearchInput({
                   <ListGroup.Item
                     key={student.id}
                     className="py-2 d-flex align-items-center"
-                    aria-selected={selectedStudents.has(student.id)}
+                    aria-selected={selectedUids.has(student.uid)}
                     action
-                    onClick={() => handleToggleStudent(student.id)}
+                    onClick={() => handleToggleStudent(student.uid)}
                   >
                     <Form.Check
                       className="me-2"
                       type="checkbox"
-                      checked={selectedStudents.has(student.id)}
+                      checked={selectedUids.has(student.uid)}
                       tabIndex={-1}
                       aria-hidden="true"
                       readOnly
@@ -208,12 +189,12 @@ export function StudentSearchInput({
             </Button>
             {validatedUids.length > 0 && (
               <Button
-                disabled={validCount === 0}
+                disabled={newValidCount === 0}
                 size="sm"
                 variant="primary"
                 onClick={handleAddValidated}
               >
-                Add {validCount} student{validCount !== 1 ? 's' : ''}
+                Add {newValidCount} to selection
               </Button>
             )}
           </div>
@@ -236,8 +217,8 @@ export function StudentSearchInput({
                     <Badge bg="danger">Not found</Badge>
                   ) : !result.enrolled ? (
                     <Badge bg="warning">Not enrolled</Badge>
-                  ) : excludedUids.has(result.uid) ? (
-                    <Badge bg="secondary">Already added</Badge>
+                  ) : selectedUids.has(result.uid) ? (
+                    <Badge bg="secondary">Already selected</Badge>
                   ) : (
                     <Badge bg="success">Valid</Badge>
                   )}
@@ -247,6 +228,15 @@ export function StudentSearchInput({
           )}
         </Tab>
       </Tabs>
+
+      <div className="d-flex justify-content-end gap-2 mt-3 pt-3 border-top">
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="primary" onClick={handleSave}>
+          Done{selectedCount > 0 ? ` (${selectedCount} selected)` : ''}
+        </Button>
+      </div>
     </div>
   );
 }

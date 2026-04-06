@@ -10,13 +10,20 @@ import {
 
 import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
+import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
 import { useTRPCClient } from '../../../../trpc/assessment/context.js';
 import type { NamePrefix } from '../hooks/fieldNames.js';
 import type { AccessControlFormData, AppliesTo, EnrollmentTarget, TargetType } from '../types.js';
 
 import { AddStudentsModal } from './AddStudentsModal.js';
 
-export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
+export function AppliesToField({
+  namePrefix,
+  courseInstanceId,
+}: {
+  namePrefix: NamePrefix;
+  courseInstanceId: string;
+}) {
   const { setValue } = useFormContext<AccessControlFormData>();
   const trpcClient = useTRPCClient();
 
@@ -29,7 +36,7 @@ export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
     name: `${namePrefix}.appliesTo` as Path<AccessControlFormData>,
   });
 
-  const { append: appendEnrollment, remove: removeEnrollment } = useFieldArray({
+  const { replace: replaceEnrollments, remove: removeEnrollment } = useFieldArray({
     name: `${namePrefix}.appliesTo.enrollments` as FieldArrayPath<AccessControlFormData>,
   });
 
@@ -49,10 +56,8 @@ export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
     );
   };
 
-  const handleAddStudents = (students: EnrollmentTarget[]) => {
-    for (const student of students) {
-      appendEnrollment(student);
-    }
+  const handleSaveStudents = (students: EnrollmentTarget[]) => {
+    replaceEnrollments(students);
   };
 
   // appliesTo may be undefined during initial render
@@ -110,34 +115,42 @@ export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
         {currentTargetType === 'enrollment' ? (
           <div>
             <div className="d-flex gap-2 mb-2">
-              <AddStudentsModal excludedUids={excludedUids} onSelectStudents={handleAddStudents} />
+              <AddStudentsModal selectedUids={excludedUids} onSaveStudents={handleSaveStudents} />
             </div>
             {enrollments.length === 0 ? (
               <div className="text-muted small border rounded p-3 text-center">
                 No students selected
               </div>
             ) : (
-              <ListGroup style={{ maxHeight: '300px', overflow: 'auto' }}>
-                {enrollments.map((s) => (
-                  <ListGroup.Item
-                    key={s.uid}
-                    className="d-flex align-items-center justify-content-between py-2"
-                  >
-                    <div>
-                      <div>{s.name ?? s.uid}</div>
-                      {s.name && <small className="text-muted">{s.uid}</small>}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      aria-label={`Remove ${s.name ?? s.uid}`}
-                      onClick={() => handleRemoveEnrollmentByUid(s.uid)}
-                    >
-                      <i className="bi bi-trash text-danger" aria-hidden="true" />
-                    </Button>
-                  </ListGroup.Item>
-                ))}
-              </ListGroup>
+              <div className="border rounded overflow-hidden">
+                <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                  <ListGroup variant="flush">
+                    {enrollments.map((s) => (
+                      <ListGroup.Item
+                        key={s.uid}
+                        className="d-flex align-items-center justify-content-between py-2"
+                      >
+                        <div>
+                          <div>
+                            <a href={getStudentEnrollmentUrl(courseInstanceId, s.enrollmentId)}>
+                              {s.name ?? s.uid}
+                            </a>
+                          </div>
+                          {s.name && <small className="text-muted">{s.uid}</small>}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Remove ${s.name ?? s.uid}`}
+                          onClick={() => handleRemoveEnrollmentByUid(s.uid)}
+                        >
+                          <i className="bi bi-trash text-danger" aria-hidden="true" />
+                        </Button>
+                      </ListGroup.Item>
+                    ))}
+                  </ListGroup>
+                </div>
+              </div>
             )}
           </div>
         ) : (
