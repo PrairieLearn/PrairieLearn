@@ -128,18 +128,18 @@ const sideNavPagesTabs = {
       tabLabel: 'Gradebook',
     },
     {
-      activePages: ['instance_admin'],
-      activeSubPages: ['students'],
+      activePages: ['students'],
+      activeSubPages: ['overview', 'student_labels', 'detail'],
       urlSuffix: '/instance_admin/students',
       iconClasses: 'fas fa-users-line',
       tabLabel: 'Students',
     },
     {
       activePages: ['instance_admin'],
-      activeSubPages: ['integrations'],
+      activeSubPages: ['lms_connections'],
       urlSuffix: '/instance_admin/lti13_instance',
       iconClasses: 'fas fa-school-flag',
-      tabLabel: 'Integrations',
+      tabLabel: 'LMS connections',
       renderCondition: () => isEnterprise(),
     },
     {
@@ -325,7 +325,7 @@ function CourseInstanceNav({
             <span title="${resLocals.course_instance?.short_name ?? ''}">
               ${resLocals.course_instance
                 ? truncateMiddle(resLocals.course_instance.short_name, 22)
-                : 'Select a course instance...'}
+                : 'Select...'}
             </span>
           </button>
           <div class="dropdown-menu py-0 overflow-hidden">

@@ -252,10 +252,10 @@ export function generateSubmissionMessage({
         return segment;
       case 'image':
         if (segment.fileData) {
-          // fileData does not contain the MIME type header, so we add it.
           return {
             type: 'image',
-            image: `data:image/jpeg;base64,${segment.fileData}`,
+            image: segment.fileData,
+            mediaType: 'image/jpeg',
             providerOptions: {
               openai: {
                 imageDetail: 'auto',
@@ -489,20 +489,25 @@ export async function insertAiGradingJob({
   response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   course_id: string;
   course_instance_id?: string;
-}): Promise<void> {
-  await execute(sql.insert_ai_grading_job, {
-    grading_job_id,
-    job_sequence_id,
-    prompt: JSON.stringify(prompt),
-    completion: response,
-    rotation_correction_degrees: null,
-    model: model_id,
-    prompt_tokens: response.usage.inputTokens ?? 0,
-    completion_tokens: response.usage.outputTokens ?? 0,
-    cost: calculateResponseCost({ model: model_id, usage: response.usage }),
-    course_id,
-    course_instance_id,
-  });
+}): Promise<string> {
+  const result = await queryScalar(
+    sql.insert_ai_grading_job,
+    {
+      grading_job_id,
+      job_sequence_id,
+      prompt: JSON.stringify(prompt),
+      completion: response,
+      rotation_correction_degrees: null,
+      model: model_id,
+      prompt_tokens: response.usage.inputTokens ?? 0,
+      completion_tokens: response.usage.outputTokens ?? 0,
+      cost: calculateResponseCost({ model: model_id, usage: response.usage }),
+      course_id,
+      course_instance_id,
+    },
+    IdSchema,
+  );
+  return result;
 }
 
 /**
@@ -546,7 +551,7 @@ export async function insertAiGradingJobWithRotationCorrection({
   gradingResponseWithRotationCorrection: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   course_id: string;
   course_instance_id?: string;
-}): Promise<void> {
+}): Promise<string> {
   let prompt_tokens =
     (gradingResponseWithRotationIssue.usage.inputTokens ?? 0) +
     (gradingResponseWithRotationCorrection.usage.inputTokens ?? 0);
@@ -571,19 +576,24 @@ export async function insertAiGradingJobWithRotationCorrection({
     rotationCorrectionDegrees[filename] = degreesRotated;
   }
 
-  await execute(sql.insert_ai_grading_job, {
-    grading_job_id,
-    job_sequence_id,
-    prompt: JSON.stringify(prompt),
-    completion: gradingResponseWithRotationCorrection,
-    rotation_correction_degrees: rotationCorrectionDegrees,
-    model: model_id,
-    prompt_tokens,
-    completion_tokens,
-    cost,
-    course_id,
-    course_instance_id,
-  });
+  const result = await queryScalar(
+    sql.insert_ai_grading_job,
+    {
+      grading_job_id,
+      job_sequence_id,
+      prompt: JSON.stringify(prompt),
+      completion: gradingResponseWithRotationCorrection,
+      rotation_correction_degrees: rotationCorrectionDegrees,
+      model: model_id,
+      prompt_tokens,
+      completion_tokens,
+      cost,
+      course_id,
+      course_instance_id,
+    },
+    IdSchema,
+  );
+  return result;
 }
 
 export async function selectLastVariantAndSubmission(
@@ -797,7 +807,8 @@ async function correctImageOrientation({
         },
         {
           type: 'image',
-          image: `data:image/jpeg;base64,${images[i - 1]}`,
+          image: images[i - 1],
+          mediaType: 'image/jpeg',
           providerOptions: {
             openai: {
               imageDetail: 'auto',

@@ -10,12 +10,12 @@
     {
       "title": "Hard questions",
       "questions": [
-        { "id": "addNumbers", "points": 5 },
-        { "id": "fossilFuelsRadio", "points": 17 },
-        { "id": "partialCredit1", "points": 19 },
-        { "id": "partialCredit2", "points": 9 },
-        { "id": "partialCredit3", "points": 13 },
-        { "id": "brokenGeneration", "points": 10 }
+        { "id": "addNumbers", "autoPoints": 5 },
+        { "id": "fossilFuelsRadio", "autoPoints": 17 },
+        { "id": "partialCredit1", "autoPoints": 19 },
+        { "id": "partialCredit2", "autoPoints": 9 },
+        { "id": "partialCredit3", "autoPoints": 13 },
+        { "id": "brokenGeneration", "autoPoints": 10 }
       ]
     }
   ]

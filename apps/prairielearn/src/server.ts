@@ -64,6 +64,7 @@ import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './l
 import { pullAndUpdateCourse } from './lib/course.js';
 import { UserSchema } from './lib/db-types.js';
 import * as externalGrader from './lib/externalGrader.js';
+import * as externalGraderDeadLetters from './lib/externalGraderDeadLetters.js';
 import * as externalGraderResults from './lib/externalGraderResults.js';
 import * as externalGradingSocket from './lib/externalGradingSocket.js';
 import * as externalImageCaptureSocket from './lib/externalImageCaptureSocket.js';
@@ -88,6 +89,10 @@ import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import { selectCourseById } from './models/course.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
+import { administratorTrpcRouter } from './trpc/administrator/trpc.js';
+import { assessmentTrpcRouter } from './trpc/assessment/trpc.js';
+import { assessmentQuestionTrpcRouter } from './trpc/assessmentQuestion/trpc.js';
+import { courseInstanceTrpcRouter } from './trpc/courseInstance/trpc.js';
 
 process.on('warning', (e) => console.warn(e));
 
@@ -831,6 +836,18 @@ export async function initExpress(): Promise<Express> {
     [(await import('./middlewares/selectAndAuthzAssessment.js')).default],
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/trpc',
+    assessmentTrpcRouter,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/assessment_question/:assessment_question_id(\\d+)',
+    (await import('./middlewares/selectAndAuthzAssessmentQuestion.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/assessment_question/:assessment_question_id(\\d+)/trpc',
+    assessmentQuestionTrpcRouter,
+  );
+  app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/,
     (req, res, _next) => {
       res.redirect(`${req.params[0]}/questions`);
@@ -1264,6 +1281,14 @@ export async function initExpress(): Promise<Express> {
       ).default,
     );
   }
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/trpc',
+    courseInstanceTrpcRouter,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/students/labels',
+    (await import('./pages/instructorStudentsLabels/instructorStudentsLabels.js')).default,
+  );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments',
     (await import('./pages/instructorAssessments/instructorAssessments.js')).default,
@@ -1901,6 +1926,8 @@ export async function initExpress(): Promise<Express> {
 
   app.use('/pl/administrator', (await import('./middlewares/authzIsAdministrator.js')).default);
 
+  app.use('/pl/administrator/trpc', administratorTrpcRouter);
+
   app.use(
     '/pl/administrator/admins',
     (await import('./pages/administratorAdmins/administratorAdmins.js')).default,
@@ -1916,10 +1943,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/administrator/courses',
     (await import('./pages/administratorCourses/administratorCourses.js')).default,
-  );
-  app.use(
-    '/pl/administrator/networks',
-    (await import('./pages/administratorNetworks/administratorNetworks.js')).default,
   );
   app.use(
     '/pl/administrator/workspaces',
@@ -2312,6 +2335,8 @@ if (shouldStartServer) {
 
     if (isEnterprise() && config.hasAzure) {
       const { getAzureStrategy } = await import('./ee/auth/azure/index.js');
+      // https://github.com/Rel1cx/eslint-react/issues/1690
+      // eslint-disable-next-line @eslint-react/error-boundaries -- Not React; this is passport.use()
       passport.use(getAzureStrategy());
     }
 
@@ -2524,7 +2549,7 @@ if (shouldStartServer) {
     load.initEstimator('python_worker_idle', 1, false);
     load.initEstimator('python_callback_waiting', 1);
 
-    await codeCaller.init();
+    await codeCaller.init({ lazyWorkers: process.env.NODE_ENV === 'test' });
     await assets.init();
     await cache.init({
       type: config.cacheType,
@@ -2571,6 +2596,7 @@ if (shouldStartServer) {
     // requests, as they may actually end up executing course code.
     if (config.externalGradingEnableResults) {
       await externalGraderResults.init();
+      await externalGraderDeadLetters.init();
     }
 
     await cron.init();
@@ -2590,6 +2616,18 @@ if (shouldStartServer) {
   // we want to gracefully shut down. This is used below in the ASG
   // lifecycle handler, and also within the "terminate" webhook.
   process.once('SIGTERM', async () => {
+    // In test environments, the entire process group receives SIGTERM, which
+    // can cause in-flight outgoing HTTP requests to fail with ECONNRESET.
+    // These unhandled 'error' events on ClientRequest objects would crash the
+    // process, so we suppress them during shutdown.
+    if (process.env.NODE_ENV === 'test') {
+      process.on('uncaughtException', (err: NodeJS.ErrnoException) => {
+        if (err.code === 'ECONNRESET') return;
+        logger.error('Uncaught exception during shutdown', err);
+        process.exit(1);
+      });
+    }
+
     // By this point, we should no longer be attached to the load balancer,
     // so there's no point shutting down the HTTP server or the socket.io
     // server.
@@ -2599,7 +2637,9 @@ if (shouldStartServer) {
     if (process.env.NODE_ENV !== 'test') {
       logger.info('Shutting down async processing');
     }
-    const results = await Promise.allSettled([
+    // First, stop all services that use the database.
+    const serviceResults = await Promise.allSettled([
+      externalGraderDeadLetters.stop(),
       externalGraderResults.stop(),
       cron.stop(),
       serverJobs.stop(),
@@ -2608,12 +2648,19 @@ if (shouldStartServer) {
       assets.close(),
       codeCaller.finish(),
       stopBatchedMigrations(),
-      namedLocks.close(),
-      sqldb.closeAsync(),
     ]);
-    results.forEach((r) => {
+    serviceResults.forEach((r) => {
       if (r.status === 'rejected') {
         logger.error('Error shutting down async processing', r.reason);
+        Sentry.captureException(r.reason);
+      }
+    });
+
+    // Then close the database connections now that nothing is using them.
+    const dbResults = await Promise.allSettled([namedLocks.close(), sqldb.closeAsync()]);
+    dbResults.forEach((r) => {
+      if (r.status === 'rejected') {
+        logger.error('Error closing database connections', r.reason);
         Sentry.captureException(r.reason);
       }
     });

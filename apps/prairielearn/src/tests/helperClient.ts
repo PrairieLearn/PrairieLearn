@@ -215,6 +215,21 @@ export function assertAlert($: cheerio.CheerioAPI, text: string, expectedLength 
   assert.lengthOf(alerts, expectedLength);
 }
 
+/**
+ * Asserts that a response redirected to an edit error page and that the
+ * job output contains the expected text.
+ */
+export async function assertEditError(response: Response, expectedText: string) {
+  assert.equal(response.status, 200);
+  const editErrorMatch = response.url.match(/\/edit_error\/\d+$/);
+  assert.isNotNull(editErrorMatch, `Expected redirect to edit_error page, got ${response.url}`);
+
+  const editErrorPage = await fetchCheerio(response.url);
+  assert.equal(editErrorPage.status, 200);
+  const jobOutput = editErrorPage.$('#job-sequence-results pre').text();
+  assert.include(jobOutput, expectedText);
+}
+
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /**

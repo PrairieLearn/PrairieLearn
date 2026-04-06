@@ -1,5 +1,12 @@
 # @prairielearn/ui
 
+## 3.2.2
+
+### Patch Changes
+
+- 144cd19: Fix ComboBox type compatibility with react-aria-components 1.16.0
+- 144cd19: Upgrade all JavaScript dependencies
+
 ## 3.2.1
 
 ### Patch Changes

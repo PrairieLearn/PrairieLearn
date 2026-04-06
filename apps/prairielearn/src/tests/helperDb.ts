@@ -103,7 +103,7 @@ async function closeSql(): Promise<void> {
   await sqldb.closeAsync();
 }
 
-async function databaseExists(dbName: string): Promise<boolean> {
+export async function databaseExists(dbName: string): Promise<boolean> {
   const client = new pg.Client(POSTGRES_INIT_CONNECTION_STRING);
   await client.connect();
   const result = await client.query(

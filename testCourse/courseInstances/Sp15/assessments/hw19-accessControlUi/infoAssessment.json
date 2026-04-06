@@ -1,0 +1,14 @@
+{
+  "uuid": "f5b2c8d1-9a3e-4f7b-8c1d-2e5a6b9c0d1f",
+  "type": "Homework",
+  "title": "Access control UI tests",
+  "set": "Homework",
+  "number": "19",
+  "accessControl": [
+    { "listBeforeRelease": true, "afterComplete": { "hideQuestions": false, "hideScore": false } },
+    { "labels": ["Section A"], "dateControl": { "dueDate": "2026-01-28T20:15:00" } }
+  ],
+  "zones": [
+    { "title": "Access Control Test Zone", "questions": [{ "id": "addNumbers", "points": 1 }] }
+  ]
+}

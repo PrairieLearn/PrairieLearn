@@ -5,6 +5,7 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { resolveModernAssessmentInstanceAccess } from '../lib/assessment-access-control/authz.js';
 import { assessmentInstanceLabel, assessmentLabel } from '../lib/assessment.shared.js';
 import {
   AssessmentInstanceSchema,
@@ -64,7 +65,17 @@ async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
   );
   if (row === null) throw new error.HttpStatusError(403, 'Access denied');
 
-  // TODO: consider row.assessment.modern_access_control
+  if (row.assessment.modern_access_control) {
+    const modernResult = await resolveModernAssessmentInstanceAccess({
+      assessment: row.assessment,
+      userId: res.locals.authz_data.user.id,
+      courseInstance: res.locals.course_instance,
+      authzData: res.locals.authz_data,
+      reqDate: res.locals.req_date,
+      assessmentInstance: row.assessment_instance,
+    });
+    row.authz_result = modernResult;
+  }
 
   if (!row.authz_result.authorized) {
     throw new error.HttpStatusError(403, 'Access denied');

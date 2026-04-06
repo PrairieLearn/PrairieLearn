@@ -1,5 +1,11 @@
 # @prairielearn/sentry
 
+## 5.0.3
+
+### Patch Changes
+
+- 144cd19: Upgrade all JavaScript dependencies
+
 ## 5.0.2
 
 ### Patch Changes
