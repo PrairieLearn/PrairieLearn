@@ -24,7 +24,6 @@ function SortableOverrideCard({
   id,
   override,
   title,
-  courseInstanceId,
   displayTimezone,
   errors,
   onEdit,
@@ -33,7 +32,6 @@ function SortableOverrideCard({
   id: string;
   override: OverrideData;
   title: string;
-  courseInstanceId: string;
   displayTimezone: string;
   errors?: string[];
   onEdit: () => void;
@@ -54,7 +52,6 @@ function SortableOverrideCard({
       <OverrideRuleSummaryCard
         rule={override}
         title={title}
-        courseInstanceId={courseInstanceId}
         displayTimezone={displayTimezone}
         errors={errors}
         dragHandleProps={{ ...attributes, ...listeners }}
@@ -247,7 +244,6 @@ export function AccessControlSummary({
                       id={sortableIds[index]}
                       override={override}
                       title={getOverrideName(index)}
-                      courseInstanceId={courseInstanceId}
                       displayTimezone={displayTimezone}
                       errors={getOverrideErrors?.(index)}
                       onEdit={() => onEditOverride(index)}
