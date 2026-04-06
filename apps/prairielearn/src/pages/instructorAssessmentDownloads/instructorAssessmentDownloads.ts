@@ -126,6 +126,35 @@ const CanvasAssessmentInstanceRowSchema = z.object({
   points: AssessmentInstanceSchema.shape.points,
 });
 
+const InstanceQuestionRowSchema = z.object({
+  uid: UserSchema.shape.uid.nullable(),
+  uin: UserSchema.shape.uin.nullable(),
+  name: UserSchema.shape.name.nullable(),
+  role: SprocUsersGetDisplayedRoleSchema,
+  assessment_label: z.string(),
+  assessment_instance_number: AssessmentInstanceSchema.shape.number,
+  zone_number: z.number(),
+  zone_title: z.string().nullable(),
+  qid: QuestionSchema.shape.qid,
+  instance_question_number: InstanceQuestionSchema.shape.number,
+  points: InstanceQuestionSchema.shape.points,
+  score_perc: InstanceQuestionSchema.shape.score_perc,
+  auto_points: InstanceQuestionSchema.shape.auto_points,
+  manual_points: InstanceQuestionSchema.shape.manual_points,
+  max_points: AssessmentQuestionSchema.shape.max_points,
+  max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
+  max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
+  date_formatted: z.string(),
+  highest_submission_score: z.number().nullable(),
+  last_submission_score: z.number().nullable(),
+  number_attempts: z.number(),
+  duration_seconds: z.number().nullable(),
+  group_name: GroupSchema.shape.name.nullable(),
+  uid_list: z.array(z.string()).nullable(),
+  assigned_grader: UserSchema.shape.uid.nullable(),
+  last_grader: UserSchema.shape.uid.nullable(),
+});
+
 export function getFilenames(locals: ResLocalsForPage<'assessment'>) {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
@@ -414,7 +443,7 @@ router.get(
       const cursor = await sqldb.queryCursor(
         sql.select_instance_questions,
         { assessment_id: res.locals.assessment.id },
-        z.unknown(),
+        InstanceQuestionRowSchema,
       );
 
       const columns = identityColumn.concat([
