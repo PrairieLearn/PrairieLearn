@@ -195,22 +195,20 @@ const checkConflictsProcedure = t.procedure
   .output(
     z.object({
       repoCourse: NullableStaffCourseSchema,
-      repoExistsOnGithub: z.boolean(),
       githubRepoUrl: z.string().url().nullable(),
       pathCourse: NullableStaffCourseSchema,
     }),
   )
   .query(async ({ input }) => {
     const normalizedPath = normalizeCoursePathInput(input.path);
-    const [repoCourse, repoExistsOnGithub, pathCourse] = await Promise.all([
+    const [repoCourse, githubRepoExists, pathCourse] = await Promise.all([
       selectOptionalCourseByRepositoryName(input.repoShortName),
       checkGithubRepositoryExists(input.repoShortName),
       selectOptionalCourseByPath(normalizedPath),
     ]);
     return {
       repoCourse: NullableStaffCourseSchema.parse(repoCourse),
-      repoExistsOnGithub,
-      githubRepoUrl: repoExistsOnGithub
+      githubRepoUrl: githubRepoExists
         ? `https://github.com/${config.githubCourseOwner}/${input.repoShortName}`
         : null,
       pathCourse: NullableStaffCourseSchema.parse(pathCourse),

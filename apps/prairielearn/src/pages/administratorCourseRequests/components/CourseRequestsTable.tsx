@@ -393,7 +393,7 @@ function CourseRequestApproveModalContent({
   const conflicts = conflictsQuery.data;
   const hasHardBlockers = !!(
     conflicts?.repoCourse ||
-    conflicts?.repoExistsOnGithub ||
+    conflicts?.githubRepoUrl ||
     conflicts?.pathCourse
   );
 
@@ -628,7 +628,6 @@ function ConflictsAlert({
   conflicts:
     | {
         repoCourse: StaffCourse | null;
-        repoExistsOnGithub: boolean;
         githubRepoUrl: string | null;
         pathCourse: StaffCourse | null;
       }
@@ -637,7 +636,7 @@ function ConflictsAlert({
 }) {
   if (!conflicts) return null;
 
-  const hasConflicts = conflicts.repoCourse || conflicts.repoExistsOnGithub || conflicts.pathCourse;
+  const hasConflicts = conflicts.repoCourse || conflicts.githubRepoUrl || conflicts.pathCourse;
   if (!hasConflicts) return null;
 
   return (
@@ -658,19 +657,15 @@ function ConflictsAlert({
             </a>
           </li>
         )}
-        {conflicts.repoExistsOnGithub && (
+        {conflicts.githubRepoUrl && (
           <li>
             A GitHub repository with this name already exists. This can happen if a repository was
             previously renamed.
-            {conflicts.githubRepoUrl && (
-              <>
-                {' '}
-                <a href={conflicts.githubRepoUrl} target="_blank" rel="noreferrer">
-                  Open repo
-                </a>
-                .
-              </>
-            )}
+            {' '}
+            <a href={conflicts.githubRepoUrl} target="_blank" rel="noreferrer">
+              Open repo
+            </a>
+            .
           </li>
         )}
         {conflicts.pathCourse && (
