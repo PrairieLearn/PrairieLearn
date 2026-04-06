@@ -43,9 +43,9 @@ export {
   type ComboBoxProps,
   type TagPickerProps,
 } from './components/ComboBox.js';
-export { ChipGroup, type ChipItem, type ChipGroupProps } from './components/ChipGroup.js';
 export {
   FilterDropdown,
   type FilterItem,
   type FilterDropdownProps,
 } from './components/FilterDropdown.js';
+export { RichSelect, type RichSelectItem, type RichSelectProps } from './components/RichSelect.js';

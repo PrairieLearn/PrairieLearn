@@ -22,7 +22,7 @@ export function AddStudentsModal({
         <i className="bi bi-plus me-1" aria-hidden="true" />
         Add students
       </Button>
-      <Modal show={show} onHide={handleClose} centered>
+      <Modal show={show} centered onHide={handleClose}>
         <Modal.Header closeButton>
           <Modal.Title>Add students</Modal.Title>
         </Modal.Header>
