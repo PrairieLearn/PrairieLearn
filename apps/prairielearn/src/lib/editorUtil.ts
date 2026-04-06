@@ -108,7 +108,7 @@ function normalizeScopedData(data: object | object[]): object[] {
   return Array.isArray(data) ? data : [data];
 }
 
-export type SaveJsonFileResult =
+type SaveJsonFileResult =
   | { success: true; newHash: string }
   | { success: false; reason: 'conflict' }
   | { success: false; reason: 'sync_failed'; jobSequenceId: string };
