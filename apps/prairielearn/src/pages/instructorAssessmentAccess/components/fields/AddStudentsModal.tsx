@@ -18,9 +18,7 @@ export function AddStudentsModal({
 }) {
   const trpc = useTRPC();
   const [show, setShow] = useState(false);
-  const [selectedUids, setSelectedUids] = useState<Set<string>>(
-    () => new Set(initialSelectedUids),
-  );
+  const [selectedUids, setSelectedUids] = useState<Set<string>>(() => new Set(initialSelectedUids));
 
   const { data: allStudents, isLoading } = useQuery({
     ...trpc.accessControl.students.queryOptions(),
@@ -48,11 +46,7 @@ export function AddStudentsModal({
       {renderTrigger ? (
         renderTrigger({ onClick: handleOpen })
       ) : (
-        <button
-          type="button"
-          className="btn btn-outline-secondary btn-sm"
-          onClick={handleOpen}
-        >
+        <button type="button" className="btn btn-outline-secondary btn-sm" onClick={handleOpen}>
           <i className="bi bi-people me-1" aria-hidden="true" />
           Manage students
         </button>
