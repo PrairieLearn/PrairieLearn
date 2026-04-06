@@ -235,7 +235,7 @@ export function OverviewCard({
                     href={getCourseInstanceStudentLabelsUrl(student.course_instance.id)}
                   >
                     <i className="bi bi-gear me-1" aria-hidden="true" />
-                    {canManageLabels ? 'Edit labels' : 'View labels'}
+                    {canManageLabels ? 'Manage labels' : 'View labels'}
                   </a>
                 }
                 onToggle={async (label) => {

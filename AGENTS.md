@@ -142,7 +142,8 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 
 ### User interface conventions
 
-- Use `react-bootstrap` components for UI elements.
+- Look for existing shared UI components in `apps/prairielearn/src/components/` or `@prairielearn/ui` before building new ones. When the same UI pattern appears across multiple pages, extract it into a shared component rather than duplicating code.
+- For basic UI elements that have a dedicated Bootstrap component, use `react-bootstrap` components. For more complex / interactive UI elements, use `react-aria`.
 - Titles and buttons should use sentence case ("Save course", "Discard these changes").
 - Form inputs with validation errors should include `aria-invalid` and `aria-errormessage` attributes pointing to the error message element's `id`.
 - Prefer using [Bootstrap Icons](https://icons.getbootstrap.com/) for icons in new code.

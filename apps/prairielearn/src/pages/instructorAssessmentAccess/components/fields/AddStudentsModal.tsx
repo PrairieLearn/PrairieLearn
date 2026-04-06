@@ -13,8 +13,14 @@ export function AddStudentsModal({
   onSaveStudents: (students: EnrollmentTarget[]) => void;
 }) {
   const [show, setShow] = useState(false);
+  const [currentSelection, setCurrentSelection] = useState<EnrollmentTarget[]>([]);
 
   const handleClose = () => setShow(false);
+
+  const handleSave = () => {
+    onSaveStudents(currentSelection);
+    handleClose();
+  };
 
   return (
     <>
@@ -29,10 +35,17 @@ export function AddStudentsModal({
         <Modal.Body>
           <StudentSearchInput
             initialSelectedUids={selectedUids}
-            onSave={onSaveStudents}
-            onClose={handleClose}
+            onSelectionChange={setCurrentSelection}
           />
         </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleSave}>
+            Done{currentSelection.length > 0 ? ` (${currentSelection.length} selected)` : ''}
+          </Button>
+        </Modal.Footer>
       </Modal>
     </>
   );

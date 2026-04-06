@@ -20,7 +20,7 @@ export function StudentLabelDropdown({
     <Dropdown autoClose="outside">
       <Dropdown.Toggle variant="outline-primary" size="sm" disabled={disabled}>
         <i className="bi bi-tags me-1" aria-hidden="true" />
-        Manage labels
+        Edit labels
       </Dropdown.Toggle>
       <Dropdown.Menu>
         {labels.length === 0 ? (
