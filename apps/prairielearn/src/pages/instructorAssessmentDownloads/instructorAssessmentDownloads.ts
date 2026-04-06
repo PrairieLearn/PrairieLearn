@@ -118,6 +118,29 @@ const ManualGradingSubmissionRowSchema = z.object({
 
 type ManualGradingSubmissionRow = z.infer<typeof ManualGradingSubmissionRowSchema>;
 
+const AssessmentInstanceRowSchema = z.object({
+  assessment_label: z.string(),
+  id: UserSchema.shape.id,
+  uid: UserSchema.shape.uid.nullable(),
+  uin: UserSchema.shape.uin.nullable(),
+  name: UserSchema.shape.name.nullable(),
+  role: SprocUsersGetDisplayedRoleSchema,
+  username: z.string().nullable(),
+  score_perc: AssessmentInstanceSchema.shape.score_perc,
+  points: AssessmentInstanceSchema.shape.points,
+  max_points: AssessmentInstanceSchema.shape.max_points,
+  number: AssessmentInstanceSchema.shape.number,
+  assessment_instance_id: AssessmentInstanceSchema.shape.id,
+  open: AssessmentInstanceSchema.shape.open,
+  time_remaining: z.string(),
+  date_formatted: z.string(),
+  duration: z.string().nullable(),
+  duration_secs: z.number().nullable(),
+  duration_mins: z.number().nullable(),
+  group_name: GroupSchema.shape.name.nullable(),
+  uid_list: z.array(z.string()).nullable(),
+});
+
 const CanvasAssessmentInstanceRowSchema = z.object({
   uid: UserSchema.shape.uid.nullable(),
   name: UserSchema.shape.name.nullable(),
@@ -352,7 +375,7 @@ async function sendInstancesCsv(
       highest_score: options.only_highest,
       group_work: options.group_work,
     },
-    z.unknown(),
+    AssessmentInstanceRowSchema,
   );
 
   res.attachment(req.params.filename);
