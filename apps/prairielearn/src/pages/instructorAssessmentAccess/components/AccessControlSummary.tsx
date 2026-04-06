@@ -9,15 +9,15 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { type ReactNode, Fragment, useId, useMemo } from 'react';
+import { Fragment, type ReactNode, useId, useMemo } from 'react';
 import { Button } from 'react-bootstrap';
 import { get, useFormState } from 'react-hook-form';
 
 import {
   type DateFieldErrors,
-  type SummaryItemErrors,
   DateTableView,
   OverrideRuleSummaryCard,
+  type SummaryItemErrors,
   generateDateTableRows,
   generateRuleSummary,
 } from './RuleSummary.js';
@@ -106,7 +106,10 @@ function SortableOverrideCard({
   );
 }
 
-function useSummaryItemErrors(pathPrefix: string, rule: MainRuleData): SummaryItemErrors | undefined {
+function useSummaryItemErrors(
+  pathPrefix: string,
+  rule: MainRuleData,
+): SummaryItemErrors | undefined {
   const { errors } = useFormState<AccessControlFormData>();
   const result: SummaryItemErrors = {};
   let hasErrors = false;
@@ -129,7 +132,11 @@ function useSummaryItemErrors(pathPrefix: string, rule: MainRuleData): SummaryIt
   return hasErrors ? result : undefined;
 }
 
-function SummaryItemChips({ items }: { items: { key: string; icon: string; text: ReactNode; error?: string }[] }) {
+function SummaryItemChips({
+  items,
+}: {
+  items: { key: string; icon: string; text: ReactNode; error?: string }[];
+}) {
   if (items.length === 0) return null;
 
   const errorItems = items.filter((item) => item.error);
@@ -148,9 +155,7 @@ function SummaryItemChips({ items }: { items: { key: string; icon: string; text:
           <span
             key={item.key}
             className={`d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1 ${
-              item.error
-                ? 'border-danger text-danger border'
-                : 'border'
+              item.error ? 'border-danger text-danger border' : 'border'
             }`}
             style={{ fontSize: '0.875rem' }}
           >
