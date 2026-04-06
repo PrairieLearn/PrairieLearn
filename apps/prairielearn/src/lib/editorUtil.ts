@@ -177,12 +177,8 @@ export async function saveJsonFile<T extends Record<string, unknown>>({
     return { success: false, reason: 'sync_failed', jobSequenceId: serverJob.jobSequenceId };
   }
 
-  // Compute new scoped hash so the client can track the updated state.
-  if (conflictCheck) {
-    const newJson = (await fs.readJson(jsonPath)) as T;
-    const newHash = computeStableHash(conflictCheck.scope(newJson));
-    return { success: true, newHash };
-  }
-
-  return { success: true, newHash: (await getOriginalHash(jsonPath)) ?? '' };
+  const newHash = conflictCheck
+    ? computeStableHash(conflictCheck.scope(modifiedJsonContents))
+    : ((await getOriginalHash(jsonPath)) ?? '');
+  return { success: true, newHash };
 }
