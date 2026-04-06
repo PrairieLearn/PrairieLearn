@@ -272,7 +272,7 @@ const infoPopoverConfig = {
 
 function AfterCompleteCard({
   title = 'After completion',
-  description = 'Configure what happens after students complete the assessment',
+  description,
   children,
 }: {
   title?: string;
@@ -295,7 +295,7 @@ function AfterCompleteCard({
             </Button>
           </OverlayTrigger>
         </div>
-        <Form.Text className="text-muted">{description}</Form.Text>
+        {description && <Form.Text className="text-muted">{description}</Form.Text>}
       </div>
       <Row className="gy-3">{children}</Row>
     </div>

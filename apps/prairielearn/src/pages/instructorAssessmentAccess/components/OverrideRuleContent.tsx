@@ -10,11 +10,7 @@ export function OverrideRuleContent({ index }: { index: number }) {
         description="Control access and credit to your assessment based on a schedule"
       />
 
-      <OverrideAfterCompleteForm
-        index={index}
-        title="After completion"
-        description="Configure what happens after students complete the assessment"
-      />
+      <OverrideAfterCompleteForm index={index} title="After completion" />
     </div>
   );
 }
