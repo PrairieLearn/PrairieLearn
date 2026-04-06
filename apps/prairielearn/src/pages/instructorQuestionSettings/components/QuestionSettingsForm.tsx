@@ -63,7 +63,6 @@ function AssessmentBadges({
   );
 }
 
-
 function validateJsonObject(value: string): string | true {
   if (!value || value.trim() === '' || value.trim() === '{}') return true;
   try {
