@@ -334,7 +334,6 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const { displayed, evaluated } = result;
 
     if (hasError(evaluated.json)) {
-      console.error('Error in evaluated expression:', evaluated.toString());
       calculatorInputGroup.classList.add('error');
       calculatorOutput.value = '';
       copyButton.onclick = null;
@@ -508,7 +507,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     lpar: '(',
     rpar: ')',
     assign: '\\coloneqq',
-    mul: '\\times',
+    mul: '\\cdot',
     minus: '-',
     plus: '+',
     'dec-point': '.',

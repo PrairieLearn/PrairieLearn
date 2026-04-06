@@ -229,7 +229,6 @@ function AssessmentEditorInner({
           return null;
       }
     });
-    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     void setPreselection(next);
   }, [selectedItem, zones, setPreselection]);
 
@@ -270,7 +269,7 @@ function AssessmentEditorInner({
   // mounted form will report its own validity, while persisted tree-state
   // invariants are checked separately from `zones`.
   useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, react-you-might-not-need-an-effect/no-chain-state-updates, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, react-you-might-not-need-an-effect/no-chain-state-updates, @eslint-react/set-state-in-effect
     setSelectedFormHasErrors(false);
   }, [selectedItem]);
 
@@ -882,7 +881,7 @@ function AssessmentEditorInner({
     // Handlers close over `zones` (updated on dispatch), so `[zones, selectedItem]`
     // correctly captures all change triggers. Listing each handler individually
     // would be redundant and cause unnecessary re-memoization.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
     [zones, selectedItem],
   );
 
@@ -936,7 +935,7 @@ function AssessmentEditorInner({
     // (used by handleQuestionPicked to build metadata), so these deps
     // correctly capture all change triggers. Listing each handler individually
     // would be redundant and cause unnecessary re-memoization.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
     [zones, selectedItem, courseQuestions, handleDismissBanner],
   );
 
