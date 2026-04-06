@@ -654,8 +654,8 @@ router.get(
             ...record,
             id_col: null,
             sis_user_id: null,
-            // UID is most closely correlated to SIS Login ID, see https://github.com/PrairieLearn/PrairieLearn/issues/13919
             sis_login_id: record.uid,
+            // TODO: implement once we've got singular sections [https://github.com/PrairieLearn/PrairieLearn/issues/13919]
             section: null,
           };
         }),
