@@ -150,8 +150,6 @@ The different types of dependency properties currently available are summarized 
 
 The `coreScripts` and `coreStyles` properties are used in legacy elements and questions, but are deprecated and should not be used in new objects. It lists scripts and styles required by this element, relative to `[PrairieLearn directory]/public/javascripts` and `[PrairieLearn directory]/public/stylesheets`, respectively. Scripts in `[PrairieLearn directory]/public/javascripts` are mainly used for compatibility with legacy elements and questions, while styles in `[PrairieLearn directory]/public/stylesheets` are reserved for [styles used by specific pages rather than individual elements](./dev-guide/guide.md#html-style).
 
-While the use of node module dependencies in course elements is supported, it is recommended that caution be used when doing so. In particular, note that node modules may be updated without warning, which in some cases may break your element. If your code relies on a particular version of a node module, it is recommended that you copy the module into your element directory or `courseFilesCourse` and link to that module from there instead.
-
 In addition to static dependencies, elements can also declare dynamic dependencies, corresponding to scripts that are loaded only if they are deemed necessary. For example, if an element may use the `d3` library, but only in certain cases, it can declare a dependency on `d3`:
 
 ```json title="info.json"
@@ -176,7 +174,9 @@ if (options.use_d3) {
 }
 ```
 
-Dynamic dependencies are implemented using [import maps](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap), which allow the `import` call in the element script to refer to the module by the name defined in the `info.json` file instead of the full URL. Dynamic dependencies may point to:
+Dynamic dependencies are implemented using [import maps](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap), which allow the `import` call in the element script to refer to the module by the name defined in the `info.json` file instead of the full URL. This may also be used as an alternative to static dependencies for ESM modules, as it allows the module to be imported using ESM syntax.
+
+Dynamic dependencies may point to:
 
 | Property                   | Description                                                                                                                                                                                                                     |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -194,3 +194,51 @@ You can also find more detail about the types of dependencies in the schema refe
 
 - [System-wide elements](./schemas/infoElementCore.md)
 - [Course-specific elements](./schemas/infoElementCourse.md)
+
+### Using node dependencies in element code
+
+Note that the use of node modules (`nodeModulesScripts` and `nodeModulesStyles`) is only supported for dependencies that PrairieLearn itself depends on. These dependencies can be found in the `dependencies` section of the [`apps/prairielearn/package.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/package.json) file in the PrairieLearn repository.
+
+While the use of node module dependencies in course elements is supported, it is recommended that caution be used when doing so. In particular, note that node modules may be updated without warning, which in some cases may break your element. Also note that, although transitive dependencies (i.e., dependencies of dependencies) may work in some cases, they are not guaranteed to continue working in the future, as dependency updates or updates in the PrairieLearn configuration may change the availability of transitive dependencies.
+
+If your code relies on a node module that is not a dependency of PrairieLearn, or you require a specific version of a node module, or if you want to avoid the risk of your element breaking due to updates to node modules, then it is recommended that you copy the module into your element directory or `courseFilesCourse` and link to that module from there instead. This way, you have control over when the module is updated, and you can ensure that updates do not break your element.
+
+To copy a node module into your element directory, first obtain the appropriate bundle for the module (e.g., from a CDN or by building it yourself), and then place it in your element directory. For example, if you want to use the `moment` library, you can obtain the bundle from a CDN (e.g., `https://cdn.jsdelivr.net/npm/moment@2.30.1/dist/moment.min.js`) and place it in your element directory as `moment.min.js`. Then, you can link to this file in your `info.json` as follows:
+
+```json title="info.json"
+{
+  "controller": "pl-my-element.py",
+  "dependencies": {
+    "elementScripts": ["moment.min.js"]
+  }
+}
+```
+
+Alternatively, if you use a module that will be used by multiple elements, or by questions directly, then it may be better to place the module in `courseFilesCourse` instead of copying it into each element directory. In this case, you can link to the module from your `info.json` as follows:
+
+```json title="info.json"
+{
+  "controller": "pl-my-element.py",
+  "dependencies": {
+    "clientFilesCourseScripts": ["moment.min.js"]
+  }
+}
+```
+
+For dynamic dependencies, the same recommendations apply. In that case, you are encouraged to use a key that is unlikely to clash with other dynamic dependencies, such as `pl-my-element/moment` for a `moment` dependency used by `pl-my-element`, or `course-specific-name/moment` for a `moment` dependency used by multiple elements in a course. In that case, make sure that your element script imports the module using the same key as defined in the `info.json` file, such as `import('pl-my-element/moment')` for an element script dependency. For example, if you copy the `moment` library into your element directory as `moment.min.js`, you can define a dynamic dependency on this file as follows:
+
+```json title="info.json"
+{
+  "controller": "pl-my-element.py",
+  "dependencies": {
+    "elementScripts": ["pl-my-element.js"]
+  },
+  "dynamicDependencies": {
+    "elementScripts": { "pl-my-element/moment": "moment.min.js" }
+  }
+}
+```
+
+!!! note
+
+    Note that, by using the methods above, you become responsible for ensuring that the module is up-to-date with latests changes and security updates. If you choose to copy a node module into your element directory, you may choose to include the version number in the file name (e.g., `moment-2.30.1.min.js`) to make it easier to keep track of which version you are using and to update it when necessary.
