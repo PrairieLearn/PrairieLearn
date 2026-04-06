@@ -23,6 +23,7 @@ const registeredWorkflows = new Map<string, WorkflowDefinition<any>>();
 // in the `locked_by` column to prevent concurrent execution of the same run.
 const serverUuid = crypto.randomUUID();
 
+// How often the crash-recovery cron checks for abandoned workflow runs.
 const DEFAULT_CRON_INTERVAL_MS = 60_000;
 
 let cronInterval: NodeJS.Timeout | null = null;
@@ -185,6 +186,11 @@ export async function continueWorkflow<TState extends Record<string, unknown>>(
   // Verify the workflow definition exists before mutating DB state, so we
   // don't move the run out of 'waiting_for_input' only to fail on a missing
   // registration (e.g. deploy mismatch or retired type).
+  //
+  // Note: if a type is permanently retired and no server registers it, the
+  // run will sit in its current status indefinitely (the cron also skips
+  // unknown types). This is acceptable for now — the logs surface it, and
+  // an admin can manually cancel orphaned runs.
   const run = await getWorkflowRun(runId);
   const definition = registeredWorkflows.get(run.type);
   if (!definition) {
