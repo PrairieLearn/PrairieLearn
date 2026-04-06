@@ -121,7 +121,7 @@ test.describe('Access control UI', () => {
     await panel.getByRole('button', { name: /Manage labels/i }).click();
 
     // Select "Extra time" from the dropdown menu
-    await page.locator('.dropdown-menu.show').getByText('Extra time').click();
+    await page.getByRole('checkbox', { name: 'Extra time' }).click();
 
     // Close the detail panel
     await panel.getByRole('button', { name: 'Close detail panel' }).click();
