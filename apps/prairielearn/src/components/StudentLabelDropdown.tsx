@@ -17,7 +17,7 @@ export function StudentLabelDropdown({
   footer?: ReactNode;
 }) {
   return (
-    <Dropdown>
+    <Dropdown autoClose="outside">
       <Dropdown.Toggle variant="outline-primary" size="sm" disabled={disabled}>
         <i className="bi bi-tags me-1" aria-hidden="true" />
         Manage labels
