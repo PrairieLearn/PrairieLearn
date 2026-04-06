@@ -8,7 +8,7 @@ import type { Timezone } from '../../lib/timezone.shared.js';
 import { createAdministratorTrpcClient } from '../../trpc/administrator/client.js';
 import { TRPCProvider } from '../../trpc/administrator/context.js';
 
-import { CourseRequestsTable } from './CourseRequestsTable.js';
+import { CourseRequestsTable } from './components/CourseRequestsTable.js';
 
 export function AdministratorCourseRequests({
   rows,

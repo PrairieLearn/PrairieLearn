@@ -27,6 +27,8 @@ import { requireAdministrator, t } from './init.js';
 
 export interface AdminCourseRequestError {}
 
+const NullableStaffCourseSchema = StaffCourseSchema.nullable();
+
 const deny = t.procedure
   .use(requireAdministrator)
   .input(z.object({ courseRequestId: IdSchema }))
@@ -192,10 +194,10 @@ const checkConflictsProcedure = t.procedure
   )
   .output(
     z.object({
-      repoCourse: StaffCourseSchema.nullable(),
+      repoCourse: NullableStaffCourseSchema,
       repoExistsOnGithub: z.boolean(),
       githubRepoUrl: z.string().url().nullable(),
-      pathCourse: StaffCourseSchema.nullable(),
+      pathCourse: NullableStaffCourseSchema,
     }),
   )
   .query(async ({ input }) => {
@@ -206,12 +208,12 @@ const checkConflictsProcedure = t.procedure
       selectOptionalCourseByPath(normalizedPath),
     ]);
     return {
-      repoCourse: repoCourse ? StaffCourseSchema.parse(repoCourse) : null,
+      repoCourse: NullableStaffCourseSchema.parse(repoCourse),
       repoExistsOnGithub,
       githubRepoUrl: repoExistsOnGithub
         ? `https://github.com/${config.githubCourseOwner}/${input.repoShortName}`
         : null,
-      pathCourse: pathCourse ? StaffCourseSchema.parse(pathCourse) : null,
+      pathCourse: NullableStaffCourseSchema.parse(pathCourse),
     };
   });
 

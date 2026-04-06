@@ -12,15 +12,15 @@ import {
   type CourseFormFieldValues,
   buildRepoShortName,
   useInstitutionPrefix,
-} from '../../components/AdminstratorCourseFormFields.js';
-import { JobStatus } from '../../components/JobStatus.js';
-import { getAppError } from '../../lib/client/errors.js';
-import type { AdminInstitution, StaffCourse } from '../../lib/client/safe-db-types.js';
-import { getAdministratorCourseRequestsUrl } from '../../lib/client/url.js';
-import type { CourseRequestRow } from '../../lib/course-request.js';
-import { type Timezone } from '../../lib/timezone.shared.js';
-import { useTRPC } from '../../trpc/administrator/context.js';
-import type { AdminCourseRequestError } from '../../trpc/administrator/course-requests.js';
+} from '../../../components/AdminstratorCourseFormFields.js';
+import { JobStatus } from '../../../components/JobStatus.js';
+import { getAppError } from '../../../lib/client/errors.js';
+import type { AdminInstitution, StaffCourse } from '../../../lib/client/safe-db-types.js';
+import { getAdministratorCourseRequestsUrl } from '../../../lib/client/url.js';
+import type { CourseRequestRow } from '../../../lib/course-request.js';
+import { type Timezone } from '../../../lib/timezone.shared.js';
+import { useTRPC } from '../../../trpc/administrator/context.js';
+import type { AdminCourseRequestError } from '../../../trpc/administrator/course-requests.js';
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);

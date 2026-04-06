@@ -55,6 +55,7 @@ export async function selectCourseByShortName(shortName: string): Promise<Course
 export async function selectOptionalCourseByRepositoryName(
   repoName: string,
 ): Promise<Course | null> {
+  // Escape SQL LIKE wildcards so they are matched literally.
   const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
   return await queryOptionalRow(
     sql.select_course_by_repository_name,
