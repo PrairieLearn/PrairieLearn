@@ -104,10 +104,6 @@ export async function getFileMetadataForPath(
   };
 }
 
-function normalizeScopedData(data: object | object[]): object[] {
-  return Array.isArray(data) ? data : [data];
-}
-
 type SaveJsonFileResult =
   | { success: true; newHash: string }
   | { success: false; reason: 'conflict' }
@@ -126,7 +122,7 @@ export async function computeScopedJsonHash<T extends Record<string, unknown>>(
 ): Promise<string | null> {
   try {
     const json = (await fs.readJson(jsonPath)) as T;
-    return computeStableHash(normalizeScopedData(scope(json)));
+    return computeStableHash(scope(json));
   } catch (err: any) {
     if (err.code === 'ENOENT') return null;
     throw err;
@@ -156,7 +152,7 @@ export async function saveJsonFile<T extends Record<string, unknown>>({
 
   // Scoped conflict detection: hash only the section being edited.
   if (conflictCheck) {
-    const currentHash = computeStableHash(normalizeScopedData(conflictCheck.scope(jsonContents)));
+    const currentHash = computeStableHash(conflictCheck.scope(jsonContents));
     if (currentHash !== conflictCheck.origHash) {
       return { success: false, reason: 'conflict' };
     }
@@ -184,7 +180,7 @@ export async function saveJsonFile<T extends Record<string, unknown>>({
   // Compute new scoped hash so the client can track the updated state.
   if (conflictCheck) {
     const newJson = (await fs.readJson(jsonPath)) as T;
-    const newHash = computeStableHash(normalizeScopedData(conflictCheck.scope(newJson)));
+    const newHash = computeStableHash(conflictCheck.scope(newJson));
     return { success: true, newHash };
   }
 
