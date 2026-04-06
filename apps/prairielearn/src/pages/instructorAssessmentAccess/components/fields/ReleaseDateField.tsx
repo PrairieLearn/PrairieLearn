@@ -110,8 +110,8 @@ export function MainReleaseDateField() {
       <ReleaseDateInput
         value={field.value}
         error={error?.message}
-        onChange={field.onChange}
         idPrefix="mainRule"
+        onChange={field.onChange}
       />
     </div>
   );
@@ -134,13 +134,13 @@ export function OverrideReleaseDateField({ index }: { index: number }) {
       label="Release"
       headerContent={<strong>Release</strong>}
       onOverride={() => {
-        field.onChange(mainValue);
+        field.onChange(mainValue || todayLocalDatetime());
         addOverride();
       }}
       onRemoveOverride={removeOverride}
     >
       <ReleaseDateInput
-        value={(field.value as string) || ''}
+        value={field.value as string}
         idPrefix={`overrides-${index}`}
         onChange={field.onChange}
       />
