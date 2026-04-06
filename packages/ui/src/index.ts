@@ -31,6 +31,9 @@ export {
   parseAsNumericFilter,
 } from './components/nuqs.js';
 
+export { SplitPane, type SplitPaneProps } from './components/SplitPane.js';
+export { StickyActionBar, type StickyActionBarProps } from './components/StickyActionBar.js';
+
 export { useModalState } from './hooks/use-modal-state.js';
 export { useResizeHandle } from './hooks/use-resize-handle.js';
 export {

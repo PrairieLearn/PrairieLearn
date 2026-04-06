@@ -100,7 +100,7 @@ const AfterCompleteJsonSchema = z
       .boolean()
       .optional()
       .describe(
-        'Whether to hide questions after assessment completion. When true, questions are hidden until showQuestionsAgainDate (if set).',
+        'Whether to hide questions after assessment completion. When false, questions are shown until showQuestionsAgainDate (if set).',
       ),
     showQuestionsAgainDate: DatetimeLocalStringSchema.nullable()
       .optional()

@@ -20,23 +20,23 @@
   "dependencies": {
     "@prairielearn/html": "workspace:^",
     "commander": "^14.0.3",
-    "esbuild": "^0.27.3",
+    "esbuild": "^0.28.0",
     "express-static-gzip": "^2.2.0 <3",
     "fs-extra": "^11.3.4",
-    "globby": "^16.1.1",
+    "globby": "^16.2.0",
     "pretty-bytes": "^7.1.0",
     "tmp-promise": "^3.0.3"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.11.0",
+    "@types/node": "^24.12.2",
     "@typescript/native-preview": "^7.0.0-dev.20260305.1",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/coverage-v8": "^4.1.2",
     "express": "^4.22.1",
-    "get-port": "^7.1.0",
+    "get-port": "^7.2.0",
     "node-fetch": "^3.3.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.2"
   }
 }
