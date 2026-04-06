@@ -325,25 +325,21 @@ export function MainAfterCompleteForm({
   return (
     <AfterCompleteCard title={title} description={description}>
       <Col md={6}>
-        <div className="mb-3">
-          <strong>Question visibility</strong>
-          <QuestionVisibilityInput
-            value={qvField.value}
-            idPrefix="mainRule"
-            hasPrairieTest={hasPrairieTest}
-            onChange={qvField.onChange}
-          />
-        </div>
+        <Form.Label className="fw-bold">Question visibility</Form.Label>
+        <QuestionVisibilityInput
+          value={qvField.value}
+          idPrefix="mainRule"
+          hasPrairieTest={hasPrairieTest}
+          onChange={qvField.onChange}
+        />
       </Col>
       <Col md={6}>
-        <div className="mb-3">
-          <strong>Score visibility</strong>
-          <ScoreVisibilityInput
-            value={svField.value}
-            idPrefix="mainRule"
-            onChange={svField.onChange}
-          />
-        </div>
+        <Form.Label className="fw-bold">Score visibility</Form.Label>
+        <ScoreVisibilityInput
+          value={svField.value}
+          idPrefix="mainRule"
+          onChange={svField.onChange}
+        />
       </Col>
     </AfterCompleteCard>
   );
