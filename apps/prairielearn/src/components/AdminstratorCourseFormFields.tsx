@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
-import { ComboBox, type ComboBoxItem, OverlayTrigger } from '@prairielearn/ui';
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
 import { type Timezone, formatTimezone } from '../lib/timezone.shared.js';
@@ -86,16 +86,6 @@ export function AdministratorCourseFormFields({
     setValue,
     formState: { errors, dirtyFields },
   } = useFormContext<CourseFormFieldValues>();
-
-  const institutionItems: ComboBoxItem[] = useMemo(
-    () =>
-      institutions.map((i) => ({
-        id: i.id,
-        label: i.short_name,
-        searchableText: `${i.short_name} ${i.long_name}`,
-      })),
-    [institutions],
-  );
 
   const institutionId = watch('institution_id');
   const shortName = watch('short_name');
@@ -182,24 +172,35 @@ export function AdministratorCourseFormFields({
         <label className="form-label" htmlFor="courseFormInstitution">
           Institution
         </label>
-        <input
-          type="hidden"
-          {...register('institution_id', { required: 'Select an institution' })}
-        />
-        <ComboBox
-          items={institutionItems}
-          value={institutionId || null}
+        <select
           id="courseFormInstitution"
-          placeholder="Select an institution..."
-          errorMessage={errors.institution_id?.message}
-          onChange={(value) => {
-            setValue('institution_id', value ?? '', { shouldValidate: true, shouldDirty: true });
-            const selected = institutions.find((i) => i.id === value);
-            if (selected) {
-              setValue('display_timezone', selected.display_timezone);
-            }
-          }}
-        />
+          className={clsx('form-select', errors.institution_id && 'is-invalid')}
+          aria-invalid={errors.institution_id ? true : undefined}
+          aria-errormessage={errors.institution_id ? 'courseFormInstitution-error' : undefined}
+          {...register('institution_id', {
+            required: 'Select an institution',
+            onChange: (e) => {
+              const selected = institutions.find((i) => i.id === e.target.value);
+              if (selected) {
+                setValue('display_timezone', selected.display_timezone);
+              }
+            },
+          })}
+        >
+          <option value="" disabled>
+            Select an institution...
+          </option>
+          {institutions.map((i) => (
+            <option key={i.id} value={i.id}>
+              {i.short_name} ({i.long_name})
+            </option>
+          ))}
+        </select>
+        {errors.institution_id && (
+          <div id="courseFormInstitution-error" className="invalid-feedback">
+            {errors.institution_id.message}
+          </div>
+        )}
         {institutionAutoFilled && <AutoFilledHint source="requesting user's account" />}
         <div aria-live="polite" aria-atomic="true">
           {isDefaultInstitution && (
