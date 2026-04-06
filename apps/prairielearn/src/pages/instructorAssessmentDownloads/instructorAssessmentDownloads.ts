@@ -141,12 +141,12 @@ const AssessmentInstanceRowSchema = z.object({
   uid_list: z.array(z.string()).nullable(),
 });
 
-const CanvasAssessmentInstanceRowSchema = z.object({
-  uid: UserSchema.shape.uid.nullable(),
-  name: UserSchema.shape.name.nullable(),
-  role: SprocUsersGetDisplayedRoleSchema,
-  score_perc: AssessmentInstanceSchema.shape.score_perc,
-  points: AssessmentInstanceSchema.shape.points,
+const CanvasAssessmentInstanceRowSchema = AssessmentInstanceRowSchema.pick({
+  uid: true,
+  name: true,
+  role: true,
+  score_perc: true,
+  points: true,
 });
 
 const InstanceQuestionRowSchema = z.object({
