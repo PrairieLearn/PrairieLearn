@@ -29,7 +29,6 @@ function SortableOverrideCard({
   errors,
   onEdit,
   onRemove,
-  mainRuleReleaseDate,
 }: {
   id: string;
   override: OverrideData;
@@ -39,7 +38,6 @@ function SortableOverrideCard({
   errors?: string[];
   onEdit: () => void;
   onRemove: () => void;
-  mainRuleReleaseDate?: string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
@@ -60,7 +58,6 @@ function SortableOverrideCard({
         displayTimezone={displayTimezone}
         errors={errors}
         dragHandleProps={{ ...attributes, ...listeners }}
-        mainRuleReleaseDate={mainRuleReleaseDate}
         onEdit={onEdit}
         onRemove={onRemove}
       />
@@ -75,7 +72,7 @@ function MainRuleSummaryContent({
   rule: MainRuleData;
   displayTimezone: string;
 }) {
-  const summaryItems = generateRuleSummary(rule, displayTimezone, 'compact');
+  const summaryItems = generateRuleSummary(rule, displayTimezone);
   const dateTableRows = generateDateTableRows(rule, displayTimezone);
 
   return (
@@ -253,7 +250,6 @@ export function AccessControlSummary({
                       courseInstanceId={courseInstanceId}
                       displayTimezone={displayTimezone}
                       errors={getOverrideErrors?.(index)}
-                      mainRuleReleaseDate={mainRule.releaseDate || undefined}
                       onEdit={() => onEditOverride(index)}
                       onRemove={() => onRemoveOverride(index)}
                     />

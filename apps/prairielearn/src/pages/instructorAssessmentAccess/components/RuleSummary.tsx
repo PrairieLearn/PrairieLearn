@@ -15,7 +15,6 @@ import {
 } from './types.js';
 
 type RuleData = MainRuleData | OverrideData;
-type SummaryVerbosity = 'compact' | 'verbose';
 
 function isMainRuleData(rule: RuleData): rule is MainRuleData {
   return 'dateControlEnabled' in rule;
@@ -172,19 +171,13 @@ interface SummaryItem {
   text: ReactNode;
 }
 
-export function generateRuleSummary(
-  rule: RuleData,
-  displayTimezone: string,
-  verbosity: SummaryVerbosity = 'compact',
-): SummaryItem[] {
+export function generateRuleSummary(rule: RuleData, displayTimezone: string): SummaryItem[] {
   const items: SummaryItem[] = [];
 
   if (isOverrideFieldActive(rule, 'durationMinutes')) {
     const durationMinutes = rule.durationMinutes;
     if (durationMinutes !== null) {
       items.push({ key: 'duration', icon: 'bi-clock', text: `${durationMinutes} minutes` });
-    } else if (verbosity === 'verbose') {
-      items.push({ key: 'duration', icon: 'bi-clock', text: 'No time limit' });
     }
   }
 
@@ -192,8 +185,6 @@ export function generateRuleSummary(
     const password = rule.password;
     if (password !== null && password !== '') {
       items.push({ key: 'password', icon: 'bi-lock', text: 'Password protected' });
-    } else if (verbosity === 'verbose') {
-      items.push({ key: 'password', icon: 'bi-unlock', text: 'No password' });
     }
   }
 
@@ -252,12 +243,6 @@ export function generateRuleSummary(
             </>
           ),
         });
-      } else if (verbosity === 'verbose') {
-        items.push({
-          key: 'question-visibility',
-          icon: 'bi-eye-slash',
-          text: 'Questions hidden after completion',
-        });
       }
     }
     if (isOverrideFieldActive(rule, 'scoreVisibility')) {
@@ -282,12 +267,6 @@ export function generateRuleSummary(
           key: 'score-visibility',
           icon: 'bi-eye-slash',
           text: 'Score hidden after completion',
-        });
-      } else if (verbosity === 'verbose') {
-        items.push({
-          key: 'score-visibility',
-          icon: 'bi-eye',
-          text: 'Score visible after completion',
         });
       }
     }
@@ -338,23 +317,23 @@ function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): str
 function generateOverrideFieldItems(
   rule: OverrideData,
   displayTimezone: string,
-  mainRuleReleaseDate?: string,
 ): OverrideFieldItem[] {
   const items: OverrideFieldItem[] = [];
   const overriddenFields = new Set(rule.overriddenFields);
 
   if (overriddenFields.has('releaseDate')) {
-    const resolvedDate = rule.releaseDate || mainRuleReleaseDate;
+    // A null/empty release date means "not released" (resolver returns active: false).
+    // TODO: enforce non-null release dates on overrides so this case goes away.
     items.push({
       label: 'Release date',
-      value: resolvedDate ? (
+      value: rule.releaseDate ? (
         <FriendlyDate
-          date={Temporal.PlainDateTime.from(resolvedDate)}
+          date={Temporal.PlainDateTime.from(rule.releaseDate)}
           timezone={displayTimezone}
           tooltip
         />
       ) : (
-        'Released'
+        'Not released'
       ),
     });
   }
@@ -566,7 +545,7 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
         <tbody>
           {rows.map((row, index) => (
             // eslint-disable-next-line @eslint-react/no-array-index-key
-            <tr key={`${row.label}-${index}-${row.credit}-${row.visibility}`}>
+            <tr key={index}>
               <td className="ps-3 border-0" style={tdStyle}>
                 {row.label && <span className="text-body-secondary me-1">{row.label}:</span>}
                 {row.date}
@@ -607,7 +586,6 @@ export function OverrideRuleSummaryCard({
   displayTimezone,
   errors,
   dragHandleProps,
-  mainRuleReleaseDate,
 }: {
   rule: OverrideData;
   title: string;
@@ -617,9 +595,8 @@ export function OverrideRuleSummaryCard({
   errors?: string[];
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
-  mainRuleReleaseDate?: string;
 }) {
-  const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone, mainRuleReleaseDate);
+  const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone);
 
   const students = rule.appliesTo.targetType === 'enrollment' ? rule.appliesTo.enrollments : [];
 

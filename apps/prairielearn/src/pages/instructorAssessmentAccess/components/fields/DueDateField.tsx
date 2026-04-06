@@ -90,7 +90,6 @@ function DueDateInput({
           checked={value !== null}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
-              // eslint-disable-next-line unicorn/prefer-array-find -- findLast unavailable in target lib
               const latestEarlyDate = earlyDeadlines?.filter((d) => d.date).pop()?.date;
               let baseDate: Temporal.PlainDate;
               if (latestEarlyDate) {
