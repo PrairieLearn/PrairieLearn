@@ -1,59 +1,47 @@
-import { Dropdown } from 'react-bootstrap';
+import { Form } from 'react-bootstrap';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import { PrairieTestControlForm } from './PrairieTestControlForm.js';
 import type { AccessControlFormData } from './types.js';
 
 export function IntegrationsSection() {
-  const { setValue } = useFormContext<AccessControlFormData>();
+  const { register, setValue } = useFormContext<AccessControlFormData>();
 
   const prairieTestEnabled = useWatch<AccessControlFormData, 'mainRule.prairieTestEnabled'>({
     name: 'mainRule.prairieTestEnabled',
   });
 
-  const availableIntegrations = [
-    { key: 'prairieTest' as const, label: 'PrairieTest', added: prairieTestEnabled },
-  ];
-  const unadded = availableIntegrations.filter((i) => !i.added);
-
-  const addIntegration = (key: string) => {
-    if (key === 'prairieTest') {
-      setValue('mainRule.prairieTestEnabled', true, { shouldDirty: true });
-    }
-  };
-
-  const removeIntegration = (key: string) => {
-    if (key === 'prairieTest') {
-      setValue('mainRule.prairieTestEnabled', false, { shouldDirty: true });
-      setValue('mainRule.prairieTestExams', [], { shouldDirty: true });
-    }
-  };
+  const prairieTestRegistration = register('mainRule.prairieTestEnabled');
 
   return (
-    <div className="mb-4">
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h6 className="mb-0">Integrations</h6>
-        {unadded.length > 0 && (
-          <Dropdown>
-            <Dropdown.Toggle size="sm" variant="outline-primary">
-              <i className="bi bi-plus-circle me-1" aria-hidden="true" /> Add integration
-            </Dropdown.Toggle>
-            <Dropdown.Menu>
-              {unadded.map((i) => (
-                <Dropdown.Item key={i.key} onClick={() => addIntegration(i.key)}>
-                  {i.label}
-                </Dropdown.Item>
-              ))}
-            </Dropdown.Menu>
-          </Dropdown>
-        )}
+    <div>
+      <div className="section-header mb-3">
+        <strong>Integrations</strong>
       </div>
-
-      {prairieTestEnabled ? (
-        <PrairieTestControlForm onRemove={() => removeIntegration('prairieTest')} />
-      ) : (
-        <p className="text-muted">No integrations configured.</p>
-      )}
+      <Form.Check
+        type="checkbox"
+        id="mainRule-prairietest-enabled"
+        label={<strong>PrairieTest</strong>}
+        defaultChecked={prairieTestEnabled}
+        {...prairieTestRegistration}
+        aria-describedby="mainRule-prairietest-help"
+        onChange={(e) => {
+          void prairieTestRegistration.onChange(e);
+          if (!e.target.checked) {
+            setValue('mainRule.prairieTestExams', [], { shouldDirty: true });
+          } else {
+            // Add an initial entry when toggling it on so that the user can immediately
+            // start configuring it without needing to click "Add Exam" first.
+            setValue('mainRule.prairieTestExams', [{ examUuid: '', readOnly: false }], {
+              shouldDirty: true,
+            });
+          }
+        }}
+      />
+      <Form.Text id="mainRule-prairietest-help" className="text-muted">
+        Control access to your assessment through PrairieTest exams
+      </Form.Text>
+      {prairieTestEnabled && <PrairieTestControlForm />}
     </div>
   );
 }

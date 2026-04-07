@@ -13,6 +13,7 @@ const siteUrl = `http://localhost:${config.serverPort}`;
 const baseUrl = `${siteUrl}/pl`;
 const coursesAdminUrl = `${baseUrl}/administrator/courses`;
 const courseRequestsAdminUrl = `${baseUrl}/administrator/courseRequests`;
+const allCourseRequestsAdminUrl = `${courseRequestsAdminUrl}?status=all`;
 
 describe('Course requests', { timeout: 60_000 }, function () {
   let trpcClient: ReturnType<typeof createAdministratorTrpcClient>;
@@ -60,7 +61,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
     });
 
     test.sequential('verify denied badge is rendered on the page', async () => {
-      const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
+      const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
       // The CourseRequestStatusIcon renders "Denied" for denied requests
@@ -71,25 +72,34 @@ describe('Course requests', { timeout: 60_000 }, function () {
   });
 
   describe('dedicated course requests page', () => {
-    test.sequential('course requests page loads and shows all statuses', async () => {
+    test.sequential('default course requests page shows pending requests', async () => {
       const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
-      // Should have the "All course requests" header
-      const heading = response.$('h2');
+      // The default view shows pending requests only.
+      const heading = response.$('h1');
+      assert.include(heading.text(), 'Pending');
+
+      const requestCell = response.$(`td:contains("${shortName}")`);
+      assert.strictEqual(requestCell.length, 0);
+    });
+
+    test.sequential('all course requests page loads and shows all statuses', async () => {
+      const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
+      assert.isTrue(response.ok);
+
+      const heading = response.$('h1');
       assert.include(heading.text(), 'All');
 
-      // The denied request should appear on this page
       const requestCell = response.$(`td:contains("${shortName}")`);
       assert.strictEqual(requestCell.length, 1);
       assert.strictEqual(requestCell.text().trim(), `${shortName}: ${title}`);
     });
 
-    test.sequential('course requests page shows "Updated By" column', async () => {
-      const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
+    test.sequential('all course requests page shows "Updated By" column', async () => {
+      const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
-      // showAll=true renders an "Updated By" column
       const headers = response.$('th');
       const headerTexts = headers.toArray().map((h) => response.$(h).text());
       assert.include(headerTexts, 'Updated By');
@@ -133,10 +143,9 @@ describe('Course requests', { timeout: 60_000 }, function () {
     });
 
     test.sequential('denied request still has action buttons (can be re-approved)', async () => {
-      const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
+      const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
-      // denied !== 'approved', so Deny and Approve buttons should still render
       const requestRow = response.$(`td:contains("${secondShortName}")`).closest('tr');
       assert.equal(requestRow.length, 1);
       const rowHtml = requestRow.html();
@@ -165,8 +174,16 @@ describe('Course requests', { timeout: 60_000 }, function () {
       });
     });
 
-    test.sequential('pending request appears on admin courses page (pending only)', async () => {
+    test.sequential('pending request does not appear on admin courses page', async () => {
       const response = await helperClient.fetchCheerio(coursesAdminUrl);
+      assert.isTrue(response.ok);
+
+      const requestCell = response.$(`td:contains("${pendingShortName}")`);
+      assert.strictEqual(requestCell.length, 0);
+    });
+
+    test.sequential('pending request appears on default course requests page', async () => {
+      const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
       const requestCell = response.$(`td:contains("${pendingShortName}")`);
@@ -174,8 +191,8 @@ describe('Course requests', { timeout: 60_000 }, function () {
       assert.strictEqual(requestCell.text().trim(), `${pendingShortName}: ${pendingTitle}`);
     });
 
-    test.sequential('pending request appears on course requests page (all)', async () => {
-      const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
+    test.sequential('pending request appears on all course requests page', async () => {
+      const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
       const requestCell = response.$(`td:contains("${pendingShortName}")`);
@@ -200,8 +217,16 @@ describe('Course requests', { timeout: 60_000 }, function () {
       },
     );
 
-    test.sequential('denied request still appears on course requests page (all)', async () => {
+    test.sequential('denied request does not appear on default course requests page', async () => {
       const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
+      assert.isTrue(response.ok);
+
+      const requestCell = response.$(`td:contains("${pendingShortName}")`);
+      assert.strictEqual(requestCell.length, 0);
+    });
+
+    test.sequential('denied request still appears on all course requests page', async () => {
+      const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
       const requestCell = response.$(`td:contains("${pendingShortName}")`);

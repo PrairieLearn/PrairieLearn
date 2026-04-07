@@ -27,6 +27,7 @@ const serverUuid = crypto.randomUUID();
 const DEFAULT_CRON_INTERVAL_MS = 60_000;
 
 let cronInterval: NodeJS.Timeout | null = null;
+let recoveryInProgress = false;
 
 /**
  * Initializes the workflow engine by creating a dedicated database connection
@@ -408,10 +409,13 @@ function createLogger(runId: string): WorkflowLogger & { flush(): Promise<void> 
     async flush() {
       if (buffer.length === 0) return;
       // Drain the buffer and concatenate in one step.
-      const text = buffer.splice(0).join('');
+      const drained = buffer.splice(0);
+      const text = drained.join('');
       try {
         await pool.queryAsync(sql.append_output, { id: runId, text });
       } catch (err) {
+        // Restore drained logs so they can be retried on the next flush.
+        buffer.unshift(...drained);
         logger.error(`Failed to append log output for workflow ${runId}`, err);
       }
     },
@@ -438,10 +442,14 @@ export function startCronLoop(opts?: { intervalMs?: number }): void {
   }
 
   cronInterval = setInterval(async () => {
+    if (recoveryInProgress) return;
+    recoveryInProgress = true;
     try {
       await recoverStaleRuns();
     } catch (err) {
       logger.error('Failed to recover stale workflow runs', err);
+    } finally {
+      recoveryInProgress = false;
     }
   }, intervalMs);
 }
