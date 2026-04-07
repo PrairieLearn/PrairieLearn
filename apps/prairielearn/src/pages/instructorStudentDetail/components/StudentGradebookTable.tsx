@@ -2,7 +2,6 @@ import { Fragment } from 'react';
 
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import { Scorebar } from '../../../components/Scorebar.js';
-import { getAssessmentInstanceUrl } from '../../../lib/client/url.js';
 import {
   type StaffGradebookRow,
   computeLabel,
@@ -43,14 +42,13 @@ export function StudentGradebookTable({ rows, urlPrefix }: StudentGradebookTable
           </th>
           <th className="text-center">Score</th>
           <th className="text-center">Points</th>
-          <th className="text-center">Actions</th>
         </tr>
       </thead>
       <tbody>
         {Array.from(rowsBySet.entries()).map(([setHeading, setAssessments]) => (
           <Fragment key={setHeading}>
             <tr>
-              <th colSpan={5}>{setHeading}</th>
+              <th colSpan={4}>{setHeading}</th>
             </tr>
             {setAssessments.map((row) => (
               <tr key={row.assessment.id}>
@@ -66,9 +64,7 @@ export function StudentGradebookTable({ rows, urlPrefix }: StudentGradebookTable
                   />
                 </td>
                 <td className="align-middle">
-                  <a
-                    href={getAssessmentInstanceUrl({ urlPrefix, assessmentId: row.assessment.id })}
-                  >
+                  <a href={`${urlPrefix}/assessment_instance/${row.assessment_instance.id}`}>
                     {computeTitle(row)}
                   </a>
                   {row.assessment.team_work && (
@@ -76,29 +72,15 @@ export function StudentGradebookTable({ rows, urlPrefix }: StudentGradebookTable
                   )}
                 </td>
                 <td className="text-center align-middle">
-                  {row.assessment_instance.id && row.show_closed_assessment_score ? (
+                  {row.show_closed_assessment_score ? (
                     <Scorebar score={row.assessment_instance.score_perc} className="mx-auto" />
-                  ) : row.assessment_instance.id ? (
+                  ) : (
                     'In progress'
-                  ) : (
-                    <span className="text-muted">Not started</span>
                   )}
                 </td>
                 <td className="text-center align-middle">
-                  {row.assessment_instance.id && row.show_closed_assessment_score ? (
+                  {row.show_closed_assessment_score ? (
                     `${row.assessment_instance.points?.toFixed(1) || '0.0'} / ${row.assessment_instance.max_points?.toFixed(1) || '0.0'}`
-                  ) : (
-                    <span className="text-muted">—</span>
-                  )}
-                </td>
-                <td className="text-center align-middle">
-                  {row.assessment_instance.id ? (
-                    <a
-                      href={`${urlPrefix}/assessment_instance/${row.assessment_instance.id}`}
-                      className="btn btn-xs btn-outline-primary"
-                    >
-                      View instance
-                    </a>
                   ) : (
                     <span className="text-muted">—</span>
                   )}
