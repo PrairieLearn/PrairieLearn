@@ -69,7 +69,7 @@ export function RichSelect<T extends string = string>({
               width: minWidth ? `max(${minWidth}px, var(--trigger-width))` : 'var(--trigger-width)',
             }}
           >
-            <ListBox className="list-unstyled m-0 p-1" items={listItems}>
+            <ListBox className="list-unstyled m-0 px-1" items={listItems}>
               {(item) => (
                 <ListBoxItem
                   id={item.id}
