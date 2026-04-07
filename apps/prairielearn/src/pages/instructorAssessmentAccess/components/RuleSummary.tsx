@@ -738,7 +738,12 @@ export function OverrideRuleSummaryCard({
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
 }) {
-  const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone, fieldErrors, itemErrors);
+  const overrideFieldItems = generateOverrideFieldItems(
+    rule,
+    displayTimezone,
+    fieldErrors,
+    itemErrors,
+  );
 
   const studentLabels =
     rule.appliesTo.targetType === 'student_label' ? rule.appliesTo.studentLabels : [];

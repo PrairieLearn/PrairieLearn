@@ -231,8 +231,8 @@ export function OverrideAfterLastDeadlineField({ index }: { index: number }) {
         dueDate={dueDateOverridden ? dueDate : mainDueDate}
         lateDeadlines={lateDeadlinesOverridden ? lateDeadlines : mainLateDeadlines}
         creditFieldPath={`overrides.${index}.afterLastDeadline.credit`}
-        onChange={field.onChange}
         showNoDueDateWarning={false}
+        onChange={field.onChange}
       />
     </FieldWrapper>
   );
