@@ -153,7 +153,7 @@ The different types of dependency properties available are summarized in this ta
 
 Additional details about how to access these fields from `server.py` can be found in the [`server.py` documentation](server.md#accessing-files-on-disk).
 
-Keep in mind that node module dependencies should be used with caution, as they may be updated without warning, which in some cases may break your question. More information can be found in the [element developer guide](./devElements.md#using-node-dependencies-in-element-code).
+Keep in mind that node module dependencies should be avoided, as they may be updated without warning, which in some cases may break your question. More information can be found in the [element developer guide](./devElements.md#using-node-dependencies-in-element-code).
 
 ### Non-randomized questions
 
