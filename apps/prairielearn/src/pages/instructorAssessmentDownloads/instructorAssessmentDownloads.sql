@@ -394,3 +394,14 @@ GROUP BY
 ORDER BY
   g.name,
   u.uid;
+
+-- BLOCK select_assessment_instance_max_points
+SELECT
+  max_points
+FROM
+  assessment_instances
+WHERE
+  assessment_id = $assessment_id
+  AND max_points IS NOT NULL
+LIMIT
+  1;
