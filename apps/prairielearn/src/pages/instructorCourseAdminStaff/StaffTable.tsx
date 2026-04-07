@@ -766,22 +766,25 @@ function StaffTableInner({
   );
   const { createCheckboxProps } = useShiftClickCheckbox<CourseUsersRow>();
 
-  const columnFilters = useMemo<ColumnFiltersState>(() => {
-    const filters: ColumnFiltersState = [];
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(() => {
+    const initial: ColumnFiltersState = [];
     if (courseRoleFilter.length > 0) {
-      filters.push({ id: 'course_role', value: courseRoleFilter });
+      initial.push({ id: 'course_role', value: courseRoleFilter });
     }
-    return filters;
-  }, [courseRoleFilter]);
+    return initial;
+  });
 
   const handleColumnFiltersChange = useMemo(
     () => (updaterOrValue: Updater<ColumnFiltersState>) => {
-      const newFilters =
-        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
-      const roleFilterEntry = newFilters.find((f) => f.id === 'course_role');
-      void setCourseRoleFilter(roleFilterEntry ? (roleFilterEntry.value as CourseRole[]) : []);
+      setColumnFilters((prev) => {
+        const newFilters =
+          typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue;
+        const roleFilterEntry = newFilters.find((f) => f.id === 'course_role');
+        void setCourseRoleFilter(roleFilterEntry ? (roleFilterEntry.value as CourseRole[]) : []);
+        return newFilters;
+      });
     },
-    [columnFilters, setCourseRoleFilter],
+    [setCourseRoleFilter],
   );
 
   const columns = useMemo(
@@ -809,6 +812,7 @@ function StaffTableInner({
         id: 'uid',
         header: 'UID',
         size: 220,
+        enableHiding: true,
         enableGlobalFilter: true,
         cell: (info) => (
           <span
@@ -831,6 +835,7 @@ function StaffTableInner({
         id: 'user_name',
         header: 'Name',
         size: 180,
+        enableHiding: true,
         enableGlobalFilter: true,
         cell: (info) => {
           const name = info.row.original.user.name;
@@ -866,6 +871,7 @@ function StaffTableInner({
         id: 'course_role',
         header: 'Course content',
         size: 190,
+        enableHiding: true,
         enableGlobalFilter: false,
         meta: { label: 'Course content access' },
         filterFn: (row, _columnId, filterValues: CourseRole[]) => {
@@ -887,23 +893,33 @@ function StaffTableInner({
         ),
       }),
       ...courseInstances.map((ci) =>
-        columnHelper.display({
-          id: `ci_${ci.id}`,
-          header: () => <code>{ci.short_name ?? `Instance ${ci.id}`}</code>,
-          size: 120,
-          enableGlobalFilter: false,
-          enableSorting: false,
-          enableHiding: true,
-          cell: (info) => (
-            <div className="text-center">
-              <CourseInstanceAccessCell
-                courseUser={info.row.original}
-                courseInstance={ci}
-                csrfToken={csrfToken}
-              />
-            </div>
-          ),
-        }),
+        columnHelper.accessor(
+          (row): InstanceRole =>
+            row.course_instance_roles?.find((cir) => String(cir.id) === String(ci.id))
+              ?.course_instance_role ?? 'None',
+          {
+            id: `ci_${ci.id}`,
+            header: () => <code>{ci.short_name ?? `Instance ${ci.id}`}</code>,
+            size: 120,
+            enableGlobalFilter: false,
+            enableSorting: false,
+            enableHiding: true,
+            filterFn: (row, columnId, filterValues: InstanceRole[]) => {
+              if (filterValues.length === 0) return true;
+              const role = row.getValue<InstanceRole>(columnId);
+              return filterValues.includes(role);
+            },
+            cell: (info) => (
+              <div className="text-center">
+                <CourseInstanceAccessCell
+                  courseUser={info.row.original}
+                  courseInstance={ci}
+                  csrfToken={csrfToken}
+                />
+              </div>
+            ),
+          },
+        ),
       ),
     ],
     [authnUserId, userId, isAdministrator, csrfToken, courseInstances, createCheckboxProps],
@@ -956,8 +972,22 @@ function StaffTableInner({
           renderValueLabel={({ value }) => <span>{value}</span>}
         />
       ),
+      ...Object.fromEntries(
+        courseInstances.map((ci) => [
+          `ci_${ci.id}`,
+          ({ header }: { header: Header<CourseUsersRow, unknown> }) => (
+            <CategoricalColumnFilter
+              column={header.column}
+              allColumnValues={[...INSTANCE_ROLE_VALUES]}
+              renderValueLabel={({ value }) => (
+                <span>{INSTANCE_ROLE_LABELS[value as InstanceRole]}</span>
+              )}
+            />
+          ),
+        ]),
+      ),
     }),
-    [],
+    [courseInstances],
   );
 
   const headerButtons = (

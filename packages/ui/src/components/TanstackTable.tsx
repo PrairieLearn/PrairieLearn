@@ -529,6 +529,7 @@ export function TanstackTableCard<RowDataModel>({
     TanstackTableDownloadButtonProps<RowDataModel>,
     'table' | 'singularLabel' | 'pluralLabel'
   > & { pluralLabel?: string; singularLabel?: string };
+  statusContent?: ReactNode;
 } & Omit<ComponentProps<'div'>, 'class'>) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
