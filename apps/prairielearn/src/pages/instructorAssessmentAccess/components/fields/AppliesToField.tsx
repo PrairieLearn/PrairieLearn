@@ -182,20 +182,20 @@ export function AppliesToField({
               <span className="text-muted small">No student labels selected</span>
             ) : (
               studentLabels.map((sl) => (
-              <StudentLabelBadge
-                key={sl.studentLabelId}
-                label={{ name: sl.name, color: sl.color ?? 'gray1' }}
-              >
-                <button
-                  type="button"
-                  className="btn p-0 lh-1"
-                  aria-label={`Remove label "${sl.name}"`}
-                  onClick={() => handleRemoveStudentLabelById(sl.studentLabelId)}
+                <StudentLabelBadge
+                  key={sl.studentLabelId}
+                  label={{ name: sl.name, color: sl.color ?? 'gray1' }}
                 >
-                  <i className="bi bi-x text-danger" aria-hidden="true" />
-                </button>
-              </StudentLabelBadge>
-            ))
+                  <button
+                    type="button"
+                    className="btn p-0 lh-1"
+                    aria-label={`Remove label "${sl.name}"`}
+                    onClick={() => handleRemoveStudentLabelById(sl.studentLabelId)}
+                  >
+                    <i className="bi bi-x text-danger" aria-hidden="true" />
+                  </button>
+                </StudentLabelBadge>
+              ))
             )}
           </div>
         )}
