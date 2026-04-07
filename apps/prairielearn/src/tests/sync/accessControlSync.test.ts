@@ -119,7 +119,6 @@ const TEST_EXAM_UUID = '11e89892-3eff-4d7f-90a2-221372f14e5c';
 describe('Access control syncing', () => {
   beforeAll(async () => {
     await helperDb.before();
-    await helperDb.resetDatabase();
     await features.enable('enhanced-access-control');
     await sqldb.executeRow(sql.insert_pt_exam, { uuid: TEST_EXAM_UUID });
   });
