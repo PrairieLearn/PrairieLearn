@@ -2,4 +2,4 @@
 '@prairielearn/ui': minor
 ---
 
-Add `buttonText` prop to `ColumnManager` for customizable toggle label. Soften `TanstackTable` header border styling.
+Add `useColumnVisibilityQueryState` hook for URL-persisted column visibility. Soften `TanstackTable` header border styling.

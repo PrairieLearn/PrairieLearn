@@ -23,6 +23,7 @@ import {
   TanstackTableCard,
   parseAsColumnPinningState,
   parseAsSortingState,
+  useColumnVisibilityQueryState,
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
@@ -603,8 +604,8 @@ function BulkEditAccessModal({
                           <select
                             className="form-select form-select-sm"
                             value={instanceRoles[ci.id] ?? ''}
-                            onChange={(e) => handleInstanceRoleChange(ci.id, e.target.value)}
                             aria-label={`Role for ${ci.short_name ?? `course instance ${ci.id}`}`}
+                            onChange={(e) => handleInstanceRoleChange(ci.id, e.target.value)}
                           >
                             <option value="">No change</option>
                             <option value="None">None (remove access)</option>
@@ -728,6 +729,20 @@ function StaffTableInner({
     'selected',
     parseAsArrayOf(parseAsString).withDefault([]),
   );
+
+  const allColumnIds = useMemo(
+    () => [
+      'select',
+      'uid',
+      'user_name',
+      'course_role',
+      ...courseInstances.map((ci) => `ci_${ci.id}`),
+    ],
+    [courseInstances],
+  );
+  const { columnVisibility, setColumnVisibility, defaultColumnVisibility } =
+    useColumnVisibilityQueryState(allColumnIds);
+
   const rowSelection = useMemo<RowSelectionState>(
     () => Object.fromEntries(selectedIds.map((id) => [id, true])),
     [selectedIds],
@@ -901,15 +916,18 @@ function StaffTableInner({
       columnFilters,
       globalFilter,
       columnPinning,
+      columnVisibility,
       rowSelection,
     },
     initialState: {
       columnPinning: DEFAULT_PINNING,
+      columnVisibility: defaultColumnVisibility,
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: handleColumnFiltersChange,
     onColumnPinningChange: setColumnPinning,
+    onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),

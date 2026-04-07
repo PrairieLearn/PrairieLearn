@@ -29,6 +29,7 @@ export {
   parseAsColumnVisibilityStateWithColumns,
   parseAsColumnPinningState,
   parseAsNumericFilter,
+  useColumnVisibilityQueryState,
 } from './components/nuqs.js';
 
 export { SplitPane, type SplitPaneProps } from './components/SplitPane.js';
