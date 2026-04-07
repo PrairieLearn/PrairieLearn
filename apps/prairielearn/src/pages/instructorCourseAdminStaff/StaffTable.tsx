@@ -148,7 +148,7 @@ function CoursePermissionCell({
     return (
       <span
         className={`btn btn-sm bg-${courseRoleColor(currentRole)}-subtle text-${courseRoleColor(currentRole)}-emphasis disabled`}
-        style={{ width: 85 }}
+        style={{ width: 105 }}
       >
         {currentRole}
       </span>
@@ -209,7 +209,7 @@ function CoursePermissionCell({
       <button
         type="button"
         className={`btn btn-sm bg-${courseRoleColor(currentRole)}-subtle text-${courseRoleColor(currentRole)}-emphasis dropdown-toggle`}
-        style={{ width: 85 }}
+        style={{ width: 105 }}
       >
         {currentRole}
       </button>
@@ -300,7 +300,11 @@ function CourseInstanceAccessCell({
               <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary ms-2">
+              <button
+                type="submit"
+                className="btn btn-primary ms-2"
+                disabled={selectedRole === currentRole}
+              >
                 Change access
               </button>
             </div>
@@ -313,7 +317,7 @@ function CourseInstanceAccessCell({
       <button
         type="button"
         className={`btn btn-sm bg-${instanceRoleColor(currentRole)}-subtle text-${instanceRoleColor(currentRole)}-emphasis dropdown-toggle`}
-        style={{ width: 85 }}
+        style={{ width: 105 }}
       >
         {INSTANCE_ROLE_LABELS[currentRole]}
       </button>
