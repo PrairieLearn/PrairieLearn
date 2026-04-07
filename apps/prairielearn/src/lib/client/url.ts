@@ -26,6 +26,14 @@ export function getAssessmentInstanceUrl({
   return `${urlPrefix}/assessment/${assessmentId}`;
 }
 
+export function getStudentAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
+  return `${getStudentCourseInstanceUrl(courseInstanceId)}/assessment/${assessmentId}`;
+}
+
+export function getPublicAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
+  return `/pl/public/course_instance/${courseInstanceId}/assessment/${assessmentId}`;
+}
+
 export function getStudentEnrollmentUrl(courseInstanceId: string, enrollmentId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/enrollment/${enrollmentId}`;
 }

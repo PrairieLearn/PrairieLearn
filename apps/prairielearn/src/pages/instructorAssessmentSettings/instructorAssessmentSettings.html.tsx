@@ -8,8 +8,12 @@ import { GitHubButton } from '../../components/GitHubButton.js';
 import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
 import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { getAppError } from '../../lib/client/errors.js';
-import type { PageContext } from '../../lib/client/page-context.js';
-import type { StaffAssessmentModule, StaffAssessmentSet } from '../../lib/client/safe-db-types.js';
+import type {
+  StaffAssessment,
+  StaffAssessmentModule,
+  StaffAssessmentSet,
+  StaffCourseInstance,
+} from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import type { AssessmentToolsConfig } from '../../lib/editors.js';
 import { validateShortName } from '../../lib/short-name.js';
@@ -18,13 +22,47 @@ import type { AssessmentSettingsError } from '../../trpc/assessment/assessment-s
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
 
-import type { SettingsFormValues } from './instructorAssessmentSettings.types.js';
+interface SettingsFormValues {
+  aid: string;
+  title: string;
+  set: string;
+  number: string;
+  module: string;
+  text?: string;
+  allow_issue_reporting: boolean;
+  allow_personal_notes: boolean;
+  multiple_instance: boolean;
+  auto_close: boolean;
+  require_honor_code: boolean;
+  honor_code?: string;
+  tools?: Record<string, boolean>;
+}
+
+interface InstructorAssessmentSettingsProps {
+  trpcCsrfToken: string;
+  urlPrefix: string;
+  canEdit: boolean;
+  origHash: string;
+  assessment: StaffAssessment;
+  assessmentSet: StaffAssessmentSet;
+  hasCoursePermissionView: boolean;
+  assessmentGHLink: string | null;
+  tids: string[];
+  studentLink: string;
+  publicLink: string;
+  infoAssessmentPath: string;
+  assessmentSets: StaffAssessmentSet[];
+  assessmentModules: StaffAssessmentModule[];
+  courseInstance: StaffCourseInstance;
+  isDevMode: boolean;
+  assessmentTools: AssessmentToolsConfig;
+}
 
 export function InstructorAssessmentSettings({
   trpcCsrfToken,
   urlPrefix,
   canEdit,
-  origHash: initialOrigHash,
+  origHash,
   assessment,
   assessmentSet,
   hasCoursePermissionView,
@@ -35,36 +73,16 @@ export function InstructorAssessmentSettings({
   infoAssessmentPath,
   assessmentSets,
   assessmentModules,
-  courseInstanceId,
-  assessmentId,
+  courseInstance,
   isDevMode,
   assessmentTools,
-}: {
-  trpcCsrfToken: string;
-  urlPrefix: string;
-  canEdit: boolean;
-  origHash: string;
-  assessment: PageContext<'assessment', 'instructor'>['assessment'];
-  assessmentSet: PageContext<'assessment', 'instructor'>['assessment_set'];
-  hasCoursePermissionView: boolean;
-  assessmentGHLink: string | null;
-  tids: string[];
-  studentLink: string;
-  publicLink: string;
-  infoAssessmentPath: string;
-  assessmentSets: StaffAssessmentSet[];
-  assessmentModules: StaffAssessmentModule[];
-  courseInstanceId: string;
-  assessmentId: string;
-  isDevMode: boolean;
-  assessmentTools: AssessmentToolsConfig;
-}) {
+}: InstructorAssessmentSettingsProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
     createAssessmentTrpcClient({
       csrfToken: trpcCsrfToken,
-      courseInstanceId,
-      assessmentId,
+      courseInstanceId: courseInstance.id,
+      assessmentId: assessment.id,
     }),
   );
 
@@ -74,7 +92,7 @@ export function InstructorAssessmentSettings({
         <InstructorAssessmentSettingsInner
           urlPrefix={urlPrefix}
           canEdit={canEdit}
-          initialOrigHash={initialOrigHash}
+          origHash={origHash}
           assessment={assessment}
           assessmentSet={assessmentSet}
           hasCoursePermissionView={hasCoursePermissionView}
@@ -97,7 +115,7 @@ InstructorAssessmentSettings.displayName = 'InstructorAssessmentSettings';
 function InstructorAssessmentSettingsInner({
   urlPrefix,
   canEdit,
-  initialOrigHash,
+  origHash,
   assessment,
   assessmentSet,
   hasCoursePermissionView,
@@ -109,24 +127,9 @@ function InstructorAssessmentSettingsInner({
   assessmentSets,
   assessmentModules,
   assessmentTools,
-}: {
-  urlPrefix: string;
-  canEdit: boolean;
-  initialOrigHash: string;
-  assessment: PageContext<'assessment', 'instructor'>['assessment'];
-  assessmentSet: PageContext<'assessment', 'instructor'>['assessment_set'];
-  hasCoursePermissionView: boolean;
-  assessmentGHLink: string | null;
-  tids: string[];
-  studentLink: string;
-  publicLink: string;
-  infoAssessmentPath: string;
-  assessmentSets: StaffAssessmentSet[];
-  assessmentModules: StaffAssessmentModule[];
-  assessmentTools: AssessmentToolsConfig;
-}) {
+}: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'courseInstance' | 'isDevMode'>) {
   const trpc = useTRPC();
-  const [origHash, setOrigHash] = useState(initialOrigHash);
+  const [currentOrigHash, setCurrentOrigHash] = useState(origHash);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const tidSet = new Set(tids);
@@ -174,10 +177,10 @@ function InstructorAssessmentSettingsInner({
 
   const onFormSubmit = (data: SettingsFormValues) => {
     saveMutation.mutate(
-      { ...data, origHash },
+      { ...data, origHash: currentOrigHash },
       {
         onSuccess: (result) => {
-          setOrigHash(result.origHash);
+          setCurrentOrigHash(result.origHash);
           reset(data);
         },
       },
