@@ -1359,10 +1359,10 @@ describe('Access control syncing', () => {
         const labelName = 'Test Label';
         const { syncedRules, errors } = await syncRulesAndRead(
           [
-            makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
+            makeAccessControlRule({ dateControl: undefined }),
             makeAccessControlRule({
               labels: [labelName],
-              dateControl: { durationMinutes: 90 },
+              dateControl: undefined,
               integrations: {
                 prairieTest: { exams: [{ examUuid: TEST_EXAM_UUID }] },
               },
@@ -1382,12 +1382,12 @@ describe('Access control syncing', () => {
         const { syncedRules } = await syncRulesAndRead(
           [
             makeAccessControlRule({
-              dateControl: { durationMinutes: 60 },
+              dateControl: undefined,
               integrations: {
                 prairieTest: { exams: [{ examUuid: TEST_EXAM_UUID }] },
               },
             }),
-            makeAccessControlRule({ labels: [labelName], dateControl: { durationMinutes: 90 } }),
+            makeAccessControlRule({ labels: [labelName], dateControl: undefined }),
           ],
           { studentLabels: [labelName] },
         );
@@ -1398,6 +1398,7 @@ describe('Access control syncing', () => {
       runInTransactionAndRollback(async () => {
         const { syncedRules, errors } = await syncRulesAndRead([
           makeAccessControlRule({
+            dateControl: undefined,
             integrations: {
               prairieTest: {
                 exams: [{ examUuid: TEST_EXAM_UUID }, { examUuid: TEST_EXAM_UUID }],
@@ -1415,6 +1416,7 @@ describe('Access control syncing', () => {
           const fakeUuid = '00000000-0000-0000-0000-000000000000';
           const { syncedRules, errors } = await syncRulesAndRead([
             makeAccessControlRule({
+              dateControl: undefined,
               integrations: {
                 prairieTest: {
                   exams: [{ examUuid: fakeUuid }],
@@ -1433,6 +1435,7 @@ describe('Access control syncing', () => {
           const fakeUuid = '00000000-0000-0000-0000-000000000000';
           const { syncedRules, errors } = await syncRulesAndRead([
             makeAccessControlRule({
+              dateControl: undefined,
               integrations: {
                 prairieTest: {
                   exams: [{ examUuid: fakeUuid }],
@@ -1951,7 +1954,7 @@ describe('Access control syncing', () => {
     it('PrairieTest exam UUIDs round-trip on main rule', () =>
       runInTransactionAndRollback(async () => {
         const mainRule = makeAccessControlRule({
-          dateControl: { durationMinutes: 60 },
+          dateControl: undefined,
           integrations: {
             prairieTest: {
               exams: [{ examUuid: TEST_EXAM_UUID }],
@@ -1980,7 +1983,7 @@ describe('Access control syncing', () => {
     it('PrairieTest readOnly flag round-trips correctly', () =>
       runInTransactionAndRollback(async () => {
         const mainRule = makeAccessControlRule({
-          dateControl: { durationMinutes: 60 },
+          dateControl: undefined,
           integrations: {
             prairieTest: {
               exams: [{ examUuid: TEST_EXAM_UUID, readOnly: true }],
@@ -2005,7 +2008,7 @@ describe('Access control syncing', () => {
       runInTransactionAndRollback(async () => {
         const { courseDir } = await syncRulesAndRead([
           makeAccessControlRule({
-            dateControl: { durationMinutes: 60 },
+            dateControl: undefined,
             integrations: {
               prairieTest: { exams: [{ examUuid: TEST_EXAM_UUID }] },
             },
@@ -2019,9 +2022,7 @@ describe('Access control syncing', () => {
         assert.equal(main.prairietestExams.length, 1);
 
         // Re-sync without the exam — stale row should be cleaned up.
-        await syncRulesAndRead([makeAccessControlRule({ dateControl: { durationMinutes: 60 } })], {
-          courseDir,
-        });
+        await syncRulesAndRead([makeAccessControlRule()], { courseDir });
 
         rules = await selectAccessControlRulesForAssessment(assessment);
         main = rules.find((r) => r.number === 0);
