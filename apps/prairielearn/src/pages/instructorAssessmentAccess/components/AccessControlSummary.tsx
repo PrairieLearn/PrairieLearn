@@ -97,10 +97,11 @@ function SortableOverrideCard({
     id,
   });
   const fieldErrors = useDateFieldErrors(`overrides.${index}`, override);
+  const itemErrors = useSummaryItemErrors(`overrides.${index}`, override);
 
   const style = {
     opacity: isDragging ? 0.6 : 1,
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Transform.toString(transform ? { ...transform, scaleX: 1, scaleY: 1 } : null),
     transition,
   };
 
@@ -111,6 +112,7 @@ function SortableOverrideCard({
         title={title}
         displayTimezone={displayTimezone}
         fieldErrors={fieldErrors}
+        itemErrors={itemErrors}
         dragHandleProps={{ ...attributes, ...listeners }}
         onEdit={onEdit}
         onRemove={onRemove}
@@ -121,13 +123,13 @@ function SortableOverrideCard({
 
 function useSummaryItemErrors(
   pathPrefix: string,
-  rule: MainRuleData,
+  rule: MainRuleData | OverrideData,
 ): SummaryItemErrors | undefined {
   const { errors } = useFormState<AccessControlFormData>();
   const result: SummaryItemErrors = {};
   let hasErrors = false;
 
-  if (rule.prairieTestExams.length > 0) {
+  if ('prairieTestExams' in rule && rule.prairieTestExams.length > 0) {
     const examErrors: string[] = [];
     for (let i = 0; i < rule.prairieTestExams.length; i++) {
       const msg: string | undefined = get(

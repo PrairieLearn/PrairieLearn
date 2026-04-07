@@ -44,6 +44,7 @@ function AfterLastDeadlineInput({
   dueDate,
   lateDeadlines,
   creditFieldPath,
+  showNoDueDateWarning = true,
 }: {
   value: AfterLastDeadlineValue | null;
   onChange: (value: AfterLastDeadlineValue | null) => void;
@@ -53,6 +54,7 @@ function AfterLastDeadlineInput({
   creditFieldPath:
     | 'mainRule.afterLastDeadline.credit'
     | `overrides.${number}.afterLastDeadline.credit`;
+  showNoDueDateWarning?: boolean;
 }) {
   const { register } = useFormContext<AccessControlFormData>();
   const userTimezone = getUserTimezone();
@@ -107,7 +109,7 @@ function AfterLastDeadlineInput({
           onChange={handleModeChange}
         />
       </div>
-      {!hasLastDeadline && mode !== 'no_submissions' && (
+      {showNoDueDateWarning && !hasLastDeadline && mode !== 'no_submissions' && (
         <Alert variant="warning" className="py-2 mb-2">
           This setting will have no effect because there is no due date set.
         </Alert>
@@ -230,6 +232,7 @@ export function OverrideAfterLastDeadlineField({ index }: { index: number }) {
         lateDeadlines={lateDeadlinesOverridden ? lateDeadlines : mainLateDeadlines}
         creditFieldPath={`overrides.${index}.afterLastDeadline.credit`}
         onChange={field.onChange}
+        showNoDueDateWarning={false}
       />
     </FieldWrapper>
   );

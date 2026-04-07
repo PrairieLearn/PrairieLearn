@@ -387,6 +387,7 @@ function generateOverrideFieldItems(
   rule: OverrideData,
   displayTimezone: string,
   fieldErrors?: DateFieldErrors,
+  itemErrors?: SummaryItemErrors,
 ): OverrideFieldItem[] {
   const items: OverrideFieldItem[] = [];
   const overriddenFields = new Set(rule.overriddenFields);
@@ -468,11 +469,13 @@ function generateOverrideFieldItems(
     items.push({
       label: 'Password',
       value: rule.password ? 'Password protected' : 'No password',
+      error: itemErrors?.password,
     });
   }
 
   if (overriddenFields.has('questionVisibility')) {
     const qv = rule.questionVisibility;
+    const qvError = itemErrors?.['question-visibility'];
     if (qv.hideQuestions) {
       if (qv.showAgainDate && qv.hideAgainDate) {
         items.push({
@@ -495,6 +498,7 @@ function generateOverrideFieldItems(
               />
             </>
           ),
+          error: qvError,
         });
       } else if (qv.showAgainDate) {
         items.push({
@@ -510,23 +514,27 @@ function generateOverrideFieldItems(
               />
             </>
           ),
+          error: qvError,
         });
       } else {
         items.push({
           label: 'Question visibility',
           value: 'Questions hidden after completion',
+          error: qvError,
         });
       }
     } else {
       items.push({
         label: 'Question visibility',
         value: 'Questions visible after completion',
+        error: qvError,
       });
     }
   }
 
   if (overriddenFields.has('scoreVisibility')) {
     const sv = rule.scoreVisibility;
+    const svError = itemErrors?.['score-visibility'];
     if (sv.hideScore) {
       if (sv.showAgainDate) {
         items.push({
@@ -542,17 +550,20 @@ function generateOverrideFieldItems(
               />
             </>
           ),
+          error: svError,
         });
       } else {
         items.push({
           label: 'Score visibility',
           value: 'Score hidden after completion',
+          error: svError,
         });
       }
     } else {
       items.push({
         label: 'Score visibility',
         value: 'Score visible after completion',
+        error: svError,
       });
     }
   }
@@ -709,6 +720,7 @@ export function OverrideRuleSummaryCard({
   onEdit,
   displayTimezone,
   fieldErrors,
+  itemErrors,
   dragHandleProps,
 }: {
   rule: OverrideData;
@@ -716,10 +728,11 @@ export function OverrideRuleSummaryCard({
   onEdit?: () => void;
   displayTimezone: string;
   fieldErrors?: DateFieldErrors;
+  itemErrors?: SummaryItemErrors;
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
 }) {
-  const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone, fieldErrors);
+  const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone, fieldErrors, itemErrors);
 
   const studentLabels =
     rule.appliesTo.targetType === 'student_label' ? rule.appliesTo.studentLabels : [];
