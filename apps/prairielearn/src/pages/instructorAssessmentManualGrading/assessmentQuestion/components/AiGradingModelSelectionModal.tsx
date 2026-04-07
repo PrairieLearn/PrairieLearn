@@ -1,7 +1,6 @@
 import clsx from 'clsx';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert, Button, Form, Modal } from 'react-bootstrap';
-import { useForm } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
@@ -175,37 +174,33 @@ export function AiGradingModelSelectionModal({
   onHide: () => void;
 }) {
   const defaultModel = getDefaultModel(aiGradingLastSelectedModel, availableProviders);
-  const form = useForm<{ model_id: AiGradingModelId }>({
-    defaultValues: { model_id: defaultModel },
-  });
-  const selectedModel = form.watch('model_id');
+  const [selectedModel, setSelectedModel] = useState<AiGradingModelId>(defaultModel);
 
   const handleClose = useCallback(() => {
-    form.reset({ model_id: defaultModel });
+    setSelectedModel(defaultModel);
     mutation.reset();
     onHide();
-  }, [onHide, mutation, defaultModel, form]);
+  }, [onHide, mutation, defaultModel]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
       if (!modalState) return;
 
-      const modelId = form.getValues('model_id');
       mutation.mutate(
         {
           selection: getSelection(modalState),
-          model_id: modelId,
+          model_id: selectedModel,
         },
         {
-          onSuccess: (result) => {
-            onSuccess(result, modelId);
+          onSuccess: (data) => {
+            onSuccess(data, selectedModel);
             onHide();
           },
         },
       );
     },
-    [modalState, mutation, onSuccess, onHide, form],
+    [modalState, selectedModel, mutation, onSuccess, onHide],
   );
 
   const isSelectedModelAvailable = availableProviders.includes(
@@ -230,7 +225,7 @@ export function AiGradingModelSelectionModal({
             selectedModel={selectedModel}
             availableProviders={availableProviders}
             relativeCosts={relativeCosts}
-            onSelect={(modelId) => form.setValue('model_id', modelId)}
+            onSelect={setSelectedModel}
           />
         </Modal.Body>
 

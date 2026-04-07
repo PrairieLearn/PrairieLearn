@@ -15,18 +15,17 @@ export function computeAiGradingRelativeCosts(
   const totalOutputTokens = BASELINE_OUTPUT_TOKENS + BASELINE_REASONING_TOKENS;
   const models = AI_GRADING_MODELS.map((m) => {
     const p = pricing[m.modelId] as { input: number; output: number } | undefined;
+    if (!p) {
+      throw new Error(`Missing pricing for AI grading model: ${m.modelId}`);
+    }
     return {
       modelId: m.modelId,
-      cost: p ? p.input * BASELINE_INPUT_TOKENS + p.output * totalOutputTokens : Infinity,
+      cost: p.input * BASELINE_INPUT_TOKENS + p.output * totalOutputTokens,
     };
   });
-  const finiteCosts = models.filter((m) => Number.isFinite(m.cost)).map((m) => m.cost);
-  const minCost = finiteCosts.length > 0 ? Math.min(...finiteCosts) : 1;
+  const minCost = Math.min(...models.map((m) => m.cost));
   return Object.fromEntries(
     models.map(({ modelId, cost }) => {
-      if (!Number.isFinite(cost)) {
-        return [modelId, '—'];
-      }
       const multiplier = cost / minCost;
       // Truncate to one decimal place (not rounded).
       const truncated = Math.floor(multiplier * 10) / 10;
