@@ -999,9 +999,7 @@ function StaffTableInner({
             <CategoricalColumnFilter
               column={header.column}
               allColumnValues={[...INSTANCE_ROLE_VALUES]}
-              renderValueLabel={({ value }) => (
-                <span>{INSTANCE_ROLE_LABELS[value as InstanceRole]}</span>
-              )}
+              renderValueLabel={({ value }) => <span>{INSTANCE_ROLE_LABELS[value]}</span>}
             />
           ),
         ]),
@@ -1051,17 +1049,16 @@ function StaffTableInner({
           target="_blank"
           rel="noreferrer"
         >
-          Learn more about content and student data access levels{' '}
-          <i className="bi bi-chevron-right" aria-hidden="true" />
+          Learn more about content and student data access levels
         </a>
         {githubAccessLink && (
-          <div className="alert alert-info mt-3">
+          <div className="alert alert-info mt-3 text-left">
             The settings above do not affect access to the course&apos;s Git repository. To change
             repository permissions, go to the{' '}
             <a className="alert-link" href={githubAccessLink} target="_blank" rel="noreferrer">
               GitHub access settings page
             </a>
-            .
+            . If you require access to the repository, please contact PrairieLearn support.
           </div>
         )}
       </div>
