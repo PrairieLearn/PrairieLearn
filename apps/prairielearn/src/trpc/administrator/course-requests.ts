@@ -1,8 +1,9 @@
-import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
+import { type StaffCourse, StaffCourseSchema } from '../../lib/client/safe-db-types.js';
+import { config } from '../../lib/config.js';
 import {
   checkInstructorLegitimacy,
   suggestInstitutionPrefix,
@@ -14,13 +15,26 @@ import {
   selectInstitutionPrefix,
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
-import { checkCoursePathExists, checkCourseRepositoryExists } from '../../lib/course.js';
 import { checkGithubRepositoryExists } from '../../lib/github.js';
+import {
+  selectOptionalCourseByPath,
+  selectOptionalCourseByRepositoryName,
+} from '../../models/course.js';
+import { throwAppError } from '../app-errors.js';
 
 import { normalizeCoursePathInput } from './course-path.js';
 import { requireAdministrator, t } from './init.js';
 
-export interface AdminCourseRequestError {}
+const NullableStaffCourseSchema = StaffCourseSchema.nullable();
+
+export interface AdminCourseRequestError {
+  CreateCourse: {
+    code: 'CONFLICTS';
+    repoCourse: StaffCourse | null;
+    githubRepoUrl: string | null;
+    pathCourse: StaffCourse | null;
+  };
+}
 
 const deny = t.procedure
   .use(requireAdministrator)
@@ -62,29 +76,25 @@ const createCourse = t.procedure
   .mutation(async ({ input, ctx }) => {
     const normalizedPath = normalizeCoursePathInput(input.path);
 
-    const repoExists = await checkCourseRepositoryExists(input.repoShortName);
-    if (repoExists) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'A course with this repository already exists.',
-      });
-    }
+    const [repoCourse, githubRepoExists, pathCourse] = await Promise.all([
+      selectOptionalCourseByRepositoryName(input.repoShortName),
+      checkGithubRepositoryExists(input.repoShortName),
+      selectOptionalCourseByPath(normalizedPath),
+    ]);
 
-    const githubRepoExists = await checkGithubRepositoryExists(input.repoShortName);
-    if (githubRepoExists) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message:
-          'A GitHub repository with this name already exists. This can happen if a repository was previously renamed.',
-      });
-    }
-
-    const pathExists = await checkCoursePathExists(normalizedPath);
-    if (pathExists) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'A course with this path already exists.',
-      });
+    if (repoCourse != null || githubRepoExists || pathCourse != null) {
+      throwAppError<AdminCourseRequestError['CreateCourse']>(
+        {
+          code: 'CONFLICTS',
+          message: 'Conflicts detected with existing courses or repositories.',
+          repoCourse: NullableStaffCourseSchema.parse(repoCourse),
+          githubRepoUrl: githubRepoExists
+            ? `https://github.com/${config.githubCourseOwner}/${input.repoShortName}`
+            : null,
+          pathCourse: NullableStaffCourseSchema.parse(pathCourse),
+        },
+        'CONFLICT',
+      );
     }
 
     const jobSequenceId = await createCourseFromRequest({

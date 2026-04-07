@@ -177,22 +177,22 @@ export function AccessControlForm({
     if (appliesTo.targetType === 'student_label') {
       const studentLabels = appliesTo.studentLabels;
       if (studentLabels.length === 0) return `Override ${index + 1}`;
-      if (studentLabels.length === 1) return `Overrides for ${studentLabels[0].name}`;
+      if (studentLabels.length === 1) return studentLabels[0].name;
       if (studentLabels.length === 2) {
-        return `Overrides for ${studentLabels[0].name} and ${studentLabels[1].name}`;
+        return `${studentLabels[0].name} and ${studentLabels[1].name}`;
       }
       const remaining = studentLabels.length - 2;
-      return `Overrides for ${studentLabels[0].name}, ${studentLabels[1].name}, and ${remaining} ${remaining === 1 ? 'other' : 'others'}`;
+      return `${studentLabels[0].name}, ${studentLabels[1].name}, and ${remaining} ${remaining === 1 ? 'other' : 'others'}`;
     } else {
       const enrollments = appliesTo.enrollments;
       if (enrollments.length === 0) return `Override ${index + 1}`;
       const getName = (e: (typeof enrollments)[0]) => e.name || e.uid;
-      if (enrollments.length === 1) return `Overrides for ${getName(enrollments[0])}`;
+      if (enrollments.length === 1) return getName(enrollments[0]);
       if (enrollments.length === 2) {
-        return `Overrides for ${getName(enrollments[0])} and ${getName(enrollments[1])}`;
+        return `${getName(enrollments[0])} and ${getName(enrollments[1])}`;
       }
       const remaining = enrollments.length - 2;
-      return `Overrides for ${getName(enrollments[0])}, ${getName(enrollments[1])}, and ${remaining} ${remaining === 1 ? 'other' : 'others'}`;
+      return `${getName(enrollments[0])}, ${getName(enrollments[1])}, and ${remaining} ${remaining === 1 ? 'other' : 'others'}`;
     }
   };
 
@@ -250,7 +250,10 @@ export function AccessControlForm({
         }
         return (
           <div className="px-3 pb-3">
-            <AppliesToField namePrefix={`overrides.${selectedRule.index}`} />
+            <AppliesToField
+              namePrefix={`overrides.${selectedRule.index}`}
+              courseInstanceId={courseInstance.id}
+            />
             <OverrideRuleContent index={selectedRule.index} />
           </div>
         );
@@ -282,7 +285,6 @@ export function AccessControlForm({
                 <div className="p-3">
                   {alert}
                   <AccessControlSummary
-                    courseInstanceId={courseInstance.id}
                     displayTimezone={courseInstance.display_timezone}
                     getOverrideName={getOverrideName}
                     mainRule={watchedData.mainRule}

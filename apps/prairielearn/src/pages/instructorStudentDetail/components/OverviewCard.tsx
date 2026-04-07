@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { z } from 'zod';
 
-import { run } from '@prairielearn/run';
-
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
+import { StudentLabelDropdown } from '../../../components/StudentLabelDropdown.js';
 import { setCookieClient } from '../../../lib/client/cookie.js';
 import {
   StaffCourseInstanceSchema,
@@ -225,68 +224,43 @@ export function OverviewCard({
             {studentLabels.length === 0 && availableStudentLabels.length > 0 && (
               <span className="text-muted fst-italic">No labels</span>
             )}
-            {hasCourseInstancePermissionEdit &&
-              availableStudentLabels.length > 0 &&
-              run(() => {
-                const unassignedLabels = availableStudentLabels.filter(
-                  (l) => !studentLabels.some((sl) => sl.id === l.id),
-                );
-                return (
-                  <div className="dropdown">
-                    <button
-                      className="btn btn-sm btn-outline-secondary dropdown-toggle"
-                      type="button"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <i className="bi bi-plus me-1" aria-hidden="true" />
-                      Add label
-                    </button>
-                    <ul className="dropdown-menu">
-                      {unassignedLabels.map((label) => (
-                        <li key={label.id}>
-                          <button
-                            type="button"
-                            className="dropdown-item"
-                            disabled={isLabelMutating}
-                            onClick={async () => {
-                              setIsLabelMutating(true);
-                              try {
-                                await trpcClient.studentLabels.batchAdd.mutate({
-                                  enrollmentIds: [enrollment.id],
-                                  labelId: label.id,
-                                });
-                                setStudentLabels((prev) => [...prev, label]);
-                              } finally {
-                                setIsLabelMutating(false);
-                              }
-                            }}
-                          >
-                            {label.name}
-                          </button>
-                        </li>
-                      ))}
-                      {unassignedLabels.length === 0 && (
-                        <li>
-                          <span className="dropdown-item text-muted">All labels assigned</span>
-                        </li>
-                      )}
-                      <li>
-                        <hr className="dropdown-divider" />
-                      </li>
-                      <li>
-                        <a
-                          className="dropdown-item"
-                          href={getCourseInstanceStudentLabelsUrl(student.course_instance.id)}
-                        >
-                          <i className="bi bi-gear me-1" aria-hidden="true" />
-                          {canManageLabels ? 'Manage labels' : 'View labels'}
-                        </a>
-                      </li>
-                    </ul>
-                  </div>
-                );
-              })}
+            {hasCourseInstancePermissionEdit && availableStudentLabels.length > 0 && (
+              <StudentLabelDropdown
+                labels={availableStudentLabels}
+                selectedIds={new Set(studentLabels.map((sl) => sl.id))}
+                disabled={isLabelMutating}
+                footer={
+                  <a
+                    className="dropdown-item"
+                    href={getCourseInstanceStudentLabelsUrl(student.course_instance.id)}
+                  >
+                    <i className="bi bi-gear me-1" aria-hidden="true" />
+                    {canManageLabels ? 'Manage labels' : 'View labels'}
+                  </a>
+                }
+                onToggle={async (label) => {
+                  const isSelected = studentLabels.some((sl) => sl.id === label.id);
+                  setIsLabelMutating(true);
+                  try {
+                    if (isSelected) {
+                      await trpcClient.studentLabels.batchRemove.mutate({
+                        enrollmentIds: [enrollment.id],
+                        labelId: label.id,
+                      });
+                      setStudentLabels((prev) => prev.filter((l) => l.id !== label.id));
+                    } else {
+                      await trpcClient.studentLabels.batchAdd.mutate({
+                        enrollmentIds: [enrollment.id],
+                        labelId: label.id,
+                      });
+                      setStudentLabels((prev) => [...prev, label]);
+                    }
+                  } finally {
+                    setIsLabelMutating(false);
+                  }
+                }}
+              />
+            )}
           </div>
         </div>
       </div>

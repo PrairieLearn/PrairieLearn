@@ -55,14 +55,15 @@ function DeadlineArrayInput({
   releaseDateRef.current = releaseDate;
   deadlinesRef.current = deadlines;
 
-  // Re-validate all deadline dates when the number of deadlines changes (handles
-  // append and remove) or when external constraints (dueDate, releaseDate) change.
+  // Re-validate all deadline dates and credits when the number of deadlines
+  // changes (handles append and remove) or when external constraints change.
   // Without this, react-hook-form won't run validators on newly appended fields
   // or re-check existing fields against updated constraints.
   useEffect(() => {
     if (deadlineFields.length > 0) {
       for (let i = 0; i < deadlineFields.length; i++) {
         void trigger(`${fieldArrayName}.${i}.date` as Path<AccessControlFormData>);
+        void trigger(`${fieldArrayName}.${i}.credit` as Path<AccessControlFormData>);
       }
     }
   }, [deadlineFields.length, dueDate, releaseDate, fieldArrayName, trigger]);
@@ -140,12 +141,16 @@ function DeadlineArrayInput({
     return true;
   };
 
-  const validateCredit = (value: unknown) => {
+  const validateCredit = (value: unknown, index: number) => {
     const numValue = value as number;
     if (isEarly) {
       if (numValue < 101 || numValue > 200) return 'Credit must be 101-200%';
     } else {
       if (numValue < 0 || numValue > 99) return 'Credit must be 0-99%';
+    }
+    const currentDeadlines = deadlinesRef.current;
+    if (index > 0 && numValue >= currentDeadlines[index - 1].credit) {
+      return 'Credit must be less than previous deadline';
     }
     return true;
   };
@@ -226,7 +231,7 @@ function DeadlineArrayInput({
 
       {deadlineFields.map((deadlineField, index) => (
         <div key={deadlineField.id} className="mb-3">
-          <div className="d-flex gap-2 mb-1 flex-wrap">
+          <div className="d-flex gap-2 mb-1 flex-wrap align-items-start">
             <div className="flex-grow-1">
               <Form.Control
                 type="datetime-local"
@@ -279,7 +284,7 @@ function DeadlineArrayInput({
                     `${fieldArrayName}.${index}.credit` as Parameters<typeof register>[0],
                     {
                       valueAsNumber: true,
-                      validate: validateCredit,
+                      validate: (value) => validateCredit(value, index),
                     },
                   )}
                 />
