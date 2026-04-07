@@ -408,10 +408,13 @@ function createLogger(runId: string): WorkflowLogger & { flush(): Promise<void> 
     async flush() {
       if (buffer.length === 0) return;
       // Drain the buffer and concatenate in one step.
-      const text = buffer.splice(0).join('');
+      const drained = buffer.splice(0);
+      const text = drained.join('');
       try {
         await pool.queryAsync(sql.append_output, { id: runId, text });
       } catch (err) {
+        // Restore drained logs so they can be retried on the next flush.
+        buffer.unshift(...drained);
         logger.error(`Failed to append log output for workflow ${runId}`, err);
       }
     },
