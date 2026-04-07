@@ -27,6 +27,7 @@ const serverUuid = crypto.randomUUID();
 const DEFAULT_CRON_INTERVAL_MS = 60_000;
 
 let cronInterval: NodeJS.Timeout | null = null;
+let recoveryInProgress = false;
 
 /**
  * Initializes the workflow engine by creating a dedicated database connection
@@ -441,10 +442,14 @@ export function startCronLoop(opts?: { intervalMs?: number }): void {
   }
 
   cronInterval = setInterval(async () => {
+    if (recoveryInProgress) return;
+    recoveryInProgress = true;
     try {
       await recoverStaleRuns();
     } catch (err) {
       logger.error('Failed to recover stale workflow runs', err);
+    } finally {
+      recoveryInProgress = false;
     }
   }, intervalMs);
 }
