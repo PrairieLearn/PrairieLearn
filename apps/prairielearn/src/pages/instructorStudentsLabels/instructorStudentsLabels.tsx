@@ -89,6 +89,7 @@ router.get(
               courseInstanceId={courseInstance.id}
               initialLabels={initialLabels}
               canEdit={canEdit}
+              isExampleCourse={course.example_course}
               isDevMode={config.devMode}
               origHash={origHash}
             />
