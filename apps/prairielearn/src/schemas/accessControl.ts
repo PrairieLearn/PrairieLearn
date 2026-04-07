@@ -338,6 +338,11 @@ export function validateGlobalDateConsistencyIssues(
   const issues: AccessControlValidationIssue[] = [];
   if (validationRules.length === 0) return issues;
 
+  // This is intentionally a coarse global check. We collapse the candidate
+  // rules down to lenient bounds that any merged timeline must satisfy:
+  // earliest release, earliest configured due, and latest configured due.
+  // That catches obviously impossible combinations without trying to model
+  // every exact target/override interaction here.
   const releaseTimes = validationRules
     .map(({ rule }) => findReleaseMs(rule))
     .filter((releaseMs): releaseMs is number => releaseMs != null);
@@ -350,7 +355,7 @@ export function validateGlobalDateConsistencyIssues(
   const minDueMs = configuredDueTimes.length > 0 ? Math.min(...configuredDueTimes) : null;
   const maxDueMs = configuredDueTimes.length > 0 ? Math.max(...configuredDueTimes) : null;
   const dueCanBeUnset = dueStates.some(
-    ({ hasConfiguredDue, dueMs }) => !hasConfiguredDue || dueMs == null,
+    ({ hasConfiguredDue, dueMs }) => hasConfiguredDue && dueMs == null,
   );
 
   for (const validationRule of validationRules) {

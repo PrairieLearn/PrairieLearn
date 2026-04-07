@@ -679,4 +679,36 @@ describe('Global temporal validation', () => {
 
     assert.deepEqual(issues, []);
   });
+
+  it('does not skip due-based global checks when an override inherits the due date', () => {
+    const issues = validateGlobalDateConsistencyIssues([
+      {
+        rule: AccessControlJsonSchema.parse({
+          dateControl: {
+            releaseDate: '2024-04-07T00:00:00',
+            dueDate: '2024-04-10T00:00:00',
+          },
+        }),
+        targetType: 'none',
+        ruleIndex: 0,
+      },
+      {
+        // Override that only sets an early deadline but does NOT touch dueDate.
+        // dueDate is undefined here, meaning "inherit from defaults" (Apr 10),
+        // NOT "students have no due date".
+        rule: AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: {
+            earlyDeadlines: [{ date: '2024-04-12T00:00:00', credit: 120 }],
+          },
+        }),
+        targetType: 'student_label',
+        ruleIndex: 1,
+      },
+    ]);
+
+    assert.isTrue(
+      issues.some((issue) => issue.message.includes('before the latest possible due date')),
+    );
+  });
 });
