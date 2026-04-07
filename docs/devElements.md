@@ -22,7 +22,7 @@ for a real example of this.
 By convention,
 all element files are named the same as the element they belong to. That directory
 should contain an `info.json` file that contains metadata about the element, including
-which file is the element controller and any dependencies of the element. See [the section on dependencies](#element-dependencies) for more information
+which file is the element controller and any dependencies of the element. See [the section on dependencies](#element-dependencies) for more information.
 
 Each element should have a `.py` controller that contains the functions listed
 in the next section. This controller is responsible for rendering the element,
