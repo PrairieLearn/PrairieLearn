@@ -315,7 +315,10 @@ export function InstructorAssessmentAccessNew({
   return PageLayout({
     resLocals,
     pageTitle: 'Access',
-    headContent: [compiledStylesheetTag('splitPane.css')],
+    headContent: [
+      compiledStylesheetTag('splitPane.css'),
+      compiledStylesheetTag('instructorAssessmentAccess.css'),
+    ],
     navContext: {
       type: 'instructor',
       page: 'assessment',
