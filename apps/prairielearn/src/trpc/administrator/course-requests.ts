@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
+import { type StaffCourse, StaffCourseSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import {
   checkInstructorLegitimacy,
@@ -24,18 +25,12 @@ import { throwAppError } from '../app-errors.js';
 import { normalizeCoursePathInput } from './course-path.js';
 import { requireAdministrator, t } from './init.js';
 
-interface ConflictCourse {
-  id: string;
-  short_name: string | null;
-  title: string | null;
-}
-
 export interface AdminCourseRequestError {
   CreateCourse: {
     code: 'CONFLICTS';
-    repoCourse: ConflictCourse | null;
+    repoCourse: StaffCourse | null;
     githubRepoUrl: string | null;
-    pathCourse: ConflictCourse | null;
+    pathCourse: StaffCourse | null;
   };
 }
 
@@ -86,19 +81,18 @@ const createCourse = t.procedure
     ]);
 
     if (repoCourse != null || githubRepoExists || pathCourse != null) {
-      throwAppError<AdminCourseRequestError['CreateCourse']>({
-        code: 'CONFLICTS',
-        message: 'Conflicts detected with existing courses or repositories.',
-        repoCourse: repoCourse
-          ? { id: repoCourse.id, short_name: repoCourse.short_name, title: repoCourse.title }
-          : null,
-        githubRepoUrl: githubRepoExists
-          ? `https://github.com/${config.githubCourseOwner}/${input.repoShortName}`
-          : null,
-        pathCourse: pathCourse
-          ? { id: pathCourse.id, short_name: pathCourse.short_name, title: pathCourse.title }
-          : null,
-      });
+      throwAppError<AdminCourseRequestError['CreateCourse']>(
+        {
+          code: 'CONFLICTS',
+          message: 'Conflicts detected with existing courses or repositories.',
+          repoCourse: repoCourse ? StaffCourseSchema.parse(repoCourse) : null,
+          githubRepoUrl: githubRepoExists
+            ? `https://github.com/${config.githubCourseOwner}/${input.repoShortName}`
+            : null,
+          pathCourse: pathCourse ? StaffCourseSchema.parse(pathCourse) : null,
+        },
+        'CONFLICT',
+      );
     }
 
     const jobSequenceId = await createCourseFromRequest({
