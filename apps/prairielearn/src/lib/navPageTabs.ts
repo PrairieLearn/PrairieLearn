@@ -1,3 +1,5 @@
+import { html } from '@prairielearn/html';
+
 import { IssueBadgeHtml } from '../components/IssueBadge.js';
 import type { NavPage, TabInfo } from '../components/Navbar.types.js';
 
@@ -258,6 +260,18 @@ export function getNavPageTabs() {
         urlSuffix: '/administrator/courses',
         iconClasses: 'fa fa-chalkboard',
         tabLabel: 'Courses',
+      },
+      {
+        activeSubPage: 'courseRequests',
+        urlSuffix: '/administrator/courseRequests',
+        iconClasses: 'fa fa-inbox',
+        tabLabel: 'Requests',
+        htmlSuffix: ({ pendingCourseRequestCount }) => {
+          if (!pendingCourseRequestCount) return '';
+          return html`<span class="badge rounded-pill text-bg-primary ms-2"
+            >${pendingCourseRequestCount}</span
+          >`;
+        },
       },
       {
         activeSubPage: 'queries',

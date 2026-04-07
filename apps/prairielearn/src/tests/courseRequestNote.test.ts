@@ -11,7 +11,7 @@ import * as helperServer from './helperServer.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const baseUrl = `${siteUrl}/pl`;
-const coursesAdminUrl = `${baseUrl}/administrator/courses`;
+const courseRequestsAdminUrl = `${baseUrl}/administrator/courseRequests`;
 
 describe('Course request note', { timeout: 60_000 }, function () {
   let trpcClient: ReturnType<typeof createAdministratorTrpcClient>;
@@ -55,7 +55,7 @@ describe('Course request note', { timeout: 60_000 }, function () {
     });
 
     test.sequential('check note information', async () => {
-      const response = await helperClient.fetchCheerio(coursesAdminUrl);
+      const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
       const textarea = response.$(`#course-request-note-${courseRequestId}`);
