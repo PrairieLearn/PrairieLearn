@@ -1929,6 +1929,11 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/administrator/trpc', administratorTrpcRouter);
 
   app.use(
+    '/pl/administrator',
+    (await import('./middlewares/selectPendingCourseRequestCount.js')).default,
+  );
+
+  app.use(
     '/pl/administrator/admins',
     (await import('./pages/administratorAdmins/administratorAdmins.js')).default,
   );
@@ -2335,6 +2340,8 @@ if (shouldStartServer) {
 
     if (isEnterprise() && config.hasAzure) {
       const { getAzureStrategy } = await import('./ee/auth/azure/index.js');
+      // https://github.com/Rel1cx/eslint-react/issues/1690
+      // eslint-disable-next-line @eslint-react/error-boundaries -- Not React; this is passport.use()
       passport.use(getAzureStrategy());
     }
 

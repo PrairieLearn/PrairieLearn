@@ -7,14 +7,12 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
+import { computeScopedJsonHash } from '../lib/editorUtil.js';
 import { features } from '../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import {
-  computeHash,
-  fetchAllAccessControlRules,
-} from '../pages/instructorAssessmentAccess/rules.js';
 import type { AccessControlJsonInput } from '../schemas/accessControl.js';
+import type { AssessmentJsonInput } from '../schemas/infoAssessment.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import {
@@ -78,12 +76,11 @@ describe('Access control save via tRPC', () => {
   }
 
   async function getOrigHash() {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'hw19-accessControlUi',
-    });
-    const rules = await fetchAllAccessControlRules(assessment);
-    return computeHash(rules);
+    const hash = await computeScopedJsonHash<AssessmentJsonInput>(
+      assessmentPath(),
+      (json) => json.accessControl ?? [],
+    );
+    return hash;
   }
 
   function assessmentPath() {

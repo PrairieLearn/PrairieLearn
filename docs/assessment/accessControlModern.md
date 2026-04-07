@@ -134,15 +134,21 @@ When PrairieTest exams are configured, students must be checked in via PrairieTe
 
 ### `afterComplete`
 
-Controls what students can see after completing an assessment.
+Controls what students can see after completing an assessment. An assessment is considered complete when students can no longer answer questions — typically when the last late deadline passes (or due date if no late deadlines), or when the assessment is closed (e.g., time limit expires, autoclose, or instructor closes it).
 
-| Field                    | Type    | Description                                                   |
-| ------------------------ | ------- | ------------------------------------------------------------- |
-| `hideQuestions`          | boolean | If `true`, questions are hidden after assessment completion.  |
-| `showQuestionsAgainDate` | string  | ISO datetime. Date to reveal questions back to students.      |
-| `hideQuestionsAgainDate` | string  | ISO datetime. Date to re-hide questions after revealing them. |
-| `hideScore`              | boolean | If `true`, the score is hidden after assessment completion.   |
-| `showScoreAgainDate`     | string  | ISO datetime. Date to reveal the score to students.           |
+By default, questions are hidden and scores are shown after completion.
+
+| Field                    | Type    | Default | Description                                                   |
+| ------------------------ | ------- | ------- | ------------------------------------------------------------- |
+| `hideQuestions`          | boolean | `true`  | If `true`, questions are hidden after assessment completion.  |
+| `showQuestionsAgainDate` | string  |         | ISO datetime. Date to reveal questions back to students.      |
+| `hideQuestionsAgainDate` | string  |         | ISO datetime. Date to re-hide questions after revealing them. |
+| `hideScore`              | boolean | `false` | If `true`, the score is hidden after assessment completion.   |
+| `showScoreAgainDate`     | string  |         | ISO datetime. Date to reveal the score to students.           |
+
+!!! warning
+
+    Setting `hideQuestions` to `false` on an assessment with PrairieTest exams is not recommended. Students may be able to view exam content when their assessment is closed.
 
 The visibility logic follows a toggle pattern:
 
