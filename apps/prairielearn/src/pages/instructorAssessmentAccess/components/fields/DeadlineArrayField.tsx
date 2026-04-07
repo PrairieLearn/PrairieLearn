@@ -335,9 +335,9 @@ export function MainDeadlineArrayField({ type }: { type: 'early' | 'late' }) {
     name: 'mainRule.dueDate',
   });
 
-  const deadlines = useWatch({
-    name: fieldName as Path<AccessControlFormData>,
-  }) as DeadlineEntry[] | undefined;
+  const deadlines = useWatch<AccessControlFormData, typeof fieldName>({
+    name: fieldName,
+  });
 
   const shouldShow = isEarly || (dueDate !== null && !!dueDate);
 
@@ -350,7 +350,7 @@ export function MainDeadlineArrayField({ type }: { type: 'early' | 'late' }) {
       idPrefix="mainRule"
       releaseDate={releaseDate}
       dueDate={dueDate}
-      deadlines={deadlines ?? []}
+      deadlines={deadlines}
     />
   );
 }
@@ -369,13 +369,13 @@ export function OverrideDeadlineArrayField({
   const { setValue } = useFormContext<AccessControlFormData>();
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, fieldPath);
 
-  const mainDeadlines = useWatch({
-    name: `mainRule.${fieldPath}` as Path<AccessControlFormData>,
-  }) as DeadlineEntry[];
+  const mainDeadlines = useWatch<AccessControlFormData, `mainRule.${typeof fieldPath}`>({
+    name: `mainRule.${fieldPath}`,
+  });
 
-  const deadlines = useWatch({
-    name: `overrides.${index}.${fieldPath}` as Path<AccessControlFormData>,
-  }) as DeadlineEntry[];
+  const deadlines = useWatch<AccessControlFormData, `overrides.${number}.${typeof fieldPath}`>({
+    name: `overrides.${index}.${fieldPath}`,
+  });
 
   const mainReleaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
@@ -385,13 +385,13 @@ export function OverrideDeadlineArrayField({
   });
 
   const { isOverridden: releaseDateOverridden } = useOverrideField(index, 'releaseDate');
-  const overrideReleaseDate = useWatch({
-    name: `overrides.${index}.releaseDate` as Path<AccessControlFormData>,
-  }) as string;
+  const overrideReleaseDate = useWatch<AccessControlFormData, `overrides.${number}.releaseDate`>({
+    name: `overrides.${index}.releaseDate`,
+  });
   const { isOverridden: dueDateOverridden } = useOverrideField(index, 'dueDate');
-  const overrideDueDate = useWatch({
-    name: `overrides.${index}.dueDate` as Path<AccessControlFormData>,
-  }) as string | null;
+  const overrideDueDate = useWatch<AccessControlFormData, `overrides.${number}.dueDate`>({
+    name: `overrides.${index}.dueDate`,
+  });
 
   const effectiveReleaseDate = releaseDateOverridden ? overrideReleaseDate : mainReleaseDate;
   const effectiveDueDate = dueDateOverridden ? overrideDueDate : mainDueDate;
@@ -401,7 +401,7 @@ export function OverrideDeadlineArrayField({
       isOverridden={isOverridden}
       label={label}
       onOverride={() => {
-        const copied = (mainDeadlines ?? []).map((d) => ({ ...d }));
+        const copied = mainDeadlines.map((d) => ({ ...d }));
         setValue(
           `overrides.${index}.${fieldPath}` as Path<AccessControlFormData>,
           copied as never,

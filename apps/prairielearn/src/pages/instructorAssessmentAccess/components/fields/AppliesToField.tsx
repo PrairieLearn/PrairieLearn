@@ -13,7 +13,6 @@ import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
 import { useTRPC } from '../../../../trpc/assessment/context.js';
-import type { NamePrefix } from '../hooks/fieldNames.js';
 import type { AccessControlFormData, AppliesTo, EnrollmentTarget, TargetType } from '../types.js';
 
 import { AddStudentsModal } from './AddStudentsModal.js';
@@ -22,7 +21,7 @@ export function AppliesToField({
   namePrefix,
   courseInstanceId,
 }: {
-  namePrefix: NamePrefix;
+  namePrefix: `overrides.${number}`;
   courseInstanceId: string;
 }) {
   const { setValue } = useFormContext<AccessControlFormData>();
@@ -30,8 +29,8 @@ export function AppliesToField({
 
   const { data: allLabels } = useQuery(trpc.accessControl.studentLabels.queryOptions());
 
-  const appliesTo = useWatch({
-    name: `${namePrefix}.appliesTo` as Path<AccessControlFormData>,
+  const appliesTo = useWatch<AccessControlFormData, `overrides.${number}.appliesTo`>({
+    name: `${namePrefix}.appliesTo`,
   });
 
   const { replace: replaceEnrollments, remove: removeEnrollment } = useFieldArray({

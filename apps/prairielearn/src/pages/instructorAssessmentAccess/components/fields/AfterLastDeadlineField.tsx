@@ -204,17 +204,17 @@ export function OverrideAfterLastDeadlineField({ index }: { index: number }) {
   );
 
   const { isOverridden: dueDateOverridden } = useOverrideField(index, 'dueDate');
-  const dueDate = useWatch({
-    name: `overrides.${index}.dueDate` as Path<AccessControlFormData>,
-  }) as string | null;
+  const dueDate = useWatch<AccessControlFormData, `overrides.${number}.dueDate`>({
+    name: `overrides.${index}.dueDate`,
+  });
   const mainDueDate = useWatch<AccessControlFormData, 'mainRule.dueDate'>({
     name: 'mainRule.dueDate',
   });
 
   const { isOverridden: lateDeadlinesOverridden } = useOverrideField(index, 'lateDeadlines');
-  const lateDeadlines = useWatch({
-    name: `overrides.${index}.lateDeadlines` as Path<AccessControlFormData>,
-  }) as DeadlineEntry[];
+  const lateDeadlines = useWatch<AccessControlFormData, `overrides.${number}.lateDeadlines`>({
+    name: `overrides.${index}.lateDeadlines`,
+  });
   const mainLateDeadlines = useWatch<AccessControlFormData, 'mainRule.lateDeadlines'>({
     name: 'mainRule.lateDeadlines',
   });

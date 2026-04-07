@@ -12,9 +12,12 @@ import type { AccessControlFormData } from '../types.js';
 export function useOverrideField(index: number, fieldName: string) {
   const { setValue, getValues } = useFormContext<AccessControlFormData>();
 
-  const overriddenFields = useWatch({
-    name: `overrides.${index}.overriddenFields` as Path<AccessControlFormData>,
-  }) as string[];
+  const overriddenFields = useWatch<
+    AccessControlFormData,
+    `overrides.${number}.overriddenFields`
+  >({
+    name: `overrides.${index}.overriddenFields`,
+  });
 
   const isOverridden = overriddenFields.includes(fieldName);
 
