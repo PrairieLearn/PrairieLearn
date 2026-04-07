@@ -11,99 +11,39 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import { Fragment, type ReactNode, useId, useMemo } from 'react';
 import { Badge, Button } from 'react-bootstrap';
-import { get, useFormState } from 'react-hook-form';
+import { useFormState } from 'react-hook-form';
 
 import {
-  type DateFieldErrors,
   DateTableView,
   OverrideRuleSummaryCard,
-  type SummaryItemErrors,
+  type RuleFormErrors,
   generateDateTableRows,
   generateRuleSummary,
 } from './RuleSummary.js';
-import type { AccessControlFormData, DeadlineEntry, MainRuleData, OverrideData } from './types.js';
+import type { AccessControlFormData, MainRuleData, OverrideData } from './types.js';
 
-// Count leaf errors in a react-hook-form errors object. Leaf nodes have a
-// `message` property; everything else is a container.
+/**
+ * Count leaf errors in a react-hook-form errors object. Leaf nodes have a
+ * `message` property; everything else is a container.
+ */
 function countErrors(obj: unknown): number {
   if (!obj || typeof obj !== 'object') return 0;
   if ('message' in obj && typeof (obj as Record<string, unknown>).message === 'string') return 1;
   return Object.values(obj).reduce((sum: number, val) => sum + countErrors(val), 0);
 }
 
-function useSectionErrorCounts(): { mainRule: number; overrides: number } {
-  const { errors } = useFormState<AccessControlFormData>();
-  return {
-    mainRule: countErrors(errors.mainRule),
-    overrides: countErrors(errors.overrides),
-  };
-}
-
-function useDateFieldErrors(
-  pathPrefix: string,
-  rule: { earlyDeadlines: DeadlineEntry[]; lateDeadlines: DeadlineEntry[] },
-): DateFieldErrors | undefined {
-  const { errors } = useFormState<AccessControlFormData>();
-  const result: DateFieldErrors = {};
-  let hasErrors = false;
-
-  const dueDateMsg: string | undefined = get(errors, `${pathPrefix}.dueDate`)?.message;
-  if (dueDateMsg) {
-    result.dueDate = dueDateMsg;
-    hasErrors = true;
-  }
-
-  const earlyMessages: (string | undefined)[] = [];
-  for (let i = 0; i < rule.earlyDeadlines.length; i++) {
-    const dateMsg: string | undefined = get(
-      errors,
-      `${pathPrefix}.earlyDeadlines.${i}.date`,
-    )?.message;
-    const creditMsg: string | undefined = get(
-      errors,
-      `${pathPrefix}.earlyDeadlines.${i}.credit`,
-    )?.message;
-    const combined = [dateMsg, creditMsg].filter(Boolean).join('; ');
-    if (combined) {
-      earlyMessages[i] = combined;
-      hasErrors = true;
-    }
-  }
-  if (earlyMessages.length > 0) result.earlyDeadlines = earlyMessages;
-
-  const lateMessages: (string | undefined)[] = [];
-  for (let i = 0; i < rule.lateDeadlines.length; i++) {
-    const dateMsg: string | undefined = get(
-      errors,
-      `${pathPrefix}.lateDeadlines.${i}.date`,
-    )?.message;
-    const creditMsg: string | undefined = get(
-      errors,
-      `${pathPrefix}.lateDeadlines.${i}.credit`,
-    )?.message;
-    const combined = [dateMsg, creditMsg].filter(Boolean).join('; ');
-    if (combined) {
-      lateMessages[i] = combined;
-      hasErrors = true;
-    }
-  }
-  if (lateMessages.length > 0) result.lateDeadlines = lateMessages;
-
-  return hasErrors ? result : undefined;
-}
-
 function SortableOverrideCard({
   id,
-  index,
   override,
+  formErrors,
   title,
   displayTimezone,
   onEdit,
   onRemove,
 }: {
   id: string;
-  index: number;
   override: OverrideData;
+  formErrors: RuleFormErrors | undefined;
   title: string;
   displayTimezone: string;
   onEdit: () => void;
@@ -112,8 +52,6 @@ function SortableOverrideCard({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
   });
-  const fieldErrors = useDateFieldErrors(`overrides.${index}`, override);
-  const itemErrors = useSummaryItemErrors(`overrides.${index}`, override);
 
   const style = {
     opacity: isDragging ? 0.6 : 1,
@@ -127,64 +65,13 @@ function SortableOverrideCard({
         rule={override}
         title={title}
         displayTimezone={displayTimezone}
-        fieldErrors={fieldErrors}
-        itemErrors={itemErrors}
+        formErrors={formErrors}
         dragHandleProps={{ ...attributes, ...listeners }}
         onEdit={onEdit}
         onRemove={onRemove}
       />
     </div>
   );
-}
-
-function useSummaryItemErrors(
-  pathPrefix: string,
-  rule: MainRuleData | OverrideData,
-): SummaryItemErrors | undefined {
-  const { errors } = useFormState<AccessControlFormData>();
-  const result: SummaryItemErrors = {};
-  let hasErrors = false;
-
-  if ('prairieTestExams' in rule && rule.prairieTestExams.length > 0) {
-    const examErrors: string[] = [];
-    for (let i = 0; i < rule.prairieTestExams.length; i++) {
-      const msg: string | undefined = get(
-        errors,
-        `${pathPrefix}.prairieTestExams.${i}.examUuid`,
-      )?.message;
-      if (msg) examErrors.push(`Exam ${i + 1}: ${msg}`);
-    }
-    if (examErrors.length > 0) {
-      result.prairietest = examErrors.join('; ');
-      hasErrors = true;
-    }
-  }
-
-  const durationMsg: string | undefined = get(errors, `${pathPrefix}.durationMinutes`)?.message;
-  if (durationMsg) {
-    result.duration = durationMsg;
-    hasErrors = true;
-  }
-
-  const passwordMsg: string | undefined = get(errors, `${pathPrefix}.password`)?.message;
-  if (passwordMsg) {
-    result.password = passwordMsg;
-    hasErrors = true;
-  }
-
-  const qvMsg: string | undefined = get(errors, `${pathPrefix}.questionVisibility`)?.message;
-  if (qvMsg) {
-    result['question-visibility'] = qvMsg;
-    hasErrors = true;
-  }
-
-  const svMsg: string | undefined = get(errors, `${pathPrefix}.scoreVisibility`)?.message;
-  if (svMsg) {
-    result['score-visibility'] = svMsg;
-    hasErrors = true;
-  }
-
-  return hasErrors ? result : undefined;
 }
 
 function SummaryItemChips({
@@ -220,15 +107,15 @@ function SummaryItemChips({
 
 function MainRuleSummaryContent({
   rule,
+  formErrors,
   displayTimezone,
 }: {
   rule: MainRuleData;
+  formErrors: RuleFormErrors | undefined;
   displayTimezone: string;
 }) {
-  const fieldErrors = useDateFieldErrors('mainRule', rule);
-  const itemErrors = useSummaryItemErrors('mainRule', rule);
-  const summaryItems = generateRuleSummary(rule, displayTimezone, itemErrors);
-  const dateTableRows = generateDateTableRows(rule, displayTimezone, fieldErrors);
+  const summaryItems = generateRuleSummary(rule, displayTimezone, formErrors);
+  const dateTableRows = generateDateTableRows(rule, displayTimezone, formErrors);
 
   return (
     <div>
@@ -301,7 +188,9 @@ export function AccessControlSummary({
     onMoveOverride(oldIndex, newIndex);
   };
 
-  const errorCounts = useSectionErrorCounts();
+  const { errors } = useFormState<AccessControlFormData>();
+  const mainRuleErrorCount = countErrors(errors.mainRule);
+  const overridesErrorCount = countErrors(errors.overrides);
 
   return (
     <div>
@@ -309,9 +198,9 @@ export function AccessControlSummary({
         <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
           <h5 className="mb-0">
             Defaults
-            {errorCounts.mainRule > 0 && (
+            {mainRuleErrorCount > 0 && (
               <Badge bg="danger" className="ms-2" style={{ fontSize: '0.7rem' }}>
-                {errorCounts.mainRule} {errorCounts.mainRule === 1 ? 'error' : 'errors'}
+                {mainRuleErrorCount} {mainRuleErrorCount === 1 ? 'error' : 'errors'}
               </Badge>
             )}
           </h5>
@@ -330,16 +219,20 @@ export function AccessControlSummary({
           Access settings that apply to all students by default.
         </small>
 
-        <MainRuleSummaryContent rule={mainRule} displayTimezone={displayTimezone} />
+        <MainRuleSummaryContent
+          rule={mainRule}
+          formErrors={errors.mainRule}
+          displayTimezone={displayTimezone}
+        />
       </section>
 
       <section>
         <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
           <h5 className="mb-0">
             Overrides
-            {errorCounts.overrides > 0 && (
+            {overridesErrorCount > 0 && (
               <Badge bg="danger" className="ms-2" style={{ fontSize: '0.7rem' }}>
-                {errorCounts.overrides} {errorCounts.overrides === 1 ? 'error' : 'errors'}
+                {overridesErrorCount} {overridesErrorCount === 1 ? 'error' : 'errors'}
               </Badge>
             )}
           </h5>
@@ -388,8 +281,8 @@ export function AccessControlSummary({
                     )}
                     <SortableOverrideCard
                       id={sortableIds[index]}
-                      index={index}
                       override={override}
+                      formErrors={errors.overrides?.[index]}
                       title={getOverrideName(index)}
                       displayTimezone={displayTimezone}
                       onEdit={() => onEditOverride(index)}

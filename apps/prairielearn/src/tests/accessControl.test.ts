@@ -525,14 +525,24 @@ describe('Date ordering validation', () => {
 });
 
 describe('Credit monotonicity validation', () => {
-  it('should reject early deadline credit below 100%', () => {
+  it('should reject early deadline credit below 101%', () => {
     const rule: AccessControlJson = AccessControlJsonSchema.parse({
       dateControl: {
         earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 80 }],
       },
     });
     const errors = validateRuleCreditMonotonicity(rule);
-    assert.isTrue(errors.some((e) => e.includes('at least 100%')));
+    assert.isTrue(errors.some((e) => e.includes('between 101% and 200%')));
+  });
+
+  it('should reject early deadline credit of exactly 100%', () => {
+    const rule: AccessControlJson = AccessControlJsonSchema.parse({
+      dateControl: {
+        earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 100 }],
+      },
+    });
+    const errors = validateRuleCreditMonotonicity(rule);
+    assert.isTrue(errors.some((e) => e.includes('between 101% and 200%')));
   });
 
   it('should reject increasing early deadline credits', () => {
@@ -555,7 +565,7 @@ describe('Credit monotonicity validation', () => {
       },
     });
     const errors = validateRuleCreditMonotonicity(rule);
-    assert.isTrue(errors.some((e) => e.includes('less than 100%')));
+    assert.isTrue(errors.some((e) => e.includes('between 0% and 99%')));
   });
 
   it('should reject increasing late deadline credits', () => {

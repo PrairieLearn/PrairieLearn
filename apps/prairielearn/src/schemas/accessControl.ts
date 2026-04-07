@@ -17,7 +17,7 @@ export const MAX_ENROLLMENT_RULES = 100;
 export const DeadlineEntryJsonSchema = z
   .object({
     date: DatetimeLocalStringSchema.describe('Date as ISO String for additional deadline'),
-    credit: z.number().min(0).describe('Amount of credit as a percent to allow'),
+    credit: z.number().min(0).max(200).describe('Amount of credit as a percent to allow'),
   })
   .strict();
 
@@ -436,8 +436,8 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
 
   if (dc.earlyDeadlines) {
     for (const d of dc.earlyDeadlines) {
-      if (d.credit < 100) {
-        errors.push(`Early deadline credit must be at least 100%, got ${d.credit}%.`);
+      if (d.credit < 101 || d.credit > 200) {
+        errors.push(`Early deadline credit must be between 101% and 200%, got ${d.credit}%.`);
         break;
       }
     }
@@ -454,8 +454,8 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
 
   if (dc.lateDeadlines) {
     for (const d of dc.lateDeadlines) {
-      if (d.credit >= 100) {
-        errors.push(`Late deadline credit must be less than 100%, got ${d.credit}%.`);
+      if (d.credit < 0 || d.credit > 99) {
+        errors.push(`Late deadline credit must be between 0% and 99%, got ${d.credit}%.`);
         break;
       }
     }

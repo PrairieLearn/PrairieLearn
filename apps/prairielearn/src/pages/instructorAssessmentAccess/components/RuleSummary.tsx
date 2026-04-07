@@ -1,6 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import type { ReactNode } from 'react';
 import { Button, Card } from 'react-bootstrap';
+import type { FieldErrors } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
@@ -10,6 +11,7 @@ import {
   DATE_CONTROL_FIELD_NAMES,
   type DeadlineEntry,
   type MainRuleData,
+  type OverridableFieldName,
   type OverrideData,
   isNonDefaultQuestionVisibility,
   isNonDefaultScoreVisibility,
@@ -17,11 +19,14 @@ import {
 
 type RuleData = MainRuleData | OverrideData;
 
+/** react-hook-form error subtree for a single access control rule. */
+export type RuleFormErrors = FieldErrors<MainRuleData> | FieldErrors<OverrideData>;
+
 function isMainRuleData(rule: RuleData): rule is MainRuleData {
   return 'dateControlEnabled' in rule;
 }
 
-function isOverrideFieldActive(rule: RuleData, fieldName: string): boolean {
+function isOverrideFieldActive(rule: RuleData, fieldName: OverridableFieldName): boolean {
   if (isMainRuleData(rule)) return true;
   return rule.overriddenFields.includes(fieldName);
 }
@@ -33,19 +38,10 @@ interface DateTableRow {
   error?: string;
 }
 
-/**
- * Maps field paths to their error messages for date-related fields.
- */
-export interface DateFieldErrors {
-  dueDate?: string;
-  earlyDeadlines?: (string | undefined)[];
-  lateDeadlines?: (string | undefined)[];
-}
-
 export function generateDateTableRows(
   rule: RuleData,
   displayTimezone: string,
-  fieldErrors?: DateFieldErrors,
+  formErrors?: RuleFormErrors,
 ): DateTableRow[] {
   const rows: DateTableRow[] = [];
 
@@ -90,6 +86,8 @@ export function generateDateTableRows(
     }
 
     earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+      const dateErr = formErrors?.earlyDeadlines?.[index]?.date?.message;
+      const creditErr = formErrors?.earlyDeadlines?.[index]?.credit?.message;
       rows.push({
         date: deadline.date ? (
           <FriendlyDate
@@ -103,7 +101,7 @@ export function generateDateTableRows(
         ),
         label: `Early ${index + 1}`,
         credit: `${deadline.credit}%`,
-        error: fieldErrors?.earlyDeadlines?.[index],
+        error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
       });
     });
 
@@ -119,7 +117,7 @@ export function generateDateTableRows(
         ),
         label: 'Due',
         credit: '100%',
-        error: fieldErrors?.dueDate,
+        error: formErrors?.dueDate?.message,
       });
     } else if (dueDate === null) {
       rows.push({
@@ -133,11 +131,13 @@ export function generateDateTableRows(
         date: 'No date set',
         label: 'Due',
         credit: '100%',
-        error: fieldErrors?.dueDate,
+        error: formErrors?.dueDate?.message,
       });
     }
 
     lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+      const dateErr = formErrors?.lateDeadlines?.[index]?.date?.message;
+      const creditErr = formErrors?.lateDeadlines?.[index]?.credit?.message;
       rows.push({
         date: deadline.date ? (
           <FriendlyDate
@@ -151,7 +151,7 @@ export function generateDateTableRows(
         ),
         label: `Late ${index + 1}`,
         credit: `${deadline.credit}%`,
-        error: fieldErrors?.lateDeadlines?.[index],
+        error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
       });
     });
 
@@ -189,12 +189,10 @@ interface SummaryItem {
   error?: string;
 }
 
-export type SummaryItemErrors = Partial<Record<string, string>>;
-
 export function generateRuleSummary(
   rule: RuleData,
   displayTimezone: string,
-  itemErrors?: SummaryItemErrors,
+  formErrors?: RuleFormErrors,
 ): SummaryItem[] {
   const items: SummaryItem[] = [];
 
@@ -215,7 +213,7 @@ export function generateRuleSummary(
   if (isOverrideFieldActive(rule, 'durationMinutes')) {
     const durationMinutes = rule.durationMinutes;
     if (durationMinutes !== null) {
-      const error = itemErrors?.duration;
+      const error = formErrors?.durationMinutes?.message;
       items.push({
         key: 'duration',
         icon: 'bi-clock',
@@ -228,7 +226,7 @@ export function generateRuleSummary(
   if (isOverrideFieldActive(rule, 'password')) {
     const password = rule.password;
     if (password !== null) {
-      const error = itemErrors?.password;
+      const error = formErrors?.password?.message;
       items.push({
         key: 'password',
         icon: 'bi-lock',
@@ -239,7 +237,13 @@ export function generateRuleSummary(
   }
 
   if (isMainRuleData(rule) && rule.prairieTestExams.length > 0) {
-    const error = itemErrors?.prairietest;
+    const mainErrors = formErrors as FieldErrors<MainRuleData> | undefined;
+    const examErrors: string[] = [];
+    for (let i = 0; i < rule.prairieTestExams.length; i++) {
+      const msg = mainErrors?.prairieTestExams?.[i]?.examUuid?.message;
+      if (msg) examErrors.push(`Exam ${i + 1}: ${msg}`);
+    }
+    const error = examErrors.length > 0 ? examErrors.join('; ') : undefined;
     items.push({
       key: 'prairietest',
       icon: 'bi-pc-display',
@@ -260,12 +264,13 @@ export function generateRuleSummary(
 
   if ((showAfterComplete || qvNonDefault) && isOverrideFieldActive(rule, 'questionVisibility')) {
     const qv = rule.questionVisibility;
+    const qvError = formErrors?.questionVisibility?.message;
     if (!qv.hideQuestions) {
       items.push({
         key: 'question-visibility',
         icon: 'bi-eye',
         text: 'Questions visible after completion',
-        error: itemErrors?.['question-visibility'],
+        error: qvError,
       });
     } else if (qv.showAgainDate && qv.hideAgainDate) {
       items.push({
@@ -289,7 +294,7 @@ export function generateRuleSummary(
             />
           </>
         ),
-        error: itemErrors?.['question-visibility'],
+        error: qvError,
       });
     } else if (qv.showAgainDate) {
       items.push({
@@ -306,19 +311,20 @@ export function generateRuleSummary(
             />
           </>
         ),
-        error: itemErrors?.['question-visibility'],
+        error: qvError,
       });
     } else {
       items.push({
         key: 'question-visibility',
         icon: 'bi-eye-slash',
         text: 'Questions hidden after completion',
-        error: itemErrors?.['question-visibility'],
+        error: qvError,
       });
     }
   }
   if ((showAfterComplete || svNonDefault) && isOverrideFieldActive(rule, 'scoreVisibility')) {
     const sv = rule.scoreVisibility;
+    const svError = formErrors?.scoreVisibility?.message;
     if (sv.hideScore && sv.showAgainDate) {
       items.push({
         key: 'score-visibility',
@@ -334,21 +340,21 @@ export function generateRuleSummary(
             />
           </>
         ),
-        error: itemErrors?.['score-visibility'],
+        error: svError,
       });
     } else if (sv.hideScore) {
       items.push({
         key: 'score-visibility',
         icon: 'bi-eye-slash',
         text: 'Score hidden after completion',
-        error: itemErrors?.['score-visibility'],
+        error: svError,
       });
     } else {
       items.push({
         key: 'score-visibility',
         icon: 'bi-eye',
         text: 'Score visible after completion',
-        error: itemErrors?.['score-visibility'],
+        error: svError,
       });
     }
   }
@@ -403,8 +409,7 @@ function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): str
 function generateOverrideFieldItems(
   rule: OverrideData,
   displayTimezone: string,
-  fieldErrors?: DateFieldErrors,
-  itemErrors?: SummaryItemErrors,
+  formErrors?: RuleFormErrors,
 ): OverrideFieldItem[] {
   const items: OverrideFieldItem[] = [];
   const overriddenFields = new Set(rule.overriddenFields);
@@ -428,11 +433,16 @@ function generateOverrideFieldItems(
   }
 
   if (overriddenFields.has('earlyDeadlines')) {
+    const earlyDeadlineErrors = rule.earlyDeadlines.map((_entry, i) => {
+      const dateErr = formErrors?.earlyDeadlines?.[i]?.date?.message;
+      const creditErr = formErrors?.earlyDeadlines?.[i]?.credit?.message;
+      return [dateErr, creditErr].filter(Boolean).join('; ') || undefined;
+    });
     const earlyItems = formatDeadlineEntries(
       rule.earlyDeadlines,
       displayTimezone,
       'Early',
-      fieldErrors?.earlyDeadlines,
+      earlyDeadlineErrors,
     );
     items.push(
       ...(earlyItems.length > 0 ? earlyItems : [{ label: 'Early deadlines', value: 'None' }]),
@@ -452,16 +462,21 @@ function generateOverrideFieldItems(
       ) : (
         'No due date'
       ),
-      error: fieldErrors?.dueDate,
+      error: formErrors?.dueDate?.message,
     });
   }
 
   if (overriddenFields.has('lateDeadlines')) {
+    const lateDeadlineErrors = rule.lateDeadlines.map((_entry, i) => {
+      const dateErr = formErrors?.lateDeadlines?.[i]?.date?.message;
+      const creditErr = formErrors?.lateDeadlines?.[i]?.credit?.message;
+      return [dateErr, creditErr].filter(Boolean).join('; ') || undefined;
+    });
     const lateItems = formatDeadlineEntries(
       rule.lateDeadlines,
       displayTimezone,
       'Late',
-      fieldErrors?.lateDeadlines,
+      lateDeadlineErrors,
     );
     items.push(
       ...(lateItems.length > 0 ? lateItems : [{ label: 'Late deadlines', value: 'None' }]),
@@ -479,7 +494,7 @@ function generateOverrideFieldItems(
     items.push({
       label: 'Time limit',
       value: rule.durationMinutes !== null ? `${rule.durationMinutes} minutes` : 'No time limit',
-      error: itemErrors?.duration,
+      error: formErrors?.durationMinutes?.message,
     });
   }
 
@@ -487,13 +502,13 @@ function generateOverrideFieldItems(
     items.push({
       label: 'Password',
       value: rule.password ? 'Password protected' : 'No password',
-      error: itemErrors?.password,
+      error: formErrors?.password?.message,
     });
   }
 
   if (overriddenFields.has('questionVisibility')) {
     const qv = rule.questionVisibility;
-    const qvError = itemErrors?.['question-visibility'];
+    const qvError = formErrors?.questionVisibility?.message;
     if (qv.hideQuestions) {
       if (qv.showAgainDate && qv.hideAgainDate) {
         items.push({
@@ -552,7 +567,7 @@ function generateOverrideFieldItems(
 
   if (overriddenFields.has('scoreVisibility')) {
     const sv = rule.scoreVisibility;
-    const svError = itemErrors?.['score-visibility'];
+    const svError = formErrors?.scoreVisibility?.message;
     if (sv.hideScore) {
       if (sv.showAgainDate) {
         items.push({
@@ -728,25 +743,18 @@ export function OverrideRuleSummaryCard({
   onRemove,
   onEdit,
   displayTimezone,
-  fieldErrors,
-  itemErrors,
+  formErrors,
   dragHandleProps,
 }: {
   rule: OverrideData;
   title: string;
   onEdit?: () => void;
   displayTimezone: string;
-  fieldErrors?: DateFieldErrors;
-  itemErrors?: SummaryItemErrors;
+  formErrors?: RuleFormErrors;
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
 }) {
-  const overrideFieldItems = generateOverrideFieldItems(
-    rule,
-    displayTimezone,
-    fieldErrors,
-    itemErrors,
-  );
+  const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone, formErrors);
 
   const studentLabels =
     rule.appliesTo.targetType === 'student_label' ? rule.appliesTo.studentLabels : [];

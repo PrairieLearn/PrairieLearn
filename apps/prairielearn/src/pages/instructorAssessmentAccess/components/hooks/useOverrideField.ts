@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
-import type { AccessControlFormData } from '../types.js';
+import type { AccessControlFormData, OverridableFieldName } from '../types.js';
 
 /**
  * Hook that manages whether a single override field is active (overridden) or
@@ -9,7 +9,7 @@ import type { AccessControlFormData } from '../types.js';
  * `overriddenFields` string array on the override – not by setting the value
  * to `undefined`, which react-hook-form does not support.
  */
-export function useOverrideField(index: number, fieldName: string) {
+export function useOverrideField(index: number, fieldName: OverridableFieldName) {
   const { setValue, getValues } = useFormContext<AccessControlFormData>();
 
   const overriddenFields = useWatch<AccessControlFormData, `overrides.${number}.overriddenFields`>({

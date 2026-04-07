@@ -13,6 +13,11 @@ export const DATE_CONTROL_FIELD_NAMES = [
   'password',
 ] as const;
 
+export type OverridableFieldName =
+  | (typeof DATE_CONTROL_FIELD_NAMES)[number]
+  | 'questionVisibility'
+  | 'scoreVisibility';
+
 export interface DeadlineEntry {
   date: string;
   credit: number;
@@ -93,7 +98,7 @@ export interface OverrideData {
   id?: string;
   trackingId: string;
   appliesTo: AppliesTo;
-  overriddenFields: string[];
+  overriddenFields: OverridableFieldName[];
   releaseDate: string;
   dueDate: string | null;
   earlyDeadlines: DeadlineEntry[];
@@ -203,7 +208,7 @@ export function jsonToOverrideFormData(
     };
   }
 
-  const overriddenFields: string[] = [];
+  const overriddenFields: OverridableFieldName[] = [];
 
   let releaseDate = '';
   if (dc?.releaseDate !== undefined) {
@@ -301,7 +306,7 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   if (rule.dateControlEnabled) {
     output.dateControl = {};
     if (rule.releaseDate) output.dateControl.releaseDate = rule.releaseDate;
-    if (rule.dueDate) output.dateControl.dueDate = rule.dueDate;
+    output.dateControl.dueDate = rule.dueDate;
     if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (rule.lateDeadlines.length > 0) output.dateControl.lateDeadlines = rule.lateDeadlines;
     if (rule.afterLastDeadline) output.dateControl.afterLastDeadline = rule.afterLastDeadline;
