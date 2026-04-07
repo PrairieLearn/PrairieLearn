@@ -209,10 +209,10 @@ function RefundConfirmationModal({
         <p>Are you sure you want to refund this credit purchase?</p>
         {creditsSpent > 0 && (
           <div className="alert alert-warning">
-            <div>
+            <p className="mb-2">
               The current transferable balance is {formatMilliDollars(transferableMilliDollars)},
               which is less than the original purchase of {formatMilliDollars(creditAmount)}.
-            </div>
+            </p>
             <div>
               {formatMilliDollars(creditsToDeduct)} will be deducted from the transferable balance.
             </div>

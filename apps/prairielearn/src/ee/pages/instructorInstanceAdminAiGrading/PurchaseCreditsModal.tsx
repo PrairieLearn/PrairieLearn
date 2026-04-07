@@ -206,12 +206,13 @@ export function PurchaseCreditsModal({
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
-    if (isCustomOutOfRange) {
-      // Debounce so the hint doesn't flash while the user is still typing.
-      debounceRef.current = setTimeout(() => setShowHint(true), 200);
-    } else {
-      setShowHint(false);
-    }
+    // Debounce so the hint doesn't flash while the user is still typing.
+    debounceRef.current = setTimeout(
+      () => {
+        setShowHint(isCustomOutOfRange);
+      },
+      isCustomOutOfRange ? 200 : 0,
+    );
     return () => clearTimeout(debounceRef.current);
   }, [isCustomOutOfRange]);
 
