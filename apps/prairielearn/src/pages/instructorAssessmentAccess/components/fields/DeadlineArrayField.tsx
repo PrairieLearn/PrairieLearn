@@ -17,6 +17,8 @@ function DeadlineArrayInput({
   idPrefix,
   releaseDate,
   dueDate,
+  validationReleaseDate,
+  validationDueDate,
   deadlines,
 }: {
   type: 'early' | 'late';
@@ -28,6 +30,8 @@ function DeadlineArrayInput({
   idPrefix: string;
   releaseDate: string | undefined;
   dueDate: string | null | undefined;
+  validationReleaseDate?: string | undefined;
+  validationDueDate?: string | null | undefined;
   deadlines: DeadlineEntry[];
 }) {
   const { register, trigger } = useFormContext<AccessControlFormData>();
@@ -46,11 +50,11 @@ function DeadlineArrayInput({
 
   // Store constraint values in refs so the validate function (which is captured
   // once by register()) always reads current values instead of stale closures.
-  const dueDateRef = useRef(dueDate);
-  const releaseDateRef = useRef(releaseDate);
+  const dueDateRef = useRef(validationDueDate ?? dueDate);
+  const releaseDateRef = useRef(validationReleaseDate ?? releaseDate);
   const deadlinesRef = useRef(deadlines);
-  dueDateRef.current = dueDate;
-  releaseDateRef.current = releaseDate;
+  dueDateRef.current = validationDueDate ?? dueDate;
+  releaseDateRef.current = validationReleaseDate ?? releaseDate;
   deadlinesRef.current = deadlines;
 
   // Re-validate all deadline dates and credits when the number of deadlines
@@ -125,10 +129,13 @@ function DeadlineArrayInput({
           return `Must be after previous early deadline (${formatRef(prevDate)})`;
         }
       }
-      if (currentReleaseDate && deadlineDate < currentReleaseDate) {
+      if (currentReleaseDate && deadlineDate <= currentReleaseDate) {
         return `Must be after release date (${formatRef(currentReleaseDate)})`;
       }
     } else {
+      if (currentReleaseDate && deadlineDate <= currentReleaseDate) {
+        return `Must be after release date (${formatRef(currentReleaseDate)})`;
+      }
       if (currentDueDate && deadlineDate <= currentDueDate) {
         return `Must be after due date (${formatRef(currentDueDate)})`;
       }
@@ -342,6 +349,8 @@ export function MainDeadlineArrayField({ type }: { type: 'early' | 'late' }) {
       idPrefix="mainRule"
       releaseDate={releaseDate}
       dueDate={dueDate}
+      validationReleaseDate={releaseDate}
+      validationDueDate={dueDate}
       deadlines={deadlines}
     />
   );
@@ -387,6 +396,8 @@ export function OverrideDeadlineArrayField({
 
   const effectiveReleaseDate = releaseDateOverridden ? overrideReleaseDate : mainReleaseDate;
   const effectiveDueDate = dueDateOverridden ? overrideDueDate : mainDueDate;
+  const validationReleaseDate = releaseDateOverridden ? overrideReleaseDate : undefined;
+  const validationDueDate = dueDateOverridden ? overrideDueDate : undefined;
 
   return (
     <FieldWrapper
@@ -405,6 +416,8 @@ export function OverrideDeadlineArrayField({
         idPrefix={`overrides-${index}`}
         releaseDate={effectiveReleaseDate}
         dueDate={effectiveDueDate}
+        validationReleaseDate={validationReleaseDate}
+        validationDueDate={validationDueDate}
         deadlines={deadlines}
       />
     </FieldWrapper>

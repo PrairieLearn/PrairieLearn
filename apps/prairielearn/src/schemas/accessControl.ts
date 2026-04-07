@@ -149,34 +149,133 @@ export type AccessControlJson = z.infer<typeof AccessControlJsonSchema>;
 // Keep the alias for callers that distinguish conceptually between the two.
 export type AccessControlJsonInput = AccessControlJson;
 
-/**
- * Validates date ordering within a single access control rule.
- * Returns an array of error messages (empty if valid).
- */
-export function validateRuleDateOrdering(rule: AccessControlJson): string[] {
-  const errors: string[] = [];
+export type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
+
+export interface AccessControlValidationRule {
+  rule: AccessControlJson;
+  targetType: AccessControlRuleTargetType;
+  ruleIndex: number;
+}
+
+export type AccessControlIssuePath =
+  | ['dateControl', 'releaseDate']
+  | ['dateControl', 'dueDate']
+  | ['dateControl', 'earlyDeadlines', number, 'date']
+  | ['dateControl', 'lateDeadlines', number, 'date']
+  | ['afterComplete', 'showQuestionsAgainDate']
+  | ['afterComplete', 'hideQuestionsAgainDate'];
+
+export interface AccessControlValidationIssue {
+  ruleIndex: number;
+  targetType: AccessControlRuleTargetType;
+  path: AccessControlIssuePath;
+  message: string;
+}
+
+function pushIssue(
+  issues: AccessControlValidationIssue[],
+  validationRule: AccessControlValidationRule,
+  path: AccessControlIssuePath,
+  message: string,
+) {
+  issues.push({
+    ruleIndex: validationRule.ruleIndex,
+    targetType: validationRule.targetType,
+    path,
+    message,
+  });
+}
+
+function findReleaseMs(rule: AccessControlJson): number | null {
+  return rule.dateControl?.releaseDate ? new Date(rule.dateControl.releaseDate).getTime() : null;
+}
+
+function findDueMs(rule: AccessControlJson): number | null {
+  return rule.dateControl?.dueDate ? new Date(rule.dateControl.dueDate).getTime() : null;
+}
+
+function findDueState(rule: AccessControlJson): {
+  hasConfiguredDue: boolean;
+  dueMs: number | null;
+} {
+  const dateControl = rule.dateControl;
+  if (dateControl?.dueDate === undefined) {
+    return { hasConfiguredDue: false, dueMs: null };
+  }
+  return {
+    hasConfiguredDue: true,
+    dueMs: dateControl.dueDate ? new Date(dateControl.dueDate).getTime() : null,
+  };
+}
+
+export function validateRuleDateOrderingIssues(
+  validationRule: AccessControlValidationRule,
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  const rule = validationRule.rule;
   const dc = rule.dateControl;
 
   if (dc) {
-    const releaseMs = dc.releaseDate ? new Date(dc.releaseDate).getTime() : null;
-    const dueMs = dc.dueDate ? new Date(dc.dueDate).getTime() : null;
+    const releaseMs = findReleaseMs(rule);
+    const dueMs = findDueMs(rule);
 
     if (releaseMs != null && dueMs != null && releaseMs >= dueMs) {
-      errors.push('Release date must be before due date.');
+      pushIssue(
+        issues,
+        validationRule,
+        ['dateControl', 'dueDate'],
+        'Release date must be before due date.',
+      );
+    }
+
+    if (releaseMs != null && dc.earlyDeadlines) {
+      for (const [index, deadline] of dc.earlyDeadlines.entries()) {
+        if (new Date(deadline.date).getTime() <= releaseMs) {
+          pushIssue(
+            issues,
+            validationRule,
+            ['dateControl', 'earlyDeadlines', index, 'date'],
+            `Early deadline date ${deadline.date} must be after the release date.`,
+          );
+        }
+      }
+    }
+
+    if (releaseMs != null && dc.lateDeadlines) {
+      for (const [index, deadline] of dc.lateDeadlines.entries()) {
+        if (new Date(deadline.date).getTime() <= releaseMs) {
+          pushIssue(
+            issues,
+            validationRule,
+            ['dateControl', 'lateDeadlines', index, 'date'],
+            `Late deadline date ${deadline.date} must be after the release date.`,
+          );
+        }
+      }
     }
 
     if (dueMs != null && dc.earlyDeadlines) {
-      for (const d of dc.earlyDeadlines) {
-        if (new Date(d.date).getTime() >= dueMs) {
-          errors.push(`Early deadline date ${d.date} must be before the due date.`);
+      for (const [index, deadline] of dc.earlyDeadlines.entries()) {
+        if (new Date(deadline.date).getTime() >= dueMs) {
+          pushIssue(
+            issues,
+            validationRule,
+            ['dateControl', 'earlyDeadlines', index, 'date'],
+            `Early deadline date ${deadline.date} must be before the due date.`,
+          );
         }
       }
     }
 
     if (dueMs != null && dc.lateDeadlines) {
-      for (const d of dc.lateDeadlines) {
-        if (new Date(d.date).getTime() <= dueMs) {
-          errors.push(`Late deadline date ${d.date} must be after the due date.`);
+      for (const [index, deadline] of dc.lateDeadlines.entries()) {
+        if (new Date(deadline.date).getTime() <= dueMs) {
+          pushIssue(
+            issues,
+            validationRule,
+            ['dateControl', 'lateDeadlines', index, 'date'],
+            `Late deadline date ${deadline.date} must be after the due date.`,
+          );
         }
       }
     }
@@ -187,7 +286,12 @@ export function validateRuleDateOrdering(rule: AccessControlJson): string[] {
           new Date(dc.earlyDeadlines[i].date).getTime() <
           new Date(dc.earlyDeadlines[i - 1].date).getTime()
         ) {
-          errors.push('Early deadlines must be in chronological order.');
+          pushIssue(
+            issues,
+            validationRule,
+            ['dateControl', 'earlyDeadlines', i, 'date'],
+            'Early deadlines must be in chronological order.',
+          );
           break;
         }
       }
@@ -199,7 +303,12 @@ export function validateRuleDateOrdering(rule: AccessControlJson): string[] {
           new Date(dc.lateDeadlines[i].date).getTime() <
           new Date(dc.lateDeadlines[i - 1].date).getTime()
         ) {
-          errors.push('Late deadlines must be in chronological order.');
+          pushIssue(
+            issues,
+            validationRule,
+            ['dateControl', 'lateDeadlines', i, 'date'],
+            'Late deadlines must be in chronological order.',
+          );
           break;
         }
       }
@@ -211,11 +320,104 @@ export function validateRuleDateOrdering(rule: AccessControlJson): string[] {
     if (
       new Date(ac.showQuestionsAgainDate).getTime() >= new Date(ac.hideQuestionsAgainDate).getTime()
     ) {
-      errors.push('showQuestionsAgainDate must be before hideQuestionsAgainDate.');
+      pushIssue(
+        issues,
+        validationRule,
+        ['afterComplete', 'hideQuestionsAgainDate'],
+        'showQuestionsAgainDate must be before hideQuestionsAgainDate.',
+      );
     }
   }
 
-  return errors;
+  return issues;
+}
+
+export function validateGlobalDateConsistencyIssues(
+  validationRules: AccessControlValidationRule[],
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  if (validationRules.length === 0) return issues;
+
+  const releaseTimes = validationRules
+    .map(({ rule }) => findReleaseMs(rule))
+    .filter((releaseMs): releaseMs is number => releaseMs != null);
+  const dueStates = validationRules.map(({ rule }) => findDueState(rule));
+  const configuredDueTimes = dueStates
+    .map(({ dueMs }) => dueMs)
+    .filter((dueMs): dueMs is number => dueMs != null);
+
+  const minReleaseMs = releaseTimes.length > 0 ? Math.min(...releaseTimes) : null;
+  const minDueMs = configuredDueTimes.length > 0 ? Math.min(...configuredDueTimes) : null;
+  const maxDueMs = configuredDueTimes.length > 0 ? Math.max(...configuredDueTimes) : null;
+  const dueCanBeUnset = dueStates.some(
+    ({ hasConfiguredDue, dueMs }) => !hasConfiguredDue || dueMs == null,
+  );
+
+  for (const validationRule of validationRules) {
+    const dueMs = findDueMs(validationRule.rule);
+
+    if (minReleaseMs != null && dueMs != null && dueMs <= minReleaseMs) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['dateControl', 'dueDate'],
+        'Due date must be after the earliest possible release date.',
+      );
+    }
+
+    for (const [index, deadline] of (
+      validationRule.rule.dateControl?.earlyDeadlines ?? []
+    ).entries()) {
+      const deadlineMs = new Date(deadline.date).getTime();
+
+      if (minReleaseMs != null && deadlineMs <= minReleaseMs) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'earlyDeadlines', index, 'date'],
+          'Early deadline must be after the earliest possible release date.',
+        );
+      }
+
+      if (!dueCanBeUnset && maxDueMs != null && deadlineMs >= maxDueMs) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'earlyDeadlines', index, 'date'],
+          'Early deadline must be before the latest possible due date.',
+        );
+      }
+    }
+
+    for (const [index, deadline] of (
+      validationRule.rule.dateControl?.lateDeadlines ?? []
+    ).entries()) {
+      const deadlineMs = new Date(deadline.date).getTime();
+
+      if (!dueCanBeUnset && minDueMs != null && deadlineMs <= minDueMs) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'lateDeadlines', index, 'date'],
+          'Late deadline must be after the earliest possible due date.',
+        );
+      }
+    }
+  }
+
+  return issues;
+}
+
+/**
+ * Validates date ordering within a single access control rule.
+ * Returns an array of error messages (empty if valid).
+ */
+export function validateRuleDateOrdering(rule: AccessControlJson): string[] {
+  return validateRuleDateOrderingIssues({
+    rule,
+    targetType: 'none',
+    ruleIndex: 0,
+  }).map((issue) => issue.message);
 }
 
 /**

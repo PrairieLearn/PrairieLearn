@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Button, Form, Modal } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
@@ -19,6 +19,7 @@ import {
   jsonToMainRuleFormData,
   jsonToOverrideFormData,
 } from './types.js';
+import { type AccessControlFormFieldPath, getGlobalDateValidationErrors } from './validation.js';
 
 const defaultInitialData: AccessControlJsonWithId[] = [];
 
@@ -61,8 +62,11 @@ export function AccessControlForm({
   });
 
   const {
+    clearErrors,
     control,
+    getFieldState,
     handleSubmit,
+    setError,
     watch,
     reset,
     formState: { isDirty, isValid },
@@ -79,6 +83,38 @@ export function AccessControlForm({
   });
 
   const watchedData = watch();
+  const manualErrorPathsRef = useRef<Set<AccessControlFormFieldPath>>(new Set());
+
+  useEffect(() => {
+    const nextManualErrors = new Map<AccessControlFormFieldPath, string>();
+    for (const error of getGlobalDateValidationErrors(watchedData)) {
+      nextManualErrors.set(error.path, error.message);
+    }
+
+    const candidatePaths = new Set<AccessControlFormFieldPath>([
+      ...manualErrorPathsRef.current,
+      ...nextManualErrors.keys(),
+    ]);
+
+    for (const path of candidatePaths) {
+      const fieldState = getFieldState(path);
+      const nextMessage = nextManualErrors.get(path);
+
+      if (nextMessage) {
+        if (fieldState.error?.type !== 'manual') {
+          if (!fieldState.error) {
+            setError(path, { type: 'manual', message: nextMessage });
+          }
+        } else if (fieldState.error.message !== nextMessage) {
+          setError(path, { type: 'manual', message: nextMessage });
+        }
+      } else if (fieldState.error?.type === 'manual') {
+        clearErrors(path);
+      }
+    }
+
+    manualErrorPathsRef.current = new Set(nextManualErrors.keys());
+  }, [clearErrors, getFieldState, setError, watchedData]);
 
   const handleFormSubmit = (data: AccessControlFormData) => {
     onSubmit(formDataToJson(data));

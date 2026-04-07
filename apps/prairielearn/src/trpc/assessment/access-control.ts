@@ -24,8 +24,10 @@ import { selectStudentLabelsInCourseInstance } from '../../models/student-label.
 import {
   type AccessControlJson,
   AccessControlJsonSchema,
+  type AccessControlValidationRule,
   MAX_ACCESS_CONTROL_RULES,
   MAX_ENROLLMENT_RULES,
+  validateGlobalDateConsistencyIssues,
 } from '../../schemas/accessControl.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { validateAccessControlArray } from '../../sync/course-db.js';
@@ -209,6 +211,7 @@ const saveAllRules = t.procedure
   )
   .mutation(async (opts) => {
     const { rules, enrollmentRules, origHash } = opts.input;
+    const validationRules: AccessControlValidationRule[] = [];
 
     // Validate all rules before writing anything to disk or DB.
     const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
@@ -223,6 +226,7 @@ const saveAllRules = t.procedure
 
     for (const [index, rule] of rulesToSync.entries()) {
       const targetType = index === 0 ? 'none' : 'student_label';
+      validationRules.push({ rule, targetType, ruleIndex: validationRules.length });
       const ruleError = validateRule(rule, targetType);
       if (ruleError) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
@@ -245,11 +249,21 @@ const saveAllRules = t.procedure
       }
 
       for (const enrollmentRule of enrollmentRules) {
+        validationRules.push({
+          rule: enrollmentRule.ruleJson,
+          targetType: 'enrollment',
+          ruleIndex: validationRules.length,
+        });
         const ruleError = validateRule(enrollmentRule.ruleJson, 'enrollment');
         if (ruleError) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
         }
       }
+    }
+
+    const globalDateErrors = validateGlobalDateConsistencyIssues(validationRules);
+    if (globalDateErrors.length > 0) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: globalDateErrors[0].message });
     }
 
     const assessmentDir = path.join(

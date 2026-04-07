@@ -515,6 +515,67 @@ describe('Access control syncing', () => {
     });
   });
 
+  describe('Temporal validation', () => {
+    it('rejects an override with an early deadline before its own release date', async () => {
+      const groupName = 'Extended time';
+      const courseData = util.getCourseData();
+      addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        util.ASSESSMENT_ID
+      ].accessControl = [
+        makeAccessControlRule(),
+        makeAccessControlRule({
+          labels: [groupName],
+          dateControl: {
+            releaseDate: '2024-04-07T00:00:00',
+            earlyDeadlines: [{ date: '2024-04-06T00:00:00', credit: 120 }],
+          },
+        }),
+      ];
+
+      await util.writeAndSyncCourseData(courseData);
+
+      const assessment = await getAssessment(util.ASSESSMENT_ID);
+      assert.isNotNull(assessment.sync_errors);
+      assert.match(assessment.sync_errors, /must be after the release date/);
+    });
+
+    it('rejects overrides that cannot produce any valid merged timeline', async () => {
+      const courseData = util.getCourseData();
+      addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, 'Section A');
+      addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, 'Section B');
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        util.ASSESSMENT_ID
+      ].accessControl = [
+        makeAccessControlRule({
+          dateControl: {
+            releaseDate: '2024-04-07T00:00:00',
+            dueDate: null,
+          },
+        }),
+        {
+          labels: ['Section A'],
+          dateControl: {
+            releaseDate: '2024-04-06T00:00:00',
+            dueDate: null,
+          },
+        },
+        {
+          labels: ['Section B'],
+          dateControl: {
+            earlyDeadlines: [{ date: '2024-04-05T00:00:00', credit: 120 }],
+          },
+        },
+      ];
+
+      await util.writeAndSyncCourseData(courseData);
+
+      const assessment = await getAssessment(util.ASSESSMENT_ID);
+      assert.isNotNull(assessment.sync_errors);
+      assert.match(assessment.sync_errors, /earliest possible release date/);
+    });
+  });
+
   it('preserves existing access control rows when the assessment has unrelated sync errors', async () => {
     const courseData = util.getCourseData();
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[

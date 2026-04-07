@@ -5,7 +5,9 @@ import * as sqldb from '@prairielearn/postgres';
 import { StudentLabelSchema } from '../../lib/db-types.js';
 import {
   type AccessControlJson,
+  type AccessControlValidationRule,
   MAX_ACCESS_CONTROL_RULES,
+  validateGlobalDateConsistencyIssues,
   validateRuleCreditMonotonicity,
   validateRuleDateOrdering,
 } from '../../schemas/accessControl.js';
@@ -104,6 +106,8 @@ function validateAssessmentRules(
     return `Too many access control rules: ${rules.length}. Maximum allowed is ${MAX_ACCESS_CONTROL_RULES}.`;
   }
 
+  const validationRules: AccessControlValidationRule[] = [];
+
   // Keep label validation here even though course-db validates it earlier.
   // If the course instance config is invalid, course-db skips label existence
   // checks to avoid cascading errors, and student label syncing is skipped.
@@ -135,8 +139,14 @@ function validateAssessmentRules(
     }
 
     const targetType = index === 0 ? 'none' : 'student_label';
+    validationRules.push({ rule, targetType, ruleIndex: index });
     const ruleError = validateRule(rule, targetType);
     if (ruleError) return ruleError;
+  }
+
+  const globalDateErrors = validateGlobalDateConsistencyIssues(validationRules);
+  if (globalDateErrors.length > 0) {
+    return globalDateErrors[0].message;
   }
 
   const assessmentInvalidUuids: string[] = [];

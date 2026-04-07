@@ -22,6 +22,7 @@ import {
 } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { getConfiguredUser } from './utils/auth.js';
+import { enrollUser } from './utils/enrollments.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 
@@ -214,4 +215,54 @@ describe('Access control save via tRPC', () => {
       }),
     ).rejects.toThrow(/defaults.*must be the first element/);
   });
+
+  test.sequential(
+    'rejects save when an enrollment override makes the timeline impossible',
+    async () => {
+      const client = await createClient();
+      const origHash = await getOrigHash();
+      await enrollUser('1', {
+        name: 'Validation Student',
+        uid: 'validation-student@example.com',
+        uin: 'validation-student',
+        email: 'validation-student@example.com',
+      });
+      const students = await client.accessControl.students.query();
+      const student = students.find(
+        (candidate) => candidate.uid === 'validation-student@example.com',
+      );
+      if (!student) {
+        throw new Error('Expected validation student enrollment to exist');
+      }
+
+      await expect(
+        client.accessControl.saveAllRules.mutate({
+          rules: [
+            {
+              dateControl: {
+                releaseDate: '2024-04-07T00:00:00',
+              },
+            },
+            {
+              labels: ['Section A'],
+              dateControl: {
+                releaseDate: '2024-04-06T00:00:00',
+              },
+            },
+          ],
+          enrollmentRules: [
+            {
+              enrollmentIds: [student.id],
+              ruleJson: {
+                dateControl: {
+                  earlyDeadlines: [{ date: '2024-04-05T00:00:00', credit: 120 }],
+                },
+              },
+            },
+          ],
+          origHash,
+        }),
+      ).rejects.toThrow(/earliest possible release date/);
+    },
+  );
 });

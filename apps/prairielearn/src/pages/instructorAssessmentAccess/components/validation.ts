@@ -1,0 +1,62 @@
+import {
+  type AccessControlValidationIssue,
+  type AccessControlValidationRule,
+  validateGlobalDateConsistencyIssues,
+} from '../../../schemas/accessControl.js';
+
+import { type AccessControlFormData, formDataToJson } from './types.js';
+
+export type AccessControlFormFieldPath =
+  | 'mainRule.releaseDate'
+  | 'mainRule.dueDate'
+  | `mainRule.earlyDeadlines.${number}.date`
+  | `mainRule.lateDeadlines.${number}.date`
+  | `overrides.${number}.releaseDate`
+  | `overrides.${number}.dueDate`
+  | `overrides.${number}.earlyDeadlines.${number}.date`
+  | `overrides.${number}.lateDeadlines.${number}.date`;
+
+function buildValidationRules(formData: AccessControlFormData): AccessControlValidationRule[] {
+  return formDataToJson(formData).map((rule, index) => ({
+    rule,
+    targetType: index === 0 ? 'none' : (rule.ruleType ?? 'student_label'),
+    ruleIndex: index,
+  }));
+}
+
+export function mapIssueToFormFieldPath(
+  issue: AccessControlValidationIssue,
+): AccessControlFormFieldPath | null {
+  const prefix: 'mainRule' | `overrides.${number}` =
+    issue.ruleIndex === 0 ? 'mainRule' : `overrides.${issue.ruleIndex - 1}`;
+
+  switch (issue.path[1]) {
+    case 'releaseDate':
+      return `${prefix}.releaseDate`;
+    case 'dueDate':
+      return `${prefix}.dueDate`;
+    case 'earlyDeadlines':
+      return `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
+    case 'lateDeadlines':
+      return `${prefix}.lateDeadlines.${issue.path[2]}.date`;
+    default:
+      return null;
+  }
+}
+
+export function getGlobalDateValidationErrors(formData: AccessControlFormData): {
+  path: AccessControlFormFieldPath;
+  message: string;
+}[] {
+  const seenPaths = new Set<AccessControlFormFieldPath>();
+  const results: { path: AccessControlFormFieldPath; message: string }[] = [];
+
+  for (const issue of validateGlobalDateConsistencyIssues(buildValidationRules(formData))) {
+    const path = mapIssueToFormFieldPath(issue);
+    if (!path || seenPaths.has(path)) continue;
+    seenPaths.add(path);
+    results.push({ path, message: issue.message });
+  }
+
+  return results;
+}

@@ -19,6 +19,7 @@ import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
   type AccessControlJson,
+  type AccessControlValidationRule,
   type AssessmentJson,
   type AssessmentJsonInput,
   type AssessmentSetJson,
@@ -28,6 +29,7 @@ import {
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
+  validateGlobalDateConsistencyIssues,
   validateRuleCreditMonotonicity,
   validateRuleDateOrdering,
 } from '../schemas/index.js';
@@ -1157,6 +1159,7 @@ export function validateAccessControlArray({
 }): { warnings: string[]; errors: string[] } {
   const errors: string[] = [];
   const warnings: string[] = [];
+  const validationRules: AccessControlValidationRule[] = [];
 
   if (accessControlJsonArray.length === 0) {
     return { errors, warnings };
@@ -1215,6 +1218,11 @@ export function validateAccessControlArray({
     }
 
     const isMainRule = rule.labels == null || rule.labels.length === 0;
+    validationRules.push({
+      rule,
+      targetType: isMainRule ? 'none' : 'student_label',
+      ruleIndex: validationRules.length,
+    });
     if (!isMainRule && rule.integrations != null) {
       errors.push(
         'integrations can only be specified on the defaults (the first element, without labels).',
@@ -1238,6 +1246,10 @@ export function validateAccessControlArray({
       errors.push(...validateRuleCreditMonotonicity(rule));
     }
   }
+
+  errors.push(
+    ...validateGlobalDateConsistencyIssues(validationRules).map((issue) => issue.message),
+  );
 
   return { errors, warnings };
 }

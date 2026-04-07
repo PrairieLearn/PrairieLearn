@@ -197,6 +197,7 @@ export function OverrideDueDateField({ index }: { index: number }) {
   });
 
   const effectiveReleaseDate = releaseDateOverridden ? releaseDate : mainReleaseDate;
+  const validationReleaseDate = releaseDateOverridden ? releaseDate : undefined;
 
   const {
     field,
@@ -206,8 +207,8 @@ export function OverrideDueDateField({ index }: { index: number }) {
     rules: {
       validate: (value) => {
         if (value !== null && !value) return 'Date is required';
-        if (value && effectiveReleaseDate && new Date(value) <= new Date(effectiveReleaseDate)) {
-          const formatted = formatDateFriendly(new Date(effectiveReleaseDate), getUserTimezone(), {
+        if (value && validationReleaseDate && new Date(value) <= new Date(validationReleaseDate)) {
+          const formatted = formatDateFriendly(new Date(validationReleaseDate), getUserTimezone(), {
             dateOnly: true,
             includeTz: false,
           });

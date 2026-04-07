@@ -4,6 +4,7 @@ import {
   type AccessControlJson,
   type AccessControlJsonInput,
   AccessControlJsonSchema,
+  validateGlobalDateConsistencyIssues,
   validateRuleCreditMonotonicity,
   validateRuleDateOrdering,
 } from '../schemas/accessControl.js';
@@ -439,6 +440,17 @@ describe('Date ordering validation', () => {
     assert.isTrue(errors.some((e) => e.includes('must be before the due date')));
   });
 
+  it('should reject early deadline before release date', () => {
+    const rule: AccessControlJson = AccessControlJsonSchema.parse({
+      dateControl: {
+        releaseDate: '2024-03-20T00:00:00',
+        earlyDeadlines: [{ date: '2024-03-19T00:00:00', credit: 120 }],
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.isTrue(errors.some((e) => e.includes('must be after the release date')));
+  });
+
   it('should reject late deadline before due date', () => {
     const rule: AccessControlJson = AccessControlJsonSchema.parse({
       dateControl: {
@@ -448,6 +460,17 @@ describe('Date ordering validation', () => {
     });
     const errors = validateRuleDateOrdering(rule);
     assert.isTrue(errors.some((e) => e.includes('must be after the due date')));
+  });
+
+  it('should reject late deadline before release date', () => {
+    const rule: AccessControlJson = AccessControlJsonSchema.parse({
+      dateControl: {
+        releaseDate: '2024-03-20T00:00:00',
+        lateDeadlines: [{ date: '2024-03-19T00:00:00', credit: 80 }],
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.isTrue(errors.some((e) => e.includes('must be after the release date')));
   });
 
   it('should reject out-of-order early deadlines', () => {
@@ -573,5 +596,87 @@ describe('Empty accessControl array', () => {
     });
     assert.deepEqual(result.errors, []);
     assert.deepEqual(result.warnings, []);
+  });
+});
+
+describe('Global temporal validation', () => {
+  it('rejects an early deadline before the earliest possible release date', () => {
+    const issues = validateGlobalDateConsistencyIssues([
+      {
+        rule: AccessControlJsonSchema.parse({
+          dateControl: {
+            releaseDate: '2024-04-07T00:00:00',
+          },
+        }),
+        targetType: 'none',
+        ruleIndex: 0,
+      },
+      {
+        rule: AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: {
+            releaseDate: '2024-04-06T00:00:00',
+          },
+        }),
+        targetType: 'student_label',
+        ruleIndex: 1,
+      },
+      {
+        rule: AccessControlJsonSchema.parse({
+          labels: ['Section B'],
+          dateControl: {
+            earlyDeadlines: [{ date: '2024-04-05T00:00:00', credit: 120 }],
+          },
+        }),
+        targetType: 'student_label',
+        ruleIndex: 2,
+      },
+    ]);
+
+    assert.isTrue(
+      issues.some(
+        (issue) =>
+          JSON.stringify(issue.path) ===
+          JSON.stringify(['dateControl', 'earlyDeadlines', 0, 'date']),
+      ),
+    );
+    assert.isTrue(issues.some((issue) => issue.message.includes('earliest possible release date')));
+  });
+
+  it('skips due-based global checks when a due date can be unset', () => {
+    const issues = validateGlobalDateConsistencyIssues([
+      {
+        rule: AccessControlJsonSchema.parse({
+          dateControl: {
+            releaseDate: '2024-04-07T00:00:00',
+            dueDate: '2024-04-08T00:00:00',
+          },
+        }),
+        targetType: 'none',
+        ruleIndex: 0,
+      },
+      {
+        rule: AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: {
+            dueDate: null,
+          },
+        }),
+        targetType: 'student_label',
+        ruleIndex: 1,
+      },
+      {
+        rule: AccessControlJsonSchema.parse({
+          labels: ['Section B'],
+          dateControl: {
+            lateDeadlines: [{ date: '2024-04-07T12:00:00', credit: 50 }],
+          },
+        }),
+        targetType: 'student_label',
+        ruleIndex: 2,
+      },
+    ]);
+
+    assert.deepEqual(issues, []);
   });
 });
