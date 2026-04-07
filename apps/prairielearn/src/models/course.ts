@@ -52,6 +52,22 @@ export async function selectCourseByShortName(shortName: string): Promise<Course
   return await queryRow(sql.select_course_by_short_name, { short_name: shortName }, CourseSchema);
 }
 
+export async function selectOptionalCourseByRepositoryName(
+  repoName: string,
+): Promise<Course | null> {
+  // Escape SQL LIKE wildcards so they are matched literally.
+  const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
+  return await queryOptionalRow(
+    sql.select_course_by_repository_name,
+    { repo_name: escapedRepoName },
+    CourseSchema,
+  );
+}
+
+export async function selectOptionalCourseByPath(path: string): Promise<Course | null> {
+  return await queryOptionalRow(sql.select_course_by_path, { path }, CourseSchema);
+}
+
 export function getLockNameForCoursePath(coursePath: string): string {
   return `coursedir:${coursePath}`;
 }

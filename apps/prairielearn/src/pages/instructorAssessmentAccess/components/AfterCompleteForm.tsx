@@ -1,7 +1,7 @@
-import { Button, Card, Col, Form, Row } from 'react-bootstrap';
+import { Alert, Button, Col, Form, Row } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
 import { FieldWrapper } from './FieldWrapper.js';
 import { useOverrideField } from './hooks/useOverrideField.js';
@@ -10,6 +10,7 @@ import type {
   QuestionVisibilityValue,
   ScoreVisibilityValue,
 } from './types.js';
+import { endOfDayDatetime, startOfDayDatetime, tomorrowDate } from './utils/dateUtils.js';
 
 type HideQuestionsMode =
   | 'show_questions'
@@ -17,6 +18,48 @@ type HideQuestionsMode =
   | 'hide_questions_until_date'
   | 'hide_questions_between_dates';
 type HideScoreMode = 'show_score' | 'hide_score_forever' | 'hide_score_until_date';
+
+const QUESTION_VISIBILITY_ITEMS: RichSelectItem<HideQuestionsMode>[] = [
+  {
+    value: 'hide_questions_forever',
+    label: 'Hide questions permanently',
+    description: 'Questions will never be visible after completion',
+  },
+  {
+    value: 'show_questions',
+    label: 'Show questions after completion',
+    description:
+      'Students can see questions and answers immediately after completing the assessment',
+  },
+  {
+    value: 'hide_questions_between_dates',
+    label: 'Show questions between dates',
+    description: 'Questions will be visible between these dates, hidden before and after',
+  },
+  {
+    value: 'hide_questions_until_date',
+    label: 'Show questions after date',
+    description: 'Questions will be hidden after completion and become visible on this date',
+  },
+];
+
+const SCORE_VISIBILITY_ITEMS: RichSelectItem<HideScoreMode>[] = [
+  {
+    value: 'show_score',
+    label: 'Show score after completion',
+    description: 'Students can see their score immediately after completing the assessment',
+  },
+  {
+    value: 'hide_score_forever',
+    label: 'Hide score permanently',
+    description: 'Score will never be visible after completion',
+  },
+  {
+    value: 'hide_score_until_date',
+    label: 'Hide score until date',
+    description: 'Score will be hidden after completion and become visible again on this date',
+  },
+];
 
 function getHideQuestionsMode(value: QuestionVisibilityValue): HideQuestionsMode {
   if (!value.hideQuestions) return 'show_questions';
@@ -35,128 +78,114 @@ function QuestionVisibilityInput({
   value,
   onChange,
   idPrefix,
+  hasPrairieTest = false,
 }: {
   value: QuestionVisibilityValue;
   onChange: (value: QuestionVisibilityValue) => void;
   idPrefix: string;
+  hasPrairieTest?: boolean;
 }) {
   const hideQuestionsMode = getHideQuestionsMode(value);
+
+  const handleModeChange = (newMode: HideQuestionsMode) => {
+    switch (newMode) {
+      case 'show_questions':
+        onChange({ hideQuestions: false });
+        break;
+      case 'hide_questions_forever':
+        onChange({ hideQuestions: true });
+        break;
+      case 'hide_questions_between_dates': {
+        const tomorrow = tomorrowDate();
+        onChange({
+          hideQuestions: true,
+          showAgainDate: startOfDayDatetime(tomorrow),
+          hideAgainDate: endOfDayDatetime(tomorrow.add({ weeks: 2 })),
+        });
+        break;
+      }
+      case 'hide_questions_until_date': {
+        const tomorrow = tomorrowDate();
+        onChange({ hideQuestions: true, showAgainDate: startOfDayDatetime(tomorrow) });
+        break;
+      }
+    }
+  };
 
   return (
     <Form.Group>
       <div className="mb-2">
-        <Form.Check
-          type="radio"
-          name={`${idPrefix}-hideQuestionsMode`}
-          id={`${idPrefix}-show-questions`}
-          label="Show questions after completion"
-          checked={hideQuestionsMode === 'show_questions'}
-          onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange({ hideQuestions: false });
-          }}
+        <RichSelect
+          items={QUESTION_VISIBILITY_ITEMS}
+          value={hideQuestionsMode}
+          aria-label="Question visibility"
+          id={`${idPrefix}-question-visibility-mode`}
+          minWidth={300}
+          onChange={handleModeChange}
         />
-        <Form.Text className="text-muted ms-4 mb-3 d-block">
-          Students can see questions and answers immediately after completing the assessment
-        </Form.Text>
-
-        <Form.Check
-          type="radio"
-          name={`${idPrefix}-hideQuestionsMode`}
-          id={`${idPrefix}-hide-questions-forever`}
-          label="Hide questions permanently"
-          checked={hideQuestionsMode === 'hide_questions_forever'}
-          onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange({ hideQuestions: true });
-          }}
-        />
-        <Form.Text className="text-muted ms-4 mb-3 d-block">
-          Questions will never be visible after completion
-        </Form.Text>
-
-        <Form.Check
-          type="radio"
-          name={`${idPrefix}-hideQuestionsMode`}
-          id={`${idPrefix}-hide-questions-until-date`}
-          label="Hide questions until date"
-          checked={hideQuestionsMode === 'hide_questions_until_date'}
-          onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange({ hideQuestions: true, showAgainDate: '' });
-          }}
-        />
-        {hideQuestionsMode === 'hide_questions_until_date' && (
-          <div className="ms-4 mt-2">
-            <Form.Control
-              id={`${idPrefix}-show-questions-date`}
-              type="datetime-local"
-              aria-label="Show questions on"
-              aria-describedby={`${idPrefix}-show-questions-date-help`}
-              value={value.showAgainDate ?? ''}
-              onChange={({ currentTarget }) =>
-                onChange({ hideQuestions: true, showAgainDate: currentTarget.value })
-              }
-            />
-            <Form.Text id={`${idPrefix}-show-questions-date-help`} className="text-muted">
-              Questions will be hidden after completion and become visible again on this date
-            </Form.Text>
-          </div>
-        )}
-
-        <Form.Check
-          type="radio"
-          name={`${idPrefix}-hideQuestionsMode`}
-          id={`${idPrefix}-hide-questions-between-dates`}
-          label="Hide questions between dates"
-          checked={hideQuestionsMode === 'hide_questions_between_dates'}
-          onChange={({ currentTarget }) => {
-            if (currentTarget.checked) {
-              onChange({ hideQuestions: true, showAgainDate: '', hideAgainDate: '' });
-            }
-          }}
-        />
-        {hideQuestionsMode === 'hide_questions_between_dates' && (
-          <div className="ms-4 mt-2">
-            <Row className="mb-2 gy-3">
-              <Col md={6}>
-                <Form.Label htmlFor={`${idPrefix}-show-questions-between-start`}>
-                  Show questions on
-                </Form.Label>
-                <Form.Control
-                  id={`${idPrefix}-show-questions-between-start`}
-                  type="datetime-local"
-                  value={value.showAgainDate ?? ''}
-                  onChange={({ currentTarget }) =>
-                    onChange({
-                      hideQuestions: true,
-                      showAgainDate: currentTarget.value,
-                      hideAgainDate: value.hideAgainDate,
-                    })
-                  }
-                />
-              </Col>
-              <Col md={6}>
-                <Form.Label htmlFor={`${idPrefix}-hide-questions-between-end`}>
-                  Hide questions again on
-                </Form.Label>
-                <Form.Control
-                  id={`${idPrefix}-hide-questions-between-end`}
-                  type="datetime-local"
-                  value={value.hideAgainDate ?? ''}
-                  onChange={({ currentTarget }) =>
-                    onChange({
-                      hideQuestions: true,
-                      showAgainDate: value.showAgainDate,
-                      hideAgainDate: currentTarget.value,
-                    })
-                  }
-                />
-              </Col>
-            </Row>
-            <Form.Text className="text-muted">
-              Questions will be visible between these dates, hidden before and after
-            </Form.Text>
-          </div>
-        )}
       </div>
+      {hideQuestionsMode === 'hide_questions_between_dates' && (
+        <div className="mt-2">
+          <Row className="mb-2 gy-3">
+            <Col md={6}>
+              <Form.Label htmlFor={`${idPrefix}-show-questions-between-start`}>
+                Show questions on
+              </Form.Label>
+              <Form.Control
+                id={`${idPrefix}-show-questions-between-start`}
+                type="datetime-local"
+                step={1}
+                value={value.showAgainDate ?? ''}
+                onChange={({ currentTarget }) =>
+                  onChange({
+                    hideQuestions: true,
+                    showAgainDate: currentTarget.value,
+                    hideAgainDate: value.hideAgainDate,
+                  })
+                }
+              />
+            </Col>
+            <Col md={6}>
+              <Form.Label htmlFor={`${idPrefix}-hide-questions-between-end`}>
+                Hide questions again on
+              </Form.Label>
+              <Form.Control
+                id={`${idPrefix}-hide-questions-between-end`}
+                type="datetime-local"
+                step={1}
+                value={value.hideAgainDate ?? ''}
+                onChange={({ currentTarget }) =>
+                  onChange({
+                    hideQuestions: true,
+                    showAgainDate: value.showAgainDate,
+                    hideAgainDate: currentTarget.value,
+                  })
+                }
+              />
+            </Col>
+          </Row>
+        </div>
+      )}
+      {hideQuestionsMode === 'hide_questions_until_date' && (
+        <div className="mt-2">
+          <Form.Control
+            id={`${idPrefix}-show-questions-date`}
+            type="datetime-local"
+            step={1}
+            aria-label="Show questions on"
+            value={value.showAgainDate ?? ''}
+            onChange={({ currentTarget }) =>
+              onChange({ hideQuestions: true, showAgainDate: currentTarget.value })
+            }
+          />
+        </div>
+      )}
+      {hasPrairieTest && hideQuestionsMode === 'show_questions' && (
+        <Alert variant="warning" className="mt-2 mb-0">
+          Showing questions after completion is not recommended when PrairieTest exams are
+          connected. Students may be able to view exam content when their assessment is closed.
+        </Alert>
+      )}
     </Form.Group>
   );
 }
@@ -172,65 +201,48 @@ function ScoreVisibilityInput({
 }) {
   const hideScoreMode = getHideScoreMode(value);
 
+  const handleModeChange = (newMode: HideScoreMode) => {
+    switch (newMode) {
+      case 'show_score':
+        onChange({ hideScore: false });
+        break;
+      case 'hide_score_forever':
+        onChange({ hideScore: true });
+        break;
+      case 'hide_score_until_date': {
+        const tomorrow = tomorrowDate();
+        onChange({ hideScore: true, showAgainDate: startOfDayDatetime(tomorrow) });
+        break;
+      }
+    }
+  };
+
   return (
     <Form.Group>
       <div className="mb-2">
-        <Form.Check
-          type="radio"
-          name={`${idPrefix}-hideScoreMode`}
-          id={`${idPrefix}-show-score`}
-          label="Show score after completion"
-          checked={hideScoreMode === 'show_score'}
-          onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange({ hideScore: false });
-          }}
+        <RichSelect
+          items={SCORE_VISIBILITY_ITEMS}
+          value={hideScoreMode}
+          aria-label="Score visibility"
+          id={`${idPrefix}-score-visibility-mode`}
+          minWidth={300}
+          onChange={handleModeChange}
         />
-        <Form.Text className="text-muted ms-4 mb-3 d-block">
-          Students can see their score immediately after completing the assessment
-        </Form.Text>
-
-        <Form.Check
-          type="radio"
-          name={`${idPrefix}-hideScoreMode`}
-          id={`${idPrefix}-hide-score-forever`}
-          label="Hide score permanently"
-          checked={hideScoreMode === 'hide_score_forever'}
-          onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange({ hideScore: true });
-          }}
-        />
-        <Form.Text className="text-muted ms-4 mb-3 d-block">
-          Score will never be visible after completion
-        </Form.Text>
-
-        <Form.Check
-          type="radio"
-          name={`${idPrefix}-hideScoreMode`}
-          id={`${idPrefix}-hide-score-until-date`}
-          label="Hide score until date"
-          checked={hideScoreMode === 'hide_score_until_date'}
-          onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange({ hideScore: true, showAgainDate: '' });
-          }}
-        />
-        {hideScoreMode === 'hide_score_until_date' && (
-          <div className="ms-4 mt-2">
-            <Form.Label htmlFor={`${idPrefix}-show-score-date`}>Show score again on</Form.Label>
-            <Form.Control
-              id={`${idPrefix}-show-score-date`}
-              type="datetime-local"
-              aria-describedby={`${idPrefix}-show-score-date-help`}
-              value={value.showAgainDate ?? ''}
-              onChange={({ currentTarget }) =>
-                onChange({ hideScore: true, showAgainDate: currentTarget.value })
-              }
-            />
-            <Form.Text id={`${idPrefix}-show-score-date-help`} className="text-muted">
-              Score will be hidden after completion and become visible again on this date
-            </Form.Text>
-          </div>
-        )}
       </div>
+      {hideScoreMode === 'hide_score_until_date' && (
+        <div className="mt-2">
+          <Form.Control
+            id={`${idPrefix}-show-score-date`}
+            type="datetime-local"
+            step={1}
+            aria-label="Show score again on"
+            value={value.showAgainDate ?? ''}
+            onChange={({ currentTarget }) =>
+              onChange({ hideScore: true, showAgainDate: currentTarget.value })
+            }
+          />
+        </div>
+      )}
     </Form.Group>
   );
 }
@@ -244,9 +256,10 @@ const infoPopoverConfig = {
         typically happens when:
       </p>
       <ul>
-        <li>The time limit expires (if durationMinutes is set)</li>
         <li>The last late deadline passes (or due date if no late deadlines)</li>
-        <li>The student's PrairieTest reservation ends</li>
+        <li>
+          The assessment is closed (e.g., time limit expires, autoclose, or instructor closes it)
+        </li>
       </ul>
       <p>
         The completion date can be different for different students based on when they started or
@@ -258,19 +271,17 @@ const infoPopoverConfig = {
 };
 
 function AfterCompleteCard({
-  title = 'After completion behavior',
-  description = 'Configure what happens after students complete the assessment',
+  title = 'After completion',
   children,
 }: {
   title?: string;
-  description?: string;
   children: React.ReactNode;
 }) {
   return (
-    <Card className="mb-4">
-      <Card.Header>
+    <div>
+      <div className="section-header mb-3">
         <div className="d-flex align-items-center">
-          <span>{title}</span>
+          <strong>{title}</strong>
           <OverlayTrigger trigger="click" placement="auto" popover={infoPopoverConfig}>
             <Button
               variant="link"
@@ -282,22 +293,13 @@ function AfterCompleteCard({
             </Button>
           </OverlayTrigger>
         </div>
-        <Form.Text className="text-muted">{description}</Form.Text>
-      </Card.Header>
-      <Card.Body>
-        <Row className="gy-3">{children}</Row>
-      </Card.Body>
-    </Card>
+      </div>
+      <Row className="gy-3">{children}</Row>
+    </div>
   );
 }
 
-export function MainAfterCompleteForm({
-  title,
-  description,
-}: {
-  title?: string;
-  description?: string;
-}) {
+export function MainAfterCompleteForm({ title }: { title?: string }) {
   const { field: qvField } = useController<AccessControlFormData, 'mainRule.questionVisibility'>({
     name: 'mainRule.questionVisibility',
   });
@@ -306,47 +308,49 @@ export function MainAfterCompleteForm({
     name: 'mainRule.scoreVisibility',
   });
 
+  const prairieTestExams = useWatch<AccessControlFormData, 'mainRule.prairieTestExams'>({
+    name: 'mainRule.prairieTestExams',
+  });
+  const hasPrairieTest = prairieTestExams.length > 0;
+
   return (
-    <AfterCompleteCard title={title} description={description}>
+    <AfterCompleteCard title={title}>
       <Col md={6}>
-        <div className="mb-3">
-          <strong>Question visibility</strong>
-          <QuestionVisibilityInput
-            value={qvField.value}
-            idPrefix="mainRule"
-            onChange={qvField.onChange}
-          />
-        </div>
+        <Form.Label className="fw-bold" htmlFor="mainRule-question-visibility-mode">
+          Question visibility
+        </Form.Label>
+        <QuestionVisibilityInput
+          value={qvField.value}
+          idPrefix="mainRule"
+          hasPrairieTest={hasPrairieTest}
+          onChange={qvField.onChange}
+        />
       </Col>
       <Col md={6}>
-        <div className="mb-3">
-          <strong>Score visibility</strong>
-          <ScoreVisibilityInput
-            value={svField.value}
-            idPrefix="mainRule"
-            onChange={svField.onChange}
-          />
-        </div>
+        <Form.Label className="fw-bold" htmlFor="mainRule-score-visibility-mode">
+          Score visibility
+        </Form.Label>
+        <ScoreVisibilityInput
+          value={svField.value}
+          idPrefix="mainRule"
+          onChange={svField.onChange}
+        />
       </Col>
     </AfterCompleteCard>
   );
 }
 
-export function OverrideAfterCompleteForm({
-  index,
-  title,
-  description,
-}: {
-  index: number;
-  title?: string;
-  description?: string;
-}) {
+export function OverrideAfterCompleteForm({ index, title }: { index: number; title?: string }) {
   const mainQV = useWatch<AccessControlFormData, 'mainRule.questionVisibility'>({
     name: 'mainRule.questionVisibility',
   });
   const mainSV = useWatch<AccessControlFormData, 'mainRule.scoreVisibility'>({
     name: 'mainRule.scoreVisibility',
   });
+  const prairieTestExams = useWatch<AccessControlFormData, 'mainRule.prairieTestExams'>({
+    name: 'mainRule.prairieTestExams',
+  });
+  const hasPrairieTest = prairieTestExams.length > 0;
 
   const { field: qvField } = useController<
     AccessControlFormData,
@@ -373,7 +377,7 @@ export function OverrideAfterCompleteForm({
   } = useOverrideField(index, 'scoreVisibility');
 
   return (
-    <AfterCompleteCard title={title} description={description}>
+    <AfterCompleteCard title={title}>
       <Col md={6}>
         <FieldWrapper
           isOverridden={qvOverridden}
@@ -388,6 +392,7 @@ export function OverrideAfterCompleteForm({
           <QuestionVisibilityInput
             value={qvField.value}
             idPrefix={`overrides-${index}`}
+            hasPrairieTest={hasPrairieTest}
             onChange={qvField.onChange}
           />
         </FieldWrapper>

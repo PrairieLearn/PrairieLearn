@@ -1,3 +1,5 @@
+import { Temporal } from '@js-temporal/polyfill';
+import { useEffect, useRef } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
 import {
   type Path,
@@ -12,7 +14,7 @@ import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
-import { getDeadlineRange, getUserTimezone } from '../utils/dateUtils.js';
+import { endOfDayDatetime, getDeadlineRange, getUserTimezone } from '../utils/dateUtils.js';
 
 function DeadlineArrayInput({
   type,
@@ -29,7 +31,7 @@ function DeadlineArrayInput({
   dueDate: string | null | undefined;
   deadlines: DeadlineEntry[];
 }) {
-  const { register } = useFormContext<AccessControlFormData>();
+  const { register, trigger } = useFormContext<AccessControlFormData>();
   const userTimezone = getUserTimezone();
   const isEarly = type === 'early';
 
@@ -43,6 +45,28 @@ function DeadlineArrayInput({
   const deadlineFields = rawDeadlineFields as (DeadlineEntry & { id: string })[];
 
   const { errors } = useFormState();
+
+  // Store constraint values in refs so the validate function (which is captured
+  // once by register()) always reads current values instead of stale closures.
+  const dueDateRef = useRef(dueDate);
+  const releaseDateRef = useRef(releaseDate);
+  const deadlinesRef = useRef(deadlines);
+  dueDateRef.current = dueDate;
+  releaseDateRef.current = releaseDate;
+  deadlinesRef.current = deadlines;
+
+  // Re-validate all deadline dates and credits when the number of deadlines
+  // changes (handles append and remove) or when external constraints change.
+  // Without this, react-hook-form won't run validators on newly appended fields
+  // or re-check existing fields against updated constraints.
+  useEffect(() => {
+    if (deadlineFields.length > 0) {
+      for (let i = 0; i < deadlineFields.length; i++) {
+        void trigger(`${fieldArrayName}.${i}.date` as Path<AccessControlFormData>);
+        void trigger(`${fieldArrayName}.${i}.credit` as Path<AccessControlFormData>);
+      }
+    }
+  }, [deadlineFields.length, dueDate, releaseDate, fieldArrayName, trigger]);
 
   const getDateError = (index: number): string | undefined => {
     return get(errors, `${fieldArrayName}.${index}.date`)?.message;
@@ -81,37 +105,34 @@ function DeadlineArrayInput({
     );
   };
 
+  // Read from refs to avoid stale closures — register() captures the validate
+  // function once, but these constraint values change over the form's lifetime.
   const validateDate = (value: unknown, index: number) => {
     const stringValue = value as string;
     if (!stringValue) return 'Date is required';
     const deadlineDate = new Date(stringValue);
+    const currentDueDate = dueDateRef.current ? new Date(dueDateRef.current) : null;
+    const currentReleaseDate = releaseDateRef.current ? new Date(releaseDateRef.current) : null;
+    const currentDeadlines = deadlinesRef.current;
 
     if (isEarly) {
-      if (dueDate) {
-        const currentDueDate = new Date(dueDate);
-        if (deadlineDate >= currentDueDate) {
-          return 'Early deadline must be before due date';
-        }
+      if (currentDueDate && deadlineDate >= currentDueDate) {
+        return 'Early deadline must be before due date';
       }
-      if (index > 0 && deadlines[index - 1]?.date) {
-        if (deadlineDate <= new Date(deadlines[index - 1].date)) {
+      if (index > 0 && currentDeadlines[index - 1]?.date) {
+        if (deadlineDate <= new Date(currentDeadlines[index - 1].date)) {
           return 'Must be after previous early deadline';
         }
       }
-      if (releaseDate) {
-        if (deadlineDate < new Date(releaseDate)) {
-          return 'Must be after release date';
-        }
+      if (currentReleaseDate && deadlineDate < currentReleaseDate) {
+        return 'Must be after release date';
       }
     } else {
-      if (dueDate) {
-        const currentDueDate = new Date(dueDate);
-        if (deadlineDate <= currentDueDate) {
-          return 'Late deadline must be after due date';
-        }
+      if (currentDueDate && deadlineDate <= currentDueDate) {
+        return 'Late deadline must be after due date';
       }
-      if (index > 0 && deadlines[index - 1]?.date) {
-        if (deadlineDate <= new Date(deadlines[index - 1].date)) {
+      if (index > 0 && currentDeadlines[index - 1]?.date) {
+        if (deadlineDate <= new Date(currentDeadlines[index - 1].date)) {
           return 'Must be after previous late deadline';
         }
       }
@@ -120,18 +141,68 @@ function DeadlineArrayInput({
     return true;
   };
 
-  const validateCredit = (value: unknown) => {
+  const validateCredit = (value: unknown, index: number) => {
     const numValue = value as number;
     if (isEarly) {
       if (numValue < 101 || numValue > 200) return 'Credit must be 101-200%';
     } else {
       if (numValue < 0 || numValue > 99) return 'Credit must be 0-99%';
     }
+    const currentDeadlines = deadlinesRef.current;
+    if (index > 0 && numValue >= currentDeadlines[index - 1].credit) {
+      return 'Credit must be less than previous deadline';
+    }
     return true;
   };
 
   const addDeadline = () => {
-    appendDeadline({ date: '', credit: isEarly ? 101 : 99 });
+    let candidateDate: Temporal.PlainDate | null = null;
+
+    // Find the last deadline that has an actual date value — earlier entries
+    // may be empty if the user hasn't filled them in yet.
+    let lastFilledDate = '';
+    for (let i = deadlineFields.length - 1; i >= 0; i--) {
+      if (deadlineFields[i].date) {
+        lastFilledDate = deadlineFields[i].date;
+        break;
+      }
+    }
+
+    if (isEarly && dueDate) {
+      // Early deadlines must be before the due date. To leave room for
+      // additional deadlines, place the new one at min(anchor + 1 week,
+      // midpoint to maxDate) — this uses natural spacing when there's
+      // plenty of room and compresses when the window is tight.
+      const maxDate = Temporal.PlainDateTime.from(dueDate).toPlainDate().subtract({ days: 1 });
+      const anchor = lastFilledDate
+        ? Temporal.PlainDateTime.from(lastFilledDate).toPlainDate()
+        : releaseDate
+          ? Temporal.PlainDateTime.from(releaseDate).toPlainDate()
+          : Temporal.Now.plainDateISO();
+
+      const daysToMax = anchor.until(maxDate).days;
+      if (daysToMax > 0) {
+        const weekOut = anchor.add({ weeks: 1 });
+        const midpoint = anchor.add({ days: Math.ceil(daysToMax / 2) });
+        candidateDate = Temporal.PlainDate.compare(weekOut, midpoint) <= 0 ? weekOut : midpoint;
+      }
+      // If daysToMax <= 0, no room — candidateDate stays null → empty field
+    } else if (isEarly && releaseDate) {
+      // No due date constraint — just space 1 week after anchor.
+      const anchor = lastFilledDate
+        ? Temporal.PlainDateTime.from(lastFilledDate).toPlainDate()
+        : Temporal.PlainDateTime.from(releaseDate).toPlainDate();
+      candidateDate = anchor.add({ weeks: 1 });
+    } else if (!isEarly && dueDate) {
+      // Late deadlines have no upper bound — 1 week spacing works.
+      const anchor = lastFilledDate
+        ? Temporal.PlainDateTime.from(lastFilledDate).toPlainDate()
+        : Temporal.PlainDateTime.from(dueDate).toPlainDate();
+      candidateDate = anchor.add({ weeks: 1 });
+    }
+
+    const defaultDate = candidateDate ? endOfDayDatetime(candidateDate) : '';
+    appendDeadline({ date: defaultDate, credit: isEarly ? 101 : 99 });
   };
 
   const label = isEarly ? 'Early deadlines' : 'Late deadlines';
@@ -160,10 +231,11 @@ function DeadlineArrayInput({
 
       {deadlineFields.map((deadlineField, index) => (
         <div key={deadlineField.id} className="mb-3">
-          <div className="d-flex gap-2 mb-1 flex-wrap">
+          <div className="d-flex gap-2 mb-1 flex-wrap align-items-start">
             <div className="flex-grow-1">
               <Form.Control
                 type="datetime-local"
+                step={1}
                 aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} date`}
                 aria-invalid={!!getDateError(index)}
                 aria-errormessage={
@@ -212,7 +284,7 @@ function DeadlineArrayInput({
                     `${fieldArrayName}.${index}.credit` as Parameters<typeof register>[0],
                     {
                       valueAsNumber: true,
-                      validate: validateCredit,
+                      validate: (value) => validateCredit(value, index),
                     },
                   )}
                 />
@@ -260,7 +332,7 @@ export function MainDeadlineArrayField({ type }: { type: 'early' | 'late' }) {
     name: fieldName as Path<AccessControlFormData>,
   }) as DeadlineEntry[] | undefined;
 
-  const shouldShow = isEarly ? releaseDate !== null : dueDate !== null && !!dueDate;
+  const shouldShow = isEarly || (dueDate !== null && !!dueDate);
 
   if (!shouldShow) return null;
 
