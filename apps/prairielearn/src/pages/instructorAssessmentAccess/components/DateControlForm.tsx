@@ -10,6 +10,7 @@ import { MainDueDateField, OverrideDueDateField } from './fields/DueDateField.js
 import { MainDurationField, OverrideDurationField } from './fields/DurationField.js';
 import { MainPasswordField, OverridePasswordField } from './fields/PasswordField.js';
 import { MainReleaseDateField, OverrideReleaseDateField } from './fields/ReleaseDateField.js';
+import { useDisplayTimezone } from './hooks/useDisplayTimezone.js';
 import type { AccessControlFormData } from './types.js';
 import { startOfDayDatetime } from './utils/dateUtils.js';
 
@@ -21,6 +22,7 @@ export function MainDateControlForm({
   description?: string;
 }) {
   const { register, setValue, getValues } = useFormContext<AccessControlFormData>();
+  const displayTimezone = useDisplayTimezone();
 
   const dateControlEnabled = useWatch<AccessControlFormData, 'mainRule.dateControlEnabled'>({
     name: 'mainRule.dateControlEnabled',
@@ -36,7 +38,7 @@ export function MainDateControlForm({
           {...register('mainRule.dateControlEnabled', {
             onChange: (e) => {
               if (e.target.checked && !getValues('mainRule.releaseDate')) {
-                setValue('mainRule.releaseDate', startOfDayDatetime(), {
+                setValue('mainRule.releaseDate', startOfDayDatetime(undefined, displayTimezone), {
                   shouldDirty: true,
                   shouldValidate: true,
                 });

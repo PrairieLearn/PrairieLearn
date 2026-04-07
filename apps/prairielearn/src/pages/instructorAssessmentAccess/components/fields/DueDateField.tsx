@@ -4,6 +4,7 @@ import { type Path, useController, useWatch } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
+import { useDisplayTimezone } from '../hooks/useDisplayTimezone.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
 import {
@@ -19,6 +20,7 @@ function DueDateInput({
   releaseDate,
   earlyDeadlines,
   error,
+  displayTimezone,
 }: {
   value: string | null;
   onChange: (value: string | null) => void;
@@ -26,6 +28,7 @@ function DueDateInput({
   releaseDate: string | null | undefined;
   earlyDeadlines: DeadlineEntry[] | undefined;
   error?: string;
+  displayTimezone: string;
 }) {
   const userTimezone = getUserTimezone();
 
@@ -97,7 +100,7 @@ function DueDateInput({
               } else if (releaseDate) {
                 baseDate = Temporal.PlainDateTime.from(releaseDate).toPlainDate();
               } else {
-                baseDate = Temporal.Now.plainDateISO();
+                baseDate = Temporal.Now.plainDateISO(displayTimezone);
               }
               onChange(endOfDayDatetime(baseDate.add({ weeks: 1 })));
             }
@@ -128,6 +131,7 @@ function DueDateInput({
 }
 
 export function MainDueDateField() {
+  const displayTimezone = useDisplayTimezone();
   const releaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
   });
@@ -160,6 +164,7 @@ export function MainDueDateField() {
         releaseDate={releaseDate}
         earlyDeadlines={earlyDeadlines}
         error={error?.message}
+        displayTimezone={displayTimezone}
         onChange={field.onChange}
       />
     </div>
@@ -167,6 +172,7 @@ export function MainDueDateField() {
 }
 
 export function OverrideDueDateField({ index }: { index: number }) {
+  const displayTimezone = useDisplayTimezone();
   const mainValue = useWatch<AccessControlFormData, 'mainRule.dueDate'>({
     name: 'mainRule.dueDate',
   });
@@ -226,6 +232,7 @@ export function OverrideDueDateField({ index }: { index: number }) {
         releaseDate={effectiveReleaseDate}
         earlyDeadlines={earlyDeadlinesOverridden ? earlyDeadlines : mainEarlyDeadlines}
         error={error?.message}
+        displayTimezone={displayTimezone}
         onChange={field.onChange}
       />
     </FieldWrapper>

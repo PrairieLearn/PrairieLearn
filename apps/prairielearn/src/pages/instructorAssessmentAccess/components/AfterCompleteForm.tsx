@@ -4,6 +4,7 @@ import { useController, useWatch } from 'react-hook-form';
 import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
 import { FieldWrapper } from './FieldWrapper.js';
+import { useDisplayTimezone } from './hooks/useDisplayTimezone.js';
 import { useOverrideField } from './hooks/useOverrideField.js';
 import type {
   AccessControlFormData,
@@ -79,11 +80,13 @@ function QuestionVisibilityInput({
   onChange,
   idPrefix,
   hasPrairieTest = false,
+  displayTimezone,
 }: {
   value: QuestionVisibilityValue;
   onChange: (value: QuestionVisibilityValue) => void;
   idPrefix: string;
   hasPrairieTest?: boolean;
+  displayTimezone: string;
 }) {
   const hideQuestionsMode = getHideQuestionsMode(value);
 
@@ -96,7 +99,7 @@ function QuestionVisibilityInput({
         onChange({ hideQuestions: true });
         break;
       case 'hide_questions_between_dates': {
-        const tomorrow = tomorrowDate();
+        const tomorrow = tomorrowDate(displayTimezone);
         onChange({
           hideQuestions: true,
           showAgainDate: startOfDayDatetime(tomorrow),
@@ -105,7 +108,7 @@ function QuestionVisibilityInput({
         break;
       }
       case 'hide_questions_until_date': {
-        const tomorrow = tomorrowDate();
+        const tomorrow = tomorrowDate(displayTimezone);
         onChange({ hideQuestions: true, showAgainDate: startOfDayDatetime(tomorrow) });
         break;
       }
@@ -194,10 +197,12 @@ function ScoreVisibilityInput({
   value,
   onChange,
   idPrefix,
+  displayTimezone,
 }: {
   value: ScoreVisibilityValue;
   onChange: (value: ScoreVisibilityValue) => void;
   idPrefix: string;
+  displayTimezone: string;
 }) {
   const hideScoreMode = getHideScoreMode(value);
 
@@ -210,7 +215,7 @@ function ScoreVisibilityInput({
         onChange({ hideScore: true });
         break;
       case 'hide_score_until_date': {
-        const tomorrow = tomorrowDate();
+        const tomorrow = tomorrowDate(displayTimezone);
         onChange({ hideScore: true, showAgainDate: startOfDayDatetime(tomorrow) });
         break;
       }
@@ -300,6 +305,7 @@ function AfterCompleteCard({
 }
 
 export function MainAfterCompleteForm({ title }: { title?: string }) {
+  const displayTimezone = useDisplayTimezone();
   const { field: qvField } = useController<AccessControlFormData, 'mainRule.questionVisibility'>({
     name: 'mainRule.questionVisibility',
   });
@@ -323,6 +329,7 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
           value={qvField.value}
           idPrefix="mainRule"
           hasPrairieTest={hasPrairieTest}
+          displayTimezone={displayTimezone}
           onChange={qvField.onChange}
         />
       </Col>
@@ -333,6 +340,7 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
         <ScoreVisibilityInput
           value={svField.value}
           idPrefix="mainRule"
+          displayTimezone={displayTimezone}
           onChange={svField.onChange}
         />
       </Col>
@@ -341,6 +349,7 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
 }
 
 export function OverrideAfterCompleteForm({ index, title }: { index: number; title?: string }) {
+  const displayTimezone = useDisplayTimezone();
   const mainQV = useWatch<AccessControlFormData, 'mainRule.questionVisibility'>({
     name: 'mainRule.questionVisibility',
   });
@@ -393,6 +402,7 @@ export function OverrideAfterCompleteForm({ index, title }: { index: number; tit
             value={qvField.value}
             idPrefix={`overrides-${index}`}
             hasPrairieTest={hasPrairieTest}
+            displayTimezone={displayTimezone}
             onChange={qvField.onChange}
           />
         </FieldWrapper>
@@ -411,6 +421,7 @@ export function OverrideAfterCompleteForm({ index, title }: { index: number; tit
           <ScoreVisibilityInput
             value={svField.value}
             idPrefix={`overrides-${index}`}
+            displayTimezone={displayTimezone}
             onChange={svField.onChange}
           />
         </FieldWrapper>

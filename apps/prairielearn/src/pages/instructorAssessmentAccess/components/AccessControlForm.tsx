@@ -12,6 +12,7 @@ import { AccessControlSummary } from './AccessControlSummary.js';
 import { MainRuleForm } from './MainRuleForm.js';
 import { OverrideRuleContent } from './OverrideRuleContent.js';
 import { AppliesToField } from './fields/AppliesToField.js';
+import { DisplayTimezoneProvider } from './hooks/useDisplayTimezone.js';
 import {
   type AccessControlFormData,
   createDefaultOverrideFormData,
@@ -261,110 +262,112 @@ export function AccessControlForm({
     ) : null;
 
   return (
-    <FormProvider {...methods}>
-      <Form
-        style={{ height: '100%' }}
-        onSubmit={handleSubmit(handleFormSubmit)}
-        // Prevent Enter from submitting the form on inputs like date fields.
-        onKeyDown={(e) => {
-          if (
-            e.key === 'Enter' &&
-            e.target instanceof HTMLElement &&
-            e.target.tagName !== 'BUTTON' &&
-            e.target.tagName !== 'TEXTAREA'
-          ) {
-            e.preventDefault();
-          }
-        }}
-      >
-        <SplitPane
-          forceOpen={selectedRule}
-          left={{
-            content: (
-              <>
-                <div className="p-3">
-                  {alert}
-                  <AccessControlSummary
-                    displayTimezone={courseInstance.display_timezone}
-                    getOverrideName={getOverrideName}
-                    mainRule={watchedData.mainRule}
-                    overrides={watchedData.overrides}
-                    mainRuleErrors={mainRuleErrors}
-                    getOverrideErrors={getOverrideErrors}
-                    onAddOverride={addOverride}
-                    onRemoveOverride={handleDeleteClick}
-                    onMoveOverride={moveOverride}
-                    onEditMainRule={() => setSelectedRule({ type: 'main' })}
-                    onClearMainRule={() =>
-                      reset(
-                        {
-                          mainRule: jsonToMainRuleFormData({}, displayTimezone),
-                          overrides: watch('overrides'),
-                        },
-                        {
-                          // Keep original defaults so the form stays dirty and the save button enables.
-                          keepDefaultValues: true,
-                        },
-                      )
-                    }
-                    onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
-                  />
-                </div>
-                <StickyActionBar
-                  message={isDirty ? 'You have unsaved changes' : 'No unsaved changes'}
-                  actions={
-                    <>
-                      <button
-                        className="btn btn-sm btn-outline-secondary"
-                        type="button"
-                        disabled={isSaving || !isDirty}
-                        onClick={() => reset()}
-                      >
-                        Cancel
-                      </button>
-                      {saveDisabledReason ? (
-                        <OverlayTrigger
-                          tooltip={{ props: { id: 'save-tooltip' }, body: saveDisabledReason }}
+    <DisplayTimezoneProvider value={displayTimezone}>
+      <FormProvider {...methods}>
+        <Form
+          style={{ height: '100%' }}
+          onSubmit={handleSubmit(handleFormSubmit)}
+          // Prevent Enter from submitting the form on inputs like date fields.
+          onKeyDown={(e) => {
+            if (
+              e.key === 'Enter' &&
+              e.target instanceof HTMLElement &&
+              e.target.tagName !== 'BUTTON' &&
+              e.target.tagName !== 'TEXTAREA'
+            ) {
+              e.preventDefault();
+            }
+          }}
+        >
+          <SplitPane
+            forceOpen={selectedRule}
+            left={{
+              content: (
+                <>
+                  <div className="p-3">
+                    {alert}
+                    <AccessControlSummary
+                      displayTimezone={courseInstance.display_timezone}
+                      getOverrideName={getOverrideName}
+                      mainRule={watchedData.mainRule}
+                      overrides={watchedData.overrides}
+                      mainRuleErrors={mainRuleErrors}
+                      getOverrideErrors={getOverrideErrors}
+                      onAddOverride={addOverride}
+                      onRemoveOverride={handleDeleteClick}
+                      onMoveOverride={moveOverride}
+                      onEditMainRule={() => setSelectedRule({ type: 'main' })}
+                      onClearMainRule={() =>
+                        reset(
+                          {
+                            mainRule: jsonToMainRuleFormData({}, displayTimezone),
+                            overrides: watch('overrides'),
+                          },
+                          {
+                            // Keep original defaults so the form stays dirty and the save button enables.
+                            keepDefaultValues: true,
+                          },
+                        )
+                      }
+                      onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
+                    />
+                  </div>
+                  <StickyActionBar
+                    message={isDirty ? 'You have unsaved changes' : 'No unsaved changes'}
+                    actions={
+                      <>
+                        <button
+                          className="btn btn-sm btn-outline-secondary"
+                          type="button"
+                          disabled={isSaving || !isDirty}
+                          onClick={() => reset()}
                         >
-                          <span className="d-inline-block">{saveButton}</span>
-                        </OverlayTrigger>
-                      ) : (
-                        saveButton
-                      )}
-                    </>
-                  }
-                />
-              </>
-            ),
-          }}
-          right={{
-            content: rightPanel,
-            title: rightTitle,
-            headerAction: rightHeaderAction,
-            collapsed: selectedRule == null ? true : undefined,
-            initialWidth: accessControlFormInitialRightWidth,
-          }}
-          onClose={() => setSelectedRule(null)}
-        />
-      </Form>
+                          Cancel
+                        </button>
+                        {saveDisabledReason ? (
+                          <OverlayTrigger
+                            tooltip={{ props: { id: 'save-tooltip' }, body: saveDisabledReason }}
+                          >
+                            <span className="d-inline-block">{saveButton}</span>
+                          </OverlayTrigger>
+                        ) : (
+                          saveButton
+                        )}
+                      </>
+                    }
+                  />
+                </>
+              ),
+            }}
+            right={{
+              content: rightPanel,
+              title: rightTitle,
+              headerAction: rightHeaderAction,
+              collapsed: selectedRule == null ? true : undefined,
+              initialWidth: accessControlFormInitialRightWidth,
+            }}
+            onClose={() => setSelectedRule(null)}
+          />
+        </Form>
 
-      <Modal show={deleteModal.show} onHide={deleteModal.hide}>
-        <Modal.Header closeButton>
-          <Modal.Title>Delete override</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          Are you sure you want to delete &quot;{deleteModal.data?.name ?? ''}&quot;? This action
-          cannot be undone.
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={deleteModal.hide}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleDeleteConfirm}>
-            Delete
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </FormProvider>
+        <Modal show={deleteModal.show} onHide={deleteModal.hide}>
+          <Modal.Header closeButton>
+            <Modal.Title>Delete override</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            Are you sure you want to delete &quot;{deleteModal.data?.name ?? ''}&quot;? This action
+            cannot be undone.
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={deleteModal.hide}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleDeleteConfirm}>
+              Delete
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      </FormProvider>
+    </DisplayTimezoneProvider>
   );
 }
