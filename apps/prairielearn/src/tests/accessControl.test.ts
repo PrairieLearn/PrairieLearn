@@ -147,7 +147,7 @@ describe('Valid configs', () => {
 
     parsedAccessControlExamples.forEach((rules, exampleIndex) => {
       const result = validateAccessControlArray({
-        rules: rules,
+        rules,
       });
 
       assert.deepEqual(

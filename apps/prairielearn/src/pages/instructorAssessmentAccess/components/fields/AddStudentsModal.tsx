@@ -74,7 +74,7 @@ export function AddStudentsModal({
           <Button variant="secondary" onClick={handleClose}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleSave} disabled={isLoading}>
+          <Button variant="primary" disabled={isLoading} onClick={handleSave}>
             Done{selectedUids.size > 0 ? ` (${selectedUids.size} selected)` : ''}
           </Button>
         </Modal.Footer>
