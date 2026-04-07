@@ -119,6 +119,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 
 - Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
 - When writing SQL, get table and column names from `database/tables/` (the source of truth) or from nearby existing queries in the same feature area. Do NOT rely on names found in old migrations, as tables and columns may have been renamed since those migrations were written.
+- Never inline SQL strings in TypeScript code. Place SQL queries in a `.sql` file alongside the TypeScript file using `-- BLOCK query_name` delimiters, load them with `sqldb.loadSqlEquiv(import.meta.url)`, and reference them as `sql.query_name`.
 
 ## TypeScript guidance
 
@@ -142,7 +143,8 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 
 ### User interface conventions
 
-- Use `react-bootstrap` components for UI elements.
+- Look for existing shared UI components in `apps/prairielearn/src/components/` or `@prairielearn/ui` before building new ones. When the same UI pattern appears across multiple pages, extract it into a shared component rather than duplicating code.
+- For basic UI elements that have a dedicated Bootstrap component, use `react-bootstrap` components. For more complex / interactive UI elements, use `react-aria`.
 - Titles and buttons should use sentence case ("Save course", "Discard these changes").
 - Form inputs with validation errors should include `aria-invalid` and `aria-errormessage` attributes pointing to the error message element's `id`.
 - Prefer using [Bootstrap Icons](https://icons.getbootstrap.com/) for icons in new code.
@@ -189,6 +191,7 @@ Inline `PageLayout` directly in the Express route handler rather than creating w
 - Pass `res.locals` to `getPageContext` to get information about the course instance / authentication state.
 - If you hydrate a component with `Hydrate`, you must register the component with `registerHydratedComponent` in a file in `apps/prairielearn/assets/scripts/esm-bundles/hydrated-components`.
 - Don't use `useMemo` for cheap computations. Use `run` from `@prairielearn/run` instead (an IIFE helper that executes a function immediately).
+- Don't use `useEffect` to sync internal state to a parent via a callback on every change — instead, let the child own its state and notify the parent imperatively when a user action requires it (e.g., clicking "Save").
 - Avoid unnecessary `useEffect` when using `react-hook-form`. The `watch()` function returns reactive values that trigger re-renders automatically, so derived state can be computed directly without `useEffect`.
 - In hydrated components using `react-hook-form`, always add `defaultValue` (text inputs, textareas, selects) or `defaultChecked` (checkboxes) alongside `{...register(...)}`. Without these, values aren't populated until client hydration, causing a flash of empty fields.
 
