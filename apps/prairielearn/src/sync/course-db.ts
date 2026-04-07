@@ -1150,24 +1150,24 @@ function formatValues(qids: Set<string> | string[]) {
  * Returns a single object with all accumulated errors and warnings.
  */
 export function validateAccessControlArray({
-  accessControlJsonArray,
+  rules,
+  enrollmentRules,
   validStudentLabelNames,
 }: {
-  accessControlJsonArray: AccessControlJson[];
+  rules: AccessControlJson[];
+  enrollmentRules?: AccessControlJson[];
   validStudentLabelNames?: Set<string>;
 }): { warnings: string[]; errors: string[] } {
   const errors: string[] = [];
   const warnings: string[] = [];
   const validationRules: AccessControlValidationRule[] = [];
 
-  if (accessControlJsonArray.length === 0) {
+  if (rules.length === 0) {
     return { errors, warnings };
   }
 
   // A main rule has no `labels` property (applies to everyone)
-  const mainRules = accessControlJsonArray.filter(
-    (rule) => rule.labels == null || rule.labels.length === 0,
-  );
+  const mainRules = rules.filter((rule) => rule.labels == null || rule.labels.length === 0);
 
   if (mainRules.length === 0) {
     errors.push('No defaults found. The first element of accessControl must apply to everyone.');
@@ -1177,14 +1177,14 @@ export function validateAccessControlArray({
     );
   } else {
     // The DB constraint `check_first_rule_is_none` requires the main rule at index 0
-    const firstRule = accessControlJsonArray[0];
+    const firstRule = rules[0];
     const isFirstRuleMain = firstRule.labels == null || firstRule.labels.length === 0;
     if (!isFirstRuleMain) {
       errors.push('The defaults (without labels) must be the first element in the array.');
     }
   }
 
-  for (const rule of accessControlJsonArray) {
+  for (const rule of rules) {
     const labels = rule.labels ?? [];
     const seenLabels = new Set<string>();
     const duplicateLabels = new Set<string>();
@@ -1221,6 +1221,15 @@ export function validateAccessControlArray({
     });
 
     errors.push(...validateRule(rule, targetType));
+  }
+
+  for (const rule of enrollmentRules ?? []) {
+    validationRules.push({
+      rule,
+      targetType: 'enrollment',
+      ruleIndex: validationRules.length,
+    });
+    errors.push(...validateRule(rule, 'enrollment'));
   }
 
   errors.push(
@@ -1663,7 +1672,7 @@ function validateAssessment({
   // Validate access control rules if defined
   if (assessment.accessControl) {
     const accessControlValidation = validateAccessControlArray({
-      accessControlJsonArray: assessment.accessControl,
+      rules: assessment.accessControl,
       validStudentLabelNames,
     });
     errors.push(...accessControlValidation.errors);

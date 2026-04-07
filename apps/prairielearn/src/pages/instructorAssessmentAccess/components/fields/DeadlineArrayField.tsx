@@ -119,6 +119,13 @@ function DeadlineArrayInput({
     const currentReleaseDate = releaseDateRef.current ? new Date(releaseDateRef.current) : null;
     const currentDeadlines = deadlinesRef.current;
 
+    // Check for duplicate dates within this deadline array.
+    for (let i = 0; i < currentDeadlines.length; i++) {
+      if (i !== index && currentDeadlines[i]?.date === value) {
+        return 'Duplicate deadline date';
+      }
+    }
+
     if (isEarly) {
       if (currentDueDate && deadlineDate >= currentDueDate) {
         return `Must be before due date (${formatRef(currentDueDate)})`;

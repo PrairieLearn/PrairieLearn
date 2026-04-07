@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Button, Form } from 'react-bootstrap';
-import { get, useFieldArray, useFormContext, useFormState } from 'react-hook-form';
+import { get, useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import type { AccessControlFormData } from './types.js';
 
@@ -17,13 +17,18 @@ export function PrairieTestControlForm() {
 
   const { errors } = useFormState();
 
-  // Validate on mount so empty exam UUIDs (added by the PrairieTest checkbox
-  // in IntegrationsSection) show errors immediately. `shouldValidate` on the
-  // parent `setValue` fires before these fields are registered, so we re-trigger
-  // here once the fields exist.
+  const watchedExams = useWatch<AccessControlFormData, 'mainRule.prairieTestExams'>({
+    name: 'mainRule.prairieTestExams',
+  });
+  const examsRef = useRef(watchedExams);
+  examsRef.current = watchedExams;
+
+  // Validate when the number of exams changes or on mount so empty exam UUIDs
+  // (added by the PrairieTest checkbox in IntegrationsSection) show errors
+  // immediately and duplicate detection re-runs after add/remove.
   useEffect(() => {
     void trigger('mainRule.prairieTestExams');
-  }, [trigger]);
+  }, [examFields.length, trigger]);
 
   const getExamUuidError = (index: number): string | undefined => {
     return get(errors, `mainRule.prairieTestExams.${index}.examUuid`)?.message;
@@ -54,6 +59,15 @@ export function PrairieTestControlForm() {
                 pattern: {
                   value: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
                   message: 'Invalid UUID format',
+                },
+                validate: (value) => {
+                  const currentExams = examsRef.current;
+                  for (let i = 0; i < currentExams.length; i++) {
+                    if (i !== index && currentExams[i]?.examUuid === value) {
+                      return 'Duplicate exam UUID';
+                    }
+                  }
+                  return true;
                 },
               })}
             />

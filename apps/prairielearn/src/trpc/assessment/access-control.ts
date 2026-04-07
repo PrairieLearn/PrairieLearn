@@ -24,14 +24,11 @@ import { selectStudentLabelsInCourseInstance } from '../../models/student-label.
 import {
   type AccessControlJson,
   AccessControlJsonSchema,
-  type AccessControlValidationRule,
   MAX_ACCESS_CONTROL_RULES,
   MAX_ENROLLMENT_RULES,
-  validateGlobalDateConsistencyIssues,
 } from '../../schemas/accessControl.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { validateAccessControlArray } from '../../sync/course-db.js';
-import { validateRule } from '../../sync/fromDisk/accessControl.js';
 import { throwAppError } from '../app-errors.js';
 
 import {
@@ -144,10 +141,6 @@ function formJsonToEnrollmentRuleData(
   };
 }
 
-// TODO: Add client-side validation for duplicate PrairieTest exam UUIDs and
-// duplicate deadline dates before this goes live. Server-side validation
-// (validateRule) catches these for all rule types, but the UI should block
-// saves proactively so users get immediate feedback instead of a server error.
 export const AccessControlJsonInputSchema = AccessControlJsonSchema.extend({
   id: z.string().optional(),
 }).strip();
@@ -211,23 +204,8 @@ const saveAllRules = t.procedure
   )
   .mutation(async (opts) => {
     const { rules, enrollmentRules, origHash } = opts.input;
-    const validationRules: AccessControlValidationRule[] = [];
-
     // Validate all rules before writing anything to disk or DB.
     const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
-
-    // Validate array-level invariants (exactly one main rule, must be first).
-    const { errors: arrayErrors } = validateAccessControlArray({
-      accessControlJsonArray: rulesToSync,
-    });
-    if (arrayErrors.length > 0) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: arrayErrors[0] });
-    }
-
-    for (const [index, rule] of rulesToSync.entries()) {
-      const targetType = index === 0 ? 'none' : 'student_label';
-      validationRules.push({ rule, targetType, ruleIndex: validationRules.length });
-    }
 
     if (enrollmentRules !== undefined && enrollmentRules.length > 0) {
       const allEnrollmentIds = new Set(enrollmentRules.flatMap((r) => r.enrollmentIds));
@@ -243,23 +221,14 @@ const saveAllRules = t.procedure
           });
         }
       }
-
-      for (const enrollmentRule of enrollmentRules) {
-        validationRules.push({
-          rule: enrollmentRule.ruleJson,
-          targetType: 'enrollment',
-          ruleIndex: validationRules.length,
-        });
-        const ruleErrors = validateRule(enrollmentRule.ruleJson, 'enrollment');
-        if (ruleErrors.length > 0) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: ruleErrors[0] });
-        }
-      }
     }
 
-    const globalDateErrors = validateGlobalDateConsistencyIssues(validationRules);
-    if (globalDateErrors.length > 0) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: globalDateErrors[0].message });
+    const { errors: validationErrors } = validateAccessControlArray({
+      rules: rulesToSync,
+      enrollmentRules: enrollmentRules?.map((r) => r.ruleJson),
+    });
+    if (validationErrors.length > 0) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: validationErrors[0] });
     }
 
     const assessmentDir = path.join(
