@@ -25,6 +25,8 @@ import { throwAppError } from '../app-errors.js';
 import { normalizeCoursePathInput } from './course-path.js';
 import { requireAdministrator, t } from './init.js';
 
+const NullableStaffCourseSchema = StaffCourseSchema.nullable();
+
 export interface AdminCourseRequestError {
   CreateCourse: {
     code: 'CONFLICTS';
@@ -85,11 +87,11 @@ const createCourse = t.procedure
         {
           code: 'CONFLICTS',
           message: 'Conflicts detected with existing courses or repositories.',
-          repoCourse: repoCourse ? StaffCourseSchema.parse(repoCourse) : null,
+          repoCourse: NullableStaffCourseSchema.parse(repoCourse),
           githubRepoUrl: githubRepoExists
             ? `https://github.com/${config.githubCourseOwner}/${input.repoShortName}`
             : null,
-          pathCourse: pathCourse ? StaffCourseSchema.parse(pathCourse) : null,
+          pathCourse: NullableStaffCourseSchema.parse(pathCourse),
         },
         'CONFLICT',
       );
