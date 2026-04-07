@@ -133,9 +133,8 @@ function AfterLastDeadlineInput({
                 shouldUnregister: true,
                 valueAsNumber: true,
                 validate: (v) => {
-                  const num = v!;
-                  if (Number.isNaN(num)) return 'Credit is required';
-                  if (num < 0 || num > 200) return 'Must be 0–200%';
+                  if (v == null || Number.isNaN(v)) return 'Credit is required';
+                  if (v < 0 || v > 200) return 'Must be 0–200%';
                   return true;
                 },
               })}
