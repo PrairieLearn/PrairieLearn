@@ -25,7 +25,7 @@ function DueDateInput({
   value: string | null;
   onChange: (value: string | null) => void;
   idPrefix: string;
-  releaseDate: string | null | undefined;
+  releaseDate: string | undefined;
   earlyDeadlines: DeadlineEntry[] | undefined;
   error?: string;
 }) {
@@ -182,7 +182,7 @@ export function OverrideDueDateField({ index }: { index: number }) {
   const { isOverridden: releaseDateOverridden } = useOverrideField(index, 'releaseDate');
   const releaseDate = useWatch({
     name: `overrides.${index}.releaseDate` as Path<AccessControlFormData>,
-  }) as string | null;
+  }) as string;
   const mainReleaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
   });

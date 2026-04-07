@@ -85,7 +85,7 @@ export function AccessControlForm({
   };
 
   const addOverride = () => {
-    const newOverride = createDefaultOverrideFormData();
+    const newOverride = createDefaultOverrideFormData(watchedData.mainRule);
     // Enrollment overrides are inserted before student-label overrides
     const firstLabelIndex = watchedData.overrides.findIndex(
       (o) => o.appliesTo.targetType === 'student_label',

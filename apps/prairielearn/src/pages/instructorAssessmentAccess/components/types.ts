@@ -87,7 +87,7 @@ export interface OverrideData {
   trackingId: string;
   appliesTo: AppliesTo;
   overriddenFields: string[];
-  releaseDate: string | null;
+  releaseDate: string;
   dueDate: string | null;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
@@ -138,7 +138,10 @@ export function jsonToMainRuleFormData(
       dc?.releaseDate != null ||
       dc?.dueDate != null ||
       (dc?.earlyDeadlines?.length ?? 0) > 0 ||
-      (dc?.lateDeadlines?.length ?? 0) > 0,
+      (dc?.lateDeadlines?.length ?? 0) > 0 ||
+      dc?.afterLastDeadline != null ||
+      dc?.durationMinutes != null ||
+      dc?.password != null,
     releaseDate: toLocalDatetimeValue(dc?.releaseDate, displayTimezone) ?? '',
     dueDate: toLocalDatetimeValue(dc?.dueDate, displayTimezone) ?? null,
     earlyDeadlines: (dc?.earlyDeadlines ?? []).map((d) => ({
@@ -196,9 +199,9 @@ export function jsonToOverrideFormData(
 
   const overriddenFields: string[] = [];
 
-  let releaseDate: string | null = null;
+  let releaseDate = '';
   if (dc?.releaseDate !== undefined) {
-    releaseDate = toLocalDatetimeValue(dc.releaseDate, displayTimezone);
+    releaseDate = toLocalDatetimeValue(dc.releaseDate, displayTimezone) ?? '';
     overriddenFields.push('releaseDate');
   }
 
@@ -393,7 +396,7 @@ export function formDataToJson(formData: AccessControlFormData): AccessControlJs
   return [mainRuleToJson(formData.mainRule), ...formData.overrides.map(overrideToJson)];
 }
 
-export function createDefaultOverrideFormData(): OverrideData {
+export function createDefaultOverrideFormData(mainRule?: MainRuleData): OverrideData {
   return {
     trackingId: crypto.randomUUID(),
     appliesTo: {
@@ -402,14 +405,14 @@ export function createDefaultOverrideFormData(): OverrideData {
       studentLabels: [],
     },
     overriddenFields: [],
-    releaseDate: null,
-    dueDate: null,
-    earlyDeadlines: [],
-    lateDeadlines: [],
-    afterLastDeadline: null,
-    durationMinutes: null,
-    password: null,
-    questionVisibility: { hideQuestions: true },
-    scoreVisibility: { hideScore: false },
+    releaseDate: mainRule?.releaseDate ?? '',
+    dueDate: mainRule?.dueDate ?? null,
+    earlyDeadlines: (mainRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
+    lateDeadlines: (mainRule?.lateDeadlines ?? []).map((d) => ({ ...d })),
+    afterLastDeadline: mainRule?.afterLastDeadline ? { ...mainRule.afterLastDeadline } : null,
+    durationMinutes: mainRule?.durationMinutes ?? null,
+    password: mainRule?.password ?? null,
+    questionVisibility: mainRule ? { ...mainRule.questionVisibility } : { hideQuestions: true },
+    scoreVisibility: mainRule ? { ...mainRule.scoreVisibility } : { hideScore: false },
   };
 }

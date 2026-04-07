@@ -35,7 +35,7 @@ const baseOverride: OverrideData = {
     studentLabels: [],
   },
   overriddenFields: [],
-  releaseDate: null,
+  releaseDate: '',
   dueDate: null,
   earlyDeadlines: [],
   lateDeadlines: [],
@@ -201,7 +201,7 @@ describe('formDataToJson', () => {
             'durationMinutes',
             'password',
           ],
-          releaseDate: null,
+          releaseDate: '',
           dueDate: null,
           earlyDeadlines: [],
           lateDeadlines: [],
@@ -217,8 +217,7 @@ describe('formDataToJson', () => {
 
     expect(overrideJson.dateControl).toBeDefined();
     const dc = overrideJson.dateControl!;
-    expect('releaseDate' in dc).toBe(true);
-    expect(dc.releaseDate).toBeNull();
+    expect('releaseDate' in dc).toBe(false);
     expect('dueDate' in dc).toBe(true);
     expect(dc.dueDate).toBeNull();
     expect('earlyDeadlines' in dc).toBe(true);

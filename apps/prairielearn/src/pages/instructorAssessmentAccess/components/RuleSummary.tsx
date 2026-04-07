@@ -79,7 +79,7 @@ export function generateDateTableRows(
         credit: '100%',
         visibility: visibilityParts.join(' '),
       });
-    } else if (releaseDate === null) {
+    } else {
       rows.push({
         date: 'Released',
         label: '',
