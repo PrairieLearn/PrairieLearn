@@ -240,9 +240,9 @@
     "brotli": 313294
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudentsLabels.ts": {
-    "raw": 1056558,
-    "gzip": 311964,
-    "brotli": 270056
+    "raw": 1056633,
+    "gzip": 311998,
+    "brotli": 270090
   },
   "scripts/esm-bundles/hydrated-components/QuestionSettingsCardFooter.ts": {
     "raw": 956101,
