@@ -227,10 +227,6 @@ const saveAllRules = t.procedure
     for (const [index, rule] of rulesToSync.entries()) {
       const targetType = index === 0 ? 'none' : 'student_label';
       validationRules.push({ rule, targetType, ruleIndex: validationRules.length });
-      const ruleError = validateRule(rule, targetType);
-      if (ruleError) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
-      }
     }
 
     if (enrollmentRules !== undefined && enrollmentRules.length > 0) {
@@ -254,9 +250,9 @@ const saveAllRules = t.procedure
           targetType: 'enrollment',
           ruleIndex: validationRules.length,
         });
-        const ruleError = validateRule(enrollmentRule.ruleJson, 'enrollment');
-        if (ruleError) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
+        const ruleErrors = validateRule(enrollmentRule.ruleJson, 'enrollment');
+        if (ruleErrors.length > 0) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: ruleErrors[0] });
         }
       }
     }
