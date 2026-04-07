@@ -30,7 +30,6 @@ interface DateTableRow {
   date: ReactNode;
   label: string;
   credit: string;
-  visibility: string;
   error?: string;
 }
 
@@ -64,36 +63,11 @@ export function generateDateTableRows(
     const lateDeadlines = rule.lateDeadlines;
 
     // Build rows in logical order: release, early deadlines, due date, late deadlines.
-    // Credit after = the credit that applies in the period following this date.
+    // Credit before = the credit you earn right before that date passes.
     const afterLastDeadline = rule.afterLastDeadline;
-    const afterLastCredit = afterLastDeadline?.allowSubmissions
-      ? `${afterLastDeadline.credit ?? 0}%`
-      : '—';
-
-    // Helper: credit after due = first late deadline credit, or after-last-deadline credit.
-    const creditAfterDue =
-      lateDeadlines.length > 0 ? `${lateDeadlines[0].credit}%` : afterLastCredit;
-
-    const hasAccessAfterDue =
-      lateDeadlines.length > 0 || afterLastDeadline?.allowSubmissions;
-
-    // Credit after release = first early deadline credit, or 100% (full credit).
-    const creditAfterRelease =
-      earlyDeadlines.length > 0 ? `${earlyDeadlines[0].credit}%` : '100%';
 
     if (releaseDate) {
       const releasePlainDateTime = Temporal.PlainDateTime.from(releaseDate);
-      const nowInTimezone = Temporal.Now.plainDateTimeISO(displayTimezone);
-
-      if (Temporal.PlainDateTime.compare(releasePlainDateTime, nowInTimezone) > 0) {
-        const visibility = isMain && rule.listBeforeRelease ? 'Closed (listed)' : 'Closed (hidden)';
-        rows.push({
-          date: '',
-          label: 'Before release',
-          credit: '—',
-          visibility,
-        });
-      }
 
       rows.push({
         date: (
@@ -105,22 +79,17 @@ export function generateDateTableRows(
           />
         ),
         label: 'Release',
-        credit: creditAfterRelease,
-        visibility: 'Opens',
+        credit: '—',
       });
     } else {
       rows.push({
         date: 'Released',
         label: '',
-        credit: creditAfterRelease,
-        visibility: 'Opens',
+        credit: '—',
       });
     }
 
     earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
-      // Credit after this early deadline = next early deadline's credit, or 100%.
-      const creditAfter =
-        index < earlyDeadlines.length - 1 ? `${earlyDeadlines[index + 1].credit}%` : '100%';
       rows.push({
         date: deadline.date ? (
           <FriendlyDate
@@ -133,8 +102,7 @@ export function generateDateTableRows(
           'No date set'
         ),
         label: `Early ${index + 1}`,
-        credit: creditAfter,
-        visibility: 'Open',
+        credit: `${deadline.credit}%`,
         error: fieldErrors?.earlyDeadlines?.[index],
       });
     });
@@ -150,32 +118,26 @@ export function generateDateTableRows(
           />
         ),
         label: 'Due',
-        credit: creditAfterDue,
-        visibility: hasAccessAfterDue ? 'Open' : 'Closes',
+        credit: '100%',
         error: fieldErrors?.dueDate,
       });
     } else if (dueDate === null) {
       rows.push({
         date: 'No due date',
         label: 'Due',
-        credit: '—',
-        visibility: 'Open',
+        credit: '100%',
       });
     } else {
       // dueDate is an empty string — "Due on date" selected but no date entered
       rows.push({
         date: 'No date set',
         label: 'Due',
-        credit: creditAfterDue,
-        visibility: hasAccessAfterDue ? 'Open' : 'Closes',
+        credit: '100%',
         error: fieldErrors?.dueDate,
       });
     }
 
     lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
-      // Credit after this late deadline = next late deadline's credit, or after-last-deadline credit.
-      const creditAfter =
-        index < lateDeadlines.length - 1 ? `${lateDeadlines[index + 1].credit}%` : afterLastCredit;
       rows.push({
         date: deadline.date ? (
           <FriendlyDate
@@ -188,23 +150,19 @@ export function generateDateTableRows(
           'No date set'
         ),
         label: `Late ${index + 1}`,
-        credit: creditAfter,
-        visibility: 'Open',
+        credit: `${deadline.credit}%`,
         error: fieldErrors?.lateDeadlines?.[index],
       });
     });
 
-    // Show "After last deadline" whenever there is any deadline configured.
+    // Show "After last deadline" only when there is a deadline it can apply to.
     const hasAnyDeadline = rule.dueDate || rule.lateDeadlines.some((d) => d.date);
 
-    if (afterLastDeadline || hasAnyDeadline) {
-      const visibility = afterLastDeadline?.allowSubmissions ? 'Open' : 'Closed';
-
+    if (hasAnyDeadline) {
       rows.push({
         date: '',
         label: 'After last deadline',
-        credit: '—',
-        visibility,
+        credit: afterLastDeadline?.allowSubmissions ? `${afterLastDeadline.credit ?? 0}%` : '—',
       });
     }
   } else {
@@ -212,14 +170,11 @@ export function generateDateTableRows(
     const afterLastDeadline = rule.afterLastDeadline;
     const hasAnyDeadline = rule.dueDate || rule.lateDeadlines.some((d) => d.date);
 
-    if (afterLastDeadline || hasAnyDeadline) {
-      const visibility = afterLastDeadline?.allowSubmissions ? 'Open' : 'Closed';
-
+    if (hasAnyDeadline) {
       rows.push({
         date: '',
         label: 'After last deadline',
-        credit: '—',
-        visibility,
+        credit: afterLastDeadline?.allowSubmissions ? `${afterLastDeadline.credit ?? 0}%` : '—',
       });
     }
   }
@@ -242,6 +197,20 @@ export function generateRuleSummary(
   itemErrors?: SummaryItemErrors,
 ): SummaryItem[] {
   const items: SummaryItem[] = [];
+
+  // Show "before release" chip when release date is in the future.
+  if (isMainRuleData(rule) && rule.dateControlEnabled && rule.releaseDate) {
+    const releasePlainDateTime = Temporal.PlainDateTime.from(rule.releaseDate);
+    const nowInTimezone = Temporal.Now.plainDateTimeISO(displayTimezone);
+
+    if (Temporal.PlainDateTime.compare(releasePlainDateTime, nowInTimezone) > 0) {
+      items.push({
+        key: 'before-release',
+        icon: rule.listBeforeRelease ? 'bi-eye' : 'bi-eye-slash',
+        text: rule.listBeforeRelease ? 'Listed before release' : 'Hidden before release',
+      });
+    }
+  }
 
   if (isOverrideFieldActive(rule, 'durationMinutes')) {
     const durationMinutes = rule.durationMinutes;
@@ -698,15 +667,7 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
               className="fw-semibold text-body-secondary text-nowrap border-bottom"
               style={thStyle}
             >
-              <i className="bi bi-percent me-1" aria-hidden="true" />
-              Credit after
-            </th>
-            <th
-              className="fw-semibold text-body-secondary text-nowrap border-bottom"
-              style={thStyle}
-            >
-              <i className="bi bi-eye me-1" aria-hidden="true" />
-              Access
+              Credit
             </th>
           </tr>
         </thead>
@@ -739,9 +700,6 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
               </td>
               <td className="border-0" style={tdStyle}>
                 <CreditBadge credit={row.credit} />
-              </td>
-              <td className="border-0" style={tdStyle}>
-                {row.visibility}
               </td>
             </tr>
           ))}
