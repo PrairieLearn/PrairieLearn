@@ -145,6 +145,7 @@ export function MainDueDateField() {
     name: 'mainRule.dueDate',
     rules: {
       validate: (value) => {
+        if (value !== null && !value) return 'Date is required';
         if (value && releaseDate && new Date(value) <= new Date(releaseDate)) {
           const formatted = formatDateFriendly(new Date(releaseDate), getUserTimezone(), {
             dateOnly: true,
@@ -204,8 +205,8 @@ export function OverrideDueDateField({ index }: { index: number }) {
     name: `overrides.${index}.dueDate`,
     rules: {
       validate: (value) => {
-        const v = value;
-        if (v && effectiveReleaseDate && new Date(v) <= new Date(effectiveReleaseDate)) {
+        if (value !== null && !value) return 'Date is required';
+        if (value && effectiveReleaseDate && new Date(value) <= new Date(effectiveReleaseDate)) {
           const formatted = formatDateFriendly(new Date(effectiveReleaseDate), getUserTimezone(), {
             dateOnly: true,
             includeTz: false,

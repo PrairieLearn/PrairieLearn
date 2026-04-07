@@ -144,6 +144,12 @@ function useSummaryItemErrors(
     }
   }
 
+  const durationMsg: string | undefined = get(errors, `${pathPrefix}.durationMinutes`)?.message;
+  if (durationMsg) {
+    result.duration = durationMsg;
+    hasErrors = true;
+  }
+
   const passwordMsg: string | undefined = get(errors, `${pathPrefix}.password`)?.message;
   if (passwordMsg) {
     result.password = passwordMsg;

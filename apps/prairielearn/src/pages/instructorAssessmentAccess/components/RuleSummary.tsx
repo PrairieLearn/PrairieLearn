@@ -141,6 +141,15 @@ export function generateDateTableRows(
         credit: '100%',
         visibility: 'Open',
       });
+    } else {
+      // dueDate is an empty string — "Due on date" selected but no date entered
+      rows.push({
+        date: 'No date set',
+        label: 'Due',
+        credit: '100%',
+        visibility: 'Closes',
+        error: fieldErrors?.dueDate,
+      });
     }
 
     lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
@@ -462,6 +471,7 @@ function generateOverrideFieldItems(
     items.push({
       label: 'Time limit',
       value: rule.durationMinutes !== null ? `${rule.durationMinutes} minutes` : 'No time limit',
+      error: itemErrors?.duration,
     });
   }
 
@@ -583,8 +593,6 @@ function OverrideFieldsList({ items }: { items: OverrideFieldItem[] }) {
               style={{
                 whiteSpace: 'nowrap',
                 width: '1%',
-                borderLeft: item.error ? '3px solid var(--bs-danger)' : undefined,
-                paddingLeft: item.error ? '0.5rem' : undefined,
               }}
             >
               {item.label}
