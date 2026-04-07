@@ -101,22 +101,22 @@ export function generateDateTableRows(
     }
 
     earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
-      if (deadline.date) {
-        rows.push({
-          date: (
-            <FriendlyDate
-              date={Temporal.PlainDateTime.from(deadline.date)}
-              timezone={displayTimezone}
-              options={{ includeTz: false }}
-              tooltip
-            />
-          ),
-          label: `Early ${index + 1}`,
-          credit: `${deadline.credit}%`,
-          visibility: 'Open',
-          error: fieldErrors?.earlyDeadlines?.[index],
-        });
-      }
+      rows.push({
+        date: deadline.date ? (
+          <FriendlyDate
+            date={Temporal.PlainDateTime.from(deadline.date)}
+            timezone={displayTimezone}
+            options={{ includeTz: false }}
+            tooltip
+          />
+        ) : (
+          'No date set'
+        ),
+        label: `Early ${index + 1}`,
+        credit: `${deadline.credit}%`,
+        visibility: 'Open',
+        error: fieldErrors?.earlyDeadlines?.[index],
+      });
     });
 
     if (dueDate) {
@@ -153,22 +153,22 @@ export function generateDateTableRows(
     }
 
     lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
-      if (deadline.date) {
-        rows.push({
-          date: (
-            <FriendlyDate
-              date={Temporal.PlainDateTime.from(deadline.date)}
-              timezone={displayTimezone}
-              options={{ includeTz: false }}
-              tooltip
-            />
-          ),
-          label: `Late ${index + 1}`,
-          credit: `${deadline.credit}%`,
-          visibility: 'Open',
-          error: fieldErrors?.lateDeadlines?.[index],
-        });
-      }
+      rows.push({
+        date: deadline.date ? (
+          <FriendlyDate
+            date={Temporal.PlainDateTime.from(deadline.date)}
+            timezone={displayTimezone}
+            options={{ includeTz: false }}
+            tooltip
+          />
+        ) : (
+          'No date set'
+        ),
+        label: `Late ${index + 1}`,
+        credit: `${deadline.credit}%`,
+        visibility: 'Open',
+        error: fieldErrors?.lateDeadlines?.[index],
+      });
     });
   }
 
@@ -358,13 +358,9 @@ function formatDeadlineEntries(
   labelPrefix: string,
   deadlineErrors?: (string | undefined)[],
 ): OverrideFieldItem[] {
-  const filtered: { entry: DeadlineEntry; originalIndex: number }[] = [];
-  deadlines.forEach((d, i) => {
-    if (d.date) filtered.push({ entry: d, originalIndex: i });
-  });
-  return filtered.map(({ entry, originalIndex }, i) => ({
-    label: filtered.length === 1 ? `${labelPrefix} deadline` : `${labelPrefix} deadline ${i + 1}`,
-    value: (
+  return deadlines.map((entry, i) => ({
+    label: deadlines.length === 1 ? `${labelPrefix} deadline` : `${labelPrefix} deadline ${i + 1}`,
+    value: entry.date ? (
       <>
         <FriendlyDate
           date={Temporal.PlainDateTime.from(entry.date)}
@@ -374,8 +370,10 @@ function formatDeadlineEntries(
         />{' '}
         ({entry.credit}% credit)
       </>
+    ) : (
+      `No date set (${entry.credit}% credit)`
     ),
-    error: deadlineErrors?.[originalIndex],
+    error: deadlineErrors?.[i],
   }));
 }
 

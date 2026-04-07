@@ -144,6 +144,7 @@ function DeadlineArrayInput({
   };
 
   const validateCredit = (value: number, index: number) => {
+    if (!Number.isFinite(value)) return 'Credit is required';
     if (isEarly) {
       if (value < 101 || value > 200) return 'Credit must be 101-200%';
     } else {
@@ -278,7 +279,7 @@ function DeadlineArrayInput({
                       ? `${idPrefix}-${type}-deadline-${index}-credit-error`
                       : undefined
                   }
-                  placeholder="Credit"
+                  placeholder="100"
                   min={isEarly ? '101' : '0'}
                   max={isEarly ? '200' : '99'}
                   {...register(`${fieldArrayName}.${index}.credit`, {
