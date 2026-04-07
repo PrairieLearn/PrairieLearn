@@ -57,7 +57,6 @@ router.get(
               availableTimezones={availableTimezones}
               coursesRoot={config.coursesRoot}
               trpcCsrfToken={trpcCsrfToken}
-              urlPrefix={urlPrefix}
               aiSecretsConfigured={!!config.administratorOpenAiApiKey}
               showAll={showAll}
             />

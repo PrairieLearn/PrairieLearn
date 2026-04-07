@@ -16,7 +16,6 @@ export function AdministratorCourseRequests({
   availableTimezones,
   coursesRoot,
   trpcCsrfToken,
-  urlPrefix,
   aiSecretsConfigured,
   showAll,
 }: {
@@ -25,7 +24,6 @@ export function AdministratorCourseRequests({
   availableTimezones: Timezone[];
   coursesRoot: string;
   trpcCsrfToken: string;
-  urlPrefix: string;
   aiSecretsConfigured: boolean;
   showAll: boolean;
 }) {
@@ -39,7 +37,6 @@ export function AdministratorCourseRequests({
           institutions={institutions}
           availableTimezones={availableTimezones}
           coursesRoot={coursesRoot}
-          urlPrefix={urlPrefix}
           aiSecretsConfigured={aiSecretsConfigured}
           showAll={showAll}
         />

@@ -14,9 +14,12 @@ import {
   useInstitutionPrefix,
 } from '../../../components/AdminstratorCourseFormFields.js';
 import { JobStatus } from '../../../components/JobStatus.js';
-import { getAppError } from '../../../lib/client/errors.js';
-import type { AdminInstitution, StaffCourse } from '../../../lib/client/safe-db-types.js';
-import { getAdministratorCourseRequestsUrl } from '../../../lib/client/url.js';
+import { type AppError, getAppError } from '../../../lib/client/errors.js';
+import type { AdminInstitution } from '../../../lib/client/safe-db-types.js';
+import {
+  getAdministratorCourseRequestsUrl,
+  getAdministratorJobSequenceUrl,
+} from '../../../lib/client/url.js';
 import type { CourseRequestRow } from '../../../lib/course-request.js';
 import { type Timezone } from '../../../lib/timezone.shared.js';
 import { useTRPC } from '../../../trpc/administrator/context.js';
@@ -32,7 +35,6 @@ export function CourseRequestsTable({
   availableTimezones,
   coursesRoot,
   showAll,
-  urlPrefix,
   aiSecretsConfigured,
 }: {
   rows: CourseRequestRow[];
@@ -40,7 +42,6 @@ export function CourseRequestsTable({
   availableTimezones: Timezone[];
   coursesRoot: string;
   showAll: boolean;
-  urlPrefix: string;
   aiSecretsConfigured: boolean;
 }) {
   const approveModal = useModalState<CourseRequestRow>();
@@ -83,7 +84,6 @@ export function CourseRequestsTable({
                 key={row.id}
                 row={row}
                 showAll={showAll}
-                urlPrefix={urlPrefix}
                 onApprove={approveModal.showWithData}
               />
             ))}
@@ -101,7 +101,6 @@ export function CourseRequestsTable({
         institutions={institutions}
         availableTimezones={availableTimezones}
         coursesRoot={coursesRoot}
-        urlPrefix={urlPrefix}
         aiSecretsConfigured={aiSecretsConfigured}
       />
     </div>
@@ -114,12 +113,10 @@ const CourseRequestTableRow = memo(
   ({
     row,
     showAll,
-    urlPrefix,
     onApprove,
   }: {
     row: CourseRequestRow;
     showAll: boolean;
-    urlPrefix: string;
     onApprove: (row: CourseRequestRow) => void;
   }) => {
     const [noteOpen, setNoteOpen] = useState(Boolean(row.note));
@@ -259,7 +256,7 @@ const CourseRequestTableRow = memo(
                           </td>
                           <td>
                             <a
-                              href={`${urlPrefix}/administrator/jobSequence/${job.id}`}
+                              href={getAdministratorJobSequenceUrl(job.id)}
                               className="btn btn-xs btn-info float-end"
                             >
                               Details
@@ -287,13 +284,11 @@ function CourseRequestApproveModal({
   institutions,
   availableTimezones,
   coursesRoot,
-  urlPrefix,
   aiSecretsConfigured,
 }: ReturnType<typeof useModalState<CourseRequestRow>> & {
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
   coursesRoot: string;
-  urlPrefix: string;
   aiSecretsConfigured: boolean;
 }) {
   return (
@@ -305,7 +300,6 @@ function CourseRequestApproveModal({
           institutions={institutions}
           availableTimezones={availableTimezones}
           coursesRoot={coursesRoot}
-          urlPrefix={urlPrefix}
           aiSecretsConfigured={aiSecretsConfigured}
           onCancel={onHide}
         />
@@ -319,7 +313,6 @@ function CourseRequestApproveModalContent({
   institutions,
   availableTimezones,
   coursesRoot,
-  urlPrefix,
   aiSecretsConfigured,
   onCancel,
 }: {
@@ -327,13 +320,12 @@ function CourseRequestApproveModalContent({
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
   coursesRoot: string;
-  urlPrefix: string;
   aiSecretsConfigured: boolean;
   onCancel: () => void;
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.createCourse.mutationOptions());
-  const appError = getAppError<AdminCourseRequestError>(mutation.error);
+  const appError = getAppError<AdminCourseRequestError['CreateCourse']>(mutation.error);
 
   const userInstitution = institutions.find((i) => i.id === request.user_institution_id);
   const isDefaultInstitution = userInstitution?.short_name === 'Default';
@@ -367,14 +359,7 @@ function CourseRequestApproveModalContent({
   const institutionId = methods.watch('institution_id');
   const prefixState = useInstitutionPrefix(institutionId, institutions);
 
-  const [conflicts, setConflicts] = useState<{
-    repoCourse: StaffCourse | null;
-    githubRepoUrl: string | null;
-    pathCourse: StaffCourse | null;
-  } | null>(null);
-
   const onSubmit = (data: CourseRequestApproveFormData) => {
-    setConflicts(null);
     mutation.mutate(
       {
         courseRequestId: request.id,
@@ -387,12 +372,8 @@ function CourseRequestApproveModalContent({
         githubUser: data.github_user,
       },
       {
-        onSuccess: (result) => {
-          if (result.status === 'conflicts') {
-            setConflicts(result);
-          } else {
-            window.location.href = `${urlPrefix}/administrator/jobSequence/${result.jobSequenceId}/`;
-          }
+        onSuccess: ({ jobSequenceId }) => {
+          window.location.href = getAdministratorJobSequenceUrl(jobSequenceId);
         },
       },
     );
@@ -562,7 +543,6 @@ function CourseRequestApproveModalContent({
             aiSecretsConfigured={aiSecretsConfigured}
             autoFilledInstitutionId={autoFilledInstitutionId}
           />
-          <ConflictsAlert conflicts={conflicts} urlPrefix={urlPrefix} />
           <div className="mb-3">
             <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
               GitHub username
@@ -574,11 +554,7 @@ function CourseRequestApproveModalContent({
               {...register('github_user')}
             />
           </div>
-          {appError && (
-            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {appError.message}
-            </Alert>
-          )}
+          <MutationError appError={appError} onDismiss={() => mutation.reset()} />
         </Modal.Body>
         <Modal.Footer>
           <button type="button" className="btn btn-secondary" onClick={onCancel}>
@@ -597,63 +573,56 @@ function CourseRequestApproveModalContent({
   );
 }
 
-function ConflictsAlert({
-  conflicts,
-  urlPrefix,
+function MutationError({
+  appError,
+  onDismiss,
 }: {
-  conflicts: {
-    repoCourse: StaffCourse | null;
-    githubRepoUrl: string | null;
-    pathCourse: StaffCourse | null;
-  } | null;
-  urlPrefix: string;
+  appError: AppError<AdminCourseRequestError['CreateCourse']> | null;
+  onDismiss: () => void;
 }) {
-  if (!conflicts) return null;
+  if (!appError) return null;
 
-  const hasConflicts = conflicts.repoCourse || conflicts.githubRepoUrl || conflicts.pathCourse;
-  if (!hasConflicts) return null;
+  if (appError.code === 'CONFLICTS') {
+    return (
+      <Alert variant="danger" className="mb-3" dismissible onClose={onDismiss}>
+        <Alert.Heading as="h6" className="mb-1">
+          <i className="fa fa-times-circle" aria-hidden="true" /> Conflicts detected
+        </Alert.Heading>
+        <ul className="mb-0 small">
+          {appError.repoCourse && (
+            <li>
+              A course with this repository name already exists:{' '}
+              <a href={`/pl/course/${appError.repoCourse.id}`} target="_blank" rel="noreferrer">
+                {appError.repoCourse.short_name}: {appError.repoCourse.title}
+              </a>
+            </li>
+          )}
+          {appError.githubRepoUrl && (
+            <li>
+              A GitHub repository with this name already exists. This can happen if a repository was
+              previously renamed.{' '}
+              <a href={appError.githubRepoUrl} target="_blank" rel="noreferrer">
+                Open repo
+              </a>
+              .
+            </li>
+          )}
+          {appError.pathCourse && (
+            <li>
+              A course with this path already exists:{' '}
+              <a href={`/pl/course/${appError.pathCourse.id}`} target="_blank" rel="noreferrer">
+                {appError.pathCourse.short_name}: {appError.pathCourse.title}
+              </a>
+            </li>
+          )}
+        </ul>
+      </Alert>
+    );
+  }
 
   return (
-    <Alert variant="danger" className="mb-3">
-      <Alert.Heading as="h6" className="mb-1">
-        <i className="fa fa-times-circle" aria-hidden="true" /> Conflicts detected
-      </Alert.Heading>
-      <ul className="mb-0 small">
-        {conflicts.repoCourse && (
-          <li>
-            A course with this repository name already exists:{' '}
-            <a
-              href={`${urlPrefix}/course/${conflicts.repoCourse.id}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {conflicts.repoCourse.short_name}: {conflicts.repoCourse.title}
-            </a>
-          </li>
-        )}
-        {conflicts.githubRepoUrl && (
-          <li>
-            A GitHub repository with this name already exists. This can happen if a repository was
-            previously renamed.{' '}
-            <a href={conflicts.githubRepoUrl} target="_blank" rel="noreferrer">
-              Open repo
-            </a>
-            .
-          </li>
-        )}
-        {conflicts.pathCourse && (
-          <li>
-            A course with this path already exists:{' '}
-            <a
-              href={`${urlPrefix}/course/${conflicts.pathCourse.id}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {conflicts.pathCourse.short_name}: {conflicts.pathCourse.title}
-            </a>
-          </li>
-        )}
-      </ul>
+    <Alert variant="danger" dismissible onClose={onDismiss}>
+      {appError.message}
     </Alert>
   );
 }
@@ -667,7 +636,7 @@ function CourseRequestDenyForm({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.deny.mutationOptions());
-  const appError = getAppError<AdminCourseRequestError>(mutation.error);
+  const appError = getAppError<Record<string, never>>(mutation.error);
 
   return (
     <>
@@ -742,7 +711,7 @@ function CourseRequestEditNoteForm({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.updateNote.mutationOptions());
-  const appError = getAppError<AdminCourseRequestError>(mutation.error);
+  const appError = getAppError<Record<string, never>>(mutation.error);
 
   const {
     register,

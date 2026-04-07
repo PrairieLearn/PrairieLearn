@@ -2,7 +2,6 @@ import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
-import { StaffCourseSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import {
   checkInstructorLegitimacy,
@@ -20,13 +19,25 @@ import {
   selectOptionalCourseByPath,
   selectOptionalCourseByRepositoryName,
 } from '../../models/course.js';
+import { throwAppError } from '../app-errors.js';
 
 import { normalizeCoursePathInput } from './course-path.js';
 import { requireAdministrator, t } from './init.js';
 
-export interface AdminCourseRequestError {}
+interface ConflictCourse {
+  id: string;
+  short_name: string | null;
+  title: string | null;
+}
 
-const NullableStaffCourseSchema = StaffCourseSchema.nullable();
+export interface AdminCourseRequestError {
+  CreateCourse: {
+    code: 'CONFLICTS';
+    repoCourse: ConflictCourse | null;
+    githubRepoUrl: string | null;
+    pathCourse: ConflictCourse | null;
+  };
+}
 
 const deny = t.procedure
   .use(requireAdministrator)
@@ -64,17 +75,7 @@ const createCourse = t.procedure
       githubUser: z.string(),
     }),
   )
-  .output(
-    z.discriminatedUnion('status', [
-      z.object({ status: z.literal('success'), jobSequenceId: z.string() }),
-      z.object({
-        status: z.literal('conflicts'),
-        repoCourse: NullableStaffCourseSchema,
-        githubRepoUrl: z.string().url().nullable(),
-        pathCourse: NullableStaffCourseSchema,
-      }),
-    ]),
-  )
+  .output(z.object({ jobSequenceId: z.string() }))
   .mutation(async ({ input, ctx }) => {
     const normalizedPath = normalizeCoursePathInput(input.path);
 
@@ -85,14 +86,19 @@ const createCourse = t.procedure
     ]);
 
     if (repoCourse != null || githubRepoExists || pathCourse != null) {
-      return {
-        status: 'conflicts' as const,
-        repoCourse: NullableStaffCourseSchema.parse(repoCourse),
+      throwAppError<AdminCourseRequestError['CreateCourse']>({
+        code: 'CONFLICTS',
+        message: 'Conflicts detected with existing courses or repositories.',
+        repoCourse: repoCourse
+          ? { id: repoCourse.id, short_name: repoCourse.short_name, title: repoCourse.title }
+          : null,
         githubRepoUrl: githubRepoExists
           ? `https://github.com/${config.githubCourseOwner}/${input.repoShortName}`
           : null,
-        pathCourse: NullableStaffCourseSchema.parse(pathCourse),
-      };
+        pathCourse: pathCourse
+          ? { id: pathCourse.id, short_name: pathCourse.short_name, title: pathCourse.title }
+          : null,
+      });
     }
 
     const jobSequenceId = await createCourseFromRequest({
@@ -106,7 +112,7 @@ const createCourse = t.procedure
       githubUser: input.githubUser.trim().length > 0 ? input.githubUser.trim() : null,
       authnUser: ctx.authn_user,
     });
-    return { status: 'success' as const, jobSequenceId };
+    return { jobSequenceId };
   });
 
 const SourcesSchema = z
