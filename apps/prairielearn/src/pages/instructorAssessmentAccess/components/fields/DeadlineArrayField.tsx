@@ -149,10 +149,8 @@ function DeadlineArrayInput({
       if (numValue < 0 || numValue > 99) return 'Credit must be 0-99%';
     }
     const currentDeadlines = deadlinesRef.current;
-    if (index > 0 && currentDeadlines[index - 1].credit != null) {
-      if (numValue >= currentDeadlines[index - 1].credit) {
-        return 'Credit must be less than previous deadline';
-      }
+    if (index > 0 && numValue >= currentDeadlines[index - 1].credit) {
+      return 'Credit must be less than previous deadline';
     }
     return true;
   };
