@@ -124,9 +124,7 @@ async function syncRulesAndRead(
   assert(syncResults.status === 'complete');
 
   const assessment =
-    syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-      util.ASSESSMENT_ID
-    ];
+    syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[util.ASSESSMENT_ID];
 
   return {
     syncedRules: await findSyncedAccessControlRules(util.ASSESSMENT_ID),
@@ -725,10 +723,10 @@ describe('Access control syncing', () => {
         assert.equal(initialRules[2].date_control_duration_minutes, 120);
 
         // swap the label rules: [assignment, label2, label1]
-        const { syncedRules } = await syncRulesAndRead(
-          [assignmentRule, labelRule2, labelRule1],
-          { studentLabels: labels, courseDir },
-        );
+        const { syncedRules } = await syncRulesAndRead([assignmentRule, labelRule2, labelRule1], {
+          studentLabels: labels,
+          courseDir,
+        });
         assert.equal(syncedRules.length, 3);
         assert.equal(syncedRules[0].number, 0);
         assert.equal(syncedRules[0].date_control_duration_minutes, 60);
@@ -1373,9 +1371,7 @@ describe('Access control syncing', () => {
           { studentLabels: [labelName] },
         );
         assert.isTrue(
-          errors.some((e) =>
-            e.includes('integrations can only be specified on the defaults'),
-          ),
+          errors.some((e) => e.includes('integrations can only be specified on the defaults')),
         );
         assert.equal(syncedRules.length, 0);
       }));
@@ -2023,10 +2019,9 @@ describe('Access control syncing', () => {
         assert.equal(main.prairietestExams.length, 1);
 
         // Re-sync without the exam — stale row should be cleaned up.
-        await syncRulesAndRead(
-          [makeAccessControlRule({ dateControl: { durationMinutes: 60 } })],
-          { courseDir },
-        );
+        await syncRulesAndRead([makeAccessControlRule({ dateControl: { durationMinutes: 60 } })], {
+          courseDir,
+        });
 
         rules = await selectAccessControlRulesForAssessment(assessment);
         main = rules.find((r) => r.number === 0);
