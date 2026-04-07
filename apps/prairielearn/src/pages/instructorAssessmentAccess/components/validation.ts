@@ -24,7 +24,7 @@ function buildValidationRules(formData: AccessControlFormData): AccessControlVal
   }));
 }
 
-export function mapIssueToFormFieldPath(
+function mapIssueToFormFieldPath(
   issue: AccessControlValidationIssue,
 ): AccessControlFormFieldPath | null {
   const prefix: 'mainRule' | `overrides.${number}` =
