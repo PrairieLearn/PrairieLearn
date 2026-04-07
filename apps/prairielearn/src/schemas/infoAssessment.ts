@@ -49,6 +49,7 @@ export const GroupsRoleJsonSchema = z
       .describe('The maximum number of users that should be in this role.')
       .optional(),
   })
+  .strict()
   .describe('A custom role for use in group assessments.');
 
 export type GroupsRoleJson = z.infer<typeof GroupsRoleJsonSchema>;
@@ -76,6 +77,7 @@ const GroupsStudentPermissionsJsonSchema = z
       .optional()
       .default(true),
   })
+  .strict()
   .describe('Student permissions for group management.');
 
 const GroupsRolePermissionsJsonSchema = z
@@ -93,6 +95,7 @@ const GroupsRolePermissionsJsonSchema = z
       .optional()
       .default([]),
   })
+  .strict()
   .describe('Role-based permissions for group assessments.');
 
 export const GroupsJsonSchema = z
