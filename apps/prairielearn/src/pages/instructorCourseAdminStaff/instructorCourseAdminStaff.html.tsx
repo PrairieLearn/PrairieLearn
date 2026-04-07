@@ -14,6 +14,8 @@ export function InstructorCourseAdminStaff({
   uidsLimit,
   githubAccessLink,
   search,
+  trpcCsrfToken,
+  courseId,
 }: {
   resLocals: ResLocalsForPage<'course'>;
   courseInstances: CourseInstance[];
@@ -21,6 +23,8 @@ export function InstructorCourseAdminStaff({
   uidsLimit: number;
   githubAccessLink: string | null;
   search: string;
+  trpcCsrfToken: string;
+  courseId: string;
 }) {
   return PageLayout({
     resLocals,
@@ -36,7 +40,8 @@ export function InstructorCourseAdminStaff({
     },
     content: hydrateHtml(
       <StaffTable
-        csrfToken={resLocals.__csrf_token}
+        trpcCsrfToken={trpcCsrfToken}
+        courseId={courseId}
         courseInstances={courseInstances}
         courseUsers={courseUsers}
         authnUserId={resLocals.authn_user.id}

@@ -1,3 +1,4 @@
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
@@ -28,9 +29,18 @@ import {
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
+import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import type { CourseInstance } from '../../lib/db-types.js';
+import { createCourseTrpcClient } from '../../trpc/course/client.js';
+import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
 
 import type { CourseUsersRow } from './instructorCourseAdminStaff.types.js';
+
+function useInvalidateStaffList() {
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
+  return () => queryClient.invalidateQueries(trpc.courseStaff.list.queryFilter());
+}
 
 const COURSE_ROLE_VALUES = ['None', 'Previewer', 'Viewer', 'Editor', 'Owner'] as const;
 type CourseRole = (typeof COURSE_ROLE_VALUES)[number];
@@ -97,7 +107,6 @@ const DEFAULT_SORT: SortingState = [{ id: 'uid', desc: false }];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['select', 'uid'], right: [] };
 
 interface StaffTableInnerProps {
-  csrfToken: string;
   courseInstances: CourseInstance[];
   courseUsers: CourseUsersRow[];
   authnUserId: string;
@@ -135,15 +144,23 @@ function instanceRoleColor(role: InstanceRole): string {
 function CoursePermissionCell({
   courseUser,
   canChangeCourseRole,
-  csrfToken,
 }: {
   courseUser: CourseUsersRow;
   canChangeCourseRole: boolean;
-  csrfToken: string;
 }) {
   const [show, setShow] = useState(false);
   const currentRole = courseUser.course_permission.course_role ?? 'None';
   const [selectedRole, setSelectedRole] = useState<CourseRole>(currentRole);
+
+  const trpc = useTRPC();
+  const invalidateStaffList = useInvalidateStaffList();
+  const mutation = useMutation({
+    ...trpc.courseStaff.updateCourseRole.mutationOptions(),
+    onSuccess: () => {
+      setShow(false);
+      return invalidateStaffList();
+    },
+  });
 
   if (!canChangeCourseRole) {
     return (
@@ -169,16 +186,13 @@ function CoursePermissionCell({
         },
         header: 'Change course content access',
         body: (
-          <form method="POST">
-            <input type="hidden" name="__action" value="course_permissions_update_role" />
-            <input type="hidden" name="__csrf_token" value={csrfToken} />
-            <input type="hidden" name="user_id" value={courseUser.user.id} />
+          <div>
             {COURSE_ROLE_VALUES.map((role) => (
               <div key={role} className="form-check">
                 <input
                   className="form-check-input"
                   type="radio"
-                  name="course_role"
+                  name={`course-role-${courseUser.user.id}`}
                   value={role}
                   id={`course-permission-input-${courseUser.user.id}-${role}`}
                   checked={selectedRole === role}
@@ -197,11 +211,18 @@ function CoursePermissionCell({
               <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary ms-2">
+              <button
+                type="button"
+                className="btn btn-primary ms-2"
+                disabled={mutation.isPending}
+                onClick={() =>
+                  mutation.mutate({ userId: courseUser.user.id, courseRole: selectedRole })
+                }
+              >
                 Change access
               </button>
             </div>
-          </form>
+          </div>
         ),
       }}
       rootClose
@@ -238,11 +259,9 @@ const INSTANCE_ROLE_DESCRIPTIONS: Record<InstanceRole, string> = {
 function CourseInstanceAccessCell({
   courseUser,
   courseInstance,
-  csrfToken,
 }: {
   courseUser: CourseUsersRow;
   courseInstance: CourseInstance;
-  csrfToken: string;
 }) {
   const existingRole = courseUser.course_instance_roles?.find(
     (cir) => String(cir.id) === String(courseInstance.id),
@@ -250,6 +269,16 @@ function CourseInstanceAccessCell({
   const currentRole: InstanceRole = existingRole?.course_instance_role ?? 'None';
   const [show, setShow] = useState(false);
   const [selectedRole, setSelectedRole] = useState<InstanceRole>(currentRole);
+
+  const trpc = useTRPC();
+  const invalidateStaffList = useInvalidateStaffList();
+  const mutation = useMutation({
+    ...trpc.courseStaff.updateInstanceRole.mutationOptions(),
+    onSuccess: () => {
+      setShow(false);
+      return invalidateStaffList();
+    },
+  });
 
   return (
     <OverlayTrigger
@@ -264,25 +293,13 @@ function CourseInstanceAccessCell({
         },
         header: `Change student data access for ${courseInstance.short_name}`,
         body: (
-          <form method="POST">
-            <input
-              type="hidden"
-              name="__action"
-              value={
-                currentRole === 'None'
-                  ? 'course_instance_permissions_insert'
-                  : 'course_instance_permissions_update_role_or_delete'
-              }
-            />
-            <input type="hidden" name="__csrf_token" value={csrfToken} />
-            <input type="hidden" name="user_id" value={courseUser.user.id} />
-            <input type="hidden" name="course_instance_id" value={courseInstance.id} />
+          <div>
             {INSTANCE_ROLE_VALUES.map((role) => (
               <div key={role} className="form-check">
                 <input
                   className="form-check-input"
                   type="radio"
-                  name="course_instance_role"
+                  name={`ci-role-${courseUser.user.id}-${courseInstance.id}`}
                   value={role}
                   id={`ci-permission-input-${courseUser.user.id}-${courseInstance.id}-${role}`}
                   checked={selectedRole === role}
@@ -302,14 +319,21 @@ function CourseInstanceAccessCell({
                 Cancel
               </button>
               <button
-                type="submit"
+                type="button"
                 className="btn btn-primary ms-2"
-                disabled={selectedRole === currentRole}
+                disabled={selectedRole === currentRole || mutation.isPending}
+                onClick={() =>
+                  mutation.mutate({
+                    userId: courseUser.user.id,
+                    courseInstanceId: courseInstance.id,
+                    courseInstanceRole: selectedRole,
+                  })
+                }
               >
                 Change access
               </button>
             </div>
-          </form>
+          </div>
         ),
       }}
       rootClose
@@ -329,25 +353,61 @@ function CourseInstanceAccessCell({
 function AddUsersModal({
   show,
   onHide,
-  csrfToken,
   uidsLimit,
   courseInstances,
 }: {
   show: boolean;
   onHide: () => void;
-  csrfToken: string;
   uidsLimit: number;
   courseInstances: CourseInstance[];
 }) {
+  const trpc = useTRPC();
+  const invalidateStaffList = useInvalidateStaffList();
+  const mutation = useMutation({
+    ...trpc.courseStaff.insertByUserUids.mutationOptions(),
+    onSuccess: (data) => {
+      const warnings: string[] = [];
+      if (data.unknownUsers.length > 0) {
+        warnings.push(`Unknown UIDs: ${data.unknownUsers.join(', ')}`);
+      }
+      if (data.errors.length > 0) {
+        warnings.push(`Errors: ${data.errors.join('; ')}`);
+      }
+      if (warnings.length > 0) {
+        // eslint-disable-next-line no-alert
+        alert(warnings.join('\n'));
+      }
+      onHide();
+      return invalidateStaffList();
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const uidValue = formData.get('uid') as string;
+    const uids = uidValue.split(/[,;\s]+/).filter(Boolean);
+    const courseRole = formData.get('course_role') as CourseRole;
+    const courseInstanceId = formData.get('course_instance_id') as string;
+    const courseInstanceRole = formData.get('course_instance_role') as
+      | 'Student Data Viewer'
+      | 'Student Data Editor';
+
+    mutation.mutate({
+      uids,
+      courseRole,
+      ...(courseInstanceId ? { courseInstanceId, courseInstanceRole } : {}),
+    });
+  };
+
   return (
     <Modal show={show} onHide={onHide}>
       <Modal.Header closeButton>
         <Modal.Title>Add users</Modal.Title>
       </Modal.Header>
-      <form method="POST">
+      <form onSubmit={handleSubmit}>
         <Modal.Body>
-          <input type="hidden" name="__action" value="course_permissions_insert_by_user_uids" />
-          <input type="hidden" name="__csrf_token" value={csrfToken} />
           <p className="form-text">
             Use this form to add users to the course staff. Any UIDs of users who are already on the
             course staff will have their permissions updated only if the new permissions are higher
@@ -419,12 +479,15 @@ function AddUsersModal({
               </div>
             </div>
           )}
+          {mutation.isError && (
+            <div className="alert alert-danger mb-0">{mutation.error.message}</div>
+          )}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={onHide}>
             Cancel
           </Button>
-          <Button variant="primary" type="submit">
+          <Button variant="primary" type="submit" disabled={mutation.isPending}>
             Add users
           </Button>
         </Modal.Footer>
@@ -434,11 +497,9 @@ function AddUsersModal({
 }
 
 function AddUsersButton({
-  csrfToken,
   uidsLimit,
   courseInstances,
 }: {
-  csrfToken: string;
   uidsLimit: number;
   courseInstances: CourseInstance[];
 }) {
@@ -457,7 +518,6 @@ function AddUsersButton({
         <span className="d-none d-sm-inline"> Add users</span>
       </Button>
       <AddUsersModal
-        csrfToken={csrfToken}
         courseInstances={courseInstances}
         show={show}
         uidsLimit={uidsLimit}
@@ -471,47 +531,55 @@ function BulkDeleteModal({
   show,
   onHide,
   selectedUsers,
-  csrfToken,
 }: {
   show: boolean;
   onHide: () => void;
   selectedUsers: CourseUsersRow[];
-  csrfToken: string;
 }) {
+  const trpc = useTRPC();
+  const invalidateStaffList = useInvalidateStaffList();
+  const mutation = useMutation({
+    ...trpc.courseStaff.bulkDelete.mutationOptions(),
+    onSuccess: () => {
+      onHide();
+      return invalidateStaffList();
+    },
+  });
+
   return (
     <Modal show={show} onHide={onHide}>
       <Modal.Header closeButton>
         <Modal.Title>Remove selected staff</Modal.Title>
       </Modal.Header>
-      <form method="POST">
-        <Modal.Body>
-          <input type="hidden" name="__action" value="bulk_course_permissions_delete" />
-          <input type="hidden" name="__csrf_token" value={csrfToken} />
+      <Modal.Body>
+        <p>
+          Are you sure you want to remove{' '}
+          <strong>
+            {selectedUsers.length} {selectedUsers.length === 1 ? 'user' : 'users'}
+          </strong>{' '}
+          from the course staff?
+        </p>
+        <ul className="mb-0" style={{ maxHeight: '200px', overflowY: 'auto' }}>
           {selectedUsers.map((u) => (
-            <input key={u.user.id} type="hidden" name="user_ids" value={u.user.id} />
+            <li key={u.user.id}>{u.user.name ?? u.user.uid}</li>
           ))}
-          <p>
-            Are you sure you want to remove{' '}
-            <strong>
-              {selectedUsers.length} {selectedUsers.length === 1 ? 'user' : 'users'}
-            </strong>{' '}
-            from the course staff?
-          </p>
-          <ul className="mb-0" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-            {selectedUsers.map((u) => (
-              <li key={u.user.id}>{u.user.name ?? u.user.uid}</li>
-            ))}
-          </ul>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={onHide}>
-            Cancel
-          </Button>
-          <Button variant="danger" type="submit">
-            Remove {selectedUsers.length} {selectedUsers.length === 1 ? 'user' : 'users'}
-          </Button>
-        </Modal.Footer>
-      </form>
+        </ul>
+        {mutation.isError && (
+          <div className="alert alert-danger mt-3 mb-0">{mutation.error.message}</div>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onHide}>
+          Cancel
+        </Button>
+        <Button
+          variant="danger"
+          disabled={mutation.isPending}
+          onClick={() => mutation.mutate({ userIds: selectedUsers.map((u) => u.user.id) })}
+        >
+          Remove {selectedUsers.length} {selectedUsers.length === 1 ? 'user' : 'users'}
+        </Button>
+      </Modal.Footer>
     </Modal>
   );
 }
@@ -521,134 +589,144 @@ function BulkEditAccessModal({
   onHide,
   selectedUsers,
   courseInstances,
-  csrfToken,
 }: {
   show: boolean;
   onHide: () => void;
   selectedUsers: CourseUsersRow[];
   courseInstances: CourseInstance[];
-  csrfToken: string;
 }) {
-  const [courseRole, setCourseRole] = useState('');
-  const [instanceRoles, setInstanceRoles] = useState<Record<string, string>>({});
+  const [courseRole, setCourseRole] = useState<CourseRole | ''>('');
+  const [instanceRoles, setInstanceRoles] = useState<Record<string, InstanceRole | ''>>({});
+  const prevShowRef = useRef(show);
+  if (prevShowRef.current && !show) {
+    setCourseRole('');
+    setInstanceRoles({});
+  }
+  prevShowRef.current = show;
 
-  useEffect(() => {
-    if (!show) {
-      setCourseRole('');
-      setInstanceRoles({});
-    }
-  }, [show]);
-
-  const handleInstanceRoleChange = (ciId: string, role: string) => {
+  const handleInstanceRoleChange = (ciId: string, role: InstanceRole | '') => {
     setInstanceRoles((prev) => ({ ...prev, [ciId]: role }));
   };
 
-  const configuredInstances = Object.entries(instanceRoles).filter(([, role]) => role !== '');
+  const configuredInstances = Object.entries(instanceRoles).filter(
+    (entry): entry is [string, InstanceRole] => entry[1] !== '',
+  );
   const hasChanges = courseRole !== '' || configuredInstances.length > 0;
+
+  const trpc = useTRPC();
+  const invalidateStaffList = useInvalidateStaffList();
+  const mutation = useMutation({
+    ...trpc.courseStaff.bulkEditAccess.mutationOptions(),
+    onSuccess: () => {
+      onHide();
+      return invalidateStaffList();
+    },
+  });
+
+  const handleSubmit = () => {
+    const userIds = selectedUsers.map((u) => u.user.id);
+    const courseInstanceChanges = configuredInstances.map(([ciId, role]) => ({
+      courseInstanceId: ciId,
+      courseInstanceRole: role,
+    }));
+
+    mutation.mutate({
+      userIds,
+      ...(courseRole ? { courseRole } : {}),
+      ...(courseInstanceChanges.length > 0 ? { courseInstanceChanges } : {}),
+    });
+  };
 
   return (
     <Modal show={show} size="lg" onHide={onHide}>
       <Modal.Header closeButton>
         <Modal.Title>Edit access</Modal.Title>
       </Modal.Header>
-      <form method="POST">
-        <Modal.Body>
-          <input type="hidden" name="__action" value="bulk_edit_access" />
-          <input type="hidden" name="__csrf_token" value={csrfToken} />
-          {selectedUsers.map((u) => (
-            <input key={u.user.id} type="hidden" name="user_ids" value={u.user.id} />
-          ))}
-          <input type="hidden" name="course_role" value={courseRole} />
-          {configuredInstances.map(([ciId, role]) => (
-            <span key={ciId}>
-              <input type="hidden" name="course_instance_ids" value={ciId} />
-              <input type="hidden" name="course_instance_roles" value={role} />
-            </span>
-          ))}
-          <p>
-            Edit access for{' '}
-            <strong>
-              {selectedUsers.length} {selectedUsers.length === 1 ? 'user' : 'users'}
-            </strong>
-            :
-          </p>
+      <Modal.Body>
+        <p>
+          Edit access for{' '}
+          <strong>
+            {selectedUsers.length} {selectedUsers.length === 1 ? 'user' : 'users'}
+          </strong>
+          :
+        </p>
 
-          <h6 className="font-weight-bolder" id="course-role-label">
-            Course content access
-          </h6>
-          <select
-            className="form-select form-select-sm mb-3"
-            aria-labelledby="course-role-label"
-            value={courseRole}
-            onChange={(e) => setCourseRole(e.target.value)}
-          >
-            <option value="">No change</option>
-            {COURSE_ROLE_VALUES.map((role) => (
-              <option key={role} value={role}>
-                {role}
-              </option>
-            ))}
-          </select>
+        <h6 className="font-weight-bolder" id="course-role-label">
+          Course content access
+        </h6>
+        <select
+          className="form-select form-select-sm mb-3"
+          aria-labelledby="course-role-label"
+          value={courseRole}
+          onChange={(e) => setCourseRole(e.target.value as CourseRole | '')}
+        >
+          <option value="">No change</option>
+          {COURSE_ROLE_VALUES.map((role) => (
+            <option key={role} value={role}>
+              {role}
+            </option>
+          ))}
+        </select>
 
-          {courseInstances.length > 0 && (
-            <>
-              <h6 className="font-weight-bolder">Student data access</h6>
-              <div className="table-responsive" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                <table className="table table-borderless table-sm align-middle mb-0">
-                  {/* <thead>
-                    <tr>
-                      <th>Course instance</th>
-                      <th style={{ width: '220px' }}>Access level</th>
+        {courseInstances.length > 0 && (
+          <>
+            <h6 className="font-weight-bolder">Student data access</h6>
+            <div className="table-responsive" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+              <table className="table table-borderless table-sm align-middle mb-0">
+                <tbody>
+                  {courseInstances.map((ci) => (
+                    <tr key={ci.id}>
+                      <td>{ci.short_name}</td>
+                      <td>
+                        <select
+                          className="form-select form-select-sm"
+                          value={instanceRoles[ci.id] ?? ''}
+                          aria-label={`Role for ${ci.short_name ?? `course instance ${ci.id}`}`}
+                          onChange={(e) =>
+                            handleInstanceRoleChange(ci.id, e.target.value as InstanceRole | '')
+                          }
+                        >
+                          <option value="">No change</option>
+                          <option value="None">None (remove access)</option>
+                          <option value="Student Data Viewer">Student data viewer</option>
+                          <option value="Student Data Editor">Student data editor</option>
+                        </select>
+                      </td>
                     </tr>
-                  </thead> */}
-                  <tbody>
-                    {courseInstances.map((ci) => (
-                      <tr key={ci.id}>
-                        <td>{ci.short_name}</td>
-                        <td>
-                          <select
-                            className="form-select form-select-sm"
-                            value={instanceRoles[ci.id] ?? ''}
-                            aria-label={`Role for ${ci.short_name ?? `course instance ${ci.id}`}`}
-                            onChange={(e) => handleInstanceRoleChange(ci.id, e.target.value)}
-                          >
-                            <option value="">No change</option>
-                            <option value="None">None (remove access)</option>
-                            <option value="Student Data Viewer">Student data viewer</option>
-                            <option value="Student Data Editor">Student data editor</option>
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={onHide}>
-            Cancel
-          </Button>
-          <Button variant="primary" type="submit" disabled={!hasChanges}>
-            Save changes
-          </Button>
-        </Modal.Footer>
-      </form>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+        {mutation.isError && (
+          <div className="alert alert-danger mt-3 mb-0">{mutation.error.message}</div>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onHide}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          disabled={!hasChanges || mutation.isPending}
+          onClick={handleSubmit}
+        >
+          Save changes
+        </Button>
+      </Modal.Footer>
     </Modal>
   );
 }
 
 function SelectionToolbar({
   selectedUsers,
-  csrfToken,
   courseInstances,
   isAdministrator,
   authnUserId,
   userId,
 }: {
   selectedUsers: CourseUsersRow[];
-  csrfToken: string;
   courseInstances: CourseInstance[];
   isAdministrator: boolean;
   authnUserId: string;
@@ -656,11 +734,6 @@ function SelectionToolbar({
 }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditAccessModal, setShowEditAccessModal] = useState(false);
-
-  // Filter out users that can't be modified (current user / owners unless admin)
-  const deletableUsers = selectedUsers.filter(
-    (u) => (u.user.id !== authnUserId && u.user.id !== userId) || isAdministrator,
-  );
 
   const modifiableUsers = selectedUsers.filter(
     (u) => (u.user.id !== authnUserId && u.user.id !== userId) || isAdministrator,
@@ -681,7 +754,7 @@ function SelectionToolbar({
         <Button
           variant="danger"
           size="sm"
-          disabled={deletableUsers.length === 0}
+          disabled={modifiableUsers.length === 0}
           onClick={() => setShowDeleteModal(true)}
         >
           <i className="fa fa-trash-alt me-1" />
@@ -691,15 +764,13 @@ function SelectionToolbar({
 
       <BulkDeleteModal
         show={showDeleteModal}
-        selectedUsers={deletableUsers}
-        csrfToken={csrfToken}
+        selectedUsers={modifiableUsers}
         onHide={() => setShowDeleteModal(false)}
       />
       <BulkEditAccessModal
         show={showEditAccessModal}
         selectedUsers={modifiableUsers}
         courseInstances={courseInstances}
-        csrfToken={csrfToken}
         onHide={() => setShowEditAccessModal(false)}
       />
     </>
@@ -707,7 +778,6 @@ function SelectionToolbar({
 }
 
 function StaffTableInner({
-  csrfToken,
   courseInstances,
   courseUsers,
   authnUserId,
@@ -716,6 +786,13 @@ function StaffTableInner({
   uidsLimit,
   githubAccessLink,
 }: StaffTableInnerProps) {
+  const trpc = useTRPC();
+  const { data: liveUsers } = useQuery({
+    ...trpc.courseStaff.list.queryOptions(),
+    initialData: courseUsers,
+    staleTime: Infinity,
+  });
+
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -887,7 +964,6 @@ function StaffTableInner({
                   info.row.original.user.id !== userId) ||
                 isAdministrator
               }
-              csrfToken={csrfToken}
             />
           </div>
         ),
@@ -911,22 +987,18 @@ function StaffTableInner({
             },
             cell: (info) => (
               <div className="text-center">
-                <CourseInstanceAccessCell
-                  courseUser={info.row.original}
-                  courseInstance={ci}
-                  csrfToken={csrfToken}
-                />
+                <CourseInstanceAccessCell courseUser={info.row.original} courseInstance={ci} />
               </div>
             ),
           },
         ),
       ),
     ],
-    [authnUserId, userId, isAdministrator, csrfToken, courseInstances, createCheckboxProps],
+    [authnUserId, userId, isAdministrator, courseInstances, createCheckboxProps],
   );
 
   const table = useReactTable({
-    data: courseUsers,
+    data: liveUsers,
     columns,
     columnResizeMode: 'onChange',
     enableRowSelection: true,
@@ -1013,18 +1085,13 @@ function StaffTableInner({
       {selectedUsers.length > 0 && (
         <SelectionToolbar
           selectedUsers={selectedUsers}
-          csrfToken={csrfToken}
           courseInstances={courseInstances}
           isAdministrator={isAdministrator}
           authnUserId={authnUserId}
           userId={userId}
         />
       )}
-      <AddUsersButton
-        csrfToken={csrfToken}
-        uidsLimit={uidsLimit}
-        courseInstances={courseInstances}
-      />
+      <AddUsersButton uidsLimit={uidsLimit} courseInstances={courseInstances} />
     </>
   );
 
@@ -1068,13 +1135,24 @@ function StaffTableInner({
 
 interface StaffTableProps extends StaffTableInnerProps {
   search: string;
+  trpcCsrfToken: string;
+  courseId: string;
 }
 
-export function StaffTable({ search, ...props }: StaffTableProps) {
+export function StaffTable({ search, trpcCsrfToken, courseId, ...props }: StaffTableProps) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() =>
+    createCourseTrpcClient({ csrfToken: trpcCsrfToken, courseId }),
+  );
+
   return (
-    <NuqsAdapter search={search}>
-      <StaffTableInner {...props} />
-    </NuqsAdapter>
+    <QueryClientProviderDebug client={queryClient} isDevMode={false}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <NuqsAdapter search={search}>
+          <StaffTableInner {...props} />
+        </NuqsAdapter>
+      </TRPCProvider>
+    </QueryClientProviderDebug>
   );
 }
 
