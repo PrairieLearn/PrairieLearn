@@ -11,7 +11,7 @@ import { MainDurationField, OverrideDurationField } from './fields/DurationField
 import { MainPasswordField, OverridePasswordField } from './fields/PasswordField.js';
 import { MainReleaseDateField, OverrideReleaseDateField } from './fields/ReleaseDateField.js';
 import type { AccessControlFormData } from './types.js';
-import { startOfDayDatetime } from './utils/dateUtils.js';
+import { startOfDayDatetime, todayDate } from './utils/dateUtils.js';
 
 export function MainDateControlForm({
   title = 'Date control',
@@ -38,7 +38,7 @@ export function MainDateControlForm({
           {...register('mainRule.dateControlEnabled', {
             onChange: (e) => {
               if (e.target.checked && !getValues('mainRule.releaseDate')) {
-                setValue('mainRule.releaseDate', startOfDayDatetime(undefined, displayTimezone), {
+                setValue('mainRule.releaseDate', startOfDayDatetime(todayDate(displayTimezone)), {
                   shouldDirty: true,
                   shouldValidate: true,
                 });

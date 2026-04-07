@@ -5,14 +5,14 @@ import { type Path, useController, useWatch } from 'react-hook-form';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData } from '../types.js';
-import { startOfDayDatetime, tomorrowDate } from '../utils/dateUtils.js';
+import { startOfDayDatetime, todayDate, tomorrowDate } from '../utils/dateUtils.js';
 
 function todayLocalDatetime(displayTimezone: string): string {
-  return startOfDayDatetime(undefined, displayTimezone);
+  return startOfDayDatetime(todayDate(displayTimezone));
 }
 
 function tomorrowLocalDatetime(displayTimezone: string): string {
-  return startOfDayDatetime(tomorrowDate(displayTimezone), displayTimezone);
+  return startOfDayDatetime(tomorrowDate(displayTimezone));
 }
 
 function isReleasedNow(value: string, displayTimezone: string): boolean {
