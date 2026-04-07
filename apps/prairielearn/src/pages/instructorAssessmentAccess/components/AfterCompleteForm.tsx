@@ -404,7 +404,6 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
         </Form.Label>
         <QuestionVisibilityInput
           value={qvField.value}
-
           idPrefix="mainRule"
           hasPrairieTest={hasPrairieTest}
           onChange={qvField.onChange}
@@ -416,7 +415,6 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
         </Form.Label>
         <ScoreVisibilityInput
           value={svField.value}
-
           idPrefix="mainRule"
           onChange={svField.onChange}
         />
@@ -437,11 +435,17 @@ export function OverrideAfterCompleteForm({ index, title }: { index: number; tit
   });
   const hasPrairieTest = prairieTestExams.length > 0;
 
-  const { field: qvField } = useController<AccessControlFormData, `overrides.${number}.questionVisibility`>({
+  const { field: qvField } = useController<
+    AccessControlFormData,
+    `overrides.${number}.questionVisibility`
+  >({
     name: `overrides.${index}.questionVisibility`,
     rules: { validate: validateQuestionVisibility },
   });
-  const { field: svField } = useController<AccessControlFormData, `overrides.${number}.scoreVisibility`>({
+  const { field: svField } = useController<
+    AccessControlFormData,
+    `overrides.${number}.scoreVisibility`
+  >({
     name: `overrides.${index}.scoreVisibility`,
     rules: { validate: validateScoreVisibility },
   });
@@ -472,7 +476,6 @@ export function OverrideAfterCompleteForm({ index, title }: { index: number; tit
         >
           <QuestionVisibilityInput
             value={qvField.value}
-  
             idPrefix={`overrides-${index}`}
             hasPrairieTest={hasPrairieTest}
             onChange={qvField.onChange}
@@ -492,7 +495,6 @@ export function OverrideAfterCompleteForm({ index, title }: { index: number; tit
         >
           <ScoreVisibilityInput
             value={svField.value}
-  
             idPrefix={`overrides-${index}`}
             onChange={svField.onChange}
           />
