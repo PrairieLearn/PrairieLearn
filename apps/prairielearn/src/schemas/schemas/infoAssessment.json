@@ -933,7 +933,8 @@
         "credit": {
           "description": "Amount of credit as a percent to allow",
           "type": "number",
-          "minimum": 0
+          "minimum": 0,
+          "maximum": 200
         }
       }
     }
