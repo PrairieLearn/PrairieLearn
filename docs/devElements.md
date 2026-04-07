@@ -199,9 +199,11 @@ You can also find more detail about the types of dependencies in the schema refe
 
 Note that the use of node modules (`nodeModulesScripts` and `nodeModulesStyles`) is only supported for dependencies that PrairieLearn itself depends on. These dependencies can be found in the `dependencies` section of the [`apps/prairielearn/package.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/package.json) file in the PrairieLearn repository.
 
-While the use of node module dependencies in course elements is supported, it should be avoided if possible. In particular, note that node modules may be updated without warning, which in some cases may break your element. Also note that, although transitive dependencies (i.e., dependencies of dependencies) may work in some cases, they are not guaranteed to continue working in the future, as dependency updates or updates in the PrairieLearn configuration may change the availability of transitive dependencies.
+!!! warning
 
-If your code relies on a node module, the recommended course of action is that you copy the module into your element directory or `courseFilesCourse` and link to that module from there instead. This way, you have control over when the module is updated, and you can ensure that updates do not break your element.
+    While the use of node module dependencies in course elements is supported, it should be avoided if possible. In particular, note that node modules may be updated without warning, which in some cases may break your element. Also note that, although transitive dependencies (i.e., dependencies of dependencies) may work in some cases, they are not guaranteed to continue working in the future, as dependency updates or updates in the PrairieLearn configuration may change the availability of transitive dependencies.
+
+    If your code relies on a node module, the recommended course of action is that you copy the module into your element directory or `courseFilesCourse` and link to that module from there instead. This way, you have control over when the module is updated, and you can ensure that updates do not break your element.
 
 To copy a node module into your element directory, first obtain the appropriate bundle for the module (e.g., from the module's home page, from a CDN or by building it yourself), and then place it in your element directory. For example, if you want to use the `moment` library, you can obtain the bundle from the module web page (`https://momentjs.com/`) or a CDN (e.g., `https://cdn.jsdelivr.net/npm/moment@2.30.1/dist/moment.min.js`) and place it in your element directory as `moment.min.js`. Then, you can link to this file in your `info.json` as follows:
 
@@ -241,4 +243,4 @@ For dynamic dependencies, the same recommendations apply. In that case, you are 
 
 !!! note
 
-    Note that, by using the methods above, you become responsible for ensuring that the module is up-to-date with latests changes and security updates. If you choose to copy a node module into your element directory, you may choose to include the version number in the file name (e.g., `moment-2.30.1.min.js`) to make it easier to keep track of which version you are using and to update it when necessary.
+    Note that, by using the methods above, you become responsible for ensuring that the module is up-to-date with latest changes and security updates. If you choose to copy a node module into your element directory, you may choose to include the version number in the file name (e.g., `moment-2.30.1.min.js`) to make it easier to keep track of which version you are using and to update it when necessary.
