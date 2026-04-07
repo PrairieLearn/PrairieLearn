@@ -159,7 +159,7 @@ export function MainDueDateField() {
 
   return (
     <div>
-      <strong>Due date</strong>
+      <Form.Label className="fw-bold">Due date</Form.Label>
       <DueDateInput
         value={field.value}
         idPrefix="mainRule"

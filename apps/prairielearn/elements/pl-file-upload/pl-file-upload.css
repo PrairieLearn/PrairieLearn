@@ -1,44 +1,51 @@
-[id^='file-upload'] .upload-dropzone {
+.pl-file-upload-container .upload-dropzone {
   min-height: 15ex;
   background-color: #fafdff;
   border: 2px dashed #0087f7;
-}
-[id^='file-upload'] .upload-dropzone.dz-clickable {
   cursor: pointer;
 }
-[id^='file-upload'] .upload-dropzone.dz-drag-hover {
+
+.pl-file-upload-container .upload-dropzone.dz-drag-hover {
   background-color: #d9edf7;
   border-style: solid;
 }
 
-[id^='file-upload'] .file-status-icon {
+.pl-file-upload-container .upload-dropzone * {
+  /* Prevent child elements from receiving drag and drop events (dragleave,
+  dragenter) that should be restricted to the parent dropzone. Since they're
+  part of a button, there is no harm in them losing events that will be
+  handled by the parent anyway. */
+  pointer-events: none;
+}
+
+.pl-file-upload-container .file-status-icon {
   margin-right: 10px;
   transition: all 400ms;
 }
 
-[id^='file-upload'] .file-status {
+.pl-file-upload-container .file-status {
   margin-bottom: 0px;
   font-size: 0.8em;
   color: #999;
 }
 
-[id^='file-upload'] .file-preview-button::before {
+.pl-file-upload-container .file-preview-button::before {
   content: 'Show preview';
 }
 
-[id^='file-upload'] .file-preview-button:not(.collapsed)::before {
+.pl-file-upload-container .file-preview-button:not(.collapsed)::before {
   content: 'Hide preview';
 }
 
-[id^='file-upload'] .file-preview-icon {
+.pl-file-upload-container .file-preview-icon {
   margin-left: 10px;
   transition: transform 400ms;
 }
 
-[id^='file-upload'] .file-preview-button:not(.collapsed) .file-preview-icon {
+.pl-file-upload-container .file-preview-button:not(.collapsed) .file-preview-icon {
   transform: rotateX(180deg);
 }
 
-[id^='file-upload'] .file-preview pre {
+.pl-file-upload-container .file-preview pre {
   max-height: 200px;
 }

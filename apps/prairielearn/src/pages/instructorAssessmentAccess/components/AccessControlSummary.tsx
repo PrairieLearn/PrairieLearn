@@ -65,7 +65,6 @@ function SortableOverrideCard({
   index,
   override,
   title,
-  courseInstanceId,
   displayTimezone,
   onEdit,
   onRemove,
@@ -74,7 +73,6 @@ function SortableOverrideCard({
   index: number;
   override: OverrideData;
   title: string;
-  courseInstanceId: string;
   displayTimezone: string;
   onEdit: () => void;
   onRemove: () => void;
@@ -95,7 +93,6 @@ function SortableOverrideCard({
       <OverrideRuleSummaryCard
         rule={override}
         title={title}
-        courseInstanceId={courseInstanceId}
         displayTimezone={displayTimezone}
         fieldErrors={fieldErrors}
         dragHandleProps={{ ...attributes, ...listeners }}
@@ -216,7 +213,6 @@ export function AccessControlSummary({
   onEditMainRule,
   onClearMainRule,
   onEditOverride,
-  courseInstanceId,
   displayTimezone,
 }: {
   mainRule: MainRuleData;
@@ -232,8 +228,6 @@ export function AccessControlSummary({
   onClearMainRule: () => void;
   /** Callback when an override edit is requested */
   onEditOverride: (index: number) => void;
-  /** Course instance ID for building URLs */
-  courseInstanceId: string;
   displayTimezone: string;
 }) {
   const dndId = useId();
@@ -264,11 +258,13 @@ export function AccessControlSummary({
         <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
           <h5 className="mb-0">Defaults</h5>
           <div className="d-flex gap-2">
-            <Button variant="outline-primary" size="sm" onClick={onEditMainRule}>
-              <i className="bi bi-pencil me-1" /> Edit
+            <Button variant="outline-primary" size="sm" aria-label="Edit" onClick={onEditMainRule}>
+              <i className="bi bi-pencil" aria-hidden="true" />
+              <span className="toolbar-btn-label ms-1">Edit</span>
             </Button>
-            <Button variant="outline-danger" size="sm" onClick={onClearMainRule}>
-              <i className="bi bi-trash me-1" /> Clear
+            <Button variant="outline-danger" size="sm" aria-label="Clear" onClick={onClearMainRule}>
+              <i className="bi bi-trash" aria-hidden="true" />
+              <span className="toolbar-btn-label ms-1">Clear</span>
             </Button>
           </div>
         </div>
@@ -317,7 +313,7 @@ export function AccessControlSummary({
                   <Fragment key={sortableIds[index]}>
                     {isFirstEnrollment && (
                       <small className="text-muted fw-semibold d-block mb-2">
-                        Student-specific overrides
+                        Overrides for specific students
                       </small>
                     )}
                     {isFirstLabel && (
@@ -330,7 +326,6 @@ export function AccessControlSummary({
                       index={index}
                       override={override}
                       title={getOverrideName(index)}
-                      courseInstanceId={courseInstanceId}
                       displayTimezone={displayTimezone}
                       onEdit={() => onEditOverride(index)}
                       onRemove={() => onRemoveOverride(index)}
