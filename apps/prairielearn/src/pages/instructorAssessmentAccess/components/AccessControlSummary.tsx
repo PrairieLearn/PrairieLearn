@@ -127,7 +127,7 @@ function useSummaryItemErrors(
   const result: SummaryItemErrors = {};
   let hasErrors = false;
 
-  if (rule.prairieTestEnabled && rule.prairieTestExams.length > 0) {
+  if (rule.prairieTestExams.length > 0) {
     const examErrors: string[] = [];
     for (let i = 0; i < rule.prairieTestExams.length; i++) {
       const msg: string | undefined = get(
@@ -140,6 +140,24 @@ function useSummaryItemErrors(
       result.prairietest = examErrors.join('; ');
       hasErrors = true;
     }
+  }
+
+  const passwordMsg: string | undefined = get(errors, `${pathPrefix}.password`)?.message;
+  if (passwordMsg) {
+    result.password = passwordMsg;
+    hasErrors = true;
+  }
+
+  const qvMsg: string | undefined = get(errors, `${pathPrefix}.questionVisibility`)?.message;
+  if (qvMsg) {
+    result['question-visibility'] = qvMsg;
+    hasErrors = true;
+  }
+
+  const svMsg: string | undefined = get(errors, `${pathPrefix}.scoreVisibility`)?.message;
+  if (svMsg) {
+    result['score-visibility'] = svMsg;
+    hasErrors = true;
   }
 
   return hasErrors ? result : undefined;

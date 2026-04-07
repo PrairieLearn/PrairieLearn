@@ -107,7 +107,7 @@ function AfterLastDeadlineInput({
           onChange={handleModeChange}
         />
       </div>
-      {!hasLastDeadline && (
+      {!hasLastDeadline && mode !== 'no_submissions' && (
         <Alert variant="warning" className="py-2 mb-2">
           This setting will have no effect because there is no due date set.
         </Alert>

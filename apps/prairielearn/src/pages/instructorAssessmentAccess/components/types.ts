@@ -34,6 +34,14 @@ export interface ScoreVisibilityValue {
   showAgainDate?: string;
 }
 
+export function isNonDefaultQuestionVisibility(qv: QuestionVisibilityValue): boolean {
+  return !qv.hideQuestions || !!qv.showAgainDate;
+}
+
+export function isNonDefaultScoreVisibility(sv: ScoreVisibilityValue): boolean {
+  return sv.hideScore;
+}
+
 interface PrairieTestExam {
   examUuid: string;
   readOnly?: boolean;
@@ -72,7 +80,6 @@ export interface MainRuleData {
   afterLastDeadline: AfterLastDeadlineValue | null;
   durationMinutes: number | null;
   password: string | null;
-  prairieTestEnabled: boolean;
   prairieTestExams: PrairieTestExam[];
   questionVisibility: QuestionVisibilityValue;
   scoreVisibility: ScoreVisibilityValue;
@@ -155,7 +162,6 @@ export function jsonToMainRuleFormData(
     afterLastDeadline: dc?.afterLastDeadline ?? null,
     durationMinutes: dc?.durationMinutes ?? null,
     password: dc?.password ?? null,
-    prairieTestEnabled: (json.integrations?.prairieTest?.exams?.length ?? 0) > 0,
     prairieTestExams: json.integrations?.prairieTest?.exams ?? [],
     questionVisibility: {
       hideQuestions: ac?.hideQuestions ?? true,
@@ -303,7 +309,7 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
     if (rule.password) output.dateControl.password = rule.password;
   }
 
-  if (rule.prairieTestEnabled && rule.prairieTestExams.length > 0) {
+  if (rule.prairieTestExams.length > 0) {
     output.integrations = {
       prairieTest: {
         exams: rule.prairieTestExams,

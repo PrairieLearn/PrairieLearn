@@ -4,7 +4,7 @@ import { get, useFieldArray, useFormContext, useFormState } from 'react-hook-for
 import type { AccessControlFormData } from './types.js';
 
 export function PrairieTestControlForm() {
-  const { register } = useFormContext<AccessControlFormData>();
+  const { register, trigger } = useFormContext<AccessControlFormData>();
 
   const {
     fields: examFields,
@@ -90,7 +90,11 @@ export function PrairieTestControlForm() {
       <Button
         size="sm"
         variant="outline-primary"
-        onClick={() => appendExam({ examUuid: '', readOnly: false })}
+        onClick={() => {
+          appendExam({ examUuid: '', readOnly: false });
+          // Trigger validation so the empty UUID error shows immediately.
+          void trigger('mainRule.prairieTestExams');
+        }}
       >
         <i className="bi bi-plus-circle me-1" aria-hidden="true" />
         Add exam

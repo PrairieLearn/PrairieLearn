@@ -5,10 +5,12 @@ import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/u
 
 import { FieldWrapper } from './FieldWrapper.js';
 import { useOverrideField } from './hooks/useOverrideField.js';
-import type {
-  AccessControlFormData,
-  QuestionVisibilityValue,
-  ScoreVisibilityValue,
+import {
+  type AccessControlFormData,
+  type QuestionVisibilityValue,
+  type ScoreVisibilityValue,
+  isNonDefaultQuestionVisibility,
+  isNonDefaultScoreVisibility,
 } from './types.js';
 import { endOfDayDatetime, startOfDayDatetime, tomorrowDate } from './utils/dateUtils.js';
 
@@ -74,6 +76,13 @@ function getHideScoreMode(value: ScoreVisibilityValue): HideScoreMode {
   return 'hide_score_until_date';
 }
 
+function validateQuestionVisibility(value: QuestionVisibilityValue): string | true {
+  if (!value.hideQuestions) return true;
+  if (value.showAgainDate !== undefined && !value.showAgainDate) return 'Date is required';
+  if (value.hideAgainDate !== undefined && !value.hideAgainDate) return 'Date is required';
+  return true;
+}
+
 function QuestionVisibilityInput({
   value,
   onChange,
@@ -112,6 +121,9 @@ function QuestionVisibilityInput({
     }
   };
 
+  const showAgainDateInvalid = value.showAgainDate !== undefined && !value.showAgainDate;
+  const hideAgainDateInvalid = value.hideAgainDate !== undefined && !value.hideAgainDate;
+
   return (
     <Form.Group>
       <div className="mb-2">
@@ -136,6 +148,12 @@ function QuestionVisibilityInput({
                 type="datetime-local"
                 step={1}
                 value={value.showAgainDate ?? ''}
+                isInvalid={showAgainDateInvalid}
+                aria-errormessage={
+                  showAgainDateInvalid
+                    ? `${idPrefix}-show-questions-between-start-error`
+                    : undefined
+                }
                 onChange={({ currentTarget }) =>
                   onChange({
                     hideQuestions: true,
@@ -144,6 +162,14 @@ function QuestionVisibilityInput({
                   })
                 }
               />
+              {showAgainDateInvalid && (
+                <Form.Control.Feedback
+                  type="invalid"
+                  id={`${idPrefix}-show-questions-between-start-error`}
+                >
+                  Date is required
+                </Form.Control.Feedback>
+              )}
             </Col>
             <Col md={6}>
               <Form.Label htmlFor={`${idPrefix}-hide-questions-between-end`}>
@@ -154,6 +180,10 @@ function QuestionVisibilityInput({
                 type="datetime-local"
                 step={1}
                 value={value.hideAgainDate ?? ''}
+                isInvalid={hideAgainDateInvalid}
+                aria-errormessage={
+                  hideAgainDateInvalid ? `${idPrefix}-hide-questions-between-end-error` : undefined
+                }
                 onChange={({ currentTarget }) =>
                   onChange({
                     hideQuestions: true,
@@ -162,6 +192,14 @@ function QuestionVisibilityInput({
                   })
                 }
               />
+              {hideAgainDateInvalid && (
+                <Form.Control.Feedback
+                  type="invalid"
+                  id={`${idPrefix}-hide-questions-between-end-error`}
+                >
+                  Date is required
+                </Form.Control.Feedback>
+              )}
             </Col>
           </Row>
         </div>
@@ -174,10 +212,19 @@ function QuestionVisibilityInput({
             step={1}
             aria-label="Show questions on"
             value={value.showAgainDate ?? ''}
+            isInvalid={showAgainDateInvalid}
+            aria-errormessage={
+              showAgainDateInvalid ? `${idPrefix}-show-questions-date-error` : undefined
+            }
             onChange={({ currentTarget }) =>
               onChange({ hideQuestions: true, showAgainDate: currentTarget.value })
             }
           />
+          {showAgainDateInvalid && (
+            <Form.Control.Feedback type="invalid" id={`${idPrefix}-show-questions-date-error`}>
+              Date is required
+            </Form.Control.Feedback>
+          )}
         </div>
       )}
       {hasPrairieTest && hideQuestionsMode === 'show_questions' && (
@@ -188,6 +235,12 @@ function QuestionVisibilityInput({
       )}
     </Form.Group>
   );
+}
+
+function validateScoreVisibility(value: ScoreVisibilityValue): string | true {
+  if (!value.hideScore) return true;
+  if (value.showAgainDate !== undefined && !value.showAgainDate) return 'Date is required';
+  return true;
 }
 
 function ScoreVisibilityInput({
@@ -217,6 +270,8 @@ function ScoreVisibilityInput({
     }
   };
 
+  const showAgainDateInvalid = value.showAgainDate !== undefined && !value.showAgainDate;
+
   return (
     <Form.Group>
       <div className="mb-2">
@@ -237,10 +292,19 @@ function ScoreVisibilityInput({
             step={1}
             aria-label="Show score again on"
             value={value.showAgainDate ?? ''}
+            isInvalid={showAgainDateInvalid}
+            aria-errormessage={
+              showAgainDateInvalid ? `${idPrefix}-show-score-date-error` : undefined
+            }
             onChange={({ currentTarget }) =>
               onChange({ hideScore: true, showAgainDate: currentTarget.value })
             }
           />
+          {showAgainDateInvalid && (
+            <Form.Control.Feedback type="invalid" id={`${idPrefix}-show-score-date-error`}>
+              Date is required
+            </Form.Control.Feedback>
+          )}
         </div>
       )}
     </Form.Group>
@@ -302,10 +366,12 @@ function AfterCompleteCard({
 export function MainAfterCompleteForm({ title }: { title?: string }) {
   const { field: qvField } = useController<AccessControlFormData, 'mainRule.questionVisibility'>({
     name: 'mainRule.questionVisibility',
+    rules: { validate: validateQuestionVisibility },
   });
 
   const { field: svField } = useController<AccessControlFormData, 'mainRule.scoreVisibility'>({
     name: 'mainRule.scoreVisibility',
+    rules: { validate: validateScoreVisibility },
   });
 
   const prairieTestExams = useWatch<AccessControlFormData, 'mainRule.prairieTestExams'>({
@@ -313,14 +379,32 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
   });
   const hasPrairieTest = prairieTestExams.length > 0;
 
+  const dateControlEnabled = useWatch<AccessControlFormData, 'mainRule.dateControlEnabled'>({
+    name: 'mainRule.dateControlEnabled',
+  });
+
+  const qvNonDefault = isNonDefaultQuestionVisibility(qvField.value);
+  const svNonDefault = isNonDefaultScoreVisibility(svField.value);
+  const showNoCompletionWarning =
+    !dateControlEnabled && !hasPrairieTest && (qvNonDefault || svNonDefault);
+
   return (
     <AfterCompleteCard title={title}>
+      {showNoCompletionWarning && (
+        <Col xs={12}>
+          <Alert variant="warning" className="py-2 mb-0">
+            These settings will have no effect because there is no way for the assessment to be
+            completed.
+          </Alert>
+        </Col>
+      )}
       <Col md={6}>
         <Form.Label className="fw-bold" htmlFor="mainRule-question-visibility-mode">
           Question visibility
         </Form.Label>
         <QuestionVisibilityInput
           value={qvField.value}
+
           idPrefix="mainRule"
           hasPrairieTest={hasPrairieTest}
           onChange={qvField.onChange}
@@ -332,6 +416,7 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
         </Form.Label>
         <ScoreVisibilityInput
           value={svField.value}
+
           idPrefix="mainRule"
           onChange={svField.onChange}
         />
@@ -352,17 +437,13 @@ export function OverrideAfterCompleteForm({ index, title }: { index: number; tit
   });
   const hasPrairieTest = prairieTestExams.length > 0;
 
-  const { field: qvField } = useController<
-    AccessControlFormData,
-    `overrides.${number}.questionVisibility`
-  >({
+  const { field: qvField } = useController<AccessControlFormData, `overrides.${number}.questionVisibility`>({
     name: `overrides.${index}.questionVisibility`,
+    rules: { validate: validateQuestionVisibility },
   });
-  const { field: svField } = useController<
-    AccessControlFormData,
-    `overrides.${number}.scoreVisibility`
-  >({
+  const { field: svField } = useController<AccessControlFormData, `overrides.${number}.scoreVisibility`>({
     name: `overrides.${index}.scoreVisibility`,
+    rules: { validate: validateScoreVisibility },
   });
 
   const {
@@ -391,6 +472,7 @@ export function OverrideAfterCompleteForm({ index, title }: { index: number; tit
         >
           <QuestionVisibilityInput
             value={qvField.value}
+  
             idPrefix={`overrides-${index}`}
             hasPrairieTest={hasPrairieTest}
             onChange={qvField.onChange}
@@ -410,6 +492,7 @@ export function OverrideAfterCompleteForm({ index, title }: { index: number; tit
         >
           <ScoreVisibilityInput
             value={svField.value}
+  
             idPrefix={`overrides-${index}`}
             onChange={svField.onChange}
           />

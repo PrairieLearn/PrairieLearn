@@ -11,6 +11,8 @@ import {
   type DeadlineEntry,
   type MainRuleData,
   type OverrideData,
+  isNonDefaultQuestionVisibility,
+  isNonDefaultScoreVisibility,
 } from './types.js';
 
 type RuleData = MainRuleData | OverrideData;
@@ -67,8 +69,7 @@ export function generateDateTableRows(
       const nowInTimezone = Temporal.Now.plainDateTimeISO(displayTimezone);
 
       if (Temporal.PlainDateTime.compare(releasePlainDateTime, nowInTimezone) > 0) {
-        const visibility =
-          isMain && rule.listBeforeRelease ? 'Closed (listed)' : 'Closed (hidden)';
+        const visibility = isMain && rule.listBeforeRelease ? 'Closed (listed)' : 'Closed (hidden)';
         rows.push({
           date: '',
           label: 'Before release',
@@ -82,6 +83,7 @@ export function generateDateTableRows(
           <FriendlyDate
             date={releasePlainDateTime}
             timezone={displayTimezone}
+            options={{ includeTz: false }}
             tooltip
           />
         ),
@@ -105,6 +107,7 @@ export function generateDateTableRows(
             <FriendlyDate
               date={Temporal.PlainDateTime.from(deadline.date)}
               timezone={displayTimezone}
+              options={{ includeTz: false }}
               tooltip
             />
           ),
@@ -122,6 +125,7 @@ export function generateDateTableRows(
           <FriendlyDate
             date={Temporal.PlainDateTime.from(dueDate)}
             timezone={displayTimezone}
+            options={{ includeTz: false }}
             tooltip
           />
         ),
@@ -146,6 +150,7 @@ export function generateDateTableRows(
             <FriendlyDate
               date={Temporal.PlainDateTime.from(deadline.date)}
               timezone={displayTimezone}
+              options={{ includeTz: false }}
               tooltip
             />
           ),
@@ -164,29 +169,13 @@ export function generateDateTableRows(
     isDateControlEnabled && (rule.dueDate || rule.lateDeadlines.some((d) => d.date));
 
   if (afterLastDeadline || hasAnyDeadline) {
-    const visibilityParts: string[] = [];
-
-    if (afterLastDeadline?.allowSubmissions) {
-      visibilityParts.push('Open');
-    } else {
-      visibilityParts.push('Closed');
-    }
-
-    if (
-      isOverrideFieldActive(rule, 'questionVisibility') &&
-      rule.questionVisibility.hideQuestions
-    ) {
-      visibilityParts.push('Questions hidden');
-    }
-    if (isOverrideFieldActive(rule, 'scoreVisibility') && rule.scoreVisibility.hideScore) {
-      visibilityParts.push('Score hidden');
-    }
+    const visibility = afterLastDeadline?.allowSubmissions ? 'Open' : 'Closed';
 
     rows.push({
       date: '',
       label: 'After last deadline',
       credit: afterLastDeadline?.allowSubmissions ? `${afterLastDeadline.credit ?? 0}%` : '—',
-      visibility: visibilityParts.join(', '),
+      visibility,
     });
   }
 
@@ -223,7 +212,7 @@ export function generateRuleSummary(
 
   if (isOverrideFieldActive(rule, 'password')) {
     const password = rule.password;
-    if (password !== null && password !== '') {
+    if (password !== null) {
       items.push({
         key: 'password',
         icon: 'bi-lock',
@@ -233,7 +222,7 @@ export function generateRuleSummary(
     }
   }
 
-  if (isMainRuleData(rule) && rule.prairieTestEnabled && rule.prairieTestExams.length > 0) {
+  if (isMainRuleData(rule) && rule.prairieTestExams.length > 0) {
     items.push({
       key: 'prairietest',
       icon: 'bi-pc-display',
@@ -242,79 +231,106 @@ export function generateRuleSummary(
     });
   }
 
-  const hasAfterLastDeadline = rule.afterLastDeadline != null;
+  const isMain = isMainRuleData(rule);
+  const hasDateControl = isMain ? rule.dateControlEnabled : false;
+  const hasPrairieTest = isMain ? rule.prairieTestExams.length > 0 : false;
+  const showAfterComplete = hasDateControl || hasPrairieTest;
 
-  if (!hasAfterLastDeadline) {
-    if (isOverrideFieldActive(rule, 'questionVisibility')) {
-      const qv = rule.questionVisibility;
-      if (!qv.hideQuestions) {
-        items.push({
-          key: 'question-visibility',
-          icon: 'bi-eye',
-          text: 'Questions visible after completion',
-        });
-      } else if (qv.showAgainDate && qv.hideAgainDate) {
-        items.push({
-          key: 'question-visibility',
-          icon: 'bi-eye-slash',
-          text: (
-            <>
-              Questions hidden after completion, shown{' '}
-              <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.showAgainDate)}
-                timezone={displayTimezone}
-                tooltip
-              />
-              {' – '}
-              <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.hideAgainDate)}
-                timezone={displayTimezone}
-                tooltip
-              />
-            </>
-          ),
-        });
-      } else if (qv.showAgainDate) {
-        items.push({
-          key: 'question-visibility',
-          icon: 'bi-eye-slash',
-          text: (
-            <>
-              Questions hidden after completion until{' '}
-              <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.showAgainDate)}
-                timezone={displayTimezone}
-                tooltip
-              />
-            </>
-          ),
-        });
-      }
+  const qvNonDefault = isNonDefaultQuestionVisibility(rule.questionVisibility);
+  const svNonDefault = isNonDefaultScoreVisibility(rule.scoreVisibility);
+
+  if ((showAfterComplete || qvNonDefault) && isOverrideFieldActive(rule, 'questionVisibility')) {
+    const qv = rule.questionVisibility;
+    if (!qv.hideQuestions) {
+      items.push({
+        key: 'question-visibility',
+        icon: 'bi-eye',
+        text: 'Questions visible after completion',
+        error: itemErrors?.['question-visibility'],
+      });
+    } else if (qv.showAgainDate && qv.hideAgainDate) {
+      items.push({
+        key: 'question-visibility',
+        icon: 'bi-eye-slash',
+        text: (
+          <>
+            Questions hidden after completion, shown{' '}
+            <FriendlyDate
+              date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+              timezone={displayTimezone}
+              options={{ includeTz: false }}
+              tooltip
+            />
+            {' – '}
+            <FriendlyDate
+              date={Temporal.PlainDateTime.from(qv.hideAgainDate)}
+              timezone={displayTimezone}
+              options={{ includeTz: false }}
+              tooltip
+            />
+          </>
+        ),
+        error: itemErrors?.['question-visibility'],
+      });
+    } else if (qv.showAgainDate) {
+      items.push({
+        key: 'question-visibility',
+        icon: 'bi-eye-slash',
+        text: (
+          <>
+            Questions hidden after completion until{' '}
+            <FriendlyDate
+              date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+              timezone={displayTimezone}
+              options={{ includeTz: false }}
+              tooltip
+            />
+          </>
+        ),
+        error: itemErrors?.['question-visibility'],
+      });
+    } else {
+      items.push({
+        key: 'question-visibility',
+        icon: 'bi-eye-slash',
+        text: 'Questions hidden after completion',
+        error: itemErrors?.['question-visibility'],
+      });
     }
-    if (isOverrideFieldActive(rule, 'scoreVisibility')) {
-      const sv = rule.scoreVisibility;
-      if (sv.hideScore && sv.showAgainDate) {
-        items.push({
-          key: 'score-visibility',
-          icon: 'bi-eye-slash',
-          text: (
-            <>
-              Score hidden after completion until{' '}
-              <FriendlyDate
-                date={Temporal.PlainDateTime.from(sv.showAgainDate)}
-                timezone={displayTimezone}
-                tooltip
-              />
-            </>
-          ),
-        });
-      } else if (sv.hideScore) {
-        items.push({
-          key: 'score-visibility',
-          icon: 'bi-eye-slash',
-          text: 'Score hidden after completion',
-        });
-      }
+  }
+  if ((showAfterComplete || svNonDefault) && isOverrideFieldActive(rule, 'scoreVisibility')) {
+    const sv = rule.scoreVisibility;
+    if (sv.hideScore && sv.showAgainDate) {
+      items.push({
+        key: 'score-visibility',
+        icon: 'bi-eye-slash',
+        text: (
+          <>
+            Score hidden after completion until{' '}
+            <FriendlyDate
+              date={Temporal.PlainDateTime.from(sv.showAgainDate)}
+              timezone={displayTimezone}
+              options={{ includeTz: false }}
+              tooltip
+            />
+          </>
+        ),
+        error: itemErrors?.['score-visibility'],
+      });
+    } else if (sv.hideScore) {
+      items.push({
+        key: 'score-visibility',
+        icon: 'bi-eye-slash',
+        text: 'Score hidden after completion',
+        error: itemErrors?.['score-visibility'],
+      });
+    } else {
+      items.push({
+        key: 'score-visibility',
+        icon: 'bi-eye',
+        text: 'Score visible after completion',
+        error: itemErrors?.['score-visibility'],
+      });
     }
   }
 
@@ -344,6 +360,7 @@ function formatDeadlineEntries(
         <FriendlyDate
           date={Temporal.PlainDateTime.from(entry.date)}
           timezone={displayTimezone}
+          options={{ includeTz: false }}
           tooltip
         />{' '}
         ({entry.credit}% credit)
@@ -383,6 +400,7 @@ function generateOverrideFieldItems(
         <FriendlyDate
           date={Temporal.PlainDateTime.from(rule.releaseDate)}
           timezone={displayTimezone}
+          options={{ includeTz: false }}
           tooltip
         />
       ) : (
@@ -410,6 +428,7 @@ function generateOverrideFieldItems(
         <FriendlyDate
           date={Temporal.PlainDateTime.from(rule.dueDate)}
           timezone={displayTimezone}
+          options={{ includeTz: false }}
           tooltip
         />
       ) : (
@@ -464,12 +483,14 @@ function generateOverrideFieldItems(
               <FriendlyDate
                 date={Temporal.PlainDateTime.from(qv.showAgainDate)}
                 timezone={displayTimezone}
+                options={{ includeTz: false }}
                 tooltip
               />
               , hidden again{' '}
               <FriendlyDate
                 date={Temporal.PlainDateTime.from(qv.hideAgainDate)}
                 timezone={displayTimezone}
+                options={{ includeTz: false }}
                 tooltip
               />
             </>
@@ -484,6 +505,7 @@ function generateOverrideFieldItems(
               <FriendlyDate
                 date={Temporal.PlainDateTime.from(qv.showAgainDate)}
                 timezone={displayTimezone}
+                options={{ includeTz: false }}
                 tooltip
               />
             </>
@@ -515,6 +537,7 @@ function generateOverrideFieldItems(
               <FriendlyDate
                 date={Temporal.PlainDateTime.from(sv.showAgainDate)}
                 timezone={displayTimezone}
+                options={{ includeTz: false }}
                 tooltip
               />
             </>
@@ -633,25 +656,23 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
                 className="border-0"
                 style={{
                   ...tdStyle,
-                  paddingLeft: row.error ? undefined : '1rem',
-                  borderLeft: row.error ? '3px solid var(--bs-danger)' : undefined,
+                  paddingLeft: '1rem',
                 }}
               >
-                {row.label && (
-                  <span className={`me-1 ${row.error ? 'text-danger' : 'text-body-secondary'}`}>
-                    {row.label}{row.date ? ':' : ''}
-                  </span>
-                )}
-                {row.error ? (
-                  <div>
-                    <span className="text-danger">
-                      <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
-                      {row.date}
+                <div className="text-nowrap">
+                  {row.label && (
+                    <span className={`me-1 ${row.error ? 'text-danger' : 'text-body-secondary'}`}>
+                      {row.label}
+                      {row.date ? ':' : ''}
                     </span>
-                    <div className="text-danger small">{row.error}</div>
+                  )}
+                  {row.error ? <span className="text-danger">{row.date}</span> : row.date}
+                </div>
+                {row.error && (
+                  <div className="text-danger small">
+                    <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
+                    {row.error}
                   </div>
-                ) : (
-                  row.date
                 )}
               </td>
               <td className="border-0" style={tdStyle}>

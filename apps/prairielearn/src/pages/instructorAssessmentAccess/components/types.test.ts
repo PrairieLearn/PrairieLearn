@@ -21,7 +21,6 @@ const defaultMainRule: MainRuleData = {
   afterLastDeadline: { credit: 0, allowSubmissions: false },
   durationMinutes: 60,
   password: 'secret',
-  prairieTestEnabled: false,
   prairieTestExams: [],
   questionVisibility: { hideQuestions: true },
   scoreVisibility: { hideScore: false },
