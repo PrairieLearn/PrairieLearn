@@ -9,18 +9,20 @@ export function StudentLabelDropdown({
   onToggle,
   disabled,
   footer,
+  buttonLabel = 'Edit labels',
 }: {
   labels: StaffStudentLabel[];
   selectedIds: Set<string>;
   onToggle: (label: StaffStudentLabel) => void;
   disabled?: boolean;
   footer?: ReactNode;
+  buttonLabel?: string;
 }) {
   return (
     <Dropdown autoClose="outside">
       <Dropdown.Toggle variant="outline-primary" size="sm" disabled={disabled}>
         <i className="bi bi-tags me-1" aria-hidden="true" />
-        Edit labels
+        {buttonLabel}
       </Dropdown.Toggle>
       <Dropdown.Menu>
         {labels.length === 0 ? (
