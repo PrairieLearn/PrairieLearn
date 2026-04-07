@@ -1,4 +1,4 @@
-import { Button, Card, Form } from 'react-bootstrap';
+import { Alert, Button, Form } from 'react-bootstrap';
 import {
   type FieldArrayPath,
   type Path,
@@ -9,6 +9,7 @@ import {
 
 import { ChipGroup } from '@prairielearn/ui';
 
+import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import type { NamePrefix } from '../hooks/fieldNames.js';
 import type {
   AccessControlFormData,
@@ -66,10 +67,6 @@ export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
   const studentLabels = typedAppliesTo?.studentLabels ?? [];
 
   const enrollmentChipItems = enrollments.map((s) => ({ id: s.uid, label: s.name ?? s.uid }));
-  const studentLabelChipItems = studentLabels.map((sl) => ({
-    id: sl.studentLabelId,
-    label: sl.name,
-  }));
 
   const handleRemoveEnrollmentByUid = (uid: string) => {
     const index = enrollments.findIndex((s) => s.uid === uid);
@@ -83,69 +80,87 @@ export function AppliesToField({ namePrefix }: { namePrefix: NamePrefix }) {
   const excludedStudentLabelIds = new Set(studentLabels.map((sl) => sl.studentLabelId));
   const excludedUids = new Set(enrollments.map((i) => i.uid));
 
+  const hasNoTargets = enrollments.length === 0 && studentLabels.length === 0;
+
   return (
-    <Card className="mb-3">
-      <Card.Header>
+    <div className="mb-4">
+      <div className="section-header mb-3">
         <strong>Applies to</strong>
-      </Card.Header>
-      <Card.Body>
-        <fieldset className="mb-3">
-          <legend className="visually-hidden">Target type</legend>
-          <Form.Check
-            type="radio"
-            id={`${namePrefix}-target-enrollment`}
-            name={`${namePrefix}-target-type`}
-            label="Specific students"
-            checked={currentTargetType === 'enrollment'}
-            onChange={() => handleTargetTypeChange('enrollment')}
-          />
-          <Form.Check
-            type="radio"
-            id={`${namePrefix}-target-student-label`}
-            name={`${namePrefix}-target-type`}
-            label="Students by label"
-            checked={currentTargetType === 'student_label'}
-            onChange={() => handleTargetTypeChange('student_label')}
-          />
-        </fieldset>
+      </div>
+      {hasNoTargets && (
+        <Alert variant="warning">
+          This override has no targets. Add at least one{' '}
+          {currentTargetType === 'enrollment' ? 'student' : 'student label'} for this rule to take
+          effect.
+        </Alert>
+      )}
+      <fieldset className="mb-3">
+        <legend className="visually-hidden">Target type</legend>
+        <Form.Check
+          type="radio"
+          id={`${namePrefix}-target-enrollment`}
+          name={`${namePrefix}-target-type`}
+          label="Specific students"
+          checked={currentTargetType === 'enrollment'}
+          onChange={() => handleTargetTypeChange('enrollment')}
+        />
+        <Form.Check
+          type="radio"
+          id={`${namePrefix}-target-student-label`}
+          name={`${namePrefix}-target-type`}
+          label="Students by label"
+          checked={currentTargetType === 'student_label'}
+          onChange={() => handleTargetTypeChange('student_label')}
+        />
+      </fieldset>
 
-        <div className="d-flex flex-wrap align-items-center gap-1">
-          {currentTargetType === 'enrollment' ? (
-            <ChipGroup
-              items={enrollmentChipItems}
-              label="Selected students"
-              emptyMessage="No students selected"
-              onRemove={handleRemoveEnrollmentByUid}
-            />
-          ) : (
-            <ChipGroup
-              items={studentLabelChipItems}
-              label="Selected student labels"
-              emptyMessage="No student labels selected"
-              onRemove={handleRemoveStudentLabelById}
-            />
-          )}
-
-          <AddTargetPopover
-            targetType={currentTargetType}
-            excludedStudentLabelIds={excludedStudentLabelIds}
-            excludedUids={excludedUids}
-            onSelectStudentLabels={handleAddStudentLabels}
-            onSelectStudents={handleAddStudents}
+      <div className="d-flex flex-wrap align-items-center gap-1">
+        {currentTargetType === 'enrollment' ? (
+          <ChipGroup
+            items={enrollmentChipItems}
+            label="Selected students"
+            emptyMessage="No students selected"
+            onRemove={handleRemoveEnrollmentByUid}
           />
+        ) : studentLabels.length === 0 ? (
+          <span className="text-muted small">No student labels selected</span>
+        ) : (
+          studentLabels.map((sl) => (
+            <StudentLabelBadge
+              key={sl.studentLabelId}
+              label={{ name: sl.name, color: sl.color ?? 'gray1' }}
+            >
+              <button
+                type="button"
+                className="btn p-0 lh-1"
+                aria-label={`Remove label "${sl.name}"`}
+                onClick={() => handleRemoveStudentLabelById(sl.studentLabelId)}
+              >
+                <i className="bi bi-x text-danger" aria-hidden="true" />
+              </button>
+            </StudentLabelBadge>
+          ))
+        )}
 
-          {currentTargetType === 'enrollment' && enrollments.length > 0 && (
-            <Button variant="outline-secondary" size="sm" onClick={() => removeEnrollment()}>
-              Remove all
-            </Button>
-          )}
-          {currentTargetType === 'student_label' && studentLabels.length > 0 && (
-            <Button variant="outline-secondary" size="sm" onClick={() => removeStudentLabel()}>
-              Remove all
-            </Button>
-          )}
-        </div>
-      </Card.Body>
-    </Card>
+        <AddTargetPopover
+          targetType={currentTargetType}
+          excludedStudentLabelIds={excludedStudentLabelIds}
+          excludedUids={excludedUids}
+          onSelectStudentLabels={handleAddStudentLabels}
+          onSelectStudents={handleAddStudents}
+        />
+
+        {currentTargetType === 'enrollment' && enrollments.length > 0 && (
+          <Button variant="outline-secondary" size="sm" onClick={() => removeEnrollment()}>
+            Remove all
+          </Button>
+        )}
+        {currentTargetType === 'student_label' && studentLabels.length > 0 && (
+          <Button variant="outline-secondary" size="sm" onClick={() => removeStudentLabel()}>
+            Remove all
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }
