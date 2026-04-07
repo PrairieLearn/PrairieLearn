@@ -5,7 +5,6 @@ import * as sqldb from '@prairielearn/postgres';
 import { StudentLabelSchema } from '../../lib/db-types.js';
 import {
   type AccessControlJson,
-  MAX_ACCESS_CONTROL_RULES,
   validateRuleCreditMonotonicity,
   validateRuleDateOrdering,
 } from '../../schemas/accessControl.js';
@@ -86,8 +85,12 @@ export function validateRule(
 }
 
 /**
- * Validates and prepares rules for a single assessment. Returns an error
- * string if validation fails, or null if the rules are valid.
+ * Validates DB-dependent constraints for a single assessment's rules.
+ * Non-DB validation (rule count, duplicates, date ordering, credit
+ * monotonicity, override-only field restrictions) is handled upstream by
+ * {@link validateAccessControlArray} in course-db.ts and the Zod schema.
+ * This function only checks constraints that require database state:
+ * student label existence and PrairieTest exam UUID existence.
  */
 function validateAssessmentRules(
   rules: AccessControlJson[],
@@ -96,45 +99,22 @@ function validateAssessmentRules(
 ): string | null {
   if (rules.length === 0) return null;
 
-  if (rules.length > MAX_ACCESS_CONTROL_RULES) {
-    return `Too many access control rules: ${rules.length}. Maximum allowed is ${MAX_ACCESS_CONTROL_RULES}.`;
-  }
-
-  // Keep label validation here even though course-db validates it earlier.
-  // If the course instance config is invalid, course-db skips label existence
-  // checks to avoid cascading errors, and student label syncing is skipped.
-  // We still need to reject labels missing from the database here so that
-  // label-targeted rules are not silently treated as main rules.
-  for (const [index, rule] of rules.entries()) {
+  // Validate that labels reference student labels that exist in the database.
+  // This check must remain here (not upstream) because when the course instance
+  // config is invalid, course-db skips label existence checks to avoid
+  // cascading errors and student label syncing is skipped. We still need to
+  // reject labels missing from the database so that label-targeted rules are
+  // not silently treated as main rules.
+  for (const rule of rules) {
     const ruleLabels = rule.labels ?? [];
-    const seenLabels = new Set<string>();
-    const duplicateLabels = new Set<string>();
-
-    for (const label of ruleLabels) {
-      if (seenLabels.has(label)) {
-        duplicateLabels.add(label);
-      } else {
-        seenLabels.add(label);
-      }
-    }
-
-    if (duplicateLabels.size > 0) {
-      return (
-        `Duplicate student label(s): ${[...duplicateLabels].join(', ')}. ` +
-        'Each label can only be targeted once per access control rule.'
-      );
-    }
-
-    const invalidLabels = [...seenLabels].filter((label) => !studentLabelIdByName.has(label));
+    const invalidLabels = ruleLabels.filter((label) => !studentLabelIdByName.has(label));
     if (invalidLabels.length > 0) {
       return `Invalid student label(s): ${invalidLabels.join(', ')}.`;
     }
-
-    const targetType = index === 0 ? 'none' : 'student_label';
-    const ruleError = validateRule(rule, targetType);
-    if (ruleError) return ruleError;
   }
 
+  // Validate that PrairieTest exam UUIDs reference exams that exist in the
+  // database. This requires a DB lookup and cannot be moved upstream.
   const assessmentInvalidUuids: string[] = [];
   for (const rule of rules) {
     for (const e of rule.integrations?.prairieTest?.exams ?? []) {

@@ -25,6 +25,7 @@ import {
   type CourseInstanceJson,
   type CourseJson,
   type GroupsJson,
+  MAX_ACCESS_CONTROL_RULES,
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
@@ -1162,6 +1163,12 @@ export function validateAccessControlArray({
     return { errors, warnings };
   }
 
+  if (accessControlJsonArray.length > MAX_ACCESS_CONTROL_RULES) {
+    errors.push(
+      `Too many access control rules: ${accessControlJsonArray.length}. Maximum allowed is ${MAX_ACCESS_CONTROL_RULES}.`,
+    );
+  }
+
   // A main rule has no `labels` property (applies to everyone)
   const mainRules = accessControlJsonArray.filter(
     (rule) => rule.labels == null || rule.labels.length === 0,
@@ -1224,6 +1231,34 @@ export function validateAccessControlArray({
       errors.push(
         'listBeforeRelease can only be specified on the defaults (the first element, without labels).',
       );
+    }
+
+    const exams = rule.integrations?.prairieTest?.exams ?? [];
+    const seenExamUuids = new Set<string>();
+    for (const e of exams) {
+      if (seenExamUuids.has(e.examUuid)) {
+        errors.push(`Duplicate PrairieTest exam UUID: ${e.examUuid}.`);
+      } else {
+        seenExamUuids.add(e.examUuid);
+      }
+    }
+
+    const seenEarlyDates = new Set<string>();
+    for (const d of rule.dateControl?.earlyDeadlines ?? []) {
+      if (seenEarlyDates.has(d.date)) {
+        errors.push(`Duplicate early deadline date: ${d.date}.`);
+      } else {
+        seenEarlyDates.add(d.date);
+      }
+    }
+
+    const seenLateDates = new Set<string>();
+    for (const d of rule.dateControl?.lateDeadlines ?? []) {
+      if (seenLateDates.has(d.date)) {
+        errors.push(`Duplicate late deadline date: ${d.date}.`);
+      } else {
+        seenLateDates.add(d.date);
+      }
     }
 
     const dateErrors = validateRuleDateOrdering(rule);
