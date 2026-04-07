@@ -213,20 +213,11 @@ const saveAllRules = t.procedure
     // Validate all rules before writing anything to disk or DB.
     const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
 
-    // Validate array-level invariants (exactly one main rule, must be first).
     const { errors: arrayErrors } = validateAccessControlArray({
       accessControlJsonArray: rulesToSync,
     });
     if (arrayErrors.length > 0) {
       throw new TRPCError({ code: 'BAD_REQUEST', message: arrayErrors[0] });
-    }
-
-    for (const [index, rule] of rulesToSync.entries()) {
-      const targetType = index === 0 ? 'none' : 'student_label';
-      const ruleError = validateRule(rule, targetType);
-      if (ruleError) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
-      }
     }
 
     if (enrollmentRules !== undefined && enrollmentRules.length > 0) {

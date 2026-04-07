@@ -29,12 +29,11 @@ import {
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
-  validateRuleCreditMonotonicity,
-  validateRuleDateOrdering,
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
 import { deduplicateByName } from './deduplicate.js';
+import { validateRule } from './fromDisk/accessControl.js';
 import * as infofile from './infofile.js';
 import { isDraftQid } from './question.js';
 
@@ -1222,51 +1221,9 @@ export function validateAccessControlArray({
     }
 
     const isMainRule = rule.labels == null || rule.labels.length === 0;
-    if (!isMainRule && rule.integrations != null) {
-      errors.push(
-        'integrations can only be specified on the defaults (the first element, without labels).',
-      );
-    }
-    if (!isMainRule && rule.listBeforeRelease !== undefined) {
-      errors.push(
-        'listBeforeRelease can only be specified on the defaults (the first element, without labels).',
-      );
-    }
-
-    const exams = rule.integrations?.prairieTest?.exams ?? [];
-    const seenExamUuids = new Set<string>();
-    for (const e of exams) {
-      if (seenExamUuids.has(e.examUuid)) {
-        errors.push(`Duplicate PrairieTest exam UUID: ${e.examUuid}.`);
-      } else {
-        seenExamUuids.add(e.examUuid);
-      }
-    }
-
-    const seenEarlyDates = new Set<string>();
-    for (const d of rule.dateControl?.earlyDeadlines ?? []) {
-      if (seenEarlyDates.has(d.date)) {
-        errors.push(`Duplicate early deadline date: ${d.date}.`);
-      } else {
-        seenEarlyDates.add(d.date);
-      }
-    }
-
-    const seenLateDates = new Set<string>();
-    for (const d of rule.dateControl?.lateDeadlines ?? []) {
-      if (seenLateDates.has(d.date)) {
-        errors.push(`Duplicate late deadline date: ${d.date}.`);
-      } else {
-        seenLateDates.add(d.date);
-      }
-    }
-
-    const dateErrors = validateRuleDateOrdering(rule);
-    errors.push(...dateErrors);
-    // Credit monotonicity assumes deadlines are chronological; skip if dates
-    // are out of order to avoid misleading "not monotonically decreasing" errors.
-    if (dateErrors.length === 0) {
-      errors.push(...validateRuleCreditMonotonicity(rule));
+    const ruleError = validateRule(rule, isMainRule ? 'none' : 'student_label');
+    if (ruleError) {
+      errors.push(ruleError);
     }
   }
 

@@ -43,10 +43,10 @@ export function validateRule(
 ): string | null {
   if (targetType !== 'none') {
     if (rule.listBeforeRelease !== undefined) {
-      return 'listBeforeRelease can only be specified on the defaults.';
+      return 'listBeforeRelease can only be specified on the defaults (the first element, without labels).';
     }
     if (rule.integrations != null) {
-      return 'integrations can only be specified on the defaults.';
+      return 'integrations can only be specified on the defaults (the first element, without labels).';
     }
   }
 
@@ -85,12 +85,8 @@ export function validateRule(
 }
 
 /**
- * Validates DB-dependent constraints for a single assessment's rules.
- * Non-DB validation (rule count, duplicates, date ordering, credit
- * monotonicity, override-only field restrictions) is handled upstream by
- * {@link validateAccessControlArray} in course-db.ts and the Zod schema.
- * This function only checks constraints that require database state:
- * student label existence and PrairieTest exam UUID existence.
+ * Validates constraints that require database state: student label existence
+ * and PrairieTest exam UUID existence.
  */
 function validateAssessmentRules(
   rules: AccessControlJson[],
@@ -99,12 +95,10 @@ function validateAssessmentRules(
 ): string | null {
   if (rules.length === 0) return null;
 
-  // Validate that labels reference student labels that exist in the database.
-  // This check must remain here (not upstream) because when the course instance
-  // config is invalid, course-db skips label existence checks to avoid
-  // cascading errors and student label syncing is skipped. We still need to
-  // reject labels missing from the database so that label-targeted rules are
-  // not silently treated as main rules.
+  // When the course instance config is invalid, student label syncing is
+  // skipped, so labels that appear valid in JSON may not exist in the DB.
+  // Reject them here to prevent label-targeted rules from being silently
+  // treated as main rules.
   for (const rule of rules) {
     const ruleLabels = rule.labels ?? [];
     const invalidLabels = ruleLabels.filter((label) => !studentLabelIdByName.has(label));
@@ -113,8 +107,6 @@ function validateAssessmentRules(
     }
   }
 
-  // Validate that PrairieTest exam UUIDs reference exams that exist in the
-  // database. This requires a DB lookup and cannot be moved upstream.
   const assessmentInvalidUuids: string[] = [];
   for (const rule of rules) {
     for (const e of rule.integrations?.prairieTest?.exams ?? []) {
