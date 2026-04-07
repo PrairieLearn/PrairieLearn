@@ -111,8 +111,20 @@ async function syncRulesAndRead(
   courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
     util.ASSESSMENT_ID
   ].accessControl = rules;
-  await util.writeAndSyncCourseData(courseData);
-  return findSyncedAccessControlRules(util.ASSESSMENT_ID);
+  const { syncResults } = await util.writeAndSyncCourseData(courseData);
+  assert.equal(syncResults.status, 'complete');
+
+  const assessment =
+    syncResults.status === 'complete'
+      ? syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+          util.ASSESSMENT_ID
+        ]
+      : undefined;
+
+  return {
+    rules: await findSyncedAccessControlRules(util.ASSESSMENT_ID),
+    errors: assessment?.errors ?? [],
+  };
 }
 
 const TEST_EXAM_UUID = '11e89892-3eff-4d7f-90a2-221372f14e5c';
@@ -219,7 +231,7 @@ describe('Access control syncing', () => {
             password: 'secret',
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { rules: syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
         assert.isTrue(row.date_control_release_date_overridden);
         assert.isNotNull(row.date_control_release_date);
@@ -239,7 +251,7 @@ describe('Access control syncing', () => {
             // dueDate, durationMinutes, password, deadlines all omitted
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { rules: syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
         assert.isFalse(row.date_control_due_date_overridden);
         assert.isNull(row.date_control_due_date);
@@ -263,7 +275,7 @@ describe('Access control syncing', () => {
             password: null,
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { rules: syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
         // Explicitly set to null: overridden=true, value=NULL
         assert.isTrue(row.date_control_due_date_overridden);
@@ -275,7 +287,7 @@ describe('Access control syncing', () => {
     it('no dateControl at all: all flags are overridden=false', () =>
       runInTransactionAndRollback(async () => {
         const rule = makeAccessControlRule({ dateControl: undefined });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { rules: syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
         assert.isFalse(row.date_control_release_date_overridden);
         assert.isFalse(row.date_control_due_date_overridden);
@@ -295,7 +307,7 @@ describe('Access control syncing', () => {
             // hideScore and showScoreAgainDate omitted
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { rules: syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
         assert.equal(row.after_complete_hide_questions, true);
         assert.isTrue(row.after_complete_show_questions_again_date_overridden);
@@ -325,7 +337,7 @@ describe('Access control syncing', () => {
             dueDate: '2024-04-01T23:59:00',
           },
         };
-        const syncedRules = await syncRulesAndRead([mainRule, overrideRule], {
+        const { rules: syncedRules } = await syncRulesAndRead([mainRule, overrideRule], {
           studentLabels: [labelName],
         });
         const override = syncedRules.find((r) => r.target_type === 'student_label');
@@ -352,7 +364,7 @@ describe('Access control syncing', () => {
           labels: [labelName],
           // no dateControl at all — inherit everything
         };
-        const syncedRules = await syncRulesAndRead([mainRule, overrideRule], {
+        const { rules: syncedRules } = await syncRulesAndRead([mainRule, overrideRule], {
           studentLabels: [labelName],
         });
         const override = syncedRules.find((r) => r.target_type === 'student_label');
@@ -384,7 +396,7 @@ describe('Access control syncing', () => {
             hideQuestions: false,
           },
         };
-        const syncedRules = await syncRulesAndRead([mainRule, overrideRule], {
+        const { rules: syncedRules } = await syncRulesAndRead([mainRule, overrideRule], {
           studentLabels: [labelName],
         });
         const override = syncedRules.find((r) => r.target_type === 'student_label');
@@ -410,7 +422,7 @@ describe('Access control syncing', () => {
             releaseDate: null, // explicitly clear — no date-based access for this label
           },
         };
-        const syncedRules = await syncRulesAndRead([mainRule, overrideRule], {
+        const { rules: syncedRules } = await syncRulesAndRead([mainRule, overrideRule], {
           studentLabels: [labelName],
         });
         const override = syncedRules.find((r) => r.target_type === 'student_label');
@@ -428,7 +440,7 @@ describe('Access control syncing', () => {
     ])('syncs listBeforeRelease: $input -> $expected', ({ input, expected }) =>
       runInTransactionAndRollback(async () => {
         const rule = makeAccessControlRule(input !== undefined ? { listBeforeRelease: input } : {});
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { rules: syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].list_before_release, expected);
       }),
@@ -459,7 +471,7 @@ describe('Access control syncing', () => {
     it('preserves inheritance for label overrides when listBeforeRelease is omitted', () =>
       runInTransactionAndRollback(async () => {
         const labelName = 'Extended time';
-        const syncedRules = await syncRulesAndRead(
+        const { rules: syncedRules } = await syncRulesAndRead(
           [
             makeAccessControlRule({ listBeforeRelease: true }),
             makeAccessControlRule({
@@ -554,7 +566,7 @@ describe('Access control syncing', () => {
             ],
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { rules: syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules[0].date_control_early_deadlines_overridden, true);
 
         const allDeadlines = await util.dumpTableWithSchema(
@@ -579,7 +591,7 @@ describe('Access control syncing', () => {
             ],
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { rules: syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules[0].date_control_late_deadlines_overridden, true);
 
         const allDeadlines = await util.dumpTableWithSchema(
@@ -603,7 +615,7 @@ describe('Access control syncing', () => {
             lateDeadlines: [],
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { rules: syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules[0].date_control_late_deadlines_overridden, true);
 
         const allDeadlines = await util.dumpTableWithSchema(
@@ -1094,7 +1106,7 @@ describe('Access control syncing', () => {
             showQuestionsAgainDate: '2025-03-25T23:59:00',
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { rules: syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].after_complete_hide_questions, true);
         assert.equal(syncedRules[0].after_complete_show_questions_again_date_overridden, true);
@@ -1110,7 +1122,7 @@ describe('Access control syncing', () => {
             hideQuestionsAgainDate: '2025-04-15T23:59:00',
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { rules: syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].after_complete_hide_questions, true);
         assert.equal(syncedRules[0].after_complete_show_questions_again_date_overridden, true);
@@ -1127,7 +1139,7 @@ describe('Access control syncing', () => {
             showScoreAgainDate: '2025-03-25T23:59:00',
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { rules: syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].after_complete_hide_score, true);
         assert.equal(syncedRules[0].after_complete_show_score_again_date_overridden, true);
@@ -1146,7 +1158,7 @@ describe('Access control syncing', () => {
           labels: [labelName],
           dateControl: { durationMinutes: 90 },
         });
-        const syncedRules = await syncRulesAndRead([assignmentRule, labelRule], {
+        const { rules: syncedRules } = await syncRulesAndRead([assignmentRule, labelRule], {
           studentLabels: [labelName],
         });
         assert.equal(syncedRules.length, 2);
@@ -1286,60 +1298,28 @@ describe('Access control syncing', () => {
   describe('Main rule requirement', () => {
     it('rejects sync when no main rule exists', () =>
       runInTransactionAndRollback(async () => {
-        const courseData = util.getCourseData();
         const labelName = 'Test Label';
-
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [
-          makeAccessControlRule({
-            labels: [labelName],
-            dateControl: { durationMinutes: 90 },
-          }),
-        ];
-
-        const courseDir = await util.writeCourseToTempDirectory(courseData);
-        const syncResults = await util.syncCourseData(courseDir);
-
-        assert.equal(syncResults.status, 'complete');
-        if (syncResults.status === 'complete') {
-          const assessment =
-            syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-              util.ASSESSMENT_ID
-            ];
-          assert.isTrue(assessment.errors.some((e) => e.includes('No defaults found')));
-        }
-
-        const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-        assert.equal(syncedRules.length, 0);
+        const { rules, errors } = await syncRulesAndRead(
+          [
+            makeAccessControlRule({
+              labels: [labelName],
+              dateControl: { durationMinutes: 90 },
+            }),
+          ],
+          { studentLabels: [labelName] },
+        );
+        assert.equal(rules.length, 0);
+        assert.isTrue(errors.some((e) => e.includes('No defaults found')));
       }));
 
     it('rejects sync when multiple main rules exist', () =>
       runInTransactionAndRollback(async () => {
-        const courseData = util.getCourseData();
-
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [
+        const { rules, errors } = await syncRulesAndRead([
           makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
           makeAccessControlRule({ dateControl: { durationMinutes: 90 } }),
-        ];
-
-        const courseDir = await util.writeCourseToTempDirectory(courseData);
-        const syncResults = await util.syncCourseData(courseDir);
-
-        assert.equal(syncResults.status, 'complete');
-        if (syncResults.status === 'complete') {
-          const assessment =
-            syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-              util.ASSESSMENT_ID
-            ];
-          assert.isTrue(assessment.errors.some((e) => e.includes('defaults entries')));
-        }
-
-        const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-        assert.equal(syncedRules.length, 0);
+        ]);
+        assert.equal(rules.length, 0);
+        assert.isTrue(errors.some((e) => e.includes('defaults entries')));
       }));
 
     it('successfully syncs with exactly one main rule', () =>
@@ -1352,7 +1332,7 @@ describe('Access control syncing', () => {
           labels: [labelName],
           dateControl: { durationMinutes: 90 },
         });
-        const syncedRules = await syncRulesAndRead([mainRule, labelRule], {
+        const { rules: syncedRules } = await syncRulesAndRead([mainRule, labelRule], {
           studentLabels: [labelName],
         });
         assert.equal(syncedRules.length, 2);
@@ -1370,7 +1350,7 @@ describe('Access control syncing', () => {
           },
         });
         // the rule should not be synced because it has validation errors
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { rules: syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 0, 'Rule with invalid date should not be synced');
       }));
 
