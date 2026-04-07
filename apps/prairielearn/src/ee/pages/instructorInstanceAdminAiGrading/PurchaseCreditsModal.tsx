@@ -206,7 +206,8 @@ export function PurchaseCreditsModal({
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
-    // Debounce so the hint doesn't flash while the user is still typing.
+    // Delay showing the hint so it doesn't flash while the user is still
+    // typing through an invalid intermediate state. Hide immediately when valid.
     debounceRef.current = setTimeout(
       () => {
         setShowHint(isCustomOutOfRange);
