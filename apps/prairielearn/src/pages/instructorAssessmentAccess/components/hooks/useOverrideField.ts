@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { type Path, useFormContext, useWatch } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 
 import type { AccessControlFormData } from '../types.js';
 
@@ -12,37 +12,26 @@ import type { AccessControlFormData } from '../types.js';
 export function useOverrideField(index: number, fieldName: string) {
   const { setValue, getValues } = useFormContext<AccessControlFormData>();
 
-  const overriddenFields = useWatch<
-    AccessControlFormData,
-    `overrides.${number}.overriddenFields`
-  >({
+  const overriddenFields = useWatch<AccessControlFormData, `overrides.${number}.overriddenFields`>({
     name: `overrides.${index}.overriddenFields`,
   });
 
   const isOverridden = overriddenFields.includes(fieldName);
 
   const addOverride = useCallback(() => {
-    const current = getValues(
-      `overrides.${index}.overriddenFields` as Path<AccessControlFormData>,
-    ) as unknown as string[];
+    const current = getValues(`overrides.${index}.overriddenFields`);
     if (!current.includes(fieldName)) {
-      setValue(
-        `overrides.${index}.overriddenFields` as Path<AccessControlFormData>,
-        // react-hook-form's setValue types don't support dynamically-keyed
-        // arrays, so the cast is required to satisfy the generic constraint.
-        [...current, fieldName] as never,
-        { shouldDirty: true },
-      );
+      setValue(`overrides.${index}.overriddenFields`, [...current, fieldName], {
+        shouldDirty: true,
+      });
     }
   }, [index, fieldName, setValue, getValues]);
 
   const removeOverride = useCallback(() => {
-    const current = getValues(
-      `overrides.${index}.overriddenFields` as Path<AccessControlFormData>,
-    ) as unknown as string[];
+    const current = getValues(`overrides.${index}.overriddenFields`);
     setValue(
-      `overrides.${index}.overriddenFields` as Path<AccessControlFormData>,
-      current.filter((f) => f !== fieldName) as never,
+      `overrides.${index}.overriddenFields`,
+      current.filter((f) => f !== fieldName),
       { shouldDirty: true },
     );
   }, [index, fieldName, setValue, getValues]);

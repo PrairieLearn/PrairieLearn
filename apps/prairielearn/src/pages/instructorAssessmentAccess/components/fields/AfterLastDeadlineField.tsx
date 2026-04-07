@@ -1,18 +1,10 @@
 import { Alert, Form, InputGroup } from 'react-bootstrap';
-import {
-  type Path,
-  get,
-  useController,
-  useFormContext,
-  useFormState,
-  useWatch,
-} from 'react-hook-form';
+import { get, useController, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import { RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
-import { getFieldName } from '../hooks/fieldNames.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, AfterLastDeadlineValue, DeadlineEntry } from '../types.js';
 import { getLastDeadlineDate, getUserTimezone } from '../utils/dateUtils.js';
@@ -58,7 +50,9 @@ function AfterLastDeadlineInput({
   idPrefix: string;
   dueDate: string | null | undefined;
   lateDeadlines: DeadlineEntry[] | undefined;
-  creditFieldPath: string;
+  creditFieldPath:
+    | 'mainRule.afterLastDeadline.credit'
+    | `overrides.${number}.afterLastDeadline.credit`;
 }) {
   const { register } = useFormContext<AccessControlFormData>();
   const userTimezone = getUserTimezone();
@@ -133,11 +127,11 @@ function AfterLastDeadlineInput({
               max="200"
               placeholder="Credit percentage"
               isInvalid={!!creditError}
-              {...register(creditFieldPath as Parameters<typeof register>[0], {
+              {...register(creditFieldPath, {
                 shouldUnregister: true,
                 valueAsNumber: true,
                 validate: (v) => {
-                  const num = v as number;
+                  const num = v!;
                   if (Number.isNaN(num)) return 'Credit is required';
                   if (num < 0 || num > 200) return 'Must be 0–200%';
                   return true;
@@ -194,8 +188,11 @@ export function OverrideAfterLastDeadlineField({ index }: { index: number }) {
     name: 'mainRule.afterLastDeadline',
   });
 
-  const { field } = useController({
-    name: `overrides.${index}.afterLastDeadline` as Path<AccessControlFormData>,
+  const { field } = useController<
+    AccessControlFormData,
+    `overrides.${number}.afterLastDeadline`
+  >({
+    name: `overrides.${index}.afterLastDeadline`,
   });
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(
@@ -230,11 +227,11 @@ export function OverrideAfterLastDeadlineField({ index }: { index: number }) {
       onRemoveOverride={removeOverride}
     >
       <AfterLastDeadlineInput
-        value={field.value as AfterLastDeadlineValue | null}
+        value={field.value}
         idPrefix={`overrides-${index}`}
         dueDate={dueDateOverridden ? dueDate : mainDueDate}
         lateDeadlines={lateDeadlinesOverridden ? lateDeadlines : mainLateDeadlines}
-        creditFieldPath={getFieldName(`overrides.${index}`, 'afterLastDeadline.credit')}
+        creditFieldPath={`overrides.${index}.afterLastDeadline.credit`}
         onChange={field.onChange}
       />
     </FieldWrapper>

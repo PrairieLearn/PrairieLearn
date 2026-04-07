@@ -1,14 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { useEffect, useRef } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
-import {
-  type Path,
-  get,
-  useFieldArray,
-  useFormContext,
-  useFormState,
-  useWatch,
-} from 'react-hook-form';
+import { get, useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import { formatDateFriendly } from '@prairielearn/formatter';
 
@@ -27,7 +20,11 @@ function DeadlineArrayInput({
   deadlines,
 }: {
   type: 'early' | 'late';
-  fieldArrayName: string;
+  fieldArrayName:
+    | 'mainRule.earlyDeadlines'
+    | 'mainRule.lateDeadlines'
+    | `overrides.${number}.earlyDeadlines`
+    | `overrides.${number}.lateDeadlines`;
   idPrefix: string;
   releaseDate: string | undefined;
   dueDate: string | null | undefined;
@@ -64,8 +61,8 @@ function DeadlineArrayInput({
   useEffect(() => {
     if (deadlineFields.length > 0) {
       for (let i = 0; i < deadlineFields.length; i++) {
-        void trigger(`${fieldArrayName}.${i}.date` as Path<AccessControlFormData>);
-        void trigger(`${fieldArrayName}.${i}.credit` as Path<AccessControlFormData>);
+        void trigger(`${fieldArrayName}.${i}.date`);
+        void trigger(`${fieldArrayName}.${i}.credit`);
       }
     }
   }, [deadlineFields.length, dueDate, releaseDate, fieldArrayName, trigger]);
@@ -112,10 +109,9 @@ function DeadlineArrayInput({
 
   // Read from refs to avoid stale closures — register() captures the validate
   // function once, but these constraint values change over the form's lifetime.
-  const validateDate = (value: unknown, index: number) => {
-    const stringValue = value as string;
-    if (!stringValue) return 'Date is required';
-    const deadlineDate = new Date(stringValue);
+  const validateDate = (value: string, index: number) => {
+    if (!value) return 'Date is required';
+    const deadlineDate = new Date(value);
     const currentDueDate = dueDateRef.current ? new Date(dueDateRef.current) : null;
     const currentReleaseDate = releaseDateRef.current ? new Date(releaseDateRef.current) : null;
     const currentDeadlines = deadlinesRef.current;
@@ -148,15 +144,14 @@ function DeadlineArrayInput({
     return true;
   };
 
-  const validateCredit = (value: unknown, index: number) => {
-    const numValue = value as number;
+  const validateCredit = (value: number, index: number) => {
     if (isEarly) {
-      if (numValue < 101 || numValue > 200) return 'Credit must be 101-200%';
+      if (value < 101 || value > 200) return 'Credit must be 101-200%';
     } else {
-      if (numValue < 0 || numValue > 99) return 'Credit must be 0-99%';
+      if (value < 0 || value > 99) return 'Credit must be 0-99%';
     }
     const currentDeadlines = deadlinesRef.current;
-    if (index > 0 && numValue >= currentDeadlines[index - 1].credit) {
+    if (index > 0 && value >= (currentDeadlines.at(index - 1)?.credit ?? 0)) {
       return 'Credit must be less than previous deadline';
     }
     return true;
@@ -251,7 +246,7 @@ function DeadlineArrayInput({
                     : undefined
                 }
                 placeholder="Deadline Date"
-                {...register(`${fieldArrayName}.${index}.date` as Parameters<typeof register>[0], {
+                {...register(`${fieldArrayName}.${index}.date`, {
                   validate: (value) => validateDate(value, index),
                 })}
               />
@@ -287,13 +282,10 @@ function DeadlineArrayInput({
                   placeholder="Credit"
                   min={isEarly ? '101' : '0'}
                   max={isEarly ? '200' : '99'}
-                  {...register(
-                    `${fieldArrayName}.${index}.credit` as Parameters<typeof register>[0],
-                    {
-                      valueAsNumber: true,
-                      validate: (value) => validateCredit(value, index),
-                    },
-                  )}
+                  {...register(`${fieldArrayName}.${index}.credit`, {
+                    valueAsNumber: true,
+                    validate: (value) => validateCredit(value, index),
+                  })}
                 />
                 <InputGroup.Text>%</InputGroup.Text>
               </InputGroup>
@@ -402,11 +394,7 @@ export function OverrideDeadlineArrayField({
       label={label}
       onOverride={() => {
         const copied = mainDeadlines.map((d) => ({ ...d }));
-        setValue(
-          `overrides.${index}.${fieldPath}` as Path<AccessControlFormData>,
-          copied as never,
-          { shouldDirty: true },
-        );
+        setValue(`overrides.${index}.${fieldPath}`, copied, { shouldDirty: true });
         addOverride();
       }}
       onRemoveOverride={removeOverride}

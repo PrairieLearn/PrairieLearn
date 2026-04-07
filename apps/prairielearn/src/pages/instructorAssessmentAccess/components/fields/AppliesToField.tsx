@@ -1,13 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Alert, Button, Form, ListGroup } from 'react-bootstrap';
-import {
-  type FieldArrayPath,
-  type Path,
-  useFieldArray,
-  useFormContext,
-  useWatch,
-} from 'react-hook-form';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 
 import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
@@ -34,21 +28,21 @@ export function AppliesToField({
   });
 
   const { replace: replaceEnrollments, remove: removeEnrollment } = useFieldArray({
-    name: `${namePrefix}.appliesTo.enrollments` as FieldArrayPath<AccessControlFormData>,
+    name: `${namePrefix}.appliesTo.enrollments`,
   });
 
   const { append: appendStudentLabel, remove: removeStudentLabel } = useFieldArray({
-    name: `${namePrefix}.appliesTo.studentLabels` as FieldArrayPath<AccessControlFormData>,
+    name: `${namePrefix}.appliesTo.studentLabels`,
   });
 
   const handleTargetTypeChange = (newType: TargetType) => {
     setValue(
-      `${namePrefix}.appliesTo` as Path<AccessControlFormData>,
+      `${namePrefix}.appliesTo`,
       {
         targetType: newType,
         enrollments: [],
         studentLabels: [],
-      } as never,
+      },
       { shouldDirty: true },
     );
   };

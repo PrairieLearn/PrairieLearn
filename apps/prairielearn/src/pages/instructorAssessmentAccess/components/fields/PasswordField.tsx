@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
-import { type Path, useController, useWatch } from 'react-hook-form';
+import { useController, useWatch } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
@@ -75,8 +75,8 @@ export function OverridePasswordField({ index }: { index: number }) {
     name: 'mainRule.password',
   });
 
-  const { field } = useController({
-    name: `overrides.${index}.password` as Path<AccessControlFormData>,
+  const { field } = useController<AccessControlFormData, `overrides.${number}.password`>({
+    name: `overrides.${index}.password`,
   });
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'password');
@@ -92,7 +92,7 @@ export function OverridePasswordField({ index }: { index: number }) {
       onRemoveOverride={removeOverride}
     >
       <PasswordInput
-        value={field.value as string | null}
+        value={field.value}
         idPrefix={`overrides-${index}`}
         onChange={field.onChange}
       />

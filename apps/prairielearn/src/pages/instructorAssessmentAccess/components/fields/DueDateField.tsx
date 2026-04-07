@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { Form } from 'react-bootstrap';
-import { type Path, useController, useWatch } from 'react-hook-form';
+import { useController, useWatch } from 'react-hook-form';
 
 import { formatDateFriendly } from '@prairielearn/formatter';
 
@@ -92,7 +92,7 @@ function DueDateInput({
           checked={value !== null}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
-              const latestEarlyDate = earlyDeadlines?.filter((d) => d.date).pop()?.date;
+              const latestEarlyDate = earlyDeadlines?.at(-1)?.date;
               let baseDate: Temporal.PlainDate;
               if (latestEarlyDate) {
                 baseDate = Temporal.PlainDateTime.from(latestEarlyDate).toPlainDate();
@@ -200,11 +200,11 @@ export function OverrideDueDateField({ index }: { index: number }) {
   const {
     field,
     fieldState: { error },
-  } = useController({
-    name: `overrides.${index}.dueDate` as Path<AccessControlFormData>,
+  } = useController<AccessControlFormData, `overrides.${number}.dueDate`>({
+    name: `overrides.${index}.dueDate`,
     rules: {
       validate: (value) => {
-        const v = value as string | null;
+        const v = value;
         if (v && effectiveReleaseDate && new Date(v) <= new Date(effectiveReleaseDate)) {
           const formatted = formatDateFriendly(new Date(effectiveReleaseDate), getUserTimezone(), {
             dateOnly: true,
@@ -217,7 +217,7 @@ export function OverrideDueDateField({ index }: { index: number }) {
     },
   });
 
-  const value = field.value as string | null;
+  const value = field.value;
 
   return (
     <FieldWrapper

@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { Form } from 'react-bootstrap';
-import { type Path, useController, useWatch } from 'react-hook-form';
+import { useController, useWatch } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
@@ -122,8 +122,8 @@ export function OverrideReleaseDateField({ index }: { index: number }) {
     name: 'mainRule.releaseDate',
   });
 
-  const { field } = useController({
-    name: `overrides.${index}.releaseDate` as Path<AccessControlFormData>,
+  const { field } = useController<AccessControlFormData, `overrides.${number}.releaseDate`>({
+    name: `overrides.${index}.releaseDate`,
   });
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'releaseDate');
@@ -140,7 +140,7 @@ export function OverrideReleaseDateField({ index }: { index: number }) {
       onRemoveOverride={removeOverride}
     >
       <ReleaseDateInput
-        value={field.value as string}
+        value={field.value}
         idPrefix={`overrides-${index}`}
         onChange={field.onChange}
       />
