@@ -5,10 +5,9 @@ import { z } from 'zod';
 
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
+import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { saveJsonFile } from '../../lib/editorUtil.js';
-import { getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
-import { computeStableHash } from '../../lib/json.js';
 import {
   type EnrollmentAccessControlRuleData,
   deleteEnrollmentAccessControlsByIds,
@@ -28,6 +27,7 @@ import {
   MAX_ACCESS_CONTROL_RULES,
   MAX_ENROLLMENT_RULES,
 } from '../../schemas/accessControl.js';
+import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { validateAccessControlArray } from '../../sync/course-db.js';
 import { validateRule } from '../../sync/fromDisk/accessControl.js';
 import { throwAppError } from '../app-errors.js';
@@ -105,11 +105,7 @@ const studentLabels = t.procedure
   .use(requireCourseInstancePermissionView)
   .query(async (opts) => {
     const labels = await selectStudentLabelsInCourseInstance(opts.ctx.course_instance);
-    return labels.map((label) => ({
-      id: label.id,
-      name: label.name,
-      color: label.color,
-    }));
+    return labels.map((label) => StaffStudentLabelSchema.parse(label));
   });
 
 function formJsonToEnrollmentRuleData(
@@ -173,7 +169,7 @@ function isNonEmptyObject(value: unknown): boolean {
  * Cleans access control rules for writing to infoAssessment.json on disk.
  * Removes empty objects/arrays and omits listBeforeRelease: false on the main rule.
  */
-export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): object[] {
+export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): AccessControlJson[] {
   return rules.map((rule, index) => {
     const clean: Record<string, unknown> = {};
 
@@ -197,7 +193,7 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): obje
       clean.afterComplete = rule.afterComplete;
     }
 
-    return clean;
+    return clean as AccessControlJson;
   });
 }
 
@@ -208,7 +204,7 @@ const saveAllRules = t.procedure
     z.object({
       rules: z.array(AccessControlJsonInputSchema).max(MAX_ACCESS_CONTROL_RULES),
       enrollmentRules: z.array(EnrollmentRuleInputSchema).max(MAX_ENROLLMENT_RULES).optional(),
-      origHash: z.string(),
+      origHash: z.string().nullable(),
     }),
   )
   .mutation(async (opts) => {
@@ -256,10 +252,6 @@ const saveAllRules = t.procedure
       }
     }
 
-    // Build the assessment file path and capture the current file hash BEFORE
-    // the concurrency check. This ensures that if another save completes between
-    // the hash check and the FileModifyEditor lock, the editor will detect the
-    // file change and reject the write (closing the TOCTOU window).
     const assessmentDir = path.join(
       opts.ctx.course.path,
       'courseInstances',
@@ -268,29 +260,19 @@ const saveAllRules = t.procedure
       opts.ctx.assessment.tid!,
     );
     const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
-    const currentFileHash = (await getOriginalHash(assessmentPath)) ?? '';
 
-    // Optimistic concurrency check: verify the full rule set (file + enrollment)
-    // hasn't changed since the page was loaded.
-    const currentRules = await selectAccessControlRules(opts.ctx.assessment);
-    const currentHash = computeStableHash(currentRules);
-    if (currentHash !== origHash) {
-      throw new TRPCError({
-        code: 'CONFLICT',
-        message:
-          'The access control rules have been modified since you loaded this page. Please refresh and try again.',
-      });
-    }
-
-    // Write updated access control rules to infoAssessment.json on disk
-    // (handles git commit + sync to DB).
-    const saveResult = await saveJsonFile({
+    const saveResult = await saveJsonFile<AssessmentJsonInput>({
       applyChanges: (jsonContents) => {
         jsonContents.accessControl = cleanAccessControlRulesForDisk(rulesToSync);
         return jsonContents;
       },
       jsonPath: assessmentPath,
-      origHash: currentFileHash,
+      // Scope the hash to just the accessControl section so unrelated file
+      // changes (e.g. zones) don't trigger spurious conflicts.
+      conflictCheck: {
+        origHash,
+        scope: (json) => json.accessControl ?? [],
+      },
       locals: {
         authz_data: opts.ctx.authz_data,
         course: opts.ctx.course,
@@ -303,6 +285,13 @@ const saveAllRules = t.procedure
     });
 
     if (!saveResult.success) {
+      if (saveResult.reason === 'conflict') {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message:
+            'The access control rules have been modified since you loaded this page. Please refresh and try again.',
+        });
+      }
       throwAppError<AccessControlError>({
         code: 'SYNC_JOB_FAILED',
         message: 'Failed to save access control rules',
@@ -317,6 +306,7 @@ const saveAllRules = t.procedure
         await lockAssessment(opts.ctx.assessment);
 
         // Determine which enrollment rules to delete
+        const currentRules = await selectAccessControlRules(opts.ctx.assessment);
         const existingIds = new Set(
           currentRules.filter((r) => r.ruleType === 'enrollment').map((r) => r.id),
         );
@@ -342,8 +332,7 @@ const saveAllRules = t.procedure
       });
     }
 
-    const newRules = await selectAccessControlRules(opts.ctx.assessment);
-    return { newHash: computeStableHash(newRules) };
+    return { newHash: saveResult.newHash };
   });
 
 export const accessControlRouter = t.router({

@@ -52,6 +52,12 @@ See any existing scope (e.g. `trpc/assessment/`) for the exact boilerplate. The 
 - Use role-scoped schemas from `lib/client/safe-db-types.ts` (e.g. `StaffStudentLabelSchema`). Always `.parse()` records through the schema before returning.
 - Use existing model functions from `models/` instead of one-off SQL.
 
+### Client-side queries and mutations
+
+- Use `trpc.subrouter.procedure.queryOptions()` with `useQuery()` for queries. Do **not** manually construct `{ queryKey, queryFn }` objects — the generated `queryOptions()` provides type-safe keys and avoids stale cache issues.
+- Use `trpc.subrouter.procedure.mutationOptions()` with `useMutation()` for mutations.
+- Access the `trpc` proxy via the scope's `useTRPC()` hook from `context.ts`.
+
 ### Client-side CSRF flow
 
 The CSRF token is generated server-side with `generatePrefixCsrfToken` using the scope's URL helper from `lib/client/url.ts`, passed as a prop to the hydrated component, and sent by the tRPC client as an `X-CSRF-Token` header. The Express CSRF middleware validates it before the request reaches the tRPC router.

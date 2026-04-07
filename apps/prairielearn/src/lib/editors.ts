@@ -96,9 +96,13 @@ async function cleanAndResetRepository(
   });
 }
 
+export function computeFileContentHash(contents: string): string {
+  return sha256(b64EncodeUnicode(contents)).toString();
+}
+
 export async function getOriginalHash(path: string) {
   try {
-    return sha256(b64EncodeUnicode(await fs.readFile(path, 'utf8'))).toString();
+    return computeFileContentHash(await fs.readFile(path, 'utf8'));
   } catch (err: any) {
     if (err.code === 'ENOENT') return null;
     throw err;
