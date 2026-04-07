@@ -45,6 +45,9 @@ interface AiGradingState {
   rubric_exists?: boolean;
   message_id?: string;
   user_message?: string;
+  /** Incremented on each continueWorkflow call. Used as a consistency check
+   * so clients can detect when another user has advanced the workflow. */
+  version?: number;
 }
 
 interface AiGradingContext {
@@ -100,6 +103,7 @@ async function reconstructAgentContext(ctx: AiGradingContext): Promise<AiGrading
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function runAgentWithStreaming(
   agent: any,
   cancellationState: { wasCanceled: boolean },
@@ -110,6 +114,7 @@ async function runAgentWithStreaming(
   workflowRunId: string,
   phase: 'generate' | 'edit',
   assessmentQuestionId: string,
+  workflowVersion: number,
 ) {
   const agentRes = await agent.stream(promptArg);
   let finalParts: unknown[] = [];
@@ -119,7 +124,7 @@ async function runAgentWithStreaming(
     generateMessageId: () => messageId,
     messageMetadata: ({ part }: { part: { type: string } }) => {
       if (part.type === 'start') {
-        return { workflow_run_id: workflowRunId, status: 'streaming', phase };
+        return { workflow_run_id: workflowRunId, status: 'streaming', phase, workflow_version: workflowVersion };
       }
       if (part.type === 'finish') {
         return {
@@ -131,6 +136,7 @@ async function runAgentWithStreaming(
               : 'completed',
           phase,
           rubric_modified: true,
+          workflow_version: workflowVersion,
         };
       }
     },
@@ -270,6 +276,7 @@ async function takeStep(
           context.run.id,
           phase,
           ctx.assessment_question_id,
+          state.version ?? 0,
         );
       } else {
         const persistedMessages = await selectAiGradingMessages(ctx.assessment_question_id);
@@ -293,6 +300,7 @@ async function takeStep(
           context.run.id,
           phase,
           ctx.assessment_question_id,
+          state.version ?? 0,
         );
       }
 
@@ -302,6 +310,7 @@ async function takeStep(
         {
           step: 'rubric_ready',
           rubric_exists: true,
+          version: state.version,
           // Clear transient fields
           message_id: undefined,
           user_message: undefined,

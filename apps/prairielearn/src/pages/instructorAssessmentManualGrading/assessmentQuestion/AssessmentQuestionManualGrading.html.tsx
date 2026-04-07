@@ -62,6 +62,7 @@ interface AssessmentQuestionManualGradingProps {
   aiRubricAgentEnabled: boolean;
   chatCsrfToken: string;
   initialChatMessages: StaffAiGradingMessage[];
+  initialWorkflowSync: { workflowRunId: string | null; version: number } | null;
 }
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
@@ -73,6 +74,7 @@ type RubricPhase = 'generate' | 'edit';
 
 type RubricChatMessage = UIMessage<{
   workflow_run_id?: string;
+  workflow_version?: number;
   status?: 'streaming' | 'completed' | 'errored';
   phase?: RubricPhase;
   rubric_modified?: boolean;
@@ -814,6 +816,7 @@ function AssessmentQuestionManualGradingInner({
   aiRubricAgentEnabled,
   chatCsrfToken,
   initialChatMessages,
+  initialWorkflowSync,
 }: AssessmentQuestionManualGradingInnerProps) {
   const initialRubricData = rubricData;
   const trpc = useTRPC();
@@ -835,6 +838,13 @@ function AssessmentQuestionManualGradingInner({
   const [chatInput, setChatInput] = useState('');
   const currentPhaseRef = useRef<RubricPhase>('generate');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  // Track workflow run ID and version for consistency checks.
+  // Updated from SSE metadata when agent responses complete.
+  const workflowSyncRef = useRef(initialWorkflowSync);
+
+  const [conflictError, setConflictError] = useState<string | null>(() => {
+    return null;
+  });
 
   const chatUrl = `${urlPrefix}/assessment/${assessment.id}/manual_grading/assessment_question/${assessmentQuestion.id}/chat`;
   const rubricDataUrl = `${chatUrl}/rubric_data`;
@@ -870,6 +880,18 @@ function AssessmentQuestionManualGradingInner({
     transport: new DefaultChatTransport({
       api: chatUrl,
       headers: { 'X-CSRF-Token': chatCsrfToken },
+      async fetch(input, init) {
+        const response = await fetch(input, init);
+        if (response.status === 409) {
+          const data = (await response.json()) as { error?: string };
+          setConflictError(
+            data.error ??
+              'The rubric assistant is out of sync. Please reload to continue.',
+          );
+          return new Response(null, { status: 204 });
+        }
+        return response;
+      },
       prepareReconnectToStreamRequest: () => ({
         api: `${chatUrl}/stream`,
       }),
@@ -889,11 +911,21 @@ function AssessmentQuestionManualGradingInner({
             ...body,
             phase: currentPhaseRef.current,
             message: messageText,
+            workflow_run_id: workflowSyncRef.current?.workflowRunId ?? null,
+            workflow_version: workflowSyncRef.current?.version ?? null,
           },
         };
       },
     }),
     onFinish({ message }) {
+      // Update workflow sync state from SSE metadata
+      if (message.metadata?.workflow_run_id && message.metadata?.workflow_version != null) {
+        workflowSyncRef.current = {
+          workflowRunId: message.metadata.workflow_run_id,
+          version: message.metadata.workflow_version,
+        };
+      }
+
       const phase = message.metadata?.phase;
 
       if (phase === 'generate') {
@@ -1229,43 +1261,59 @@ function AssessmentQuestionManualGradingInner({
               );
             })}
           </div>
-          <div className="p-3 border-top">
-            {!hasGeneratedRubric && (
-              <div className="d-flex justify-content-end mb-2">
-                <button
-                  type="button"
-                  className="btn btn-outline-primary btn-sm"
-                  disabled={isGenerating}
-                  onClick={() => {
-                    currentPhaseRef.current = 'generate';
-                    void sendMessage({ text: 'Generate a new rubric.' });
-                  }}
-                >
-                  <i className="bi bi-stars me-1" />
-                  Generate a new rubric
-                </button>
-              </div>
-            )}
-            <GradingPromptInput
-              value={chatInput}
-              disabled={false}
-              isGenerating={isGenerating}
-              onChange={setChatInput}
-              onSubmit={(text) => {
-                const trimmedText = text.trim();
-                if (trimmedText.length === 0) return;
-                currentPhaseRef.current = 'edit';
-                void sendMessage({ text: trimmedText });
-                setChatInput('');
-              }}
-              onStop={() => {
-                void fetch(`${chatUrl}/cancel`, {
-                  method: 'POST',
-                  headers: { 'X-CSRF-Token': chatCsrfToken },
-                });
-              }}
-            />
-          </div>
+          {conflictError ? (
+            <div className="p-3 border-top">
+              <Alert variant="danger" className="mb-2 small">
+                {conflictError}
+              </Alert>
+              <button
+                type="button"
+                className="btn btn-outline-primary btn-sm w-100"
+                onClick={() => window.location.reload()}
+              >
+                <i className="bi bi-arrow-clockwise me-1" />
+                Reload
+              </button>
+            </div>
+          ) : (
+            <div className="p-3 border-top">
+              {!hasGeneratedRubric && (
+                <div className="d-flex justify-content-end mb-2">
+                  <button
+                    type="button"
+                    className="btn btn-outline-primary btn-sm"
+                    disabled={isGenerating}
+                    onClick={() => {
+                      currentPhaseRef.current = 'generate';
+                      void sendMessage({ text: 'Generate a new rubric.' });
+                    }}
+                  >
+                    <i className="bi bi-stars me-1" />
+                    Generate a new rubric
+                  </button>
+                </div>
+              )}
+              <GradingPromptInput
+                value={chatInput}
+                disabled={false}
+                isGenerating={isGenerating}
+                onChange={setChatInput}
+                onSubmit={(text) => {
+                  const trimmedText = text.trim();
+                  if (trimmedText.length === 0) return;
+                  currentPhaseRef.current = 'edit';
+                  void sendMessage({ text: trimmedText });
+                  setChatInput('');
+                }}
+                onStop={() => {
+                  void fetch(`${chatUrl}/cancel`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-Token': chatCsrfToken },
+                  });
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
 

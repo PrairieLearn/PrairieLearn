@@ -154,6 +154,18 @@ router.get(
           .parse(await selectAiGradingMessages(assessment_question.id))
       : [];
 
+    const initialWorkflowSync = await run(async () => {
+      if (!aiRubricAgentEnabled) return null;
+      const wf = await getActiveWorkflowRun('ai_grading', {
+        assessment_question_id: assessment_question.id,
+      });
+      if (!wf) return { workflowRunId: null, version: 0 };
+      return {
+        workflowRunId: wf.id,
+        version: (wf.state as { version?: number }).version ?? 0,
+      };
+    });
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -221,6 +233,7 @@ router.get(
                 aiRubricAgentEnabled={aiRubricAgentEnabled}
                 chatCsrfToken={chatCsrfToken}
                 initialChatMessages={initialChatMessages}
+                initialWorkflowSync={initialWorkflowSync}
               />
             </Hydrate>
           </>
@@ -331,6 +344,40 @@ router.post(
       });
     }
 
+    // The rubric assistant is designed for single-user use. We use the workflow's
+    // atomic state transition as a concurrency lock: continueWorkflow fails if the
+    // workflow isn't in 'waiting_for_input' (i.e., another user already started the
+    // agent). We also check a version counter so that stale clients (whose page
+    // loaded before another user made changes) are rejected before inserting messages.
+    // The second user's chat may be briefly inconsistent — this is acceptable since
+    // multi-user simultaneous editing is not the current intended use case.
+    if (workflowRun.status !== 'waiting_for_input') {
+      res.status(409).json({
+        error:
+          'The rubric assistant is out of sync. Please reload to continue.',
+      });
+      return;
+    }
+
+    // Version/workflow-run consistency check: the client sends the workflow run ID
+    // and version it knows about. If they don't match, the client is stale.
+    const clientWorkflowRunId =
+      typeof req.body.workflow_run_id === 'string' ? req.body.workflow_run_id : null;
+    const clientVersion =
+      typeof req.body.workflow_version === 'number' ? req.body.workflow_version : null;
+    const serverVersion = (workflowRun.state as { version?: number }).version ?? 0;
+
+    if (
+      (clientWorkflowRunId !== null && clientWorkflowRunId !== workflowRun.id) ||
+      (clientVersion !== null && clientVersion !== serverVersion)
+    ) {
+      res.status(409).json({
+        error:
+          'The rubric assistant is out of sync. Please reload to continue.',
+      });
+      return;
+    }
+
     // Insert messages into DB to get message_id (needed as Redis stream key)
     const { messageRow } = await prepareAgentMessages({
       phase,
@@ -348,17 +395,26 @@ router.post(
     const streamContext = await getAiGradingStreamContext();
     await streamContext.createNewResumableStream(messageRow.id, () => sseStream.readable);
 
-    // Continue workflow → triggers takeStep('agent_running') asynchronously.
-    // takeStep will find the pre-created SSE stream via takeSseStream().
+    const currentVersion = (workflowRun.state as { version?: number }).version ?? 0;
+    const nextVersion = currentVersion + 1;
+
     try {
       await continueWorkflow(workflowRun.id, {
         step: 'agent_running',
         phase,
         user_message: userMessage,
         message_id: messageRow.id,
+        version: nextVersion,
       });
     } catch (err) {
-      takeSseStream(messageRow.id); // Clean up leaked stream
+      takeSseStream(messageRow.id);
+      if (err instanceof Error && err.message.includes('waiting_for_input')) {
+        res.status(409).json({
+          error:
+            'The rubric assistant is out of sync. Please reload to continue.',
+        });
+        return;
+      }
       throw err;
     }
 
