@@ -3,7 +3,6 @@ import { Form } from 'react-bootstrap';
 import { type Path, useController, useWatch } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
-import { useDisplayTimezone } from '../hooks/useDisplayTimezone.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData } from '../types.js';
 import { startOfDayDatetime, tomorrowDate } from '../utils/dateUtils.js';
@@ -88,8 +87,7 @@ function ReleaseDateInput({
   );
 }
 
-export function MainReleaseDateField() {
-  const displayTimezone = useDisplayTimezone();
+export function MainReleaseDateField({ displayTimezone }: { displayTimezone: string }) {
   const dateControlEnabled = useWatch<AccessControlFormData, 'mainRule.dateControlEnabled'>({
     name: 'mainRule.dateControlEnabled',
   });
@@ -122,8 +120,13 @@ export function MainReleaseDateField() {
   );
 }
 
-export function OverrideReleaseDateField({ index }: { index: number }) {
-  const displayTimezone = useDisplayTimezone();
+export function OverrideReleaseDateField({
+  index,
+  displayTimezone,
+}: {
+  index: number;
+  displayTimezone: string;
+}) {
   const mainValue = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
   });

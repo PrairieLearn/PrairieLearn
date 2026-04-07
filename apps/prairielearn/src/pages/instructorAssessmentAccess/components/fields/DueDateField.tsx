@@ -4,7 +4,6 @@ import { type Path, useController, useWatch } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
-import { useDisplayTimezone } from '../hooks/useDisplayTimezone.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
 import {
@@ -130,8 +129,7 @@ function DueDateInput({
   );
 }
 
-export function MainDueDateField() {
-  const displayTimezone = useDisplayTimezone();
+export function MainDueDateField({ displayTimezone }: { displayTimezone: string }) {
   const releaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
   });
@@ -171,8 +169,13 @@ export function MainDueDateField() {
   );
 }
 
-export function OverrideDueDateField({ index }: { index: number }) {
-  const displayTimezone = useDisplayTimezone();
+export function OverrideDueDateField({
+  index,
+  displayTimezone,
+}: {
+  index: number;
+  displayTimezone: string;
+}) {
   const mainValue = useWatch<AccessControlFormData, 'mainRule.dueDate'>({
     name: 'mainRule.dueDate',
   });

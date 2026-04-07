@@ -12,7 +12,6 @@ import {
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
-import { useDisplayTimezone } from '../hooks/useDisplayTimezone.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
 import { endOfDayDatetime, getDeadlineRange, getUserTimezone } from '../utils/dateUtils.js';
@@ -319,8 +318,13 @@ function DeadlineArrayInput({
   );
 }
 
-export function MainDeadlineArrayField({ type }: { type: 'early' | 'late' }) {
-  const displayTimezone = useDisplayTimezone();
+export function MainDeadlineArrayField({
+  type,
+  displayTimezone,
+}: {
+  type: 'early' | 'late';
+  displayTimezone: string;
+}) {
   const isEarly = type === 'early';
   const fieldName = isEarly ? 'mainRule.earlyDeadlines' : 'mainRule.lateDeadlines';
 
@@ -356,11 +360,12 @@ export function MainDeadlineArrayField({ type }: { type: 'early' | 'late' }) {
 export function OverrideDeadlineArrayField({
   index,
   type,
+  displayTimezone,
 }: {
   index: number;
   type: 'early' | 'late';
+  displayTimezone: string;
 }) {
-  const displayTimezone = useDisplayTimezone();
   const isEarly = type === 'early';
   const fieldPath = isEarly ? 'earlyDeadlines' : 'lateDeadlines';
   const label = isEarly ? 'Early deadlines' : 'Late deadlines';

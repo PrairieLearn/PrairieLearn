@@ -4,7 +4,6 @@ import { useController, useWatch } from 'react-hook-form';
 import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
 import { FieldWrapper } from './FieldWrapper.js';
-import { useDisplayTimezone } from './hooks/useDisplayTimezone.js';
 import { useOverrideField } from './hooks/useOverrideField.js';
 import type {
   AccessControlFormData,
@@ -304,8 +303,13 @@ function AfterCompleteCard({
   );
 }
 
-export function MainAfterCompleteForm({ title }: { title?: string }) {
-  const displayTimezone = useDisplayTimezone();
+export function MainAfterCompleteForm({
+  title,
+  displayTimezone,
+}: {
+  title?: string;
+  displayTimezone: string;
+}) {
   const { field: qvField } = useController<AccessControlFormData, 'mainRule.questionVisibility'>({
     name: 'mainRule.questionVisibility',
   });
@@ -348,8 +352,15 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
   );
 }
 
-export function OverrideAfterCompleteForm({ index, title }: { index: number; title?: string }) {
-  const displayTimezone = useDisplayTimezone();
+export function OverrideAfterCompleteForm({
+  index,
+  title,
+  displayTimezone,
+}: {
+  index: number;
+  title?: string;
+  displayTimezone: string;
+}) {
   const mainQV = useWatch<AccessControlFormData, 'mainRule.questionVisibility'>({
     name: 'mainRule.questionVisibility',
   });
