@@ -392,6 +392,7 @@ function AddUsersModal({
                   className="form-select form-select-sm"
                   id="addUsersInputCourseInstance"
                   name="course_instance_id"
+                  aria-label="Course instance for student data access"
                 >
                   <option value="">None</option>
                   {courseInstances.map((ci) => (
@@ -404,6 +405,7 @@ function AddUsersModal({
                   className="form-select form-select-sm"
                   id="addUsersInputCourseInstanceRole"
                   name="course_instance_role"
+                  aria-label="Role for student data access"
                 >
                   <option value="Student Data Viewer">Viewer</option>
                   <option value="Student Data Editor">Editor</option>
@@ -524,6 +526,13 @@ function BulkEditAccessModal({
   const [courseRole, setCourseRole] = useState('');
   const [instanceRoles, setInstanceRoles] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    if (!show) {
+      setCourseRole('');
+      setInstanceRoles({});
+    }
+  }, [show]);
+
   const handleInstanceRoleChange = (ciId: string, role: string) => {
     setInstanceRoles((prev) => ({ ...prev, [ciId]: role }));
   };
@@ -595,6 +604,7 @@ function BulkEditAccessModal({
                             className="form-select form-select-sm"
                             value={instanceRoles[ci.id] ?? ''}
                             onChange={(e) => handleInstanceRoleChange(ci.id, e.target.value)}
+                            aria-label={`Role for ${ci.short_name ?? `course instance ${ci.id}`}`}
                           >
                             <option value="">No change</option>
                             <option value="None">None (remove access)</option>
@@ -959,7 +969,6 @@ function StaffTableInner({
           pluralLabel="users"
           globalFilter={{ placeholder: 'Search by UID or name...' }}
           tableOptions={{ filters, rowHeight: 72 }}
-          columnManager={{ buttonText: 'Course instances' }}
           headerButtons={headerButtons}
         />
       </div>

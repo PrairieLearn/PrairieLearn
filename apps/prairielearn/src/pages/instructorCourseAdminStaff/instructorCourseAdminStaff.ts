@@ -202,7 +202,7 @@ router.post(
               <p>
                 The following users were added to the course staff, were given course content access
                 <strong>${req.body.course_role}</strong>, and were given student data access
-                <strong>${course_instance.short_name} (Viewer)</strong>:
+                <strong>${course_instance.short_name} (${req.body.course_instance_role})</strong>:
               </p>
               <div class="container">
                 <pre class="bg-dark text-white rounded p-2">${given_cp_and_cip.join(',\n')}</pre>
@@ -230,7 +230,8 @@ ${given_cp_and_cip.join(',\n')}
             <p>
               The following users were added to the course staff and were given course content
               access <strong>${req.body.course_role}</strong>, but were <strong>not</strong> given
-              student data access <strong>${course_instance.short_name} (Viewer)</strong>:
+              student data access
+              <strong>${course_instance.short_name} (${req.body.course_instance_role})</strong>:
             </p>
             <div class="container">
               <pre class="bg-dark text-white rounded p-2">${result.not_given_cip.join(',\n')}</pre>
@@ -417,13 +418,17 @@ ${given_cp_and_cip.join(',\n')}
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'bulk_course_permissions_delete') {
-      const userIds: string[] = Array.isArray(req.body.user_ids)
-        ? req.body.user_ids
-        : [req.body.user_ids];
-
-      if (userIds.length === 0) {
+      if (!req.body.user_ids || req.body.user_ids === '') {
         throw new error.HttpStatusError(400, 'No users selected');
       }
+
+      const userIds: string[] = (
+        Array.isArray(req.body.user_ids) ? req.body.user_ids : [req.body.user_ids]
+      )
+        .map((id: unknown) => String(id ?? '').trim())
+        .filter((id: string) => id !== '');
+
+      if (userIds.length === 0) throw new error.HttpStatusError(400, 'No users selected');
 
       for (const userId of userIds) {
         if (idsEqual(userId, res.locals.user.id) && !res.locals.authz_data.is_administrator) {
@@ -447,21 +452,84 @@ ${given_cp_and_cip.join(',\n')}
       }
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'bulk_edit_access') {
-      const userIds: string[] = Array.isArray(req.body.user_ids)
-        ? req.body.user_ids
-        : [req.body.user_ids];
-
-      if (userIds.length === 0) {
+      if (!req.body.user_ids || req.body.user_ids === '') {
         throw new error.HttpStatusError(400, 'No users selected');
       }
 
+      const userIds: string[] = (
+        Array.isArray(req.body.user_ids) ? req.body.user_ids : [req.body.user_ids]
+      )
+        .map((id: unknown) => String(id ?? '').trim())
+        .filter((id: string) => id !== '');
+
+      if (userIds.length === 0) throw new error.HttpStatusError(400, 'No users selected');
+
+      const isUniqueConstraintViolation = (err: unknown): boolean => {
+        if (!err || typeof err !== 'object') return false;
+        const maybeAny = err as any;
+        if (maybeAny.code === '23505') return true;
+        const message = typeof maybeAny.message === 'string' ? maybeAny.message : '';
+        return /duplicate key value|unique constraint/i.test(message);
+      };
+
       // Handle course role change if specified
       const courseRole = req.body.course_role;
-      if (courseRole && courseRole !== '') {
-        if (!['None', 'Previewer', 'Viewer', 'Editor', 'Owner'].includes(courseRole)) {
-          throw new error.HttpStatusError(400, `Invalid requested course role: ${courseRole}`);
+      // Handle course instance role changes if specified
+      const rawCiIds = req.body.course_instance_ids;
+      const rawCiRoles = req.body.course_instance_roles;
+      const willEditCourseInstances = Boolean(rawCiIds) || Boolean(rawCiRoles);
+
+      // Validate *entire* bulk payload before mutating anything
+      if (
+        courseRole &&
+        courseRole !== '' &&
+        !['None', 'Previewer', 'Viewer', 'Editor', 'Owner'].includes(courseRole)
+      ) {
+        throw new error.HttpStatusError(400, `Invalid requested course role: ${courseRole}`);
+      }
+
+      let courseInstanceIds: string[] = [];
+      let courseInstanceRoles: string[] = [];
+      let accessibleInstances: CourseInstanceAuthz[] = [];
+
+      if (willEditCourseInstances) {
+        if (!rawCiIds || !rawCiRoles) {
+          throw new error.HttpStatusError(400, 'Mismatched course instance ids and roles');
         }
 
+        courseInstanceIds = (Array.isArray(rawCiIds) ? rawCiIds : [rawCiIds])
+          .map((id: unknown) => String(id ?? '').trim())
+          .filter((id: string) => id !== '');
+        courseInstanceRoles = (Array.isArray(rawCiRoles) ? rawCiRoles : [rawCiRoles])
+          .map((r: unknown) => String(r ?? '').trim())
+          .filter((r: string) => r !== '');
+
+        if (courseInstanceIds.length !== courseInstanceRoles.length) {
+          throw new error.HttpStatusError(400, 'Mismatched course instance ids and roles');
+        }
+
+        accessibleInstances = await selectCourseInstancesWithStaffAccess({
+          course,
+          authzData,
+          requiredRole: ['Owner'],
+        });
+
+        for (let i = 0; i < courseInstanceIds.length; i++) {
+          const ciId = courseInstanceIds[i];
+          const role = courseInstanceRoles[i];
+
+          if (!accessibleInstances.some((ci) => idsEqual(ci.id, ciId))) {
+            throw new error.HttpStatusError(400, 'Invalid requested course instance');
+          }
+
+          if (!['None', 'Student Data Viewer', 'Student Data Editor'].includes(role)) {
+            throw new error.HttpStatusError(400, `Invalid requested course instance role: ${role}`);
+          }
+        }
+      }
+
+      // Mutations start only after full validation succeeds
+      if (courseRole && courseRole !== '') {
         for (const userId of userIds) {
           if (idsEqual(userId, res.locals.user.id) && !res.locals.authz_data.is_administrator) {
             throw new error.HttpStatusError(
@@ -488,37 +556,13 @@ ${given_cp_and_cip.join(',\n')}
         }
       }
 
-      // Handle course instance role changes if specified
-      const rawCiIds = req.body.course_instance_ids;
-      const rawCiRoles = req.body.course_instance_roles;
-      if (rawCiIds) {
-        const courseInstanceIds: string[] = Array.isArray(rawCiIds) ? rawCiIds : [rawCiIds];
-        const courseInstanceRoles: string[] = Array.isArray(rawCiRoles) ? rawCiRoles : [rawCiRoles];
-
-        if (courseInstanceIds.length !== courseInstanceRoles.length) {
-          throw new error.HttpStatusError(400, 'Mismatched course instance ids and roles');
-        }
-
-        const accessibleInstances = await selectCourseInstancesWithStaffAccess({
-          course,
-          authzData,
-          requiredRole: ['Owner'],
-        });
-
+      if (willEditCourseInstances) {
         for (let i = 0; i < courseInstanceIds.length; i++) {
           const ciId = courseInstanceIds[i];
           const role = courseInstanceRoles[i] as
             | 'None'
             | 'Student Data Viewer'
             | 'Student Data Editor';
-
-          if (!accessibleInstances.some((ci) => idsEqual(ci.id, ciId))) {
-            throw new error.HttpStatusError(400, 'Invalid requested course instance');
-          }
-
-          if (!['None', 'Student Data Viewer', 'Student Data Editor'].includes(role)) {
-            throw new error.HttpStatusError(400, `Invalid requested course instance role: ${role}`);
-          }
 
           for (const userId of userIds) {
             if (role === 'None') {
@@ -537,13 +581,14 @@ ${given_cp_and_cip.join(',\n')}
                   course_instance_role: role,
                   authn_user_id: res.locals.authz_data.authn_user.id,
                 });
-              } catch {
+              } catch (err: unknown) {
+                if (!isUniqueConstraintViolation(err)) throw err;
                 await updateCourseInstancePermissionsRole({
-                  course_id: course.id,
+                  course_id: res.locals.course.id,
                   user_id: userId,
                   course_instance_id: ciId,
                   course_instance_role: role,
-                  authn_user_id: authzData.authn_user.id,
+                  authn_user_id: res.locals.authz_data.authn_user.id,
                 });
               }
             }
