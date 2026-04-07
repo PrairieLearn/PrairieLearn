@@ -508,6 +508,7 @@ export function TanstackTableCard<RowDataModel>({
   globalFilter,
   tableOptions,
   downloadButtonOptions,
+  statusContent,
   className,
   ...divProps
 }: {
@@ -620,7 +621,12 @@ export function TanstackTableCard<RowDataModel>({
           {columnManager?.buttons}
         </div>
         <div className="ms-auto text-muted text-nowrap">
-          Showing {displayedCount} of {totalCount} {totalCount === 1 ? singularLabel : pluralLabel}
+          {statusContent ?? (
+            <>
+              Showing {displayedCount} of {totalCount}{' '}
+              {totalCount === 1 ? singularLabel : pluralLabel}
+            </>
+          )}
         </div>
       </div>
       <div className="flex-grow-1">

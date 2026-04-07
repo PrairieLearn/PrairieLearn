@@ -16,6 +16,7 @@ import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } fr
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Modal } from 'react-bootstrap';
 
+import { run } from '@prairielearn/run';
 import {
   CategoricalColumnFilter,
   NuqsAdapter,
@@ -668,7 +669,6 @@ function SelectionToolbar({
   return (
     <>
       <div className="d-flex align-items-center gap-2">
-        <span className="text-white small">{selectedUsers.length} selected</span>
         <Button
           variant="light"
           size="sm"
@@ -962,6 +962,26 @@ function StaffTableInner({
   });
 
   const selectedUsers = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
+  const displayedCount = table.getRowModel().rows.length;
+  const totalCount = table.getCoreRowModel().rows.length;
+  const isFiltered = displayedCount !== totalCount;
+  const selectedCount = selectedUsers.length;
+
+  const statusContent = run(() => {
+    if (selectedCount > 0) {
+      return (
+        <>
+          Selected {selectedCount} of {displayedCount} {displayedCount === 1 ? 'user' : 'users'}
+          {isFiltered && ' (filtered)'}
+        </>
+      );
+    }
+    return (
+      <>
+        Showing {displayedCount} of {totalCount} {totalCount === 1 ? 'user' : 'users'}
+      </>
+    );
+  });
 
   const filters = useMemo(
     () => ({
@@ -1022,6 +1042,7 @@ function StaffTableInner({
           globalFilter={{ placeholder: 'Search by UID or name...' }}
           tableOptions={{ filters, rowHeight: 72 }}
           headerButtons={headerButtons}
+          statusContent={statusContent}
         />
       </div>
       <div className="small flex-shrink-0 border-top pt-3 text-end">
