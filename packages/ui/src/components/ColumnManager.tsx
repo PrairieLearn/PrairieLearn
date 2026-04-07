@@ -317,6 +317,9 @@ export function ColumnManager<RowDataModel>({
   const hasHideableColumns = allLeafColumns.some((c) => c.getCanHide());
   if (!hasHideableColumns && !topContent) return null;
 
+  const hasMenuSectionsBelowTopContent =
+    pinnedMenuColumns.length > 0 || unpinnedRootColumns.length > 0 || showResetButton;
+
   return (
     <Dropdown
       ref={menuRef}
@@ -352,7 +355,7 @@ export function ColumnManager<RowDataModel>({
         {topContent && (
           <>
             {topContent}
-            <Dropdown.Divider />
+            {hasMenuSectionsBelowTopContent && <Dropdown.Divider />}
           </>
         )}
         {pinnedMenuColumns.length > 0 && (
