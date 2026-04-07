@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 
 import {
@@ -92,11 +92,13 @@ function PresetPackageCard({
 function CustomPackageCard({
   isSelected,
   customAmount,
+  validationError,
   onSelect,
   onAmountChange,
 }: {
   isSelected: boolean;
   customAmount: string;
+  validationError: string | null;
   onSelect: () => void;
   onAmountChange: (value: string) => void;
 }) {
@@ -137,6 +139,8 @@ function CustomPackageCard({
               max={MAX_PURCHASE_MILLI_DOLLARS / 1000}
               value={customAmount}
               aria-label="Custom dollar amount"
+              aria-invalid={validationError != null || undefined}
+              aria-errormessage={validationError != null ? 'custom-amount-error' : undefined}
               onFocus={onSelect}
               onChange={(e) => {
                 const raw = e.target.value;
@@ -146,11 +150,6 @@ function CustomPackageCard({
                 }
                 const num = Number.parseInt(raw, 10);
                 if (!Number.isFinite(num) || num < 0) {
-                  return;
-                }
-                const maxDollars = MAX_PURCHASE_MILLI_DOLLARS / 1000;
-                if (num > maxDollars) {
-                  onAmountChange(String(maxDollars));
                   return;
                 }
                 onAmountChange(raw);
@@ -174,6 +173,11 @@ function CustomPackageCard({
             )}
           </div>
         </div>
+        {validationError != null && (
+          <div id="custom-amount-error" className="text-danger small mt-2">
+            {validationError}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -211,6 +215,28 @@ export function PurchaseCreditsModal({
   const minDollars = MIN_PURCHASE_MILLI_DOLLARS / 1000;
   const maxDollars = MAX_PURCHASE_MILLI_DOLLARS / 1000;
   const canProceed = purchaseDollars >= minDollars && purchaseDollars <= maxDollars;
+
+  const isCustomOutOfRange =
+    selected.type === 'custom' && customAmount !== '' && !canProceed;
+  const [showValidationError, setShowValidationError] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    if (isCustomOutOfRange) {
+      // Debounce so the error doesn't flash while the user is still typing.
+      debounceRef.current = setTimeout(() => setShowValidationError(true), 200);
+    } else {
+      setShowValidationError(false);
+    }
+    return () => clearTimeout(debounceRef.current);
+  }, [isCustomOutOfRange]);
+
+  const validationError = showValidationError
+    ? purchaseDollars < minDollars
+      ? `Minimum purchase amount is $${minDollars}.`
+      : `Maximum purchase amount is $${maxDollars.toLocaleString()}.`
+    : null;
 
   function handleProceed() {
     checkoutMutation.mutate({ amount_milli_dollars: amountMilliDollars });
@@ -258,6 +284,7 @@ export function PurchaseCreditsModal({
           <CustomPackageCard
             isSelected={selected.type === 'custom'}
             customAmount={customAmount}
+            validationError={validationError}
             onSelect={() => setSelected({ type: 'custom' })}
             onAmountChange={setCustomAmount}
           />

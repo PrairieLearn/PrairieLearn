@@ -210,12 +210,11 @@ function RefundConfirmationModal({
         {creditsSpent > 0 && (
           <div className="alert alert-warning">
             <div>
-              Instructor used {formatMilliDollars(creditsSpent)} of{' '}
-              {formatMilliDollars(creditAmount)}.
+              The current transferable balance is {formatMilliDollars(transferableMilliDollars)},
+              which is less than the original purchase of {formatMilliDollars(creditAmount)}.
             </div>
             <div>
-              {formatMilliDollars(creditsToDeduct)} will be deducted from their transferable
-              credits.
+              {formatMilliDollars(creditsToDeduct)} will be deducted from the transferable balance.
             </div>
             <div>{formatMilliDollars(creditAmount)} will be refunded via Stripe.</div>
           </div>

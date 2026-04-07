@@ -175,6 +175,13 @@ const createCheckoutMutation = t.procedure
       },
     });
 
+    if (!session.url) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to create checkout session. Please try again.',
+      });
+    }
+
     await insertCreditCheckoutSession({
       agent_user_id: authn_user.id,
       stripe_object_id: session.id,
@@ -182,13 +189,6 @@ const createCheckoutMutation = t.procedure
       data: session,
       amount_milli_dollars: amountMilliDollars,
     });
-
-    if (!session.url) {
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to create checkout session. Please try again.',
-      });
-    }
 
     return { checkoutUrl: session.url };
   });
