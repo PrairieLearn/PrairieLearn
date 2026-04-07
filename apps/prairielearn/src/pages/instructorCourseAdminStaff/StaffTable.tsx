@@ -593,7 +593,7 @@ function BulkEditAccessModal({
             <>
               <h6 className="font-weight-bolder">Student data access</h6>
               <div className="table-responsive" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                <table className="table table-sm align-middle mb-0">
+                <table className="table table-borderless table-sm align-middle mb-0">
                   {/* <thead>
                     <tr>
                       <th>Course instance</th>
