@@ -188,10 +188,7 @@ export function OverrideAfterLastDeadlineField({ index }: { index: number }) {
     name: 'mainRule.afterLastDeadline',
   });
 
-  const { field } = useController<
-    AccessControlFormData,
-    `overrides.${number}.afterLastDeadline`
-  >({
+  const { field } = useController<AccessControlFormData, `overrides.${number}.afterLastDeadline`>({
     name: `overrides.${index}.afterLastDeadline`,
   });
 

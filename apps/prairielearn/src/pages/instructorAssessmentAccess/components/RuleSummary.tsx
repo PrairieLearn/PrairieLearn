@@ -181,7 +181,7 @@ export function generateDateTableRows(
   return rows;
 }
 
-export interface SummaryItem {
+interface SummaryItem {
   key: string;
   icon: string;
   text: ReactNode;

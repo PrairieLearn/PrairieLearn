@@ -39,8 +39,14 @@ function useDateFieldErrors(
 
   const earlyMessages: (string | undefined)[] = [];
   for (let i = 0; i < rule.earlyDeadlines.length; i++) {
-    const dateMsg: string | undefined = get(errors, `${pathPrefix}.earlyDeadlines.${i}.date`)?.message;
-    const creditMsg: string | undefined = get(errors, `${pathPrefix}.earlyDeadlines.${i}.credit`)?.message;
+    const dateMsg: string | undefined = get(
+      errors,
+      `${pathPrefix}.earlyDeadlines.${i}.date`,
+    )?.message;
+    const creditMsg: string | undefined = get(
+      errors,
+      `${pathPrefix}.earlyDeadlines.${i}.credit`,
+    )?.message;
     const combined = [dateMsg, creditMsg].filter(Boolean).join('; ');
     if (combined) {
       earlyMessages[i] = combined;
@@ -51,8 +57,14 @@ function useDateFieldErrors(
 
   const lateMessages: (string | undefined)[] = [];
   for (let i = 0; i < rule.lateDeadlines.length; i++) {
-    const dateMsg: string | undefined = get(errors, `${pathPrefix}.lateDeadlines.${i}.date`)?.message;
-    const creditMsg: string | undefined = get(errors, `${pathPrefix}.lateDeadlines.${i}.credit`)?.message;
+    const dateMsg: string | undefined = get(
+      errors,
+      `${pathPrefix}.lateDeadlines.${i}.date`,
+    )?.message;
+    const creditMsg: string | undefined = get(
+      errors,
+      `${pathPrefix}.lateDeadlines.${i}.credit`,
+    )?.message;
     const combined = [dateMsg, creditMsg].filter(Boolean).join('; ');
     if (combined) {
       lateMessages[i] = combined;
