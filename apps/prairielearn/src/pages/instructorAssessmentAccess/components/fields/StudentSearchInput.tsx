@@ -1,252 +1,78 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { Alert, Badge, Button, Form, ListGroup, Spinner, Tab, Tabs } from 'react-bootstrap';
+import { Form } from 'react-bootstrap';
 
-import { parseUniqueValuesFromString } from '../../../../lib/string-util.js';
-import { useTRPC, useTRPCClient } from '../../../../trpc/assessment/context.js';
-import type { EnrollmentTarget } from '../types.js';
+import { StudentCheckboxList } from '../../../../components/StudentCheckboxList.js';
+
+interface Student {
+  id: string;
+  uid: string;
+  name: string | null;
+}
 
 export function StudentSearchInput({
-  excludedUids,
-  onSelect,
-  onClose,
+  allStudents,
+  selectedUids,
+  onSelectedUidsChange,
 }: {
-  excludedUids: Set<string>;
-  onSelect: (students: EnrollmentTarget[]) => void;
-  onClose: () => void;
+  allStudents: Student[];
+  selectedUids: Set<string>;
+  onSelectedUidsChange: (uids: Set<string>) => void;
 }) {
-  const trpc = useTRPC();
-  const trpcClient = useTRPCClient();
   const [searchQuery, setSearchQuery] = useState('');
-  const [uidInput, setUidInput] = useState('');
-  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(() => new Set());
-
-  const { data: allStudents, isLoading: isLoadingStudents } = useQuery(
-    trpc.accessControl.students.queryOptions(),
-  );
-
-  const validateMutation = useMutation({
-    mutationFn: (uids: string[]) => trpcClient.accessControl.validateUids.query({ uids }),
-  });
-
-  const validatedUids = validateMutation.data ?? [];
 
   const filteredStudents = useMemo(() => {
-    if (!allStudents) return [];
-    return allStudents.filter((student) => {
-      if (excludedUids.has(student.uid)) return false;
-      if (!searchQuery) return true;
-      const query = searchQuery.toLowerCase();
-      return (
+    if (!searchQuery) return allStudents;
+    const query = searchQuery.toLowerCase();
+    return allStudents.filter(
+      (student) =>
         student.uid.toLowerCase().includes(query) ||
-        (student.name?.toLowerCase().includes(query) ?? false)
-      );
-    });
-  }, [allStudents, excludedUids, searchQuery]);
+        (student.name?.toLowerCase().includes(query) ?? false),
+    );
+  }, [allStudents, searchQuery]);
 
-  const handleValidate = () => {
-    const uids = parseUniqueValuesFromString(uidInput, 500);
-    if (uids.length > 0) {
-      validateMutation.mutate(uids);
-    }
-  };
-
-  const handleAddValidated = () => {
-    const validStudents = validatedUids
-      .map((r) => {
-        if (!r.id || !r.enrolled || excludedUids.has(r.uid)) return null;
-        return { enrollmentId: r.id, uid: r.uid, name: r.name };
-      })
-      .filter((s) => !!s);
-
-    if (validStudents.length > 0) {
-      onSelect(validStudents);
-      setUidInput('');
-      validateMutation.reset();
-      onClose();
-    }
-  };
-
-  const handleToggleStudent = (studentId: string) => {
-    setSelectedStudents((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(studentId)) {
-        newSet.delete(studentId);
-      } else {
-        newSet.add(studentId);
-      }
-      return newSet;
-    });
+  const handleToggleStudent = (uid: string) => {
+    const newSet = new Set(selectedUids);
+    if (newSet.has(uid)) newSet.delete(uid);
+    else newSet.add(uid);
+    onSelectedUidsChange(newSet);
   };
 
   const handleSelectAll = () => {
-    setSelectedStudents((prev) => {
-      const newSet = new Set(prev);
-      for (const student of filteredStudents) {
-        newSet.add(student.id);
-      }
-      return newSet;
-    });
-  };
-
-  const handleClearSelection = () => {
-    setSelectedStudents(new Set());
-  };
-
-  const handleAddSelected = () => {
-    if (!allStudents) return;
-    const studentsToAdd = allStudents
-      .filter((s) => selectedStudents.has(s.id) && !excludedUids.has(s.uid))
-      .map((s) => ({
-        enrollmentId: s.id,
-        uid: s.uid,
-        name: s.name,
-      }));
-    if (studentsToAdd.length > 0) {
-      onSelect(studentsToAdd);
-      setSelectedStudents(new Set());
-      onClose();
+    const newSet = new Set(selectedUids);
+    for (const student of filteredStudents) {
+      newSet.add(student.uid);
     }
+    onSelectedUidsChange(newSet);
   };
 
-  const validCount = validatedUids.filter(
-    (r) => r.id && r.enrolled && !excludedUids.has(r.uid),
-  ).length;
-
-  const selectedCount = allStudents
-    ? allStudents.filter((s) => selectedStudents.has(s.id) && !excludedUids.has(s.uid)).length
-    : 0;
+  const handleClearAll = () => {
+    onSelectedUidsChange(new Set());
+  };
 
   return (
-    <div style={{ width: '350px' }}>
-      <Tabs className="mb-2" defaultActiveKey="search" fill>
-        <Tab eventKey="search" title="Search">
-          <Form.Control
-            className="mb-2"
-            aria-label="Filter students by name or UID"
-            placeholder="Filter by name or UID..."
-            type="text"
-            value={searchQuery}
-            onChange={({ currentTarget }) => setSearchQuery(currentTarget.value)}
-          />
+    <div className="d-flex flex-column gap-2">
+      <Form.Control
+        aria-label="Filter students by name or UID"
+        placeholder="Filter by name or UID..."
+        type="text"
+        value={searchQuery}
+        onChange={({ currentTarget }) => setSearchQuery(currentTarget.value)}
+      />
 
-          {isLoadingStudents ? (
-            <div className="text-center py-3">
-              <Spinner animation="border" size="sm" />
-            </div>
-          ) : filteredStudents.length === 0 ? (
-            <div className="text-muted text-center py-2">
-              {allStudents?.length === 0 ? 'No students enrolled' : 'No matching students'}
-            </div>
-          ) : (
-            <>
-              <div className="d-flex gap-2 mb-2">
-                <Button variant="outline-secondary" size="sm" onClick={handleSelectAll}>
-                  Select all
-                </Button>
-                {selectedCount > 0 && (
-                  <>
-                    <Button variant="outline-secondary" size="sm" onClick={handleClearSelection}>
-                      Clear
-                    </Button>
-                    <Button variant="primary" size="sm" onClick={handleAddSelected}>
-                      Add {selectedCount} student{selectedCount !== 1 ? 's' : ''}
-                    </Button>
-                  </>
-                )}
-              </div>
-              <ListGroup style={{ maxHeight: '200px', overflow: 'auto' }}>
-                {filteredStudents.map((student) => (
-                  <ListGroup.Item
-                    key={student.id}
-                    className="py-2 d-flex align-items-center"
-                    aria-selected={selectedStudents.has(student.id)}
-                    action
-                    onClick={() => handleToggleStudent(student.id)}
-                  >
-                    <Form.Check
-                      className="me-2"
-                      type="checkbox"
-                      checked={selectedStudents.has(student.id)}
-                      tabIndex={-1}
-                      aria-hidden="true"
-                      readOnly
-                    />
-                    <div className="flex-grow-1">
-                      <div>{student.name ?? student.uid}</div>
-                      {student.name && <small className="text-muted">{student.uid}</small>}
-                    </div>
-                  </ListGroup.Item>
-                ))}
-              </ListGroup>
-            </>
-          )}
-        </Tab>
-
-        <Tab eventKey="paste" title="Paste UIDs">
-          <Form.Control
-            as="textarea"
-            className="mb-2"
-            aria-label="Paste UIDs (comma, space, or newline separated)"
-            placeholder="Paste UIDs (comma, space, or newline separated)"
-            rows={3}
-            value={uidInput}
-            onChange={({ currentTarget }) => {
-              setUidInput(currentTarget.value);
-              validateMutation.reset();
-            }}
-          />
-
-          <div className="d-flex gap-2 mb-2">
-            <Button
-              disabled={uidInput.trim().length === 0 || validateMutation.isPending}
-              size="sm"
-              variant="outline-primary"
-              onClick={handleValidate}
-            >
-              {validateMutation.isPending ? 'Validating...' : 'Validate'}
-            </Button>
-            {validatedUids.length > 0 && (
-              <Button
-                disabled={validCount === 0}
-                size="sm"
-                variant="primary"
-                onClick={handleAddValidated}
-              >
-                Add {validCount} student{validCount !== 1 ? 's' : ''}
-              </Button>
-            )}
-          </div>
-
-          {validateMutation.isError && (
-            <Alert className="py-2 small" variant="danger">
-              {validateMutation.error.message}
-            </Alert>
-          )}
-
-          {validatedUids.length > 0 && (
-            <div style={{ maxHeight: '150px', overflow: 'auto' }}>
-              {validatedUids.map((result) => (
-                <div
-                  key={result.uid}
-                  className="d-flex justify-content-between align-items-center py-1 border-bottom"
-                >
-                  <span className="small">{result.uid}</span>
-                  {result.notFound ? (
-                    <Badge bg="danger">Not found</Badge>
-                  ) : !result.enrolled ? (
-                    <Badge bg="warning">Not enrolled</Badge>
-                  ) : excludedUids.has(result.uid) ? (
-                    <Badge bg="secondary">Already added</Badge>
-                  ) : (
-                    <Badge bg="success">Valid</Badge>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </Tab>
-      </Tabs>
+      {filteredStudents.length === 0 ? (
+        <div className="text-muted text-center py-3 border rounded">No matching students</div>
+      ) : (
+        <StudentCheckboxList
+          items={filteredStudents}
+          selectedUids={selectedUids}
+          label="Student selection"
+          checkboxIdPrefix="student-select"
+          maxHeight="300px"
+          onToggle={handleToggleStudent}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleClearAll}
+        />
+      )}
     </div>
   );
 }
