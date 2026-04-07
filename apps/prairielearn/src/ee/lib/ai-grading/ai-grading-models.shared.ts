@@ -20,9 +20,13 @@ export function computeAiGradingRelativeCosts(
       cost: p ? p.input * BASELINE_INPUT_TOKENS + p.output * totalOutputTokens : Infinity,
     };
   });
-  const minCost = Math.min(...models.map((m) => m.cost));
+  const finiteCosts = models.filter((m) => Number.isFinite(m.cost)).map((m) => m.cost);
+  const minCost = finiteCosts.length > 0 ? Math.min(...finiteCosts) : 1;
   return Object.fromEntries(
     models.map(({ modelId, cost }) => {
+      if (!Number.isFinite(cost)) {
+        return [modelId, '—'];
+      }
       const multiplier = cost / minCost;
       // Truncate to one decimal place (not rounded).
       const truncated = Math.floor(multiplier * 10) / 10;

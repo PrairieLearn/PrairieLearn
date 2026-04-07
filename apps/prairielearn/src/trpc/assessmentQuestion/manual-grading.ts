@@ -178,28 +178,26 @@ const aiGradeInstanceQuestionsMutation = t.procedure
       });
     }
 
-    const [job_sequence_id] = await Promise.all([
-      aiGrade({
-        question: opts.ctx.question,
-        course: opts.ctx.course,
-        course_instance: opts.ctx.course_instance,
-        assessment: opts.ctx.assessment,
-        assessment_question: opts.ctx.assessment_question,
-        urlPrefix: opts.ctx.urlPrefix,
-        authn_user_id: opts.ctx.authn_user.id,
-        user_id: opts.ctx.user.id,
-        model_id: opts.input.model_id,
-        mode: run(() => {
-          if (Array.isArray(opts.input.selection)) return 'selected';
-          return opts.input.selection;
-        }),
-        instance_question_ids: run(() => {
-          if (!Array.isArray(opts.input.selection)) return undefined;
-          return opts.input.selection;
-        }),
+    const job_sequence_id = await aiGrade({
+      question: opts.ctx.question,
+      course: opts.ctx.course,
+      course_instance: opts.ctx.course_instance,
+      assessment: opts.ctx.assessment,
+      assessment_question: opts.ctx.assessment_question,
+      urlPrefix: opts.ctx.urlPrefix,
+      authn_user_id: opts.ctx.authn_user.id,
+      user_id: opts.ctx.user.id,
+      model_id: opts.input.model_id,
+      mode: run(() => {
+        if (Array.isArray(opts.input.selection)) return 'selected';
+        return opts.input.selection;
       }),
-      setAiGradingLastSelectedModel(opts.ctx.assessment_question.id, opts.input.model_id),
-    ]);
+      instance_question_ids: run(() => {
+        if (!Array.isArray(opts.input.selection)) return undefined;
+        return opts.input.selection;
+      }),
+    });
+    await setAiGradingLastSelectedModel(opts.ctx.assessment_question.id, opts.input.model_id);
     const job_sequence_token = generateJobSequenceToken(job_sequence_id);
     return { job_sequence_id, job_sequence_token };
   });

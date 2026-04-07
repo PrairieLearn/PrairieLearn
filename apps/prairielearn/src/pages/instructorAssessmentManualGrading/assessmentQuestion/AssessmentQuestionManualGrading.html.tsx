@@ -102,6 +102,9 @@ function AssessmentQuestionManualGradingInner({
   } | null>(null);
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
+  const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
+    assessmentQuestion.ai_grading_last_selected_model ?? null,
+  );
 
   // AI grading is available only if the question uses manual grading.
   const isAiGradingAvailable = (assessmentQuestion.max_manual_points ?? 0) > 0;
@@ -193,13 +196,14 @@ function AssessmentQuestionManualGradingInner({
       />
 
       <AiGradingModelSelectionModal
-        key={assessmentQuestion.ai_grading_last_selected_model ?? 'default'}
+        key={lastSelectedModel ?? 'default'}
         modalState={modelSelectionModalState}
         mutation={mutations.gradeSubmissionsMutation}
         availableProviders={availableAiGradingProviders}
-        aiGradingLastSelectedModel={assessmentQuestion.ai_grading_last_selected_model ?? null}
+        aiGradingLastSelectedModel={lastSelectedModel}
         relativeCosts={aiGradingRelativeCosts}
-        onSuccess={(data) => {
+        onSuccess={(data, modelId) => {
+          setLastSelectedModel(modelId);
           setPendingGradingJob(data);
         }}
         onHide={() => setModelSelectionModalState(null)}

@@ -1,6 +1,7 @@
 import clsx from 'clsx';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { Alert, Button, Form, Modal } from 'react-bootstrap';
+import { useForm } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
@@ -167,37 +168,44 @@ export function AiGradingModelSelectionModal({
   availableProviders: EnumAiGradingProvider[];
   aiGradingLastSelectedModel: string | null;
   relativeCosts: Record<string, string>;
-  onSuccess: (data: { job_sequence_id: string; job_sequence_token: string }) => void;
+  onSuccess: (
+    data: { job_sequence_id: string; job_sequence_token: string },
+    modelId: AiGradingModelId,
+  ) => void;
   onHide: () => void;
 }) {
   const defaultModel = getDefaultModel(aiGradingLastSelectedModel, availableProviders);
-  const [selectedModel, setSelectedModel] = useState<AiGradingModelId>(defaultModel);
+  const form = useForm<{ model_id: AiGradingModelId }>({
+    defaultValues: { model_id: defaultModel },
+  });
+  const selectedModel = form.watch('model_id');
 
   const handleClose = useCallback(() => {
-    setSelectedModel(defaultModel);
+    form.reset({ model_id: defaultModel });
     mutation.reset();
     onHide();
-  }, [onHide, mutation, defaultModel]);
+  }, [onHide, mutation, defaultModel, form]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
       if (!modalState) return;
 
+      const modelId = form.getValues('model_id');
       mutation.mutate(
         {
           selection: getSelection(modalState),
-          model_id: selectedModel,
+          model_id: modelId,
         },
         {
-          onSuccess: (data) => {
-            onSuccess(data);
+          onSuccess: (result) => {
+            onSuccess(result, modelId);
             onHide();
           },
         },
       );
     },
-    [modalState, selectedModel, mutation, onSuccess, onHide],
+    [modalState, mutation, onSuccess, onHide, form],
   );
 
   const isSelectedModelAvailable = availableProviders.includes(
@@ -222,7 +230,7 @@ export function AiGradingModelSelectionModal({
             selectedModel={selectedModel}
             availableProviders={availableProviders}
             relativeCosts={relativeCosts}
-            onSelect={setSelectedModel}
+            onSelect={(modelId) => form.setValue('model_id', modelId)}
           />
         </Modal.Body>
 
