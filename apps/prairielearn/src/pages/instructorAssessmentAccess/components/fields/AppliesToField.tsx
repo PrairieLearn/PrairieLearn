@@ -7,7 +7,7 @@ import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
 import { useTRPC } from '../../../../trpc/assessment/context.js';
-import type { AccessControlFormData, AppliesTo, EnrollmentTarget, TargetType } from '../types.js';
+import type { AccessControlFormData, EnrollmentTarget, TargetType } from '../types.js';
 
 import { AddStudentsModal } from './AddStudentsModal.js';
 
@@ -51,11 +51,7 @@ export function AppliesToField({
     replaceEnrollments(students);
   };
 
-  // appliesTo may be undefined during initial render
-  const typedAppliesTo = appliesTo as AppliesTo | undefined;
-  const currentTargetType = typedAppliesTo?.targetType ?? 'enrollment';
-  const enrollments = typedAppliesTo?.enrollments ?? [];
-  const studentLabels = typedAppliesTo?.studentLabels ?? [];
+  const { targetType, enrollments, studentLabels } = appliesTo;
 
   const handleRemoveEnrollmentByUid = (uid: string) => {
     const index = enrollments.findIndex((s) => s.uid === uid);
@@ -83,7 +79,7 @@ export function AppliesToField({
           id={`${namePrefix}-target-enrollment`}
           name={`${namePrefix}-target-type`}
           label="Specific students"
-          checked={currentTargetType === 'enrollment'}
+          checked={targetType === 'enrollment'}
           onChange={() => handleTargetTypeChange('enrollment')}
         />
         <Form.Check
@@ -91,13 +87,13 @@ export function AppliesToField({
           id={`${namePrefix}-target-student-label`}
           name={`${namePrefix}-target-type`}
           label="Students by label"
-          checked={currentTargetType === 'student_label'}
+          checked={targetType === 'student_label'}
           onChange={() => handleTargetTypeChange('student_label')}
         />
       </fieldset>
 
       <div>
-        {currentTargetType === 'enrollment' ? (
+        {targetType === 'enrollment' ? (
           <div className="border rounded overflow-hidden">
             <div
               className={clsx(
@@ -196,8 +192,7 @@ export function AppliesToField({
       {hasNoTargets && (
         <Alert variant="warning" className="mt-3 mb-0">
           This override has no targets. Add at least one{' '}
-          {currentTargetType === 'enrollment' ? 'student' : 'student label'} for this rule to take
-          effect.
+          {targetType === 'enrollment' ? 'student' : 'student label'} for this rule to take effect.
         </Alert>
       )}
     </div>
