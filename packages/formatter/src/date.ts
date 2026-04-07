@@ -238,7 +238,12 @@ function formatDateFriendlyParts(
   baseDate: Date,
   maxPrecision: TimePrecision = 'second',
   minPrecision: TimePrecision = 'hour',
-): { dateFormatted: string; timeFormatted: string; timezoneFormatted: string } {
+): {
+  dateFormatted: string;
+  timeFormatted: string;
+  timezoneFormatted: string;
+  dayBoundary: 'start' | 'end' | null;
+} {
   // compute the number of days from the base date (0 = today, 1 = tomorrow, etc.)
 
   const baseZonedDateTime = toTemporalInstant.call(baseDate).toZonedDateTimeISO(timezone);
@@ -344,10 +349,23 @@ function formatDateFriendlyParts(
 
   const timezoneFormatted = `(${parts.timeZoneName.value})`;
 
+  // detect day boundary times
+  const hour = zonedDateTime.hour;
+  const minute = zonedDateTime.minute;
+  const second = zonedDateTime.second;
+
+  let dayBoundary: 'start' | 'end' | null = null;
+  if (hour === 0 && minute === 0 && (second === 0 || second === 1)) {
+    dayBoundary = 'start';
+  } else if (hour === 23 && minute === 59 && second === 59) {
+    dayBoundary = 'end';
+  }
+
   return {
     dateFormatted,
     timeFormatted,
     timezoneFormatted,
+    dayBoundary,
   };
 }
 
@@ -402,7 +420,7 @@ export function formatDateFriendly(
     date = new Date(date.toZonedDateTime(timezone).epochMilliseconds);
   }
 
-  const { dateFormatted, timeFormatted, timezoneFormatted } = formatDateFriendlyParts(
+  const { dateFormatted, timeFormatted, timezoneFormatted, dayBoundary } = formatDateFriendlyParts(
     date,
     timezone,
     baseDate,
@@ -411,7 +429,19 @@ export function formatDateFriendly(
   );
 
   let dateTimeFormatted = '';
-  if (dateOnly) {
+  if (dayBoundary && !dateOnly) {
+    const boundaryLabel = dayBoundary === 'start' ? 'start' : 'end';
+    if (timeOnly) {
+      dateTimeFormatted = `${boundaryLabel} of day`;
+    } else {
+      const isRelative = ['today', 'tomorrow', 'yesterday'].includes(dateFormatted);
+      if (isRelative) {
+        dateTimeFormatted = `${boundaryLabel} of ${dateFormatted}`;
+      } else {
+        dateTimeFormatted = `${dateFormatted}, ${boundaryLabel} of day`;
+      }
+    }
+  } else if (dateOnly) {
     dateTimeFormatted = dateFormatted;
   } else if (timeOnly) {
     dateTimeFormatted = timeFormatted;

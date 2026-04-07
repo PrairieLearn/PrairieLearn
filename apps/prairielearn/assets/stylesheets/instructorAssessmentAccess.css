@@ -1,0 +1,13 @@
+/* ── SplitPane app-specific overrides ─────────────────────────────────── */
+
+.pl-ui-split-pane__left {
+  container-type: inline-size;
+  container-name: split-left;
+}
+
+/* ── Toolbar button text: hide when the left pane is narrow ────────── */
+@container split-left (max-width: 650px) {
+  .toolbar-btn-label {
+    display: none;
+  }
+}

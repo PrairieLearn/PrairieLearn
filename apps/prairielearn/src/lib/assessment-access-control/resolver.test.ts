@@ -949,12 +949,32 @@ describe('resolveAccessControl', () => {
   });
 
   describe('after-complete visibility', () => {
-    it('shows assessment when hideQuestions is not set', () => {
+    it('hides questions by default when hideQuestions is not set', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [makeMainRule({})],
       });
+      expect(result.showClosedAssessment).toBe(false);
+    });
+
+    it('shows questions when hideQuestions is explicitly false', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            afterComplete: { hideQuestions: false },
+          }),
+        ],
+      });
       expect(result.showClosedAssessment).toBe(true);
+    });
+
+    it('still shows score by default when afterComplete is undefined', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [makeMainRule({})],
+      });
+      expect(result.showClosedAssessmentScore).toBe(true);
     });
 
     it('hides assessment when hideQuestions is true', () => {
@@ -1242,6 +1262,7 @@ describe('resolveAccessControl', () => {
       {
         label: 'ignores showScoreAgainDate when hideScore is false',
         afterComplete: { hideScore: false, showScoreAgainDate: '2025-06-01T00:00:00Z' },
+        expectedAssessment: false,
         expectedScore: true,
       },
       {
@@ -1272,18 +1293,18 @@ describe('resolveAccessControl', () => {
   });
 
   describe('showBeforeRelease edge cases', () => {
-    it('lists assessment normally when listBeforeRelease set without dateControl', () => {
+    it('shows before release when listBeforeRelease set without dateControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [makeMainRule({ listBeforeRelease: true })],
       });
-      // No dateControl → no release date concept → assessment just listed
+      // No dateControl → no release mechanism → perpetually "before release"
       expect(result.authorized).toBe(true);
-      // Not "before release" since there's no release
-      expect(result.showBeforeRelease).toBe(false);
+      expect(result.showBeforeRelease).toBe(true);
+      expect(result.active).toBe(false);
     });
 
-    it('lists assessment normally when dateControl has no releaseDate', () => {
+    it('shows before release when dateControl has no releaseDate', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -1295,9 +1316,168 @@ describe('resolveAccessControl', () => {
           }),
         ],
       });
-      // dateControl exists but no releaseDate → always available
+      // dateControl exists but no releaseDate → perpetually "before release"
+      expect(result.authorized).toBe(true);
+      expect(result.showBeforeRelease).toBe(true);
+      expect(result.active).toBe(false);
+    });
+
+    it('does not show before release without listBeforeRelease and no dateControl', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [makeMainRule({})],
+      });
       expect(result.authorized).toBe(true);
       expect(result.showBeforeRelease).toBe(false);
+    });
+  });
+
+  describe('showBeforeRelease with PrairieTest', () => {
+    const ptExam = { uuid: 'pt-exam-1', readOnly: false };
+
+    it('lists but does not authorize PT assessment when listBeforeRelease set and not in exam mode', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [{ ...makeMainRule({ listBeforeRelease: true }), prairietestExams: [ptExam] }],
+      });
+      // Not in exam mode but listBeforeRelease → listed but not authorized
+      expect(result.authorized).toBe(false);
+      expect(result.showBeforeRelease).toBe(true);
+      expect(result.active).toBe(false);
+    });
+
+    it('hides PT assessment when listBeforeRelease false and not in exam mode', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
+      });
+      expect(result.authorized).toBe(false);
+    });
+
+    it('does not list or authorize PT assessment in exam mode when no matching reservation', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Exam',
+        rules: [{ ...makeMainRule({ listBeforeRelease: true }), prairietestExams: [ptExam] }],
+        prairieTestReservations: [
+          { examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
+        ],
+      });
+      expect(result.authorized).toBe(false);
+      expect(result.showBeforeRelease).toBe(false);
+      expect(result.active).toBe(false);
+    });
+
+    it('hides PT assessment when listBeforeRelease false and no matching reservation', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Exam',
+        rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
+        prairieTestReservations: [
+          { examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
+        ],
+      });
+      expect(result.authorized).toBe(false);
+      expect(result.showBeforeRelease).toBe(false);
+      expect(result.active).toBe(false);
+    });
+
+    it('does not grant access to PT assessment via listBeforeRelease bypass', () => {
+      // Regression test: listBeforeRelease must not set authorized=true for
+      // PrairieTest-gated assessments, otherwise students can start instances
+      // by posting directly to the assessment URL.
+      for (const authzMode of ['Public', 'Exam'] as const) {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode,
+          rules: [{ ...makeMainRule({ listBeforeRelease: true }), prairietestExams: [ptExam] }],
+          prairieTestReservations:
+            authzMode === 'Exam'
+              ? [{ examUuid: 'wrong-exam', accessEnd: new Date('2025-04-01T00:00:00Z') }]
+              : [],
+        });
+        expect(result.authorized).toBe(false);
+        expect(result.showBeforeRelease).toBe(authzMode === 'Public');
+        expect(result.credit).toBe(0);
+      }
+    });
+
+    it('shows closed PT assessment as closed instead of "before release" when past due date', () => {
+      // When a PT-gated assessment has date controls and is past its due
+      // date, it should show as a normal closed assessment rather than "Not
+      // yet open" indefinitely.
+      for (const authzMode of ['Public', 'Exam'] as const) {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode,
+          rules: [
+            {
+              ...makeMainRule({
+                listBeforeRelease: true,
+                dateControl: {
+                  releaseDate: '2025-01-01T00:00:00Z',
+                  dueDate: '2025-02-01T00:00:00Z',
+                },
+              }),
+              prairietestExams: [ptExam],
+            },
+          ],
+          prairieTestReservations:
+            authzMode === 'Exam'
+              ? [{ examUuid: 'wrong-exam', accessEnd: new Date('2025-04-01T00:00:00Z') }]
+              : [],
+        });
+        expect(result.showBeforeRelease).toBe(false);
+        expect(result.authorized).toBe(true);
+        expect(result.active).toBe(false);
+      }
+    });
+
+    it('grants access via PT reservation even when assessment is past due date', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Exam',
+        rules: [
+          {
+            ...makeMainRule({
+              dateControl: {
+                releaseDate: '2025-01-01T00:00:00Z',
+                dueDate: '2025-02-01T00:00:00Z',
+              },
+            }),
+            prairietestExams: [ptExam],
+          },
+        ],
+        prairieTestReservations: [
+          { examUuid: ptExam.uuid, accessEnd: new Date('2025-04-01T00:00:00Z') },
+        ],
+      });
+      expect(result.authorized).toBe(true);
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(true);
+      expect(result.showBeforeRelease).toBe(false);
+    });
+
+    it('still shows "before release" for PT assessment that is open but student lacks access', () => {
+      // When a PT-gated assessment has date controls and is within its open
+      // period, students without PT access should still see "Not yet open".
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          {
+            ...makeMainRule({
+              listBeforeRelease: true,
+              dateControl: {
+                releaseDate: '2025-01-01T00:00:00Z',
+                dueDate: '2025-06-01T00:00:00Z',
+              },
+            }),
+            prairietestExams: [ptExam],
+          },
+        ],
+      });
+      expect(result.showBeforeRelease).toBe(true);
+      expect(result.active).toBe(false);
     });
   });
 });
