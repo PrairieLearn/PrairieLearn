@@ -7,7 +7,12 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
 import { useRef, useState } from 'react';
@@ -53,7 +58,7 @@ export function PreferencesTable({
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
   function handleDragEnd(event: DragEndEvent) {
@@ -69,8 +74,8 @@ export function PreferencesTable({
 
   return (
     <div className="mb-3">
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2 className="h4">Preferences</h2>
+      <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <h2 className="h4 mb-0">Preferences</h2>
         <Button
           variant="outline-primary"
           size="sm"
@@ -104,35 +109,34 @@ export function PreferencesTable({
       {fields.length > 0 && (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
-            <div className="table-responsive card mb-3">
-              <table className="table table-sm align-middle mb-0" aria-label="Preferences">
-                <thead>
-                  <tr>
-                    {canEdit && <th className="preferences-col-drag" />}
-                    <th>Name</th>
-                    <th className="preferences-col-type">Type</th>
-                    <th>Default</th>
-                    <th>Values</th>
-                    {canEdit && <th className="preferences-col-actions" />}
-                  </tr>
-                </thead>
-                <tbody>
-                  {fields.map((field, index) => (
-                    <PreferenceRow
-                      key={field.id}
-                      field={field}
-                      index={index}
-                      canEdit={canEdit}
-                      register={register}
-                      watch={watch}
-                      setValue={setValue}
-                      errors={errors?.[index]}
-                      remove={remove}
-                      clearErrors={clearErrors}
-                    />
-                  ))}
-                </tbody>
-              </table>
+            <div
+              className={clsx(
+                'card mb-3 overflow-auto preferences-grid',
+                canEdit ? 'preferences-grid-editable' : 'preferences-grid-readonly',
+              )}
+            >
+              <div className="preferences-grid-header">
+                {canEdit && <div />}
+                <div>Name</div>
+                <div>Type</div>
+                <div>Default</div>
+                <div>Values</div>
+                {canEdit && <div />}
+              </div>
+              {fields.map((field, index) => (
+                <PreferenceRow
+                  key={field.id}
+                  field={field}
+                  index={index}
+                  canEdit={canEdit}
+                  register={register}
+                  watch={watch}
+                  setValue={setValue}
+                  errors={errors?.[index]}
+                  remove={remove}
+                  clearErrors={clearErrors}
+                />
+              ))}
             </div>
           </SortableContext>
         </DndContext>
@@ -172,24 +176,26 @@ function PreferenceRow({
   const enumValues = watch(`preferences.${index}.enum`);
   const allPreferences = watch('preferences');
 
+  const nameColIndex = canEdit ? 2 : 1;
+  const defaultColIndex = canEdit ? 4 : 3;
+
   return (
-    <tr
+    <div
       ref={setNodeRef}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.6 : 1,
       }}
-      className="preferences-row"
+      className="preferences-grid-row"
     >
+      {/* Row 1: controls */}
       {canEdit && (
-        <td>
-          <div className="d-flex align-items-center preferences-cell-align">
-            <DragHandle attributes={attributes} listeners={listeners} disabled={!canEdit} />
-          </div>
-        </td>
+        <div>
+          <DragHandle attributes={attributes} listeners={listeners} disabled={!canEdit} />
+        </div>
       )}
-      <td>
+      <div>
         <input
           type="text"
           className={clsx(
@@ -212,13 +218,8 @@ function PreferenceRow({
             },
           })}
         />
-        {errors?.name && (
-          <div id={`pref-${index}-name-error`} className="invalid-feedback">
-            {errors.name.message}
-          </div>
-        )}
-      </td>
-      <td>
+      </div>
+      <div>
         <select
           className="form-select form-select-sm"
           id={`pref-${index}-type`}
@@ -245,8 +246,8 @@ function PreferenceRow({
           <option value="number">Number</option>
           <option value="boolean">Boolean</option>
         </select>
-      </td>
-      <td>
+      </div>
+      <div>
         {prefType === 'boolean' ? (
           <select
             className={clsx('form-select form-select-sm', errors?.default && 'is-invalid')}
@@ -307,43 +308,54 @@ function PreferenceRow({
             })}
           />
         )}
-        {errors?.default && (
-          <div id={`pref-${index}-default-error`} className="invalid-feedback">
-            {errors.default.message}
-          </div>
+      </div>
+      <div>
+        {prefType === 'boolean' ? (
+          <span className="text-muted small">N/A</span>
+        ) : (
+          <EnumInput
+            index={index}
+            canEdit={canEdit}
+            prefType={prefType}
+            watch={watch}
+            setValue={setValue}
+            clearErrors={clearErrors}
+          />
         )}
-      </td>
-      <td>
-        <div className="d-flex align-items-center preferences-cell-align">
-          {prefType === 'boolean' ? (
-            <span className="text-muted small">N/A</span>
-          ) : (
-            <EnumInput
-              index={index}
-              canEdit={canEdit}
-              prefType={prefType}
-              watch={watch}
-              setValue={setValue}
-              clearErrors={clearErrors}
-            />
-          )}
-        </div>
-      </td>
+      </div>
       {canEdit && (
-        <td>
-          <div className="d-flex align-items-center preferences-cell-align">
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-danger"
-              aria-label={`Remove preference ${index + 1}`}
-              onClick={() => remove(index)}
-            >
-              <i className="bi bi-trash" aria-hidden="true" />
-            </button>
-          </div>
-        </td>
+        <div>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-danger"
+            aria-label={`Remove preference ${index + 1}`}
+            onClick={() => remove(index)}
+          >
+            <i className="bi bi-trash" aria-hidden="true" />
+          </button>
+        </div>
       )}
-    </tr>
+
+      {/* Row 2: error messages (explicitly placed on grid row 2) */}
+      {errors?.name && (
+        <div
+          id={`pref-${index}-name-error`}
+          className="invalid-feedback d-block"
+          style={{ gridColumn: nameColIndex, gridRow: 2 }}
+        >
+          {errors.name.message}
+        </div>
+      )}
+      {errors?.default && (
+        <div
+          id={`pref-${index}-default-error`}
+          className="invalid-feedback d-block"
+          style={{ gridColumn: defaultColIndex, gridRow: 2 }}
+        >
+          {errors.default.message}
+        </div>
+      )}
+    </div>
   );
 }
 

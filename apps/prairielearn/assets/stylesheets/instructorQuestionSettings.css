@@ -1,24 +1,38 @@
-/* Column widths for the preferences table */
-.preferences-col-drag {
-  width: 2rem;
+/* Preferences grid layout */
+.preferences-grid {
+  min-width: 36rem;
 }
 
-.preferences-col-type {
-  width: 7rem;
+.preferences-grid-row,
+.preferences-grid-header {
+  display: grid;
+  gap: 0 0.5rem;
+  padding: 0.25rem 0.5rem;
+  align-items: center;
 }
 
-.preferences-col-actions {
-  width: 2.5rem;
+.preferences-grid-editable .preferences-grid-row,
+.preferences-grid-editable .preferences-grid-header {
+  grid-template-columns: 2rem minmax(0, 1fr) 7rem minmax(0, 1fr) minmax(0, 1.5fr) 2.5rem;
 }
 
-/* Preference table rows */
-.preferences-row {
-  vertical-align: top;
+.preferences-grid-readonly .preferences-grid-row,
+.preferences-grid-readonly .preferences-grid-header {
+  grid-template-columns: minmax(0, 1fr) 7rem minmax(0, 1fr) minmax(0, 1.5fr);
 }
 
-/* Matches the height of .form-control-sm so non-input cells align with inputs */
-.preferences-cell-align {
-  min-height: calc(1.5em + 0.5rem + 2px);
+.preferences-grid-header {
+  font-weight: bold;
+  font-size: 0.875rem;
+  border-bottom: 2px solid var(--bs-border-color);
+}
+
+.preferences-grid-row {
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.preferences-grid-row:last-child {
+  border-bottom: none;
 }
 
 /* Enum value badges */
