@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Button, Form } from 'react-bootstrap';
 import { get, useFieldArray, useFormContext, useFormState } from 'react-hook-form';
 
@@ -15,6 +16,14 @@ export function PrairieTestControlForm() {
   });
 
   const { errors } = useFormState();
+
+  // Validate on mount so empty exam UUIDs (added by the PrairieTest checkbox
+  // in IntegrationsSection) show errors immediately. `shouldValidate` on the
+  // parent `setValue` fires before these fields are registered, so we re-trigger
+  // here once the fields exist.
+  useEffect(() => {
+    void trigger('mainRule.prairieTestExams');
+  }, [trigger]);
 
   const getExamUuidError = (index: number): string | undefined => {
     return get(errors, `mainRule.prairieTestExams.${index}.examUuid`)?.message;

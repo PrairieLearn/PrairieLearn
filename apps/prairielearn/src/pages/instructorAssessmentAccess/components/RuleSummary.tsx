@@ -64,6 +64,23 @@ export function generateDateTableRows(
     const lateDeadlines = rule.lateDeadlines;
 
     // Build rows in logical order: release, early deadlines, due date, late deadlines.
+    // Credit after = the credit that applies in the period following this date.
+    const afterLastDeadline = rule.afterLastDeadline;
+    const afterLastCredit = afterLastDeadline?.allowSubmissions
+      ? `${afterLastDeadline.credit ?? 0}%`
+      : '—';
+
+    // Helper: credit after due = first late deadline credit, or after-last-deadline credit.
+    const creditAfterDue =
+      lateDeadlines.length > 0 ? `${lateDeadlines[0].credit}%` : afterLastCredit;
+
+    const hasAccessAfterDue =
+      lateDeadlines.length > 0 || afterLastDeadline?.allowSubmissions;
+
+    // Credit after release = first early deadline credit, or 100% (full credit).
+    const creditAfterRelease =
+      earlyDeadlines.length > 0 ? `${earlyDeadlines[0].credit}%` : '100%';
+
     if (releaseDate) {
       const releasePlainDateTime = Temporal.PlainDateTime.from(releaseDate);
       const nowInTimezone = Temporal.Now.plainDateTimeISO(displayTimezone);
@@ -88,19 +105,22 @@ export function generateDateTableRows(
           />
         ),
         label: 'Release',
-        credit: '100%',
+        credit: creditAfterRelease,
         visibility: 'Opens',
       });
     } else {
       rows.push({
         date: 'Released',
         label: '',
-        credit: '100%',
+        credit: creditAfterRelease,
         visibility: 'Opens',
       });
     }
 
     earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+      // Credit after this early deadline = next early deadline's credit, or 100%.
+      const creditAfter =
+        index < earlyDeadlines.length - 1 ? `${earlyDeadlines[index + 1].credit}%` : '100%';
       rows.push({
         date: deadline.date ? (
           <FriendlyDate
@@ -113,7 +133,7 @@ export function generateDateTableRows(
           'No date set'
         ),
         label: `Early ${index + 1}`,
-        credit: `${deadline.credit}%`,
+        credit: creditAfter,
         visibility: 'Open',
         error: fieldErrors?.earlyDeadlines?.[index],
       });
@@ -130,15 +150,15 @@ export function generateDateTableRows(
           />
         ),
         label: 'Due',
-        credit: '100%',
-        visibility: 'Closes',
+        credit: creditAfterDue,
+        visibility: hasAccessAfterDue ? 'Open' : 'Closes',
         error: fieldErrors?.dueDate,
       });
     } else if (dueDate === null) {
       rows.push({
         date: 'No due date',
         label: 'Due',
-        credit: '100%',
+        credit: '—',
         visibility: 'Open',
       });
     } else {
@@ -146,13 +166,16 @@ export function generateDateTableRows(
       rows.push({
         date: 'No date set',
         label: 'Due',
-        credit: '100%',
-        visibility: 'Closes',
+        credit: creditAfterDue,
+        visibility: hasAccessAfterDue ? 'Open' : 'Closes',
         error: fieldErrors?.dueDate,
       });
     }
 
     lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+      // Credit after this late deadline = next late deadline's credit, or after-last-deadline credit.
+      const creditAfter =
+        index < lateDeadlines.length - 1 ? `${lateDeadlines[index + 1].credit}%` : afterLastCredit;
       rows.push({
         date: deadline.date ? (
           <FriendlyDate
@@ -165,27 +188,40 @@ export function generateDateTableRows(
           'No date set'
         ),
         label: `Late ${index + 1}`,
-        credit: `${deadline.credit}%`,
+        credit: creditAfter,
         visibility: 'Open',
         error: fieldErrors?.lateDeadlines?.[index],
       });
     });
-  }
 
-  // Show "After last deadline" whenever there is any deadline configured.
-  const afterLastDeadline = rule.afterLastDeadline;
-  const hasAnyDeadline =
-    isDateControlEnabled && (rule.dueDate || rule.lateDeadlines.some((d) => d.date));
+    // Show "After last deadline" whenever there is any deadline configured.
+    const hasAnyDeadline = rule.dueDate || rule.lateDeadlines.some((d) => d.date);
 
-  if (afterLastDeadline || hasAnyDeadline) {
-    const visibility = afterLastDeadline?.allowSubmissions ? 'Open' : 'Closed';
+    if (afterLastDeadline || hasAnyDeadline) {
+      const visibility = afterLastDeadline?.allowSubmissions ? 'Open' : 'Closed';
 
-    rows.push({
-      date: '',
-      label: 'After last deadline',
-      credit: afterLastDeadline?.allowSubmissions ? `${afterLastDeadline.credit ?? 0}%` : '—',
-      visibility,
-    });
+      rows.push({
+        date: '',
+        label: 'After last deadline',
+        credit: '—',
+        visibility,
+      });
+    }
+  } else {
+    // No date control — still show "After last deadline" if configured.
+    const afterLastDeadline = rule.afterLastDeadline;
+    const hasAnyDeadline = rule.dueDate || rule.lateDeadlines.some((d) => d.date);
+
+    if (afterLastDeadline || hasAnyDeadline) {
+      const visibility = afterLastDeadline?.allowSubmissions ? 'Open' : 'Closed';
+
+      rows.push({
+        date: '',
+        label: 'After last deadline',
+        credit: '—',
+        visibility,
+      });
+    }
   }
 
   return rows;
@@ -210,11 +246,12 @@ export function generateRuleSummary(
   if (isOverrideFieldActive(rule, 'durationMinutes')) {
     const durationMinutes = rule.durationMinutes;
     if (durationMinutes !== null) {
+      const error = itemErrors?.duration;
       items.push({
         key: 'duration',
         icon: 'bi-clock',
-        text: `${durationMinutes} minutes`,
-        error: itemErrors?.duration,
+        text: error ? 'Missing time limit' : `${durationMinutes} minutes`,
+        error,
       });
     }
   }
@@ -222,21 +259,25 @@ export function generateRuleSummary(
   if (isOverrideFieldActive(rule, 'password')) {
     const password = rule.password;
     if (password !== null) {
+      const error = itemErrors?.password;
       items.push({
         key: 'password',
         icon: 'bi-lock',
-        text: 'Password protected',
-        error: itemErrors?.password,
+        text: error ? 'Missing password' : 'Password protected',
+        error,
       });
     }
   }
 
   if (isMainRuleData(rule) && rule.prairieTestExams.length > 0) {
+    const error = itemErrors?.prairietest;
     items.push({
       key: 'prairietest',
       icon: 'bi-pc-display',
-      text: `${rule.prairieTestExams.length} PrairieTest ${rule.prairieTestExams.length === 1 ? 'exam' : 'exams'}`,
-      error: itemErrors?.prairietest,
+      text: error
+        ? 'Missing PrairieTest exam UUID'
+        : `${rule.prairieTestExams.length} PrairieTest ${rule.prairieTestExams.length === 1 ? 'exam' : 'exams'}`,
+      error,
     });
   }
 
@@ -616,11 +657,15 @@ function OverrideFieldsList({ items }: { items: OverrideFieldItem[] }) {
 }
 
 function CreditBadge({ credit }: { credit: string }) {
+  if (!credit) return null;
+
   const numericValue = Number.parseInt(credit, 10);
   let className: string;
 
   if (Number.isNaN(numericValue)) {
     className = 'bg-body-tertiary text-body-secondary';
+  } else if (numericValue > 100) {
+    className = 'bg-info-subtle text-info-emphasis';
   } else if (numericValue === 100) {
     className = 'bg-success-subtle text-success-emphasis';
   } else if (numericValue === 0) {
@@ -654,7 +699,7 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
               style={thStyle}
             >
               <i className="bi bi-percent me-1" aria-hidden="true" />
-              Credit
+              Credit after
             </th>
             <th
               className="fw-semibold text-body-secondary text-nowrap border-bottom"

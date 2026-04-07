@@ -30,6 +30,7 @@ export function IntegrationsSection() {
           } else {
             setValue('mainRule.prairieTestExams', [{ examUuid: '', readOnly: false }], {
               shouldDirty: true,
+              shouldValidate: true,
             });
           }
         }}

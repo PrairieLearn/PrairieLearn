@@ -233,6 +233,12 @@ function QuestionVisibilityInput({
           connected. Students may be able to view exam content when their assessment is closed.
         </Alert>
       )}
+      {!hasPrairieTest && hideQuestionsMode !== 'show_questions' && (
+        <Alert variant="info" className="mt-2 mb-0">
+          If this is not an exam, consider setting question visibility to "Show questions after
+          completion" so students can review their work.
+        </Alert>
+      )}
     </Form.Group>
   );
 }

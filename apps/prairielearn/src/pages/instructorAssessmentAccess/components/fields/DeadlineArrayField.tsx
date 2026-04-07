@@ -211,7 +211,8 @@ function DeadlineArrayInput({
     }
 
     const defaultDate = candidateDate ? endOfDayDatetime(candidateDate) : '';
-    appendDeadline({ date: defaultDate, credit: isEarly ? 101 : 99 });
+    const defaultCredit = isEarly ? 110 - deadlineFields.length : 90 - deadlineFields.length;
+    appendDeadline({ date: defaultDate, credit: defaultCredit });
   };
 
   const label = isEarly ? 'Early deadlines' : 'Late deadlines';
@@ -309,7 +310,7 @@ function DeadlineArrayInput({
           {getCreditError(index) && (
             <Form.Text
               id={`${idPrefix}-${type}-deadline-${index}-credit-error`}
-              className="text-danger"
+              className="text-danger d-block"
               role="alert"
             >
               {getCreditError(index)}

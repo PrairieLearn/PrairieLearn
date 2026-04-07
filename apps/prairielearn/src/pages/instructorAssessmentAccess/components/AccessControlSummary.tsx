@@ -10,7 +10,7 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Fragment, type ReactNode, useId, useMemo } from 'react';
-import { Button } from 'react-bootstrap';
+import { Badge, Button } from 'react-bootstrap';
 import { get, useFormState } from 'react-hook-form';
 
 import {
@@ -22,6 +22,22 @@ import {
   generateRuleSummary,
 } from './RuleSummary.js';
 import type { AccessControlFormData, DeadlineEntry, MainRuleData, OverrideData } from './types.js';
+
+// Count leaf errors in a react-hook-form errors object. Leaf nodes have a
+// `message` property; everything else is a container.
+function countErrors(obj: unknown): number {
+  if (!obj || typeof obj !== 'object') return 0;
+  if ('message' in obj && typeof (obj as Record<string, unknown>).message === 'string') return 1;
+  return Object.values(obj).reduce((sum: number, val) => sum + countErrors(val), 0);
+}
+
+function useSectionErrorCounts(): { mainRule: number; overrides: number } {
+  const { errors } = useFormState<AccessControlFormData>();
+  return {
+    mainRule: countErrors(errors.mainRule),
+    overrides: countErrors(errors.overrides),
+  };
+}
 
 function useDateFieldErrors(
   pathPrefix: string,
@@ -178,17 +194,8 @@ function SummaryItemChips({
 }) {
   if (items.length === 0) return null;
 
-  const errorItems = items.filter((item) => item.error);
-
   return (
     <div>
-      {errorItems.length > 0 && (
-        <div className="alert alert-danger py-2 px-3 small mb-2">
-          {errorItems.map((item) => (
-            <div key={item.key}>{item.error}</div>
-          ))}
-        </div>
-      )}
       <div className="d-flex flex-wrap gap-2">
         {items.map((item) => (
           <span
@@ -294,11 +301,20 @@ export function AccessControlSummary({
     onMoveOverride(oldIndex, newIndex);
   };
 
+  const errorCounts = useSectionErrorCounts();
+
   return (
     <div>
       <section className="mb-4">
         <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
-          <h5 className="mb-0">Defaults</h5>
+          <h5 className="mb-0">
+            Defaults
+            {errorCounts.mainRule > 0 && (
+              <Badge bg="danger" className="ms-2" style={{ fontSize: '0.7rem' }}>
+                {errorCounts.mainRule} {errorCounts.mainRule === 1 ? 'error' : 'errors'}
+              </Badge>
+            )}
+          </h5>
           <div className="d-flex gap-2">
             <Button variant="outline-primary" size="sm" aria-label="Edit" onClick={onEditMainRule}>
               <i className="bi bi-pencil" aria-hidden="true" />
@@ -319,7 +335,14 @@ export function AccessControlSummary({
 
       <section>
         <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
-          <h5 className="mb-0">Overrides</h5>
+          <h5 className="mb-0">
+            Overrides
+            {errorCounts.overrides > 0 && (
+              <Badge bg="danger" className="ms-2" style={{ fontSize: '0.7rem' }}>
+                {errorCounts.overrides} {errorCounts.overrides === 1 ? 'error' : 'errors'}
+              </Badge>
+            )}
+          </h5>
           <Button variant="primary" size="sm" onClick={onAddOverride}>
             <i className="bi bi-plus-lg me-1" /> Add override
           </Button>

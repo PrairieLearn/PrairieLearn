@@ -181,11 +181,13 @@ export function AccessControlForm({
     }
   };
 
+  const hasManualErrors = getGlobalDateValidationErrors(watchedData).length > 0;
+
   const saveDisabledReason = isSaving
     ? 'Saving...'
     : !isDirty
       ? 'No changes to save'
-      : !isValid
+      : !isValid || hasManualErrors
         ? 'Fix validation errors before saving'
         : null;
 
