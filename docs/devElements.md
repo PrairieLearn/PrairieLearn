@@ -203,7 +203,7 @@ Note that the use of node modules (`nodeModulesScripts` and `nodeModulesStyles`)
 
     While the use of node module dependencies in course elements is supported, it should be avoided if possible. In particular, note that node modules may be updated without warning, which in some cases may break your element. Also note that, although transitive dependencies (i.e., dependencies of dependencies) may work in some cases, they are not guaranteed to continue working in the future, as dependency updates or updates in the PrairieLearn configuration may change the availability of transitive dependencies.
 
-    If your code relies on a node module, the recommended course of action is that you copy the module into your element directory or `courseFilesCourse` and link to that module from there instead. This way, you have control over when the module is updated, and you can ensure that updates do not break your element.
+    If your code relies on a node module, the recommended course of action is that you copy the module into your element directory or `clientFilesCourse` and link to that module from there instead. This way, you have control over when the module is updated, and you can ensure that updates do not break your element.
 
 To copy a node module into your element directory, first obtain the appropriate bundle for the module (e.g., from the module's home page, from a CDN or by building it yourself), and then place it in your element directory. For example, if you want to use the `moment` library, you can obtain the bundle from the module web page (`https://momentjs.com/`) or a CDN (e.g., `https://cdn.jsdelivr.net/npm/moment@2.30.1/dist/moment.min.js`) and place it in your element directory as `moment.min.js`. Then, you can link to this file in your `info.json` as follows:
 
@@ -216,7 +216,7 @@ To copy a node module into your element directory, first obtain the appropriate 
 }
 ```
 
-Alternatively, if you use a module that will be used by multiple elements, or by questions directly, then it may be better to place the module in `courseFilesCourse` instead of copying it into each element directory. In this case, you can link to the module from your `info.json` as follows:
+Alternatively, if you use a module that will be used by multiple elements, or by questions directly, then it may be better to place the module in `clientFilesCourse` instead of copying it into each element directory. In this case, you can link to the module from your `info.json` as follows:
 
 ```json title="info.json"
 {
