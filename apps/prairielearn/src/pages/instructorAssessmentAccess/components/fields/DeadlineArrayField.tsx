@@ -35,13 +35,12 @@ function DeadlineArrayInput({
   const isEarly = type === 'early';
 
   const {
-    fields: rawDeadlineFields,
+    fields: deadlineFields,
     append: appendDeadline,
     remove: removeDeadline,
-  } = useFieldArray({
+  } = useFieldArray<AccessControlFormData, typeof fieldArrayName>({
     name: fieldArrayName,
   });
-  const deadlineFields = rawDeadlineFields as (DeadlineEntry & { id: string })[];
 
   const { errors } = useFormState();
 

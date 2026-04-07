@@ -201,7 +201,7 @@ export function jsonToOverrideFormData(
 
   let releaseDate = '';
   if (dc?.releaseDate !== undefined) {
-    releaseDate = toLocalDatetimeValue(dc.releaseDate, displayTimezone) ?? '';
+    releaseDate = toLocalDatetimeValue(dc.releaseDate, displayTimezone);
     overriddenFields.push('releaseDate');
   }
 
