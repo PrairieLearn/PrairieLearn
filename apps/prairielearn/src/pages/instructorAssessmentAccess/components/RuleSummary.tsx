@@ -63,28 +63,38 @@ export function generateDateTableRows(
 
     // Build rows in logical order: release, early deadlines, due date, late deadlines.
     if (releaseDate) {
-      const visibilityParts: string[] = ['Assessment opens'];
-      if (isMain && rule.listBeforeRelease) {
-        visibilityParts.push('(listed before release)');
+      const releasePlainDateTime = Temporal.PlainDateTime.from(releaseDate);
+      const nowInTimezone = Temporal.Now.plainDateTimeISO(displayTimezone);
+
+      if (Temporal.PlainDateTime.compare(releasePlainDateTime, nowInTimezone) > 0) {
+        const visibility =
+          isMain && rule.listBeforeRelease ? 'Closed (listed)' : 'Closed (hidden)';
+        rows.push({
+          date: '',
+          label: 'Before release',
+          credit: '—',
+          visibility,
+        });
       }
+
       rows.push({
         date: (
           <FriendlyDate
-            date={Temporal.PlainDateTime.from(releaseDate)}
+            date={releasePlainDateTime}
             timezone={displayTimezone}
             tooltip
           />
         ),
         label: 'Release',
         credit: '100%',
-        visibility: visibilityParts.join(' '),
+        visibility: 'Opens',
       });
     } else {
       rows.push({
         date: 'Released',
         label: '',
         credit: '100%',
-        visibility: 'Assessment opens',
+        visibility: 'Opens',
       });
     }
 
@@ -117,7 +127,7 @@ export function generateDateTableRows(
         ),
         label: 'Due',
         credit: '100%',
-        visibility: 'Due',
+        visibility: 'Closes',
         error: fieldErrors?.dueDate,
       });
     } else if (dueDate === null) {
@@ -148,14 +158,16 @@ export function generateDateTableRows(
     });
   }
 
-  // afterLastDeadline is shown regardless of dateControlEnabled since it can
-  // be configured independently of date-based access control.
+  // Show "After last deadline" whenever there is any deadline configured.
   const afterLastDeadline = rule.afterLastDeadline;
-  if (afterLastDeadline) {
+  const hasAnyDeadline =
+    isDateControlEnabled && (rule.dueDate || rule.lateDeadlines.some((d) => d.date));
+
+  if (afterLastDeadline || hasAnyDeadline) {
     const visibilityParts: string[] = [];
 
-    if (afterLastDeadline.allowSubmissions) {
-      visibilityParts.push('Submissions allowed');
+    if (afterLastDeadline?.allowSubmissions) {
+      visibilityParts.push('Open');
     } else {
       visibilityParts.push('Closed');
     }
@@ -171,9 +183,9 @@ export function generateDateTableRows(
     }
 
     rows.push({
-      date: 'After last deadline',
-      label: '',
-      credit: afterLastDeadline.credit !== undefined ? `${afterLastDeadline.credit}%` : '0%',
+      date: '',
+      label: 'After last deadline',
+      credit: afterLastDeadline?.allowSubmissions ? `${afterLastDeadline.credit ?? 0}%` : '—',
       visibility: visibilityParts.join(', '),
     });
   }
@@ -567,7 +579,9 @@ function CreditBadge({ credit }: { credit: string }) {
   const numericValue = Number.parseInt(credit, 10);
   let className: string;
 
-  if (numericValue === 100) {
+  if (Number.isNaN(numericValue)) {
+    className = 'bg-body-tertiary text-body-secondary';
+  } else if (numericValue === 100) {
     className = 'bg-success-subtle text-success-emphasis';
   } else if (numericValue === 0) {
     className = 'bg-danger-subtle text-danger-emphasis';
@@ -607,7 +621,7 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
               style={thStyle}
             >
               <i className="bi bi-eye me-1" aria-hidden="true" />
-              Visibility
+              Access
             </th>
           </tr>
         </thead>
@@ -625,7 +639,7 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
               >
                 {row.label && (
                   <span className={`me-1 ${row.error ? 'text-danger' : 'text-body-secondary'}`}>
-                    {row.label}:
+                    {row.label}{row.date ? ':' : ''}
                   </span>
                 )}
                 {row.error ? (
