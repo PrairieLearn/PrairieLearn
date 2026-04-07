@@ -16,6 +16,9 @@ div.pl-order-blocks-bottom {
 li.pl-order-blocks-code {
   list-style-type: none;
   padding: 0px !important;
+  /* The following color is hardcoded to match the default background of pl-code blocks.
+     If pl-code changes its default background color, this will need to be updated to stay
+     in sync. */
   background-color: #f0f0f0;
 }
 
