@@ -57,6 +57,14 @@ const ROLE_DESCRIPTIONS: Record<CourseRole, string> = {
     'Can see all questions, course instances, and assessments. Can see and close issues. Can see, download, and edit all code and configuration files. Can sync course files to and from the GitHub repository. Can add and remove course staff and can change access roles.',
 };
 
+const LEARN_MORE_LINK = (
+  <div className="text-start text-secondary mt-2 form-text">
+    <a href="https://docs.prairielearn.com/course/#course-staff" target="_blank" rel="noreferrer">
+      Learn more about content and student data access levels
+    </a>
+  </div>
+);
+
 function IndeterminateCheckbox({
   checked,
   indeterminate,
@@ -119,21 +127,21 @@ interface StaffTableInnerProps {
 function courseRoleColor(role: CourseRole): string {
   switch (role) {
     case 'None':
-      return 'secondary';
+      return 'light';
     case 'Previewer':
     case 'Viewer':
       return 'primary';
     case 'Editor':
       return 'success';
     case 'Owner':
-      return 'dark';
+      return 'warning';
   }
 }
 
 function instanceRoleColor(role: InstanceRole): string {
   switch (role) {
     case 'None':
-      return 'secondary';
+      return 'light';
     case 'Student Data Viewer':
       return 'primary';
     case 'Student Data Editor':
@@ -166,7 +174,7 @@ function CoursePermissionCell({
     return (
       <span
         className={`btn btn-sm bg-${courseRoleColor(currentRole)}-subtle text-${courseRoleColor(currentRole)}-emphasis disabled`}
-        style={{ width: 105 }}
+        style={{ width: 110 }}
       >
         {currentRole}
       </span>
@@ -207,6 +215,7 @@ function CoursePermissionCell({
               </div>
             ))}
             <p className="small text-muted mt-2 mb-0">{ROLE_DESCRIPTIONS[selectedRole]}</p>
+            {LEARN_MORE_LINK}
             <div className="mt-3 text-end">
               <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
                 Cancel
@@ -230,8 +239,8 @@ function CoursePermissionCell({
     >
       <button
         type="button"
-        className={`btn btn-sm bg-${courseRoleColor(currentRole)}-subtle text-${courseRoleColor(currentRole)}-emphasis dropdown-toggle`}
-        style={{ width: 105 }}
+        className={`btn btn-sm bg-${courseRoleColor(currentRole)}-subtle text-${courseRoleColor(currentRole)}-emphasis ${currentRole === 'None' ? 'btn-outline-dark' : ''} dropdown-toggle`}
+        style={{ width: 110 }}
       >
         {currentRole}
       </button>
@@ -259,9 +268,11 @@ const INSTANCE_ROLE_DESCRIPTIONS: Record<InstanceRole, string> = {
 function CourseInstanceAccessCell({
   courseUser,
   courseInstance,
+  canChangeInstanceRole,
 }: {
   courseUser: CourseUsersRow;
   courseInstance: CourseInstance;
+  canChangeInstanceRole: boolean;
 }) {
   const existingRole = courseUser.course_instance_roles?.find(
     (cir) => String(cir.id) === String(courseInstance.id),
@@ -279,6 +290,17 @@ function CourseInstanceAccessCell({
       return invalidateStaffList();
     },
   });
+
+  if (!canChangeInstanceRole) {
+    return (
+      <span
+        className={`btn btn-sm bg-${instanceRoleColor(currentRole)}-subtle text-${instanceRoleColor(currentRole)}-emphasis disabled`}
+        style={{ width: 90 }}
+      >
+        {INSTANCE_ROLE_LABELS[currentRole]}
+      </span>
+    );
+  }
 
   return (
     <OverlayTrigger
@@ -314,6 +336,7 @@ function CourseInstanceAccessCell({
               </div>
             ))}
             <p className="small text-muted mt-2 mb-0">{INSTANCE_ROLE_DESCRIPTIONS[selectedRole]}</p>
+            {LEARN_MORE_LINK}
             <div className="mt-3 text-end">
               <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
                 Cancel
@@ -341,8 +364,8 @@ function CourseInstanceAccessCell({
     >
       <button
         type="button"
-        className={`btn btn-sm bg-${instanceRoleColor(currentRole)}-subtle text-${instanceRoleColor(currentRole)}-emphasis dropdown-toggle`}
-        style={{ width: 105 }}
+        className={`btn btn-sm bg-${instanceRoleColor(currentRole)}-subtle text-${instanceRoleColor(currentRole)}-emphasis ${currentRole === 'None' ? 'btn-outline-dark' : ''} dropdown-toggle`}
+        style={{ width: 90 }}
       >
         {INSTANCE_ROLE_LABELS[currentRole]}
       </button>
@@ -374,9 +397,6 @@ function AddUsersModal({
     ...trpc.courseStaff.insertByUserUids.mutationOptions(),
     onSuccess: (data) => {
       const warnings: string[] = [];
-      if (data.unknownUsers.length > 0) {
-        warnings.push(`Unknown UIDs: ${data.unknownUsers.join(', ')}`);
-      }
       if (data.errors.length > 0) {
         warnings.push(`Errors: ${data.errors.join('; ')}`);
       }
@@ -490,6 +510,7 @@ function AddUsersModal({
           {mutation.isError && (
             <div className="alert alert-danger mt-3 mb-0">{mutation.error.message}</div>
           )}
+          {LEARN_MORE_LINK}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={onHide}>
@@ -646,19 +667,13 @@ function BulkEditAccessModal({
   };
 
   return (
-    <Modal show={show} size="lg" onHide={onHide}>
+    <Modal show={show} size="md" onHide={onHide}>
       <Modal.Header closeButton>
-        <Modal.Title>Edit access</Modal.Title>
+        <Modal.Title>
+          Edit access for {selectedUsers.length} {selectedUsers.length === 1 ? 'user' : 'users'}
+        </Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <p>
-          Edit access for{' '}
-          <strong>
-            {selectedUsers.length} {selectedUsers.length === 1 ? 'user' : 'users'}
-          </strong>
-          :
-        </p>
-
         <h6 className="font-weight-bolder" id="course-role-label">
           Course content access
         </h6>
@@ -710,6 +725,7 @@ function BulkEditAccessModal({
         {mutation.isError && (
           <div className="alert alert-danger mt-3 mb-0">{mutation.error.message}</div>
         )}
+        {LEARN_MORE_LINK}
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onHide}>
@@ -760,8 +776,9 @@ function SelectionToolbar({
           Edit access
         </Button>
         <Button
-          variant="danger"
+          variant="light"
           size="sm"
+          className="text-danger"
           disabled={modifiableUsers.length === 0}
           onClick={() => setShowDeleteModal(true)}
         >
@@ -996,7 +1013,15 @@ function StaffTableInner({
             },
             cell: (info) => (
               <div className="text-center">
-                <CourseInstanceAccessCell courseUser={info.row.original} courseInstance={ci} />
+                <CourseInstanceAccessCell
+                  courseUser={info.row.original}
+                  courseInstance={ci}
+                  canChangeInstanceRole={
+                    (info.row.original.user.id !== authnUserId &&
+                      info.row.original.user.id !== userId) ||
+                    isAdministrator
+                  }
+                />
               </div>
             ),
           },
@@ -1119,16 +1144,9 @@ function StaffTableInner({
           statusContent={statusContent}
         />
       </div>
-      <div className="small flex-shrink-0 border-top pt-3 text-end">
-        <a
-          href="https://docs.prairielearn.com/course/#course-staff"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Learn more about content and student data access levels
-        </a>
+      <div className="small flex-shrink-0 border-top pt-3 pb-1">
         {githubAccessLink && (
-          <div className="alert alert-info mt-3 text-left">
+          <div className="text-muted text-start">
             The settings above do not affect access to the course&apos;s Git repository. To change
             repository permissions, go to the{' '}
             <a className="alert-link" href={githubAccessLink} target="_blank" rel="noreferrer">
