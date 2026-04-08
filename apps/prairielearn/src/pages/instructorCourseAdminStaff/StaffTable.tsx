@@ -361,6 +361,13 @@ function AddUsersModal({
   uidsLimit: number;
   courseInstances: CourseInstance[];
 }) {
+  const [instanceRoles, setInstanceRoles] = useState<Record<string, string>>({});
+  const prevShowRef = useRef(show);
+  if (prevShowRef.current && !show) {
+    setInstanceRoles({});
+  }
+  prevShowRef.current = show;
+
   const trpc = useTRPC();
   const invalidateStaffList = useInvalidateStaffList();
   const mutation = useMutation({
@@ -389,15 +396,17 @@ function AddUsersModal({
     const uidValue = formData.get('uid') as string;
     const uids = uidValue.split(/[,;\s]+/).filter(Boolean);
     const courseRole = formData.get('course_role') as CourseRole;
-    const courseInstanceId = formData.get('course_instance_id') as string;
-    const courseInstanceRole = formData.get('course_instance_role') as
-      | 'Student Data Viewer'
-      | 'Student Data Editor';
+
+    const courseInstanceChanges = Object.entries(instanceRoles)
+      .filter((entry): entry is [string, 'Student Data Viewer' | 'Student Data Editor'] =>
+        ['Student Data Viewer', 'Student Data Editor'].includes(entry[1]),
+      )
+      .map(([ciId, role]) => ({ courseInstanceId: ciId, courseInstanceRole: role }));
 
     mutation.mutate({
       uids,
       courseRole,
-      ...(courseInstanceId ? { courseInstanceId, courseInstanceRole } : {}),
+      ...(courseInstanceChanges.length > 0 ? { courseInstanceChanges } : {}),
     });
   };
 
@@ -432,7 +441,7 @@ function AddUsersModal({
           </div>
           <div className="mb-3">
             <label className="form-label" htmlFor="addUsersInputCourseRole">
-              Course content access for all new users:
+              Course content access:
             </label>
             <select
               className="form-select form-select-sm"
@@ -449,38 +458,40 @@ function AddUsersModal({
             </select>
           </div>
           {courseInstances.length > 0 && (
-            <div className="mb-3">
-              <label className="form-label" htmlFor="addUsersInputCourseInstance">
-                Student data access for all new users:
-              </label>
-              <div className="input-group">
-                <select
-                  className="form-select form-select-sm"
-                  id="addUsersInputCourseInstance"
-                  name="course_instance_id"
-                  aria-label="Course instance for student data access"
-                >
-                  <option value="">None</option>
-                  {courseInstances.map((ci) => (
-                    <option key={ci.id} value={ci.id}>
-                      {ci.short_name}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="form-select form-select-sm"
-                  id="addUsersInputCourseInstanceRole"
-                  name="course_instance_role"
-                  aria-label="Role for student data access"
-                >
-                  <option value="Student Data Viewer">Viewer</option>
-                  <option value="Student Data Editor">Editor</option>
-                </select>
+            <>
+              <h6 className="font-weight-bolder">Student data access</h6>
+              <div
+                className="table-responsive"
+                style={{ maxHeight: '300px', overflowY: 'auto' }}
+              >
+                <table className="table table-borderless table-sm align-middle mb-0">
+                  <tbody>
+                    {courseInstances.map((ci) => (
+                      <tr key={ci.id}>
+                        <td>{ci.short_name}</td>
+                        <td>
+                          <select
+                            className="form-select form-select-sm"
+                            value={instanceRoles[ci.id] ?? ''}
+                            aria-label={`Role for ${ci.short_name ?? `course instance ${ci.id}`}`}
+                            onChange={(e) =>
+                              setInstanceRoles((prev) => ({ ...prev, [ci.id]: e.target.value }))
+                            }
+                          >
+                            <option value="">None</option>
+                            <option value="Student Data Viewer">Student data viewer</option>
+                            <option value="Student Data Editor">Student data editor</option>
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            </div>
+            </>
           )}
           {mutation.isError && (
-            <div className="alert alert-danger mb-0">{mutation.error.message}</div>
+            <div className="alert alert-danger mt-3 mb-0">{mutation.error.message}</div>
           )}
         </Modal.Body>
         <Modal.Footer>
