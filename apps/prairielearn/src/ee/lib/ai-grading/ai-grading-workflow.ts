@@ -166,7 +166,7 @@ async function runAgentWithStreaming(
 
   await finalizeAssistantMessage({
     messageId,
-    status: finalStatus === 'canceled' ? 'errored' : finalStatus,
+    status: finalStatus,
     parts: finalParts,
     modelId,
     usage: {

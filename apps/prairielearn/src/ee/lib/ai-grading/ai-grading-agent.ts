@@ -748,7 +748,7 @@ export async function finalizeAssistantMessage({
   rubricSnapshot,
 }: {
   messageId: string;
-  status: 'completed' | 'errored';
+  status: 'completed' | 'errored' | 'canceled';
   parts: unknown[];
   modelId: string;
   usage: {

@@ -2,7 +2,7 @@ import { useChat } from '@ai-sdk/react';
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { DefaultChatTransport, type ToolUIPart, type UIMessage } from 'ai';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Button, Modal, Overlay, Popover } from 'react-bootstrap';
+import { Alert, Button, Modal, Overlay, OverlayTrigger, Popover, Tooltip } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import { NuqsAdapter } from '@prairielearn/ui';
@@ -31,7 +31,7 @@ import {
   type ConflictModalState,
   GradingConflictModal,
 } from './components/GradingConflictModal.js';
-import { GradingPromptInput } from './components/GradingPromptInput.js';
+
 import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
 
@@ -75,7 +75,7 @@ type RubricPhase = 'generate' | 'edit';
 type RubricChatMessage = UIMessage<{
   workflow_run_id?: string;
   workflow_version?: number;
-  status?: 'streaming' | 'completed' | 'errored';
+  status?: 'streaming' | 'completed' | 'errored' | 'canceled';
   phase?: RubricPhase;
   rubric_modified?: boolean;
 }>;
@@ -472,26 +472,32 @@ function RubricDiff({ diff, actionSlot }: { diff: RubricDiffResult; actionSlot?:
   const changeCount = diff.items.length + diff.settingsChanges.length;
 
   return (
-    <div
-      className="mt-2 mb-1 rounded border"
-      style={{ fontSize: '0.85rem', background: 'rgba(0,0,0,0.015)' }}
-    >
-      <div className="d-flex align-items-center px-2 py-1">
-        <button
-          type="button"
-          className="btn btn-sm p-0 text-start d-flex align-items-center gap-1"
-          style={{ fontSize: '0.75rem', color: '#6c757d' }}
-          onClick={() => setExpanded((e) => !e)}
-        >
+    <div className="mt-1 mb-1 rounded border" style={{ fontSize: '0.85rem' }}>
+      <div
+        className="d-flex align-items-center px-2 py-1"
+        style={{ cursor: 'pointer' }}
+        role="button"
+        tabIndex={0}
+        onClick={() => setExpanded((e) => !e)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setExpanded((s) => !s);
+          }
+        }}
+      >
+        <div className="d-flex align-items-center gap-1 text-muted" style={{ fontSize: '0.85rem' }}>
           <i
             className={`bi bi-chevron-${expanded ? 'down' : 'right'}`}
-            style={{ fontSize: '0.6rem' }}
+            style={{ fontSize: '0.65rem' }}
           />
-          <span className="fw-semibold">
-            {changeCount} change{changeCount !== 1 ? 's' : ''}
-          </span>
-        </button>
-        {actionSlot && <div className="ms-auto">{actionSlot}</div>}
+          {changeCount} change{changeCount !== 1 ? 's' : ''}
+        </div>
+        {actionSlot && (
+          <div className="ms-auto" onClick={(e) => e.stopPropagation()}>
+            {actionSlot}
+          </div>
+        )}
       </div>
       {!expanded ? null : (
         <div className="d-flex flex-column gap-1 px-2 pb-2">
@@ -712,16 +718,22 @@ function RevertButton({
 
   return (
     <>
-      <button
-        ref={targetRef}
-        type="button"
-        className="btn btn-link btn-sm p-0 text-muted"
-        disabled={disabled}
-        onClick={() => setShow((s) => !s)}
-      >
-        <i className="bi bi-arrow-counterclockwise me-1" />
-        {label}
-      </button>
+      {disabled ? (
+        <span className="btn btn-link btn-sm p-0 text-muted disabled" style={{ pointerEvents: 'none', opacity: 0.5, textDecoration: 'none' }}>
+          <i className="bi bi-arrow-counterclockwise me-1" />
+          {label}
+        </span>
+      ) : (
+        <button
+          ref={targetRef}
+          type="button"
+          className="btn btn-link btn-sm p-0 text-muted"
+          onClick={() => setShow((s) => !s)}
+        >
+          <i className="bi bi-arrow-counterclockwise me-1" />
+          {label}
+        </button>
+      )}
       <Overlay
         target={targetRef.current}
         show={show}
@@ -774,7 +786,7 @@ function persistedMessagesToInitialMessages(
   persistedMessages: StaffAiGradingMessage[],
 ): RubricChatMessage[] {
   return persistedMessages
-    .filter((m) => m.status === 'completed' || m.status === 'streaming')
+    .filter((m) => m.status === 'completed' || m.status === 'streaming' || m.status === 'canceled')
     .map((m) => ({
       id: m.id,
       role: m.role,
@@ -838,6 +850,7 @@ function AssessmentQuestionManualGradingInner({
   const [chatInput, setChatInput] = useState('');
   const currentPhaseRef = useRef<RubricPhase>('generate');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
   // Track workflow run ID and version for consistency checks.
   // Updated from SSE metadata when agent responses complete.
   const workflowSyncRef = useRef(initialWorkflowSync);
@@ -958,6 +971,10 @@ function AssessmentQuestionManualGradingInner({
 
   const isGenerating = status === 'streaming' || status === 'submitted';
 
+  useEffect(() => {
+    if (!isGenerating) setIsStopping(false);
+  }, [isGenerating]);
+
   // Refresh rubric data in real-time as mutation tool calls complete during streaming.
   const completedMutationCountRef = useRef(0);
   useEffect(() => {
@@ -979,11 +996,16 @@ function AssessmentQuestionManualGradingInner({
     }
   }, [messages, refreshRubricData]);
 
-  // Re-run MathJax typesetting when messages change
+  // Re-run MathJax typesetting and auto-scroll the chat container when messages change.
+  // We scroll the container div (overflow-auto), NOT the viewport.
   const chatContainerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (chatContainerRef.current) {
       void mathjaxTypeset([chatContainerRef.current]);
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
     }
   }, [messages]);
 
@@ -1114,12 +1136,12 @@ function AssessmentQuestionManualGradingInner({
       {aiRubricAgentEnabled && (
         <div
           className="d-flex flex-column border rounded flex-shrink-0 overflow-hidden"
-          style={{ width: '100%', maxWidth: 480, height: '70vh' }}
+          style={{ width: '100%', maxWidth: 'min(480px, 35vw)', height: '70vh' }}
         >
           <div className="d-flex align-items-center gap-2 px-3 py-2 border-bottom bg-white">
             <i className="bi bi-stars text-primary" />
             <span className="fw-semibold small flex-grow-1">Rubric assistant</span>
-            {messages.length > 0 && (
+            {messages.length > 0 && hasCourseInstancePermissionEdit && (
               <>
                 <button
                   type="button"
@@ -1229,6 +1251,7 @@ function AssessmentQuestionManualGradingInner({
               const isMessageComplete =
                 message.metadata?.status === 'completed' ||
                 message.metadata?.status === 'errored' ||
+                message.metadata?.status === 'canceled' ||
                 !isGenerating;
 
               return (
@@ -1239,6 +1262,12 @@ function AssessmentQuestionManualGradingInner({
                       isGenerating && !isMessageComplete && msgIndex === messages.length - 1
                     }
                   />
+                  {message.metadata?.status === 'canceled' && (
+                    <div className="small text-muted fst-italic">
+                      <i className="bi bi-stop-circle me-1" aria-hidden="true" />
+                      Generation was stopped
+                    </div>
+                  )}
                   <MasterRubricDiff
                     parts={message.parts}
                     isComplete={isMessageComplete}
@@ -1246,7 +1275,7 @@ function AssessmentQuestionManualGradingInner({
                       isMessageComplete && hasMutations(message.parts) ? (
                         <RevertButton
                           label="Revert"
-                          disabled={isGenerating}
+                          disabled={!hasCourseInstancePermissionEdit || isGenerating}
                           onConfirm={() => {
                             currentPhaseRef.current = 'edit';
                             void sendMessage({
@@ -1275,43 +1304,103 @@ function AssessmentQuestionManualGradingInner({
                 Reload
               </button>
             </div>
+          ) : !hasCourseInstancePermissionEdit ? (
+            <OverlayTrigger
+              placement="top"
+              overlay={
+                <Tooltip>
+                  Sending messages requires student data editor access or higher.
+                </Tooltip>
+              }
+            >
+              <div className="px-3 py-2 border-top bg-white d-flex align-items-center justify-content-center text-body-secondary small">
+                Read-only access
+              </div>
+            </OverlayTrigger>
           ) : (
-            <div className="p-3 border-top">
-              {!hasGeneratedRubric && (
-                <div className="d-flex justify-content-end mb-2">
-                  <button
-                    type="button"
-                    className="btn btn-outline-primary btn-sm"
-                    disabled={isGenerating}
-                    onClick={() => {
-                      currentPhaseRef.current = 'generate';
-                      void sendMessage({ text: 'Generate a new rubric.' });
-                    }}
-                  >
-                    <i className="bi bi-stars me-1" />
-                    Generate a new rubric
-                  </button>
-                </div>
-              )}
-              <GradingPromptInput
+            <div className="px-3 py-2 border-top">
+              <textarea
+                className="form-control mb-2"
+                rows={2}
+                placeholder="Message the AI assistant..."
                 value={chatInput}
-                disabled={false}
-                isGenerating={isGenerating}
-                onChange={setChatInput}
-                onSubmit={(text) => {
-                  const trimmedText = text.trim();
-                  if (trimmedText.length === 0) return;
-                  currentPhaseRef.current = 'edit';
-                  void sendMessage({ text: trimmedText });
-                  setChatInput('');
-                }}
-                onStop={() => {
-                  void fetch(`${chatUrl}/cancel`, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-Token': chatCsrfToken },
-                  });
+                disabled={isGenerating}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    const trimmedText = chatInput.trim();
+                    if (trimmedText.length > 0 && !isGenerating) {
+                      currentPhaseRef.current = 'edit';
+                      void sendMessage({ text: trimmedText });
+                      setChatInput('');
+                    }
+                  }
                 }}
               />
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  {!hasGeneratedRubric && (
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      disabled={isGenerating}
+                      onClick={() => {
+                        currentPhaseRef.current = 'generate';
+                        void sendMessage({ text: 'Generate a new rubric.' });
+                      }}
+                    >
+                      <i className="bi bi-stars me-1" />
+                      Generate rubric
+                    </button>
+                  )}
+                </div>
+                {isGenerating ? (
+                  isStopping ? (
+                    <button type="button" className="btn btn-outline-secondary btn-sm" disabled>
+                      <span
+                        className="spinner-border spinner-border-sm me-1"
+                        role="status"
+                        aria-hidden="true"
+                      />
+                      Stopping...
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-outline-danger btn-sm"
+                      onClick={() => {
+                        setIsStopping(true);
+                        void fetch(`${chatUrl}/cancel`, {
+                          method: 'POST',
+                          headers: { 'X-CSRF-Token': chatCsrfToken },
+                        });
+                      }}
+                    >
+                      <i className="bi bi-stop-fill me-1" />
+                      Stop
+                    </button>
+                  )
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    disabled={chatInput.trim().length === 0}
+                    onClick={() => {
+                      const trimmedText = chatInput.trim();
+                      if (trimmedText.length === 0) return;
+                      currentPhaseRef.current = 'edit';
+                      void sendMessage({ text: trimmedText });
+                      setChatInput('');
+                    }}
+                  >
+                    <i className="bi bi-send-fill" />
+                  </button>
+                )}
+              </div>
+              <div className="text-muted small text-center mt-1">
+                AI can make mistakes. Review the generated rubric.
+              </div>
             </div>
           )}
         </div>

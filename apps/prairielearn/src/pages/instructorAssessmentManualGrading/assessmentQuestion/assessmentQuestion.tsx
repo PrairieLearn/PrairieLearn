@@ -293,8 +293,8 @@ router.post(
     if (!(await features.enabledFromLocals('ai-rubric-grading-agent', res.locals))) {
       throw new error.HttpStatusError(403, 'AI rubric grading agent is not enabled');
     }
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
     const { assessment, assessment_question, question, urlPrefix, authz_data } = extractPageContext(
@@ -325,6 +325,7 @@ router.post(
       assessment_question_id: assessment_question.id,
     });
 
+    let isNewWorkflow = false;
     if (!workflowRun) {
       workflowRun = await startWorkflow('ai_grading', {
         context: {
@@ -342,6 +343,7 @@ router.post(
         initialState: { step: 'awaiting_input' },
         phase: 'rubric_setup',
       });
+      isNewWorkflow = true;
     }
 
     // The rubric assistant is designed for single-user use. We use the workflow's
@@ -351,31 +353,36 @@ router.post(
     // loaded before another user made changes) are rejected before inserting messages.
     // The second user's chat may be briefly inconsistent — this is acceptable since
     // multi-user simultaneous editing is not the current intended use case.
-    if (workflowRun.status !== 'waiting_for_input') {
-      res.status(409).json({
-        error:
-          'The rubric assistant is out of sync. Please reload to continue.',
-      });
-      return;
-    }
+    //
+    // Skip these checks for newly created workflows — startWorkflow returns the
+    // run with status 'running' before takeStep transitions it to 'waiting_for_input'.
+    if (!isNewWorkflow) {
+      if (workflowRun.status !== 'waiting_for_input') {
+        res.status(409).json({
+          error:
+            'The rubric assistant is out of sync. Please reload to continue.',
+        });
+        return;
+      }
 
-    // Version/workflow-run consistency check: the client sends the workflow run ID
-    // and version it knows about. If they don't match, the client is stale.
-    const clientWorkflowRunId =
-      typeof req.body.workflow_run_id === 'string' ? req.body.workflow_run_id : null;
-    const clientVersion =
-      typeof req.body.workflow_version === 'number' ? req.body.workflow_version : null;
-    const serverVersion = (workflowRun.state as { version?: number }).version ?? 0;
+      // Version/workflow-run consistency check: the client sends the workflow run ID
+      // and version it knows about. If they don't match, the client is stale.
+      const clientWorkflowRunId =
+        typeof req.body.workflow_run_id === 'string' ? req.body.workflow_run_id : null;
+      const clientVersion =
+        typeof req.body.workflow_version === 'number' ? req.body.workflow_version : null;
+      const serverVersion = (workflowRun.state as { version?: number }).version ?? 0;
 
-    if (
-      (clientWorkflowRunId !== null && clientWorkflowRunId !== workflowRun.id) ||
-      (clientVersion !== null && clientVersion !== serverVersion)
-    ) {
-      res.status(409).json({
-        error:
-          'The rubric assistant is out of sync. Please reload to continue.',
-      });
-      return;
+      if (
+        (clientWorkflowRunId !== null && clientWorkflowRunId !== workflowRun.id) ||
+        (clientVersion !== null && clientVersion !== serverVersion)
+      ) {
+        res.status(409).json({
+          error:
+            'The rubric assistant is out of sync. Please reload to continue.',
+        });
+        return;
+      }
     }
 
     // Insert messages into DB to get message_id (needed as Redis stream key)
