@@ -76,10 +76,16 @@ function getHideScoreMode(value: ScoreVisibilityValue): HideScoreMode {
   return 'hide_score_until_date';
 }
 
+const DATE_REQUIRED_MESSAGE = 'Date is required';
+
+function isDateFieldEmpty(value: string | undefined): boolean {
+  return value !== undefined && !value;
+}
+
 function validateQuestionVisibility(value: QuestionVisibilityValue): string | true {
   if (!value.hideQuestions) return true;
-  if (value.showAgainDate !== undefined && !value.showAgainDate) return 'Date is required';
-  if (value.hideAgainDate !== undefined && !value.hideAgainDate) return 'Date is required';
+  if (isDateFieldEmpty(value.showAgainDate)) return DATE_REQUIRED_MESSAGE;
+  if (isDateFieldEmpty(value.hideAgainDate)) return DATE_REQUIRED_MESSAGE;
   return true;
 }
 
@@ -121,8 +127,8 @@ function QuestionVisibilityInput({
     }
   };
 
-  const showAgainDateInvalid = value.showAgainDate !== undefined && !value.showAgainDate;
-  const hideAgainDateInvalid = value.hideAgainDate !== undefined && !value.hideAgainDate;
+  const showAgainDateInvalid = isDateFieldEmpty(value.showAgainDate);
+  const hideAgainDateInvalid = isDateFieldEmpty(value.hideAgainDate);
 
   return (
     <Form.Group>
@@ -167,7 +173,7 @@ function QuestionVisibilityInput({
                   type="invalid"
                   id={`${idPrefix}-show-questions-between-start-error`}
                 >
-                  Date is required
+                  {DATE_REQUIRED_MESSAGE}
                 </Form.Control.Feedback>
               )}
             </Col>
@@ -197,7 +203,7 @@ function QuestionVisibilityInput({
                   type="invalid"
                   id={`${idPrefix}-hide-questions-between-end-error`}
                 >
-                  Date is required
+                  {DATE_REQUIRED_MESSAGE}
                 </Form.Control.Feedback>
               )}
             </Col>
@@ -222,7 +228,7 @@ function QuestionVisibilityInput({
           />
           {showAgainDateInvalid && (
             <Form.Control.Feedback type="invalid" id={`${idPrefix}-show-questions-date-error`}>
-              Date is required
+              {DATE_REQUIRED_MESSAGE}
             </Form.Control.Feedback>
           )}
         </div>
@@ -245,7 +251,7 @@ function QuestionVisibilityInput({
 
 function validateScoreVisibility(value: ScoreVisibilityValue): string | true {
   if (!value.hideScore) return true;
-  if (value.showAgainDate !== undefined && !value.showAgainDate) return 'Date is required';
+  if (isDateFieldEmpty(value.showAgainDate)) return DATE_REQUIRED_MESSAGE;
   return true;
 }
 
@@ -276,7 +282,7 @@ function ScoreVisibilityInput({
     }
   };
 
-  const showAgainDateInvalid = value.showAgainDate !== undefined && !value.showAgainDate;
+  const showAgainDateInvalid = isDateFieldEmpty(value.showAgainDate);
 
   return (
     <Form.Group>
@@ -308,7 +314,7 @@ function ScoreVisibilityInput({
           />
           {showAgainDateInvalid && (
             <Form.Control.Feedback type="invalid" id={`${idPrefix}-show-score-date-error`}>
-              Date is required
+              {DATE_REQUIRED_MESSAGE}
             </Form.Control.Feedback>
           )}
         </div>

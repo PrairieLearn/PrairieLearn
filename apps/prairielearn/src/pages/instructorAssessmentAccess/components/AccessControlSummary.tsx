@@ -196,7 +196,7 @@ export function AccessControlSummary({
     <div>
       <section className="mb-4">
         <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
-          <h5 className="mb-0">
+          <h5 className="mb-0 d-flex align-items-center">
             Defaults
             {mainRuleErrorCount > 0 && (
               <Badge bg="danger" className="ms-2" style={{ fontSize: '0.7rem' }}>
@@ -228,7 +228,7 @@ export function AccessControlSummary({
 
       <section>
         <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
-          <h5 className="mb-0">
+          <h5 className="mb-0 d-flex align-items-center">
             Overrides
             {overridesErrorCount > 0 && (
               <Badge bg="danger" className="ms-2" style={{ fontSize: '0.7rem' }}>
