@@ -19059,7 +19059,7 @@ __metadata:
     turbo: "npm:^2.9.3"
     typescript: "npm:^5.9.3"
     vitest: "npm:^4.1.2"
-    zod: "npm:^4.3.6"
+    zod: "npm:^3.25.76"
     zod-to-json-schema: "npm:^3.25.2"
   languageName: unknown
   linkType: soft
