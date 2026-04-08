@@ -1150,12 +1150,13 @@ function formatValues(qids: Set<string> | string[]) {
  * Validates an array of access control rules.
  * Returns a single object with all accumulated errors and warnings.
  *
- * @param rules The full ordered list of access control rules: index 0 is the
- *   main (defaults) rule that applies to everyone (no labels), and all
- *   subsequent entries are student-label rules that target specific labels.
- * @param enrollmentRules Optional separate list of enrollment-based rules.
- * @param validStudentLabelNames Optional set of known student label names for
- *   cross-referencing validation.
+ * @param params
+ * @param params.rules The full ordered list of access control rules: index 0 is the
+ * main (defaults) rule that applies to everyone (no labels), and all
+ * subsequent entries are student-label rules that target specific labels.
+ * @param params.enrollmentRules Optional separate list of enrollment-based rules.
+ * @param params.validStudentLabelNames Optional set of known student label names for
+ * cross-referencing validation.
  */
 export function validateAccessControlRules({
   rules,

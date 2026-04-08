@@ -2,6 +2,7 @@ import {
   type AccessControlValidationIssue,
   type AccessControlValidationRule,
   validateGlobalDateConsistencyIssues,
+  validateRuleDateOrderingIssues,
 } from '../../../schemas/accessControl.js';
 
 import { type AccessControlFormData, formDataToJson } from './types.js';
@@ -11,10 +12,12 @@ export type AccessControlFormFieldPath =
   | 'mainRule.dueDate'
   | `mainRule.earlyDeadlines.${number}.date`
   | `mainRule.lateDeadlines.${number}.date`
+  | 'mainRule.questionVisibility.hideAgainDate'
   | `overrides.${number}.releaseDate`
   | `overrides.${number}.dueDate`
   | `overrides.${number}.earlyDeadlines.${number}.date`
-  | `overrides.${number}.lateDeadlines.${number}.date`;
+  | `overrides.${number}.lateDeadlines.${number}.date`
+  | `overrides.${number}.questionVisibility.hideAgainDate`;
 
 function buildValidationRules(formData: AccessControlFormData): AccessControlValidationRule[] {
   return formDataToJson(formData).map((rule, index) => ({
@@ -30,15 +33,27 @@ function mapIssueToFormFieldPath(
   const prefix: 'mainRule' | `overrides.${number}` =
     issue.ruleIndex === 0 ? 'mainRule' : `overrides.${issue.ruleIndex - 1}`;
 
-  switch (issue.path[1]) {
-    case 'releaseDate':
-      return `${prefix}.releaseDate`;
-    case 'dueDate':
-      return `${prefix}.dueDate`;
-    case 'earlyDeadlines':
-      return `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
-    case 'lateDeadlines':
-      return `${prefix}.lateDeadlines.${issue.path[2]}.date`;
+  switch (issue.path[0]) {
+    case 'dateControl':
+      switch (issue.path[1]) {
+        case 'releaseDate':
+          return `${prefix}.releaseDate`;
+        case 'dueDate':
+          return `${prefix}.dueDate`;
+        case 'earlyDeadlines':
+          return `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
+        case 'lateDeadlines':
+          return `${prefix}.lateDeadlines.${issue.path[2]}.date`;
+        default:
+          return null;
+      }
+    case 'afterComplete':
+      switch (issue.path[1]) {
+        case 'hideQuestionsAgainDate':
+          return `${prefix}.questionVisibility.hideAgainDate`;
+        default:
+          return null;
+      }
     default:
       return null;
   }
@@ -51,11 +66,22 @@ export function getGlobalDateValidationErrors(formData: AccessControlFormData): 
   const seenPaths = new Set<AccessControlFormFieldPath>();
   const results: { path: AccessControlFormFieldPath; message: string }[] = [];
 
-  for (const issue of validateGlobalDateConsistencyIssues(buildValidationRules(formData))) {
+  const validationRules = buildValidationRules(formData);
+
+  for (const issue of validateGlobalDateConsistencyIssues(validationRules)) {
     const path = mapIssueToFormFieldPath(issue);
     if (!path || seenPaths.has(path)) continue;
     seenPaths.add(path);
     results.push({ path, message: issue.message });
+  }
+
+  for (const validationRule of validationRules) {
+    for (const issue of validateRuleDateOrderingIssues(validationRule)) {
+      const path = mapIssueToFormFieldPath(issue);
+      if (!path || seenPaths.has(path)) continue;
+      seenPaths.add(path);
+      results.push({ path, message: issue.message });
+    }
   }
 
   return results;

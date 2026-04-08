@@ -67,6 +67,7 @@ export function generateDateTableRows(
           <FriendlyDate
             date={Temporal.PlainDateTime.from(releaseDate)}
             timezone={displayTimezone}
+            options={{ includeTz: false }}
             tooltip
           />
         ),
@@ -83,6 +84,7 @@ export function generateDateTableRows(
           <FriendlyDate
             date={Temporal.PlainDateTime.from(deadline.date)}
             timezone={displayTimezone}
+            options={{ includeTz: false }}
             tooltip
           />
         ) : (
@@ -100,6 +102,7 @@ export function generateDateTableRows(
           <FriendlyDate
             date={Temporal.PlainDateTime.from(dueDate)}
             timezone={displayTimezone}
+            options={{ includeTz: false }}
             tooltip
           />
         ),
@@ -131,6 +134,7 @@ export function generateDateTableRows(
           <FriendlyDate
             date={Temporal.PlainDateTime.from(deadline.date)}
             timezone={displayTimezone}
+            options={{ includeTz: false }}
             tooltip
           />
         ) : (
@@ -274,12 +278,14 @@ export function generateRuleSummary(
             <FriendlyDate
               date={Temporal.PlainDateTime.from(qv.showAgainDate)}
               timezone={displayTimezone}
+              options={{ includeTz: false }}
               tooltip
             />
             {' – '}
             <FriendlyDate
               date={Temporal.PlainDateTime.from(qv.hideAgainDate)}
               timezone={displayTimezone}
+              options={{ includeTz: false }}
               tooltip
             />
           </>
@@ -296,6 +302,7 @@ export function generateRuleSummary(
             <FriendlyDate
               date={Temporal.PlainDateTime.from(qv.showAgainDate)}
               timezone={displayTimezone}
+              options={{ includeTz: false }}
               tooltip
             />
           </>
@@ -325,6 +332,7 @@ export function generateRuleSummary(
             <FriendlyDate
               date={Temporal.PlainDateTime.from(sv.showAgainDate)}
               timezone={displayTimezone}
+              options={{ includeTz: false }}
               tooltip
             />
           </>
@@ -370,6 +378,7 @@ function formatDeadlineEntries(
         <FriendlyDate
           date={Temporal.PlainDateTime.from(entry.date)}
           timezone={displayTimezone}
+          options={{ includeTz: false }}
           tooltip
         />{' '}
         ({entry.credit}% credit)
@@ -411,6 +420,7 @@ function generateOverrideFieldItems(
         <FriendlyDate
           date={Temporal.PlainDateTime.from(rule.releaseDate)}
           timezone={displayTimezone}
+          options={{ includeTz: false }}
           tooltip
         />
       ) : (
@@ -443,6 +453,7 @@ function generateOverrideFieldItems(
         <FriendlyDate
           date={Temporal.PlainDateTime.from(rule.dueDate)}
           timezone={displayTimezone}
+          options={{ includeTz: false }}
           tooltip
         />
       ) : (
@@ -509,12 +520,14 @@ function generateOverrideFieldItems(
               <FriendlyDate
                 date={Temporal.PlainDateTime.from(qv.showAgainDate)}
                 timezone={displayTimezone}
+                options={{ includeTz: false }}
                 tooltip
               />
               , hidden again{' '}
               <FriendlyDate
                 date={Temporal.PlainDateTime.from(qv.hideAgainDate)}
                 timezone={displayTimezone}
+                options={{ includeTz: false }}
                 tooltip
               />
             </>
@@ -530,6 +543,7 @@ function generateOverrideFieldItems(
               <FriendlyDate
                 date={Temporal.PlainDateTime.from(qv.showAgainDate)}
                 timezone={displayTimezone}
+                options={{ includeTz: false }}
                 tooltip
               />
             </>
@@ -566,6 +580,7 @@ function generateOverrideFieldItems(
               <FriendlyDate
                 date={Temporal.PlainDateTime.from(sv.showAgainDate)}
                 timezone={displayTimezone}
+                options={{ includeTz: false }}
                 tooltip
               />
             </>

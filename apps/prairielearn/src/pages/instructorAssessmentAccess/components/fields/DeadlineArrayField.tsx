@@ -3,7 +3,6 @@ import { useEffect, useRef } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
 import { get, useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
-
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
@@ -211,7 +210,7 @@ function DeadlineArrayInput({
     const defaultDate = candidateDate ? endOfDayDatetime(candidateDate) : '';
     const previousCredit =
       deadlineFields[deadlineFields.length - 1]?.credit ?? (isEarly ? 110 : 90);
-    const defaultCredit = previousCredit - 10;
+    const defaultCredit = previousCredit - 1;
     appendDeadline({ date: defaultDate, credit: defaultCredit });
   };
 

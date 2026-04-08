@@ -1,5 +1,5 @@
 import { Alert, Button, Col, Form, Row } from 'react-bootstrap';
-import { useController, useWatch } from 'react-hook-form';
+import { get, useController, useFormState, useWatch } from 'react-hook-form';
 
 import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
@@ -7,6 +7,7 @@ import { FieldWrapper } from './FieldWrapper.js';
 import { useOverrideField } from './hooks/useOverrideField.js';
 import {
   type AccessControlFormData,
+  type DeadlineEntry,
   type QuestionVisibilityValue,
   type ScoreVisibilityValue,
   isNonDefaultQuestionVisibility,
@@ -76,6 +77,16 @@ function getHideScoreMode(value: ScoreVisibilityValue): HideScoreMode {
   return 'hide_score_until_date';
 }
 
+function getLastDeadline(
+  dueDate: string | null,
+  lateDeadlines: DeadlineEntry[],
+): string | null {
+  if (lateDeadlines.length > 0) {
+    return lateDeadlines[lateDeadlines.length - 1].date;
+  }
+  return dueDate;
+}
+
 const DATE_REQUIRED_MESSAGE = 'Date is required';
 
 function isDateFieldEmpty(value: string | undefined): boolean {
@@ -94,13 +105,19 @@ function QuestionVisibilityInput({
   onChange,
   idPrefix,
   hasPrairieTest = false,
+  lastDeadline,
+  hideAgainDateError,
 }: {
   value: QuestionVisibilityValue;
   onChange: (value: QuestionVisibilityValue) => void;
   idPrefix: string;
   hasPrairieTest?: boolean;
+  lastDeadline?: string | null;
+  hideAgainDateError?: string;
 }) {
   const hideQuestionsMode = getHideQuestionsMode(value);
+  const showAgainBeforeLastDeadline =
+    value.showAgainDate && lastDeadline && value.showAgainDate < lastDeadline;
 
   const handleModeChange = (newMode: HideQuestionsMode) => {
     switch (newMode) {
@@ -128,7 +145,8 @@ function QuestionVisibilityInput({
   };
 
   const showAgainDateInvalid = isDateFieldEmpty(value.showAgainDate);
-  const hideAgainDateInvalid = isDateFieldEmpty(value.hideAgainDate);
+  const hideAgainDateEmpty = isDateFieldEmpty(value.hideAgainDate);
+  const hideAgainDateInvalid = hideAgainDateEmpty || !!hideAgainDateError;
 
   return (
     <Form.Group>
@@ -203,7 +221,7 @@ function QuestionVisibilityInput({
                   type="invalid"
                   id={`${idPrefix}-hide-questions-between-end-error`}
                 >
-                  {DATE_REQUIRED_MESSAGE}
+                  {hideAgainDateEmpty ? DATE_REQUIRED_MESSAGE : hideAgainDateError}
                 </Form.Control.Feedback>
               )}
             </Col>
@@ -243,6 +261,12 @@ function QuestionVisibilityInput({
         <Alert variant="info" className="mt-2 mb-0">
           If this is not an exam, consider setting question visibility to "Show questions after
           completion" so students can review their work.
+        </Alert>
+      )}
+      {showAgainBeforeLastDeadline && (
+        <Alert variant="warning" className="mt-2 mb-0">
+          This date is before the last deadline. Students will be able to see questions while they
+          still have submissions remaining.
         </Alert>
       )}
     </Form.Group>
@@ -386,6 +410,12 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
     rules: { validate: validateScoreVisibility },
   });
 
+  const { errors } = useFormState<AccessControlFormData>();
+  const hideAgainDateError: string | undefined = get(
+    errors,
+    'mainRule.questionVisibility.hideAgainDate',
+  )?.message;
+
   const prairieTestExams = useWatch<AccessControlFormData, 'mainRule.prairieTestExams'>({
     name: 'mainRule.prairieTestExams',
   });
@@ -394,6 +424,13 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
   const dateControlEnabled = useWatch<AccessControlFormData, 'mainRule.dateControlEnabled'>({
     name: 'mainRule.dateControlEnabled',
   });
+  const dueDate = useWatch<AccessControlFormData, 'mainRule.dueDate'>({
+    name: 'mainRule.dueDate',
+  });
+  const lateDeadlines = useWatch<AccessControlFormData, 'mainRule.lateDeadlines'>({
+    name: 'mainRule.lateDeadlines',
+  });
+  const lastDeadline = getLastDeadline(dueDate, lateDeadlines);
 
   const qvNonDefault = isNonDefaultQuestionVisibility(qvField.value);
   const svNonDefault = isNonDefaultScoreVisibility(svField.value);
@@ -418,6 +455,8 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
           value={qvField.value}
           idPrefix="mainRule"
           hasPrairieTest={hasPrairieTest}
+          lastDeadline={lastDeadline}
+          hideAgainDateError={hideAgainDateError}
           onChange={qvField.onChange}
         />
       </Col>
@@ -446,6 +485,12 @@ export function OverrideAfterCompleteForm({ index, title }: { index: number; tit
     name: 'mainRule.prairieTestExams',
   });
   const hasPrairieTest = prairieTestExams.length > 0;
+
+  const { errors } = useFormState<AccessControlFormData>();
+  const hideAgainDateError: string | undefined = get(
+    errors,
+    `overrides.${index}.questionVisibility.hideAgainDate`,
+  )?.message;
 
   const { field: qvField } = useController<
     AccessControlFormData,
@@ -490,6 +535,7 @@ export function OverrideAfterCompleteForm({ index, title }: { index: number; tit
             value={qvField.value}
             idPrefix={`overrides-${index}`}
             hasPrairieTest={hasPrairieTest}
+            hideAgainDateError={hideAgainDateError}
             onChange={qvField.onChange}
           />
         </FieldWrapper>
