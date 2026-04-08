@@ -5,7 +5,7 @@
     "apps/*",
     "packages/*"
   ],
-  "packageManager": "pnpm@10.14.0",
+  "packageManager": "pnpm@10.33.0",
   "engines": {
     "node": ">=24.0.0"
   },
