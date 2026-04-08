@@ -420,7 +420,7 @@ export function RubricSettings({
       __csrf_token: csrfToken,
       __action: 'modify_rubric_settings',
       use_rubric,
-      modified_at: modifiedAt instanceof Date ? modifiedAt.toISOString() : (modifiedAt ?? ''),
+      modified_at: modifiedAt instanceof Date ? modifiedAt.toISOString() : '',
       replace_auto_points: replaceAutoPoints,
       starting_points: startingPoints,
       min_points: minPoints,
@@ -556,7 +556,7 @@ export function RubricSettings({
       <input
         type="hidden"
         name="modified_at"
-        value={modifiedAt instanceof Date ? modifiedAt.toISOString() : (modifiedAt ?? '')}
+        value={modifiedAt instanceof Date ? modifiedAt.toISOString() : ''}
       />
       <input type="hidden" name="starting_points" value={startingPoints} />
       <input type="hidden" name="max_extra_points" value={maxExtraPoints ?? ''} />

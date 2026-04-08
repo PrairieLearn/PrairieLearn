@@ -45,8 +45,10 @@ interface AiGradingState {
   rubric_exists?: boolean;
   message_id?: string;
   user_message?: string;
-  /** Incremented on each continueWorkflow call. Used as a consistency check
-   * so clients can detect when another user has advanced the workflow. */
+  /**
+   * Incremented on each continueWorkflow call. Used as a consistency check
+   * so clients can detect when another user has advanced the workflow.
+   */
   version?: number;
 }
 
@@ -103,19 +105,30 @@ async function reconstructAgentContext(ctx: AiGradingContext): Promise<AiGrading
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function runAgentWithStreaming(
-  agent: any,
-  cancellationState: { wasCanceled: boolean },
-  messageId: string,
-  modelId: string,
-  promptArg: { prompt: string } | { messages: ModelMessage[] },
-  sseStream: JsonToSseTransformStream,
-  workflowRunId: string,
-  phase: 'generate' | 'edit',
-  assessmentQuestionId: string,
-  workflowVersion: number,
-) {
+async function runAgentWithStreaming(opts: {
+  agent: any;
+  cancellationState: { wasCanceled: boolean };
+  messageId: string;
+  modelId: string;
+  promptArg: { prompt: string } | { messages: ModelMessage[] };
+  sseStream: JsonToSseTransformStream;
+  workflowRunId: string;
+  phase: 'generate' | 'edit';
+  assessmentQuestionId: string;
+  workflowVersion: number;
+}) {
+  const {
+    agent,
+    cancellationState,
+    messageId,
+    modelId,
+    promptArg,
+    sseStream,
+    workflowRunId,
+    phase,
+    assessmentQuestionId,
+    workflowVersion,
+  } = opts;
   const agentRes = await agent.stream(promptArg);
   let finalParts: unknown[] = [];
   const errorState = { hasError: false };
@@ -124,7 +137,12 @@ async function runAgentWithStreaming(
     generateMessageId: () => messageId,
     messageMetadata: ({ part }: { part: { type: string } }) => {
       if (part.type === 'start') {
-        return { workflow_run_id: workflowRunId, status: 'streaming', phase, workflow_version: workflowVersion };
+        return {
+          workflow_run_id: workflowRunId,
+          status: 'streaming',
+          phase,
+          workflow_version: workflowVersion,
+        };
       }
       if (part.type === 'finish') {
         return {
@@ -266,18 +284,18 @@ async function takeStep(
           messageId,
         );
 
-        await runAgentWithStreaming(
+        await runAgentWithStreaming({
           agent,
           cancellationState,
           messageId,
           modelId,
-          { prompt: 'Generate a new rubric.' },
+          promptArg: { prompt: 'Generate a new rubric.' },
           sseStream,
-          context.run.id,
+          workflowRunId: context.run.id,
           phase,
-          ctx.assessment_question_id,
-          state.version ?? 0,
-        );
+          assessmentQuestionId: ctx.assessment_question_id,
+          workflowVersion: state.version ?? 0,
+        });
       } else {
         const persistedMessages = await selectAiGradingMessages(ctx.assessment_question_id);
 
@@ -290,18 +308,18 @@ async function takeStep(
           messageId,
         );
 
-        await runAgentWithStreaming(
+        await runAgentWithStreaming({
           agent,
           cancellationState,
           messageId,
           modelId,
-          { messages },
+          promptArg: { messages },
           sseStream,
-          context.run.id,
+          workflowRunId: context.run.id,
           phase,
-          ctx.assessment_question_id,
-          state.version ?? 0,
-        );
+          assessmentQuestionId: ctx.assessment_question_id,
+          workflowVersion: state.version ?? 0,
+        });
       }
 
       logger.info('Agent completed, returning to rubric_ready');

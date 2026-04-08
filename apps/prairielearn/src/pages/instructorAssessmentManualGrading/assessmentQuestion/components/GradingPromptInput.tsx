@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 export function GradingPromptInput({
   value,
@@ -18,12 +18,10 @@ export function GradingPromptInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isStopping, setIsStopping] = useState(false);
 
-  // Reset isStopping when generation ends
-  useEffect(() => {
-    if (!isGenerating) {
-      setIsStopping(false);
-    }
-  }, [isGenerating]);
+  // Reset isStopping when generation ends (render-time adjustment, not useEffect).
+  if (!isGenerating && isStopping) {
+    setIsStopping(false);
+  }
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

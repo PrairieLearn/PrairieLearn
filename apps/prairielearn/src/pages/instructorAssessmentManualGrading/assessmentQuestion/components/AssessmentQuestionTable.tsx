@@ -647,7 +647,7 @@ export function AssessmentQuestionTable({
     <>
       <div className="mb-3">
         <RubricSettings
-          key={`${rubricData?.rubric?.id ?? 'no-rubric'}-${rubricData?.rubric?.modified_at ?? ''}`}
+          key={`${rubricData?.rubric.id ?? 'no-rubric'}-${String(rubricData?.rubric.modified_at ?? '')}`}
           hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
           assessmentQuestion={assessmentQuestion}
           rubricData={rubricData}

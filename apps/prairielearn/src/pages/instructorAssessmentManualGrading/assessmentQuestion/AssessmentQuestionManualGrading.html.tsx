@@ -2,10 +2,10 @@ import { useChat } from '@ai-sdk/react';
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { DefaultChatTransport, type ToolUIPart, type UIMessage } from 'ai';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Button, Modal, Overlay, OverlayTrigger, Popover, Tooltip } from 'react-bootstrap';
+import { Alert, Button, Modal, Overlay, Popover } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
-import { NuqsAdapter } from '@prairielearn/ui';
+import { NuqsAdapter, OverlayTrigger } from '@prairielearn/ui';
 
 import { MemoizedMarkdown } from '../../../components/MemoizedMarkdown.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
@@ -20,7 +20,7 @@ import type {
 } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
-import type { RubricData } from '../../../lib/manualGrading.types.js';
+import { type RubricData, RubricDataSchema } from '../../../lib/manualGrading.types.js';
 import { createAssessmentQuestionTrpcClient } from '../../../trpc/assessmentQuestion/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/assessmentQuestion/context.js';
 
@@ -31,7 +31,6 @@ import {
   type ConflictModalState,
   GradingConflictModal,
 } from './components/GradingConflictModal.js';
-
 import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
 
@@ -493,11 +492,7 @@ function RubricDiff({ diff, actionSlot }: { diff: RubricDiffResult; actionSlot?:
           />
           {changeCount} change{changeCount !== 1 ? 's' : ''}
         </div>
-        {actionSlot && (
-          <div className="ms-auto" onClick={(e) => e.stopPropagation()}>
-            {actionSlot}
-          </div>
-        )}
+        {actionSlot && <div className="ms-auto">{actionSlot}</div>}
       </div>
       {!expanded ? null : (
         <div className="d-flex flex-column gap-1 px-2 pb-2">
@@ -719,7 +714,10 @@ function RevertButton({
   return (
     <>
       {disabled ? (
-        <span className="btn btn-link btn-sm p-0 text-muted disabled" style={{ pointerEvents: 'none', opacity: 0.5, textDecoration: 'none' }}>
+        <span
+          className="btn btn-link btn-sm p-0 text-muted disabled"
+          style={{ pointerEvents: 'none', opacity: 0.5, textDecoration: 'none' }}
+        >
           <i className="bi bi-arrow-counterclockwise me-1" />
           {label}
         </span>
@@ -728,7 +726,10 @@ function RevertButton({
           ref={targetRef}
           type="button"
           className="btn btn-link btn-sm p-0 text-muted"
-          onClick={() => setShow((s) => !s)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShow((s) => !s);
+          }}
         >
           <i className="bi bi-arrow-counterclockwise me-1" />
           {label}
@@ -872,7 +873,7 @@ function AssessmentQuestionManualGradingInner({
           rubric_data: unknown;
           aiGradingStats: AiGradingGeneralStats | null;
         };
-        const newRubricData = data.rubric_data as RubricData | null;
+        const newRubricData = RubricDataSchema.nullable().parse(data.rubric_data);
         setRubricDataState(newRubricData);
         setAiGradingStatsState(data.aiGradingStats);
 
@@ -898,8 +899,7 @@ function AssessmentQuestionManualGradingInner({
         if (response.status === 409) {
           const data = (await response.json()) as { error?: string };
           setConflictError(
-            data.error ??
-              'The rubric assistant is out of sync. Please reload to continue.',
+            data.error ?? 'The rubric assistant is out of sync. Please reload to continue.',
           );
           return new Response(null, { status: 204 });
         }
@@ -932,7 +932,7 @@ function AssessmentQuestionManualGradingInner({
     }),
     onFinish({ message }) {
       // Update workflow sync state from SSE metadata
-      if (message.metadata?.workflow_run_id && message.metadata?.workflow_version != null) {
+      if (message.metadata?.workflow_run_id && message.metadata.workflow_version != null) {
         workflowSyncRef.current = {
           workflowRunId: message.metadata.workflow_run_id,
           version: message.metadata.workflow_version,
@@ -971,12 +971,14 @@ function AssessmentQuestionManualGradingInner({
 
   const isGenerating = status === 'streaming' || status === 'submitted';
 
-  useEffect(() => {
-    if (!isGenerating) setIsStopping(false);
-  }, [isGenerating]);
+  // Reset isStopping when generation ends (render-time adjustment, not useEffect).
+  if (!isGenerating && isStopping) {
+    setIsStopping(false);
+  }
 
   // Refresh rubric data in real-time as mutation tool calls complete during streaming.
   const completedMutationCountRef = useRef(0);
+  /* eslint-disable react-you-might-not-need-an-effect/no-derived-state -- rubricDataState is fetched from the server, not derived from messages */
   useEffect(() => {
     let count = 0;
     for (const message of messages) {
@@ -995,6 +997,7 @@ function AssessmentQuestionManualGradingInner({
       refreshRubricData();
     }
   }, [messages, refreshRubricData]);
+  /* eslint-enable react-you-might-not-need-an-effect/no-derived-state */
 
   // Re-run MathJax typesetting and auto-scroll the chat container when messages change.
   // We scroll the container div (overflow-auto), NOT the viewport.
@@ -1307,11 +1310,10 @@ function AssessmentQuestionManualGradingInner({
           ) : !hasCourseInstancePermissionEdit ? (
             <OverlayTrigger
               placement="top"
-              overlay={
-                <Tooltip>
-                  Sending messages requires student data editor access or higher.
-                </Tooltip>
-              }
+              tooltip={{
+                props: { id: 'read-only-tooltip' },
+                body: 'Sending messages requires student data editor access or higher.',
+              }}
             >
               <div className="px-3 py-2 border-top bg-white d-flex align-items-center justify-content-center text-body-secondary small">
                 Read-only access

@@ -359,8 +359,7 @@ router.post(
     if (!isNewWorkflow) {
       if (workflowRun.status !== 'waiting_for_input') {
         res.status(409).json({
-          error:
-            'The rubric assistant is out of sync. Please reload to continue.',
+          error: 'The rubric assistant is out of sync. Please reload to continue.',
         });
         return;
       }
@@ -378,8 +377,7 @@ router.post(
         (clientVersion !== null && clientVersion !== serverVersion)
       ) {
         res.status(409).json({
-          error:
-            'The rubric assistant is out of sync. Please reload to continue.',
+          error: 'The rubric assistant is out of sync. Please reload to continue.',
         });
         return;
       }
@@ -417,8 +415,7 @@ router.post(
       takeSseStream(messageRow.id);
       if (err instanceof Error && err.message.includes('waiting_for_input')) {
         res.status(409).json({
-          error:
-            'The rubric assistant is out of sync. Please reload to continue.',
+          error: 'The rubric assistant is out of sync. Please reload to continue.',
         });
         return;
       }

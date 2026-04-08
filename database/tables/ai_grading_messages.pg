@@ -9,6 +9,7 @@ columns
     parts: jsonb not null default '[]'::jsonb
     phase: enum_ai_grading_message_phase not null
     role: enum_ai_question_generation_message_role not null
+    rubric_snapshot: jsonb
     status: enum_ai_question_generation_message_status not null
     updated_at: timestamp with time zone not null default now()
     usage_input_tokens: integer not null default 0
@@ -17,7 +18,6 @@ columns
     usage_output_tokens: integer not null default 0
     usage_output_tokens_reasoning: integer not null default 0
     workflow_run_id: bigint
-    rubric_snapshot: jsonb
 
 indexes
     ai_grading_messages_pkey: PRIMARY KEY (id) USING btree (id)
