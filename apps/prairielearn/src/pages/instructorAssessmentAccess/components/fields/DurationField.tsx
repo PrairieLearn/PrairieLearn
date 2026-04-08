@@ -31,6 +31,7 @@ function DurationInput({
             <Form.Control
               type="number"
               aria-label="Duration in minutes"
+              aria-invalid={!!error}
               placeholder="Duration in minutes"
               value={value || ''}
               isInvalid={!!error}
