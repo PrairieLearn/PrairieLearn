@@ -12,6 +12,10 @@ import { type ZodSchema, z } from 'zod';
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 
+import {
+  validateGlobalDateConsistencyIssues,
+  validateRule,
+} from '../lib/access-control/validation.js';
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
@@ -30,12 +34,10 @@ import {
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
-  validateGlobalDateConsistencyIssues,
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
 import { deduplicateByName } from './deduplicate.js';
-import { validateRule } from './fromDisk/accessControl.js';
 import * as infofile from './infofile.js';
 import { isDraftQid } from './question.js';
 
@@ -1191,7 +1193,7 @@ export function validateAccessControlRules({
     const firstRule = rules[0];
     const isFirstRuleMain = firstRule.labels == null || firstRule.labels.length === 0;
     if (!isFirstRuleMain) {
-      errors.push('The defaults (without labels) must be the first element in the array.');
+      errors.push('The defaults must be the first element in the array.');
     }
   }
 

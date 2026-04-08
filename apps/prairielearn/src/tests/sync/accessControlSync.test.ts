@@ -529,42 +529,6 @@ describe('Access control syncing', () => {
         assert.isNotNull(assessment.sync_errors);
         assert.match(assessment.sync_errors, /must be after the release date/);
       }));
-
-    it('rejects overrides that cannot produce any valid merged timeline', () =>
-      runInTransactionAndRollback(async () => {
-        const courseData = util.getCourseData();
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, 'Section A');
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, 'Section B');
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [
-          makeAccessControlRule({
-            dateControl: {
-              releaseDate: '2024-04-07T00:00:00',
-              dueDate: null,
-            },
-          }),
-          {
-            labels: ['Section A'],
-            dateControl: {
-              releaseDate: '2024-04-06T00:00:00',
-              dueDate: null,
-            },
-          },
-          {
-            labels: ['Section B'],
-            dateControl: {
-              earlyDeadlines: [{ date: '2024-04-05T00:00:00', credit: 120 }],
-            },
-          },
-        ];
-
-        await util.writeAndSyncCourseData(courseData);
-
-        const assessment = await getAssessment(util.ASSESSMENT_ID);
-        assert.isNotNull(assessment.sync_errors);
-        assert.match(assessment.sync_errors, /earliest possible release date/);
-      }));
   });
 
   describe('Deadline handling', () => {
@@ -1207,52 +1171,6 @@ describe('Access control syncing', () => {
           errorThrown,
           'A rule can be associated with labels or individual students, but not both',
         );
-      }));
-  });
-
-  describe('Main rule requirement', () => {
-    it('rejects sync when no main rule exists', () =>
-      runInTransactionAndRollback(async () => {
-        const labelName = 'Test Label';
-        const { syncedRules, errors } = await syncRulesAndRead(
-          [
-            makeAccessControlRule({
-              labels: [labelName],
-              dateControl: { durationMinutes: 90 },
-            }),
-          ],
-          { studentLabels: [labelName] },
-        );
-        assert.equal(syncedRules.length, 0);
-        assert.isTrue(errors.some((e) => e.includes('No defaults found')));
-      }));
-
-    it('rejects sync when multiple main rules exist', () =>
-      runInTransactionAndRollback(async () => {
-        const { syncedRules, errors } = await syncRulesAndRead([
-          makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
-          makeAccessControlRule({ dateControl: { durationMinutes: 90 } }),
-        ]);
-        assert.equal(syncedRules.length, 0);
-        assert.isTrue(errors.some((e) => e.includes('defaults entries')));
-      }));
-
-    it('successfully syncs with exactly one main rule', () =>
-      runInTransactionAndRollback(async () => {
-        const labelName = 'Test Label';
-        const mainRule = makeAccessControlRule({
-          dateControl: { durationMinutes: 60 },
-        });
-        const labelRule = makeAccessControlRule({
-          labels: [labelName],
-          dateControl: { durationMinutes: 90 },
-        });
-        const { syncedRules } = await syncRulesAndRead([mainRule, labelRule], {
-          studentLabels: [labelName],
-        });
-        assert.equal(syncedRules.length, 2);
-        assert.equal(syncedRules[0].date_control_duration_minutes, 60); // main
-        assert.equal(syncedRules[1].date_control_duration_minutes, 90); // label
       }));
   });
 

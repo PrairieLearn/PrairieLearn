@@ -2,15 +2,16 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import {
+  validateGlobalDateConsistencyIssues,
+  validateRule,
+} from '../../lib/access-control/validation.js';
 import { config } from '../../lib/config.js';
 import { StudentLabelSchema } from '../../lib/db-types.js';
 import {
   type AccessControlJson,
   type AccessControlValidationRule,
   MAX_ACCESS_CONTROL_RULES,
-  validateGlobalDateConsistencyIssues,
-  validateRuleCreditMonotonicity,
-  validateRuleDateOrdering,
 } from '../../schemas/accessControl.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -32,73 +33,6 @@ function mapField<T>(jsonValue: T | null | undefined): {
 
 const JSON_RULE_START = 0;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/**
- * Validates a single access control rule. Checks duplicates, date ordering,
- * credit monotonicity, and target-type constraints (e.g. integrations and
- * listBeforeRelease are only valid on the main rule).
- *
- * @param rule The access control rule to validate.
- * @param targetType 'none' for the main rule, 'student_label' or 'enrollment' for overrides.
- */
-export function validateRule(
-  rule: AccessControlJson,
-  targetType: 'none' | 'student_label' | 'enrollment',
-): string[] {
-  const errors: string[] = [];
-
-  if (targetType === 'none') {
-    if (rule.dateControl && !rule.dateControl.releaseDate) {
-      errors.push('Release date is required on the defaults when dateControl is specified.');
-    }
-  } else {
-    if (rule.listBeforeRelease !== undefined) {
-      errors.push('listBeforeRelease can only be specified on the defaults.');
-    }
-    if (rule.integrations != null) {
-      errors.push('integrations can only be specified on the defaults.');
-    }
-  }
-
-  if (rule.dateControl?.password === '') {
-    errors.push('Password cannot be empty.');
-  }
-
-  const exams = rule.integrations?.prairieTest?.exams ?? [];
-  const seenUuids = new Set<string>();
-  for (const e of exams) {
-    if (seenUuids.has(e.examUuid)) {
-      errors.push(`Duplicate PrairieTest exam UUID: ${e.examUuid}.`);
-    }
-    seenUuids.add(e.examUuid);
-  }
-
-  const earlyDates = new Set<string>();
-  for (const d of rule.dateControl?.earlyDeadlines ?? []) {
-    if (earlyDates.has(d.date)) {
-      errors.push(`Duplicate early deadline date: ${d.date}.`);
-    }
-    earlyDates.add(d.date);
-  }
-
-  const lateDates = new Set<string>();
-  for (const d of rule.dateControl?.lateDeadlines ?? []) {
-    if (lateDates.has(d.date)) {
-      errors.push(`Duplicate late deadline date: ${d.date}.`);
-    }
-    lateDates.add(d.date);
-  }
-
-  const dateErrors = validateRuleDateOrdering(rule);
-  errors.push(...dateErrors);
-  // Credit monotonicity assumes deadlines are chronological; skip if dates
-  // are out of order to avoid misleading "not monotonically decreasing" errors.
-  if (dateErrors.length === 0) {
-    errors.push(...validateRuleCreditMonotonicity(rule));
-  }
-
-  return errors;
-}
 
 /**
  * Validates and prepares rules for a single assessment. Returns an error
