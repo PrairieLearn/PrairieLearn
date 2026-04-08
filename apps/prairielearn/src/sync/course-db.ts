@@ -1170,8 +1170,10 @@ export function validateAccessControlRules({
   const errors: string[] = [];
   const warnings: string[] = [];
   const validationRules: AccessControlValidationRule[] = [];
+  const enrollmentRulesCount = enrollmentRules?.length ?? 0;
 
-  if (rules.length === 0) {
+  // If the feature is completely unused, we can skip all validation and we don't need a default rule.
+  if (rules.length === 0 && enrollmentRulesCount === 0) {
     return { errors, warnings };
   }
 
