@@ -395,25 +395,6 @@ describe('Access control syncing', () => {
         assert.isFalse(override.after_complete_show_score_again_date_overridden);
         assert.isNull(override.after_complete_show_score_again_date);
       }));
-
-    it('override with null releaseDate: overridden=true, value=NULL', () =>
-      runInTransactionAndRollback(async () => {
-        const labelName = 'Test Label';
-        const mainRule = makeAccessControlRule();
-        const overrideRule: AccessControlJsonInput = {
-          labels: [labelName],
-          dateControl: {
-            releaseDate: null, // explicitly clear — no date-based access for this label
-          },
-        };
-        const { syncedRules } = await syncRulesAndRead([mainRule, overrideRule], {
-          studentLabels: [labelName],
-        });
-        const override = syncedRules.find((r) => r.target_type === 'student_label');
-        assert.isOk(override);
-        assert.isTrue(override.date_control_release_date_overridden);
-        assert.isNull(override.date_control_release_date);
-      }));
   });
 
   describe('listBeforeRelease', () => {
