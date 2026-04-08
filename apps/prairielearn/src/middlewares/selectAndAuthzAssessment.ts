@@ -2,10 +2,6 @@ import asyncHandler from 'express-async-handler';
 
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
-import {
-  type AccessDisplayModel,
-  buildLegacyAccessDisplayModel,
-} from '../lib/assessment-access-control/access-display.js';
 import { resolveModernAssessmentAccess } from '../lib/assessment-access-control/authz.js';
 import type { ResLocalsForPage } from '../lib/res-locals.js';
 
@@ -31,8 +27,6 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
-  let accessDisplayModel: AccessDisplayModel;
-
   if (row.assessment.modern_access_control) {
     const modernResult = await resolveModernAssessmentAccess({
       assessment: row.assessment,
@@ -42,31 +36,17 @@ export default asyncHandler(async (req, res, next) => {
       reqDate: res.locals.req_date,
     });
     row.authz_result = modernResult.authzResult;
-    accessDisplayModel = modernResult.accessDisplayModel;
-  } else {
-    accessDisplayModel = buildLegacyAccessDisplayModel({
-      accessRules: row.authz_result.access_rules,
-      active: row.authz_result.active,
-      nextActiveTime: row.authz_result.next_active_time,
-      listed: row.authz_result.authorized,
-    });
   }
 
-  const responseLocals = {
-    ...res.locals,
-    ...row,
-    access_display_model: accessDisplayModel,
-  } as ResLocalsForPage<'assessment'>;
-
   if (!row.authz_result.authorized) {
-    if (row.assessment.modern_access_control && accessDisplayModel.availability.listed) {
-      Object.assign(res.locals, row, { access_display_model: accessDisplayModel });
+    if (row.assessment.modern_access_control && row.authz_result.show_before_release) {
+      const responseLocals = { ...res.locals, ...row } as ResLocalsForPage<'assessment'>;
       res.status(403).send(StudentAssessmentAccess({ resLocals: responseLocals }));
       return;
     }
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;
   }
-  Object.assign(res.locals, row, { access_display_model: accessDisplayModel });
+  Object.assign(res.locals, row);
   next();
 });

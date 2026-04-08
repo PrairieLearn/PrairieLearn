@@ -1,6 +1,5 @@
 import z from 'zod';
 
-import type { AccessDisplayModel } from '../lib/assessment-access-control/access-display.js';
 import {
   AssessmentModuleSchema,
   AssessmentSchema,
@@ -16,6 +15,4 @@ export const SelectAndAuthzAssessmentSchema = z.object({
   assessment_label: z.string(),
 });
 
-export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema> & {
-  access_display_model: AccessDisplayModel;
-};
+export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema>;

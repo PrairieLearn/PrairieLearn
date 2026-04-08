@@ -5,10 +5,6 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import {
-  type AccessDisplayModel,
-  buildLegacyAccessDisplayModel,
-} from '../lib/assessment-access-control/access-display.js';
 import { resolveModernAssessmentInstanceAccess } from '../lib/assessment-access-control/authz.js';
 import { assessmentInstanceLabel, assessmentLabel } from '../lib/assessment.shared.js';
 import {
@@ -54,7 +50,6 @@ const SelectAndAuthzAssessmentInstanceSchema = z.union([
 export type ResLocalsAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmentInstanceSchema> & {
   assessment_instance_label: string;
   assessment_label: string;
-  access_display_model: AccessDisplayModel;
 };
 
 async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
@@ -70,7 +65,6 @@ async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
   );
   if (row === null) throw new error.HttpStatusError(403, 'Access denied');
 
-  let accessDisplayModel: AccessDisplayModel;
   if (row.assessment.modern_access_control) {
     const modernResult = await resolveModernAssessmentInstanceAccess({
       assessment: row.assessment,
@@ -81,14 +75,6 @@ async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
       assessmentInstance: row.assessment_instance,
     });
     row.authz_result = modernResult.authzResult;
-    accessDisplayModel = modernResult.accessDisplayModel;
-  } else {
-    accessDisplayModel = buildLegacyAccessDisplayModel({
-      accessRules: row.authz_result.access_rules,
-      active: row.authz_result.active,
-      nextActiveTime: row.authz_result.next_active_time,
-      listed: row.authz_result.authorized,
-    });
   }
 
   if (!row.authz_result.authorized) {
@@ -101,7 +87,6 @@ async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
       row.assessment_set,
     ),
     assessment_label: assessmentLabel(row.assessment, row.assessment_set),
-    access_display_model: accessDisplayModel,
   });
 }
 

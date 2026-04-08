@@ -22,7 +22,6 @@ import {
   QuestionVariantHistory,
 } from '../../components/QuestionScore.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
-import { StudentAccessSummaryInline } from '../../components/StudentAccessSummary.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
@@ -327,7 +326,6 @@ export function StudentAssessmentInstance({
                     ${AssessmentStatus({
                       assessment_instance: resLocals.assessment_instance,
                       authz_result: resLocals.authz_result,
-                      accessDisplayModel: resLocals.access_display_model,
                     })}
                   </div>
                 `
@@ -353,7 +351,6 @@ export function StudentAssessmentInstance({
                     ${AssessmentStatus({
                       assessment_instance: resLocals.assessment_instance,
                       authz_result: resLocals.authz_result,
-                      accessDisplayModel: resLocals.access_display_model,
                     })}
                   </div>
                 `}
@@ -809,11 +806,9 @@ export function StudentAssessmentInstance({
 function AssessmentStatus({
   assessment_instance,
   authz_result,
-  accessDisplayModel,
 }: {
   assessment_instance: AssessmentInstance;
   authz_result: StudentAssessmentInstanceAuthzResult;
-  accessDisplayModel: ResLocalsForPage<'assessment-instance'>['access_display_model'];
 }) {
   if (assessment_instance.open && authz_result.active) {
     return html`
@@ -822,19 +817,11 @@ function AssessmentStatus({
         <br />
         Available credit: ${authz_result.credit_date_string}
       </div>
-      ${StudentAccessSummaryInline({
-        model: accessDisplayModel,
-        className: 'mt-3',
-      })}
     `;
   }
 
   return html`
     <div>Assessment is <strong>closed</strong> and you cannot answer questions.</div>
-    ${StudentAccessSummaryInline({
-      model: accessDisplayModel,
-      className: 'mt-3',
-    })}
   `;
 }
 

@@ -4,8 +4,6 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
-import { StudentAccessSummaryPopover } from '../../components/StudentAccessSummary.js';
-import type { AccessDisplayModel } from '../../lib/assessment-access-control/access-display.js';
 import {
   AssessmentAccessRuleSchema,
   AssessmentInstanceSchema,
@@ -39,9 +37,7 @@ export const StudentAssessmentsRowSchema = z.object({
   show_before_release: z.boolean().optional(),
 });
 type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowSchema>;
-type StudentAssessmentsDisplayRow = StudentAssessmentsRow & {
-  access_display_model: AccessDisplayModel;
-};
+type StudentAssessmentsDisplayRow = StudentAssessmentsRow;
 
 export function StudentAssessments({
   resLocals,
@@ -111,18 +107,13 @@ export function StudentAssessments({
                     <td class="text-center align-middle">
                       ${row.modern_access_control &&
                       row.assessment_instance_id == null &&
-                      row.access_display_model.availability.state !== 'open'
-                        ? html`<span class="text-muted"
-                            >${row.access_display_model.availability.label}</span
-                          >`
+                      !row.active
+                        ? html`<span class="text-muted">Not yet available</span>`
                         : row.credit_date_string === 'None'
                           ? ''
                           : row.assessment_instance_open !== false
                             ? row.credit_date_string
                             : 'Assessment closed.'}
-                      ${StudentAccessSummaryPopover({
-                        model: row.access_display_model,
-                      })}
                     </td>
                     <td class="text-center align-middle">
                       ${row.multiple_instance_header

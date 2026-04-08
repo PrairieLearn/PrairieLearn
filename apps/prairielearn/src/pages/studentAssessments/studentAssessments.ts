@@ -2,7 +2,6 @@ import { Router } from 'express';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { buildLegacyAccessDisplayModel } from '../../lib/assessment-access-control/access-display.js';
 import { resolveModernAssessmentAccessBatch } from '../../lib/assessment-access-control/authz.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import logPageView from '../../middlewares/logPageView.js';
@@ -40,17 +39,7 @@ router.get(
 
     const rowsWithAccessDisplay = rows
       .map((row) => {
-        if (!row.modern_access_control) {
-          return {
-            ...row,
-            access_display_model: buildLegacyAccessDisplayModel({
-              accessRules: row.access_rules,
-              active: row.active,
-              nextActiveTime: null,
-              listed: row.authorized,
-            }),
-          };
-        }
+        if (!row.modern_access_control) return row;
 
         const result = modernResults?.get(row.assessment_id);
         if (!result) return null;
@@ -62,12 +51,11 @@ router.get(
           active: result.authzResult.active,
           show_closed_assessment_score: result.authzResult.show_closed_assessment_score,
           show_before_release: result.authzResult.show_before_release,
-          access_display_model: result.accessDisplayModel,
         };
       })
       .filter((row): row is NonNullable<typeof row> => {
         if (row == null) return false;
-        return row.access_display_model.availability.listed;
+        return row.authorized || (row.show_before_release ?? false);
       });
 
     res.send(StudentAssessments({ resLocals: res.locals, rows: rowsWithAccessDisplay }));

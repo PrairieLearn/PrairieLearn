@@ -6,7 +6,6 @@ import {
 } from '../components/AssessmentRegenerate.js';
 import { PageLayout } from '../components/PageLayout.js';
 import { ScorebarHtml } from '../components/Scorebar.js';
-import { StudentAccessSummaryInline } from '../components/StudentAccessSummary.js';
 import { TimeLimitExpiredModal } from '../components/TimeLimitExpiredModal.js';
 import type { AssessmentInstance } from '../lib/db-types.js';
 import { formatPoints } from '../lib/format.js';
@@ -25,8 +24,6 @@ export function StudentAssessmentAccess({
   showTimeLimitExpiredModal?: boolean;
   userCanDeleteAssessmentInstance?: boolean;
 }) {
-  const accessDisplayModel =
-    'access_display_model' in resLocals ? resLocals.access_display_model : undefined;
   const { assessment, assessment_set, assessment_instance, authz_result } = resLocals;
   return PageLayout({
     resLocals,
@@ -74,9 +71,7 @@ export function StudentAssessmentAccess({
             : AssessmentStatusDescription({
                 assessment_instance,
                 authz_result,
-                accessDisplayModel,
               })}
-          ${StudentAccessSummaryInline({ model: accessDisplayModel, className: 'mt-3' })}
         </div>
       </div>
     `,
@@ -86,19 +81,15 @@ export function StudentAssessmentAccess({
 function AssessmentStatusDescription({
   assessment_instance,
   authz_result,
-  accessDisplayModel,
   extraClasses = '',
 }: {
   assessment_instance?: AssessmentInstance;
   authz_result: StudentAssessmentAccessLocals['authz_result'];
-  accessDisplayModel?: StudentAssessmentAccessLocals['access_display_model'];
   extraClasses?: string;
 }) {
-  const availabilityMessage =
-    authz_result.next_active_time != null &&
-    accessDisplayModel?.availability.state !== 'future_open'
-      ? `Assessment is not yet open. It will become available on ${authz_result.next_active_time}.`
-      : (accessDisplayModel?.availability.message ?? 'Assessment is no longer available.');
+  const availabilityMessage = authz_result.next_active_time
+    ? `Assessment is not yet open. It will become available on ${authz_result.next_active_time}.`
+    : 'Assessment is no longer available.';
 
   return html`
     <div class="${extraClasses}" data-testid="assessment-closed-message">
