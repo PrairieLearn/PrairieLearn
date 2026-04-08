@@ -748,14 +748,7 @@
           "properties": {
             "releaseDate": {
               "description": "Release date as ISO String",
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/DatetimeLocalStringSchema"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "$ref": "#/definitions/DatetimeLocalStringSchema"
             },
             "dueDate": {
               "description": "Due date as ISO String",
