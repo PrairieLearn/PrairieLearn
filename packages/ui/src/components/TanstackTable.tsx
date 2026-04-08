@@ -497,6 +497,7 @@ export function TanstackTable<RowDataModel>({
  * @param params.globalFilter.placeholder - Placeholder text for the search input
  * @param params.tableOptions - Specific options for the table. See {@link TanstackTableProps} for more details.
  * @param params.downloadButtonOptions - Specific options for the download button. See {@link TanstackTableDownloadButtonProps} for more details.
+ * @param params.statusContent - Optional content to replace the default "Showing X of Y" status text.
  */
 export function TanstackTableCard<RowDataModel>({
   table,

@@ -181,6 +181,7 @@ export const parseAsColumnPinningState = createParser<ColumnPinningState>({
  * and `onColumnVisibilityChange`.
  *
  * @param allColumnIds - Array of all hideable column IDs
+ * @param options - Optional configuration
  * @param options.defaultHidden - Column IDs that should be hidden by default
  * @param options.paramName - URL query parameter name (defaults to `'columns'`)
  */
@@ -188,7 +189,7 @@ export function useColumnVisibilityQueryState(
   allColumnIds: string[],
   options?: { defaultHidden?: string[]; paramName?: string },
 ) {
-  const hiddenSet = useMemo(() => new Set(options?.defaultHidden ?? []), [options?.defaultHidden]);
+  const hiddenSet = useMemo(() => new Set(options?.defaultHidden), [options?.defaultHidden]);
   const defaultColumnVisibility = useMemo<VisibilityState>(
     () => Object.fromEntries(allColumnIds.map((id) => [id, !hiddenSet.has(id)])),
     [allColumnIds, hiddenSet],
