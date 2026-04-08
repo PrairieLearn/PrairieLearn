@@ -11,12 +11,13 @@ import { MemoizedMarkdown } from '../../../components/MemoizedMarkdown.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import { mathjaxTypeset } from '../../../lib/client/mathjax.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
-import type {
-  StaffAiGradingMessage,
-  StaffAssessment,
-  StaffAssessmentQuestion,
-  StaffInstanceQuestionGroup,
-  StaffUser,
+import {
+  type StaffAiGradingMessage,
+  StaffAiGradingMessageSchema,
+  type StaffAssessment,
+  type StaffAssessmentQuestion,
+  type StaffInstanceQuestionGroup,
+  type StaffUser,
 } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
@@ -861,6 +862,7 @@ function AssessmentQuestionManualGradingInner({
   });
 
   const chatUrl = `${urlPrefix}/assessment/${assessment.id}/manual_grading/assessment_question/${assessmentQuestion.id}/chat`;
+  const chatMessagesUrl = `${chatUrl}/messages`;
   const rubricDataUrl = `${chatUrl}/rubric_data`;
 
   const refreshRubricData = useCallback(() => {
@@ -888,7 +890,7 @@ function AssessmentQuestionManualGradingInner({
       .catch(() => {});
   }, [rubricDataUrl, chatCsrfToken]);
 
-  const { messages, setMessages, sendMessage, status } = useChat<RubricChatMessage>({
+  const { messages, setMessages, sendMessage, resumeStream, status } = useChat<RubricChatMessage>({
     messages: persistedMessagesToInitialMessages(initialChatMessages),
     resume: true,
     transport: new DefaultChatTransport({
@@ -969,7 +971,11 @@ function AssessmentQuestionManualGradingInner({
     },
   });
 
-  const isGenerating = status === 'streaming' || status === 'submitted';
+  const hasStreamingAssistantMessage = messages.some(
+    (m) => m.role === 'assistant' && m.metadata?.status === 'streaming',
+  );
+  const isGenerating =
+    status === 'streaming' || status === 'submitted' || hasStreamingAssistantMessage;
 
   // Reset isStopping when generation ends (render-time adjustment, not useEffect).
   if (!isGenerating && isStopping) {
@@ -998,6 +1004,75 @@ function AssessmentQuestionManualGradingInner({
     }
   }, [messages, refreshRubricData]);
   /* eslint-enable react-you-might-not-need-an-effect/no-derived-state */
+
+  const refreshChatMessages = useCallback(async () => {
+    const response = await fetch(chatMessagesUrl, {
+      headers: { 'X-CSRF-Token': chatCsrfToken },
+    });
+    if (!response.ok) return;
+    const data = (await response.json()) as { messages: unknown };
+    const serverMessages = StaffAiGradingMessageSchema.array().parse(data.messages);
+    setMessages(persistedMessagesToInitialMessages(serverMessages));
+  }, [chatCsrfToken, chatMessagesUrl, setMessages]);
+
+  const resumeInFlightRef = useRef(false);
+  useEffect(() => {
+    if (!hasStreamingAssistantMessage || status !== 'ready') return;
+
+    let canceled = false;
+    const tryResumeStream = async () => {
+      if (canceled || resumeInFlightRef.current) return;
+
+      resumeInFlightRef.current = true;
+      try {
+        await resumeStream();
+      } catch {
+        // Best-effort reconnect.
+      }
+      resumeInFlightRef.current = false;
+    };
+
+    void tryResumeStream();
+    const intervalId = window.setInterval(() => {
+      void tryResumeStream();
+    }, 1000);
+
+    return () => {
+      canceled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [hasStreamingAssistantMessage, resumeStream, status]);
+
+  const refreshMessagesInFlightRef = useRef(false);
+  useEffect(() => {
+    if (!hasStreamingAssistantMessage || status !== 'ready') return;
+
+    let canceled = false;
+    const tryRefreshMessages = async () => {
+      if (canceled || refreshMessagesInFlightRef.current) return;
+
+      refreshMessagesInFlightRef.current = true;
+      try {
+        await refreshChatMessages();
+      } catch {
+        // Keep retrying in the interval.
+      }
+      refreshMessagesInFlightRef.current = false;
+    };
+
+    const initialTimeoutId = window.setTimeout(() => {
+      void tryRefreshMessages();
+    }, 1250);
+    const intervalId = window.setInterval(() => {
+      void tryRefreshMessages();
+    }, 2000);
+
+    return () => {
+      canceled = true;
+      window.clearTimeout(initialTimeoutId);
+      window.clearInterval(intervalId);
+    };
+  }, [hasStreamingAssistantMessage, refreshChatMessages, status]);
 
   // Re-run MathJax typesetting and auto-scroll the chat container when messages change.
   // We scroll the container div (overflow-auto), NOT the viewport.
@@ -1255,7 +1330,7 @@ function AssessmentQuestionManualGradingInner({
                 message.metadata?.status === 'completed' ||
                 message.metadata?.status === 'errored' ||
                 message.metadata?.status === 'canceled' ||
-                !isGenerating;
+                message.metadata?.status == null;
 
               return (
                 <div key={message.id} className="d-flex flex-column gap-1 mb-3">

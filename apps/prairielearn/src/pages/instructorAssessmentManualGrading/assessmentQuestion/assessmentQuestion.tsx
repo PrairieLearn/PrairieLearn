@@ -59,6 +59,8 @@ import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGradi
 import { selectInstanceQuestionsForManualGrading } from './queries.js';
 
 const router = Router();
+const CHAT_STREAM_RETRY_INTERVAL_MS = 100;
+const CHAT_STREAM_RETRY_TIMEOUT_MS = 3000;
 
 router.get(
   '/',
@@ -452,25 +454,58 @@ router.get(
       accessType: 'instructor',
     });
 
-    const latestMessage = await selectLatestStreamingAiGradingMessage(assessment_question.id);
-
-    if (!latestMessage) {
-      res.status(204).send();
-      return;
-    }
-
     const streamContext = await getAiGradingStreamContext();
-    const stream = await streamContext.resumeExistingStream(latestMessage.id);
+    const startTime = Date.now();
+    while (true) {
+      const latestMessage = await selectLatestStreamingAiGradingMessage(assessment_question.id);
 
-    if (!stream) {
-      res.status(204).send();
-      return;
+      if (!latestMessage) {
+        res.status(204).send();
+        return;
+      }
+
+      const stream = await streamContext.resumeExistingStream(latestMessage.id);
+      if (stream === null) {
+        res.status(204).send();
+        return;
+      }
+      if (stream !== undefined) {
+        Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
+          res.setHeader(key, value);
+        });
+        Readable.fromWeb(stream as never).pipe(res);
+        return;
+      }
+
+      if (Date.now() - startTime >= CHAT_STREAM_RETRY_TIMEOUT_MS) {
+        res.status(204).send();
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, CHAT_STREAM_RETRY_INTERVAL_MS));
+    }
+  }),
+);
+
+router.get(
+  '/chat/messages',
+  typedAsyncHandler<'instructor-assessment-question'>(async (_req, res) => {
+    if (!(await features.enabledFromLocals('ai-rubric-grading-agent', res.locals))) {
+      throw new error.HttpStatusError(403, 'AI rubric grading agent is not enabled');
+    }
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
-    Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
-      res.setHeader(key, value);
+    const { assessment_question } = extractPageContext(res.locals, {
+      pageType: 'assessmentQuestion',
+      accessType: 'instructor',
     });
-    Readable.fromWeb(stream as never).pipe(res);
+
+    const messages = z
+      .array(StaffAiGradingMessageSchema)
+      .parse(await selectAiGradingMessages(assessment_question.id));
+    res.json({ messages });
   }),
 );
 
