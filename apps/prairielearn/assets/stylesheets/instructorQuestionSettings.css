@@ -1,14 +1,10 @@
-/* Preferences grid layout */
-.preferences-grid {
-  min-width: 36rem;
-}
-
 .preferences-grid-row,
 .preferences-grid-header {
   display: grid;
   gap: 0 0.5rem;
   padding: 0.25rem 0.5rem;
   align-items: center;
+  min-width: 36rem;
 }
 
 .preferences-grid-editable .preferences-grid-row,

@@ -16,7 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { Button } from 'react-bootstrap';
 import {
   type Control,
@@ -57,6 +57,7 @@ export function PreferencesTable({
     name: 'preferences',
   });
 
+  const dndId = useId();
   const gridRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
@@ -126,6 +127,7 @@ export function PreferencesTable({
 
       {fields.length > 0 && (
         <DndContext
+          id={dndId}
           sensors={sensors}
           collisionDetection={closestCenter}
           modifiers={[restrictToGridVertical]}
