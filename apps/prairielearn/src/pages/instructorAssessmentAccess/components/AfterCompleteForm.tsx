@@ -105,6 +105,7 @@ function QuestionVisibilityInput({
   lastDeadline,
   hasTimeLimit = false,
   hideAgainDateError,
+  displayTimezone,
 }: {
   value: QuestionVisibilityValue;
   onChange: (value: QuestionVisibilityValue) => void;
@@ -113,6 +114,7 @@ function QuestionVisibilityInput({
   lastDeadline?: string | null;
   hasTimeLimit?: boolean;
   hideAgainDateError?: string;
+  displayTimezone: string;
 }) {
   const hideQuestionsMode = getHideQuestionsMode(value);
   const showAgainBeforeLastDeadline =
@@ -127,7 +129,7 @@ function QuestionVisibilityInput({
         onChange({ hideQuestions: true });
         break;
       case 'hide_questions_between_dates': {
-        const tomorrow = tomorrowDate();
+        const tomorrow = tomorrowDate(displayTimezone);
         onChange({
           hideQuestions: true,
           showAgainDate: startOfDayDatetime(tomorrow),
@@ -136,7 +138,7 @@ function QuestionVisibilityInput({
         break;
       }
       case 'hide_questions_until_date': {
-        const tomorrow = tomorrowDate();
+        const tomorrow = tomorrowDate(displayTimezone);
         onChange({ hideQuestions: true, showAgainDate: startOfDayDatetime(tomorrow) });
         break;
       }
@@ -289,12 +291,14 @@ function ScoreVisibilityInput({
   idPrefix,
   lastDeadline,
   hasTimeLimit = false,
+  displayTimezone,
 }: {
   value: ScoreVisibilityValue;
   onChange: (value: ScoreVisibilityValue) => void;
   idPrefix: string;
   lastDeadline?: string | null;
   hasTimeLimit?: boolean;
+  displayTimezone: string;
 }) {
   const hideScoreMode = getHideScoreMode(value);
   const showAgainBeforeLastDeadline =
@@ -309,7 +313,7 @@ function ScoreVisibilityInput({
         onChange({ hideScore: true });
         break;
       case 'hide_score_until_date': {
-        const tomorrow = tomorrowDate();
+        const tomorrow = tomorrowDate(displayTimezone);
         onChange({ hideScore: true, showAgainDate: startOfDayDatetime(tomorrow) });
         break;
       }
@@ -420,7 +424,13 @@ function AfterCompleteCard({
   );
 }
 
-export function MainAfterCompleteForm({ title }: { title?: string }) {
+export function MainAfterCompleteForm({
+  title,
+  displayTimezone,
+}: {
+  title?: string;
+  displayTimezone: string;
+}) {
   const { field: qvField } = useController<AccessControlFormData, 'mainRule.questionVisibility'>({
     name: 'mainRule.questionVisibility',
     rules: { validate: validateQuestionVisibility },
@@ -484,6 +494,7 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
           lastDeadline={lastDeadline}
           hasTimeLimit={hasTimeLimit}
           hideAgainDateError={hideAgainDateError}
+          displayTimezone={displayTimezone}
           onChange={qvField.onChange}
         />
       </Col>
@@ -496,6 +507,7 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
           idPrefix="mainRule"
           lastDeadline={lastDeadline}
           hasTimeLimit={hasTimeLimit}
+          displayTimezone={displayTimezone}
           onChange={svField.onChange}
         />
       </Col>
@@ -503,7 +515,15 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
   );
 }
 
-export function OverrideAfterCompleteForm({ index, title }: { index: number; title?: string }) {
+export function OverrideAfterCompleteForm({
+  index,
+  title,
+  displayTimezone,
+}: {
+  index: number;
+  title?: string;
+  displayTimezone: string;
+}) {
   const mainQV = useWatch<AccessControlFormData, 'mainRule.questionVisibility'>({
     name: 'mainRule.questionVisibility',
   });
@@ -565,6 +585,7 @@ export function OverrideAfterCompleteForm({ index, title }: { index: number; tit
             idPrefix={`overrides-${index}`}
             hasPrairieTest={hasPrairieTest}
             hideAgainDateError={hideAgainDateError}
+            displayTimezone={displayTimezone}
             onChange={qvField.onChange}
           />
         </FieldWrapper>
@@ -583,6 +604,7 @@ export function OverrideAfterCompleteForm({ index, title }: { index: number; tit
           <ScoreVisibilityInput
             value={svField.value}
             idPrefix={`overrides-${index}`}
+            displayTimezone={displayTimezone}
             onChange={svField.onChange}
           />
         </FieldWrapper>
