@@ -6,7 +6,9 @@ import { config } from '../../lib/config.js';
 import { StudentLabelSchema } from '../../lib/db-types.js';
 import {
   type AccessControlJson,
+  type AccessControlValidationRule,
   MAX_ACCESS_CONTROL_RULES,
+  validateGlobalDateConsistencyIssues,
   validateRuleCreditMonotonicity,
   validateRuleDateOrdering,
 } from '../../schemas/accessControl.js';
@@ -42,21 +44,31 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 export function validateRule(
   rule: AccessControlJson,
   targetType: 'none' | 'student_label' | 'enrollment',
-): string | null {
-  if (targetType !== 'none') {
+): string[] {
+  const errors: string[] = [];
+
+  if (targetType === 'none') {
+    if (rule.dateControl && !rule.dateControl.releaseDate) {
+      errors.push('Release date is required on the defaults when dateControl is specified.');
+    }
+  } else {
     if (rule.listBeforeRelease !== undefined) {
-      return 'listBeforeRelease can only be specified on the defaults.';
+      errors.push('listBeforeRelease can only be specified on the defaults.');
     }
     if (rule.integrations != null) {
-      return 'integrations can only be specified on the defaults.';
+      errors.push('integrations can only be specified on the defaults.');
     }
+  }
+
+  if (rule.dateControl?.password === '') {
+    errors.push('Password cannot be empty.');
   }
 
   const exams = rule.integrations?.prairieTest?.exams ?? [];
   const seenUuids = new Set<string>();
   for (const e of exams) {
     if (seenUuids.has(e.examUuid)) {
-      return `Duplicate PrairieTest exam UUID: ${e.examUuid}.`;
+      errors.push(`Duplicate PrairieTest exam UUID: ${e.examUuid}.`);
     }
     seenUuids.add(e.examUuid);
   }
@@ -64,7 +76,7 @@ export function validateRule(
   const earlyDates = new Set<string>();
   for (const d of rule.dateControl?.earlyDeadlines ?? []) {
     if (earlyDates.has(d.date)) {
-      return `Duplicate early deadline date: ${d.date}.`;
+      errors.push(`Duplicate early deadline date: ${d.date}.`);
     }
     earlyDates.add(d.date);
   }
@@ -72,18 +84,20 @@ export function validateRule(
   const lateDates = new Set<string>();
   for (const d of rule.dateControl?.lateDeadlines ?? []) {
     if (lateDates.has(d.date)) {
-      return `Duplicate late deadline date: ${d.date}.`;
+      errors.push(`Duplicate late deadline date: ${d.date}.`);
     }
     lateDates.add(d.date);
   }
 
   const dateErrors = validateRuleDateOrdering(rule);
-  if (dateErrors.length > 0) return dateErrors[0];
+  errors.push(...dateErrors);
+  // Credit monotonicity assumes deadlines are chronological; skip if dates
+  // are out of order to avoid misleading "not monotonically decreasing" errors.
+  if (dateErrors.length === 0) {
+    errors.push(...validateRuleCreditMonotonicity(rule));
+  }
 
-  const creditErrors = validateRuleCreditMonotonicity(rule);
-  if (creditErrors.length > 0) return creditErrors[0];
-
-  return null;
+  return errors;
 }
 
 /**
@@ -100,6 +114,8 @@ function validateAssessmentRules(
   if (rules.length > MAX_ACCESS_CONTROL_RULES) {
     return `Too many access control rules: ${rules.length}. Maximum allowed is ${MAX_ACCESS_CONTROL_RULES}.`;
   }
+
+  const validationRules: AccessControlValidationRule[] = [];
 
   // Keep label validation here even though course-db validates it earlier.
   // If the course instance config is invalid, course-db skips label existence
@@ -132,8 +148,14 @@ function validateAssessmentRules(
     }
 
     const targetType = index === 0 ? 'none' : 'student_label';
-    const ruleError = validateRule(rule, targetType);
-    if (ruleError) return ruleError;
+    validationRules.push({ rule, targetType, ruleIndex: index });
+    const ruleErrors = validateRule(rule, targetType);
+    if (ruleErrors.length > 0) return ruleErrors[0];
+  }
+
+  const globalDateErrors = validateGlobalDateConsistencyIssues(validationRules);
+  if (globalDateErrors.length > 0) {
+    return globalDateErrors[0].message;
   }
 
   const assessmentInvalidUuids: string[] = [];
