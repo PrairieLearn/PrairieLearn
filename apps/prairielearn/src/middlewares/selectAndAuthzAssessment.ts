@@ -1,5 +1,4 @@
 import asyncHandler from 'express-async-handler';
-import z from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
@@ -8,30 +7,13 @@ import {
   buildLegacyAccessDisplayModel,
 } from '../lib/assessment-access-control/access-display.js';
 import { resolveModernAssessmentAccess } from '../lib/assessment-access-control/authz.js';
-import {
-  AssessmentModuleSchema,
-  AssessmentSchema,
-  AssessmentSetSchema,
-  SprocAuthzAssessmentSchema,
-} from '../lib/db-types.js';
 import type { ResLocalsForPage } from '../lib/res-locals.js';
 
 import { AccessDenied } from './selectAndAuthzAssessment.html.js';
+import { SelectAndAuthzAssessmentSchema } from './selectAndAuthzAssessment.types.js';
 import { StudentAssessmentAccess } from './studentAssessmentAccess.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-
-const SelectAndAuthzAssessmentSchema = z.object({
-  assessment: AssessmentSchema,
-  assessment_set: AssessmentSetSchema,
-  assessment_module: AssessmentModuleSchema.nullable(),
-  authz_result: SprocAuthzAssessmentSchema,
-  assessment_label: z.string(),
-});
-
-export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema> & {
-  access_display_model: AccessDisplayModel;
-};
 
 export default asyncHandler(async (req, res, next) => {
   const row = await queryOptionalRow(
