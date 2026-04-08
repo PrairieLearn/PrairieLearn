@@ -27,6 +27,7 @@ import { type AccessControlJsonInput } from '../../schemas/accessControl.js';
 import { cleanAccessControlRulesForDisk } from '../../trpc/assessment/access-control.js';
 import * as helperDb from '../helperDb.js';
 import { runInTransactionAndRollback } from '../helperDb.js';
+import { withConfig } from '../utils/config.js';
 
 import * as util from './util.js';
 
@@ -80,13 +81,13 @@ async function findSyncedAccessControlRules(assessmentId: string) {
 
 /**
  * Helper to add a student label to the course instance JSON configuration.
- * Groups must be in the JSON config to persist through syncs, since
- * the syncStudentLabels function soft-deletes groups not in the config.
+ * Labels must be in the JSON config to persist through syncs, since
+ * the syncStudentLabels function soft-deletes labels not in the config.
  */
 function addStudentLabelToConfig(
   courseData: ReturnType<typeof util.getCourseData>,
   courseInstanceId: string,
-  groupName: string,
+  labelName: string,
 ) {
   const ci = courseData.courseInstances[courseInstanceId];
   if (!ci.courseInstance.studentLabels) {
@@ -94,14 +95,14 @@ function addStudentLabelToConfig(
   }
   ci.courseInstance.studentLabels.push({
     uuid: crypto.randomUUID(),
-    name: groupName,
+    name: labelName,
     color: 'blue1',
   });
 }
 
 async function syncRulesAndRead(
   rules: AccessControlJsonInput[],
-  opts?: { studentLabels?: string[] },
+  opts?: { studentLabels?: string[]; courseDir?: string },
 ) {
   const courseData = util.getCourseData();
   for (const label of opts?.studentLabels ?? []) {
@@ -110,8 +111,26 @@ async function syncRulesAndRead(
   courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
     util.ASSESSMENT_ID
   ].accessControl = rules;
-  await util.writeAndSyncCourseData(courseData);
-  return findSyncedAccessControlRules(util.ASSESSMENT_ID);
+
+  let courseDir: string;
+  if (opts?.courseDir) {
+    await util.writeCourseToDirectory(courseData, opts.courseDir);
+    courseDir = opts.courseDir;
+  } else {
+    courseDir = await util.writeCourseToTempDirectory(courseData);
+  }
+  const syncResults = await util.syncCourseData(courseDir);
+
+  assert(syncResults.status === 'complete');
+
+  const assessment =
+    syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[util.ASSESSMENT_ID];
+
+  return {
+    syncedRules: await findSyncedAccessControlRules(util.ASSESSMENT_ID),
+    errors: assessment.errors,
+    courseDir,
+  };
 }
 
 const TEST_EXAM_UUID = '11e89892-3eff-4d7f-90a2-221372f14e5c';
@@ -128,75 +147,34 @@ describe('Access control syncing', () => {
   describe('Basic rule syncing', () => {
     it('adds a new main access control rule', () =>
       runInTransactionAndRollback(async () => {
-        const { courseData, courseDir } = await util.createAndSyncCourseData();
-
-        const newRule = makeAccessControlRule();
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [newRule];
-
-        await util.overwriteAndSyncCourseData(courseData, courseDir);
-
-        const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+        const { syncedRules } = await syncRulesAndRead([makeAccessControlRule()]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].number, 0);
         assert.equal(syncedRules[0].date_control_release_date_overridden, true);
-        // main rules have 'none' target_type (applies to all)
         assert.equal(syncedRules[0].target_type, 'none');
       }));
 
     it('removes an access control rule', () =>
       runInTransactionAndRollback(async () => {
-        const courseData = util.getCourseData();
-
-        const rule = makeAccessControlRule();
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [rule];
-
-        const courseDir = await util.writeCourseToTempDirectory(courseData);
-        await util.syncCourseData(courseDir);
-
-        const initialRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+        const { syncedRules: initialRules, courseDir } = await syncRulesAndRead([
+          makeAccessControlRule(),
+        ]);
         assert.equal(initialRules.length, 1);
 
-        // Replace with a different rule (at least one main rule is required)
-        const newRule = makeAccessControlRule({
-          dateControl: { durationMinutes: 45 },
-        });
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [newRule];
-
-        await util.overwriteAndSyncCourseData(courseData, courseDir);
-
-        const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-        assert.equal(syncedRules.length, 1);
-        assert.equal(syncedRules[0].date_control_duration_minutes, 45);
+        const { syncedRules } = await syncRulesAndRead([], { courseDir });
+        assert.equal(syncedRules.length, 0);
       }));
 
     it('updates an existing access control rule', () =>
       runInTransactionAndRollback(async () => {
-        const courseData = util.getCourseData();
+        const { courseDir } = await syncRulesAndRead([
+          makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
+        ]);
 
-        const rule = makeAccessControlRule({
-          dateControl: { durationMinutes: 60 },
-        });
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [rule];
-
-        const courseDir = await util.writeCourseToTempDirectory(courseData);
-        await util.syncCourseData(courseDir);
-
-        rule.dateControl!.durationMinutes = 90;
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [rule];
-
-        await util.overwriteAndSyncCourseData(courseData, courseDir);
-
-        const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+        const { syncedRules } = await syncRulesAndRead(
+          [makeAccessControlRule({ dateControl: { durationMinutes: 90 } })],
+          { courseDir },
+        );
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].date_control_duration_minutes, 90);
       }));
@@ -223,7 +201,7 @@ describe('Access control syncing', () => {
             password: 'secret',
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
         assert.isTrue(row.date_control_release_date_overridden);
         assert.isNotNull(row.date_control_release_date);
@@ -243,7 +221,7 @@ describe('Access control syncing', () => {
             // dueDate, durationMinutes, password, deadlines all omitted
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
         assert.isFalse(row.date_control_due_date_overridden);
         assert.isNull(row.date_control_due_date);
@@ -267,7 +245,7 @@ describe('Access control syncing', () => {
             password: null,
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
         // Explicitly set to null: overridden=true, value=NULL
         assert.isTrue(row.date_control_due_date_overridden);
@@ -279,7 +257,7 @@ describe('Access control syncing', () => {
     it('no dateControl at all: all flags are overridden=false', () =>
       runInTransactionAndRollback(async () => {
         const rule = makeAccessControlRule({ dateControl: undefined });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
         assert.isFalse(row.date_control_release_date_overridden);
         assert.isFalse(row.date_control_due_date_overridden);
@@ -299,7 +277,7 @@ describe('Access control syncing', () => {
             // hideScore and showScoreAgainDate omitted
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
         assert.equal(row.after_complete_hide_questions, true);
         assert.isTrue(row.after_complete_show_questions_again_date_overridden);
@@ -314,7 +292,7 @@ describe('Access control syncing', () => {
   describe('_overridden flag behavior on override rules', () => {
     it('override with one field: only that field gets overridden=true', () =>
       runInTransactionAndRollback(async () => {
-        const groupName = 'Test Group';
+        const labelName = 'Test Label';
         const mainRule = makeAccessControlRule({
           dateControl: {
             releaseDate: '2024-03-14T00:01:00',
@@ -324,13 +302,13 @@ describe('Access control syncing', () => {
           },
         });
         const overrideRule: AccessControlJsonInput = {
-          labels: [groupName],
+          labels: [labelName],
           dateControl: {
             dueDate: '2024-04-01T23:59:00',
           },
         };
-        const syncedRules = await syncRulesAndRead([mainRule, overrideRule], {
-          studentLabels: [groupName],
+        const { syncedRules } = await syncRulesAndRead([mainRule, overrideRule], {
+          studentLabels: [labelName],
         });
         const override = syncedRules.find((r) => r.target_type === 'student_label');
         assert.isOk(override);
@@ -350,14 +328,14 @@ describe('Access control syncing', () => {
 
     it('override with no dateControl: all flags are overridden=false', () =>
       runInTransactionAndRollback(async () => {
-        const groupName = 'Test Group';
+        const labelName = 'Test Label';
         const mainRule = makeAccessControlRule();
         const overrideRule: AccessControlJsonInput = {
-          labels: [groupName],
+          labels: [labelName],
           // no dateControl at all — inherit everything
         };
-        const syncedRules = await syncRulesAndRead([mainRule, overrideRule], {
-          studentLabels: [groupName],
+        const { syncedRules } = await syncRulesAndRead([mainRule, overrideRule], {
+          studentLabels: [labelName],
         });
         const override = syncedRules.find((r) => r.target_type === 'student_label');
         assert.isOk(override);
@@ -372,7 +350,7 @@ describe('Access control syncing', () => {
 
     it('afterComplete override with one field: only that field is set', () =>
       runInTransactionAndRollback(async () => {
-        const groupName = 'Test Group';
+        const labelName = 'Test Label';
         const mainRule = makeAccessControlRule({
           afterComplete: {
             hideQuestions: true,
@@ -383,13 +361,13 @@ describe('Access control syncing', () => {
           },
         });
         const overrideRule: AccessControlJsonInput = {
-          labels: [groupName],
+          labels: [labelName],
           afterComplete: {
             hideQuestions: false,
           },
         };
-        const syncedRules = await syncRulesAndRead([mainRule, overrideRule], {
-          studentLabels: [groupName],
+        const { syncedRules } = await syncRulesAndRead([mainRule, overrideRule], {
+          studentLabels: [labelName],
         });
         const override = syncedRules.find((r) => r.target_type === 'student_label');
         assert.isOk(override);
@@ -406,16 +384,16 @@ describe('Access control syncing', () => {
 
     it('override with null releaseDate: overridden=true, value=NULL', () =>
       runInTransactionAndRollback(async () => {
-        const groupName = 'Test Group';
+        const labelName = 'Test Label';
         const mainRule = makeAccessControlRule();
         const overrideRule: AccessControlJsonInput = {
-          labels: [groupName],
+          labels: [labelName],
           dateControl: {
-            releaseDate: null, // explicitly clear — no date-based access for this group
+            releaseDate: null, // explicitly clear — no date-based access for this label
           },
         };
-        const syncedRules = await syncRulesAndRead([mainRule, overrideRule], {
-          studentLabels: [groupName],
+        const { syncedRules } = await syncRulesAndRead([mainRule, overrideRule], {
+          studentLabels: [labelName],
         });
         const override = syncedRules.find((r) => r.target_type === 'student_label');
         assert.isOk(override);
@@ -432,7 +410,7 @@ describe('Access control syncing', () => {
     ])('syncs listBeforeRelease: $input -> $expected', ({ input, expected }) =>
       runInTransactionAndRollback(async () => {
         const rule = makeAccessControlRule(input !== undefined ? { listBeforeRelease: input } : {});
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].list_before_release, expected);
       }),
@@ -462,19 +440,19 @@ describe('Access control syncing', () => {
 
     it('preserves inheritance for label overrides when listBeforeRelease is omitted', () =>
       runInTransactionAndRollback(async () => {
-        const groupName = 'Extended time';
-        const syncedRules = await syncRulesAndRead(
+        const labelName = 'Extended time';
+        const { syncedRules } = await syncRulesAndRead(
           [
             makeAccessControlRule({ listBeforeRelease: true }),
             makeAccessControlRule({
-              labels: [groupName],
+              labels: [labelName],
               dateControl: {
                 dueDate: '2024-03-28T23:59:00',
               },
             }),
           ],
           {
-            studentLabels: [groupName],
+            studentLabels: [labelName],
           },
         );
 
@@ -492,29 +470,20 @@ describe('Access control syncing', () => {
 
     it('rejects listBeforeRelease on label-based overrides', () =>
       runInTransactionAndRollback(async () => {
-        const groupName = 'Extended time';
-        const courseData = util.getCourseData();
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [
-          makeAccessControlRule({ listBeforeRelease: false }),
-          makeAccessControlRule({
-            labels: [groupName],
-            listBeforeRelease: true,
-            dateControl: {
-              dueDate: '2024-03-28T23:59:00',
-            },
-          }),
-        ];
-
-        await util.writeAndSyncCourseData(courseData);
-
-        const assessment = await getAssessment(util.ASSESSMENT_ID);
-        assert.isNotNull(assessment.sync_errors);
-        assert.match(
-          assessment.sync_errors,
-          /listBeforeRelease can only be specified on the defaults/,
+        const labelName = 'Extended time';
+        const { errors } = await syncRulesAndRead(
+          [
+            makeAccessControlRule({ listBeforeRelease: false }),
+            makeAccessControlRule({
+              labels: [labelName],
+              listBeforeRelease: true,
+              dateControl: { dueDate: '2024-03-28T23:59:00' },
+            }),
+          ],
+          { studentLabels: [labelName] },
+        );
+        assert.isTrue(
+          errors.some((e) => e.includes('listBeforeRelease can only be specified on the defaults')),
         );
       }));
   });
@@ -558,7 +527,7 @@ describe('Access control syncing', () => {
             ],
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules[0].date_control_early_deadlines_overridden, true);
 
         const allDeadlines = await util.dumpTableWithSchema(
@@ -583,7 +552,7 @@ describe('Access control syncing', () => {
             ],
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules[0].date_control_late_deadlines_overridden, true);
 
         const allDeadlines = await util.dumpTableWithSchema(
@@ -607,7 +576,7 @@ describe('Access control syncing', () => {
             lateDeadlines: [],
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules[0].date_control_late_deadlines_overridden, true);
 
         const allDeadlines = await util.dumpTableWithSchema(
@@ -622,21 +591,11 @@ describe('Access control syncing', () => {
 
     it('removes deadlines when rule is updated', () =>
       runInTransactionAndRollback(async () => {
-        const courseData = util.getCourseData();
-
-        const rule = makeAccessControlRule({
-          dateControl: {
-            lateDeadlines: [{ date: '2024-03-23T23:59:00', credit: 80 }],
-          },
-        });
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [rule];
-
-        const courseDir = await util.writeCourseToTempDirectory(courseData);
-        await util.syncCourseData(courseDir);
-
-        const initialRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+        const { syncedRules: initialRules, courseDir } = await syncRulesAndRead([
+          makeAccessControlRule({
+            dateControl: { lateDeadlines: [{ date: '2024-03-23T23:59:00', credit: 80 }] },
+          }),
+        ]);
         const allInitialDeadlines = await util.dumpTableWithSchema(
           'assessment_access_control_late_deadlines',
           AssessmentAccessControlLateDeadlineSchema,
@@ -646,19 +605,14 @@ describe('Access control syncing', () => {
         );
         assert.equal(initialDeadlines.length, 1);
 
-        rule.dateControl!.lateDeadlines = [];
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [rule];
-
-        await util.overwriteAndSyncCourseData(courseData, courseDir);
-
-        const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+        const { syncedRules } = await syncRulesAndRead(
+          [makeAccessControlRule({ dateControl: { lateDeadlines: [] } })],
+          { courseDir },
+        );
         const allSyncedDeadlines = await util.dumpTableWithSchema(
           'assessment_access_control_late_deadlines',
           AssessmentAccessControlLateDeadlineSchema,
         );
-
         const syncedDeadlines = allSyncedDeadlines.filter((d) =>
           idsEqual(d.assessment_access_control_rule_id, syncedRules[0].id),
         );
@@ -669,32 +623,18 @@ describe('Access control syncing', () => {
   describe('Order management', () => {
     it('assigns correct number to multiple rules', () =>
       runInTransactionAndRollback(async () => {
-        const courseData = util.getCourseData();
-        const groupName1 = 'Group A';
-        const groupName2 = 'Group B';
-
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName1);
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName2);
-
-        const rule1 = makeAccessControlRule({
-          dateControl: { releaseDate: '2024-03-14T00:01:00', durationMinutes: 60 },
-        });
-        const rule2 = makeAccessControlRule({
-          labels: [groupName1],
-          dateControl: { durationMinutes: 90 },
-        });
-        const rule3 = makeAccessControlRule({
-          labels: [groupName2],
-          dateControl: { durationMinutes: 120 },
-        });
-
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [rule1, rule2, rule3];
-
-        await util.writeAndSyncCourseData(courseData);
-
-        const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+        const labelName1 = 'Label A';
+        const labelName2 = 'Label B';
+        const { syncedRules } = await syncRulesAndRead(
+          [
+            makeAccessControlRule({
+              dateControl: { releaseDate: '2024-03-14T00:01:00', durationMinutes: 60 },
+            }),
+            makeAccessControlRule({ labels: [labelName1], dateControl: { durationMinutes: 90 } }),
+            makeAccessControlRule({ labels: [labelName2], dateControl: { durationMinutes: 120 } }),
+          ],
+          { studentLabels: [labelName1, labelName2] },
+        );
         assert.equal(syncedRules.length, 3);
 
         assert.equal(syncedRules[0].number, 0);
@@ -712,157 +652,116 @@ describe('Access control syncing', () => {
 
     it('maintains number when rules are updated', () =>
       runInTransactionAndRollback(async () => {
-        const courseData = util.getCourseData();
-        const groupName = 'Test Group';
+        const labelName = 'Test Label';
+        const { courseDir } = await syncRulesAndRead(
+          [
+            makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
+            makeAccessControlRule({ labels: [labelName], dateControl: { durationMinutes: 90 } }),
+          ],
+          { studentLabels: [labelName] },
+        );
 
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
-
-        const rule1 = makeAccessControlRule({ dateControl: { durationMinutes: 60 } });
-        const rule2 = makeAccessControlRule({
-          labels: [groupName],
-          dateControl: { durationMinutes: 90 },
-        });
-
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [rule1, rule2];
-
-        const courseDir = await util.writeCourseToTempDirectory(courseData);
-        await util.syncCourseData(courseDir);
-
-        rule1.dateControl!.durationMinutes = 75;
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [rule1, rule2];
-
-        await util.overwriteAndSyncCourseData(courseData, courseDir);
-
-        const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+        const { syncedRules } = await syncRulesAndRead(
+          [
+            makeAccessControlRule({ dateControl: { durationMinutes: 75 } }),
+            makeAccessControlRule({ labels: [labelName], dateControl: { durationMinutes: 90 } }),
+          ],
+          { studentLabels: [labelName], courseDir },
+        );
         assert.equal(syncedRules.length, 2);
-
         assert.equal(syncedRules[0].number, 0);
         assert.equal(syncedRules[0].date_control_duration_minutes, 75);
-
         assert.equal(syncedRules[1].number, 1);
         assert.equal(syncedRules[1].date_control_duration_minutes, 90);
       }));
 
     it('deletes excess rules when syncing fewer rules', () =>
       runInTransactionAndRollback(async () => {
-        const courseData = util.getCourseData();
-        const groupName1 = 'Group A';
-        const groupName2 = 'Group B';
-
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName1);
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName2);
-
-        const rule1 = makeAccessControlRule({ dateControl: { durationMinutes: 60 } });
-        const rule2 = makeAccessControlRule({
-          labels: [groupName1],
-          dateControl: { durationMinutes: 90 },
-        });
-        const rule3 = makeAccessControlRule({
-          labels: [groupName2],
-          dateControl: { durationMinutes: 120 },
-        });
-
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [rule1, rule2, rule3];
-
-        const courseDir = await util.writeCourseToTempDirectory(courseData);
-        await util.syncCourseData(courseDir);
-
-        const initialRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+        const labelName1 = 'Label A';
+        const labelName2 = 'Label B';
+        const labels = [labelName1, labelName2];
+        const { syncedRules: initialRules, courseDir } = await syncRulesAndRead(
+          [
+            makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
+            makeAccessControlRule({ labels: [labelName1], dateControl: { durationMinutes: 90 } }),
+            makeAccessControlRule({ labels: [labelName2], dateControl: { durationMinutes: 120 } }),
+          ],
+          { studentLabels: labels },
+        );
         assert.equal(initialRules.length, 3);
 
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [rule1];
-        await util.overwriteAndSyncCourseData(courseData, courseDir);
-
-        const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+        const { syncedRules } = await syncRulesAndRead(
+          [makeAccessControlRule({ dateControl: { durationMinutes: 60 } })],
+          { studentLabels: labels, courseDir },
+        );
         assert.equal(syncedRules.length, 1);
-
         assert.equal(syncedRules[0].number, 0);
         assert.equal(syncedRules[0].date_control_duration_minutes, 60);
       }));
 
-    // Validate renumbering group rules works in the database
-    // Note: The main rule (target_type='none') must remain at position 0
-    it('respects rule number when group rules are renumbered', () =>
+    it('respects rule number when label rules are renumbered', () =>
       runInTransactionAndRollback(async () => {
-        const courseData = util.getCourseData();
-        const groupName1 = 'Group A';
-        const groupName2 = 'Group B';
-
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName1);
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName2);
-
+        const labelName1 = 'Label A';
+        const labelName2 = 'Label B';
+        const labels = [labelName1, labelName2];
         const assignmentRule = makeAccessControlRule({ dateControl: { durationMinutes: 60 } });
-        const groupRule1 = makeAccessControlRule({
-          labels: [groupName1],
+        const labelRule1 = makeAccessControlRule({
+          labels: [labelName1],
           dateControl: { durationMinutes: 90 },
         });
-        const groupRule2 = makeAccessControlRule({
-          labels: [groupName2],
+        const labelRule2 = makeAccessControlRule({
+          labels: [labelName2],
           dateControl: { durationMinutes: 120 },
         });
 
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [assignmentRule, groupRule1, groupRule2];
-
-        const courseDir = await util.writeCourseToTempDirectory(courseData);
-        await util.syncCourseData(courseDir);
-
-        const initialRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+        const { syncedRules: initialRules, courseDir } = await syncRulesAndRead(
+          [assignmentRule, labelRule1, labelRule2],
+          { studentLabels: labels },
+        );
         assert.equal(initialRules[0].date_control_duration_minutes, 60);
         assert.equal(initialRules[1].date_control_duration_minutes, 90);
         assert.equal(initialRules[2].date_control_duration_minutes, 120);
 
-        // swap the group rules: [assignment, group2, group1]
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [assignmentRule, groupRule2, groupRule1];
-        await util.overwriteAndSyncCourseData(courseData, courseDir);
-
-        const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+        // swap the label rules: [assignment, label2, label1]
+        const { syncedRules } = await syncRulesAndRead([assignmentRule, labelRule2, labelRule1], {
+          studentLabels: labels,
+          courseDir,
+        });
         assert.equal(syncedRules.length, 3);
         assert.equal(syncedRules[0].number, 0);
-        assert.equal(syncedRules[0].date_control_duration_minutes, 60); // assignment stays at 0
+        assert.equal(syncedRules[0].date_control_duration_minutes, 60);
         assert.equal(syncedRules[1].number, 1);
-        assert.equal(syncedRules[1].date_control_duration_minutes, 120); // group2 now at 1
+        assert.equal(syncedRules[1].date_control_duration_minutes, 120);
         assert.equal(syncedRules[2].number, 2);
-        assert.equal(syncedRules[2].date_control_duration_minutes, 90); // group1 now at 2
+        assert.equal(syncedRules[2].date_control_duration_minutes, 90);
       }));
   });
 
   describe('Enrollment-level rule precedence', () => {
-    it('preserves enrollment rules when group rules change', () =>
+    it('preserves enrollment rules when label rules change', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
-        const groupName1 = 'Group A';
-        const groupName2 = 'Group B';
+        const labelName1 = 'Label A';
+        const labelName2 = 'Label B';
 
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName1);
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName2);
+        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName1);
+        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName2);
 
         const assignmentRule = makeAccessControlRule({
           dateControl: { durationMinutes: 60 },
         });
-        const groupRule1 = makeAccessControlRule({
-          labels: [groupName1],
+        const labelRule1 = makeAccessControlRule({
+          labels: [labelName1],
           dateControl: { durationMinutes: 90 },
         });
-        const groupRule2 = makeAccessControlRule({
-          labels: [groupName2],
+        const labelRule2 = makeAccessControlRule({
+          labels: [labelName2],
           dateControl: { durationMinutes: 120 },
         });
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
           util.ASSESSMENT_ID
-        ].accessControl = [assignmentRule, groupRule1, groupRule2];
+        ].accessControl = [assignmentRule, labelRule1, labelRule2];
 
         const courseDir = await util.writeCourseToTempDirectory(courseData);
         await util.syncCourseData(courseDir);
@@ -878,9 +777,9 @@ describe('Access control syncing', () => {
         assert.equal(allRules[0].number, 0);
         assert.equal(allRules[0].date_control_duration_minutes, 60); // assignment
         assert.equal(allRules[1].number, 1);
-        assert.equal(allRules[1].date_control_duration_minutes, 90); // group1
+        assert.equal(allRules[1].date_control_duration_minutes, 90); // label1
         assert.equal(allRules[2].number, 2);
-        assert.equal(allRules[2].date_control_duration_minutes, 120); // group2
+        assert.equal(allRules[2].date_control_duration_minutes, 120); // label2
 
         // manually create 2 enrollment-level rules (UI creation)
         const user1 = await selectOrInsertUserByUid('user1@example.com');
@@ -938,8 +837,8 @@ describe('Access control syncing', () => {
         allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
         assert.equal(allRules.length, 5);
         assert.equal(allRules[0].number, 0); // assignment (none)
-        assert.equal(allRules[1].number, 1); // group1 (student_label)
-        assert.equal(allRules[2].number, 2); // group2 (student_label)
+        assert.equal(allRules[1].number, 1); // label1 (student_label)
+        assert.equal(allRules[2].number, 2); // label2 (student_label)
         assert.equal(allRules[3].number, 1); // enrollment1
         assert.equal(allRules[3].date_control_duration_minutes, 150);
         assert.equal(allRules[4].number, 2); // enrollment2
@@ -947,14 +846,14 @@ describe('Access control syncing', () => {
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
           util.ASSESSMENT_ID
-        ].accessControl = [assignmentRule, groupRule1];
+        ].accessControl = [assignmentRule, labelRule1];
         await util.overwriteAndSyncCourseData(courseData, courseDir);
 
         allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
         assert.equal(allRules.length, 4);
         assert.equal(allRules[0].number, 0); // assignment (none)
         assert.equal(allRules[0].date_control_duration_minutes, 60);
-        assert.equal(allRules[1].number, 1); // group1 (student_label)
+        assert.equal(allRules[1].number, 1); // label1 (student_label)
         assert.equal(allRules[1].date_control_duration_minutes, 90);
         assert.equal(allRules[2].number, 1); // enrollment1
         assert.equal(allRules[2].date_control_duration_minutes, 150);
@@ -972,22 +871,22 @@ describe('Access control syncing', () => {
         );
         assert.equal(enrollmentTargets.length, 2);
 
-        const groupRule3 = makeAccessControlRule({
-          labels: [groupName2], // reusing groupName2
+        const labelRule3 = makeAccessControlRule({
+          labels: [labelName2], // reusing labelName2
           dateControl: { durationMinutes: 135 },
         });
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
           util.ASSESSMENT_ID
-        ].accessControl = [assignmentRule, groupRule1, groupRule3];
+        ].accessControl = [assignmentRule, labelRule1, labelRule3];
         await util.overwriteAndSyncCourseData(courseData, courseDir);
 
         allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
         assert.equal(allRules.length, 5);
         assert.equal(allRules[0].number, 0); // assignment (none)
         assert.equal(allRules[0].date_control_duration_minutes, 60);
-        assert.equal(allRules[1].number, 1); // group1 (student_label)
+        assert.equal(allRules[1].number, 1); // label1 (student_label)
         assert.equal(allRules[1].date_control_duration_minutes, 90);
-        assert.equal(allRules[2].number, 2); // group3 (student_label, new)
+        assert.equal(allRules[2].number, 2); // label3 (student_label, new)
         assert.equal(allRules[2].date_control_duration_minutes, 135);
         assert.equal(allRules[3].number, 1); // enrollment1
         assert.equal(allRules[3].date_control_duration_minutes, 150);
@@ -1006,24 +905,24 @@ describe('Access control syncing', () => {
         assert.equal(finalTargets.length, 2);
       }));
 
-    it('preserves enrollment rules when group rules are removed', () =>
+    it('preserves enrollment rules when label rules are removed', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
-        const groupName = 'Test Group';
+        const labelName = 'Test Label';
 
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
 
         const assignmentRule = makeAccessControlRule({
           dateControl: { durationMinutes: 60 },
         });
-        const groupRule = makeAccessControlRule({
-          labels: [groupName],
+        const labelRule = makeAccessControlRule({
+          labels: [labelName],
           dateControl: { durationMinutes: 90 },
         });
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
           util.ASSESSMENT_ID
-        ].accessControl = [assignmentRule, groupRule];
+        ].accessControl = [assignmentRule, labelRule];
 
         const courseDir = await util.writeCourseToTempDirectory(courseData);
         await util.syncCourseData(courseDir);
@@ -1062,7 +961,7 @@ describe('Access control syncing', () => {
         assert.equal(allRules[0].number, 0);
         assert.equal(allRules[0].date_control_duration_minutes, 60); // assignment (none)
         assert.equal(allRules[1].number, 1);
-        assert.equal(allRules[1].date_control_duration_minutes, 90); // group (student_label)
+        assert.equal(allRules[1].date_control_duration_minutes, 90); // label (student_label)
         assert.equal(allRules[2].number, 1);
         assert.equal(allRules[2].date_control_duration_minutes, 150); // enrollment
 
@@ -1098,7 +997,7 @@ describe('Access control syncing', () => {
             showQuestionsAgainDate: '2025-03-25T23:59:00',
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].after_complete_hide_questions, true);
         assert.equal(syncedRules[0].after_complete_show_questions_again_date_overridden, true);
@@ -1114,7 +1013,7 @@ describe('Access control syncing', () => {
             hideQuestionsAgainDate: '2025-04-15T23:59:00',
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].after_complete_hide_questions, true);
         assert.equal(syncedRules[0].after_complete_show_questions_again_date_overridden, true);
@@ -1131,7 +1030,7 @@ describe('Access control syncing', () => {
             showScoreAgainDate: '2025-03-25T23:59:00',
           },
         });
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].after_complete_hide_score, true);
         assert.equal(syncedRules[0].after_complete_show_score_again_date_overridden, true);
@@ -1139,19 +1038,19 @@ describe('Access control syncing', () => {
       }));
   });
 
-  describe('Group-level rules', () => {
-    it('syncs group-level access control rules', () =>
+  describe('Label-level rules', () => {
+    it('syncs label-level access control rules', () =>
       runInTransactionAndRollback(async () => {
-        const groupName = 'Test Group';
+        const labelName = 'Test Label';
         const assignmentRule = makeAccessControlRule({
           dateControl: { durationMinutes: 60 },
         });
-        const groupRule = makeAccessControlRule({
-          labels: [groupName],
+        const labelRule = makeAccessControlRule({
+          labels: [labelName],
           dateControl: { durationMinutes: 90 },
         });
-        const syncedRules = await syncRulesAndRead([assignmentRule, groupRule], {
-          studentLabels: [groupName],
+        const { syncedRules } = await syncRulesAndRead([assignmentRule, labelRule], {
+          studentLabels: [labelName],
         });
         assert.equal(syncedRules.length, 2);
 
@@ -1159,60 +1058,32 @@ describe('Access control syncing', () => {
           'assessment_access_control_student_labels',
           AssessmentAccessControlStudentLabelSchema,
         );
-        const groupTargets = allStudentLabels.filter((t) =>
+        const labelTargets = allStudentLabels.filter((t) =>
           idsEqual(t.assessment_access_control_rule_id, syncedRules[1].id),
         );
-        assert.equal(groupTargets.length, 1);
+        assert.equal(labelTargets.length, 1);
       }));
 
-    it('rejects sync when group targets are invalid', () =>
+    it('rejects sync when label targets are invalid', () =>
       runInTransactionAndRollback(async () => {
-        const courseData = util.getCourseData();
-
-        const assignmentRule = makeAccessControlRule({
-          dateControl: { durationMinutes: 60 },
-        });
-        const ruleWithInvalidTarget = makeAccessControlRule({
-          labels: ['nonexistent-group'],
-          dateControl: { durationMinutes: 90 },
-        });
-
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [assignmentRule, ruleWithInvalidTarget];
-
-        const courseDir = await util.writeCourseToTempDirectory(courseData);
-        const syncResults = await util.syncCourseData(courseDir);
-
-        assert.equal(syncResults.status, 'complete');
-        if (syncResults.status === 'complete') {
-          const assessment =
-            syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-              util.ASSESSMENT_ID
-            ];
-          assert.isOk(assessment.errors, 'Assessment should have errors');
-          assert.isTrue(
-            assessment.errors.some((error) => error.includes('nonexistent-group')),
-            'Should have error mentioning the invalid label name',
-          );
-        }
-
-        // No rules should be synced because the sync errored
-        const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-        assert.equal(
-          syncedRules.length,
-          0,
-          'Should not sync any rules when there are invalid group targets',
-        );
+        const { syncedRules, errors } = await syncRulesAndRead([
+          makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
+          makeAccessControlRule({
+            labels: ['nonexistent-label'],
+            dateControl: { durationMinutes: 90 },
+          }),
+        ]);
+        assert.isTrue(errors.some((e) => e.includes('nonexistent-label')));
+        assert.equal(syncedRules.length, 0);
       }));
 
-    it('rejects adding a group to a rule that already has individual students', () =>
+    it('rejects adding a label to a rule that already has individual students', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
-        const groupName = 'Test Group';
+        const labelName = 'Test Label';
 
         // Add student label to config so it exists in DB after sync
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
 
         // Sync the course to get the assessment and student label in the database
         await util.writeAndSyncCourseData(courseData);
@@ -1258,7 +1129,7 @@ describe('Access control syncing', () => {
 
         const studentLabelId = await sqldb.queryScalar(
           sql.select_student_label_id,
-          { name: groupName, course_instance_id: courseInstance.id },
+          { name: labelName, course_instance_id: courseInstance.id },
           IdSchema,
         );
 
@@ -1282,7 +1153,7 @@ describe('Access control syncing', () => {
 
         assert.isTrue(
           errorThrown,
-          'A rule can be associated with groups or individual students, but not both',
+          'A rule can be associated with labels or individual students, but not both',
         );
       }));
   });
@@ -1290,49 +1161,46 @@ describe('Access control syncing', () => {
   describe('Main rule requirement', () => {
     it('rejects sync when no main rule exists', () =>
       runInTransactionAndRollback(async () => {
-        const groupName = 'Test Group';
-        const groupRule = makeAccessControlRule({
-          labels: [groupName],
-          dateControl: { durationMinutes: 90 },
-        });
-        const syncedRules = await syncRulesAndRead([groupRule], {
-          studentLabels: [groupName],
-        });
-        assert.equal(syncedRules.length, 0, 'Should not sync any rules when there is no main rule');
+        const labelName = 'Test Label';
+        const { syncedRules, errors } = await syncRulesAndRead(
+          [
+            makeAccessControlRule({
+              labels: [labelName],
+              dateControl: { durationMinutes: 90 },
+            }),
+          ],
+          { studentLabels: [labelName] },
+        );
+        assert.equal(syncedRules.length, 0);
+        assert.isTrue(errors.some((e) => e.includes('No defaults found')));
       }));
 
     it('rejects sync when multiple main rules exist', () =>
       runInTransactionAndRollback(async () => {
-        const rule1 = makeAccessControlRule({
-          dateControl: { durationMinutes: 60 },
-        });
-        const rule2 = makeAccessControlRule({
-          dateControl: { durationMinutes: 90 },
-        });
-        const syncedRules = await syncRulesAndRead([rule1, rule2]);
-        assert.equal(
-          syncedRules.length,
-          0,
-          'Should not sync any rules when there are multiple main rules',
-        );
+        const { syncedRules, errors } = await syncRulesAndRead([
+          makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
+          makeAccessControlRule({ dateControl: { durationMinutes: 90 } }),
+        ]);
+        assert.equal(syncedRules.length, 0);
+        assert.isTrue(errors.some((e) => e.includes('defaults entries')));
       }));
 
     it('successfully syncs with exactly one main rule', () =>
       runInTransactionAndRollback(async () => {
-        const groupName = 'Test Group';
+        const labelName = 'Test Label';
         const mainRule = makeAccessControlRule({
           dateControl: { durationMinutes: 60 },
         });
-        const groupRule = makeAccessControlRule({
-          labels: [groupName],
+        const labelRule = makeAccessControlRule({
+          labels: [labelName],
           dateControl: { durationMinutes: 90 },
         });
-        const syncedRules = await syncRulesAndRead([mainRule, groupRule], {
-          studentLabels: [groupName],
+        const { syncedRules } = await syncRulesAndRead([mainRule, labelRule], {
+          studentLabels: [labelName],
         });
-        assert.equal(syncedRules.length, 2, 'Should sync all rules when properly configured');
+        assert.equal(syncedRules.length, 2);
         assert.equal(syncedRules[0].date_control_duration_minutes, 60); // main
-        assert.equal(syncedRules[1].date_control_duration_minutes, 90); // group
+        assert.equal(syncedRules[1].date_control_duration_minutes, 90); // label
       }));
   });
 
@@ -1345,7 +1213,7 @@ describe('Access control syncing', () => {
           },
         });
         // the rule should not be synced because it has validation errors
-        const syncedRules = await syncRulesAndRead([rule]);
+        const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 0, 'Rule with invalid date should not be synced');
       }));
 
@@ -1397,15 +1265,15 @@ describe('Access control syncing', () => {
     it('still syncs labels that already exist in the database when the course instance file is invalid', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
-        const groupName = 'foo';
+        const labelName = 'foo';
 
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
           util.ASSESSMENT_ID
         ].accessControl = [
           makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
           makeAccessControlRule({
-            labels: [groupName],
+            labels: [labelName],
             dateControl: { durationMinutes: 90 },
           }),
         ];
@@ -1418,7 +1286,7 @@ describe('Access control syncing', () => {
         ].accessControl = [
           makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
           makeAccessControlRule({
-            labels: [groupName],
+            labels: [labelName],
             dateControl: { durationMinutes: 120 },
           }),
         ];
@@ -1454,164 +1322,131 @@ describe('Access control syncing', () => {
 
     it('rejects duplicate early deadline dates', () =>
       runInTransactionAndRollback(async () => {
-        const rule = makeAccessControlRule({
-          dateControl: {
-            dueDate: '2024-03-21T23:59:00',
-            earlyDeadlines: [
-              { date: '2024-03-18T23:59:00', credit: 120 },
-              { date: '2024-03-18T23:59:00', credit: 110 },
-            ],
-          },
-        });
-
-        const courseData = util.getCourseData();
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [rule];
-        const courseDir = await util.writeCourseToTempDirectory(courseData);
-        const syncResults = await util.syncCourseData(courseDir);
-
-        assert.equal(syncResults.status, 'complete');
-        if (syncResults.status === 'complete') {
-          const assessment =
-            syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-              util.ASSESSMENT_ID
-            ];
-          assert.isTrue(assessment.errors.some((e) => e.includes('Duplicate early deadline date')));
-        }
-
-        const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+        const { syncedRules, errors } = await syncRulesAndRead([
+          makeAccessControlRule({
+            dateControl: {
+              dueDate: '2024-03-21T23:59:00',
+              earlyDeadlines: [
+                { date: '2024-03-18T23:59:00', credit: 120 },
+                { date: '2024-03-18T23:59:00', credit: 110 },
+              ],
+            },
+          }),
+        ]);
+        assert.isTrue(errors.some((e) => e.includes('Duplicate early deadline date')));
         assert.equal(syncedRules.length, 0);
       }));
 
     it('rejects duplicate late deadline dates', () =>
       runInTransactionAndRollback(async () => {
-        const rule = makeAccessControlRule({
-          dateControl: {
-            dueDate: '2024-03-21T23:59:00',
-            lateDeadlines: [
-              { date: '2024-03-28T23:59:00', credit: 50 },
-              { date: '2024-03-28T23:59:00', credit: 25 },
-            ],
-          },
-        });
-
-        const courseData = util.getCourseData();
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [rule];
-        const courseDir = await util.writeCourseToTempDirectory(courseData);
-        const syncResults = await util.syncCourseData(courseDir);
-
-        assert.equal(syncResults.status, 'complete');
-        if (syncResults.status === 'complete') {
-          const assessment =
-            syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-              util.ASSESSMENT_ID
-            ];
-          assert.isTrue(assessment.errors.some((e) => e.includes('Duplicate late deadline date')));
-        }
-
-        const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+        const { syncedRules, errors } = await syncRulesAndRead([
+          makeAccessControlRule({
+            dateControl: {
+              dueDate: '2024-03-21T23:59:00',
+              lateDeadlines: [
+                { date: '2024-03-28T23:59:00', credit: 50 },
+                { date: '2024-03-28T23:59:00', credit: 25 },
+              ],
+            },
+          }),
+        ]);
+        assert.isTrue(errors.some((e) => e.includes('Duplicate late deadline date')));
         assert.equal(syncedRules.length, 0);
       }));
 
     it('rejects sync when non-main rule specifies integrations', () =>
       runInTransactionAndRollback(async () => {
-        const courseData = util.getCourseData();
-        const groupName = 'Test Group';
-
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
-
-        // create a main rule without integrations
-        // and a group-level rule WITH integrations (which should be invalid)
-        const mainRule = makeAccessControlRule({
-          dateControl: { durationMinutes: 60 },
-        });
-        const groupRuleWithIntegrations = makeAccessControlRule({
-          labels: [groupName],
-          dateControl: { durationMinutes: 90 },
-          integrations: {
-            prairieTest: {
-              exams: [{ examUuid: TEST_EXAM_UUID }],
-            },
-          },
-        });
-
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [mainRule, groupRuleWithIntegrations];
-
-        const courseDir = await util.writeCourseToTempDirectory(courseData);
-        const syncResults = await util.syncCourseData(courseDir);
-
-        assert.equal(syncResults.status, 'complete');
-        if (syncResults.status === 'complete') {
-          assert.isTrue(
-            syncResults.hadJsonErrors,
-            'Sync should have JSON errors when non-main rule specifies integrations',
-          );
-
-          const assessment =
-            syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-              util.ASSESSMENT_ID
-            ];
-          assert.isOk(assessment, 'Assessment should exist in courseData');
-          assert.isOk(assessment.errors, 'Assessment should have errors');
-
-          assert.isTrue(
-            assessment.errors.some((error) =>
-              error.includes(
-                'integrations can only be specified on the defaults (the first element, without labels)',
-              ),
-            ),
-            'Should have specific error about integrations on non-main rule',
-          );
-        }
-
-        const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-        assert.equal(
-          syncedRules.length,
-          0,
-          'Should not sync any rules when a non-main rule specifies integrations',
+        const labelName = 'Test Label';
+        const { syncedRules, errors } = await syncRulesAndRead(
+          [
+            makeAccessControlRule({ dateControl: undefined }),
+            makeAccessControlRule({
+              labels: [labelName],
+              dateControl: undefined,
+              integrations: {
+                prairieTest: { exams: [{ examUuid: TEST_EXAM_UUID }] },
+              },
+            }),
+          ],
+          { studentLabels: [labelName] },
         );
+        assert.isTrue(
+          errors.some((e) => e.includes('integrations can only be specified on the defaults')),
+        );
+        assert.equal(syncedRules.length, 0);
       }));
 
     it('allows main rule to specify integrations', () =>
       runInTransactionAndRollback(async () => {
-        const courseData = util.getCourseData();
-        const groupName = 'Test Group';
-
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
-
-        // create a main rule WITH integrations (should be valid)
-        // and a group-level rule WITHOUT integrations
-        const mainRuleWithIntegrations = makeAccessControlRule({
-          dateControl: { durationMinutes: 60 },
-          integrations: {
-            prairieTest: {
-              exams: [{ examUuid: TEST_EXAM_UUID }],
-            },
-          },
-        });
-        const groupRule = makeAccessControlRule({
-          labels: [groupName],
-          dateControl: { durationMinutes: 90 },
-        });
-
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [mainRuleWithIntegrations, groupRule];
-
-        await util.writeAndSyncCourseData(courseData);
-
-        const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-        assert.equal(
-          syncedRules.length,
-          2,
-          'Should sync all rules when only main rule has integrations',
+        const labelName = 'Test Label';
+        const { syncedRules } = await syncRulesAndRead(
+          [
+            makeAccessControlRule({
+              dateControl: undefined,
+              integrations: {
+                prairieTest: { exams: [{ examUuid: TEST_EXAM_UUID }] },
+              },
+            }),
+            makeAccessControlRule({ labels: [labelName], dateControl: undefined }),
+          ],
+          { studentLabels: [labelName] },
         );
+        assert.equal(syncedRules.length, 2);
       }));
+
+    it('rejects duplicate PrairieTest exam UUIDs', () =>
+      runInTransactionAndRollback(async () => {
+        const { syncedRules, errors } = await syncRulesAndRead([
+          makeAccessControlRule({
+            dateControl: undefined,
+            integrations: {
+              prairieTest: {
+                exams: [{ examUuid: TEST_EXAM_UUID }, { examUuid: TEST_EXAM_UUID }],
+              },
+            },
+          }),
+        ]);
+        assert.equal(syncedRules.length, 0);
+        assert.isTrue(errors.some((e) => e.includes('Duplicate PrairieTest exam UUID')));
+      }));
+
+    it('rejects non-existent PrairieTest exam UUIDs when checkAccessRulesExamUuid is enabled', () =>
+      runInTransactionAndRollback(() =>
+        withConfig({ checkAccessRulesExamUuid: true }, async () => {
+          const fakeUuid = '00000000-0000-0000-0000-000000000000';
+          const { syncedRules, errors } = await syncRulesAndRead([
+            makeAccessControlRule({
+              dateControl: undefined,
+              integrations: {
+                prairieTest: {
+                  exams: [{ examUuid: fakeUuid }],
+                },
+              },
+            }),
+          ]);
+          assert.equal(syncedRules.length, 0);
+          assert.isTrue(errors.some((e) => e.includes('Invalid PrairieTest exam UUID(s)')));
+        }),
+      ));
+
+    it('allows non-existent PrairieTest exam UUIDs when checkAccessRulesExamUuid is disabled', () =>
+      runInTransactionAndRollback(() =>
+        withConfig({ checkAccessRulesExamUuid: false }, async () => {
+          const fakeUuid = '00000000-0000-0000-0000-000000000000';
+          const { syncedRules, errors } = await syncRulesAndRead([
+            makeAccessControlRule({
+              dateControl: undefined,
+              integrations: {
+                prairieTest: {
+                  exams: [{ examUuid: fakeUuid }],
+                },
+              },
+            }),
+          ]);
+          assert.equal(syncedRules.length, 1);
+          assert.isFalse(errors.some((e) => e.includes('Invalid PrairieTest exam UUID(s)')));
+        }),
+      ));
   });
 
   // TODO: should we make more constants in util.ts for this?
@@ -1654,9 +1489,9 @@ describe('Access control syncing', () => {
     it('does not let duplicate labels in one assessment block others from syncing', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
-        const groupName = 'Test Group';
+        const labelName = 'Test Label';
 
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.test2 = {
           uuid: '15d421af-a8d4-45a9-bd74-78e8b222f833',
@@ -1673,7 +1508,7 @@ describe('Access control syncing', () => {
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.test2.accessControl = [
           makeAccessControlRule({ dateControl: { durationMinutes: 75 } }),
           makeAccessControlRule({
-            labels: [groupName, groupName],
+            labels: [labelName, labelName],
             dateControl: { durationMinutes: 90 },
           }),
         ];
@@ -1717,7 +1552,7 @@ describe('Access control syncing', () => {
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.test2.accessControl = [
           makeAccessControlRule({ dateControl: { durationMinutes: 75 } }),
           makeAccessControlRule({
-            labels: ['missing-group'],
+            labels: ['missing-label'],
             dateControl: { durationMinutes: 90 },
           }),
         ];
@@ -1729,7 +1564,7 @@ describe('Access control syncing', () => {
           const invalidAssessment =
             syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.test2;
           assert.isOk(invalidAssessment.errors);
-          assert.isTrue(invalidAssessment.errors.some((error) => error.includes('missing-group')));
+          assert.isTrue(invalidAssessment.errors.some((error) => error.includes('missing-label')));
         }
 
         const syncedRules1 = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
@@ -1747,8 +1582,8 @@ describe('Access control syncing', () => {
     it('preserves afterLastDeadline.allowSubmissions without credit on override', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
-        const groupName = 'Test Group';
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+        const labelName = 'Test Label';
+        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
 
         const mainRule = makeAccessControlRule({
           dateControl: {
@@ -1758,7 +1593,7 @@ describe('Access control syncing', () => {
           },
         });
         const overrideRule: AccessControlJsonInput = {
-          labels: [groupName],
+          labels: [labelName],
           dateControl: {
             afterLastDeadline: { allowSubmissions: false },
           },
@@ -1779,12 +1614,12 @@ describe('Access control syncing', () => {
     it('preserves hideQuestions without hideQuestionsAgainDate on override', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
-        const groupName = 'Test Group';
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+        const labelName = 'Test Label';
+        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
 
         const mainRule = makeAccessControlRule();
         const overrideRule: AccessControlJsonInput = {
-          labels: [groupName],
+          labels: [labelName],
           afterComplete: { hideQuestions: true },
         };
 
@@ -1803,12 +1638,12 @@ describe('Access control syncing', () => {
     it('preserves hideScore without showScoreAgainDate on override', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
-        const groupName = 'Test Group';
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+        const labelName = 'Test Label';
+        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
 
         const mainRule = makeAccessControlRule();
         const overrideRule: AccessControlJsonInput = {
-          labels: [groupName],
+          labels: [labelName],
           afterComplete: { hideScore: true },
         };
 
@@ -1828,12 +1663,12 @@ describe('Access control syncing', () => {
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
-        const groupName = 'Test Group';
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+        const labelName = 'Test Label';
+        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
 
         const mainRule = makeAccessControlRule();
         const overrideRule: AccessControlJsonInput = {
-          labels: [groupName],
+          labels: [labelName],
           dateControl: {
             dueDate: '2024-04-01T23:59:00',
           },
@@ -1857,8 +1692,8 @@ describe('Access control syncing', () => {
     it('explicit null override removals round-trip correctly', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
-        const groupName = 'Test Group';
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+        const labelName = 'Test Label';
+        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
 
         const mainRule: AccessControlJsonInput = {
           dateControl: {
@@ -1870,7 +1705,7 @@ describe('Access control syncing', () => {
           },
         };
         const overrideRule: AccessControlJsonInput = {
-          labels: [groupName],
+          labels: [labelName],
           dateControl: {
             durationMinutes: null,
             password: null,
@@ -1896,8 +1731,8 @@ describe('Access control syncing', () => {
     it('explicit null override removals change resolved access behavior', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
-        const groupName = 'Test Group';
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+        const labelName = 'Test Label';
+        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
 
         const mainRule: AccessControlJsonInput = {
           dateControl: {
@@ -1909,7 +1744,7 @@ describe('Access control syncing', () => {
           },
         };
         const overrideRule: AccessControlJsonInput = {
-          labels: [groupName],
+          labels: [labelName],
           dateControl: {
             durationMinutes: null,
             password: null,
@@ -2079,8 +1914,8 @@ describe('Access control syncing', () => {
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
-        const groupName = 'Override Group';
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+        const labelName = 'Override Label';
+        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
 
         const mainRule: AccessControlJsonInput = {
           dateControl: {
@@ -2091,7 +1926,7 @@ describe('Access control syncing', () => {
           },
         };
         const overrideRule: AccessControlJsonInput = {
-          labels: [groupName],
+          labels: [labelName],
           dateControl: {
             dueDate: '2024-04-01T23:59:00',
           },
@@ -2119,7 +1954,7 @@ describe('Access control syncing', () => {
     it('PrairieTest exam UUIDs round-trip on main rule', () =>
       runInTransactionAndRollback(async () => {
         const mainRule = makeAccessControlRule({
-          dateControl: { durationMinutes: 60 },
+          dateControl: undefined,
           integrations: {
             prairieTest: {
               exams: [{ examUuid: TEST_EXAM_UUID }],
@@ -2148,7 +1983,7 @@ describe('Access control syncing', () => {
     it('PrairieTest readOnly flag round-trips correctly', () =>
       runInTransactionAndRollback(async () => {
         const mainRule = makeAccessControlRule({
-          dateControl: { durationMinutes: 60 },
+          dateControl: undefined,
           integrations: {
             prairieTest: {
               exams: [{ examUuid: TEST_EXAM_UUID, readOnly: true }],
@@ -2167,6 +2002,32 @@ describe('Access control syncing', () => {
         const main = rules.find((r) => r.number === 0);
         assert.isOk(main);
         assert.deepEqual(main.prairietestExams, [{ uuid: TEST_EXAM_UUID, readOnly: true }]);
+      }));
+
+    it('removes stale PrairieTest exam rows on re-sync', () =>
+      runInTransactionAndRollback(async () => {
+        const { courseDir } = await syncRulesAndRead([
+          makeAccessControlRule({
+            dateControl: undefined,
+            integrations: {
+              prairieTest: { exams: [{ examUuid: TEST_EXAM_UUID }] },
+            },
+          }),
+        ]);
+
+        const assessment = await getAssessment(util.ASSESSMENT_ID);
+        let rules = await selectAccessControlRulesForAssessment(assessment);
+        let main = rules.find((r) => r.number === 0);
+        assert.isOk(main);
+        assert.equal(main.prairietestExams.length, 1);
+
+        // Re-sync without the exam — stale row should be cleaned up.
+        await syncRulesAndRead([makeAccessControlRule()], { courseDir });
+
+        rules = await selectAccessControlRulesForAssessment(assessment);
+        main = rules.find((r) => r.number === 0);
+        assert.isOk(main);
+        assert.equal(main.prairietestExams.length, 0);
       }));
   });
 });
