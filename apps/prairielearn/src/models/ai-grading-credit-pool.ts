@@ -220,10 +220,8 @@ export async function adjustCreditPool({
         ? before.credit_transferable_milli_dollars
         : before.credit_non_transferable_milli_dollars;
 
-    // Cap deductions to the current balance so admins can empty the pool
-    // even when the remaining balance is less than the requested deduction.
-    const cappedDelta =
-      currentBalance + delta_milli_dollars < 0 ? -currentBalance : delta_milli_dollars;
+    // Cap deductions so the balance doesn't go negative.
+    const cappedDelta = Math.max(delta_milli_dollars, -currentBalance);
 
     if (cappedDelta === 0) return;
 

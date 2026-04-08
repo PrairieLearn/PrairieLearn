@@ -95,10 +95,7 @@ function AdminCreditPoolContent({
           isSuccess={adjustMutation.isSuccess}
           maxAddDollars={maxAddDollars}
           maxDeductDollars={maxDeductDollars}
-          transferableMilliDollars={poolQuery.data?.credit_transferable_milli_dollars ?? null}
-          nonTransferableMilliDollars={
-            poolQuery.data?.credit_non_transferable_milli_dollars ?? null
-          }
+          poolData={poolQuery.data ?? null}
           onSubmit={(data) => adjustMutation.mutate(data)}
           onDismissError={() => adjustMutation.reset()}
           onDismissSuccess={() => adjustMutation.reset()}
@@ -115,8 +112,7 @@ function AdjustCreditsForm({
   isSuccess,
   maxAddDollars,
   maxDeductDollars,
-  transferableMilliDollars,
-  nonTransferableMilliDollars,
+  poolData,
   onSubmit,
   onDismissError,
   onDismissSuccess,
@@ -127,8 +123,10 @@ function AdjustCreditsForm({
   isSuccess: boolean;
   maxAddDollars: number;
   maxDeductDollars: number;
-  transferableMilliDollars: number | null;
-  nonTransferableMilliDollars: number | null;
+  poolData: {
+    credit_transferable_milli_dollars: number;
+    credit_non_transferable_milli_dollars: number;
+  } | null;
   onSubmit: (data: {
     action: 'add' | 'deduct';
     amount_dollars: number;
@@ -146,7 +144,11 @@ function AdjustCreditsForm({
   const parsedAmount = Number(amountStr);
   const maxForAction = action === 'add' ? maxAddDollars : maxDeductDollars;
   const currentBalanceMilliDollars =
-    creditType === 'transferable' ? transferableMilliDollars : nonTransferableMilliDollars;
+    poolData == null
+      ? null
+      : creditType === 'transferable'
+        ? poolData.credit_transferable_milli_dollars
+        : poolData.credit_non_transferable_milli_dollars;
   const isAmountInvalid =
     amountStr !== '' &&
     (!Number.isFinite(parsedAmount) || parsedAmount <= 0 || parsedAmount > maxForAction);
@@ -246,8 +248,8 @@ function AdjustCreditsForm({
         )}
         {isDeductionCapped && (
           <div className="text-muted small mt-3">
-            Amount exceeds the {creditType === 'transferable' ? 'transferable' : 'non-transferable'}{' '}
-            balance. {formatMilliDollars(currentBalanceMilliDollars)} will be deducted.
+            Amount exceeds the {creditType.replace('_', '-')} balance.{' '}
+            {formatMilliDollars(currentBalanceMilliDollars)} will be deducted.
           </div>
         )}
       </form>
