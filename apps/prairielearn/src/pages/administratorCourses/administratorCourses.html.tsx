@@ -11,11 +11,9 @@ import {
   type CourseFormFieldValues,
   useInstitutionPrefix,
 } from '../../components/AdminstratorCourseFormFields.js';
-import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
 import { getAppError } from '../../lib/client/errors.js';
 import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import type { CourseRequestRow } from '../../lib/course-request.js';
 import type { Timezone } from '../../lib/timezone.shared.js';
 import { createAdministratorTrpcClient } from '../../trpc/administrator/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/administrator/context.js';
@@ -44,23 +42,19 @@ type CourseColumnName =
   | 'branch';
 
 export function AdministratorCourses({
-  courseRequests,
   institutions,
   availableTimezones,
   courses,
   coursesRoot,
   trpcCsrfToken,
-  urlPrefix,
   courseRepoDefaultBranch,
   aiSecretsConfigured,
 }: {
-  courseRequests: CourseRequestRow[];
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
   courses: CourseWithInstitution[];
   coursesRoot: string;
   trpcCsrfToken: string;
-  urlPrefix: string;
   courseRepoDefaultBranch: string;
   aiSecretsConfigured: boolean;
 }) {
@@ -72,15 +66,6 @@ export function AdministratorCourses({
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <>
           <h1 className="visually-hidden">Courses</h1>
-          <CourseRequestsTable
-            rows={courseRequests}
-            institutions={institutions}
-            availableTimezones={availableTimezones}
-            coursesRoot={coursesRoot}
-            urlPrefix={urlPrefix}
-            showAll={false}
-            aiSecretsConfigured={aiSecretsConfigured}
-          />
           <CoursesCard
             courses={courses}
             institutions={institutions}

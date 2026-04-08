@@ -327,7 +327,38 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
     });
   });
 
-  describe('13. Comprehensive test of all downloads', function () {
+  describe('13. Enroll a student and have them start the exam', function () {
+    it('should generate a student and create an assessment instance', async () => {
+      const [studentUser] = await generateAndEnrollUsers({ count: 1, course_instance_id: '1' });
+      await helperExam.withPTReservation(
+        {
+          userId: studentUser.id,
+          accessStart: new Date(Date.now() - 60_000),
+          accessEnd: new Date(Date.now() + 600_000),
+        },
+        () =>
+          withUser(studentUser, async () => {
+            const assessmentUrl =
+              locals.siteUrl + '/pl/course_instance/1/assessment/' + locals.assessment_id;
+
+            const res = await fetch(assessmentUrl);
+            assert.equal(res.status, 200);
+            const $ = cheerio.load(await res.text());
+
+            const instanceRes = await fetch(assessmentUrl, {
+              method: 'POST',
+              body: new URLSearchParams({
+                __action: 'new_instance',
+                __csrf_token: getCSRFToken($),
+              }),
+            });
+            assert.equal(instanceRes.status, 200);
+          }),
+      );
+    });
+  });
+
+  describe('14. Comprehensive test of all downloads', function () {
     it('should attempt to download every file in getFilenames', async () => {
       const assessment = await selectAssessmentById(locals.assessment_id);
       assert.isNotNull(assessment.assessment_set_id);

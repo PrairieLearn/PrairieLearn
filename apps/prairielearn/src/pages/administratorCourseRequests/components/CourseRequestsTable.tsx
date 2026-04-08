@@ -7,21 +7,23 @@ import ReactMarkdown from 'react-markdown';
 
 import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
-import { getAppError } from '../lib/client/errors.js';
-import type { AdminInstitution } from '../lib/client/safe-db-types.js';
-import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
-import type { CourseRequestRow } from '../lib/course-request.js';
-import { type Timezone } from '../lib/timezone.shared.js';
-import { useTRPC } from '../trpc/administrator/context.js';
-import type { AdminCourseRequestError } from '../trpc/administrator/course-requests.js';
-
 import {
   AdministratorCourseFormFields,
   type CourseFormFieldValues,
   buildRepoShortName,
   useInstitutionPrefix,
-} from './AdminstratorCourseFormFields.js';
-import { JobStatus } from './JobStatus.js';
+} from '../../../components/AdminstratorCourseFormFields.js';
+import { JobStatus } from '../../../components/JobStatus.js';
+import { type AppError, getAppError } from '../../../lib/client/errors.js';
+import type { AdminInstitution } from '../../../lib/client/safe-db-types.js';
+import {
+  getAdministratorCourseRequestsUrl,
+  getAdministratorJobSequenceUrl,
+} from '../../../lib/client/url.js';
+import type { CourseRequestRow } from '../../../lib/course-request.js';
+import { type Timezone } from '../../../lib/timezone.shared.js';
+import { useTRPC } from '../../../trpc/administrator/context.js';
+import type { AdminCourseRequestError } from '../../../trpc/administrator/course-requests.js';
 
 interface CourseRequestApproveFormData extends CourseFormFieldValues {
   github_user: string;
@@ -33,7 +35,6 @@ export function CourseRequestsTable({
   availableTimezones,
   coursesRoot,
   showAll,
-  urlPrefix,
   aiSecretsConfigured,
 }: {
   rows: CourseRequestRow[];
@@ -41,7 +42,6 @@ export function CourseRequestsTable({
   availableTimezones: Timezone[];
   coursesRoot: string;
   showAll: boolean;
-  urlPrefix: string;
   aiSecretsConfigured: boolean;
 }) {
   const approveModal = useModalState<CourseRequestRow>();
@@ -50,11 +50,11 @@ export function CourseRequestsTable({
   return (
     <div className="card mb-4">
       <div className="card-header bg-primary text-white d-flex align-items-center">
-        <h2>{headerPrefix} course requests</h2>
+        <h1 className="h2 mb-0">{headerPrefix} course requests</h1>
         {!showAll && (
           <a
             className="btn btn-sm btn-light ms-auto"
-            href={getAdministratorCourseRequestsUrl({ urlPrefix })}
+            href={getAdministratorCourseRequestsUrl({ showAll: true })}
           >
             <i className="fa fa-search" aria-hidden="true" />
             <span className="d-none d-sm-inline">View all</span>
@@ -84,7 +84,6 @@ export function CourseRequestsTable({
                 key={row.id}
                 row={row}
                 showAll={showAll}
-                urlPrefix={urlPrefix}
                 onApprove={approveModal.showWithData}
               />
             ))}
@@ -102,7 +101,6 @@ export function CourseRequestsTable({
         institutions={institutions}
         availableTimezones={availableTimezones}
         coursesRoot={coursesRoot}
-        urlPrefix={urlPrefix}
         aiSecretsConfigured={aiSecretsConfigured}
       />
     </div>
@@ -115,12 +113,10 @@ const CourseRequestTableRow = memo(
   ({
     row,
     showAll,
-    urlPrefix,
     onApprove,
   }: {
     row: CourseRequestRow;
     showAll: boolean;
-    urlPrefix: string;
     onApprove: (row: CourseRequestRow) => void;
   }) => {
     const [noteOpen, setNoteOpen] = useState(Boolean(row.note));
@@ -260,7 +256,7 @@ const CourseRequestTableRow = memo(
                           </td>
                           <td>
                             <a
-                              href={`${urlPrefix}/administrator/jobSequence/${job.id}`}
+                              href={getAdministratorJobSequenceUrl(job.id)}
                               className="btn btn-xs btn-info float-end"
                             >
                               Details
@@ -288,13 +284,11 @@ function CourseRequestApproveModal({
   institutions,
   availableTimezones,
   coursesRoot,
-  urlPrefix,
   aiSecretsConfigured,
 }: ReturnType<typeof useModalState<CourseRequestRow>> & {
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
   coursesRoot: string;
-  urlPrefix: string;
   aiSecretsConfigured: boolean;
 }) {
   return (
@@ -306,7 +300,6 @@ function CourseRequestApproveModal({
           institutions={institutions}
           availableTimezones={availableTimezones}
           coursesRoot={coursesRoot}
-          urlPrefix={urlPrefix}
           aiSecretsConfigured={aiSecretsConfigured}
           onCancel={onHide}
         />
@@ -320,7 +313,6 @@ function CourseRequestApproveModalContent({
   institutions,
   availableTimezones,
   coursesRoot,
-  urlPrefix,
   aiSecretsConfigured,
   onCancel,
 }: {
@@ -328,13 +320,12 @@ function CourseRequestApproveModalContent({
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
   coursesRoot: string;
-  urlPrefix: string;
   aiSecretsConfigured: boolean;
   onCancel: () => void;
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.createCourse.mutationOptions());
-  const appError = getAppError<AdminCourseRequestError>(mutation.error);
+  const appError = getAppError<AdminCourseRequestError['CreateCourse']>(mutation.error);
 
   const userInstitution = institutions.find((i) => i.id === request.user_institution_id);
   const isDefaultInstitution = userInstitution?.short_name === 'Default';
@@ -382,7 +373,7 @@ function CourseRequestApproveModalContent({
       },
       {
         onSuccess: ({ jobSequenceId }) => {
-          window.location.href = `${urlPrefix}/administrator/jobSequence/${jobSequenceId}/`;
+          window.location.href = getAdministratorJobSequenceUrl(jobSequenceId);
         },
       },
     );
@@ -563,11 +554,7 @@ function CourseRequestApproveModalContent({
               {...register('github_user')}
             />
           </div>
-          {appError && (
-            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {appError.message}
-            </Alert>
-          )}
+          <MutationError appError={appError} onDismiss={() => mutation.reset()} />
         </Modal.Body>
         <Modal.Footer>
           <button type="button" className="btn btn-secondary" onClick={onCancel}>
@@ -586,6 +573,60 @@ function CourseRequestApproveModalContent({
   );
 }
 
+function MutationError({
+  appError,
+  onDismiss,
+}: {
+  appError: AppError<AdminCourseRequestError['CreateCourse']> | null;
+  onDismiss: () => void;
+}) {
+  if (!appError) return null;
+
+  if (appError.code === 'CONFLICTS') {
+    return (
+      <Alert variant="danger" className="mb-3" dismissible onClose={onDismiss}>
+        <Alert.Heading as="h6" className="mb-1">
+          <i className="fa fa-times-circle" aria-hidden="true" /> Conflicts detected
+        </Alert.Heading>
+        <ul className="mb-0 small">
+          {appError.repoCourse && (
+            <li>
+              A course with this repository name already exists:{' '}
+              <a href={`/pl/course/${appError.repoCourse.id}`} target="_blank" rel="noreferrer">
+                {appError.repoCourse.short_name}: {appError.repoCourse.title}
+              </a>
+            </li>
+          )}
+          {appError.githubRepoUrl && (
+            <li>
+              A GitHub repository with this name already exists. This can happen if a repository was
+              previously renamed.{' '}
+              <a href={appError.githubRepoUrl} target="_blank" rel="noreferrer">
+                Open repo
+              </a>
+              .
+            </li>
+          )}
+          {appError.pathCourse && (
+            <li>
+              A course with this path already exists:{' '}
+              <a href={`/pl/course/${appError.pathCourse.id}`} target="_blank" rel="noreferrer">
+                {appError.pathCourse.short_name}: {appError.pathCourse.title}
+              </a>
+            </li>
+          )}
+        </ul>
+      </Alert>
+    );
+  }
+
+  return (
+    <Alert variant="danger" dismissible onClose={onDismiss}>
+      {appError.message}
+    </Alert>
+  );
+}
+
 function CourseRequestDenyForm({
   request,
   onCancel,
@@ -595,7 +636,7 @@ function CourseRequestDenyForm({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.deny.mutationOptions());
-  const appError = getAppError<AdminCourseRequestError>(mutation.error);
+  const appError = getAppError<Record<string, never>>(mutation.error);
 
   return (
     <>
@@ -670,7 +711,7 @@ function CourseRequestEditNoteForm({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.updateNote.mutationOptions());
-  const appError = getAppError<AdminCourseRequestError>(mutation.error);
+  const appError = getAppError<Record<string, never>>(mutation.error);
 
   const {
     register,
