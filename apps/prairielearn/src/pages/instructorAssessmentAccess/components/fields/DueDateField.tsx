@@ -25,7 +25,7 @@ function DueDateInput({
   value: string | null;
   onChange: (value: string | null) => void;
   idPrefix: string;
-  releaseDate: string | undefined;
+  releaseDate: string | null | undefined;
   earlyDeadlines: DeadlineEntry[] | undefined;
   error?: string;
 }) {

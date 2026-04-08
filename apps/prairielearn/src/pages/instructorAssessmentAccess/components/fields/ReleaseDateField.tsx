@@ -15,7 +15,7 @@ function tomorrowLocalDatetime(): string {
   return startOfDayDatetime(tomorrowDate());
 }
 
-function isReleasedNow(value: string): boolean {
+function isReleasedNow(value: string | null): boolean {
   if (!value) return true;
   const release = Temporal.PlainDateTime.from(value);
   const now = Temporal.Now.plainDateTimeISO();
@@ -28,8 +28,8 @@ function ReleaseDateInput({
   error,
   idPrefix,
 }: {
-  value: string;
-  onChange: (value: string) => void;
+  value: string | null;
+  onChange: (value: string | null) => void;
   error?: string;
   idPrefix: string;
 }) {
@@ -71,7 +71,7 @@ function ReleaseDateInput({
             aria-label="Release date"
             aria-invalid={!!error}
             aria-errormessage={error ? `${idPrefix}-release-date-error` : undefined}
-            value={value}
+            value={value ?? ''}
             onChange={({ currentTarget }) => onChange(currentTarget.value)}
           />
           {error && (

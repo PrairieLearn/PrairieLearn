@@ -27,9 +27,9 @@ function DeadlineArrayInput({
     | `overrides.${number}.earlyDeadlines`
     | `overrides.${number}.lateDeadlines`;
   idPrefix: string;
-  releaseDate: string | undefined;
+  releaseDate: string | null | undefined;
   dueDate: string | null | undefined;
-  validationReleaseDate?: string | undefined;
+  validationReleaseDate?: string | null | undefined;
   validationDueDate?: string | null | undefined;
   deadlines: DeadlineEntry[];
 }) {
