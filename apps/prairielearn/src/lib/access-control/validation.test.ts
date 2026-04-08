@@ -1,13 +1,17 @@
 import { assert, describe, it } from 'vitest';
 
 import {
+  type AccessControlJsonInput,
+  AccessControlJsonSchema,
+} from '../../schemas/accessControl.js';
+
+import {
+  validateAccessControlRules,
   validateGlobalDateConsistencyIssues,
   validateRule,
   validateRuleCreditMonotonicity,
   validateRuleDateOrdering,
-} from '../lib/access-control/validation.js';
-import { type AccessControlJsonInput, AccessControlJsonSchema } from '../schemas/accessControl.js';
-import { validateAccessControlRules } from '../sync/course-db.js';
+} from './validation.js';
 
 describe('Valid configs', () => {
   const validAccessControlExamples: AccessControlJsonInput[][] = [
