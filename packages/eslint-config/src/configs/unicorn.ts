@@ -63,6 +63,7 @@ export function unicornConfig(): TSESLint.FlatConfig.ConfigArray {
 
         // False positives
         'unicorn/error-message': 'off',
+        'unicorn/prefer-array-find': ['error', { checkFromLast: false }], // findLast is unavailable in our target lib
         'unicorn/prefer-at': 'off', // https://github.com/microsoft/TypeScript/issues/47660#issuecomment-3146907649
         'unicorn/throw-new-error': 'off',
 

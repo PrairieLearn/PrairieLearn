@@ -206,17 +206,6 @@ export async function pullAndUpdateCourse({
   return { jobSequenceId: serverJob.jobSequenceId, jobPromise };
 }
 
-export async function checkCourseRepositoryExists(repoName: string) {
-  // Escape SQL LIKE wildcards so they are matched literally.
-  const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
-  const result = await sqldb.queryScalar(
-    sql.exists_by_course_request_repository_name,
-    { repoName: escapedRepoName },
-    z.boolean(),
-  );
-  return result;
-}
-
 /**
  * Extracts the "owner/repo.git" suffix from a Git repository URL,
  * handling both SSH (git@github.com:Org/repo.git) and HTTPS

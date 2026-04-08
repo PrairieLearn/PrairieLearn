@@ -15,13 +15,14 @@ import {
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { computeScopedJsonHash } from '../../lib/editorUtil.js';
 import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
-import { computeStableHash } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectAccessControlRules } from '../../models/assessment-access-control-rules.js';
+import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 
 import {
   AssessmentAccessRulesSchema,
@@ -55,7 +56,11 @@ router.get(
 
     if (enhancedAccessControlEnabled && res.locals.assessment.modern_access_control) {
       const jsonRules = await selectAccessControlRules(res.locals.assessment);
-      const origHash = computeStableHash(jsonRules);
+      const assessmentPath = getAssessmentPath(res.locals);
+      const origHash = await computeScopedJsonHash<AssessmentJsonInput>(
+        assessmentPath,
+        (json) => json.accessControl ?? [],
+      );
       const trpcCsrfToken = generatePrefixCsrfToken(
         {
           url: getAssessmentTrpcUrl({
