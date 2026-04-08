@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { config } from '../../lib/config.js';
 import { StudentLabelSchema } from '../../lib/db-types.js';
 import {
   type AccessControlJson,
@@ -279,26 +280,28 @@ export async function syncAllAccessControl(
   const studentLabelIdByName = new Map(existingLabels.map((g) => [g.name, g.id]));
 
   // Collect all exam UUIDs across all assessments and validate once.
-  const allExamUuids = new Set<string>();
-  for (const { rules } of assessments) {
-    for (const rule of rules) {
-      for (const e of rule.integrations?.prairieTest?.exams ?? []) {
-        if (UUID_REGEX.test(e.examUuid)) {
-          allExamUuids.add(e.examUuid);
+  const invalidExamUuids = new Set<string>();
+  if (config.checkAccessRulesExamUuid) {
+    const allExamUuids = new Set<string>();
+    for (const { rules } of assessments) {
+      for (const rule of rules) {
+        for (const e of rule.integrations?.prairieTest?.exams ?? []) {
+          if (UUID_REGEX.test(e.examUuid)) {
+            allExamUuids.add(e.examUuid);
+          }
         }
       }
     }
-  }
 
-  const invalidExamUuids = new Set<string>();
-  if (allExamUuids.size > 0) {
-    const examValidation = await sqldb.queryRows(
-      sql.check_exam_uuids_exist,
-      { exam_uuids: JSON.stringify([...allExamUuids]) },
-      z.object({ uuid: z.string(), uuid_exists: z.boolean() }),
-    );
-    for (const { uuid, uuid_exists } of examValidation) {
-      if (!uuid_exists) invalidExamUuids.add(uuid);
+    if (allExamUuids.size > 0) {
+      const examValidation = await sqldb.queryRows(
+        sql.check_exam_uuids_exist,
+        { exam_uuids: JSON.stringify([...allExamUuids]) },
+        z.object({ uuid: z.string(), uuid_exists: z.boolean() }),
+      );
+      for (const { uuid, uuid_exists } of examValidation) {
+        if (!uuid_exists) invalidExamUuids.add(uuid);
+      }
     }
   }
 
