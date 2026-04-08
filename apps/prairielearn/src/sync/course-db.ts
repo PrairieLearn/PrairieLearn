@@ -19,6 +19,7 @@ import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
   type AccessControlJson,
+  type AccessControlRuleTargetType,
   type AccessControlValidationRule,
   type AssessmentJson,
   type AssessmentJsonInput,
@@ -1148,6 +1149,13 @@ function formatValues(qids: Set<string> | string[]) {
 /**
  * Validates an array of access control rules.
  * Returns a single object with all accumulated errors and warnings.
+ *
+ * @param rules The full ordered list of access control rules: index 0 is the
+ *   main (defaults) rule that applies to everyone (no labels), and all
+ *   subsequent entries are student-label rules that target specific labels.
+ * @param enrollmentRules Optional separate list of enrollment-based rules.
+ * @param validStudentLabelNames Optional set of known student label names for
+ *   cross-referencing validation.
  */
 export function validateAccessControlRules({
   rules,
@@ -1184,7 +1192,10 @@ export function validateAccessControlRules({
     }
   }
 
-  for (const rule of rules) {
+  // Index 0 is the main rule; everything else is a student-label rule.
+  rules.forEach((rule, index) => {
+    const targetType: AccessControlRuleTargetType = index === 0 ? 'none' : 'student_label';
+
     const labels = rule.labels ?? [];
     const seenLabels = new Set<string>();
     const duplicateLabels = new Set<string>();
@@ -1212,8 +1223,6 @@ export function validateAccessControlRules({
       }
     }
 
-    const isMainRule = rule.labels == null || rule.labels.length === 0;
-    const targetType = isMainRule ? 'none' : 'student_label';
     validationRules.push({
       rule,
       targetType,
@@ -1221,7 +1230,7 @@ export function validateAccessControlRules({
     });
 
     errors.push(...validateRule(rule, targetType));
-  }
+  });
 
   for (const rule of enrollmentRules ?? []) {
     validationRules.push({
