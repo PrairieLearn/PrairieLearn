@@ -47,7 +47,11 @@ import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
-import { type CounterClockwiseRotationDegrees, RotationCorrectionOutputSchema } from './types.js';
+import {
+  type AiGradingOrientation,
+  type CounterClockwiseRotationDegrees,
+  RotationCorrectionOutputSchema,
+} from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -866,7 +870,7 @@ export async function correctImagesOrientation({
 }: {
   submittedAnswer: Record<string, any>;
   submittedImages: Record<string, string>;
-  orientations: Record<string, string>;
+  orientations: Record<string, AiGradingOrientation>;
   model: LanguageModel;
 }) {
   if (!submittedAnswer._files) {

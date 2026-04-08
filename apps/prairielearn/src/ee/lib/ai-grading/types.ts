@@ -64,6 +64,8 @@ const AIGradingOrientationSchema = z.enum([
   'Rotated Clockwise 90 degrees',
 ]);
 
+export type AiGradingOrientation = z.infer<typeof AIGradingOrientationSchema>;
+
 const orientationDescription = [
   'The orientation of the handwriting in this image.',
   'Upright (0 degrees): The handwriting is in a standard reading position already.',

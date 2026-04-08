@@ -709,25 +709,37 @@ export async function aiGrade({
           }
 
           // Only correct images that were flagged as non-upright.
-          const { rotatedSubmittedAnswer, rotationCorrections, anyImageRotated } =
-            await correctImagesOrientation({
-              submittedAnswer: submission.submitted_answer,
-              submittedImages,
-              orientations,
-              model,
-            });
+          const { rotatedSubmittedAnswer, rotationCorrections } = await correctImagesOrientation({
+            submittedAnswer: submission.submitted_answer,
+            submittedImages,
+            orientations,
+            model,
+          });
 
-          logger.info(`rotationCorrections: ${JSON.stringify(rotationCorrections)}`)
-
-          if (!anyImageRotated) {
-            // Rotation correction ran but no images were actually rotated.
-            return { finalGradingResponse: initialResponse, rotationCorrectionApplied: false };
-          }
+          logger.info(`rotationCorrections: ${JSON.stringify(rotationCorrections)}`);
 
           const rotationCorrected = Object.values(rotationCorrections).some(
             (correction) => correction.degreesRotated !== 0,
           );
-          // TODO: Return initialResponse if rotationCorrected == false, and modify corresponding cost tracking/rate limiting logic.
+
+          if (!rotationCorrected) {
+            // Rotation correction ran but no images were actually rotated.
+            // Still need to track costs for the correction LLM calls that did run.
+            const correctionResponses = Object.values(rotationCorrections)
+              .map((r) => r.response)
+              .filter((r) => r != null);
+            if (correctionResponses.length > 0) {
+              logResponsesUsage({ responses: correctionResponses, logger });
+              for (const response of correctionResponses) {
+                await addAiGradingCostToIntervalUsage({
+                  courseInstance: course_instance,
+                  model: model_id,
+                  usage: response.usage,
+                });
+              }
+            }
+            return { finalGradingResponse: initialResponse, rotationCorrectionApplied: false };
+          }
 
           // Regenerate the prompt with the rotation-corrected images.
           input = await generatePrompt({
@@ -949,18 +961,35 @@ export async function aiGrade({
           }
 
           // Only correct images that were flagged as non-upright.
-          const { rotatedSubmittedAnswer, rotationCorrections, anyImageRotated } =
-            await correctImagesOrientation({
-              submittedAnswer: submission.submitted_answer,
-              submittedImages,
-              orientations,
-              model,
-            });
+          const { rotatedSubmittedAnswer, rotationCorrections } = await correctImagesOrientation({
+            submittedAnswer: submission.submitted_answer,
+            submittedImages,
+            orientations,
+            model,
+          });
 
           logger.info(`rotationCorrections: ${JSON.stringify(rotationCorrections)}`);
 
-          if (!anyImageRotated) {
+          const rotationCorrected = Object.values(rotationCorrections).some(
+            (correction) => correction.degreesRotated !== 0,
+          );
+
+          if (!rotationCorrected) {
             // Rotation correction ran but no images were actually rotated.
+            // Still need to track costs for the correction LLM calls that did run.
+            const correctionResponses = Object.values(rotationCorrections)
+              .map((r) => r.response)
+              .filter((r) => r != null);
+            if (correctionResponses.length > 0) {
+              logResponsesUsage({ responses: correctionResponses, logger });
+              for (const response of correctionResponses) {
+                await addAiGradingCostToIntervalUsage({
+                  courseInstance: course_instance,
+                  model: model_id,
+                  usage: response.usage,
+                });
+              }
+            }
             return { finalGradingResponse: initialResponse, rotationCorrectionApplied: false };
           }
 
@@ -968,6 +997,7 @@ export async function aiGrade({
           input = await generatePrompt({
             questionPrompt,
             questionAnswer,
+            rotationCorrected,
             submission_text,
             submitted_answer: rotatedSubmittedAnswer,
             rubric_items,
