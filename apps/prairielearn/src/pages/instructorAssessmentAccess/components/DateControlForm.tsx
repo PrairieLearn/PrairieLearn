@@ -11,14 +11,16 @@ import { MainDurationField, OverrideDurationField } from './fields/DurationField
 import { MainPasswordField, OverridePasswordField } from './fields/PasswordField.js';
 import { MainReleaseDateField, OverrideReleaseDateField } from './fields/ReleaseDateField.js';
 import type { AccessControlFormData } from './types.js';
-import { startOfDayDatetime } from './utils/dateUtils.js';
+import { startOfDayDatetime, todayDate } from './utils/dateUtils.js';
 
 export function MainDateControlForm({
   title = 'Date control',
   description = 'Control access and credit to your assessment based on a schedule',
+  displayTimezone,
 }: {
   title?: string;
   description?: string;
+  displayTimezone: string;
 }) {
   const { register, setValue, getValues } = useFormContext<AccessControlFormData>();
 
@@ -36,7 +38,7 @@ export function MainDateControlForm({
           {...register('mainRule.dateControlEnabled', {
             onChange: (e) => {
               if (e.target.checked && !getValues('mainRule.releaseDate')) {
-                setValue('mainRule.releaseDate', startOfDayDatetime(), {
+                setValue('mainRule.releaseDate', startOfDayDatetime(todayDate(displayTimezone)), {
                   shouldDirty: true,
                   shouldValidate: true,
                 });
@@ -51,10 +53,10 @@ export function MainDateControlForm({
       </div>
       {dateControlEnabled ? (
         <div className="d-flex flex-column gap-3">
-          <MainReleaseDateField />
-          <MainDeadlineArrayField type="early" />
-          <MainDueDateField />
-          <MainDeadlineArrayField type="late" />
+          <MainReleaseDateField displayTimezone={displayTimezone} />
+          <MainDeadlineArrayField type="early" displayTimezone={displayTimezone} />
+          <MainDueDateField displayTimezone={displayTimezone} />
+          <MainDeadlineArrayField type="late" displayTimezone={displayTimezone} />
           <MainAfterLastDeadlineField />
           <Row className="gy-3">
             <Col md={6}>
@@ -78,10 +80,12 @@ export function OverrideDateControlForm({
   index,
   title = 'Date control',
   description = 'Override date settings from the defaults by clicking "Override" on individual fields',
+  displayTimezone,
 }: {
   index: number;
   title?: string;
   description?: string;
+  displayTimezone: string;
 }) {
   return (
     <div>
@@ -92,10 +96,10 @@ export function OverrideDateControlForm({
         <Form.Text className="text-muted">{description}</Form.Text>
       </div>
       <div className="d-flex flex-column gap-3">
-        <OverrideReleaseDateField index={index} />
-        <OverrideDeadlineArrayField index={index} type="early" />
-        <OverrideDueDateField index={index} />
-        <OverrideDeadlineArrayField index={index} type="late" />
+        <OverrideReleaseDateField index={index} displayTimezone={displayTimezone} />
+        <OverrideDeadlineArrayField index={index} type="early" displayTimezone={displayTimezone} />
+        <OverrideDueDateField index={index} displayTimezone={displayTimezone} />
+        <OverrideDeadlineArrayField index={index} type="late" displayTimezone={displayTimezone} />
         <OverrideAfterLastDeadlineField index={index} />
         <Row className="gy-3">
           <Col md={6}>
