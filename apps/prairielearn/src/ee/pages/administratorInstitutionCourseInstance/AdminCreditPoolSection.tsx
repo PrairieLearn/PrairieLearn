@@ -245,10 +245,10 @@ function AdjustCreditsForm({
           </div>
         )}
         {isDeductionCapped && (
-          <Alert variant="warning" className="mt-3 mb-0 py-2">
+          <div className="text-muted small mt-3">
             Amount exceeds the {creditType === 'transferable' ? 'transferable' : 'non-transferable'}{' '}
             balance. {formatMilliDollars(currentBalanceMilliDollars)} will be deducted.
-          </Alert>
+          </div>
         )}
       </form>
       {isSuccess && (
