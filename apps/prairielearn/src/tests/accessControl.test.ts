@@ -140,8 +140,8 @@ describe('Valid configs', () => {
   ];
 
   it('should pass validation for valid access control configs (no warnings or errors)', () => {
-    const parsedAccessControlExamples =validAccessControlExamples.map(
-      (example) => example.map((rule) => AccessControlJsonSchema.parse(rule)),
+    const parsedAccessControlExamples = validAccessControlExamples.map((example) =>
+      example.map((rule) => AccessControlJsonSchema.parse(rule)),
     );
 
     parsedAccessControlExamples.forEach((rules, exampleIndex) => {
@@ -180,9 +180,7 @@ describe('Main rule requirement', () => {
       },
     ];
 
-    const parsedRules =rulesWithoutMain.map((rule) =>
-      AccessControlJsonSchema.parse(rule),
-    );
+    const parsedRules = rulesWithoutMain.map((rule) => AccessControlJsonSchema.parse(rule));
     const result = validateAccessControlRules({
       rules: parsedRules,
     });
@@ -210,9 +208,7 @@ describe('Main rule requirement', () => {
       },
     ];
 
-    const parsedRules =rulesWithMultipleMain.map((rule) =>
-      AccessControlJsonSchema.parse(rule),
-    );
+    const parsedRules = rulesWithMultipleMain.map((rule) => AccessControlJsonSchema.parse(rule));
     const result = validateAccessControlRules({
       rules: parsedRules,
     });
@@ -234,9 +230,7 @@ describe('Main rule requirement', () => {
       },
     ];
 
-    const parsedRules =rulesWithOneMain.map((rule) =>
-      AccessControlJsonSchema.parse(rule),
-    );
+    const parsedRules = rulesWithOneMain.map((rule) => AccessControlJsonSchema.parse(rule));
     const result = validateAccessControlRules({
       rules: parsedRules,
     });
