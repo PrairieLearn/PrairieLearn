@@ -11,16 +11,10 @@ export type AccessControlFormFieldPath =
   | 'mainRule.dueDate'
   | `mainRule.earlyDeadlines.${number}.date`
   | `mainRule.lateDeadlines.${number}.date`
-  | 'mainRule.questionVisibility.showAgainDate'
-  | 'mainRule.questionVisibility.hideAgainDate'
-  | 'mainRule.scoreVisibility.showAgainDate'
   | `overrides.${number}.releaseDate`
   | `overrides.${number}.dueDate`
   | `overrides.${number}.earlyDeadlines.${number}.date`
-  | `overrides.${number}.lateDeadlines.${number}.date`
-  | `overrides.${number}.questionVisibility.showAgainDate`
-  | `overrides.${number}.questionVisibility.hideAgainDate`
-  | `overrides.${number}.scoreVisibility.showAgainDate`;
+  | `overrides.${number}.lateDeadlines.${number}.date`;
 
 function buildValidationRules(formData: AccessControlFormData): AccessControlValidationRule[] {
   return formDataToJson(formData).map((rule, index) => ({
@@ -36,29 +30,15 @@ function mapIssueToFormFieldPath(
   const prefix: 'mainRule' | `overrides.${number}` =
     issue.ruleIndex === 0 ? 'mainRule' : `overrides.${issue.ruleIndex - 1}`;
 
-  switch (issue.path[0]) {
-    case 'dateControl':
-      switch (issue.path[1]) {
-        case 'releaseDate':
-          return `${prefix}.releaseDate`;
-        case 'dueDate':
-          return `${prefix}.dueDate`;
-        case 'earlyDeadlines':
-          return `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
-        case 'lateDeadlines':
-          return `${prefix}.lateDeadlines.${issue.path[2]}.date`;
-        default:
-          return null;
-      }
-    case 'afterComplete':
-      switch (issue.path[1]) {
-        case 'showQuestionsAgainDate':
-          return `${prefix}.questionVisibility.showAgainDate`;
-        case 'hideQuestionsAgainDate':
-          return `${prefix}.questionVisibility.hideAgainDate`;
-        default:
-          return null;
-      }
+  switch (issue.path[1]) {
+    case 'releaseDate':
+      return `${prefix}.releaseDate`;
+    case 'dueDate':
+      return `${prefix}.dueDate`;
+    case 'earlyDeadlines':
+      return `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
+    case 'lateDeadlines':
+      return `${prefix}.lateDeadlines.${issue.path[2]}.date`;
     default:
       return null;
   }
