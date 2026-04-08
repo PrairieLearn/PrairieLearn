@@ -141,7 +141,7 @@ function formJsonToEnrollmentRuleData(
   };
 }
 
-export const AccessControlJsonInputSchema = AccessControlJsonSchema.extend({
+const AccessControlJsonInputSchema = AccessControlJsonSchema.extend({
   id: z.string().optional(),
 }).strip();
 
