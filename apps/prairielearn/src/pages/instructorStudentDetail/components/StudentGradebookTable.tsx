@@ -70,7 +70,6 @@ export function StudentGradebookTable({ rows, urlPrefix }: StudentGradebookTable
                       courseInstanceId: row.assessment.course_instance_id,
                       assessmentInstanceId: row.assessment_instance.id,
                     })}
-                    title={computeTitle(row)}
                   >
                     {computeTitle(row)}
                   </a>
