@@ -197,7 +197,6 @@ describe('formDataToJson', () => {
             studentLabels: [],
           },
           overriddenFields: [
-            'releaseDate',
             'dueDate',
             'earlyDeadlines',
             'lateDeadlines',
@@ -205,7 +204,7 @@ describe('formDataToJson', () => {
             'durationMinutes',
             'password',
           ],
-          releaseDate: null,
+          // Release date as null is not allowed, so this is false.
           dueDate: null,
           earlyDeadlines: [],
           lateDeadlines: [],
@@ -221,7 +220,6 @@ describe('formDataToJson', () => {
 
     expect(overrideJson.dateControl).toBeDefined();
     const dc = overrideJson.dateControl!;
-    expect('releaseDate' in dc).toBe(false);
     expect('dueDate' in dc).toBe(true);
     expect(dc.dueDate).toBeNull();
     expect('earlyDeadlines' in dc).toBe(true);

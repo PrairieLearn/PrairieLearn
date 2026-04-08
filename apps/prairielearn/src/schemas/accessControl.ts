@@ -161,7 +161,8 @@ export type AccessControlIssuePath =
   | ['dateControl', 'earlyDeadlines', number, 'date']
   | ['dateControl', 'lateDeadlines', number, 'date']
   | ['afterComplete', 'showQuestionsAgainDate']
-  | ['afterComplete', 'hideQuestionsAgainDate'];
+  | ['afterComplete', 'hideQuestionsAgainDate']
+  | ['afterComplete', 'showScoreAgainDate'];
 
 export interface AccessControlValidationIssue {
   ruleIndex: number;
@@ -204,6 +205,16 @@ function findDueState(rule: AccessControlJson): {
     hasConfiguredDue: true,
     dueMs: dateControl.dueDate ? new Date(dateControl.dueDate).getTime() : null,
   };
+}
+
+function findLastDeadlineMs(rule: AccessControlJson): number | null {
+  const dc = rule.dateControl;
+  if (!dc) return null;
+
+  if (dc.lateDeadlines && dc.lateDeadlines.length > 0) {
+    return new Date(dc.lateDeadlines[dc.lateDeadlines.length - 1].date).getTime();
+  }
+  return findDueMs(rule);
 }
 
 export function validateRuleDateOrderingIssues(
@@ -324,6 +335,30 @@ export function validateRuleDateOrderingIssues(
         ['afterComplete', 'hideQuestionsAgainDate'],
         'showQuestionsAgainDate must be before hideQuestionsAgainDate.',
       );
+    }
+  }
+
+  const lastDeadlineMs = findLastDeadlineMs(rule);
+  if (lastDeadlineMs != null) {
+    if (ac?.showQuestionsAgainDate) {
+      if (new Date(ac.showQuestionsAgainDate).getTime() <= lastDeadlineMs) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['afterComplete', 'showQuestionsAgainDate'],
+          'Show questions again date must be after the last deadline.',
+        );
+      }
+    }
+    if (ac?.showScoreAgainDate) {
+      if (new Date(ac.showScoreAgainDate).getTime() <= lastDeadlineMs) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['afterComplete', 'showScoreAgainDate'],
+          'Show score again date must be after the last deadline.',
+        );
+      }
     }
   }
 

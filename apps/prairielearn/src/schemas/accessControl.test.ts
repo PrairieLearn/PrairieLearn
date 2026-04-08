@@ -6,6 +6,7 @@ describe('AccessControlJsonSchema', () => {
   it('accepts explicit nulls used to clear inherited override fields', () => {
     const result = AccessControlJsonSchema.parse({
       dateControl: {
+        // You cannot "clear" release date on overrides, it must be set to a value.
         releaseDate: '2024-03-14T00:01:00',
         dueDate: null,
         earlyDeadlines: null,

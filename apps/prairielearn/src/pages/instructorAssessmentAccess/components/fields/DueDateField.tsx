@@ -14,6 +14,17 @@ import {
   getUserTimezone,
 } from '../utils/dateUtils.js';
 
+function localDatetimeToTimezoneDate(value: string, timezone: string): Date {
+  return new Date(Temporal.PlainDateTime.from(value).toZonedDateTime(timezone).epochMilliseconds);
+}
+
+function formatCourseLocalDate(value: string, displayTimezone: string): string {
+  return formatDateFriendly(localDatetimeToTimezoneDate(value, displayTimezone), displayTimezone, {
+    dateOnly: true,
+    includeTz: false,
+  });
+}
+
 function DueDateInput({
   value,
   onChange,
@@ -149,10 +160,7 @@ export function MainDueDateField({ displayTimezone }: { displayTimezone: string 
       validate: (value) => {
         if (value !== null && !value) return 'Date is required';
         if (value && releaseDate && new Date(value) <= new Date(releaseDate)) {
-          const formatted = formatDateFriendly(new Date(releaseDate), getUserTimezone(), {
-            dateOnly: true,
-            includeTz: false,
-          });
+          const formatted = formatCourseLocalDate(releaseDate, displayTimezone);
           return `Must be after release date (${formatted})`;
         }
         return true;
@@ -217,10 +225,7 @@ export function OverrideDueDateField({
       validate: (value) => {
         if (value !== null && !value) return 'Date is required';
         if (value && validationReleaseDate && new Date(value) <= new Date(validationReleaseDate)) {
-          const formatted = formatDateFriendly(new Date(validationReleaseDate), getUserTimezone(), {
-            dateOnly: true,
-            includeTz: false,
-          });
+          const formatted = formatCourseLocalDate(validationReleaseDate, displayTimezone);
           return `Must be after release date (${formatted})`;
         }
         return true;

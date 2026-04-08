@@ -504,6 +504,114 @@ describe('Date ordering validation', () => {
     assert.isTrue(errors.some((e) => e.includes('showQuestionsAgainDate must be before')));
   });
 
+  it('should reject showQuestionsAgainDate before last late deadline', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        dueDate: '2024-03-20T00:00:00',
+        lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
+      },
+      afterComplete: {
+        hideQuestions: true,
+        showQuestionsAgainDate: '2024-03-23T00:00:00',
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.isTrue(
+      errors.some((e) => e.includes('Show questions again date must be after the last deadline')),
+    );
+  });
+
+  it('should reject showQuestionsAgainDate before due date when no late deadlines', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        dueDate: '2024-03-20T00:00:00',
+      },
+      afterComplete: {
+        hideQuestions: true,
+        showQuestionsAgainDate: '2024-03-19T00:00:00',
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.isTrue(
+      errors.some((e) => e.includes('Show questions again date must be after the last deadline')),
+    );
+  });
+
+  it('should reject showScoreAgainDate before last deadline', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        dueDate: '2024-03-20T00:00:00',
+        lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
+      },
+      afterComplete: {
+        hideScore: true,
+        showScoreAgainDate: '2024-03-22T00:00:00',
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.isTrue(
+      errors.some((e) => e.includes('Show score again date must be after the last deadline')),
+    );
+  });
+
+  it('should accept showQuestionsAgainDate after last deadline', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        dueDate: '2024-03-20T00:00:00',
+        lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
+      },
+      afterComplete: {
+        hideQuestions: true,
+        showQuestionsAgainDate: '2024-03-26T00:00:00',
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.deepEqual(errors, []);
+  });
+
+  it('should accept showScoreAgainDate after last deadline', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        dueDate: '2024-03-20T00:00:00',
+      },
+      afterComplete: {
+        hideScore: true,
+        showScoreAgainDate: '2024-03-21T00:00:00',
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.deepEqual(errors, []);
+  });
+
+  it('should not check show-again dates when release date but no due date', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        releaseDate: '2024-03-10T00:00:00',
+      },
+      afterComplete: {
+        hideQuestions: true,
+        showQuestionsAgainDate: '2024-03-05T00:00:00',
+        hideScore: true,
+        showScoreAgainDate: '2024-03-05T00:00:00',
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.deepEqual(errors, []);
+  });
+
+  it('should not check show-again dates when no date control', () => {
+    const rule = AccessControlJsonSchema.parse({
+      afterComplete: {
+        hideQuestions: true,
+        showQuestionsAgainDate: '2024-03-23T00:00:00',
+        hideScore: true,
+        showScoreAgainDate: '2024-03-23T00:00:00',
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.deepEqual(errors, []);
+  });
+
   it('should accept valid date ordering', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
@@ -592,6 +700,21 @@ describe('Empty accessControl array', () => {
     });
     assert.deepEqual(result.errors, []);
     assert.deepEqual(result.warnings, []);
+  });
+
+  it('requires a defaults rule when enrollment-only rules are provided', () => {
+    const result = validateAccessControlRules({
+      rules: [],
+      enrollmentRules: [
+        AccessControlJsonSchema.parse({
+          dateControl: {
+            durationMinutes: 90,
+          },
+        }),
+      ],
+    });
+
+    assert.isTrue(result.errors.some((error) => error.includes('No defaults found')));
   });
 });
 

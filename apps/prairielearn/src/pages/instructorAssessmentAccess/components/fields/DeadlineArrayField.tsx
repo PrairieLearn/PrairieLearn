@@ -1,4 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
+import stableStringify from 'fast-json-stable-stringify';
 import { useEffect, useRef } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
 import { get, useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
@@ -48,6 +49,7 @@ function DeadlineArrayInput({
 
   const { errors } = useFormState();
 
+  const deadlinesStringified = stableStringify(deadlines);
   // Store constraint values in refs so the validate function (which is captured
   // once by register()) always reads current values instead of stale closures.
   const dueDateRef = useRef(validationDueDate ?? dueDate);
@@ -68,7 +70,7 @@ function DeadlineArrayInput({
         void trigger(`${fieldArrayName}.${i}.credit`);
       }
     }
-  }, [deadlineFields.length, dueDate, releaseDate, fieldArrayName, trigger]);
+  }, [deadlineFields.length, deadlinesStringified, dueDate, releaseDate, fieldArrayName, trigger]);
 
   const getDateError = (index: number): string | undefined => {
     return get(errors, `${fieldArrayName}.${index}.date`)?.message;
@@ -79,7 +81,7 @@ function DeadlineArrayInput({
   };
 
   const getTimeRangeText = (index: number) => {
-    const currentDeadlines: DeadlineEntry[] = structuredClone(deadlineFields);
+    const currentDeadlines = structuredClone(deadlines);
 
     const anchorDate = isEarly ? releaseDate : dueDate;
     const range = getDeadlineRange(index, currentDeadlines, anchorDate);
@@ -169,9 +171,9 @@ function DeadlineArrayInput({
     // Find the last deadline that has an actual date value — earlier entries
     // may be empty if the user hasn't filled them in yet.
     let lastFilledDate = '';
-    for (let i = deadlineFields.length - 1; i >= 0; i--) {
-      if (deadlineFields[i].date) {
-        lastFilledDate = deadlineFields[i].date;
+    for (let i = deadlines.length - 1; i >= 0; i--) {
+      if (deadlines[i].date) {
+        lastFilledDate = deadlines[i].date;
         break;
       }
     }
@@ -210,8 +212,7 @@ function DeadlineArrayInput({
     }
 
     const defaultDate = candidateDate ? endOfDayDatetime(candidateDate) : '';
-    const previousCredit =
-      deadlineFields[deadlineFields.length - 1]?.credit ?? (isEarly ? 110 : 90);
+    const previousCredit = deadlines.at(-1)?.credit ?? (isEarly ? 110 : 90);
     const defaultCredit = previousCredit - 1;
     appendDeadline({ date: defaultDate, credit: defaultCredit });
   };
@@ -247,6 +248,7 @@ function DeadlineArrayInput({
               <Form.Control
                 type="datetime-local"
                 step={1}
+                defaultValue={deadlineField.date}
                 aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} date`}
                 aria-invalid={!!getDateError(index)}
                 aria-errormessage={
@@ -280,6 +282,7 @@ function DeadlineArrayInput({
                 <Form.Control
                   id={`${idPrefix}-${type}-deadline-${index}-credit`}
                   type="number"
+                  defaultValue={deadlineField.credit}
                   style={{ width: '5rem' }}
                   aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} credit percentage`}
                   aria-invalid={!!getCreditError(index)}

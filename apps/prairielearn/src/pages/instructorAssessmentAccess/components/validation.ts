@@ -12,12 +12,16 @@ export type AccessControlFormFieldPath =
   | 'mainRule.dueDate'
   | `mainRule.earlyDeadlines.${number}.date`
   | `mainRule.lateDeadlines.${number}.date`
+  | 'mainRule.questionVisibility.showAgainDate'
   | 'mainRule.questionVisibility.hideAgainDate'
+  | 'mainRule.scoreVisibility.showAgainDate'
   | `overrides.${number}.releaseDate`
   | `overrides.${number}.dueDate`
   | `overrides.${number}.earlyDeadlines.${number}.date`
   | `overrides.${number}.lateDeadlines.${number}.date`
-  | `overrides.${number}.questionVisibility.hideAgainDate`;
+  | `overrides.${number}.questionVisibility.showAgainDate`
+  | `overrides.${number}.questionVisibility.hideAgainDate`
+  | `overrides.${number}.scoreVisibility.showAgainDate`;
 
 function buildValidationRules(formData: AccessControlFormData): AccessControlValidationRule[] {
   return formDataToJson(formData).map((rule, index) => ({
@@ -49,8 +53,12 @@ function mapIssueToFormFieldPath(
       }
     case 'afterComplete':
       switch (issue.path[1]) {
+        case 'showQuestionsAgainDate':
+          return `${prefix}.questionVisibility.showAgainDate`;
         case 'hideQuestionsAgainDate':
           return `${prefix}.questionVisibility.hideAgainDate`;
+        case 'showScoreAgainDate':
+          return `${prefix}.scoreVisibility.showAgainDate`;
         default:
           return null;
       }
