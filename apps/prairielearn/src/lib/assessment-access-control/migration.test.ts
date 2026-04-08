@@ -346,14 +346,45 @@ describe('migrateAllowAccess', () => {
     });
   });
 
-  it('migrates single-reduced-credit', () => {
+  it('emits lateDeadlines in chronological order even when credit order differs', () => {
+    // Reduced rules intentionally out of chronological order relative to credit:
+    // later date has higher credit, earlier date has lower credit.
+    const rules: AssessmentAccessRuleJson[] = [
+      { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
+      { credit: 80, startDate: '2024-01-01', endDate: '2024-06-01' },
+      { credit: 30, startDate: '2024-01-01', endDate: '2024-04-01' },
+    ];
+    const { result } = migrateAllowAccess('declining-credit', rules);
+    assert.deepEqual(result.dateControl?.lateDeadlines, [
+      { date: '2024-04-01', credit: 30 },
+      { date: '2024-06-01', credit: 80 },
+    ]);
+  });
+
+  it('migrates single-reduced-credit with credit loss warning', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
-    const { result } = migrateAllowAccess('single-reduced-credit', rules);
+    const { result, warnings } = migrateAllowAccess('single-reduced-credit', rules);
     assert.deepEqual(result, {
       dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
     });
+    assert.lengthOf(warnings, 1);
+    assert.match(warnings[0], /50%/);
+    assert.match(warnings[0], /lost during migration/);
+  });
+
+  it('migrates single bonus credit with credit loss warning', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      { credit: 120, startDate: '2024-01-01', endDate: '2024-06-01' },
+    ];
+    const { result, warnings } = migrateAllowAccess('single-deadline', rules);
+    assert.deepEqual(result, {
+      dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+    });
+    assert.lengthOf(warnings, 1);
+    assert.match(warnings[0], /120%/);
+    assert.match(warnings[0], /lost during migration/);
   });
 
   it('migrates multiple prairietest exams', () => {
@@ -501,7 +532,9 @@ describe('analyzeAssessmentFile', () => {
         assert.equal(result.tid, 'hw01');
         assert.equal(result.archetype, 'single-deadline');
         assert.equal(result.canMigrate, true);
+        assert.equal(result.canMigrateInPlace, true);
         assert.equal(result.hasUidRules, false);
+        assert.deepEqual(result.warnings, []);
       },
       { unsafeCleanup: true },
     );
@@ -524,7 +557,9 @@ describe('analyzeAssessmentFile', () => {
         );
         const result = await analyzeAssessmentFile(filePath, 'e01');
         assert.isNotNull(result);
+        assert.equal(result.canMigrateInPlace, false);
         assert.equal(result.hasUidRules, true);
+        assert(result.warnings.some((warning) => warning.includes('UID-based rules are excluded')));
       },
       { unsafeCleanup: true },
     );
@@ -551,6 +586,8 @@ describe('analyzeAssessmentFile', () => {
         assert.equal(result.archetype, 'declining-credit');
         assert.equal(result.hasUidRules, true);
         assert.equal(result.canMigrate, true);
+        assert.equal(result.canMigrateInPlace, false);
+        assert(result.warnings.some((warning) => warning.includes('UID-based rules are excluded')));
       },
       { unsafeCleanup: true },
     );
@@ -572,7 +609,9 @@ describe('analyzeAssessmentFile', () => {
         assert.isNotNull(result);
         assert.equal(result.archetype, 'unclassified');
         assert.equal(result.canMigrate, false);
+        assert.equal(result.canMigrateInPlace, false);
         assert.equal(result.hasUidRules, true);
+        assert(result.warnings.some((warning) => warning.includes('UID-based rules are excluded')));
       },
       { unsafeCleanup: true },
     );
@@ -625,6 +664,8 @@ describe('analyzeAssessmentFile', () => {
         assert.isNotNull(result);
         assert.equal(result.archetype, 'no-op');
         assert.equal(result.canMigrate, true);
+        assert.equal(result.canMigrateInPlace, true);
+        assert.match(result.warnings[0], /No-op access rule/);
       },
       { unsafeCleanup: true },
     );

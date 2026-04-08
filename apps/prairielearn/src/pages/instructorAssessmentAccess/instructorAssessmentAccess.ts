@@ -101,7 +101,7 @@ router.get(
     if (enhancedAccessControlEnabled) {
       migrationAnalysis = await analyzeAssessmentFile(assessmentPath, res.locals.assessment.tid!);
 
-      if (migrationAnalysis?.canMigrate) {
+      if (migrationAnalysis?.canMigrateInPlace) {
         const content = await fs.readFile(assessmentPath, 'utf-8');
         const parsed = JSON.parse(content);
         const beforeJson = JSON.stringify(parsed.allowAccess, null, 2);
@@ -156,6 +156,18 @@ router.post(
 
       const assessmentPath = getAssessmentPath(res.locals);
       const content = await fs.readFile(assessmentPath, 'utf-8');
+      const migrationAnalysis = await analyzeAssessmentFile(
+        assessmentPath,
+        res.locals.assessment.tid!,
+      );
+
+      if (migrationAnalysis?.hasUidRules) {
+        flash(
+          'error',
+          'Automatic migration is not available for assessments with UID-based rules. Recreate those rules as enrollment overrides in the modern access control UI after removing them from allowAccess.',
+        );
+        return res.redirect(req.originalUrl);
+      }
 
       const migrationResult = migrateAssessmentJson(content);
       if (!migrationResult) {

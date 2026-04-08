@@ -143,7 +143,7 @@ export function CopyCourseInstanceModal({
     const valid = await trigger(['short_name', 'long_name']);
     if (!valid) return;
 
-    if (analysisQuery.data?.hasLegacyRules) {
+    if (analysisQuery.isError || analysisQuery.data?.hasLegacyRules) {
       setStep('access-control');
     } else {
       void handleSubmit((data) => copyMutation.mutate(data))();
@@ -216,7 +216,8 @@ export function CopyCourseInstanceModal({
             >
               {isPending
                 ? 'Copying...'
-                : step === 'settings' && analysisQuery.data?.hasLegacyRules
+                : step === 'settings' &&
+                    (analysisQuery.isError || analysisQuery.data?.hasLegacyRules)
                   ? 'Next'
                   : 'Copy course instance'}
             </button>
@@ -360,77 +361,96 @@ function AccessControlStep({
     );
   }
 
-  if (analysisQuery.isError) {
-    const appError = getAppError<InstanceAdminSettingsError>(analysisQuery.error);
-
-    return (
-      <Modal.Body>
-        <Alert variant="danger">
-          {appError?.message ?? 'Failed to analyze access control rules.'} You can still copy the
-          course instance. Assessment access rules will be migrated to the modern format where
-          possible; any rules that cannot be migrated will be preserved in their current format.
-        </Alert>
-      </Modal.Body>
-    );
-  }
-
   const assessments = analysis?.assessments ?? [];
   const allCanMigrate = analysis?.allCanMigrate ?? false;
+  const appError = analysisQuery.isError
+    ? getAppError<InstanceAdminSettingsError>(analysisQuery.error)
+    : null;
+  const assessmentsWithWarnings = assessments.filter((a) => a.warnings.length > 0);
+  const blockedAssessments = assessments.filter((a) => !a.canMigrate);
+  const showPreserveOption =
+    accessControlStrategy === 'migrate' && (analysisQuery.isError || !allCanMigrate);
 
   return (
     <Modal.Body>
-      <p>
-        This course instance has{' '}
-        <strong>
-          {assessments.length} assessment{assessments.length !== 1 ? 's' : ''}
-        </strong>{' '}
-        with legacy access control rules. Choose how to handle them in the copy.
-      </p>
+      {analysisQuery.isError ? (
+        <Alert variant="danger">
+          {appError?.message ?? 'Failed to analyze access control rules.'} You can still choose how
+          copied assessments should handle any legacy access control rules that are encountered.
+        </Alert>
+      ) : (
+        <>
+          <p>
+            This course instance has{' '}
+            <strong>
+              {assessments.length} assessment{assessments.length !== 1 ? 's' : ''}
+            </strong>{' '}
+            with legacy access control rules. Choose how to handle them in the copy.
+          </p>
 
-      <div
-        className="border rounded mb-3"
-        style={{ maxHeight: '200px', overflowY: 'auto' }}
-        role="list"
-        aria-label="Assessments with legacy access control"
-      >
-        <table className="table table-sm table-hover mb-0">
-          <thead className="table-light sticky-top">
-            <tr>
-              <th>Assessment</th>
-              <th className="text-center">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {assessments.map((a) => (
-              <tr key={a.tid}>
-                <td>
-                  <code>{a.tid}</code>
-                  <small className="text-muted d-block">{a.title}</small>
-                </td>
-                <td className="text-center">
-                  {a.canMigrate ? (
-                    <i
-                      className="bi bi-check-circle-fill text-success"
-                      aria-label="Can be migrated"
-                    />
-                  ) : (
-                    <i
-                      className="bi bi-exclamation-triangle-fill text-warning"
-                      aria-label="Cannot be migrated"
-                    />
-                  )}
-                  {a.hasUidRules && (
-                    <i
-                      className="bi bi-person-fill text-info ms-1"
-                      aria-label="Has UID-based rules"
-                    />
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          {(assessmentsWithWarnings.length > 0 || blockedAssessments.length > 0) && (
+            <Alert variant="warning">
+              {assessmentsWithWarnings.length > 0 && (
+                <div>
+                  <strong>{assessmentsWithWarnings.length}</strong> assessment
+                  {assessmentsWithWarnings.length !== 1 ? 's' : ''} will migrate with caveats.
+                </div>
+              )}
+              {blockedAssessments.length > 0 && (
+                <div>
+                  <strong>{blockedAssessments.length}</strong> assessment
+                  {blockedAssessments.length !== 1 ? 's' : ''} cannot be migrated automatically.
+                </div>
+              )}
+            </Alert>
+          )}
+
+          <div
+            className="border rounded mb-3"
+            style={{ maxHeight: '240px', overflowY: 'auto' }}
+            role="list"
+            aria-label="Assessments with legacy access control"
+          >
+            <table className="table table-sm table-hover mb-0">
+              <thead className="table-light sticky-top">
+                <tr>
+                  <th>Assessment</th>
+                  <th>Status</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assessments.map((a) => (
+                  <tr key={a.tid}>
+                    <td>
+                      <code>{a.tid}</code>
+                      <small className="text-muted d-block">{a.title}</small>
+                    </td>
+                    <td>
+                      {a.canMigrate ? (
+                        a.warnings.length > 0 ? (
+                          <span className="badge text-bg-warning">Migrates with caveats</span>
+                        ) : (
+                          <span className="badge text-bg-success">Can migrate</span>
+                        )
+                      ) : (
+                        <span className="badge text-bg-secondary">Manual review</span>
+                      )}
+                    </td>
+                    <td>
+                      {a.warnings.length > 0 ? (
+                        <small className="text-muted">{a.warnings.join(' ')}</small>
+                      ) : (
+                        <small className="text-muted">No known caveats.</small>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       <fieldset>
         <legend className="h6">Migration strategy</legend>
@@ -438,19 +458,28 @@ function AccessControlStep({
         <Form.Check
           type="radio"
           id="strategy-migrate"
-          label="Attempt to migrate to modern format"
+          label="Attempt automatic migration to modern format"
           value="migrate"
           {...register('access_control_strategy')}
         />
-        {!allCanMigrate && accessControlStrategy === 'migrate' && (
+        {accessControlStrategy === 'migrate' &&
+          assessmentsWithWarnings.some((a) => a.hasUidRules) && (
+            <div className="ms-4 mt-1 mb-2">
+              <small className="text-muted d-block">
+                UID-based rules are copied only in legacy format. If you migrate the copy, those
+                individual-student rules are omitted and can be recreated later as enrollment
+                overrides if needed.
+              </small>
+            </div>
+          )}
+        {showPreserveOption && (
           <div className="ms-4 mt-1 mb-2">
             <Form.Check
               type="checkbox"
               id="preserve-incompatible"
               label={
                 <small className="text-muted">
-                  Preserve incompatible rules (keep legacy format for assessments that cannot be
-                  migrated)
+                  Preserve assessments that cannot be migrated automatically in their legacy format
                 </small>
               }
               {...register('preserve_incompatible')}

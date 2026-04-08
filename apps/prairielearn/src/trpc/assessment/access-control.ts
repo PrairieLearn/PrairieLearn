@@ -122,8 +122,12 @@ function formJsonToEnrollmentRuleData(
     dueDate: dc?.dueDate ?? null,
     earlyDeadlinesOverridden: dc?.earlyDeadlines !== undefined,
     lateDeadlinesOverridden: dc?.lateDeadlines !== undefined,
+    afterLastDeadlineOverridden: dc?.afterLastDeadline !== undefined,
     afterLastDeadlineAllowSubmissions: dc?.afterLastDeadline?.allowSubmissions ?? null,
-    afterLastDeadlineCreditOverridden: dc?.afterLastDeadline?.credit !== undefined,
+    afterLastDeadlineCreditOverridden:
+      dc?.afterLastDeadline !== undefined &&
+      dc?.afterLastDeadline !== null &&
+      dc?.afterLastDeadline?.credit !== undefined,
     afterLastDeadlineCredit: dc?.afterLastDeadline?.credit ?? null,
     durationMinutesOverridden: dc?.durationMinutes !== undefined,
     durationMinutes: dc?.durationMinutes ?? null,

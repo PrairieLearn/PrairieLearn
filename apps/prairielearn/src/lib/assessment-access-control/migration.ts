@@ -16,14 +16,42 @@ export interface AssessmentMigrationAnalysis {
   type: string;
   archetype: string;
   canMigrate: boolean;
+  canMigrateInPlace: boolean;
   ruleCount: number;
   hasUidRules: boolean;
+  warnings: string[];
 }
 
 interface CourseInstanceMigrationAnalysis {
   assessments: AssessmentMigrationAnalysis[];
   hasLegacyRules: boolean;
   allCanMigrate: boolean;
+}
+
+function analyzeAllowAccessRules(allowAccess: AssessmentAccessRuleJson[]) {
+  const hasUidRules = allowAccess.some((rule) => rule.uids);
+  const rulesForClassification = allowAccess.filter((rule) => !rule.uids);
+
+  const archetype =
+    rulesForClassification.length > 0 ? classifyArchetype(rulesForClassification) : 'unclassified';
+
+  const { warnings: migrationWarnings } = migrateAllowAccess(archetype, rulesForClassification);
+  const warnings = [...migrationWarnings];
+  if (hasUidRules) {
+    warnings.push(
+      'UID-based rules are excluded from the migrated JSON and must be recreated as enrollment overrides if needed.',
+    );
+  }
+
+  const canMigrate = isMigratable(archetype, migrationWarnings);
+
+  return {
+    archetype,
+    canMigrate,
+    canMigrateInPlace: canMigrate && !hasUidRules,
+    hasUidRules,
+    warnings,
+  };
 }
 
 function getCreditRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
@@ -211,6 +239,18 @@ function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
 
   const result: AccessControlJsonInput = {};
 
+  // The modern system hardcodes 100% credit at the due date. Non-100% credit
+  // values cannot be represented directly and are lost during migration.
+  // If needed, reduced credit could be encoded as a late deadline without a
+  // due date, and bonus credit as an early deadline before a fabricated due
+  // date, but both are semantically misleading in the UI.
+  const credit = creditRule.credit ?? 0;
+  if (credit !== 100 && credit !== 0) {
+    warnings.push(
+      `Credit value of ${credit}% will be lost during migration. The modern system assumes 100% credit at the due date.`,
+    );
+  }
+
   const releaseDate = findReleaseDate(rules);
   if (creditRule.startDate || creditRule.endDate || releaseDate) {
     result.dateControl = {};
@@ -264,7 +304,7 @@ function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
   if (reducedRules.length > 0) {
     result.dateControl!.lateDeadlines = reducedRules
       .filter((r) => r.endDate)
-      .sort((a, b) => (b.credit ?? 0) - (a.credit ?? 0))
+      .sort((a, b) => (a.endDate ?? '').localeCompare(b.endDate ?? ''))
       .map((r) => ({ date: r.endDate!, credit: r.credit! }));
   }
 
@@ -507,14 +547,8 @@ export async function analyzeAssessmentFile(
     return null;
   }
 
-  const hasUidRules = allowAccess.some((rule) => rule.uids);
-  const rulesForClassification = allowAccess.filter((rule) => !rule.uids);
-
-  const archetype =
-    rulesForClassification.length > 0 ? classifyArchetype(rulesForClassification) : 'unclassified';
-
-  const { warnings } = migrateAllowAccess(archetype, rulesForClassification);
-  const canMigrate = isMigratable(archetype, warnings);
+  const { archetype, canMigrate, canMigrateInPlace, hasUidRules, warnings } =
+    analyzeAllowAccessRules(allowAccess);
 
   return {
     tid,
@@ -522,8 +556,10 @@ export async function analyzeAssessmentFile(
     type: (data.type as string | undefined) ?? 'unknown',
     archetype,
     canMigrate,
+    canMigrateInPlace,
     ruleCount: allowAccess.length,
     hasUidRules,
+    warnings,
   };
 }
 

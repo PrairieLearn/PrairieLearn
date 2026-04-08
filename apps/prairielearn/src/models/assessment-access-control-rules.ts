@@ -42,6 +42,7 @@ export interface EnrollmentAccessControlRuleData {
   dueDate: string | null;
   earlyDeadlinesOverridden: boolean;
   lateDeadlinesOverridden: boolean;
+  afterLastDeadlineOverridden: boolean;
   afterLastDeadlineAllowSubmissions: boolean | null;
   afterLastDeadlineCreditOverridden: boolean;
   afterLastDeadlineCredit: number | null;
@@ -253,7 +254,11 @@ export async function syncEnrollmentAccessControl(
     date_control_early_deadlines_overridden: ruleData.earlyDeadlinesOverridden,
     date_control_late_deadlines_overridden: ruleData.lateDeadlinesOverridden,
     date_control_after_last_deadline_allow_submissions: ruleData.afterLastDeadlineAllowSubmissions,
-    date_control_after_last_deadline_credit_overridden: ruleData.afterLastDeadlineCreditOverridden,
+    // When afterLastDeadline was explicitly set to null, encode it as
+    // credit_overridden=true with credit=null and allow_submissions=null
+    // so dbBaseRowToAccessControlJson reconstructs it as null.
+    date_control_after_last_deadline_credit_overridden:
+      ruleData.afterLastDeadlineCreditOverridden || ruleData.afterLastDeadlineOverridden,
     date_control_after_last_deadline_credit: ruleData.afterLastDeadlineCredit,
     date_control_duration_minutes_overridden: ruleData.durationMinutesOverridden,
     date_control_duration_minutes: ruleData.durationMinutes,

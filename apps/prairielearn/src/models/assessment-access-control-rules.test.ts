@@ -54,6 +54,64 @@ function makeRow(
   };
 }
 
+describe('dbRowToAccessControlJson afterLastDeadline round-trip', () => {
+  it('omits afterLastDeadline when no override is set', () => {
+    const result = dbRowToAccessControlJson(makeRow());
+    expect(result.dateControl?.afterLastDeadline).toBeUndefined();
+  });
+
+  it('reconstructs explicit afterLastDeadline: null', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          date_control_after_last_deadline_credit_overridden: true,
+          date_control_after_last_deadline_credit: null,
+          date_control_after_last_deadline_allow_submissions: null,
+        },
+      }),
+    );
+    expect(result.dateControl?.afterLastDeadline).toBeNull();
+  });
+
+  it('reconstructs afterLastDeadline with allowSubmissions: true', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          date_control_after_last_deadline_allow_submissions: true,
+        },
+      }),
+    );
+    expect(result.dateControl?.afterLastDeadline).toEqual({ allowSubmissions: true });
+  });
+
+  it('reconstructs afterLastDeadline with allowSubmissions and credit', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          date_control_after_last_deadline_allow_submissions: true,
+          date_control_after_last_deadline_credit_overridden: true,
+          date_control_after_last_deadline_credit: 50,
+        },
+      }),
+    );
+    expect(result.dateControl?.afterLastDeadline).toEqual({
+      allowSubmissions: true,
+      credit: 50,
+    });
+  });
+
+  it('reconstructs afterLastDeadline with allowSubmissions: false', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          date_control_after_last_deadline_allow_submissions: false,
+        },
+      }),
+    );
+    expect(result.dateControl?.afterLastDeadline).toEqual({ allowSubmissions: false });
+  });
+});
+
 describe('dbRowToAccessControlJson', () => {
   it('omits integrations when prairietest_exams is an empty array', () => {
     const result = dbRowToAccessControlJson(makeRow({ prairietest_exams: [] }));

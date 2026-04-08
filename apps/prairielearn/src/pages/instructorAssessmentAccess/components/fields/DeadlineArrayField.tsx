@@ -145,6 +145,7 @@ function DeadlineArrayInput({
 
   const validateCredit = (value: unknown, index: number) => {
     const numValue = value as number;
+    if (Number.isNaN(numValue)) return 'Credit is required';
     if (isEarly) {
       if (numValue < 101 || numValue > 200) return 'Credit must be 101-200%';
     } else {

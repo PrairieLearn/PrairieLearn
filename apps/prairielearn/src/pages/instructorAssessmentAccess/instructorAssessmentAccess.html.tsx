@@ -94,11 +94,15 @@ export function InstructorAssessmentAccess({
               <div
                 class="alert alert-warning mb-0 rounded-0 border-start-0 border-end-0 border-top-0"
               >
-                ${migrationAnalysis && !migrationAnalysis.canMigrate
-                  ? html`This assessment uses the legacy access control system. Automatic migration
-                    is not available for this assessment's access rules.`
-                  : html`This assessment uses the legacy access control system. Consider migrating
-                    to the modern format for a better editing experience.`}
+                ${migrationAnalysis?.hasUidRules
+                  ? html`This assessment uses UID-based legacy access rules. Automatic migration is
+                    disabled because those rules must be recreated as enrollment overrides in the
+                    modern access control UI.`
+                  : migrationAnalysis && !migrationAnalysis.canMigrate
+                    ? html`This assessment uses the legacy access control system. Automatic
+                      migration is not available for this assessment's access rules.`
+                    : html`This assessment uses the legacy access control system. Consider migrating
+                      to the modern format for a better editing experience.`}
               </div>
             `
           : ''}
