@@ -1127,7 +1127,7 @@ function StaffTableInner({
         >
           Learn more about content and student data access levels
         </a>
-        {(true || githubAccessLink) && (
+        {githubAccessLink && (
           <div className="alert alert-info mt-3 text-left">
             The settings above do not affect access to the course&apos;s Git repository. To change
             repository permissions, go to the{' '}
