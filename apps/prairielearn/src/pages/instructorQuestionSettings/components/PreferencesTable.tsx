@@ -2,6 +2,7 @@ import {
   DndContext,
   type DragEndEvent,
   KeyboardSensor,
+  type Modifier,
   PointerSensor,
   closestCenter,
   useSensor,
@@ -56,10 +57,27 @@ export function PreferencesTable({
     name: 'preferences',
   });
 
+  const gridRef = useRef<HTMLDivElement>(null);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  const restrictToGridVertical: Modifier = ({ draggingNodeRect, transform }) => {
+    if (!draggingNodeRect || !gridRef.current) {
+      return { ...transform, x: 0 };
+    }
+    const containerRect = gridRef.current.getBoundingClientRect();
+    return {
+      ...transform,
+      x: 0,
+      y: Math.min(
+        Math.max(transform.y, containerRect.top - draggingNodeRect.top),
+        containerRect.bottom - draggingNodeRect.bottom,
+      ),
+    };
+  };
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -107,11 +125,16 @@ export function PreferencesTable({
       )}
 
       {fields.length > 0 && (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          modifiers={[restrictToGridVertical]}
+          onDragEnd={handleDragEnd}
+        >
           <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
             <div
               className={clsx(
-                'card mb-3 overflow-auto preferences-grid',
+                'card mb-3 overflow-x-auto preferences-grid',
                 canEdit ? 'preferences-grid-editable' : 'preferences-grid-readonly',
               )}
             >
@@ -123,20 +146,22 @@ export function PreferencesTable({
                 <div>Values</div>
                 {canEdit && <div />}
               </div>
-              {fields.map((field, index) => (
-                <PreferenceRow
-                  key={field.id}
-                  field={field}
-                  index={index}
-                  canEdit={canEdit}
-                  register={register}
-                  watch={watch}
-                  setValue={setValue}
-                  errors={errors?.[index]}
-                  remove={remove}
-                  clearErrors={clearErrors}
-                />
-              ))}
+              <div ref={gridRef}>
+                {fields.map((field, index) => (
+                  <PreferenceRow
+                    key={field.id}
+                    field={field}
+                    index={index}
+                    canEdit={canEdit}
+                    register={register}
+                    watch={watch}
+                    setValue={setValue}
+                    errors={errors?.[index]}
+                    remove={remove}
+                    clearErrors={clearErrors}
+                  />
+                ))}
+              </div>
             </div>
           </SortableContext>
         </DndContext>
