@@ -19,6 +19,7 @@ function DueDateInput({
   releaseDate,
   earlyDeadlines,
   error,
+  displayTimezone,
 }: {
   value: string | null;
   onChange: (value: string | null) => void;
@@ -26,6 +27,7 @@ function DueDateInput({
   releaseDate: string | null | undefined;
   earlyDeadlines: DeadlineEntry[] | undefined;
   error?: string;
+  displayTimezone: string;
 }) {
   const userTimezone = getUserTimezone();
 
@@ -97,7 +99,7 @@ function DueDateInput({
               } else if (releaseDate) {
                 baseDate = Temporal.PlainDateTime.from(releaseDate).toPlainDate();
               } else {
-                baseDate = Temporal.Now.plainDateISO();
+                baseDate = Temporal.Now.plainDateISO(displayTimezone);
               }
               onChange(endOfDayDatetime(baseDate.add({ weeks: 1 })));
             }
@@ -127,7 +129,7 @@ function DueDateInput({
   );
 }
 
-export function MainDueDateField() {
+export function MainDueDateField({ displayTimezone }: { displayTimezone: string }) {
   const releaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
   });
@@ -160,13 +162,20 @@ export function MainDueDateField() {
         releaseDate={releaseDate}
         earlyDeadlines={earlyDeadlines}
         error={error?.message}
+        displayTimezone={displayTimezone}
         onChange={field.onChange}
       />
     </div>
   );
 }
 
-export function OverrideDueDateField({ index }: { index: number }) {
+export function OverrideDueDateField({
+  index,
+  displayTimezone,
+}: {
+  index: number;
+  displayTimezone: string;
+}) {
   const mainValue = useWatch<AccessControlFormData, 'mainRule.dueDate'>({
     name: 'mainRule.dueDate',
   });
@@ -226,6 +235,7 @@ export function OverrideDueDateField({ index }: { index: number }) {
         releaseDate={effectiveReleaseDate}
         earlyDeadlines={earlyDeadlinesOverridden ? earlyDeadlines : mainEarlyDeadlines}
         error={error?.message}
+        displayTimezone={displayTimezone}
         onChange={field.onChange}
       />
     </FieldWrapper>

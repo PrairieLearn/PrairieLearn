@@ -23,6 +23,7 @@ function DeadlineArrayInput({
   releaseDate,
   dueDate,
   deadlines,
+  displayTimezone,
 }: {
   type: 'early' | 'late';
   fieldArrayName: string;
@@ -30,6 +31,7 @@ function DeadlineArrayInput({
   releaseDate: string | null | undefined;
   dueDate: string | null | undefined;
   deadlines: DeadlineEntry[];
+  displayTimezone: string;
 }) {
   const { register, trigger } = useFormContext<AccessControlFormData>();
   const userTimezone = getUserTimezone();
@@ -178,7 +180,7 @@ function DeadlineArrayInput({
         ? Temporal.PlainDateTime.from(lastFilledDate).toPlainDate()
         : releaseDate
           ? Temporal.PlainDateTime.from(releaseDate).toPlainDate()
-          : Temporal.Now.plainDateISO();
+          : Temporal.Now.plainDateISO(displayTimezone);
 
       const daysToMax = anchor.until(maxDate).days;
       if (daysToMax > 0) {
@@ -316,7 +318,13 @@ function DeadlineArrayInput({
   );
 }
 
-export function MainDeadlineArrayField({ type }: { type: 'early' | 'late' }) {
+export function MainDeadlineArrayField({
+  type,
+  displayTimezone,
+}: {
+  type: 'early' | 'late';
+  displayTimezone: string;
+}) {
   const isEarly = type === 'early';
   const fieldName = isEarly ? 'mainRule.earlyDeadlines' : 'mainRule.lateDeadlines';
 
@@ -344,6 +352,7 @@ export function MainDeadlineArrayField({ type }: { type: 'early' | 'late' }) {
       releaseDate={releaseDate}
       dueDate={dueDate}
       deadlines={deadlines ?? []}
+      displayTimezone={displayTimezone}
     />
   );
 }
@@ -351,9 +360,11 @@ export function MainDeadlineArrayField({ type }: { type: 'early' | 'late' }) {
 export function OverrideDeadlineArrayField({
   index,
   type,
+  displayTimezone,
 }: {
   index: number;
   type: 'early' | 'late';
+  displayTimezone: string;
 }) {
   const isEarly = type === 'early';
   const fieldPath = isEarly ? 'earlyDeadlines' : 'lateDeadlines';
@@ -398,6 +409,7 @@ export function OverrideDeadlineArrayField({
         releaseDate={effectiveReleaseDate}
         dueDate={effectiveDueDate}
         deadlines={deadlines}
+        displayTimezone={displayTimezone}
       />
     </FieldWrapper>
   );

@@ -241,7 +241,7 @@ export function AccessControlForm({
   const rightPanel =
     selectedRule?.type === 'main' ? (
       <div className="px-3 pb-3">
-        <MainRuleForm />
+        <MainRuleForm displayTimezone={displayTimezone} />
       </div>
     ) : selectedRule?.type === 'override' ? (
       (() => {
@@ -254,7 +254,7 @@ export function AccessControlForm({
               namePrefix={`overrides.${selectedRule.index}`}
               courseInstanceId={courseInstance.id}
             />
-            <OverrideRuleContent index={selectedRule.index} />
+            <OverrideRuleContent index={selectedRule.index} displayTimezone={displayTimezone} />
           </div>
         );
       })()
