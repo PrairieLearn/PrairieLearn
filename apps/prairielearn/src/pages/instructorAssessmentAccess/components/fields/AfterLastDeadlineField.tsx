@@ -8,6 +8,8 @@ import {
   useWatch,
 } from 'react-hook-form';
 
+import { RichSelect, type RichSelectItem } from '@prairielearn/ui';
+
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { getFieldName } from '../hooks/fieldNames.js';
@@ -16,6 +18,24 @@ import type { AccessControlFormData, AfterLastDeadlineValue, DeadlineEntry } fro
 import { getLastDeadlineDate, getUserTimezone } from '../utils/dateUtils.js';
 
 type AfterLastDeadlineMode = 'no_submissions' | 'practice_submissions' | 'partial_credit';
+
+const AFTER_LAST_DEADLINE_ITEMS: RichSelectItem<AfterLastDeadlineMode>[] = [
+  {
+    value: 'no_submissions',
+    label: 'No submissions allowed',
+    description: 'Students can still view but not submit',
+  },
+  {
+    value: 'practice_submissions',
+    label: 'Allow practice submissions',
+    description: 'No credit is given for practice submissions',
+  },
+  {
+    value: 'partial_credit',
+    label: 'Allow submissions for partial credit',
+    description: 'Students will receive partial credit for submissions after the deadline',
+  },
+];
 
 function getMode(value: AfterLastDeadlineValue | null): AfterLastDeadlineMode {
   if (!value) return 'no_submissions';
@@ -62,57 +82,45 @@ function AfterLastDeadlineInput({
 
   const hasLastDeadline = !!dueDate || (lateDeadlines && lateDeadlines.length > 0);
 
+  const handleModeChange = (newMode: AfterLastDeadlineMode) => {
+    switch (newMode) {
+      case 'no_submissions':
+        onChange({ allowSubmissions: false });
+        break;
+      case 'practice_submissions':
+        onChange({ allowSubmissions: true });
+        break;
+      case 'partial_credit':
+        onChange({ allowSubmissions: true, credit: 0 });
+        break;
+    }
+  };
+
   return (
     <Form.Group>
-      {!hasLastDeadline && (
-        <Alert variant="warning" className="py-2 mb-2">
-          This setting will have no effect because there is no due date set.
-        </Alert>
-      )}
       <div>
         <strong>After last deadline</strong>
         <br />
         <small className="text-muted">{getLastDeadlineText()}</small>
       </div>
       <div className="mb-2 mt-2">
-        <Form.Check
-          type="radio"
-          name={`${idPrefix}-afterLastDeadlineMode`}
-          id={`${idPrefix}-after-deadline-no-submissions`}
-          label="No submissions allowed"
-          checked={mode === 'no_submissions'}
-          onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange({ allowSubmissions: false });
-          }}
-        />
-        <Form.Check
-          type="radio"
-          name={`${idPrefix}-afterLastDeadlineMode`}
-          id={`${idPrefix}-after-deadline-practice-submissions`}
-          label="Allow practice submissions"
-          checked={mode === 'practice_submissions'}
-          onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange({ allowSubmissions: true });
-          }}
-        />
-        <Form.Text className="text-muted ms-4 mb-3 d-block">
-          No credit is given for practice submissions
-        </Form.Text>
-
-        <Form.Check
-          type="radio"
-          name={`${idPrefix}-afterLastDeadlineMode`}
-          id={`${idPrefix}-after-deadline-partial-credit`}
-          label="Allow submissions for partial credit"
-          checked={mode === 'partial_credit'}
-          onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange({ allowSubmissions: true, credit: 0 });
-          }}
+        <RichSelect
+          items={AFTER_LAST_DEADLINE_ITEMS}
+          value={mode}
+          aria-label="After last deadline"
+          id={`${idPrefix}-after-deadline-mode`}
+          minWidth={300}
+          onChange={handleModeChange}
         />
       </div>
+      {!hasLastDeadline && (
+        <Alert variant="warning" className="py-2 mb-2">
+          This setting will have no effect because there is no due date set.
+        </Alert>
+      )}
 
       {mode === 'partial_credit' && (
-        <div className="ms-4">
+        <div className="mt-2">
           <InputGroup>
             <Form.Control
               type="number"

@@ -26,10 +26,10 @@ export function FieldWrapper({
   /** Optional: content to display in the header row next to the Remove override button */
   headerContent?: ReactNode;
 }) {
-  const cardStyle = isOverridden ? {} : { border: '2px dashed #dee2e6' };
+  const cardStyle = isOverridden ? {} : { border: '2px dashed var(--bs-border-color)' };
 
   return (
-    <Card className="mb-3" style={cardStyle}>
+    <Card style={cardStyle}>
       <Card.Body>
         {!isOverridden ? (
           <div className="d-flex justify-content-between align-items-center">
@@ -49,7 +49,7 @@ export function FieldWrapper({
         ) : (
           <>
             {(headerContent || onRemoveOverride) && (
-              <div className="d-flex justify-content-between align-items-start mb-2">
+              <div className="d-flex justify-content-between align-items-center mb-2">
                 {headerContent}
                 {onRemoveOverride && (
                   <Button size="sm" variant="outline-danger" onClick={onRemoveOverride}>

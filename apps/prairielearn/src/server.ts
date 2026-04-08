@@ -1929,6 +1929,11 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/administrator/trpc', administratorTrpcRouter);
 
   app.use(
+    '/pl/administrator',
+    (await import('./middlewares/selectPendingCourseRequestCount.js')).default,
+  );
+
+  app.use(
     '/pl/administrator/admins',
     (await import('./pages/administratorAdmins/administratorAdmins.js')).default,
   );
