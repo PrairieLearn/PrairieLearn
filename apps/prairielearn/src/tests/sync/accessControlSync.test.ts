@@ -1,6 +1,7 @@
 import * as crypto from 'node:crypto';
 import * as path from 'node:path';
 
+import { merge } from 'es-toolkit';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
@@ -39,27 +40,19 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 function makeAccessControlRule(
   overrides: Partial<AccessControlJsonInput> = {},
 ): AccessControlJsonInput {
-  if ('dateControl' in overrides) {
-    const { dateControl: dcOverrides, ...rest } = overrides;
-    if (dcOverrides === undefined) {
-      return { ...rest };
-    }
-    return {
+  if ('dateControl' in overrides && overrides.dateControl === undefined) {
+    const { dateControl: _, ...rest } = overrides;
+    return { ...rest };
+  }
+  return merge(
+    {
       dateControl: {
         releaseDate: '2024-03-14T00:01:00',
         dueDate: '2024-03-21T23:59:00',
-        ...dcOverrides,
       },
-      ...rest,
-    };
-  }
-  return {
-    dateControl: {
-      releaseDate: '2024-03-14T00:01:00',
-      dueDate: '2024-03-21T23:59:00',
     },
-    ...overrides,
-  };
+    overrides,
+  );
 }
 
 const TARGET_TYPE_ORDER: Record<AssessmentAccessControlRule['target_type'], number> = {
@@ -511,7 +504,7 @@ describe('Access control syncing', () => {
       assert.match(assessment.sync_errors, /must have required property 'title'/);
     }));
 
-  describe('Temporal validation', () => {
+  describe('Date ordering validation', () => {
     it('rejects an override with an early deadline before its own release date', () =>
       runInTransactionAndRollback(async () => {
         const groupName = 'Extended time';
@@ -2112,7 +2105,7 @@ describe('cleanAccessControlRulesForDisk', () => {
 
     const cleaned = cleanAccessControlRulesForDisk(rules);
 
-    assert.equal((cleaned[0] as any).listBeforeRelease, true);
+    assert.equal(cleaned[0].listBeforeRelease, true);
     assert.notProperty(cleaned[1], 'listBeforeRelease');
   });
 
@@ -2126,10 +2119,10 @@ describe('cleanAccessControlRulesForDisk', () => {
 
     const cleaned = cleanAccessControlRulesForDisk(rules);
 
-    assert.deepEqual((cleaned[0] as any).dateControl, {
+    assert.deepEqual(cleaned[0].dateControl, {
       releaseDate: '2024-03-14T00:01:00',
       dueDate: '2024-04-01T23:59:00',
     });
-    assert.deepEqual((cleaned[0] as any).afterComplete, { hideQuestions: true });
+    assert.deepEqual(cleaned[0].afterComplete, { hideQuestions: true });
   });
 });
