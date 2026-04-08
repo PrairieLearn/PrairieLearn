@@ -7,6 +7,13 @@
   min-width: 36rem;
 }
 
+/* overflow-x: auto (on the card) forces overflow-y to auto as well;
+   clip it so dragged rows don't trigger a vertical scrollbar. */
+.preferences-grid-editable,
+.preferences-grid-readonly {
+  overflow-y: clip;
+}
+
 .preferences-grid-editable .preferences-grid-row,
 .preferences-grid-editable .preferences-grid-header {
   grid-template-columns: 2rem minmax(0, 1fr) 7rem minmax(0, 1fr) minmax(0, 1.5fr) 2.5rem;

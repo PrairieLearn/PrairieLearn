@@ -58,6 +58,7 @@ export function PreferencesTable({
   });
 
   const dndId = useId();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
@@ -65,17 +66,21 @@ export function PreferencesTable({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  // Clamp the dragged item's center (not edges) to the container so that
+  // closestCenter collision detection can always reach every target, even
+  // when rows have very different heights.
   const restrictToGridVertical: Modifier = ({ draggingNodeRect, transform }) => {
     if (!draggingNodeRect || !gridRef.current) {
       return { ...transform, x: 0 };
     }
     const containerRect = gridRef.current.getBoundingClientRect();
+    const draggingCenterY = draggingNodeRect.top + draggingNodeRect.height / 2;
     return {
       ...transform,
       x: 0,
       y: Math.min(
-        Math.max(transform.y, containerRect.top - draggingNodeRect.top),
-        containerRect.bottom - draggingNodeRect.bottom,
+        Math.max(transform.y, containerRect.top - draggingCenterY),
+        containerRect.bottom - draggingCenterY,
       ),
     };
   };
@@ -132,11 +137,19 @@ export function PreferencesTable({
           collisionDetection={closestCenter}
           modifiers={[restrictToGridVertical]}
           onDragEnd={handleDragEnd}
+          // The card has overflow-x: auto for horizontal scrolling on narrow
+          // viewports, which makes dnd-kit treat it as scrollable on ALL axes
+          // (it checks /(auto|scroll|overlay)/ without distinguishing axes).
+          // Exclude it so dragging doesn't vertically scroll the card contents.
+          autoScroll={{
+            canScroll: (element) => element !== scrollContainerRef.current,
+          }}
         >
           <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
             <div
+              ref={scrollContainerRef}
               className={clsx(
-                'card mb-3 overflow-x-auto preferences-grid',
+                'card mb-3 overflow-x-auto',
                 canEdit ? 'preferences-grid-editable' : 'preferences-grid-readonly',
               )}
             >
