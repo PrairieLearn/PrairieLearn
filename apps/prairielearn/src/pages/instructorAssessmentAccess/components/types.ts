@@ -416,7 +416,7 @@ export function createDefaultOverrideFormData(mainRule?: MainRuleData): Override
       studentLabels: [],
     },
     overriddenFields: [],
-    releaseDate: mainRule?.releaseDate ?? '',
+    releaseDate: mainRule?.releaseDate ?? null,
     dueDate: mainRule?.dueDate ?? null,
     earlyDeadlines: (mainRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
     lateDeadlines: (mainRule?.lateDeadlines ?? []).map((d) => ({ ...d })),
