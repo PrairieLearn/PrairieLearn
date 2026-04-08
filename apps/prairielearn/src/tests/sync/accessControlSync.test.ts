@@ -41,7 +41,7 @@ function makeAccessControlRule(
   overrides: Partial<AccessControlJsonInput> = {},
 ): AccessControlJsonInput {
   if ('dateControl' in overrides && overrides.dateControl === undefined) {
-    const { dateControl: _, ...rest } = overrides;
+    const { dateControl: _dateControl, ...rest } = overrides;
     return { ...rest };
   }
   return merge(
@@ -692,13 +692,14 @@ describe('Access control syncing', () => {
         assert.equal(syncedRules[0].date_control_duration_minutes, 60);
         assert.isNotNull(syncedRules[0].date_control_release_date);
 
+        // Override rules inherit releaseDate from makeAccessControlRule defaults.
         assert.equal(syncedRules[1].number, 1);
         assert.equal(syncedRules[1].date_control_duration_minutes, 90);
-        assert.isNull(syncedRules[1].date_control_release_date);
+        assert.isNotNull(syncedRules[1].date_control_release_date);
 
         assert.equal(syncedRules[2].number, 2);
         assert.equal(syncedRules[2].date_control_duration_minutes, 120);
-        assert.isNull(syncedRules[2].date_control_release_date);
+        assert.isNotNull(syncedRules[2].date_control_release_date);
       }));
 
     it('maintains number when rules are updated', () =>

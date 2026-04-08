@@ -53,14 +53,10 @@ export function validateRule(
     }
   } else {
     if (rule.listBeforeRelease !== undefined) {
-      errors.push(
-        'listBeforeRelease can only be specified on the defaults (the first element, without labels).',
-      );
+      errors.push('listBeforeRelease can only be specified on the defaults.');
     }
     if (rule.integrations != null) {
-      errors.push(
-        'integrations can only be specified on the defaults (the first element, without labels).',
-      );
+      errors.push('integrations can only be specified on the defaults.');
     }
   }
 
