@@ -3,11 +3,11 @@ import crypto from 'node:crypto';
 import stableStringify from 'fast-json-stable-stringify';
 
 /**
- * Computes a stable SHA-256 hash of an array of objects, using deterministic
- * key ordering. Useful for optimistic concurrency checks.
+ * Computes a stable SHA-256 hash of a value, using deterministic key ordering.
+ * Useful for optimistic concurrency checks.
  */
-export function computeStableHash(values: object[]): string {
-  return crypto.createHash('sha256').update(stableStringify(values)).digest('hex');
+export function computeStableHash(value: unknown): string {
+  return crypto.createHash('sha256').update(stableStringify(value)).digest('hex');
 }
 
 /**

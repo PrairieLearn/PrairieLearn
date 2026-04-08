@@ -4,9 +4,8 @@ import { TRPCError } from '@trpc/server';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
-import * as sqldb from '@prairielearn/postgres';
+import { flash } from '@prairielearn/flash';
 import { run } from '@prairielearn/run';
-import { IdSchema } from '@prairielearn/zod';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
@@ -20,6 +19,7 @@ import {
 } from '../../lib/editors.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { validateShortName } from '../../lib/short-name.js';
+import { selectAssessmentByUuid } from '../../models/assessment.js';
 import {
   type AssessmentJsonInput,
   EnumAssessmentToolSchema,
@@ -28,14 +28,12 @@ import { throwAppError } from '../app-errors.js';
 
 import { requireCoursePermissionEdit, t } from './init.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
-
 export interface AssessmentSettingsError {
   UpdateAssessment:
-    | { code: 'INVALID_SHORT_NAME'; message: string }
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string; message: string };
-  CopyAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string; message: string };
-  DeleteAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string; message: string };
+    | { code: 'INVALID_SHORT_NAME' }
+    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  CopyAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  DeleteAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
 
 const updateAssessment = t.procedure
@@ -261,7 +259,13 @@ const updateAssessment = t.procedure
       tid_new,
       'infoAssessment.json',
     );
-    const newHash = (await getOriginalHash(newInfoAssessmentPath)) ?? '';
+    const newHash = await getOriginalHash(newInfoAssessmentPath);
+    if (newHash === null) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to read hash of updated infoAssessment.json',
+      });
+    }
 
     return { origHash: newHash };
   });
@@ -281,13 +285,17 @@ const copyAssessment = t.procedure.use(requireCoursePermissionEdit).mutation(asy
     });
   }
 
-  const assessmentId = await sqldb.queryScalar(
-    sql.select_assessment_id_from_uuid,
-    { uuid: editor.uuid, course_instance_id: course_instance.id },
-    IdSchema,
+  const copiedAssessment = await selectAssessmentByUuid({
+    uuid: editor.uuid,
+    course_instance_id: course_instance.id,
+  });
+
+  flash(
+    'success',
+    'Assessment copied successfully. You are now viewing your copy of the assessment.',
   );
 
-  return { assessmentId };
+  return { assessmentId: copiedAssessment.id };
 });
 
 const deleteAssessment = t.procedure.use(requireCoursePermissionEdit).mutation(async ({ ctx }) => {
@@ -304,6 +312,8 @@ const deleteAssessment = t.procedure.use(requireCoursePermissionEdit).mutation(a
       jobSequenceId: serverJob.jobSequenceId,
     });
   }
+
+  flash('success', 'Assessment deleted successfully.');
 });
 
 export const assessmentSettingsRouter = t.router({

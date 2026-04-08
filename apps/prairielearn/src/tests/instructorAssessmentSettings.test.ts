@@ -1,5 +1,6 @@
 import * as path from 'path';
 
+import { TRPCClientError } from '@trpc/client';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
@@ -14,7 +15,10 @@ import { config } from '../lib/config.js';
 import { AssessmentSchema } from '../lib/db-types.js';
 import { getOriginalHash } from '../lib/editors.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
-import type { AssessmentSettingsError } from '../trpc/assessment/assessment-settings.js';
+import {
+  type AssessmentSettingsError,
+  type assessmentSettingsRouter,
+} from '../trpc/assessment/assessment-settings.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import {
@@ -237,7 +241,11 @@ describe('Editing assessment settings', () => {
         });
         assert.fail('Expected mutation to throw');
       } catch (err: unknown) {
-        assert.include(String(err), 'Access denied');
+        assert.instanceOf(err, TRPCClientError);
+        assert.equal(
+          (err as TRPCClientError<typeof assessmentSettingsRouter>).data?.code,
+          'FORBIDDEN',
+        );
       }
     });
   });
@@ -259,7 +267,11 @@ describe('Editing assessment settings', () => {
         });
         assert.fail('Expected mutation to throw');
       } catch (err: unknown) {
-        assert.include(String(err), 'infoAssessment.json does not exist');
+        assert.instanceOf(err, TRPCClientError);
+        assert.equal(
+          (err as TRPCClientError<typeof assessmentSettingsRouter>).data?.code,
+          'BAD_REQUEST',
+        );
       }
     } finally {
       await fs.move(`${assessmentLiveInfoPath}.bak`, assessmentLiveInfoPath);

@@ -26,6 +26,14 @@ export function getAssessmentInstanceUrl({
   return `${urlPrefix}/assessment/${assessmentId}`;
 }
 
+export function getStudentAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
+  return `${getStudentCourseInstanceUrl(courseInstanceId)}/assessment/${assessmentId}`;
+}
+
+export function getPublicAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
+  return `/pl/public/course_instance/${courseInstanceId}/assessment/${assessmentId}`;
+}
+
 export function getStudentEnrollmentUrl(courseInstanceId: string, enrollmentId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/enrollment/${enrollmentId}`;
 }
@@ -99,8 +107,13 @@ export function getAiQuestionGenerationDraftsUrl({ urlPrefix }: { urlPrefix: str
   return `${urlPrefix}/ai_generate_question_drafts`;
 }
 
-export function getAdministratorCourseRequestsUrl({ urlPrefix }: { urlPrefix: string }): string {
-  return `${urlPrefix}/administrator/courseRequests`;
+export function getAdministratorJobSequenceUrl(jobSequenceId: string): string {
+  return `/pl/administrator/jobSequence/${jobSequenceId}`;
+}
+
+export function getAdministratorCourseRequestsUrl({ showAll }: { showAll?: boolean }): string {
+  const base = '/pl/administrator/courseRequests';
+  return showAll ? `${base}?status=all` : base;
 }
 
 export function getCourseInstanceBaseUrl(courseInstanceId: string): string {

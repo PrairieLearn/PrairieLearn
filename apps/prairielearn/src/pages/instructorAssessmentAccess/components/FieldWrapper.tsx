@@ -49,7 +49,7 @@ export function FieldWrapper({
         ) : (
           <>
             {(headerContent || onRemoveOverride) && (
-              <div className="d-flex justify-content-between align-items-start mb-2">
+              <div className="d-flex justify-content-between align-items-center mb-2">
                 {headerContent}
                 {onRemoveOverride && (
                   <Button size="sm" variant="outline-danger" onClick={onRemoveOverride}>

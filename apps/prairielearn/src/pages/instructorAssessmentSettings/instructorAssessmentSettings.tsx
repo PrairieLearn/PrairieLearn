@@ -13,13 +13,19 @@ import {
   StaffAssessmentModuleSchema,
   StaffAssessmentSetSchema,
 } from '../../lib/client/safe-db-types.js';
-import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
+import {
+  getAssessmentTrpcUrl,
+  getPublicAssessmentUrl,
+  getStudentAssessmentUrl,
+} from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { type AssessmentToolsConfig, getOriginalHash } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
+import { selectAssessmentModulesForCourse } from '../../models/assessment-module.js';
+import { selectAssessmentSetsForCourse } from '../../models/assessment-set.js';
 import { selectAssessmentToolDefaults } from '../../models/assessment.js';
 import { EnumAssessmentToolSchema } from '../../schemas/infoAssessment.js';
 
@@ -42,23 +48,17 @@ router.get(
       { course_instance_id: course_instance.id },
       z.string(),
     );
-    const assessmentSets = await sqldb.queryRows(
-      sql.select_assessment_sets,
-      { course_id: course.id },
-      StaffAssessmentSetSchema,
-    );
-    const assessmentModules = await sqldb.queryRows(
-      sql.select_assessment_modules,
-      { course_id: course.id },
-      StaffAssessmentModuleSchema,
-    );
+    const assessmentSets = z
+      .array(StaffAssessmentSetSchema)
+      .parse(await selectAssessmentSetsForCourse(course.id));
+    const assessmentModules = z
+      .array(StaffAssessmentModuleSchema)
+      .parse(await selectAssessmentModulesForCourse(course.id));
     const host = getCanonicalHost(req);
-    const studentLink = new URL(
-      `/pl/course_instance/${course_instance.id}/assessment/${assessment.id}`,
-      host,
-    ).href;
+    const studentLink = new URL(getStudentAssessmentUrl(course_instance.id, assessment.id), host)
+      .href;
     const publicLink = new URL(
-      `/pl/public/course_instance/${course_instance.id}/assessment/${assessment.id}/questions`,
+      `${getPublicAssessmentUrl(course_instance.id, assessment.id)}/questions`,
       host,
     ).href;
     const infoAssessmentPath = encodePath(
@@ -128,11 +128,9 @@ router.get(
               tids={tids}
               studentLink={studentLink}
               publicLink={publicLink}
-              infoAssessmentPath={infoAssessmentPath}
               assessmentSets={assessmentSets}
               assessmentModules={assessmentModules}
-              courseInstanceId={String(course_instance.id)}
-              assessmentId={String(assessment.id)}
+              courseInstance={course_instance}
               isDevMode={config.devMode}
               assessmentTools={assessmentTools}
             />
