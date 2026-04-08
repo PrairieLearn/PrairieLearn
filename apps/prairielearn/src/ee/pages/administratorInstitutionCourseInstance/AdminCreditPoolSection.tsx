@@ -1,4 +1,4 @@
-import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
@@ -54,6 +54,7 @@ function AdminCreditPoolContent({
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const poolQuery = useQuery(trpc.creditPool.queryOptions());
 
   const adjustMutation = useMutation({
     ...trpc.adjustCreditPool.mutationOptions(),
@@ -94,6 +95,10 @@ function AdminCreditPoolContent({
           isSuccess={adjustMutation.isSuccess}
           maxAddDollars={maxAddDollars}
           maxDeductDollars={maxDeductDollars}
+          transferableMilliDollars={poolQuery.data?.credit_transferable_milli_dollars ?? null}
+          nonTransferableMilliDollars={
+            poolQuery.data?.credit_non_transferable_milli_dollars ?? null
+          }
           onSubmit={(data) => adjustMutation.mutate(data)}
           onDismissError={() => adjustMutation.reset()}
           onDismissSuccess={() => adjustMutation.reset()}
@@ -110,6 +115,8 @@ function AdjustCreditsForm({
   isSuccess,
   maxAddDollars,
   maxDeductDollars,
+  transferableMilliDollars,
+  nonTransferableMilliDollars,
   onSubmit,
   onDismissError,
   onDismissSuccess,
@@ -120,6 +127,8 @@ function AdjustCreditsForm({
   isSuccess: boolean;
   maxAddDollars: number;
   maxDeductDollars: number;
+  transferableMilliDollars: number | null;
+  nonTransferableMilliDollars: number | null;
   onSubmit: (data: {
     action: 'add' | 'deduct';
     amount_dollars: number;
@@ -136,9 +145,17 @@ function AdjustCreditsForm({
 
   const parsedAmount = Number(amountStr);
   const maxForAction = action === 'add' ? maxAddDollars : maxDeductDollars;
+  const currentBalanceMilliDollars =
+    creditType === 'transferable' ? transferableMilliDollars : nonTransferableMilliDollars;
   const isAmountInvalid =
     amountStr !== '' &&
     (!Number.isFinite(parsedAmount) || parsedAmount <= 0 || parsedAmount > maxForAction);
+  const isDeductionCapped =
+    action === 'deduct' &&
+    !isAmountInvalid &&
+    amountStr !== '' &&
+    currentBalanceMilliDollars != null &&
+    Math.round(parsedAmount * 1000) > currentBalanceMilliDollars;
 
   function handleSubmit() {
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return;
@@ -225,6 +242,11 @@ function AdjustCreditsForm({
         {isAmountInvalid && (
           <div id="amount-error" className="text-danger small mt-1">
             Enter an amount between $0.01 and {formatMilliDollars(maxForAction * 1000)}.
+          </div>
+        )}
+        {isDeductionCapped && (
+          <div className="text-muted small mt-1">
+            {formatMilliDollars(currentBalanceMilliDollars)} will be deducted.
           </div>
         )}
       </form>
