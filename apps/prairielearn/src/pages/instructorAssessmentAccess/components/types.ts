@@ -78,7 +78,7 @@ export interface MainRuleData {
   trackingId: string;
   listBeforeRelease: boolean;
   dateControlEnabled: boolean;
-  releaseDate: string;
+  releaseDate: string | null;
   dueDate: string | null;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
@@ -154,7 +154,7 @@ export function jsonToMainRuleFormData(
       dc?.afterLastDeadline != null ||
       dc?.durationMinutes != null ||
       dc?.password != null,
-    releaseDate: toLocalDatetimeValue(dc?.releaseDate, displayTimezone) ?? '',
+    releaseDate: toLocalDatetimeValue(dc?.releaseDate, displayTimezone) ?? null,
     dueDate: toLocalDatetimeValue(dc?.dueDate, displayTimezone) ?? null,
     earlyDeadlines: (dc?.earlyDeadlines ?? []).map((d) => ({
       ...d,

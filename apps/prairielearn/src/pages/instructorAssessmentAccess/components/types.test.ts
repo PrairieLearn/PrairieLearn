@@ -50,6 +50,11 @@ function buildFormData(override: OverrideData): AccessControlFormData {
 }
 
 describe('jsonToMainRuleFormData', () => {
+  it('defaults releaseDate to null when dateControl is not configured', () => {
+    const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
+    expect(mainRule.releaseDate).toBeNull();
+  });
+
   it('defaults hideQuestions to true when afterComplete is not configured', () => {
     const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
     expect(mainRule.questionVisibility.hideQuestions).toBe(true);
