@@ -77,10 +77,7 @@ function getHideScoreMode(value: ScoreVisibilityValue): HideScoreMode {
   return 'hide_score_until_date';
 }
 
-function getLastDeadline(
-  dueDate: string | null,
-  lateDeadlines: DeadlineEntry[],
-): string | null {
+function getLastDeadline(dueDate: string | null, lateDeadlines: DeadlineEntry[]): string | null {
   if (lateDeadlines.length > 0) {
     return lateDeadlines[lateDeadlines.length - 1].date;
   }
@@ -106,6 +103,7 @@ function QuestionVisibilityInput({
   idPrefix,
   hasPrairieTest = false,
   lastDeadline,
+  hasTimeLimit = false,
   hideAgainDateError,
 }: {
   value: QuestionVisibilityValue;
@@ -113,6 +111,7 @@ function QuestionVisibilityInput({
   idPrefix: string;
   hasPrairieTest?: boolean;
   lastDeadline?: string | null;
+  hasTimeLimit?: boolean;
   hideAgainDateError?: string;
 }) {
   const hideQuestionsMode = getHideQuestionsMode(value);
@@ -263,10 +262,15 @@ function QuestionVisibilityInput({
           completion" so students can review their work.
         </Alert>
       )}
-      {showAgainBeforeLastDeadline && (
+      {showAgainBeforeLastDeadline && hasTimeLimit && (
         <Alert variant="warning" className="mt-2 mb-0">
-          This date is before the last deadline. Students will be able to see questions while they
-          still have submissions remaining.
+          This date is before the last deadline. Students who finish early may see questions while
+          others are still working.
+        </Alert>
+      )}
+      {showAgainBeforeLastDeadline && !hasTimeLimit && (
+        <Alert variant="info" className="mt-2 mb-0">
+          This date is before the last deadline and won't take effect until the deadline passes.
         </Alert>
       )}
     </Form.Group>
@@ -283,12 +287,18 @@ function ScoreVisibilityInput({
   value,
   onChange,
   idPrefix,
+  lastDeadline,
+  hasTimeLimit = false,
 }: {
   value: ScoreVisibilityValue;
   onChange: (value: ScoreVisibilityValue) => void;
   idPrefix: string;
+  lastDeadline?: string | null;
+  hasTimeLimit?: boolean;
 }) {
   const hideScoreMode = getHideScoreMode(value);
+  const showAgainBeforeLastDeadline =
+    value.showAgainDate && lastDeadline && value.showAgainDate < lastDeadline;
 
   const handleModeChange = (newMode: HideScoreMode) => {
     switch (newMode) {
@@ -342,6 +352,17 @@ function ScoreVisibilityInput({
             </Form.Control.Feedback>
           )}
         </div>
+      )}
+      {showAgainBeforeLastDeadline && hasTimeLimit && (
+        <Alert variant="warning" className="mt-2 mb-0">
+          This date is before the last deadline. Students who finish early may see their score while
+          others are still working.
+        </Alert>
+      )}
+      {showAgainBeforeLastDeadline && !hasTimeLimit && (
+        <Alert variant="info" className="mt-2 mb-0">
+          This date is before the last deadline and won't take effect until the deadline passes.
+        </Alert>
       )}
     </Form.Group>
   );
@@ -430,7 +451,12 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
   const lateDeadlines = useWatch<AccessControlFormData, 'mainRule.lateDeadlines'>({
     name: 'mainRule.lateDeadlines',
   });
-  const lastDeadline = getLastDeadline(dueDate, lateDeadlines);
+  const lastDeadline = dateControlEnabled ? getLastDeadline(dueDate, lateDeadlines) : null;
+
+  const durationMinutes = useWatch<AccessControlFormData, 'mainRule.durationMinutes'>({
+    name: 'mainRule.durationMinutes',
+  });
+  const hasTimeLimit = durationMinutes !== null;
 
   const qvNonDefault = isNonDefaultQuestionVisibility(qvField.value);
   const svNonDefault = isNonDefaultScoreVisibility(svField.value);
@@ -456,6 +482,7 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
           idPrefix="mainRule"
           hasPrairieTest={hasPrairieTest}
           lastDeadline={lastDeadline}
+          hasTimeLimit={hasTimeLimit}
           hideAgainDateError={hideAgainDateError}
           onChange={qvField.onChange}
         />
@@ -467,6 +494,8 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
         <ScoreVisibilityInput
           value={svField.value}
           idPrefix="mainRule"
+          lastDeadline={lastDeadline}
+          hasTimeLimit={hasTimeLimit}
           onChange={svField.onChange}
         />
       </Col>
