@@ -30,9 +30,9 @@ const AfterLastDeadlineJsonSchema = z
 
 const DateControlJsonSchema = z
   .object({
-    releaseDate: DatetimeLocalStringSchema.optional().describe(
-      'Release date as ISO String. If absent, no date-based access is granted. On overrides, omit to inherit from defaults.',
-    ),
+    releaseDate: DatetimeLocalStringSchema.nullable()
+      .optional()
+      .describe('Release date as ISO String. If absent or null, no date-based access is granted.'),
     dueDate: DatetimeLocalStringSchema.nullable().optional().describe('Due date as ISO String'),
     earlyDeadlines: z
       .array(DeadlineEntryJsonSchema)
