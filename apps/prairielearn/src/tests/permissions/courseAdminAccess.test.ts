@@ -243,7 +243,9 @@ function runTest(context: TestContext) {
   });
 
   test.sequential('cannot delete self even when emulating another owner', async () => {
-    const trpc = createTrpcClient();
+    const trpc = createTrpcClient({
+      cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
+    });
     try {
       await trpc.courseStaff.deleteUser.mutate({ userId: context.userId });
       assert.fail('Expected FORBIDDEN error');
@@ -256,7 +258,9 @@ function runTest(context: TestContext) {
   test.sequential(
     'cannot change course role of self even when emulating another owner',
     async () => {
-      const trpc = createTrpcClient();
+      const trpc = createTrpcClient({
+        cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
+      });
       try {
         await trpc.courseStaff.updateCourseRole.mutate({
           userId: context.userId,
