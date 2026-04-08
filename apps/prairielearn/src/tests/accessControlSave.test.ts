@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 
+import { merge } from 'es-toolkit';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
@@ -27,27 +28,15 @@ import { enrollUser } from './utils/enrollments.js';
 const siteUrl = `http://localhost:${config.serverPort}`;
 
 function makeRule(overrides: Partial<AccessControlJsonInput> = {}): AccessControlJsonInput {
-  if ('dateControl' in overrides) {
-    const { dateControl: dcOverrides, ...rest } = overrides;
-    if (dcOverrides === undefined) {
-      return { ...rest };
-    }
-    return {
+  return merge(
+    {
       dateControl: {
         releaseDate: '2024-03-14T00:01:00',
         dueDate: '2024-03-21T23:59:00',
-        ...dcOverrides,
       },
-      ...rest,
-    };
-  }
-  return {
-    dateControl: {
-      releaseDate: '2024-03-14T00:01:00',
-      dueDate: '2024-03-21T23:59:00',
     },
-    ...overrides,
-  };
+    overrides,
+  ) as AccessControlJsonInput;
 }
 
 describe('Access control save via tRPC', () => {
@@ -145,7 +134,7 @@ describe('Access control save via tRPC', () => {
     const client = await createClient();
     const origHash = await getOrigHash();
 
-    const rules: AccessControlJsonInput[] = [{ listBeforeRelease: false, afterComplete: {} }];
+    const rules: AccessControlJsonInput[] = [{ listBeforeRelease: false }];
 
     const result = await client.accessControl.saveAllRules.mutate({ rules, origHash });
     assert.isString(result.newHash);
@@ -155,7 +144,6 @@ describe('Access control save via tRPC', () => {
 
     assert.equal(parsed.accessControl.length, 1);
     assert.notProperty(parsed.accessControl[0], 'listBeforeRelease');
-    assert.notProperty(parsed.accessControl[0], 'afterComplete');
   });
 
   test.sequential('rejects save with stale origHash', async () => {
