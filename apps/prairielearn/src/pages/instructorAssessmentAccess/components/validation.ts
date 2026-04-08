@@ -3,7 +3,7 @@ import {
   type AccessControlValidationRule,
   validateGlobalDateConsistencyIssues,
   validateRuleDateOrderingIssues,
-} from '../../../schemas/accessControl.js';
+} from '../../../lib/assessment-access-control/validation.js';
 
 import { type AccessControlFormData, formDataToJson } from './types.js';
 

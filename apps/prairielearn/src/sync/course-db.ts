@@ -12,15 +12,13 @@ import { type ZodSchema, z } from 'zod';
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 
+import { validateAccessControlRules } from '../lib/assessment-access-control/validation.js';
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
-  type AccessControlJson,
-  type AccessControlRuleTargetType,
-  type AccessControlValidationRule,
   type AssessmentJson,
   type AssessmentJsonInput,
   type AssessmentSetJson,
@@ -30,12 +28,10 @@ import {
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
-  validateGlobalDateConsistencyIssues,
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
 import { deduplicateByName } from './deduplicate.js';
-import { validateRule } from './fromDisk/accessControl.js';
 import * as infofile from './infofile.js';
 import { isDraftQid } from './question.js';
 
@@ -1144,111 +1140,6 @@ function formatValues(qids: Set<string> | string[]) {
   return Array.from(qids)
     .map((qid) => `"${qid}"`)
     .join(', ');
-}
-
-/**
- * Validates an array of access control rules.
- * Returns a single object with all accumulated errors and warnings.
- *
- * @param params
- * @param params.rules The full ordered list of access control rules: index 0 is the
- * main (defaults) rule that applies to everyone (no labels), and all
- * subsequent entries are student-label rules that target specific labels.
- * @param params.enrollmentRules Optional separate list of enrollment-based rules.
- * @param params.validStudentLabelNames Optional set of known student label names for
- * cross-referencing validation.
- */
-export function validateAccessControlRules({
-  rules,
-  enrollmentRules,
-  validStudentLabelNames,
-}: {
-  rules: AccessControlJson[];
-  enrollmentRules?: AccessControlJson[];
-  validStudentLabelNames?: Set<string>;
-}): { warnings: string[]; errors: string[] } {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-  const validationRules: AccessControlValidationRule[] = [];
-  const enrollmentRulesCount = enrollmentRules?.length ?? 0;
-
-  // If the feature is completely unused, we can skip all validation and we don't need a default rule.
-  if (rules.length === 0 && enrollmentRulesCount === 0) {
-    return { errors, warnings };
-  }
-
-  // A main rule has no `labels` property (applies to everyone)
-  const mainRules = rules.filter((rule) => rule.labels == null || rule.labels.length === 0);
-
-  if (mainRules.length === 0) {
-    errors.push('No defaults found. The first element of accessControl must apply to everyone.');
-  } else if (mainRules.length > 1) {
-    errors.push(
-      `Found ${mainRules.length} defaults entries. Only one element of accessControl should apply to everyone.`,
-    );
-  } else {
-    // The DB constraint `check_first_rule_is_none` requires the main rule at index 0
-    const firstRule = rules[0];
-    const isFirstRuleMain = firstRule.labels == null || firstRule.labels.length === 0;
-    if (!isFirstRuleMain) {
-      errors.push('The defaults (without labels) must be the first element in the array.');
-    }
-  }
-
-  // Index 0 is the main rule; everything else is a student-label rule.
-  rules.forEach((rule, index) => {
-    const targetType: AccessControlRuleTargetType = index === 0 ? 'none' : 'student_label';
-
-    const labels = rule.labels ?? [];
-    const seenLabels = new Set<string>();
-    const duplicateLabels = new Set<string>();
-
-    for (const label of labels) {
-      if (seenLabels.has(label)) {
-        duplicateLabels.add(label);
-      } else {
-        seenLabels.add(label);
-      }
-    }
-
-    if (duplicateLabels.size > 0) {
-      errors.push(
-        `Found duplicate student labels in this access control rule: ${formatValues(duplicateLabels)}.`,
-      );
-    }
-
-    if (validStudentLabelNames !== undefined) {
-      const invalidLabels = [...seenLabels].filter((label) => !validStudentLabelNames.has(label));
-      if (invalidLabels.length > 0) {
-        errors.push(
-          `The access control rule targets non-existent student labels: ${formatValues(invalidLabels)}.`,
-        );
-      }
-    }
-
-    validationRules.push({
-      rule,
-      targetType,
-      ruleIndex: validationRules.length,
-    });
-
-    errors.push(...validateRule(rule, targetType));
-  });
-
-  for (const rule of enrollmentRules ?? []) {
-    validationRules.push({
-      rule,
-      targetType: 'enrollment',
-      ruleIndex: validationRules.length,
-    });
-    errors.push(...validateRule(rule, 'enrollment'));
-  }
-
-  errors.push(
-    ...validateGlobalDateConsistencyIssues(validationRules).map((issue) => issue.message),
-  );
-
-  return { errors, warnings };
 }
 
 /**
