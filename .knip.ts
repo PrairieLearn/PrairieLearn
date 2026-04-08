@@ -89,7 +89,7 @@ const config: KnipConfig = {
       entry: ['scripts/*.{mts,mjs}'],
       project: ['scripts/*.{mts,mjs}'],
       // https://knip.dev/guides/configuring-project-files#ignore-issues-in-specific-files
-      ignore: ['vitest.config.ts', 'eslint.config.mjs'],
+      ignore: ['vitest.config.ts'],
     },
     'apps/prairielearn': {
       // https://knip.dev/guides/handling-issues#dynamic-import-specifiers
