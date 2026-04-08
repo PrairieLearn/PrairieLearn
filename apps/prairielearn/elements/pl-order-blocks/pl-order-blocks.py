@@ -354,6 +354,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             raise ValueError(
                 f"invalid score: {data['partial_scores'][answer_name].get('score', 0)}"
             ) from exc
+    uuid = pl.get_uuid()
 
     if data["panel"] == "question":
         editable = data["editable"]
@@ -398,7 +399,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if check_indentation:
             help_text += "<p><strong>Your answer should be indented.</strong> Indent your tiles by dragging them horizontally in the answer area, or by using left/right arrows with the block selected.</p>"
 
-        uuid = pl.get_uuid()
         html_params = {
             "question": True,
             "parse-error": data["format_errors"].get(answer_name, None),
@@ -459,6 +459,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "parse-error": data["format_errors"].get(answer_name, None),
             "student_submission": student_submission,
             "feedback": feedback,
+            "uuid": uuid,
             "block_formatting": block_formatting,
             "allow_feedback_badges": not all(
                 block.get("badge_type", "") == "" for block in student_submission

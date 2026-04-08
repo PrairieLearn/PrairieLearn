@@ -34,7 +34,7 @@ $(function() {
                 {{/options}}
             </ul>
         </div>
-        <div class="pl-order-blocks-container form-control {{#parse-error}}has-validation is-invalid{{/parse-error}} {{block_layout}} {{dropzone_layout}} ">
+        <div class="pl-order-blocks-container form-control {{#parse-error}}has-validation is-invalid{{/parse-error}} {{block_layout}} {{dropzone_layout}}" {{#parse-error}}aria-invalid="true" aria-errormessage="pl-order-blocks-{{uuid}}-error"{{/parse-error}}>
             <div class="card-header pl-order-blocks-header bg-primary-subtle">
                 <span class="me-2">
                     {{solution-header}}
