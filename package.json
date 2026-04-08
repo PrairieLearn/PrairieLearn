@@ -41,6 +41,7 @@
     "@playwright/test": "^1.59.1",
     "@postgres-language-server/cli": "^0.22.1",
     "@prairielearn/eslint-config": "workspace:^",
+    "@prairielearn/signed-token": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
     "@reteps/tree-sitter-htmlmustache": "^0.7.3",
     "@typescript/native-preview": "^7.0.0-dev.20260305.1",

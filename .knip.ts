@@ -144,7 +144,7 @@ const config: KnipConfig = {
     // ...FALSE_NEGATIVE_CLI_DEPS,
   ],
   // TODO: enable these features
-  exclude: ['binaries', 'dependencies', 'unlisted'],
+  exclude: ['binaries'],
 };
 
 export default config;
