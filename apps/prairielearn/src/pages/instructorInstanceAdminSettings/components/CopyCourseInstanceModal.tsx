@@ -39,7 +39,7 @@ interface CopyFormValues
   short_name: string;
   long_name: string;
   access_control_strategy: 'migrate' | 'keep' | 'wipe';
-  preserve_incompatible: boolean;
+  clear_incompatible: boolean;
 }
 
 export function CopyCourseInstanceModal({
@@ -72,7 +72,7 @@ export function CopyCourseInstanceModal({
       self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
       course_instance_permission: isAdministrator ? 'None' : 'Student Data Editor',
       access_control_strategy: 'migrate',
-      preserve_incompatible: true,
+      clear_incompatible: true,
     },
     mode: 'onSubmit',
   });
@@ -101,7 +101,7 @@ export function CopyCourseInstanceModal({
         self_enrollment_use_enrollment_code: data.self_enrollment_use_enrollment_code,
         course_instance_permission: data.course_instance_permission,
         access_control_strategy: data.access_control_strategy,
-        preserve_incompatible: data.preserve_incompatible,
+        clear_incompatible: data.clear_incompatible,
       };
 
       const resp = await fetch(window.location.pathname, {
@@ -385,7 +385,12 @@ function AccessControlStep({
             <strong>
               {assessments.length} assessment{assessments.length !== 1 ? 's' : ''}
             </strong>{' '}
-            with legacy access control rules. Choose how to handle them in the copy.
+            with legacy access control rules. Choose how to handle them in the copy. Learn more
+            about{' '}
+            <a href="https://docs.prairielearn.com/assessment/accessControl/" target="_blank">
+              access control
+            </a>
+            .
           </p>
 
           {(assessmentsWithWarnings.length > 0 || blockedAssessments.length > 0) && (
@@ -458,7 +463,7 @@ function AccessControlStep({
         <Form.Check
           type="radio"
           id="strategy-migrate"
-          label="Attempt automatic migration to modern format"
+          label="Migrate to modern format (Recommended)"
           value="migrate"
           {...register('access_control_strategy')}
         />
@@ -476,13 +481,14 @@ function AccessControlStep({
           <div className="ms-4 mt-1 mb-2">
             <Form.Check
               type="checkbox"
-              id="preserve-incompatible"
+              id="clear-incompatible"
               label={
                 <small className="text-muted">
-                  Preserve assessments that cannot be migrated automatically in their legacy format
+                  Clear access control for incompatible assessments
                 </small>
               }
-              {...register('preserve_incompatible')}
+              defaultChecked
+              {...register('clear_incompatible')}
             />
           </div>
         )}
@@ -490,7 +496,7 @@ function AccessControlStep({
         <Form.Check
           type="radio"
           id="strategy-keep"
-          label="Keep legacy access control as-is"
+          label="Don't migrate to modern access control"
           value="keep"
           {...register('access_control_strategy')}
         />
@@ -498,7 +504,7 @@ function AccessControlStep({
         <Form.Check
           type="radio"
           id="strategy-wipe"
-          label="Remove all access control rules"
+          label="Migrate to modern format and wipe all rules"
           value="wipe"
           {...register('access_control_strategy')}
         />

@@ -431,7 +431,18 @@ describe('Date ordering validation', () => {
       },
     });
     const errors = validateRuleDateOrdering(rule);
-    assert.isTrue(errors.some((e) => e.includes('must be before the due date')));
+    assert.isTrue(errors.some((e) => e.includes('must be on or before the due date')));
+  });
+
+  it('should accept early deadline equal to due date', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        dueDate: '2024-03-20T00:00:00',
+        earlyDeadlines: [{ date: '2024-03-20T00:00:00', credit: 120 }],
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.deepEqual(errors, []);
   });
 
   it('should reject early deadline before release date', () => {
@@ -453,7 +464,18 @@ describe('Date ordering validation', () => {
       },
     });
     const errors = validateRuleDateOrdering(rule);
-    assert.isTrue(errors.some((e) => e.includes('must be after the due date')));
+    assert.isTrue(errors.some((e) => e.includes('must be on or after the due date')));
+  });
+
+  it('should accept late deadline equal to due date', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        dueDate: '2024-03-20T00:00:00',
+        lateDeadlines: [{ date: '2024-03-20T00:00:00', credit: 80 }],
+      },
+    });
+    const errors = validateRuleDateOrdering(rule);
+    assert.deepEqual(errors, []);
   });
 
   it('should reject late deadline before release date', () => {
@@ -827,7 +849,7 @@ describe('Global temporal validation', () => {
     ]);
 
     assert.isTrue(
-      issues.some((issue) => issue.message.includes('before the latest possible due date')),
+      issues.some((issue) => issue.message.includes('on or before the latest possible due date')),
     );
   });
 });

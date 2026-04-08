@@ -33,6 +33,14 @@ import {
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
+function todayAsDatetimeLocal(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}T00:00:00`;
+}
+
 function getAssessmentPath(
   resLocals: Pick<ResLocalsForPage<'assessment'>, 'course' | 'course_instance' | 'assessment'>,
 ): string {
@@ -96,6 +104,7 @@ router.get(
       afterJson: string;
       warnings: string[];
       hasUidRules: boolean;
+      isWipe: boolean;
     } | null = null;
 
     if (enhancedAccessControlEnabled) {
@@ -106,7 +115,7 @@ router.get(
         const parsed = JSON.parse(content);
         const beforeJson = JSON.stringify(parsed.allowAccess, null, 2);
 
-        const migrationResult = migrateAssessmentJson(content);
+        const migrationResult = migrateAssessmentJson(content, todayAsDatetimeLocal());
         if (migrationResult) {
           const migratedParsed = JSON.parse(migrationResult.json);
           const afterJson = JSON.stringify(migratedParsed.accessControl, null, 2);
@@ -115,8 +124,24 @@ router.get(
             afterJson,
             warnings: migrationResult.warnings,
             hasUidRules: migrationAnalysis.hasUidRules,
+            isWipe: false,
           };
         }
+      } else if (
+        migrationAnalysis &&
+        !migrationAnalysis.canMigrate &&
+        !migrationAnalysis.hasUidRules
+      ) {
+        const content = await fs.readFile(assessmentPath, 'utf-8');
+        const parsed = JSON.parse(content);
+        const beforeJson = JSON.stringify(parsed.allowAccess, null, 2);
+        migrationPreview = {
+          beforeJson,
+          afterJson: '[]',
+          warnings: migrationAnalysis.warnings,
+          hasUidRules: false,
+          isWipe: true,
+        };
       }
     }
 
@@ -169,13 +194,19 @@ router.post(
         return res.redirect(req.originalUrl);
       }
 
-      const migrationResult = migrateAssessmentJson(content);
-      if (!migrationResult) {
+      const migrationResult = migrateAssessmentJson(content, todayAsDatetimeLocal());
+
+      let formattedJson: string;
+      if (migrationResult) {
+        formattedJson = await formatJsonWithPrettier(migrationResult.json);
+      } else if (req.body.migrate_strategy === 'wipe') {
+        const data = JSON.parse(content);
+        delete data.allowAccess;
+        formattedJson = await formatJsonWithPrettier(JSON.stringify(data));
+      } else {
         flash('error', 'This assessment cannot be automatically migrated.');
         return res.redirect(req.originalUrl);
       }
-
-      const formattedJson = await formatJsonWithPrettier(migrationResult.json);
 
       const paths = getPaths(undefined, res.locals);
       const editor = new FileModifyEditor({
@@ -196,7 +227,12 @@ router.post(
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
 
-      flash('success', 'Access rules migrated to modern format.');
+      flash(
+        'success',
+        migrationResult
+          ? 'Access rules migrated to modern format.'
+          : 'Legacy access rules removed. You can now configure access rules in the modern format.',
+      );
       return res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `Unknown action: ${req.body.__action}`);

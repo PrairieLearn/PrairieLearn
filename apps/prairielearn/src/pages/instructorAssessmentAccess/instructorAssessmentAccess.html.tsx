@@ -40,6 +40,7 @@ interface MigrationPreview {
   afterJson: string;
   warnings: string[];
   hasUidRules: boolean;
+  isWipe: boolean;
 }
 
 export function InstructorAssessmentAccess({
@@ -83,7 +84,7 @@ export function InstructorAssessmentAccess({
                   data-bs-toggle="modal"
                   data-bs-target="#migrationConfirmModal"
                 >
-                  Migrate to modern format
+                  ${migrationPreview.isWipe ? 'Migrate and wipe' : 'Migrate to modern format'}
                 </button>
               `
             : ''}
@@ -226,6 +227,16 @@ function MigrationConfirmModal({
     size: 'modal-xl',
     content: html`
       <div class="modal-body">
+        ${migrationPreview.isWipe
+          ? html`
+              <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                This assessment's access rules cannot be automatically migrated. Proceeding will
+                <strong>remove all existing access rules</strong> and switch to the modern format
+                with no rules configured. You will need to recreate your access rules from scratch.
+              </div>
+            `
+          : ''}
         ${migrationPreview.hasUidRules
           ? html`
               <div class="alert alert-warning">
@@ -267,6 +278,19 @@ function MigrationConfirmModal({
               : ''}
           `;
         })()}
+        <p>
+          See the
+          <a href="https://docs.prairielearn.com/assessment/accessControl/" target="_blank">
+            access control documentation
+          </a>
+          for details on the modern format.
+        </p>
+        <p class="text-muted small mb-2">
+          Compare the current <code>infoAssessment.json</code> with the migrated version below.
+          <strong>Previous state</strong> shows the legacy <code>allowAccess</code> rules.
+          <strong>New state</strong> shows the modern <code>accessControl</code> format that will
+          replace them.
+        </p>
         <ul class="nav nav-tabs" role="tablist">
           <li class="nav-item" role="presentation">
             <button
@@ -315,11 +339,16 @@ function MigrationConfirmModal({
       <input type="hidden" name="__action" value="migrate_access_control" />
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
       <input type="hidden" name="orig_hash" value="${origHash}" />
+      ${migrationPreview.isWipe
+        ? html`<input type="hidden" name="migrate_strategy" value="wipe" />`
+        : ''}
       <small class="text-muted me-auto">
         This can be reverted through the file editor or git history.
       </small>
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn btn-primary">Confirm migration</button>
+      <button type="submit" class="btn ${migrationPreview.isWipe ? 'btn-danger' : 'btn-primary'}">
+        ${migrationPreview.isWipe ? 'Migrate and wipe' : 'Confirm migration'}
+      </button>
     `,
   });
 }

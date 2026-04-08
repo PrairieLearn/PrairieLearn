@@ -960,17 +960,21 @@ export class CourseInstanceCopyEditor extends Editor {
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
 
-    if (this.accessControlMigration && this.accessControlMigration.strategy !== 'keep') {
-      const assessmentsPath = path.join(courseInstancePath, 'assessments');
-      const assessmentDirs = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
-      for (const dir of assessmentDirs) {
-        const infoPath = path.join(assessmentsPath, dir, 'infoAssessment.json');
+    const assessmentsPath = path.join(courseInstancePath, 'assessments');
+    const assessmentDirs = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
+    for (const dir of assessmentDirs) {
+      const infoPath = path.join(assessmentsPath, dir, 'infoAssessment.json');
+
+      if (this.accessControlMigration && this.accessControlMigration.strategy !== 'keep') {
         await applyMigrationToAssessmentFile(
           infoPath,
           this.accessControlMigration.strategy,
           this.accessControlMigration.preserveIncompatible,
+          this.metadataOverrides?.publishing?.startDate ?? new Date().toISOString(),
         );
       }
+
+      await stripPrairieTestExamUuids(infoPath);
     }
 
     pathsToAdd.push(courseInstancePath);
@@ -1031,6 +1035,44 @@ async function updateInfoAssessmentFilesForTargetCourse(
       }
     }
     await fs.writeJson(infoPath, infoJson, { spaces: 4 });
+  }
+}
+
+/**
+ * Strips PrairieTest exam UUIDs from an assessment file. Exam UUIDs are
+ * specific to a course instance's PT reservations and should not be carried
+ * over when copying a course instance.
+ */
+async function stripPrairieTestExamUuids(filePath: string): Promise<void> {
+  const data = await fs.readJson(filePath);
+  let changed = false;
+
+  // Legacy format: remove examUuid from allowAccess rules
+  if (Array.isArray(data.allowAccess)) {
+    for (const rule of data.allowAccess) {
+      if ('examUuid' in rule) {
+        delete rule.examUuid;
+        changed = true;
+      }
+    }
+  }
+
+  // Modern format: remove integrations.prairieTest from accessControl entries
+  if (Array.isArray(data.accessControl)) {
+    for (const entry of data.accessControl) {
+      if (entry.integrations?.prairieTest) {
+        delete entry.integrations.prairieTest;
+        if (Object.keys(entry.integrations).length === 0) {
+          delete entry.integrations;
+        }
+        changed = true;
+      }
+    }
+  }
+
+  if (changed) {
+    const formatted = await formatJsonWithPrettier(JSON.stringify(data));
+    await fs.writeFile(filePath, formatted);
   }
 }
 

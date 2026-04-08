@@ -729,6 +729,31 @@ Below are common legacy patterns and their modern equivalents.
 
     UID-based rules from the legacy system (the `uids` field) don't have a direct JSON equivalent in the modern format. On the Assessment Access page, automatic migration is disabled until those rules are removed or recreated as enrollment overrides. During course-instance copy, migrating to modern access control omits UID-based rules from the copied assessment JSON. Use [student labels](#student-labels-and-overrides) or individual enrollment overrides (configured via the UI on the Assessment Access tab) instead.
 
+## Limitations
+
+The modern access control system models credit as a single contiguous timeline from the release date through deadlines to the final close. This means it **cannot represent non-contiguous credit ranges** — configurations where credit is available, then unavailable, then available again.
+
+For example, the following legacy configuration has a gap between Feb 15 and Mar 1 where no credit is available, followed by a second credit window:
+
+```json
+{
+  "allowAccess": [
+    {
+      "startDate": "2025-01-15T00:00:01",
+      "endDate": "2025-02-15T23:59:59",
+      "credit": 100
+    },
+    {
+      "startDate": "2025-03-01T00:00:01",
+      "endDate": "2025-03-15T23:59:59",
+      "credit": 100
+    }
+  ]
+}
+```
+
+This pattern cannot be automatically migrated. Assessments with non-contiguous credit ranges will be flagged as incompatible during migration. You can choose to clear these rules and reconfigure access manually, or keep the legacy format.
+
 ## Staff access
 
 Course staff (anyone with a course role of Previewer or above, or a course instance role of Student Data Viewer or above) always receive full access to all assessments regardless of access control rules. They see 100% credit with a "(Staff override)" indicator.

@@ -12,6 +12,7 @@ import {
   applyMigrationToAssessmentFile,
   classifyArchetype,
   migrateAllowAccess,
+  migrateAssessmentJson,
 } from './migration.js';
 
 describe('classifyArchetype', () => {
@@ -58,12 +59,20 @@ describe('classifyArchetype', () => {
       expected: 'declining-credit',
     },
     {
-      name: 'multi-deadline',
+      name: 'multi-deadline (contiguous)',
+      rules: [
+        { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
+        { credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
+      ],
+      expected: 'multi-deadline',
+    },
+    {
+      name: 'multi-deadline with gap (unsupported)',
       rules: [
         { credit: 100, startDate: '2024-01-01', endDate: '2024-02-01' },
         { credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
       ],
-      expected: 'multi-deadline',
+      expected: 'unclassified',
     },
     {
       name: 'single full-credit without dates',
@@ -331,19 +340,42 @@ describe('migrateAllowAccess', () => {
     assert.match(warnings[0], /collapsed/);
   });
 
-  it('declining-credit with bonus and reduced (no full)', () => {
+  it('declining-credit with bonus and reduced (no full) creates early deadlines', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
       { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
     ];
-    const { result } = migrateAllowAccess('declining-credit', rules);
+    const { result, warnings } = migrateAllowAccess('declining-credit', rules);
     assert.deepEqual(result, {
       dateControl: {
         releaseDate: '2024-01-01',
         dueDate: '2024-02-01',
+        earlyDeadlines: [{ date: '2024-02-01', credit: 120 }],
         lateDeadlines: [{ date: '2024-06-01', credit: 50 }],
       },
     });
+    assert.lengthOf(warnings, 0);
+  });
+
+  it('declining-credit with multiple bonus and reduced (no full) creates multiple early deadlines', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      { credit: 130, startDate: '2024-01-01', endDate: '2024-01-15' },
+      { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
+      { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
+    ];
+    const { result, warnings } = migrateAllowAccess('declining-credit', rules);
+    assert.deepEqual(result, {
+      dateControl: {
+        releaseDate: '2024-01-01',
+        dueDate: '2024-02-01',
+        earlyDeadlines: [
+          { date: '2024-01-15', credit: 130 },
+          { date: '2024-02-01', credit: 120 },
+        ],
+        lateDeadlines: [{ date: '2024-06-01', credit: 50 }],
+      },
+    });
+    assert.lengthOf(warnings, 0);
   });
 
   it('emits lateDeadlines in chronological order even when credit order differs', () => {
@@ -361,30 +393,34 @@ describe('migrateAllowAccess', () => {
     ]);
   });
 
-  it('migrates single-reduced-credit with credit loss warning', () => {
+  it('migrates single-reduced-credit as late deadline at due date', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
     const { result, warnings } = migrateAllowAccess('single-reduced-credit', rules);
     assert.deepEqual(result, {
-      dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+      dateControl: {
+        releaseDate: '2024-01-01',
+        dueDate: '2024-06-01',
+        lateDeadlines: [{ date: '2024-06-01', credit: 50 }],
+      },
     });
-    assert.lengthOf(warnings, 1);
-    assert.match(warnings[0], /50%/);
-    assert.match(warnings[0], /lost during migration/);
+    assert.lengthOf(warnings, 0);
   });
 
-  it('migrates single bonus credit with credit loss warning', () => {
+  it('migrates single bonus credit as early deadline at due date', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 120, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
     const { result, warnings } = migrateAllowAccess('single-deadline', rules);
     assert.deepEqual(result, {
-      dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+      dateControl: {
+        releaseDate: '2024-01-01',
+        dueDate: '2024-06-01',
+        earlyDeadlines: [{ date: '2024-06-01', credit: 120 }],
+      },
     });
-    assert.lengthOf(warnings, 1);
-    assert.match(warnings[0], /120%/);
-    assert.match(warnings[0], /lost during migration/);
+    assert.lengthOf(warnings, 0);
   });
 
   it('migrates multiple prairietest exams', () => {
@@ -1020,5 +1056,98 @@ describe('applyMigrationToAssessmentFile', () => {
       },
       { unsafeCleanup: true },
     );
+  });
+
+  it('uses fallback release date when migration produces dateControl without releaseDate', async () => {
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [{ password: 'secret', credit: 100 }],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', false, '2025-01-15T00:00:00');
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.isUndefined(result.allowAccess);
+        assert.lengthOf(result.accessControl, 1);
+        assert.equal(result.accessControl[0].dateControl?.releaseDate, '2025-01-15T00:00:00');
+        assert.equal(result.accessControl[0].dateControl?.password, 'secret');
+      },
+      { unsafeCleanup: true },
+    );
+  });
+
+  it('does not override existing release date with fallback', async () => {
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', false, '2025-09-01T00:00:00');
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.equal(result.accessControl[0].dateControl?.releaseDate, '2024-01-01');
+      },
+      { unsafeCleanup: true },
+    );
+  });
+});
+
+describe('migrateAssessmentJson fallback release date', () => {
+  it('uses fallback when migration produces dateControl without releaseDate', () => {
+    const json = JSON.stringify({
+      type: 'Homework',
+      allowAccess: [{ password: 'secret', credit: 100 }],
+    });
+    const result = migrateAssessmentJson(json, '2025-01-15T00:00:00');
+    assert.isNotNull(result);
+    const parsed = JSON.parse(result.json);
+    assert.equal(parsed.accessControl[0].dateControl?.releaseDate, '2025-01-15T00:00:00');
+  });
+
+  it('does not override existing release date with fallback', () => {
+    const json = JSON.stringify({
+      type: 'Homework',
+      allowAccess: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
+    });
+    const result = migrateAssessmentJson(json, '2025-09-01T00:00:00');
+    assert.isNotNull(result);
+    const parsed = JSON.parse(result.json);
+    assert.equal(parsed.accessControl[0].dateControl?.releaseDate, '2024-01-01');
+  });
+
+  it('does not add releaseDate when result has no dateControl', () => {
+    const json = JSON.stringify({
+      type: 'Homework',
+      allowAccess: [{}],
+    });
+    const result = migrateAssessmentJson(json, '2025-01-15T00:00:00');
+    assert.isNotNull(result);
+    const parsed = JSON.parse(result.json);
+    assert.isUndefined(parsed.accessControl[0].dateControl);
+  });
+
+  it('works without fallback (backward compatible)', () => {
+    const json = JSON.stringify({
+      type: 'Homework',
+      allowAccess: [{ password: 'secret', credit: 100 }],
+    });
+    const result = migrateAssessmentJson(json);
+    assert.isNotNull(result);
+    const parsed = JSON.parse(result.json);
+    assert.isUndefined(parsed.accessControl[0].dateControl?.releaseDate);
   });
 });

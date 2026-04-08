@@ -161,6 +161,25 @@ function withMods(
   return `${base} (${mods.join(', ')})`;
 }
 
+function hasAccessGaps(rules: AssessmentAccessRuleJson[]): boolean {
+  const accessRules = rules.filter((r) => (r.credit ?? 0) > 0);
+
+  // If any access rule has no dates, it covers all time — no gaps possible.
+  if (accessRules.some((r) => !r.startDate && !r.endDate)) return false;
+
+  const datedRules = accessRules
+    .filter((r) => r.endDate)
+    .sort((a, b) => (a.startDate ?? '').localeCompare(b.startDate ?? ''));
+
+  for (let i = 0; i < datedRules.length - 1; i++) {
+    const currentEnd = datedRules[i].endDate!;
+    const nextStart = datedRules[i + 1].startDate;
+    if (nextStart && nextStart > currentEnd) return true;
+  }
+
+  return false;
+}
+
 export function classifyArchetype(rules: AssessmentAccessRuleJson[]): string {
   rules = rules.filter((r) => !r.uids);
   const analyzed = rules.map(analyzeRule);
@@ -187,6 +206,10 @@ export function classifyArchetype(rules: AssessmentAccessRuleJson[]): string {
     creditHidesClosed: creditRules.some((r) => r.hidesClosedAssessment),
     creditHidesScore: creditRules.some((r) => r.hidesClosedScore),
   };
+
+  // Detect gaps between access windows (ACCESS <-> NO ACCESS <-> ACCESS).
+  // The modern format cannot represent non-contiguous access periods.
+  if (hasAccessGaps(rules)) return 'unclassified';
 
   const allNoOp = analyzed.every(
     (r) =>
@@ -238,18 +261,7 @@ function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
   }
 
   const result: AccessControlJsonInput = {};
-
-  // The modern system hardcodes 100% credit at the due date. Non-100% credit
-  // values cannot be represented directly and are lost during migration.
-  // If needed, reduced credit could be encoded as a late deadline without a
-  // due date, and bonus credit as an early deadline before a fabricated due
-  // date, but both are semantically misleading in the UI.
   const credit = creditRule.credit ?? 0;
-  if (credit !== 100 && credit !== 0) {
-    warnings.push(
-      `Credit value of ${credit}% will be lost during migration. The modern system assumes 100% credit at the due date.`,
-    );
-  }
 
   const releaseDate = findReleaseDate(rules);
   if (creditRule.startDate || creditRule.endDate || releaseDate) {
@@ -257,6 +269,16 @@ function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
     if (releaseDate) result.dateControl.releaseDate = releaseDate;
     if (creditRule.endDate) result.dateControl.dueDate = creditRule.endDate;
     if (creditRule.timeLimitMin) result.dateControl.durationMinutes = creditRule.timeLimitMin;
+
+    // Reduced credit: encode as a late deadline at the due date.
+    if (credit > 0 && credit < 100 && creditRule.endDate) {
+      result.dateControl.lateDeadlines = [{ date: creditRule.endDate, credit }];
+    }
+
+    // Bonus credit: encode as an early deadline at the due date.
+    if (credit > 100 && creditRule.endDate) {
+      result.dateControl.earlyDeadlines = [{ date: creditRule.endDate, credit }];
+    }
   }
 
   const afterComplete = buildAfterComplete(rules);
@@ -295,7 +317,7 @@ function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
   if (releaseDate) result.dateControl!.releaseDate = releaseDate;
   if (dueDate) result.dateControl!.dueDate = dueDate;
 
-  if (bonusRules.length > 0 && fullRules.length > 0) {
+  if (bonusRules.length > 0) {
     result.dateControl!.earlyDeadlines = bonusRules
       .filter((r) => r.endDate)
       .map((r) => ({ date: r.endDate!, credit: r.credit! }));
@@ -504,9 +526,24 @@ function isMigratable(archetype: string, warnings: string[]): boolean {
   return archetype !== 'unclassified' && !warnings.some((w) => w.startsWith('Unsupported'));
 }
 
+/**
+ * Ensures a release date exists on the migrated result when dateControl is present.
+ * If the migration didn't extract a release date from the legacy rules, the
+ * fallback is used instead.
+ */
+function applyFallbackReleaseDate(
+  result: AccessControlJsonInput,
+  fallbackReleaseDate: string | undefined,
+): void {
+  if (result.dateControl && !result.dateControl.releaseDate && fallbackReleaseDate) {
+    result.dateControl.releaseDate = fallbackReleaseDate;
+  }
+}
+
 /** Migrates assessment JSON from legacy allowAccess to modern accessControl format. */
 export function migrateAssessmentJson(
   jsonContent: string,
+  fallbackReleaseDate?: string,
 ): { json: string; warnings: string[] } | null {
   const data = JSON.parse(jsonContent);
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
@@ -519,6 +556,8 @@ export function migrateAssessmentJson(
   const canMigrate = isMigratable(archetype, warnings);
 
   if (!canMigrate) return null;
+
+  applyFallbackReleaseDate(result, fallbackReleaseDate);
 
   data.accessControl = [result];
   delete data.allowAccess;
@@ -589,6 +628,7 @@ export async function applyMigrationToAssessmentFile(
   filePath: string,
   strategy: 'migrate' | 'keep' | 'wipe',
   preserveIncompatible: boolean,
+  fallbackReleaseDate?: string,
 ): Promise<void> {
   const content = await fs.readFile(filePath, 'utf-8');
   const data = JSON.parse(content);
@@ -622,6 +662,7 @@ export async function applyMigrationToAssessmentFile(
   const canMigrate = isMigratable(archetype, warnings);
 
   if (canMigrate) {
+    applyFallbackReleaseDate(result, fallbackReleaseDate);
     data.accessControl = [result];
     delete data.allowAccess;
   } else if (!preserveIncompatible) {
