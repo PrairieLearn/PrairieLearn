@@ -443,10 +443,12 @@ function isAssessmentClosedForPrairieTest(
   // If there is no configured terminal deadline structure, the assessment
   // is open-ended — not closed.
   const hasTerminalStructure =
-    dateControl.dueDate != null ||
-    (dateControl.lateDeadlines != null && dateControl.lateDeadlines.length > 0) ||
-    dateControl.afterLastDeadline !== undefined;
+    dateControl.dueDate != null || (dateControl.lateDeadlines?.length ?? 0) > 0;
   if (!hasTerminalStructure) return false;
+
+  // Practice submissions keep the assessment open even when the student is
+  // not earning credit.
+  if (dateControl.afterLastDeadline?.allowSubmissions === true) return false;
 
   return true;
 }

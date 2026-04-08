@@ -1463,6 +1463,8 @@ describe('resolveAccessControl', () => {
       // mode for a short grace period after PrairieTest has already ended the
       // reservation. The migrated PT rule should still respect the closed
       // assessment visibility settings in that state.
+      // Uses a past dueDate to represent "exam has ended" — open-ended
+      // assessments (dueDate: null) are not considered closed.
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',
@@ -1471,7 +1473,7 @@ describe('resolveAccessControl', () => {
             ...makeMainRule({
               dateControl: {
                 releaseDate: '2025-01-01T00:00:00Z',
-                dueDate: null,
+                dueDate: '2025-02-01T00:00:00Z',
               },
               afterComplete: {
                 hideQuestions: true,

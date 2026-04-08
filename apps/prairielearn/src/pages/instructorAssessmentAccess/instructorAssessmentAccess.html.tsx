@@ -235,17 +235,38 @@ function MigrationConfirmModal({
               </div>
             `
           : ''}
-        ${migrationPreview.warnings.length > 0
-          ? html`
-              <div class="alert alert-info">
-                <i class="bi bi-info-circle-fill"></i>
-                <strong>Migration notes:</strong>
-                <ul class="mb-0 mt-1">
-                  ${migrationPreview.warnings.map((w) => html`<li>${w}</li>`)}
-                </ul>
-              </div>
-            `
-          : ''}
+        ${(() => {
+          const dataLossWarnings = migrationPreview.warnings.filter(
+            (w) => w.includes('lost during migration') || w.includes('collapsed'),
+          );
+          const infoWarnings = migrationPreview.warnings.filter(
+            (w) => !w.includes('lost during migration') && !w.includes('collapsed'),
+          );
+          return html`
+            ${dataLossWarnings.length > 0
+              ? html`
+                  <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>Data loss:</strong>
+                    <ul class="mb-0 mt-1">
+                      ${dataLossWarnings.map((w) => html`<li>${w}</li>`)}
+                    </ul>
+                  </div>
+                `
+              : ''}
+            ${infoWarnings.length > 0
+              ? html`
+                  <div class="alert alert-info">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <strong>Migration notes:</strong>
+                    <ul class="mb-0 mt-1">
+                      ${infoWarnings.map((w) => html`<li>${w}</li>`)}
+                    </ul>
+                  </div>
+                `
+              : ''}
+          `;
+        })()}
         <ul class="nav nav-tabs" role="tablist">
           <li class="nav-item" role="presentation">
             <button
@@ -294,6 +315,9 @@ function MigrationConfirmModal({
       <input type="hidden" name="__action" value="migrate_access_control" />
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
       <input type="hidden" name="orig_hash" value="${origHash}" />
+      <small class="text-muted me-auto">
+        This can be reverted through the file editor or git history.
+      </small>
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Confirm migration</button>
     `,
