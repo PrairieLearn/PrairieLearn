@@ -23,12 +23,15 @@ export function PrairieTestControlForm() {
   const examsRef = useRef(watchedExams);
   examsRef.current = watchedExams;
 
-  // Validate when the number of exams changes or on mount so empty exam UUIDs
-  // (added by the PrairieTest checkbox in IntegrationsSection) show errors
-  // immediately and duplicate detection re-runs after add/remove.
+  const watchedExamUuids = watchedExams.map((exam) => exam.examUuid).join('\0');
+
+  // Validate when the number of exams changes, any UUID is edited, or on mount
+  // so empty exam UUIDs (added by the PrairieTest checkbox in
+  // IntegrationsSection) show errors immediately and duplicate detection
+  // re-runs after add/remove/edit.
   useEffect(() => {
     void trigger('mainRule.prairieTestExams');
-  }, [examFields.length, trigger]);
+  }, [examFields.length, watchedExamUuids, trigger]);
 
   const getExamUuidError = (index: number): string | undefined => {
     return get(errors, `mainRule.prairieTestExams.${index}.examUuid`)?.message;
