@@ -57,7 +57,8 @@ router.get(
     const initialLabels = await getStudentLabelsWithUserData(courseInstance);
     const canEdit =
       authz_data.has_course_permission_edit &&
-      (authz_data.has_course_instance_permission_edit ?? false);
+      (authz_data.has_course_instance_permission_edit ?? false) &&
+      !course.example_course;
 
     const trpcUrl = `/pl/course_instance/${courseInstance.id}/instructor/trpc`;
     const trpcCsrfToken = generatePrefixCsrfToken(
@@ -90,6 +91,7 @@ router.get(
               courseInstanceId={courseInstance.id}
               initialLabels={initialLabels}
               canEdit={canEdit}
+              isExampleCourse={course.example_course}
               isDevMode={config.devMode}
               origHash={origHash}
             />
