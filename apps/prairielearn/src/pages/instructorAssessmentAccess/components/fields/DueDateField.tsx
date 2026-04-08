@@ -1,6 +1,8 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { Form } from 'react-bootstrap';
-import { type Path, useController, useWatch } from 'react-hook-form';
+import { useController, useWatch } from 'react-hook-form';
+
+import { formatDateFriendly } from '@prairielearn/formatter';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
@@ -11,6 +13,17 @@ import {
   getLatestEarlyDeadlineDate,
   getUserTimezone,
 } from '../utils/dateUtils.js';
+
+function localDatetimeToTimezoneDate(value: string, timezone: string): Date {
+  return new Date(Temporal.PlainDateTime.from(value).toZonedDateTime(timezone).epochMilliseconds);
+}
+
+function formatCourseLocalDate(value: string, displayTimezone: string): string {
+  return formatDateFriendly(localDatetimeToTimezoneDate(value, displayTimezone), displayTimezone, {
+    dateOnly: true,
+    includeTz: false,
+  });
+}
 
 function DueDateInput({
   value,
@@ -92,7 +105,7 @@ function DueDateInput({
           checked={value !== null}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
-              const latestEarlyDate = earlyDeadlines?.filter((d) => d.date).pop()?.date;
+              const latestEarlyDate = earlyDeadlines?.at(-1)?.date;
               let baseDate: Temporal.PlainDate;
               if (latestEarlyDate) {
                 baseDate = Temporal.PlainDateTime.from(latestEarlyDate).toPlainDate();
@@ -145,8 +158,10 @@ export function MainDueDateField({ displayTimezone }: { displayTimezone: string 
     name: 'mainRule.dueDate',
     rules: {
       validate: (value) => {
+        if (value !== null && !value) return 'Date is required';
         if (value && releaseDate && new Date(value) <= new Date(releaseDate)) {
-          return 'Due date must be after release date';
+          const formatted = formatCourseLocalDate(releaseDate, displayTimezone);
+          return `Must be after release date (${formatted})`;
         }
         return true;
       },
@@ -183,40 +198,42 @@ export function OverrideDueDateField({
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'dueDate');
 
   const { isOverridden: releaseDateOverridden } = useOverrideField(index, 'releaseDate');
-  const releaseDate = useWatch({
-    name: `overrides.${index}.releaseDate` as Path<AccessControlFormData>,
-  }) as string | null;
+  const releaseDate = useWatch<AccessControlFormData, `overrides.${number}.releaseDate`>({
+    name: `overrides.${index}.releaseDate`,
+  });
   const mainReleaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
   });
 
   const { isOverridden: earlyDeadlinesOverridden } = useOverrideField(index, 'earlyDeadlines');
-  const earlyDeadlines = useWatch({
-    name: `overrides.${index}.earlyDeadlines` as Path<AccessControlFormData>,
-  }) as DeadlineEntry[];
+  const earlyDeadlines = useWatch<AccessControlFormData, `overrides.${number}.earlyDeadlines`>({
+    name: `overrides.${index}.earlyDeadlines`,
+  });
   const mainEarlyDeadlines = useWatch<AccessControlFormData, 'mainRule.earlyDeadlines'>({
     name: 'mainRule.earlyDeadlines',
   });
 
   const effectiveReleaseDate = releaseDateOverridden ? releaseDate : mainReleaseDate;
+  const validationReleaseDate = releaseDateOverridden ? releaseDate : undefined;
 
   const {
     field,
     fieldState: { error },
-  } = useController({
-    name: `overrides.${index}.dueDate` as Path<AccessControlFormData>,
+  } = useController<AccessControlFormData, `overrides.${number}.dueDate`>({
+    name: `overrides.${index}.dueDate`,
     rules: {
       validate: (value) => {
-        const v = value as string | null;
-        if (v && effectiveReleaseDate && new Date(v) <= new Date(effectiveReleaseDate)) {
-          return 'Due date must be after release date';
+        if (value !== null && !value) return 'Date is required';
+        if (value && validationReleaseDate && new Date(value) <= new Date(validationReleaseDate)) {
+          const formatted = formatCourseLocalDate(validationReleaseDate, displayTimezone);
+          return `Must be after release date (${formatted})`;
         }
         return true;
       },
     },
   });
 
-  const value = field.value as string | null;
+  const value = field.value;
 
   return (
     <FieldWrapper
