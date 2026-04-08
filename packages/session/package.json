@@ -29,20 +29,20 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/cookie": "^0.6.0 <1",
     "@types/cookie-signature": "^1.1.2",
-    "@types/node": "^24.11.0",
+    "@types/node": "^24.12.2",
     "@types/node-fetch": "^2.6.13",
     "@types/on-headers": "^1.0.4",
     "@types/set-cookie-parser": "^2.4.10",
     "@types/uid-safe": "^2.1.5",
     "@typescript/native-preview": "^7.0.0-dev.20260305.1",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/coverage-v8": "^4.1.2",
     "express": "^4.22.1",
     "fetch-cookie": "^3.2.0",
     "node-fetch": "^3.3.2",
-    "set-cookie-parser": "^3.0.1",
+    "set-cookie-parser": "^3.1.0",
     "source-map-support": "^0.5.21",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.2"
   }
 }

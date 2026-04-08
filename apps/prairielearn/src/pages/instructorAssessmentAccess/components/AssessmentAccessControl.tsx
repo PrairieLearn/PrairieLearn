@@ -16,7 +16,7 @@ import { AccessControlForm } from './AccessControlForm.js';
 interface AssessmentAccessControlProps {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
-  origHash: string;
+  origHash: string | null;
   assessmentId: string;
   initialData: AccessControlJsonWithId[];
 }

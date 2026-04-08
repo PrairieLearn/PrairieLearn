@@ -81,7 +81,7 @@ export function ManualGradingAssessment({
                 // React doesn't let us emit raw event handlers, so
                 // instead we render these buttons inside a `dangerouslySetInnerHTML` block.
 
-                // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+                // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
                 dangerouslySetInnerHTML={{
                   __html: html`
                     <form method="POST" class="d-inline">

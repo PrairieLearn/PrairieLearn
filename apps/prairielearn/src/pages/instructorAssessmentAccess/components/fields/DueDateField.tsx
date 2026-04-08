@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import { Form } from 'react-bootstrap';
 import { type Path, useController, useWatch } from 'react-hook-form';
 
@@ -5,7 +6,11 @@ import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
-import { getLatestEarlyDeadlineDate, getUserTimezone } from '../utils/dateUtils.js';
+import {
+  endOfDayDatetime,
+  getLatestEarlyDeadlineDate,
+  getUserTimezone,
+} from '../utils/dateUtils.js';
 
 function DueDateInput({
   value,
@@ -14,6 +19,7 @@ function DueDateInput({
   releaseDate,
   earlyDeadlines,
   error,
+  displayTimezone,
 }: {
   value: string | null;
   onChange: (value: string | null) => void;
@@ -21,6 +27,7 @@ function DueDateInput({
   releaseDate: string | null | undefined;
   earlyDeadlines: DeadlineEntry[] | undefined;
   error?: string;
+  displayTimezone: string;
 }) {
   const userTimezone = getUserTimezone();
 
@@ -84,7 +91,18 @@ function DueDateInput({
           label="Due on date"
           checked={value !== null}
           onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange('');
+            if (currentTarget.checked) {
+              const latestEarlyDate = earlyDeadlines?.filter((d) => d.date).pop()?.date;
+              let baseDate: Temporal.PlainDate;
+              if (latestEarlyDate) {
+                baseDate = Temporal.PlainDateTime.from(latestEarlyDate).toPlainDate();
+              } else if (releaseDate) {
+                baseDate = Temporal.PlainDateTime.from(releaseDate).toPlainDate();
+              } else {
+                baseDate = Temporal.Now.plainDateISO(displayTimezone);
+              }
+              onChange(endOfDayDatetime(baseDate.add({ weeks: 1 })));
+            }
           }}
         />
       </div>
@@ -92,6 +110,7 @@ function DueDateInput({
         <>
           <Form.Control
             type="datetime-local"
+            step={1}
             aria-label="Due date"
             aria-invalid={!!error}
             aria-errormessage={error ? `${idPrefix}-due-date-error` : undefined}
@@ -110,7 +129,7 @@ function DueDateInput({
   );
 }
 
-export function MainDueDateField() {
+export function MainDueDateField({ displayTimezone }: { displayTimezone: string }) {
   const releaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
   });
@@ -136,20 +155,27 @@ export function MainDueDateField() {
 
   return (
     <div>
-      <strong>Due date</strong>
+      <Form.Label className="fw-bold">Due date</Form.Label>
       <DueDateInput
         value={field.value}
         idPrefix="mainRule"
         releaseDate={releaseDate}
         earlyDeadlines={earlyDeadlines}
         error={error?.message}
+        displayTimezone={displayTimezone}
         onChange={field.onChange}
       />
     </div>
   );
 }
 
-export function OverrideDueDateField({ index }: { index: number }) {
+export function OverrideDueDateField({
+  index,
+  displayTimezone,
+}: {
+  index: number;
+  displayTimezone: string;
+}) {
   const mainValue = useWatch<AccessControlFormData, 'mainRule.dueDate'>({
     name: 'mainRule.dueDate',
   });
@@ -209,6 +235,7 @@ export function OverrideDueDateField({ index }: { index: number }) {
         releaseDate={effectiveReleaseDate}
         earlyDeadlines={earlyDeadlinesOverridden ? earlyDeadlines : mainEarlyDeadlines}
         error={error?.message}
+        displayTimezone={displayTimezone}
         onChange={field.onChange}
       />
     </FieldWrapper>
