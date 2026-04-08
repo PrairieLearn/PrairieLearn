@@ -1458,6 +1458,40 @@ describe('resolveAccessControl', () => {
       expect(result.showBeforeRelease).toBe(false);
     });
 
+    it('keeps closed scores hidden when Exam mode outlives the PrairieTest reservation', () => {
+      // Regression test for #12579: `ip_to_mode` can continue reporting Exam
+      // mode for a short grace period after PrairieTest has already ended the
+      // reservation. The migrated PT rule should still respect the closed
+      // assessment visibility settings in that state.
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Exam',
+        rules: [
+          {
+            ...makeMainRule({
+              dateControl: {
+                releaseDate: '2025-01-01T00:00:00Z',
+                dueDate: null,
+              },
+              afterComplete: {
+                hideQuestions: true,
+                hideScore: true,
+              },
+            }),
+            prairietestExams: [ptExam],
+          },
+        ],
+        prairieTestReservations: [],
+      });
+      expect(result.authorized).toBe(true);
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
+      expect(result.examAccessEnd).toBeNull();
+      expect(result.showClosedAssessment).toBe(false);
+      expect(result.showClosedAssessmentScore).toBe(false);
+      expect(result.showBeforeRelease).toBe(false);
+    });
+
     it('still shows "before release" for PT assessment that is open but student lacks access', () => {
       // When a PT-gated assessment has date controls and is within its open
       // period, students without PT access should still see "Not yet open".

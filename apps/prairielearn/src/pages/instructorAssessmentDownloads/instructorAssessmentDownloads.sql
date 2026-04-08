@@ -269,7 +269,7 @@ WITH
                 JSONB_AGG(
                   JSONB_BUILD_OBJECT(
                     'description',
-                    rgi.description,
+                    ri.description,
                     'points',
                     rgi.points
                   )
@@ -279,6 +279,7 @@ WITH
             )
           FROM
             rubric_grading_items rgi
+            JOIN rubric_items ri ON (ri.id = rgi.rubric_item_id)
           WHERE
             rgi.rubric_grading_id = rg.id
         )

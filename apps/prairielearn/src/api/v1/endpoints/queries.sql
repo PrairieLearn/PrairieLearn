@@ -267,13 +267,14 @@ SELECT
           'rubric_item_id',
           rgi.rubric_item_id,
           'text',
-          rgi.description,
+          ri.description,
           'points',
           rgi.points
         )
       )
     FROM
       rubric_grading_items rgi
+      JOIN rubric_items ri ON (ri.id = rgi.rubric_item_id)
     WHERE
       rgi.rubric_grading_id = rg.id
   ) AS rubric_grading_items,
