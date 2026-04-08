@@ -157,6 +157,7 @@ const updateInstanceRole = t.procedure
     }),
   )
   .mutation(async ({ input, ctx }) => {
+    assertCanModifyUser(ctx.authz_data, input.userId, 'change their own student data access');
     const accessibleInstances = await getAccessibleInstances(ctx);
     assertInstanceAccessible(accessibleInstances, input.courseInstanceId);
 
@@ -307,6 +308,7 @@ const bulkEditAccess = t.procedure
     if (input.courseInstanceChanges) {
       for (const change of input.courseInstanceChanges) {
         for (const userId of input.userIds) {
+          assertCanModifyUser(ctx.authz_data, userId, 'change their own student data access');
           await upsertOrDeleteInstancePermission({
             courseId: ctx.course.id,
             userId,
