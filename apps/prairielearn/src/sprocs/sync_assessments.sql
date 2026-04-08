@@ -39,6 +39,7 @@ BEGIN
 
     -- Move all our data into a temporary table so it's easier to work with
 
+    DROP TABLE IF EXISTS disk_assessments;
     CREATE TEMPORARY TABLE disk_assessments (
         tid TEXT NOT NULL,
         uuid uuid,

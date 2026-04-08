@@ -1,3 +1,4 @@
+import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
 import archiver from 'archiver';
@@ -8,6 +9,12 @@ import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import {
+  CANVAS_CSV_FIXED_COLUMNS,
+  CANVAS_CSV_POINTS_POSSIBLE_NAME,
+  canvasPointsPossibleValue,
+  canvasStudentRecord,
+} from '../../lib/canvas-csv.js';
 import {
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
@@ -42,7 +49,7 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   uid: UserSchema.shape.uid.nullable(),
   uin: UserSchema.shape.uin.nullable(),
   name: UserSchema.shape.name.nullable(),
-  role: SprocUsersGetDisplayedRoleSchema,
+  role: SprocUsersGetDisplayedRoleSchema.nullable(),
   assessment_label: z.string(),
   assessment_instance_number: AssessmentInstanceSchema.shape.number,
   qid: QuestionSchema.shape.qid,
@@ -69,6 +76,7 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   mode: SubmissionSchema.shape.mode,
   grading_requested_at_formatted: z.string().nullable(),
   graded_at_formatted: z.string().nullable(),
+  score: SubmissionSchema.shape.score,
   correct: z.enum(['TRUE', 'FALSE']).nullable(),
   feedback: SubmissionSchema.shape.feedback,
   rubric_grading: RubricGradingSchema.pick({ computed_points: true, adjust_points: true })
@@ -111,6 +119,66 @@ const ManualGradingSubmissionRowSchema = z.object({
 
 type ManualGradingSubmissionRow = z.infer<typeof ManualGradingSubmissionRowSchema>;
 
+const AssessmentInstanceRowSchema = z.object({
+  assessment_label: z.string(),
+  id: UserSchema.shape.id,
+  uid: UserSchema.shape.uid.nullable(),
+  uin: UserSchema.shape.uin.nullable(),
+  name: UserSchema.shape.name.nullable(),
+  role: SprocUsersGetDisplayedRoleSchema,
+  username: z.string().nullable(),
+  score_perc: AssessmentInstanceSchema.shape.score_perc,
+  points: AssessmentInstanceSchema.shape.points,
+  max_points: AssessmentInstanceSchema.shape.max_points,
+  number: AssessmentInstanceSchema.shape.number,
+  assessment_instance_id: AssessmentInstanceSchema.shape.id,
+  open: AssessmentInstanceSchema.shape.open,
+  time_remaining: z.string(),
+  date_formatted: z.string(),
+  duration: z.string().nullable(),
+  duration_secs: z.number().nullable(),
+  duration_mins: z.number().nullable(),
+  group_name: GroupSchema.shape.name.nullable(),
+  uid_list: z.array(z.string()).nullable(),
+});
+
+const CanvasAssessmentInstanceRowSchema = AssessmentInstanceRowSchema.pick({
+  uid: true,
+  name: true,
+  role: true,
+  score_perc: true,
+  points: true,
+});
+
+const InstanceQuestionRowSchema = z.object({
+  uid: UserSchema.shape.uid.nullable(),
+  uin: UserSchema.shape.uin.nullable(),
+  name: UserSchema.shape.name.nullable(),
+  role: SprocUsersGetDisplayedRoleSchema.nullable(),
+  assessment_label: z.string(),
+  assessment_instance_number: AssessmentInstanceSchema.shape.number,
+  zone_number: z.number(),
+  zone_title: z.string().nullable(),
+  qid: QuestionSchema.shape.qid,
+  instance_question_number: InstanceQuestionSchema.shape.number,
+  points: InstanceQuestionSchema.shape.points,
+  score_perc: InstanceQuestionSchema.shape.score_perc,
+  auto_points: InstanceQuestionSchema.shape.auto_points,
+  manual_points: InstanceQuestionSchema.shape.manual_points,
+  max_points: AssessmentQuestionSchema.shape.max_points,
+  max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
+  max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
+  date_formatted: z.string(),
+  highest_submission_score: z.number().nullable(),
+  last_submission_score: z.number().nullable(),
+  number_attempts: z.number(),
+  duration_seconds: z.number().nullable(),
+  group_name: GroupSchema.shape.name.nullable(),
+  uid_list: z.array(z.string()).nullable(),
+  assigned_grader: UserSchema.shape.uid.nullable(),
+  last_grader: UserSchema.shape.uid.nullable(),
+});
+
 export function getFilenames(locals: ResLocalsForPage<'assessment'>) {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
@@ -139,6 +207,8 @@ export function getFilenames(locals: ResLocalsForPage<'assessment'>) {
     finalFilesZipFilename: prefix + 'final_files.zip',
     bestFilesZipFilename: prefix + 'best_files.zip',
     allFilesZipFilename: prefix + 'all_files.zip',
+    canvasScoresCsvFilename: prefix + 'scores_for_canvas.csv',
+    canvasPointsCsvFilename: prefix + 'points_for_canvas.csv',
   };
   if (locals.assessment.team_work) {
     filenames.groupsCsvFilename = prefix + 'groups.csv';
@@ -306,7 +376,7 @@ async function sendInstancesCsv(
       highest_score: options.only_highest,
       group_work: options.group_work,
     },
-    z.unknown(),
+    AssessmentInstanceRowSchema,
   );
 
   res.attachment(req.params.filename);
@@ -397,7 +467,7 @@ router.get(
       const cursor = await sqldb.queryCursor(
         sql.select_instance_questions,
         { assessment_id: res.locals.assessment.id },
-        z.unknown(),
+        InstanceQuestionRowSchema,
       );
 
       const columns = identityColumn.concat([
@@ -587,6 +657,63 @@ router.get(
         only_highest: false,
         group_work: true,
       });
+    } else if (
+      req.params.filename === filenames.canvasScoresCsvFilename ||
+      req.params.filename === filenames.canvasPointsCsvFilename
+    ) {
+      const isPoints = req.params.filename === filenames.canvasPointsCsvFilename;
+      const assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
+      const scoreKey = isPoints ? 'points' : 'score_perc';
+      const canvasColumns: Columns = [...CANVAS_CSV_FIXED_COLUMNS, [assessmentName, scoreKey]];
+      const cursor = await sqldb.queryCursor(
+        sql.select_assessment_instances,
+        {
+          assessment_id: res.locals.assessment.id,
+          highest_score: true,
+          group_work: false,
+        },
+        CanvasAssessmentInstanceRowSchema,
+      );
+
+      // The assessment-level max_points is null for assessments whose max
+      // points are computed dynamically (e.g., Exams with randomized zones).
+      // Fall back to the instance-level max_points from any assessment instance.
+      let maxPoints = res.locals.assessment.max_points;
+      if (isPoints && maxPoints == null) {
+        maxPoints = await sqldb.queryOptionalScalar(
+          sql.select_assessment_instance_max_points,
+          { assessment_id: res.locals.assessment.id },
+          z.number(),
+        );
+      }
+
+      const scoreFormat = isPoints ? 'points' : 'percentage';
+      const pointsPossibleRow = {
+        name: CANVAS_CSV_POINTS_POSSIBLE_NAME,
+        ...canvasStudentRecord({ uid: null }),
+        [scoreKey]: canvasPointsPossibleValue(scoreFormat, maxPoints),
+      };
+
+      res.attachment(req.params.filename);
+      await pipeline(
+        Readable.from(
+          (async function* () {
+            yield pointsPossibleRow;
+            for await (const row of cursor.stream(100)) {
+              yield row;
+            }
+          })(),
+        ),
+        stringifyWithColumns(canvasColumns, (record) => {
+          if (record.name === CANVAS_CSV_POINTS_POSSIBLE_NAME) return record;
+          if (record.role !== 'Student') return null;
+          return {
+            ...record,
+            ...canvasStudentRecord(record),
+          };
+        }),
+        res,
+      );
     } else {
       throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }

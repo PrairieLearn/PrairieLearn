@@ -5,20 +5,20 @@ import { type Path, useController, useWatch } from 'react-hook-form';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData } from '../types.js';
-import { startOfDayDatetime, tomorrowDate } from '../utils/dateUtils.js';
+import { startOfDayDatetime, todayDate, tomorrowDate } from '../utils/dateUtils.js';
 
-function todayLocalDatetime(): string {
-  return startOfDayDatetime();
+function todayLocalDatetime(displayTimezone: string): string {
+  return startOfDayDatetime(todayDate(displayTimezone));
 }
 
-function tomorrowLocalDatetime(): string {
-  return startOfDayDatetime(tomorrowDate());
+function tomorrowLocalDatetime(displayTimezone: string): string {
+  return startOfDayDatetime(tomorrowDate(displayTimezone));
 }
 
-function isReleasedNow(value: string): boolean {
+function isReleasedNow(value: string, displayTimezone: string): boolean {
   if (!value) return true;
   const release = Temporal.PlainDateTime.from(value);
-  const now = Temporal.Now.plainDateTimeISO();
+  const now = Temporal.Now.plainDateTimeISO(displayTimezone);
   return Temporal.PlainDateTime.compare(release, now) <= 0;
 }
 
@@ -27,13 +27,15 @@ function ReleaseDateInput({
   onChange,
   error,
   idPrefix,
+  displayTimezone,
 }: {
   value: string;
   onChange: (value: string) => void;
   error?: string;
   idPrefix: string;
+  displayTimezone: string;
 }) {
-  const released = isReleasedNow(value);
+  const released = isReleasedNow(value, displayTimezone);
 
   return (
     <Form.Group>
@@ -46,7 +48,7 @@ function ReleaseDateInput({
           checked={released}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
-              onChange(todayLocalDatetime());
+              onChange(todayLocalDatetime(displayTimezone));
             }
           }}
         />
@@ -58,7 +60,7 @@ function ReleaseDateInput({
           checked={!released}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
-              onChange(tomorrowLocalDatetime());
+              onChange(tomorrowLocalDatetime(displayTimezone));
             }
           }}
         />
@@ -85,7 +87,7 @@ function ReleaseDateInput({
   );
 }
 
-export function MainReleaseDateField() {
+export function MainReleaseDateField({ displayTimezone }: { displayTimezone: string }) {
   const dateControlEnabled = useWatch<AccessControlFormData, 'mainRule.dateControlEnabled'>({
     name: 'mainRule.dateControlEnabled',
   });
@@ -111,13 +113,20 @@ export function MainReleaseDateField() {
         value={field.value}
         error={error?.message}
         idPrefix="mainRule"
+        displayTimezone={displayTimezone}
         onChange={field.onChange}
       />
     </div>
   );
 }
 
-export function OverrideReleaseDateField({ index }: { index: number }) {
+export function OverrideReleaseDateField({
+  index,
+  displayTimezone,
+}: {
+  index: number;
+  displayTimezone: string;
+}) {
   const mainValue = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
   });
@@ -134,7 +143,7 @@ export function OverrideReleaseDateField({ index }: { index: number }) {
       label="Release"
       headerContent={<strong>Release</strong>}
       onOverride={() => {
-        field.onChange(mainValue || todayLocalDatetime());
+        field.onChange(mainValue || todayLocalDatetime(displayTimezone));
         addOverride();
       }}
       onRemoveOverride={removeOverride}
@@ -142,6 +151,7 @@ export function OverrideReleaseDateField({ index }: { index: number }) {
       <ReleaseDateInput
         value={field.value as string}
         idPrefix={`overrides-${index}`}
+        displayTimezone={displayTimezone}
         onChange={field.onChange}
       />
     </FieldWrapper>
