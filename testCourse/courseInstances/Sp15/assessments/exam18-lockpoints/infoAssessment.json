@@ -6,34 +6,16 @@
   "set": "Exam",
   "number": "18",
   "zones": [
-    {
-      "title": "Conceptual questions",
-      "questions": [
-        {
-          "id": "addNumbers",
-          "points": 10
-        }
-      ]
-    },
+    { "title": "Conceptual questions", "questions": [{ "id": "addNumbers", "autoPoints": 10 }] },
     {
       "title": "Applied questions",
       "lockpoint": true,
-      "questions": [
-        {
-          "id": "partialCredit3",
-          "points": 10
-        }
-      ]
+      "questions": [{ "id": "partialCredit3", "autoPoints": 10 }]
     },
     {
       "title": "Advanced questions",
       "lockpoint": true,
-      "questions": [
-        {
-          "id": "orderBlocks",
-          "points": 10
-        }
-      ]
+      "questions": [{ "id": "orderBlocks", "autoPoints": 10 }]
     }
   ]
 }

@@ -1,12 +1,13 @@
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useMemo, useState } from 'react';
-import { Alert, Button, Form, Modal } from 'react-bootstrap';
+import { Alert, Button, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { assertNever } from '@prairielearn/utils';
 
+import { StudentCheckboxList } from '../../../components/StudentCheckboxList.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import type { EnumEnrollmentStatus } from '../../../lib/db-types.js';
 import { computeStatus } from '../../../lib/publishing.js';
@@ -44,121 +45,11 @@ function getCurrentStatusLabel(status: EnumEnrollmentStatus): string {
   }
 }
 
-function StudentCheckboxList({
-  items,
-  selectedUids,
-  onToggle,
-  onSelectAll,
-  onDeselectAll,
-  icon,
-  iconColor,
-  iconBg,
-  label,
-  description,
-  checkboxIdPrefix,
-}: {
-  items: StudentSyncItem[];
-  selectedUids: Set<string>;
-  onToggle: (uid: string) => void;
-  onSelectAll: () => void;
-  onDeselectAll: () => void;
-  icon: string;
-  iconColor: string;
-  iconBg: string;
-  label: string;
-  description: string;
-  checkboxIdPrefix: string;
-}) {
-  if (items.length === 0) return null;
-
-  const selectedCount = items.filter((item) => selectedUids.has(item.uid)).length;
-
+function renderSyncItemBadge(item: StudentSyncItem) {
   return (
-    <div className="d-flex flex-column gap-2">
-      <div className="d-flex align-items-center gap-2">
-        <div
-          className={clsx(
-            iconBg,
-            'rounded d-flex align-items-center justify-content-center flex-shrink-0',
-          )}
-          style={{ width: '2.5rem', height: '2.5rem' }}
-        >
-          <i
-            className={clsx('bi', icon, iconColor)}
-            style={{ fontSize: '1.25rem' }}
-            aria-hidden="true"
-          />
-        </div>
-        <div className="flex-grow-1">
-          <h6 className="mb-0">{label}</h6>
-          <p className="text-muted small mb-0">{description}</p>
-        </div>
-      </div>
-
-      <div className="border rounded overflow-hidden" role="group" aria-label={label}>
-        <div className="d-flex align-items-center px-3 py-2 bg-body-tertiary border-bottom">
-          <span className="small text-muted">
-            {selectedCount} of {items.length} selected
-          </span>
-          <div className="d-flex gap-1 ms-auto">
-            <Button
-              variant="link"
-              size="sm"
-              className="text-decoration-none"
-              aria-label={`Select all ${label.toLowerCase()}`}
-              onClick={onSelectAll}
-            >
-              Select all
-            </Button>
-            <Button
-              variant="link"
-              size="sm"
-              className="text-decoration-none"
-              aria-label={`Clear all ${label.toLowerCase()}`}
-              onClick={onDeselectAll}
-            >
-              Clear all
-            </Button>
-          </div>
-        </div>
-        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-          {items.map((item, index) => (
-            <div
-              key={item.uid}
-              className={clsx('px-3 py-2', index !== items.length - 1 && 'border-bottom')}
-            >
-              <Form.Check
-                type="checkbox"
-                id={`${checkboxIdPrefix}-${item.uid}`}
-                className="d-flex gap-2 align-items-center mb-0"
-              >
-                <Form.Check.Input
-                  type="checkbox"
-                  className="mt-0"
-                  checked={selectedUids.has(item.uid)}
-                  onChange={() => onToggle(item.uid)}
-                />
-                <Form.Check.Label className="d-flex align-items-center gap-2 flex-grow-1">
-                  <span className="d-flex flex-column">
-                    <span>{item.uid}</span>
-                    {item.userName && <span className="text-muted small">{item.userName}</span>}
-                  </span>
-                  <span className="ms-auto">
-                    {item.currentStatus ? (
-                      <span className="badge rounded-pill bg-light text-body border">
-                        {getCurrentStatusLabel(item.currentStatus)}
-                      </span>
-                    ) : (
-                      <span className="badge rounded-pill bg-light text-body border">New</span>
-                    )}
-                  </span>
-                </Form.Check.Label>
-              </Form.Check>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+    <span className="badge rounded-pill bg-light text-body border">
+      {item.currentStatus ? getCurrentStatusLabel(item.currentStatus) : 'New'}
+    </span>
   );
 }
 
@@ -394,37 +285,43 @@ export function SyncStudentsModal({
                   Review the changes below. Uncheck any students you don't want to modify.
                 </p>
 
-                <StudentCheckboxList
-                  items={preview.toInvite}
-                  selectedUids={selectedAdds}
-                  icon="bi-person-plus"
-                  iconColor="text-success"
-                  iconBg="bg-success-subtle"
-                  label="Students to add"
-                  description="New students will be invited. Blocked or removed students will be re-enrolled."
-                  checkboxIdPrefix="sync-add"
-                  onToggle={toggleAdd}
-                  onSelectAll={() =>
-                    setSelectedAdds(new Set(preview.toInvite.map((item) => item.uid)))
-                  }
-                  onDeselectAll={() => setSelectedAdds(new Set())}
-                />
+                {preview.toInvite.length > 0 && (
+                  <StudentCheckboxList
+                    items={preview.toInvite}
+                    selectedUids={selectedAdds}
+                    icon="bi-person-plus"
+                    iconColor="text-success"
+                    iconBg="bg-success-subtle"
+                    label="Students to add"
+                    description="New students will be invited. Blocked or removed students will be re-enrolled."
+                    checkboxIdPrefix="sync-add"
+                    renderItemExtra={renderSyncItemBadge}
+                    onToggle={toggleAdd}
+                    onSelectAll={() =>
+                      setSelectedAdds(new Set(preview.toInvite.map((item) => item.uid)))
+                    }
+                    onDeselectAll={() => setSelectedAdds(new Set())}
+                  />
+                )}
 
-                <StudentCheckboxList
-                  items={allRemovals}
-                  selectedUids={selectedRemovals}
-                  icon="bi-person-dash"
-                  iconColor="text-danger"
-                  iconBg="bg-danger-subtle"
-                  label="Students to remove"
-                  description="Joined students will be removed. Pending invitations will be cancelled."
-                  checkboxIdPrefix="sync-remove"
-                  onToggle={toggleRemoval}
-                  onSelectAll={() =>
-                    setSelectedRemovals(new Set(allRemovals.map((item) => item.uid)))
-                  }
-                  onDeselectAll={() => setSelectedRemovals(new Set())}
-                />
+                {allRemovals.length > 0 && (
+                  <StudentCheckboxList
+                    items={allRemovals}
+                    selectedUids={selectedRemovals}
+                    icon="bi-person-dash"
+                    iconColor="text-danger"
+                    iconBg="bg-danger-subtle"
+                    label="Students to remove"
+                    description="Joined students will be removed. Pending invitations will be cancelled."
+                    checkboxIdPrefix="sync-remove"
+                    renderItemExtra={renderSyncItemBadge}
+                    onToggle={toggleRemoval}
+                    onSelectAll={() =>
+                      setSelectedRemovals(new Set(allRemovals.map((item) => item.uid)))
+                    }
+                    onDeselectAll={() => setSelectedRemovals(new Set())}
+                  />
+                )}
               </div>
             )}
           </>

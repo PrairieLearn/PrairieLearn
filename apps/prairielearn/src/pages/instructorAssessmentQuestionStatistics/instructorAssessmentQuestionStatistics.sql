@@ -37,13 +37,13 @@ SELECT
       q.id = qt.question_id
   ) AS question_tags,
   admin_assessment_question_number (aq.id) AS assessment_question_number,
-  ag.number AS alternative_group_number,
+  ag.number AS alternative_pool_number,
   (
     count(*) OVER (
       PARTITION BY
         ag.number
     )
-  )::integer AS alternative_group_size,
+  )::integer AS alternative_pool_size,
   z.title AS zone_title,
   (
     lag(z.id) OVER (
@@ -60,7 +60,7 @@ SELECT
       ORDER BY
         aq.number
     ) IS NULL
-  ) AS start_new_alternative_group
+  ) AS start_new_alternative_pool
 FROM
   assessment_questions AS aq
   JOIN questions AS q ON (q.id = aq.question_id)
