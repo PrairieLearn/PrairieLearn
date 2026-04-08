@@ -64,6 +64,20 @@ export interface AccessControlResolverInput {
   prairieTestReservations: PrairieTestReservation[];
 }
 
+export type AccessAvailabilityState =
+  | 'open'
+  | 'before_release'
+  | 'future_open'
+  | 'closed'
+  | 'prairietest_gated_unavailable';
+
+export interface TimelineEntry {
+  type: 'early' | 'due' | 'late';
+  date: Date;
+  credit: number;
+  index: number;
+}
+
 export interface AccessControlResolverResult {
   authorized: boolean;
   credit: number | null;
@@ -89,6 +103,10 @@ export interface AccessControlResolverResult {
    * `listBeforeRelease` config input.
    */
   showBeforeRelease: boolean;
+  availabilityState: AccessAvailabilityState;
+  availabilityListed: boolean;
+  opensAt: Date | null;
+  timeline: TimelineEntry[];
 }
 
 const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
@@ -102,6 +120,10 @@ const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
   showClosedAssessmentScore: true,
   examAccessEnd: null,
   showBeforeRelease: false,
+  availabilityState: 'closed',
+  availabilityListed: false,
+  opensAt: null,
+  timeline: [],
 };
 
 const COURSE_ROLE_RANK: Record<EnumCourseRole, number> = {
@@ -208,6 +230,7 @@ interface CreditResult {
   nextDeadlineDate: Date | null;
   password: string | null;
   timeLimitMin: number | null;
+  timeline: TimelineEntry[];
 }
 
 /**
@@ -245,6 +268,7 @@ export function computeCredit(
       nextDeadlineDate: null,
       password: null,
       timeLimitMin: null,
+      timeline: [],
     };
   }
 
@@ -259,6 +283,7 @@ export function computeCredit(
       nextDeadlineDate: releaseDate,
       password: null,
       timeLimitMin: null,
+      timeline: [],
     };
   }
 
@@ -271,34 +296,37 @@ export function computeCredit(
       nextDeadlineDate: null,
       password: null,
       timeLimitMin: null,
+      timeline: [],
     };
   }
 
   // Build timeline segments: each entry is [deadline, creditBefore]
   // The credit value represents what you get if you submit BEFORE this deadline.
-  const timeline: { date: Date; credit: number }[] = [];
+  const timeline: TimelineEntry[] = [];
 
+  let earlyIndex = 0;
   if (dateControl.earlyDeadlines) {
     for (const entry of dateControl.earlyDeadlines) {
       const entryDate = new Date(entry.date);
       // Filter out early deadlines before release date or after/at due date.
       if (entryDate <= releaseDate) continue;
       if (dueDate && entryDate >= dueDate) continue;
-      timeline.push({ date: entryDate, credit: entry.credit });
+      timeline.push({ type: 'early', date: entryDate, credit: entry.credit, index: earlyIndex++ });
     }
   }
 
   if (dueDate) {
-    timeline.push({ date: dueDate, credit: 100 });
+    timeline.push({ type: 'due', date: dueDate, credit: 100, index: 0 });
   }
 
+  let lateIndex = 0;
   if (dateControl.lateDeadlines) {
     for (const entry of dateControl.lateDeadlines) {
       const entryDate = new Date(entry.date);
       // Filter out late deadlines before release date or before/at due date.
       if (entryDate <= releaseDate) continue;
       if (dueDate && entryDate <= dueDate) continue;
-      timeline.push({ date: entryDate, credit: entry.credit });
+      timeline.push({ type: 'late', date: entryDate, credit: entry.credit, index: lateIndex++ });
     }
   }
 
@@ -313,6 +341,7 @@ export function computeCredit(
       nextDeadlineDate: null,
       password: null,
       timeLimitMin: null,
+      timeline,
     };
   }
 
@@ -335,6 +364,7 @@ export function computeCredit(
           date,
           authzMode,
         ),
+        timeline,
       };
     }
   }
@@ -352,6 +382,7 @@ export function computeCredit(
     nextDeadlineDate: null,
     password: dateControl.password ?? null,
     timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
+    timeline,
   };
 }
 
@@ -572,6 +603,43 @@ export function resolveEffectiveRuleContext({
   };
 }
 
+function computeDateBasedAvailability({
+  beforeRelease,
+  nextDeadlineDate,
+  hasReleaseDate,
+  active,
+  showBeforeRelease,
+}: {
+  beforeRelease: boolean;
+  nextDeadlineDate: Date | null;
+  hasReleaseDate: boolean;
+  active: boolean;
+  showBeforeRelease: boolean;
+}): {
+  availabilityState: AccessAvailabilityState;
+  availabilityListed: boolean;
+  opensAt: Date | null;
+} {
+  if (beforeRelease) {
+    return {
+      availabilityState: 'future_open',
+      availabilityListed: showBeforeRelease,
+      opensAt: nextDeadlineDate,
+    };
+  }
+  if (!hasReleaseDate) {
+    return {
+      availabilityState: 'before_release',
+      availabilityListed: showBeforeRelease,
+      opensAt: null,
+    };
+  }
+  if (active) {
+    return { availabilityState: 'open', availabilityListed: true, opensAt: null };
+  }
+  return { availabilityState: 'closed', availabilityListed: true, opensAt: null };
+}
+
 export function resolveAccessControlFromRuleContext(
   input: Omit<AccessControlResolverInput, 'rules' | 'enrollment'> & {
     ruleContext: ResolvedAccessRuleContext | null;
@@ -602,6 +670,10 @@ export function resolveAccessControlFromRuleContext(
       showClosedAssessmentScore: true,
       examAccessEnd: null,
       showBeforeRelease: false,
+      availabilityState: 'open',
+      availabilityListed: true,
+      opensAt: null,
+      timeline: [],
     };
   }
 
@@ -627,9 +699,26 @@ export function resolveAccessControlFromRuleContext(
       !creditResult.active,
   });
   if (ptOutcome.action === 'deny') {
+    if (ptOutcome.reason === 'prairietest_gated_unavailable') {
+      return {
+        ...UNAUTHORIZED_RESULT,
+        showBeforeRelease: ptOutcome.showBeforeRelease,
+        availabilityState: 'prairietest_gated_unavailable',
+        availabilityListed: ptOutcome.listed,
+        timeline: creditResult.timeline,
+      };
+    }
     return {
       ...UNAUTHORIZED_RESULT,
       showBeforeRelease: ptOutcome.showBeforeRelease,
+      ...computeDateBasedAvailability({
+        beforeRelease: creditResult.beforeRelease,
+        nextDeadlineDate: creditResult.nextDeadlineDate,
+        hasReleaseDate: !!effectiveRule.dateControl?.releaseDate,
+        active: false,
+        showBeforeRelease: ptOutcome.showBeforeRelease,
+      }),
+      timeline: creditResult.timeline,
     };
   }
 
@@ -667,6 +756,10 @@ export function resolveAccessControlFromRuleContext(
   if (creditResult.beforeRelease && !showBeforeRelease) {
     return {
       ...UNAUTHORIZED_RESULT,
+      availabilityState: 'future_open',
+      availabilityListed: false,
+      opensAt: creditResult.nextDeadlineDate,
+      timeline: creditResult.timeline,
     };
   }
 
@@ -688,6 +781,14 @@ export function resolveAccessControlFromRuleContext(
     showClosedAssessmentScore,
     examAccessEnd,
     showBeforeRelease,
+    ...computeDateBasedAvailability({
+      beforeRelease: creditResult.beforeRelease,
+      nextDeadlineDate: creditResult.nextDeadlineDate,
+      hasReleaseDate: !!effectiveRule.dateControl?.releaseDate,
+      active: creditResult.active,
+      showBeforeRelease,
+    }),
+    timeline: creditResult.timeline,
   };
 }
 

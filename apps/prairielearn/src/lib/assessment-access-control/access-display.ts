@@ -4,14 +4,14 @@ import { formatDate } from '@prairielearn/formatter';
 
 import type { SprocAuthzAssessmentSchema } from '../db-types.js';
 
-import type { RuntimeAfterComplete, RuntimeDateControl } from './resolver.js';
+import type {
+  AccessAvailabilityState,
+  RuntimeAfterComplete,
+  RuntimeDateControl,
+  TimelineEntry,
+} from './resolver.js';
 
-export type AccessAvailabilityState =
-  | 'open'
-  | 'before_release'
-  | 'future_open'
-  | 'closed'
-  | 'prairietest_gated_unavailable';
+export type { AccessAvailabilityState } from './resolver.js';
 
 export interface AccessDisplayRow {
   key: string;
@@ -73,12 +73,6 @@ export interface AccessDisplaySource {
       showAgainDate?: Date | null;
     };
   };
-}
-
-export interface ModernAccessAvailability {
-  state: AccessAvailabilityState;
-  listed: boolean;
-  opensAt: Date | null;
 }
 
 type LegacyAccessRule = z.infer<typeof SprocAuthzAssessmentSchema>['access_rules'][number];
@@ -293,19 +287,26 @@ export function buildModernAccessDisplayModel({
   listBeforeRelease,
   dateControl,
   afterComplete,
-  availability,
+  timeline,
+  availabilityState,
+  availabilityListed,
+  opensAt,
   displayTimezone,
   prairieTestExamCount,
 }: {
   listBeforeRelease?: boolean;
   dateControl?: RuntimeDateControl;
   afterComplete?: RuntimeAfterComplete;
-  availability: ModernAccessAvailability;
+  timeline: TimelineEntry[];
+  availabilityState: AccessAvailabilityState;
+  availabilityListed: boolean;
+  opensAt: Date | null;
   displayTimezone: string;
   prairieTestExamCount: number;
 }): AccessDisplayModel {
   const rows: AccessDisplaySource['rows'] = [];
 
+  // Release row comes from dateControl (not in timeline).
   if (dateControl?.releaseDate !== undefined) {
     if (dateControl.releaseDate) {
       const releaseDetails = ['Assessment opens'];
@@ -330,51 +331,54 @@ export function buildModernAccessDisplayModel({
     }
   }
 
-  dateControl?.earlyDeadlines?.forEach((deadline, index) => {
-    rows.push({
-      key: `early-${index}`,
-      label: `Early ${index + 1}`,
-      date: new Date(deadline.date),
-      creditText: `${deadline.credit}%`,
-      detailsText: 'Open',
-    });
-  });
-
-  if (dateControl?.dueDate !== undefined) {
-    if (dateControl.dueDate) {
+  // Early entries from the resolver's timeline.
+  for (const entry of timeline) {
+    if (entry.type === 'early') {
       rows.push({
-        key: 'due',
-        label: 'Due',
-        date: dateControl.dueDate,
-        creditText: '100%',
-        detailsText: 'Due',
-      });
-    } else {
-      rows.push({
-        key: 'due',
-        label: 'Due',
-        dateText: 'No due date',
-        creditText: '100%',
+        key: `early-${entry.index}`,
+        label: `Early ${entry.index + 1}`,
+        date: entry.date,
+        creditText: `${entry.credit}%`,
         detailsText: 'Open',
       });
     }
   }
 
-  dateControl?.lateDeadlines?.forEach((deadline, index) => {
+  // Due date: from the timeline when present, or from dateControl for the
+  // explicit "no due date" case (dueDate === null).
+  const dueEntry = timeline.find((e) => e.type === 'due');
+  if (dueEntry) {
     rows.push({
-      key: `late-${index}`,
-      label: `Late ${index + 1}`,
-      date: new Date(deadline.date),
-      creditText: `${deadline.credit}%`,
+      key: 'due',
+      label: 'Due',
+      date: dueEntry.date,
+      creditText: '100%',
+      detailsText: 'Due',
+    });
+  } else if (dateControl?.dueDate === null) {
+    rows.push({
+      key: 'due',
+      label: 'Due',
+      dateText: 'No due date',
+      creditText: '100%',
       detailsText: 'Open',
     });
-  });
+  }
 
-  const hasTimelineBoundaries =
-    dateControl?.dueDate !== undefined ||
-    (dateControl?.lateDeadlines?.length ?? 0) > 0 ||
-    (dateControl?.earlyDeadlines?.length ?? 0) > 0;
-  if (hasTimelineBoundaries) {
+  // Late entries from the resolver's timeline.
+  for (const entry of timeline) {
+    if (entry.type === 'late') {
+      rows.push({
+        key: `late-${entry.index}`,
+        label: `Late ${entry.index + 1}`,
+        date: entry.date,
+        creditText: `${entry.credit}%`,
+        detailsText: 'Open',
+      });
+    }
+  }
+
+  if (timeline.length > 0 || dateControl?.dueDate === null) {
     const afterLastDeadline = dateControl?.afterLastDeadline;
     rows.push({
       key: 'after-last-deadline',
@@ -394,9 +398,9 @@ export function buildModernAccessDisplayModel({
   return formatAccessDisplayModel({
     displayTimezone,
     availability: {
-      state: availability.state,
-      listed: availability.listed,
-      opensAt: availability.opensAt,
+      state: availabilityState,
+      listed: availabilityListed,
+      opensAt,
     },
     rows,
     settings: {

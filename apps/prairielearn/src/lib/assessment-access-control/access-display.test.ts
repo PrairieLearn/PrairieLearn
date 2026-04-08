@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildLegacyAccessDisplayModel, buildModernAccessDisplayModel } from './access-display.js';
-import type { RuntimeAccessControl } from './resolver.js';
 
 describe('access display adapters', () => {
   it('builds legacy rows from access-rule windows', () => {
@@ -36,25 +35,24 @@ describe('access display adapters', () => {
   });
 
   it('builds modern release, due, and late timeline rows', () => {
-    const effectiveRule: RuntimeAccessControl = {
+    const model = buildModernAccessDisplayModel({
       listBeforeRelease: true,
       dateControl: {
         releaseDate: new Date('2025-03-01T18:00:00Z'),
         dueDate: new Date('2025-03-10T18:00:00Z'),
-        lateDeadlines: [{ date: '2025-03-15T18:00:00Z', credit: 80 }],
         durationMinutes: 45,
         password: 'secret',
       },
       afterComplete: {
         hideQuestions: false,
       },
-    };
-
-    const model = buildModernAccessDisplayModel({
-      listBeforeRelease: effectiveRule.listBeforeRelease,
-      dateControl: effectiveRule.dateControl,
-      afterComplete: effectiveRule.afterComplete,
-      availability: { state: 'open', listed: true, opensAt: null },
+      timeline: [
+        { type: 'due', date: new Date('2025-03-10T18:00:00Z'), credit: 100, index: 0 },
+        { type: 'late', date: new Date('2025-03-15T18:00:00Z'), credit: 80, index: 0 },
+      ],
+      availabilityState: 'open',
+      availabilityListed: true,
+      opensAt: null,
       displayTimezone: 'America/Chicago',
       prairieTestExamCount: 0,
     });
@@ -78,11 +76,10 @@ describe('access display adapters', () => {
         releaseDate: new Date('2025-04-01T00:00:00Z'),
         dueDate: new Date('2025-05-01T00:00:00Z'),
       },
-      availability: {
-        state: 'future_open',
-        listed: true,
-        opensAt: new Date('2025-04-01T00:00:00Z'),
-      },
+      timeline: [],
+      availabilityState: 'future_open',
+      availabilityListed: true,
+      opensAt: new Date('2025-04-01T00:00:00Z'),
       displayTimezone: 'UTC',
       prairieTestExamCount: 0,
     });
@@ -97,11 +94,10 @@ describe('access display adapters', () => {
       dateControl: {
         releaseDate: null,
       },
-      availability: {
-        state: 'before_release',
-        listed: true,
-        opensAt: null,
-      },
+      timeline: [],
+      availabilityState: 'before_release',
+      availabilityListed: true,
+      opensAt: null,
       displayTimezone: 'UTC',
       prairieTestExamCount: 0,
     });
@@ -124,11 +120,10 @@ describe('access display adapters', () => {
         hideQuestions: true,
         hideScore: true,
       },
-      availability: {
-        state: 'closed',
-        listed: true,
-        opensAt: null,
-      },
+      timeline: [{ type: 'due', date: new Date('2025-03-10T00:00:00Z'), credit: 100, index: 0 }],
+      availabilityState: 'closed',
+      availabilityListed: true,
+      opensAt: null,
       displayTimezone: 'UTC',
       prairieTestExamCount: 0,
     });
@@ -139,11 +134,10 @@ describe('access display adapters', () => {
 
   it('includes PrairieTest badges and availability messaging', () => {
     const model = buildModernAccessDisplayModel({
-      availability: {
-        state: 'prairietest_gated_unavailable',
-        listed: true,
-        opensAt: null,
-      },
+      timeline: [],
+      availabilityState: 'prairietest_gated_unavailable',
+      availabilityListed: true,
+      opensAt: null,
       displayTimezone: 'UTC',
       prairieTestExamCount: 2,
     });

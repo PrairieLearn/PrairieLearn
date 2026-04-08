@@ -7,10 +7,7 @@ import {
   type AccessDisplayModel,
   buildLegacyAccessDisplayModel,
 } from '../lib/assessment-access-control/access-display.js';
-import {
-  type ModernAccessRenderInfo,
-  resolveModernAssessmentAccess,
-} from '../lib/assessment-access-control/authz.js';
+import { resolveModernAssessmentAccess } from '../lib/assessment-access-control/authz.js';
 import {
   AssessmentModuleSchema,
   AssessmentSchema,
@@ -34,7 +31,6 @@ const SelectAndAuthzAssessmentSchema = z.object({
 
 export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema> & {
   access_display_model: AccessDisplayModel;
-  modern_access_info: ModernAccessRenderInfo | null;
 };
 
 export default asyncHandler(async (req, res, next) => {
@@ -53,7 +49,7 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
-  let modernAccessInfo: ModernAccessRenderInfo | null = null;
+  let accessDisplayModel: AccessDisplayModel;
 
   if (row.assessment.modern_access_control) {
     const modernResult = await resolveModernAssessmentAccess({
@@ -64,39 +60,31 @@ export default asyncHandler(async (req, res, next) => {
       reqDate: res.locals.req_date,
     });
     row.authz_result = modernResult.authzResult;
-    modernAccessInfo = modernResult.renderInfo;
+    accessDisplayModel = modernResult.accessDisplayModel;
+  } else {
+    accessDisplayModel = buildLegacyAccessDisplayModel({
+      accessRules: row.authz_result.access_rules,
+      active: row.authz_result.active,
+      nextActiveTime: row.authz_result.next_active_time,
+      listed: row.authz_result.authorized,
+    });
   }
 
-  const accessDisplayModel = row.assessment.modern_access_control
-    ? modernAccessInfo!.accessDisplayModel
-    : buildLegacyAccessDisplayModel({
-        accessRules: row.authz_result.access_rules,
-        active: row.authz_result.active,
-        nextActiveTime: row.authz_result.next_active_time,
-        listed: row.authz_result.authorized,
-      });
   const responseLocals = {
     ...res.locals,
     ...row,
     access_display_model: accessDisplayModel,
-    modern_access_info: modernAccessInfo,
   } as ResLocalsForPage<'assessment'>;
 
   if (!row.authz_result.authorized) {
-    if (modernAccessInfo?.availability.listed) {
-      Object.assign(res.locals, row, {
-        access_display_model: accessDisplayModel,
-        modern_access_info: modernAccessInfo,
-      });
+    if (row.assessment.modern_access_control && accessDisplayModel.availability.listed) {
+      Object.assign(res.locals, row, { access_display_model: accessDisplayModel });
       res.status(403).send(StudentAssessmentAccess({ resLocals: responseLocals }));
       return;
     }
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;
   }
-  Object.assign(res.locals, row, {
-    access_display_model: accessDisplayModel,
-    modern_access_info: modernAccessInfo,
-  });
+  Object.assign(res.locals, row, { access_display_model: accessDisplayModel });
   next();
 });

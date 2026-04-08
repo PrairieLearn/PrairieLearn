@@ -9,10 +9,7 @@ import {
   type AccessDisplayModel,
   buildLegacyAccessDisplayModel,
 } from '../lib/assessment-access-control/access-display.js';
-import {
-  type ModernAccessRenderInfo,
-  resolveModernAssessmentInstanceAccess,
-} from '../lib/assessment-access-control/authz.js';
+import { resolveModernAssessmentInstanceAccess } from '../lib/assessment-access-control/authz.js';
 import { assessmentInstanceLabel, assessmentLabel } from '../lib/assessment.shared.js';
 import {
   AssessmentInstanceSchema,
@@ -58,7 +55,6 @@ export type ResLocalsAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmen
   assessment_instance_label: string;
   assessment_label: string;
   access_display_model: AccessDisplayModel;
-  modern_access_info: ModernAccessRenderInfo | null;
 };
 
 async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
@@ -74,7 +70,7 @@ async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
   );
   if (row === null) throw new error.HttpStatusError(403, 'Access denied');
 
-  let modernAccessInfo: ModernAccessRenderInfo | null = null;
+  let accessDisplayModel: AccessDisplayModel;
   if (row.assessment.modern_access_control) {
     const modernResult = await resolveModernAssessmentInstanceAccess({
       assessment: row.assessment,
@@ -85,17 +81,15 @@ async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
       assessmentInstance: row.assessment_instance,
     });
     row.authz_result = modernResult.authzResult;
-    modernAccessInfo = modernResult.renderInfo;
+    accessDisplayModel = modernResult.accessDisplayModel;
+  } else {
+    accessDisplayModel = buildLegacyAccessDisplayModel({
+      accessRules: row.authz_result.access_rules,
+      active: row.authz_result.active,
+      nextActiveTime: row.authz_result.next_active_time,
+      listed: row.authz_result.authorized,
+    });
   }
-
-  const accessDisplayModel = row.assessment.modern_access_control
-    ? modernAccessInfo!.accessDisplayModel
-    : buildLegacyAccessDisplayModel({
-        accessRules: row.authz_result.access_rules,
-        active: row.authz_result.active,
-        nextActiveTime: row.authz_result.next_active_time,
-        listed: row.authz_result.authorized,
-      });
 
   if (!row.authz_result.authorized) {
     throw new error.HttpStatusError(403, 'Access denied');
@@ -108,7 +102,6 @@ async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
     ),
     assessment_label: assessmentLabel(row.assessment, row.assessment_set),
     access_display_model: accessDisplayModel,
-    modern_access_info: modernAccessInfo,
   });
 }
 

@@ -12,11 +12,7 @@ import type {
 import { getGroupId } from '../groups.js';
 import { idsEqual } from '../id.js';
 
-import {
-  type AccessDisplayModel,
-  type ModernAccessAvailability,
-  buildModernAccessDisplayModel,
-} from './access-display.js';
+import { type AccessDisplayModel, buildModernAccessDisplayModel } from './access-display.js';
 import {
   selectAccessControlRulesForAssessment,
   selectAccessControlRulesForCourseInstance,
@@ -24,8 +20,6 @@ import {
 } from './data.js';
 import {
   type AccessControlResolverResult,
-  computeCredit,
-  evaluatePrairieTestAccess,
   resolveAccessControlFromRuleContext,
   resolveEffectiveRuleContext,
 } from './resolver.js';
@@ -49,36 +43,25 @@ interface ModernAssessmentAccessInput {
   reqDate: Date;
 }
 
-export interface ModernAccessRenderInfo {
-  availability: ModernAccessAvailability;
-  accessDisplayModel: AccessDisplayModel;
-}
-
 export interface ModernAssessmentAccessResult {
   authzResult: SprocAuthzAssessment;
-  renderInfo: ModernAccessRenderInfo;
+  accessDisplayModel: AccessDisplayModel;
 }
 
 export interface ModernAssessmentInstanceAccessResult {
   authzResult: SprocAuthzAssessmentInstance;
-  renderInfo: ModernAccessRenderInfo;
+  accessDisplayModel: AccessDisplayModel;
 }
 
-function buildClosedHiddenRenderInfo(displayTimezone: string): ModernAccessRenderInfo {
-  const availability: ModernAccessAvailability = {
-    state: 'closed',
-    listed: false,
+function buildClosedHiddenAccessDisplayModel(displayTimezone: string): AccessDisplayModel {
+  return buildModernAccessDisplayModel({
+    availabilityState: 'closed',
+    availabilityListed: false,
     opensAt: null,
-  };
-
-  return {
-    availability,
-    accessDisplayModel: buildModernAccessDisplayModel({
-      availability,
-      displayTimezone,
-      prairieTestExamCount: 0,
-    }),
-  };
+    timeline: [],
+    displayTimezone,
+    prairieTestExamCount: 0,
+  });
 }
 
 function resolverResultToSprocAuthzAssessment(
@@ -104,118 +87,28 @@ function resolverResultToSprocAuthzAssessment(
   };
 }
 
-function deriveAvailability({
-  result,
-  effectiveRule,
-  prairieTestExams,
-  prairieTestReservations,
-  authzMode,
-  reqDate,
-}: {
-  result: AccessControlResolverResult;
-  effectiveRule: NonNullable<ReturnType<typeof resolveEffectiveRuleContext>>['effectiveRule'];
-  prairieTestExams: NonNullable<ReturnType<typeof resolveEffectiveRuleContext>>['prairieTestExams'];
-  prairieTestReservations: Parameters<
-    typeof evaluatePrairieTestAccess
-  >[0]['prairieTestReservations'];
-  authzMode: EnumMode | null;
-  reqDate: Date;
-}): ModernAccessAvailability {
-  const creditResult = computeCredit(effectiveRule.dateControl, reqDate, authzMode);
-  const prairieTestOutcome = evaluatePrairieTestAccess({
-    prairieTestExams,
-    prairieTestReservations,
-    authzMode,
-    listBeforeRelease: effectiveRule.listBeforeRelease ?? false,
-    assessmentClosed:
-      !!effectiveRule.dateControl?.releaseDate &&
-      !creditResult.beforeRelease &&
-      !creditResult.active,
-  });
-
-  if (
-    prairieTestOutcome.action === 'deny' &&
-    prairieTestOutcome.reason === 'prairietest_gated_unavailable'
-  ) {
-    return {
-      state: 'prairietest_gated_unavailable',
-      listed: prairieTestOutcome.listed,
-      opensAt: null,
-    };
-  }
-
-  if (creditResult.beforeRelease) {
-    return {
-      state: 'future_open',
-      listed: result.showBeforeRelease,
-      opensAt: creditResult.nextDeadlineDate,
-    };
-  }
-
-  if (!effectiveRule.dateControl?.releaseDate) {
-    return {
-      state: 'before_release',
-      listed: result.showBeforeRelease,
-      opensAt: null,
-    };
-  }
-
-  if (result.active) {
-    return {
-      state: 'open',
-      listed: true,
-      opensAt: null,
-    };
-  }
-
-  return {
-    state: 'closed',
-    listed: true,
-    opensAt: null,
-  };
-}
-
-export function buildModernAccessRenderInfo({
+export function buildAccessDisplayModelFromResult({
   result,
   effectiveRule,
   prairieTestExamCount,
-  prairieTestExams,
-  prairieTestReservations,
   displayTimezone,
-  authzMode,
-  reqDate,
 }: {
   result: AccessControlResolverResult;
   effectiveRule: NonNullable<ReturnType<typeof resolveEffectiveRuleContext>>['effectiveRule'];
   prairieTestExamCount: number;
-  prairieTestExams: NonNullable<ReturnType<typeof resolveEffectiveRuleContext>>['prairieTestExams'];
-  prairieTestReservations: Parameters<
-    typeof evaluatePrairieTestAccess
-  >[0]['prairieTestReservations'];
   displayTimezone: string;
-  authzMode: EnumMode | null;
-  reqDate: Date;
-}): ModernAccessRenderInfo {
-  const availability = deriveAvailability({
-    result,
-    effectiveRule,
-    prairieTestExams,
-    prairieTestReservations,
-    authzMode,
-    reqDate,
+}): AccessDisplayModel {
+  return buildModernAccessDisplayModel({
+    listBeforeRelease: effectiveRule.listBeforeRelease,
+    dateControl: effectiveRule.dateControl,
+    afterComplete: effectiveRule.afterComplete,
+    timeline: result.timeline,
+    availabilityState: result.availabilityState,
+    availabilityListed: result.availabilityListed,
+    opensAt: result.opensAt,
+    displayTimezone,
+    prairieTestExamCount,
   });
-
-  return {
-    availability,
-    accessDisplayModel: buildModernAccessDisplayModel({
-      listBeforeRelease: effectiveRule.listBeforeRelease,
-      dateControl: effectiveRule.dateControl,
-      afterComplete: effectiveRule.afterComplete,
-      availability,
-      displayTimezone,
-      prairieTestExamCount,
-    }),
-  };
 }
 
 export async function resolveModernAssessmentAccess({
@@ -243,18 +136,14 @@ export async function resolveModernAssessmentAccess({
 
   return {
     authzResult: resolverResultToSprocAuthzAssessment(result, authzData.mode),
-    renderInfo:
+    accessDisplayModel:
       ruleContext == null
-        ? buildClosedHiddenRenderInfo(courseInstance.display_timezone)
-        : buildModernAccessRenderInfo({
+        ? buildClosedHiddenAccessDisplayModel(courseInstance.display_timezone)
+        : buildAccessDisplayModelFromResult({
             result,
             effectiveRule: ruleContext.effectiveRule,
             prairieTestExamCount: ruleContext.prairieTestExamCount,
-            prairieTestExams: ruleContext.prairieTestExams,
-            prairieTestReservations,
             displayTimezone: courseInstance.display_timezone,
-            authzMode: authzData.mode ?? null,
-            reqDate,
           }),
   };
 }
@@ -329,7 +218,7 @@ export async function resolveModernAssessmentInstanceAccess({
       timeLimitExpired,
       hasCourseInstancePermissionView: authzData.has_course_instance_permission_view ?? false,
     }),
-    renderInfo: assessmentAccess.renderInfo,
+    accessDisplayModel: assessmentAccess.accessDisplayModel,
   };
 }
 
@@ -367,18 +256,14 @@ export async function resolveModernAssessmentAccessBatch({
 
     results.set(assessmentId, {
       authzResult: resolverResultToSprocAuthzAssessment(result, authzData.mode),
-      renderInfo:
+      accessDisplayModel:
         ruleContext == null
-          ? buildClosedHiddenRenderInfo(courseInstance.display_timezone)
-          : buildModernAccessRenderInfo({
+          ? buildClosedHiddenAccessDisplayModel(courseInstance.display_timezone)
+          : buildAccessDisplayModelFromResult({
               result,
               effectiveRule: ruleContext.effectiveRule,
               prairieTestExamCount: ruleContext.prairieTestExamCount,
-              prairieTestExams: ruleContext.prairieTestExams,
-              prairieTestReservations,
               displayTimezone: courseInstance.display_timezone,
-              authzMode: authzData.mode ?? null,
-              reqDate,
             }),
     });
   }

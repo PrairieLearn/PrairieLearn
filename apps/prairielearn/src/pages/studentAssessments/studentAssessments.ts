@@ -62,7 +62,7 @@ router.get(
           active: result.authzResult.active,
           show_closed_assessment_score: result.authzResult.show_closed_assessment_score,
           show_before_release: result.authzResult.show_before_release,
-          access_display_model: result.renderInfo.accessDisplayModel,
+          access_display_model: result.accessDisplayModel,
         };
       })
       .filter((row): row is NonNullable<typeof row> => {
