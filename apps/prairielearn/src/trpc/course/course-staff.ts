@@ -177,23 +177,22 @@ const insertByUserUids = t.procedure
     z.object({
       uids: z.array(z.string()).min(1).max(MAX_UIDS),
       courseRole: CourseRoleSchema,
-      courseInstanceId: IdSchema.optional(),
-      courseInstanceRole: InsertableInstanceRoleSchema.optional(),
+      courseInstanceChanges: z
+        .array(
+          z.object({
+            courseInstanceId: IdSchema,
+            courseInstanceRole: InsertableInstanceRoleSchema,
+          }),
+        )
+        .optional(),
     }),
   )
   .mutation(async ({ input, ctx }) => {
-    let courseInstance: CourseInstanceAuthz | undefined;
-    if (input.courseInstanceId) {
-      const accessibleInstances = await getAccessibleInstances(ctx);
-      courseInstance = accessibleInstances.find((ci) => idsEqual(ci.id, input.courseInstanceId!));
-      if (!courseInstance) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid requested course instance' });
-      }
-      if (!input.courseInstanceRole) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Course instance role is required when a course instance is specified',
-        });
+    let accessibleInstances: CourseInstanceAuthz[] = [];
+    if (input.courseInstanceChanges && input.courseInstanceChanges.length > 0) {
+      accessibleInstances = await getAccessibleInstances(ctx);
+      for (const change of input.courseInstanceChanges) {
+        assertInstanceAccessible(accessibleInstances, change.courseInstanceId);
       }
     }
 
@@ -229,22 +228,24 @@ const insertByUserUids = t.procedure
         result.unknownUsers.push(uid);
       }
 
-      if (!courseInstance || !input.courseInstanceRole) continue;
+      if (!input.courseInstanceChanges) continue;
 
-      try {
-        await insertCourseInstancePermissions({
-          course_id: ctx.course.id,
-          user_id: user.id,
-          course_instance_id: courseInstance.id,
-          course_instance_role: input.courseInstanceRole,
-          authn_user_id: ctx.authz_data.authn_user.id,
-        });
-      } catch (err: unknown) {
-        logger.verbose(`Failed to insert course instance permission for uid: ${uid}`, err);
-        result.notGivenCip.push(uid);
-        result.errors.push(
-          `Failed to give student data access to ${uid}\n(${err instanceof Error ? err.message : String(err)})`,
-        );
+      for (const change of input.courseInstanceChanges) {
+        try {
+          await insertCourseInstancePermissions({
+            course_id: ctx.course.id,
+            user_id: user.id,
+            course_instance_id: change.courseInstanceId,
+            course_instance_role: change.courseInstanceRole,
+            authn_user_id: ctx.authz_data.authn_user.id,
+          });
+        } catch (err: unknown) {
+          logger.verbose(`Failed to insert course instance permission for uid: ${uid}`, err);
+          result.notGivenCip.push(uid);
+          result.errors.push(
+            `Failed to give student data access to ${uid}\n(${err instanceof Error ? err.message : String(err)})`,
+          );
+        }
       }
     }
 
