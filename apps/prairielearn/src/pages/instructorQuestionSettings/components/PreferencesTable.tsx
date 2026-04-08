@@ -149,7 +149,7 @@ export function PreferencesTable({
             <div
               ref={scrollContainerRef}
               className={clsx(
-                'card mb-3 overflow-x-auto',
+                'card mb-3',
                 canEdit ? 'preferences-grid-editable' : 'preferences-grid-readonly',
               )}
             >

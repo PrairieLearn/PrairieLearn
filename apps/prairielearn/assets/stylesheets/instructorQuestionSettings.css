@@ -7,10 +7,12 @@
   min-width: 36rem;
 }
 
-/* overflow-x: auto (on the card) forces overflow-y to auto as well;
-   clip it so dragged rows don't trigger a vertical scrollbar. */
+/* Horizontal scroll for narrow viewports. overflow-x: auto forces
+   overflow-y to auto as well; clip it so dragged rows don't trigger
+   a vertical scrollbar. */
 .preferences-grid-editable,
 .preferences-grid-readonly {
+  overflow-x: auto;
   overflow-y: clip;
 }
 
