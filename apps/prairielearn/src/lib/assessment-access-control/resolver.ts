@@ -214,15 +214,27 @@ interface CreditResult {
  * Outcome of PrairieTest access resolution. Used as a discriminated union so
  * the main resolver can handle each case linearly without nested control flow.
  */
-type PrairieTestOutcome =
-  | { action: 'deny'; result: AccessControlResolverResult }
+export type PrairieTestOutcome =
+  | {
+      action: 'deny';
+      reason: PrairieTestDenyReason;
+      listed: boolean;
+      showBeforeRelease: boolean;
+    }
   | { action: 'grant'; examAccessEnd: Date; credit: number; active: boolean }
   | { action: 'continue' };
 
-function computeCredit(
+type PrairieTestDenyReason = 'exam_mode_without_prairietest' | 'prairietest_gated_unavailable';
+
+export interface ResolvedAccessRuleContext {
+  effectiveRule: RuntimeAccessControl;
+  prairieTestExamCount: number;
+  prairieTestExams: AccessControlRuleInput['prairietestExams'];
+}
+
+export function computeCredit(
   dateControl: RuntimeDateControl | undefined,
   date: Date,
-  effectiveRule: RuntimeAccessControl,
   authzMode: EnumMode | null,
 ): CreditResult {
   if (!dateControl?.releaseDate) {
@@ -435,7 +447,19 @@ function formatCreditDateString(
  * skipped so the normal closed-assessment behavior applies instead of showing
  * "Not yet open" indefinitely.
  */
-function resolvePrairieTestAccess({
+function makePrairieTestDeniedOutcome({
+  reason,
+  listed = false,
+  showBeforeRelease = false,
+}: {
+  reason: PrairieTestDenyReason;
+  listed?: boolean;
+  showBeforeRelease?: boolean;
+}): PrairieTestOutcome {
+  return { action: 'deny', reason, listed, showBeforeRelease };
+}
+
+export function evaluatePrairieTestAccess({
   prairieTestExams,
   prairieTestReservations,
   authzMode,
@@ -453,7 +477,7 @@ function resolvePrairieTestAccess({
   if (!hasPrairieTestExams) {
     // No PT exams configured but student is in PrairieTest exam mode → deny.
     if (authzMode === 'Exam') {
-      return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
+      return makePrairieTestDeniedOutcome({ reason: 'exam_mode_without_prairietest' });
     }
     return { action: 'continue' };
   }
@@ -466,10 +490,14 @@ function resolvePrairieTestAccess({
     // We ONLY do this outside of Exam mode; when in Exam mode, we only show assessments
     // that the user can actually access.
     if (listBeforeRelease) {
-      return { action: 'deny', result: { ...UNAUTHORIZED_RESULT, showBeforeRelease: true } };
+      return makePrairieTestDeniedOutcome({
+        reason: 'prairietest_gated_unavailable',
+        listed: true,
+        showBeforeRelease: true,
+      });
     }
 
-    return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
+    return makePrairieTestDeniedOutcome({ reason: 'prairietest_gated_unavailable' });
   }
 
   // In Exam mode — find a matching reservation.
@@ -492,45 +520,15 @@ function resolvePrairieTestAccess({
 
   // No matching reservation — deny unless the assessment is closed.
   if (assessmentClosed) return { action: 'continue' };
-  return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
+  return makePrairieTestDeniedOutcome({ reason: 'prairietest_gated_unavailable' });
 }
 
-export function resolveAccessControl(
-  input: AccessControlResolverInput,
-): AccessControlResolverResult {
-  const {
-    rules,
-    enrollment,
-    date,
-    displayTimezone,
-    authzMode,
-    courseRole,
-    courseInstanceRole,
-    prairieTestReservations,
-  } = input;
-
-  if (
-    roleAtLeast(courseRole, 'Previewer') ||
-    instanceRoleAtLeast(courseInstanceRole, 'Student Data Viewer')
-  ) {
-    return {
-      authorized: true,
-      credit: 100,
-      creditDateString: '100% (Staff override)',
-      timeLimitMin: null,
-      password: null,
-      active: true,
-      showClosedAssessment: true,
-      showClosedAssessmentScore: true,
-      examAccessEnd: null,
-      showBeforeRelease: false,
-    };
-  }
-
+export function resolveEffectiveRuleContext({
+  rules,
+  enrollment,
+}: Pick<AccessControlResolverInput, 'rules' | 'enrollment'>): ResolvedAccessRuleContext | null {
   const mainRuleInput = rules.find((r) => r.number === 0 && r.targetType === 'none');
-  if (!mainRuleInput) {
-    return { ...UNAUTHORIZED_RESULT };
-  }
+  if (!mainRuleInput) return null;
 
   // Sort: student_label first (broader), enrollment second (more specific, wins in cascade).
   const overrides = rules
@@ -566,15 +564,60 @@ export function resolveAccessControl(
       ? cascadeOverrides(cascadedOverride, override.rule)
       : override.rule;
   }
-  const effectiveRule = mergeRules(mainRuleInput.rule, cascadedOverride);
 
-  let creditResult = computeCredit(effectiveRule.dateControl, date, effectiveRule, authzMode);
+  return {
+    effectiveRule: mergeRules(mainRuleInput.rule, cascadedOverride),
+    prairieTestExamCount: mainRuleInput.prairietestExams.length,
+    prairieTestExams: mainRuleInput.prairietestExams,
+  };
+}
+
+export function resolveAccessControlFromRuleContext(
+  input: Omit<AccessControlResolverInput, 'rules' | 'enrollment'> & {
+    ruleContext: ResolvedAccessRuleContext | null;
+  },
+): AccessControlResolverResult {
+  const {
+    ruleContext,
+    date,
+    displayTimezone,
+    authzMode,
+    courseRole,
+    courseInstanceRole,
+    prairieTestReservations,
+  } = input;
+
+  if (
+    roleAtLeast(courseRole, 'Previewer') ||
+    instanceRoleAtLeast(courseInstanceRole, 'Student Data Viewer')
+  ) {
+    return {
+      authorized: true,
+      credit: 100,
+      creditDateString: '100% (Staff override)',
+      timeLimitMin: null,
+      password: null,
+      active: true,
+      showClosedAssessment: true,
+      showClosedAssessmentScore: true,
+      examAccessEnd: null,
+      showBeforeRelease: false,
+    };
+  }
+
+  if (!ruleContext) {
+    return { ...UNAUTHORIZED_RESULT };
+  }
+
+  const { effectiveRule, prairieTestExams } = ruleContext;
+
+  let creditResult = computeCredit(effectiveRule.dateControl, date, authzMode);
 
   // Resolve PrairieTest access. This is separated from the main flow to keep
   // the resolver linear: it either denies early, grants PT credit overrides,
   // or continues with the normal date-control-based result.
-  const ptOutcome = resolvePrairieTestAccess({
-    prairieTestExams: mainRuleInput.prairietestExams,
+  const ptOutcome = evaluatePrairieTestAccess({
+    prairieTestExams,
     prairieTestReservations,
     authzMode,
     listBeforeRelease: effectiveRule.listBeforeRelease ?? false,
@@ -583,7 +626,12 @@ export function resolveAccessControl(
       !creditResult.beforeRelease &&
       !creditResult.active,
   });
-  if (ptOutcome.action === 'deny') return ptOutcome.result;
+  if (ptOutcome.action === 'deny') {
+    return {
+      ...UNAUTHORIZED_RESULT,
+      showBeforeRelease: ptOutcome.showBeforeRelease,
+    };
+  }
 
   let examAccessEnd: Date | null = null;
   if (ptOutcome.action === 'grant') {
@@ -617,7 +665,9 @@ export function resolveAccessControl(
   // If the assessment is before its release date and showBeforeRelease is false,
   // the student should not see or access it at all.
   if (creditResult.beforeRelease && !showBeforeRelease) {
-    return { ...UNAUTHORIZED_RESULT };
+    return {
+      ...UNAUTHORIZED_RESULT,
+    };
   }
 
   const creditDateString = formatCreditDateString(
@@ -639,4 +689,21 @@ export function resolveAccessControl(
     examAccessEnd,
     showBeforeRelease,
   };
+}
+
+export function resolveAccessControl(
+  input: AccessControlResolverInput,
+): AccessControlResolverResult {
+  return resolveAccessControlFromRuleContext({
+    date: input.date,
+    displayTimezone: input.displayTimezone,
+    authzMode: input.authzMode,
+    courseRole: input.courseRole,
+    courseInstanceRole: input.courseInstanceRole,
+    prairieTestReservations: input.prairieTestReservations,
+    ruleContext: resolveEffectiveRuleContext({
+      rules: input.rules,
+      enrollment: input.enrollment,
+    }),
+  });
 }

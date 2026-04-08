@@ -5,6 +5,7 @@ import path from 'node:path';
 import type { Page } from '@playwright/test';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
+import { selectAssessmentByTid } from '../../models/assessment.js';
 import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import {
   addLabelToEnrollment,
@@ -37,6 +38,14 @@ async function writeAssessmentConfig(
   const config = JSON.parse(await fs.readFile(configPath, 'utf-8'));
   config.accessControl = accessControl;
   await fs.writeFile(configPath, JSON.stringify(config, null, 2));
+}
+
+async function selectAccessControlUiAssessmentId(courseInstanceId: string) {
+  const assessment = await selectAssessmentByTid({
+    course_instance_id: courseInstanceId,
+    tid: 'hw19-accessControlUi',
+  });
+  return assessment.id;
 }
 
 test.describe.serial('Student access control', () => {
@@ -144,6 +153,37 @@ test.describe.serial('Student access control', () => {
     await expect(page.getByText('Not yet open')).toBeVisible();
   });
 
+  test('assessment list shows modern access details in the popover', async ({
+    page,
+    baseURL,
+    courseInstance,
+    testCoursePath,
+    enableFeatureFlag,
+  }) => {
+    await enableFeatureFlag('enhanced-access-control');
+    await writeAssessmentConfig(testCoursePath, [
+      {
+        listBeforeRelease: true,
+        dateControl: {
+          releaseDate: '2099-06-01T00:00:00',
+          dueDate: '2099-12-01T00:00:00',
+          durationMinutes: 45,
+        },
+      },
+    ]);
+    await syncCourse(testCoursePath);
+
+    await impersonateUser(page, STUDENT_B.uid, baseURL);
+    await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
+
+    await page
+      .getByRole('row', { name: new RegExp(ASSESSMENT_TITLE) })
+      .getByRole('button', { name: 'Access details' })
+      .click();
+    await expect(page.getByRole('table', { name: 'Access details' })).toBeVisible();
+    await expect(page.getByText('45 minutes time limit')).toBeVisible();
+  });
+
   test('normal access shows clickable assessment link', async ({
     page,
     baseURL,
@@ -169,6 +209,64 @@ test.describe.serial('Student access control', () => {
     const assessmentLink = page.getByRole('link', { name: ASSESSMENT_TITLE, exact: true });
     await expect(assessmentLink).toBeVisible();
     await expect(assessmentLink).toHaveAttribute('href', /\/assessment\/\d+/);
+  });
+
+  test('assessment instance page renders inline access details for modern access control', async ({
+    page,
+    baseURL,
+    courseInstance,
+    testCoursePath,
+    enableFeatureFlag,
+  }) => {
+    await enableFeatureFlag('enhanced-access-control');
+    await writeAssessmentConfig(testCoursePath, [
+      {
+        dateControl: {
+          releaseDate: '2020-01-01T00:00:00',
+          dueDate: '2099-01-01T00:00:00',
+          durationMinutes: 30,
+        },
+      },
+    ]);
+    await syncCourse(testCoursePath);
+
+    await impersonateUser(page, STUDENT_A.uid, baseURL);
+    await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
+
+    await page.getByRole('link', { name: ASSESSMENT_TITLE, exact: true }).click();
+
+    await expect(page.getByText('Access details', { exact: true })).toBeVisible();
+    await expect(page.getByText('30 minutes time limit')).toBeVisible();
+  });
+
+  test('direct URL to a listed but unavailable modern assessment shows the friendly unavailable page', async ({
+    page,
+    baseURL,
+    courseInstance,
+    testCoursePath,
+    enableFeatureFlag,
+  }) => {
+    await enableFeatureFlag('enhanced-access-control');
+    await writeAssessmentConfig(testCoursePath, [
+      {
+        listBeforeRelease: true,
+        dateControl: {
+          releaseDate: '2099-06-01T00:00:00',
+          dueDate: '2099-12-01T00:00:00',
+        },
+      },
+    ]);
+    await syncCourse(testCoursePath);
+    const assessmentId = await selectAccessControlUiAssessmentId(courseInstance.id);
+    await impersonateUser(page, STUDENT_B.uid, baseURL);
+    await page.goto(`/pl/course_instance/${courseInstance.id}/assessment/${assessmentId}/`);
+
+    await expect(page.getByTestId('assessment-closed-message')).toContainText(
+      'Assessment is not yet open.',
+    );
+    await expect(
+      page.getByText("This assessment's configuration does not allow you to access it right now."),
+    ).not.toBeVisible();
   });
 
   test('listBeforeRelease: false with future release hides assessment entirely', async ({

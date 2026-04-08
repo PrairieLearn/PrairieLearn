@@ -4,6 +4,11 @@ import { Alert, Button, Card } from 'react-bootstrap';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
+import {
+  type AccessDisplayModel,
+  type AccessDisplaySource,
+  formatAccessDisplayModel,
+} from '../../../lib/assessment-access-control/access-display.js';
 
 import {
   type AfterLastDeadlineValue,
@@ -31,137 +36,168 @@ interface DateTableRow {
   visibility: string;
 }
 
-export function generateDateTableRows(rule: RuleData, displayTimezone: string): DateTableRow[] {
-  const rows: DateTableRow[] = [];
+function dateToInstant(date: string, displayTimezone: string): Date {
+  return new Date(
+    Temporal.PlainDateTime.from(date).toZonedDateTime(displayTimezone).toInstant()
+      .epochMilliseconds,
+  );
+}
 
-  // For main rule: check dateControlEnabled flag
-  // For override: check if any date field is overridden
+function buildAccessDisplayModelForRule(
+  rule: RuleData,
+  displayTimezone: string,
+): AccessDisplayModel {
+  const rows: AccessDisplaySource['rows'] = [];
   const isMain = isMainRuleData(rule);
   const isDateControlEnabled = isMain
     ? rule.dateControlEnabled
-    : DATE_CONTROL_FIELD_NAMES.some((f) => isOverrideFieldActive(rule, f));
+    : DATE_CONTROL_FIELD_NAMES.some((field) => isOverrideFieldActive(rule, field));
 
   if (isDateControlEnabled) {
-    const releaseDate = rule.releaseDate;
-    const dueDate = rule.dueDate;
-    const earlyDeadlines = rule.earlyDeadlines;
-    const lateDeadlines = rule.lateDeadlines;
-
-    // Build rows in logical order: release, early deadlines, due date, late deadlines.
-    if (releaseDate) {
-      const visibilityParts: string[] = ['Assessment opens'];
-      if (isMain && rule.listBeforeRelease) {
-        visibilityParts.push('(listed before release)');
+    if (isMain || isOverrideFieldActive(rule, 'releaseDate')) {
+      if (rule.releaseDate) {
+        rows.push({
+          key: 'release',
+          label: 'Release',
+          date: dateToInstant(rule.releaseDate, displayTimezone),
+          creditText: '100%',
+          detailsText:
+            isMain && rule.listBeforeRelease
+              ? 'Assessment opens, Listed before release'
+              : 'Assessment opens',
+        });
+      } else if (rule.releaseDate === null) {
+        rows.push({
+          key: 'release',
+          label: 'Release',
+          dateText: 'Not yet available',
+          creditText: '100%',
+          detailsText: 'No opening time configured',
+        });
       }
-      rows.push({
-        date: (
-          <FriendlyDate
-            date={Temporal.PlainDateTime.from(releaseDate)}
-            timezone={displayTimezone}
-            tooltip
-          />
-        ),
-        label: 'Release',
-        credit: '100%',
-        visibility: visibilityParts.join(' '),
-      });
-    } else if (releaseDate === null) {
-      rows.push({
-        date: 'Released',
-        label: '',
-        credit: '100%',
-        visibility: 'Assessment opens',
-      });
     }
 
-    earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
-      if (deadline.date) {
+    if (isMain || isOverrideFieldActive(rule, 'earlyDeadlines')) {
+      rule.earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+        if (!deadline.date) return;
         rows.push({
-          date: (
-            <FriendlyDate
-              date={Temporal.PlainDateTime.from(deadline.date)}
-              timezone={displayTimezone}
-              tooltip
-            />
-          ),
+          key: `early-${index}`,
           label: `Early ${index + 1}`,
-          credit: `${deadline.credit}%`,
-          visibility: 'Open',
+          date: dateToInstant(deadline.date, displayTimezone),
+          creditText: `${deadline.credit}%`,
+          detailsText: 'Open',
         });
-      }
-    });
-
-    if (dueDate) {
-      rows.push({
-        date: (
-          <FriendlyDate
-            date={Temporal.PlainDateTime.from(dueDate)}
-            timezone={displayTimezone}
-            tooltip
-          />
-        ),
-        label: 'Due',
-        credit: '100%',
-        visibility: 'Due',
-      });
-    } else if (dueDate === null) {
-      rows.push({
-        date: 'No due date',
-        label: 'Due',
-        credit: '100%',
-        visibility: 'Open',
       });
     }
 
-    lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
-      if (deadline.date) {
+    if (isMain || isOverrideFieldActive(rule, 'dueDate')) {
+      if (rule.dueDate) {
         rows.push({
-          date: (
-            <FriendlyDate
-              date={Temporal.PlainDateTime.from(deadline.date)}
-              timezone={displayTimezone}
-              tooltip
-            />
-          ),
-          label: `Late ${index + 1}`,
-          credit: `${deadline.credit}%`,
-          visibility: 'Open',
+          key: 'due',
+          label: 'Due',
+          date: dateToInstant(rule.dueDate, displayTimezone),
+          creditText: '100%',
+          detailsText: 'Due',
+        });
+      } else if (rule.dueDate === null) {
+        rows.push({
+          key: 'due',
+          label: 'Due',
+          dateText: 'No due date',
+          creditText: '100%',
+          detailsText: 'Open',
         });
       }
-    });
+    }
+
+    if (isMain || isOverrideFieldActive(rule, 'lateDeadlines')) {
+      rule.lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+        if (!deadline.date) return;
+        rows.push({
+          key: `late-${index}`,
+          label: `Late ${index + 1}`,
+          date: dateToInstant(deadline.date, displayTimezone),
+          creditText: `${deadline.credit}%`,
+          detailsText: 'Open',
+        });
+      });
+    }
   }
 
-  // afterLastDeadline is shown regardless of dateControlEnabled since it can
-  // be configured independently of date-based access control.
-  const afterLastDeadline = rule.afterLastDeadline;
-  if (afterLastDeadline) {
-    const visibilityParts: string[] = [];
-
-    if (afterLastDeadline.allowSubmissions) {
-      visibilityParts.push('Submissions allowed');
-    } else {
-      visibilityParts.push('Closed');
-    }
-
+  if (rule.afterLastDeadline) {
+    const details = [rule.afterLastDeadline.allowSubmissions ? 'Submissions allowed' : 'Closed'];
     if (
       isOverrideFieldActive(rule, 'questionVisibility') &&
       rule.questionVisibility.hideQuestions
     ) {
-      visibilityParts.push('Questions hidden');
+      details.push('Questions hidden');
     }
     if (isOverrideFieldActive(rule, 'scoreVisibility') && rule.scoreVisibility.hideScore) {
-      visibilityParts.push('Score hidden');
+      details.push('Score hidden');
     }
-
     rows.push({
-      date: 'After last deadline',
-      label: '',
-      credit: afterLastDeadline.credit !== undefined ? `${afterLastDeadline.credit}%` : '0%',
-      visibility: visibilityParts.join(', '),
+      key: 'after-last-deadline',
+      label: null,
+      dateText: 'After last deadline',
+      creditText:
+        rule.afterLastDeadline.credit !== undefined ? `${rule.afterLastDeadline.credit}%` : '0%',
+      detailsText: details.join(', '),
     });
   }
 
-  return rows;
+  return formatAccessDisplayModel({
+    displayTimezone,
+    availability: { state: 'open', listed: true },
+    includeAvailabilityBadge: false,
+    rows,
+    settings: {
+      durationMinutes: isOverrideFieldActive(rule, 'durationMinutes') ? rule.durationMinutes : null,
+      passwordRequired:
+        isOverrideFieldActive(rule, 'password') && rule.password != null && rule.password !== '',
+      prairieTestExamCount:
+        isMain && rule.prairieTestEnabled ? rule.prairieTestExams.length : undefined,
+      questionVisibility:
+        !rule.afterLastDeadline && isOverrideFieldActive(rule, 'questionVisibility')
+          ? {
+              hideQuestions: rule.questionVisibility.hideQuestions,
+              showAgainDate: rule.questionVisibility.showAgainDate
+                ? dateToInstant(rule.questionVisibility.showAgainDate, displayTimezone)
+                : null,
+              hideAgainDate: rule.questionVisibility.hideAgainDate
+                ? dateToInstant(rule.questionVisibility.hideAgainDate, displayTimezone)
+                : null,
+            }
+          : undefined,
+      scoreVisibility:
+        !rule.afterLastDeadline && isOverrideFieldActive(rule, 'scoreVisibility')
+          ? {
+              hideScore: rule.scoreVisibility.hideScore,
+              showAgainDate: rule.scoreVisibility.showAgainDate
+                ? dateToInstant(rule.scoreVisibility.showAgainDate, displayTimezone)
+                : null,
+            }
+          : undefined,
+    },
+  });
+}
+
+export function generateDateTableRows(rule: RuleData, displayTimezone: string): DateTableRow[] {
+  return buildAccessDisplayModelForRule(rule, displayTimezone).rows.map((row) => ({
+    date: row.dateIso ? (
+      <FriendlyDate
+        date={Temporal.Instant.from(row.dateIso)
+          .toZonedDateTimeISO(displayTimezone)
+          .toPlainDateTime()}
+        timezone={displayTimezone}
+        tooltip
+      />
+    ) : (
+      row.dateText
+    ),
+    label: row.label ?? '',
+    credit: row.creditText ?? '—',
+    visibility: row.detailsText,
+  }));
 }
 
 interface SummaryItem {
@@ -171,107 +207,11 @@ interface SummaryItem {
 }
 
 export function generateRuleSummary(rule: RuleData, displayTimezone: string): SummaryItem[] {
-  const items: SummaryItem[] = [];
-
-  if (isOverrideFieldActive(rule, 'durationMinutes')) {
-    const durationMinutes = rule.durationMinutes;
-    if (durationMinutes !== null) {
-      items.push({ key: 'duration', icon: 'bi-clock', text: `${durationMinutes} minutes` });
-    }
-  }
-
-  if (isOverrideFieldActive(rule, 'password')) {
-    const password = rule.password;
-    if (password !== null && password !== '') {
-      items.push({ key: 'password', icon: 'bi-lock', text: 'Password protected' });
-    }
-  }
-
-  if (isMainRuleData(rule) && rule.prairieTestEnabled && rule.prairieTestExams.length > 0) {
-    items.push({
-      key: 'prairietest',
-      icon: 'bi-pc-display',
-      text: `${rule.prairieTestExams.length} PrairieTest ${rule.prairieTestExams.length === 1 ? 'exam' : 'exams'}`,
-    });
-  }
-
-  const hasAfterLastDeadline = rule.afterLastDeadline != null;
-
-  if (!hasAfterLastDeadline) {
-    if (isOverrideFieldActive(rule, 'questionVisibility')) {
-      const qv = rule.questionVisibility;
-      if (!qv.hideQuestions) {
-        items.push({
-          key: 'question-visibility',
-          icon: 'bi-eye',
-          text: 'Questions visible after completion',
-        });
-      } else if (qv.showAgainDate && qv.hideAgainDate) {
-        items.push({
-          key: 'question-visibility',
-          icon: 'bi-eye-slash',
-          text: (
-            <>
-              Questions hidden after completion, shown{' '}
-              <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.showAgainDate)}
-                timezone={displayTimezone}
-                tooltip
-              />
-              {' – '}
-              <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.hideAgainDate)}
-                timezone={displayTimezone}
-                tooltip
-              />
-            </>
-          ),
-        });
-      } else if (qv.showAgainDate) {
-        items.push({
-          key: 'question-visibility',
-          icon: 'bi-eye-slash',
-          text: (
-            <>
-              Questions hidden after completion until{' '}
-              <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.showAgainDate)}
-                timezone={displayTimezone}
-                tooltip
-              />
-            </>
-          ),
-        });
-      }
-    }
-    if (isOverrideFieldActive(rule, 'scoreVisibility')) {
-      const sv = rule.scoreVisibility;
-      if (sv.hideScore && sv.showAgainDate) {
-        items.push({
-          key: 'score-visibility',
-          icon: 'bi-eye-slash',
-          text: (
-            <>
-              Score hidden after completion until{' '}
-              <FriendlyDate
-                date={Temporal.PlainDateTime.from(sv.showAgainDate)}
-                timezone={displayTimezone}
-                tooltip
-              />
-            </>
-          ),
-        });
-      } else if (sv.hideScore) {
-        items.push({
-          key: 'score-visibility',
-          icon: 'bi-eye-slash',
-          text: 'Score hidden after completion',
-        });
-      }
-    }
-  }
-
-  return items;
+  return buildAccessDisplayModelForRule(rule, displayTimezone).badges.map((badge) => ({
+    key: badge.key,
+    icon: badge.icon ? `bi-${badge.icon}` : 'bi-info-circle',
+    text: badge.label,
+  }));
 }
 
 interface OverrideFieldItem {

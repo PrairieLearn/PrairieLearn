@@ -3,7 +3,8 @@ import type { z } from 'zod';
 
 import type { SprocAuthzAssessmentSchema } from '../db-types.js';
 
-import { applyInstanceAccess } from './authz.js';
+import type { AccessControlResolverResult } from './resolver.js';
+import { applyInstanceAccess, buildModernAccessRenderInfo } from './authz.js';
 
 type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 
@@ -26,6 +27,19 @@ const baseAssessmentResult: SprocAuthzAssessment = {
 const unauthorizedResult: SprocAuthzAssessment = {
   ...baseAssessmentResult,
   authorized: false,
+};
+
+const baseResolverResult: AccessControlResolverResult = {
+  authorized: true,
+  credit: 100,
+  creditDateString: '100%',
+  timeLimitMin: null,
+  password: null,
+  active: true,
+  showClosedAssessment: true,
+  showClosedAssessmentScore: true,
+  examAccessEnd: null,
+  showBeforeRelease: false,
 };
 
 describe('applyInstanceAccess', () => {
@@ -114,6 +128,174 @@ describe('applyInstanceAccess', () => {
       });
 
       expect(result.time_limit_expired).toBe(false);
+    });
+  });
+});
+
+describe('buildModernAccessRenderInfo', () => {
+  it('derives listed future-open availability from the release date', () => {
+    const result = buildModernAccessRenderInfo({
+      result: { ...baseResolverResult, active: false, showBeforeRelease: true },
+      effectiveRule: {
+        listBeforeRelease: true,
+        dateControl: {
+          releaseDate: new Date('2025-04-01T00:00:00Z'),
+          dueDate: new Date('2025-05-01T00:00:00Z'),
+        },
+      },
+      prairieTestExamCount: 0,
+      prairieTestExams: [],
+      prairieTestReservations: [],
+      displayTimezone: 'UTC',
+      authzMode: null,
+      reqDate: new Date('2025-03-15T00:00:00Z'),
+    });
+
+    expect(result.availability).toEqual({
+      state: 'future_open',
+      listed: true,
+      opensAt: new Date('2025-04-01T00:00:00Z'),
+    });
+  });
+
+  it('derives hidden future-open availability when listBeforeRelease is disabled', () => {
+    const result = buildModernAccessRenderInfo({
+      result: { ...baseResolverResult, authorized: false, active: false, showBeforeRelease: false },
+      effectiveRule: {
+        dateControl: {
+          releaseDate: new Date('2025-04-01T00:00:00Z'),
+          dueDate: new Date('2025-05-01T00:00:00Z'),
+        },
+      },
+      prairieTestExamCount: 0,
+      prairieTestExams: [],
+      prairieTestReservations: [],
+      displayTimezone: 'UTC',
+      authzMode: null,
+      reqDate: new Date('2025-03-15T00:00:00Z'),
+    });
+
+    expect(result.availability).toEqual({
+      state: 'future_open',
+      listed: false,
+      opensAt: new Date('2025-04-01T00:00:00Z'),
+    });
+  });
+
+  it('derives before-release availability when no release date is configured', () => {
+    const result = buildModernAccessRenderInfo({
+      result: { ...baseResolverResult, active: false, showBeforeRelease: true },
+      effectiveRule: {
+        listBeforeRelease: true,
+        dateControl: {
+          dueDate: new Date('2025-05-01T00:00:00Z'),
+        },
+      },
+      prairieTestExamCount: 0,
+      prairieTestExams: [],
+      prairieTestReservations: [],
+      displayTimezone: 'UTC',
+      authzMode: null,
+      reqDate: new Date('2025-03-15T00:00:00Z'),
+    });
+
+    expect(result.availability).toEqual({
+      state: 'before_release',
+      listed: true,
+      opensAt: null,
+    });
+  });
+
+  it('derives listed PrairieTest-gated availability outside exam mode', () => {
+    const result = buildModernAccessRenderInfo({
+      result: { ...baseResolverResult, authorized: false, active: false, showBeforeRelease: true },
+      effectiveRule: {
+        listBeforeRelease: true,
+        dateControl: {
+          releaseDate: new Date('2025-03-01T00:00:00Z'),
+          dueDate: new Date('2025-05-01T00:00:00Z'),
+        },
+      },
+      prairieTestExamCount: 1,
+      prairieTestExams: [{ uuid: 'exam-1', readOnly: false }],
+      prairieTestReservations: [],
+      displayTimezone: 'UTC',
+      authzMode: null,
+      reqDate: new Date('2025-03-15T00:00:00Z'),
+    });
+
+    expect(result.availability).toEqual({
+      state: 'prairietest_gated_unavailable',
+      listed: true,
+      opensAt: null,
+    });
+  });
+
+  it('derives hidden PrairieTest-gated availability in exam mode without a matching reservation', () => {
+    const result = buildModernAccessRenderInfo({
+      result: { ...baseResolverResult, authorized: false, active: false, showBeforeRelease: false },
+      effectiveRule: {
+        listBeforeRelease: true,
+        dateControl: {
+          releaseDate: new Date('2025-03-01T00:00:00Z'),
+          dueDate: new Date('2025-05-01T00:00:00Z'),
+        },
+      },
+      prairieTestExamCount: 1,
+      prairieTestExams: [{ uuid: 'exam-1', readOnly: false }],
+      prairieTestReservations: [{ examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') }],
+      displayTimezone: 'UTC',
+      authzMode: 'Exam',
+      reqDate: new Date('2025-03-15T00:00:00Z'),
+    });
+
+    expect(result.availability).toEqual({
+      state: 'prairietest_gated_unavailable',
+      listed: false,
+      opensAt: null,
+    });
+  });
+
+  it('derives open and closed availability from the authz result once released', () => {
+    const effectiveRule = {
+      dateControl: {
+        releaseDate: new Date('2025-03-01T00:00:00Z'),
+        dueDate: new Date('2025-05-01T00:00:00Z'),
+      },
+    };
+
+    expect(
+      buildModernAccessRenderInfo({
+        result: baseResolverResult,
+        effectiveRule,
+        prairieTestExamCount: 0,
+        prairieTestExams: [],
+        prairieTestReservations: [],
+        displayTimezone: 'UTC',
+        authzMode: null,
+        reqDate: new Date('2025-03-15T00:00:00Z'),
+      }).availability,
+    ).toEqual({
+      state: 'open',
+      listed: true,
+      opensAt: null,
+    });
+
+    expect(
+      buildModernAccessRenderInfo({
+        result: { ...baseResolverResult, active: false },
+        effectiveRule,
+        prairieTestExamCount: 0,
+        prairieTestExams: [],
+        prairieTestReservations: [],
+        displayTimezone: 'UTC',
+        authzMode: null,
+        reqDate: new Date('2025-03-15T00:00:00Z'),
+      }).availability,
+    ).toEqual({
+      state: 'closed',
+      listed: true,
+      opensAt: null,
     });
   });
 });

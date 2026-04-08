@@ -121,7 +121,7 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
       reqDate: res.locals.req_date,
       assessmentInstance: row.assessment_instance,
     });
-    row.authz_result = modernResult;
+    row.authz_result = modernResult.authzResult;
   }
 
   if (!row.authz_result.authorized) throw new error.HttpStatusError(403, 'Access denied');

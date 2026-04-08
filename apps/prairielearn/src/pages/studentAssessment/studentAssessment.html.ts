@@ -3,6 +3,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import { StudentAccessSummaryInline } from '../../components/StudentAccessSummary.js';
 import { type Assessment, type GroupConfig, type User } from '../../lib/db-types.js';
 import { type GroupInfo } from '../../lib/groups.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
@@ -68,6 +69,10 @@ export function StudentAssessment({
                 </p>
               `
             : ''}
+          ${StudentAccessSummaryInline({
+            model: resLocals.access_display_model,
+            className: 'mb-4',
+          })}
           ${assessment.team_work
             ? StudentGroupControls({ groupConfig, groupInfo, userCanAssignRoles, resLocals })
             : StartAssessmentForm({

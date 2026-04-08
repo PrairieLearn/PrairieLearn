@@ -6,10 +6,13 @@ import {
 } from '../components/AssessmentRegenerate.js';
 import { PageLayout } from '../components/PageLayout.js';
 import { ScorebarHtml } from '../components/Scorebar.js';
+import { StudentAccessSummaryInline } from '../components/StudentAccessSummary.js';
 import { TimeLimitExpiredModal } from '../components/TimeLimitExpiredModal.js';
 import type { AssessmentInstance } from '../lib/db-types.js';
 import { formatPoints } from '../lib/format.js';
 import type { ResLocalsForPage } from '../lib/res-locals.js';
+
+type StudentAssessmentAccessLocals = ResLocalsForPage<'assessment' | 'assessment-instance'>;
 
 export function StudentAssessmentAccess({
   resLocals,
@@ -17,11 +20,13 @@ export function StudentAssessmentAccess({
   showTimeLimitExpiredModal = false,
   userCanDeleteAssessmentInstance = false,
 }: {
-  resLocals: ResLocalsForPage<'assessment' | 'assessment-instance'>;
+  resLocals: StudentAssessmentAccessLocals;
   showClosedScore?: boolean;
   showTimeLimitExpiredModal?: boolean;
   userCanDeleteAssessmentInstance?: boolean;
 }) {
+  const accessDisplayModel =
+    'access_display_model' in resLocals ? resLocals.access_display_model : undefined;
   const { assessment, assessment_set, assessment_instance, authz_result } = resLocals;
   return PageLayout({
     resLocals,
@@ -66,7 +71,12 @@ export function StudentAssessmentAccess({
                   })}
                 </div>
               `
-            : AssessmentStatusDescription({ assessment_instance, authz_result })}
+            : AssessmentStatusDescription({
+                assessment_instance,
+                authz_result,
+                accessDisplayModel,
+              })}
+          ${StudentAccessSummaryInline({ model: accessDisplayModel, className: 'mt-3' })}
         </div>
       </div>
     `,
@@ -76,19 +86,25 @@ export function StudentAssessmentAccess({
 function AssessmentStatusDescription({
   assessment_instance,
   authz_result,
+  accessDisplayModel,
   extraClasses = '',
 }: {
   assessment_instance?: AssessmentInstance;
-  authz_result: any;
+  authz_result: StudentAssessmentAccessLocals['authz_result'];
+  accessDisplayModel?: StudentAssessmentAccessLocals['access_display_model'];
   extraClasses?: string;
 }) {
+  const availabilityMessage =
+    authz_result.next_active_time != null &&
+    accessDisplayModel?.availability.state !== 'future_open'
+      ? `Assessment is not yet open. It will become available on ${authz_result.next_active_time}.`
+      : (accessDisplayModel?.availability.message ?? 'Assessment is no longer available.');
+
   return html`
     <div class="${extraClasses}" data-testid="assessment-closed-message">
       ${assessment_instance?.open === false
         ? html`Assessment is <strong>closed</strong> and is no longer available.`
-        : authz_result.next_active_time == null
-          ? html`Assessment is no longer available.`
-          : html`Assessment will become available on ${authz_result.next_active_time}.`}
+        : html`${availabilityMessage}`}
     </div>
   `;
 }

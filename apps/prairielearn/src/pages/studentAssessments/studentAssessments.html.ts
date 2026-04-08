@@ -4,15 +4,14 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
-import {
-  AuthzAccessRuleSchema,
-  StudentAccessRulesPopover,
-} from '../../components/StudentAccessRulesPopover.js';
+import { StudentAccessSummaryPopover } from '../../components/StudentAccessSummary.js';
+import type { AccessDisplayModel } from '../../lib/assessment-access-control/access-display.js';
 import {
   AssessmentAccessRuleSchema,
   AssessmentInstanceSchema,
   AssessmentSchema,
   AssessmentSetSchema,
+  SprocAuthzAssessmentSchema,
 } from '../../lib/db-types.js';
 import { type ResLocalsForPage } from '../../lib/res-locals.js';
 
@@ -29,7 +28,7 @@ export const StudentAssessmentsRowSchema = z.object({
   label: z.string(),
   credit_date_string: z.string(),
   active: AssessmentAccessRuleSchema.shape.active,
-  access_rules: AuthzAccessRuleSchema.array(),
+  access_rules: SprocAuthzAssessmentSchema.shape.access_rules,
   show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
   assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),
   assessment_instance_score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
@@ -40,13 +39,16 @@ export const StudentAssessmentsRowSchema = z.object({
   show_before_release: z.boolean().optional(),
 });
 type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowSchema>;
+type StudentAssessmentsDisplayRow = StudentAssessmentsRow & {
+  access_display_model: AccessDisplayModel;
+};
 
 export function StudentAssessments({
   resLocals,
   rows,
 }: {
   resLocals: ResLocalsForPage<'course-instance'>;
-  rows: StudentAssessmentsRow[];
+  rows: StudentAssessmentsDisplayRow[];
 }) {
   const { urlPrefix, authz_data } = resLocals;
   return PageLayout({
@@ -94,33 +96,33 @@ export function StudentAssessments({
                       </span>
                     </td>
                     <td class="align-middle">
-                      ${row.show_before_release
+                      ${row.multiple_instance_header ||
+                      (!row.active && row.assessment_instance_id == null)
                         ? html`<span class="text-muted">${row.title}</span>`
-                        : row.multiple_instance_header ||
-                            (!row.active && row.assessment_instance_id == null)
-                          ? row.title
-                          : html`
-                              <a href="${urlPrefix}${row.link}">
-                                ${row.title}
-                                ${row.team_work
-                                  ? html`<i class="fas fa-users" aria-hidden="true"></i>`
-                                  : ''}
-                              </a>
-                            `}
+                        : html`
+                            <a href="${urlPrefix}${row.link}">
+                              ${row.title}
+                              ${row.team_work
+                                ? html`<i class="fas fa-users" aria-hidden="true"></i>`
+                                : ''}
+                            </a>
+                          `}
                     </td>
                     <td class="text-center align-middle">
-                      ${row.show_before_release
-                        ? html`<span class="text-muted">Not yet open</span>`
+                      ${row.modern_access_control &&
+                      row.assessment_instance_id == null &&
+                      row.access_display_model.availability.state !== 'open'
+                        ? html`<span class="text-muted"
+                            >${row.access_display_model.availability.label}</span
+                          >`
                         : row.credit_date_string === 'None'
                           ? ''
                           : row.assessment_instance_open !== false
                             ? row.credit_date_string
                             : 'Assessment closed.'}
-                      ${row.modern_access_control
-                        ? ''
-                        : StudentAccessRulesPopover({
-                            accessRules: row.access_rules,
-                          })}
+                      ${StudentAccessSummaryPopover({
+                        model: row.access_display_model,
+                      })}
                     </td>
                     <td class="text-center align-middle">
                       ${row.multiple_instance_header
