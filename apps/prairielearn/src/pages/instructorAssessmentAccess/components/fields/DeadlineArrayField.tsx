@@ -3,7 +3,6 @@ import { useEffect, useRef } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
 import { get, useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
-import { formatDateFriendly } from '@prairielearn/formatter';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
@@ -79,10 +78,7 @@ function DeadlineArrayInput({
   };
 
   const getTimeRangeText = (index: number) => {
-    const currentDeadlines: DeadlineEntry[] = deadlineFields.map((f) => ({
-      date: f.date,
-      credit: f.credit,
-    }));
+    const currentDeadlines: DeadlineEntry[] = structuredClone(deadlineFields);
 
     const anchorDate = isEarly ? releaseDate : dueDate;
     const range = getDeadlineRange(index, currentDeadlines, anchorDate);
@@ -107,9 +103,6 @@ function DeadlineArrayInput({
     );
   };
 
-  const formatRef = (date: Date) =>
-    formatDateFriendly(date, getUserTimezone(), { dateOnly: true, includeTz: false });
-
   // Read from refs to avoid stale closures — register() captures the validate
   // function once, but these constraint values change over the form's lifetime.
   const validateDate = (value: string, index: number) => {
@@ -128,28 +121,26 @@ function DeadlineArrayInput({
 
     if (isEarly) {
       if (currentDueDate && deadlineDate >= currentDueDate) {
-        return `Must be before due date (${formatRef(currentDueDate)})`;
+        return 'Early deadline is out of range';
       }
       if (index > 0 && currentDeadlines[index - 1]?.date) {
-        const prevDate = new Date(currentDeadlines[index - 1].date);
-        if (deadlineDate <= prevDate) {
-          return `Must be after previous early deadline (${formatRef(prevDate)})`;
+        if (deadlineDate <= new Date(currentDeadlines[index - 1].date)) {
+          return 'Must be after the previous deadline';
         }
       }
       if (currentReleaseDate && deadlineDate <= currentReleaseDate) {
-        return `Must be after release date (${formatRef(currentReleaseDate)})`;
+        return 'Deadline is out of range';
       }
     } else {
       if (currentReleaseDate && deadlineDate <= currentReleaseDate) {
-        return `Must be after release date (${formatRef(currentReleaseDate)})`;
+        return 'Deadline is out of range';
       }
       if (currentDueDate && deadlineDate <= currentDueDate) {
-        return `Must be after due date (${formatRef(currentDueDate)})`;
+        return 'Late deadline is out of range';
       }
       if (index > 0 && currentDeadlines[index - 1]?.date) {
-        const prevDate = new Date(currentDeadlines[index - 1].date);
-        if (deadlineDate <= prevDate) {
-          return `Must be after previous late deadline (${formatRef(prevDate)})`;
+        if (deadlineDate <= new Date(currentDeadlines[index - 1].date)) {
+          return 'Must be after the previous deadline';
         }
       }
     }
@@ -218,7 +209,9 @@ function DeadlineArrayInput({
     }
 
     const defaultDate = candidateDate ? endOfDayDatetime(candidateDate) : '';
-    const defaultCredit = isEarly ? 110 - deadlineFields.length : 90 - deadlineFields.length;
+    const previousCredit =
+      deadlineFields[deadlineFields.length - 1]?.credit ?? (isEarly ? 110 : 90);
+    const defaultCredit = previousCredit - 10;
     appendDeadline({ date: defaultDate, credit: defaultCredit });
   };
 
