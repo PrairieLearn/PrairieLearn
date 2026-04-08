@@ -50,7 +50,6 @@ interface InstructorAssessmentSettingsProps {
   tids: string[];
   studentLink: string;
   publicLink: string;
-  infoAssessmentPath: string;
   assessmentSets: StaffAssessmentSet[];
   assessmentModules: StaffAssessmentModule[];
   courseInstance: StaffCourseInstance;
@@ -70,7 +69,6 @@ export function InstructorAssessmentSettings({
   tids,
   studentLink,
   publicLink,
-  infoAssessmentPath,
   assessmentSets,
   assessmentModules,
   courseInstance,
@@ -100,10 +98,10 @@ export function InstructorAssessmentSettings({
           tids={tids}
           studentLink={studentLink}
           publicLink={publicLink}
-          infoAssessmentPath={infoAssessmentPath}
           assessmentSets={assessmentSets}
           assessmentModules={assessmentModules}
           assessmentTools={assessmentTools}
+          courseInstance={courseInstance}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -123,11 +121,11 @@ function InstructorAssessmentSettingsInner({
   tids,
   studentLink,
   publicLink,
-  infoAssessmentPath,
   assessmentSets,
   assessmentModules,
   assessmentTools,
-}: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'courseInstance' | 'isDevMode'>) {
+  courseInstance,
+}: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'isDevMode'>) {
   const trpc = useTRPC();
   const [currentOrigHash, setCurrentOrigHash] = useState(origHash);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -188,14 +186,28 @@ function InstructorAssessmentSettingsInner({
   };
 
   const requireHonorCode = watch('require_honor_code');
+  const currentAid = watch('aid');
+  const currentSetName = watch('set');
+  const currentNumber = watch('number');
+
+  const currentInfoAssessmentPath = encodePathNoNormalize(
+    `courseInstances/${courseInstance.short_name!}/assessments/${currentAid}/infoAssessment.json`,
+  );
+  const currentGHLink =
+    assessmentGHLink && assessment.tid
+      ? assessmentGHLink.replace(
+          `/assessments/${encodeURIComponent(assessment.tid)}`,
+          `/assessments/${encodeURIComponent(currentAid)}`,
+        )
+      : assessmentGHLink;
 
   return (
     <div className="card mb-4">
       <div className="card-header bg-primary text-white d-flex align-items-center justify-content-between">
         <h1>
-          {assessmentSet.name} {assessment.number}: Settings
+          {currentSetName} {currentNumber}: Settings
         </h1>
-        <GitHubButton gitHubLink={assessmentGHLink} />
+        <GitHubButton gitHubLink={currentGHLink} />
       </div>
       <div className="card-body">
         <form name="edit-assessment-settings-form" onSubmit={handleSubmit(onFormSubmit)}>
@@ -550,7 +562,7 @@ function InstructorAssessmentSettingsInner({
                   <a
                     data-testid="edit-assessment-configuration-link"
                     href={encodePathNoNormalize(
-                      `${urlPrefix}/assessment/${assessment.id}/file_edit/${infoAssessmentPath}`,
+                      `${urlPrefix}/assessment/${assessment.id}/file_edit/${currentInfoAssessmentPath}`,
                     )}
                   >
                     Edit assessment configuration
@@ -561,7 +573,7 @@ function InstructorAssessmentSettingsInner({
             ) : (
               <p className="mb-0">
                 <a
-                  href={`${urlPrefix}/assessment/${assessment.id}/file_view/${infoAssessmentPath}`}
+                  href={`${urlPrefix}/assessment/${assessment.id}/file_view/${currentInfoAssessmentPath}`}
                 >
                   View assessment configuration
                 </a>{' '}

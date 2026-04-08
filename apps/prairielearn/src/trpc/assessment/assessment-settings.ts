@@ -258,6 +258,8 @@ const deleteAssessment = t.procedure.use(requireCoursePermissionEdit).mutation(a
       jobSequenceId: serverJob.jobSequenceId,
     });
   }
+
+  flash('success', 'Assessment deleted successfully.');
 });
 
 export const assessmentSettingsRouter = t.router({

@@ -125,7 +125,6 @@ router.get(
               tids={tids}
               studentLink={studentLink}
               publicLink={publicLink}
-              infoAssessmentPath={infoAssessmentPath}
               assessmentSets={assessmentSets}
               assessmentModules={assessmentModules}
               courseInstance={course_instance}
