@@ -23,6 +23,16 @@ export function getAssessmentUrl({
   return `${urlPrefix}/assessment/${assessmentId}`;
 }
 
+export function getAssessmentInstanceUrl({
+  courseInstanceId,
+  assessmentInstanceId,
+}: {
+  courseInstanceId: string;
+  assessmentInstanceId: string;
+}) {
+  return `/pl/course_instance/${courseInstanceId}/instructor/assessment_instance/${assessmentInstanceId}`;
+}
+
 export function getStudentEnrollmentUrl(courseInstanceId: string, enrollmentId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/enrollment/${enrollmentId}`;
 }

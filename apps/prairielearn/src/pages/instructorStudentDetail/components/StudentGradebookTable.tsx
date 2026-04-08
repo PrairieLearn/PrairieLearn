@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import { Scorebar } from '../../../components/Scorebar.js';
+import { getAssessmentInstanceUrl } from '../../../lib/client/url.js';
 import {
   type StaffGradebookRow,
   computeLabel,
@@ -64,7 +65,13 @@ export function StudentGradebookTable({ rows, urlPrefix }: StudentGradebookTable
                   />
                 </td>
                 <td className="align-middle">
-                  <a href={`${urlPrefix}/assessment_instance/${row.assessment_instance.id}`}>
+                  <a
+                    href={getAssessmentInstanceUrl({
+                      courseInstanceId: row.assessment.course_instance_id,
+                      assessmentInstanceId: row.assessment_instance.id,
+                    })}
+                    title={computeTitle(row)}
+                  >
                     {computeTitle(row)}
                   </a>
                   {row.assessment.team_work && (
