@@ -29,8 +29,8 @@ export {
   parseAsColumnVisibilityStateWithColumns,
   parseAsColumnPinningState,
   parseAsNumericFilter,
-  useColumnVisibilityQueryState,
 } from './components/nuqs.js';
+export { useColumnVisibilityQueryState } from './hooks/use-column-visibility-query-state.js';
 
 export { SplitPane, type SplitPaneProps } from './components/SplitPane.js';
 export { StickyActionBar, type StickyActionBarProps } from './components/StickyActionBar.js';

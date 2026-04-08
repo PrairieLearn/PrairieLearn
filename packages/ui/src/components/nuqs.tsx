@@ -1,11 +1,11 @@
 import type { ColumnPinningState, SortingState, VisibilityState } from '@tanstack/table-core';
-import { createParser, useQueryState } from 'nuqs';
+import { createParser } from 'nuqs';
 import {
   type unstable_AdapterInterface,
   unstable_createAdapterProvider,
 } from 'nuqs/adapters/custom';
 import { NuqsAdapter as NuqsReactAdapter } from 'nuqs/adapters/react';
-import { createContext, use, useMemo } from 'react';
+import { createContext, use } from 'react';
 
 import type { NumericColumnFilterValue } from './NumericInputColumnFilter.js';
 
@@ -175,33 +175,6 @@ export const parseAsColumnPinningState = createParser<ColumnPinningState>({
  *
  * Example: `gte_5` <-> `>=5`
  */
-/**
- * Hook that provides column visibility state persisted to the URL query string.
- * Returns values ready to spread into `useReactTable`'s `state`, `initialState`,
- * and `onColumnVisibilityChange`.
- *
- * @param allColumnIds - Array of all hideable column IDs
- * @param options - Optional configuration
- * @param options.defaultHidden - Column IDs that should be hidden by default
- * @param options.paramName - URL query parameter name (defaults to `'columns'`)
- */
-export function useColumnVisibilityQueryState(
-  allColumnIds: string[],
-  options?: { defaultHidden?: string[]; paramName?: string },
-) {
-  const hiddenSet = useMemo(() => new Set(options?.defaultHidden), [options?.defaultHidden]);
-  const defaultColumnVisibility = useMemo<VisibilityState>(
-    () => Object.fromEntries(allColumnIds.map((id) => [id, !hiddenSet.has(id)])),
-    [allColumnIds, hiddenSet],
-  );
-  const [columnVisibility, setColumnVisibility] = useQueryState(
-    options?.paramName ?? 'columns',
-    parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
-  );
-
-  return { columnVisibility, setColumnVisibility, defaultColumnVisibility };
-}
-
 export const parseAsNumericFilter = createParser<NumericColumnFilterValue>({
   parse(queryValue) {
     if (!queryValue) return { filterValue: '', emptyOnly: false };
