@@ -9,10 +9,12 @@ export function createCourseTrpcClient({
   csrfToken,
   courseId,
   urlBase = '',
+  extraHeaders,
 }: {
   csrfToken: string;
   courseId: string;
   urlBase?: string;
+  extraHeaders?: Record<string, string>;
 }) {
   return createTRPCClient<CourseRouter>({
     links: [
@@ -21,6 +23,7 @@ export function createCourseTrpcClient({
         headers: {
           'X-TRPC': 'true',
           'X-CSRF-Token': csrfToken,
+          ...extraHeaders,
         },
         transformer: superjson,
       }),

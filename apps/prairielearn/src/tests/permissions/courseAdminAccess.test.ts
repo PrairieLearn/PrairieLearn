@@ -82,7 +82,10 @@ interface TestContext {
   userId: string;
 }
 
-function createTrpcClient(authnUserId = '2') {
+function createTrpcClient({
+  authnUserId = '2',
+  cookie = 'pl_test_user=test_instructor',
+}: { authnUserId?: string; cookie?: string } = {}) {
   const siteUrl = `http://localhost:${config.serverPort}`;
   const csrfToken = generatePrefixCsrfToken(
     { url: getCourseTrpcUrl('1'), authn_user_id: authnUserId },
@@ -92,6 +95,7 @@ function createTrpcClient(authnUserId = '2') {
     csrfToken,
     courseId: '1',
     urlBase: siteUrl,
+    extraHeaders: { cookie },
   });
 }
 
