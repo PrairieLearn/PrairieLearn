@@ -73,6 +73,7 @@ export default asyncHandler(async (req, res, next) => {
         accessRules: row.authz_result.access_rules,
         active: row.authz_result.active,
         nextActiveTime: row.authz_result.next_active_time,
+        listed: row.authz_result.authorized,
       });
   const responseLocals = {
     ...res.locals,

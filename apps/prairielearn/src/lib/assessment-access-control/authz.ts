@@ -115,7 +115,9 @@ function deriveAvailability({
   result: AccessControlResolverResult;
   effectiveRule: NonNullable<ReturnType<typeof resolveEffectiveRuleContext>>['effectiveRule'];
   prairieTestExams: NonNullable<ReturnType<typeof resolveEffectiveRuleContext>>['prairieTestExams'];
-  prairieTestReservations: Parameters<typeof evaluatePrairieTestAccess>[0]['prairieTestReservations'];
+  prairieTestReservations: Parameters<
+    typeof evaluatePrairieTestAccess
+  >[0]['prairieTestReservations'];
   authzMode: EnumMode | null;
   reqDate: Date;
 }): ModernAccessAvailability {
@@ -187,7 +189,9 @@ export function buildModernAccessRenderInfo({
   effectiveRule: NonNullable<ReturnType<typeof resolveEffectiveRuleContext>>['effectiveRule'];
   prairieTestExamCount: number;
   prairieTestExams: NonNullable<ReturnType<typeof resolveEffectiveRuleContext>>['prairieTestExams'];
-  prairieTestReservations: Parameters<typeof evaluatePrairieTestAccess>[0]['prairieTestReservations'];
+  prairieTestReservations: Parameters<
+    typeof evaluatePrairieTestAccess
+  >[0]['prairieTestReservations'];
   displayTimezone: string;
   authzMode: EnumMode | null;
   reqDate: Date;

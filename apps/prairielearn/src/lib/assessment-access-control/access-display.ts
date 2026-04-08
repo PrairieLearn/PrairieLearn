@@ -437,10 +437,12 @@ export function buildLegacyAccessDisplayModel({
   accessRules,
   active,
   nextActiveTime,
+  listed,
 }: {
   accessRules: LegacyAccessRule[];
   active: boolean;
   nextActiveTime: string | null;
+  listed: boolean;
 }): AccessDisplayModel {
   const timeLimits = new Set(
     accessRules.map((rule) => rule.time_limit_min).filter((value) => value !== '—'),
@@ -450,7 +452,7 @@ export function buildLegacyAccessDisplayModel({
     displayTimezone: 'UTC',
     availability: {
       state: active ? 'open' : nextActiveTime ? 'future_open' : 'closed',
-      listed: true,
+      listed,
       opensAtText: nextActiveTime,
     },
     rows: accessRules.map((rule, index) => ({

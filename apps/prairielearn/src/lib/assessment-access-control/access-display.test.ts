@@ -26,6 +26,7 @@ describe('access display adapters', () => {
       ],
       active: true,
       nextActiveTime: null,
+      listed: true,
     });
 
     expect(model.availability.state).toBe('open');

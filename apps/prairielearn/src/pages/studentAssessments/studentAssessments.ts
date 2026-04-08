@@ -47,6 +47,7 @@ router.get(
               accessRules: row.access_rules,
               active: row.active,
               nextActiveTime: null,
+              listed: row.authorized,
             }),
           };
         }
@@ -66,7 +67,7 @@ router.get(
       })
       .filter((row): row is NonNullable<typeof row> => {
         if (row == null) return false;
-        return row.authorized || row.access_display_model.availability.listed;
+        return row.access_display_model.availability.listed;
       });
 
     res.send(StudentAssessments({ resLocals: res.locals, rows: rowsWithAccessDisplay }));

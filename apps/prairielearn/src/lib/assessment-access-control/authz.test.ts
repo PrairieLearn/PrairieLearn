@@ -3,8 +3,8 @@ import type { z } from 'zod';
 
 import type { SprocAuthzAssessmentSchema } from '../db-types.js';
 
-import type { AccessControlResolverResult } from './resolver.js';
 import { applyInstanceAccess, buildModernAccessRenderInfo } from './authz.js';
+import type { AccessControlResolverResult } from './resolver.js';
 
 type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 
@@ -243,7 +243,9 @@ describe('buildModernAccessRenderInfo', () => {
       },
       prairieTestExamCount: 1,
       prairieTestExams: [{ uuid: 'exam-1', readOnly: false }],
-      prairieTestReservations: [{ examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') }],
+      prairieTestReservations: [
+        { examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
+      ],
       displayTimezone: 'UTC',
       authzMode: 'Exam',
       reqDate: new Date('2025-03-15T00:00:00Z'),
