@@ -60,6 +60,9 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       /** Whether handwriting enhancement is active in the gallery viewer */
       this.galleryHandwritingEnhanced = false;
 
+      /** Whether the capture has been modified from its initial state */
+      this.captureChanged = false;
+
       /** Flag representing the current state of the capture before entering crop/zoom */
       this.previousCaptureChangedFlag = false;
       this.previousCropRotateState = null;
@@ -353,6 +356,15 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       cropRotateResetButton.addEventListener('click', () => {
         this.resetAllCropRotation();
       });
+    }
+
+    setCaptureChangedFlag(changed) {
+      this.captureChanged = changed;
+
+      if (!this.multiMode) {
+        this.updateCaptureButtons(changed);
+        this.setShowDeletionButton(changed);
+      }
     }
 
     setShowDeletionButton(showDeletionButton) {
