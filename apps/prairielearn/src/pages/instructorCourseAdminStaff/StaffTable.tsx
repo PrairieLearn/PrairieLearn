@@ -984,6 +984,7 @@ function StaffTableInner({
           {
             id: `ci_${ci.id}`,
             header: () => <code>{ci.short_name ?? `Instance ${ci.id}`}</code>,
+            meta: { label: ci.short_name ?? `Instance ${ci.id}` },
             size: 120,
             enableGlobalFilter: false,
             enableSorting: false,
@@ -1126,7 +1127,7 @@ function StaffTableInner({
         >
           Learn more about content and student data access levels
         </a>
-        {githubAccessLink && (
+        {(true || githubAccessLink) && (
           <div className="alert alert-info mt-3 text-left">
             The settings above do not affect access to the course&apos;s Git repository. To change
             repository permissions, go to the{' '}
