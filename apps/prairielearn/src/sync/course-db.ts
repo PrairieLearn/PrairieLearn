@@ -1149,7 +1149,7 @@ function formatValues(qids: Set<string> | string[]) {
  * Validates an array of access control rules.
  * Returns a single object with all accumulated errors and warnings.
  */
-export function validateAccessControlArray({
+export function validateAccessControlRules({
   rules,
   enrollmentRules,
   validStudentLabelNames,
@@ -1671,7 +1671,7 @@ function validateAssessment({
 
   // Validate access control rules if defined
   if (assessment.accessControl) {
-    const accessControlValidation = validateAccessControlArray({
+    const accessControlValidation = validateAccessControlRules({
       rules: assessment.accessControl,
       validStudentLabelNames,
     });

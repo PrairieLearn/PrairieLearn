@@ -28,7 +28,7 @@ import {
   MAX_ENROLLMENT_RULES,
 } from '../../schemas/accessControl.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
-import { validateAccessControlArray } from '../../sync/course-db.js';
+import { validateAccessControlRules } from '../../sync/course-db.js';
 import { throwAppError } from '../app-errors.js';
 
 import {
@@ -223,7 +223,7 @@ const saveAllRules = t.procedure
       }
     }
 
-    const { errors: validationErrors } = validateAccessControlArray({
+    const { errors: validationErrors } = validateAccessControlRules({
       rules: rulesToSync,
       enrollmentRules: enrollmentRules?.map((r) => r.ruleJson),
     });
