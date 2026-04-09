@@ -6,9 +6,13 @@ import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
 import {
   type AccessDisplayModel,
-  type AccessDisplaySource,
-  formatAccessDisplayModel,
+  buildModernAccessDisplayModel,
 } from '../../../lib/assessment-access-control/access-display.js';
+import type {
+  RuntimeAfterComplete,
+  RuntimeDateControl,
+  TimelineEntry,
+} from '../../../lib/assessment-access-control/resolver.js';
 
 import {
   type AfterLastDeadlineValue,
@@ -48,137 +52,123 @@ function buildAccessDisplayModelForRule(
   rule: RuleData,
   displayTimezone: string,
 ): AccessDisplayModel {
-  const rows: AccessDisplaySource['rows'] = [];
   const isMain = isMainRuleData(rule);
   const isDateControlEnabled = isMain
     ? rule.dateControlEnabled
     : DATE_CONTROL_FIELD_NAMES.some((field) => isOverrideFieldActive(rule, field));
 
+  // Convert form date strings into the RuntimeDateControl shape expected by
+  // the shared builder.
+  const dateControl: RuntimeDateControl = {};
+
   if (isDateControlEnabled) {
     if (isMain || isOverrideFieldActive(rule, 'releaseDate')) {
       if (rule.releaseDate) {
-        rows.push({
-          key: 'release',
-          label: 'Release',
-          date: dateToInstant(rule.releaseDate, displayTimezone),
-          creditText: '100%',
-          detailsText:
-            isMain && rule.listBeforeRelease
-              ? 'Assessment opens, Listed before release'
-              : 'Assessment opens',
-        });
+        dateControl.releaseDate = dateToInstant(rule.releaseDate, displayTimezone);
       } else if (rule.releaseDate === null) {
-        rows.push({
-          key: 'release',
-          label: 'Release',
-          dateText: 'Not yet available',
-          creditText: '100%',
-          detailsText: 'No opening time configured',
-        });
+        dateControl.releaseDate = null;
       }
-    }
-
-    if (isMain || isOverrideFieldActive(rule, 'earlyDeadlines')) {
-      rule.earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
-        if (!deadline.date) return;
-        rows.push({
-          key: `early-${index}`,
-          label: `Early ${index + 1}`,
-          date: dateToInstant(deadline.date, displayTimezone),
-          creditText: `${deadline.credit}%`,
-          detailsText: 'Open',
-        });
-      });
     }
 
     if (isMain || isOverrideFieldActive(rule, 'dueDate')) {
       if (rule.dueDate) {
-        rows.push({
-          key: 'due',
-          label: 'Due',
-          date: dateToInstant(rule.dueDate, displayTimezone),
-          creditText: '100%',
-          detailsText: 'Due',
-        });
+        dateControl.dueDate = dateToInstant(rule.dueDate, displayTimezone);
       } else if (rule.dueDate === null) {
-        rows.push({
-          key: 'due',
-          label: 'Due',
-          dateText: 'No due date',
-          creditText: '100%',
-          detailsText: 'Open',
-        });
+        dateControl.dueDate = null;
       }
-    }
-
-    if (isMain || isOverrideFieldActive(rule, 'lateDeadlines')) {
-      rule.lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
-        if (!deadline.date) return;
-        rows.push({
-          key: `late-${index}`,
-          label: `Late ${index + 1}`,
-          date: dateToInstant(deadline.date, displayTimezone),
-          creditText: `${deadline.credit}%`,
-          detailsText: 'Open',
-        });
-      });
     }
   }
 
   if (rule.afterLastDeadline) {
-    const details = [rule.afterLastDeadline.allowSubmissions ? 'Submissions allowed' : 'Closed'];
-    if (
-      isOverrideFieldActive(rule, 'questionVisibility') &&
-      rule.questionVisibility.hideQuestions
-    ) {
-      details.push('Questions hidden');
-    }
-    if (isOverrideFieldActive(rule, 'scoreVisibility') && rule.scoreVisibility.hideScore) {
-      details.push('Score hidden');
-    }
-    rows.push({
-      key: 'after-last-deadline',
-      label: null,
-      dateText: 'After last deadline',
-      creditText:
-        rule.afterLastDeadline.credit !== undefined ? `${rule.afterLastDeadline.credit}%` : '0%',
-      detailsText: details.join(', '),
-    });
+    dateControl.afterLastDeadline = rule.afterLastDeadline;
   }
 
-  return formatAccessDisplayModel({
+  if (isOverrideFieldActive(rule, 'durationMinutes')) {
+    dateControl.durationMinutes = rule.durationMinutes;
+  }
+
+  if (isOverrideFieldActive(rule, 'password')) {
+    dateControl.password = rule.password;
+  }
+
+  // Build the timeline from early deadlines, due date, and late deadlines.
+  const timeline: TimelineEntry[] = [];
+
+  if (isDateControlEnabled) {
+    if (isMain || isOverrideFieldActive(rule, 'earlyDeadlines')) {
+      rule.earlyDeadlines.forEach((d, i) => {
+        if (d.date) {
+          timeline.push({
+            type: 'early',
+            date: dateToInstant(d.date, displayTimezone),
+            credit: d.credit,
+            index: i,
+          });
+        }
+      });
+    }
+
+    if ((isMain || isOverrideFieldActive(rule, 'dueDate')) && rule.dueDate) {
+      timeline.push({
+        type: 'due',
+        date: dateToInstant(rule.dueDate, displayTimezone),
+        credit: 100,
+        index: 0,
+      });
+    }
+
+    if (isMain || isOverrideFieldActive(rule, 'lateDeadlines')) {
+      rule.lateDeadlines.forEach((d, i) => {
+        if (d.date) {
+          timeline.push({
+            type: 'late',
+            date: dateToInstant(d.date, displayTimezone),
+            credit: d.credit,
+            index: i,
+          });
+        }
+      });
+    }
+  }
+
+  // Build RuntimeAfterComplete from visibility settings.
+  const afterComplete: RuntimeAfterComplete = {};
+  if (isOverrideFieldActive(rule, 'questionVisibility')) {
+    afterComplete.hideQuestions = rule.questionVisibility.hideQuestions;
+    if (rule.questionVisibility.showAgainDate) {
+      afterComplete.showQuestionsAgainDate = dateToInstant(
+        rule.questionVisibility.showAgainDate,
+        displayTimezone,
+      );
+    }
+    if (rule.questionVisibility.hideAgainDate) {
+      afterComplete.hideQuestionsAgainDate = dateToInstant(
+        rule.questionVisibility.hideAgainDate,
+        displayTimezone,
+      );
+    }
+  }
+  if (isOverrideFieldActive(rule, 'scoreVisibility')) {
+    afterComplete.hideScore = rule.scoreVisibility.hideScore;
+    if (rule.scoreVisibility.showAgainDate) {
+      afterComplete.showScoreAgainDate = dateToInstant(
+        rule.scoreVisibility.showAgainDate,
+        displayTimezone,
+      );
+    }
+  }
+
+  return buildModernAccessDisplayModel({
+    listBeforeRelease: isMain ? rule.listBeforeRelease : undefined,
+    dateControl,
+    afterComplete: Object.keys(afterComplete).length > 0 ? afterComplete : undefined,
+    timeline,
+    availabilityState: 'open',
+    availabilityListed: true,
+    opensAt: null,
     displayTimezone,
-    availability: { state: 'open', listed: true },
+    prairieTestExamCount: isMain ? rule.prairieTestExams.length : 0,
     includeAvailabilityBadge: false,
-    rows,
-    settings: {
-      durationMinutes: isOverrideFieldActive(rule, 'durationMinutes') ? rule.durationMinutes : null,
-      passwordRequired:
-        isOverrideFieldActive(rule, 'password') && rule.password != null && rule.password !== '',
-      prairieTestExamCount:
-        isMain && rule.prairieTestExams.length > 0 ? rule.prairieTestExams.length : undefined,
-      questionVisibility:
-        !rule.afterLastDeadline && isOverrideFieldActive(rule, 'questionVisibility')
-          ? {
-              hideQuestions: rule.questionVisibility.hideQuestions,
-              showAgainDate: rule.questionVisibility.showAgainDate
-                ? dateToInstant(rule.questionVisibility.showAgainDate, displayTimezone)
-                : null,
-              hideAgainDate: rule.questionVisibility.hideAgainDate
-                ? dateToInstant(rule.questionVisibility.hideAgainDate, displayTimezone)
-                : null,
-            }
-          : undefined,
-      scoreVisibility:
-        !rule.afterLastDeadline && isOverrideFieldActive(rule, 'scoreVisibility')
-          ? {
-              hideScore: rule.scoreVisibility.hideScore,
-              showAgainDate: rule.scoreVisibility.showAgainDate
-                ? dateToInstant(rule.scoreVisibility.showAgainDate, displayTimezone)
-                : null,
-            }
-          : undefined,
-    },
   });
 }
 
