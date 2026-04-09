@@ -193,6 +193,7 @@ Inline `PageLayout` directly in the Express route handler rather than creating w
 - Don't use `useMemo` for cheap computations. Use `run` from `@prairielearn/run` instead (an IIFE helper that executes a function immediately).
 - Don't use `useEffect` to sync internal state to a parent via a callback on every change — instead, let the child own its state and notify the parent imperatively when a user action requires it (e.g., clicking "Save").
 - Avoid unnecessary `useEffect` when using `react-hook-form`. The `watch()` function returns reactive values that trigger re-renders automatically, so derived state can be computed directly without `useEffect`.
+- When a `useEffect` is necessary, add a comment explaining what it does — the intent of effects is often non-obvious.
 - In hydrated components using `react-hook-form`, always add `defaultValue` (text inputs, textareas, selects) or `defaultChecked` (checkboxes) alongside `{...register(...)}`. Without these, values aren't populated until client hydration, causing a flash of empty fields.
 
 ## Python guidance

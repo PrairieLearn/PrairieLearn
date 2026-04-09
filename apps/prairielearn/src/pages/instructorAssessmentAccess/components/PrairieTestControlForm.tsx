@@ -1,10 +1,11 @@
+import { useEffect, useRef } from 'react';
 import { Button, Form } from 'react-bootstrap';
-import { get, useFieldArray, useFormContext, useFormState } from 'react-hook-form';
+import { get, useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import type { AccessControlFormData } from './types.js';
 
 export function PrairieTestControlForm() {
-  const { register } = useFormContext<AccessControlFormData>();
+  const { register, trigger } = useFormContext<AccessControlFormData>();
 
   const {
     fields: examFields,
@@ -15,6 +16,22 @@ export function PrairieTestControlForm() {
   });
 
   const { errors } = useFormState();
+
+  const watchedExams = useWatch<AccessControlFormData, 'mainRule.prairieTestExams'>({
+    name: 'mainRule.prairieTestExams',
+  });
+  const examsRef = useRef(watchedExams);
+  examsRef.current = watchedExams;
+
+  const watchedExamUuids = watchedExams.map((exam) => exam.examUuid).join('\0');
+
+  // Validate when the number of exams changes, any UUID is edited, or on mount
+  // so empty exam UUIDs (added by the PrairieTest checkbox in
+  // IntegrationsSection) show errors immediately and duplicate detection
+  // re-runs after add/remove/edit.
+  useEffect(() => {
+    void trigger('mainRule.prairieTestExams');
+  }, [examFields.length, watchedExamUuids, trigger]);
 
   const getExamUuidError = (index: number): string | undefined => {
     return get(errors, `mainRule.prairieTestExams.${index}.examUuid`)?.message;
@@ -45,6 +62,15 @@ export function PrairieTestControlForm() {
                 pattern: {
                   value: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
                   message: 'Invalid UUID format',
+                },
+                validate: (value) => {
+                  const currentExams = examsRef.current;
+                  for (let i = 0; i < currentExams.length; i++) {
+                    if (i !== index && currentExams[i]?.examUuid === value) {
+                      return 'Duplicate exam UUID';
+                    }
+                  }
+                  return true;
                 },
               })}
             />
@@ -90,7 +116,11 @@ export function PrairieTestControlForm() {
       <Button
         size="sm"
         variant="outline-primary"
-        onClick={() => appendExam({ examUuid: '', readOnly: false })}
+        onClick={() => {
+          appendExam({ examUuid: '', readOnly: false });
+          // Trigger validation so the empty UUID error shows immediately.
+          void trigger('mainRule.prairieTestExams');
+        }}
       >
         <i className="bi bi-plus-circle me-1" aria-hidden="true" />
         Add exam

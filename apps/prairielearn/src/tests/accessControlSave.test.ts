@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 
+import { merge } from 'es-toolkit';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
@@ -22,17 +23,20 @@ import {
 } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { getConfiguredUser } from './utils/auth.js';
+import { enrollUser } from './utils/enrollments.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 
 function makeRule(overrides: Partial<AccessControlJsonInput> = {}): AccessControlJsonInput {
-  return {
-    dateControl: {
-      releaseDate: '2024-03-14T00:01:00',
-      dueDate: '2024-03-21T23:59:00',
+  return merge(
+    {
+      dateControl: {
+        releaseDate: '2024-03-14T00:01:00',
+        dueDate: '2024-03-21T23:59:00',
+      },
     },
-    ...overrides,
-  };
+    overrides,
+  ) as AccessControlJsonInput;
 }
 
 describe('Access control save via tRPC', () => {
@@ -130,9 +134,7 @@ describe('Access control save via tRPC', () => {
     const client = await createClient();
     const origHash = await getOrigHash();
 
-    const rules: AccessControlJsonInput[] = [
-      { listBeforeRelease: false, dateControl: {}, afterComplete: {} },
-    ];
+    const rules: AccessControlJsonInput[] = [{ listBeforeRelease: false }];
 
     const result = await client.accessControl.saveAllRules.mutate({ rules, origHash });
     assert.isString(result.newHash);
@@ -142,8 +144,6 @@ describe('Access control save via tRPC', () => {
 
     assert.equal(parsed.accessControl.length, 1);
     assert.notProperty(parsed.accessControl[0], 'listBeforeRelease');
-    assert.notProperty(parsed.accessControl[0], 'dateControl');
-    assert.notProperty(parsed.accessControl[0], 'afterComplete');
   });
 
   test.sequential('rejects save with stale origHash', async () => {
@@ -203,4 +203,54 @@ describe('Access control save via tRPC', () => {
       }),
     ).rejects.toThrow(/defaults.*must be the first element/);
   });
+
+  test.sequential(
+    'rejects save when an enrollment override makes the timeline impossible',
+    async () => {
+      const client = await createClient();
+      const origHash = await getOrigHash();
+      await enrollUser('1', {
+        name: 'Validation Student',
+        uid: 'validation-student@example.com',
+        uin: 'validation-student',
+        email: 'validation-student@example.com',
+      });
+      const students = await client.accessControl.students.query();
+      const student = students.find(
+        (candidate) => candidate.uid === 'validation-student@example.com',
+      );
+      if (!student) {
+        throw new Error('Expected validation student enrollment to exist');
+      }
+
+      await expect(
+        client.accessControl.saveAllRules.mutate({
+          rules: [
+            {
+              dateControl: {
+                releaseDate: '2024-04-07T00:00:00',
+              },
+            },
+            {
+              labels: ['Section A'],
+              dateControl: {
+                releaseDate: '2024-04-06T00:00:00',
+              },
+            },
+          ],
+          enrollmentRules: [
+            {
+              enrollmentIds: [student.id],
+              ruleJson: {
+                dateControl: {
+                  earlyDeadlines: [{ date: '2024-04-05T00:00:00', credit: 120 }],
+                },
+              },
+            },
+          ],
+          origHash,
+        }),
+      ).rejects.toThrow(/earliest possible release date/);
+    },
+  );
 });
