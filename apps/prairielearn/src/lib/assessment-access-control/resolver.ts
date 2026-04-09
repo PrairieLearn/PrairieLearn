@@ -11,7 +11,7 @@ export interface RuntimeDateControl {
   dueDate?: Date | null;
   earlyDeadlines?: { date: string; credit: number }[] | null;
   lateDeadlines?: { date: string; credit: number }[] | null;
-  afterLastDeadline?: { allowSubmissions?: boolean | null; credit?: number | null };
+  afterLastDeadline?: { allowSubmissions?: boolean; credit?: number | null };
   durationMinutes?: number | null;
   password?: string | null;
 }

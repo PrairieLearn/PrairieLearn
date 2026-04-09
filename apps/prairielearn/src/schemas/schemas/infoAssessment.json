@@ -795,7 +795,7 @@
               "additionalProperties": false,
               "properties": {
                 "allowSubmissions": {
-                  "type": ["boolean", "null"]
+                  "type": "boolean"
                 },
                 "credit": {
                   "anyOf": [
