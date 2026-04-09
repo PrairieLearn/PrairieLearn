@@ -25,6 +25,16 @@ WHERE
   AND course_instance_id = $course_instance_id
   AND deleted_at IS NULL;
 
+-- BLOCK select_assessment_by_uuid
+SELECT
+  *
+FROM
+  assessments
+WHERE
+  uuid = $uuid
+  AND course_instance_id = $course_instance_id
+  AND deleted_at IS NULL;
+
 -- BLOCK select_assessment_info_for_job
 SELECT
   aset.abbreviation || a.number AS assessment_label,
