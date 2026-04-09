@@ -232,7 +232,6 @@ type PrairieTestOutcome =
 function computeCredit(
   dateControl: RuntimeDateControl | undefined,
   date: Date,
-  effectiveRule: RuntimeAccessControl,
   authzMode: EnumMode | null,
 ): CreditResult {
   if (!dateControl?.releaseDate) {
@@ -342,10 +341,7 @@ function computeCredit(
   // or if afterLastDeadline is not configured, use defaults.
   const afterLast = dateControl.afterLastDeadline;
   const credit = afterLast?.credit ?? 0;
-  assert(
-    !afterLast || afterLast.allowSubmissions !== undefined,
-    'afterLastDeadline.allowSubmissions must be set when afterLastDeadline is configured',
-  );
+  assert(!afterLast || afterLast.allowSubmissions !== undefined);
   const active = afterLast?.allowSubmissions === true;
   return {
     credit,
@@ -582,7 +578,7 @@ export function resolveAccessControl(
   }
   const effectiveRule = mergeRules(mainRuleInput.rule, cascadedOverride);
 
-  let creditResult = computeCredit(effectiveRule.dateControl, date, effectiveRule, authzMode);
+  let creditResult = computeCredit(effectiveRule.dateControl, date, authzMode);
 
   // Resolve PrairieTest access. This is separated from the main flow to keep
   // the resolver linear: it either denies early, grants PT credit overrides,
