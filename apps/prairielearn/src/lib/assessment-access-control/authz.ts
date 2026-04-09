@@ -122,7 +122,7 @@ function resolverResultToSprocAuthzAssessment(
     // reservation (examAccessEnd is non-null), indicating a live exam session.
     mode: authzMode === 'Exam' && result.examAccessEnd ? 'Exam' : null,
     show_before_release: result.showBeforeRelease,
-    next_active_time: null,
+    next_active_time: result.opensAt ? formatDateShort(result.opensAt, displayTimezone) : null,
     access_rules: buildAccessRulesFromTimeline({
       timeline: result.timeline,
       dateControl,

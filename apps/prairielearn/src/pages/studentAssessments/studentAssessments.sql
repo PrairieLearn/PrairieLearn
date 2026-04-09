@@ -166,10 +166,6 @@ WITH
   )
 SELECT
   *,
-  CASE
-    WHEN assessment_instance_id IS NULL THEN '/assessment/' || assessment_id || '/'
-    ELSE '/assessment_instance/' || assessment_instance_id || '/'
-  END AS link,
   (
     LAG(
       CASE

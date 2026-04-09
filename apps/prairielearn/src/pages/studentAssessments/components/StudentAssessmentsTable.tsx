@@ -3,6 +3,10 @@ import { z } from 'zod';
 
 import { Scorebar } from '../../../components/Scorebar.js';
 import { StudentAccessRulesPopoverReact } from '../../../components/StudentAccessRulesPopover.js';
+import {
+  getStudentAssessmentInstanceUrl,
+  getStudentAssessmentUrl,
+} from '../../../lib/client/url.js';
 
 const AccessRuleSchema = z.object({
   active: z.boolean().nullable(),
@@ -28,11 +32,20 @@ export const StudentAssessmentsTableRowSchema = z.object({
   assessment_instance_id: z.string().nullable(),
   assessment_instance_score_perc: z.number().nullable(),
   assessment_instance_open: z.boolean().nullable(),
-  link: z.string(),
   start_new_assessment_group: z.boolean(),
   assessment_group_heading: z.string(),
 });
 type StudentAssessmentsTableRow = z.infer<typeof StudentAssessmentsTableRowSchema>;
+
+function getRowUrl(row: StudentAssessmentsTableRow, courseInstanceId: string): string {
+  if (row.assessment_instance_id != null) {
+    return getStudentAssessmentInstanceUrl({
+      courseInstanceId,
+      assessmentInstanceId: row.assessment_instance_id,
+    });
+  }
+  return getStudentAssessmentUrl({ courseInstanceId, assessmentId: row.assessment_id });
+}
 
 function AssessmentScore({ row }: { row: StudentAssessmentsTableRow }) {
   if (row.assessment_instance_id == null) return <>Not started</>;
@@ -41,15 +54,15 @@ function AssessmentScore({ row }: { row: StudentAssessmentsTableRow }) {
 }
 
 function NewInstanceButton({
-  urlPrefix,
+  courseInstanceId,
   row,
 }: {
-  urlPrefix: string;
+  courseInstanceId: string;
   row: StudentAssessmentsTableRow;
 }) {
   if (row.active) {
     return (
-      <a href={`${urlPrefix}${row.link}`} className="btn btn-primary btn-sm">
+      <a href={getRowUrl(row, courseInstanceId)} className="btn btn-primary btn-sm">
         New instance
       </a>
     );
@@ -79,10 +92,10 @@ function AvailableCredit({ row }: { row: StudentAssessmentsTableRow }) {
 
 export function StudentAssessmentsTable({
   rows,
-  urlPrefix,
+  courseInstanceId,
 }: {
   rows: StudentAssessmentsTableRow[];
-  urlPrefix: string;
+  courseInstanceId: string;
 }) {
   return (
     <div className="table-responsive">
@@ -129,7 +142,7 @@ export function StudentAssessmentsTable({
                   (!row.active && row.assessment_instance_id == null) ? (
                     <span className="text-muted">{row.title}</span>
                   ) : (
-                    <a href={`${urlPrefix}${row.link}`}>
+                    <a href={getRowUrl(row, courseInstanceId)}>
                       {row.title}
                       {row.team_work && <i className="fas fa-users" aria-hidden="true" />}
                     </a>
@@ -140,7 +153,7 @@ export function StudentAssessmentsTable({
                 </td>
                 <td className="text-center align-middle">
                   {row.multiple_instance_header ? (
-                    <NewInstanceButton urlPrefix={urlPrefix} row={row} />
+                    <NewInstanceButton courseInstanceId={courseInstanceId} row={row} />
                   ) : (
                     <AssessmentScore row={row} />
                   )}
@@ -153,3 +166,4 @@ export function StudentAssessmentsTable({
     </div>
   );
 }
+StudentAssessmentsTable.displayName = 'StudentAssessmentsTable';
