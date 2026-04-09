@@ -11,6 +11,7 @@ import {
   validateRule,
   validateRuleCreditMonotonicity,
   validateRuleDateOrdering,
+  validateRuleStructuralDependencyIssues,
 } from './validation.js';
 
 describe('Valid configs', () => {
@@ -120,6 +121,10 @@ describe('Valid configs', () => {
     // Example 9: Reveal then hide questions again
     [
       {
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+        },
         afterComplete: {
           hideQuestions: false,
           showQuestionsAgainDate: '2024-03-23T23:59:00',
@@ -586,29 +591,21 @@ describe('Date ordering validation', () => {
     assert.deepEqual(errors, []);
   });
 
-  it('should not check show-again dates when release date but no due date', () => {
+  it('should not check show-again date ordering when release date but no due date', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         releaseDate: '2024-03-10T00:00:00',
-      },
-      afterComplete: {
-        hideQuestions: true,
-        showQuestionsAgainDate: '2024-03-05T00:00:00',
-        hideScore: true,
-        showScoreAgainDate: '2024-03-05T00:00:00',
       },
     });
     const errors = validateRuleDateOrdering(rule);
     assert.deepEqual(errors, []);
   });
 
-  it('should not check show-again dates when no date control', () => {
+  it('should not check show-again date ordering when no date control', () => {
     const rule = AccessControlJsonSchema.parse({
       afterComplete: {
         hideQuestions: true,
-        showQuestionsAgainDate: '2024-03-23T00:00:00',
         hideScore: true,
-        showScoreAgainDate: '2024-03-23T00:00:00',
       },
     });
     const errors = validateRuleDateOrdering(rule);
@@ -936,5 +933,173 @@ describe('Duplicate detection', () => {
     ];
     const result = validateAccessControlRules({ rules });
     assert.isTrue(result.errors.some((e) => e.includes('Duplicate early deadline date')));
+  });
+});
+
+describe('Structural field dependency validation', () => {
+  it('should reject early deadlines without a due date', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 120 }],
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+    assert.isTrue(issues.some((i) => i.message.includes('Early deadlines require a due date')));
+  });
+
+  it('should reject late deadlines without a due date', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+    assert.isTrue(issues.some((i) => i.message.includes('Late deadlines require a due date')));
+  });
+
+  it('should accept early deadlines with a due date', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        dueDate: '2024-03-21T23:59:00',
+        earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 120 }],
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+    assert.deepEqual(issues, []);
+  });
+
+  it('should reject after-complete dates without any deadline', () => {
+    const rule = AccessControlJsonSchema.parse({
+      afterComplete: {
+        hideQuestions: true,
+        showQuestionsAgainDate: '2024-03-23T23:59:00',
+        hideScore: true,
+        showScoreAgainDate: '2024-03-25T23:59:00',
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+    assert.isTrue(
+      issues.some(
+        (i) =>
+          i.message.includes('require at least one deadline') &&
+          JSON.stringify(i.path) === JSON.stringify(['afterComplete', 'showQuestionsAgainDate']),
+      ),
+    );
+    assert.isTrue(
+      issues.some(
+        (i) =>
+          i.message.includes('require at least one deadline') &&
+          JSON.stringify(i.path) === JSON.stringify(['afterComplete', 'showScoreAgainDate']),
+      ),
+    );
+  });
+
+  it('should accept after-complete dates with a deadline', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        dueDate: '2024-03-21T23:59:00',
+      },
+      afterComplete: {
+        hideQuestions: true,
+        showQuestionsAgainDate: '2024-03-23T23:59:00',
+        hideScore: true,
+        showScoreAgainDate: '2024-03-25T23:59:00',
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+    assert.deepEqual(issues, []);
+  });
+
+  it('should accept after-complete boolean fields without deadlines', () => {
+    const rule = AccessControlJsonSchema.parse({
+      afterComplete: {
+        hideQuestions: true,
+        hideScore: true,
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+    assert.deepEqual(issues, []);
+  });
+
+  it('should accept after-complete dates when only early deadlines exist', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 120 }],
+      },
+      afterComplete: {
+        hideQuestions: true,
+        showQuestionsAgainDate: '2024-03-23T23:59:00',
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+    const afterCompleteIssues = issues.filter((i) => i.path[0] === 'afterComplete');
+    assert.deepEqual(afterCompleteIssues, []);
+  });
+
+  it('should surface structural errors through validateRule', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        releaseDate: '2024-03-14T00:01:00',
+        earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 120 }],
+      },
+    });
+    const errors = validateRule(rule, 'none');
+    assert.isTrue(errors.some((e) => e.includes('Early deadlines require a due date')));
+  });
+
+  it('should surface structural errors through validateAccessControlRules', () => {
+    const rules = [
+      AccessControlJsonSchema.parse({
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
+        },
+      }),
+    ];
+    const result = validateAccessControlRules({ rules });
+    assert.isTrue(result.errors.some((e) => e.includes('Late deadlines require a due date')));
+  });
+
+  it('should enforce constraints on overrides too', () => {
+    const rule = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 120 }],
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'student_label',
+      ruleIndex: 1,
+    });
+    assert.isTrue(issues.some((i) => i.message.includes('Early deadlines require a due date')));
   });
 });

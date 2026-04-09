@@ -3,6 +3,7 @@ import {
   type AccessControlValidationRule,
   validateGlobalDateConsistencyIssues,
   validateRuleDateOrderingIssues,
+  validateRuleStructuralDependencyIssues,
 } from '../../../lib/assessment-access-control/validation.js';
 
 import { type AccessControlFormData, formDataToJson } from './types.js';
@@ -84,7 +85,10 @@ export function getGlobalDateValidationErrors(formData: AccessControlFormData): 
   }
 
   for (const validationRule of validationRules) {
-    for (const issue of validateRuleDateOrderingIssues(validationRule)) {
+    for (const issue of [
+      ...validateRuleStructuralDependencyIssues(validationRule),
+      ...validateRuleDateOrderingIssues(validationRule),
+    ]) {
       const path = mapIssueToFormFieldPath(issue);
       if (!path || seenPaths.has(path)) continue;
       seenPaths.add(path);

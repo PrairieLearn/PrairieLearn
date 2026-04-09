@@ -110,8 +110,13 @@ function DeadlineArrayInput({
   // function once, but these constraint values change over the form's lifetime.
   const validateDate = (value: string, index: number) => {
     if (!value) return 'Date is required';
-    const deadlineDate = new Date(value);
+
     const currentDueDate = dueDateRef.current ? new Date(dueDateRef.current) : null;
+    if (!currentDueDate) {
+      return isEarly ? 'Early deadlines require a due date' : 'Late deadlines require a due date';
+    }
+
+    const deadlineDate = new Date(value);
     const currentReleaseDate = releaseDateRef.current ? new Date(releaseDateRef.current) : null;
     const currentDeadlines = deadlinesRef.current;
 
@@ -123,7 +128,7 @@ function DeadlineArrayInput({
     }
 
     if (isEarly) {
-      if (currentDueDate && deadlineDate >= currentDueDate) {
+      if (deadlineDate >= currentDueDate) {
         return 'Early deadline is out of range';
       }
       if (index > 0 && currentDeadlines[index - 1]?.date) {
@@ -138,7 +143,7 @@ function DeadlineArrayInput({
       if (currentReleaseDate && deadlineDate <= currentReleaseDate) {
         return 'Deadline is out of range';
       }
-      if (currentDueDate && deadlineDate <= currentDueDate) {
+      if (deadlineDate <= currentDueDate) {
         return 'Late deadline is out of range';
       }
       if (index > 0 && currentDeadlines[index - 1]?.date) {

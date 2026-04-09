@@ -82,6 +82,87 @@ function findLastDeadlineMs(rule: AccessControlJson): number | null {
   return findDueMs(rule);
 }
 
+function hasAnyDeadline(rule: AccessControlJson): boolean {
+  const dc = rule.dateControl;
+  if (!dc) return false;
+  if (dc.dueDate) return true;
+  if (dc.earlyDeadlines && dc.earlyDeadlines.length > 0) return true;
+  if (dc.lateDeadlines && dc.lateDeadlines.length > 0) return true;
+  return false;
+}
+
+/**
+ * Validates structural field dependencies within a single rule.
+ * These are constraints where certain fields are meaningless without
+ * prerequisite fields being set.
+ */
+export function validateRuleStructuralDependencyIssues(
+  validationRule: AccessControlValidationRule,
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  const rule = validationRule.rule;
+  const dc = rule.dateControl;
+
+  // Constraint 1: Early/late deadlines require a due date.
+  // Early deadlines are "before the due date" and late deadlines are "after
+  // the due date" — they're defined relative to the due date.
+  if (dc) {
+    if (dc.earlyDeadlines && dc.earlyDeadlines.length > 0 && !dc.dueDate) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['dateControl', 'earlyDeadlines', 0, 'date'],
+        'Early deadlines require a due date.',
+      );
+    }
+    if (dc.lateDeadlines && dc.lateDeadlines.length > 0 && !dc.dueDate) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['dateControl', 'lateDeadlines', 0, 'date'],
+        'Late deadlines require a due date.',
+      );
+    }
+  }
+
+  // Constraint 2: After-complete date fields require at least one deadline.
+  // The date fields (showQuestionsAgainDate, hideQuestionsAgainDate,
+  // showScoreAgainDate) are meant to fire relative to the last deadline.
+  // Boolean fields (hideQuestions, hideScore) are fine without deadlines.
+  // PrairieTest exams manage completion independently, so after-complete
+  // dates are valid without deadlines when PT is configured.
+  const hasPrairieTest = (rule.integrations?.prairieTest?.exams ?? []).length > 0;
+  const ac = rule.afterComplete;
+  if (ac && !hasAnyDeadline(rule) && !hasPrairieTest) {
+    if (ac.showQuestionsAgainDate) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['afterComplete', 'showQuestionsAgainDate'],
+        'After-complete dates require at least one deadline (due date, early deadline, or late deadline).',
+      );
+    }
+    if (ac.hideQuestionsAgainDate) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['afterComplete', 'hideQuestionsAgainDate'],
+        'After-complete dates require at least one deadline (due date, early deadline, or late deadline).',
+      );
+    }
+    if (ac.showScoreAgainDate) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['afterComplete', 'showScoreAgainDate'],
+        'After-complete dates require at least one deadline (due date, early deadline, or late deadline).',
+      );
+    }
+  }
+
+  return issues;
+}
+
 export function validateRuleDateOrderingIssues(
   validationRule: AccessControlValidationRule,
 ): AccessControlValidationIssue[] {
@@ -422,6 +503,14 @@ export function validateRule(
     }
     lateDates.add(d.date);
   }
+
+  errors.push(
+    ...validateRuleStructuralDependencyIssues({
+      rule,
+      targetType,
+      ruleIndex: 0,
+    }).map((issue) => issue.message),
+  );
 
   const dateErrors = validateRuleDateOrdering(rule);
   errors.push(...dateErrors);
