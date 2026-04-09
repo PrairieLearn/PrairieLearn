@@ -133,22 +133,31 @@ export async function computeScopedJsonHash<T extends Record<string, unknown>>(
   }
 }
 
-export async function saveJsonFile<T extends Record<string, unknown>>({
+type PrepareJsonFileEditorResult<T> =
+  | { success: true; editor: FileModifyEditor; modifiedJsonContents: T }
+  | { success: false; reason: 'conflict' };
+
+interface JsonFileEditorParams<T extends Record<string, unknown>> {
+  applyChanges: (jsonContents: T) => T;
+  jsonPath: string;
+  conflictCheck: { origHash: string | null; scope: (jsonContents: T) => unknown };
+  locals: { authz_data: AuthzData; course: Course; user: User };
+  container: { rootPath: string; invalidRootPaths: string[] };
+}
+
+/**
+ * Builds a `FileModifyEditor` for a JSON file edit without executing it. Use
+ * this when the caller needs to defer or batch the actual write (e.g. to run
+ * additional steps before committing the change). Most callers should use
+ * `saveJsonFile` instead, which prepares and executes the editor in one call.
+ */
+export async function prepareJsonFileEditor<T extends Record<string, unknown>>({
   applyChanges,
   jsonPath,
   conflictCheck,
   locals,
   container,
-}: {
-  applyChanges: (jsonContents: T) => T;
-  jsonPath: string;
-  conflictCheck: {
-    origHash: string | null;
-    scope: (jsonContents: T) => unknown;
-  };
-  locals: { authz_data: AuthzData; course: Course; user: User };
-  container: { rootPath: string; invalidRootPaths: string[] };
-}): Promise<SaveJsonFileResult> {
+}: JsonFileEditorParams<T>): Promise<PrepareJsonFileEditorResult<T>> {
   // Read file once for conflict check, content modification, and TOCTOU hash.
   const rawContents = await fs.readFile(jsonPath, 'utf8');
   const fullFileHash = computeFileContentHash(rawContents);
@@ -173,6 +182,30 @@ export async function saveJsonFile<T extends Record<string, unknown>>({
     editContents: b64EncodeUnicode(formattedJson),
     origHash: fullFileHash,
   });
+
+  return { success: true, editor, modifiedJsonContents };
+}
+
+export async function saveJsonFile<T extends Record<string, unknown>>({
+  applyChanges,
+  jsonPath,
+  conflictCheck,
+  locals,
+  container,
+}: JsonFileEditorParams<T>): Promise<SaveJsonFileResult> {
+  const prepared = await prepareJsonFileEditor({
+    applyChanges,
+    jsonPath,
+    conflictCheck,
+    locals,
+    container,
+  });
+
+  if (!prepared.success) {
+    return prepared;
+  }
+
+  const { editor, modifiedJsonContents } = prepared;
 
   const serverJob = await editor.prepareServerJob();
   try {
