@@ -80,8 +80,12 @@ router.get(
     const userId = res.locals.authn_user.id;
 
     const [titleCheck, shortNameCheck] = await Promise.all([
-      title ? checkCourseTitleInInstitution({ title, institutionId, userId }) : { exists: false, owned: false },
-      shortName ? checkCourseShortNameInInstitution({ shortName, institutionId, userId }) : { exists: false, owned: false },
+      title
+        ? checkCourseTitleInInstitution({ title, institutionId, userId })
+        : { exists: false, owned: false },
+      shortName
+        ? checkCourseShortNameInInstitution({ shortName, institutionId, userId })
+        : { exists: false, owned: false },
     ]);
 
     res.json({ title: titleCheck, short_name: shortNameCheck });

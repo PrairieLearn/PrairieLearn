@@ -52,7 +52,10 @@ FROM
   )
 WHERE
   LOWER(c.title) = LOWER($title)
-  AND ($institution_id::bigint IS NULL OR c.institution_id = $institution_id)
+  AND (
+    $institution_id::bigint IS NULL
+    OR c.institution_id = $institution_id
+  )
   AND c.deleted_at IS NULL;
 
 -- BLOCK check_course_short_name_in_institution
@@ -67,7 +70,10 @@ FROM
   )
 WHERE
   LOWER(c.short_name) = LOWER($short_name)
-  AND ($institution_id::bigint IS NULL OR c.institution_id = $institution_id)
+  AND (
+    $institution_id::bigint IS NULL
+    OR c.institution_id = $institution_id
+  )
   AND c.deleted_at IS NULL;
 
 -- BLOCK update_course_commit_hash
