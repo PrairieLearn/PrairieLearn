@@ -50,7 +50,11 @@ export function RequestCourse({
           </button>
         `,
       })}
-      ${CourseNewRequestCard({ csrfToken: resLocals.__csrf_token })}
+      ${CourseNewRequestCard({
+        csrfToken: resLocals.__csrf_token,
+        isDefaultInstitution: resLocals.authn_institution.id === '1',
+        institutionName: resLocals.authn_institution.long_name,
+      })}
     `,
   });
 }
@@ -107,7 +111,15 @@ function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {
   `;
 }
 
-function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
+function CourseNewRequestCard({
+  csrfToken,
+  isDefaultInstitution,
+  institutionName,
+}: {
+  csrfToken: string;
+  isDefaultInstitution: boolean;
+  institutionName: string;
+}): HtmlValue {
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -147,35 +159,68 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               />
             </div>
           </div>
-          <div class="row">
-            <div class="mb-3 col-md-6">
-              <label class="form-label" for="cr-institution">Institution</label>
-              <input
-                type="text"
-                class="form-control"
-                name="cr-institution"
-                id="cr-institution"
-                minlength="1"
-                required
-              />
-              <small class="form-text text-muted">
-                This is your academic institution (e.g., "University of Illinois").
-              </small>
-            </div>
-            <div class="mb-3 col-md-6">
-              <label class="form-label" for="cr-email">Email</label>
-              <input
-                type="email"
-                class="form-control"
-                name="cr-email"
-                id="cr-email"
-                placeholder="login@yourinstitution.edu"
-                minlength="1"
-                required
-              />
-              <small class="form-text text-muted"> Use your official work email address. </small>
-            </div>
-          </div>
+          ${isDefaultInstitution
+            ? html`
+                <div class="row">
+                  <div class="mb-3 col-md-6">
+                    <label class="form-label" for="cr-institution">Institution</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="cr-institution"
+                      id="cr-institution"
+                      minlength="1"
+                      required
+                    />
+                    <small class="form-text text-muted">
+                      This is your academic institution (e.g., "University of Illinois").
+                    </small>
+                  </div>
+                  <div class="mb-3 col-md-6">
+                    <label class="form-label" for="cr-email">Email</label>
+                    <input
+                      type="email"
+                      class="form-control"
+                      name="cr-email"
+                      id="cr-email"
+                      placeholder="login@yourinstitution.edu"
+                      minlength="1"
+                      required
+                    />
+                    <small class="form-text text-muted">
+                      You are not signed in with an institutional account, please sign into
+                      PrairieLearn with your institutional account when requesting a course.
+                      Alternatively, you can enter your institutional email address here (your
+                      request may be processed more slowly).
+                    </small>
+                    <div
+                      class="d-none alert alert-warning mt-2 mb-0"
+                      id="cr-email-warning"
+                      role="alert"
+                    >
+                      This doesn't look like an institutional email address. Course requests from
+                      non-institutional email addresses may be rejected. Please use your official
+                      institution email if you have one.
+                    </div>
+                  </div>
+                </div>
+              `
+            : html`
+                <div class="mb-3">
+                  <label class="form-label">Institution</label>
+                  <input
+                    type="text"
+                    class="form-control-plaintext"
+                    readonly
+                    value="${institutionName}"
+                  />
+                  <input type="hidden" name="cr-institution" value="${institutionName}" />
+                  <small class="form-text text-muted">
+                    This is determined by your sign-in account. If you want to request a course for
+                    a different institution, please sign in with the appropriate account.
+                  </small>
+                </div>
+              `}
           <div class="mb-3">
             <label class="form-label" for="cr-shortname">Course Rubric and Number</label>
             <input
@@ -204,6 +249,22 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             <small class="form-text text-muted">
               This is the official title of the course, as given in the course catalog.
             </small>
+            <div class="d-none alert alert-danger mt-2 mb-0" id="cr-title-owned" role="alert">
+              You already own a course with this name. If you want to offer a new semester or
+              section,
+              <a
+                href="https://docs.prairielearn.com/courseInstance/#creating-a-course-instance"
+                target="_blank"
+                rel="noopener noreferrer"
+                >create a new course instance</a
+              >
+              from within your existing course instead of requesting a new one.
+            </div>
+            <div class="d-none alert alert-warning mt-2 mb-0" id="cr-title-exists" role="alert">
+              A course with this name already exists on PrairieLearn. If you'd like to share content
+              with the existing instructor, consider reaching out to them. If you prefer a separate
+              course, you may continue and your request will be reviewed.
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-label" for="cr-ghuser">GitHub Username (optional)</label>

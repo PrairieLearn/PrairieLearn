@@ -40,6 +40,28 @@ WHERE
 LIMIT
   1;
 
+-- BLOCK get_existing_courses_by_title
+SELECT
+  c.id,
+  c.short_name,
+  c.title,
+  EXISTS (
+    SELECT
+      1
+    FROM
+      course_permissions AS cp
+    WHERE
+      cp.course_id = c.id
+      AND cp.user_id = $user_id
+      AND cp.course_role = 'Owner'
+  ) AS is_owner
+FROM
+  courses AS c
+WHERE
+  LOWER(BTRIM(c.title)) = LOWER(BTRIM($title))
+  AND c.institution_id = $institution_id
+  AND c.deleted_at IS NULL;
+
 -- BLOCK can_auto_create_course
 SELECT
   (

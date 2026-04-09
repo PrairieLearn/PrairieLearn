@@ -61,6 +61,39 @@ router.get(
   }),
 );
 
+const ExistingCourseCheckSchema = z.object({
+  id: IdSchema,
+  short_name: z.string().nullable(),
+  title: z.string().nullable(),
+  is_owner: z.boolean(),
+});
+
+router.get(
+  '/check',
+  typedAsyncHandler<'plain'>(async (req, res) => {
+    const requestSchema = z.object({
+      title: z.string().trim().min(1),
+    });
+    const { title } = requestSchema.parse(req.query);
+
+    const existingCourses = await queryRows(
+      sql.get_existing_courses_by_title,
+      {
+        user_id: res.locals.authn_user.id,
+        title,
+        institution_id: res.locals.authn_institution.id,
+      },
+      ExistingCourseCheckSchema,
+    );
+
+    const ownedCourse = existingCourses.find((c) => c.is_owner);
+    res.json({
+      owned: ownedCourse != null,
+      exists: existingCourses.length > 0,
+    });
+  }),
+);
+
 router.post(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
@@ -101,7 +134,12 @@ router.post(
       flash('error', 'The last name should not be empty.');
       error = true;
     }
-    if (work_email.length === 0) {
+
+    // This indicates that the user is not signed in with an institutional account.
+    const isDefaultInstitution = res.locals.authn_institution.id === '1';
+
+    // We require a work email if the user is not signed in with an institutional account.
+    if (isDefaultInstitution && work_email.length === 0) {
       flash('error', 'The work email should not be empty.');
       error = true;
     }
@@ -125,6 +163,26 @@ router.post(
 
     if (hasExistingCourseRequest) {
       flash('error', 'You already have a request for this course.');
+      error = true;
+    }
+
+    // Check if a course with this title already exists at the user's institution.
+    const existingCourses = await queryRows(
+      sql.get_existing_courses_by_title,
+      {
+        user_id: res.locals.authn_user.id,
+        title,
+        institution_id: res.locals.authn_institution.id,
+      },
+      ExistingCourseCheckSchema,
+    );
+
+    const ownedCourse = existingCourses.find((c) => c.is_owner);
+    if (ownedCourse) {
+      flash(
+        'error',
+        `You already own a course with the name "${title}". If you want to offer a new semester or section, create a new course instance from within your existing course instead of requesting a new one.`,
+      );
       error = true;
     }
 
@@ -186,7 +244,8 @@ router.post(
             `Course repo: ${repo_short_name}\n` +
             `Course rubric: ${short_name}\n` +
             `Course title: ${title}\n` +
-            `Requested by: ${first_name} ${last_name} (${work_email})\n` +
+            `Institution: ${res.locals.authn_institution.long_name}\n` +
+            `Requested by: ${first_name} ${last_name} (${work_email || res.locals.authn_user.uid})\n` +
             `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
             `GitHub username: ${github_user || 'not provided'}`,
         );
@@ -204,7 +263,8 @@ router.post(
           '*Incoming course request*\n' +
             `Course rubric: ${short_name}\n` +
             `Course title: ${title}\n` +
-            `Requested by: ${first_name} ${last_name} (${work_email})\n` +
+            `Institution: ${res.locals.authn_institution.long_name}\n` +
+            `Requested by: ${first_name} ${last_name} (${work_email || res.locals.authn_user.uid})\n` +
             `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
             `GitHub username: ${github_user || 'not provided'}`,
         );
