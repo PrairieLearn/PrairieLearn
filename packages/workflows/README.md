@@ -12,7 +12,7 @@ The workflow engine is initialized automatically in `server.ts` at startup. It u
 import * as workflows from '@prairielearn/workflows';
 
 await workflows.init(pgConfig, idleErrorHandler);
-workflows.startCronLoop(); // starts crash-recovery polling
+workflows.startRecoveryLoop(); // starts crash-recovery polling
 ```
 
 ### Defining a workflow
@@ -51,13 +51,13 @@ registerWorkflow<RubricAssistantState>({
         if (rubricData) {
           return {
             state: { ...run.state, step: 'rubric_ready', rubric_exists: true },
-            status: 'waiting_for_input',
+            status: 'waiting',
             phase: 'rubric_setup',
           };
         } else {
           return {
             state: { ...run.state, step: 'awaiting_input', rubric_exists: false },
-            status: 'waiting_for_input',
+            status: 'waiting',
             phase: 'rubric_setup',
           };
         }
@@ -70,7 +70,7 @@ registerWorkflow<RubricAssistantState>({
         await runAgent(run);
         return {
           state: { step: 'rubric_ready', rubric_exists: true },
-          status: 'waiting_for_input',
+          status: 'waiting',
           phase: 'rubric_setup',
         };
       }
@@ -80,7 +80,7 @@ registerWorkflow<RubricAssistantState>({
       // transitions to 'agent_running'.
       case 'rubric_ready':
       case 'awaiting_input':
-        return { state: run.state, status: 'waiting_for_input', phase: 'rubric_setup' };
+        return { state: run.state, status: 'waiting', phase: 'rubric_setup' };
 
       default:
         return {
@@ -102,15 +102,20 @@ const run = await startWorkflow('rubric_assistant', {
   initialState: { step: 'rubric_check' },
   context: { assessment_question_id: '42', course_id: '1' },
 });
+// If you want compile-time checking of initialState shape:
+// const run = await startWorkflow<RubricAssistantState>('rubric_assistant', {
+//   initialState: { step: 'rubric_check' },
+//   context: { assessment_question_id: '42', course_id: '1' },
+// });
 // run.id is the workflow run ID
 // run.status is 'running' — the step loop continues in the background
 ```
 
-The `context` field stores domain-specific identifiers alongside the run for querying. The engine never inspects it. You can add your own indexes on `context` fields via standard migrations.
+The `context` field stores domain-specific identifiers as string key/value pairs alongside the run for querying. The engine never inspects it. You can add your own indexes on `context` fields via standard migrations.
 
 ### Pausing for external input
 
-When a step returns `status: 'waiting_for_input'`, the workflow pauses — for example, waiting for a human response before making an LLM call. Call `continueWorkflow` to merge new data into state and resume:
+When a step returns `status: 'waiting'`, the workflow pauses — for example, waiting for a human response before making an LLM call. Call `continueWorkflow` to merge new data into state and resume:
 
 ```ts
 import { continueWorkflow } from '@prairielearn/workflows';
@@ -156,13 +161,13 @@ await cancelWorkflow(run.id);
 
 The `status` field controls what the engine does next:
 
-| Status                | Engine behavior                                      |
-| --------------------- | ---------------------------------------------------- |
-| `'continue'`          | Persist state, call `takeStep` again immediately     |
-| `'waiting_for_input'` | Persist state, pause until `continueWorkflow` called |
-| `'completed'`         | Persist state, mark run as finished                  |
-| `'error'`             | Persist state + `error_message`, mark run as failed  |
+| Status        | Engine behavior                                      |
+| ------------- | ---------------------------------------------------- |
+| `'continue'`  | Persist state, call `takeStep` again immediately     |
+| `'waiting'`   | Persist state, pause until `continueWorkflow` called |
+| `'completed'` | Persist state, mark run as finished                  |
+| `'error'`     | Persist state + `error_message`, mark run as failed  |
 
 ### Crash recovery
 
-The engine uses soft locks with heartbeats. If a server crashes mid-step, the crash-recovery cron (started by `startCronLoop()`) detects the stale heartbeat and resumes the workflow from its last persisted state on another server.
+The engine uses soft locks with heartbeats. If a server crashes mid-step, the recovery loop (started by `startRecoveryLoop()`) detects the stale heartbeat and resumes the workflow from its last persisted state on another server.

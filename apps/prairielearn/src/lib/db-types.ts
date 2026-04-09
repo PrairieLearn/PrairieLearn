@@ -99,7 +99,7 @@ export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
 
 export const EnumWorkflowRunStatusSchema = z.enum([
   'running',
-  'waiting_for_input',
+  'waiting',
   'completed',
   'error',
   'canceled',

@@ -3,13 +3,14 @@ import { z } from 'zod';
 /** All possible statuses for a workflow run. */
 export const WorkflowRunStatusSchema = z.enum([
   'running',
-  'waiting_for_input',
+  'waiting',
   'completed',
   'error',
   'canceled',
 ]);
 
 export type WorkflowRunStatus = z.infer<typeof WorkflowRunStatusSchema>;
+export type WorkflowContext = Record<string, string>;
 
 /** Zod schema for validating rows from the `workflow_runs` table. */
 export const WorkflowRunSchema = z.object({
@@ -21,7 +22,7 @@ export const WorkflowRunSchema = z.object({
   locked_by: z.string().nullable(),
   locked_at: z.date().nullable(),
   heartbeat_at: z.date().nullable(),
-  context: z.record(z.unknown()),
+  context: z.record(z.string()),
   created_at: z.date(),
   updated_at: z.date(),
   completed_at: z.date().nullable(),
@@ -43,11 +44,11 @@ export type WorkflowRun<TState = Record<string, unknown>> = Omit<
 /**
  * Status values that a step function can return:
  * - `'continue'` — run the next step immediately.
- * - `'waiting_for_input'` — pause until {@link continueWorkflow} is called.
+ * - `'waiting'` — pause until {@link continueWorkflow} is called.
  * - `'completed'` — the workflow finished successfully.
  * - `'error'` — the workflow encountered a domain error.
  */
-export type StepResultStatus = 'continue' | 'waiting_for_input' | 'completed' | 'error';
+export type StepResultStatus = 'continue' | 'waiting' | 'completed' | 'error';
 
 /**
  * The value returned by a `takeStep` call to signal the engine what to do next.

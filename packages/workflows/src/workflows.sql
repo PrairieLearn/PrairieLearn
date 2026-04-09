@@ -27,7 +27,7 @@ FROM
   workflow_runs
 WHERE
   type = $type
-  AND status IN ('running', 'waiting_for_input')
+  AND status IN ('running', 'waiting')
   AND context @> $context_filter::jsonb
 ORDER BY
   created_at DESC
@@ -115,7 +115,7 @@ SET
   updated_at = now()
 WHERE
   id = $id
-  AND status = 'waiting_for_input'
+  AND status = 'waiting'
 RETURNING
   *;
 

@@ -1,4 +1,7 @@
+import { setTimeout as sleep } from 'node:timers/promises';
+
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+import { z } from 'zod';
 
 import { PostgresPool, makePostgresTestUtils } from '@prairielearn/postgres';
 
@@ -39,12 +42,12 @@ describe('@prairielearn/workflows', () => {
       throw err;
     });
     // Create the table manually since migrations don't run in package tests.
-    await testPool.queryAsync(
+    await testPool.execute(
       `CREATE TABLE IF NOT EXISTS workflow_runs (
         id bigserial PRIMARY KEY,
         type text NOT NULL,
         status text NOT NULL DEFAULT 'running' CHECK (
-          status IN ('running', 'waiting_for_input', 'completed', 'error', 'canceled')
+          status IN ('running', 'waiting', 'completed', 'error', 'canceled')
         ),
         phase text,
         state jsonb NOT NULL DEFAULT '{}'::jsonb,
@@ -58,19 +61,15 @@ describe('@prairielearn/workflows', () => {
         error_message text,
         output text NOT NULL DEFAULT ''
       )`,
-      {},
     );
-    await testPool.queryAsync(
+    await testPool.execute(
       'CREATE INDEX IF NOT EXISTS workflow_runs_type_status_idx ON workflow_runs (type, status)',
-      {},
     );
-    await testPool.queryAsync(
+    await testPool.execute(
       "CREATE INDEX IF NOT EXISTS workflow_runs_status_running_idx ON workflow_runs (status, heartbeat_at) WHERE status = 'running'",
-      {},
     );
-    await testPool.queryAsync(
+    await testPool.execute(
       'CREATE INDEX IF NOT EXISTS workflow_runs_context_idx ON workflow_runs USING gin (context)',
-      {},
     );
   });
 
@@ -101,7 +100,7 @@ describe('@prairielearn/workflows', () => {
 
       const run = await startWorkflow(type, {
         initialState: { step: 0 },
-        context: { test: true },
+        context: { test: 'true' },
       });
 
       assert.equal(run.type, type);
@@ -131,7 +130,7 @@ describe('@prairielearn/workflows', () => {
           if (run.state.phase === 'init') {
             return {
               state: { phase: 'waiting' },
-              status: 'waiting_for_input',
+              status: 'waiting',
               phase: 'awaiting-input',
             };
           }
@@ -154,10 +153,10 @@ describe('@prairielearn/workflows', () => {
         initialState: { phase: 'init' },
       });
 
-      await waitForStatus(run.id, 'waiting_for_input');
+      await waitForStatus(run.id, 'waiting');
 
       const pausedRun = await getWorkflowRun<{ phase: string; input?: string }>(run.id);
-      assert.equal(pausedRun.status, 'waiting_for_input');
+      assert.equal(pausedRun.status, 'waiting');
       assert.equal(pausedRun.state.phase, 'waiting');
 
       await continueWorkflow(run.id, { input: 'hello' });
@@ -220,7 +219,7 @@ describe('@prairielearn/workflows', () => {
         async takeStep(): Promise<StepResult<{ waiting: boolean }>> {
           return {
             state: { waiting: true },
-            status: 'waiting_for_input',
+            status: 'waiting',
             phase: 'waiting',
           };
         },
@@ -228,7 +227,7 @@ describe('@prairielearn/workflows', () => {
 
       const run = await startWorkflow(type, { initialState: { waiting: false } });
 
-      await waitForStatus(run.id, 'waiting_for_input');
+      await waitForStatus(run.id, 'waiting');
 
       await cancelWorkflow(run.id);
 
@@ -264,22 +263,22 @@ describe('@prairielearn/workflows', () => {
       registerWorkflow<{ x: number }>({
         type,
         async takeStep(): Promise<StepResult<{ x: number }>> {
-          return { state: { x: 1 }, status: 'waiting_for_input' };
+          return { state: { x: 1 }, status: 'waiting' };
         },
       });
 
       const run = await startWorkflow(type, {
         initialState: { x: 0 },
-        context: { entity_id: 42 },
+        context: { entity_id: '42' },
       });
 
-      await waitForStatus(run.id, 'waiting_for_input');
+      await waitForStatus(run.id, 'waiting');
 
-      const found = await getActiveWorkflowRun(type, { entity_id: 42 });
+      const found = await getActiveWorkflowRun(type, { entity_id: '42' });
       assert.isNotNull(found);
       assert.equal(found!.id, run.id);
 
-      const notFound = await getActiveWorkflowRun(type, { entity_id: 999 });
+      const notFound = await getActiveWorkflowRun(type, { entity_id: '999' });
       assert.isNull(notFound);
     });
   });
@@ -346,7 +345,7 @@ describe('@prairielearn/workflows', () => {
         },
       });
 
-      const ctx = { course_id: 1, assessment_id: 2, name: 'test' };
+      const ctx = { course_id: '1', assessment_id: '2', name: 'test' };
       const run = await startWorkflow(type, {
         initialState: {},
         context: ctx,
@@ -377,13 +376,14 @@ describe('@prairielearn/workflows', () => {
       // Manually insert a run that looks like it was mid-execution when
       // a worker crashed: status is 'running', it has a lock, but the
       // heartbeat is 5 minutes stale.
-      const result = await testPool.queryAsync(
+      const row = await testPool.queryRow(
         `INSERT INTO workflow_runs (type, status, state, locked_by, locked_at, heartbeat_at)
          VALUES ($type, 'running', $state::jsonb, 'dead-worker', now() - interval '10 minutes', now() - interval '5 minutes')
          RETURNING id`,
         { type, state: JSON.stringify({ step: 1 }) },
+        z.object({ id: z.coerce.string() }),
       );
-      const runId = String(result.rows[0].id);
+      const runId = row.id;
 
       // The stale lock (heartbeat > 2 min ago) should be treated as
       // abandoned. resumeWorkflow acquires a fresh lock and finishes.
@@ -408,13 +408,14 @@ describe('@prairielearn/workflows', () => {
       });
 
       // Insert a run with a fresh heartbeat (another worker is actively running it).
-      const result = await testPool.queryAsync(
+      const row = await testPool.queryRow(
         `INSERT INTO workflow_runs (type, status, state, locked_by, locked_at, heartbeat_at)
          VALUES ($type, 'running', $state::jsonb, 'other-worker', now(), now())
          RETURNING id`,
         { type, state: JSON.stringify({ v: 0 }) },
+        z.object({ id: z.coerce.string() }),
       );
-      const runId = String(result.rows[0].id);
+      const runId = row.id;
 
       // resumeWorkflow should fail to acquire the lock and return without
       // modifying the run (the other worker still "owns" it).
@@ -437,8 +438,4 @@ async function waitForStatus(runId: string, status: string, timeoutMs = 5000): P
   }
   const run = await getWorkflowRun(runId);
   throw new Error(`Timeout waiting for status '${status}', current status: '${run.status}'`);
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

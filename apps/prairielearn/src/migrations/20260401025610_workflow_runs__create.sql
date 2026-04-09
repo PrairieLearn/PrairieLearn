@@ -1,6 +1,6 @@
 CREATE TYPE enum_workflow_run_status AS ENUM(
   'running',
-  'waiting_for_input',
+  'waiting',
   'completed',
   'error',
   'canceled'
@@ -22,6 +22,16 @@ CREATE TABLE IF NOT EXISTS workflow_runs (
   error_message text,
   output text NOT NULL DEFAULT '',
   CONSTRAINT workflow_runs_context_type_check CHECK (jsonb_typeof(context) = 'object'),
+  CONSTRAINT workflow_runs_context_value_type_check CHECK (
+    NOT EXISTS (
+      SELECT
+        1
+      FROM
+        jsonb_each(context) AS context_item (k, v)
+      WHERE
+        jsonb_typeof(context_item.v) <> 'string'
+    )
+  ),
   CONSTRAINT workflow_runs_state_type_check CHECK (jsonb_typeof(state) = 'object')
 );
 

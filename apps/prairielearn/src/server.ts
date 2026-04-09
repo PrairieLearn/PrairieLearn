@@ -2367,9 +2367,11 @@ if (shouldStartServer) {
       renewIntervalMs: config.namedLocksRenewIntervalMs,
     });
 
-    // Workflow engine uses its own connection pool to avoid deadlocks
-    // with long-running workflow soft locks.
-    await workflows.init(pgConfig, idleErrorHandler);
+    if (config.workflowsActive) {
+      // Workflow engine uses its own connection pool to isolate workflow
+      // traffic from request-serving queries on the main pool.
+      await workflows.init(pgConfig, idleErrorHandler);
+    }
 
     logger.verbose('Successfully connected to database');
 
@@ -2605,7 +2607,9 @@ if (shouldStartServer) {
     }
 
     await cron.init();
-    workflows.startCronLoop();
+    if (config.workflowsActive) {
+      workflows.startRecoveryLoop();
+    }
     await lifecycleHooks.completeInstanceLaunch();
   } catch (err) {
     // When HMR is active, we'll defer this error logging to the Vite plugin, which can

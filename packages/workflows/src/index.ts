@@ -9,8 +9,8 @@ export {
   getWorkflowRun,
   getActiveWorkflowRun,
   appendWorkflowOutput,
-  startCronLoop,
-  stopCronLoop,
+  startRecoveryLoop,
+  stopRecoveryLoop,
 } from './workflows.js';
 
 export type {
@@ -21,6 +21,7 @@ export type {
   StepResultStatus,
   WorkflowStepContext,
   WorkflowLogger,
+  WorkflowContext,
 } from './workflows.types.js';
 
 export { WorkflowRunSchema, WorkflowRunStatusSchema } from './workflows.types.js';
