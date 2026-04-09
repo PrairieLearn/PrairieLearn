@@ -18,7 +18,7 @@ const defaultMainRule: MainRuleData = {
   dueDate: '2025-04-01T00:00:00Z',
   earlyDeadlines: [{ date: '2025-03-15T00:00:00Z', credit: 110 }],
   lateDeadlines: [{ date: '2025-04-15T00:00:00Z', credit: 50 }],
-  afterLastDeadline: { credit: 0, allowSubmissions: false },
+  afterLastDeadline: { allowSubmissions: false },
   durationMinutes: 60,
   password: 'secret',
   prairieTestExams: [],
@@ -231,5 +231,44 @@ describe('formDataToJson', () => {
     expect(dc.durationMinutes).toBeNull();
     expect('password' in dc).toBe(true);
     expect(dc.password).toBeNull();
+  });
+
+  it('override afterLastDeadline includes explicit credit: null for no_submissions', () => {
+    const override: OverrideData = {
+      ...baseOverride,
+      trackingId: 'o-ald-nosub',
+      overriddenFields: ['afterLastDeadline'],
+      afterLastDeadline: { allowSubmissions: false },
+    };
+
+    const result = formDataToJson(buildFormData(override));
+    const dc = result[1].dateControl!;
+    expect(dc.afterLastDeadline).toEqual({ allowSubmissions: false, credit: null });
+  });
+
+  it('override afterLastDeadline includes explicit credit: null for practice_submissions', () => {
+    const override: OverrideData = {
+      ...baseOverride,
+      trackingId: 'o-ald-practice',
+      overriddenFields: ['afterLastDeadline'],
+      afterLastDeadline: { allowSubmissions: true },
+    };
+
+    const result = formDataToJson(buildFormData(override));
+    const dc = result[1].dateControl!;
+    expect(dc.afterLastDeadline).toEqual({ allowSubmissions: true, credit: null });
+  });
+
+  it('override afterLastDeadline preserves numeric credit for partial_credit', () => {
+    const override: OverrideData = {
+      ...baseOverride,
+      trackingId: 'o-ald-partial',
+      overriddenFields: ['afterLastDeadline'],
+      afterLastDeadline: { allowSubmissions: true, credit: 50 },
+    };
+
+    const result = formDataToJson(buildFormData(override));
+    const dc = result[1].dateControl!;
+    expect(dc.afterLastDeadline).toEqual({ allowSubmissions: true, credit: 50 });
   });
 });

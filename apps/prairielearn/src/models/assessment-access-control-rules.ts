@@ -125,17 +125,17 @@ function dbBaseRowToAccessControlJson(
   if (rule.date_control_late_deadlines_overridden) {
     dateControl.lateDeadlines = row.late_deadlines ?? [];
   }
-  if (
-    rule.date_control_after_last_deadline_credit_overridden ||
-    rule.date_control_after_last_deadline_allow_submissions !== null
-  ) {
+  const allowSubmissions = rule.date_control_after_last_deadline_allow_submissions;
+  if (allowSubmissions === true) {
     dateControl.afterLastDeadline = {
+      allowSubmissions,
       credit: unmapField(
         rule.date_control_after_last_deadline_credit_overridden,
         rule.date_control_after_last_deadline_credit,
       ),
-      allowSubmissions: rule.date_control_after_last_deadline_allow_submissions ?? undefined,
     };
+  } else if (allowSubmissions === false) {
+    dateControl.afterLastDeadline = { allowSubmissions };
   }
   if (rule.date_control_duration_minutes_overridden) {
     dateControl.durationMinutes = rule.date_control_duration_minutes;
@@ -148,20 +148,27 @@ function dbBaseRowToAccessControlJson(
   if (rule.after_complete_hide_questions !== null) {
     afterComplete.hideQuestions = rule.after_complete_hide_questions;
   }
-  if (rule.after_complete_show_questions_again_date_overridden) {
-    afterComplete.showQuestionsAgainDate =
-      rule.after_complete_show_questions_again_date?.toISOString() ?? null;
-  }
-  if (rule.after_complete_hide_questions_again_date_overridden) {
-    afterComplete.hideQuestionsAgainDate =
-      rule.after_complete_hide_questions_again_date?.toISOString() ?? null;
+  // Only emit date fields when hideQuestions is not explicitly false.
+  // When hideQuestions is false, dates are irrelevant (questions are always shown).
+  if (rule.after_complete_hide_questions !== false) {
+    if (rule.after_complete_show_questions_again_date_overridden) {
+      afterComplete.showQuestionsAgainDate =
+        rule.after_complete_show_questions_again_date?.toISOString() ?? null;
+    }
+    if (rule.after_complete_hide_questions_again_date_overridden) {
+      afterComplete.hideQuestionsAgainDate =
+        rule.after_complete_hide_questions_again_date?.toISOString() ?? null;
+    }
   }
   if (rule.after_complete_hide_score !== null) {
     afterComplete.hideScore = rule.after_complete_hide_score;
   }
-  if (rule.after_complete_show_score_again_date_overridden) {
-    afterComplete.showScoreAgainDate =
-      rule.after_complete_show_score_again_date?.toISOString() ?? null;
+  // Only emit date field when hideScore is not explicitly false.
+  if (rule.after_complete_hide_score !== false) {
+    if (rule.after_complete_show_score_again_date_overridden) {
+      afterComplete.showScoreAgainDate =
+        rule.after_complete_show_score_again_date?.toISOString() ?? null;
+    }
   }
 
   const isMainRule = rule.number === 0 && rule.target_type === 'none';

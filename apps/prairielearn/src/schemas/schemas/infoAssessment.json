@@ -791,24 +791,44 @@
             },
             "afterLastDeadline": {
               "description": "Controls for assessment behaviour after last deadline",
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "allowSubmissions": {
-                  "type": "boolean"
-                },
-                "credit": {
-                  "anyOf": [
-                    {
-                      "type": "number",
-                      "minimum": 0
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["allowSubmissions"],
+                  "properties": {
+                    "allowSubmissions": {
+                      "type": "boolean",
+                      "const": false
                     },
-                    {
+                    "credit": {
                       "type": "null"
                     }
-                  ]
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["allowSubmissions"],
+                  "properties": {
+                    "allowSubmissions": {
+                      "type": "boolean",
+                      "const": true
+                    },
+                    "credit": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
                 }
-              }
+              ]
             },
             "durationMinutes": {
               "description": "Desired duration limit for assessment",

@@ -23,10 +23,9 @@ export interface DeadlineEntry {
   credit: number;
 }
 
-export interface AfterLastDeadlineValue {
-  allowSubmissions?: boolean;
-  credit?: number | null;
-}
+export type AfterLastDeadlineValue =
+  | { allowSubmissions: false; credit?: null }
+  | { allowSubmissions: true; credit?: number | null };
 
 export interface QuestionVisibilityValue {
   hideQuestions: boolean;
@@ -333,14 +332,16 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
     output.afterComplete = {
       hideQuestions: qv.hideQuestions,
     };
-    if (qv.showAgainDate) {
-      output.afterComplete.showQuestionsAgainDate = qv.showAgainDate;
-    }
-    if (qv.hideAgainDate) {
-      output.afterComplete.hideQuestionsAgainDate = qv.hideAgainDate;
+    if (qv.hideQuestions) {
+      if (qv.showAgainDate) {
+        output.afterComplete.showQuestionsAgainDate = qv.showAgainDate;
+      }
+      if (qv.hideAgainDate) {
+        output.afterComplete.hideQuestionsAgainDate = qv.hideAgainDate;
+      }
     }
     output.afterComplete.hideScore = sv.hideScore;
-    if (sv.showAgainDate) {
+    if (sv.hideScore && sv.showAgainDate) {
       output.afterComplete.showScoreAgainDate = sv.showAgainDate;
     }
   }
@@ -372,7 +373,12 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
     if (of.has('earlyDeadlines')) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (of.has('lateDeadlines')) output.dateControl.lateDeadlines = rule.lateDeadlines;
     if (of.has('afterLastDeadline') && rule.afterLastDeadline) {
-      output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+      // Always include explicit credit so the override clears the main
+      // rule's credit rather than silently inheriting it.
+      const ald = rule.afterLastDeadline;
+      output.dateControl.afterLastDeadline = ald.allowSubmissions
+        ? { allowSubmissions: true, credit: ald.credit ?? null }
+        : { allowSubmissions: false, credit: null };
     }
     if (of.has('durationMinutes')) output.dateControl.durationMinutes = rule.durationMinutes;
     if (of.has('password')) output.dateControl.password = rule.password;
@@ -382,16 +388,18 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
     output.afterComplete = {};
     if (of.has('questionVisibility')) {
       output.afterComplete.hideQuestions = rule.questionVisibility.hideQuestions;
-      if (rule.questionVisibility.showAgainDate) {
-        output.afterComplete.showQuestionsAgainDate = rule.questionVisibility.showAgainDate;
-      }
-      if (rule.questionVisibility.hideAgainDate) {
-        output.afterComplete.hideQuestionsAgainDate = rule.questionVisibility.hideAgainDate;
+      if (rule.questionVisibility.hideQuestions) {
+        if (rule.questionVisibility.showAgainDate) {
+          output.afterComplete.showQuestionsAgainDate = rule.questionVisibility.showAgainDate;
+        }
+        if (rule.questionVisibility.hideAgainDate) {
+          output.afterComplete.hideQuestionsAgainDate = rule.questionVisibility.hideAgainDate;
+        }
       }
     }
     if (of.has('scoreVisibility')) {
       output.afterComplete.hideScore = rule.scoreVisibility.hideScore;
-      if (rule.scoreVisibility.showAgainDate) {
+      if (rule.scoreVisibility.hideScore && rule.scoreVisibility.showAgainDate) {
         output.afterComplete.showScoreAgainDate = rule.scoreVisibility.showAgainDate;
       }
     }

@@ -9,12 +9,15 @@ export const DeadlineEntryJsonSchema = z
   })
   .strict();
 
-const AfterLastDeadlineJsonSchema = z
-  .object({
-    allowSubmissions: z.boolean().optional(),
-    credit: z.number().min(0).nullable().optional(),
-  })
-  .strict();
+const AfterLastDeadlineJsonSchema = z.discriminatedUnion('allowSubmissions', [
+  z.object({ allowSubmissions: z.literal(false), credit: z.null().optional() }).strict(),
+  z
+    .object({
+      allowSubmissions: z.literal(true),
+      credit: z.number().min(0).nullable().optional(),
+    })
+    .strict(),
+]);
 
 const DateControlJsonSchema = z
   .object({
@@ -80,35 +83,75 @@ const IntegrationsJsonSchema = z
   .strict()
   .optional();
 
+const HideQuestionsJsonSchema = z.discriminatedUnion('hideQuestions', [
+  z
+    .object({
+      hideQuestions: z.literal(false),
+      showQuestionsAgainDate: z.null().optional(),
+      hideQuestionsAgainDate: z.null().optional(),
+    })
+    .strict(),
+  z
+    .object({
+      hideQuestions: z.literal(true),
+      showQuestionsAgainDate: DatetimeLocalStringSchema.nullable().optional(),
+      hideQuestionsAgainDate: DatetimeLocalStringSchema.nullable().optional(),
+    })
+    .strict(),
+]);
+
+const HideScoreJsonSchema = z.discriminatedUnion('hideScore', [
+  z.object({ hideScore: z.literal(false), showScoreAgainDate: z.null().optional() }).strict(),
+  z
+    .object({
+      hideScore: z.literal(true),
+      showScoreAgainDate: DatetimeLocalStringSchema.nullable().optional(),
+    })
+    .strict(),
+]);
+
 const AfterCompleteJsonSchema = z
   .object({
-    hideQuestions: z
-      .boolean()
-      .optional()
-      .describe(
-        'Whether to hide questions after assessment completion. When false, questions are shown until showQuestionsAgainDate (if set).',
-      ),
-    showQuestionsAgainDate: DatetimeLocalStringSchema.nullable()
-      .optional()
-      .describe(
-        'Date as ISO String for when hidden questions become visible again after assessment completion',
-      ),
-    hideQuestionsAgainDate: DatetimeLocalStringSchema.nullable()
-      .optional()
-      .describe('Date as ISO String for when questions are re-hidden after being shown again'),
-    hideScore: z
-      .boolean()
-      .optional()
-      .describe(
-        'Whether to hide scores after assessment completion. When true, scores are hidden until showScoreAgainDate (if set).',
-      ),
-    showScoreAgainDate: DatetimeLocalStringSchema.nullable()
-      .optional()
-      .describe(
-        'Date as ISO String for when hidden scores become visible again after assessment completion',
-      ),
+    hideQuestions: z.boolean().optional(),
+    showQuestionsAgainDate: DatetimeLocalStringSchema.nullable().optional(),
+    hideQuestionsAgainDate: DatetimeLocalStringSchema.nullable().optional(),
+    hideScore: z.boolean().optional(),
+    showScoreAgainDate: DatetimeLocalStringSchema.nullable().optional(),
   })
   .strict()
+  .superRefine((data, ctx) => {
+    if (data.hideQuestions !== undefined) {
+      const picked = {
+        hideQuestions: data.hideQuestions,
+        ...(data.showQuestionsAgainDate !== undefined && {
+          showQuestionsAgainDate: data.showQuestionsAgainDate,
+        }),
+        ...(data.hideQuestionsAgainDate !== undefined && {
+          hideQuestionsAgainDate: data.hideQuestionsAgainDate,
+        }),
+      };
+      const result = HideQuestionsJsonSchema.safeParse(picked);
+      if (!result.success) {
+        for (const issue of result.error.issues) {
+          ctx.addIssue(issue);
+        }
+      }
+    }
+    if (data.hideScore !== undefined) {
+      const picked = {
+        hideScore: data.hideScore,
+        ...(data.showScoreAgainDate !== undefined && {
+          showScoreAgainDate: data.showScoreAgainDate,
+        }),
+      };
+      const result = HideScoreJsonSchema.safeParse(picked);
+      if (!result.success) {
+        for (const issue of result.error.issues) {
+          ctx.addIssue(issue);
+        }
+      }
+    }
+  })
   .optional();
 
 export const AccessControlJsonSchema = z
