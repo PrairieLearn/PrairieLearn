@@ -31,8 +31,12 @@ describe('Cron', { timeout: 60_000 }, function () {
   afterAll(helperServer.after);
 
   describe('1. cron jobs', () => {
-    it('should wait for 20 seconds', { timeout: 30_000 }, async () => {
+    it('should wait for cron jobs to run and then stop cron', { timeout: 30_000 }, async () => {
       await new Promise((resolve) => setTimeout(resolve, 20_000));
+      // Stop cron and wait for any in-flight jobs to finish. This avoids
+      // a race where a job has updated its `date` but hasn't yet written
+      // `succeeded_at`, which would cause the next assertion to fail.
+      await cron.stop();
     });
 
     it('should all have started', async () => {
