@@ -996,7 +996,7 @@ function StaffTableInner({
         meta: { label: 'Course content access' },
         filterFn: (row, _columnId, filterValues: CourseRole[]) => {
           if (filterValues.length === 0) return true;
-          return filterValues.includes(row.original.course_permission.course_role!);
+          return filterValues.includes(row.original.course_permission.course_role ?? 'None');
         },
         cell: (info) => (
           <div className="text-center">
