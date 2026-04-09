@@ -36,8 +36,8 @@ let recoveryInProgress = false;
  * in `apps/prairielearn/src/migrations/`). Must be called before any other
  * workflow functions.
  *
- * Uses a separate pool from the application's default pool to avoid deadlocks,
- * since workflows may hold soft locks for extended periods.
+ * Uses a separate pool from the application's default pool so that
+ * long-running workflow connections don't starve request-serving queries.
  *
  * @param pgConfig - Postgres connection configuration.
  * @param idleErrorHandler - Called when an idle client emits an error.
@@ -487,9 +487,9 @@ async function recoverStaleRuns(): Promise<void> {
 
   for (const run of unlockedRuns) {
     const definition = registeredWorkflows.get(run.type);
-    // Skip runs whose workflow type isn't registered on this server.
-    // In multi-server deployments, not all servers register all types;
-    // the run will be picked up by a server that does.
+    // During rolling deploys, a server running old code may not have a
+    // newly-added workflow type registered yet. Silently skip so that a
+    // server with the updated code handles recovery instead.
     if (!definition) continue;
 
     logger.info(`Resuming unlocked workflow run ${run.id} (type: ${run.type})`);

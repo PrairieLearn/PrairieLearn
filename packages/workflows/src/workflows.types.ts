@@ -1,3 +1,15 @@
+// This package owns the Zod schemas for the `workflow_runs` table and its
+// `enum_workflow_run_status` enum, rather than defining them in the app's
+// centralized `db-types.ts`. This follows the same pattern as
+// `@prairielearn/migrations` (which owns `batched_migrations` schemas).
+//
+// This is unusual for a "reusable" package — it can't stand alone because
+// the table is created by a migration in `apps/prairielearn`. But keeping
+// the schema here, next to the engine code that reads/writes the table,
+// avoids duplication, keeps types close to their consumers, and ensures
+// the correct dependency direction (app imports from package, not the 
+// other way around).
+
 import { z } from 'zod';
 
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';

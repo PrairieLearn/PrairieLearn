@@ -97,9 +97,6 @@ export const EnumQuestionTypeSchema = z.enum([
 ]);
 export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
 
-export { WorkflowRunStatusSchema as EnumWorkflowRunStatusSchema } from '@prairielearn/workflows';
-export type { WorkflowRunStatus as EnumWorkflowRunStatus } from '@prairielearn/workflows';
-
 // *******************************************************************************
 // Miscellaneous schemas; keep these alphabetized.
 // *******************************************************************************
@@ -1719,9 +1716,6 @@ export const ZoneSchema = z.object({
   title: z.string().nullable(),
 });
 export type Zone = z.infer<typeof ZoneSchema>;
-
-export { WorkflowRunSchema } from '@prairielearn/workflows';
-export type { WorkflowRun } from '@prairielearn/workflows';
 
 // *******************************************************************************
 // Miscellaneous schemas.
