@@ -92,8 +92,7 @@ function prepareRuleRow(
   const durationMinutesField = mapField(dateControl.durationMinutes);
   const passwordField = mapField(dateControl.password);
   const afterLastDeadlineAllowSubmissionsField = mapField(afterLastDeadline?.allowSubmissions);
-  const afterLastDeadlineCreditField =
-    afterLastDeadline === undefined ? mapField<null>(null) : mapField(afterLastDeadline.credit);
+  const afterLastDeadlineCreditField = mapField(afterLastDeadline?.credit);
   const hideQuestionsField = mapField(afterComplete.hideQuestions);
   const showQuestionsAgainDateField = mapField(afterComplete.showQuestionsAgainDate);
   const hideQuestionsAgainDateField = mapField(afterComplete.hideQuestionsAgainDate);
