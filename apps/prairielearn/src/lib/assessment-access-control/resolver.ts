@@ -763,6 +763,23 @@ export function resolveAccessControlFromRuleContext(
     };
   }
 
+  // If the assessment is before its release date but showBeforeRelease is true,
+  // the student can see it listed but cannot access it.
+  if (creditResult.beforeRelease && showBeforeRelease) {
+    return {
+      ...UNAUTHORIZED_RESULT,
+      showBeforeRelease: true,
+      ...computeDateBasedAvailability({
+        beforeRelease: true,
+        nextDeadlineDate: creditResult.nextDeadlineDate,
+        hasReleaseDate: true,
+        active: false,
+        showBeforeRelease: true,
+      }),
+      timeline: creditResult.timeline,
+    };
+  }
+
   const creditDateString = formatCreditDateString(
     creditResult.credit,
     creditResult.active,

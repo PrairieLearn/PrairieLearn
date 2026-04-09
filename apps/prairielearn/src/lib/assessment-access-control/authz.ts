@@ -20,6 +20,7 @@ import {
 } from './data.js';
 import {
   type AccessControlResolverResult,
+  formatDateShort,
   resolveAccessControlFromRuleContext,
   resolveEffectiveRuleContext,
 } from './resolver.js';
@@ -67,6 +68,7 @@ function buildClosedHiddenAccessDisplayModel(displayTimezone: string): AccessDis
 function resolverResultToSprocAuthzAssessment(
   result: AccessControlResolverResult,
   authzMode: EnumMode | undefined,
+  displayTimezone: string,
 ): SprocAuthzAssessment {
   return {
     authorized: result.authorized,
@@ -82,7 +84,7 @@ function resolverResultToSprocAuthzAssessment(
     // reservation (examAccessEnd is non-null), indicating a live exam session.
     mode: authzMode === 'Exam' && result.examAccessEnd ? 'Exam' : null,
     show_before_release: result.showBeforeRelease,
-    next_active_time: null,
+    next_active_time: result.opensAt ? formatDateShort(result.opensAt, displayTimezone) : null,
     access_rules: [],
   };
 }
@@ -135,7 +137,11 @@ export async function resolveModernAssessmentAccess({
   });
 
   return {
-    authzResult: resolverResultToSprocAuthzAssessment(result, authzData.mode),
+    authzResult: resolverResultToSprocAuthzAssessment(
+      result,
+      authzData.mode,
+      courseInstance.display_timezone,
+    ),
     accessDisplayModel:
       ruleContext == null
         ? buildClosedHiddenAccessDisplayModel(courseInstance.display_timezone)
@@ -255,7 +261,11 @@ export async function resolveModernAssessmentAccessBatch({
     });
 
     results.set(assessmentId, {
-      authzResult: resolverResultToSprocAuthzAssessment(result, authzData.mode),
+      authzResult: resolverResultToSprocAuthzAssessment(
+        result,
+        authzData.mode,
+        courseInstance.display_timezone,
+      ),
       accessDisplayModel:
         ruleContext == null
           ? buildClosedHiddenAccessDisplayModel(courseInstance.display_timezone)
