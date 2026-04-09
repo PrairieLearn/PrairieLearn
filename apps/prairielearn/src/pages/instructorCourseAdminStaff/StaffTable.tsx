@@ -235,7 +235,10 @@ function CoursePermissionCell({
         ),
       }}
       rootClose
-      onToggle={setShow}
+      onToggle={(nextShow) => {
+        if (nextShow) setSelectedRole(currentRole);
+        setShow(nextShow);
+      }}
     >
       <button
         type="button"
@@ -360,7 +363,10 @@ function CourseInstanceAccessCell({
         ),
       }}
       rootClose
-      onToggle={setShow}
+      onToggle={(nextShow) => {
+        if (nextShow) setSelectedRole(currentRole);
+        setShow(nextShow);
+      }}
     >
       <button
         type="button"
