@@ -29,23 +29,6 @@ export function getUserTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
-interface DateRange {
-  start: Date | null;
-  end: Date;
-}
-
-export function getDeadlineRange(
-  rangeStart: string | null | undefined,
-  deadline: DeadlineEntry | undefined,
-): DateRange | null {
-  if (!deadline?.date) return null;
-
-  return {
-    start: rangeStart ? new Date(rangeStart) : null,
-    end: new Date(deadline.date),
-  };
-}
-
 export function getLastDeadlineDate(
   lateDeadlines: DeadlineEntry[] | undefined,
   dueDate: string | null | undefined,
