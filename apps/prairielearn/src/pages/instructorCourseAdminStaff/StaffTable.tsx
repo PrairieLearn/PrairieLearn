@@ -882,6 +882,18 @@ function StaffTableInner({
     return initial;
   });
 
+  // Sync URL state → table column filters when courseRoleFilter changes externally
+  // (e.g., browser back/forward navigation, direct URL edits).
+  useEffect(() => {
+    setColumnFilters((prev) => {
+      const withoutRole = prev.filter((f) => f.id !== 'course_role');
+      if (courseRoleFilter.length > 0) {
+        return [...withoutRole, { id: 'course_role', value: courseRoleFilter }];
+      }
+      return withoutRole.length === prev.length ? prev : withoutRole;
+    });
+  }, [courseRoleFilter]);
+
   const handleColumnFiltersChange = useMemo(
     () => (updaterOrValue: Updater<ColumnFiltersState>) => {
       setColumnFilters((prev) => {
