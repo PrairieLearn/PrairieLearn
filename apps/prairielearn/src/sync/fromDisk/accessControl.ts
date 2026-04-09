@@ -2,12 +2,6 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import {
-  type AccessControlValidationRule,
-  MAX_ACCESS_CONTROL_RULES,
-  validateGlobalDateConsistencyIssues,
-  validateRule,
-} from '../../lib/assessment-access-control/validation.js';
 import { config } from '../../lib/config.js';
 import { StudentLabelSchema } from '../../lib/db-types.js';
 import type { AccessControlJson } from '../../schemas/accessControl.js';
@@ -33,8 +27,8 @@ const JSON_RULE_START = 0;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Validates and prepares rules for a single assessment. Returns an error
- * string if validation fails, or null if the rules are valid.
+ * Validates constraints that require database state: student label existence
+ * and PrairieTest exam UUID existence.
  */
 function validateAssessmentRules(
   rules: AccessControlJson[],
@@ -43,51 +37,16 @@ function validateAssessmentRules(
 ): string | null {
   if (rules.length === 0) return null;
 
-  if (rules.length > MAX_ACCESS_CONTROL_RULES) {
-    return `Too many access control rules: ${rules.length}. Maximum allowed is ${MAX_ACCESS_CONTROL_RULES}.`;
-  }
-
-  const validationRules: AccessControlValidationRule[] = [];
-
-  // Keep label validation here even though course-db validates it earlier.
-  // If the course instance config is invalid, course-db skips label existence
-  // checks to avoid cascading errors, and student label syncing is skipped.
-  // We still need to reject labels missing from the database here so that
-  // label-targeted rules are not silently treated as main rules.
-  for (const [index, rule] of rules.entries()) {
+  // When the course instance config is invalid, student label syncing is
+  // skipped, so labels that appear valid in JSON may not exist in the DB.
+  // Reject them here to prevent label-targeted rules from being silently
+  // treated as main rules.
+  for (const rule of rules) {
     const ruleLabels = rule.labels ?? [];
-    const seenLabels = new Set<string>();
-    const duplicateLabels = new Set<string>();
-
-    for (const label of ruleLabels) {
-      if (seenLabels.has(label)) {
-        duplicateLabels.add(label);
-      } else {
-        seenLabels.add(label);
-      }
-    }
-
-    if (duplicateLabels.size > 0) {
-      return (
-        `Duplicate student label(s): ${[...duplicateLabels].join(', ')}. ` +
-        'Each label can only be targeted once per access control rule.'
-      );
-    }
-
-    const invalidLabels = [...seenLabels].filter((label) => !studentLabelIdByName.has(label));
+    const invalidLabels = ruleLabels.filter((label) => !studentLabelIdByName.has(label));
     if (invalidLabels.length > 0) {
       return `Invalid student label(s): ${invalidLabels.join(', ')}.`;
     }
-
-    const targetType = index === 0 ? 'none' : 'student_label';
-    validationRules.push({ rule, targetType, ruleIndex: index });
-    const ruleErrors = validateRule(rule, targetType);
-    if (ruleErrors.length > 0) return ruleErrors[0];
-  }
-
-  const globalDateErrors = validateGlobalDateConsistencyIssues(validationRules);
-  if (globalDateErrors.length > 0) {
-    return globalDateErrors[0].message;
   }
 
   const assessmentInvalidUuids: string[] = [];

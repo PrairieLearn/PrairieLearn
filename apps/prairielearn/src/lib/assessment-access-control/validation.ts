@@ -475,6 +475,12 @@ export function validateAccessControlRules({
     return { errors, warnings };
   }
 
+  if (rules.length > MAX_ACCESS_CONTROL_RULES) {
+    errors.push(
+      `Too many access control rules: ${rules.length}. Maximum allowed is ${MAX_ACCESS_CONTROL_RULES}.`,
+    );
+  }
+
   // A main rule has no `labels` property (applies to everyone)
   const mainRules = rules.filter((rule) => rule.labels == null || rule.labels.length === 0);
 
