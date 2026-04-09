@@ -204,6 +204,11 @@
     "gzip": 152,
     "brotli": 107
   },
+  "stylesheets/instructorQuestionSettings.css": {
+    "raw": 1159,
+    "gzip": 449,
+    "brotli": 356
+  },
   "stylesheets/pageLayout.css": {
     "raw": 5946,
     "gzip": 1456,
@@ -255,9 +260,9 @@
     "brotli": 232295
   },
   "scripts/esm-bundles/hydrated-components/QuestionSettingsForm.ts": {
-    "raw": 1174764,
-    "gzip": 345457,
-    "brotli": 280625
+    "raw": 1235213,
+    "gzip": 365140,
+    "brotli": 298309
   },
   "scripts/esm-bundles/hydrated-components/RichTextEditor.ts": {
     "raw": 1507952,
@@ -315,9 +320,9 @@
     "brotli": 303256
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionsEditor.ts": {
-    "raw": 1437266,
-    "gzip": 423853,
-    "brotli": 349069
+    "raw": 1440447,
+    "gzip": 424735,
+    "brotli": 349829
   },
   "scripts/esm-bundles/hydrated-components/AssessmentSetsPage.ts": {
     "raw": 954897,
