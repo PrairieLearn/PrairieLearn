@@ -29,36 +29,6 @@ export function getUserTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
-interface DateRange {
-  start: Date | null;
-  end: Date;
-}
-
-export function getDeadlineRange(
-  index: number,
-  deadlines: DeadlineEntry[],
-  anchorDate: string | null | undefined,
-): DateRange | null {
-  const currentDeadline = deadlines[index];
-  if (!currentDeadline.date) return null;
-
-  const endDate = new Date(currentDeadline.date);
-  let startDate: Date | null = null;
-
-  if (index === 0) {
-    if (anchorDate) {
-      startDate = new Date(anchorDate);
-    }
-  } else {
-    const previousDeadline = deadlines[index - 1];
-    if (previousDeadline.date) {
-      startDate = new Date(previousDeadline.date);
-    }
-  }
-
-  return { start: startDate, end: endDate };
-}
-
 export function getLastDeadlineDate(
   lateDeadlines: DeadlineEntry[] | undefined,
   dueDate: string | null | undefined,
