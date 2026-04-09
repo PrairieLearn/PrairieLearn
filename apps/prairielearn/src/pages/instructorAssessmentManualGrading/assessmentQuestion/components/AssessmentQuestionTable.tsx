@@ -28,7 +28,6 @@ import {
 import { RubricSettings } from '../../../../components/RubricSettings.js';
 import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
 import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
-import { DEFAULT_AI_GRADING_MODEL } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import type { AiGradingGeneralStats } from '../../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../../lib/client/page-context.js';
 import type {
@@ -77,7 +76,6 @@ interface AssessmentQuestionTableProps {
   assessmentQuestion: StaffAssessmentQuestion;
   questionQid: string;
   aiGradingMode: boolean;
-  aiGradingModelSelectionEnabled: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
@@ -126,7 +124,6 @@ export function AssessmentQuestionTable({
   assessmentQuestion,
   questionQid,
   aiGradingMode,
-  aiGradingModelSelectionEnabled,
   rubricData,
   instanceQuestionGroups,
   courseStaff,
@@ -601,13 +598,7 @@ export function AssessmentQuestionTable({
     groupSubmissionMutation,
   } = mutations;
 
-  // If model selection is disabled, grading will use an OpenAI model, so we
-  // specifically check for an OpenAI key.
-  //
-  // If model selection is enabled, we check key availability across all providers.
-  const aiGradingDisabledNoKeys = aiGradingModelSelectionEnabled
-    ? availableAiGradingProviders.length === 0
-    : !availableAiGradingProviders.includes('openai');
+  const aiGradingDisabledNoKeys = availableAiGradingProviders.length === 0;
 
   const columnFiltersComponents = createColumnFilters({
     allGraders,
@@ -729,9 +720,7 @@ export function AssessmentQuestionTable({
                 {aiGradingDisabledNoKeys ? (
                   <OverlayTrigger
                     tooltip={{
-                      body: aiGradingModelSelectionEnabled
-                        ? 'No AI grading API keys are configured. Add a key in AI grading settings.'
-                        : 'No OpenAI API key is configured. Add a key in AI grading settings.',
+                      body: 'No AI grading API keys are configured. Add a key in AI grading settings.',
                       props: { id: 'ai-grading-no-keys-tooltip' },
                     }}
                   >
@@ -753,85 +742,33 @@ export function AssessmentQuestionTable({
                       <AiGradingOption
                         text="Grade all human-graded"
                         numToGrade={aiGradingCounts.humanGraded}
-                        onSelect={() => {
-                          if (aiGradingModelSelectionEnabled) {
-                            onSetModelSelectionModalState({
-                              type: 'human_graded',
-                              numToGrade: aiGradingCounts.humanGraded,
-                            });
-                          } else {
-                            gradeSubmissionsMutation.mutate(
-                              {
-                                selection: 'human_graded',
-                                model_id: DEFAULT_AI_GRADING_MODEL,
-                              },
-                              {
-                                onSuccess: (data) => {
-                                  serverJobProgress.handleAddOngoingJobSequence(
-                                    data.job_sequence_id,
-                                    data.job_sequence_token,
-                                  );
-                                },
-                              },
-                            );
-                          }
-                        }}
+                        onSelect={() =>
+                          onSetModelSelectionModalState({
+                            type: 'human_graded',
+                            numToGrade: aiGradingCounts.humanGraded,
+                          })
+                        }
                       />
                       <AiGradingOption
                         text="Grade selected"
                         numToGrade={aiGradingCounts.selected}
-                        onSelect={() => {
-                          if (aiGradingModelSelectionEnabled) {
-                            onSetModelSelectionModalState({
-                              type: 'selected',
-                              ids: selectedIds,
-                              numToGrade: aiGradingCounts.selected,
-                            });
-                          } else {
-                            gradeSubmissionsMutation.mutate(
-                              {
-                                selection: selectedIds,
-                                model_id: DEFAULT_AI_GRADING_MODEL,
-                              },
-                              {
-                                onSuccess: (data) => {
-                                  serverJobProgress.handleAddOngoingJobSequence(
-                                    data.job_sequence_id,
-                                    data.job_sequence_token,
-                                  );
-                                  table.resetRowSelection();
-                                },
-                              },
-                            );
-                          }
-                        }}
+                        onSelect={() =>
+                          onSetModelSelectionModalState({
+                            type: 'selected',
+                            ids: selectedIds,
+                            numToGrade: aiGradingCounts.selected,
+                          })
+                        }
                       />
                       <AiGradingOption
                         text="Grade all"
                         numToGrade={aiGradingCounts.all}
-                        onSelect={() => {
-                          if (aiGradingModelSelectionEnabled) {
-                            onSetModelSelectionModalState({
-                              type: 'all',
-                              numToGrade: aiGradingCounts.all,
-                            });
-                          } else {
-                            gradeSubmissionsMutation.mutate(
-                              {
-                                selection: 'all',
-                                model_id: DEFAULT_AI_GRADING_MODEL,
-                              },
-                              {
-                                onSuccess: (data) => {
-                                  serverJobProgress.handleAddOngoingJobSequence(
-                                    data.job_sequence_id,
-                                    data.job_sequence_token,
-                                  );
-                                },
-                              },
-                            );
-                          }
-                        }}
+                        onSelect={() =>
+                          onSetModelSelectionModalState({
+                            type: 'all',
+                            numToGrade: aiGradingCounts.all,
+                          })
+                        }
                       />
                       <Dropdown.Divider />
                       <Dropdown.Item onClick={() => setShowDeleteAiGradingModal(true)}>
