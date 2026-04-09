@@ -121,7 +121,6 @@ interface StaffTableInnerProps {
   userId: string;
   isAdministrator: boolean;
   uidsLimit: number;
-  githubAccessLink: string | null;
 }
 
 function courseRoleColor(role: CourseRole): string {
@@ -815,7 +814,6 @@ function StaffTableInner({
   userId,
   isAdministrator,
   uidsLimit,
-  githubAccessLink,
 }: StaffTableInnerProps) {
   const trpc = useTRPC();
   const { data: liveUsers } = useQuery({
@@ -874,37 +872,19 @@ function StaffTableInner({
   );
   const { createCheckboxProps } = useShiftClickCheckbox<CourseUsersRow>();
 
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(() => {
-    const initial: ColumnFiltersState = [];
-    if (courseRoleFilter.length > 0) {
-      initial.push({ id: 'course_role', value: courseRoleFilter });
-    }
-    return initial;
-  });
-
-  // Sync URL state → table column filters when courseRoleFilter changes externally
-  // (e.g., browser back/forward navigation, direct URL edits).
-  useEffect(() => {
-    setColumnFilters((prev) => {
-      const withoutRole = prev.filter((f) => f.id !== 'course_role');
-      if (courseRoleFilter.length > 0) {
-        return [...withoutRole, { id: 'course_role', value: courseRoleFilter }];
-      }
-      return withoutRole.length === prev.length ? prev : withoutRole;
-    });
-  }, [courseRoleFilter]);
+  const columnFilters = useMemo<ColumnFiltersState>(
+    () => (courseRoleFilter.length > 0 ? [{ id: 'course_role', value: courseRoleFilter }] : []),
+    [courseRoleFilter],
+  );
 
   const handleColumnFiltersChange = useMemo(
     () => (updaterOrValue: Updater<ColumnFiltersState>) => {
-      setColumnFilters((prev) => {
-        const newFilters =
-          typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue;
-        const roleFilterEntry = newFilters.find((f) => f.id === 'course_role');
-        void setCourseRoleFilter(roleFilterEntry ? (roleFilterEntry.value as CourseRole[]) : []);
-        return newFilters;
-      });
+      const newFilters =
+        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
+      const roleFilterEntry = newFilters.find((f) => f.id === 'course_role');
+      void setCourseRoleFilter(roleFilterEntry ? (roleFilterEntry.value as CourseRole[]) : []);
     },
-    [setCourseRoleFilter],
+    [columnFilters, setCourseRoleFilter],
   );
 
   const columns = useMemo(

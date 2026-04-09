@@ -12,7 +12,6 @@ export function InstructorCourseAdminStaff({
   courseInstances,
   courseUsers,
   uidsLimit,
-  githubAccessLink,
   search,
   trpcCsrfToken,
   courseId,
@@ -21,7 +20,6 @@ export function InstructorCourseAdminStaff({
   courseInstances: CourseInstance[];
   courseUsers: CourseUsersRow[];
   uidsLimit: number;
-  githubAccessLink: string | null;
   search: string;
   trpcCsrfToken: string;
   courseId: string;
@@ -48,7 +46,6 @@ export function InstructorCourseAdminStaff({
         userId={resLocals.user.id}
         isAdministrator={resLocals.is_administrator}
         uidsLimit={uidsLimit}
-        githubAccessLink={githubAccessLink}
         search={search}
       />,
       { fullHeight: true },

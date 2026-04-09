@@ -6,7 +6,6 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getCourseTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
@@ -44,14 +43,6 @@ router.get(
       CourseUsersRowSchema,
     );
 
-    let githubAccessLink: string | null = null;
-    if (!res.locals.course.example_course) {
-      const githubPrefix = httpPrefixForCourseRepo(res.locals.course.repository);
-      if (githubPrefix) {
-        githubAccessLink = `${githubPrefix}/settings/access`;
-      }
-    }
-
     const trpcUrl = getCourseTrpcUrl(res.locals.course.id);
     const trpcCsrfToken = generatePrefixCsrfToken(
       { url: trpcUrl, authn_user_id: res.locals.authn_user.id },
@@ -64,7 +55,6 @@ router.get(
         courseInstances,
         courseUsers,
         uidsLimit: MAX_UIDS,
-        githubAccessLink,
         search: getUrl(req).search,
         trpcCsrfToken,
         courseId: res.locals.course.id,
