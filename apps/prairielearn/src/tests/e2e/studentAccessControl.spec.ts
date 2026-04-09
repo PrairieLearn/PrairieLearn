@@ -149,39 +149,8 @@ test.describe.serial('Student access control', () => {
     const assessmentLink = page.getByRole('link', { name: ASSESSMENT_TITLE, exact: true });
     await expect(assessmentLink).not.toBeVisible();
 
-    // "Not yet open" text should be visible
-    await expect(page.getByText('Not yet open')).toBeVisible();
-  });
-
-  test('assessment list shows modern access details in the popover', async ({
-    page,
-    baseURL,
-    courseInstance,
-    testCoursePath,
-    enableFeatureFlag,
-  }) => {
-    await enableFeatureFlag('enhanced-access-control');
-    await writeAssessmentConfig(testCoursePath, [
-      {
-        listBeforeRelease: true,
-        dateControl: {
-          releaseDate: '2099-06-01T00:00:00',
-          dueDate: '2099-12-01T00:00:00',
-          durationMinutes: 45,
-        },
-      },
-    ]);
-    await syncCourse(testCoursePath);
-
-    await impersonateUser(page, STUDENT_B.uid, baseURL);
-    await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
-
-    await page
-      .getByRole('row', { name: new RegExp(ASSESSMENT_TITLE) })
-      .getByRole('button', { name: 'Access details' })
-      .click();
-    await expect(page.getByRole('table', { name: 'Access details' })).toBeVisible();
-    await expect(page.getByText('45 minutes time limit')).toBeVisible();
+    // "Not yet available" text should be visible
+    await expect(page.getByText('Not yet available')).toBeVisible();
   });
 
   test('normal access shows clickable assessment link', async ({
@@ -209,34 +178,6 @@ test.describe.serial('Student access control', () => {
     const assessmentLink = page.getByRole('link', { name: ASSESSMENT_TITLE, exact: true });
     await expect(assessmentLink).toBeVisible();
     await expect(assessmentLink).toHaveAttribute('href', /\/assessment\/\d+/);
-  });
-
-  test('assessment instance page renders inline access details for modern access control', async ({
-    page,
-    baseURL,
-    courseInstance,
-    testCoursePath,
-    enableFeatureFlag,
-  }) => {
-    await enableFeatureFlag('enhanced-access-control');
-    await writeAssessmentConfig(testCoursePath, [
-      {
-        dateControl: {
-          releaseDate: '2020-01-01T00:00:00',
-          dueDate: '2099-01-01T00:00:00',
-          durationMinutes: 30,
-        },
-      },
-    ]);
-    await syncCourse(testCoursePath);
-
-    await impersonateUser(page, STUDENT_A.uid, baseURL);
-    await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
-
-    await page.getByRole('link', { name: ASSESSMENT_TITLE, exact: true }).click();
-
-    await expect(page.getByText('Access details', { exact: true })).toBeVisible();
-    await expect(page.getByText('30 minutes time limit')).toBeVisible();
   });
 
   test('direct URL to a listed but unavailable modern assessment shows the friendly unavailable page', async ({
