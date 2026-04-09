@@ -39,7 +39,7 @@ export const StudentAssessmentsRowSchema = z.object({
   assessment_group_heading: z.string(),
   show_before_release: z.boolean().optional(),
 });
-export type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowSchema>;
+type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowSchema>;
 
 export function StudentAssessments({
   resLocals,
