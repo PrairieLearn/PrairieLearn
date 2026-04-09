@@ -134,10 +134,10 @@ const createCheckoutMutation = t.procedure
     });
 
     const stripe = getStripeClient();
-    const [customerId, institution] = await Promise.all([
-      getOrCreateStripeCustomerId(authn_user.id, { name: authn_user.name }),
-      selectInstitutionForCourse({ course_id: course.id }),
-    ]);
+    const institution = await selectInstitutionForCourse({ course_id: course.id });
+    const customerId = await getOrCreateStripeCustomerId(authn_user.id, {
+      name: authn_user.name,
+    });
 
     const urlBase = `${host}/pl/course_instance/${course_instance.id}/instructor/instance_admin/ai_grading`;
 
