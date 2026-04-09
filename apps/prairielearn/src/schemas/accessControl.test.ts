@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { AccessControlJsonInputSchema } from '../../trpc/assessment/access-control.js';
+import { AccessControlJsonSchema } from './accessControl.js';
 
-describe('AccessControlJsonInputSchema', () => {
+describe('AccessControlJsonSchema', () => {
   it('accepts explicit nulls used to clear inherited override fields', () => {
-    const result = AccessControlJsonInputSchema.parse({
+    const result = AccessControlJsonSchema.parse({
       dateControl: {
-        releaseDate: null,
+        // You cannot "clear" release date on overrides, it must be set to a value.
+        releaseDate: '2024-03-14T00:01:00',
         dueDate: null,
         earlyDeadlines: null,
         lateDeadlines: null,
@@ -16,7 +17,7 @@ describe('AccessControlJsonInputSchema', () => {
       },
     });
 
-    expect(result.dateControl?.releaseDate).toBeNull();
+    expect(result.dateControl?.releaseDate).toBe('2024-03-14T00:01:00');
     expect(result.dateControl?.afterLastDeadline).toBeNull();
     expect(result.dateControl?.durationMinutes).toBeNull();
   });

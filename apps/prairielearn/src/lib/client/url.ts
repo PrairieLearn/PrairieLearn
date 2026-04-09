@@ -2,21 +2,18 @@ export function getStudentCourseInstanceUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}`;
 }
 
-export type AssessmentInstanceUrlParts =
-  | {
-      urlPrefix: string;
-      courseInstanceId?: undefined;
-    }
+export type AssessmentUrlParts =
+  | { urlPrefix: string; courseInstanceId?: undefined }
   // If urlPrefix is not provided, then course_instance_id
   // must be provided and the appropriate URL prefix will be constructed
   | { urlPrefix?: undefined; courseInstanceId: string };
 
-export function getAssessmentInstanceUrl({
+export function getAssessmentUrl({
   urlPrefix,
   assessmentId,
   courseInstanceId,
   publicURL = false,
-}: { publicURL?: boolean; assessmentId: string } & AssessmentInstanceUrlParts) {
+}: { publicURL?: boolean; assessmentId: string } & AssessmentUrlParts) {
   if (publicURL) {
     urlPrefix = `/pl/public/course_instance/${courseInstanceId}`;
   } else if (urlPrefix === undefined) {
@@ -24,6 +21,16 @@ export function getAssessmentInstanceUrl({
   }
 
   return `${urlPrefix}/assessment/${assessmentId}`;
+}
+
+export function getAssessmentInstanceUrl({
+  courseInstanceId,
+  assessmentInstanceId,
+}: {
+  courseInstanceId: string;
+  assessmentInstanceId: string;
+}) {
+  return `/pl/course_instance/${courseInstanceId}/instructor/assessment_instance/${assessmentInstanceId}`;
 }
 
 export function getStudentEnrollmentUrl(courseInstanceId: string, enrollmentId: string): string {
