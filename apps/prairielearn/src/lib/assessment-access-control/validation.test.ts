@@ -953,7 +953,7 @@ describe('afterLastDeadline validation', () => {
     });
     const errors = validateRule(rule, 'none');
     assert.isTrue(
-      errors.some((e) => e.includes('cannot set credit when submissions are not allowed')),
+      errors.some((e) => e.includes('allowSubmissions must be true when credit is configured')),
     );
   });
 
@@ -970,7 +970,7 @@ describe('afterLastDeadline validation', () => {
     });
     const errors = validateRule(rule, 'none');
     assert.isTrue(
-      errors.some((e) => e.includes('cannot set credit when submissions are not allowed')),
+      errors.some((e) => e.includes('allowSubmissions must be true when credit is configured')),
     );
   });
 
@@ -987,6 +987,22 @@ describe('afterLastDeadline validation', () => {
     });
     const errors = validateRule(rule, 'none');
     assert.deepEqual(errors, []);
+  });
+
+  it('should reject credit without allowSubmissions', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        releaseDate: '2024-03-14T00:01:00',
+        dueDate: '2024-03-21T23:59:00',
+        afterLastDeadline: {
+          credit: null,
+        },
+      },
+    });
+    const errors = validateRule(rule, 'none');
+    assert.isTrue(
+      errors.some((e) => e.includes('allowSubmissions must be true when credit is configured')),
+    );
   });
 
   it('should accept allowSubmissions false without credit', () => {

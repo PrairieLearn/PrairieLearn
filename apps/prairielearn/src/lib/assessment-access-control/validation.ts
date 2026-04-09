@@ -408,8 +408,8 @@ export function validateRule(
       'afterLastDeadline.allowSubmissions is required when afterLastDeadline is configured.',
     );
   }
-  if (ald?.allowSubmissions === false && ald.credit != null) {
-    errors.push('afterLastDeadline cannot set credit when submissions are not allowed.');
+  if (ald?.credit !== undefined && ald.allowSubmissions !== true) {
+    errors.push('afterLastDeadline.allowSubmissions must be true when credit is configured.');
   }
 
   const exams = rule.integrations?.prairieTest?.exams ?? [];
