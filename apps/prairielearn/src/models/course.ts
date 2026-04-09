@@ -68,7 +68,7 @@ export async function selectOptionalCourseByPath(path: string): Promise<Course |
   return await queryOptionalRow(sql.select_course_by_path, { path }, CourseSchema);
 }
 
-export interface CourseFieldCheck {
+interface CourseFieldCheck {
   exists: boolean;
   owned: boolean;
 }

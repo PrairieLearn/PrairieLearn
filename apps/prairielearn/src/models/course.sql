@@ -42,7 +42,7 @@ LIMIT
 
 -- BLOCK check_course_title_in_institution
 SELECT
-  TRUE AS "exists",
+  TRUE AS exists,
   BOOL_OR(cp.course_role = 'Owner') AS owned
 FROM
   courses AS c
@@ -60,7 +60,7 @@ WHERE
 
 -- BLOCK check_course_short_name_in_institution
 SELECT
-  TRUE AS "exists",
+  TRUE AS exists,
   BOOL_OR(cp.course_role = 'Owner') AS owned
 FROM
   courses AS c
