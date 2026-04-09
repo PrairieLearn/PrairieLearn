@@ -476,12 +476,3 @@ input.form-check-input:disabled {
 .markdown-body > :last-child {
   margin-bottom: 0;
 }
-
-.bg-body-glass {
-  background-color: color-mix(in srgb, var(--bs-body-bg), rgba(255, 255, 255, 0) 40%);
-  backdrop-filter: blur(2px);
-}
-
-.btn-wide {
-  min-width: 200px;
-}

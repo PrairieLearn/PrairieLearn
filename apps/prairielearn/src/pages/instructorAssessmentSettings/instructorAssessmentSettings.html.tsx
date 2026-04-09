@@ -17,7 +17,6 @@ import type {
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import type { AssessmentToolsConfig } from '../../lib/editors.js';
 import { validateShortName } from '../../lib/short-name.js';
-import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 import type { AssessmentSettingsError } from '../../trpc/assessment/assessment-settings.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
@@ -52,7 +51,6 @@ interface InstructorAssessmentSettingsProps {
   origHash: string;
   assessment: StaffAssessment;
   assessmentSet: StaffAssessmentSet;
-  hasCoursePermissionView: boolean;
   assessmentGHLink: string | null;
   tids: string[];
   studentLink: string;
@@ -71,7 +69,6 @@ export function InstructorAssessmentSettings({
   origHash,
   assessment,
   assessmentSet,
-  hasCoursePermissionView,
   assessmentGHLink,
   tids,
   studentLink,
@@ -100,7 +97,6 @@ export function InstructorAssessmentSettings({
           origHash={origHash}
           assessment={assessment}
           assessmentSet={assessmentSet}
-          hasCoursePermissionView={hasCoursePermissionView}
           assessmentGHLink={assessmentGHLink}
           tids={tids}
           studentLink={studentLink}
@@ -108,7 +104,6 @@ export function InstructorAssessmentSettings({
           assessmentSets={assessmentSets}
           assessmentModules={assessmentModules}
           assessmentTools={assessmentTools}
-          courseInstance={courseInstance}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -123,7 +118,6 @@ function InstructorAssessmentSettingsInner({
   origHash,
   assessment,
   assessmentSet,
-  hasCoursePermissionView,
   assessmentGHLink,
   tids,
   studentLink,
@@ -131,8 +125,7 @@ function InstructorAssessmentSettingsInner({
   assessmentSets,
   assessmentModules,
   assessmentTools,
-  courseInstance,
-}: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'isDevMode'>) {
+}: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'isDevMode' | 'courseInstance'>) {
   const trpc = useTRPC();
   const [currentOrigHash, setCurrentOrigHash] = useState(origHash);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -170,12 +163,15 @@ function InstructorAssessmentSettingsInner({
     register,
     reset,
     watch,
+    setValue,
     handleSubmit,
     formState: { isDirty, errors, isSubmitting },
   } = useForm<SettingsFormValues>({
     mode: 'onChange',
     defaultValues,
   });
+
+  const [useCustomMaxPoints, setUseCustomMaxPoints] = useState(assessment.max_points != null);
 
   const saveMutation = useMutation(trpc.assessmentSettings.updateAssessment.mutationOptions());
   const copyMutation = useMutation(trpc.assessmentSettings.copyAssessment.mutationOptions());
@@ -188,12 +184,17 @@ function InstructorAssessmentSettingsInner({
   );
 
   const onFormSubmit = (data: SettingsFormValues) => {
+    const sanitized = {
+      ...data,
+      max_points: useCustomMaxPoints ? data.max_points : null,
+    };
     saveMutation.mutate(
-      { ...data, origHash: currentOrigHash },
+      { ...sanitized, origHash: currentOrigHash },
       {
         onSuccess: (result) => {
           setCurrentOrigHash(result.origHash);
-          reset(data);
+          reset(sanitized);
+          setUseCustomMaxPoints(sanitized.max_points != null);
         },
       },
     );
@@ -201,10 +202,6 @@ function InstructorAssessmentSettingsInner({
 
   const requireHonorCode = watch('require_honor_code');
   const currentAid = watch('aid');
-
-  const currentInfoAssessmentPath = encodePathNoNormalize(
-    `courseInstances/${courseInstance.short_name!}/assessments/${currentAid}/infoAssessment.json`,
-  );
   const currentGHLink =
     assessmentGHLink && assessment.tid
       ? assessmentGHLink.replace(
@@ -217,7 +214,7 @@ function InstructorAssessmentSettingsInner({
     <>
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
         <Modal.Header closeButton>
-          <Modal.Title>Delete assessment</Modal.Title>
+          <Modal.Title>Delete</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {deleteError && (
@@ -226,7 +223,7 @@ function InstructorAssessmentSettingsInner({
             </Alert>
           )}
           <p>
-            Are you sure you want to delete the assessment <strong>{assessment.tid}</strong>?
+            Are you sure you want to delete the assessment <b>{assessment.tid}</b>?
           </p>
         </Modal.Body>
         <Modal.Footer>
@@ -275,37 +272,18 @@ function InstructorAssessmentSettingsInner({
                       }
                     >
                       <i className="bi bi-copy" aria-hidden="true" />{' '}
-                      {copyMutation.isPending ? 'Copying...' : 'Copy assessment'}
+                      {copyMutation.isPending ? 'Copying...' : 'Copy'}
                     </Button>
                     <Button
                       size="sm"
                       variant="outline-danger"
                       onClick={() => setShowDeleteModal(true)}
                     >
-                      <i className="bi bi-trash" aria-hidden="true" /> Delete assessment
+                      <i className="bi bi-trash" aria-hidden="true" /> Delete
                     </Button>
                   </>
                 )}
                 <GitHubButton gitHubLink={currentGHLink} />
-                {hasCoursePermissionView &&
-                  (canEdit ? (
-                    <a
-                      data-testid="edit-assessment-configuration-link"
-                      className="btn btn-sm btn-outline-secondary"
-                      href={encodePathNoNormalize(
-                        `${urlPrefix}/assessment/${assessment.id}/file_edit/${currentInfoAssessmentPath}`,
-                      )}
-                    >
-                      <i className="bi bi-code-slash" aria-hidden="true" /> Edit JSON
-                    </a>
-                  ) : (
-                    <a
-                      className="btn btn-sm btn-outline-secondary"
-                      href={`${urlPrefix}/assessment/${assessment.id}/file_view/${currentInfoAssessmentPath}`}
-                    >
-                      <i className="bi bi-code-slash" aria-hidden="true" /> View JSON
-                    </a>
-                  ))}
               </div>
             </div>
             {copyError && (
@@ -491,6 +469,29 @@ function InstructorAssessmentSettingsInner({
             <p className="text-muted small">
               Configure how points are calculated for this assessment.
             </p>
+            <div className="form-check mb-3">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="use_custom_max_points"
+                checked={useCustomMaxPoints}
+                disabled={!canEdit}
+                onChange={(e) => {
+                  setUseCustomMaxPoints(e.target.checked);
+                  if (!e.target.checked) {
+                    const input = document.getElementById('max_points') as HTMLInputElement;
+                    input.value = '';
+                    setValue('max_points', null, { shouldDirty: true });
+                  }
+                }}
+              />
+              <label className="form-check-label" htmlFor="use_custom_max_points">
+                Set a custom maximum
+              </label>
+              <div className="small text-muted">
+                By default, the maximum points are the sum of all zone points.
+              </div>
+            </div>
             <div className="row">
               <div className="col-md-6 mb-3">
                 <label className="form-label" htmlFor="max_points">
@@ -504,12 +505,16 @@ function InstructorAssessmentSettingsInner({
                   placeholder="Auto (sum of zones)"
                   min="0"
                   step="any"
-                  disabled={!canEdit}
+                  disabled={!canEdit || !useCustomMaxPoints}
                   defaultValue={defaultValues.max_points ?? ''}
-                  {...register('max_points', { valueAsNumber: true })}
+                  {...register('max_points', {
+                    setValueAs: (v) => (v === '' ? null : Number(v)),
+                  })}
                 />
                 <small id="max-points-help" className="form-text text-muted">
-                  Points needed for 100% score.
+                  {useCustomMaxPoints
+                    ? 'Points needed for 100% score.'
+                    : 'Automatically computed as the sum of all zone points.'}
                 </small>
               </div>
               <div className="col-md-6 mb-3">
@@ -526,7 +531,9 @@ function InstructorAssessmentSettingsInner({
                   step="any"
                   disabled={!canEdit}
                   defaultValue={defaultValues.max_bonus_points ?? ''}
-                  {...register('max_bonus_points', { valueAsNumber: true })}
+                  {...register('max_bonus_points', {
+                    setValueAs: (v) => (v === '' ? null : Number(v)),
+                  })}
                 />
                 <small id="max-bonus-points-help" className="form-text text-muted">
                   Maximum additional points beyond the maximum.
@@ -652,7 +659,9 @@ function InstructorAssessmentSettingsInner({
                     step="any"
                     disabled={!canEdit}
                     defaultValue={defaultValues.grade_rate_minutes ?? ''}
-                    {...register('grade_rate_minutes', { valueAsNumber: true })}
+                    {...register('grade_rate_minutes', {
+                      setValueAs: (v) => (v === '' ? null : Number(v)),
+                    })}
                   />
                 </div>
               </div>
@@ -807,7 +816,7 @@ function InstructorAssessmentSettingsInner({
         </div>
 
         {canEdit && (
-          <div className="position-sticky bottom-0 z-3 bg-body-glass border-top">
+          <div className="position-sticky bottom-0 z-3 bg-body border-top">
             {saveMutation.isSuccess && (
               <Alert
                 className="mb-0 rounded-0 border-start-0 border-end-0 border-bottom"
@@ -828,29 +837,34 @@ function InstructorAssessmentSettingsInner({
                 {appError.message}
               </Alert>
             )}
-            <div className="d-flex justify-content-end">
-              <div className="d-flex gap-2 p-4">
-                <button
-                  id="cancel-button"
-                  type="button"
-                  className="btn btn-secondary min-wi"
-                  onClick={() => {
-                    reset();
-                    saveMutation.reset();
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  id="save-button"
-                  type="submit"
-                  className="btn btn-primary btn-wide w-100"
-                  disabled={!isDirty || isSubmitting || saveMutation.isPending}
-                >
-                  {saveMutation.isPending ? 'Saving...' : 'Save assessment'}
-                </button>
+            {isDirty && (
+              <div className="d-flex align-items-center justify-content-between gap-2 px-4 py-3">
+                <div className="small text-muted">You have unsaved changes</div>
+                <div className="d-flex gap-2">
+                  <button
+                    id="cancel-button"
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    disabled={isSubmitting || saveMutation.isPending}
+                    onClick={() => {
+                      reset(defaultValues);
+                      saveMutation.reset();
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    id="save-button"
+                    type="submit"
+                    className="btn btn-sm btn-primary"
+                    disabled={isSubmitting || saveMutation.isPending}
+                  >
+                    <i className="bi bi-save me-1" aria-hidden="true" />
+                    {saveMutation.isPending ? 'Saving...' : 'Save and sync'}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </form>

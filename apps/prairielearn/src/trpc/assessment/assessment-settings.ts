@@ -52,13 +52,25 @@ const updateAssessment = t.procedure
       auto_close: z.boolean(),
       require_honor_code: z.boolean(),
       honor_code: z.string().optional(),
-      max_points: z.number().nullable(),
-      max_bonus_points: z.number().nullable(),
+      max_points: z.preprocess(
+        (v) => (typeof v === 'number' && Number.isNaN(v) ? null : v),
+        z.number().nullable(),
+      ),
+      max_bonus_points: z.preprocess(
+        (v) => (typeof v === 'number' && Number.isNaN(v) ? null : v),
+        z.number().nullable(),
+      ),
       constant_question_value: z.boolean(),
       shuffle_questions: z.boolean(),
-      advance_score_perc: z.number().nullable(),
+      advance_score_perc: z.preprocess(
+        (v) => (typeof v === 'number' && Number.isNaN(v) ? null : v),
+        z.number().nullable(),
+      ),
       allow_real_time_grading: z.boolean(),
-      grade_rate_minutes: z.number().nullable(),
+      grade_rate_minutes: z.preprocess(
+        (v) => (typeof v === 'number' && Number.isNaN(v) ? null : v),
+        z.number().nullable(),
+      ),
       origHash: z.string(),
       tools: z.record(z.string(), z.boolean()).optional(),
     }),
@@ -169,7 +181,7 @@ const updateAssessment = t.procedure
     assessmentInfo.maxBonusPoints = propertyValueWithDefault(
       assessmentInfo.maxBonusPoints,
       input.max_bonus_points ?? undefined,
-      undefined,
+      (v: number | null | undefined) => v == null || v === 0,
     );
     if (assessment.type === 'Homework') {
       assessmentInfo.constantQuestionValue = propertyValueWithDefault(
@@ -204,7 +216,7 @@ const updateAssessment = t.procedure
     assessmentInfo.gradeRateMinutes = propertyValueWithDefault(
       assessmentInfo.gradeRateMinutes,
       input.grade_rate_minutes ?? undefined,
-      undefined,
+      (v: number | null | undefined) => v == null || v === 0,
     );
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
