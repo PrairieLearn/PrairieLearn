@@ -33,6 +33,7 @@ import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { validatePreferencesSchema } from '../../lib/question-settings/validation.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { validateShortName } from '../../lib/short-name.js';
@@ -42,10 +43,7 @@ import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
-import {
-  type QuestionPreferencesSchemaJson,
-  validatePreferencesSchema,
-} from '../../schemas/infoQuestion.js';
+import { type QuestionPreferencesSchemaJson } from '../../schemas/infoQuestion.js';
 
 import { InstructorQuestionSettings } from './instructorQuestionSettings.html.js';
 import {
@@ -146,7 +144,13 @@ router.post(
         throw new error.HttpStatusError(400, 'Question info file does not exist');
       }
 
-      // Reconstruct preferences array from flat form keys (e.g. "preferences.0.name")
+      // The preferences editor is a hydrated React component embedded in an
+      // otherwise server-rendered form, so its values arrive here as flat
+      // `preferences.<index>.<field>` keys via a native form POST. We
+      // reconstruct the nested array here before Zod validation. Once the
+      // question settings page is fully migrated to React + tRPC, the client
+      // will post the preferences as JSON directly and this block can go away.
+      // See https://github.com/PrairieLearn/PrairieLearn/issues/14656.
       const preferencesArray: Record<string, string>[] = [];
       for (const [key, value] of Object.entries(req.body)) {
         const match = key.match(/^preferences\.(\d+)\.(\w+)$/);
@@ -273,7 +277,6 @@ router.post(
         res.locals.question.type === 'Freeform',
       );
 
-      // Build preferences schema from form array
       if (body.preferences.length > 0) {
         const preferencesSchema: QuestionPreferencesSchemaJson = {};
         for (const pref of body.preferences) {

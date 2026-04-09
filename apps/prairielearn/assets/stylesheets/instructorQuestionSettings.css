@@ -7,6 +7,17 @@
   min-width: 36rem;
 }
 
+/* Clip vertical overflow so a dragged row can't escape into the header
+   above or beyond the rows area below. overflow-x stays visible so rows
+   can extend past the wrapper's width and trigger the parent card's
+   horizontal scroll on narrow viewports. `clip` (not `hidden`) avoids
+   creating a scroll container, which would let focused inputs trigger
+   programmatic scrolls. */
+.preferences-grid-rows {
+  overflow-x: visible;
+  overflow-y: clip;
+}
+
 /* Horizontal scroll for narrow viewports. overflow-x: auto forces
    overflow-y to auto as well; clip it so dragged rows don't trigger
    a vertical scrollbar. */

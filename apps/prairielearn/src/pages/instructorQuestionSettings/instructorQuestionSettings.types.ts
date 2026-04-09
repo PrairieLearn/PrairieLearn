@@ -64,7 +64,6 @@ export interface QuestionSettingsFormValues {
   workspace_enable_networking: boolean;
   workspace_rewrite_url: boolean;
   preferences: PreferenceField[];
-  /** Tracks the state of the checkbox */
   external_grading_enabled: boolean;
   external_grading_image: string;
   external_grading_entrypoint: string;

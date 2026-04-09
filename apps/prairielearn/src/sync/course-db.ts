@@ -16,6 +16,7 @@ import { validateAccessControlRules } from '../lib/assessment-access-control/val
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
+import { validatePreferencesSchema } from '../lib/question-settings/validation.js';
 import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
@@ -28,7 +29,6 @@ import {
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
-  validatePreferencesSchema,
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 

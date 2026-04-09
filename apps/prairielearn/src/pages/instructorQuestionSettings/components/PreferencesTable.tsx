@@ -16,7 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
-import { useId, useRef, useState } from 'react';
+import { useCallback, useId, useRef, useState } from 'react';
 import { Button } from 'react-bootstrap';
 import {
   type Control,
@@ -161,7 +161,7 @@ export function PreferencesTable({
                 <div>Values</div>
                 {canEdit && <div />}
               </div>
-              <div ref={gridRef}>
+              <div ref={gridRef} className="preferences-grid-rows">
                 {fields.map((field, index) => (
                   <PreferenceRow
                     key={field.id}
@@ -223,6 +223,9 @@ function PreferenceRow({
     <div
       ref={setNodeRef}
       style={{
+        // Force scaleX/scaleY to 1: dnd-kit's `useDerivedTransform` animates
+        // index changes by computing scaleX/Y from old-rect/new-rect ratios,
+        // which warps tall rows when they land in shorter rows' slots.
         transform: CSS.Transform.toString(
           transform ? { ...transform, scaleX: 1, scaleY: 1 } : null,
         ),
@@ -418,7 +421,6 @@ function EnumInput({
 }) {
   const [inputValue, setInputValue] = useState('');
   const [adding, setAdding] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
   const enumValues = watch(`preferences.${index}.enum`);
 
   const currentDefault = watch(`preferences.${index}.default`);
@@ -446,8 +448,6 @@ function EnumInput({
 
   function startAdding() {
     setAdding(true);
-    // Focus the input after it renders
-    setTimeout(() => inputRef.current?.focus(), 0);
   }
 
   function stopAdding() {
@@ -455,6 +455,10 @@ function EnumInput({
     setAdding(false);
     setInputValue('');
   }
+
+  const focusOnMount = useCallback((node: HTMLInputElement | null) => {
+    node?.focus();
+  }, []);
 
   return (
     <div>
@@ -483,7 +487,7 @@ function EnumInput({
         {canEdit &&
           (adding ? (
             <input
-              ref={inputRef}
+              ref={focusOnMount}
               type={prefType === 'number' ? 'number' : 'text'}
               step={prefType === 'number' ? 'any' : undefined}
               className="form-control form-control-sm preferences-enum-input"
