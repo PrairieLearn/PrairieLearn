@@ -403,10 +403,8 @@ export function validateRule(
   }
 
   const ald = rule.dateControl?.afterLastDeadline;
-  if (ald && ald.allowSubmissions === false && ald.credit != null) {
-    errors.push(
-      'afterLastDeadline cannot set credit when submissions are not allowed.',
-    );
+  if (ald?.allowSubmissions === false && ald.credit != null) {
+    errors.push('afterLastDeadline cannot set credit when submissions are not allowed.');
   }
 
   const exams = rule.integrations?.prairieTest?.exams ?? [];

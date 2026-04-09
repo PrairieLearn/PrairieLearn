@@ -1761,7 +1761,7 @@ describe('Access control syncing', () => {
           dateControl: {
             durationMinutes: null,
             password: null,
-            afterLastDeadline: null,
+            afterLastDeadline: undefined,
           },
         };
 
@@ -1800,7 +1800,7 @@ describe('Access control syncing', () => {
           dateControl: {
             durationMinutes: null,
             password: null,
-            afterLastDeadline: null,
+            afterLastDeadline: undefined,
           },
         };
 
