@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 import { z } from 'zod';
 
+import { FriendlyDate, TimezoneContext } from '../../../components/FriendlyDate.js';
 import { Scorebar } from '../../../components/Scorebar.js';
 import { StudentAccessRulesPopoverReact } from '../../../components/StudentAccessRulesPopover.js';
 import {
@@ -79,7 +80,15 @@ function AvailableCredit({ row }: { row: StudentAssessmentsTableRow }) {
   if (row.modern_access_control && row.assessment_instance_id == null && !row.active) {
     if (row.opens_at) {
       return (
-        <span className="text-muted">Available {new Date(row.opens_at).toLocaleDateString()}</span>
+        <span className="text-muted">
+          Available{' '}
+          <FriendlyDate
+            date={new Date(row.opens_at)}
+            relative={false}
+            options={{ dateOnly: true }}
+            tooltip
+          />
+        </span>
       );
     }
     return <span className="text-muted">Not yet available</span>;
@@ -99,77 +108,81 @@ function AvailableCredit({ row }: { row: StudentAssessmentsTableRow }) {
 export function StudentAssessmentsTable({
   rows,
   courseInstanceId,
+  displayTimezone,
 }: {
   rows: StudentAssessmentsTableRow[];
   courseInstanceId: string;
+  displayTimezone: string;
 }) {
   return (
-    <div className="table-responsive">
-      <table className="table table-sm table-hover" aria-label="Assessments">
-        <thead>
-          <tr>
-            <th style={{ width: '1%' }}>
-              <span className="visually-hidden">Label</span>
-            </th>
-            <th>
-              <span className="visually-hidden">Title</span>
-            </th>
-            <th className="text-center">Available credit</th>
-            <th className="text-center">Score</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <Fragment
-              key={
-                row.assessment_instance_id != null
-                  ? `instance-${row.assessment_instance_id}`
-                  : `assessment-${row.assessment_id}`
-              }
-            >
-              {row.start_new_assessment_group && (
+    <TimezoneContext value={displayTimezone}>
+      <div className="table-responsive">
+        <table className="table table-sm table-hover" aria-label="Assessments">
+          <thead>
+            <tr>
+              <th style={{ width: '1%' }}>
+                <span className="visually-hidden">Label</span>
+              </th>
+              <th>
+                <span className="visually-hidden">Title</span>
+              </th>
+              <th className="text-center">Available credit</th>
+              <th className="text-center">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <Fragment
+                key={
+                  row.assessment_instance_id != null
+                    ? `instance-${row.assessment_instance_id}`
+                    : `assessment-${row.assessment_id}`
+                }
+              >
+                {row.start_new_assessment_group && (
+                  <tr>
+                    <th colSpan={4} scope="row" data-testid="assessment-group-heading">
+                      {row.assessment_group_heading}
+                    </th>
+                  </tr>
+                )}
                 <tr>
-                  <th colSpan={4} scope="row" data-testid="assessment-group-heading">
-                    {row.assessment_group_heading}
-                  </th>
+                  <td className="align-middle" style={{ width: '1%' }}>
+                    <span
+                      className={`badge color-${row.assessment_set_color}`}
+                      data-testid="assessment-set-badge"
+                    >
+                      {row.label}
+                    </span>
+                  </td>
+                  <td className="align-middle">
+                    {row.multiple_instance_header ||
+                    (!row.active && row.assessment_instance_id == null) ? (
+                      <span className="text-muted">{row.title}</span>
+                    ) : (
+                      <a href={getRowUrl(row, courseInstanceId)}>
+                        {row.title}
+                        {row.team_work && <i className="fas fa-users" aria-hidden="true" />}
+                      </a>
+                    )}
+                  </td>
+                  <td className="text-center align-middle">
+                    <AvailableCredit row={row} />
+                  </td>
+                  <td className="text-center align-middle">
+                    {row.multiple_instance_header ? (
+                      <NewInstanceButton courseInstanceId={courseInstanceId} row={row} />
+                    ) : (
+                      <AssessmentScore row={row} />
+                    )}
+                  </td>
                 </tr>
-              )}
-              <tr>
-                <td className="align-middle" style={{ width: '1%' }}>
-                  <span
-                    className={`badge color-${row.assessment_set_color}`}
-                    data-testid="assessment-set-badge"
-                  >
-                    {row.label}
-                  </span>
-                </td>
-                <td className="align-middle">
-                  {row.multiple_instance_header ||
-                  (!row.active && row.assessment_instance_id == null) ? (
-                    <span className="text-muted">{row.title}</span>
-                  ) : (
-                    <a href={getRowUrl(row, courseInstanceId)}>
-                      {row.title}
-                      {row.team_work && <i className="fas fa-users" aria-hidden="true" />}
-                    </a>
-                  )}
-                </td>
-                <td className="text-center align-middle">
-                  <AvailableCredit row={row} />
-                </td>
-                <td className="text-center align-middle">
-                  {row.multiple_instance_header ? (
-                    <NewInstanceButton courseInstanceId={courseInstanceId} row={row} />
-                  ) : (
-                    <AssessmentScore row={row} />
-                  )}
-                </td>
-              </tr>
-            </Fragment>
-          ))}
-        </tbody>
-      </table>
-    </div>
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </TimezoneContext>
   );
 }
 StudentAssessmentsTable.displayName = 'StudentAssessmentsTable';

@@ -9,6 +9,7 @@ interface FriendlyDateProps {
   date: Date | Temporal.PlainDateTime;
   timezone?: string;
   tooltip?: boolean;
+  relative?: boolean;
   options?: Parameters<typeof formatDateFriendly>[2];
   fullOptions?: Parameters<typeof formatDate>[2];
 }
@@ -17,13 +18,17 @@ export const FriendlyDate: FC<FriendlyDateProps> = ({
   date,
   timezone = null,
   tooltip = false,
+  relative = true,
   options,
   fullOptions,
 }) => {
   const timezoneContext = use(TimezoneContext);
   timezone = timezone ?? timezoneContext;
 
-  const friendlyString = formatDateFriendly(date, timezone, options);
+  const friendlyString = formatDateFriendly(date, timezone, {
+    baseDate: relative ? new Date() : undefined,
+    ...options,
+  });
   const fullString = formatDate(date, timezone, fullOptions);
   if (!tooltip) return <span style={{ fontVariantNumeric: 'tabular-nums' }}>{friendlyString}</span>;
   return (

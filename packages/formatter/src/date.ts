@@ -235,7 +235,7 @@ export function formatDateWithinRange(
 function formatDateFriendlyParts(
   date: Date,
   timezone: string,
-  baseDate: Date,
+  baseDate?: Date,
   maxPrecision: TimePrecision = 'second',
   minPrecision: TimePrecision = 'hour',
 ): {
@@ -244,15 +244,7 @@ function formatDateFriendlyParts(
   timezoneFormatted: string;
   dayBoundary: 'start' | 'end' | null;
 } {
-  // compute the number of days from the base date (0 = today, 1 = tomorrow, etc.)
-
-  const baseZonedDateTime = toTemporalInstant.call(baseDate).toZonedDateTimeISO(timezone);
   const zonedDateTime = toTemporalInstant.call(date).toZonedDateTimeISO(timezone);
-
-  const basePlainDate = baseZonedDateTime.toPlainDate();
-  const plainDate = zonedDateTime.toPlainDate();
-
-  const daysOffset = plainDate.since(basePlainDate, { largestUnit: 'day' }).days;
 
   // format the parts of the date and time
 
@@ -271,17 +263,27 @@ function formatDateFriendlyParts(
   const parts = keyBy(new Intl.DateTimeFormat('en-US', options).formatToParts(date), (x) => x.type);
 
   // format the date string
+  // If baseDate is provided, use relative labels (today, tomorrow, yesterday)
+  // and the 180-day threshold. Otherwise, always use absolute date labels with year.
 
   let dateFormatted = '';
-  if (daysOffset === 0) {
-    dateFormatted = 'today';
-  } else if (daysOffset === 1) {
-    dateFormatted = 'tomorrow';
-  } else if (daysOffset === -1) {
-    dateFormatted = 'yesterday';
-  } else if (Math.abs(daysOffset) <= 180) {
-    // non-breaking-space (\u00a0) is used between the month and day
-    dateFormatted = `${parts.weekday.value}, ${parts.month.value}\u00a0${parts.day.value}`;
+  if (baseDate) {
+    const baseZonedDateTime = toTemporalInstant.call(baseDate).toZonedDateTimeISO(timezone);
+    const basePlainDate = baseZonedDateTime.toPlainDate();
+    const plainDate = zonedDateTime.toPlainDate();
+    const daysOffset = plainDate.since(basePlainDate, { largestUnit: 'day' }).days;
+
+    if (daysOffset === 0) {
+      dateFormatted = 'today';
+    } else if (daysOffset === 1) {
+      dateFormatted = 'tomorrow';
+    } else if (daysOffset === -1) {
+      dateFormatted = 'yesterday';
+    } else if (Math.abs(daysOffset) <= 180) {
+      dateFormatted = `${parts.weekday.value}, ${parts.month.value}\u00a0${parts.day.value}`;
+    } else {
+      dateFormatted = `${parts.weekday.value}, ${parts.month.value}\u00a0${parts.day.value}, ${parts.year.value}`;
+    }
   } else {
     dateFormatted = `${parts.weekday.value}, ${parts.month.value}\u00a0${parts.day.value}, ${parts.year.value}`;
   }
@@ -386,7 +388,7 @@ function formatDateFriendlyParts(
  * @param date The date to format.
  * @param timezone The time zone to use for formatting.
  * @param options
- * @param options.baseDate The base date to use for comparison (default is the current date).
+ * @param options.baseDate The base date to use for relative date labels (today, tomorrow, yesterday). If omitted, absolute date labels are always used.
  * @param options.includeTz Whether to include the time zone in the output (default true).
  * @param options.timeFirst If true, the time is shown before the date (default false).
  * @param options.dateOnly If true, only the date is shown (default false).

@@ -65,7 +65,11 @@ export function StudentAssessments({
             <h1>Assessments</h1>
           </div>
           <Hydrate>
-            <StudentAssessmentsTable rows={safeRows} courseInstanceId={course_instance.id} />
+            <StudentAssessmentsTable
+              rows={safeRows}
+              courseInstanceId={course_instance.id}
+              displayTimezone={course_instance.display_timezone}
+            />
           </Hydrate>
         </div>
         {authz_data.mode === 'Exam' && (
