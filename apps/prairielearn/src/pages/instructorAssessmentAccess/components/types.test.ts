@@ -216,8 +216,8 @@ describe('formDataToJson', () => {
 
     expect(overrideJson.dateControl).toBeDefined();
     const dc = overrideJson.dateControl!;
-    expect('releaseDate' in dc).toBe(true);
-    expect(dc.releaseDate).toBeNull();
+    // releaseDate is not nullable in the schema, so null values are omitted
+    expect('releaseDate' in dc).toBe(false);
     expect('dueDate' in dc).toBe(true);
     expect(dc.dueDate).toBeNull();
     expect('earlyDeadlines' in dc).toBe(true);
