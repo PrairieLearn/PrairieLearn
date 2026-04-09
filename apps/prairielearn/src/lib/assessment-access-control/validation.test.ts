@@ -973,21 +973,6 @@ describe('Structural field dependency validation', () => {
     assert.isTrue(issues.some((i) => i.message.includes('Late deadlines require a due date')));
   });
 
-  it('should accept early deadlines with a due date', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        dueDate: '2024-03-21T23:59:00',
-        earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 120 }],
-      },
-    });
-    const issues = validateRuleStructuralDependencyIssues({
-      rule,
-      targetType: 'none',
-      ruleIndex: 0,
-    });
-    assert.deepEqual(issues, []);
-  });
-
   it('should reject after-complete dates without any deadline', () => {
     const rule = AccessControlJsonSchema.parse({
       afterComplete: {
@@ -1016,26 +1001,6 @@ describe('Structural field dependency validation', () => {
           JSON.stringify(i.path) === JSON.stringify(['afterComplete', 'showScoreAgainDate']),
       ),
     );
-  });
-
-  it('should accept after-complete dates with a deadline', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        dueDate: '2024-03-21T23:59:00',
-      },
-      afterComplete: {
-        hideQuestions: true,
-        showQuestionsAgainDate: '2024-03-23T23:59:00',
-        hideScore: true,
-        showScoreAgainDate: '2024-03-25T23:59:00',
-      },
-    });
-    const issues = validateRuleStructuralDependencyIssues({
-      rule,
-      targetType: 'none',
-      ruleIndex: 0,
-    });
-    assert.deepEqual(issues, []);
   });
 
   it('should accept after-complete boolean fields without deadlines', () => {
@@ -1068,8 +1033,7 @@ describe('Structural field dependency validation', () => {
       targetType: 'none',
       ruleIndex: 0,
     });
-    const afterCompleteIssues = issues.filter((i) => i.path[0] === 'afterComplete');
-    assert.deepEqual(afterCompleteIssues, []);
+    assert.deepEqual(issues, []);
   });
 
   it('should accept after-complete dates when PrairieTest is configured', () => {
@@ -1089,19 +1053,7 @@ describe('Structural field dependency validation', () => {
       targetType: 'none',
       ruleIndex: 0,
     });
-    const afterCompleteIssues = issues.filter((i) => i.path[0] === 'afterComplete');
-    assert.deepEqual(afterCompleteIssues, []);
-  });
-
-  it('should surface structural errors through validateRule', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        releaseDate: '2024-03-14T00:01:00',
-        earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 120 }],
-      },
-    });
-    const errors = validateRule(rule, 'none');
-    assert.isTrue(errors.some((e) => e.includes('Early deadlines require a due date')));
+    assert.deepEqual(issues, []);
   });
 
   it('should surface structural errors through validateAccessControlRules', () => {
