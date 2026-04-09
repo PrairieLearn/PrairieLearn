@@ -106,14 +106,14 @@ export const QuestionSettingsForm = ({
   // If we didn't wrap in `handleSubmit`, we could use `event.currentTarget`.
   const formRef = useRef<HTMLFormElement>(null);
 
-  const preferences: PreferenceField[] = question.preferences_schema
-    ? Object.entries(question.preferences_schema).map(([name, schema]) => ({
-        name,
-        type: schema.type,
-        default: String(schema.default),
-        enum: schema.enum?.map(String) ?? [],
-      }))
-    : [];
+  const preferences = Object.entries(question.preferences_schema ?? {}).map(
+    ([name, schema]): PreferenceField => ({
+      name,
+      type: schema.type,
+      default: String(schema.default),
+      enum: schema.enum?.map(String) ?? [],
+    }),
+  );
 
   const defaultValues: QuestionSettingsFormValues = {
     qid: question.qid ?? '',
