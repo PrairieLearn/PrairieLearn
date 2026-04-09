@@ -129,22 +129,14 @@ function dbBaseRowToAccessControlJson(
     rule.date_control_after_last_deadline_credit_overridden ||
     rule.date_control_after_last_deadline_allow_submissions !== null
   ) {
-    if (
-      rule.date_control_after_last_deadline_credit_overridden &&
-      rule.date_control_after_last_deadline_credit == null &&
-      rule.date_control_after_last_deadline_allow_submissions == null
-    ) {
-      dateControl.afterLastDeadline = null;
-    } else {
-      dateControl.afterLastDeadline = {
-        credit:
-          unmapField(
-            rule.date_control_after_last_deadline_credit_overridden,
-            rule.date_control_after_last_deadline_credit,
-          ) ?? undefined,
-        allowSubmissions: rule.date_control_after_last_deadline_allow_submissions ?? undefined,
-      };
-    }
+    dateControl.afterLastDeadline = {
+      credit:
+        unmapField(
+          rule.date_control_after_last_deadline_credit_overridden,
+          rule.date_control_after_last_deadline_credit,
+        ) ?? undefined,
+      allowSubmissions: rule.date_control_after_last_deadline_allow_submissions ?? undefined,
+    };
   }
   if (rule.date_control_duration_minutes_overridden) {
     dateControl.durationMinutes = rule.date_control_duration_minutes;

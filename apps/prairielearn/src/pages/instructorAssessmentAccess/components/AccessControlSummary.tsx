@@ -12,12 +12,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Fragment, useId, useMemo } from 'react';
 import { Button } from 'react-bootstrap';
 
-import {
-  DateTableView,
-  OverrideRuleSummaryCard,
-  generateDateTableRows,
-  generateRuleSummary,
-} from './RuleSummary.js';
+import { DateTableView, OverrideRuleSummaryCard, buildRulePreview } from './RuleSummary.js';
 import type { MainRuleData, OverrideData } from './types.js';
 
 function SortableOverrideCard({
@@ -69,33 +64,32 @@ function MainRuleSummaryContent({
   rule: MainRuleData;
   displayTimezone: string;
 }) {
-  const summaryItems = generateRuleSummary(rule, displayTimezone);
-  const dateTableRows = generateDateTableRows(rule, displayTimezone);
+  const { rows, badges } = buildRulePreview(rule, displayTimezone);
 
   return (
     <div>
-      {dateTableRows.length > 0 && (
+      {rows.length > 0 && (
         <div className="mb-2">
-          <DateTableView rows={dateTableRows} />
+          <DateTableView rows={rows} />
         </div>
       )}
 
-      {summaryItems.length > 0 && (
+      {badges.length > 0 && (
         <div className="d-flex flex-wrap gap-2">
-          {summaryItems.map((item) => (
+          {badges.map((badge) => (
             <span
-              key={item.key}
+              key={badge.key}
               className="d-inline-flex align-items-center gap-1 border rounded-pill px-3 py-1"
               style={{ fontSize: '0.875rem' }}
             >
-              <i className={`bi ${item.icon}`} aria-hidden="true" />
-              {item.text}
+              <i className={`bi ${badge.icon}`} aria-hidden="true" />
+              {badge.text}
             </span>
           ))}
         </div>
       )}
 
-      {dateTableRows.length === 0 && summaryItems.length === 0 && (
+      {rows.length === 0 && badges.length === 0 && (
         <div
           className="rounded text-center py-3 text-body-secondary"
           style={{ border: '2px dashed var(--bs-border-color)' }}

@@ -224,8 +224,7 @@ describe('formDataToJson', () => {
     expect(dc.earlyDeadlines).toEqual([]);
     expect('lateDeadlines' in dc).toBe(true);
     expect(dc.lateDeadlines).toEqual([]);
-    expect('afterLastDeadline' in dc).toBe(true);
-    expect(dc.afterLastDeadline).toBeNull();
+    expect('afterLastDeadline' in dc).toBe(false);
     expect('durationMinutes' in dc).toBe(true);
     expect(dc.durationMinutes).toBeNull();
     expect('password' in dc).toBe(true);

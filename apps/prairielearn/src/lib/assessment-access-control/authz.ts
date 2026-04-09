@@ -12,7 +12,6 @@ import type {
 import { getGroupId } from '../groups.js';
 import { idsEqual } from '../id.js';
 
-import { type AccessDisplayModel, buildModernAccessDisplayModel } from './access-display.js';
 import {
   selectAccessControlRulesForAssessment,
   selectAccessControlRulesForCourseInstance,
@@ -45,23 +44,10 @@ interface ModernAssessmentAccessInput {
 
 interface ModernAssessmentAccessResult {
   authzResult: SprocAuthzAssessment;
-  accessDisplayModel: AccessDisplayModel;
 }
 
 interface ModernAssessmentInstanceAccessResult {
   authzResult: SprocAuthzAssessmentInstance;
-  accessDisplayModel: AccessDisplayModel;
-}
-
-function buildClosedHiddenAccessDisplayModel(displayTimezone: string): AccessDisplayModel {
-  return buildModernAccessDisplayModel({
-    availabilityState: 'closed',
-    availabilityListed: false,
-    opensAt: null,
-    timeline: [],
-    displayTimezone,
-    prairieTestExamCount: 0,
-  });
 }
 
 function resolverResultToSprocAuthzAssessment(
@@ -85,30 +71,6 @@ function resolverResultToSprocAuthzAssessment(
     next_active_time: null,
     access_rules: [],
   };
-}
-
-export function buildAccessDisplayModelFromResult({
-  result,
-  effectiveRule,
-  prairieTestExamCount,
-  displayTimezone,
-}: {
-  result: AccessControlResolverResult;
-  effectiveRule: NonNullable<ReturnType<typeof resolveEffectiveRuleContext>>['effectiveRule'];
-  prairieTestExamCount: number;
-  displayTimezone: string;
-}): AccessDisplayModel {
-  return buildModernAccessDisplayModel({
-    listBeforeRelease: effectiveRule.listBeforeRelease,
-    dateControl: effectiveRule.dateControl,
-    afterComplete: effectiveRule.afterComplete,
-    timeline: result.timeline,
-    availabilityState: result.availabilityState,
-    availabilityListed: result.availabilityListed,
-    opensAt: result.opensAt,
-    displayTimezone,
-    prairieTestExamCount,
-  });
 }
 
 export async function resolveModernAssessmentAccess({
@@ -136,15 +98,6 @@ export async function resolveModernAssessmentAccess({
 
   return {
     authzResult: resolverResultToSprocAuthzAssessment(result, authzData.mode),
-    accessDisplayModel:
-      ruleContext == null
-        ? buildClosedHiddenAccessDisplayModel(courseInstance.display_timezone)
-        : buildAccessDisplayModelFromResult({
-            result,
-            effectiveRule: ruleContext.effectiveRule,
-            prairieTestExamCount: ruleContext.prairieTestExamCount,
-            displayTimezone: courseInstance.display_timezone,
-          }),
   };
 }
 
@@ -218,7 +171,6 @@ export async function resolveModernAssessmentInstanceAccess({
       timeLimitExpired,
       hasCourseInstancePermissionView: authzData.has_course_instance_permission_view ?? false,
     }),
-    accessDisplayModel: assessmentAccess.accessDisplayModel,
   };
 }
 
@@ -256,15 +208,6 @@ export async function resolveModernAssessmentAccessBatch({
 
     results.set(assessmentId, {
       authzResult: resolverResultToSprocAuthzAssessment(result, authzData.mode),
-      accessDisplayModel:
-        ruleContext == null
-          ? buildClosedHiddenAccessDisplayModel(courseInstance.display_timezone)
-          : buildAccessDisplayModelFromResult({
-              result,
-              effectiveRule: ruleContext.effectiveRule,
-              prairieTestExamCount: ruleContext.prairieTestExamCount,
-              displayTimezone: courseInstance.display_timezone,
-            }),
     });
   }
 

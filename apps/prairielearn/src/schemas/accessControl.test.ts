@@ -11,14 +11,17 @@ describe('AccessControlJsonSchema', () => {
         dueDate: null,
         earlyDeadlines: null,
         lateDeadlines: null,
-        afterLastDeadline: null,
+        afterLastDeadline: { credit: null, allowSubmissions: null },
         durationMinutes: null,
         password: null,
       },
     });
 
     expect(result.dateControl?.releaseDate).toBe('2024-03-14T00:01:00');
-    expect(result.dateControl?.afterLastDeadline).toBeNull();
+    expect(result.dateControl?.afterLastDeadline).toEqual({
+      credit: null,
+      allowSubmissions: null,
+    });
     expect(result.dateControl?.durationMinutes).toBeNull();
   });
 });
