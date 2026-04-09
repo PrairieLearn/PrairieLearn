@@ -19,6 +19,9 @@ import {
 } from './data.js';
 import {
   type AccessControlResolverResult,
+  type RuntimeDateControl,
+  type TimelineEntry,
+  formatDateShort,
   resolveAccessControlFromRuleContext,
   resolveEffectiveRuleContext,
 } from './resolver.js';
@@ -44,15 +47,66 @@ interface ModernAssessmentAccessInput {
 
 interface ModernAssessmentAccessResult {
   authzResult: SprocAuthzAssessment;
+  opensAt: Date | null;
 }
 
 interface ModernAssessmentInstanceAccessResult {
   authzResult: SprocAuthzAssessmentInstance;
 }
 
+function buildAccessRulesFromTimeline({
+  timeline,
+  dateControl,
+  displayTimezone,
+  currentCredit,
+}: {
+  timeline: TimelineEntry[];
+  dateControl: RuntimeDateControl | undefined;
+  displayTimezone: string;
+  currentCredit: number | null;
+}): SprocAuthzAssessment['access_rules'] {
+  if (timeline.length === 0 || !dateControl?.releaseDate) return [];
+
+  const fmt = (d: Date) => formatDateShort(d, displayTimezone);
+  const rules: SprocAuthzAssessment['access_rules'] = [];
+
+  // Each timeline entry means "before this date, credit = entry.credit".
+  // Convert to rows with start/end ranges.
+  for (let i = 0; i < timeline.length; i++) {
+    const entry = timeline[i];
+    const startDate = i === 0 ? dateControl.releaseDate : timeline[i - 1].date;
+    const credit = entry.credit;
+    rules.push({
+      credit: credit > 0 ? `${credit}%` : 'None',
+      start_date: fmt(startDate),
+      end_date: fmt(entry.date),
+      time_limit_min: dateControl.durationMinutes ? `${dateControl.durationMinutes} min` : '—',
+      mode: null,
+      active: currentCredit != null && currentCredit === credit,
+    });
+  }
+
+  // After the last deadline, show afterLastDeadline credit if > 0.
+  const afterCredit = dateControl.afterLastDeadline?.credit ?? 0;
+  if (afterCredit > 0) {
+    rules.push({
+      credit: `${afterCredit}%`,
+      start_date: fmt(timeline[timeline.length - 1].date),
+      end_date: '—',
+      time_limit_min: dateControl.durationMinutes ? `${dateControl.durationMinutes} min` : '—',
+      mode: null,
+      active: currentCredit != null && currentCredit === afterCredit,
+    });
+  }
+
+  return rules;
+}
+
 function resolverResultToSprocAuthzAssessment(
   result: AccessControlResolverResult,
   authzMode: EnumMode | undefined,
+  dateControl: RuntimeDateControl | undefined,
+  displayTimezone: string,
 ): SprocAuthzAssessment {
   return {
     authorized: result.authorized,
@@ -69,7 +123,12 @@ function resolverResultToSprocAuthzAssessment(
     mode: authzMode === 'Exam' && result.examAccessEnd ? 'Exam' : null,
     show_before_release: result.showBeforeRelease,
     next_active_time: null,
-    access_rules: [],
+    access_rules: buildAccessRulesFromTimeline({
+      timeline: result.timeline,
+      dateControl,
+      displayTimezone,
+      currentCredit: result.credit,
+    }),
   };
 }
 
@@ -97,7 +156,13 @@ export async function resolveModernAssessmentAccess({
   });
 
   return {
-    authzResult: resolverResultToSprocAuthzAssessment(result, authzData.mode),
+    authzResult: resolverResultToSprocAuthzAssessment(
+      result,
+      authzData.mode,
+      ruleContext?.effectiveRule.dateControl,
+      courseInstance.display_timezone,
+    ),
+    opensAt: result.opensAt,
   };
 }
 
@@ -207,7 +272,13 @@ export async function resolveModernAssessmentAccessBatch({
     });
 
     results.set(assessmentId, {
-      authzResult: resolverResultToSprocAuthzAssessment(result, authzData.mode),
+      authzResult: resolverResultToSprocAuthzAssessment(
+        result,
+        authzData.mode,
+        ruleContext?.effectiveRule.dateControl,
+        courseInstance.display_timezone,
+      ),
+      opensAt: result.opensAt,
     });
   }
 

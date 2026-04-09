@@ -149,8 +149,8 @@ test.describe.serial('Student access control', () => {
     const assessmentLink = page.getByRole('link', { name: ASSESSMENT_TITLE, exact: true });
     await expect(assessmentLink).not.toBeVisible();
 
-    // "Not yet available" text should be visible
-    await expect(page.getByText('Not yet available')).toBeVisible();
+    // Should show when the assessment becomes available
+    await expect(page.getByText(/Available .+2099/)).toBeVisible();
   });
 
   test('normal access shows clickable assessment link', async ({

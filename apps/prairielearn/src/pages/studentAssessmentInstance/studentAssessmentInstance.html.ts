@@ -22,6 +22,7 @@ import {
   QuestionVariantHistory,
 } from '../../components/QuestionScore.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
+import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
@@ -816,6 +817,7 @@ function AssessmentStatus({
         Assessment is <strong>open</strong> and you can answer questions.
         <br />
         Available credit: ${authz_result.credit_date_string}
+        ${StudentAccessRulesPopover({ accessRules: authz_result.access_rules })}
       </div>
     `;
   }

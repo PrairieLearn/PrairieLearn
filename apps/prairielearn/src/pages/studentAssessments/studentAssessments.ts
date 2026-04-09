@@ -51,6 +51,7 @@ router.get(
           active: result.authzResult.active,
           show_closed_assessment_score: result.authzResult.show_closed_assessment_score,
           show_before_release: result.authzResult.show_before_release,
+          opens_at: result.opensAt,
         };
       })
       .filter((row): row is NonNullable<typeof row> => {
