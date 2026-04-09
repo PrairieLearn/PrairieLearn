@@ -34,10 +34,6 @@ interface DateRange {
   end: Date;
 }
 
-/**
- * Returns the date range that a deadline covers.
- * Returns `null` if the current deadline has no date set.
- */
 export function getDeadlineRange(
   rangeStart: string | null | undefined,
   deadline: DeadlineEntry | undefined,

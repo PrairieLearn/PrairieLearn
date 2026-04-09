@@ -81,11 +81,9 @@ function DeadlineArrayInput({
   };
 
   const getTimeRangeText = (index: number) => {
-    const currentDeadlines = structuredClone(deadlines);
-
     const anchorDate = isEarly ? releaseDate : dueDate;
-    const rangeStart = currentDeadlines[index - 1]?.date ?? anchorDate;
-    const range = getDeadlineRange(rangeStart, currentDeadlines[index]);
+    const rangeStart = deadlines[index - 1]?.date ?? anchorDate;
+    const range = getDeadlineRange(rangeStart, deadlines[index]);
 
     if (!range) return null;
 
