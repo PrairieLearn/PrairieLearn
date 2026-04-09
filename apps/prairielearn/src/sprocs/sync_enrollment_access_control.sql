@@ -27,7 +27,6 @@ BEGIN
         -- Update existing enrollment rule
         UPDATE assessment_access_control_rules SET
             list_before_release = (rule_data ->> 'list_before_release')::boolean,
-            date_control_release_date_overridden = (rule_data ->> 'date_control_release_date_overridden')::boolean,
             date_control_release_date = input_date(rule_data ->> 'date_control_release_date', ci_timezone),
             date_control_due_date_overridden = (rule_data ->> 'date_control_due_date_overridden')::boolean,
             date_control_due_date = input_date(rule_data ->> 'date_control_due_date', ci_timezone),
@@ -82,7 +81,6 @@ BEGIN
             number,
             target_type,
             list_before_release,
-            date_control_release_date_overridden,
             date_control_release_date,
             date_control_due_date_overridden,
             date_control_due_date,
@@ -109,7 +107,6 @@ BEGIN
             next_number,
             'enrollment',
             (rule_data ->> 'list_before_release')::boolean,
-            (rule_data ->> 'date_control_release_date_overridden')::boolean,
             input_date(rule_data ->> 'date_control_release_date', ci_timezone),
             (rule_data ->> 'date_control_due_date_overridden')::boolean,
             input_date(rule_data ->> 'date_control_due_date', ci_timezone),

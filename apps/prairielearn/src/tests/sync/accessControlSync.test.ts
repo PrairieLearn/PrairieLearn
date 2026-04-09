@@ -157,7 +157,7 @@ describe('Access control syncing', () => {
         const { syncedRules } = await syncRulesAndRead([makeAccessControlRule()]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].number, 0);
-        assert.equal(syncedRules[0].date_control_release_date_overridden, true);
+        assert.isNotNull(syncedRules[0].date_control_release_date);
         assert.equal(syncedRules[0].target_type, 'none');
       }));
 
@@ -210,7 +210,6 @@ describe('Access control syncing', () => {
         });
         const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
-        assert.isTrue(row.date_control_release_date_overridden);
         assert.isNotNull(row.date_control_release_date);
         assert.isTrue(row.date_control_due_date_overridden);
         assert.isNotNull(row.date_control_due_date);
@@ -266,7 +265,7 @@ describe('Access control syncing', () => {
         const rule = makeAccessControlRule({ dateControl: undefined });
         const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
-        assert.isFalse(row.date_control_release_date_overridden);
+        assert.isNull(row.date_control_release_date);
         assert.isFalse(row.date_control_due_date_overridden);
         assert.isFalse(row.date_control_duration_minutes_overridden);
         assert.isFalse(row.date_control_password_overridden);
@@ -323,7 +322,6 @@ describe('Access control syncing', () => {
         assert.isTrue(override.date_control_due_date_overridden);
         assert.isNotNull(override.date_control_due_date);
         // Everything else should be overridden=false (inherit from main)
-        assert.isFalse(override.date_control_release_date_overridden);
         assert.isNull(override.date_control_release_date);
         assert.isFalse(override.date_control_duration_minutes_overridden);
         assert.isNull(override.date_control_duration_minutes);
@@ -346,7 +344,7 @@ describe('Access control syncing', () => {
         });
         const override = syncedRules.find((r) => r.target_type === 'student_label');
         assert.isOk(override);
-        assert.isFalse(override.date_control_release_date_overridden);
+        assert.isNull(override.date_control_release_date);
         assert.isFalse(override.date_control_due_date_overridden);
         assert.isFalse(override.date_control_duration_minutes_overridden);
         assert.isFalse(override.date_control_password_overridden);
