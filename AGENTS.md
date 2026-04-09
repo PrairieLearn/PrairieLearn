@@ -119,6 +119,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 
 - Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
 - When writing SQL, get table and column names from `database/tables/` (the source of truth) or from nearby existing queries in the same feature area. Do NOT rely on names found in old migrations, as tables and columns may have been renamed since those migrations were written.
+- Never inline SQL strings in TypeScript code. Place SQL queries in a `.sql` file alongside the TypeScript file using `-- BLOCK query_name` delimiters, load them with `sqldb.loadSqlEquiv(import.meta.url)`, and reference them as `sql.query_name`.
 
 ## TypeScript guidance
 
@@ -192,6 +193,7 @@ Inline `PageLayout` directly in the Express route handler rather than creating w
 - Don't use `useMemo` for cheap computations. Use `run` from `@prairielearn/run` instead (an IIFE helper that executes a function immediately).
 - Don't use `useEffect` to sync internal state to a parent via a callback on every change — instead, let the child own its state and notify the parent imperatively when a user action requires it (e.g., clicking "Save").
 - Avoid unnecessary `useEffect` when using `react-hook-form`. The `watch()` function returns reactive values that trigger re-renders automatically, so derived state can be computed directly without `useEffect`.
+- When a `useEffect` is necessary, add a comment explaining what it does — the intent of effects is often non-obvious.
 - In hydrated components using `react-hook-form`, always add `defaultValue` (text inputs, textareas, selects) or `defaultChecked` (checkboxes) alongside `{...register(...)}`. Without these, values aren't populated until client hydration, causing a flash of empty fields.
 
 ## Python guidance

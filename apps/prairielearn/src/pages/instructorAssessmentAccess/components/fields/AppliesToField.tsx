@@ -1,20 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Alert, Button, Form, ListGroup } from 'react-bootstrap';
-import {
-  type FieldArrayPath,
-  type Path,
-  useFieldArray,
-  useFormContext,
-  useWatch,
-} from 'react-hook-form';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 
 import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
 import { useTRPC } from '../../../../trpc/assessment/context.js';
-import type { NamePrefix } from '../hooks/fieldNames.js';
-import type { AccessControlFormData, AppliesTo, EnrollmentTarget, TargetType } from '../types.js';
+import type { AccessControlFormData, EnrollmentTarget, TargetType } from '../types.js';
 
 import { AddStudentsModal } from './AddStudentsModal.js';
 
@@ -22,7 +15,7 @@ export function AppliesToField({
   namePrefix,
   courseInstanceId,
 }: {
-  namePrefix: NamePrefix;
+  namePrefix: `overrides.${number}`;
   courseInstanceId: string;
 }) {
   const { setValue } = useFormContext<AccessControlFormData>();
@@ -30,26 +23,26 @@ export function AppliesToField({
 
   const { data: allLabels } = useQuery(trpc.accessControl.studentLabels.queryOptions());
 
-  const appliesTo = useWatch({
-    name: `${namePrefix}.appliesTo` as Path<AccessControlFormData>,
+  const appliesTo = useWatch<AccessControlFormData, `overrides.${number}.appliesTo`>({
+    name: `${namePrefix}.appliesTo`,
   });
 
   const { replace: replaceEnrollments, remove: removeEnrollment } = useFieldArray({
-    name: `${namePrefix}.appliesTo.enrollments` as FieldArrayPath<AccessControlFormData>,
+    name: `${namePrefix}.appliesTo.enrollments`,
   });
 
   const { append: appendStudentLabel, remove: removeStudentLabel } = useFieldArray({
-    name: `${namePrefix}.appliesTo.studentLabels` as FieldArrayPath<AccessControlFormData>,
+    name: `${namePrefix}.appliesTo.studentLabels`,
   });
 
   const handleTargetTypeChange = (newType: TargetType) => {
     setValue(
-      `${namePrefix}.appliesTo` as Path<AccessControlFormData>,
+      `${namePrefix}.appliesTo`,
       {
         targetType: newType,
         enrollments: [],
         studentLabels: [],
-      } as never,
+      },
       { shouldDirty: true },
     );
   };
@@ -58,11 +51,7 @@ export function AppliesToField({
     replaceEnrollments(students);
   };
 
-  // appliesTo may be undefined during initial render
-  const typedAppliesTo = appliesTo as AppliesTo | undefined;
-  const currentTargetType = typedAppliesTo?.targetType ?? 'enrollment';
-  const enrollments = typedAppliesTo?.enrollments ?? [];
-  const studentLabels = typedAppliesTo?.studentLabels ?? [];
+  const { targetType, enrollments, studentLabels } = appliesTo;
 
   const handleRemoveEnrollmentByUid = (uid: string) => {
     const index = enrollments.findIndex((s) => s.uid === uid);
@@ -90,7 +79,7 @@ export function AppliesToField({
           id={`${namePrefix}-target-enrollment`}
           name={`${namePrefix}-target-type`}
           label="Specific students"
-          checked={currentTargetType === 'enrollment'}
+          checked={targetType === 'enrollment'}
           onChange={() => handleTargetTypeChange('enrollment')}
         />
         <Form.Check
@@ -98,13 +87,13 @@ export function AppliesToField({
           id={`${namePrefix}-target-student-label`}
           name={`${namePrefix}-target-type`}
           label="Students by label"
-          checked={currentTargetType === 'student_label'}
+          checked={targetType === 'student_label'}
           onChange={() => handleTargetTypeChange('student_label')}
         />
       </fieldset>
 
       <div>
-        {currentTargetType === 'enrollment' ? (
+        {targetType === 'enrollment' ? (
           <div className="border rounded overflow-hidden">
             <div
               className={clsx(
@@ -203,8 +192,7 @@ export function AppliesToField({
       {hasNoTargets && (
         <Alert variant="warning" className="mt-3 mb-0">
           This override has no targets. Add at least one{' '}
-          {currentTargetType === 'enrollment' ? 'student' : 'student label'} for this rule to take
-          effect.
+          {targetType === 'enrollment' ? 'student' : 'student label'} for this rule to take effect.
         </Alert>
       )}
     </div>

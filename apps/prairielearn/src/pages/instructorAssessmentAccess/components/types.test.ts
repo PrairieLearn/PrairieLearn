@@ -21,7 +21,6 @@ const defaultMainRule: MainRuleData = {
   afterLastDeadline: { credit: 0, allowSubmissions: false },
   durationMinutes: 60,
   password: 'secret',
-  prairieTestEnabled: false,
   prairieTestExams: [],
   questionVisibility: { hideQuestions: true },
   scoreVisibility: { hideScore: false },
@@ -51,6 +50,11 @@ function buildFormData(override: OverrideData): AccessControlFormData {
 }
 
 describe('jsonToMainRuleFormData', () => {
+  it('defaults releaseDate to null when dateControl is not configured', () => {
+    const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
+    expect(mainRule.releaseDate).toBeNull();
+  });
+
   it('defaults hideQuestions to true when afterComplete is not configured', () => {
     const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
     expect(mainRule.questionVisibility.hideQuestions).toBe(true);
@@ -193,7 +197,6 @@ describe('formDataToJson', () => {
             studentLabels: [],
           },
           overriddenFields: [
-            'releaseDate',
             'dueDate',
             'earlyDeadlines',
             'lateDeadlines',
@@ -201,7 +204,7 @@ describe('formDataToJson', () => {
             'durationMinutes',
             'password',
           ],
-          releaseDate: null,
+          // Release date as null is not allowed, so this is false.
           dueDate: null,
           earlyDeadlines: [],
           lateDeadlines: [],
@@ -217,8 +220,6 @@ describe('formDataToJson', () => {
 
     expect(overrideJson.dateControl).toBeDefined();
     const dc = overrideJson.dateControl!;
-    expect('releaseDate' in dc).toBe(true);
-    expect(dc.releaseDate).toBeNull();
     expect('dueDate' in dc).toBe(true);
     expect(dc.dueDate).toBeNull();
     expect('earlyDeadlines' in dc).toBe(true);

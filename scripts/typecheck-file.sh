@@ -36,6 +36,7 @@ find_module_augmentation_files() {
         --exclude-dir=build \
         --exclude-dir=client \
         --exclude-dir=assets \
+        --exclude-dir=.claude \
         2> /dev/null || true
 }
 
