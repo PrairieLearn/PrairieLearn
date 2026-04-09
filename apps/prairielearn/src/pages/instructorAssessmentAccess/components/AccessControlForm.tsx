@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Button, Form, Modal } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
@@ -19,6 +19,7 @@ import {
   jsonToMainRuleFormData,
   jsonToOverrideFormData,
 } from './types.js';
+import { type AccessControlFormFieldPath, getGlobalDateValidationErrors } from './validation.js';
 
 const defaultInitialData: AccessControlJsonWithId[] = [];
 
@@ -27,57 +28,6 @@ const defaultInitialData: AccessControlJsonWithId[] = [];
  * deadline override inputs onto a single line.
  */
 const accessControlFormInitialRightWidth = 560;
-
-/**
- * Maps react-hook-form error field keys to human-friendly labels.
- * Keys at any depth in the error object are matched.
- */
-const FIELD_LABELS: Record<string, string> = {
-  examUuid: 'Exam UUID',
-  releaseDate: 'Release date',
-  dueDate: 'Due date',
-  durationMinutes: 'Time limit',
-  password: 'Password',
-};
-
-/**
- * Array field keys that should produce indexed labels like "Early deadline 1".
- * When a numeric index is encountered under one of these keys, the label is
- * built from the array name + 1-based index and used as context for child errors.
- */
-const ARRAY_LABELS: Record<string, string> = {
-  earlyDeadlines: 'Early deadline',
-  lateDeadlines: 'Late deadline',
-  prairieTestExams: 'Exam',
-};
-
-function collectErrorMessages(
-  errors: Record<string, unknown> | undefined,
-  parentKey?: string,
-  parentArrayLabel?: string,
-): string[] {
-  if (!errors) return [];
-  const messages: string[] = [];
-  for (const [key, value] of Object.entries(errors)) {
-    if (value && typeof value === 'object') {
-      const obj = value as Record<string, unknown>;
-      if (typeof obj.message === 'string') {
-        const label = FIELD_LABELS[key] ?? parentKey;
-        messages.push(label ? `${label}: ${obj.message}` : obj.message);
-      } else if (ARRAY_LABELS[key]) {
-        messages.push(...collectErrorMessages(obj, parentKey, ARRAY_LABELS[key]));
-      } else if (parentArrayLabel && /^\d+$/.test(key)) {
-        const indexedLabel = `${parentArrayLabel} ${Number(key) + 1}`;
-        messages.push(...collectErrorMessages(obj, indexedLabel));
-      } else {
-        messages.push(
-          ...collectErrorMessages(obj, FIELD_LABELS[key] ?? parentKey, parentArrayLabel),
-        );
-      }
-    }
-  }
-  return messages;
-}
 
 type SelectedRule = { type: 'main' } | { type: 'override'; index: number } | null;
 
@@ -112,11 +62,14 @@ export function AccessControlForm({
   });
 
   const {
+    clearErrors,
     control,
+    getFieldState,
     handleSubmit,
+    setError,
     watch,
     reset,
-    formState: { isDirty, isValid, errors },
+    formState: { isDirty, isValid },
   } = methods;
 
   const {
@@ -130,13 +83,47 @@ export function AccessControlForm({
   });
 
   const watchedData = watch();
+  const manualErrorPathsRef = useRef<Set<AccessControlFormFieldPath>>(new Set());
+
+  // Sync cross-field date validation errors into react-hook-form as manual errors,
+  // and clear them when the underlying issues are resolved.
+  useEffect(() => {
+    const nextManualErrors = new Map<AccessControlFormFieldPath, string>();
+    for (const error of getGlobalDateValidationErrors(watchedData)) {
+      nextManualErrors.set(error.path, error.message);
+    }
+
+    const candidatePaths = new Set<AccessControlFormFieldPath>([
+      ...manualErrorPathsRef.current,
+      ...nextManualErrors.keys(),
+    ]);
+
+    for (const path of candidatePaths) {
+      const fieldState = getFieldState(path);
+      const nextMessage = nextManualErrors.get(path);
+
+      if (nextMessage) {
+        if (fieldState.error?.type !== 'manual') {
+          if (!fieldState.error) {
+            setError(path, { type: 'manual', message: nextMessage });
+          }
+        } else if (fieldState.error.message !== nextMessage) {
+          setError(path, { type: 'manual', message: nextMessage });
+        }
+      } else if (fieldState.error?.type === 'manual') {
+        clearErrors(path);
+      }
+    }
+
+    manualErrorPathsRef.current = new Set(nextManualErrors.keys());
+  }, [clearErrors, getFieldState, setError, watchedData]);
 
   const handleFormSubmit = (data: AccessControlFormData) => {
     onSubmit(formDataToJson(data));
   };
 
   const addOverride = () => {
-    const newOverride = createDefaultOverrideFormData();
+    const newOverride = createDefaultOverrideFormData(watchedData.mainRule);
     // Enrollment overrides are inserted before student-label overrides
     const firstLabelIndex = watchedData.overrides.findIndex(
       (o) => o.appliesTo.targetType === 'student_label',
@@ -196,17 +183,13 @@ export function AccessControlForm({
     }
   };
 
-  const mainRuleErrors = collectErrorMessages(
-    errors.mainRule as Record<string, unknown> | undefined,
-  );
-  const getOverrideErrors = (index: number): string[] =>
-    collectErrorMessages(errors.overrides?.[index] as Record<string, unknown> | undefined);
+  const hasManualErrors = getGlobalDateValidationErrors(watchedData).length > 0;
 
   const saveDisabledReason = isSaving
     ? 'Saving...'
     : !isDirty
       ? 'No changes to save'
-      : !isValid
+      : !isValid || hasManualErrors
         ? 'Fix validation errors before saving'
         : null;
 
@@ -241,7 +224,7 @@ export function AccessControlForm({
   const rightPanel =
     selectedRule?.type === 'main' ? (
       <div className="px-3 pb-3">
-        <MainRuleForm />
+        <MainRuleForm displayTimezone={displayTimezone} />
       </div>
     ) : selectedRule?.type === 'override' ? (
       (() => {
@@ -254,7 +237,7 @@ export function AccessControlForm({
               namePrefix={`overrides.${selectedRule.index}`}
               courseInstanceId={courseInstance.id}
             />
-            <OverrideRuleContent index={selectedRule.index} />
+            <OverrideRuleContent index={selectedRule.index} displayTimezone={displayTimezone} />
           </div>
         );
       })()
@@ -289,8 +272,6 @@ export function AccessControlForm({
                     getOverrideName={getOverrideName}
                     mainRule={watchedData.mainRule}
                     overrides={watchedData.overrides}
-                    mainRuleErrors={mainRuleErrors}
-                    getOverrideErrors={getOverrideErrors}
                     onAddOverride={addOverride}
                     onRemoveOverride={handleDeleteClick}
                     onMoveOverride={moveOverride}
