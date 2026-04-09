@@ -93,14 +93,23 @@ function DeadlineArrayInput({
       return (
         <>
           {prefix} –{' '}
-          <FriendlyDate date={new Date(end)} timezone={userTimezone} options={{ includeTz: false }} />
+          <FriendlyDate
+            date={new Date(end)}
+            timezone={userTimezone}
+            options={{ includeTz: false }}
+          />
         </>
       );
     }
 
     return (
       <>
-        <FriendlyDate date={new Date(start)} timezone={userTimezone} options={{ includeTz: false }} /> –{' '}
+        <FriendlyDate
+          date={new Date(start)}
+          timezone={userTimezone}
+          options={{ includeTz: false }}
+        />{' '}
+        –{' '}
         <FriendlyDate date={new Date(end)} timezone={userTimezone} options={{ includeTz: false }} />
       </>
     );
