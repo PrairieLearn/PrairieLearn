@@ -49,7 +49,6 @@ describe('@prairielearn/workflows', () => {
         status text NOT NULL DEFAULT 'running' CHECK (
           status IN ('running', 'waiting', 'completed', 'error', 'canceled')
         ),
-        phase text,
         state jsonb NOT NULL DEFAULT '{}'::jsonb,
         locked_by text,
         locked_at timestamptz,
@@ -88,12 +87,11 @@ describe('@prairielearn/workflows', () => {
           run,
         }: WorkflowStepContext<{ step: number }>): Promise<StepResult<{ step: number }>> {
           if (run.state.step >= 3) {
-            return { state: run.state, status: 'completed', phase: 'done' };
+            return { state: run.state, status: 'completed' };
           }
           return {
             state: { step: run.state.step + 1 },
             status: 'continue',
-            phase: `step-${run.state.step + 1}`,
           };
         },
       });
@@ -112,7 +110,6 @@ describe('@prairielearn/workflows', () => {
       const finalRun = await getWorkflowRun<{ step: number }>(run.id);
       assert.equal(finalRun.status, 'completed');
       assert.equal(finalRun.state.step, 3);
-      assert.equal(finalRun.phase, 'done');
       assert.isNotNull(finalRun.completed_at);
     });
   });
@@ -120,25 +117,23 @@ describe('@prairielearn/workflows', () => {
   describe('pause and resume', () => {
     it('pauses for input and resumes with continueWorkflow', async () => {
       const type = uniqueType('pause_resume');
-      registerWorkflow<{ phase: string; input?: string }>({
+      registerWorkflow<{ stage: string; input?: string }>({
         type,
         async takeStep({
           run,
-        }: WorkflowStepContext<{ phase: string; input?: string }>): Promise<
-          StepResult<{ phase: string; input?: string }>
+        }: WorkflowStepContext<{ stage: string; input?: string }>): Promise<
+          StepResult<{ stage: string; input?: string }>
         > {
-          if (run.state.phase === 'init') {
+          if (run.state.stage === 'init') {
             return {
-              state: { phase: 'waiting' },
+              state: { stage: 'waiting' },
               status: 'waiting',
-              phase: 'awaiting-input',
             };
           }
-          if (run.state.phase === 'waiting' && run.state.input) {
+          if (run.state.stage === 'waiting' && run.state.input) {
             return {
-              state: { phase: 'done', input: run.state.input },
+              state: { stage: 'done', input: run.state.input },
               status: 'completed',
-              phase: 'finished',
             };
           }
           return {
@@ -150,20 +145,20 @@ describe('@prairielearn/workflows', () => {
       });
 
       const run = await startWorkflow(type, {
-        initialState: { phase: 'init' },
+        initialState: { stage: 'init' },
       });
 
       await waitForStatus(run.id, 'waiting');
 
-      const pausedRun = await getWorkflowRun<{ phase: string; input?: string }>(run.id);
+      const pausedRun = await getWorkflowRun<{ stage: string; input?: string }>(run.id);
       assert.equal(pausedRun.status, 'waiting');
-      assert.equal(pausedRun.state.phase, 'waiting');
+      assert.equal(pausedRun.state.stage, 'waiting');
 
       await continueWorkflow(run.id, { input: 'hello' });
 
       await waitForStatus(run.id, 'completed');
 
-      const finalRun = await getWorkflowRun<{ phase: string; input?: string }>(run.id);
+      const finalRun = await getWorkflowRun<{ stage: string; input?: string }>(run.id);
       assert.equal(finalRun.status, 'completed');
       assert.equal(finalRun.state.input, 'hello');
     });
@@ -220,7 +215,6 @@ describe('@prairielearn/workflows', () => {
           return {
             state: { waiting: true },
             status: 'waiting',
-            phase: 'waiting',
           };
         },
       });
@@ -236,7 +230,7 @@ describe('@prairielearn/workflows', () => {
       assert.isNotNull(canceledRun.completed_at);
     });
 
-    it('throws when canceling a completed workflow', async () => {
+    it('no-ops when canceling a completed workflow', async () => {
       const type = uniqueType('cancel_completed');
       registerWorkflow({
         type,
@@ -248,12 +242,11 @@ describe('@prairielearn/workflows', () => {
       const run = await startWorkflow(type, { initialState: {} });
       await waitForStatus(run.id, 'completed');
 
-      try {
-        await cancelWorkflow(run.id);
-        assert.fail('should have thrown');
-      } catch (err) {
-        assert.include((err as Error).message, 'Cannot cancel');
-      }
+      // Should not throw — idempotent no-op for already-terminal runs.
+      await cancelWorkflow(run.id);
+
+      const finalRun = await getWorkflowRun(run.id);
+      assert.equal(finalRun.status, 'completed');
     });
   });
 
@@ -308,33 +301,6 @@ describe('@prairielearn/workflows', () => {
     });
   });
 
-  describe('phase tracking', () => {
-    it('tracks phase changes through steps', async () => {
-      const type = uniqueType('phases');
-      registerWorkflow<{ n: number }>({
-        type,
-        async takeStep({
-          run,
-        }: WorkflowStepContext<{ n: number }>): Promise<StepResult<{ n: number }>> {
-          if (run.state.n === 0) {
-            return { state: { n: 1 }, status: 'continue', phase: 'phase-a' };
-          }
-          return { state: { n: 2 }, status: 'completed', phase: 'phase-b' };
-        },
-      });
-
-      const run = await startWorkflow(type, {
-        initialState: { n: 0 },
-        phase: 'init',
-      });
-
-      await waitForStatus(run.id, 'completed');
-
-      const finalRun = await getWorkflowRun(run.id);
-      assert.equal(finalRun.phase, 'phase-b');
-    });
-  });
-
   describe('context preservation', () => {
     it('preserves context across the workflow lifecycle', async () => {
       const type = uniqueType('context');
@@ -367,7 +333,7 @@ describe('@prairielearn/workflows', () => {
           run,
         }: WorkflowStepContext<{ step: number }>): Promise<StepResult<{ step: number }>> {
           if (run.state.step >= 2) {
-            return { state: run.state, status: 'completed', phase: 'done' };
+            return { state: run.state, status: 'completed' };
           }
           return { state: { step: run.state.step + 1 }, status: 'continue' };
         },

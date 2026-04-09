@@ -97,14 +97,8 @@ export const EnumQuestionTypeSchema = z.enum([
 ]);
 export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
 
-export const EnumWorkflowRunStatusSchema = z.enum([
-  'running',
-  'waiting',
-  'completed',
-  'error',
-  'canceled',
-]);
-export type EnumWorkflowRunStatus = z.infer<typeof EnumWorkflowRunStatusSchema>;
+export { WorkflowRunStatusSchema as EnumWorkflowRunStatusSchema } from '@prairielearn/workflows';
+export type { WorkflowRunStatus as EnumWorkflowRunStatus } from '@prairielearn/workflows';
 
 // *******************************************************************************
 // Miscellaneous schemas; keep these alphabetized.
@@ -1726,23 +1720,8 @@ export const ZoneSchema = z.object({
 });
 export type Zone = z.infer<typeof ZoneSchema>;
 
-export const WorkflowRunSchema = z.object({
-  completed_at: DateFromISOString.nullable(),
-  context: z.record(z.unknown()),
-  created_at: DateFromISOString,
-  error_message: z.string().nullable(),
-  heartbeat_at: DateFromISOString.nullable(),
-  id: IdSchema,
-  locked_at: DateFromISOString.nullable(),
-  locked_by: z.string().nullable(),
-  output: z.string(),
-  phase: z.string().nullable(),
-  state: z.record(z.unknown()),
-  status: EnumWorkflowRunStatusSchema,
-  type: z.string(),
-  updated_at: DateFromISOString,
-});
-export type WorkflowRun = z.infer<typeof WorkflowRunSchema>;
+export { WorkflowRunSchema } from '@prairielearn/workflows';
+export type { WorkflowRun } from '@prairielearn/workflows';
 
 // *******************************************************************************
 // Miscellaneous schemas.

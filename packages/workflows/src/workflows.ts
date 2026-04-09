@@ -86,7 +86,6 @@ export function registerWorkflow<TState extends Record<string, unknown>>(
  * @param opts.initialState - The starting state passed to the first `takeStep` call.
  * @param opts.context - Opaque domain-specific metadata (e.g. `{ assessment_question_id: '42' }`)
  * stored alongside the run for querying; the engine never inspects this value.
- * @param opts.phase - Optional initial phase label for display/debugging.
  * @returns The persisted workflow run record. Throws if no workflow is registered.
  */
 export async function startWorkflow<TState extends Record<string, unknown>>(
@@ -94,7 +93,6 @@ export async function startWorkflow<TState extends Record<string, unknown>>(
   opts: {
     initialState: TState;
     context?: WorkflowContext;
-    phase?: string;
   },
 ): Promise<WorkflowRun<TState>> {
   const definition = registeredWorkflows.get(type);
@@ -107,7 +105,6 @@ export async function startWorkflow<TState extends Record<string, unknown>>(
     {
       type,
       status: 'running',
-      phase: opts.phase ?? null,
       state: JSON.stringify(opts.initialState),
       context: JSON.stringify(opts.context ?? {}),
     },
@@ -159,13 +156,20 @@ export async function resumeWorkflow(runId: string): Promise<void> {
  * If the workflow is currently being executed by another server, the running
  * loop will observe the status change on its next iteration and exit.
  *
- * @param runId - The ID of the workflow run to cancel. Throws if the run is
- * not found or is already in a terminal state.
+ * @param runId - The ID of the workflow run to cancel. Throws if the run
+ * does not exist. No-ops if the run is already in a terminal state, for
+ * idempotency.
  */
 export async function cancelWorkflow(runId: string): Promise<void> {
   const rowCount = await pool.execute(sql.cancel_run, { id: runId });
   if (rowCount === 0) {
-    throw new Error(`Cannot cancel workflow ${runId}: not found or already in a terminal state`);
+    // The SQL only skips terminal states, so rowCount=0 means either
+    // the run doesn't exist or it's already terminated. Check which.
+    const run = await pool.queryOptionalRow(sql.select_run_by_id, { id: runId }, WorkflowRunSchema);
+    if (!run) {
+      throw new Error(`Cannot cancel workflow ${runId}: not found`);
+    }
+    // Already in a terminal state — no-op for idempotency.
   }
 }
 
@@ -347,7 +351,6 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
       const updated = await persistStep(runId, serverUuid, {
         state: stepResult.state,
         status: dbStatus,
-        phase: stepResult.phase,
         error_message: stepResult.error_message,
       });
 
@@ -371,7 +374,6 @@ async function persistStep<TState extends Record<string, unknown>>(
   result: {
     state: TState;
     status: WorkflowRunStatus;
-    phase?: string;
     error_message?: string;
   },
 ): Promise<boolean> {
@@ -380,7 +382,6 @@ async function persistStep<TState extends Record<string, unknown>>(
     locked_by: lockedBy,
     state: JSON.stringify(result.state),
     status: result.status,
-    phase: result.phase ?? null,
     error_message: result.error_message ?? null,
   });
   // Returns false if the row was not updated (e.g. run was canceled or lock was lost)
@@ -486,6 +487,9 @@ async function recoverStaleRuns(): Promise<void> {
 
   for (const run of unlockedRuns) {
     const definition = registeredWorkflows.get(run.type);
+    // Skip runs whose workflow type isn't registered on this server.
+    // In multi-server deployments, not all servers register all types;
+    // the run will be picked up by a server that does.
     if (!definition) continue;
 
     logger.info(`Resuming unlocked workflow run ${run.id} (type: ${run.type})`);

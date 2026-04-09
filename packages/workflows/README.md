@@ -32,7 +32,6 @@ import { registerWorkflow } from '@prairielearn/workflows';
 
 interface RubricAssistantState {
   step: string;
-  phase?: 'generate' | 'edit';
   rubric_exists?: boolean;
   message_id?: string;
   user_message?: string;
@@ -52,13 +51,11 @@ registerWorkflow<RubricAssistantState>({
           return {
             state: { ...run.state, step: 'rubric_ready', rubric_exists: true },
             status: 'waiting',
-            phase: 'rubric_setup',
           };
         } else {
           return {
             state: { ...run.state, step: 'awaiting_input', rubric_exists: false },
             status: 'waiting',
-            phase: 'rubric_setup',
           };
         }
       }
@@ -66,12 +63,11 @@ registerWorkflow<RubricAssistantState>({
       // Step 2: Run the LLM to generate or edit the rubric based on
       // the instructor's message. Returns to rubric_ready when done.
       case 'agent_running': {
-        logger.info(`Running LLM — phase: ${run.state.phase}`);
+        logger.info(`Running LLM for step ${run.state.step}`);
         await runAgent(run);
         return {
           state: { step: 'rubric_ready', rubric_exists: true },
           status: 'waiting',
-          phase: 'rubric_setup',
         };
       }
 
@@ -80,7 +76,7 @@ registerWorkflow<RubricAssistantState>({
       // transitions to 'agent_running'.
       case 'rubric_ready':
       case 'awaiting_input':
-        return { state: run.state, status: 'waiting', phase: 'rubric_setup' };
+        return { state: run.state, status: 'waiting' };
 
       default:
         return {
@@ -124,7 +120,6 @@ import { continueWorkflow } from '@prairielearn/workflows';
 // the POST handler resumes the paused workflow with their input.
 await continueWorkflow(run.id, {
   step: 'agent_running',
-  phase: 'edit',
   user_message: 'Add a rubric item for code style',
   message_id: newMessageId,
 });

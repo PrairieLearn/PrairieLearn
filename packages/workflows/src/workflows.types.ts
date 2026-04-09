@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
+
 /** All possible statuses for a workflow run. */
 export const WorkflowRunStatusSchema = z.enum([
   'running',
@@ -14,18 +16,17 @@ export type WorkflowContext = Record<string, string>;
 
 /** Zod schema for validating rows from the `workflow_runs` table. */
 export const WorkflowRunSchema = z.object({
-  id: z.string(),
+  id: IdSchema,
   type: z.string(),
   status: WorkflowRunStatusSchema,
-  phase: z.string().nullable(),
   state: z.record(z.unknown()),
   locked_by: z.string().nullable(),
-  locked_at: z.date().nullable(),
-  heartbeat_at: z.date().nullable(),
+  locked_at: DateFromISOString.nullable(),
+  heartbeat_at: DateFromISOString.nullable(),
   context: z.record(z.string()),
-  created_at: z.date(),
-  updated_at: z.date(),
-  completed_at: z.date().nullable(),
+  created_at: DateFromISOString,
+  updated_at: DateFromISOString,
+  completed_at: DateFromISOString.nullable(),
   error_message: z.string().nullable(),
   output: z.string(),
 });
@@ -55,13 +56,11 @@ export type StepResultStatus = 'continue' | 'waiting' | 'completed' | 'error';
  *
  * @property state - The updated workflow state to persist.
  * @property status - Controls the engine's next action (see {@link StepResultStatus}).
- * @property phase - Optional label for the current phase (for display/debugging).
  * @property error_message - Human-readable error description (only when `status` is `'error'`).
  */
 export interface StepResult<TState extends Record<string, unknown>> {
   state: TState;
   status: StepResultStatus;
-  phase?: string;
   error_message?: string;
 }
 
@@ -96,7 +95,7 @@ export interface WorkflowStepContext<TState extends Record<string, unknown>> {
  *
  * @property type - A unique string identifier for this workflow kind.
  * @property takeStep - The step function called repeatedly by the engine.
- * All domain logic — phase transitions, LLM calls, pause decisions — lives
+ * All domain logic — state transitions, LLM calls, pause decisions — lives
  * here. The engine is just a loop; the step function is the workflow.
  */
 export interface WorkflowDefinition<

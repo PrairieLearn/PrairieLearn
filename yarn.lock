@@ -5679,6 +5679,7 @@ __metadata:
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
+    "@prairielearn/zod": "workspace:^"
     "@types/node": "npm:^24.11.0"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260305.1"
     "@vitest/coverage-v8": "npm:^4.0.18"

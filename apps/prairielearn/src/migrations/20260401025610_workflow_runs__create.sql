@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS workflow_runs (
   id bigserial PRIMARY KEY,
   type text NOT NULL,
   status enum_workflow_run_status NOT NULL DEFAULT 'running',
-  phase text,
   state jsonb NOT NULL DEFAULT '{}'::jsonb,
   locked_by text,
   locked_at timestamptz,

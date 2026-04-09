@@ -1,14 +1,8 @@
 -- BLOCK insert_run
 INSERT INTO
-  workflow_runs (type, status, phase, state, context)
+  workflow_runs (type, status, state, context)
 VALUES
-  (
-    $type,
-    $status,
-    $phase,
-    $state::jsonb,
-    $context::jsonb
-  )
+  ($type, $status, $state::jsonb, $context::jsonb)
 RETURNING
   *;
 
@@ -75,7 +69,6 @@ UPDATE workflow_runs
 SET
   state = $state::jsonb,
   status = $status,
-  phase = $phase,
   error_message = $error_message,
   updated_at = now(),
   completed_at = CASE
