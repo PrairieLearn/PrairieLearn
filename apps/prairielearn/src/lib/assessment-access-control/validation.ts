@@ -105,8 +105,12 @@ export function validateRuleStructuralDependencyIssues(
   // Constraint 1: Early/late deadlines require a due date.
   // Early deadlines are "before the due date" and late deadlines are "after
   // the due date" — they're defined relative to the due date.
+  // On overrides, dueDate === undefined means "inherit from main rule" (valid),
+  // while dueDate === null means "explicitly no due date" (invalid with deadlines).
   if (dc) {
-    if (dc.earlyDeadlines && dc.earlyDeadlines.length > 0 && !dc.dueDate) {
+    const dueDateMissing = validationRule.targetType === 'none' ? !dc.dueDate : dc.dueDate === null;
+
+    if (dc.earlyDeadlines && dc.earlyDeadlines.length > 0 && dueDateMissing) {
       pushIssue(
         issues,
         validationRule,
@@ -114,7 +118,7 @@ export function validateRuleStructuralDependencyIssues(
         'Early deadlines require a due date.',
       );
     }
-    if (dc.lateDeadlines && dc.lateDeadlines.length > 0 && !dc.dueDate) {
+    if (dc.lateDeadlines && dc.lateDeadlines.length > 0 && dueDateMissing) {
       pushIssue(
         issues,
         validationRule,
@@ -130,10 +134,17 @@ export function validateRuleStructuralDependencyIssues(
   // Boolean fields (hideQuestions, hideScore) are fine without deadlines.
   // PrairieTest and timed assessments manage completion independently,
   // so after-complete dates are valid without deadlines in those cases.
+  // Only enforced on the main rule — overrides may inherit deadlines.
   const hasPrairieTest = (rule.integrations?.prairieTest?.exams ?? []).length > 0;
   const hasDuration = dc?.durationMinutes != null;
   const ac = rule.afterComplete;
-  if (ac && !hasAnyDeadline(rule) && !hasPrairieTest && !hasDuration) {
+  if (
+    validationRule.targetType === 'none' &&
+    ac &&
+    !hasAnyDeadline(rule) &&
+    !hasPrairieTest &&
+    !hasDuration
+  ) {
     if (ac.showQuestionsAgainDate) {
       pushIssue(
         issues,

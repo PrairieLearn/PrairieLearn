@@ -1117,10 +1117,26 @@ describe('Structural field dependency validation', () => {
     assert.isTrue(result.errors.some((e) => e.includes('Late deadlines require a due date')));
   });
 
-  it('should enforce constraints on overrides too', () => {
+  it('should allow overrides to inherit due date from main rule', () => {
     const rule = AccessControlJsonSchema.parse({
       labels: ['Section A'],
       dateControl: {
+        earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 120 }],
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'student_label',
+      ruleIndex: 1,
+    });
+    assert.deepEqual(issues, []);
+  });
+
+  it('should reject overrides that explicitly clear due date with deadlines', () => {
+    const rule = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        dueDate: null,
         earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 120 }],
       },
     });
