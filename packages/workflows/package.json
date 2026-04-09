@@ -20,6 +20,7 @@
   "dependencies": {
     "@prairielearn/logger": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
+    "@prairielearn/sentry": "workspace:^",
     "@prairielearn/zod": "workspace:^",
     "pg": "^8.20.0",
     "zod": "^3.25.76"

@@ -4,6 +4,7 @@ import { type PoolConfig } from 'pg';
 
 import { logger } from '@prairielearn/logger';
 import { type PoolClient, PostgresPool, loadSqlEquiv } from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 
 import {
   type StepResult,
@@ -116,6 +117,7 @@ export async function startWorkflow<TState extends Record<string, unknown>>(
   // Start executing the workflow asynchronously
   executeWorkflow(run.id, definition).catch((err) => {
     logger.error(`Failed to execute workflow ${run.id}`, err);
+    Sentry.captureException(err);
   });
 
   return run;
@@ -215,6 +217,7 @@ export async function continueWorkflow<TState extends Record<string, unknown>>(
   // Resume execution asynchronously
   executeWorkflow(runId, definition).catch((err) => {
     logger.error(`Failed to resume workflow ${runId} after continue`, err);
+    Sentry.captureException(err);
   });
 }
 
@@ -303,6 +306,7 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
       }
     } catch (err) {
       logger.error(`Failed to update heartbeat for workflow ${runId}`, err);
+      Sentry.captureException(err);
     }
   }, 30_000);
 
@@ -364,6 +368,7 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
     abortController.abort();
     await pool.execute(sql.release_lock, { id: runId, locked_by: serverUuid }).catch((err) => {
       logger.error(`Failed to release lock for workflow ${runId}`, err);
+      Sentry.captureException(err);
     });
   }
 }
@@ -399,11 +404,9 @@ function createLogger(runId: string): WorkflowLogger & { flush(): Promise<void> 
 
   return {
     info(msg: string) {
-      logger.info(`Workflow ${runId}: ${msg}`);
       buffer.push(`[INFO] ${msg}\n`);
     },
     error(msg: string) {
-      logger.error(`Workflow ${runId}: ${msg}`);
       buffer.push(`[ERROR] ${msg}\n`);
     },
     async flush() {
@@ -417,6 +420,7 @@ function createLogger(runId: string): WorkflowLogger & { flush(): Promise<void> 
         // Restore drained logs so they can be retried on the next flush.
         buffer.unshift(...drained);
         logger.error(`Failed to append log output for workflow ${runId}`, err);
+        Sentry.captureException(err);
       }
     },
   };
@@ -448,6 +452,7 @@ export function startRecoveryLoop(opts?: { intervalMs?: number }): void {
       await recoverStaleRuns();
     } catch (err) {
       logger.error('Failed to recover stale workflow runs', err);
+      Sentry.captureException(err);
     } finally {
       recoveryInProgress = false;
     }
@@ -475,6 +480,7 @@ async function recoverStaleRuns(): Promise<void> {
       await resumeWorkflow(run.id);
     } catch (err) {
       logger.error(`Failed to recover workflow ${run.id}`, err);
+      Sentry.captureException(err);
     }
   }
 
@@ -497,6 +503,7 @@ async function recoverStaleRuns(): Promise<void> {
       await executeWorkflow(run.id, definition);
     } catch (err) {
       logger.error(`Failed to resume unlocked workflow ${run.id}`, err);
+      Sentry.captureException(err);
     }
   }
 }

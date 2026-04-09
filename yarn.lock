@@ -5678,6 +5678,7 @@ __metadata:
   dependencies:
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
+    "@prairielearn/sentry": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/zod": "workspace:^"
     "@types/node": "npm:^24.11.0"
