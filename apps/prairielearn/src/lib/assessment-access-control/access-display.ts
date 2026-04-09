@@ -293,6 +293,7 @@ export function buildModernAccessDisplayModel({
   opensAt,
   displayTimezone,
   prairieTestExamCount,
+  includeAvailabilityBadge,
 }: {
   listBeforeRelease?: boolean;
   dateControl?: RuntimeDateControl;
@@ -303,6 +304,7 @@ export function buildModernAccessDisplayModel({
   opensAt: Date | null;
   displayTimezone: string;
   prairieTestExamCount: number;
+  includeAvailabilityBadge?: boolean;
 }): AccessDisplayModel {
   const rows: AccessDisplaySource['rows'] = [];
 
@@ -378,7 +380,7 @@ export function buildModernAccessDisplayModel({
     }
   }
 
-  if (timeline.length > 0 || dateControl?.dueDate === null) {
+  if (timeline.length > 0 || dateControl?.dueDate === null || dateControl?.afterLastDeadline != null) {
     const afterLastDeadline = dateControl?.afterLastDeadline;
     rows.push({
       key: 'after-last-deadline',
@@ -402,24 +404,27 @@ export function buildModernAccessDisplayModel({
       listed: availabilityListed,
       opensAt,
     },
+    includeAvailabilityBadge,
     rows,
     settings: {
       durationMinutes: dateControl?.durationMinutes ?? null,
       passwordRequired: !!dateControl?.password,
       prairieTestExamCount,
-      questionVisibility: showCompletionBadges
-        ? {
-            hideQuestions: afterComplete?.hideQuestions,
-            showAgainDate: afterComplete?.showQuestionsAgainDate,
-            hideAgainDate: afterComplete?.hideQuestionsAgainDate,
-          }
-        : undefined,
-      scoreVisibility: showCompletionBadges
-        ? {
-            hideScore: afterComplete?.hideScore,
-            showAgainDate: afterComplete?.showScoreAgainDate,
-          }
-        : undefined,
+      questionVisibility:
+        showCompletionBadges && afterComplete?.hideQuestions !== undefined
+          ? {
+              hideQuestions: afterComplete.hideQuestions,
+              showAgainDate: afterComplete?.showQuestionsAgainDate,
+              hideAgainDate: afterComplete?.hideQuestionsAgainDate,
+            }
+          : undefined,
+      scoreVisibility:
+        showCompletionBadges && afterComplete?.hideScore !== undefined
+          ? {
+              hideScore: afterComplete.hideScore,
+              showAgainDate: afterComplete?.showScoreAgainDate,
+            }
+          : undefined,
     },
   });
 }
