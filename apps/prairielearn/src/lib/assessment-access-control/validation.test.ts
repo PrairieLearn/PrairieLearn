@@ -938,3 +938,68 @@ describe('Duplicate detection', () => {
     assert.isTrue(result.errors.some((e) => e.includes('Duplicate early deadline date')));
   });
 });
+
+describe('afterLastDeadline validation', () => {
+  it('should reject credit when allowSubmissions is false', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        releaseDate: '2024-03-14T00:01:00',
+        dueDate: '2024-03-21T23:59:00',
+        afterLastDeadline: {
+          allowSubmissions: false,
+          credit: 50,
+        },
+      },
+    });
+    const errors = validateRule(rule, 'none');
+    assert.isTrue(
+      errors.some((e) => e.includes('cannot set credit when submissions are not allowed')),
+    );
+  });
+
+  it('should reject zero credit when allowSubmissions is false', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        releaseDate: '2024-03-14T00:01:00',
+        dueDate: '2024-03-21T23:59:00',
+        afterLastDeadline: {
+          allowSubmissions: false,
+          credit: 0,
+        },
+      },
+    });
+    const errors = validateRule(rule, 'none');
+    assert.isTrue(
+      errors.some((e) => e.includes('cannot set credit when submissions are not allowed')),
+    );
+  });
+
+  it('should accept credit when allowSubmissions is true', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        releaseDate: '2024-03-14T00:01:00',
+        dueDate: '2024-03-21T23:59:00',
+        afterLastDeadline: {
+          allowSubmissions: true,
+          credit: 50,
+        },
+      },
+    });
+    const errors = validateRule(rule, 'none');
+    assert.deepEqual(errors, []);
+  });
+
+  it('should accept allowSubmissions false without credit', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        releaseDate: '2024-03-14T00:01:00',
+        dueDate: '2024-03-21T23:59:00',
+        afterLastDeadline: {
+          allowSubmissions: false,
+        },
+      },
+    });
+    const errors = validateRule(rule, 'none');
+    assert.deepEqual(errors, []);
+  });
+});
