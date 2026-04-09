@@ -132,11 +132,6 @@ export function PreferencesTable({
 
       {fields.length > 0 && (
         <DndContext
-          id={dndId}
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          modifiers={[restrictToGridVertical]}
-          onDragEnd={handleDragEnd}
           // The card has overflow-x: auto for horizontal scrolling on narrow
           // viewports, which makes dnd-kit treat it as scrollable on ALL axes
           // (it checks /(auto|scroll|overlay)/ without distinguishing axes).
@@ -144,6 +139,11 @@ export function PreferencesTable({
           autoScroll={{
             canScroll: (element) => element !== scrollContainerRef.current,
           }}
+          collisionDetection={closestCenter}
+          id={dndId}
+          modifiers={[restrictToGridVertical]}
+          sensors={sensors}
+          onDragEnd={handleDragEnd}
         >
           <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
             <div
