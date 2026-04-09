@@ -10,25 +10,81 @@ const FREE_EMAIL_DOMAINS = new Set([
   'yahoo.com',
 ]);
 
+interface CheckResult {
+  owned: boolean;
+  exists: boolean;
+}
+
 onDocumentReady(() => {
   const submitButton = document.querySelector<HTMLButtonElement>(
     '.question-form button[type=submit]',
   );
   const titleInput = document.querySelector<HTMLInputElement>('#cr-title');
-  const titleOwnedWarning = document.querySelector<HTMLElement>('#cr-title-owned');
-  const titleExistsWarning = document.querySelector<HTMLElement>('#cr-title-exists');
+  const shortNameInput = document.querySelector<HTMLInputElement>('#cr-shortname');
+
+  const warnings = {
+    title: {
+      owned: document.querySelector<HTMLElement>('#cr-title-owned'),
+      exists: document.querySelector<HTMLElement>('#cr-title-exists'),
+    },
+    short_name: {
+      owned: document.querySelector<HTMLElement>('#cr-shortname-owned'),
+      exists: document.querySelector<HTMLElement>('#cr-shortname-exists'),
+    },
+  };
 
   let selectedRole: string | null = null;
-  let courseIsOwned = false;
-  let courseExists = false;
+  let titleResult: CheckResult = { owned: false, exists: false };
+  let shortNameResult: CheckResult = { owned: false, exists: false };
   let checkTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function updateWarnings(field: 'title' | 'short_name', result: CheckResult) {
+    warnings[field].owned?.classList.toggle('d-none', !result.owned);
+    warnings[field].exists?.classList.toggle('d-none', result.owned || !result.exists);
+  }
 
   function updateSubmitButton() {
     if (!submitButton) return;
-    const blocked = courseIsOwned;
-    const warned = courseExists && !courseIsOwned;
+    const blocked = titleResult.owned || shortNameResult.owned;
+    const warned =
+      (titleResult.exists && !titleResult.owned) ||
+      (shortNameResult.exists && !shortNameResult.owned);
     submitButton.disabled = blocked || selectedRole !== 'instructor';
     submitButton.className = `btn ${blocked ? 'btn-danger' : warned ? 'btn-warning' : 'btn-primary'}`;
+  }
+
+  function scheduleCheck() {
+    if (checkTimeout) clearTimeout(checkTimeout);
+
+    const title = titleInput?.value.trim() ?? '';
+    const short_name = shortNameInput?.value.trim().toUpperCase() ?? '';
+
+    if (!title && !short_name) {
+      titleResult = { owned: false, exists: false };
+      shortNameResult = { owned: false, exists: false };
+      updateWarnings('title', titleResult);
+      updateWarnings('short_name', shortNameResult);
+      updateSubmitButton();
+      return;
+    }
+
+    checkTimeout = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams();
+        if (title) params.set('title', title);
+        if (short_name) params.set('short_name', short_name);
+        const resp = await fetch(`/pl/request_course/check?${params.toString()}`);
+        if (!resp.ok) return;
+        const data = (await resp.json()) as { title: CheckResult; short_name: CheckResult };
+        titleResult = data.title;
+        shortNameResult = data.short_name;
+        updateWarnings('title', titleResult);
+        updateWarnings('short_name', shortNameResult);
+        updateSubmitButton();
+      } catch {
+        // Non-critical check; ignore network errors.
+      }
+    }, 300);
   }
 
   // Role selection.
@@ -45,35 +101,9 @@ onDocumentReady(() => {
     }),
   );
 
-  // Check for existing courses with the same title.
-  titleInput?.addEventListener('input', () => {
-    if (checkTimeout) clearTimeout(checkTimeout);
-    const title = titleInput.value.trim();
-
-    if (!title) {
-      courseIsOwned = false;
-      courseExists = false;
-      titleOwnedWarning?.classList.add('d-none');
-      titleExistsWarning?.classList.add('d-none');
-      updateSubmitButton();
-      return;
-    }
-
-    checkTimeout = setTimeout(async () => {
-      try {
-        const resp = await fetch(`/pl/request_course/check?title=${encodeURIComponent(title)}`);
-        if (!resp.ok) return;
-        const data = (await resp.json()) as { owned: boolean; exists: boolean };
-        courseIsOwned = data.owned;
-        courseExists = data.exists;
-        titleOwnedWarning?.classList.toggle('d-none', !data.owned);
-        titleExistsWarning?.classList.toggle('d-none', data.owned || !data.exists);
-        updateSubmitButton();
-      } catch {
-        // Non-critical check; ignore network errors.
-      }
-    }, 300);
-  });
+  // Check for existing courses on title or rubric change.
+  titleInput?.addEventListener('input', scheduleCheck);
+  shortNameInput?.addEventListener('input', scheduleCheck);
 
   // Referral source "other" toggle.
   document

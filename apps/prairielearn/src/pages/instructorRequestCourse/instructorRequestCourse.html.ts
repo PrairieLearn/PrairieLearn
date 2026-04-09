@@ -233,6 +233,22 @@ function CourseNewRequestCard({
               required
             />
             <small class="form-text text-muted"> Examples: MATH 101, PHYS 440. </small>
+            <div class="d-none alert alert-danger mt-2 mb-0" id="cr-shortname-owned" role="alert">
+              You already own a course with this rubric. If you want to offer a new semester or
+              section,
+              <a
+                href="https://docs.prairielearn.com/courseInstance/#creating-a-course-instance"
+                target="_blank"
+                rel="noopener noreferrer"
+                >create a new course instance</a
+              >
+              from within your existing course instead of requesting a new one.
+            </div>
+            <div class="d-none alert alert-warning mt-2 mb-0" id="cr-shortname-exists" role="alert">
+              A course with this rubric already exists on PrairieLearn. If you'd like to share
+              content with the existing instructor, consider reaching out to them. If you prefer a
+              separate course, you may continue and your request will be reviewed.
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-label" for="cr-title">Course Title</label>

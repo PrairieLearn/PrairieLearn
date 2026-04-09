@@ -12,10 +12,16 @@ import { IdSchema } from '@prairielearn/zod';
 import { Lti13Claim } from '../../ee/lib/lti13.js';
 import { config } from '../../lib/config.js';
 import { insertCourseRequest } from '../../lib/course-request.js';
+import type { Course } from '../../lib/db-types.js';
 import * as github from '../../lib/github.js';
 import { isEnterprise } from '../../lib/license.js';
 import * as opsbot from '../../lib/opsbot.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { selectCoursePermissionForUser } from '../../models/course-permissions.js';
+import {
+  selectCoursesByShortNameInInstitution,
+  selectCoursesByTitleInInstitution,
+} from '../../models/course.js';
 
 import { RequestCourse } from './instructorRequestCourse.html.js';
 import {
@@ -25,6 +31,13 @@ import {
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
+
+async function checkUserOwnsCourse(courses: Course[], userId: string): Promise<boolean> {
+  const roles = await Promise.all(
+    courses.map((c) => selectCoursePermissionForUser({ course_id: c.id, user_id: userId })),
+  );
+  return roles.includes('Owner');
+}
 
 router.get(
   '/',
@@ -61,35 +74,27 @@ router.get(
   }),
 );
 
-const ExistingCourseCheckSchema = z.object({
-  id: IdSchema,
-  short_name: z.string().nullable(),
-  title: z.string().nullable(),
-  is_owner: z.boolean(),
-});
-
 router.get(
   '/check',
   typedAsyncHandler<'plain'>(async (req, res) => {
-    const requestSchema = z.object({
-      title: z.string().trim().min(1),
-    });
-    const { title } = requestSchema.parse(req.query);
+    const title = typeof req.query.title === 'string' ? req.query.title.trim() : '';
+    const shortName = typeof req.query.short_name === 'string' ? req.query.short_name.trim() : '';
+    const institutionId = res.locals.authn_institution.id;
+    const userId = res.locals.authn_user.id;
 
-    const existingCourses = await queryRows(
-      sql.get_existing_courses_by_title,
-      {
-        user_id: res.locals.authn_user.id,
-        title,
-        institution_id: res.locals.authn_institution.id,
-      },
-      ExistingCourseCheckSchema,
-    );
+    const [titleCourses, shortNameCourses] = await Promise.all([
+      title ? selectCoursesByTitleInInstitution(title, institutionId) : [],
+      shortName ? selectCoursesByShortNameInInstitution(shortName, institutionId) : [],
+    ]);
 
-    const ownedCourse = existingCourses.find((c) => c.is_owner);
+    const [titleOwned, shortNameOwned] = await Promise.all([
+      titleCourses.length > 0 ? checkUserOwnsCourse(titleCourses, userId) : false,
+      shortNameCourses.length > 0 ? checkUserOwnsCourse(shortNameCourses, userId) : false,
+    ]);
+
     res.json({
-      owned: ownedCourse != null,
-      exists: existingCourses.length > 0,
+      title: { owned: titleOwned, exists: titleCourses.length > 0 },
+      short_name: { owned: shortNameOwned, exists: shortNameCourses.length > 0 },
     });
   }),
 );
@@ -135,10 +140,7 @@ router.post(
       error = true;
     }
 
-    // This indicates that the user is not signed in with an institutional account.
     const isDefaultInstitution = res.locals.authn_institution.id === '1';
-
-    // We require a work email if the user is not signed in with an institutional account.
     if (isDefaultInstitution && work_email.length === 0) {
       flash('error', 'The work email should not be empty.');
       error = true;
@@ -166,22 +168,26 @@ router.post(
       error = true;
     }
 
-    // Check if a course with this title already exists at the user's institution.
-    const existingCourses = await queryRows(
-      sql.get_existing_courses_by_title,
-      {
-        user_id: res.locals.authn_user.id,
-        title,
-        institution_id: res.locals.authn_institution.id,
-      },
-      ExistingCourseCheckSchema,
-    );
+    // Check if a course with this title or rubric already exists at the user's institution.
+    const institutionId = res.locals.authn_institution.id;
+    const userId = res.locals.authn_user.id;
 
-    const ownedCourse = existingCourses.find((c) => c.is_owner);
-    if (ownedCourse) {
+    const [titleCourses, shortNameCourses] = await Promise.all([
+      selectCoursesByTitleInInstitution(title, institutionId),
+      selectCoursesByShortNameInInstitution(short_name, institutionId),
+    ]);
+
+    if (await checkUserOwnsCourse(titleCourses, userId)) {
       flash(
         'error',
         `You already own a course with the name "${title}". If you want to offer a new semester or section, create a new course instance from within your existing course instead of requesting a new one.`,
+      );
+      error = true;
+    }
+    if (await checkUserOwnsCourse(shortNameCourses, userId)) {
+      flash(
+        'error',
+        `You already own a course with the rubric "${short_name}". If you want to offer a new semester or section, create a new course instance from within your existing course instead of requesting a new one.`,
       );
       error = true;
     }

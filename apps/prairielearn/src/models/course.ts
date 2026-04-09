@@ -68,6 +68,28 @@ export async function selectOptionalCourseByPath(path: string): Promise<Course |
   return await queryOptionalRow(sql.select_course_by_path, { path }, CourseSchema);
 }
 
+export async function selectCoursesByTitleInInstitution(
+  title: string,
+  institutionId: string,
+): Promise<Course[]> {
+  return await queryRows(
+    sql.select_courses_by_title_in_institution,
+    { title, institution_id: institutionId },
+    CourseSchema,
+  );
+}
+
+export async function selectCoursesByShortNameInInstitution(
+  shortName: string,
+  institutionId: string,
+): Promise<Course[]> {
+  return await queryRows(
+    sql.select_courses_by_short_name_in_institution,
+    { short_name: shortName, institution_id: institutionId },
+    CourseSchema,
+  );
+}
+
 export function getLockNameForCoursePath(coursePath: string): string {
   return `coursedir:${coursePath}`;
 }

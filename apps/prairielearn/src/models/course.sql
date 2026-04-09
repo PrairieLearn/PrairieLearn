@@ -40,6 +40,26 @@ WHERE
 LIMIT
   1;
 
+-- BLOCK select_courses_by_title_in_institution
+SELECT
+  c.*
+FROM
+  courses AS c
+WHERE
+  LOWER(c.title) = LOWER($title)
+  AND c.institution_id = $institution_id
+  AND c.deleted_at IS NULL;
+
+-- BLOCK select_courses_by_short_name_in_institution
+SELECT
+  c.*
+FROM
+  courses AS c
+WHERE
+  LOWER(c.short_name) = LOWER($short_name)
+  AND c.institution_id = $institution_id
+  AND c.deleted_at IS NULL;
+
 -- BLOCK update_course_commit_hash
 UPDATE courses
 SET
