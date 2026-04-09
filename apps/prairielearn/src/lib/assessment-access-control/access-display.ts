@@ -380,7 +380,11 @@ export function buildModernAccessDisplayModel({
     }
   }
 
-  if (timeline.length > 0 || dateControl?.dueDate === null || dateControl?.afterLastDeadline != null) {
+  if (
+    timeline.length > 0 ||
+    dateControl?.dueDate === null ||
+    dateControl?.afterLastDeadline != null
+  ) {
     const afterLastDeadline = dateControl?.afterLastDeadline;
     rows.push({
       key: 'after-last-deadline',
