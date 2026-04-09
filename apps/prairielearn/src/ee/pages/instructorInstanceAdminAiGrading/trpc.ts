@@ -12,6 +12,7 @@ import {
   updateUseCustomApiKeys,
   upsertCredential,
 } from '../../../models/ai-grading-credentials.js';
+import { selectInstitutionForCourse } from '../../../models/institution.js';
 import {
   MAX_PURCHASE_MILLI_DOLLARS,
   MIN_PURCHASE_MILLI_DOLLARS,
@@ -133,19 +134,21 @@ const createCheckoutMutation = t.procedure
     });
 
     const stripe = getStripeClient();
-    const customerId = await getOrCreateStripeCustomerId(authn_user.id, {
-      name: authn_user.name,
-    });
+    const [customerId, institution] = await Promise.all([
+      getOrCreateStripeCustomerId(authn_user.id, { name: authn_user.name }),
+      selectInstitutionForCourse({ course_id: course.id }),
+    ]);
 
     const urlBase = `${host}/pl/course_instance/${course_instance.id}/instructor/instance_admin/ai_grading`;
 
     const metadata = {
       prairielearn_type: 'ai_grading_credits',
+      prairielearn_institution_id: institution.id,
+      prairielearn_institution_name: `${institution.long_name} (${institution.short_name})`,
       prairielearn_course_id: course.id,
+      prairielearn_course_name: `${course.short_name}: ${course.title}`,
       prairielearn_course_instance_id: course_instance.id,
-      prairielearn_course_instance_name: course_instance.short_name,
-      prairielearn_course_name: course.short_name,
-      prairielearn_institution_id: course.institution_id,
+      prairielearn_course_instance_name: `${course_instance.long_name} (${course_instance.short_name})`,
       prairielearn_user_id: authn_user.id,
     };
 
