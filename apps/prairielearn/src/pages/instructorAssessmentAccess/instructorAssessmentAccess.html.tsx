@@ -280,7 +280,7 @@ function MigrationConfirmModal({
         })()}
         <p>
           See the
-          <a href="https://docs.prairielearn.com/assessment/accessControl/" target="_blank">
+          <a href="https://docs.prairielearn.com/assessment/accessControl/" target="_blank" rel="noreferrer">
             access control documentation
           </a>
           for details on the modern format.

@@ -387,7 +387,7 @@ function AccessControlStep({
             </strong>{' '}
             with legacy access control rules. Choose how to handle them in the copy. Learn more
             about{' '}
-            <a href="https://docs.prairielearn.com/assessment/accessControl/" target="_blank">
+            <a href="https://docs.prairielearn.com/assessment/accessControl/" target="_blank" rel="noreferrer noopener">
               access control
             </a>
             .
