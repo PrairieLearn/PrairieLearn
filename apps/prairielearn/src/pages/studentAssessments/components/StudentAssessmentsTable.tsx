@@ -34,6 +34,7 @@ export const StudentAssessmentsTableRowSchema = z.object({
   assessment_instance_open: z.boolean().nullable(),
   start_new_assessment_group: z.boolean(),
   assessment_group_heading: z.string(),
+  opens_at: z.string().nullable().optional(),
 });
 type StudentAssessmentsTableRow = z.infer<typeof StudentAssessmentsTableRowSchema>;
 
@@ -76,6 +77,13 @@ function NewInstanceButton({
 
 function AvailableCredit({ row }: { row: StudentAssessmentsTableRow }) {
   if (row.modern_access_control && row.assessment_instance_id == null && !row.active) {
+    if (row.opens_at) {
+      return (
+        <span className="text-muted">
+          Available {new Date(row.opens_at).toLocaleDateString()}
+        </span>
+      );
+    }
     return <span className="text-muted">Not yet available</span>;
   }
   if (row.credit_date_string === 'None') return null;

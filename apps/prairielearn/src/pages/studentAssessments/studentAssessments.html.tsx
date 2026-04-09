@@ -38,6 +38,7 @@ export const StudentAssessmentsRowSchema = z.object({
   start_new_assessment_group: z.boolean(),
   assessment_group_heading: z.string(),
   show_before_release: z.boolean().optional(),
+  opens_at: z.string().nullable().optional(),
 });
 type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowSchema>;
 
