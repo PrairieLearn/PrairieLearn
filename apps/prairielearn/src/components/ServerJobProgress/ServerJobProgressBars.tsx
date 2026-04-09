@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Alert, ProgressBar } from 'react-bootstrap';
 
+import { formatMilliDollars } from '../../lib/ai-grading-credits.js';
 import { getCourseInstanceJobSequenceUrl } from '../../lib/client/url.js';
 import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
 
@@ -81,6 +82,8 @@ export function ServerJobsProgressInfo({
             failed: jobProgress.job_failure_message ?? statusTextSafe.failed,
           }}
           itemNames={itemNames}
+          totalCostMilliDollars={jobProgress.total_cost_milli_dollars}
+          numItemsIncurredCost={jobProgress.num_items_incurred_cost}
           onDismissCompleteJobSequence={onDismissCompleteJobSequence}
         />
       ))}
@@ -111,6 +114,9 @@ export function ServerJobsProgressInfo({
  * @param params.statusText.complete Text for completed jobs.
  * @param params.statusText.failed Text for failed jobs.
  *
+ * @param params.totalCostMilliDollars Optional running total cost in milli-dollars for the job.
+ * @param params.numItemsIncurredCost Optional number of items that incurred cost.
+ *
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
  */
 function ServerJobProgressInfo({
@@ -120,6 +126,8 @@ function ServerJobProgressInfo({
   nums,
   statusIcons,
   statusText,
+  totalCostMilliDollars,
+  numItemsIncurredCost,
   onDismissCompleteJobSequence,
 }: {
   jobSequenceId: string;
@@ -140,6 +148,8 @@ function ServerJobProgressInfo({
     complete: string;
     failed: string;
   };
+  totalCostMilliDollars?: number;
+  numItemsIncurredCost?: number;
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
 }) {
   const jobStatus = useMemo(() => {
@@ -171,23 +181,33 @@ function ServerJobProgressInfo({
     };
   }, [statusText, statusIcons, jobStatus]);
 
-  const progressInfo = useMemo(() => {
+  const progressPercent = nums.total !== 0 ? (nums.complete / nums.total) * 100 : 0;
+  const successCount = nums.complete - nums.failed;
+
+  const perSubmissionLabel = useMemo(() => {
+    if (
+      totalCostMilliDollars == null ||
+      numItemsIncurredCost == null ||
+      numItemsIncurredCost <= 0
+    ) {
+      return null;
+    }
+    const avg = formatMilliDollars(Math.round(totalCostMilliDollars / numItemsIncurredCost));
+    return `${avg.startsWith('<') ? avg : `~${avg}`}/submission`;
+  }, [totalCostMilliDollars, numItemsIncurredCost]);
+
+  const progressLabel = useMemo(() => {
     switch (jobStatus) {
-      case 'inProgress':
-        return (
-          <>
-            {`${nums.complete}/${nums.total} ${itemNames}`}
-            <span className="text-danger">{nums.failed > 0 ? ` (${nums.failed} failed)` : ''}</span>
-          </>
-        );
+      case 'inProgress': {
+        const failedSuffix = nums.failed > 0 ? ` (${nums.failed} failed)` : '';
+        return `${nums.complete}/${nums.total} ${itemNames}${failedSuffix}`;
+      }
       case 'failed':
-        return `${nums.total - nums.failed}/${nums.total} ${itemNames} (${nums.failed} failed)`;
+        return `${successCount}/${nums.total} ${itemNames} (${nums.failed} failed)`;
       case 'complete':
         return `${nums.total} ${itemNames}`;
-      default:
-        return <></>;
     }
-  }, [jobStatus, nums, itemNames]);
+  }, [jobStatus, nums, itemNames, successCount]);
 
   return (
     <Alert
@@ -196,39 +216,61 @@ function ServerJobProgressInfo({
       dismissible={jobStatus === 'complete' || jobStatus === 'failed'}
       onClose={() => onDismissCompleteJobSequence(jobSequenceId)}
     >
-      <div className="d-flex flex-column flex-lg-row align-items-lg-center gap-2 gap-lg-3">
-        <div className="d-flex align-items-center gap-2">
+      <div className="d-flex flex-wrap align-items-center gap-2 gap-lg-3">
+        <div className="d-flex align-items-center gap-2 flex-shrink-0">
           <i className={`bi ${icon} fs-5`} aria-hidden="true" />
           <strong>{text}</strong>
         </div>
 
-        {jobStatus === 'inProgress' ? (
-          <div className="flex-grow-1">
-            <ProgressBar
-              now={
-                nums.total !== 0 // Prevent division by 0
-                  ? (nums.complete / nums.total) * 100
-                  : 0
-              }
-              variant="primary"
-              striped
-              animated
-            />
+        {jobStatus === 'inProgress' && (
+          <div className="flex-grow-1" style={{ flexBasis: '6rem' }}>
+            <ProgressBar>
+              <ProgressBar
+                key="success"
+                now={progressPercent - (nums.total !== 0 ? (nums.failed / nums.total) * 100 : 0)}
+                variant="primary"
+                animated
+              />
+              {nums.failed > 0 && (
+                <ProgressBar key="failed" now={(nums.failed / nums.total) * 100} variant="danger" />
+              )}
+            </ProgressBar>
           </div>
-        ) : (
-          <></>
         )}
 
-        <div className="d-flex flex-wrap align-items-center gap-2 gap-lg-3">
-          <div className="text-muted small">{progressInfo}</div>
+        <div className="d-flex flex-wrap align-items-center gap-2 small">
+          <span className="text-body-secondary">{progressLabel}</span>
+
+          {totalCostMilliDollars != null && (
+            <>
+              <span className="text-body-secondary opacity-50" aria-hidden="true">
+                &middot;
+              </span>
+              {perSubmissionLabel && (
+                <>
+                  <span className="text-body-secondary">{perSubmissionLabel}</span>
+                  <span className="text-body-secondary opacity-50" aria-hidden="true">
+                    &middot;
+                  </span>
+                </>
+              )}
+              <span className="text-body-secondary fw-medium">
+                Total: {formatMilliDollars(totalCostMilliDollars)}
+              </span>
+            </>
+          )}
+
+          <span className="text-body-secondary opacity-50" aria-hidden="true">
+            &middot;
+          </span>
           <a
             href={getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId)}
-            className="text-decoration-none small"
+            className="text-decoration-none"
             target="_blank"
             rel="noreferrer"
             aria-label="View job logs"
           >
-            View logs
+            View logs <i className="bi bi-box-arrow-up-right" style={{ fontSize: '0.7em' }} />
           </a>
         </div>
       </div>
