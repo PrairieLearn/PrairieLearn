@@ -34,29 +34,20 @@ interface DateRange {
   end: Date;
 }
 
+/**
+ * Returns the date range that a deadline covers.
+ * Returns `null` if the current deadline has no date set.
+ */
 export function getDeadlineRange(
-  index: number,
-  deadlines: DeadlineEntry[],
-  anchorDate: string | null | undefined,
+  rangeStart: string | null | undefined,
+  deadline: DeadlineEntry | undefined,
 ): DateRange | null {
-  const currentDeadline = deadlines[index];
-  if (!currentDeadline.date) return null;
+  if (!deadline?.date) return null;
 
-  const endDate = new Date(currentDeadline.date);
-  let startDate: Date | null = null;
-
-  if (index === 0) {
-    if (anchorDate) {
-      startDate = new Date(anchorDate);
-    }
-  } else {
-    const previousDeadline = deadlines[index - 1];
-    if (previousDeadline.date) {
-      startDate = new Date(previousDeadline.date);
-    }
-  }
-
-  return { start: startDate, end: endDate };
+  return {
+    start: rangeStart ? new Date(rangeStart) : null,
+    end: new Date(deadline.date),
+  };
 }
 
 export function getLastDeadlineDate(
