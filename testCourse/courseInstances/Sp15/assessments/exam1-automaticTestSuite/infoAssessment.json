@@ -6,8 +6,11 @@
   "number": "1",
   "module": "Module1",
   "allowAccess": [
-    { "credit": 50, "startDate": "2024-01-01T00:00:01", "endDate": "2024-02-01T23:59:59" },
-    { "credit": 50, "startDate": "2024-02-01T00:00:01", "endDate": "2024-03-01T23:59:59" }
+    {
+      "examUuid": "e66122b5-c793-4235-9851-9a3aa80ae39b",
+      "credit": 100,
+      "timeLimitMin": 50
+    }
   ],
   "zones": [
     {
