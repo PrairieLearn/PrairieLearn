@@ -231,7 +231,7 @@ describe('resolveAccessControl', () => {
             dateControl: {
               releaseDate: '2025-03-01T00:00:00Z',
               dueDate: '2025-03-10T00:00:00Z',
-              afterLastDeadline: { credit: 25 },
+              afterLastDeadline: { credit: 25, allowSubmissions: true },
             },
           }),
         ],
@@ -834,7 +834,7 @@ describe('resolveAccessControl', () => {
           dateControl: {
             releaseDate: '2025-01-01T00:00:00Z',
             dueDate: '2025-02-01T00:00:00Z',
-            afterLastDeadline: { credit: 50 },
+            afterLastDeadline: { credit: 50, allowSubmissions: true },
           },
         }),
       };

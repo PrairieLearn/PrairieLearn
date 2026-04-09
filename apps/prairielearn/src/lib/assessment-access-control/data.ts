@@ -88,21 +88,13 @@ function buildDateControl(
     const includeAllowSubmissions = rule.date_control_after_last_deadline_allow_submissions != null;
 
     if (includeCredit || includeAllowSubmissions) {
-      if (
-        rule.date_control_after_last_deadline_credit_overridden &&
-        rule.date_control_after_last_deadline_credit == null &&
-        rule.date_control_after_last_deadline_allow_submissions == null
-      ) {
-        dateControl.afterLastDeadline = null;
-      } else {
-        dateControl.afterLastDeadline = {};
-        if (rule.date_control_after_last_deadline_credit != null) {
-          dateControl.afterLastDeadline.credit = rule.date_control_after_last_deadline_credit;
-        }
-        if (includeAllowSubmissions) {
-          dateControl.afterLastDeadline.allowSubmissions =
-            rule.date_control_after_last_deadline_allow_submissions!;
-        }
+      dateControl.afterLastDeadline = {};
+      if (includeCredit) {
+        dateControl.afterLastDeadline.credit = rule.date_control_after_last_deadline_credit;
+      }
+      if (includeAllowSubmissions) {
+        dateControl.afterLastDeadline.allowSubmissions =
+          rule.date_control_after_last_deadline_allow_submissions!;
       }
     }
   }

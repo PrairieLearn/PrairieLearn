@@ -1761,7 +1761,7 @@ describe('Access control syncing', () => {
           dateControl: {
             durationMinutes: null,
             password: null,
-            afterLastDeadline: undefined,
+            afterLastDeadline: { credit: null },
           },
         };
 
@@ -1777,8 +1777,7 @@ describe('Access control syncing', () => {
         assert.isOk(override.rule.dateControl);
         assert.strictEqual(override.rule.dateControl.durationMinutes, null);
         assert.strictEqual(override.rule.dateControl.password, null);
-        // afterLastDeadline: undefined means "not overridden", so it's not present in read-back
-        assert.isUndefined(override.rule.dateControl.afterLastDeadline);
+        assert.strictEqual(override.rule.dateControl.afterLastDeadline?.credit, null);
       }));
 
     it('explicit null override removals change resolved access behavior', () =>
@@ -1801,7 +1800,7 @@ describe('Access control syncing', () => {
           dateControl: {
             durationMinutes: null,
             password: null,
-            afterLastDeadline: undefined,
+            afterLastDeadline: { credit: null },
           },
         };
 
@@ -1846,9 +1845,10 @@ describe('Access control syncing', () => {
           courseInstanceRole: 'None',
           prairieTestReservations: [],
         });
-        // afterLastDeadline is not overridden (undefined), so main rule's
-        // afterLastDeadline { credit: 10, allowSubmissions: true } applies
-        assert.equal(afterDueResult.credit, 10);
+        // afterLastDeadline.credit: null overrides main rule's credit: 10,
+        // resolving to credit 0 (via ?? 0); allowSubmissions: true is still
+        // set from the main rule so the assessment remains active
+        assert.equal(afterDueResult.credit, 0);
         assert.isTrue(afterDueResult.active);
       }));
 

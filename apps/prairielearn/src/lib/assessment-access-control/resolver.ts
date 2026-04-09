@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-types.js';
 
@@ -142,7 +144,15 @@ function mergeDateControl(
   if (ov.dueDate !== undefined) merged.dueDate = ov.dueDate;
   if (ov.earlyDeadlines !== undefined) merged.earlyDeadlines = ov.earlyDeadlines;
   if (ov.lateDeadlines !== undefined) merged.lateDeadlines = ov.lateDeadlines;
-  if (ov.afterLastDeadline !== undefined) merged.afterLastDeadline = ov.afterLastDeadline;
+  if (ov.afterLastDeadline !== undefined) {
+    merged.afterLastDeadline = { ...merged.afterLastDeadline };
+    if (ov.afterLastDeadline.credit !== undefined) {
+      merged.afterLastDeadline.credit = ov.afterLastDeadline.credit;
+    }
+    if (ov.afterLastDeadline.allowSubmissions !== undefined) {
+      merged.afterLastDeadline.allowSubmissions = ov.afterLastDeadline.allowSubmissions;
+    }
+  }
   if (ov.durationMinutes !== undefined) merged.durationMinutes = ov.durationMinutes;
   if (ov.password !== undefined) merged.password = ov.password;
   return merged;
@@ -332,7 +342,11 @@ function computeCredit(
   // or if afterLastDeadline is not configured, use defaults.
   const afterLast = dateControl.afterLastDeadline;
   const credit = afterLast?.credit ?? 0;
-  const active = credit > 0 && afterLast?.allowSubmissions !== false;
+  assert(
+    !afterLast || afterLast.allowSubmissions !== undefined,
+    'afterLastDeadline.allowSubmissions must be set when afterLastDeadline is configured',
+  );
+  const active = afterLast?.allowSubmissions === true;
   return {
     credit,
     active,

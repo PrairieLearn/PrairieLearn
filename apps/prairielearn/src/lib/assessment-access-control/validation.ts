@@ -403,6 +403,9 @@ export function validateRule(
   }
 
   const ald = rule.dateControl?.afterLastDeadline;
+  if (targetType === 'none' && ald && ald.allowSubmissions === undefined) {
+    errors.push('afterLastDeadline.allowSubmissions is required when afterLastDeadline is configured.');
+  }
   if (ald?.allowSubmissions === false && ald.credit != null) {
     errors.push('afterLastDeadline cannot set credit when submissions are not allowed.');
   }
