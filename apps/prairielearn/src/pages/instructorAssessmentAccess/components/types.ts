@@ -13,6 +13,11 @@ export const DATE_CONTROL_FIELD_NAMES = [
   'password',
 ] as const;
 
+export type OverridableFieldName =
+  | (typeof DATE_CONTROL_FIELD_NAMES)[number]
+  | 'questionVisibility'
+  | 'scoreVisibility';
+
 export interface DeadlineEntry {
   date: string;
   credit: number;
@@ -32,6 +37,14 @@ export interface QuestionVisibilityValue {
 export interface ScoreVisibilityValue {
   hideScore: boolean;
   showAgainDate?: string;
+}
+
+export function isNonDefaultQuestionVisibility(qv: QuestionVisibilityValue): boolean {
+  return !qv.hideQuestions || !!qv.showAgainDate;
+}
+
+export function isNonDefaultScoreVisibility(sv: ScoreVisibilityValue): boolean {
+  return sv.hideScore;
 }
 
 interface PrairieTestExam {
@@ -65,14 +78,13 @@ export interface MainRuleData {
   trackingId: string;
   listBeforeRelease: boolean;
   dateControlEnabled: boolean;
-  releaseDate: string;
+  releaseDate: string | null;
   dueDate: string | null;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
   afterLastDeadline: AfterLastDeadlineValue | null;
   durationMinutes: number | null;
   password: string | null;
-  prairieTestEnabled: boolean;
   prairieTestExams: PrairieTestExam[];
   questionVisibility: QuestionVisibilityValue;
   scoreVisibility: ScoreVisibilityValue;
@@ -86,7 +98,7 @@ export interface OverrideData {
   id?: string;
   trackingId: string;
   appliesTo: AppliesTo;
-  overriddenFields: string[];
+  overriddenFields: OverridableFieldName[];
   releaseDate: string | null;
   dueDate: string | null;
   earlyDeadlines: DeadlineEntry[];
@@ -138,8 +150,11 @@ export function jsonToMainRuleFormData(
       dc?.releaseDate != null ||
       dc?.dueDate != null ||
       (dc?.earlyDeadlines?.length ?? 0) > 0 ||
-      (dc?.lateDeadlines?.length ?? 0) > 0,
-    releaseDate: toLocalDatetimeValue(dc?.releaseDate, displayTimezone) ?? '',
+      (dc?.lateDeadlines?.length ?? 0) > 0 ||
+      dc?.afterLastDeadline != null ||
+      dc?.durationMinutes != null ||
+      dc?.password != null,
+    releaseDate: toLocalDatetimeValue(dc?.releaseDate, displayTimezone) ?? null,
     dueDate: toLocalDatetimeValue(dc?.dueDate, displayTimezone) ?? null,
     earlyDeadlines: (dc?.earlyDeadlines ?? []).map((d) => ({
       ...d,
@@ -152,7 +167,6 @@ export function jsonToMainRuleFormData(
     afterLastDeadline: dc?.afterLastDeadline ?? null,
     durationMinutes: dc?.durationMinutes ?? null,
     password: dc?.password ?? null,
-    prairieTestEnabled: (json.integrations?.prairieTest?.exams?.length ?? 0) > 0,
     prairieTestExams: json.integrations?.prairieTest?.exams ?? [],
     questionVisibility: {
       hideQuestions: ac?.hideQuestions ?? true,
@@ -194,11 +208,11 @@ export function jsonToOverrideFormData(
     };
   }
 
-  const overriddenFields: string[] = [];
+  const overriddenFields: OverridableFieldName[] = [];
 
   let releaseDate: string | null = null;
   if (dc?.releaseDate !== undefined) {
-    releaseDate = toLocalDatetimeValue(dc.releaseDate, displayTimezone) ?? null;
+    releaseDate = toLocalDatetimeValue(dc.releaseDate, displayTimezone);
     overriddenFields.push('releaseDate');
   }
 
@@ -292,21 +306,15 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   if (rule.dateControlEnabled) {
     output.dateControl = {};
     if (rule.releaseDate) output.dateControl.releaseDate = rule.releaseDate;
-    if (rule.dueDate) output.dateControl.dueDate = rule.dueDate;
+    output.dateControl.dueDate = rule.dueDate;
     if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (rule.lateDeadlines.length > 0) output.dateControl.lateDeadlines = rule.lateDeadlines;
-  }
-
-  // Non-date fields live under dateControl in the schema but should be
-  // preserved regardless of whether the date control toggle is enabled.
-  if (rule.afterLastDeadline || rule.durationMinutes != null || rule.password) {
-    output.dateControl ??= {};
     if (rule.afterLastDeadline) output.dateControl.afterLastDeadline = rule.afterLastDeadline;
     if (rule.durationMinutes != null) output.dateControl.durationMinutes = rule.durationMinutes;
     if (rule.password) output.dateControl.password = rule.password;
   }
 
-  if (rule.prairieTestEnabled && rule.prairieTestExams.length > 0) {
+  if (rule.prairieTestExams.length > 0) {
     output.integrations = {
       prairieTest: {
         exams: rule.prairieTestExams,
@@ -357,7 +365,9 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
 
   if (hasDateControl) {
     output.dateControl = {};
-    if (of.has('releaseDate')) output.dateControl.releaseDate = rule.releaseDate;
+    if (of.has('releaseDate') && rule.releaseDate) {
+      output.dateControl.releaseDate = rule.releaseDate;
+    }
     if (of.has('dueDate')) output.dateControl.dueDate = rule.dueDate;
     if (of.has('earlyDeadlines')) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (of.has('lateDeadlines')) output.dateControl.lateDeadlines = rule.lateDeadlines;
@@ -397,7 +407,7 @@ export function formDataToJson(formData: AccessControlFormData): AccessControlJs
   return [mainRuleToJson(formData.mainRule), ...formData.overrides.map(overrideToJson)];
 }
 
-export function createDefaultOverrideFormData(): OverrideData {
+export function createDefaultOverrideFormData(mainRule?: MainRuleData): OverrideData {
   return {
     trackingId: crypto.randomUUID(),
     appliesTo: {
@@ -406,14 +416,14 @@ export function createDefaultOverrideFormData(): OverrideData {
       studentLabels: [],
     },
     overriddenFields: [],
-    releaseDate: null,
-    dueDate: null,
-    earlyDeadlines: [],
-    lateDeadlines: [],
-    afterLastDeadline: null,
-    durationMinutes: null,
-    password: null,
-    questionVisibility: { hideQuestions: true },
-    scoreVisibility: { hideScore: false },
+    releaseDate: mainRule?.releaseDate ?? null,
+    dueDate: mainRule?.dueDate ?? null,
+    earlyDeadlines: (mainRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
+    lateDeadlines: (mainRule?.lateDeadlines ?? []).map((d) => ({ ...d })),
+    afterLastDeadline: mainRule?.afterLastDeadline ? { ...mainRule.afterLastDeadline } : null,
+    durationMinutes: mainRule?.durationMinutes ?? null,
+    password: mainRule?.password ?? null,
+    questionVisibility: mainRule ? { ...mainRule.questionVisibility } : { hideQuestions: true },
+    scoreVisibility: mainRule ? { ...mainRule.scoreVisibility } : { hideScore: false },
   };
 }
