@@ -42,7 +42,7 @@ export interface AccessDisplayModel {
   badges: AccessDisplayBadge[];
 }
 
-export interface AccessDisplaySource {
+interface AccessDisplaySource {
   displayTimezone: string;
   availability: {
     state: AccessAvailabilityState;
@@ -248,7 +248,7 @@ function buildVisibilityBadges(
   return badges;
 }
 
-export function formatAccessDisplayModel(source: AccessDisplaySource): AccessDisplayModel {
+function formatAccessDisplayModel(source: AccessDisplaySource): AccessDisplayModel {
   const availability = formatAvailability(source.availability, source.displayTimezone);
   const rows = source.rows.map((row) => ({
     key: row.key,
