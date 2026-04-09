@@ -79,9 +79,7 @@ function AvailableCredit({ row }: { row: StudentAssessmentsTableRow }) {
   if (row.modern_access_control && row.assessment_instance_id == null && !row.active) {
     if (row.opens_at) {
       return (
-        <span className="text-muted">
-          Available {new Date(row.opens_at).toLocaleDateString()}
-        </span>
+        <span className="text-muted">Available {new Date(row.opens_at).toLocaleDateString()}</span>
       );
     }
     return <span className="text-muted">Not yet available</span>;
