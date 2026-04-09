@@ -191,7 +191,8 @@ export async function deductCreditsForAiGrading(
 /**
  * Adjust the credit pool for a course instance by a delta amount (admin operation).
  * Positive delta adds credits, negative delta removes credits.
- * Throws if the resulting balance would be negative.
+ * If a deduction exceeds the selected pool balance, the deduction is capped
+ * to the remaining balance so balances never go negative.
  */
 export async function adjustCreditPool({
   course_instance_id,
