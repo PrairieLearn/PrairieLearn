@@ -40,24 +40,34 @@ WHERE
 LIMIT
   1;
 
--- BLOCK select_courses_by_title_in_institution
+-- BLOCK check_course_title_in_institution
 SELECT
-  c.*
+  TRUE AS "exists",
+  BOOL_OR(cp.course_role = 'Owner') AS owned
 FROM
   courses AS c
+  LEFT JOIN course_permissions AS cp ON (
+    cp.course_id = c.id
+    AND cp.user_id = $user_id
+  )
 WHERE
   LOWER(c.title) = LOWER($title)
-  AND c.institution_id = $institution_id
+  AND ($institution_id::bigint IS NULL OR c.institution_id = $institution_id)
   AND c.deleted_at IS NULL;
 
--- BLOCK select_courses_by_short_name_in_institution
+-- BLOCK check_course_short_name_in_institution
 SELECT
-  c.*
+  TRUE AS "exists",
+  BOOL_OR(cp.course_role = 'Owner') AS owned
 FROM
   courses AS c
+  LEFT JOIN course_permissions AS cp ON (
+    cp.course_id = c.id
+    AND cp.user_id = $user_id
+  )
 WHERE
   LOWER(c.short_name) = LOWER($short_name)
-  AND c.institution_id = $institution_id
+  AND ($institution_id::bigint IS NULL OR c.institution_id = $institution_id)
   AND c.deleted_at IS NULL;
 
 -- BLOCK update_course_commit_hash

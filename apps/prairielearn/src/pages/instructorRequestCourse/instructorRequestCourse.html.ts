@@ -7,6 +7,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type CourseRequest } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import { DEFAULT_INSTITUTION_SHORT_NAME } from '../../models/institution.js';
 
 import type { CourseRequestRow, Lti13CourseRequestInput } from './instructorRequestCourse.types.js';
 
@@ -52,7 +53,8 @@ export function RequestCourse({
       })}
       ${CourseNewRequestCard({
         csrfToken: resLocals.__csrf_token,
-        isDefaultInstitution: resLocals.authn_institution.id === '1',
+        isDefaultInstitution:
+          resLocals.authn_institution.short_name === DEFAULT_INSTITUTION_SHORT_NAME,
         institutionName: resLocals.authn_institution.long_name,
       })}
     `,
@@ -237,7 +239,7 @@ function CourseNewRequestCard({
               You already own a course with this rubric. If you want to offer a new semester or
               section,
               <a
-                href="https://docs.prairielearn.com/courseInstance/#creating-a-course-instance"
+                href="https://docs.prairielearn.com/courseInstance/#creating-or-copying-a-course-instance"
                 target="_blank"
                 rel="noopener noreferrer"
                 >create a new course instance</a
@@ -269,7 +271,7 @@ function CourseNewRequestCard({
               You already own a course with this name. If you want to offer a new semester or
               section,
               <a
-                href="https://docs.prairielearn.com/courseInstance/#creating-a-course-instance"
+                href="https://docs.prairielearn.com/courseInstance/#creating-or-copying-a-course-instance"
                 target="_blank"
                 rel="noopener noreferrer"
                 >create a new course instance</a

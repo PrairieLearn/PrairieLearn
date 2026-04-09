@@ -37,6 +37,9 @@ onDocumentReady(() => {
   let titleResult: CheckResult = { owned: false, exists: false };
   let shortNameResult: CheckResult = { owned: false, exists: false };
   let checkTimeout: ReturnType<typeof setTimeout> | null = null;
+  let checkIsLoading = false;
+
+  const BUTTON_VARIANTS = ['btn-primary', 'btn-warning', 'btn-danger'];
 
   function updateWarnings(field: 'title' | 'short_name', result: CheckResult) {
     warnings[field].owned?.classList.toggle('d-none', !result.owned);
@@ -49,8 +52,10 @@ onDocumentReady(() => {
     const warned =
       (titleResult.exists && !titleResult.owned) ||
       (shortNameResult.exists && !shortNameResult.owned);
-    submitButton.disabled = blocked || selectedRole !== 'instructor';
-    submitButton.className = `btn ${blocked ? 'btn-danger' : warned ? 'btn-warning' : 'btn-primary'}`;
+    submitButton.disabled = blocked || checkIsLoading || selectedRole !== 'instructor';
+    const variant = blocked ? 'btn-danger' : warned ? 'btn-warning' : 'btn-primary';
+    submitButton.classList.remove(...BUTTON_VARIANTS);
+    submitButton.classList.add(variant);
   }
 
   function scheduleCheck() {
@@ -64,9 +69,13 @@ onDocumentReady(() => {
       shortNameResult = { owned: false, exists: false };
       updateWarnings('title', titleResult);
       updateWarnings('short_name', shortNameResult);
+      checkIsLoading = false;
       updateSubmitButton();
       return;
     }
+
+    checkIsLoading = true;
+    updateSubmitButton();
 
     checkTimeout = setTimeout(async () => {
       try {
@@ -80,9 +89,11 @@ onDocumentReady(() => {
         shortNameResult = data.short_name;
         updateWarnings('title', titleResult);
         updateWarnings('short_name', shortNameResult);
-        updateSubmitButton();
       } catch {
         // Non-critical check; ignore network errors.
+      } finally {
+        checkIsLoading = false;
+        updateSubmitButton();
       }
     }, 300);
   }
