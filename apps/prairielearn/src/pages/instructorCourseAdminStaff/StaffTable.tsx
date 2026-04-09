@@ -60,7 +60,7 @@ const ROLE_DESCRIPTIONS: Record<CourseRole, string> = {
 const LEARN_MORE_LINK = (
   <div className="text-start text-secondary mt-2 form-text">
     <a href="https://docs.prairielearn.com/course/#course-staff" target="_blank" rel="noreferrer">
-      Learn more about content and student data access levels
+      Learn more about GitHub access and course content / student data access levels
     </a>
   </div>
 );
@@ -1143,18 +1143,6 @@ function StaffTableInner({
           headerButtons={headerButtons}
           statusContent={statusContent}
         />
-      </div>
-      <div className="small flex-shrink-0 border-top pt-3 pb-1">
-        {githubAccessLink && (
-          <div className="text-muted text-start">
-            The settings above do not affect access to the course&apos;s Git repository. To change
-            repository permissions, go to the{' '}
-            <a className="alert-link" href={githubAccessLink} target="_blank" rel="noreferrer">
-              GitHub access settings page
-            </a>
-            . If you require access to the repository, please contact PrairieLearn support.
-          </div>
-        )}
       </div>
     </div>
   );
