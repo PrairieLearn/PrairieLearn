@@ -25,7 +25,7 @@ describe('Cron', { timeout: 60_000 }, function () {
     config.cronDailySec = cronDailyMS / 1000;
 
     // set all other cron jobs to execute soon
-    config.cronOverrideAllIntervalsSec = 1;
+    config.cronOverrideAllIntervalsSec = 3;
 
     await helperServer.before()();
   });
