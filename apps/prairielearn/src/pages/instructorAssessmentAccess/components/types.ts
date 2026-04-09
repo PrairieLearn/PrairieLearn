@@ -25,7 +25,7 @@ export interface DeadlineEntry {
 
 export interface AfterLastDeadlineValue {
   allowSubmissions?: boolean;
-  credit?: number;
+  credit?: number | null;
 }
 
 export interface QuestionVisibilityValue {
@@ -371,7 +371,9 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
     if (of.has('dueDate')) output.dateControl.dueDate = rule.dueDate;
     if (of.has('earlyDeadlines')) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (of.has('lateDeadlines')) output.dateControl.lateDeadlines = rule.lateDeadlines;
-    if (of.has('afterLastDeadline')) output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+    if (of.has('afterLastDeadline') && rule.afterLastDeadline) {
+      output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+    }
     if (of.has('durationMinutes')) output.dateControl.durationMinutes = rule.durationMinutes;
     if (of.has('password')) output.dateControl.password = rule.password;
   }

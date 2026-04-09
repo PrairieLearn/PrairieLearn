@@ -392,7 +392,7 @@ function formatDeadlineEntries(
 
 function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): string {
   const parts: string[] = [];
-  if (afterLastDeadline.credit !== undefined) {
+  if (afterLastDeadline.credit != null) {
     parts.push(`${afterLastDeadline.credit}% credit`);
   }
   if (afterLastDeadline.allowSubmissions) {

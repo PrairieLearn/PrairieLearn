@@ -33,7 +33,7 @@ function getMode(value: AfterLastDeadlineValue | null): AfterLastDeadlineMode {
   if (!value) return 'no_submissions';
   const { allowSubmissions, credit } = value;
   if (!allowSubmissions) return 'no_submissions';
-  if (credit === undefined) return 'practice_submissions';
+  if (credit == null) return 'practice_submissions';
   return 'partial_credit';
 }
 
