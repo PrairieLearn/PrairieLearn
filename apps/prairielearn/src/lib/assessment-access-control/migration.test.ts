@@ -568,7 +568,6 @@ describe('analyzeAssessmentFile', () => {
         assert.equal(result.tid, 'hw01');
         assert.equal(result.archetype, 'single-deadline');
         assert.equal(result.canMigrate, true);
-        assert.equal(result.canMigrateInPlace, true);
         assert.equal(result.hasUidRules, false);
         assert.deepEqual(result.warnings, []);
       },
@@ -593,7 +592,7 @@ describe('analyzeAssessmentFile', () => {
         );
         const result = await analyzeAssessmentFile(filePath, 'e01');
         assert.isNotNull(result);
-        assert.equal(result.canMigrateInPlace, false);
+        assert.equal(result.canMigrate, true);
         assert.equal(result.hasUidRules, true);
         assert(result.warnings.some((warning) => warning.includes('UID-based rules are excluded')));
       },
@@ -622,7 +621,6 @@ describe('analyzeAssessmentFile', () => {
         assert.equal(result.archetype, 'declining-credit');
         assert.equal(result.hasUidRules, true);
         assert.equal(result.canMigrate, true);
-        assert.equal(result.canMigrateInPlace, false);
         assert(result.warnings.some((warning) => warning.includes('UID-based rules are excluded')));
       },
       { unsafeCleanup: true },
@@ -645,7 +643,6 @@ describe('analyzeAssessmentFile', () => {
         assert.isNotNull(result);
         assert.equal(result.archetype, 'unclassified');
         assert.equal(result.canMigrate, false);
-        assert.equal(result.canMigrateInPlace, false);
         assert.equal(result.hasUidRules, true);
         assert(result.warnings.some((warning) => warning.includes('UID-based rules are excluded')));
       },
@@ -700,7 +697,6 @@ describe('analyzeAssessmentFile', () => {
         assert.isNotNull(result);
         assert.equal(result.archetype, 'no-op');
         assert.equal(result.canMigrate, true);
-        assert.equal(result.canMigrateInPlace, true);
         assert.match(result.warnings[0], /No-op access rule/);
       },
       { unsafeCleanup: true },

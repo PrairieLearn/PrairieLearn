@@ -16,7 +16,6 @@ export interface AssessmentMigrationAnalysis {
   type: string;
   archetype: string;
   canMigrate: boolean;
-  canMigrateInPlace: boolean;
   ruleCount: number;
   hasUidRules: boolean;
   warnings: string[];
@@ -48,7 +47,6 @@ function analyzeAllowAccessRules(allowAccess: AssessmentAccessRuleJson[]) {
   return {
     archetype,
     canMigrate,
-    canMigrateInPlace: canMigrate && !hasUidRules,
     hasUidRules,
     warnings,
   };
@@ -586,7 +584,7 @@ export async function analyzeAssessmentFile(
     return null;
   }
 
-  const { archetype, canMigrate, canMigrateInPlace, hasUidRules, warnings } =
+  const { archetype, canMigrate, hasUidRules, warnings } =
     analyzeAllowAccessRules(allowAccess);
 
   return {
@@ -595,7 +593,6 @@ export async function analyzeAssessmentFile(
     type: (data.type as string | undefined) ?? 'unknown',
     archetype,
     canMigrate,
-    canMigrateInPlace,
     ruleCount: allowAccess.length,
     hasUidRules,
     warnings,
