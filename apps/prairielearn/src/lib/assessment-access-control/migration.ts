@@ -584,8 +584,7 @@ export async function analyzeAssessmentFile(
     return null;
   }
 
-  const { archetype, canMigrate, hasUidRules, warnings } =
-    analyzeAllowAccessRules(allowAccess);
+  const { archetype, canMigrate, hasUidRules, warnings } = analyzeAllowAccessRules(allowAccess);
 
   return {
     tid,
