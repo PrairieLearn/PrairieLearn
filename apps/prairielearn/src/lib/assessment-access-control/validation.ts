@@ -86,7 +86,6 @@ function hasAnyDeadline(rule: AccessControlJson): boolean {
   const dc = rule.dateControl;
   if (!dc) return false;
   if (dc.dueDate) return true;
-  if (dc.earlyDeadlines && dc.earlyDeadlines.length > 0) return true;
   if (dc.lateDeadlines && dc.lateDeadlines.length > 0) return true;
   return false;
 }
@@ -129,11 +128,12 @@ export function validateRuleStructuralDependencyIssues(
   // The date fields (showQuestionsAgainDate, hideQuestionsAgainDate,
   // showScoreAgainDate) are meant to fire relative to the last deadline.
   // Boolean fields (hideQuestions, hideScore) are fine without deadlines.
-  // PrairieTest exams manage completion independently, so after-complete
-  // dates are valid without deadlines when PT is configured.
+  // PrairieTest and timed assessments manage completion independently,
+  // so after-complete dates are valid without deadlines in those cases.
   const hasPrairieTest = (rule.integrations?.prairieTest?.exams ?? []).length > 0;
+  const hasDuration = dc?.durationMinutes != null;
   const ac = rule.afterComplete;
-  if (ac && !hasAnyDeadline(rule) && !hasPrairieTest) {
+  if (ac && !hasAnyDeadline(rule) && !hasPrairieTest && !hasDuration) {
     if (ac.showQuestionsAgainDate) {
       pushIssue(
         issues,

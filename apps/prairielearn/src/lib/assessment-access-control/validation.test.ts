@@ -1045,10 +1045,31 @@ describe('Structural field dependency validation', () => {
     assert.deepEqual(issues, []);
   });
 
-  it('should accept after-complete dates when only early deadlines exist', () => {
+  it('should accept after-complete dates when durationMinutes is set', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
-        earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 120 }],
+        durationMinutes: 60,
+      },
+      afterComplete: {
+        hideQuestions: true,
+        showQuestionsAgainDate: '2024-03-23T23:59:00',
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+    const afterCompleteIssues = issues.filter((i) => i.path[0] === 'afterComplete');
+    assert.deepEqual(afterCompleteIssues, []);
+  });
+
+  it('should accept after-complete dates when PrairieTest is configured', () => {
+    const rule = AccessControlJsonSchema.parse({
+      integrations: {
+        prairieTest: {
+          exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+        },
       },
       afterComplete: {
         hideQuestions: true,

@@ -85,14 +85,16 @@ export function getGlobalDateValidationErrors(formData: AccessControlFormData): 
   }
 
   for (const validationRule of validationRules) {
-    for (const issue of [
-      ...validateRuleStructuralDependencyIssues(validationRule),
-      ...validateRuleDateOrderingIssues(validationRule),
+    for (const issues of [
+      validateRuleStructuralDependencyIssues(validationRule),
+      validateRuleDateOrderingIssues(validationRule),
     ]) {
-      const path = mapIssueToFormFieldPath(issue);
-      if (!path || seenPaths.has(path)) continue;
-      seenPaths.add(path);
-      results.push({ path, message: issue.message });
+      for (const issue of issues) {
+        const path = mapIssueToFormFieldPath(issue);
+        if (!path || seenPaths.has(path)) continue;
+        seenPaths.add(path);
+        results.push({ path, message: issue.message });
+      }
     }
   }
 
