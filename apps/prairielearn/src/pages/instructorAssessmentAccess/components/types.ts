@@ -161,7 +161,12 @@ export function jsonToMainRuleFormData(
       ...d,
       date: toLocalDatetimeValue(d.date, displayTimezone),
     })),
-    afterLastDeadline: dc?.afterLastDeadline ?? null,
+    afterLastDeadline: dc?.afterLastDeadline
+      ? {
+          allowSubmissions: dc.afterLastDeadline.allowSubmissions ?? undefined,
+          credit: dc.afterLastDeadline.credit ?? undefined,
+        }
+      : null,
     durationMinutes: dc?.durationMinutes ?? null,
     password: dc?.password ?? null,
     prairieTestExams: json.integrations?.prairieTest?.exams ?? [],
@@ -239,7 +244,10 @@ export function jsonToOverrideFormData(
 
   let afterLastDeadline: AfterLastDeadlineValue | null = null;
   if (dc?.afterLastDeadline !== undefined) {
-    afterLastDeadline = dc.afterLastDeadline;
+    afterLastDeadline = {
+      allowSubmissions: dc.afterLastDeadline.allowSubmissions ?? undefined,
+      credit: dc.afterLastDeadline.credit ?? undefined,
+    };
     overriddenFields.push('afterLastDeadline');
   }
 
@@ -374,7 +382,9 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
     if (of.has('dueDate')) output.dateControl.dueDate = rule.dueDate;
     if (of.has('earlyDeadlines')) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (of.has('lateDeadlines')) output.dateControl.lateDeadlines = rule.lateDeadlines;
-    if (of.has('afterLastDeadline')) output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+    if (of.has('afterLastDeadline') && rule.afterLastDeadline) {
+      output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+    }
     if (of.has('durationMinutes')) output.dateControl.durationMinutes = rule.durationMinutes;
     if (of.has('password')) output.dateControl.password = rule.password;
   }

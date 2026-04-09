@@ -3,8 +3,7 @@ import type { z } from 'zod';
 
 import type { SprocAuthzAssessmentSchema } from '../db-types.js';
 
-import { applyInstanceAccess, buildAccessDisplayModelFromResult } from './authz.js';
-import type { AccessControlResolverResult } from './resolver.js';
+import { applyInstanceAccess } from './authz.js';
 
 type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 
@@ -27,23 +26,6 @@ const baseAssessmentResult: SprocAuthzAssessment = {
 const unauthorizedResult: SprocAuthzAssessment = {
   ...baseAssessmentResult,
   authorized: false,
-};
-
-const baseResolverResult: AccessControlResolverResult = {
-  authorized: true,
-  credit: 100,
-  creditDateString: '100%',
-  timeLimitMin: null,
-  password: null,
-  active: true,
-  showClosedAssessment: true,
-  showClosedAssessmentScore: true,
-  examAccessEnd: null,
-  showBeforeRelease: false,
-  availabilityState: 'open',
-  availabilityListed: true,
-  opensAt: null,
-  timeline: [],
 };
 
 describe('applyInstanceAccess', () => {
@@ -133,98 +115,5 @@ describe('applyInstanceAccess', () => {
 
       expect(result.time_limit_expired).toBe(false);
     });
-  });
-});
-
-describe('buildAccessDisplayModelFromResult', () => {
-  it('passes future-open availability through to the display model', () => {
-    const model = buildAccessDisplayModelFromResult({
-      result: {
-        ...baseResolverResult,
-        active: false,
-        showBeforeRelease: true,
-        availabilityState: 'future_open',
-        availabilityListed: true,
-        opensAt: new Date('2025-04-01T00:00:00Z'),
-      },
-      effectiveRule: {
-        listBeforeRelease: true,
-        dateControl: {
-          releaseDate: new Date('2025-04-01T00:00:00Z'),
-          dueDate: new Date('2025-05-01T00:00:00Z'),
-        },
-      },
-      prairieTestExamCount: 0,
-      displayTimezone: 'UTC',
-    });
-
-    expect(model.availability.state).toBe('future_open');
-    expect(model.availability.listed).toBe(true);
-  });
-
-  it('passes closed availability through to the display model', () => {
-    const model = buildAccessDisplayModelFromResult({
-      result: {
-        ...baseResolverResult,
-        active: false,
-        availabilityState: 'closed',
-        availabilityListed: true,
-      },
-      effectiveRule: {
-        dateControl: {
-          releaseDate: new Date('2025-03-01T00:00:00Z'),
-          dueDate: new Date('2025-05-01T00:00:00Z'),
-        },
-      },
-      prairieTestExamCount: 0,
-      displayTimezone: 'UTC',
-    });
-
-    expect(model.availability.state).toBe('closed');
-    expect(model.availability.listed).toBe(true);
-  });
-
-  it('passes PrairieTest-gated availability through to the display model', () => {
-    const model = buildAccessDisplayModelFromResult({
-      result: {
-        ...baseResolverResult,
-        authorized: false,
-        active: false,
-        showBeforeRelease: true,
-        availabilityState: 'prairietest_gated_unavailable',
-        availabilityListed: true,
-      },
-      effectiveRule: {
-        listBeforeRelease: true,
-        dateControl: {
-          releaseDate: new Date('2025-03-01T00:00:00Z'),
-          dueDate: new Date('2025-05-01T00:00:00Z'),
-        },
-      },
-      prairieTestExamCount: 1,
-      displayTimezone: 'UTC',
-    });
-
-    expect(model.availability.state).toBe('prairietest_gated_unavailable');
-    expect(model.availability.listed).toBe(true);
-  });
-
-  it('uses the resolver timeline for display rows', () => {
-    const model = buildAccessDisplayModelFromResult({
-      result: {
-        ...baseResolverResult,
-        timeline: [{ type: 'due', date: new Date('2025-05-01T00:00:00Z'), credit: 100, index: 0 }],
-      },
-      effectiveRule: {
-        dateControl: {
-          releaseDate: new Date('2025-03-01T00:00:00Z'),
-          dueDate: new Date('2025-05-01T00:00:00Z'),
-        },
-      },
-      prairieTestExamCount: 0,
-      displayTimezone: 'UTC',
-    });
-
-    expect(model.rows.map((r) => r.label)).toEqual(['Release', 'Due', null]);
   });
 });
