@@ -81,9 +81,8 @@ function DeadlineArrayInput({
   };
 
   const getTimeRangeText = (index: number) => {
-    if (index >= deadlines.length) return null;
-    const deadline = deadlines[index];
-    if (!deadline.date) return null;
+    const deadline = deadlines.at(index);
+    if (!deadline?.date) return null;
 
     const anchorDate = isEarly ? releaseDate : dueDate;
     const start = (index > 0 ? deadlines[index - 1].date : null) ?? anchorDate;
