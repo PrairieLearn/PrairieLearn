@@ -237,7 +237,7 @@ interface CreditResult {
  * Outcome of PrairieTest access resolution. Used as a discriminated union so
  * the main resolver can handle each case linearly without nested control flow.
  */
-export type PrairieTestOutcome =
+type PrairieTestOutcome =
   | {
       action: 'deny';
       reason: PrairieTestDenyReason;
@@ -249,13 +249,13 @@ export type PrairieTestOutcome =
 
 type PrairieTestDenyReason = 'exam_mode_without_prairietest' | 'prairietest_gated_unavailable';
 
-export interface ResolvedAccessRuleContext {
+interface ResolvedAccessRuleContext {
   effectiveRule: RuntimeAccessControl;
   prairieTestExamCount: number;
   prairieTestExams: AccessControlRuleInput['prairietestExams'];
 }
 
-export function computeCredit(
+function computeCredit(
   dateControl: RuntimeDateControl | undefined,
   date: Date,
   authzMode: EnumMode | null,
@@ -490,7 +490,7 @@ function makePrairieTestDeniedOutcome({
   return { action: 'deny', reason, listed, showBeforeRelease };
 }
 
-export function evaluatePrairieTestAccess({
+function evaluatePrairieTestAccess({
   prairieTestExams,
   prairieTestReservations,
   authzMode,

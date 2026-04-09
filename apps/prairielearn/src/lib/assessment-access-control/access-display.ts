@@ -474,12 +474,3 @@ export function buildLegacyAccessDisplayModel({
         : undefined,
   });
 }
-
-export function buildEmptyAccessDisplayModel(): AccessDisplayModel {
-  return formatAccessDisplayModel({
-    displayTimezone: 'UTC',
-    availability: { state: 'closed', listed: false },
-    rows: [],
-    settings: undefined,
-  });
-}

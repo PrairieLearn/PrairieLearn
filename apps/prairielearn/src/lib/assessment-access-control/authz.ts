@@ -43,12 +43,12 @@ interface ModernAssessmentAccessInput {
   reqDate: Date;
 }
 
-export interface ModernAssessmentAccessResult {
+interface ModernAssessmentAccessResult {
   authzResult: SprocAuthzAssessment;
   accessDisplayModel: AccessDisplayModel;
 }
 
-export interface ModernAssessmentInstanceAccessResult {
+interface ModernAssessmentInstanceAccessResult {
   authzResult: SprocAuthzAssessmentInstance;
   accessDisplayModel: AccessDisplayModel;
 }
