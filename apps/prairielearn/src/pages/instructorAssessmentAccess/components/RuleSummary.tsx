@@ -1,6 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import type { ReactNode } from 'react';
-import { Alert, Button, Card } from 'react-bootstrap';
+import { Button, Card } from 'react-bootstrap';
+import type { FieldErrors } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
@@ -15,16 +16,22 @@ import {
   DATE_CONTROL_FIELD_NAMES,
   type DeadlineEntry,
   type MainRuleData,
+  type OverridableFieldName,
   type OverrideData,
+  isNonDefaultQuestionVisibility,
+  isNonDefaultScoreVisibility,
 } from './types.js';
 
 type RuleData = MainRuleData | OverrideData;
+
+/** react-hook-form error subtree for a single access control rule. */
+export type RuleFormErrors = FieldErrors<MainRuleData> | FieldErrors<OverrideData>;
 
 function isMainRuleData(rule: RuleData): rule is MainRuleData {
   return 'dateControlEnabled' in rule;
 }
 
-function isOverrideFieldActive(rule: RuleData, fieldName: string): boolean {
+function isOverrideFieldActive(rule: RuleData, fieldName: OverridableFieldName): boolean {
   if (isMainRuleData(rule)) return true;
   return rule.overriddenFields.includes(fieldName);
 }
@@ -33,7 +40,7 @@ interface DateTableRow {
   date: ReactNode;
   label: string;
   credit: string;
-  visibility: string;
+  error?: string;
 }
 
 function dateToInstant(date: string, displayTimezone: string): Date {
@@ -204,6 +211,7 @@ interface SummaryItem {
   key: string;
   icon: string;
   text: ReactNode;
+  error?: string;
 }
 
 export function generateRuleSummary(rule: RuleData, displayTimezone: string): SummaryItem[] {
@@ -217,26 +225,31 @@ export function generateRuleSummary(rule: RuleData, displayTimezone: string): Su
 interface OverrideFieldItem {
   label: string;
   value: ReactNode;
+  error?: string;
 }
 
 function formatDeadlineEntries(
   deadlines: DeadlineEntry[],
   displayTimezone: string,
   labelPrefix: string,
+  deadlineErrors?: (string | undefined)[],
 ): OverrideFieldItem[] {
-  const filtered = deadlines.filter((d) => d.date);
-  return filtered.map((d, i) => ({
-    label: filtered.length === 1 ? `${labelPrefix} deadline` : `${labelPrefix} deadline ${i + 1}`,
-    value: (
+  return deadlines.map((entry, i) => ({
+    label: deadlines.length === 1 ? `${labelPrefix} deadline` : `${labelPrefix} deadline ${i + 1}`,
+    value: entry.date ? (
       <>
         <FriendlyDate
-          date={Temporal.PlainDateTime.from(d.date)}
+          date={Temporal.PlainDateTime.from(entry.date)}
           timezone={displayTimezone}
+          options={{ includeTz: false }}
           tooltip
         />{' '}
-        ({d.credit}% credit)
+        ({entry.credit}% credit)
       </>
+    ) : (
+      `No date set (${entry.credit}% credit)`
     ),
+    error: deadlineErrors?.[i],
   }));
 }
 
@@ -256,6 +269,7 @@ function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): str
 function generateOverrideFieldItems(
   rule: OverrideData,
   displayTimezone: string,
+  formErrors?: RuleFormErrors,
 ): OverrideFieldItem[] {
   const items: OverrideFieldItem[] = [];
   const overriddenFields = new Set(rule.overriddenFields);
@@ -269,6 +283,7 @@ function generateOverrideFieldItems(
         <FriendlyDate
           date={Temporal.PlainDateTime.from(rule.releaseDate)}
           timezone={displayTimezone}
+          options={{ includeTz: false }}
           tooltip
         />
       ) : (
@@ -278,7 +293,17 @@ function generateOverrideFieldItems(
   }
 
   if (overriddenFields.has('earlyDeadlines')) {
-    const earlyItems = formatDeadlineEntries(rule.earlyDeadlines, displayTimezone, 'Early');
+    const earlyDeadlineErrors = rule.earlyDeadlines.map((_entry, i) => {
+      const dateErr = formErrors?.earlyDeadlines?.[i]?.date?.message;
+      const creditErr = formErrors?.earlyDeadlines?.[i]?.credit?.message;
+      return [dateErr, creditErr].filter(Boolean).join('; ') || undefined;
+    });
+    const earlyItems = formatDeadlineEntries(
+      rule.earlyDeadlines,
+      displayTimezone,
+      'Early',
+      earlyDeadlineErrors,
+    );
     items.push(
       ...(earlyItems.length > 0 ? earlyItems : [{ label: 'Early deadlines', value: 'None' }]),
     );
@@ -291,16 +316,28 @@ function generateOverrideFieldItems(
         <FriendlyDate
           date={Temporal.PlainDateTime.from(rule.dueDate)}
           timezone={displayTimezone}
+          options={{ includeTz: false }}
           tooltip
         />
       ) : (
         'No due date'
       ),
+      error: formErrors?.dueDate?.message,
     });
   }
 
   if (overriddenFields.has('lateDeadlines')) {
-    const lateItems = formatDeadlineEntries(rule.lateDeadlines, displayTimezone, 'Late');
+    const lateDeadlineErrors = rule.lateDeadlines.map((_entry, i) => {
+      const dateErr = formErrors?.lateDeadlines?.[i]?.date?.message;
+      const creditErr = formErrors?.lateDeadlines?.[i]?.credit?.message;
+      return [dateErr, creditErr].filter(Boolean).join('; ') || undefined;
+    });
+    const lateItems = formatDeadlineEntries(
+      rule.lateDeadlines,
+      displayTimezone,
+      'Late',
+      lateDeadlineErrors,
+    );
     items.push(
       ...(lateItems.length > 0 ? lateItems : [{ label: 'Late deadlines', value: 'None' }]),
     );
@@ -310,6 +347,7 @@ function generateOverrideFieldItems(
     items.push({
       label: 'After last deadline',
       value: rule.afterLastDeadline ? formatAfterLastDeadline(rule.afterLastDeadline) : 'None',
+      error: formErrors?.afterLastDeadline?.credit?.message,
     });
   }
 
@@ -317,6 +355,7 @@ function generateOverrideFieldItems(
     items.push({
       label: 'Time limit',
       value: rule.durationMinutes !== null ? `${rule.durationMinutes} minutes` : 'No time limit',
+      error: formErrors?.durationMinutes?.message,
     });
   }
 
@@ -324,11 +363,16 @@ function generateOverrideFieldItems(
     items.push({
       label: 'Password',
       value: rule.password ? 'Password protected' : 'No password',
+      error: formErrors?.password?.message,
     });
   }
 
   if (overriddenFields.has('questionVisibility')) {
     const qv = rule.questionVisibility;
+    const qvError =
+      formErrors?.questionVisibility?.showAgainDate?.message ||
+      formErrors?.questionVisibility?.hideAgainDate?.message ||
+      formErrors?.questionVisibility?.message;
     if (qv.hideQuestions) {
       if (qv.showAgainDate && qv.hideAgainDate) {
         items.push({
@@ -339,16 +383,19 @@ function generateOverrideFieldItems(
               <FriendlyDate
                 date={Temporal.PlainDateTime.from(qv.showAgainDate)}
                 timezone={displayTimezone}
+                options={{ includeTz: false }}
                 tooltip
               />
               , hidden again{' '}
               <FriendlyDate
                 date={Temporal.PlainDateTime.from(qv.hideAgainDate)}
                 timezone={displayTimezone}
+                options={{ includeTz: false }}
                 tooltip
               />
             </>
           ),
+          error: qvError,
         });
       } else if (qv.showAgainDate) {
         items.push({
@@ -359,27 +406,33 @@ function generateOverrideFieldItems(
               <FriendlyDate
                 date={Temporal.PlainDateTime.from(qv.showAgainDate)}
                 timezone={displayTimezone}
+                options={{ includeTz: false }}
                 tooltip
               />
             </>
           ),
+          error: qvError,
         });
       } else {
         items.push({
           label: 'Question visibility',
           value: 'Questions hidden after completion',
+          error: qvError,
         });
       }
     } else {
       items.push({
         label: 'Question visibility',
         value: 'Questions visible after completion',
+        error: qvError,
       });
     }
   }
 
   if (overriddenFields.has('scoreVisibility')) {
     const sv = rule.scoreVisibility;
+    const svError =
+      formErrors?.scoreVisibility?.showAgainDate?.message || formErrors?.scoreVisibility?.message;
     if (sv.hideScore) {
       if (sv.showAgainDate) {
         items.push({
@@ -390,21 +443,25 @@ function generateOverrideFieldItems(
               <FriendlyDate
                 date={Temporal.PlainDateTime.from(sv.showAgainDate)}
                 timezone={displayTimezone}
+                options={{ includeTz: false }}
                 tooltip
               />
             </>
           ),
+          error: svError,
         });
       } else {
         items.push({
           label: 'Score visibility',
           value: 'Score hidden after completion',
+          error: svError,
         });
       }
     } else {
       items.push({
         label: 'Score visibility',
         value: 'Score visible after completion',
+        error: svError,
       });
     }
   }
@@ -420,12 +477,27 @@ function OverrideFieldsList({ items }: { items: OverrideFieldItem[] }) {
         {items.map((item) => (
           <tr key={item.label}>
             <td
-              className="text-body-secondary fw-medium p-0 pe-3 pb-1"
-              style={{ whiteSpace: 'nowrap', width: '1%' }}
+              className={`fw-medium p-0 pe-3 pb-1 ${item.error ? 'text-danger' : 'text-body-secondary'}`}
+              style={{
+                whiteSpace: 'nowrap',
+                width: '1%',
+              }}
             >
               {item.label}
             </td>
-            <td className="p-0 pb-1">{item.value}</td>
+            <td className="p-0 pb-1">
+              {item.error ? (
+                <div>
+                  <span className="text-danger">
+                    <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
+                    {item.value}
+                  </span>
+                  <div className="text-danger small">{item.error}</div>
+                </div>
+              ) : (
+                item.value
+              )}
+            </td>
           </tr>
         ))}
       </tbody>
@@ -434,10 +506,16 @@ function OverrideFieldsList({ items }: { items: OverrideFieldItem[] }) {
 }
 
 function CreditBadge({ credit }: { credit: string }) {
+  if (!credit) return null;
+
   const numericValue = Number.parseInt(credit, 10);
   let className: string;
 
-  if (numericValue === 100) {
+  if (Number.isNaN(numericValue)) {
+    className = 'bg-body-tertiary text-body-secondary';
+  } else if (numericValue > 100) {
+    className = 'bg-info-subtle text-info-emphasis';
+  } else if (numericValue === 100) {
     className = 'bg-success-subtle text-success-emphasis';
   } else if (numericValue === 0) {
     className = 'bg-danger-subtle text-danger-emphasis';
@@ -469,15 +547,7 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
               className="fw-semibold text-body-secondary text-nowrap border-bottom"
               style={thStyle}
             >
-              <i className="bi bi-percent me-1" aria-hidden="true" />
               Credit
-            </th>
-            <th
-              className="fw-semibold text-body-secondary text-nowrap border-bottom"
-              style={thStyle}
-            >
-              <i className="bi bi-eye me-1" aria-hidden="true" />
-              Visibility
             </th>
           </tr>
         </thead>
@@ -485,15 +555,31 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
           {rows.map((row, index) => (
             // eslint-disable-next-line @eslint-react/no-array-index-key
             <tr key={index}>
-              <td className="ps-3 border-0" style={tdStyle}>
-                {row.label && <span className="text-body-secondary me-1">{row.label}:</span>}
-                {row.date}
+              <td
+                className="border-0"
+                style={{
+                  ...tdStyle,
+                  paddingLeft: '1rem',
+                }}
+              >
+                <div className="text-nowrap">
+                  {row.label && (
+                    <span className={`me-1 ${row.error ? 'text-danger' : 'text-body-secondary'}`}>
+                      {row.label}
+                      {row.date ? ':' : ''}
+                    </span>
+                  )}
+                  {row.error ? <span className="text-danger">{row.date}</span> : row.date}
+                </div>
+                {row.error && (
+                  <div className="text-danger small">
+                    <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
+                    {row.error}
+                  </div>
+                )}
               </td>
               <td className="border-0" style={tdStyle}>
                 <CreditBadge credit={row.credit} />
-              </td>
-              <td className="border-0" style={tdStyle}>
-                {row.visibility}
               </td>
             </tr>
           ))}
@@ -522,18 +608,18 @@ export function OverrideRuleSummaryCard({
   onRemove,
   onEdit,
   displayTimezone,
-  errors,
+  formErrors,
   dragHandleProps,
 }: {
   rule: OverrideData;
   title: string;
   onEdit?: () => void;
   displayTimezone: string;
-  errors?: string[];
+  formErrors?: RuleFormErrors;
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
 }) {
-  const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone);
+  const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone, formErrors);
 
   const studentLabels =
     rule.appliesTo.targetType === 'student_label' ? rule.appliesTo.studentLabels : [];
@@ -585,16 +671,6 @@ export function OverrideRuleSummaryCard({
         </div>
       </Card.Header>
       <Card.Body>
-        {errors && errors.length > 0 && (
-          <Alert variant="danger" className="mb-3">
-            <ul className="mb-0">
-              {errors.map((msg) => (
-                <li key={msg}>{msg}</li>
-              ))}
-            </ul>
-          </Alert>
-        )}
-
         {overrideFieldItems.length > 0 && <OverrideFieldsList items={overrideFieldItems} />}
 
         {overrideFieldItems.length === 0 && (

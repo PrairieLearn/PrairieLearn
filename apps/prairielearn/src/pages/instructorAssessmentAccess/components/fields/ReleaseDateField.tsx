@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { Form } from 'react-bootstrap';
-import { type Path, useController, useWatch } from 'react-hook-form';
+import { useController, useWatch } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
@@ -15,7 +15,7 @@ function tomorrowLocalDatetime(displayTimezone: string): string {
   return startOfDayDatetime(tomorrowDate(displayTimezone));
 }
 
-function isReleasedNow(value: string, displayTimezone: string): boolean {
+function isReleasedNow(value: string | null, displayTimezone: string): boolean {
   if (!value) return true;
   const release = Temporal.PlainDateTime.from(value);
   const now = Temporal.Now.plainDateTimeISO(displayTimezone);
@@ -29,8 +29,8 @@ function ReleaseDateInput({
   idPrefix,
   displayTimezone,
 }: {
-  value: string;
-  onChange: (value: string) => void;
+  value: string | null;
+  onChange: (value: string | null) => void;
   error?: string;
   idPrefix: string;
   displayTimezone: string;
@@ -73,7 +73,7 @@ function ReleaseDateInput({
             aria-label="Release date"
             aria-invalid={!!error}
             aria-errormessage={error ? `${idPrefix}-release-date-error` : undefined}
-            value={value}
+            value={value ?? ''}
             onChange={({ currentTarget }) => onChange(currentTarget.value)}
           />
           {error && (
@@ -131,8 +131,8 @@ export function OverrideReleaseDateField({
     name: 'mainRule.releaseDate',
   });
 
-  const { field } = useController({
-    name: `overrides.${index}.releaseDate` as Path<AccessControlFormData>,
+  const { field } = useController<AccessControlFormData, `overrides.${number}.releaseDate`>({
+    name: `overrides.${index}.releaseDate`,
   });
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'releaseDate');
@@ -149,7 +149,7 @@ export function OverrideReleaseDateField({
       onRemoveOverride={removeOverride}
     >
       <ReleaseDateInput
-        value={field.value as string}
+        value={field.value}
         idPrefix={`overrides-${index}`}
         displayTimezone={displayTimezone}
         onChange={field.onChange}
