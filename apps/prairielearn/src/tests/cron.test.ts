@@ -18,12 +18,12 @@ describe('Cron', { timeout: 60_000 }, function () {
     const midnight = new Date(now).setHours(0, 0, 0, 0);
     const sinceMidnightMS = now - midnight;
     const dayMS = 24 * 60 * 60 * 1000;
-    const timeToNextMS = 15 * 1000;
+    const timeToNextMS = 3 * 1000;
     const cronDailyMS = (timeToNextMS + sinceMidnightMS) % dayMS;
     config.cronDailySec = cronDailyMS / 1000;
 
     // set all other cron jobs to execute soon
-    config.cronOverrideAllIntervalsSec = 3;
+    config.cronOverrideAllIntervalsSec = 1;
 
     await helperServer.before()();
   });
@@ -31,8 +31,8 @@ describe('Cron', { timeout: 60_000 }, function () {
   afterAll(helperServer.after);
 
   describe('1. cron jobs', () => {
-    it('should wait for cron jobs to run and then stop cron', { timeout: 30_000 }, async () => {
-      await new Promise((resolve) => setTimeout(resolve, 20_000));
+    it('should wait for cron jobs to run and then stop cron', { timeout: 15_000 }, async () => {
+      await new Promise((resolve) => setTimeout(resolve, 8_000));
       // Stop cron and wait for any in-flight jobs to finish. This avoids
       // a race where a job has updated its `date` but hasn't yet written
       // `succeeded_at`, which would cause the next assertion to fail.
