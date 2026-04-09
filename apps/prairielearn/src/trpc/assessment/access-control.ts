@@ -5,6 +5,11 @@ import { z } from 'zod';
 
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
+import {
+  MAX_ACCESS_CONTROL_RULES,
+  MAX_ENROLLMENT_RULES,
+  validateAccessControlRules,
+} from '../../lib/assessment-access-control/validation.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { saveJsonFile } from '../../lib/editorUtil.js';
 import { features } from '../../lib/features/index.js';
@@ -21,14 +26,8 @@ import {
   validateEnrollmentIdsInCourseInstance,
 } from '../../models/enrollment.js';
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
-import {
-  type AccessControlJson,
-  AccessControlJsonSchema,
-  MAX_ACCESS_CONTROL_RULES,
-  MAX_ENROLLMENT_RULES,
-} from '../../schemas/accessControl.js';
+import { type AccessControlJson, AccessControlJsonSchema } from '../../schemas/accessControl.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
-import { validateAccessControlRules } from '../../sync/course-db.js';
 import { throwAppError } from '../app-errors.js';
 
 import {
