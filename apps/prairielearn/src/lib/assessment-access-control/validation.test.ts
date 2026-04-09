@@ -591,21 +591,29 @@ describe('Date ordering validation', () => {
     assert.deepEqual(errors, []);
   });
 
-  it('should not check show-again date ordering when release date but no due date', () => {
+  it('should not check show-again dates when release date but no due date', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         releaseDate: '2024-03-10T00:00:00',
+      },
+      afterComplete: {
+        hideQuestions: true,
+        showQuestionsAgainDate: '2024-03-05T00:00:00',
+        hideScore: true,
+        showScoreAgainDate: '2024-03-05T00:00:00',
       },
     });
     const errors = validateRuleDateOrdering(rule);
     assert.deepEqual(errors, []);
   });
 
-  it('should not check show-again date ordering when no date control', () => {
+  it('should not check show-again dates when no date control', () => {
     const rule = AccessControlJsonSchema.parse({
       afterComplete: {
         hideQuestions: true,
+        showQuestionsAgainDate: '2024-03-23T00:00:00',
         hideScore: true,
+        showScoreAgainDate: '2024-03-23T00:00:00',
       },
     });
     const errors = validateRuleDateOrdering(rule);
