@@ -402,6 +402,13 @@ export function validateRule(
     errors.push('Password cannot be empty.');
   }
 
+  const ald = rule.dateControl?.afterLastDeadline;
+  if (ald && ald.allowSubmissions === false && ald.credit != null) {
+    errors.push(
+      'afterLastDeadline cannot set credit when submissions are not allowed.',
+    );
+  }
+
   const exams = rule.integrations?.prairieTest?.exams ?? [];
   const seenUuids = new Set<string>();
   for (const e of exams) {
