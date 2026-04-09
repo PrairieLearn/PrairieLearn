@@ -12,7 +12,7 @@ import { type ZodSchema, z } from 'zod';
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 
-import { validateAccessControlRules } from '../lib/access-control/validation.js';
+import { validateAccessControlRules } from '../lib/assessment-access-control/validation.js';
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';

@@ -1,11 +1,9 @@
 import {
+  type AccessControlValidationIssue,
+  type AccessControlValidationRule,
   validateGlobalDateConsistencyIssues,
   validateRuleDateOrderingIssues,
-} from '../../../lib/access-control/validation.js';
-import type {
-  AccessControlValidationIssue,
-  AccessControlValidationRule,
-} from '../../../schemas/accessControl.js';
+} from '../../../lib/assessment-access-control/validation.js';
 
 import { type AccessControlFormData, formDataToJson } from './types.js';
 

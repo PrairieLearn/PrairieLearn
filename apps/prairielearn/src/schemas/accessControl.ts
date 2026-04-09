@@ -2,20 +2,6 @@ import { z } from 'zod';
 
 import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 
-// Pure validation functions live in `../../lib/access-control/validation.ts`.
-
-/**
- * Maximum number of access control rules (main + overrides) per assessment.
- * Enforced during both JSON sync and tRPC input validation.
- */
-export const MAX_ACCESS_CONTROL_RULES = 50;
-
-/**
- * Maximum number of enrollment-targeted access control rules per assessment.
- * Enrollment rules are per-student overrides, so a lower limit is appropriate.
- */
-export const MAX_ENROLLMENT_RULES = 100;
-
 export const DeadlineEntryJsonSchema = z
   .object({
     date: DatetimeLocalStringSchema.describe('Date as ISO String for additional deadline'),
@@ -148,27 +134,3 @@ export type AccessControlJson = z.infer<typeof AccessControlJsonSchema>;
 // With no .default() transforms, input and output types are identical.
 // Keep the alias for callers that distinguish conceptually between the two.
 export type AccessControlJsonInput = AccessControlJson;
-
-export type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
-
-export interface AccessControlValidationRule {
-  rule: AccessControlJson;
-  targetType: AccessControlRuleTargetType;
-  ruleIndex: number;
-}
-
-export type AccessControlIssuePath =
-  | ['dateControl', 'releaseDate']
-  | ['dateControl', 'dueDate']
-  | ['dateControl', 'earlyDeadlines', number, 'date']
-  | ['dateControl', 'lateDeadlines', number, 'date']
-  | ['afterComplete', 'showQuestionsAgainDate']
-  | ['afterComplete', 'hideQuestionsAgainDate']
-  | ['afterComplete', 'showScoreAgainDate'];
-
-export interface AccessControlValidationIssue {
-  ruleIndex: number;
-  targetType: AccessControlRuleTargetType;
-  path: AccessControlIssuePath;
-  message: string;
-}
