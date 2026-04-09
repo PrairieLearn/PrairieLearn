@@ -521,7 +521,6 @@ export function TanstackTableCard<RowDataModel>({
   columnManager?: {
     buttons?: ReactNode;
     topContent?: ReactNode;
-    buttonText?: string;
   };
   globalFilter: {
     placeholder: string;
@@ -617,7 +616,6 @@ export function TanstackTableCard<RowDataModel>({
           <ColumnManager
             table={table}
             topContent={columnManager?.topContent}
-            buttonText={columnManager?.buttonText}
           />
           {columnManager?.buttons}
         </div>

@@ -158,7 +158,6 @@ function ColumnItem<RowDataModel>({
 interface ColumnManagerProps<RowDataModel> {
   table: Table<RowDataModel>;
   topContent?: ReactNode;
-  buttonText?: string;
 }
 
 /**
@@ -177,7 +176,6 @@ function findLastIndex<T>(arr: T[], predicate: (value: T, index: number) => bool
 export function ColumnManager<RowDataModel>({
   table,
   topContent,
-  buttonText = 'View',
 }: ColumnManagerProps<RowDataModel>) {
   const [activeElementId, setActiveElementId] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -302,7 +300,7 @@ export function ColumnManager<RowDataModel>({
         id="column-manager"
         variant="tanstack-table"
       >
-        <i className="bi bi-view-list me-2" aria-hidden="true" /> {buttonText}{' '}
+        <i className="bi bi-view-list me-2" aria-hidden="true" /> View{' '}
       </Dropdown.Toggle>
       <Dropdown.Menu
         style={{ maxHeight: '60vh', overflowY: 'auto' }}
