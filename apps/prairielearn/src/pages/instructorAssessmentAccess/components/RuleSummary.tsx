@@ -4,7 +4,6 @@ import { Alert, Button, Card } from 'react-bootstrap';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
-import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 
 import {
   type AfterLastDeadlineValue,
@@ -582,7 +581,6 @@ export function OverrideRuleSummaryCard({
   title,
   onRemove,
   onEdit,
-  courseInstanceId,
   displayTimezone,
   errors,
   dragHandleProps,
@@ -590,15 +588,12 @@ export function OverrideRuleSummaryCard({
   rule: OverrideData;
   title: string;
   onEdit?: () => void;
-  courseInstanceId: string;
   displayTimezone: string;
   errors?: string[];
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
 }) {
   const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone);
-
-  const students = rule.appliesTo.targetType === 'enrollment' ? rule.appliesTo.enrollments : [];
 
   const studentLabels =
     rule.appliesTo.targetType === 'student_label' ? rule.appliesTo.studentLabels : [];
@@ -631,23 +626,20 @@ export function OverrideRuleSummaryCard({
               ))}
             </>
           ) : (
-            <>
-              <span className="d-inline-flex align-items-center gap-1 text-body-secondary small">
-                <i className="bi bi-person" aria-hidden="true" />
-              </span>
-              <strong>{title}</strong>
-            </>
+            <strong>{title}</strong>
           )}
         </div>
         <div className="d-flex gap-2 flex-shrink-0">
           {onEdit && (
-            <Button variant="outline-primary" size="sm" onClick={onEdit}>
-              <i className="bi bi-pencil me-1" /> Edit
+            <Button variant="outline-primary" size="sm" aria-label="Edit" onClick={onEdit}>
+              <i className="bi bi-pencil" aria-hidden="true" />
+              <span className="toolbar-btn-label ms-1">Edit</span>
             </Button>
           )}
           {onRemove && (
-            <Button variant="outline-danger" size="sm" onClick={onRemove}>
-              <i className="bi bi-trash me-1" /> Remove
+            <Button variant="outline-danger" size="sm" aria-label="Remove" onClick={onRemove}>
+              <i className="bi bi-trash" aria-hidden="true" />
+              <span className="toolbar-btn-label ms-1">Remove</span>
             </Button>
           )}
         </div>
@@ -665,21 +657,7 @@ export function OverrideRuleSummaryCard({
 
         {overrideFieldItems.length > 0 && <OverrideFieldsList items={overrideFieldItems} />}
 
-        {students.length > 0 && (
-          <div className="mb-2">
-            <span className="text-body-secondary">Applies to: </span>
-            {students.map((student, idx) => (
-              <span key={student.enrollmentId}>
-                <a href={getStudentEnrollmentUrl(courseInstanceId, student.enrollmentId)}>
-                  {student.name ?? student.uid}
-                </a>
-                {idx < students.length - 1 && ', '}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {overrideFieldItems.length === 0 && students.length === 0 && (
+        {overrideFieldItems.length === 0 && (
           <p className="text-body-secondary mb-0">No specific settings configured</p>
         )}
       </Card.Body>

@@ -153,6 +153,10 @@ The different types of dependency properties available are summarized in this ta
 
 Additional details about how to access these fields from `server.py` can be found in the [`server.py` documentation](server.md#accessing-files-on-disk).
 
+!!! warning
+
+    Keep in mind that node module dependencies should be avoided, as they may be updated without warning, which in some cases may break your question. More information can be found in the [element developer guide](../devElements.md#using-node-dependencies-in-element-code).
+
 ### Non-randomized questions
 
 While it is recommended that all questions contain random parameters, sometimes it is impractical to do this. For questions that don't have a meaningful amount of randomization in them, the `info.json` file should set `"singleVariant": true`. This has the following effects:

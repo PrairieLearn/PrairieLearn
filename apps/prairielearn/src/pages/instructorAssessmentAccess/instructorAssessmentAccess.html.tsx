@@ -303,7 +303,7 @@ export function InstructorAssessmentAccessNew({
   initialData,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
-  origHash: string;
+  origHash: string | null;
   trpcCsrfToken: string;
   initialData: AccessControlJsonWithId[];
 }) {
@@ -315,7 +315,10 @@ export function InstructorAssessmentAccessNew({
   return PageLayout({
     resLocals,
     pageTitle: 'Access',
-    headContent: [compiledStylesheetTag('splitPane.css')],
+    headContent: [
+      compiledStylesheetTag('splitPane.css'),
+      compiledStylesheetTag('instructorAssessmentAccess.css'),
+    ],
     navContext: {
       type: 'instructor',
       page: 'assessment',
