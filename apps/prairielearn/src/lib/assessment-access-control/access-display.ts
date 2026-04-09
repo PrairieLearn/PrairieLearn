@@ -414,15 +414,15 @@ export function buildModernAccessDisplayModel({
         showCompletionBadges && afterComplete?.hideQuestions !== undefined
           ? {
               hideQuestions: afterComplete.hideQuestions,
-              showAgainDate: afterComplete?.showQuestionsAgainDate,
-              hideAgainDate: afterComplete?.hideQuestionsAgainDate,
+              showAgainDate: afterComplete.showQuestionsAgainDate,
+              hideAgainDate: afterComplete.hideQuestionsAgainDate,
             }
           : undefined,
       scoreVisibility:
         showCompletionBadges && afterComplete?.hideScore !== undefined
           ? {
               hideScore: afterComplete.hideScore,
-              showAgainDate: afterComplete?.showScoreAgainDate,
+              showAgainDate: afterComplete.showScoreAgainDate,
             }
           : undefined,
     },
