@@ -15,6 +15,7 @@ import {
   DATE_CONTROL_FIELD_NAMES,
   type DeadlineEntry,
   type MainRuleData,
+  type OverridableFieldName,
   type OverrideData,
 } from './types.js';
 
@@ -24,7 +25,7 @@ function isMainRuleData(rule: RuleData): rule is MainRuleData {
   return 'dateControlEnabled' in rule;
 }
 
-function isOverrideFieldActive(rule: RuleData, fieldName: string): boolean {
+function isOverrideFieldActive(rule: RuleData, fieldName: OverridableFieldName): boolean {
   if (isMainRuleData(rule)) return true;
   return rule.overriddenFields.includes(fieldName);
 }
@@ -155,7 +156,7 @@ function buildAccessDisplayModelForRule(
       passwordRequired:
         isOverrideFieldActive(rule, 'password') && rule.password != null && rule.password !== '',
       prairieTestExamCount:
-        isMain && rule.prairieTestEnabled ? rule.prairieTestExams.length : undefined,
+        isMain && rule.prairieTestExams.length > 0 ? rule.prairieTestExams.length : undefined,
       questionVisibility:
         !rule.afterLastDeadline && isOverrideFieldActive(rule, 'questionVisibility')
           ? {

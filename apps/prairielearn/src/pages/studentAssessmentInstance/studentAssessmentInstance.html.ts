@@ -820,9 +820,7 @@ function AssessmentStatus({
     `;
   }
 
-  return html`
-    <div>Assessment is <strong>closed</strong> and you cannot answer questions.</div>
-  `;
+  return html` <div>Assessment is <strong>closed</strong> and you cannot answer questions.</div> `;
 }
 
 function RealTimeGradingInformationAlert({

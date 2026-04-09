@@ -112,8 +112,9 @@ function dbBaseRowToAccessControlJson(
   const rule = row.access_control_rule;
   const dateControl: AccessControlJson['dateControl'] = {};
 
-  if (rule.date_control_release_date_overridden) {
-    dateControl.releaseDate = rule.date_control_release_date?.toISOString() ?? null;
+  // TODO: Make sure this is correct, update the data model now that (cleared) release dates are not allowed.
+  if (rule.date_control_release_date_overridden && rule.date_control_release_date) {
+    dateControl.releaseDate = rule.date_control_release_date.toISOString();
   }
   if (rule.date_control_due_date_overridden) {
     dateControl.dueDate = rule.date_control_due_date?.toISOString() ?? null;
