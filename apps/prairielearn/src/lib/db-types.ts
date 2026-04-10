@@ -238,14 +238,13 @@ export const AssessmentAccessControlRuleSchema = z.object({
   date_control_password: z.string().nullable(),
   date_control_password_overridden: z.boolean(),
   date_control_release_date: DateFromISOString.nullable(),
-  date_control_release_date_overridden: z.boolean(),
 
   id: IdSchema,
   list_before_release: z.boolean().nullable(),
   number: z.number(),
 
-  // Target type: 'none' for main rule (applies to all), 'enrollment' for individual students, 'student_label' for labels
-  target_type: z.enum(['none', 'enrollment', 'student_label']),
+  // Target type: 'none' for main rule (applies to all), 'student_label' for labels, 'enrollment' for individual students
+  target_type: z.enum(['none', 'student_label', 'enrollment']),
 });
 export type AssessmentAccessControlRule = z.infer<typeof AssessmentAccessControlRuleSchema>;
 

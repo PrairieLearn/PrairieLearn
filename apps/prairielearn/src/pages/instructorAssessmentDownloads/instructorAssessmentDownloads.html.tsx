@@ -23,6 +23,8 @@ export interface Filenames {
   finalFilesZipFilename: string;
   bestFilesZipFilename: string;
   allFilesZipFilename: string;
+  canvasScoresCsvFilename: string;
+  canvasPointsCsvFilename: string;
   groupsCsvFilename?: string;
   scoresGroupCsvFilename?: string;
   scoresGroupAllCsvFilename?: string;
@@ -279,6 +281,34 @@ export function InstructorAssessmentDownloads({
                     </tr>
                   `
                 : ''}
+              <tr>
+                <td>
+                  <a
+                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
+                      .id}/downloads/${filenames.canvasScoresCsvFilename}"
+                    >${filenames.canvasScoresCsvFilename}</a
+                  >
+                </td>
+                <td>
+                  Percentage scores for each student, formatted for import into Canvas. Only users
+                  with the Student role are included. Scores range from 0 to 100 (or higher if bonus
+                  credit was given).
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a
+                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
+                      .id}/downloads/${filenames.canvasPointsCsvFilename}"
+                    >${filenames.canvasPointsCsvFilename}</a
+                  >
+                </td>
+                <td>
+                  Total points for each student, formatted for import into Canvas. Only users with
+                  the Student role are included. Points range from 0 to the maximum for this
+                  assessment (or higher if bonus credit was given).
+                </td>
+              </tr>
               <tr>
                 <td>
                   <a

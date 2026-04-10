@@ -18,9 +18,11 @@ export const CourseAssessmentRowSchema = z.object({
   assessment_number: AssessmentSchema.shape.number,
   assessment_set_number: AssessmentSetSchema.shape.number,
   assessment_set_id: AssessmentSetSchema.shape.id,
+  assessment_set_name: z.string(),
   assessment_set_heading: z.string(),
   color: AssessmentSetSchema.shape.color,
   label: z.string(),
+  max_points: AssessmentSchema.shape.max_points,
 });
 export type CourseAssessmentRow = z.infer<typeof CourseAssessmentRowSchema>;
 
@@ -49,6 +51,8 @@ export const GradebookRowSchema = z.object({
     z
       .object({
         score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
+        points: AssessmentInstanceSchema.shape.points.nullable(),
+        max_points: AssessmentInstanceSchema.shape.max_points.nullable(),
         assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),
         uid_other_users_group: OtherGroupUserSchema.array(),
       })

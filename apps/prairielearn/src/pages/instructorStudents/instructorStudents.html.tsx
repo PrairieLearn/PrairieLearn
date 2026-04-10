@@ -16,7 +16,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 import z from 'zod';
 
@@ -24,6 +24,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
 import {
   CategoricalColumnFilter,
+  IndeterminateCheckbox,
   MultiSelectColumnFilter,
   NuqsAdapter,
   OverlayTrigger,
@@ -57,39 +58,6 @@ import { MAX_LABEL_UIDS } from '../instructorStudentsLabels/instructorStudentsLa
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
 import { SyncStudentsModal } from './components/SyncStudentsModal.js';
 import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
-
-function IndeterminateCheckbox({
-  checked,
-  indeterminate,
-  disabled,
-  onChange,
-  'aria-label': ariaLabel,
-}: {
-  checked: boolean;
-  indeterminate: boolean;
-  disabled?: boolean;
-  onChange: () => void;
-  'aria-label': string;
-}) {
-  const checkboxRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (checkboxRef.current) {
-      checkboxRef.current.indeterminate = indeterminate;
-    }
-  }, [indeterminate]);
-
-  return (
-    <input
-      ref={checkboxRef}
-      type="checkbox"
-      checked={checked}
-      disabled={disabled}
-      aria-label={ariaLabel}
-      onChange={onChange}
-    />
-  );
-}
 
 function SelectAllCheckbox({ table }: { table: Table<StudentRow> }) {
   return (

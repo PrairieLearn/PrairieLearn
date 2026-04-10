@@ -206,6 +206,7 @@
         "studentPermissions": {
           "description": "Student permissions for group management.",
           "type": "object",
+          "additionalProperties": false,
           "properties": {
             "canCreateGroup": {
               "description": "Whether students can create groups.",
@@ -233,6 +234,7 @@
         "rolePermissions": {
           "description": "Role-based permissions for group assessments.",
           "type": "object",
+          "additionalProperties": false,
           "properties": {
             "canAssignRoles": {
               "description": "Role names that can assign other users to roles.",
@@ -691,6 +693,7 @@
     "GroupsRoleJsonSchema": {
       "description": "A custom role for use in group assessments.",
       "type": "object",
+      "additionalProperties": false,
       "required": ["name"],
       "properties": {
         "name": {
@@ -736,7 +739,7 @@
           }
         },
         "listBeforeRelease": {
-          "description": "Main rule only. Whether to list the assessment title before the release date. Students can see the title but cannot open the assessment. Defaults to false.",
+          "description": "Only valid on the first entry (defaults). Whether to list the assessment title before the release date. Students can see the title but cannot open the assessment. Defaults to false.",
           "type": "boolean"
         },
         "dateControl": {
@@ -744,15 +747,8 @@
           "additionalProperties": false,
           "properties": {
             "releaseDate": {
-              "description": "Release date as ISO String. If absent or null, no date-based access is granted.",
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/DatetimeLocalStringSchema"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "description": "Release date as ISO String",
+              "$ref": "#/definitions/DatetimeLocalStringSchema"
             },
             "dueDate": {
               "description": "Due date as ISO String",
@@ -877,7 +873,7 @@
           "additionalProperties": false,
           "properties": {
             "hideQuestions": {
-              "description": "Whether to hide questions after assessment completion. When true, questions are hidden until showQuestionsAgainDate (if set).",
+              "description": "Whether to hide questions after assessment completion. When false, questions are shown until showQuestionsAgainDate (if set).",
               "type": "boolean"
             },
             "showQuestionsAgainDate": {
@@ -937,7 +933,8 @@
         "credit": {
           "description": "Amount of credit as a percent to allow",
           "type": "number",
-          "minimum": 0
+          "minimum": 0,
+          "maximum": 200
         }
       }
     }

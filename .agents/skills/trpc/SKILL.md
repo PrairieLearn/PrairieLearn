@@ -52,15 +52,22 @@ See any existing scope (e.g. `trpc/assessment/`) for the exact boilerplate. The 
 - Use role-scoped schemas from `lib/client/safe-db-types.ts` (e.g. `StaffStudentLabelSchema`). Always `.parse()` records through the schema before returning.
 - Use existing model functions from `models/` instead of one-off SQL.
 
+### Client-side queries and mutations
+
+- Use `trpc.subrouter.procedure.queryOptions()` with `useQuery()` for queries. Do **not** manually construct `{ queryKey, queryFn }` objects — the generated `queryOptions()` provides type-safe keys and avoids stale cache issues.
+- Use `trpc.subrouter.procedure.mutationOptions()` with `useMutation()` for mutations.
+- Access the `trpc` proxy via the scope's `useTRPC()` hook from `context.ts`.
+
 ### Client-side CSRF flow
 
 The CSRF token is generated server-side with `generatePrefixCsrfToken` using the scope's URL helper from `lib/client/url.ts`, passed as a prop to the hydrated component, and sent by the tRPC client as an `X-CSRF-Token` header. The Express CSRF middleware validates it before the request reaches the tRPC router.
 
 ## Errors
 
-- **Default to plain `TRPCError`** with a human-readable message. Use `throwAppError` only when the client needs structured metadata or must take structurally different actions per error code.
+- **Default to plain `TRPCError`** with a human-readable message. Use `throwAppError` only when the client needs structured metadata (extra fields beyond `message`) or must take structurally different actions per error code. If the error message is static and displayed as-is, a plain `TRPCError` is sufficient — reserve app errors for cases where the client needs dynamic, structured data (e.g., a job sequence ID to link to).
 - **Every subrouter** exports an error interface (empty if no typed errors). See `trpc/courseInstance/student-labels.ts` (typed) and `trpc/administrator/courses.ts` (empty).
-- **Client must always** use `getAppError<ErrorType>(mutation.error)` — never access raw errors directly. Always handle the `'BASIC'` fallback code. Never pass raw mutation/query errors as props; pass the resolved `AppError<T>` instead.
+- **`message: string` is automatically included** by `throwAppError` and `getAppError` — do not declare it in error type definitions. Only declare procedure-specific fields (e.g., `jobSequenceId`).
+- **Client must always** use `getAppError<ErrorType>(mutation.error)` — never access raw errors directly. Always handle the `'UNKNOWN'` fallback code (for untyped errors). Never pass raw mutation/query errors as props; pass the resolved `AppError<T>` instead.
 - See `pages/instructorStudentsLabels/components/LabelModifyModal.tsx` (typed client) and `pages/administratorCourses/administratorCourses.html.tsx` (plain client) for examples.
 
 ## Testing

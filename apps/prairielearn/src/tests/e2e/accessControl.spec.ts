@@ -46,7 +46,7 @@ async function navigateToAccessPage(page: Page, courseInstanceId: string, assess
 
 /** Returns the split-pane detail panel used for editing rules. */
 function getDetailPanel(page: Page): Locator {
-  return page.locator('#split-pane-detail');
+  return page.locator('#pl-ui-split-pane-detail');
 }
 
 /** Returns the currently visible modal dialog (e.g. delete confirmation). */
@@ -86,7 +86,7 @@ test.describe('Access control UI', () => {
     });
     await navigateToAccessPage(page, courseInstance.id, assessment.id);
 
-    await expect(page.getByRole('heading', { name: 'Main rule' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Defaults' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Overrides' })).toBeVisible();
     await expect(page.getByRole('button', { name: /Add override/i })).toBeVisible();
 
@@ -114,19 +114,14 @@ test.describe('Access control UI', () => {
     const panel = getDetailPanel(page);
     await expect(panel).toBeVisible();
 
-    // Select "Student labels" radio in "Applies to"
-    await panel.getByLabel('Student labels').check();
+    // Select "Students by label" radio in "Applies to"
+    await panel.getByLabel('Students by label').check();
 
-    // Click "Add student labels" button to open the popover
-    await panel.getByRole('button', { name: /Add student labels/i }).click();
+    // Click "Select labels" dropdown to open it
+    await panel.getByRole('button', { name: /Select labels/i }).click();
 
-    // Select "Extra time" from the student label list in the popover
-    const popover = page.locator('[data-popper-placement]');
-    await expect(popover).toBeVisible();
-    await popover.getByText('Extra time').click();
-
-    // Click "Add 1 student label" button
-    await popover.getByRole('button', { name: /Add 1 student label/i }).click();
+    // Select "Extra time" from the dropdown menu
+    await page.getByRole('checkbox', { name: 'Extra time' }).click();
 
     // Close the detail panel
     await panel.getByRole('button', { name: 'Close detail panel' }).click();
@@ -170,7 +165,7 @@ test.describe('Access control UI', () => {
     // Confirm deletion in modal
     const modal = getVisibleModal(page);
     await expect(modal).toBeVisible();
-    await expect(modal.getByText('Delete override rule')).toBeVisible();
+    await expect(modal.getByText('Delete override')).toBeVisible();
     await modal.getByRole('button', { name: 'Delete' }).click();
     await expect(modal).not.toBeVisible();
 
@@ -221,8 +216,9 @@ test.describe('Access control UI', () => {
     // Override question visibility
     await panel.getByRole('button', { name: 'Override Question visibility' }).click();
 
-    // Select "Hide questions permanently"
-    await panel.getByLabel('Hide questions permanently').check();
+    // Select "Hide questions permanently" from the RichSelect dropdown
+    await panel.getByRole('button', { name: /Question visibility/i }).click();
+    await page.getByRole('option', { name: /Hide questions permanently/i }).click();
 
     // Close the detail panel
     await panel.getByRole('button', { name: 'Close detail panel' }).click();

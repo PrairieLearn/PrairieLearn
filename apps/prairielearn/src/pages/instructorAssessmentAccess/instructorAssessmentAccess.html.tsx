@@ -13,9 +13,9 @@ import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import type { AccessControlJsonWithId } from '../../models/assessment-access-control-rules.js';
 
 import { AssessmentAccessControl } from './components/AssessmentAccessControl.js';
-import type { AccessControlJsonWithId } from './components/types.js';
 
 export const AssessmentAccessRulesSchema = z.object({
   mode: z.string(),
@@ -303,7 +303,7 @@ export function InstructorAssessmentAccessNew({
   initialData,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
-  origHash: string;
+  origHash: string | null;
   trpcCsrfToken: string;
   initialData: AccessControlJsonWithId[];
 }) {
@@ -315,7 +315,10 @@ export function InstructorAssessmentAccessNew({
   return PageLayout({
     resLocals,
     pageTitle: 'Access',
-    headContent: [compiledStylesheetTag('splitPane.css')],
+    headContent: [
+      compiledStylesheetTag('splitPane.css'),
+      compiledStylesheetTag('instructorAssessmentAccess.css'),
+    ],
     navContext: {
       type: 'instructor',
       page: 'assessment',

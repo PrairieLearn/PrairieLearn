@@ -65,6 +65,7 @@ export function LabelModifyModal({
     register,
     handleSubmit,
     setError,
+    reset,
     formState: { errors },
     watch,
   } = useForm<LabelFormValues>({
@@ -132,12 +133,6 @@ export function LabelModifyModal({
     if (!appError) return null;
 
     switch (appError.code) {
-      case 'LABEL_NAME_TAKEN':
-        return (
-          <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
-            A label named &ldquo;{appError.name}&rdquo; already exists.
-          </Alert>
-        );
       case 'SYNC_JOB_FAILED':
         return (
           <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
@@ -147,7 +142,7 @@ export function LabelModifyModal({
             </a>
           </Alert>
         );
-      case 'BASIC':
+      case 'UNKNOWN':
         return (
           <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
             {appError.message}
@@ -206,6 +201,7 @@ export function LabelModifyModal({
       onExited={() => {
         setStage({ type: 'editing' });
         saveMutation.reset();
+        reset();
         onExited?.();
       }}
     >
