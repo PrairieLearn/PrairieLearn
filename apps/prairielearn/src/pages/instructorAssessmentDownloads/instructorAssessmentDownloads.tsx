@@ -8,13 +8,16 @@ import { z } from 'zod';
 import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/react/server';
 
+import { PageLayout } from '../../components/PageLayout.js';
 import {
   CANVAS_CSV_FIXED_COLUMNS,
   CANVAS_CSV_POINTS_POSSIBLE_NAME,
   canvasPointsPossibleValue,
   canvasStudentRecord,
 } from '../../lib/canvas-csv.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import {
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
@@ -342,11 +345,43 @@ async function pipeCursorToArchive<T>(
 router.get(
   '/',
   typedAsyncHandler<'assessment'>(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
+    const { assessment, assessment_set, urlPrefix, authz_data } = extractPageContext(res.locals, {
+      pageType: 'assessment',
+      accessType: 'instructor',
+    });
+
+    if (!authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
+
+    const filenames = getFilenames(res.locals);
+
     res.send(
-      InstructorAssessmentDownloads({ resLocals: res.locals, filenames: getFilenames(res.locals) }),
+      PageLayout({
+        resLocals: res.locals,
+        pageTitle: 'Downloads',
+        navContext: {
+          type: 'instructor',
+          page: 'assessment',
+          subPage: 'downloads',
+        },
+        options: {
+          fullWidth: true,
+        },
+        content: (
+          <Hydrate>
+            <InstructorAssessmentDownloads
+              urlPrefix={urlPrefix}
+              assessmentId={String(assessment.id)}
+              assessmentSetName={assessment_set.name}
+              assessmentNumber={assessment.number}
+              isMultipleInstance={assessment.multiple_instance}
+              isTeamWork={assessment.team_work}
+              filenames={filenames}
+            />
+          </Hydrate>
+        ),
+      }),
     );
   }),
 );
