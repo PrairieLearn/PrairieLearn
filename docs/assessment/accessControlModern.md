@@ -148,18 +148,18 @@ By default, questions are hidden and scores are shown after completion.
 
 #### `afterComplete.questions`
 
-| Field          | Type    | Default | Description                                                   |
-| -------------- | ------- | ------- | ------------------------------------------------------------- |
-| `hidden`       | boolean | `true`  | If `true`, questions are hidden after assessment completion.  |
-| `visibleFrom`  | string  |         | ISO datetime. Date to reveal questions back to students.      |
-| `visibleUntil` | string  |         | ISO datetime. Date to re-hide questions after revealing them. |
+| Field          | Type           | Default | Description                                                   |
+| -------------- | -------------- | ------- | ------------------------------------------------------------- |
+| `hidden`       | boolean        | `true`  | If `true`, questions are hidden after assessment completion.  |
+| `visibleFrom`  | string or null |         | ISO datetime. Date to reveal questions back to students.      |
+| `visibleUntil` | string or null |         | ISO datetime. Date to re-hide questions after revealing them. |
 
 #### `afterComplete.score`
 
-| Field         | Type    | Default | Description                                                 |
-| ------------- | ------- | ------- | ----------------------------------------------------------- |
-| `hidden`      | boolean | `false` | If `true`, the score is hidden after assessment completion. |
-| `visibleFrom` | string  |         | ISO datetime. Date to reveal the score to students.         |
+| Field         | Type           | Default | Description                                                 |
+| ------------- | -------------- | ------- | ----------------------------------------------------------- |
+| `hidden`      | boolean        | `false` | If `true`, the score is hidden after assessment completion. |
+| `visibleFrom` | string or null |         | ISO datetime. Date to reveal the score to students.         |
 
 !!! warning
 
@@ -172,6 +172,8 @@ The visibility logic follows a toggle pattern:
 3. At `questions.visibleUntil`, questions are hidden again.
 
 The same logic applies to `score.hidden` / `score.visibleFrom` (there is no "visible until" for scores).
+
+When overriding `afterComplete.questions`, always include `hidden`, `visibleFrom`, and `visibleUntil`. Use `visibleFrom: null` and `visibleUntil: null` to clear inherited visibility dates. When overriding `afterComplete.score`, always include `hidden` and `visibleFrom`; use `visibleFrom: null` to clear the inherited score visibility date.
 
 ### Other fields
 

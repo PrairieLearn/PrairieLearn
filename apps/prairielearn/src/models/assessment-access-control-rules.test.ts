@@ -121,4 +121,27 @@ describe('dbRowToAccessControlJson', () => {
       credit: null,
     });
   });
+
+  it('emits explicit null afterComplete visibility dates for overrides', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          target_type: 'student_label',
+          number: 1,
+          after_complete_questions_hidden: true,
+          after_complete_score_hidden: true,
+        },
+      }),
+    );
+
+    expect(result.afterComplete?.questions).toEqual({
+      hidden: true,
+      visibleFrom: null,
+      visibleUntil: null,
+    });
+    expect(result.afterComplete?.score).toEqual({
+      hidden: true,
+      visibleFrom: null,
+    });
+  });
 });

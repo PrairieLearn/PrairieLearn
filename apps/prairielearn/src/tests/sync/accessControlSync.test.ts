@@ -355,7 +355,7 @@ describe('Access control syncing', () => {
         assert.isFalse(override.date_control_after_last_deadline_credit_overridden);
       }));
 
-    it('afterComplete override with one field: only that field is set', () =>
+    it('afterComplete override with explicit null visibility dates sets those fields', () =>
       runInTransactionAndRollback(async () => {
         const labelName = 'Test Label';
         const mainRule = makeAccessControlRule({
@@ -374,7 +374,7 @@ describe('Access control syncing', () => {
         const overrideRule: AccessControlJsonInput = {
           labels: [labelName],
           afterComplete: {
-            questions: { hidden: false },
+            questions: { hidden: false, visibleFrom: null, visibleUntil: null },
           },
         };
         const { syncedRules } = await syncRulesAndRead([mainRule, overrideRule], {
@@ -383,10 +383,9 @@ describe('Access control syncing', () => {
         const override = syncedRules.find((r) => r.target_type === 'student_label');
         assert.isOk(override);
         assert.equal(override.after_complete_questions_hidden, false);
-        // Date fields not set on the override should have overridden=false
-        assert.isFalse(override.after_complete_questions_visible_from_overridden);
+        assert.isTrue(override.after_complete_questions_visible_from_overridden);
         assert.isNull(override.after_complete_questions_visible_from);
-        assert.isFalse(override.after_complete_questions_visible_until_overridden);
+        assert.isTrue(override.after_complete_questions_visible_until_overridden);
         assert.isNull(override.after_complete_questions_visible_until);
         assert.isNull(override.after_complete_score_hidden);
         assert.isFalse(override.after_complete_score_visible_from_overridden);
@@ -1592,7 +1591,7 @@ describe('Access control syncing', () => {
         assert.isNull(override.rule.dateControl?.afterLastDeadline?.credit);
       }));
 
-    it('preserves questions.hidden without questions.visibleUntil on override', () =>
+    it('preserves explicit null afterComplete question visibility on override', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
         const labelName = 'Test Label';
@@ -1601,7 +1600,7 @@ describe('Access control syncing', () => {
         const mainRule = makeAccessControlRule();
         const overrideRule: AccessControlJsonInput = {
           labels: [labelName],
-          afterComplete: { questions: { hidden: true } },
+          afterComplete: { questions: { hidden: true, visibleFrom: null, visibleUntil: null } },
         };
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
@@ -1613,10 +1612,14 @@ describe('Access control syncing', () => {
         const rules = await selectAccessControlRulesForAssessment(assessment);
         const override = rules.find((r) => r.number > 0);
         assert.isOk(override);
-        assert.equal(override.rule.afterComplete?.questions?.hidden, true);
+        const questions = override.rule.afterComplete?.questions;
+        assert.isOk(questions);
+        assert.equal(questions.hidden, true);
+        assert.isNull(questions.visibleFrom);
+        assert.isNull(questions.visibleUntil);
       }));
 
-    it('preserves score.hidden without score.visibleFrom on override', () =>
+    it('preserves explicit null afterComplete score visibility on override', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
         const labelName = 'Test Label';
@@ -1625,7 +1628,7 @@ describe('Access control syncing', () => {
         const mainRule = makeAccessControlRule();
         const overrideRule: AccessControlJsonInput = {
           labels: [labelName],
-          afterComplete: { score: { hidden: true } },
+          afterComplete: { score: { hidden: true, visibleFrom: null } },
         };
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
@@ -1637,7 +1640,10 @@ describe('Access control syncing', () => {
         const rules = await selectAccessControlRulesForAssessment(assessment);
         const override = rules.find((r) => r.number > 0);
         assert.isOk(override);
-        assert.equal(override.rule.afterComplete?.score?.hidden, true);
+        const score = override.rule.afterComplete?.score;
+        assert.isOk(score);
+        assert.equal(score.hidden, true);
+        assert.isNull(score.visibleFrom);
       }));
 
     it('override dateControl round-trips correctly', () =>

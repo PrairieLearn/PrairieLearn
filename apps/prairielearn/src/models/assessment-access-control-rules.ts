@@ -159,15 +159,25 @@ function dbBaseRowToAccessControlJson(
   if (qHidden === null) {
     questions = undefined;
   } else if (qHidden === false) {
-    questions = { hidden: false as const };
+    questions = {
+      hidden: false as const,
+      ...(isOverride ? { visibleFrom: null, visibleUntil: null } : {}),
+    };
   } else if (qVisibleFrom != null && qVisibleFrom.length > 0) {
     questions = {
       hidden: true as const,
       visibleFrom: qVisibleFrom,
-      ...(qVisibleUntil !== undefined && { visibleUntil: qVisibleUntil }),
+      ...(qVisibleUntil !== undefined
+        ? { visibleUntil: qVisibleUntil }
+        : isOverride
+          ? { visibleUntil: null }
+          : {}),
     };
   } else {
-    questions = { hidden: true as const };
+    questions = {
+      hidden: true as const,
+      ...(isOverride ? { visibleFrom: null, visibleUntil: null } : {}),
+    };
   }
 
   type ScoreJson = NonNullable<NonNullable<AccessControlJson['afterComplete']>['score']>;
@@ -180,11 +190,11 @@ function dbBaseRowToAccessControlJson(
   if (sHidden === null) {
     score = undefined;
   } else if (sHidden === false) {
-    score = { hidden: false as const };
+    score = { hidden: false as const, ...(isOverride ? { visibleFrom: null } : {}) };
   } else if (sVisibleFrom !== undefined) {
     score = { hidden: true as const, visibleFrom: sVisibleFrom };
   } else {
-    score = { hidden: true as const };
+    score = { hidden: true as const, ...(isOverride ? { visibleFrom: null } : {}) };
   }
 
   const afterComplete: AccessControlJson['afterComplete'] = {};

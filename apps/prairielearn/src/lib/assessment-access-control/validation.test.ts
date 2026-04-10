@@ -1094,3 +1094,60 @@ describe('afterLastDeadline validation', () => {
     assert.deepEqual(errors, []);
   });
 });
+
+describe('afterComplete override validation', () => {
+  it('should accept omitted visibility fields on defaults', () => {
+    const rule = AccessControlJsonSchema.parse({
+      afterComplete: {
+        questions: { hidden: true },
+        score: { hidden: true },
+      },
+    });
+    const errors = validateRule(rule, 'none');
+    assert.deepEqual(errors, []);
+  });
+
+  it('should reject omitted question visibility fields on overrides', () => {
+    const rule = AccessControlJsonSchema.parse({
+      afterComplete: {
+        questions: { hidden: true },
+      },
+    });
+    const errors = validateRule(rule, 'student_label');
+    assert.isTrue(
+      errors.some((error) =>
+        error.includes('afterComplete.questions.visibleFrom must be explicitly set on overrides'),
+      ),
+    );
+    assert.isTrue(
+      errors.some((error) =>
+        error.includes('afterComplete.questions.visibleUntil must be explicitly set on overrides'),
+      ),
+    );
+  });
+
+  it('should reject omitted score visibility fields on overrides', () => {
+    const rule = AccessControlJsonSchema.parse({
+      afterComplete: {
+        score: { hidden: true },
+      },
+    });
+    const errors = validateRule(rule, 'student_label');
+    assert.isTrue(
+      errors.some((error) =>
+        error.includes('afterComplete.score.visibleFrom must be explicitly set on overrides'),
+      ),
+    );
+  });
+
+  it('should accept explicit null visibility fields on overrides', () => {
+    const rule = AccessControlJsonSchema.parse({
+      afterComplete: {
+        questions: { hidden: true, visibleFrom: null, visibleUntil: null },
+        score: { hidden: true, visibleFrom: null },
+      },
+    });
+    const errors = validateRule(rule, 'student_label');
+    assert.deepEqual(errors, []);
+  });
+});

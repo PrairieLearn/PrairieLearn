@@ -1580,10 +1580,12 @@ describe('mergeRules', () => {
       toRuntime({
         afterComplete: {
           questions: {
+            hidden: true,
             visibleFrom: null,
             visibleUntil: null,
           },
           score: {
+            hidden: true,
             visibleFrom: null,
           },
         },
