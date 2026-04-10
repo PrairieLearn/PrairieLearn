@@ -43,8 +43,13 @@ export function StudentAssessmentInstanceBody({
   const [showTimeLimitExpired, setShowTimeLimitExpired] = useState(showTimeLimitExpiredModal);
   const [activeLockpointZoneId, setActiveLockpointZoneId] = useState<string | null>(null);
   const [lockpointConfirmed, setLockpointConfirmed] = useState(false);
-  const { active, authorizedEdit, creditDateString, hasPassword, showClosedAssessment } =
-    authzResult;
+  const {
+    active,
+    authorized_edit: authorizedEdit,
+    credit_date_string: creditDateString,
+    has_password: hasPassword,
+    show_closed_assessment: showClosedAssessment,
+  } = authzResult;
 
   const assessmentInstanceOpen = !!assessmentInstance.open;
   const allQuestionsDisabled = !someQuestionsAllowRealTimeGrading;

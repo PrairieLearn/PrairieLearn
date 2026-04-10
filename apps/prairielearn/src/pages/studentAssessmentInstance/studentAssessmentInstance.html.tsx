@@ -24,11 +24,11 @@ import {
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
+  StaffInstanceQuestionSchema,
   StudentAssessmentInstanceAuthzResultSchema,
   StudentAssessmentQuestionSchema,
   StudentAssessmentSchema,
   StudentAssessmentSetSchema,
-  StudentInstanceQuestionSchema,
   StudentQuestionSchema,
   StudentZoneSchema,
 } from '../../lib/client/safe-db-types.js';
@@ -46,7 +46,7 @@ import {
 } from './components/types.js';
 
 export const InstanceQuestionRowSchema = z.object({
-  instance_question: StudentInstanceQuestionSchema,
+  instance_question: StaffInstanceQuestionSchema,
   zone: StudentZoneSchema,
   assessment_question: StudentAssessmentQuestionSchema,
   question: StudentQuestionSchema,
@@ -329,7 +329,7 @@ export function StudentAssessmentInstance({
               serverRemainingMS: resLocals.assessment_instance_remaining_ms,
               serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
               serverUpdateURL: `${resLocals.urlPrefix}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
-              canTriggerFinish: authzResult.authorizedEdit,
+              canTriggerFinish: authzResult.authorized_edit,
               showsTimeoutWarning: true,
               reloadOnFail: true,
               csrfToken: resLocals.__csrf_token,
