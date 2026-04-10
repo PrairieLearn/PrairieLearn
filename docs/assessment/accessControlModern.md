@@ -60,11 +60,15 @@ Below is a complete skeleton showing all available fields. All fields are option
         }
       },
       "afterComplete": {
-        "hideQuestions": true,
-        "showQuestionsAgainDate": "2025-03-01T00:00:01",
-        "hideQuestionsAgainDate": "2025-06-01T00:00:01",
-        "hideScore": true,
-        "showScoreAgainDate": "2025-03-01T00:00:01"
+        "questions": {
+          "hidden": true,
+          "visibleFrom": "2025-03-01T00:00:01",
+          "visibleUntil": "2025-06-01T00:00:01"
+        },
+        "score": {
+          "hidden": true,
+          "visibleFrom": "2025-03-01T00:00:01"
+        }
       }
     },
     {
@@ -96,12 +100,14 @@ Controls when the assessment is available and how credit is computed over time.
 
 #### `afterLastDeadline`
 
-| Field              | Type    | Default     | Description                                                    |
-| ------------------ | ------- | ----------- | -------------------------------------------------------------- |
-| `allowSubmissions` | boolean | (see below) | Whether students can still submit answers after all deadlines. |
-| `credit`           | number  | `0`         | Credit percentage after the last deadline.                     |
+| Field              | Type           | Default | Description                                                    |
+| ------------------ | -------------- | ------- | -------------------------------------------------------------- |
+| `allowSubmissions` | boolean        | `false` | Whether students can still submit answers after all deadlines. |
+| `credit`           | number or null | `0`     | Credit percentage after the last deadline.                     |
 
-After the last deadline, the assessment is considered "active" (students can submit) only if `credit > 0` **and** `allowSubmissions` is not `false`.
+After the last deadline, the assessment is considered "active" (students can submit) only if `allowSubmissions` is `true`. Set `credit` to a number for post-deadline credit, or use `null`/omit `credit` for practice submissions with 0% credit.
+
+When overriding `afterLastDeadline`, always include `credit`. Use `credit: null` to clear inherited credit.
 
 #### Credit timeline
 
@@ -138,25 +144,36 @@ Controls what students can see after completing an assessment. An assessment is 
 
 By default, questions are hidden and scores are shown after completion.
 
-| Field                    | Type    | Default | Description                                                   |
-| ------------------------ | ------- | ------- | ------------------------------------------------------------- |
-| `hideQuestions`          | boolean | `true`  | If `true`, questions are hidden after assessment completion.  |
-| `showQuestionsAgainDate` | string  |         | ISO datetime. Date to reveal questions back to students.      |
-| `hideQuestionsAgainDate` | string  |         | ISO datetime. Date to re-hide questions after revealing them. |
-| `hideScore`              | boolean | `false` | If `true`, the score is hidden after assessment completion.   |
-| `showScoreAgainDate`     | string  |         | ISO datetime. Date to reveal the score to students.           |
+`afterComplete` has two sub-objects: `questions` and `score`.
+
+#### `afterComplete.questions`
+
+| Field          | Type           | Default | Description                                                   |
+| -------------- | -------------- | ------- | ------------------------------------------------------------- |
+| `hidden`       | boolean        | `true`  | If `true`, questions are hidden after assessment completion.  |
+| `visibleFrom`  | string or null |         | ISO datetime. Date to reveal questions back to students.      |
+| `visibleUntil` | string or null |         | ISO datetime. Date to re-hide questions after revealing them. |
+
+#### `afterComplete.score`
+
+| Field         | Type           | Default | Description                                                 |
+| ------------- | -------------- | ------- | ----------------------------------------------------------- |
+| `hidden`      | boolean        | `false` | If `true`, the score is hidden after assessment completion. |
+| `visibleFrom` | string or null |         | ISO datetime. Date to reveal the score to students.         |
 
 !!! warning
 
-    Setting `hideQuestions` to `false` on an assessment with PrairieTest exams is not recommended. Students may be able to view exam content when their assessment is closed.
+    Setting `questions.hidden` to `false` on an assessment with PrairieTest exams is not recommended. Students may be able to view exam content when their assessment is closed.
 
 The visibility logic follows a toggle pattern:
 
-1. If `hideQuestions` is `true`, questions are hidden after completion.
-2. At `showQuestionsAgainDate`, questions become visible again.
-3. At `hideQuestionsAgainDate`, questions are hidden again.
+1. If `questions.hidden` is `true`, questions are hidden after completion.
+2. At `questions.visibleFrom`, questions become visible again.
+3. At `questions.visibleUntil`, questions are hidden again.
 
-The same logic applies to `hideScore` / `showScoreAgainDate` (there is no "hide score again" date).
+The same logic applies to `score.hidden` / `score.visibleFrom` (there is no "visible until" for scores).
+
+When overriding `afterComplete.questions`, always include `hidden`, `visibleFrom`, and `visibleUntil`. Use `visibleFrom: null` and `visibleUntil: null` to clear inherited visibility dates. When overriding `afterComplete.score`, always include `hidden` and `visibleFrom`; use `visibleFrom: null` to clear the inherited score visibility date.
 
 ### Other fields
 
@@ -326,9 +343,8 @@ Students can access the homework from Jan 15 to Feb 15 for 100% credit. After Fe
         "password": "exam2025"
       },
       "afterComplete": {
-        "hideQuestions": true,
-        "hideScore": true,
-        "showScoreAgainDate": "2025-03-12T00:00:01"
+        "questions": { "hidden": true },
+        "score": { "hidden": true, "visibleFrom": "2025-03-12T00:00:01" }
       }
     }
   ]
@@ -351,7 +367,7 @@ If a student starts close enough to the due date that less than 90 minutes remai
         }
       },
       "afterComplete": {
-        "hideQuestions": true
+        "questions": { "hidden": true }
       }
     }
   ]
@@ -372,8 +388,7 @@ Students must be checked in via PrairieTest. Time limits and scheduling are mana
         "durationMinutes": 60
       },
       "afterComplete": {
-        "hideQuestions": true,
-        "showQuestionsAgainDate": "2025-03-01T00:00:01"
+        "questions": { "hidden": true, "visibleFrom": "2025-03-01T00:00:01" }
       }
     },
     {
@@ -607,7 +622,7 @@ Below are common legacy patterns and their modern equivalents.
             "dueDate": "2025-02-15T23:59:59"
           },
           "afterComplete": {
-            "hideQuestions": true
+            "questions": { "hidden": true }
           }
         }
       ]
@@ -646,7 +661,7 @@ Below are common legacy patterns and their modern equivalents.
             "dueDate": "2025-02-15T23:59:59"
           },
           "afterComplete": {
-            "hideScore": true
+            "score": { "hidden": true }
           }
         }
       ]

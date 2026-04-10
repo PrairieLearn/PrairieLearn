@@ -48,14 +48,14 @@ export interface EnrollmentAccessControlRuleData {
   durationMinutes: number | null;
   passwordOverridden: boolean;
   password: string | null;
-  hideQuestions: boolean | null;
-  showQuestionsAgainDateOverridden: boolean;
-  showQuestionsAgainDate: string | null;
-  hideQuestionsAgainDateOverridden: boolean;
-  hideQuestionsAgainDate: string | null;
-  hideScore: boolean | null;
-  showScoreAgainDateOverridden: boolean;
-  showScoreAgainDate: string | null;
+  questionsHidden: boolean | null;
+  questionsVisibleFromOverridden: boolean;
+  questionsVisibleFrom: string | null;
+  questionsVisibleUntilOverridden: boolean;
+  questionsVisibleUntil: string | null;
+  scoreHidden: boolean | null;
+  scoreVisibleFromOverridden: boolean;
+  scoreVisibleFrom: string | null;
   earlyDeadlines: { date: string; credit: number }[];
   lateDeadlines: { date: string; credit: number }[];
 }
@@ -123,17 +123,21 @@ function dbBaseRowToAccessControlJson(
   if (rule.date_control_late_deadlines_overridden) {
     dateControl.lateDeadlines = row.late_deadlines ?? [];
   }
-  if (
-    rule.date_control_after_last_deadline_credit_overridden ||
-    rule.date_control_after_last_deadline_allow_submissions !== null
-  ) {
+  const isOverride = rule.target_type !== 'none';
+  const allowSubmissions = rule.date_control_after_last_deadline_allow_submissions;
+  if (allowSubmissions === true) {
+    const credit = unmapField(
+      rule.date_control_after_last_deadline_credit_overridden,
+      rule.date_control_after_last_deadline_credit,
+    );
     dateControl.afterLastDeadline = {
-      credit: unmapField(
-        rule.date_control_after_last_deadline_credit_overridden,
-        rule.date_control_after_last_deadline_credit,
-      ),
-      allowSubmissions: rule.date_control_after_last_deadline_allow_submissions ?? undefined,
+      allowSubmissions,
+      ...(credit !== undefined || isOverride ? { credit: credit ?? null } : {}),
     };
+  } else if (allowSubmissions === false) {
+    dateControl.afterLastDeadline = isOverride
+      ? { allowSubmissions, credit: null }
+      : { allowSubmissions };
   }
   if (rule.date_control_duration_minutes_overridden) {
     dateControl.durationMinutes = rule.date_control_duration_minutes;
@@ -142,24 +146,63 @@ function dbBaseRowToAccessControlJson(
     dateControl.password = rule.date_control_password;
   }
 
+  const qHidden = rule.after_complete_questions_hidden;
+  const qVisibleFrom = rule.after_complete_questions_visible_from_overridden
+    ? (rule.after_complete_questions_visible_from?.toISOString() ?? null)
+    : undefined;
+  const qVisibleUntil = rule.after_complete_questions_visible_until_overridden
+    ? (rule.after_complete_questions_visible_until?.toISOString() ?? null)
+    : undefined;
+
+  type QuestionsJson = NonNullable<NonNullable<AccessControlJson['afterComplete']>['questions']>;
+  let questions: QuestionsJson | undefined;
+  if (qHidden === null) {
+    questions = undefined;
+  } else if (qHidden === false) {
+    questions = {
+      hidden: false as const,
+      ...(isOverride ? { visibleFrom: null, visibleUntil: null } : {}),
+    };
+  } else if (qVisibleFrom != null && qVisibleFrom.length > 0) {
+    questions = {
+      hidden: true as const,
+      visibleFrom: qVisibleFrom,
+      ...(qVisibleUntil !== undefined
+        ? { visibleUntil: qVisibleUntil }
+        : isOverride
+          ? { visibleUntil: null }
+          : {}),
+    };
+  } else {
+    questions = {
+      hidden: true as const,
+      ...(isOverride ? { visibleFrom: null, visibleUntil: null } : {}),
+    };
+  }
+
+  type ScoreJson = NonNullable<NonNullable<AccessControlJson['afterComplete']>['score']>;
+  let score: ScoreJson | undefined;
+  const sHidden = rule.after_complete_score_hidden;
+  const sVisibleFrom = rule.after_complete_score_visible_from_overridden
+    ? (rule.after_complete_score_visible_from?.toISOString() ?? null)
+    : undefined;
+
+  if (sHidden === null) {
+    score = undefined;
+  } else if (sHidden === false) {
+    score = { hidden: false as const, ...(isOverride ? { visibleFrom: null } : {}) };
+  } else if (sVisibleFrom !== undefined) {
+    score = { hidden: true as const, visibleFrom: sVisibleFrom };
+  } else {
+    score = { hidden: true as const, ...(isOverride ? { visibleFrom: null } : {}) };
+  }
+
   const afterComplete: AccessControlJson['afterComplete'] = {};
-  if (rule.after_complete_hide_questions !== null) {
-    afterComplete.hideQuestions = rule.after_complete_hide_questions;
+  if (questions) {
+    afterComplete.questions = questions;
   }
-  if (rule.after_complete_show_questions_again_date_overridden) {
-    afterComplete.showQuestionsAgainDate =
-      rule.after_complete_show_questions_again_date?.toISOString() ?? null;
-  }
-  if (rule.after_complete_hide_questions_again_date_overridden) {
-    afterComplete.hideQuestionsAgainDate =
-      rule.after_complete_hide_questions_again_date?.toISOString() ?? null;
-  }
-  if (rule.after_complete_hide_score !== null) {
-    afterComplete.hideScore = rule.after_complete_hide_score;
-  }
-  if (rule.after_complete_show_score_again_date_overridden) {
-    afterComplete.showScoreAgainDate =
-      rule.after_complete_show_score_again_date?.toISOString() ?? null;
+  if (score) {
+    afterComplete.score = score;
   }
 
   const isMainRule = rule.number === 0 && rule.target_type === 'none';
@@ -248,14 +291,14 @@ export async function syncEnrollmentAccessControl(
     date_control_duration_minutes: ruleData.durationMinutes,
     date_control_password_overridden: ruleData.passwordOverridden,
     date_control_password: ruleData.password,
-    after_complete_hide_questions: ruleData.hideQuestions,
-    after_complete_show_questions_again_date_overridden: ruleData.showQuestionsAgainDateOverridden,
-    after_complete_show_questions_again_date: ruleData.showQuestionsAgainDate,
-    after_complete_hide_questions_again_date_overridden: ruleData.hideQuestionsAgainDateOverridden,
-    after_complete_hide_questions_again_date: ruleData.hideQuestionsAgainDate,
-    after_complete_hide_score: ruleData.hideScore,
-    after_complete_show_score_again_date_overridden: ruleData.showScoreAgainDateOverridden,
-    after_complete_show_score_again_date: ruleData.showScoreAgainDate,
+    after_complete_questions_hidden: ruleData.questionsHidden,
+    after_complete_questions_visible_from_overridden: ruleData.questionsVisibleFromOverridden,
+    after_complete_questions_visible_from: ruleData.questionsVisibleFrom,
+    after_complete_questions_visible_until_overridden: ruleData.questionsVisibleUntilOverridden,
+    after_complete_questions_visible_until: ruleData.questionsVisibleUntil,
+    after_complete_score_hidden: ruleData.scoreHidden,
+    after_complete_score_visible_from_overridden: ruleData.scoreVisibleFromOverridden,
+    after_complete_score_visible_from: ruleData.scoreVisibleFrom,
   });
 
   const earlyDeadlinesJson = ruleData.earlyDeadlines.map((d) =>

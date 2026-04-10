@@ -46,8 +46,10 @@ describe('Valid configs', () => {
           durationMinutes: 60,
         },
         afterComplete: {
-          hideQuestions: true,
-          showQuestionsAgainDate: '2024-03-23T23:59:00',
+          questions: {
+            hidden: true,
+            visibleFrom: '2024-03-23T23:59:00',
+          },
         },
       },
     ],
@@ -61,10 +63,14 @@ describe('Valid configs', () => {
           },
         },
         afterComplete: {
-          hideQuestions: true,
-          showQuestionsAgainDate: '2024-03-23T23:59:00',
-          hideScore: true,
-          showScoreAgainDate: '2024-03-23T23:59:00',
+          questions: {
+            hidden: true,
+            visibleFrom: '2024-03-23T23:59:00',
+          },
+          score: {
+            hidden: true,
+            visibleFrom: '2024-03-23T23:59:00',
+          },
         },
       },
     ],
@@ -117,13 +123,15 @@ describe('Valid configs', () => {
       },
     ],
 
-    // Example 9: Reveal then hide questions again
+    // Example 9: Show questions between dates then re-hide
     [
       {
         afterComplete: {
-          hideQuestions: false,
-          showQuestionsAgainDate: '2024-03-23T23:59:00',
-          hideQuestionsAgainDate: '2024-03-25T23:59:00',
+          questions: {
+            hidden: true,
+            visibleFrom: '2024-03-23T23:59:00',
+            visibleUntil: '2024-03-25T23:59:00',
+          },
         },
       },
     ],
@@ -136,7 +144,9 @@ describe('Valid configs', () => {
           dueDate: '2024-03-21T23:59:00',
         },
         afterComplete: {
-          hideScore: true,
+          score: {
+            hidden: true,
+          },
         },
       },
     ],
@@ -281,7 +291,10 @@ describe('Date fields without seconds', () => {
         lateDeadlines: [{ date: '2024-03-23T23:59', credit: 80 }],
       },
       afterComplete: {
-        showQuestionsAgainDate: '2024-03-25T12:00', // No seconds
+        questions: {
+          hidden: true,
+          visibleFrom: '2024-03-25T12:00', // No seconds
+        },
       },
     };
 
@@ -291,7 +304,7 @@ describe('Date fields without seconds', () => {
     assert.equal(parsed.dateControl?.dueDate, '2024-03-21T23:59:00');
     assert.equal(parsed.dateControl?.earlyDeadlines?.[0].date, '2024-03-17T23:59:00');
     assert.equal(parsed.dateControl?.lateDeadlines?.[0].date, '2024-03-23T23:59:00');
-    assert.equal(parsed.afterComplete?.showQuestionsAgainDate, '2024-03-25T12:00:00');
+    assert.equal(parsed.afterComplete?.questions?.visibleFrom, '2024-03-25T12:00:00');
 
     const result = validateAccessControlRules({
       rules: [parsed],
@@ -338,10 +351,13 @@ describe('Date fields must be dates', () => {
           releaseDate: '2024-03-14T00:01:00',
         },
         afterComplete: {
-          showQuestionsAgainDate: 'NOTADATE',
+          questions: {
+            hidden: true,
+            visibleFrom: 'NOTADATE',
+          },
         },
       },
-      expectedPath: ['afterComplete', 'showQuestionsAgainDate'],
+      expectedPath: ['afterComplete', 'questions'],
     },
     {
       config: {
@@ -496,26 +512,31 @@ describe('Date ordering validation', () => {
     assert.isTrue(errors.some((e) => e.includes('chronological order')));
   });
 
-  it('should reject showQuestionsAgainDate after hideQuestionsAgainDate', () => {
+  it('should reject visibleFrom after visibleUntil for questions', () => {
     const rule = AccessControlJsonSchema.parse({
       afterComplete: {
-        showQuestionsAgainDate: '2024-03-30T00:00:00',
-        hideQuestionsAgainDate: '2024-03-25T00:00:00',
+        questions: {
+          hidden: true,
+          visibleFrom: '2024-03-30T00:00:00',
+          visibleUntil: '2024-03-25T00:00:00',
+        },
       },
     });
     const errors = validateRuleDateOrdering(rule);
-    assert.isTrue(errors.some((e) => e.includes('showQuestionsAgainDate must be before')));
+    assert.isTrue(errors.some((e) => e.includes('visibleFrom must be before')));
   });
 
-  it('should reject showQuestionsAgainDate before last late deadline', () => {
+  it('should reject visibleFrom before last late deadline for questions', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         dueDate: '2024-03-20T00:00:00',
         lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
       },
       afterComplete: {
-        hideQuestions: true,
-        showQuestionsAgainDate: '2024-03-23T00:00:00',
+        questions: {
+          hidden: true,
+          visibleFrom: '2024-03-23T00:00:00',
+        },
       },
     });
     const errors = validateRuleDateOrdering(rule);
@@ -524,14 +545,16 @@ describe('Date ordering validation', () => {
     );
   });
 
-  it('should reject showQuestionsAgainDate before due date when no late deadlines', () => {
+  it('should reject visibleFrom before due date when no late deadlines for questions', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         dueDate: '2024-03-20T00:00:00',
       },
       afterComplete: {
-        hideQuestions: true,
-        showQuestionsAgainDate: '2024-03-19T00:00:00',
+        questions: {
+          hidden: true,
+          visibleFrom: '2024-03-19T00:00:00',
+        },
       },
     });
     const errors = validateRuleDateOrdering(rule);
@@ -540,15 +563,17 @@ describe('Date ordering validation', () => {
     );
   });
 
-  it('should reject showScoreAgainDate before last deadline', () => {
+  it('should reject visibleFrom before last deadline for score', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         dueDate: '2024-03-20T00:00:00',
         lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
       },
       afterComplete: {
-        hideScore: true,
-        showScoreAgainDate: '2024-03-22T00:00:00',
+        score: {
+          hidden: true,
+          visibleFrom: '2024-03-22T00:00:00',
+        },
       },
     });
     const errors = validateRuleDateOrdering(rule);
@@ -557,29 +582,33 @@ describe('Date ordering validation', () => {
     );
   });
 
-  it('should accept showQuestionsAgainDate after last deadline', () => {
+  it('should accept visibleFrom after last deadline for questions', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         dueDate: '2024-03-20T00:00:00',
         lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
       },
       afterComplete: {
-        hideQuestions: true,
-        showQuestionsAgainDate: '2024-03-26T00:00:00',
+        questions: {
+          hidden: true,
+          visibleFrom: '2024-03-26T00:00:00',
+        },
       },
     });
     const errors = validateRuleDateOrdering(rule);
     assert.deepEqual(errors, []);
   });
 
-  it('should accept showScoreAgainDate after last deadline', () => {
+  it('should accept visibleFrom after last deadline for score', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         dueDate: '2024-03-20T00:00:00',
       },
       afterComplete: {
-        hideScore: true,
-        showScoreAgainDate: '2024-03-21T00:00:00',
+        score: {
+          hidden: true,
+          visibleFrom: '2024-03-21T00:00:00',
+        },
       },
     });
     const errors = validateRuleDateOrdering(rule);
@@ -592,10 +621,14 @@ describe('Date ordering validation', () => {
         releaseDate: '2024-03-10T00:00:00',
       },
       afterComplete: {
-        hideQuestions: true,
-        showQuestionsAgainDate: '2024-03-05T00:00:00',
-        hideScore: true,
-        showScoreAgainDate: '2024-03-05T00:00:00',
+        questions: {
+          hidden: true,
+          visibleFrom: '2024-03-05T00:00:00',
+        },
+        score: {
+          hidden: true,
+          visibleFrom: '2024-03-05T00:00:00',
+        },
       },
     });
     const errors = validateRuleDateOrdering(rule);
@@ -605,10 +638,14 @@ describe('Date ordering validation', () => {
   it('should not check show-again dates when no date control', () => {
     const rule = AccessControlJsonSchema.parse({
       afterComplete: {
-        hideQuestions: true,
-        showQuestionsAgainDate: '2024-03-23T00:00:00',
-        hideScore: true,
-        showScoreAgainDate: '2024-03-23T00:00:00',
+        questions: {
+          hidden: true,
+          visibleFrom: '2024-03-23T00:00:00',
+        },
+        score: {
+          hidden: true,
+          visibleFrom: '2024-03-23T00:00:00',
+        },
       },
     });
     const errors = validateRuleDateOrdering(rule);
@@ -940,38 +977,49 @@ describe('Duplicate detection', () => {
 });
 
 describe('afterLastDeadline validation', () => {
-  it('should reject credit when allowSubmissions is false', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        releaseDate: '2024-03-14T00:01:00',
-        dueDate: '2024-03-21T23:59:00',
-        afterLastDeadline: {
-          allowSubmissions: false,
-          credit: 50,
+  it('should reject numeric credit when allowSubmissions is false', () => {
+    assert.throws(() =>
+      AccessControlJsonSchema.parse({
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+          afterLastDeadline: {
+            allowSubmissions: false,
+            credit: 50,
+          },
         },
-      },
-    });
-    const errors = validateRule(rule, 'none');
-    assert.isTrue(
-      errors.some((e) => e.includes('allowSubmissions must be true when credit is configured')),
+      }),
     );
   });
 
   it('should reject zero credit when allowSubmissions is false', () => {
+    assert.throws(() =>
+      AccessControlJsonSchema.parse({
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+          afterLastDeadline: {
+            allowSubmissions: false,
+            credit: 0,
+          },
+        },
+      }),
+    );
+  });
+
+  it('should accept null credit when allowSubmissions is false', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         releaseDate: '2024-03-14T00:01:00',
         dueDate: '2024-03-21T23:59:00',
         afterLastDeadline: {
           allowSubmissions: false,
-          credit: 0,
+          credit: null,
         },
       },
     });
     const errors = validateRule(rule, 'none');
-    assert.isTrue(
-      errors.some((e) => e.includes('allowSubmissions must be true when credit is configured')),
-    );
+    assert.deepEqual(errors, []);
   });
 
   it('should accept credit when allowSubmissions is true', () => {
@@ -990,18 +1038,16 @@ describe('afterLastDeadline validation', () => {
   });
 
   it('should reject credit without allowSubmissions', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        releaseDate: '2024-03-14T00:01:00',
-        dueDate: '2024-03-21T23:59:00',
-        afterLastDeadline: {
-          credit: null,
+    assert.throws(() =>
+      AccessControlJsonSchema.parse({
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+          afterLastDeadline: {
+            credit: null,
+          },
         },
-      },
-    });
-    const errors = validateRule(rule, 'none');
-    assert.isTrue(
-      errors.some((e) => e.includes('allowSubmissions must be true when credit is configured')),
+      }),
     );
   });
 
@@ -1016,6 +1062,92 @@ describe('afterLastDeadline validation', () => {
       },
     });
     const errors = validateRule(rule, 'none');
+    assert.deepEqual(errors, []);
+  });
+
+  it('should reject omitted credit on overrides', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        afterLastDeadline: {
+          allowSubmissions: false,
+        },
+      },
+    });
+    const errors = validateRule(rule, 'student_label');
+    assert.isTrue(
+      errors.some((error) =>
+        error.includes('afterLastDeadline.credit must be explicitly set on overrides'),
+      ),
+    );
+  });
+
+  it('should accept null credit on overrides', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        afterLastDeadline: {
+          allowSubmissions: false,
+          credit: null,
+        },
+      },
+    });
+    const errors = validateRule(rule, 'student_label');
+    assert.deepEqual(errors, []);
+  });
+});
+
+describe('afterComplete override validation', () => {
+  it('should accept omitted visibility fields on defaults', () => {
+    const rule = AccessControlJsonSchema.parse({
+      afterComplete: {
+        questions: { hidden: true },
+        score: { hidden: true },
+      },
+    });
+    const errors = validateRule(rule, 'none');
+    assert.deepEqual(errors, []);
+  });
+
+  it('should reject omitted question visibility fields on overrides', () => {
+    const rule = AccessControlJsonSchema.parse({
+      afterComplete: {
+        questions: { hidden: true },
+      },
+    });
+    const errors = validateRule(rule, 'student_label');
+    assert.isTrue(
+      errors.some((error) =>
+        error.includes('afterComplete.questions.visibleFrom must be explicitly set on overrides'),
+      ),
+    );
+    assert.isTrue(
+      errors.some((error) =>
+        error.includes('afterComplete.questions.visibleUntil must be explicitly set on overrides'),
+      ),
+    );
+  });
+
+  it('should reject omitted score visibility fields on overrides', () => {
+    const rule = AccessControlJsonSchema.parse({
+      afterComplete: {
+        score: { hidden: true },
+      },
+    });
+    const errors = validateRule(rule, 'student_label');
+    assert.isTrue(
+      errors.some((error) =>
+        error.includes('afterComplete.score.visibleFrom must be explicitly set on overrides'),
+      ),
+    );
+  });
+
+  it('should accept explicit null visibility fields on overrides', () => {
+    const rule = AccessControlJsonSchema.parse({
+      afterComplete: {
+        questions: { hidden: true, visibleFrom: null, visibleUntil: null },
+        score: { hidden: true, visibleFrom: null },
+      },
+    });
+    const errors = validateRule(rule, 'student_label');
     assert.deepEqual(errors, []);
   });
 });

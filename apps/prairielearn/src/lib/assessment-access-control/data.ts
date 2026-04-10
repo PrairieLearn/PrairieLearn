@@ -106,24 +106,31 @@ function buildAfterComplete(rule: AssessmentAccessControlRule): RuntimeAfterComp
   const override = isOverride(rule);
   const includeField = (overridden: boolean) => !override || overridden;
 
+  const questions: RuntimeAfterComplete['questions'] = {};
+  if (rule.after_complete_questions_hidden != null) {
+    questions.hidden = rule.after_complete_questions_hidden;
+  }
+  if (includeField(rule.after_complete_questions_visible_until_overridden)) {
+    questions.visibleUntil = rule.after_complete_questions_visible_until ?? null;
+  }
+  if (includeField(rule.after_complete_questions_visible_from_overridden)) {
+    questions.visibleFrom = rule.after_complete_questions_visible_from ?? null;
+  }
+
+  const score: RuntimeAfterComplete['score'] = {};
+  if (rule.after_complete_score_hidden != null) {
+    score.hidden = rule.after_complete_score_hidden;
+  }
+  if (includeField(rule.after_complete_score_visible_from_overridden)) {
+    score.visibleFrom = rule.after_complete_score_visible_from ?? null;
+  }
+
   const afterComplete: RuntimeAfterComplete = {};
-
-  if (rule.after_complete_hide_questions != null) {
-    afterComplete.hideQuestions = rule.after_complete_hide_questions;
+  if (Object.keys(questions).length > 0) {
+    afterComplete.questions = questions;
   }
-  if (includeField(rule.after_complete_hide_questions_again_date_overridden)) {
-    afterComplete.hideQuestionsAgainDate = rule.after_complete_hide_questions_again_date ?? null;
-  }
-
-  if (includeField(rule.after_complete_show_questions_again_date_overridden)) {
-    afterComplete.showQuestionsAgainDate = rule.after_complete_show_questions_again_date ?? null;
-  }
-
-  if (rule.after_complete_hide_score != null) {
-    afterComplete.hideScore = rule.after_complete_hide_score;
-  }
-  if (includeField(rule.after_complete_show_score_again_date_overridden)) {
-    afterComplete.showScoreAgainDate = rule.after_complete_show_score_again_date ?? null;
+  if (Object.keys(score).length > 0) {
+    afterComplete.score = score;
   }
 
   return Object.keys(afterComplete).length > 0 ? afterComplete : undefined;

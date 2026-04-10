@@ -25,9 +25,9 @@ export type AccessControlIssuePath =
   | ['dateControl', 'dueDate']
   | ['dateControl', 'earlyDeadlines', number, 'date']
   | ['dateControl', 'lateDeadlines', number, 'date']
-  | ['afterComplete', 'showQuestionsAgainDate']
-  | ['afterComplete', 'hideQuestionsAgainDate']
-  | ['afterComplete', 'showScoreAgainDate'];
+  | ['afterComplete', 'questions', 'visibleFrom']
+  | ['afterComplete', 'questions', 'visibleUntil']
+  | ['afterComplete', 'score', 'visibleFrom'];
 
 export interface AccessControlValidationIssue {
   ruleIndex: number;
@@ -189,38 +189,37 @@ export function validateRuleDateOrderingIssues(
     }
   }
 
-  const ac = rule.afterComplete;
-  if (ac?.showQuestionsAgainDate && ac.hideQuestionsAgainDate) {
-    if (
-      new Date(ac.showQuestionsAgainDate).getTime() >= new Date(ac.hideQuestionsAgainDate).getTime()
-    ) {
+  const questions = rule.afterComplete?.questions;
+  if (questions?.visibleFrom && questions.visibleUntil) {
+    if (new Date(questions.visibleFrom).getTime() >= new Date(questions.visibleUntil).getTime()) {
       pushIssue(
         issues,
         validationRule,
-        ['afterComplete', 'hideQuestionsAgainDate'],
-        'showQuestionsAgainDate must be before hideQuestionsAgainDate.',
+        ['afterComplete', 'questions', 'visibleUntil'],
+        'visibleFrom must be before visibleUntil.',
       );
     }
   }
 
   const lastDeadlineMs = findLastDeadlineMs(rule);
   if (lastDeadlineMs != null) {
-    if (ac?.showQuestionsAgainDate) {
-      if (new Date(ac.showQuestionsAgainDate).getTime() <= lastDeadlineMs) {
+    if (questions?.visibleFrom) {
+      if (new Date(questions.visibleFrom).getTime() <= lastDeadlineMs) {
         pushIssue(
           issues,
           validationRule,
-          ['afterComplete', 'showQuestionsAgainDate'],
+          ['afterComplete', 'questions', 'visibleFrom'],
           'Show questions again date must be after the last deadline.',
         );
       }
     }
-    if (ac?.showScoreAgainDate) {
-      if (new Date(ac.showScoreAgainDate).getTime() <= lastDeadlineMs) {
+    const score = rule.afterComplete?.score;
+    if (score?.visibleFrom) {
+      if (new Date(score.visibleFrom).getTime() <= lastDeadlineMs) {
         pushIssue(
           issues,
           validationRule,
-          ['afterComplete', 'showScoreAgainDate'],
+          ['afterComplete', 'score', 'visibleFrom'],
           'Show score again date must be after the last deadline.',
         );
       }
@@ -396,6 +395,31 @@ export function validateRule(
     if (rule.integrations != null) {
       errors.push('integrations can only be specified on the defaults.');
     }
+    if (
+      rule.dateControl?.afterLastDeadline !== undefined &&
+      rule.dateControl.afterLastDeadline.credit === undefined
+    ) {
+      errors.push('afterLastDeadline.credit must be explicitly set on overrides.');
+    }
+    if (rule.afterComplete?.questions !== undefined) {
+      if (rule.afterComplete.questions.hidden === undefined) {
+        errors.push('afterComplete.questions.hidden must be explicitly set on overrides.');
+      }
+      if (rule.afterComplete.questions.visibleFrom === undefined) {
+        errors.push('afterComplete.questions.visibleFrom must be explicitly set on overrides.');
+      }
+      if (rule.afterComplete.questions.visibleUntil === undefined) {
+        errors.push('afterComplete.questions.visibleUntil must be explicitly set on overrides.');
+      }
+    }
+    if (rule.afterComplete?.score !== undefined) {
+      if (rule.afterComplete.score.hidden === undefined) {
+        errors.push('afterComplete.score.hidden must be explicitly set on overrides.');
+      }
+      if (rule.afterComplete.score.visibleFrom === undefined) {
+        errors.push('afterComplete.score.visibleFrom must be explicitly set on overrides.');
+      }
+    }
   }
 
   const ald = rule.dateControl?.afterLastDeadline;
@@ -404,8 +428,8 @@ export function validateRule(
       'afterLastDeadline.allowSubmissions is required when afterLastDeadline is configured.',
     );
   }
-  if (ald?.credit !== undefined && ald.allowSubmissions !== true) {
-    errors.push('afterLastDeadline.allowSubmissions must be true when credit is configured.');
+  if (ald?.allowSubmissions === false && ald.credit != null) {
+    errors.push('afterLastDeadline cannot set credit when submissions are not allowed.');
   }
 
   const exams = rule.integrations?.prairieTest?.exams ?? [];

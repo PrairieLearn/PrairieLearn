@@ -5,7 +5,10 @@
   "set": "Homework",
   "number": "19",
   "accessControl": [
-    { "listBeforeRelease": true, "afterComplete": { "hideQuestions": false, "hideScore": false } },
+    {
+      "listBeforeRelease": true,
+      "afterComplete": { "questions": { "hidden": false }, "score": { "hidden": false } }
+    },
     { "labels": ["Section A"], "dateControl": { "dueDate": "2026-01-28T20:15:00" } }
   ],
   "zones": [

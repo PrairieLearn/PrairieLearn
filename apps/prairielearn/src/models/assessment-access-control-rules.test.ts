@@ -21,14 +21,14 @@ function makeBaseRule(overrides: Record<string, unknown> = {}) {
     date_control_duration_minutes_overridden: false,
     date_control_password: null,
     date_control_password_overridden: false,
-    after_complete_hide_questions: null,
-    after_complete_show_questions_again_date: null,
-    after_complete_show_questions_again_date_overridden: false,
-    after_complete_hide_questions_again_date: null,
-    after_complete_hide_questions_again_date_overridden: false,
-    after_complete_hide_score: null,
-    after_complete_show_score_again_date: null,
-    after_complete_show_score_again_date_overridden: false,
+    after_complete_questions_hidden: null,
+    after_complete_questions_visible_from: null,
+    after_complete_questions_visible_from_overridden: false,
+    after_complete_questions_visible_until: null,
+    after_complete_questions_visible_until_overridden: false,
+    after_complete_score_hidden: null,
+    after_complete_score_visible_from: null,
+    after_complete_score_visible_from_overridden: false,
     ...overrides,
   };
 }
@@ -74,6 +74,74 @@ describe('dbRowToAccessControlJson', () => {
       prairieTest: {
         exams: [{ examUuid: 'abc-123', readOnly: false }],
       },
+    });
+  });
+
+  it('omits hidden-absent afterComplete questions with date overrides', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          after_complete_questions_hidden: null,
+          after_complete_questions_visible_from: new Date('2025-03-01T00:00:00Z'),
+          after_complete_questions_visible_from_overridden: true,
+        },
+      }),
+    );
+
+    expect(result.afterComplete?.questions).toBeUndefined();
+  });
+
+  it('omits hidden-absent afterComplete score with date overrides', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          after_complete_score_hidden: null,
+          after_complete_score_visible_from: new Date('2025-03-01T00:00:00Z'),
+          after_complete_score_visible_from_overridden: true,
+        },
+      }),
+    );
+
+    expect(result.afterComplete?.score).toBeUndefined();
+  });
+
+  it('emits explicit null afterLastDeadline credit for overrides', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          target_type: 'student_label',
+          number: 1,
+          date_control_after_last_deadline_allow_submissions: false,
+        },
+      }),
+    );
+
+    expect(result.dateControl?.afterLastDeadline).toEqual({
+      allowSubmissions: false,
+      credit: null,
+    });
+  });
+
+  it('emits explicit null afterComplete visibility dates for overrides', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          target_type: 'student_label',
+          number: 1,
+          after_complete_questions_hidden: true,
+          after_complete_score_hidden: true,
+        },
+      }),
+    );
+
+    expect(result.afterComplete?.questions).toEqual({
+      hidden: true,
+      visibleFrom: null,
+      visibleUntil: null,
+    });
+    expect(result.afterComplete?.score).toEqual({
+      hidden: true,
+      visibleFrom: null,
     });
   });
 });
