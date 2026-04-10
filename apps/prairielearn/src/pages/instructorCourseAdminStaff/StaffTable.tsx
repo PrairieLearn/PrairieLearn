@@ -740,6 +740,10 @@ function SelectionToolbar({
     (u) => (u.user.id !== authnUserId && u.user.id !== userId) || isAdministrator,
   );
 
+  const deletableUsers = modifiableUsers.filter(
+    (u) => isAdministrator || u.course_permission.course_role !== 'Owner',
+  );
+
   return (
     <>
       <div className="d-flex align-items-center gap-2">
@@ -756,7 +760,7 @@ function SelectionToolbar({
           variant="light"
           size="sm"
           className="text-danger"
-          disabled={modifiableUsers.length === 0}
+          disabled={deletableUsers.length === 0}
           onClick={() => setShowDeleteModal(true)}
         >
           <i className="fa fa-trash-alt me-1" />
@@ -766,7 +770,7 @@ function SelectionToolbar({
 
       <BulkDeleteModal
         show={showDeleteModal}
-        selectedUsers={modifiableUsers}
+        selectedUsers={deletableUsers}
         onHide={() => setShowDeleteModal(false)}
       />
       <BulkEditAccessModal
@@ -844,17 +848,36 @@ function StaffTableInner({
   );
   const { createCheckboxProps } = useShiftClickCheckbox<CourseUsersRow>();
 
-  const columnFilters = useMemo<ColumnFiltersState>(
-    () => (courseRoleFilter.length > 0 ? [{ id: 'course_role', value: courseRoleFilter }] : []),
-    [courseRoleFilter],
-  );
+  const [instanceFilters, setInstanceFilters] = useState<Record<string, InstanceRole[]>>({});
+
+  const columnFilters = useMemo<ColumnFiltersState>(() => {
+    const filters: ColumnFiltersState = [];
+    if (courseRoleFilter.length > 0) {
+      filters.push({ id: 'course_role', value: courseRoleFilter });
+    }
+    for (const [columnId, roles] of Object.entries(instanceFilters)) {
+      if (roles.length > 0) {
+        filters.push({ id: columnId, value: roles });
+      }
+    }
+    return filters;
+  }, [courseRoleFilter, instanceFilters]);
 
   const handleColumnFiltersChange = useMemo(
     () => (updaterOrValue: Updater<ColumnFiltersState>) => {
       const newFilters =
         typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
+
       const roleFilterEntry = newFilters.find((f) => f.id === 'course_role');
       void setCourseRoleFilter(roleFilterEntry ? (roleFilterEntry.value as CourseRole[]) : []);
+
+      const newInstanceFilters: Record<string, InstanceRole[]> = {};
+      for (const f of newFilters) {
+        if (f.id.startsWith('ci_')) {
+          newInstanceFilters[f.id] = f.value as InstanceRole[];
+        }
+      }
+      setInstanceFilters(newInstanceFilters);
     },
     [columnFilters, setCourseRoleFilter],
   );

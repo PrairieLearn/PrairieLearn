@@ -15,6 +15,7 @@ import {
   deleteCoursePermissions,
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
+  selectCoursePermissionForUser,
   selectCourseUsers,
   updateCoursePermissionsRole,
   upsertCourseInstancePermissionsRole,
@@ -43,6 +44,23 @@ function assertCanModifyUser(
       code: 'FORBIDDEN',
       message: `Owners cannot ${action} even if they are emulating another user`,
     });
+  }
+}
+
+async function assertCanDeleteUser(
+  authzData: { user: { id: string }; authn_user: { id: string }; is_administrator: boolean },
+  userId: string,
+  courseId: string,
+) {
+  assertCanModifyUser(authzData, userId, 'remove themselves from the course staff');
+  if (!authzData.is_administrator) {
+    const role = await selectCoursePermissionForUser({ course_id: courseId, user_id: userId });
+    if (role === 'Owner') {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Only administrators can remove owners from the course staff',
+      });
+    }
   }
 }
 
@@ -125,7 +143,7 @@ const deleteUser = t.procedure
   .use(requireCoursePermissionOwn)
   .input(z.object({ userId: IdSchema }))
   .mutation(async ({ input, ctx }) => {
-    assertCanModifyUser(ctx.authz_data, input.userId, 'remove themselves from the course staff');
+    await assertCanDeleteUser(ctx.authz_data, input.userId, ctx.course.id);
     await deleteCoursePermissions({
       course_id: ctx.course.id,
       user_id: input.userId,
@@ -242,7 +260,7 @@ const bulkDelete = t.procedure
   .input(z.object({ userIds: z.array(IdSchema).min(1) }))
   .mutation(async ({ input, ctx }) => {
     for (const userId of input.userIds) {
-      assertCanModifyUser(ctx.authz_data, userId, 'remove themselves from the course staff');
+      await assertCanDeleteUser(ctx.authz_data, userId, ctx.course.id);
     }
     await deleteCoursePermissions({
       course_id: ctx.course.id,
