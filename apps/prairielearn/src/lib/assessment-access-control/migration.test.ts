@@ -75,6 +75,22 @@ describe('classifyArchetype', () => {
       expected: 'unclassified',
     },
     {
+      name: 'half-open gap (endDate then startDate with gap)',
+      rules: [
+        { credit: 100, endDate: '2024-02-01' },
+        { credit: 100, startDate: '2024-03-01' },
+      ],
+      expected: 'unclassified',
+    },
+    {
+      name: 'half-open contiguous (endDate meets startDate)',
+      rules: [
+        { credit: 100, endDate: '2024-02-01' },
+        { credit: 100, startDate: '2024-02-01' },
+      ],
+      expected: 'multi-deadline',
+    },
+    {
       name: 'single full-credit without dates',
       rules: [{ credit: 100 }],
       expected: 'single-deadline',
@@ -340,7 +356,7 @@ describe('migrateAllowAccess', () => {
     assert.match(warnings[0], /collapsed/);
   });
 
-  it('declining-credit with bonus and reduced (no full) creates early deadlines', () => {
+  it('declining-credit with bonus and reduced (no full) omits dueDate', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
       { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
@@ -349,7 +365,6 @@ describe('migrateAllowAccess', () => {
     assert.deepEqual(result, {
       dateControl: {
         releaseDate: '2024-01-01',
-        dueDate: '2024-02-01',
         earlyDeadlines: [{ date: '2024-02-01', credit: 120 }],
         lateDeadlines: [{ date: '2024-06-01', credit: 50 }],
       },
@@ -357,7 +372,7 @@ describe('migrateAllowAccess', () => {
     assert.lengthOf(warnings, 0);
   });
 
-  it('declining-credit with multiple bonus and reduced (no full) creates multiple early deadlines', () => {
+  it('declining-credit with multiple bonus and reduced (no full) omits dueDate', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 130, startDate: '2024-01-01', endDate: '2024-01-15' },
       { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
@@ -367,7 +382,6 @@ describe('migrateAllowAccess', () => {
     assert.deepEqual(result, {
       dateControl: {
         releaseDate: '2024-01-01',
-        dueDate: '2024-02-01',
         earlyDeadlines: [
           { date: '2024-01-15', credit: 130 },
           { date: '2024-02-01', credit: 120 },
@@ -393,7 +407,7 @@ describe('migrateAllowAccess', () => {
     ]);
   });
 
-  it('migrates single-reduced-credit as late deadline at due date', () => {
+  it('migrates single-reduced-credit as late deadline without dueDate', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
@@ -401,14 +415,13 @@ describe('migrateAllowAccess', () => {
     assert.deepEqual(result, {
       dateControl: {
         releaseDate: '2024-01-01',
-        dueDate: '2024-06-01',
         lateDeadlines: [{ date: '2024-06-01', credit: 50 }],
       },
     });
     assert.lengthOf(warnings, 0);
   });
 
-  it('migrates single bonus credit as early deadline at due date', () => {
+  it('migrates single bonus credit as early deadline without dueDate', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 120, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
@@ -416,7 +429,6 @@ describe('migrateAllowAccess', () => {
     assert.deepEqual(result, {
       dateControl: {
         releaseDate: '2024-01-01',
-        dueDate: '2024-06-01',
         earlyDeadlines: [{ date: '2024-06-01', credit: 120 }],
       },
     });
@@ -1147,3 +1159,4 @@ describe('migrateAssessmentJson fallback release date', () => {
     assert.isUndefined(parsed.accessControl[0].dateControl?.releaseDate);
   });
 });
+

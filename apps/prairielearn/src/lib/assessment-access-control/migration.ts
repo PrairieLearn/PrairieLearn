@@ -161,18 +161,32 @@ function withMods(
 
 function hasAccessGaps(rules: AssessmentAccessRuleJson[]): boolean {
   const accessRules = rules.filter((r) => (r.credit ?? 0) > 0);
+  if (accessRules.length === 0) return false;
 
   // If any access rule has no dates, it covers all time — no gaps possible.
   if (accessRules.some((r) => !r.startDate && !r.endDate)) return false;
 
-  const datedRules = accessRules
-    .filter((r) => r.endDate)
-    .sort((a, b) => (a.startDate ?? '').localeCompare(b.startDate ?? ''));
+  // Sort by startDate (no startDate = earliest possible, sorts first).
+  const sorted = [...accessRules].sort((a, b) =>
+    (a.startDate ?? '').localeCompare(b.startDate ?? ''),
+  );
 
-  for (let i = 0; i < datedRules.length - 1; i++) {
-    const currentEnd = datedRules[i].endDate!;
-    const nextStart = datedRules[i + 1].startDate;
-    if (nextStart && nextStart > currentEnd) return true;
+  // Merge intervals and look for gaps. Track the furthest end seen;
+  // null means the merged interval extends to +∞.
+  let furthestEnd: string | null = sorted[0].endDate ?? null;
+
+  for (let i = 1; i < sorted.length; i++) {
+    const rule = sorted[i];
+    // Once coverage extends to +∞, no further gaps are possible.
+    if (furthestEnd === null) break;
+    // A gap exists if this rule starts after the current coverage ends.
+    if (rule.startDate && rule.startDate > furthestEnd) return true;
+    // Extend coverage.
+    if (!rule.endDate) {
+      furthestEnd = null;
+    } else if (rule.endDate > furthestEnd) {
+      furthestEnd = rule.endDate;
+    }
   }
 
   return false;
@@ -265,17 +279,19 @@ function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
   if (creditRule.startDate || creditRule.endDate || releaseDate) {
     result.dateControl = {};
     if (releaseDate) result.dateControl.releaseDate = releaseDate;
-    if (creditRule.endDate) result.dateControl.dueDate = creditRule.endDate;
     if (creditRule.timeLimitMin) result.dateControl.durationMinutes = creditRule.timeLimitMin;
 
-    // Reduced credit: encode as a late deadline at the due date.
     if (credit > 0 && credit < 100 && creditRule.endDate) {
+      // Reduced credit: no full-credit period exists, so omit dueDate.
+      // The late deadline is the sole timeline entry.
       result.dateControl.lateDeadlines = [{ date: creditRule.endDate, credit }];
-    }
-
-    // Bonus credit: encode as an early deadline at the due date.
-    if (credit > 100 && creditRule.endDate) {
+    } else if (credit > 100 && creditRule.endDate) {
+      // Bonus credit: no full-credit period exists, so omit dueDate.
+      // The early deadline is the sole timeline entry.
       result.dateControl.earlyDeadlines = [{ date: creditRule.endDate, credit }];
+    } else if (creditRule.endDate) {
+      // Full credit (100%): set dueDate normally.
+      result.dateControl.dueDate = creditRule.endDate;
     }
   }
 
@@ -300,12 +316,14 @@ function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
   const fullRules = creditRules.filter((r) => (r.credit ?? 0) === 100);
   const reducedRules = creditRules.filter((r) => (r.credit ?? 0) > 0 && (r.credit ?? 0) < 100);
 
-  const primaryRules = fullRules.length > 0 ? fullRules : bonusRules;
-  const primaryEndDates = primaryRules
+  // Only derive dueDate from full-credit rules. When there are no full-credit
+  // rules (e.g. bonus + reduced only), omitting dueDate avoids placing deadline
+  // entries at the due-date boundary where the resolver would filter them out.
+  const fullEndDates = fullRules
     .map((r) => r.endDate)
     .filter(Boolean)
     .sort() as string[];
-  const dueDate = primaryEndDates[primaryEndDates.length - 1];
+  const dueDate = fullEndDates[fullEndDates.length - 1] as string | undefined;
 
   const releaseDate = findReleaseDate(rules);
 

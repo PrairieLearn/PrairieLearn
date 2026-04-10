@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AccessControlJson } from '../../schemas/accessControl.js';
+import type { AccessControlJson, AccessControlJsonInput } from '../../schemas/accessControl.js';
+import type { AssessmentAccessRuleJson } from '../../schemas/infoAssessment.js';
 
+import { classifyArchetype, migrateAllowAccess } from './migration.js';
 import {
   type AccessControlResolverInput,
   type AccessControlRuleInput,
@@ -1214,6 +1216,110 @@ describe('resolveAccessControl', () => {
     });
   });
 
+  describe('migrated non-100% credit rules', () => {
+    it('gives reduced credit before late deadline when no dueDate', () => {
+      // Migrated from: { credit: 50, startDate: ..., endDate: '2025-04-01' }
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-01T00:00:00Z',
+              lateDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 50 }],
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(50);
+      expect(result.active).toBe(true);
+    });
+
+    it('gives 0 credit after late deadline when no dueDate', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-01T00:00:00Z',
+              lateDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 50 }],
+            },
+          }),
+        ],
+        date: new Date('2025-04-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
+    });
+
+    it('gives bonus credit before early deadline when no dueDate', () => {
+      // Migrated from: { credit: 120, startDate: ..., endDate: '2025-04-01' }
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-01T00:00:00Z',
+              earlyDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 120 }],
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(120);
+      expect(result.active).toBe(true);
+    });
+
+    it('gives 0 credit after early deadline when no dueDate', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-01T00:00:00Z',
+              earlyDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 120 }],
+            },
+          }),
+        ],
+        date: new Date('2025-04-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
+    });
+
+    it('resolves bonus+reduced declining credit without dueDate', () => {
+      // Migrated from: [{ credit: 120, endDate: '2025-03-10' }, { credit: 50, endDate: '2025-04-01' }]
+      const rule = makeMainRule({
+        dateControl: {
+          releaseDate: '2025-03-01T00:00:00Z',
+          earlyDeadlines: [{ date: '2025-03-10T00:00:00Z', credit: 120 }],
+          lateDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 50 }],
+        },
+      });
+
+      const beforeBonus = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        date: new Date('2025-03-05T00:00:00Z'),
+      });
+      expect(beforeBonus.credit).toBe(120);
+
+      const afterBonus = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(afterBonus.credit).toBe(50);
+
+      const afterAll = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        date: new Date('2025-04-15T00:00:00Z'),
+      });
+      expect(afterAll.credit).toBe(0);
+    });
+  });
+
   describe('no date control defaults', () => {
     it.each([
       { label: 'dateControl absent', rule: {} },
@@ -1803,5 +1909,117 @@ describe('formatDateShort', () => {
     expect(result).toMatch(/Sat/);
     expect(result).toMatch(/Mar/);
     expect(result).toMatch(/15/);
+  });
+});
+
+/**
+ * Converts migrated `AccessControlJsonInput` (string dates) into the runtime
+ * representation expected by the resolver.
+ */
+function migratedToRuntime(json: AccessControlJsonInput): RuntimeAccessControl {
+  const result: RuntimeAccessControl = {};
+  if (json.dateControl) {
+    const { releaseDate, dueDate, ...rest } = json.dateControl;
+    result.dateControl = {
+      ...rest,
+      releaseDate: releaseDate != null ? new Date(releaseDate) : undefined,
+      dueDate: dueDate !== undefined ? (dueDate !== null ? new Date(dueDate) : null) : undefined,
+    };
+  }
+  if (json.listBeforeRelease !== undefined) result.listBeforeRelease = json.listBeforeRelease;
+  return result;
+}
+
+function resolveMigratedAt(migrated: AccessControlJsonInput, date: string): number | null {
+  const input: AccessControlResolverInput = {
+    rules: [
+      {
+        rule: migratedToRuntime(migrated),
+        number: 0,
+        targetType: 'none',
+        enrollmentIds: [],
+        studentLabelIds: [],
+        prairietestExams: [],
+      },
+    ],
+    enrollment: { enrollmentId: 'e1', studentLabelIds: [] },
+    date: new Date(date),
+    displayTimezone: 'UTC',
+    authzMode: 'Public',
+    courseRole: 'None',
+    courseInstanceRole: 'None',
+    prairieTestReservations: [],
+  };
+  return resolveAccessControl(input).credit;
+}
+
+function migrateRules(rules: AssessmentAccessRuleJson[]): AccessControlJsonInput {
+  const archetype = classifyArchetype(rules);
+  return migrateAllowAccess(archetype, rules).result;
+}
+
+describe('migration → resolver round-trip', () => {
+  it('single-reduced-credit preserves reduced credit through the resolver', () => {
+    const migrated = migrateRules([
+      { credit: 50, startDate: '2024-01-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
+    ]);
+
+    expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(50);
+    expect(resolveMigratedAt(migrated, '2024-07-01T00:00:00Z')).toBe(0);
+  });
+
+  it('single bonus credit preserves bonus credit through the resolver', () => {
+    const migrated = migrateRules([
+      { credit: 120, startDate: '2024-01-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
+    ]);
+
+    expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(120);
+    expect(resolveMigratedAt(migrated, '2024-07-01T00:00:00Z')).toBe(0);
+  });
+
+  it('declining-credit with bonus + reduced (no full) preserves all credit tiers', () => {
+    const migrated = migrateRules([
+      { credit: 120, startDate: '2024-01-01T00:00:00Z', endDate: '2024-02-01T00:00:00Z' },
+      { credit: 50, startDate: '2024-02-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
+    ]);
+
+    expect(resolveMigratedAt(migrated, '2024-01-15T00:00:00Z')).toBe(120);
+    expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(50);
+    expect(resolveMigratedAt(migrated, '2024-07-01T00:00:00Z')).toBe(0);
+  });
+
+  it('declining-credit with multiple bonus + reduced (no full) preserves all tiers', () => {
+    const migrated = migrateRules([
+      { credit: 130, startDate: '2024-01-01T00:00:00Z', endDate: '2024-01-15T00:00:00Z' },
+      { credit: 120, startDate: '2024-01-01T00:00:00Z', endDate: '2024-02-01T00:00:00Z' },
+      { credit: 50, startDate: '2024-02-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
+    ]);
+
+    expect(resolveMigratedAt(migrated, '2024-01-10T00:00:00Z')).toBe(130);
+    expect(resolveMigratedAt(migrated, '2024-01-20T00:00:00Z')).toBe(120);
+    expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(50);
+    expect(resolveMigratedAt(migrated, '2024-07-01T00:00:00Z')).toBe(0);
+  });
+
+  it('declining-credit with bonus + full + reduced preserves all tiers', () => {
+    const migrated = migrateRules([
+      { credit: 110, startDate: '2024-01-01T00:00:00Z', endDate: '2024-02-01T00:00:00Z' },
+      { credit: 100, startDate: '2024-01-01T00:00:00Z', endDate: '2024-03-01T00:00:00Z' },
+      { credit: 50, startDate: '2024-01-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
+    ]);
+
+    expect(resolveMigratedAt(migrated, '2024-01-15T00:00:00Z')).toBe(110);
+    expect(resolveMigratedAt(migrated, '2024-02-15T00:00:00Z')).toBe(100);
+    expect(resolveMigratedAt(migrated, '2024-04-15T00:00:00Z')).toBe(50);
+    expect(resolveMigratedAt(migrated, '2024-07-01T00:00:00Z')).toBe(0);
+  });
+
+  it('single-deadline with full credit preserves 100% through the resolver', () => {
+    const migrated = migrateRules([
+      { credit: 100, startDate: '2024-01-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
+    ]);
+
+    expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(100);
+    expect(resolveMigratedAt(migrated, '2024-07-01T00:00:00Z')).toBe(0);
   });
 });

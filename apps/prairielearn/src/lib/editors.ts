@@ -970,7 +970,7 @@ export class CourseInstanceCopyEditor extends Editor {
           infoPath,
           this.accessControlMigration.strategy,
           this.accessControlMigration.preserveIncompatible,
-          this.metadataOverrides?.publishing?.startDate ?? new Date().toISOString(),
+          this.metadataOverrides?.publishing?.startDate ?? new Date().toISOString().slice(0, 19),
         );
       }
 
