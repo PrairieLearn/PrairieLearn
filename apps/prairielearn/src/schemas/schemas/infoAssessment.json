@@ -898,6 +898,9 @@
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {
+                    "hidden": {
+                      "type": "boolean"
+                    },
                     "visibleFrom": {
                       "type": "null"
                     },
@@ -911,6 +914,10 @@
                   "additionalProperties": false,
                   "required": ["visibleFrom"],
                   "properties": {
+                    "hidden": {
+                      "type": "boolean",
+                      "const": true
+                    },
                     "visibleFrom": {
                       "$ref": "#/definitions/DatetimeLocalStringSchema"
                     },
@@ -925,68 +932,6 @@
                       ]
                     }
                   }
-                },
-                {
-                  "anyOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "required": ["hidden"],
-                      "properties": {
-                        "hidden": {
-                          "type": "boolean",
-                          "const": false
-                        },
-                        "visibleFrom": {
-                          "type": "null"
-                        },
-                        "visibleUntil": {
-                          "type": "null"
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "required": ["hidden"],
-                      "properties": {
-                        "hidden": {
-                          "type": "boolean",
-                          "const": true
-                        },
-                        "visibleFrom": {
-                          "type": "null"
-                        },
-                        "visibleUntil": {
-                          "type": "null"
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "required": ["hidden", "visibleFrom"],
-                      "properties": {
-                        "hidden": {
-                          "type": "boolean",
-                          "const": true
-                        },
-                        "visibleFrom": {
-                          "$ref": "#/definitions/DatetimeLocalStringSchema"
-                        },
-                        "visibleUntil": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/definitions/DatetimeLocalStringSchema"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        }
-                      }
-                    }
-                  ]
                 }
               ]
             },
@@ -996,56 +941,27 @@
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {
+                    "hidden": {
+                      "type": "boolean"
+                    },
                     "visibleFrom": {
-                      "anyOf": [
-                        {
-                          "$ref": "#/definitions/DatetimeLocalStringSchema"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
+                      "type": "null"
                     }
                   }
                 },
                 {
-                  "anyOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "required": ["hidden"],
-                      "properties": {
-                        "hidden": {
-                          "type": "boolean",
-                          "const": false
-                        },
-                        "visibleFrom": {
-                          "type": "null"
-                        }
-                      }
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["visibleFrom"],
+                  "properties": {
+                    "hidden": {
+                      "type": "boolean",
+                      "const": true
                     },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "required": ["hidden"],
-                      "properties": {
-                        "hidden": {
-                          "type": "boolean",
-                          "const": true
-                        },
-                        "visibleFrom": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/definitions/DatetimeLocalStringSchema"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        }
-                      }
+                    "visibleFrom": {
+                      "$ref": "#/definitions/DatetimeLocalStringSchema"
                     }
-                  ]
+                  }
                 }
               ]
             }

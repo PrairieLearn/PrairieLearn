@@ -93,15 +93,11 @@ function prepareRuleRow(
   const passwordField = mapField(dateControl.password);
   const afterLastDeadlineAllowSubmissionsField = mapField(afterLastDeadline?.allowSubmissions);
   const afterLastDeadlineCreditField = mapField(afterLastDeadline?.credit);
-  const questions = afterComplete.questions;
-  const questionsHiddenField = mapField(
-    questions && 'hidden' in questions ? questions.hidden : undefined,
-  );
-  const questionsVisibleFromField = mapField(questions?.visibleFrom);
-  const questionsVisibleUntilField = mapField(questions?.visibleUntil);
-  const score = afterComplete.score;
-  const scoreHiddenField = mapField(score && 'hidden' in score ? score.hidden : undefined);
-  const scoreVisibleFromField = mapField(score?.visibleFrom);
+  const questionsHiddenField = mapField(afterComplete.questions?.hidden);
+  const questionsVisibleFromField = mapField(afterComplete.questions?.visibleFrom);
+  const questionsVisibleUntilField = mapField(afterComplete.questions?.visibleUntil);
+  const scoreHiddenField = mapField(afterComplete.score?.hidden);
+  const scoreVisibleFromField = mapField(afterComplete.score?.visibleFrom);
 
   const ruleLabels = rule.labels ?? [];
   const studentLabelIds = ruleLabels

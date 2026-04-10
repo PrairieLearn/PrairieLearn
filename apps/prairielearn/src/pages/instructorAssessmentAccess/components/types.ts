@@ -168,12 +168,12 @@ export function jsonToMainRuleFormData(
     password: dc?.password ?? null,
     prairieTestExams: json.integrations?.prairieTest?.exams ?? [],
     questionVisibility: {
-      hidden: ac?.questions && 'hidden' in ac.questions ? ac.questions.hidden : true,
+      hidden: ac?.questions?.hidden ?? true,
       visibleFrom: toLocalDatetimeValue(ac?.questions?.visibleFrom, displayTimezone) ?? undefined,
       visibleUntil: toLocalDatetimeValue(ac?.questions?.visibleUntil, displayTimezone) ?? undefined,
     },
     scoreVisibility: {
-      hidden: ac?.score && 'hidden' in ac.score ? ac.score.hidden : false,
+      hidden: ac?.score?.hidden ?? false,
       visibleFrom: toLocalDatetimeValue(ac?.score?.visibleFrom, displayTimezone) ?? undefined,
     },
   };
@@ -258,7 +258,7 @@ export function jsonToOverrideFormData(
   }
 
   let questionVisibility: QuestionVisibilityValue = { hidden: true };
-  if (ac?.questions && 'hidden' in ac.questions) {
+  if (ac?.questions?.hidden !== undefined) {
     questionVisibility = {
       hidden: ac.questions.hidden,
       visibleFrom: toLocalDatetimeValue(ac.questions.visibleFrom, displayTimezone) ?? undefined,
@@ -268,7 +268,7 @@ export function jsonToOverrideFormData(
   }
 
   let scoreVisibility: ScoreVisibilityValue = { hidden: false };
-  if (ac?.score && 'hidden' in ac.score) {
+  if (ac?.score?.hidden !== undefined) {
     scoreVisibility = {
       hidden: ac.score.hidden,
       visibleFrom: toLocalDatetimeValue(ac.score.visibleFrom, displayTimezone) ?? undefined,

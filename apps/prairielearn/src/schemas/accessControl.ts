@@ -83,71 +83,43 @@ const IntegrationsJsonSchema = z
   .strict()
   .optional();
 
-const QuestionsJsonSchema = z.union([
-  z
-    .object({
-      hidden: z.literal(false),
-      visibleFrom: z.null().optional(),
-      visibleUntil: z.null().optional(),
-    })
-    .strict(),
-  z
-    .object({
-      hidden: z.literal(true),
-      visibleFrom: z.null().optional(),
-      visibleUntil: z.null().optional(),
-    })
-    .strict(),
-  z
-    .object({
-      hidden: z.literal(true),
-      visibleFrom: DatetimeLocalStringSchema,
-      visibleUntil: DatetimeLocalStringSchema.nullable().optional(),
-    })
-    .strict(),
-]);
-
-const ScoreJsonSchema = z.union([
-  z.object({ hidden: z.literal(false), visibleFrom: z.null().optional() }).strict(),
-  z
-    .object({
-      hidden: z.literal(true),
-      visibleFrom: DatetimeLocalStringSchema.nullable().optional(),
-    })
-    .strict(),
-]);
-
 const AfterCompleteQuestionsJsonSchema = z
   .union([
-    // No hidden, no visibleFrom — visibleUntil not allowed.
+    // No dates — hidden can be any value or absent.
     z
       .object({
+        hidden: z.boolean().optional(),
         visibleFrom: z.null().optional(),
         visibleUntil: z.null().optional(),
       })
       .strict(),
-    // No hidden, with visibleFrom — visibleUntil allowed.
+    // With dates — hidden must be true or absent (not false).
     z
       .object({
+        hidden: z.literal(true).optional(),
         visibleFrom: DatetimeLocalStringSchema,
         visibleUntil: DatetimeLocalStringSchema.nullable().optional(),
       })
       .strict(),
-    // With hidden — delegate to the union.
-    QuestionsJsonSchema,
   ])
   .optional();
 
 const AfterCompleteScoreJsonSchema = z
   .union([
-    // When hidden is absent (override inheriting boolean from defaults), allow any date fields.
+    // No dates — hidden can be any value or absent.
     z
       .object({
-        visibleFrom: DatetimeLocalStringSchema.nullable().optional(),
+        hidden: z.boolean().optional(),
+        visibleFrom: z.null().optional(),
       })
       .strict(),
-    // When hidden is present, use the discriminated union rules.
-    ScoreJsonSchema,
+    // With dates — hidden must be true or absent (not false).
+    z
+      .object({
+        hidden: z.literal(true).optional(),
+        visibleFrom: DatetimeLocalStringSchema,
+      })
+      .strict(),
   ])
   .optional();
 
