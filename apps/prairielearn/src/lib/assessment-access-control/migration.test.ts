@@ -14,6 +14,7 @@ import {
   migrateAllowAccess,
   migrateAssessmentJson,
 } from './migration.js';
+import { validateRule } from './validation.js';
 
 describe('classifyArchetype', () => {
   const cases: { name: string; rules: AssessmentAccessRuleJson[]; expected: string }[] = [
@@ -392,7 +393,7 @@ describe('migrateAllowAccess', () => {
     assert.lengthOf(warnings, 0);
   });
 
-  it('emits lateDeadlines in chronological order even when credit order differs', () => {
+  it('collapses dominated late deadlines so migrated credit stays monotonic', () => {
     // Reduced rules intentionally out of chronological order relative to credit:
     // later date has higher credit, earlier date has lower credit.
     const rules: AssessmentAccessRuleJson[] = [
@@ -400,11 +401,10 @@ describe('migrateAllowAccess', () => {
       { credit: 80, startDate: '2024-01-01', endDate: '2024-06-01' },
       { credit: 30, startDate: '2024-01-01', endDate: '2024-04-01' },
     ];
-    const { result } = migrateAllowAccess('declining-credit', rules);
-    assert.deepEqual(result.dateControl?.lateDeadlines, [
-      { date: '2024-04-01', credit: 30 },
-      { date: '2024-06-01', credit: 80 },
-    ]);
+    const { result, warnings } = migrateAllowAccess('declining-credit', rules);
+    assert.deepEqual(result.dateControl?.lateDeadlines, [{ date: '2024-06-01', credit: 80 }]);
+    assert.match(warnings[0], /collapsed/);
+    assert.deepEqual(validateRule(result, 'none'), []);
   });
 
   it('migrates single-reduced-credit as late deadline without dueDate', () => {

@@ -84,15 +84,15 @@ Below is a complete skeleton showing all available fields. All fields are option
 
 Controls when the assessment is available and how credit is computed over time.
 
-| Field               | Type    | Description                                                                                            |
-| ------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| `releaseDate`       | string  | ISO datetime. The assessment is not visible to students before this date.                              |
-| `dueDate`           | string  | ISO datetime. The primary deadline. Students receive 100% credit before this date.                     |
-| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines _before_ the due date offering bonus credit (e.g., 110%). |
-| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines _after_ the due date offering reduced credit (e.g., 80%). |
-| `afterLastDeadline` | object  | Controls behavior after all deadlines have passed. See below.                                          |
-| `durationMinutes`   | integer | Time limit in minutes for timed assessments.                                                           |
-| `password`          | string  | Proctor password required to start the assessment.                                                     |
+| Field               | Type    | Description                                                                                                  |
+| ------------------- | ------- | ------------------------------------------------------------------------------------------------------------ |
+| `releaseDate`       | string  | ISO datetime. The assessment is not visible to students before this date.                                    |
+| `dueDate`           | string  | ISO datetime. The primary deadline. Students receive 100% credit before this date.                           |
+| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines _on or before_ the due date offering bonus credit (e.g., 110%). |
+| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines _on or after_ the due date offering reduced credit (e.g., 80%). |
+| `afterLastDeadline` | object  | Controls behavior after all deadlines have passed. See below.                                                |
+| `durationMinutes`   | integer | Time limit in minutes for timed assessments.                                                                 |
+| `password`          | string  | Proctor password required to start the assessment.                                                           |
 
 #### `afterLastDeadline`
 

@@ -824,6 +824,33 @@ describe('Global temporal validation', () => {
     assert.deepEqual(issues, []);
   });
 
+  it('allows global late deadline equal to inherited due date', () => {
+    const issues = validateGlobalDateConsistencyIssues([
+      {
+        rule: AccessControlJsonSchema.parse({
+          dateControl: {
+            releaseDate: '2024-04-07T00:00:00',
+            dueDate: '2024-04-10T00:00:00',
+          },
+        }),
+        targetType: 'none',
+        ruleIndex: 0,
+      },
+      {
+        rule: AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: {
+            lateDeadlines: [{ date: '2024-04-10T00:00:00', credit: 80 }],
+          },
+        }),
+        targetType: 'student_label',
+        ruleIndex: 1,
+      },
+    ]);
+
+    assert.deepEqual(issues, []);
+  });
+
   it('does not skip due-based global checks when an override inherits the due date', () => {
     const issues = validateGlobalDateConsistencyIssues([
       {

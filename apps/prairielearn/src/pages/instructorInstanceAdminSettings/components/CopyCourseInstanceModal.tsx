@@ -373,12 +373,14 @@ function AccessControlStep({
 
   return (
     <Modal.Body>
-      {analysisQuery.isError ? (
+      {analysisQuery.isError && (
         <Alert variant="danger">
           {appError?.message ?? 'Failed to analyze access control rules.'} You can still choose how
           copied assessments should handle any legacy access control rules that are encountered.
         </Alert>
-      ) : (
+      )}
+
+      {assessments.length > 0 && (
         <>
           <p>
             This course instance has{' '}

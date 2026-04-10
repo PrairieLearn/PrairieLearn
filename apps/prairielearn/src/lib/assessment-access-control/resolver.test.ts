@@ -349,6 +349,23 @@ describe('resolveAccessControl', () => {
       });
       expect(result.credit).toBe(100);
     });
+
+    it('gives bonus credit when early deadline is equal to due date', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-01T00:00:00Z',
+              earlyDeadlines: [{ date: '2025-03-20T00:00:00Z', credit: 110 }],
+              dueDate: '2025-03-20T00:00:00Z',
+            },
+          }),
+        ],
+        date: new Date('2025-03-12T00:00:00Z'),
+      });
+      expect(result.credit).toBe(110);
+    });
   });
 
   describe('override matching by enrollment', () => {

@@ -297,12 +297,12 @@ export function validateGlobalDateConsistencyIssues(
     ).entries()) {
       const deadlineMs = new Date(deadline.date).getTime();
 
-      if (!dueCanBeUnset && minDueMs != null && deadlineMs <= minDueMs) {
+      if (!dueCanBeUnset && minDueMs != null && deadlineMs < minDueMs) {
         pushIssue(
           issues,
           validationRule,
           ['dateControl', 'lateDeadlines', index, 'date'],
-          'Late deadline must be after the earliest possible due date.',
+          'Late deadline must be on or after the earliest possible due date.',
         );
       }
     }

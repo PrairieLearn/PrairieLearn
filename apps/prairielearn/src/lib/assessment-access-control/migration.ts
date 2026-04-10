@@ -301,6 +301,47 @@ function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
   return { result, warnings };
 }
 
+function normalizeCreditDeadlines(
+  rules: AssessmentAccessRuleJson[],
+  deadlineKind: 'early' | 'late',
+): { deadlines: { date: string; credit: number }[]; warnings: string[] } {
+  const bestCreditByDate = new Map<string, number>();
+  for (const rule of rules) {
+    if (!rule.endDate || rule.credit == null) continue;
+    const previousCredit = bestCreditByDate.get(rule.endDate);
+    if (previousCredit == null || rule.credit > previousCredit) {
+      bestCreditByDate.set(rule.endDate, rule.credit);
+    }
+  }
+
+  const sorted = Array.from(bestCreditByDate.entries())
+    .map(([date, credit]) => ({ date, credit }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const kept: { date: string; credit: number }[] = [];
+  let maxCreditSeen = -Infinity;
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const deadline = sorted[i];
+    if (deadline.credit > maxCreditSeen) {
+      kept.push(deadline);
+      maxCreditSeen = deadline.credit;
+    }
+  }
+  kept.reverse();
+
+  const droppedCount = rules.filter((rule) => rule.endDate).length - kept.length;
+  const warnings =
+    droppedCount > 0
+      ? [
+          `${droppedCount} ${deadlineKind} deadline${
+            droppedCount === 1 ? '' : 's'
+          } collapsed because higher-credit rules cover the same period.`,
+        ]
+      : [];
+
+  return { deadlines: kept, warnings };
+}
+
 function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
   result: AccessControlJsonInput;
   warnings: string[];
@@ -334,16 +375,18 @@ function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
   if (dueDate) result.dateControl!.dueDate = dueDate;
 
   if (bonusRules.length > 0) {
-    result.dateControl!.earlyDeadlines = bonusRules
-      .filter((r) => r.endDate)
-      .map((r) => ({ date: r.endDate!, credit: r.credit! }));
+    const { deadlines, warnings: deadlineWarnings } = normalizeCreditDeadlines(bonusRules, 'early');
+    warnings.push(...deadlineWarnings);
+    if (deadlines.length > 0) result.dateControl!.earlyDeadlines = deadlines;
   }
 
   if (reducedRules.length > 0) {
-    result.dateControl!.lateDeadlines = reducedRules
-      .filter((r) => r.endDate)
-      .sort((a, b) => (a.endDate ?? '').localeCompare(b.endDate ?? ''))
-      .map((r) => ({ date: r.endDate!, credit: r.credit! }));
+    const { deadlines, warnings: deadlineWarnings } = normalizeCreditDeadlines(
+      reducedRules,
+      'late',
+    );
+    warnings.push(...deadlineWarnings);
+    if (deadlines.length > 0) result.dateControl!.lateDeadlines = deadlines;
   }
 
   const afterComplete = buildAfterComplete(rules);

@@ -1,5 +1,6 @@
 import * as path from 'path';
 
+import { Temporal } from '@js-temporal/polyfill';
 import { Router } from 'express';
 import fs from 'fs-extra';
 
@@ -33,12 +34,9 @@ import {
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
-function todayAsDatetimeLocal(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}T00:00:00`;
+function todayAsDatetimeLocal(timezone: string): string {
+  const today = Temporal.Now.plainDateISO(timezone);
+  return `${today.toString()}T00:00:00`;
 }
 
 function getAssessmentPath(
@@ -115,7 +113,10 @@ router.get(
         const parsed = JSON.parse(content);
         const beforeJson = JSON.stringify(parsed.allowAccess, null, 2);
 
-        const migrationResult = migrateAssessmentJson(content, todayAsDatetimeLocal());
+        const migrationResult = migrateAssessmentJson(
+          content,
+          todayAsDatetimeLocal(res.locals.course_instance.display_timezone),
+        );
         if (migrationResult) {
           const migratedParsed = JSON.parse(migrationResult.json);
           const afterJson = JSON.stringify(migratedParsed.accessControl, null, 2);
@@ -178,7 +179,10 @@ router.post(
       const assessmentPath = getAssessmentPath(res.locals);
       const content = await fs.readFile(assessmentPath, 'utf-8');
 
-      const migrationResult = migrateAssessmentJson(content, todayAsDatetimeLocal());
+      const migrationResult = migrateAssessmentJson(
+        content,
+        todayAsDatetimeLocal(res.locals.course_instance.display_timezone),
+      );
 
       let formattedJson: string;
       if (migrationResult) {
@@ -186,6 +190,7 @@ router.post(
       } else if (req.body.migrate_strategy === 'wipe') {
         const data = JSON.parse(content);
         delete data.allowAccess;
+        data.accessControl = [];
         formattedJson = await formatJsonWithPrettier(JSON.stringify(data));
       } else {
         flash('error', 'This assessment cannot be automatically migrated.');
