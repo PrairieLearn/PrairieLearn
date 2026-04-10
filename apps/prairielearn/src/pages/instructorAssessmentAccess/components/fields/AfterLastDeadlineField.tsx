@@ -8,6 +8,7 @@ import {
   useWatch,
 } from 'react-hook-form';
 
+import { run } from '@prairielearn/run';
 import { RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
@@ -68,22 +69,6 @@ function resolveConstraints(
   };
 }
 
-type FormPath = FieldPath<AccessControlFormData>;
-
-/** Field paths that the credit validation depends on. */
-function getCreditDeps(overrideIndex?: number): FormPath[] {
-  if (overrideIndex == null) {
-    return ['mainRule.dueDate', 'mainRule.lateDeadlines'];
-  }
-  return [
-    `overrides.${overrideIndex}.overriddenFields` as FormPath,
-    `overrides.${overrideIndex}.dueDate` as FormPath,
-    `overrides.${overrideIndex}.lateDeadlines` as FormPath,
-    'mainRule.dueDate',
-    'mainRule.lateDeadlines',
-  ];
-}
-
 function AfterLastDeadlineInput({
   value,
   onChange,
@@ -102,7 +87,21 @@ function AfterLastDeadlineInput({
     ? (`overrides.${overrideIndex}.afterLastDeadline.credit` as const)
     : ('mainRule.afterLastDeadline.credit' as const);
   const idPrefix = isOverride ? `overrides-${overrideIndex}` : 'mainRule';
-  const creditDeps = getCreditDeps(overrideIndex);
+
+  // Field paths that affect credit validation — used for both display
+  // reactivity (useWatch) and validation re-triggering (deps).
+  const creditDeps = run<FieldPath<AccessControlFormData>[]>(() => {
+    if (isOverride) {
+      return [
+        'mainRule.dueDate',
+        'mainRule.lateDeadlines',
+        `overrides.${overrideIndex}.overriddenFields`,
+        `overrides.${overrideIndex}.dueDate`,
+        `overrides.${overrideIndex}.lateDeadlines`,
+      ];
+    }
+    return ['mainRule.dueDate', 'mainRule.lateDeadlines'];
+  });
 
   const { register, getValues } = useFormContext<AccessControlFormData>();
   const { errors } = useFormState();
