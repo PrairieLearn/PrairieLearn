@@ -10,4 +10,4 @@ WHERE
     OR succeeded_at < date
   )
   AND name != 'sendUnfinishedCronWarnings'
-  AND date > now() - interval '1 day';
+  AND date > now() - interval '36 hours';
