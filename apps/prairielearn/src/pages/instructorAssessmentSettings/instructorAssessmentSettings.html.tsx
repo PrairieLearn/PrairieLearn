@@ -507,16 +507,24 @@ function InstructorAssessmentSettingsInner({
                 </label>
                 <input
                   type="number"
-                  className="form-control"
+                  className={clsx('form-control', errors.max_points && 'is-invalid')}
                   id="max_points"
                   aria-describedby="max-points-help"
+                  aria-invalid={errors.max_points ? 'true' : 'false'}
+                  {...(errors.max_points ? { 'aria-errormessage': 'max-points-error' } : {})}
                   placeholder="Auto (sum of zones)"
-                  min="0"
                   step="any"
                   disabled={!canEdit || !useCustomMaxPoints}
                   defaultValue={defaultValues.max_points}
-                  {...register('max_points')}
+                  {...register('max_points', {
+                    validate: (v) => v === '' || Number(v) >= 0 || 'Must be 0 or greater',
+                  })}
                 />
+                {errors.max_points && (
+                  <div id="max-points-error" className="invalid-feedback">
+                    {errors.max_points.message}
+                  </div>
+                )}
                 <small id="max-points-help" className="form-text text-muted">
                   {useCustomMaxPoints
                     ? 'Points needed for 100% score.'
@@ -529,16 +537,26 @@ function InstructorAssessmentSettingsInner({
                 </label>
                 <input
                   type="number"
-                  className="form-control"
+                  className={clsx('form-control', errors.max_bonus_points && 'is-invalid')}
                   id="max_bonus_points"
                   aria-describedby="max-bonus-points-help"
+                  aria-invalid={errors.max_bonus_points ? 'true' : 'false'}
+                  {...(errors.max_bonus_points
+                    ? { 'aria-errormessage': 'max-bonus-points-error' }
+                    : {})}
                   placeholder="0"
-                  min="0"
                   step="any"
                   disabled={!canEdit}
                   defaultValue={defaultValues.max_bonus_points}
-                  {...register('max_bonus_points')}
+                  {...register('max_bonus_points', {
+                    validate: (v) => v === '' || Number(v) >= 0 || 'Must be 0 or greater',
+                  })}
                 />
+                {errors.max_bonus_points && (
+                  <div id="max-bonus-points-error" className="invalid-feedback">
+                    {errors.max_bonus_points.message}
+                  </div>
+                )}
                 <small id="max-bonus-points-help" className="form-text text-muted">
                   Maximum additional points beyond the maximum.
                 </small>
@@ -600,20 +618,34 @@ function InstructorAssessmentSettingsInner({
                     <InputGroup>
                       <input
                         type="number"
-                        className="form-control"
+                        className={clsx('form-control', errors.advance_score_perc && 'is-invalid')}
                         id="advance_score_perc"
                         aria-describedby="advance-score-perc-help"
-                        min="0"
-                        max="100"
+                        aria-invalid={errors.advance_score_perc ? 'true' : 'false'}
+                        {...(errors.advance_score_perc
+                          ? { 'aria-errormessage': 'advance-score-perc-error' }
+                          : {})}
                         step="1"
                         disabled={!canEdit}
                         defaultValue={defaultValues.advance_score_perc}
-                        {...register('advance_score_perc')}
+                        {...register('advance_score_perc', {
+                          validate: (v) => {
+                            if (v === '') return true;
+                            const n = Number(v);
+                            if (n < 0 || n > 100) return 'Must be between 0 and 100';
+                            return true;
+                          },
+                        })}
                       />
                       <InputGroup.Text>%</InputGroup.Text>
                     </InputGroup>
                   </div>
                 </div>
+                {errors.advance_score_perc && (
+                  <div id="advance-score-perc-error" className="invalid-feedback d-block">
+                    {errors.advance_score_perc.message}
+                  </div>
+                )}
                 <small id="advance-score-perc-help" className="form-text text-muted">
                   Minimum score percentage to unlock the next question.
                 </small>
@@ -655,16 +687,26 @@ function InstructorAssessmentSettingsInner({
                 <div className="col-md-4">
                   <input
                     type="number"
-                    className="form-control"
+                    className={clsx('form-control', errors.grade_rate_minutes && 'is-invalid')}
                     id="grade_rate_minutes"
                     aria-describedby="grade-rate-minutes-help"
+                    aria-invalid={errors.grade_rate_minutes ? 'true' : 'false'}
+                    {...(errors.grade_rate_minutes
+                      ? { 'aria-errormessage': 'grade-rate-minutes-error' }
+                      : {})}
                     placeholder="0"
-                    min="0"
                     step="any"
                     disabled={!canEdit}
                     defaultValue={defaultValues.grade_rate_minutes}
-                    {...register('grade_rate_minutes')}
+                    {...register('grade_rate_minutes', {
+                      validate: (v) => v === '' || Number(v) >= 0 || 'Must be 0 or greater',
+                    })}
                   />
+                  {errors.grade_rate_minutes && (
+                    <div id="grade-rate-minutes-error" className="invalid-feedback">
+                      {errors.grade_rate_minutes.message}
+                    </div>
+                  )}
                 </div>
               </div>
               <small id="grade-rate-minutes-help" className="form-text text-muted">
