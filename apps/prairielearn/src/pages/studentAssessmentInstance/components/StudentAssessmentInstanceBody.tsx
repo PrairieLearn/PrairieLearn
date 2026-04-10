@@ -14,18 +14,11 @@ import type {
 StudentAssessmentInstanceBody.displayName = 'StudentAssessmentInstanceBody';
 
 export function StudentAssessmentInstanceBody({
-  assessmentType,
-  assessmentSetAbbreviation,
-  assessmentNumber,
-  assessmentTitle,
-  isTeamWork,
+  assessment,
+  assessmentSet,
   assessmentInstance,
   remainingMs,
-  active,
-  authorizedEdit,
-  creditDateString,
-  password,
-  showClosedAssessment,
+  authzResult,
   hasManualGradingQuestion,
   hasAutoGradingQuestion,
   someQuestionsAllowRealTimeGrading,
@@ -50,10 +43,12 @@ export function StudentAssessmentInstanceBody({
   const [showTimeLimitExpired, setShowTimeLimitExpired] = useState(showTimeLimitExpiredModal);
   const [activeLockpointZoneId, setActiveLockpointZoneId] = useState<string | null>(null);
   const [lockpointConfirmed, setLockpointConfirmed] = useState(false);
+  const { active, authorizedEdit, creditDateString, hasPassword, showClosedAssessment } =
+    authzResult;
 
   const assessmentInstanceOpen = !!assessmentInstance.open;
   const allQuestionsDisabled = !someQuestionsAllowRealTimeGrading;
-  const showExamFooterContent = assessmentType === 'Exam' && assessmentInstanceOpen && active;
+  const showExamFooterContent = assessment.type === 'Exam' && assessmentInstanceOpen && active;
   const showUnauthorizedEditWarning = !authorizedEdit;
   const showCardFooter = showExamFooterContent || showUnauthorizedEditWarning;
 
@@ -81,10 +76,10 @@ export function StudentAssessmentInstanceBody({
       <div className="card mb-4">
         <div className="card-header bg-primary text-white d-flex align-items-center">
           <h1>
-            {assessmentSetAbbreviation}
-            {assessmentNumber}: {assessmentTitle}
+            {assessmentSet.abbreviation}
+            {assessment.number}: {assessment.title}
           </h1>
-          {isTeamWork && (
+          {assessment.team_work && (
             <>
               &nbsp;
               <i className="fas fa-users" />
@@ -178,7 +173,7 @@ export function StudentAssessmentInstanceBody({
           >
             <thead>
               <InstanceQuestionTableHeader
-                assessmentType={assessmentType}
+                assessmentType={assessment.type}
                 hasAutoGradingQuestion={hasAutoGradingQuestion}
                 hasManualGradingQuestion={hasManualGradingQuestion}
                 someQuestionsAllowRealTimeGrading={someQuestionsAllowRealTimeGrading}
@@ -188,7 +183,7 @@ export function StudentAssessmentInstanceBody({
               <QuestionTableBody
                 questionRows={questionRows}
                 rowRenderedHtml={rowRenderedHtml}
-                assessmentType={assessmentType}
+                assessmentType={assessment.type}
                 hasAutoGradingQuestion={hasAutoGradingQuestion}
                 hasManualGradingQuestion={hasManualGradingQuestion}
                 someQuestionsAllowRealTimeGrading={someQuestionsAllowRealTimeGrading}
@@ -216,7 +211,7 @@ export function StudentAssessmentInstanceBody({
                 savedAnswers={savedAnswers}
                 suspendedSavedAnswers={suspendedSavedAnswers}
                 authorizedEdit={authorizedEdit}
-                password={password}
+                hasPassword={hasPassword}
                 showClosedAssessment={showClosedAssessment}
                 csrfToken={csrfToken}
                 onFinish={() => setShowConfirmFinish(true)}
@@ -937,7 +932,7 @@ function ExamFooterContent({
   savedAnswers,
   suspendedSavedAnswers,
   authorizedEdit,
-  password,
+  hasPassword,
   showClosedAssessment,
   csrfToken,
   onFinish,
@@ -947,7 +942,7 @@ function ExamFooterContent({
   savedAnswers: number;
   suspendedSavedAnswers: number;
   authorizedEdit: boolean;
-  password: string | null;
+  hasPassword: boolean;
   showClosedAssessment: boolean;
   csrfToken: string;
   onFinish: () => void;
@@ -994,7 +989,7 @@ function ExamFooterContent({
             with <strong>Available points</strong> can be attempted again for more points.
             Attempting questions again will never reduce the points you already have.
           </li>
-          {password != null || !showClosedAssessment || someQuestionsForbidRealTimeGrading ? (
+          {hasPassword || !showClosedAssessment || someQuestionsForbidRealTimeGrading ? (
             <li>
               After you have answered all the questions completely, click here:{' '}
               <button

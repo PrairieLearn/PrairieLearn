@@ -1,6 +1,11 @@
 import { type z } from 'zod';
 
-import { RawStudentAssessmentInstanceSchema__UNSAFE } from '../../../lib/client/safe-db-types.js';
+import {
+  RawStudentAssessmentInstanceSchema__UNSAFE,
+  type StudentAssessment,
+  type StudentAssessmentInstanceAuthzResult,
+  type StudentAssessmentSet,
+} from '../../../lib/client/safe-db-types.js';
 
 // Assessment instance parsed from the __UNSAFE schema and transformed
 // to null out score fields when real-time grading is fully disabled.
@@ -51,19 +56,12 @@ export interface RowRenderedHtml {
 }
 
 export interface StudentAssessmentInstanceBodyProps {
-  assessmentType: string;
-  assessmentSetAbbreviation: string;
-  assessmentNumber: string;
-  assessmentTitle: string | null;
-  isTeamWork: boolean;
+  assessment: StudentAssessment;
+  assessmentSet: StudentAssessmentSet;
   assessmentInstance: StudentAssessmentInstance;
   remainingMs: number | null;
 
-  active: boolean;
-  authorizedEdit: boolean;
-  creditDateString: string | null;
-  password: string | null;
-  showClosedAssessment: boolean;
+  authzResult: StudentAssessmentInstanceAuthzResult;
 
   hasManualGradingQuestion: boolean;
   hasAutoGradingQuestion: boolean;

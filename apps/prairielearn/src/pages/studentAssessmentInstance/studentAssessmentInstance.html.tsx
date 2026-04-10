@@ -5,7 +5,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
-import { DateFromISOString, IdSchema } from '@prairielearn/zod';
+import { DateFromISOString } from '@prairielearn/zod';
 
 import {
   RegenerateInstanceAlert,
@@ -24,12 +24,15 @@ import {
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
-  AssessmentQuestionSchema,
-  EnumQuestionAccessModeSchema,
-  type GroupConfig,
-  InstanceQuestionSchema,
-  QuestionSchema,
-} from '../../lib/db-types.js';
+  StudentAssessmentInstanceAuthzResultSchema,
+  StudentAssessmentQuestionSchema,
+  StudentAssessmentSchema,
+  StudentAssessmentSetSchema,
+  StudentInstanceQuestionSchema,
+  StudentQuestionSchema,
+  StudentZoneSchema,
+} from '../../lib/client/safe-db-types.js';
+import { EnumQuestionAccessModeSchema, type GroupConfig } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
 import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
@@ -42,31 +45,20 @@ import {
   StudentAssessmentInstanceSchema,
 } from './components/types.js';
 
-export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
+export const InstanceQuestionRowSchema = z.object({
+  instance_question: StudentInstanceQuestionSchema,
+  zone: StudentZoneSchema,
+  assessment_question: StudentAssessmentQuestionSchema,
+  question: StudentQuestionSchema,
   start_new_zone: z.boolean(),
-  zone_id: IdSchema,
-  zone_number: z.number(),
-  zone_title: z.string().nullable(),
-  lockpoint: z.boolean(),
   lockpoint_crossed: z.boolean(),
   lockpoint_crossed_at: DateFromISOString.nullable(),
   lockpoint_crossed_authn_user_uid: z.string().nullable(),
-  question_title: QuestionSchema.shape.title,
-  max_points: z.number().nullable(),
-  max_manual_points: z.number().nullable(),
-  max_auto_points: z.number().nullable(),
-  init_points: z.number().nullable(),
-  grade_rate_minutes: AssessmentQuestionSchema.shape.grade_rate_minutes,
-  allow_real_time_grading: AssessmentQuestionSchema.shape.allow_real_time_grading,
   row_order: z.number(),
   question_number: z.string(),
-  zone_max_points: z.number().nullable(),
-  zone_has_max_points: z.boolean(),
-  zone_best_questions: z.number().nullable(),
-  zone_has_best_questions: z.boolean(),
+  question_access_mode: EnumQuestionAccessModeSchema,
   zone_question_count: z.number(),
   file_count: z.number(),
-  question_access_mode: EnumQuestionAccessModeSchema,
   prev_advance_score_perc: z.number().nullable(),
   prev_title: z.string().nullable(),
   prev_question_access_mode: EnumQuestionAccessModeSchema.nullable(),
@@ -79,7 +71,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
     })
     .optional(),
 });
-type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
+export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
 export function StudentAssessmentInstance({
   instance_question_rows,
@@ -114,19 +106,19 @@ export function StudentAssessmentInstance({
   let suspendedSavedAnswers = 0;
 
   const someQuestionsAllowRealTimeGrading = instance_question_rows.some(
-    (q) => q.allow_real_time_grading,
+    (q) => q.assessment_question.allow_real_time_grading,
   );
   const someQuestionsForbidRealTimeGrading = instance_question_rows.some(
-    (q) => !q.allow_real_time_grading,
+    (q) => !q.assessment_question.allow_real_time_grading,
   );
 
-  instance_question_rows.forEach((question) => {
-    if (question.status === 'saved') {
-      if (question.allowGradeLeftMs > 0) {
+  instance_question_rows.forEach((row) => {
+    if (row.instance_question.status === 'saved') {
+      if (row.allowGradeLeftMs > 0) {
         suspendedSavedAnswers++;
       } else if (
-        (question.max_auto_points || !question.max_manual_points) &&
-        question.allow_real_time_grading
+        (row.assessment_question.max_auto_points || !row.assessment_question.max_manual_points) &&
+        row.assessment_question.allow_real_time_grading
       ) {
         savedAnswers++;
       }
@@ -159,21 +151,22 @@ export function StudentAssessmentInstance({
     : null;
 
   const firstUncrossedLockpointZoneNumber = instance_question_rows
-    .filter((row) => row.start_new_zone && row.lockpoint && !row.lockpoint_crossed)
-    .map((row) => row.zone_number)
+    .filter((row) => row.start_new_zone && row.zone.lockpoint && !row.lockpoint_crossed)
+    .map((row) => row.zone.number)
     .sort((a, b) => a - b)[0];
 
   // Pre-render shared HTML-template components for the question table cells.
   const rowRenderedHtml: RowRenderedHtml[] = instance_question_rows.map((row) => {
     const rendered: RowRenderedHtml = {};
+    const { instance_question: iq, assessment_question: aq } = row;
 
     if (resLocals.assessment.type === 'Exam') {
       if (row.question_access_mode === 'blocked_lockpoint') {
         rendered.statusHtml = '<span class="badge text-bg-secondary">Locked</span>';
       } else {
         rendered.statusHtml = ExamQuestionStatus({
-          instance_question: row,
-          assessment_question: row,
+          instance_question: iq,
+          assessment_question: aq,
           realTimeGradingPartiallyDisabled:
             someQuestionsAllowRealTimeGrading && someQuestionsForbidRealTimeGrading,
           allowGradeLeftMs: row.allowGradeLeftMs,
@@ -181,14 +174,13 @@ export function StudentAssessmentInstance({
       }
 
       if (resLocals.has_auto_grading_question && someQuestionsAllowRealTimeGrading) {
-        rendered.availablePointsHtml = row.max_auto_points
+        rendered.availablePointsHtml = aq.max_auto_points
           ? ExamQuestionAvailablePoints({
-              open: (resLocals.assessment_instance.open && row.open) ?? false,
+              open: (resLocals.assessment_instance.open && iq.open) ?? false,
               currentWeight:
-                (row.points_list_original?.[row.number_attempts] ?? 0) -
-                (row.max_manual_points ?? 0),
-              pointsList: row.points_list?.map((p) => p - (row.max_manual_points ?? 0)),
-              highestSubmissionScore: row.highest_submission_score,
+                (iq.points_list_original?.[iq.number_attempts] ?? 0) - (aq.max_manual_points ?? 0),
+              pointsList: iq.points_list?.map((p) => p - (aq.max_manual_points ?? 0)),
+              highestSubmissionScore: iq.highest_submission_score,
             }).toString()
           : '&mdash;';
       }
@@ -196,59 +188,59 @@ export function StudentAssessmentInstance({
       if (someQuestionsAllowRealTimeGrading || !resLocals.assessment_instance.open) {
         if (resLocals.has_auto_grading_question && resLocals.has_manual_grading_question) {
           rendered.autoPointsHtml = InstanceQuestionPoints({
-            instance_question: row,
-            assessment_question: row,
+            instance_question: iq,
+            assessment_question: aq,
             component: 'auto',
           }).toString();
           rendered.manualPointsHtml = InstanceQuestionPoints({
-            instance_question: row,
-            assessment_question: row,
+            instance_question: iq,
+            assessment_question: aq,
             component: 'manual',
           }).toString();
         }
         rendered.totalPointsHtml = InstanceQuestionPoints({
-          instance_question: row,
-          assessment_question: row,
+          instance_question: iq,
+          assessment_question: aq,
           component: 'total',
         }).toString();
       } else {
         if (resLocals.has_auto_grading_question && resLocals.has_manual_grading_question) {
-          rendered.autoPointsHtml = formatPoints(row.max_auto_points);
-          rendered.manualPointsHtml = formatPoints(row.max_manual_points);
+          rendered.autoPointsHtml = formatPoints(aq.max_auto_points);
+          rendered.manualPointsHtml = formatPoints(aq.max_manual_points);
         }
-        rendered.totalPointsHtml = formatPoints(row.max_points);
+        rendered.totalPointsHtml = formatPoints(aq.max_points);
       }
     } else {
       // Homework
       if (resLocals.has_auto_grading_question) {
-        if (!row.max_auto_points) {
+        if (!aq.max_auto_points) {
           rendered.availablePointsHtml = '&mdash;';
         } else {
-          const currentAutoValue = (row.current_value ?? 0) - (row.max_manual_points ?? 0);
+          const currentAutoValue = (iq.current_value ?? 0) - (aq.max_manual_points ?? 0);
           rendered.availablePointsHtml = formatPoints(currentAutoValue);
         }
         rendered.variantHistoryHtml = QuestionVariantHistory({
           urlPrefix: resLocals.urlPrefix,
-          instanceQuestionId: row.id,
+          instanceQuestionId: iq.id,
           previousVariants: row.previous_variants,
         }).toString();
       }
 
       if (resLocals.has_auto_grading_question && resLocals.has_manual_grading_question) {
         rendered.autoPointsHtml = InstanceQuestionPoints({
-          instance_question: row,
-          assessment_question: row,
+          instance_question: iq,
+          assessment_question: aq,
           component: 'auto',
         }).toString();
         rendered.manualPointsHtml = InstanceQuestionPoints({
-          instance_question: row,
-          assessment_question: row,
+          instance_question: iq,
+          assessment_question: aq,
           component: 'manual',
         }).toString();
       }
       rendered.totalPointsHtml = InstanceQuestionPoints({
-        instance_question: row,
-        assessment_question: row,
+        instance_question: iq,
+        assessment_question: aq,
         component: 'total',
       }).toString();
     }
@@ -274,12 +266,12 @@ export function StudentAssessmentInstance({
   // Map rows to client-safe type (no db-types.ts references).
   const isGroupAssessment = groupConfig != null;
   const questionRows: ClientQuestionRow[] = instance_question_rows.map((row) => ({
-    id: row.id,
+    id: row.instance_question.id,
     startNewZone: row.start_new_zone,
-    zoneId: row.zone_id,
-    zoneNumber: row.zone_number,
-    zoneTitle: row.zone_title,
-    lockpoint: row.lockpoint,
+    zoneId: row.zone.id,
+    zoneNumber: row.zone.number,
+    zoneTitle: row.zone.title,
+    lockpoint: row.zone.lockpoint,
     lockpointCrossed: row.lockpoint_crossed,
     lockpointCrossedInfo: run(() => {
       if (!row.lockpoint_crossed) return null;
@@ -295,7 +287,7 @@ export function StudentAssessmentInstance({
       return parts.join(' ');
     }),
     questionNumber: row.question_number,
-    questionTitle: row.question_title,
+    questionTitle: row.question.title,
     questionAccessMode: row.question_access_mode,
     prevAdvanceScorePerc: row.prev_advance_score_perc,
     prevTitle: row.prev_title,
@@ -307,15 +299,20 @@ export function StudentAssessmentInstance({
         }
       : undefined,
     fileCount: row.file_count,
-    zoneMaxPoints: row.zone_max_points,
-    zoneHasMaxPoints: row.zone_has_max_points,
-    zoneBestQuestions: row.zone_best_questions,
-    zoneHasBestQuestions: row.zone_has_best_questions,
+    zoneMaxPoints: row.zone.max_points,
+    zoneHasMaxPoints: row.zone.max_points != null,
+    zoneBestQuestions: row.zone.best_questions,
+    zoneHasBestQuestions: row.zone.best_questions != null,
     zoneQuestionCount: row.zone_question_count,
   }));
 
-  const allQuestionsAnswered = instance_question_rows.every((iq) => iq.status !== 'unanswered');
+  const allQuestionsAnswered = instance_question_rows.every(
+    (row) => row.instance_question.status !== 'unanswered',
+  );
+  const assessment = StudentAssessmentSchema.parse(resLocals.assessment);
+  const assessmentSet = StudentAssessmentSetSchema.parse(resLocals.assessment_set);
   const assessmentInstance = StudentAssessmentInstanceSchema.parse(resLocals.assessment_instance);
+  const authzResult = StudentAssessmentInstanceAuthzResultSchema.parse(resLocals.authz_result);
 
   return PageLayout({
     resLocals,
@@ -332,7 +329,7 @@ export function StudentAssessmentInstance({
               serverRemainingMS: resLocals.assessment_instance_remaining_ms,
               serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
               serverUpdateURL: `${resLocals.urlPrefix}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
-              canTriggerFinish: resLocals.authz_result.authorized_edit,
+              canTriggerFinish: authzResult.authorizedEdit,
               showsTimeoutWarning: true,
               reloadOnFail: true,
               csrfToken: resLocals.__csrf_token,
@@ -352,18 +349,11 @@ export function StudentAssessmentInstance({
         )}
         <Hydrate>
           <StudentAssessmentInstanceBody
-            assessmentType={resLocals.assessment.type}
-            assessmentSetAbbreviation={resLocals.assessment_set.abbreviation}
-            assessmentNumber={resLocals.assessment.number}
-            assessmentTitle={resLocals.assessment.title}
-            isTeamWork={!!resLocals.assessment.team_work}
+            assessment={assessment}
+            assessmentSet={assessmentSet}
             assessmentInstance={assessmentInstance}
             remainingMs={resLocals.assessment_instance_remaining_ms ?? null}
-            active={!!resLocals.authz_result.active}
-            authorizedEdit={!!resLocals.authz_result.authorized_edit}
-            creditDateString={resLocals.authz_result.credit_date_string}
-            password={resLocals.authz_result.password ?? null}
-            showClosedAssessment={!!resLocals.authz_result.show_closed_assessment}
+            authzResult={authzResult}
             hasManualGradingQuestion={resLocals.has_manual_grading_question}
             hasAutoGradingQuestion={resLocals.has_auto_grading_question}
             someQuestionsAllowRealTimeGrading={someQuestionsAllowRealTimeGrading}
