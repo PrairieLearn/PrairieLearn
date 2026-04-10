@@ -56,6 +56,7 @@ export function RequestCourse({
         isDefaultInstitution:
           resLocals.authn_institution.short_name === DEFAULT_INSTITUTION_SHORT_NAME,
         institutionName: resLocals.authn_institution.long_name,
+        userEmail: resLocals.authn_user.uid,
       })}
     `,
   });
@@ -117,10 +118,12 @@ function CourseNewRequestCard({
   csrfToken,
   isDefaultInstitution,
   institutionName,
+  userEmail,
 }: {
   csrfToken: string;
   isDefaultInstitution: boolean;
   institutionName: string;
+  userEmail: string;
 }): HtmlValue {
   return html`
     <div class="card mb-4">
@@ -208,19 +211,36 @@ function CourseNewRequestCard({
                 </div>
               `
             : html`
-                <div class="mb-3">
-                  <label class="form-label">Institution</label>
-                  <input
-                    type="text"
-                    class="form-control-plaintext"
-                    readonly
-                    value="${institutionName}"
-                  />
-                  <input type="hidden" name="cr-institution" value="${institutionName}" />
-                  <small class="form-text text-muted">
-                    This is determined by your sign-in account. If you want to request a course for
-                    a different institution, please sign in with the appropriate account.
-                  </small>
+                <div class="row">
+                  <div class="mb-3 col-md-6">
+                    <label class="form-label" for="cr-institution">Institution</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="cr-institution"
+                      id="cr-institution"
+                      disabled
+                      value="${institutionName}"
+                    />
+                    <small class="form-text text-muted">
+                      This is determined by your sign-in account. If you want to request a course
+                      for a different institution, please sign in with the appropriate account.
+                    </small>
+                  </div>
+                  <div class="mb-3 col-md-6">
+                    <label class="form-label" for="cr-email">Email</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="cr-email"
+                      id="cr-email"
+                      disabled
+                      value="${userEmail}"
+                    />
+                    <small class="form-text text-muted">
+                      This is determined by your sign-in account.
+                    </small>
+                  </div>
                 </div>
               `}
           <div class="mb-3">
@@ -236,7 +256,7 @@ function CourseNewRequestCard({
             />
             <small class="form-text text-muted"> Examples: MATH 101, PHYS 440. </small>
             <div class="d-none alert alert-danger mt-2 mb-0" id="cr-shortname-owned" role="alert">
-              You already own a course with this rubric. If you want to offer a new semester or
+              You already own a course with this short name. If you want to offer a new semester or
               section,
               <a
                 href="https://docs.prairielearn.com/courseInstance/#creating-or-copying-a-course-instance"
@@ -247,7 +267,7 @@ function CourseNewRequestCard({
               from within your existing course instead of requesting a new one.
             </div>
             <div class="d-none alert alert-warning mt-2 mb-0" id="cr-shortname-exists" role="alert">
-              A course with this rubric already exists on PrairieLearn. If you'd like to share
+              A course with this short name already exists on PrairieLearn. If you'd like to share
               content with the existing instructor, consider reaching out to them. If you prefer a
               separate course, you may continue and your request will be reviewed.
             </div>
@@ -268,7 +288,7 @@ function CourseNewRequestCard({
               This is the official title of the course, as given in the course catalog.
             </small>
             <div class="d-none alert alert-danger mt-2 mb-0" id="cr-title-owned" role="alert">
-              You already own a course with this name. If you want to offer a new semester or
+              You already own a course with this title. If you want to offer a new semester or
               section,
               <a
                 href="https://docs.prairielearn.com/courseInstance/#creating-or-copying-a-course-instance"
@@ -279,9 +299,9 @@ function CourseNewRequestCard({
               from within your existing course instead of requesting a new one.
             </div>
             <div class="d-none alert alert-warning mt-2 mb-0" id="cr-title-exists" role="alert">
-              A course with this name already exists on PrairieLearn. If you'd like to share content
-              with the existing instructor, consider reaching out to them. If you prefer a separate
-              course, you may continue and your request will be reviewed.
+              A course with this title already exists on PrairieLearn. If you'd like to share
+              content with the existing instructor, consider reaching out to them. If you prefer a
+              separate course, you may continue and your request will be reviewed.
             </div>
           </div>
           <div class="mb-3">

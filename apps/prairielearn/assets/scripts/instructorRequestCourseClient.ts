@@ -145,7 +145,9 @@ onDocumentReady(() => {
       if (!form) return;
       for (const [name, value] of Object.entries(lti13Info)) {
         const input = form.elements.namedItem(name);
-        if (input) (input as HTMLInputElement).value = value;
+        if (input instanceof HTMLInputElement && !input.readOnly && !input.disabled) {
+          input.value = value;
+        }
       }
       modal.hide();
     });
