@@ -555,7 +555,6 @@ const minimalStudentInstanceQuestion: z.input<typeof StudentInstanceQuestionSche
   current_value: null,
   highest_submission_score: null,
   id: '1',
-  last_grader: null,
   manual_points: null,
   number_attempts: 0,
   open: true,
@@ -678,10 +677,10 @@ describe('safe-db-types schemas', () => {
     expect(parsed).not.toHaveProperty('password');
     expect(parsed).toStrictEqual({
       active: true,
-      authorizedEdit: true,
-      creditDateString: null,
-      hasPassword: true,
-      showClosedAssessment: false,
+      authorized_edit: true,
+      credit_date_string: null,
+      has_password: true,
+      show_closed_assessment: false,
     });
   });
 
