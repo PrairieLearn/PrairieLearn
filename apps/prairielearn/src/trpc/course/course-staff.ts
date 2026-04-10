@@ -22,6 +22,8 @@ import {
 
 import { requireCoursePermissionOwn, t } from './init.js';
 
+export interface CourseStaffError {}
+
 const MAX_UIDS = 100;
 
 const CourseRoleSchema = z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']);

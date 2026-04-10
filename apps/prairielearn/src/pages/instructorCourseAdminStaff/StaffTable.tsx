@@ -30,11 +30,13 @@ import {
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
+import { getAppError } from '../../lib/client/errors.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import type { CourseInstance } from '../../lib/db-types.js';
 import type { CourseUsersRow } from '../../models/course-permissions.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
+import type { CourseStaffError } from '../../trpc/course/course-staff.js';
 
 function useInvalidateStaffList() {
   const queryClient = useQueryClient();
@@ -380,6 +382,7 @@ function AddUsersModal({
       return invalidateStaffList();
     },
   });
+  const appError = getAppError<CourseStaffError>(mutation.error);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -479,8 +482,8 @@ function AddUsersModal({
               </div>
             </>
           )}
-          {mutation.isError && (
-            <div className="alert alert-danger mt-3 mb-0">{mutation.error.message}</div>
+          {appError && (
+            <div className="alert alert-danger mt-3 mb-0">{appError.message}</div>
           )}
           {LEARN_MORE_LINK}
         </Modal.Body>
@@ -546,6 +549,7 @@ function BulkDeleteModal({
       return invalidateStaffList();
     },
   });
+  const appError = getAppError<CourseStaffError>(mutation.error);
 
   return (
     <Modal show={show} onHide={onHide}>
@@ -565,8 +569,8 @@ function BulkDeleteModal({
             <li key={u.user.id}>{u.user.name ?? u.user.uid}</li>
           ))}
         </ul>
-        {mutation.isError && (
-          <div className="alert alert-danger mt-3 mb-0">{mutation.error.message}</div>
+        {appError && (
+          <div className="alert alert-danger mt-3 mb-0">{appError.message}</div>
         )}
       </Modal.Body>
       <Modal.Footer>
@@ -623,6 +627,7 @@ function BulkEditAccessModal({
       return invalidateStaffList();
     },
   });
+  const appError = getAppError<CourseStaffError>(mutation.error);
 
   const handleSubmit = () => {
     const userIds = selectedUsers.map((u) => u.user.id);
@@ -694,8 +699,8 @@ function BulkEditAccessModal({
             </div>
           </>
         )}
-        {mutation.isError && (
-          <div className="alert alert-danger mt-3 mb-0">{mutation.error.message}</div>
+        {appError && (
+          <div className="alert alert-danger mt-3 mb-0">{appError.message}</div>
         )}
         {LEARN_MORE_LINK}
       </Modal.Body>
