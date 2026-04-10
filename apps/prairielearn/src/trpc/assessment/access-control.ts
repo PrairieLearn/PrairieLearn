@@ -126,10 +126,10 @@ function formJsonToEnrollmentRuleData(
     passwordOverridden: dc?.password !== undefined,
     password: dc?.password ?? null,
     questionsHidden: ac?.questions?.hidden ?? null,
-    questionsVisibleFrom: ac?.questions?.visibleFrom ?? null,
-    questionsVisibleUntil: ac?.questions?.visibleUntil ?? null,
+    questionsVisibleFromDate: ac?.questions?.visibleFromDate ?? null,
+    questionsVisibleUntilDate: ac?.questions?.visibleUntilDate ?? null,
     scoreHidden: ac?.score?.hidden ?? null,
-    scoreVisibleFrom: ac?.score?.visibleFrom ?? null,
+    scoreVisibleFromDate: ac?.score?.visibleFromDate ?? null,
     earlyDeadlines: dc?.earlyDeadlines ?? [],
     lateDeadlines: dc?.lateDeadlines ?? [],
   };

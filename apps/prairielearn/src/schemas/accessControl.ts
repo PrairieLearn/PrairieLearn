@@ -89,16 +89,16 @@ const AfterCompleteQuestionsJsonSchema = z
     z
       .object({
         hidden: z.boolean().optional(),
-        visibleFrom: z.null().optional(),
-        visibleUntil: z.null().optional(),
+        visibleFromDate: z.null().optional(),
+        visibleUntilDate: z.null().optional(),
       })
       .strict(),
     // With dates — hidden must be true.
     z
       .object({
         hidden: z.literal(true),
-        visibleFrom: DatetimeLocalStringSchema,
-        visibleUntil: DatetimeLocalStringSchema.nullable().optional(),
+        visibleFromDate: DatetimeLocalStringSchema,
+        visibleUntilDate: DatetimeLocalStringSchema.nullable().optional(),
       })
       .strict(),
   ])
@@ -110,14 +110,14 @@ const AfterCompleteScoreJsonSchema = z
     z
       .object({
         hidden: z.boolean().optional(),
-        visibleFrom: z.null().optional(),
+        visibleFromDate: z.null().optional(),
       })
       .strict(),
     // With dates — hidden must be true.
     z
       .object({
         hidden: z.literal(true),
-        visibleFrom: DatetimeLocalStringSchema,
+        visibleFromDate: DatetimeLocalStringSchema,
       })
       .strict(),
   ])

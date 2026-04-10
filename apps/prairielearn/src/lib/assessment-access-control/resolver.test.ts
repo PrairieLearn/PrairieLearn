@@ -33,18 +33,18 @@ function toRuntime(json: AccessControlJson): RuntimeAccessControl {
   if (afterComplete) {
     result.afterComplete = {};
     if (afterComplete.questions) {
-      const { visibleFrom, visibleUntil, ...qRest } = afterComplete.questions;
+      const { visibleFromDate, visibleUntilDate, ...qRest } = afterComplete.questions;
       result.afterComplete.questions = {
         ...qRest,
-        visibleFrom: visibleFrom != null ? new Date(visibleFrom) : visibleFrom,
-        visibleUntil: visibleUntil != null ? new Date(visibleUntil) : visibleUntil,
+        visibleFromDate: visibleFromDate != null ? new Date(visibleFromDate) : visibleFromDate,
+        visibleUntilDate: visibleUntilDate != null ? new Date(visibleUntilDate) : visibleUntilDate,
       };
     }
     if (afterComplete.score) {
-      const { visibleFrom, ...sRest } = afterComplete.score;
+      const { visibleFromDate, ...sRest } = afterComplete.score;
       result.afterComplete.score = {
         ...sRest,
-        visibleFrom: visibleFrom != null ? new Date(visibleFrom) : visibleFrom,
+        visibleFromDate: visibleFromDate != null ? new Date(visibleFromDate) : visibleFromDate,
       };
     }
   }
@@ -1012,7 +1012,7 @@ describe('resolveAccessControl', () => {
       expect(result.showClosedAssessment).toBe(false);
     });
 
-    it('shows assessment again after questions.visibleFrom', () => {
+    it('shows assessment again after questions.visibleFromDate', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -1020,7 +1020,7 @@ describe('resolveAccessControl', () => {
             afterComplete: {
               questions: {
                 hidden: true,
-                visibleFrom: '2025-03-10T00:00:00Z',
+                visibleFromDate: '2025-03-10T00:00:00Z',
               },
             },
           }),
@@ -1030,7 +1030,7 @@ describe('resolveAccessControl', () => {
       expect(result.showClosedAssessment).toBe(true);
     });
 
-    it('hides assessment again after questions.visibleUntil', () => {
+    it('hides assessment again after questions.visibleUntilDate', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -1038,8 +1038,8 @@ describe('resolveAccessControl', () => {
             afterComplete: {
               questions: {
                 hidden: true,
-                visibleFrom: '2025-03-10T00:00:00Z',
-                visibleUntil: '2025-03-14T00:00:00Z',
+                visibleFromDate: '2025-03-10T00:00:00Z',
+                visibleUntilDate: '2025-03-14T00:00:00Z',
               },
             },
           }),
@@ -1061,7 +1061,7 @@ describe('resolveAccessControl', () => {
       expect(result.showClosedAssessmentScore).toBe(false);
     });
 
-    it('shows score again after score.visibleFrom', () => {
+    it('shows score again after score.visibleFromDate', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -1069,7 +1069,7 @@ describe('resolveAccessControl', () => {
             afterComplete: {
               score: {
                 hidden: true,
-                visibleFrom: '2025-03-10T00:00:00Z',
+                visibleFromDate: '2025-03-10T00:00:00Z',
               },
             },
           }),
@@ -1272,7 +1272,7 @@ describe('resolveAccessControl', () => {
 
   describe('afterComplete visibility edge cases', () => {
     // The schema now prevents invalid combinations like hidden:false with
-    // date fields, or visibleUntil without visibleFrom, so we only test
+    // date fields, or visibleUntilDate without visibleFromDate, so we only test
     // schema-valid edge cases here.
     it('hides questions when hidden:true with no dates', () => {
       const result = resolveAccessControl({
@@ -1568,12 +1568,12 @@ describe('mergeRules', () => {
         afterComplete: {
           questions: {
             hidden: true,
-            visibleFrom: '2025-06-01T00:00:00Z',
-            visibleUntil: '2025-09-01T00:00:00Z',
+            visibleFromDate: '2025-06-01T00:00:00Z',
+            visibleUntilDate: '2025-09-01T00:00:00Z',
           },
           score: {
             hidden: true,
-            visibleFrom: '2025-07-01T00:00:00Z',
+            visibleFromDate: '2025-07-01T00:00:00Z',
           },
         },
       }),
@@ -1581,21 +1581,21 @@ describe('mergeRules', () => {
         afterComplete: {
           questions: {
             hidden: true,
-            visibleFrom: null,
-            visibleUntil: null,
+            visibleFromDate: null,
+            visibleUntilDate: null,
           },
           score: {
             hidden: true,
-            visibleFrom: null,
+            visibleFromDate: null,
           },
         },
       }),
     );
     expect(result.afterComplete?.questions?.hidden).toBe(true);
-    expect(result.afterComplete?.questions?.visibleFrom).toBeNull();
-    expect(result.afterComplete?.questions?.visibleUntil).toBeNull();
+    expect(result.afterComplete?.questions?.visibleFromDate).toBeNull();
+    expect(result.afterComplete?.questions?.visibleUntilDate).toBeNull();
     expect(result.afterComplete?.score?.hidden).toBe(true);
-    expect(result.afterComplete?.score?.visibleFrom).toBeNull();
+    expect(result.afterComplete?.score?.visibleFromDate).toBeNull();
   });
 
   it.each<{ field: keyof RuntimeAccessControl; main: AccessControlJson }>([

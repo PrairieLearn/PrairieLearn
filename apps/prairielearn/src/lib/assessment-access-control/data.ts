@@ -99,15 +99,15 @@ function buildAfterComplete(rule: AssessmentAccessControlRule): RuntimeAfterComp
   if (rule.after_complete_questions_hidden != null) {
     afterComplete.questions = {
       hidden: rule.after_complete_questions_hidden,
-      visibleFrom: rule.after_complete_questions_visible_from ?? null,
-      visibleUntil: rule.after_complete_questions_visible_until ?? null,
+      visibleFromDate: rule.after_complete_questions_visible_from_date ?? null,
+      visibleUntilDate: rule.after_complete_questions_visible_until_date ?? null,
     };
   }
 
   if (rule.after_complete_score_hidden != null) {
     afterComplete.score = {
       hidden: rule.after_complete_score_hidden,
-      visibleFrom: rule.after_complete_score_visible_from ?? null,
+      visibleFromDate: rule.after_complete_score_visible_from_date ?? null,
     };
   }
 

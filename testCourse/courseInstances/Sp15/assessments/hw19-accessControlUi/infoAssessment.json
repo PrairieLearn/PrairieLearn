@@ -19,8 +19,8 @@
       "afterComplete": {
         "questions": {
           "hidden": true,
-          "visibleFrom": "2026-04-11T00:00:01",
-          "visibleUntil": "2026-04-25T23:59:59"
+          "visibleFromDate": "2026-04-11T00:00:01",
+          "visibleUntilDate": "2026-04-25T23:59:59"
         }
       }
     },
@@ -28,7 +28,7 @@
       "labels": ["Extra time", "Section A"],
       "dateControl": { "afterLastDeadline": { "allowSubmissions": false, "credit": null } },
       "afterComplete": {
-        "questions": { "hidden": false, "visibleFrom": null, "visibleUntil": null }
+        "questions": { "hidden": false, "visibleFromDate": null, "visibleUntilDate": null }
       }
     }
   ],

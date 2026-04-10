@@ -62,12 +62,12 @@ Below is a complete skeleton showing all available fields. All fields are option
       "afterComplete": {
         "questions": {
           "hidden": true,
-          "visibleFrom": "2025-03-01T00:00:01",
-          "visibleUntil": "2025-06-01T00:00:01"
+          "visibleFromDate": "2025-03-01T00:00:01",
+          "visibleUntilDate": "2025-06-01T00:00:01"
         },
         "score": {
           "hidden": true,
-          "visibleFrom": "2025-03-01T00:00:01"
+          "visibleFromDate": "2025-03-01T00:00:01"
         }
       }
     },
@@ -148,18 +148,18 @@ By default, questions are hidden and scores are shown after completion.
 
 #### `afterComplete.questions`
 
-| Field          | Type           | Default | Description                                                   |
-| -------------- | -------------- | ------- | ------------------------------------------------------------- |
-| `hidden`       | boolean        | `true`  | If `true`, questions are hidden after assessment completion.  |
-| `visibleFrom`  | string or null |         | ISO datetime. Date to reveal questions back to students.      |
-| `visibleUntil` | string or null |         | ISO datetime. Date to re-hide questions after revealing them. |
+| Field              | Type           | Default | Description                                                   |
+| ------------------ | -------------- | ------- | ------------------------------------------------------------- |
+| `hidden`           | boolean        | `true`  | If `true`, questions are hidden after assessment completion.  |
+| `visibleFromDate`  | string or null |         | ISO datetime. Date to reveal questions back to students.      |
+| `visibleUntilDate` | string or null |         | ISO datetime. Date to re-hide questions after revealing them. |
 
 #### `afterComplete.score`
 
-| Field         | Type           | Default | Description                                                 |
-| ------------- | -------------- | ------- | ----------------------------------------------------------- |
-| `hidden`      | boolean        | `false` | If `true`, the score is hidden after assessment completion. |
-| `visibleFrom` | string or null |         | ISO datetime. Date to reveal the score to students.         |
+| Field             | Type           | Default | Description                                                 |
+| ----------------- | -------------- | ------- | ----------------------------------------------------------- |
+| `hidden`          | boolean        | `false` | If `true`, the score is hidden after assessment completion. |
+| `visibleFromDate` | string or null |         | ISO datetime. Date to reveal the score to students.         |
 
 !!! warning
 
@@ -168,12 +168,12 @@ By default, questions are hidden and scores are shown after completion.
 The visibility logic follows a toggle pattern:
 
 1. If `questions.hidden` is `true`, questions are hidden after completion.
-2. At `questions.visibleFrom`, questions become visible again.
-3. At `questions.visibleUntil`, questions are hidden again.
+2. At `questions.visibleFromDate`, questions become visible again.
+3. At `questions.visibleUntilDate`, questions are hidden again.
 
-The same logic applies to `score.hidden` / `score.visibleFrom` (there is no "visible until" for scores).
+The same logic applies to `score.hidden` / `score.visibleFromDate` (there is no "visible until" for scores).
 
-When overriding `afterComplete.questions`, always include `hidden`, `visibleFrom`, and `visibleUntil`. Use `visibleFrom: null` and `visibleUntil: null` to clear inherited visibility dates. When overriding `afterComplete.score`, always include `hidden` and `visibleFrom`; use `visibleFrom: null` to clear the inherited score visibility date.
+When overriding `afterComplete.questions`, always include `hidden`, `visibleFromDate`, and `visibleUntilDate`. Use `visibleFromDate: null` and `visibleUntilDate: null` to clear inherited visibility dates. When overriding `afterComplete.score`, always include `hidden` and `visibleFromDate`; use `visibleFromDate: null` to clear the inherited score visibility date.
 
 ### Other fields
 
@@ -344,7 +344,7 @@ Students can access the homework from Jan 15 to Feb 15 for 100% credit. After Fe
       },
       "afterComplete": {
         "questions": { "hidden": true },
-        "score": { "hidden": true, "visibleFrom": "2025-03-12T00:00:01" }
+        "score": { "hidden": true, "visibleFromDate": "2025-03-12T00:00:01" }
       }
     }
   ]
@@ -388,7 +388,7 @@ Students must be checked in via PrairieTest. Time limits and scheduling are mana
         "durationMinutes": 60
       },
       "afterComplete": {
-        "questions": { "hidden": true, "visibleFrom": "2025-03-01T00:00:01" }
+        "questions": { "hidden": true, "visibleFromDate": "2025-03-01T00:00:01" }
       }
     },
     {

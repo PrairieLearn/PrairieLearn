@@ -13,16 +13,16 @@ export type AccessControlFormFieldPath =
   | 'mainRule.dueDate'
   | `mainRule.earlyDeadlines.${number}.date`
   | `mainRule.lateDeadlines.${number}.date`
-  | 'mainRule.questionVisibility.visibleFrom'
-  | 'mainRule.questionVisibility.visibleUntil'
-  | 'mainRule.scoreVisibility.visibleFrom'
+  | 'mainRule.questionVisibility.visibleFromDate'
+  | 'mainRule.questionVisibility.visibleUntilDate'
+  | 'mainRule.scoreVisibility.visibleFromDate'
   | `overrides.${number}.releaseDate`
   | `overrides.${number}.dueDate`
   | `overrides.${number}.earlyDeadlines.${number}.date`
   | `overrides.${number}.lateDeadlines.${number}.date`
-  | `overrides.${number}.questionVisibility.visibleFrom`
-  | `overrides.${number}.questionVisibility.visibleUntil`
-  | `overrides.${number}.scoreVisibility.visibleFrom`;
+  | `overrides.${number}.questionVisibility.visibleFromDate`
+  | `overrides.${number}.questionVisibility.visibleUntilDate`
+  | `overrides.${number}.scoreVisibility.visibleFromDate`;
 
 function buildValidationRules(formData: AccessControlFormData): AccessControlValidationRule[] {
   return formDataToJson(formData).map((rule, index) => ({
@@ -55,15 +55,15 @@ function mapIssueToFormFieldPath(
     case 'afterComplete':
       if (issue.path[1] === 'questions') {
         switch (issue.path[2]) {
-          case 'visibleFrom':
-            return `${prefix}.questionVisibility.visibleFrom`;
-          case 'visibleUntil':
-            return `${prefix}.questionVisibility.visibleUntil`;
+          case 'visibleFromDate':
+            return `${prefix}.questionVisibility.visibleFromDate`;
+          case 'visibleUntilDate':
+            return `${prefix}.questionVisibility.visibleUntilDate`;
           default:
             return null;
         }
       }
-      return `${prefix}.scoreVisibility.visibleFrom`;
+      return `${prefix}.scoreVisibility.visibleFromDate`;
     default:
       return null;
   }

@@ -258,8 +258,8 @@ export function generateRuleSummary(
   if ((showAfterComplete || qvNonDefault) && isOverrideFieldActive(rule, 'questionVisibility')) {
     const qv = rule.questionVisibility;
     const qvError =
-      formErrors?.questionVisibility?.visibleFrom?.message ||
-      formErrors?.questionVisibility?.visibleUntil?.message ||
+      formErrors?.questionVisibility?.visibleFromDate?.message ||
+      formErrors?.questionVisibility?.visibleUntilDate?.message ||
       formErrors?.questionVisibility?.message;
     if (!qv.hidden) {
       items.push({
@@ -268,7 +268,7 @@ export function generateRuleSummary(
         text: 'Questions visible after completion',
         error: qvError,
       });
-    } else if (qv.visibleFrom && qv.visibleUntil) {
+    } else if (qv.visibleFromDate && qv.visibleUntilDate) {
       items.push({
         key: 'question-visibility',
         icon: 'bi-eye-slash',
@@ -276,14 +276,14 @@ export function generateRuleSummary(
           <>
             Questions hidden after completion, shown{' '}
             <FriendlyDate
-              date={Temporal.PlainDateTime.from(qv.visibleFrom)}
+              date={Temporal.PlainDateTime.from(qv.visibleFromDate)}
               timezone={displayTimezone}
               options={{ includeTz: false }}
               tooltip
             />
             {' – '}
             <FriendlyDate
-              date={Temporal.PlainDateTime.from(qv.visibleUntil)}
+              date={Temporal.PlainDateTime.from(qv.visibleUntilDate)}
               timezone={displayTimezone}
               options={{ includeTz: false }}
               tooltip
@@ -292,7 +292,7 @@ export function generateRuleSummary(
         ),
         error: qvError,
       });
-    } else if (qv.visibleFrom) {
+    } else if (qv.visibleFromDate) {
       items.push({
         key: 'question-visibility',
         icon: 'bi-eye-slash',
@@ -300,7 +300,7 @@ export function generateRuleSummary(
           <>
             Questions hidden after completion until{' '}
             <FriendlyDate
-              date={Temporal.PlainDateTime.from(qv.visibleFrom)}
+              date={Temporal.PlainDateTime.from(qv.visibleFromDate)}
               timezone={displayTimezone}
               options={{ includeTz: false }}
               tooltip
@@ -321,8 +321,8 @@ export function generateRuleSummary(
   if ((showAfterComplete || svNonDefault) && isOverrideFieldActive(rule, 'scoreVisibility')) {
     const sv = rule.scoreVisibility;
     const svError =
-      formErrors?.scoreVisibility?.visibleFrom?.message || formErrors?.scoreVisibility?.message;
-    if (sv.hidden && sv.visibleFrom) {
+      formErrors?.scoreVisibility?.visibleFromDate?.message || formErrors?.scoreVisibility?.message;
+    if (sv.hidden && sv.visibleFromDate) {
       items.push({
         key: 'score-visibility',
         icon: 'bi-eye-slash',
@@ -330,7 +330,7 @@ export function generateRuleSummary(
           <>
             Score hidden after completion until{' '}
             <FriendlyDate
-              date={Temporal.PlainDateTime.from(sv.visibleFrom)}
+              date={Temporal.PlainDateTime.from(sv.visibleFromDate)}
               timezone={displayTimezone}
               options={{ includeTz: false }}
               tooltip
@@ -507,25 +507,25 @@ function generateOverrideFieldItems(
   if (overriddenFields.has('questionVisibility')) {
     const qv = rule.questionVisibility;
     const qvError =
-      formErrors?.questionVisibility?.visibleFrom?.message ||
-      formErrors?.questionVisibility?.visibleUntil?.message ||
+      formErrors?.questionVisibility?.visibleFromDate?.message ||
+      formErrors?.questionVisibility?.visibleUntilDate?.message ||
       formErrors?.questionVisibility?.message;
     if (qv.hidden) {
-      if (qv.visibleFrom && qv.visibleUntil) {
+      if (qv.visibleFromDate && qv.visibleUntilDate) {
         items.push({
           label: 'Question visibility',
           value: (
             <>
               Hidden, shown again{' '}
               <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.visibleFrom)}
+                date={Temporal.PlainDateTime.from(qv.visibleFromDate)}
                 timezone={displayTimezone}
                 options={{ includeTz: false }}
                 tooltip
               />
               , hidden again{' '}
               <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.visibleUntil)}
+                date={Temporal.PlainDateTime.from(qv.visibleUntilDate)}
                 timezone={displayTimezone}
                 options={{ includeTz: false }}
                 tooltip
@@ -534,14 +534,14 @@ function generateOverrideFieldItems(
           ),
           error: qvError,
         });
-      } else if (qv.visibleFrom) {
+      } else if (qv.visibleFromDate) {
         items.push({
           label: 'Question visibility',
           value: (
             <>
               Hidden, shown again{' '}
               <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.visibleFrom)}
+                date={Temporal.PlainDateTime.from(qv.visibleFromDate)}
                 timezone={displayTimezone}
                 options={{ includeTz: false }}
                 tooltip
@@ -569,16 +569,16 @@ function generateOverrideFieldItems(
   if (overriddenFields.has('scoreVisibility')) {
     const sv = rule.scoreVisibility;
     const svError =
-      formErrors?.scoreVisibility?.visibleFrom?.message || formErrors?.scoreVisibility?.message;
+      formErrors?.scoreVisibility?.visibleFromDate?.message || formErrors?.scoreVisibility?.message;
     if (sv.hidden) {
-      if (sv.visibleFrom) {
+      if (sv.visibleFromDate) {
         items.push({
           label: 'Score visibility',
           value: (
             <>
               Hidden, shown again{' '}
               <FriendlyDate
-                date={Temporal.PlainDateTime.from(sv.visibleFrom)}
+                date={Temporal.PlainDateTime.from(sv.visibleFromDate)}
                 timezone={displayTimezone}
                 options={{ includeTz: false }}
                 tooltip

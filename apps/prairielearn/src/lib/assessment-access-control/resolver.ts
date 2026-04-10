@@ -21,12 +21,12 @@ export interface RuntimeDateControl {
 export interface RuntimeAfterComplete {
   questions?: {
     hidden?: boolean;
-    visibleFrom?: Date | null;
-    visibleUntil?: Date | null;
+    visibleFromDate?: Date | null;
+    visibleUntilDate?: Date | null;
   };
   score?: {
     hidden?: boolean;
-    visibleFrom?: Date | null;
+    visibleFromDate?: Date | null;
   };
 }
 
@@ -362,19 +362,19 @@ function computeTimeLimitMin(
 
 export function resolveVisibility(
   hide: boolean | undefined,
-  visibleFrom: Date | null | undefined,
-  visibleUntil: Date | null | undefined,
+  visibleFromDate: Date | null | undefined,
+  visibleUntilDate: Date | null | undefined,
   date: Date,
 ): boolean {
   if (!hide) return true;
 
   let visible = false;
 
-  if (visibleFrom && date >= visibleFrom) {
+  if (visibleFromDate && date >= visibleFromDate) {
     visible = true;
   }
 
-  if (visible && visibleUntil && date >= visibleUntil) {
+  if (visible && visibleUntilDate && date >= visibleUntilDate) {
     visible = false;
   }
 
@@ -596,14 +596,14 @@ export function resolveAccessControl(
 
   const showClosedAssessment = resolveVisibility(
     effectiveRule.afterComplete?.questions?.hidden ?? true,
-    effectiveRule.afterComplete?.questions?.visibleFrom,
-    effectiveRule.afterComplete?.questions?.visibleUntil,
+    effectiveRule.afterComplete?.questions?.visibleFromDate,
+    effectiveRule.afterComplete?.questions?.visibleUntilDate,
     date,
   );
 
   const showClosedAssessmentScore = resolveVisibility(
     effectiveRule.afterComplete?.score?.hidden,
-    effectiveRule.afterComplete?.score?.visibleFrom,
+    effectiveRule.afterComplete?.score?.visibleFromDate,
     undefined,
     date,
   );

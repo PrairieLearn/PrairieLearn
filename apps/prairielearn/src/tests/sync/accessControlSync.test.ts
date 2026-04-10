@@ -278,7 +278,7 @@ describe('Access control syncing', () => {
           afterComplete: {
             questions: {
               hidden: true,
-              visibleFrom: '2024-04-01T00:00:00',
+              visibleFromDate: '2024-04-01T00:00:00',
             },
             // score omitted
           },
@@ -286,10 +286,10 @@ describe('Access control syncing', () => {
         const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
         assert.equal(row.after_complete_questions_hidden, true);
-        assert.isNotNull(row.after_complete_questions_visible_from);
+        assert.isNotNull(row.after_complete_questions_visible_from_date);
         // Omitted fields
         assert.isNull(row.after_complete_score_hidden);
-        assert.isNull(row.after_complete_score_visible_from);
+        assert.isNull(row.after_complete_score_visible_from_date);
       }));
   });
 
@@ -357,19 +357,19 @@ describe('Access control syncing', () => {
           afterComplete: {
             questions: {
               hidden: true,
-              visibleFrom: '2024-04-01T00:00:00',
-              visibleUntil: '2024-05-01T00:00:00',
+              visibleFromDate: '2024-04-01T00:00:00',
+              visibleUntilDate: '2024-05-01T00:00:00',
             },
             score: {
               hidden: true,
-              visibleFrom: '2024-04-15T00:00:00',
+              visibleFromDate: '2024-04-15T00:00:00',
             },
           },
         });
         const overrideRule: AccessControlJsonInput = {
           labels: [labelName],
           afterComplete: {
-            questions: { hidden: false, visibleFrom: null, visibleUntil: null },
+            questions: { hidden: false, visibleFromDate: null, visibleUntilDate: null },
           },
         };
         const { syncedRules } = await syncRulesAndRead([mainRule, overrideRule], {
@@ -378,10 +378,10 @@ describe('Access control syncing', () => {
         const override = syncedRules.find((r) => r.target_type === 'student_label');
         assert.isOk(override);
         assert.equal(override.after_complete_questions_hidden, false);
-        assert.isNull(override.after_complete_questions_visible_from);
-        assert.isNull(override.after_complete_questions_visible_until);
+        assert.isNull(override.after_complete_questions_visible_from_date);
+        assert.isNull(override.after_complete_questions_visible_until_date);
         assert.isNull(override.after_complete_score_hidden);
-        assert.isNull(override.after_complete_score_visible_from);
+        assert.isNull(override.after_complete_score_visible_from_date);
       }));
   });
 
@@ -1006,32 +1006,32 @@ describe('Access control syncing', () => {
           afterComplete: {
             questions: {
               hidden: true,
-              visibleFrom: '2025-03-25T23:59:00',
+              visibleFromDate: '2025-03-25T23:59:00',
             },
           },
         });
         const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].after_complete_questions_hidden, true);
-        assert.isNotNull(syncedRules[0].after_complete_questions_visible_from);
+        assert.isNotNull(syncedRules[0].after_complete_questions_visible_from_date);
       }));
 
-    it('syncs questions.visibleUntil settings', () =>
+    it('syncs questions.visibleUntilDate settings', () =>
       runInTransactionAndRollback(async () => {
         const rule = makeAccessControlRule({
           afterComplete: {
             questions: {
               hidden: true,
-              visibleFrom: '2025-03-25T23:59:00',
-              visibleUntil: '2025-04-15T23:59:00',
+              visibleFromDate: '2025-03-25T23:59:00',
+              visibleUntilDate: '2025-04-15T23:59:00',
             },
           },
         });
         const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].after_complete_questions_hidden, true);
-        assert.isNotNull(syncedRules[0].after_complete_questions_visible_from);
-        assert.isNotNull(syncedRules[0].after_complete_questions_visible_until);
+        assert.isNotNull(syncedRules[0].after_complete_questions_visible_from_date);
+        assert.isNotNull(syncedRules[0].after_complete_questions_visible_until_date);
       }));
 
     it('syncs score.hidden settings', () =>
@@ -1040,14 +1040,14 @@ describe('Access control syncing', () => {
           afterComplete: {
             score: {
               hidden: true,
-              visibleFrom: '2025-03-25T23:59:00',
+              visibleFromDate: '2025-03-25T23:59:00',
             },
           },
         });
         const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].after_complete_score_hidden, true);
-        assert.isNotNull(syncedRules[0].after_complete_score_visible_from);
+        assert.isNotNull(syncedRules[0].after_complete_score_visible_from_date);
       }));
   });
 
@@ -1498,7 +1498,7 @@ describe('Access control syncing', () => {
         assert.equal(syncedRules.length, 2);
       }));
 
-    it('accepts override with partial afterComplete.questions (missing visibleUntil)', () =>
+    it('accepts override with partial afterComplete.questions (missing visibleUntilDate)', () =>
       runInTransactionAndRollback(async () => {
         const { syncedRules, errors } = await syncRulesAndRead(
           [
@@ -1506,7 +1506,7 @@ describe('Access control syncing', () => {
             {
               labels: ['label1'],
               afterComplete: {
-                questions: { hidden: true, visibleFrom: '2024-04-01T00:00:00' },
+                questions: { hidden: true, visibleFromDate: '2024-04-01T00:00:00' },
               },
             },
           ],
@@ -1542,8 +1542,8 @@ describe('Access control syncing', () => {
               afterComplete: {
                 questions: {
                   hidden: true,
-                  visibleFrom: '2024-04-01T00:00:00',
-                  visibleUntil: '2024-05-01T00:00:00',
+                  visibleFromDate: '2024-04-01T00:00:00',
+                  visibleUntilDate: '2024-05-01T00:00:00',
                 },
               },
             },
@@ -1561,7 +1561,7 @@ describe('Access control syncing', () => {
             makeAccessControlRule(),
             {
               labels: ['label1'],
-              afterComplete: { score: { hidden: true, visibleFrom: '2024-04-01T00:00:00' } },
+              afterComplete: { score: { hidden: true, visibleFromDate: '2024-04-01T00:00:00' } },
             },
           ],
           { studentLabels: ['label1'] },
@@ -1578,8 +1578,8 @@ describe('Access control syncing', () => {
             {
               labels: ['label1'],
               afterComplete: {
-                questions: { hidden: false, visibleFrom: null, visibleUntil: null },
-                score: { hidden: false, visibleFrom: null },
+                questions: { hidden: false, visibleFromDate: null, visibleUntilDate: null },
+                score: { hidden: false, visibleFromDate: null },
               },
             },
           ],
@@ -1773,7 +1773,9 @@ describe('Access control syncing', () => {
         const mainRule = makeAccessControlRule();
         const overrideRule: AccessControlJsonInput = {
           labels: [labelName],
-          afterComplete: { questions: { hidden: true, visibleFrom: null, visibleUntil: null } },
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: null, visibleUntilDate: null },
+          },
         };
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
@@ -1788,8 +1790,8 @@ describe('Access control syncing', () => {
         const questions = override.rule.afterComplete?.questions;
         assert.isOk(questions);
         assert.equal(questions.hidden, true);
-        assert.isNull(questions.visibleFrom);
-        assert.isNull(questions.visibleUntil);
+        assert.isNull(questions.visibleFromDate);
+        assert.isNull(questions.visibleUntilDate);
       }));
 
     it('preserves explicit null afterComplete score visibility on override', () =>
@@ -1801,7 +1803,7 @@ describe('Access control syncing', () => {
         const mainRule = makeAccessControlRule();
         const overrideRule: AccessControlJsonInput = {
           labels: [labelName],
-          afterComplete: { score: { hidden: true, visibleFrom: null } },
+          afterComplete: { score: { hidden: true, visibleFromDate: null } },
         };
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
@@ -1816,7 +1818,7 @@ describe('Access control syncing', () => {
         const score = override.rule.afterComplete?.score;
         assert.isOk(score);
         assert.equal(score.hidden, true);
-        assert.isNull(score.visibleFrom);
+        assert.isNull(score.visibleFromDate);
       }));
 
     it('override dateControl round-trips correctly', () =>
@@ -2029,11 +2031,11 @@ describe('Access control syncing', () => {
           afterComplete: {
             questions: {
               hidden: true,
-              visibleFrom: '2024-04-01T00:00:00',
+              visibleFromDate: '2024-04-01T00:00:00',
             },
             score: {
               hidden: true,
-              visibleFrom: '2024-04-15T00:00:00',
+              visibleFromDate: '2024-04-15T00:00:00',
             },
           },
         };
@@ -2067,12 +2069,12 @@ describe('Access control syncing', () => {
         assert.isOk(ac);
         assert.equal(ac.questions?.hidden, true);
         assert.deepEqual(
-          ac.questions?.visibleFrom,
+          ac.questions?.visibleFromDate,
           plainDateTimeStringToDate('2024-04-01T00:00:00', timezone),
         );
         assert.equal(ac.score?.hidden, true);
         assert.deepEqual(
-          ac.score?.visibleFrom,
+          ac.score?.visibleFromDate,
           plainDateTimeStringToDate('2024-04-15T00:00:00', timezone),
         );
       }));

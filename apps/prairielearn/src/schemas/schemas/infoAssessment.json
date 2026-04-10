@@ -901,10 +901,10 @@
                     "hidden": {
                       "type": "boolean"
                     },
-                    "visibleFrom": {
+                    "visibleFromDate": {
                       "type": "null"
                     },
-                    "visibleUntil": {
+                    "visibleUntilDate": {
                       "type": "null"
                     }
                   }
@@ -912,16 +912,16 @@
                 {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": ["hidden", "visibleFrom"],
+                  "required": ["hidden", "visibleFromDate"],
                   "properties": {
                     "hidden": {
                       "type": "boolean",
                       "const": true
                     },
-                    "visibleFrom": {
+                    "visibleFromDate": {
                       "$ref": "#/definitions/DatetimeLocalStringSchema"
                     },
-                    "visibleUntil": {
+                    "visibleUntilDate": {
                       "anyOf": [
                         {
                           "$ref": "#/definitions/DatetimeLocalStringSchema"
@@ -944,7 +944,7 @@
                     "hidden": {
                       "type": "boolean"
                     },
-                    "visibleFrom": {
+                    "visibleFromDate": {
                       "type": "null"
                     }
                   }
@@ -952,13 +952,13 @@
                 {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": ["hidden", "visibleFrom"],
+                  "required": ["hidden", "visibleFromDate"],
                   "properties": {
                     "hidden": {
                       "type": "boolean",
                       "const": true
                     },
-                    "visibleFrom": {
+                    "visibleFromDate": {
                       "$ref": "#/definitions/DatetimeLocalStringSchema"
                     }
                   }

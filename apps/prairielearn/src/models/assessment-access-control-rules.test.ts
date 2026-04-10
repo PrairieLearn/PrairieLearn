@@ -21,10 +21,10 @@ function makeBaseRule(overrides: Record<string, unknown> = {}) {
     date_control_password: null,
     date_control_password_overridden: false,
     after_complete_questions_hidden: null,
-    after_complete_questions_visible_from: null,
-    after_complete_questions_visible_until: null,
+    after_complete_questions_visible_from_date: null,
+    after_complete_questions_visible_until_date: null,
     after_complete_score_hidden: null,
-    after_complete_score_visible_from: null,
+    after_complete_score_visible_from_date: null,
     ...overrides,
   };
 }
@@ -78,7 +78,7 @@ describe('dbRowToAccessControlJson', () => {
       makeRow({
         rule: {
           after_complete_questions_hidden: null,
-          after_complete_questions_visible_from: new Date('2025-03-01T00:00:00Z'),
+          after_complete_questions_visible_from_date: new Date('2025-03-01T00:00:00Z'),
         },
       }),
     );
@@ -91,7 +91,7 @@ describe('dbRowToAccessControlJson', () => {
       makeRow({
         rule: {
           after_complete_score_hidden: null,
-          after_complete_score_visible_from: new Date('2025-03-01T00:00:00Z'),
+          after_complete_score_visible_from_date: new Date('2025-03-01T00:00:00Z'),
         },
       }),
     );

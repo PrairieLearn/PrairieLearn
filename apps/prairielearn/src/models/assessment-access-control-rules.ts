@@ -48,10 +48,10 @@ export interface EnrollmentAccessControlRuleData {
   passwordOverridden: boolean;
   password: string | null;
   questionsHidden: boolean | null;
-  questionsVisibleFrom: string | null;
-  questionsVisibleUntil: string | null;
+  questionsVisibleFromDate: string | null;
+  questionsVisibleUntilDate: string | null;
   scoreHidden: boolean | null;
-  scoreVisibleFrom: string | null;
+  scoreVisibleFromDate: string | null;
   earlyDeadlines: { date: string; credit: number }[];
   lateDeadlines: { date: string; credit: number }[];
 }
@@ -129,8 +129,8 @@ function dbBaseRowToAccessControlJson(
   }
 
   const qHidden = rule.after_complete_questions_hidden;
-  const qVisibleFrom = rule.after_complete_questions_visible_from?.toISOString() ?? null;
-  const qVisibleUntil = rule.after_complete_questions_visible_until?.toISOString() ?? null;
+  const qVisibleFromDate = rule.after_complete_questions_visible_from_date?.toISOString() ?? null;
+  const qVisibleUntilDate = rule.after_complete_questions_visible_until_date?.toISOString() ?? null;
 
   type QuestionsJson = NonNullable<NonNullable<AccessControlJson['afterComplete']>['questions']>;
   let questions: QuestionsJson | undefined;
@@ -138,11 +138,11 @@ function dbBaseRowToAccessControlJson(
     questions = undefined;
   } else if (qHidden === false) {
     questions = { hidden: false as const };
-  } else if (qVisibleFrom) {
+  } else if (qVisibleFromDate) {
     questions = {
       hidden: true as const,
-      visibleFrom: qVisibleFrom,
-      ...(qVisibleUntil ? { visibleUntil: qVisibleUntil } : {}),
+      visibleFromDate: qVisibleFromDate,
+      ...(qVisibleUntilDate ? { visibleUntilDate: qVisibleUntilDate } : {}),
     };
   } else {
     questions = { hidden: true as const };
@@ -151,14 +151,14 @@ function dbBaseRowToAccessControlJson(
   type ScoreJson = NonNullable<NonNullable<AccessControlJson['afterComplete']>['score']>;
   let score: ScoreJson | undefined;
   const sHidden = rule.after_complete_score_hidden;
-  const sVisibleFrom = rule.after_complete_score_visible_from?.toISOString() ?? null;
+  const sVisibleFromDate = rule.after_complete_score_visible_from_date?.toISOString() ?? null;
 
   if (sHidden === null) {
     score = undefined;
   } else if (sHidden === false) {
     score = { hidden: false as const };
-  } else if (sVisibleFrom) {
-    score = { hidden: true as const, visibleFrom: sVisibleFrom };
+  } else if (sVisibleFromDate) {
+    score = { hidden: true as const, visibleFromDate: sVisibleFromDate };
   } else {
     score = { hidden: true as const };
   }
@@ -257,10 +257,10 @@ export async function syncEnrollmentAccessControl(
     date_control_password_overridden: ruleData.passwordOverridden,
     date_control_password: ruleData.password,
     after_complete_questions_hidden: ruleData.questionsHidden,
-    after_complete_questions_visible_from: ruleData.questionsVisibleFrom,
-    after_complete_questions_visible_until: ruleData.questionsVisibleUntil,
+    after_complete_questions_visible_from_date: ruleData.questionsVisibleFromDate,
+    after_complete_questions_visible_until_date: ruleData.questionsVisibleUntilDate,
     after_complete_score_hidden: ruleData.scoreHidden,
-    after_complete_score_visible_from: ruleData.scoreVisibleFrom,
+    after_complete_score_visible_from_date: ruleData.scoreVisibleFromDate,
   });
 
   const earlyDeadlinesJson = ruleData.earlyDeadlines.map((d) =>

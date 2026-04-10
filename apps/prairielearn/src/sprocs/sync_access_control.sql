@@ -48,10 +48,10 @@ BEGIN
         date_control_password,
 
         after_complete_questions_hidden,
-        after_complete_questions_visible_from,
-        after_complete_questions_visible_until,
+        after_complete_questions_visible_from_date,
+        after_complete_questions_visible_until_date,
         after_complete_score_hidden,
-        after_complete_score_visible_from
+        after_complete_score_visible_from_date
     )
     SELECT
         (rule ->> 'assessment_id')::bigint,
@@ -71,10 +71,10 @@ BEGIN
         (rule ->> 'date_control_password')::text,
 
         (rule ->> 'after_complete_questions_hidden')::boolean,
-        input_date(rule ->> 'after_complete_questions_visible_from', ci_timezone),
-        input_date(rule ->> 'after_complete_questions_visible_until', ci_timezone),
+        input_date(rule ->> 'after_complete_questions_visible_from_date', ci_timezone),
+        input_date(rule ->> 'after_complete_questions_visible_until_date', ci_timezone),
         (rule ->> 'after_complete_score_hidden')::boolean,
-        input_date(rule ->> 'after_complete_score_visible_from', ci_timezone)
+        input_date(rule ->> 'after_complete_score_visible_from_date', ci_timezone)
     FROM UNNEST(rules_data) AS rule
     ON CONFLICT (assessment_id, number, target_type) DO UPDATE SET
         list_before_release = EXCLUDED.list_before_release,
@@ -91,10 +91,10 @@ BEGIN
         date_control_password = EXCLUDED.date_control_password,
 
         after_complete_questions_hidden = EXCLUDED.after_complete_questions_hidden,
-        after_complete_questions_visible_from = EXCLUDED.after_complete_questions_visible_from,
-        after_complete_questions_visible_until = EXCLUDED.after_complete_questions_visible_until,
+        after_complete_questions_visible_from_date = EXCLUDED.after_complete_questions_visible_from_date,
+        after_complete_questions_visible_until_date = EXCLUDED.after_complete_questions_visible_until_date,
         after_complete_score_hidden = EXCLUDED.after_complete_score_hidden,
-        after_complete_score_visible_from = EXCLUDED.after_complete_score_visible_from;
+        after_complete_score_visible_from_date = EXCLUDED.after_complete_score_visible_from_date;
 
     -- Upsert student labels by joining on (assessment_id, number) to resolve the
     -- access control ID. Student labels always have target_type='student_label'.

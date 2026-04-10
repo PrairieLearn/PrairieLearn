@@ -25,9 +25,9 @@ export type AccessControlIssuePath =
   | ['dateControl', 'dueDate']
   | ['dateControl', 'earlyDeadlines', number, 'date']
   | ['dateControl', 'lateDeadlines', number, 'date']
-  | ['afterComplete', 'questions', 'visibleFrom']
-  | ['afterComplete', 'questions', 'visibleUntil']
-  | ['afterComplete', 'score', 'visibleFrom'];
+  | ['afterComplete', 'questions', 'visibleFromDate']
+  | ['afterComplete', 'questions', 'visibleUntilDate']
+  | ['afterComplete', 'score', 'visibleFromDate'];
 
 export interface AccessControlValidationIssue {
   ruleIndex: number;
@@ -121,7 +121,7 @@ export function validateRuleStructuralDependencyIssues(
   }
 
   // Constraint 2: After-complete date fields require at least one deadline.
-  // The date fields (visibleFrom, visibleUntil) are meant to fire relative
+  // The date fields (visibleFromDate, visibleUntilDate) are meant to fire relative
   // to the last deadline. Boolean fields (hidden) are fine without deadlines.
   // PrairieTest and timed assessments manage completion independently,
   // so after-complete dates are valid without deadlines in those cases.
@@ -136,27 +136,27 @@ export function validateRuleStructuralDependencyIssues(
     !hasPrairieTest &&
     !hasDuration
   ) {
-    if (ac.questions?.visibleFrom) {
+    if (ac.questions?.visibleFromDate) {
       pushIssue(
         issues,
         validationRule,
-        ['afterComplete', 'questions', 'visibleFrom'],
+        ['afterComplete', 'questions', 'visibleFromDate'],
         'After-complete dates require at least one deadline (due date or late deadline).',
       );
     }
-    if (ac.questions?.visibleUntil) {
+    if (ac.questions?.visibleUntilDate) {
       pushIssue(
         issues,
         validationRule,
-        ['afterComplete', 'questions', 'visibleUntil'],
+        ['afterComplete', 'questions', 'visibleUntilDate'],
         'After-complete dates require at least one deadline (due date or late deadline).',
       );
     }
-    if (ac.score?.visibleFrom) {
+    if (ac.score?.visibleFromDate) {
       pushIssue(
         issues,
         validationRule,
-        ['afterComplete', 'score', 'visibleFrom'],
+        ['afterComplete', 'score', 'visibleFromDate'],
         'After-complete dates require at least one deadline (due date or late deadline).',
       );
     }
@@ -273,36 +273,39 @@ export function validateRuleDateOrderingIssues(
   }
 
   const questions = rule.afterComplete?.questions;
-  if (questions?.visibleFrom && questions.visibleUntil) {
-    if (new Date(questions.visibleFrom).getTime() >= new Date(questions.visibleUntil).getTime()) {
+  if (questions?.visibleFromDate && questions.visibleUntilDate) {
+    if (
+      new Date(questions.visibleFromDate).getTime() >=
+      new Date(questions.visibleUntilDate).getTime()
+    ) {
       pushIssue(
         issues,
         validationRule,
-        ['afterComplete', 'questions', 'visibleUntil'],
-        'visibleFrom must be before visibleUntil.',
+        ['afterComplete', 'questions', 'visibleUntilDate'],
+        'visibleFromDate must be before visibleUntilDate.',
       );
     }
   }
 
   const lastDeadlineMs = findLastDeadlineMs(rule);
   if (lastDeadlineMs != null) {
-    if (questions?.visibleFrom) {
-      if (new Date(questions.visibleFrom).getTime() <= lastDeadlineMs) {
+    if (questions?.visibleFromDate) {
+      if (new Date(questions.visibleFromDate).getTime() <= lastDeadlineMs) {
         pushIssue(
           issues,
           validationRule,
-          ['afterComplete', 'questions', 'visibleFrom'],
+          ['afterComplete', 'questions', 'visibleFromDate'],
           'Show questions again date must be after the last deadline.',
         );
       }
     }
     const score = rule.afterComplete?.score;
-    if (score?.visibleFrom) {
-      if (new Date(score.visibleFrom).getTime() <= lastDeadlineMs) {
+    if (score?.visibleFromDate) {
+      if (new Date(score.visibleFromDate).getTime() <= lastDeadlineMs) {
         pushIssue(
           issues,
           validationRule,
-          ['afterComplete', 'score', 'visibleFrom'],
+          ['afterComplete', 'score', 'visibleFromDate'],
           'Show score again date must be after the last deadline.',
         );
       }

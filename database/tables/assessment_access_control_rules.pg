@@ -1,9 +1,9 @@
 columns
     after_complete_questions_hidden: boolean
-    after_complete_questions_visible_from: timestamp with time zone
-    after_complete_questions_visible_until: timestamp with time zone
+    after_complete_questions_visible_from_date: timestamp with time zone
+    after_complete_questions_visible_until_date: timestamp with time zone
     after_complete_score_hidden: boolean
-    after_complete_score_visible_from: timestamp with time zone
+    after_complete_score_visible_from_date: timestamp with time zone
     assessment_id: bigint not null
     date_control_after_last_deadline_allow_submissions: boolean
     date_control_after_last_deadline_credit: integer

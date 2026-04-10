@@ -28,8 +28,8 @@ describe('AccessControlJsonSchema', () => {
         afterComplete: {
           questions: {
             hidden: true,
-            visibleFrom: '2024-03-25T00:00:00',
-            visibleUntil: '2024-03-30T00:00:00',
+            visibleFromDate: '2024-03-25T00:00:00',
+            visibleUntilDate: '2024-03-30T00:00:00',
           },
         },
       });
@@ -55,79 +55,79 @@ describe('AccessControlJsonSchema', () => {
         afterComplete: {
           questions: {
             hidden: false,
-            visibleFrom: null,
-            visibleUntil: null,
+            visibleFromDate: null,
+            visibleUntilDate: null,
           },
         },
       });
       expect(result.success).toBe(true);
     });
 
-    it('rejects hidden: false with non-null visibleFrom', () => {
+    it('rejects hidden: false with non-null visibleFromDate', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
           questions: {
             hidden: false,
-            visibleFrom: '2024-03-25T00:00:00',
+            visibleFromDate: '2024-03-25T00:00:00',
           },
         },
       });
       expect(result.success).toBe(false);
     });
 
-    it('rejects hidden: false with non-null visibleUntil', () => {
+    it('rejects hidden: false with non-null visibleUntilDate', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
           questions: {
             hidden: false,
-            visibleUntil: '2024-03-30T00:00:00',
+            visibleUntilDate: '2024-03-30T00:00:00',
           },
         },
       });
       expect(result.success).toBe(false);
     });
 
-    it('rejects visibleFrom when hidden is absent', () => {
+    it('rejects visibleFromDate when hidden is absent', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
           questions: {
-            visibleFrom: '2024-03-25T00:00:00',
+            visibleFromDate: '2024-03-25T00:00:00',
           },
         },
       });
       expect(result.success).toBe(false);
     });
 
-    it('rejects visibleUntil without visibleFrom', () => {
-      const result = AccessControlJsonSchema.safeParse({
-        afterComplete: {
-          questions: {
-            hidden: true,
-            visibleUntil: '2024-03-30T00:00:00',
-          },
-        },
-      });
-      expect(result.success).toBe(false);
-    });
-
-    it('rejects visibleUntil without visibleFrom when hidden is absent', () => {
-      const result = AccessControlJsonSchema.safeParse({
-        afterComplete: {
-          questions: {
-            visibleUntil: '2024-03-30T00:00:00',
-          },
-        },
-      });
-      expect(result.success).toBe(false);
-    });
-
-    it('accepts visibleUntil with visibleFrom', () => {
+    it('rejects visibleUntilDate without visibleFromDate', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
           questions: {
             hidden: true,
-            visibleFrom: '2024-03-25T00:00:00',
-            visibleUntil: '2024-03-30T00:00:00',
+            visibleUntilDate: '2024-03-30T00:00:00',
+          },
+        },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects visibleUntilDate without visibleFromDate when hidden is absent', () => {
+      const result = AccessControlJsonSchema.safeParse({
+        afterComplete: {
+          questions: {
+            visibleUntilDate: '2024-03-30T00:00:00',
+          },
+        },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('accepts visibleUntilDate with visibleFromDate', () => {
+      const result = AccessControlJsonSchema.safeParse({
+        afterComplete: {
+          questions: {
+            hidden: true,
+            visibleFromDate: '2024-03-25T00:00:00',
+            visibleUntilDate: '2024-03-30T00:00:00',
           },
         },
       });
@@ -136,61 +136,61 @@ describe('AccessControlJsonSchema', () => {
   });
 
   describe('afterComplete score union', () => {
-    it('accepts hidden: true with visibleFrom', () => {
+    it('accepts hidden: true with visibleFromDate', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
           score: {
             hidden: true,
-            visibleFrom: '2024-03-25T00:00:00',
+            visibleFromDate: '2024-03-25T00:00:00',
           },
         },
       });
       expect(result.success).toBe(true);
     });
 
-    it('accepts hidden: true without visibleFrom', () => {
+    it('accepts hidden: true without visibleFromDate', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: { score: { hidden: true } },
       });
       expect(result.success).toBe(true);
     });
 
-    it('accepts hidden: false without visibleFrom', () => {
+    it('accepts hidden: false without visibleFromDate', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: { score: { hidden: false } },
       });
       expect(result.success).toBe(true);
     });
 
-    it('accepts hidden: false with null visibleFrom (override clearing)', () => {
+    it('accepts hidden: false with null visibleFromDate (override clearing)', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
           score: {
             hidden: false,
-            visibleFrom: null,
+            visibleFromDate: null,
           },
         },
       });
       expect(result.success).toBe(true);
     });
 
-    it('rejects hidden: false with non-null visibleFrom', () => {
+    it('rejects hidden: false with non-null visibleFromDate', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
           score: {
             hidden: false,
-            visibleFrom: '2024-03-25T00:00:00',
+            visibleFromDate: '2024-03-25T00:00:00',
           },
         },
       });
       expect(result.success).toBe(false);
     });
 
-    it('rejects visibleFrom when hidden is absent', () => {
+    it('rejects visibleFromDate when hidden is absent', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
           score: {
-            visibleFrom: '2024-03-25T00:00:00',
+            visibleFromDate: '2024-03-25T00:00:00',
           },
         },
       });
@@ -204,11 +204,11 @@ describe('AccessControlJsonSchema', () => {
         afterComplete: {
           questions: {
             hidden: true,
-            visibleFrom: '2024-03-25T00:00:00',
+            visibleFromDate: '2024-03-25T00:00:00',
           },
           score: {
             hidden: true,
-            visibleFrom: '2024-03-25T00:00:00',
+            visibleFromDate: '2024-03-25T00:00:00',
           },
         },
       });
@@ -221,7 +221,7 @@ describe('AccessControlJsonSchema', () => {
           questions: { hidden: false },
           score: {
             hidden: true,
-            visibleFrom: '2024-03-25T00:00:00',
+            visibleFromDate: '2024-03-25T00:00:00',
           },
         },
       });
@@ -233,11 +233,11 @@ describe('AccessControlJsonSchema', () => {
         afterComplete: {
           questions: {
             hidden: false,
-            visibleFrom: '2024-03-25T00:00:00',
+            visibleFromDate: '2024-03-25T00:00:00',
           },
           score: {
             hidden: true,
-            visibleFrom: '2024-03-25T00:00:00',
+            visibleFromDate: '2024-03-25T00:00:00',
           },
         },
       });

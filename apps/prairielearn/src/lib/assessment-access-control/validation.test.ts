@@ -49,7 +49,7 @@ describe('Valid configs', () => {
         afterComplete: {
           questions: {
             hidden: true,
-            visibleFrom: '2024-03-23T23:59:00',
+            visibleFromDate: '2024-03-23T23:59:00',
           },
         },
       },
@@ -66,11 +66,11 @@ describe('Valid configs', () => {
         afterComplete: {
           questions: {
             hidden: true,
-            visibleFrom: '2024-03-23T23:59:00',
+            visibleFromDate: '2024-03-23T23:59:00',
           },
           score: {
             hidden: true,
-            visibleFrom: '2024-03-23T23:59:00',
+            visibleFromDate: '2024-03-23T23:59:00',
           },
         },
       },
@@ -134,8 +134,8 @@ describe('Valid configs', () => {
         afterComplete: {
           questions: {
             hidden: true,
-            visibleFrom: '2024-03-23T23:59:00',
-            visibleUntil: '2024-03-25T23:59:00',
+            visibleFromDate: '2024-03-23T23:59:00',
+            visibleUntilDate: '2024-03-25T23:59:00',
           },
         },
       },
@@ -298,7 +298,7 @@ describe('Date fields without seconds', () => {
       afterComplete: {
         questions: {
           hidden: true,
-          visibleFrom: '2024-03-25T12:00', // No seconds
+          visibleFromDate: '2024-03-25T12:00', // No seconds
         },
       },
     };
@@ -309,7 +309,7 @@ describe('Date fields without seconds', () => {
     assert.equal(parsed.dateControl?.dueDate, '2024-03-21T23:59:00');
     assert.equal(parsed.dateControl?.earlyDeadlines?.[0].date, '2024-03-17T23:59:00');
     assert.equal(parsed.dateControl?.lateDeadlines?.[0].date, '2024-03-23T23:59:00');
-    assert.equal(parsed.afterComplete?.questions?.visibleFrom, '2024-03-25T12:00:00');
+    assert.equal(parsed.afterComplete?.questions?.visibleFromDate, '2024-03-25T12:00:00');
 
     const result = validateAccessControlRules({
       rules: [parsed],
@@ -358,7 +358,7 @@ describe('Date fields must be dates', () => {
         afterComplete: {
           questions: {
             hidden: true,
-            visibleFrom: 'NOTADATE',
+            visibleFromDate: 'NOTADATE',
           },
         },
       },
@@ -517,21 +517,21 @@ describe('Date ordering validation', () => {
     assert.isTrue(errors.some((e) => e.includes('chronological order')));
   });
 
-  it('should reject visibleFrom after visibleUntil for questions', () => {
+  it('should reject visibleFromDate after visibleUntilDate for questions', () => {
     const rule = AccessControlJsonSchema.parse({
       afterComplete: {
         questions: {
           hidden: true,
-          visibleFrom: '2024-03-30T00:00:00',
-          visibleUntil: '2024-03-25T00:00:00',
+          visibleFromDate: '2024-03-30T00:00:00',
+          visibleUntilDate: '2024-03-25T00:00:00',
         },
       },
     });
     const errors = validateRuleDateOrdering(rule);
-    assert.isTrue(errors.some((e) => e.includes('visibleFrom must be before')));
+    assert.isTrue(errors.some((e) => e.includes('visibleFromDate must be before')));
   });
 
-  it('should reject visibleFrom before last late deadline for questions', () => {
+  it('should reject visibleFromDate before last late deadline for questions', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         dueDate: '2024-03-20T00:00:00',
@@ -540,7 +540,7 @@ describe('Date ordering validation', () => {
       afterComplete: {
         questions: {
           hidden: true,
-          visibleFrom: '2024-03-23T00:00:00',
+          visibleFromDate: '2024-03-23T00:00:00',
         },
       },
     });
@@ -550,7 +550,7 @@ describe('Date ordering validation', () => {
     );
   });
 
-  it('should reject visibleFrom before due date when no late deadlines for questions', () => {
+  it('should reject visibleFromDate before due date when no late deadlines for questions', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         dueDate: '2024-03-20T00:00:00',
@@ -558,7 +558,7 @@ describe('Date ordering validation', () => {
       afterComplete: {
         questions: {
           hidden: true,
-          visibleFrom: '2024-03-19T00:00:00',
+          visibleFromDate: '2024-03-19T00:00:00',
         },
       },
     });
@@ -568,7 +568,7 @@ describe('Date ordering validation', () => {
     );
   });
 
-  it('should reject visibleFrom before last deadline for score', () => {
+  it('should reject visibleFromDate before last deadline for score', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         dueDate: '2024-03-20T00:00:00',
@@ -577,7 +577,7 @@ describe('Date ordering validation', () => {
       afterComplete: {
         score: {
           hidden: true,
-          visibleFrom: '2024-03-22T00:00:00',
+          visibleFromDate: '2024-03-22T00:00:00',
         },
       },
     });
@@ -587,7 +587,7 @@ describe('Date ordering validation', () => {
     );
   });
 
-  it('should accept visibleFrom after last deadline for questions', () => {
+  it('should accept visibleFromDate after last deadline for questions', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         dueDate: '2024-03-20T00:00:00',
@@ -596,7 +596,7 @@ describe('Date ordering validation', () => {
       afterComplete: {
         questions: {
           hidden: true,
-          visibleFrom: '2024-03-26T00:00:00',
+          visibleFromDate: '2024-03-26T00:00:00',
         },
       },
     });
@@ -604,7 +604,7 @@ describe('Date ordering validation', () => {
     assert.deepEqual(errors, []);
   });
 
-  it('should accept visibleFrom after last deadline for score', () => {
+  it('should accept visibleFromDate after last deadline for score', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         dueDate: '2024-03-20T00:00:00',
@@ -612,7 +612,7 @@ describe('Date ordering validation', () => {
       afterComplete: {
         score: {
           hidden: true,
-          visibleFrom: '2024-03-21T00:00:00',
+          visibleFromDate: '2024-03-21T00:00:00',
         },
       },
     });
@@ -628,11 +628,11 @@ describe('Date ordering validation', () => {
       afterComplete: {
         questions: {
           hidden: true,
-          visibleFrom: '2024-03-05T00:00:00',
+          visibleFromDate: '2024-03-05T00:00:00',
         },
         score: {
           hidden: true,
-          visibleFrom: '2024-03-05T00:00:00',
+          visibleFromDate: '2024-03-05T00:00:00',
         },
       },
     });
@@ -645,11 +645,11 @@ describe('Date ordering validation', () => {
       afterComplete: {
         questions: {
           hidden: true,
-          visibleFrom: '2024-03-23T00:00:00',
+          visibleFromDate: '2024-03-23T00:00:00',
         },
         score: {
           hidden: true,
-          visibleFrom: '2024-03-23T00:00:00',
+          visibleFromDate: '2024-03-23T00:00:00',
         },
       },
     });
@@ -1202,11 +1202,11 @@ describe('Structural field dependency validation', () => {
       afterComplete: {
         questions: {
           hidden: true,
-          visibleFrom: '2024-03-23T23:59:00',
+          visibleFromDate: '2024-03-23T23:59:00',
         },
         score: {
           hidden: true,
-          visibleFrom: '2024-03-25T23:59:00',
+          visibleFromDate: '2024-03-25T23:59:00',
         },
       },
     });
@@ -1219,14 +1219,15 @@ describe('Structural field dependency validation', () => {
       issues.some(
         (i) =>
           i.message.includes('require at least one deadline') &&
-          JSON.stringify(i.path) === JSON.stringify(['afterComplete', 'questions', 'visibleFrom']),
+          JSON.stringify(i.path) ===
+            JSON.stringify(['afterComplete', 'questions', 'visibleFromDate']),
       ),
     );
     assert.isTrue(
       issues.some(
         (i) =>
           i.message.includes('require at least one deadline') &&
-          JSON.stringify(i.path) === JSON.stringify(['afterComplete', 'score', 'visibleFrom']),
+          JSON.stringify(i.path) === JSON.stringify(['afterComplete', 'score', 'visibleFromDate']),
       ),
     );
   });
@@ -1254,7 +1255,7 @@ describe('Structural field dependency validation', () => {
       afterComplete: {
         questions: {
           hidden: true,
-          visibleFrom: '2024-03-23T23:59:00',
+          visibleFromDate: '2024-03-23T23:59:00',
         },
       },
     });
@@ -1276,7 +1277,7 @@ describe('Structural field dependency validation', () => {
       afterComplete: {
         questions: {
           hidden: true,
-          visibleFrom: '2024-03-23T23:59:00',
+          visibleFromDate: '2024-03-23T23:59:00',
         },
       },
     });

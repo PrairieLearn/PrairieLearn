@@ -178,14 +178,14 @@ describe('formDataToJson', () => {
       ...baseOverride,
       trackingId: 'o-7',
       overriddenFields: ['questionVisibility', 'scoreVisibility'],
-      questionVisibility: { hidden: true, visibleFrom: '2025-06-01T00:00:00Z' },
+      questionVisibility: { hidden: true, visibleFromDate: '2025-06-01T00:00:00Z' },
       scoreVisibility: { hidden: true },
     };
 
     const overrideJson = formDataToJson(buildFormData(override))[1];
     expect(overrideJson.afterComplete).toBeDefined();
     expect(overrideJson.afterComplete!.questions!.hidden).toBe(true);
-    expect(overrideJson.afterComplete!.questions!.visibleFrom).toBe('2025-06-01T00:00:00Z');
+    expect(overrideJson.afterComplete!.questions!.visibleFromDate).toBe('2025-06-01T00:00:00Z');
     expect(overrideJson.afterComplete!.score!.hidden).toBe(true);
   });
 

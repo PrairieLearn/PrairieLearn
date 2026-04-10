@@ -29,17 +29,17 @@ export type AfterLastDeadlineValue =
 
 export interface QuestionVisibilityValue {
   hidden: boolean;
-  visibleFrom?: string;
-  visibleUntil?: string;
+  visibleFromDate?: string;
+  visibleUntilDate?: string;
 }
 
 export interface ScoreVisibilityValue {
   hidden: boolean;
-  visibleFrom?: string;
+  visibleFromDate?: string;
 }
 
 export function isNonDefaultQuestionVisibility(qv: QuestionVisibilityValue): boolean {
-  return !qv.hidden || qv.visibleFrom !== undefined || qv.visibleUntil !== undefined;
+  return !qv.hidden || qv.visibleFromDate !== undefined || qv.visibleUntilDate !== undefined;
 }
 
 export function isNonDefaultScoreVisibility(sv: ScoreVisibilityValue): boolean {
@@ -169,12 +169,15 @@ export function jsonToMainRuleFormData(
     prairieTestExams: json.integrations?.prairieTest?.exams ?? [],
     questionVisibility: {
       hidden: ac?.questions?.hidden ?? true,
-      visibleFrom: toLocalDatetimeValue(ac?.questions?.visibleFrom, displayTimezone) ?? undefined,
-      visibleUntil: toLocalDatetimeValue(ac?.questions?.visibleUntil, displayTimezone) ?? undefined,
+      visibleFromDate:
+        toLocalDatetimeValue(ac?.questions?.visibleFromDate, displayTimezone) ?? undefined,
+      visibleUntilDate:
+        toLocalDatetimeValue(ac?.questions?.visibleUntilDate, displayTimezone) ?? undefined,
     },
     scoreVisibility: {
       hidden: ac?.score?.hidden ?? false,
-      visibleFrom: toLocalDatetimeValue(ac?.score?.visibleFrom, displayTimezone) ?? undefined,
+      visibleFromDate:
+        toLocalDatetimeValue(ac?.score?.visibleFromDate, displayTimezone) ?? undefined,
     },
   };
 }
@@ -261,8 +264,10 @@ export function jsonToOverrideFormData(
   if (ac?.questions?.hidden !== undefined) {
     questionVisibility = {
       hidden: ac.questions.hidden,
-      visibleFrom: toLocalDatetimeValue(ac.questions.visibleFrom, displayTimezone) ?? undefined,
-      visibleUntil: toLocalDatetimeValue(ac.questions.visibleUntil, displayTimezone) ?? undefined,
+      visibleFromDate:
+        toLocalDatetimeValue(ac.questions.visibleFromDate, displayTimezone) ?? undefined,
+      visibleUntilDate:
+        toLocalDatetimeValue(ac.questions.visibleUntilDate, displayTimezone) ?? undefined,
     };
     overriddenFields.push('questionVisibility');
   }
@@ -271,7 +276,7 @@ export function jsonToOverrideFormData(
   if (ac?.score?.hidden !== undefined) {
     scoreVisibility = {
       hidden: ac.score.hidden,
-      visibleFrom: toLocalDatetimeValue(ac.score.visibleFrom, displayTimezone) ?? undefined,
+      visibleFromDate: toLocalDatetimeValue(ac.score.visibleFromDate, displayTimezone) ?? undefined,
     };
     overriddenFields.push('scoreVisibility');
   }
@@ -325,22 +330,26 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   // (questions.hidden: true, score.hidden: false).
   const qv = rule.questionVisibility;
   const sv = rule.scoreVisibility;
-  const hasNonDefaultQuestions = !qv.hidden || qv.visibleFrom || qv.visibleUntil;
-  const hasNonDefaultScore = sv.hidden || sv.visibleFrom;
+  const hasNonDefaultQuestions = !qv.hidden || qv.visibleFromDate || qv.visibleUntilDate;
+  const hasNonDefaultScore = sv.hidden || sv.visibleFromDate;
 
   if (hasNonDefaultQuestions || hasNonDefaultScore) {
     output.afterComplete = {};
     if (hasNonDefaultQuestions) {
       output.afterComplete.questions = qv.hidden
-        ? qv.visibleFrom
-          ? { hidden: true, visibleFrom: qv.visibleFrom, visibleUntil: qv.visibleUntil }
+        ? qv.visibleFromDate
+          ? {
+              hidden: true,
+              visibleFromDate: qv.visibleFromDate,
+              visibleUntilDate: qv.visibleUntilDate,
+            }
           : { hidden: true }
         : { hidden: false };
     }
     if (hasNonDefaultScore) {
       output.afterComplete.score = sv.hidden
-        ? sv.visibleFrom
-          ? { hidden: true, visibleFrom: sv.visibleFrom }
+        ? sv.visibleFromDate
+          ? { hidden: true, visibleFromDate: sv.visibleFromDate }
           : { hidden: true }
         : { hidden: false };
     }
@@ -384,16 +393,20 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
     if (of.has('questionVisibility')) {
       const qv = rule.questionVisibility;
       output.afterComplete.questions = qv.hidden
-        ? qv.visibleFrom
-          ? { hidden: true, visibleFrom: qv.visibleFrom, visibleUntil: qv.visibleUntil }
+        ? qv.visibleFromDate
+          ? {
+              hidden: true,
+              visibleFromDate: qv.visibleFromDate,
+              visibleUntilDate: qv.visibleUntilDate,
+            }
           : { hidden: true }
         : { hidden: false };
     }
     if (of.has('scoreVisibility')) {
       const sv = rule.scoreVisibility;
       output.afterComplete.score = sv.hidden
-        ? sv.visibleFrom
-          ? { hidden: true, visibleFrom: sv.visibleFrom }
+        ? sv.visibleFromDate
+          ? { hidden: true, visibleFromDate: sv.visibleFromDate }
           : { hidden: true }
         : { hidden: false };
     }
