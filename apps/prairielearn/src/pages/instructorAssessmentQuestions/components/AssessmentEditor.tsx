@@ -790,8 +790,8 @@ function AssessmentEditorInner({
     zone.questions.some((q) => q.alternatives?.length === 0),
   );
   const structuralSaveValidationErrorKind = useMemo(
-    () => getStructuralSaveValidationErrorKind(zones),
-    [zones],
+    () => getStructuralSaveValidationErrorKind(zones, assessment.type),
+    [zones, assessment.type],
   );
 
   const hasUnsavedChanges = useMemo(
@@ -830,6 +830,10 @@ function AssessmentEditorInner({
         return 'Cannot save: one or more zones have configuration errors';
       case 'altPool':
         return 'Cannot save: one or more alternative pools have configuration errors';
+      case 'questionPoints':
+        return 'Cannot save: one or more questions have no points configured';
+      case 'homeworkRealTimeGrading':
+        return 'Cannot save: real-time grading cannot be disabled for Homework assessments';
       default:
         return undefined;
     }
