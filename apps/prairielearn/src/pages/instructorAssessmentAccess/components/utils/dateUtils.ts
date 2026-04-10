@@ -25,13 +25,9 @@ export function endOfDayDatetime(date: Temporal.PlainDate): string {
     .toString({ smallestUnit: 'second' });
 }
 
-export function getUserTimezone(): string {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone;
-}
-
 interface DateRange {
-  start: Date | null;
-  end: Date;
+  start: Temporal.PlainDateTime | null;
+  end: Temporal.PlainDateTime;
 }
 
 export function getDeadlineRange(
@@ -42,45 +38,45 @@ export function getDeadlineRange(
   const currentDeadline = deadlines[index];
   if (!currentDeadline.date) return null;
 
-  const endDate = new Date(currentDeadline.date);
-  let startDate: Date | null = null;
+  const end = Temporal.PlainDateTime.from(currentDeadline.date);
+  let start: Temporal.PlainDateTime | null = null;
 
   if (index === 0) {
     if (anchorDate) {
-      startDate = new Date(anchorDate);
+      start = Temporal.PlainDateTime.from(anchorDate);
     }
   } else {
     const previousDeadline = deadlines[index - 1];
     if (previousDeadline.date) {
-      startDate = new Date(previousDeadline.date);
+      start = Temporal.PlainDateTime.from(previousDeadline.date);
     }
   }
 
-  return { start: startDate, end: endDate };
+  return { start, end };
 }
 
 export function getLastDeadlineDate(
   lateDeadlines: DeadlineEntry[] | undefined,
   dueDate: string | null | undefined,
-): Date | null {
+): Temporal.PlainDateTime | null {
   if (lateDeadlines && lateDeadlines.length > 0) {
     const validLateDeadlines = lateDeadlines.filter((d) => d.date);
     if (validLateDeadlines.length > 0) {
-      const sorted = [...validLateDeadlines].sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-      );
-      return new Date(sorted[0].date);
+      const sorted = [...validLateDeadlines].sort((a, b) => (a.date < b.date ? 1 : -1));
+      return Temporal.PlainDateTime.from(sorted[0].date);
     }
   }
 
   if (dueDate) {
-    return new Date(dueDate);
+    return Temporal.PlainDateTime.from(dueDate);
   }
 
   return null;
 }
 
-export function getLatestEarlyDeadlineDate(earlyDeadlines: DeadlineEntry[]): Date | null {
+export function getLatestEarlyDeadlineDate(
+  earlyDeadlines: DeadlineEntry[],
+): Temporal.PlainDateTime | null {
   if (earlyDeadlines.length === 0) {
     return null;
   }
@@ -90,8 +86,6 @@ export function getLatestEarlyDeadlineDate(earlyDeadlines: DeadlineEntry[]): Dat
     return null;
   }
 
-  const sorted = [...validDeadlines].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-  );
-  return new Date(sorted[0].date);
+  const sorted = [...validDeadlines].sort((a, b) => (a.date < b.date ? 1 : -1));
+  return Temporal.PlainDateTime.from(sorted[0].date);
 }
