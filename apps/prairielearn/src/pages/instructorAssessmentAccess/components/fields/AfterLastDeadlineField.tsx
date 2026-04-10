@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Alert, Form, InputGroup } from 'react-bootstrap';
 import { get, useController, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
@@ -56,10 +57,22 @@ function AfterLastDeadlineInput({
     | `overrides.${number}.afterLastDeadline.credit`;
   showNoDueDateWarning?: boolean;
 }) {
-  const { register } = useFormContext<AccessControlFormData>();
+  const { register, trigger } = useFormContext<AccessControlFormData>();
   const userTimezone = getUserTimezone();
   const { errors } = useFormState();
   const creditError: string | undefined = get(errors, creditFieldPath)?.message;
+
+  // Store constraint values in refs so the validate function (which is captured
+  // once by register()) always reads current values instead of stale closures.
+  const lateDeadlinesRef = useRef(lateDeadlines);
+  const dueDateRef = useRef(dueDate);
+  lateDeadlinesRef.current = lateDeadlines;
+  dueDateRef.current = dueDate;
+
+  // Re-validate credit when late deadlines or due date change.
+  useEffect(() => {
+    void trigger(creditFieldPath);
+  }, [lateDeadlines, dueDate, creditFieldPath, trigger]);
 
   const mode = getMode(value);
 
@@ -135,6 +148,12 @@ function AfterLastDeadlineInput({
                 validate: (v) => {
                   if (v == null || Number.isNaN(v)) return 'Credit is required';
                   if (v < 0 || v > 200) return 'Must be 0–200%';
+                  const precedingCredit =
+                    lateDeadlinesRef.current?.at(-1)?.credit ??
+                    (dueDateRef.current != null ? 100 : undefined);
+                  if (precedingCredit != null && v > precedingCredit) {
+                    return `Must not exceed ${precedingCredit}% (the preceding deadline's credit)`;
+                  }
                   return true;
                 },
               })}

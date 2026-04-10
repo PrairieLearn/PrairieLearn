@@ -694,6 +694,78 @@ describe('Credit monotonicity validation', () => {
     const errors = validateRuleCreditMonotonicity(rule);
     assert.deepEqual(errors, []);
   });
+
+  it('should reject afterLastDeadline credit exceeding last late deadline credit', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        dueDate: '2024-03-21T00:00:00',
+        lateDeadlines: [
+          { date: '2024-03-25T00:00:00', credit: 80 },
+          { date: '2024-03-28T00:00:00', credit: 50 },
+        ],
+        afterLastDeadline: { allowSubmissions: true, credit: 60 },
+      },
+    });
+    const errors = validateRuleCreditMonotonicity(rule);
+    assert.isTrue(errors.some((e) => e.includes('must not exceed')));
+  });
+
+  it('should reject afterLastDeadline credit exceeding 100 when no late deadlines', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        dueDate: '2024-03-21T00:00:00',
+        afterLastDeadline: { allowSubmissions: true, credit: 110 },
+      },
+    });
+    const errors = validateRuleCreditMonotonicity(rule);
+    assert.isTrue(errors.some((e) => e.includes('must not exceed')));
+  });
+
+  it('should accept afterLastDeadline credit equal to last late deadline credit', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        dueDate: '2024-03-21T00:00:00',
+        lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
+        afterLastDeadline: { allowSubmissions: true, credit: 50 },
+      },
+    });
+    const errors = validateRuleCreditMonotonicity(rule);
+    assert.deepEqual(errors, []);
+  });
+
+  it('should accept afterLastDeadline credit less than last late deadline credit', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        dueDate: '2024-03-21T00:00:00',
+        lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
+        afterLastDeadline: { allowSubmissions: true, credit: 30 },
+      },
+    });
+    const errors = validateRuleCreditMonotonicity(rule);
+    assert.deepEqual(errors, []);
+  });
+
+  it('should accept afterLastDeadline without credit (practice mode)', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        dueDate: '2024-03-21T00:00:00',
+        lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
+        afterLastDeadline: { allowSubmissions: true },
+      },
+    });
+    const errors = validateRuleCreditMonotonicity(rule);
+    assert.deepEqual(errors, []);
+  });
+
+  it('should skip afterLastDeadline check when no due date or late deadlines', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        afterLastDeadline: { allowSubmissions: true, credit: 50 },
+      },
+    });
+    const errors = validateRuleCreditMonotonicity(rule);
+    assert.deepEqual(errors, []);
+  });
 });
 
 describe('Empty accessControl array', () => {

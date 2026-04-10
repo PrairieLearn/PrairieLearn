@@ -368,6 +368,19 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
     }
   }
 
+  const afterCredit = dc.afterLastDeadline?.credit;
+  if (afterCredit != null) {
+    // Determine the preceding credit in the timeline.
+    const precedingCredit =
+      dc.lateDeadlines?.at(-1)?.credit ?? (dc.dueDate != null ? 100 : undefined);
+
+    if (precedingCredit != null && afterCredit > precedingCredit) {
+      errors.push(
+        `After-last-deadline credit (${afterCredit}%) must not exceed the preceding deadline's credit (${precedingCredit}%).`,
+      );
+    }
+  }
+
   return errors;
 }
 
