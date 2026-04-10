@@ -9,4 +9,5 @@ WHERE
     succeeded_at IS NULL
     OR succeeded_at < date
   )
-  AND name != 'sendUnfinishedCronWarnings';
+  AND name != 'sendUnfinishedCronWarnings'
+  AND name = ANY ($active_job_names);
