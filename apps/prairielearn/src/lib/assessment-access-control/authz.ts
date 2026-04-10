@@ -17,7 +17,11 @@ import {
   selectAccessControlRulesForCourseInstance,
   selectUserAccessContext,
 } from './data.js';
-import { type AccessControlResolverResult, resolveAccessControl } from './resolver.js';
+import {
+  type AccessControlResolverResult,
+  formatDateShort,
+  resolveAccessControl,
+} from './resolver.js';
 
 type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 type SprocAuthzAssessmentInstance = z.infer<typeof SprocAuthzAssessmentInstanceSchema>;
@@ -41,6 +45,7 @@ interface ModernAssessmentAccessInput {
 function resolverResultToSprocAuthzAssessment(
   result: AccessControlResolverResult,
   authzMode: EnumMode | undefined,
+  displayTimezone: string,
 ): SprocAuthzAssessment {
   return {
     authorized: result.authorized,
@@ -56,7 +61,9 @@ function resolverResultToSprocAuthzAssessment(
     // reservation (examAccessEnd is non-null), indicating a live exam session.
     mode: authzMode === 'Exam' && result.examAccessEnd ? 'Exam' : null,
     show_before_release: result.showBeforeRelease,
-    next_active_time: null,
+    next_active_time: result.nextActiveDate
+      ? formatDateShort(result.nextActiveDate, displayTimezone)
+      : null,
     access_rules: [],
   };
 }
@@ -84,7 +91,11 @@ export async function resolveModernAssessmentAccess({
     prairieTestReservations,
   });
 
-  return resolverResultToSprocAuthzAssessment(result, authzData.mode);
+  return resolverResultToSprocAuthzAssessment(
+    result,
+    authzData.mode,
+    courseInstance.display_timezone,
+  );
 }
 
 interface ModernAssessmentInstanceAccessInput extends ModernAssessmentAccessInput {
@@ -190,7 +201,10 @@ export async function resolveModernAssessmentAccessBatch({
       prairieTestReservations,
     });
 
-    results.set(assessmentId, resolverResultToSprocAuthzAssessment(result, authzData.mode));
+    results.set(
+      assessmentId,
+      resolverResultToSprocAuthzAssessment(result, authzData.mode, courseInstance.display_timezone),
+    );
   }
 
   return results;

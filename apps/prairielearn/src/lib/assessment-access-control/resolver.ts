@@ -89,6 +89,11 @@ export interface AccessControlResolverResult {
    * `listBeforeRelease` config input.
    */
   showBeforeRelease: boolean;
+  /**
+   * The next date when the assessment becomes active (e.g. the release date
+   * when before release). Null when already active or no future open date.
+   */
+  nextActiveDate: Date | null;
 }
 
 const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
@@ -102,6 +107,7 @@ const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
   showClosedAssessmentScore: true,
   examAccessEnd: null,
   showBeforeRelease: false,
+  nextActiveDate: null,
 };
 
 const COURSE_ROLE_RANK: Record<EnumCourseRole, number> = {
@@ -524,6 +530,7 @@ export function resolveAccessControl(
       showClosedAssessmentScore: true,
       examAccessEnd: null,
       showBeforeRelease: false,
+      nextActiveDate: null,
     };
   }
 
@@ -620,6 +627,16 @@ export function resolveAccessControl(
     return { ...UNAUTHORIZED_RESULT };
   }
 
+  // If the assessment is before its release date but showBeforeRelease is true,
+  // the student can see it listed but cannot access it.
+  if (creditResult.beforeRelease && showBeforeRelease) {
+    return {
+      ...UNAUTHORIZED_RESULT,
+      showBeforeRelease: true,
+      nextActiveDate: creditResult.nextDeadlineDate,
+    };
+  }
+
   const creditDateString = formatCreditDateString(
     creditResult.credit,
     creditResult.active,
@@ -638,5 +655,6 @@ export function resolveAccessControl(
     showClosedAssessmentScore,
     examAccessEnd,
     showBeforeRelease,
+    nextActiveDate: null,
   };
 }
