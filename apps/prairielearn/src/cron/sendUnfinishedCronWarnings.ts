@@ -12,20 +12,20 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 export async function run() {
   if (!opsbot.canSendMessages()) return;
 
-  const activeJobNames = jobs.map((job) => job.name);
+  const activeJobNames = new Set(jobs.map((job) => job.name));
 
-  const result = await sqldb.queryRows(
+  const rows = await sqldb.queryRows(
     sql.select_unfinished_cron_jobs,
-    { active_job_names: activeJobNames },
     z.object({
       name: CronJobSchema.shape.name,
       formatted_started_at: z.string(),
     }),
   );
-  if (result.length === 0) return;
+  const unfinishedJobs = rows.filter((row) => activeJobNames.has(row.name));
+  if (unfinishedJobs.length === 0) return;
 
   let msg = '_Unfinished cron jobs:_\n';
-  for (const row of result) {
+  for (const row of unfinishedJobs) {
     msg += `    *${row.name}:* started at ${row.formatted_started_at} but not finished\n`;
     logger.error('cron:sendUnfinishedCronJobs job not finished', row);
   }
