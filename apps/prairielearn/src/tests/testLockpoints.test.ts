@@ -169,45 +169,6 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
     });
   }
 
-  async function fetchAssessmentInstancePageWithLockpointModal() {
-    const assessmentInstanceResponse = await helperClient.fetchCheerio(
-      context.assessmentInstanceUrl,
-    );
-    assert.isTrue(assessmentInstanceResponse.ok);
-
-    const lockpointModal = assessmentInstanceResponse.$('[id^="crossLockpointModal-"]').first();
-    assert.lengthOf(lockpointModal, 1);
-
-    const csrfToken = lockpointModal.find('input[name="__csrf_token"]').attr('value');
-    assert.isString(csrfToken);
-    context.__csrf_token = csrfToken!;
-
-    return assessmentInstanceResponse;
-  }
-
-  async function postCrossLockpoint(zoneId: string) {
-    return await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'cross_lockpoint',
-        __csrf_token: context.__csrf_token,
-        zone_id: zoneId,
-      }),
-    });
-  }
-
-  async function crossNextLockpoint() {
-    const assessmentInstanceResponse = await fetchAssessmentInstancePageWithLockpointModal();
-    const lockpointModal = assessmentInstanceResponse.$('[id^="crossLockpointModal-"]').first();
-
-    const zoneId = lockpointModal.find('input[name="zone_id"]').attr('value');
-    assert.isString(zoneId);
-
-    const response = await postCrossLockpoint(zoneId!);
-    assert.isTrue(response.ok);
-    return response;
-  }
-
   test.sequential(
     'creates an assessment instance and initializes lockpoint state',
     async function () {
@@ -224,7 +185,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
         ['default', 'blocked_lockpoint', 'blocked_lockpoint'],
       );
 
-      assert.equal(response.$('button[data-bs-target^="#crossLockpointModal-"]').length, 1);
+      assert.equal(response.$('button:contains("Proceed to next questions")').length, 1);
       assert.equal(
         response.$(`a[href*="instance_question/${context.questionStates[1].id}"]`).length,
         0,
@@ -233,8 +194,10 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
   );
 
   test.sequential('lockpoints cannot be crossed out of order', async function () {
-    await fetchAssessmentInstancePageWithLockpointModal();
-    const response = await postCrossLockpoint(context.lockpointZoneIds[1]);
+    const response = await postCrossLockpointForInstance(
+      context.assessmentInstanceUrl,
+      context.lockpointZoneIds[1],
+    );
     assert.isFalse(response.ok);
     assert.equal(response.status, 403);
 
@@ -263,7 +226,11 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
   test.sequential(
     'crossing the first lockpoint makes previous questions read-only',
     async function () {
-      const response = await crossNextLockpoint();
+      const response = await postCrossLockpointForInstance(
+        context.assessmentInstanceUrl,
+        context.lockpointZoneIds[0],
+      );
+      assert.isTrue(response.ok);
       await refreshQuestionStates();
 
       assert.deepEqual(
@@ -279,8 +246,10 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
   );
 
   test.sequential('crossing an already crossed lockpoint is idempotent', async function () {
-    await fetchAssessmentInstancePageWithLockpointModal();
-    const response = await postCrossLockpoint(context.lockpointZoneIds[0]);
+    const response = await postCrossLockpointForInstance(
+      context.assessmentInstanceUrl,
+      context.lockpointZoneIds[0],
+    );
     assert.isTrue(response.ok);
 
     await refreshQuestionStates();
@@ -318,7 +287,11 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
   test.sequential(
     'crossing subsequent lockpoints is sequential and updates read-only state',
     async function () {
-      await crossNextLockpoint();
+      const response = await postCrossLockpointForInstance(
+        context.assessmentInstanceUrl,
+        context.lockpointZoneIds[1],
+      );
+      assert.isTrue(response.ok);
       await refreshQuestionStates();
 
       assert.deepEqual(

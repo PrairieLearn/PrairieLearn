@@ -290,20 +290,11 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       assert.equal(badge.eq(2).text().trim(), 'pending');
 
       // We should now be able to finish the entire assessment.
-      //
-      // First, make sure that the form and button actually exist.
-      const modal = otherEnabledGradeResponse.$('#confirmFinishModal');
-      const form = modal.closest('form');
-      assert.lengthOf(form, 1);
-      const finishButton = form.find('button[name="__action"][value="finish"]');
-      assert.lengthOf(finishButton, 1);
-
-      // Make a request to actually finish.
       const finishResponse = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'finish',
-          __csrf_token: helperClient.getCSRFToken(form),
+          __csrf_token: helperClient.getCSRFToken(otherEnabledGradeResponse.$),
         }),
       });
       assert.isTrue(finishResponse.ok);
