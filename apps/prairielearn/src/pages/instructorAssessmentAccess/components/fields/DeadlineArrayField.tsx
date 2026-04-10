@@ -8,7 +8,7 @@ import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
-import { endOfDayDatetime, getUserTimezone } from '../utils/dateUtils.js';
+import { endOfDayDatetime } from '../utils/dateUtils.js';
 
 function DeadlineArrayInput({
   type,
@@ -36,7 +36,6 @@ function DeadlineArrayInput({
   displayTimezone: string;
 }) {
   const { register, trigger } = useFormContext<AccessControlFormData>();
-  const userTimezone = getUserTimezone();
   const isEarly = type === 'early';
 
   const {
@@ -94,8 +93,8 @@ function DeadlineArrayInput({
         <>
           {prefix} –{' '}
           <FriendlyDate
-            date={new Date(end)}
-            timezone={userTimezone}
+            date={Temporal.PlainDateTime.from(end)}
+            timezone={displayTimezone}
             options={{ includeTz: false }}
           />
         </>
@@ -105,12 +104,16 @@ function DeadlineArrayInput({
     return (
       <>
         <FriendlyDate
-          date={new Date(start)}
-          timezone={userTimezone}
+          date={Temporal.PlainDateTime.from(start)}
+          timezone={displayTimezone}
           options={{ includeTz: false }}
         />{' '}
         –{' '}
-        <FriendlyDate date={new Date(end)} timezone={userTimezone} options={{ includeTz: false }} />
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(end)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+        />
       </>
     );
   };

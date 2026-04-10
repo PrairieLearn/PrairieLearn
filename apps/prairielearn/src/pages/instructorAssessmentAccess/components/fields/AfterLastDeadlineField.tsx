@@ -8,7 +8,7 @@ import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, AfterLastDeadlineValue, DeadlineEntry } from '../types.js';
-import { getLastDeadlineDate, getUserTimezone } from '../utils/dateUtils.js';
+import { getLastDeadlineDate } from '../utils/dateUtils.js';
 
 type AfterLastDeadlineMode = 'no_submissions' | 'practice_submissions' | 'partial_credit';
 
@@ -45,6 +45,7 @@ function AfterLastDeadlineInput({
   dueDate,
   lateDeadlines,
   creditFieldPath,
+  displayTimezone,
   showNoDueDateWarning = true,
 }: {
   value: AfterLastDeadlineValue | null;
@@ -55,10 +56,10 @@ function AfterLastDeadlineInput({
   creditFieldPath:
     | 'mainRule.afterLastDeadline.credit'
     | `overrides.${number}.afterLastDeadline.credit`;
+  displayTimezone: string;
   showNoDueDateWarning?: boolean;
 }) {
   const { register, trigger } = useFormContext<AccessControlFormData>();
-  const userTimezone = getUserTimezone();
   const { errors } = useFormState();
   const creditError: string | undefined = get(errors, creditFieldPath)?.message;
 
@@ -82,7 +83,7 @@ function AfterLastDeadlineInput({
       return (
         <>
           This will take effect after{' '}
-          <FriendlyDate date={lastDate} timezone={userTimezone} options={{ includeTz: false }} />
+          <FriendlyDate date={lastDate} timezone={displayTimezone} options={{ includeTz: false }} />
         </>
       );
     }
@@ -178,7 +179,7 @@ function AfterLastDeadlineInput({
   );
 }
 
-export function MainAfterLastDeadlineField() {
+export function MainAfterLastDeadlineField({ displayTimezone }: { displayTimezone: string }) {
   const { field } = useController<AccessControlFormData, 'mainRule.afterLastDeadline'>({
     name: 'mainRule.afterLastDeadline',
   });
@@ -198,12 +199,19 @@ export function MainAfterLastDeadlineField() {
       dueDate={dueDate}
       lateDeadlines={lateDeadlines}
       creditFieldPath="mainRule.afterLastDeadline.credit"
+      displayTimezone={displayTimezone}
       onChange={field.onChange}
     />
   );
 }
 
-export function OverrideAfterLastDeadlineField({ index }: { index: number }) {
+export function OverrideAfterLastDeadlineField({
+  index,
+  displayTimezone,
+}: {
+  index: number;
+  displayTimezone: string;
+}) {
   const mainValue = useWatch<AccessControlFormData, 'mainRule.afterLastDeadline'>({
     name: 'mainRule.afterLastDeadline',
   });
@@ -249,6 +257,7 @@ export function OverrideAfterLastDeadlineField({ index }: { index: number }) {
         dueDate={dueDateOverridden ? dueDate : mainDueDate}
         lateDeadlines={lateDeadlinesOverridden ? lateDeadlines : mainLateDeadlines}
         creditFieldPath={`overrides.${index}.afterLastDeadline.credit`}
+        displayTimezone={displayTimezone}
         showNoDueDateWarning={false}
         onChange={field.onChange}
       />
