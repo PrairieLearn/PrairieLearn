@@ -48,4 +48,3 @@ export function getLastDeadlineDate(
 
   return null;
 }
-
