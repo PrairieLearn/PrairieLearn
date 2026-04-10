@@ -893,52 +893,161 @@
           "additionalProperties": false,
           "properties": {
             "questions": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "hidden": {
-                  "type": "boolean"
-                },
-                "visibleFrom": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/DatetimeLocalStringSchema"
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "visibleFrom": {
+                      "type": "null"
                     },
-                    {
+                    "visibleUntil": {
                       "type": "null"
                     }
-                  ]
+                  }
                 },
-                "visibleUntil": {
-                  "anyOf": [
-                    {
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["visibleFrom"],
+                  "properties": {
+                    "visibleFrom": {
                       "$ref": "#/definitions/DatetimeLocalStringSchema"
                     },
+                    "visibleUntil": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/definitions/DatetimeLocalStringSchema"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "anyOf": [
                     {
-                      "type": "null"
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["hidden"],
+                      "properties": {
+                        "hidden": {
+                          "type": "boolean",
+                          "const": false
+                        },
+                        "visibleFrom": {
+                          "type": "null"
+                        },
+                        "visibleUntil": {
+                          "type": "null"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["hidden"],
+                      "properties": {
+                        "hidden": {
+                          "type": "boolean",
+                          "const": true
+                        },
+                        "visibleFrom": {
+                          "type": "null"
+                        },
+                        "visibleUntil": {
+                          "type": "null"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["hidden", "visibleFrom"],
+                      "properties": {
+                        "hidden": {
+                          "type": "boolean",
+                          "const": true
+                        },
+                        "visibleFrom": {
+                          "$ref": "#/definitions/DatetimeLocalStringSchema"
+                        },
+                        "visibleUntil": {
+                          "anyOf": [
+                            {
+                              "$ref": "#/definitions/DatetimeLocalStringSchema"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
                     }
                   ]
                 }
-              }
+              ]
             },
             "score": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "hidden": {
-                  "type": "boolean"
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "visibleFrom": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/definitions/DatetimeLocalStringSchema"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
                 },
-                "visibleFrom": {
+                {
                   "anyOf": [
                     {
-                      "$ref": "#/definitions/DatetimeLocalStringSchema"
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["hidden"],
+                      "properties": {
+                        "hidden": {
+                          "type": "boolean",
+                          "const": false
+                        },
+                        "visibleFrom": {
+                          "type": "null"
+                        }
+                      }
                     },
                     {
-                      "type": "null"
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["hidden"],
+                      "properties": {
+                        "hidden": {
+                          "type": "boolean",
+                          "const": true
+                        },
+                        "visibleFrom": {
+                          "anyOf": [
+                            {
+                              "$ref": "#/definitions/DatetimeLocalStringSchema"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
                     }
                   ]
                 }
-              }
+              ]
             }
           }
         }

@@ -122,7 +122,6 @@ const AfterCompleteQuestionsJsonSchema = z
     // No hidden, no visibleFrom — visibleUntil not allowed.
     z
       .object({
-        hidden: z.undefined().optional(),
         visibleFrom: z.null().optional(),
         visibleUntil: z.null().optional(),
       })
@@ -130,7 +129,6 @@ const AfterCompleteQuestionsJsonSchema = z
     // No hidden, with visibleFrom — visibleUntil allowed.
     z
       .object({
-        hidden: z.undefined().optional(),
         visibleFrom: DatetimeLocalStringSchema,
         visibleUntil: DatetimeLocalStringSchema.nullable().optional(),
       })
@@ -145,7 +143,6 @@ const AfterCompleteScoreJsonSchema = z
     // When hidden is absent (override inheriting boolean from defaults), allow any date fields.
     z
       .object({
-        hidden: z.undefined().optional(),
         visibleFrom: DatetimeLocalStringSchema.nullable().optional(),
       })
       .strict(),
