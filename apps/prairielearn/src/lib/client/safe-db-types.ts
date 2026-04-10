@@ -154,15 +154,10 @@ export const RawStudentAssessmentInstanceAuthzResultSchema =
     credit_date_string: true,
     password: true,
     show_closed_assessment: true,
-  }).transform(
-    ({ active, authorized_edit, credit_date_string, password, show_closed_assessment }) => ({
-      active,
-      authorizedEdit: authorized_edit,
-      creditDateString: credit_date_string,
-      hasPassword: password != null,
-      showClosedAssessment: show_closed_assessment,
-    }),
-  );
+  }).transform(({ password, ...rest }) => ({
+    ...rest,
+    has_password: password != null,
+  }));
 export const StudentAssessmentInstanceAuthzResultSchema =
   RawStudentAssessmentInstanceAuthzResultSchema.brand<'StudentAssessmentInstanceAuthzResult'>();
 export type StudentAssessmentInstanceAuthzResult = z.infer<
@@ -386,7 +381,6 @@ export const RawStudentInstanceQuestionSchema = RawStaffInstanceQuestionSchema.p
   current_value: true,
   highest_submission_score: true,
   id: true,
-  last_grader: true,
   manual_points: true,
   number_attempts: true,
   open: true,
