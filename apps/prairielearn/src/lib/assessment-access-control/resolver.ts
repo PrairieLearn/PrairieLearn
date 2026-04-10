@@ -66,7 +66,7 @@ export interface AccessControlResolverInput {
 
 export interface AccessTimelineEntry {
   credit: number;
-  startDate: Date;
+  startDate: Date | null;
   endDate: Date | null;
   active: boolean;
 }
@@ -218,7 +218,10 @@ export function cascadeOverrides(
 /**
  * Builds an access timeline from dateControl for display purposes.
  * Each entry is a contiguous period [startDate, endDate) with a credit value.
- * The last entry may have `endDate: null` if it extends indefinitely.
+ *
+ * - A before-release entry (startDate: null) is included when the current
+ *   date is before the release date.
+ * - An after-last-deadline entry (endDate: null) is always appended.
  */
 export function buildAccessTimeline(
   dateControl: RuntimeDateControl | undefined,
@@ -260,10 +263,20 @@ export function buildAccessTimeline(
 
   if (deadlines.length === 0) return [];
 
-  // Convert deadlines into display segments.
   const segments: AccessTimelineEntry[] = [];
-  let segmentStart = releaseDate;
 
+  // Before-release entry when the current date precedes the release date.
+  if (date < releaseDate) {
+    segments.push({
+      credit: 0,
+      startDate: null,
+      endDate: releaseDate,
+      active: true,
+    });
+  }
+
+  // Credit segments derived from deadlines.
+  let segmentStart = releaseDate;
   for (const deadline of deadlines) {
     segments.push({
       credit: deadline.credit,
@@ -274,17 +287,14 @@ export function buildAccessTimeline(
     segmentStart = deadline.date;
   }
 
-  // After last deadline segment.
-  const afterLast = dateControl.afterLastDeadline;
-  const afterCredit = afterLast?.credit ?? 0;
-  if (afterCredit > 0 || afterLast) {
-    segments.push({
-      credit: afterCredit,
-      startDate: segmentStart,
-      endDate: null,
-      active: date >= segmentStart,
-    });
-  }
+  // After-last-deadline entry is always shown.
+  const afterCredit = dateControl.afterLastDeadline?.credit ?? 0;
+  segments.push({
+    credit: afterCredit,
+    startDate: segmentStart,
+    endDate: null,
+    active: date >= segmentStart,
+  });
 
   return segments;
 }

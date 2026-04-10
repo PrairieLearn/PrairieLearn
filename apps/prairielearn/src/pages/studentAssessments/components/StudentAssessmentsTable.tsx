@@ -18,10 +18,12 @@ const AccessRuleSchema = z.object({
   time_limit_min: z.string(),
 });
 
+// Serialized form of AccessTimelineEntry after Hydrate JSON serialization
+// (Date objects become ISO strings).
 const AccessTimelineEntrySchema = z.object({
   credit: z.number(),
-  start_date: z.string(),
-  end_date: z.string().nullable(),
+  startDate: z.string().nullable(),
+  endDate: z.string().nullable(),
   active: z.boolean(),
 });
 

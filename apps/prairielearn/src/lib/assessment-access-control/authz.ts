@@ -58,12 +58,7 @@ function resolverResultToSprocAuthzAssessment(
     show_before_release: result.showBeforeRelease,
     next_active_time: null,
     access_rules: [],
-    access_timeline: result.accessTimeline.map((entry) => ({
-      credit: entry.credit,
-      start_date: entry.startDate.toISOString(),
-      end_date: entry.endDate?.toISOString() ?? null,
-      active: entry.active,
-    })),
+    access_timeline: result.accessTimeline,
   };
 }
 

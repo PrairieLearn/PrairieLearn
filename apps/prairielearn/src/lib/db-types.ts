@@ -136,12 +136,10 @@ export const SprocTeamInfoSchema = z.object({
 export type SprocTeamInfo = z.infer<typeof SprocTeamInfoSchema>;
 
 // Timeline entry for modern access control display.
-export const AccessTimelineEntrySchema = z.object({
-  active: z.boolean(),
-  credit: z.number(),
-  end_date: z.string().nullable(),
-  start_date: z.string(),
-});
+// This is only produced programmatically by the modern resolver (never from SQL),
+// so we use z.custom to carry the Date-based interface through.
+export const AccessTimelineEntrySchema =
+  z.custom<import('./assessment-access-control/resolver.js').AccessTimelineEntry>();
 
 // Result of authz_assessment sproc
 export const SprocAuthzAssessmentSchema = z.object({

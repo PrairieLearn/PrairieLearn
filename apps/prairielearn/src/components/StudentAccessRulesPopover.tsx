@@ -3,15 +3,14 @@ import type { z } from 'zod';
 
 import { type HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
 
-import type { AccessTimelineEntrySchema, SprocAuthzAssessmentSchema } from '../lib/db-types.js';
+import type { AccessTimelineEntry } from '../lib/assessment-access-control/resolver.js';
+import type { SprocAuthzAssessmentSchema } from '../lib/db-types.js';
 
 import { TimezoneContext } from './FriendlyDate.js';
 
 type AccessRule = z.infer<typeof SprocAuthzAssessmentSchema>['access_rules'][number];
-type AccessTimelineEntry = z.infer<typeof AccessTimelineEntrySchema>;
 
-function formatTimelineDate(isoString: string, timezone: string): string {
-  const date = new Date(isoString);
+function formatTimelineDate(date: Date, timezone: string): string {
   return new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
     hour: '2-digit',
@@ -82,8 +81,8 @@ function timelinePopoverContentHtml(
         (entry) => html`
           <tr>
             <td>${entry.credit}%</td>
-            <td>${formatTimelineDate(entry.start_date, timezone)}</td>
-            <td>${entry.end_date ? formatTimelineDate(entry.end_date, timezone) : '—'}</td>
+            <td>${entry.startDate ? formatTimelineDate(entry.startDate, timezone) : '—'}</td>
+            <td>${entry.endDate ? formatTimelineDate(entry.endDate, timezone) : '—'}</td>
           </tr>
         `,
       )}
@@ -137,14 +136,33 @@ export function StudentAccessRulesPopoverReact({ accessRules }: { accessRules: A
   );
 }
 
-/** React version for modern access timeline. */
+/**
+ * Serialized shape of AccessTimelineEntry after Hydrate JSON serialization.
+ * Date objects become ISO strings; the React component accepts this form.
+ */
+export interface SerializedAccessTimelineEntry {
+  credit: number;
+  startDate: string | null;
+  endDate: string | null;
+  active: boolean;
+}
+
+/** React version for modern access timeline (receives serialized dates from Hydrate). */
 export function StudentAccessTimelinePopover({
   accessTimeline,
 }: {
-  accessTimeline: AccessTimelineEntry[];
+  accessTimeline: SerializedAccessTimelineEntry[];
 }) {
   const timezone = use(TimezoneContext);
   if (accessTimeline.length === 0) return null;
+
+  // Rehydrate string dates back to Date objects for formatting.
+  const entries: AccessTimelineEntry[] = accessTimeline.map((entry) => ({
+    credit: entry.credit,
+    startDate: entry.startDate ? new Date(entry.startDate) : null,
+    endDate: entry.endDate ? new Date(entry.endDate) : null,
+    active: entry.active,
+  }));
 
   return (
     <button
@@ -154,7 +172,7 @@ export function StudentAccessTimelinePopover({
       data-bs-container="body"
       data-bs-html="true"
       data-bs-title="Access details"
-      data-bs-content={escapeHtml(timelinePopoverContentHtml(accessTimeline, timezone)).toString()}
+      data-bs-content={escapeHtml(timelinePopoverContentHtml(entries, timezone)).toString()}
     >
       <i className="fa fa-question-circle" />
     </button>
