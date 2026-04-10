@@ -373,12 +373,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
     if (of.has('earlyDeadlines')) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (of.has('lateDeadlines')) output.dateControl.lateDeadlines = rule.lateDeadlines;
     if (of.has('afterLastDeadline') && rule.afterLastDeadline) {
-      // Always include explicit credit so the override clears the main
-      // rule's credit rather than silently inheriting it.
-      const ald = rule.afterLastDeadline;
-      output.dateControl.afterLastDeadline = ald.allowSubmissions
-        ? { allowSubmissions: true, credit: ald.credit ?? null }
-        : { allowSubmissions: false, credit: null };
+      output.dateControl.afterLastDeadline = rule.afterLastDeadline;
     }
     if (of.has('durationMinutes')) output.dateControl.durationMinutes = rule.durationMinutes;
     if (of.has('password')) output.dateControl.password = rule.password;
@@ -388,18 +383,19 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
     output.afterComplete = {};
     if (of.has('questionVisibility')) {
       const qv = rule.questionVisibility;
-      output.afterComplete.questions =
-        qv.hidden && qv.visibleFrom
-          ? { hidden: true, visibleFrom: qv.visibleFrom, visibleUntil: qv.visibleUntil || null }
-          : qv.hidden
-            ? { hidden: true, visibleFrom: null, visibleUntil: null }
-            : { hidden: false, visibleFrom: null, visibleUntil: null };
+      output.afterComplete.questions = qv.hidden
+        ? qv.visibleFrom
+          ? { hidden: true, visibleFrom: qv.visibleFrom, visibleUntil: qv.visibleUntil }
+          : { hidden: true }
+        : { hidden: false };
     }
     if (of.has('scoreVisibility')) {
       const sv = rule.scoreVisibility;
       output.afterComplete.score = sv.hidden
-        ? { hidden: true, visibleFrom: sv.visibleFrom || null }
-        : { hidden: false, visibleFrom: null };
+        ? sv.visibleFrom
+          ? { hidden: true, visibleFrom: sv.visibleFrom }
+          : { hidden: true }
+        : { hidden: false };
     }
   }
 

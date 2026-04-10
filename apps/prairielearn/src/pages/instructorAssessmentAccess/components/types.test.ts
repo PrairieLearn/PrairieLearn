@@ -248,7 +248,7 @@ describe('formDataToJson', () => {
     expect(dc.password).toBeNull();
   });
 
-  it('override afterLastDeadline includes explicit credit: null for no_submissions', () => {
+  it('override afterLastDeadline passes through for no_submissions', () => {
     const override: OverrideData = {
       ...baseOverride,
       trackingId: 'o-ald-nosub',
@@ -258,10 +258,10 @@ describe('formDataToJson', () => {
 
     const result = formDataToJson(buildFormData(override));
     const dc = result[1].dateControl!;
-    expect(dc.afterLastDeadline).toEqual({ allowSubmissions: false, credit: null });
+    expect(dc.afterLastDeadline).toEqual({ allowSubmissions: false });
   });
 
-  it('override afterLastDeadline includes explicit credit: null for practice_submissions', () => {
+  it('override afterLastDeadline passes through for practice_submissions', () => {
     const override: OverrideData = {
       ...baseOverride,
       trackingId: 'o-ald-practice',
@@ -271,7 +271,7 @@ describe('formDataToJson', () => {
 
     const result = formDataToJson(buildFormData(override));
     const dc = result[1].dateControl!;
-    expect(dc.afterLastDeadline).toEqual({ allowSubmissions: true, credit: null });
+    expect(dc.afterLastDeadline).toEqual({ allowSubmissions: true });
   });
 
   it('override afterLastDeadline preserves numeric credit for partial_credit', () => {

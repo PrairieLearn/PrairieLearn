@@ -16,19 +16,15 @@ function makeBaseRule(overrides: Record<string, unknown> = {}) {
     date_control_late_deadlines_overridden: false,
     date_control_after_last_deadline_allow_submissions: null,
     date_control_after_last_deadline_credit: null,
-    date_control_after_last_deadline_credit_overridden: false,
     date_control_duration_minutes: null,
     date_control_duration_minutes_overridden: false,
     date_control_password: null,
     date_control_password_overridden: false,
     after_complete_questions_hidden: null,
     after_complete_questions_visible_from: null,
-    after_complete_questions_visible_from_overridden: false,
     after_complete_questions_visible_until: null,
-    after_complete_questions_visible_until_overridden: false,
     after_complete_score_hidden: null,
     after_complete_score_visible_from: null,
-    after_complete_score_visible_from_overridden: false,
     ...overrides,
   };
 }
@@ -77,13 +73,12 @@ describe('dbRowToAccessControlJson', () => {
     });
   });
 
-  it('omits hidden-absent afterComplete questions with date overrides', () => {
+  it('omits afterComplete questions when hidden is null', () => {
     const result = dbRowToAccessControlJson(
       makeRow({
         rule: {
           after_complete_questions_hidden: null,
           after_complete_questions_visible_from: new Date('2025-03-01T00:00:00Z'),
-          after_complete_questions_visible_from_overridden: true,
         },
       }),
     );
@@ -91,13 +86,12 @@ describe('dbRowToAccessControlJson', () => {
     expect(result.afterComplete?.questions).toBeUndefined();
   });
 
-  it('omits hidden-absent afterComplete score with date overrides', () => {
+  it('omits afterComplete score when hidden is null', () => {
     const result = dbRowToAccessControlJson(
       makeRow({
         rule: {
           after_complete_score_hidden: null,
           after_complete_score_visible_from: new Date('2025-03-01T00:00:00Z'),
-          after_complete_score_visible_from_overridden: true,
         },
       }),
     );
@@ -105,7 +99,21 @@ describe('dbRowToAccessControlJson', () => {
     expect(result.afterComplete?.score).toBeUndefined();
   });
 
-  it('emits explicit null afterLastDeadline credit for overrides', () => {
+  it('omits credit for main rule afterLastDeadline when not set', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          date_control_after_last_deadline_allow_submissions: false,
+        },
+      }),
+    );
+
+    expect(result.dateControl?.afterLastDeadline).toEqual({
+      allowSubmissions: false,
+    });
+  });
+
+  it('emits explicit null credit for override afterLastDeadline', () => {
     const result = dbRowToAccessControlJson(
       makeRow({
         rule: {
@@ -122,26 +130,27 @@ describe('dbRowToAccessControlJson', () => {
     });
   });
 
-  it('emits explicit null afterComplete visibility dates for overrides', () => {
+  it('reconstructs afterComplete questions as simple hidden: true', () => {
     const result = dbRowToAccessControlJson(
       makeRow({
         rule: {
-          target_type: 'student_label',
-          number: 1,
           after_complete_questions_hidden: true,
+        },
+      }),
+    );
+
+    expect(result.afterComplete?.questions).toEqual({ hidden: true });
+  });
+
+  it('reconstructs afterComplete score as simple hidden: true', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
           after_complete_score_hidden: true,
         },
       }),
     );
 
-    expect(result.afterComplete?.questions).toEqual({
-      hidden: true,
-      visibleFrom: null,
-      visibleUntil: null,
-    });
-    expect(result.afterComplete?.score).toEqual({
-      hidden: true,
-      visibleFrom: null,
-    });
+    expect(result.afterComplete?.score).toEqual({ hidden: true });
   });
 });

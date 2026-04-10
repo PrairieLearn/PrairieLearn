@@ -7,14 +7,28 @@
   "accessControl": [
     {
       "listBeforeRelease": true,
-      "afterComplete": { "questions": { "hidden": false }, "score": { "hidden": false } }
+      "dateControl": {
+        "releaseDate": "2026-04-10T00:00:01",
+        "dueDate": null,
+        "afterLastDeadline": { "allowSubmissions": true }
+      },
+      "afterComplete": { "questions": { "hidden": false } }
     },
     {
-      "labels": ["Section A"],
-      "dateControl": { "dueDate": "2026-01-28T20:15:00" },
+      "labels": ["Extra time"],
       "afterComplete": {
-        "questions": { "hidden": true, "visibleFrom": "2026-05-08T00:00:01", "visibleUntil": null },
-        "score": { "hidden": true, "visibleFrom": "2026-04-11T00:00:01" }
+        "questions": {
+          "hidden": true,
+          "visibleFrom": "2026-04-11T00:00:01",
+          "visibleUntil": "2026-04-25T23:59:59"
+        }
+      }
+    },
+    {
+      "labels": ["Extra time", "Section A"],
+      "dateControl": { "afterLastDeadline": { "allowSubmissions": false, "credit": null } },
+      "afterComplete": {
+        "questions": { "hidden": false, "visibleFrom": null, "visibleUntil": null }
       }
     }
   ],

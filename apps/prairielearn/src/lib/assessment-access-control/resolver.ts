@@ -149,13 +149,7 @@ function mergeDateControl(
   if (ov.earlyDeadlines !== undefined) merged.earlyDeadlines = ov.earlyDeadlines;
   if (ov.lateDeadlines !== undefined) merged.lateDeadlines = ov.lateDeadlines;
   if (ov.afterLastDeadline !== undefined) {
-    merged.afterLastDeadline = { ...merged.afterLastDeadline };
-    if (ov.afterLastDeadline.credit !== undefined) {
-      merged.afterLastDeadline.credit = ov.afterLastDeadline.credit;
-    }
-    if (ov.afterLastDeadline.allowSubmissions !== undefined) {
-      merged.afterLastDeadline.allowSubmissions = ov.afterLastDeadline.allowSubmissions;
-    }
+    merged.afterLastDeadline = ov.afterLastDeadline;
   }
   if (ov.durationMinutes !== undefined) merged.durationMinutes = ov.durationMinutes;
   if (ov.password !== undefined) merged.password = ov.password;
@@ -170,26 +164,10 @@ function mergeAfterComplete(
   if (!base) return override;
   if (!override) return { ...base };
 
-  const merged: RuntimeAfterComplete = {};
-
-  // Merge questions
-  if (base.questions || override.questions) {
-    const bq = base.questions ?? {};
-    const oq = override.questions ?? {};
-    merged.questions = { ...bq };
-    if (oq.hidden !== undefined) merged.questions.hidden = oq.hidden;
-    if (oq.visibleFrom !== undefined) merged.questions.visibleFrom = oq.visibleFrom;
-    if (oq.visibleUntil !== undefined) merged.questions.visibleUntil = oq.visibleUntil;
-  }
-
-  // Merge score
-  if (base.score || override.score) {
-    const bs = base.score ?? {};
-    const os = override.score ?? {};
-    merged.score = { ...bs };
-    if (os.hidden !== undefined) merged.score.hidden = os.hidden;
-    if (os.visibleFrom !== undefined) merged.score.visibleFrom = os.visibleFrom;
-  }
+  const merged: RuntimeAfterComplete = {
+    questions: override.questions !== undefined ? override.questions : base.questions,
+    score: override.score !== undefined ? override.score : base.score,
+  };
 
   return merged;
 }

@@ -237,7 +237,6 @@ describe('Access control syncing', () => {
         assert.isNull(row.date_control_password);
         assert.isFalse(row.date_control_early_deadlines_overridden);
         assert.isFalse(row.date_control_late_deadlines_overridden);
-        assert.isFalse(row.date_control_after_last_deadline_credit_overridden);
         assert.isNull(row.date_control_after_last_deadline_credit);
         assert.isNull(row.date_control_after_last_deadline_allow_submissions);
       }));
@@ -271,7 +270,6 @@ describe('Access control syncing', () => {
         assert.isFalse(row.date_control_password_overridden);
         assert.isFalse(row.date_control_early_deadlines_overridden);
         assert.isFalse(row.date_control_late_deadlines_overridden);
-        assert.isFalse(row.date_control_after_last_deadline_credit_overridden);
       }));
 
     it('afterComplete fields follow the same pattern', () =>
@@ -288,11 +286,9 @@ describe('Access control syncing', () => {
         const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
         assert.equal(row.after_complete_questions_hidden, true);
-        assert.isTrue(row.after_complete_questions_visible_from_overridden);
         assert.isNotNull(row.after_complete_questions_visible_from);
         // Omitted fields
         assert.isNull(row.after_complete_score_hidden);
-        assert.isFalse(row.after_complete_score_visible_from_overridden);
         assert.isNull(row.after_complete_score_visible_from);
       }));
   });
@@ -352,7 +348,6 @@ describe('Access control syncing', () => {
         assert.isFalse(override.date_control_password_overridden);
         assert.isFalse(override.date_control_early_deadlines_overridden);
         assert.isFalse(override.date_control_late_deadlines_overridden);
-        assert.isFalse(override.date_control_after_last_deadline_credit_overridden);
       }));
 
     it('afterComplete override with explicit null visibility dates sets those fields', () =>
@@ -383,12 +378,9 @@ describe('Access control syncing', () => {
         const override = syncedRules.find((r) => r.target_type === 'student_label');
         assert.isOk(override);
         assert.equal(override.after_complete_questions_hidden, false);
-        assert.isTrue(override.after_complete_questions_visible_from_overridden);
         assert.isNull(override.after_complete_questions_visible_from);
-        assert.isTrue(override.after_complete_questions_visible_until_overridden);
         assert.isNull(override.after_complete_questions_visible_until);
         assert.isNull(override.after_complete_score_hidden);
-        assert.isFalse(override.after_complete_score_visible_from_overridden);
         assert.isNull(override.after_complete_score_visible_from);
       }));
   });
@@ -1021,7 +1013,6 @@ describe('Access control syncing', () => {
         const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].after_complete_questions_hidden, true);
-        assert.equal(syncedRules[0].after_complete_questions_visible_from_overridden, true);
         assert.isNotNull(syncedRules[0].after_complete_questions_visible_from);
       }));
 
@@ -1039,9 +1030,7 @@ describe('Access control syncing', () => {
         const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].after_complete_questions_hidden, true);
-        assert.equal(syncedRules[0].after_complete_questions_visible_from_overridden, true);
         assert.isNotNull(syncedRules[0].after_complete_questions_visible_from);
-        assert.equal(syncedRules[0].after_complete_questions_visible_until_overridden, true);
         assert.isNotNull(syncedRules[0].after_complete_questions_visible_until);
       }));
 
@@ -1058,7 +1047,6 @@ describe('Access control syncing', () => {
         const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].after_complete_score_hidden, true);
-        assert.equal(syncedRules[0].after_complete_score_visible_from_overridden, true);
         assert.isNotNull(syncedRules[0].after_complete_score_visible_from);
       }));
   });
@@ -1429,7 +1417,7 @@ describe('Access control syncing', () => {
   });
 
   describe('Override afterLastDeadline validation', () => {
-    it('rejects override with afterLastDeadline missing credit', () =>
+    it('accepts override with afterLastDeadline missing credit', () =>
       runInTransactionAndRollback(async () => {
         const { syncedRules, errors } = await syncRulesAndRead(
           [
@@ -1441,12 +1429,8 @@ describe('Access control syncing', () => {
           ],
           { studentLabels: ['label1'] },
         );
-        assert.equal(syncedRules.length, 0);
-        assert.isTrue(
-          errors.some((e) =>
-            e.includes('afterLastDeadline.credit must be explicitly set on overrides'),
-          ),
-        );
+        assert.isFalse(errors.some((e) => e.includes('afterLastDeadline')));
+        assert.equal(syncedRules.length, 2);
       }));
 
     it('accepts override with all afterLastDeadline properties', () =>
@@ -1498,7 +1482,7 @@ describe('Access control syncing', () => {
   });
 
   describe('Override afterComplete validation', () => {
-    it('rejects override with partial afterComplete.questions (hidden only)', () =>
+    it('accepts override with partial afterComplete.questions (hidden only)', () =>
       runInTransactionAndRollback(async () => {
         const { syncedRules, errors } = await syncRulesAndRead(
           [
@@ -1510,20 +1494,11 @@ describe('Access control syncing', () => {
           ],
           { studentLabels: ['label1'] },
         );
-        assert.equal(syncedRules.length, 0);
-        assert.isTrue(
-          errors.some((e) =>
-            e.includes('afterComplete.questions.visibleFrom must be explicitly set on overrides'),
-          ),
-        );
-        assert.isTrue(
-          errors.some((e) =>
-            e.includes('afterComplete.questions.visibleUntil must be explicitly set on overrides'),
-          ),
-        );
+        assert.isFalse(errors.some((e) => e.includes('afterComplete')));
+        assert.equal(syncedRules.length, 2);
       }));
 
-    it('rejects override with partial afterComplete.questions (missing visibleUntil)', () =>
+    it('accepts override with partial afterComplete.questions (missing visibleUntil)', () =>
       runInTransactionAndRollback(async () => {
         const { syncedRules, errors } = await syncRulesAndRead(
           [
@@ -1537,15 +1512,11 @@ describe('Access control syncing', () => {
           ],
           { studentLabels: ['label1'] },
         );
-        assert.equal(syncedRules.length, 0);
-        assert.isTrue(
-          errors.some((e) =>
-            e.includes('afterComplete.questions.visibleUntil must be explicitly set on overrides'),
-          ),
-        );
+        assert.isFalse(errors.some((e) => e.includes('afterComplete')));
+        assert.equal(syncedRules.length, 2);
       }));
 
-    it('rejects override with partial afterComplete.score (hidden only)', () =>
+    it('accepts override with partial afterComplete.score (hidden only)', () =>
       runInTransactionAndRollback(async () => {
         const { syncedRules, errors } = await syncRulesAndRead(
           [
@@ -1557,12 +1528,8 @@ describe('Access control syncing', () => {
           ],
           { studentLabels: ['label1'] },
         );
-        assert.equal(syncedRules.length, 0);
-        assert.isTrue(
-          errors.some((e) =>
-            e.includes('afterComplete.score.visibleFrom must be explicitly set on overrides'),
-          ),
-        );
+        assert.isFalse(errors.some((e) => e.includes('afterComplete')));
+        assert.equal(syncedRules.length, 2);
       }));
 
     it('accepts override with all afterComplete.questions properties', () =>
@@ -1603,7 +1570,7 @@ describe('Access control syncing', () => {
         assert.equal(syncedRules.length, 2);
       }));
 
-    it('accepts override with null visibility dates (explicit nulls count as set)', () =>
+    it('accepts override with null visibility dates', () =>
       runInTransactionAndRollback(async () => {
         const { syncedRules, errors } = await syncRulesAndRead(
           [

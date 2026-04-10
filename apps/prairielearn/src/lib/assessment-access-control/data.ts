@@ -83,54 +83,32 @@ function buildDateControl(
       })) ?? null;
   }
 
-  {
-    const includeCredit = rule.date_control_after_last_deadline_credit_overridden;
-    const includeAllowSubmissions = rule.date_control_after_last_deadline_allow_submissions != null;
-
-    if (includeCredit || includeAllowSubmissions) {
-      dateControl.afterLastDeadline = {};
-      if (includeCredit) {
-        dateControl.afterLastDeadline.credit = rule.date_control_after_last_deadline_credit;
-      }
-      if (includeAllowSubmissions) {
-        dateControl.afterLastDeadline.allowSubmissions =
-          rule.date_control_after_last_deadline_allow_submissions!;
-      }
-    }
+  if (rule.date_control_after_last_deadline_allow_submissions != null) {
+    dateControl.afterLastDeadline = {
+      allowSubmissions: rule.date_control_after_last_deadline_allow_submissions,
+      credit: rule.date_control_after_last_deadline_credit,
+    };
   }
 
   return Object.keys(dateControl).length > 0 ? dateControl : undefined;
 }
 
 function buildAfterComplete(rule: AssessmentAccessControlRule): RuntimeAfterComplete | undefined {
-  const override = isOverride(rule);
-  const includeField = (overridden: boolean) => !override || overridden;
-
-  const questions: RuntimeAfterComplete['questions'] = {};
-  if (rule.after_complete_questions_hidden != null) {
-    questions.hidden = rule.after_complete_questions_hidden;
-  }
-  if (includeField(rule.after_complete_questions_visible_until_overridden)) {
-    questions.visibleUntil = rule.after_complete_questions_visible_until ?? null;
-  }
-  if (includeField(rule.after_complete_questions_visible_from_overridden)) {
-    questions.visibleFrom = rule.after_complete_questions_visible_from ?? null;
-  }
-
-  const score: RuntimeAfterComplete['score'] = {};
-  if (rule.after_complete_score_hidden != null) {
-    score.hidden = rule.after_complete_score_hidden;
-  }
-  if (includeField(rule.after_complete_score_visible_from_overridden)) {
-    score.visibleFrom = rule.after_complete_score_visible_from ?? null;
-  }
-
   const afterComplete: RuntimeAfterComplete = {};
-  if (Object.keys(questions).length > 0) {
-    afterComplete.questions = questions;
+
+  if (rule.after_complete_questions_hidden != null) {
+    afterComplete.questions = {
+      hidden: rule.after_complete_questions_hidden,
+      visibleFrom: rule.after_complete_questions_visible_from ?? null,
+      visibleUntil: rule.after_complete_questions_visible_until ?? null,
+    };
   }
-  if (Object.keys(score).length > 0) {
-    afterComplete.score = score;
+
+  if (rule.after_complete_score_hidden != null) {
+    afterComplete.score = {
+      hidden: rule.after_complete_score_hidden,
+      visibleFrom: rule.after_complete_score_visible_from ?? null,
+    };
   }
 
   return Object.keys(afterComplete).length > 0 ? afterComplete : undefined;

@@ -216,19 +216,15 @@ export const AssessmentAccessControlRuleSchema = z.object({
   // After complete fields
   after_complete_questions_hidden: z.boolean().nullable(),
   after_complete_questions_visible_from: DateFromISOString.nullable(),
-  after_complete_questions_visible_from_overridden: z.boolean(),
   after_complete_questions_visible_until: DateFromISOString.nullable(),
-  after_complete_questions_visible_until_overridden: z.boolean(),
   after_complete_score_hidden: z.boolean().nullable(),
   after_complete_score_visible_from: DateFromISOString.nullable(),
-  after_complete_score_visible_from_overridden: z.boolean(),
 
   assessment_id: IdSchema,
 
   // Date control fields
   date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
   date_control_after_last_deadline_credit: z.number().nullable(),
-  date_control_after_last_deadline_credit_overridden: z.boolean(),
   date_control_due_date: DateFromISOString.nullable(),
   date_control_due_date_overridden: z.boolean(),
   date_control_duration_minutes: z.number().nullable(),

@@ -41,7 +41,6 @@ BEGIN
         date_control_early_deadlines_overridden,
         date_control_late_deadlines_overridden,
         date_control_after_last_deadline_allow_submissions,
-        date_control_after_last_deadline_credit_overridden,
         date_control_after_last_deadline_credit,
         date_control_duration_minutes_overridden,
         date_control_duration_minutes,
@@ -49,12 +48,9 @@ BEGIN
         date_control_password,
 
         after_complete_questions_hidden,
-        after_complete_questions_visible_from_overridden,
         after_complete_questions_visible_from,
-        after_complete_questions_visible_until_overridden,
         after_complete_questions_visible_until,
         after_complete_score_hidden,
-        after_complete_score_visible_from_overridden,
         after_complete_score_visible_from
     )
     SELECT
@@ -68,7 +64,6 @@ BEGIN
         (rule ->> 'date_control_early_deadlines_overridden')::boolean,
         (rule ->> 'date_control_late_deadlines_overridden')::boolean,
         (rule ->> 'date_control_after_last_deadline_allow_submissions')::boolean,
-        (rule ->> 'date_control_after_last_deadline_credit_overridden')::boolean,
         (rule ->> 'date_control_after_last_deadline_credit')::integer,
         (rule ->> 'date_control_duration_minutes_overridden')::boolean,
         (rule ->> 'date_control_duration_minutes')::integer,
@@ -76,12 +71,9 @@ BEGIN
         (rule ->> 'date_control_password')::text,
 
         (rule ->> 'after_complete_questions_hidden')::boolean,
-        (rule ->> 'after_complete_questions_visible_from_overridden')::boolean,
         input_date(rule ->> 'after_complete_questions_visible_from', ci_timezone),
-        (rule ->> 'after_complete_questions_visible_until_overridden')::boolean,
         input_date(rule ->> 'after_complete_questions_visible_until', ci_timezone),
         (rule ->> 'after_complete_score_hidden')::boolean,
-        (rule ->> 'after_complete_score_visible_from_overridden')::boolean,
         input_date(rule ->> 'after_complete_score_visible_from', ci_timezone)
     FROM UNNEST(rules_data) AS rule
     ON CONFLICT (assessment_id, number, target_type) DO UPDATE SET
@@ -92,7 +84,6 @@ BEGIN
         date_control_early_deadlines_overridden = EXCLUDED.date_control_early_deadlines_overridden,
         date_control_late_deadlines_overridden = EXCLUDED.date_control_late_deadlines_overridden,
         date_control_after_last_deadline_allow_submissions = EXCLUDED.date_control_after_last_deadline_allow_submissions,
-        date_control_after_last_deadline_credit_overridden = EXCLUDED.date_control_after_last_deadline_credit_overridden,
         date_control_after_last_deadline_credit = EXCLUDED.date_control_after_last_deadline_credit,
         date_control_duration_minutes_overridden = EXCLUDED.date_control_duration_minutes_overridden,
         date_control_duration_minutes = EXCLUDED.date_control_duration_minutes,
@@ -100,12 +91,9 @@ BEGIN
         date_control_password = EXCLUDED.date_control_password,
 
         after_complete_questions_hidden = EXCLUDED.after_complete_questions_hidden,
-        after_complete_questions_visible_from_overridden = EXCLUDED.after_complete_questions_visible_from_overridden,
         after_complete_questions_visible_from = EXCLUDED.after_complete_questions_visible_from,
-        after_complete_questions_visible_until_overridden = EXCLUDED.after_complete_questions_visible_until_overridden,
         after_complete_questions_visible_until = EXCLUDED.after_complete_questions_visible_until,
         after_complete_score_hidden = EXCLUDED.after_complete_score_hidden,
-        after_complete_score_visible_from_overridden = EXCLUDED.after_complete_score_visible_from_overridden,
         after_complete_score_visible_from = EXCLUDED.after_complete_score_visible_from;
 
     -- Upsert student labels by joining on (assessment_id, number) to resolve the

@@ -395,31 +395,6 @@ export function validateRule(
     if (rule.integrations != null) {
       errors.push('integrations can only be specified on the defaults.');
     }
-    if (
-      rule.dateControl?.afterLastDeadline !== undefined &&
-      rule.dateControl.afterLastDeadline.credit === undefined
-    ) {
-      errors.push('afterLastDeadline.credit must be explicitly set on overrides.');
-    }
-    if (rule.afterComplete?.questions !== undefined) {
-      if (rule.afterComplete.questions.hidden === undefined) {
-        errors.push('afterComplete.questions.hidden must be explicitly set on overrides.');
-      }
-      if (rule.afterComplete.questions.visibleFrom === undefined) {
-        errors.push('afterComplete.questions.visibleFrom must be explicitly set on overrides.');
-      }
-      if (rule.afterComplete.questions.visibleUntil === undefined) {
-        errors.push('afterComplete.questions.visibleUntil must be explicitly set on overrides.');
-      }
-    }
-    if (rule.afterComplete?.score !== undefined) {
-      if (rule.afterComplete.score.hidden === undefined) {
-        errors.push('afterComplete.score.hidden must be explicitly set on overrides.');
-      }
-      if (rule.afterComplete.score.visibleFrom === undefined) {
-        errors.push('afterComplete.score.visibleFrom must be explicitly set on overrides.');
-      }
-    }
   }
 
   const exams = rule.integrations?.prairieTest?.exams ?? [];

@@ -42,19 +42,15 @@ export interface EnrollmentAccessControlRuleData {
   earlyDeadlinesOverridden: boolean;
   lateDeadlinesOverridden: boolean;
   afterLastDeadlineAllowSubmissions: boolean | null;
-  afterLastDeadlineCreditOverridden: boolean;
   afterLastDeadlineCredit: number | null;
   durationMinutesOverridden: boolean;
   durationMinutes: number | null;
   passwordOverridden: boolean;
   password: string | null;
   questionsHidden: boolean | null;
-  questionsVisibleFromOverridden: boolean;
   questionsVisibleFrom: string | null;
-  questionsVisibleUntilOverridden: boolean;
   questionsVisibleUntil: string | null;
   scoreHidden: boolean | null;
-  scoreVisibleFromOverridden: boolean;
   scoreVisibleFrom: string | null;
   earlyDeadlines: { date: string; credit: number }[];
   lateDeadlines: { date: string; credit: number }[];
@@ -91,17 +87,6 @@ const RuleRowSchema = z.object({
     .nullable(),
 });
 
-/**
- * Reverses the mapField() logic from sync/fromDisk/accessControl.ts:
- * - overridden: false → undefined (inherit)
- * - overridden: true, value: null → null (explicitly overridden to unset)
- * - overridden: true, value: V → V
- */
-function unmapField<T>(overridden: boolean, value: T | null): T | null | undefined {
-  if (!overridden) return undefined;
-  return value;
-}
-
 function dbBaseRowToAccessControlJson(
   row: Pick<
     z.infer<typeof RuleRowSchema>,
@@ -126,13 +111,10 @@ function dbBaseRowToAccessControlJson(
   const isOverride = rule.target_type !== 'none';
   const allowSubmissions = rule.date_control_after_last_deadline_allow_submissions;
   if (allowSubmissions === true) {
-    const credit = unmapField(
-      rule.date_control_after_last_deadline_credit_overridden,
-      rule.date_control_after_last_deadline_credit,
-    );
+    const credit = rule.date_control_after_last_deadline_credit;
     dateControl.afterLastDeadline = {
       allowSubmissions,
-      ...(credit !== undefined || isOverride ? { credit: credit ?? null } : {}),
+      ...(credit != null || isOverride ? { credit: credit ?? null } : {}),
     };
   } else if (allowSubmissions === false) {
     dateControl.afterLastDeadline = isOverride
@@ -147,54 +129,38 @@ function dbBaseRowToAccessControlJson(
   }
 
   const qHidden = rule.after_complete_questions_hidden;
-  const qVisibleFrom = rule.after_complete_questions_visible_from_overridden
-    ? (rule.after_complete_questions_visible_from?.toISOString() ?? null)
-    : undefined;
-  const qVisibleUntil = rule.after_complete_questions_visible_until_overridden
-    ? (rule.after_complete_questions_visible_until?.toISOString() ?? null)
-    : undefined;
+  const qVisibleFrom = rule.after_complete_questions_visible_from?.toISOString() ?? null;
+  const qVisibleUntil = rule.after_complete_questions_visible_until?.toISOString() ?? null;
 
   type QuestionsJson = NonNullable<NonNullable<AccessControlJson['afterComplete']>['questions']>;
   let questions: QuestionsJson | undefined;
   if (qHidden === null) {
     questions = undefined;
   } else if (qHidden === false) {
-    questions = {
-      hidden: false as const,
-      ...(isOverride ? { visibleFrom: null, visibleUntil: null } : {}),
-    };
-  } else if (qVisibleFrom != null && qVisibleFrom.length > 0) {
+    questions = { hidden: false as const };
+  } else if (qVisibleFrom) {
     questions = {
       hidden: true as const,
       visibleFrom: qVisibleFrom,
-      ...(qVisibleUntil !== undefined
-        ? { visibleUntil: qVisibleUntil }
-        : isOverride
-          ? { visibleUntil: null }
-          : {}),
+      ...(qVisibleUntil ? { visibleUntil: qVisibleUntil } : {}),
     };
   } else {
-    questions = {
-      hidden: true as const,
-      ...(isOverride ? { visibleFrom: null, visibleUntil: null } : {}),
-    };
+    questions = { hidden: true as const };
   }
 
   type ScoreJson = NonNullable<NonNullable<AccessControlJson['afterComplete']>['score']>;
   let score: ScoreJson | undefined;
   const sHidden = rule.after_complete_score_hidden;
-  const sVisibleFrom = rule.after_complete_score_visible_from_overridden
-    ? (rule.after_complete_score_visible_from?.toISOString() ?? null)
-    : undefined;
+  const sVisibleFrom = rule.after_complete_score_visible_from?.toISOString() ?? null;
 
   if (sHidden === null) {
     score = undefined;
   } else if (sHidden === false) {
-    score = { hidden: false as const, ...(isOverride ? { visibleFrom: null } : {}) };
-  } else if (sVisibleFrom !== undefined) {
+    score = { hidden: false as const };
+  } else if (sVisibleFrom) {
     score = { hidden: true as const, visibleFrom: sVisibleFrom };
   } else {
-    score = { hidden: true as const, ...(isOverride ? { visibleFrom: null } : {}) };
+    score = { hidden: true as const };
   }
 
   const afterComplete: AccessControlJson['afterComplete'] = {};
@@ -285,19 +251,15 @@ export async function syncEnrollmentAccessControl(
     date_control_early_deadlines_overridden: ruleData.earlyDeadlinesOverridden,
     date_control_late_deadlines_overridden: ruleData.lateDeadlinesOverridden,
     date_control_after_last_deadline_allow_submissions: ruleData.afterLastDeadlineAllowSubmissions,
-    date_control_after_last_deadline_credit_overridden: ruleData.afterLastDeadlineCreditOverridden,
     date_control_after_last_deadline_credit: ruleData.afterLastDeadlineCredit,
     date_control_duration_minutes_overridden: ruleData.durationMinutesOverridden,
     date_control_duration_minutes: ruleData.durationMinutes,
     date_control_password_overridden: ruleData.passwordOverridden,
     date_control_password: ruleData.password,
     after_complete_questions_hidden: ruleData.questionsHidden,
-    after_complete_questions_visible_from_overridden: ruleData.questionsVisibleFromOverridden,
     after_complete_questions_visible_from: ruleData.questionsVisibleFrom,
-    after_complete_questions_visible_until_overridden: ruleData.questionsVisibleUntilOverridden,
     after_complete_questions_visible_until: ruleData.questionsVisibleUntil,
     after_complete_score_hidden: ruleData.scoreHidden,
-    after_complete_score_visible_from_overridden: ruleData.scoreVisibleFromOverridden,
     after_complete_score_visible_from: ruleData.scoreVisibleFrom,
   });
 

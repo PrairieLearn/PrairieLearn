@@ -33,7 +33,6 @@ BEGIN
             date_control_early_deadlines_overridden = (rule_data ->> 'date_control_early_deadlines_overridden')::boolean,
             date_control_late_deadlines_overridden = (rule_data ->> 'date_control_late_deadlines_overridden')::boolean,
             date_control_after_last_deadline_allow_submissions = (rule_data ->> 'date_control_after_last_deadline_allow_submissions')::boolean,
-            date_control_after_last_deadline_credit_overridden = (rule_data ->> 'date_control_after_last_deadline_credit_overridden')::boolean,
             date_control_after_last_deadline_credit = (rule_data ->> 'date_control_after_last_deadline_credit')::integer,
             date_control_duration_minutes_overridden = (rule_data ->> 'date_control_duration_minutes_overridden')::boolean,
             date_control_duration_minutes = (rule_data ->> 'date_control_duration_minutes')::integer,
@@ -41,12 +40,9 @@ BEGIN
             date_control_password = (rule_data ->> 'date_control_password')::text,
 
             after_complete_questions_hidden = (rule_data ->> 'after_complete_questions_hidden')::boolean,
-            after_complete_questions_visible_from_overridden = (rule_data ->> 'after_complete_questions_visible_from_overridden')::boolean,
             after_complete_questions_visible_from = input_date(rule_data ->> 'after_complete_questions_visible_from', ci_timezone),
-            after_complete_questions_visible_until_overridden = (rule_data ->> 'after_complete_questions_visible_until_overridden')::boolean,
             after_complete_questions_visible_until = input_date(rule_data ->> 'after_complete_questions_visible_until', ci_timezone),
             after_complete_score_hidden = (rule_data ->> 'after_complete_score_hidden')::boolean,
-            after_complete_score_visible_from_overridden = (rule_data ->> 'after_complete_score_visible_from_overridden')::boolean,
             after_complete_score_visible_from = input_date(rule_data ->> 'after_complete_score_visible_from', ci_timezone)
         FROM assessments AS a
         WHERE assessment_access_control_rules.id = existing_rule_id
@@ -87,7 +83,6 @@ BEGIN
             date_control_early_deadlines_overridden,
             date_control_late_deadlines_overridden,
             date_control_after_last_deadline_allow_submissions,
-            date_control_after_last_deadline_credit_overridden,
             date_control_after_last_deadline_credit,
             date_control_duration_minutes_overridden,
             date_control_duration_minutes,
@@ -95,12 +90,9 @@ BEGIN
             date_control_password,
 
             after_complete_questions_hidden,
-            after_complete_questions_visible_from_overridden,
             after_complete_questions_visible_from,
-            after_complete_questions_visible_until_overridden,
             after_complete_questions_visible_until,
             after_complete_score_hidden,
-            after_complete_score_visible_from_overridden,
             after_complete_score_visible_from
         ) VALUES (
             syncing_assessment_id,
@@ -113,7 +105,6 @@ BEGIN
             (rule_data ->> 'date_control_early_deadlines_overridden')::boolean,
             (rule_data ->> 'date_control_late_deadlines_overridden')::boolean,
             (rule_data ->> 'date_control_after_last_deadline_allow_submissions')::boolean,
-            (rule_data ->> 'date_control_after_last_deadline_credit_overridden')::boolean,
             (rule_data ->> 'date_control_after_last_deadline_credit')::integer,
             (rule_data ->> 'date_control_duration_minutes_overridden')::boolean,
             (rule_data ->> 'date_control_duration_minutes')::integer,
@@ -121,12 +112,9 @@ BEGIN
             (rule_data ->> 'date_control_password')::text,
 
             (rule_data ->> 'after_complete_questions_hidden')::boolean,
-            (rule_data ->> 'after_complete_questions_visible_from_overridden')::boolean,
             input_date(rule_data ->> 'after_complete_questions_visible_from', ci_timezone),
-            (rule_data ->> 'after_complete_questions_visible_until_overridden')::boolean,
             input_date(rule_data ->> 'after_complete_questions_visible_until', ci_timezone),
             (rule_data ->> 'after_complete_score_hidden')::boolean,
-            (rule_data ->> 'after_complete_score_visible_from_overridden')::boolean,
             input_date(rule_data ->> 'after_complete_score_visible_from', ci_timezone)
         ) RETURNING id INTO new_rule_id;
     END IF;
