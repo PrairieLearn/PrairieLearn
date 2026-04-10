@@ -51,7 +51,7 @@ function buildDateControl(
   // This applies uniformly to main rules and overrides.
   const dateControl: RuntimeDateControl = {};
 
-  if (rule.date_control_release_date_overridden) {
+  if (rule.date_control_release_date != null) {
     dateControl.releaseDate = rule.date_control_release_date;
   }
 

@@ -443,9 +443,9 @@ export function validateRule(
   return errors;
 }
 
-function formatValues(qids: Set<string> | string[]) {
-  return Array.from(qids)
-    .map((qid) => `"${qid}"`)
+function formatValues(values: Set<string> | string[]) {
+  return Array.from(values)
+    .map((v) => `"${v}"`)
     .join(', ');
 }
 
@@ -500,7 +500,7 @@ export function validateAccessControlRules({
     const firstRule = rules[0];
     const isFirstRuleMain = firstRule.labels == null || firstRule.labels.length === 0;
     if (!isFirstRuleMain) {
-      errors.push('The defaults (without labels) must be the first element in the array.');
+      errors.push('The defaults must be the first element in the array.');
     }
   }
 
