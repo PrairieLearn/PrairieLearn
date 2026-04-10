@@ -104,4 +104,21 @@ describe('dbRowToAccessControlJson', () => {
 
     expect(result.afterComplete?.score).toBeUndefined();
   });
+
+  it('emits explicit null afterLastDeadline credit for overrides', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          target_type: 'student_label',
+          number: 1,
+          date_control_after_last_deadline_allow_submissions: false,
+        },
+      }),
+    );
+
+    expect(result.dateControl?.afterLastDeadline).toEqual({
+      allowSubmissions: false,
+      credit: null,
+    });
+  });
 });

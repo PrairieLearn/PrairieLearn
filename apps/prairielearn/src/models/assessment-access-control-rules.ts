@@ -123,17 +123,21 @@ function dbBaseRowToAccessControlJson(
   if (rule.date_control_late_deadlines_overridden) {
     dateControl.lateDeadlines = row.late_deadlines ?? [];
   }
+  const isOverride = rule.target_type !== 'none';
   const allowSubmissions = rule.date_control_after_last_deadline_allow_submissions;
   if (allowSubmissions === true) {
+    const credit = unmapField(
+      rule.date_control_after_last_deadline_credit_overridden,
+      rule.date_control_after_last_deadline_credit,
+    );
     dateControl.afterLastDeadline = {
       allowSubmissions,
-      credit: unmapField(
-        rule.date_control_after_last_deadline_credit_overridden,
-        rule.date_control_after_last_deadline_credit,
-      ),
+      ...(credit !== undefined || isOverride ? { credit: credit ?? null } : {}),
     };
   } else if (allowSubmissions === false) {
-    dateControl.afterLastDeadline = { allowSubmissions };
+    dateControl.afterLastDeadline = isOverride
+      ? { allowSubmissions, credit: null }
+      : { allowSubmissions };
   }
   if (rule.date_control_duration_minutes_overridden) {
     dateControl.durationMinutes = rule.date_control_duration_minutes;

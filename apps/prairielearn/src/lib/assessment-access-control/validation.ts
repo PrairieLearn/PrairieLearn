@@ -395,6 +395,12 @@ export function validateRule(
     if (rule.integrations != null) {
       errors.push('integrations can only be specified on the defaults.');
     }
+    if (
+      rule.dateControl?.afterLastDeadline !== undefined &&
+      rule.dateControl.afterLastDeadline.credit === undefined
+    ) {
+      errors.push('afterLastDeadline.credit must be explicitly set on overrides.');
+    }
   }
 
   if (rule.dateControl?.password === '') {

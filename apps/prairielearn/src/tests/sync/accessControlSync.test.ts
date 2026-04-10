@@ -1559,7 +1559,7 @@ describe('Access control syncing', () => {
   describe('Round-trip', () => {
     const timezone = 'America/Chicago';
 
-    it('preserves afterLastDeadline.allowSubmissions without credit on override', () =>
+    it('preserves explicit null afterLastDeadline credit on override', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
         const labelName = 'Test Label';
@@ -1575,7 +1575,7 @@ describe('Access control syncing', () => {
         const overrideRule: AccessControlJsonInput = {
           labels: [labelName],
           dateControl: {
-            afterLastDeadline: { allowSubmissions: false },
+            afterLastDeadline: { allowSubmissions: false, credit: null },
           },
         };
 
@@ -1589,6 +1589,7 @@ describe('Access control syncing', () => {
         const override = rules.find((r) => r.number > 0);
         assert.isOk(override);
         assert.equal(override.rule.dateControl?.afterLastDeadline?.allowSubmissions, false);
+        assert.isNull(override.rule.dateControl?.afterLastDeadline?.credit);
       }));
 
     it('preserves questions.hidden without questions.visibleUntil on override', () =>

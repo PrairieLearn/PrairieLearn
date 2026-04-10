@@ -100,12 +100,14 @@ Controls when the assessment is available and how credit is computed over time.
 
 #### `afterLastDeadline`
 
-| Field              | Type    | Default     | Description                                                    |
-| ------------------ | ------- | ----------- | -------------------------------------------------------------- |
-| `allowSubmissions` | boolean | (see below) | Whether students can still submit answers after all deadlines. |
-| `credit`           | number  | `0`         | Credit percentage after the last deadline.                     |
+| Field              | Type           | Default | Description                                                    |
+| ------------------ | -------------- | ------- | -------------------------------------------------------------- |
+| `allowSubmissions` | boolean        | `false` | Whether students can still submit answers after all deadlines. |
+| `credit`           | number or null | `0`     | Credit percentage after the last deadline.                     |
 
-After the last deadline, the assessment is considered "active" (students can submit) only if `credit > 0` **and** `allowSubmissions` is not `false`.
+After the last deadline, the assessment is considered "active" (students can submit) only if `allowSubmissions` is `true`. Set `credit` to a number for post-deadline credit, or use `null`/omit `credit` for practice submissions with 0% credit.
+
+When overriding `afterLastDeadline`, always include `credit`. Use `credit: null` to clear inherited credit.
 
 #### Credit timeline
 

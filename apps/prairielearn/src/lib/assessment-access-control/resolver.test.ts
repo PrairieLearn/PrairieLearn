@@ -264,6 +264,29 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(false);
     });
 
+    it('clears inherited afterLastDeadline credit when an override disables submissions', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-01-01T00:00:00Z',
+              dueDate: '2025-03-10T00:00:00Z',
+              afterLastDeadline: { credit: 25, allowSubmissions: true },
+            },
+          }),
+          makeOverrideRule(
+            1,
+            { dateControl: { afterLastDeadline: { allowSubmissions: false, credit: null } } },
+            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
+          ),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
+    });
+
     it('returns showBeforeRelease when set and before release', () => {
       const result = resolveAccessControl({
         ...baseInput,
@@ -1609,6 +1632,27 @@ describe('mergeRules', () => {
     expect(result.dateControl?.password).toBe('secret');
   });
 
+  it('clears main afterLastDeadline credit with explicit null when override disables submissions', () => {
+    const result = mergeRules(
+      toRuntime({
+        dateControl: {
+          afterLastDeadline: { allowSubmissions: true, credit: 25 },
+          password: 'secret',
+        },
+      }),
+      toRuntime({
+        dateControl: {
+          afterLastDeadline: { allowSubmissions: false, credit: null },
+        },
+      }),
+    );
+    expect(result.dateControl?.afterLastDeadline).toEqual({
+      allowSubmissions: false,
+      credit: null,
+    });
+    expect(result.dateControl?.password).toBe('secret');
+  });
+
   it('ignores listBeforeRelease on overrides', () => {
     const result = mergeRules(
       toRuntime({ listBeforeRelease: false }),
@@ -1643,6 +1687,27 @@ describe('cascadeOverrides', () => {
       toRuntime({ dateControl: { dueDate: '2025-05-01T00:00:00Z' } }),
     );
     expect(result.dateControl?.dueDate).toEqual(new Date('2025-05-01T00:00:00Z'));
+  });
+
+  it('clears cascaded afterLastDeadline credit with explicit null when next disables submissions', () => {
+    const result = cascadeOverrides(
+      toRuntime({
+        dateControl: {
+          afterLastDeadline: { allowSubmissions: true, credit: 25 },
+          password: 'secret',
+        },
+      }),
+      toRuntime({
+        dateControl: {
+          afterLastDeadline: { allowSubmissions: false, credit: null },
+        },
+      }),
+    );
+    expect(result.dateControl?.afterLastDeadline).toEqual({
+      allowSubmissions: false,
+      credit: null,
+    });
+    expect(result.dateControl?.password).toBe('secret');
   });
 
   it('merges afterComplete sub-fields', () => {

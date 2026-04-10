@@ -292,6 +292,7 @@ describe('Date fields without seconds', () => {
       },
       afterComplete: {
         questions: {
+          hidden: true,
           visibleFrom: '2024-03-25T12:00', // No seconds
         },
       },
@@ -351,6 +352,7 @@ describe('Date fields must be dates', () => {
         },
         afterComplete: {
           questions: {
+            hidden: true,
             visibleFrom: 'NOTADATE',
           },
         },
@@ -514,6 +516,7 @@ describe('Date ordering validation', () => {
     const rule = AccessControlJsonSchema.parse({
       afterComplete: {
         questions: {
+          hidden: true,
           visibleFrom: '2024-03-30T00:00:00',
           visibleUntil: '2024-03-25T00:00:00',
         },
@@ -1059,6 +1062,35 @@ describe('afterLastDeadline validation', () => {
       },
     });
     const errors = validateRule(rule, 'none');
+    assert.deepEqual(errors, []);
+  });
+
+  it('should reject omitted credit on overrides', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        afterLastDeadline: {
+          allowSubmissions: false,
+        },
+      },
+    });
+    const errors = validateRule(rule, 'student_label');
+    assert.isTrue(
+      errors.some((error) =>
+        error.includes('afterLastDeadline.credit must be explicitly set on overrides'),
+      ),
+    );
+  });
+
+  it('should accept null credit on overrides', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        afterLastDeadline: {
+          allowSubmissions: false,
+          credit: null,
+        },
+      },
+    });
+    const errors = validateRule(rule, 'student_label');
     assert.deepEqual(errors, []);
   });
 });
