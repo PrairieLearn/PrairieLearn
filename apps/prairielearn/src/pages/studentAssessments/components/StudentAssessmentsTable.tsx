@@ -4,10 +4,7 @@ import { z } from 'zod';
 import { FriendlyDate, TimezoneContext } from '../../../components/FriendlyDate.js';
 import { Scorebar } from '../../../components/Scorebar.js';
 import { StudentAccessRulesPopoverReact } from '../../../components/StudentAccessRulesPopover.js';
-import {
-  getStudentCourseInstanceUrl,
-  getStudentAssessmentUrl,
-} from '../../../lib/client/url.js';
+import { getStudentAssessmentUrl, getStudentCourseInstanceUrl } from '../../../lib/client/url.js';
 
 const AccessRuleSchema = z.object({
   active: z.boolean().nullable(),

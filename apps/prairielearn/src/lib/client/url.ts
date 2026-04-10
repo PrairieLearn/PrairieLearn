@@ -24,7 +24,7 @@ export function getAssessmentUrl({
 }
 
 export function getStudentAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
-  return `${getStudentCourseInstanceUrl(courseInstanceId)}/assessment/${assessmentId}`;
+  return `${getStudentCourseInstanceUrl(courseInstanceId)}/assessment/${assessmentId}/`;
 }
 
 export function getPublicAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
