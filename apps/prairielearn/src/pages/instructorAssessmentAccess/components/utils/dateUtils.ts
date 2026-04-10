@@ -25,16 +25,21 @@ export function endOfDayDatetime(date: Temporal.PlainDate): string {
     .toString({ smallestUnit: 'second' });
 }
 
+function getLatestDeadlineEntry(deadlines: DeadlineEntry[]): Temporal.PlainDateTime | null {
+  let latest = '';
+  for (const d of deadlines) {
+    if (d.date && d.date > latest) latest = d.date;
+  }
+  return latest ? Temporal.PlainDateTime.from(latest) : null;
+}
+
 export function getLastDeadlineDate(
   lateDeadlines: DeadlineEntry[] | undefined,
   dueDate: string | null | undefined,
 ): Temporal.PlainDateTime | null {
-  if (lateDeadlines && lateDeadlines.length > 0) {
-    const validLateDeadlines = lateDeadlines.filter((d) => d.date);
-    if (validLateDeadlines.length > 0) {
-      const sorted = [...validLateDeadlines].sort((a, b) => (a.date < b.date ? 1 : -1));
-      return Temporal.PlainDateTime.from(sorted[0].date);
-    }
+  if (lateDeadlines) {
+    const result = getLatestDeadlineEntry(lateDeadlines);
+    if (result) return result;
   }
 
   if (dueDate) {
@@ -47,15 +52,5 @@ export function getLastDeadlineDate(
 export function getLatestEarlyDeadlineDate(
   earlyDeadlines: DeadlineEntry[],
 ): Temporal.PlainDateTime | null {
-  if (earlyDeadlines.length === 0) {
-    return null;
-  }
-
-  const validDeadlines = earlyDeadlines.filter((d) => d.date);
-  if (validDeadlines.length === 0) {
-    return null;
-  }
-
-  const sorted = [...validDeadlines].sort((a, b) => (a.date < b.date ? 1 : -1));
-  return Temporal.PlainDateTime.from(sorted[0].date);
+  return getLatestDeadlineEntry(earlyDeadlines);
 }
