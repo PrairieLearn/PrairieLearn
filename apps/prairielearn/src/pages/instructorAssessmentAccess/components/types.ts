@@ -40,7 +40,7 @@ export interface ScoreVisibilityValue {
 }
 
 export function isNonDefaultQuestionVisibility(qv: QuestionVisibilityValue): boolean {
-  return !qv.hideQuestions || !!qv.showAgainDate;
+  return !qv.hideQuestions || qv.showAgainDate !== undefined || qv.hideAgainDate !== undefined;
 }
 
 export function isNonDefaultScoreVisibility(sv: ScoreVisibilityValue): boolean {
