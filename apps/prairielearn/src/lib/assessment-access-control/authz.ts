@@ -176,18 +176,23 @@ interface ModernAssessmentAccessBatchInput {
   reqDate: Date;
 }
 
+interface BatchResult {
+  authzResult: SprocAuthzAssessment;
+  nextActiveDate: Date | null;
+}
+
 export async function resolveModernAssessmentAccessBatch({
   courseInstance,
   userId,
   authzData,
   reqDate,
-}: ModernAssessmentAccessBatchInput): Promise<Map<string, SprocAuthzAssessment>> {
+}: ModernAssessmentAccessBatchInput): Promise<Map<string, BatchResult>> {
   const [allRules, { enrollment, prairieTestReservations }] = await Promise.all([
     selectAccessControlRulesForCourseInstance(courseInstance),
     selectUserAccessContext(userId, courseInstance, reqDate),
   ]);
 
-  const results = new Map<string, SprocAuthzAssessment>();
+  const results = new Map<string, BatchResult>();
 
   for (const [assessmentId, rules] of allRules) {
     const result = resolveAccessControl({
@@ -201,10 +206,14 @@ export async function resolveModernAssessmentAccessBatch({
       prairieTestReservations,
     });
 
-    results.set(
-      assessmentId,
-      resolverResultToSprocAuthzAssessment(result, authzData.mode, courseInstance.display_timezone),
-    );
+    results.set(assessmentId, {
+      authzResult: resolverResultToSprocAuthzAssessment(
+        result,
+        authzData.mode,
+        courseInstance.display_timezone,
+      ),
+      nextActiveDate: result.nextActiveDate,
+    });
   }
 
   return results;
