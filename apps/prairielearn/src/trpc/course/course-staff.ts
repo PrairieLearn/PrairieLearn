@@ -2,7 +2,6 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { idsEqual } from '../../lib/id.js';
@@ -15,14 +14,12 @@ import {
   deleteCoursePermissions,
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
+  selectCourseUsers,
   updateCourseInstancePermissionsRole,
   updateCoursePermissionsRole,
 } from '../../models/course-permissions.js';
-import { CourseUsersRowSchema } from '../../pages/instructorCourseAdminStaff/instructorCourseAdminStaff.types.js';
 
 import { requireCoursePermissionOwn, t } from './init.js';
-
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const MAX_UIDS = 100;
 
@@ -110,11 +107,7 @@ async function upsertOrDeleteInstancePermission({
 // --- Procedures ---
 
 const list = t.procedure.use(requireCoursePermissionOwn).query(async ({ ctx }) => {
-  return sqldb.queryRows(
-    sql.select_course_users,
-    { course_id: ctx.course.id },
-    CourseUsersRowSchema,
-  );
+  return selectCourseUsers({ course_id: ctx.course.id });
 });
 
 const updateCourseRole = t.procedure

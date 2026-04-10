@@ -3,9 +3,9 @@ import { hydrateHtml } from '@prairielearn/react/server';
 import { PageLayout } from '../../components/PageLayout.js';
 import type { CourseInstance } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import type { CourseUsersRow } from '../../models/course-permissions.js';
 
 import { StaffTable } from './StaffTable.js';
-import type { CourseUsersRow } from './instructorCourseAdminStaff.types.js';
 
 export function InstructorCourseAdminStaff({
   resLocals,

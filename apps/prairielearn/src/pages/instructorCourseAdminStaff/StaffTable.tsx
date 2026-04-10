@@ -31,10 +31,10 @@ import {
 
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import type { CourseInstance } from '../../lib/db-types.js';
+import type { CourseUsersRow } from '../../models/course-permissions.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
 
-import type { CourseUsersRow } from './instructorCourseAdminStaff.types.js';
 
 function useInvalidateStaffList() {
   const queryClient = useQueryClient();

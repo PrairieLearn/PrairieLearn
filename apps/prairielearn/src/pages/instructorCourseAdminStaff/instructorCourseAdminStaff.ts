@@ -1,6 +1,5 @@
 import { Router } from 'express';
 
-import * as sqldb from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { extractPageContext } from '../../lib/client/page-context.js';
@@ -10,11 +9,10 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
+import { selectCourseUsers } from '../../models/course-permissions.js';
 
 import { InstructorCourseAdminStaff } from './instructorCourseAdminStaff.html.js';
-import { CourseUsersRowSchema } from './instructorCourseAdminStaff.types.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 const router = Router();
 
 const MAX_UIDS = 100;
@@ -37,11 +35,7 @@ router.get(
       requiredRole: ['Owner'],
     });
 
-    const courseUsers = await sqldb.queryRows(
-      sql.select_course_users,
-      { course_id: res.locals.course.id },
-      CourseUsersRowSchema,
-    );
+    const courseUsers = await selectCourseUsers({ course_id: res.locals.course.id });
 
     const trpcUrl = getCourseTrpcUrl(res.locals.course.id);
     const trpcCsrfToken = generatePrefixCsrfToken(
