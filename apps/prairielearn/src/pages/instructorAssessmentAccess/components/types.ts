@@ -330,20 +330,17 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
 
   if (hasNonDefaultAfterComplete) {
     output.afterComplete = {
-      questions: { hidden: qv.hidden },
+      questions: qv.hidden
+        ? qv.visibleFrom
+          ? { hidden: true, visibleFrom: qv.visibleFrom, visibleUntil: qv.visibleUntil }
+          : { hidden: true }
+        : { hidden: false },
+      score: sv.hidden
+        ? sv.visibleFrom
+          ? { hidden: true, visibleFrom: sv.visibleFrom }
+          : { hidden: true }
+        : { hidden: false },
     };
-    if (qv.hidden) {
-      if (qv.visibleFrom) {
-        output.afterComplete.questions!.visibleFrom = qv.visibleFrom;
-      }
-      if (qv.visibleUntil) {
-        output.afterComplete.questions!.visibleUntil = qv.visibleUntil;
-      }
-    }
-    output.afterComplete.score = { hidden: sv.hidden };
-    if (sv.hidden && sv.visibleFrom) {
-      output.afterComplete.score.visibleFrom = sv.visibleFrom;
-    }
   }
 
   return output;
@@ -387,21 +384,19 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
   if (of.has('questionVisibility') || of.has('scoreVisibility')) {
     output.afterComplete = {};
     if (of.has('questionVisibility')) {
-      output.afterComplete.questions = { hidden: rule.questionVisibility.hidden };
-      if (rule.questionVisibility.hidden) {
-        if (rule.questionVisibility.visibleFrom) {
-          output.afterComplete.questions.visibleFrom = rule.questionVisibility.visibleFrom;
-        }
-        if (rule.questionVisibility.visibleUntil) {
-          output.afterComplete.questions.visibleUntil = rule.questionVisibility.visibleUntil;
-        }
-      }
+      const qv = rule.questionVisibility;
+      output.afterComplete.questions =
+        qv.hidden && qv.visibleFrom
+          ? { hidden: true, visibleFrom: qv.visibleFrom, visibleUntil: qv.visibleUntil || null }
+          : qv.hidden
+            ? { hidden: true, visibleFrom: null, visibleUntil: null }
+            : { hidden: false, visibleFrom: null, visibleUntil: null };
     }
     if (of.has('scoreVisibility')) {
-      output.afterComplete.score = { hidden: rule.scoreVisibility.hidden };
-      if (rule.scoreVisibility.hidden && rule.scoreVisibility.visibleFrom) {
-        output.afterComplete.score.visibleFrom = rule.scoreVisibility.visibleFrom;
-      }
+      const sv = rule.scoreVisibility;
+      output.afterComplete.score = sv.hidden
+        ? { hidden: true, visibleFrom: sv.visibleFrom || null }
+        : { hidden: false, visibleFrom: null };
     }
   }
 

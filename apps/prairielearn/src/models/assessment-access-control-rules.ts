@@ -144,35 +144,66 @@ function dbBaseRowToAccessControlJson(
     dateControl.password = rule.date_control_password;
   }
 
-  const questions: NonNullable<AccessControlJson['afterComplete']>['questions'] = {};
-  if (rule.after_complete_questions_hidden !== null) {
-    questions.hidden = rule.after_complete_questions_hidden;
-  }
-  // Only emit date fields when hidden is not explicitly false.
-  // When hidden is false, dates are irrelevant (questions are always shown).
-  if (rule.after_complete_questions_hidden !== false) {
-    if (rule.after_complete_questions_visible_from_overridden) {
-      questions.visibleFrom = rule.after_complete_questions_visible_from?.toISOString() ?? null;
+  const qHidden = rule.after_complete_questions_hidden;
+  const qVisibleFrom = rule.after_complete_questions_visible_from_overridden
+    ? (rule.after_complete_questions_visible_from?.toISOString() ?? null)
+    : undefined;
+  const qVisibleUntil = rule.after_complete_questions_visible_until_overridden
+    ? (rule.after_complete_questions_visible_until?.toISOString() ?? null)
+    : undefined;
+
+  type QuestionsJson = NonNullable<NonNullable<AccessControlJson['afterComplete']>['questions']>;
+  let questions: QuestionsJson | undefined;
+  if (qHidden === null) {
+    // No hidden set — override inheriting from main rule.
+    if (qVisibleFrom != null && qVisibleFrom.length > 0) {
+      questions = {
+        visibleFrom: qVisibleFrom,
+        ...(qVisibleUntil !== undefined && { visibleUntil: qVisibleUntil }),
+      };
+    } else if (qVisibleFrom !== undefined || qVisibleUntil !== undefined) {
+      // visibleFrom is absent/null, so visibleUntil must also be null per schema.
+      questions = {
+        ...(qVisibleFrom !== undefined && { visibleFrom: null }),
+        ...(qVisibleUntil !== undefined && { visibleUntil: null }),
+      };
     }
-    if (rule.after_complete_questions_visible_until_overridden) {
-      questions.visibleUntil = rule.after_complete_questions_visible_until?.toISOString() ?? null;
+  } else if (qHidden === false) {
+    questions = { hidden: false as const };
+  } else if (qVisibleFrom != null && qVisibleFrom.length > 0) {
+    questions = {
+      hidden: true as const,
+      visibleFrom: qVisibleFrom,
+      ...(qVisibleUntil !== undefined && { visibleUntil: qVisibleUntil }),
+    };
+  } else {
+    questions = { hidden: true as const };
+  }
+
+  type ScoreJson = NonNullable<NonNullable<AccessControlJson['afterComplete']>['score']>;
+  let score: ScoreJson | undefined;
+  const sHidden = rule.after_complete_score_hidden;
+  const sVisibleFrom = rule.after_complete_score_visible_from_overridden
+    ? (rule.after_complete_score_visible_from?.toISOString() ?? null)
+    : undefined;
+
+  if (sHidden === null) {
+    if (sVisibleFrom !== undefined) {
+      score = { ...(sVisibleFrom !== undefined && { visibleFrom: sVisibleFrom }) };
     }
+  } else if (sHidden === false) {
+    score = { hidden: false as const };
+  } else if (sVisibleFrom !== undefined) {
+    score = { hidden: true as const, visibleFrom: sVisibleFrom };
+  } else {
+    score = { hidden: true as const };
   }
-  const score: NonNullable<AccessControlJson['afterComplete']>['score'] = {};
-  if (rule.after_complete_score_hidden !== null) {
-    score.hidden = rule.after_complete_score_hidden;
-  }
-  // Only emit date field when hidden is not explicitly false.
-  if (rule.after_complete_score_hidden !== false) {
-    if (rule.after_complete_score_visible_from_overridden) {
-      score.visibleFrom = rule.after_complete_score_visible_from?.toISOString() ?? null;
-    }
-  }
+
   const afterComplete: AccessControlJson['afterComplete'] = {};
-  if (Object.keys(questions).length > 0) {
+  if (questions) {
     afterComplete.questions = questions;
   }
-  if (Object.keys(score).length > 0) {
+  if (score) {
     afterComplete.score = score;
   }
 

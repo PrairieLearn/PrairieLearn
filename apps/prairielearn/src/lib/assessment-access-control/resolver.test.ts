@@ -254,13 +254,13 @@ describe('resolveAccessControl', () => {
             dateControl: {
               releaseDate: '2025-01-01T00:00:00Z',
               dueDate: '2025-03-10T00:00:00Z',
-              afterLastDeadline: { credit: 25, allowSubmissions: false },
+              afterLastDeadline: { allowSubmissions: false },
             },
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
       });
-      expect(result.credit).toBe(25);
+      expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
     });
 
@@ -1248,62 +1248,21 @@ describe('resolveAccessControl', () => {
   });
 
   describe('afterComplete visibility edge cases', () => {
-    const cases: {
-      label: string;
-      afterComplete: AccessControlJson['afterComplete'];
-      date?: string;
-      expectedAssessment?: boolean;
-      expectedScore?: boolean;
-    }[] = [
-      {
-        label: 'ignores questions.visibleFrom when questions.hidden is false',
-        afterComplete: {
-          questions: { hidden: false, visibleFrom: '2025-06-01T00:00:00Z' },
-        },
-        expectedAssessment: true,
-      },
-      {
-        label: 'ignores questions.visibleUntil when questions.hidden is false',
-        afterComplete: {
-          questions: { hidden: false, visibleUntil: '2025-01-01T00:00:00Z' },
-        },
-        expectedAssessment: true,
-      },
-      {
-        label: 'ignores score.visibleFrom when score.hidden is false',
-        afterComplete: {
-          score: { hidden: false, visibleFrom: '2025-06-01T00:00:00Z' },
-        },
-        expectedAssessment: false,
-        expectedScore: true,
-      },
-      {
-        label: 'ignores questions.visibleUntil when questions.visibleFrom is not set',
-        afterComplete: {
-          questions: { hidden: true, visibleUntil: '2025-04-01T00:00:00Z' },
-        },
-        date: '2025-05-01T00:00:00Z',
-        expectedAssessment: false,
-      },
-    ];
-
-    it.each(cases)(
-      '$label',
-      ({ afterComplete, date, expectedAssessment = true, expectedScore = true }) => {
-        const result = resolveAccessControl({
-          ...baseInput,
-          rules: [
-            makeMainRule({
-              dateControl: { dueDate: '2025-03-10T00:00:00Z' },
-              afterComplete,
-            }),
-          ],
-          ...(date ? { date: new Date(date) } : {}),
-        });
-        expect(result.showClosedAssessment).toBe(expectedAssessment);
-        expect(result.showClosedAssessmentScore).toBe(expectedScore);
-      },
-    );
+    // The schema now prevents invalid combinations like hidden:false with
+    // date fields, or visibleUntil without visibleFrom, so we only test
+    // schema-valid edge cases here.
+    it('hides questions when hidden:true with no dates', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: { dueDate: '2025-03-10T00:00:00Z' },
+            afterComplete: { questions: { hidden: true } },
+          }),
+        ],
+      });
+      expect(result.showClosedAssessment).toBe(false);
+    });
   });
 
   describe('showBeforeRelease edge cases', () => {

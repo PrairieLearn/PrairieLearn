@@ -83,7 +83,7 @@ const IntegrationsJsonSchema = z
   .strict()
   .optional();
 
-const QuestionsJsonSchema = z.discriminatedUnion('hidden', [
+const QuestionsJsonSchema = z.union([
   z
     .object({
       hidden: z.literal(false),
@@ -94,13 +94,20 @@ const QuestionsJsonSchema = z.discriminatedUnion('hidden', [
   z
     .object({
       hidden: z.literal(true),
-      visibleFrom: DatetimeLocalStringSchema.nullable().optional(),
+      visibleFrom: z.null().optional(),
+      visibleUntil: z.null().optional(),
+    })
+    .strict(),
+  z
+    .object({
+      hidden: z.literal(true),
+      visibleFrom: DatetimeLocalStringSchema,
       visibleUntil: DatetimeLocalStringSchema.nullable().optional(),
     })
     .strict(),
 ]);
 
-const ScoreJsonSchema = z.discriminatedUnion('hidden', [
+const ScoreJsonSchema = z.union([
   z.object({ hidden: z.literal(false), visibleFrom: z.null().optional() }).strict(),
   z
     .object({
@@ -111,49 +118,40 @@ const ScoreJsonSchema = z.discriminatedUnion('hidden', [
 ]);
 
 const AfterCompleteQuestionsJsonSchema = z
-  .object({
-    hidden: z.boolean().optional(),
-    visibleFrom: DatetimeLocalStringSchema.nullable().optional(),
-    visibleUntil: DatetimeLocalStringSchema.nullable().optional(),
-  })
-  .strict()
-  .superRefine((data, ctx) => {
-    if (data.hidden !== undefined) {
-      const picked = {
-        hidden: data.hidden,
-        ...(data.visibleFrom !== undefined && { visibleFrom: data.visibleFrom }),
-        ...(data.visibleUntil !== undefined && { visibleUntil: data.visibleUntil }),
-      };
-      const result = QuestionsJsonSchema.safeParse(picked);
-      if (!result.success) {
-        for (const issue of result.error.issues) {
-          ctx.addIssue(issue);
-        }
-      }
-    }
-  })
+  .union([
+    // No hidden, no visibleFrom — visibleUntil not allowed.
+    z
+      .object({
+        hidden: z.undefined().optional(),
+        visibleFrom: z.null().optional(),
+        visibleUntil: z.null().optional(),
+      })
+      .strict(),
+    // No hidden, with visibleFrom — visibleUntil allowed.
+    z
+      .object({
+        hidden: z.undefined().optional(),
+        visibleFrom: DatetimeLocalStringSchema,
+        visibleUntil: DatetimeLocalStringSchema.nullable().optional(),
+      })
+      .strict(),
+    // With hidden — delegate to the union.
+    QuestionsJsonSchema,
+  ])
   .optional();
 
 const AfterCompleteScoreJsonSchema = z
-  .object({
-    hidden: z.boolean().optional(),
-    visibleFrom: DatetimeLocalStringSchema.nullable().optional(),
-  })
-  .strict()
-  .superRefine((data, ctx) => {
-    if (data.hidden !== undefined) {
-      const picked = {
-        hidden: data.hidden,
-        ...(data.visibleFrom !== undefined && { visibleFrom: data.visibleFrom }),
-      };
-      const result = ScoreJsonSchema.safeParse(picked);
-      if (!result.success) {
-        for (const issue of result.error.issues) {
-          ctx.addIssue(issue);
-        }
-      }
-    }
-  })
+  .union([
+    // When hidden is absent (override inheriting boolean from defaults), allow any date fields.
+    z
+      .object({
+        hidden: z.undefined().optional(),
+        visibleFrom: DatetimeLocalStringSchema.nullable().optional(),
+      })
+      .strict(),
+    // When hidden is present, use the discriminated union rules.
+    ScoreJsonSchema,
+  ])
   .optional();
 
 const AfterCompleteJsonSchema = z

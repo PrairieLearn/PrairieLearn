@@ -97,6 +97,42 @@ describe('AccessControlJsonSchema', () => {
       });
       expect(result.success).toBe(true);
     });
+
+    it('rejects visibleUntil without visibleFrom', () => {
+      const result = AccessControlJsonSchema.safeParse({
+        afterComplete: {
+          questions: {
+            hidden: true,
+            visibleUntil: '2024-03-30T00:00:00',
+          },
+        },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects visibleUntil without visibleFrom when hidden is absent', () => {
+      const result = AccessControlJsonSchema.safeParse({
+        afterComplete: {
+          questions: {
+            visibleUntil: '2024-03-30T00:00:00',
+          },
+        },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('accepts visibleUntil with visibleFrom', () => {
+      const result = AccessControlJsonSchema.safeParse({
+        afterComplete: {
+          questions: {
+            hidden: true,
+            visibleFrom: '2024-03-25T00:00:00',
+            visibleUntil: '2024-03-30T00:00:00',
+          },
+        },
+      });
+      expect(result.success).toBe(true);
+    });
   });
 
   describe('afterComplete score union', () => {
