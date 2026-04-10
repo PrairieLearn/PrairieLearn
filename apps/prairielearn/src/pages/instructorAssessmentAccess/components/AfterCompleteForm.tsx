@@ -523,14 +523,26 @@ export function OverrideAfterCompleteForm({
     `overrides.${number}.questionVisibility`
   >({
     name: `overrides.${index}.questionVisibility`,
-    rules: { validate: validateQuestionVisibility },
+    rules: {
+      validate: (v, formValues) => {
+        if (!formValues.overrides[index].overriddenFields.includes('questionVisibility')) {
+          return true;
+        }
+        return validateQuestionVisibility(v);
+      },
+    },
   });
   const { field: svField } = useController<
     AccessControlFormData,
     `overrides.${number}.scoreVisibility`
   >({
     name: `overrides.${index}.scoreVisibility`,
-    rules: { validate: validateScoreVisibility },
+    rules: {
+      validate: (v, formValues) => {
+        if (!formValues.overrides[index].overriddenFields.includes('scoreVisibility')) return true;
+        return validateScoreVisibility(v);
+      },
+    },
   });
 
   const {

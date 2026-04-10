@@ -10,7 +10,7 @@ import type { AccessControlFormData, OverridableFieldName } from '../types.js';
  * to `undefined`, which react-hook-form does not support.
  */
 export function useOverrideField(index: number, fieldName: OverridableFieldName) {
-  const { setValue, getValues } = useFormContext<AccessControlFormData>();
+  const { setValue, getValues, trigger } = useFormContext<AccessControlFormData>();
 
   const overriddenFields = useWatch<AccessControlFormData, `overrides.${number}.overriddenFields`>({
     name: `overrides.${index}.overriddenFields`,
@@ -24,8 +24,10 @@ export function useOverrideField(index: number, fieldName: OverridableFieldName)
       setValue(`overrides.${index}.overriddenFields`, [...current, fieldName], {
         shouldDirty: true,
       });
+      // Re-validate the field now that it's overridden so errors surface immediately.
+      void trigger(`overrides.${index}.${fieldName}`);
     }
-  }, [index, fieldName, setValue, getValues]);
+  }, [index, fieldName, setValue, getValues, trigger]);
 
   const removeOverride = useCallback(() => {
     const current = getValues(`overrides.${index}.overriddenFields`);
@@ -34,7 +36,9 @@ export function useOverrideField(index: number, fieldName: OverridableFieldName)
       current.filter((f) => f !== fieldName),
       { shouldDirty: true },
     );
-  }, [index, fieldName, setValue, getValues]);
+    // Re-validate the field so its validator sees it's no longer overridden and clears errors.
+    void trigger(`overrides.${index}.${fieldName}`);
+  }, [index, fieldName, setValue, getValues, trigger]);
 
   return { isOverridden, addOverride, removeOverride };
 }

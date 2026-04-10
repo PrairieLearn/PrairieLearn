@@ -40,7 +40,8 @@ export type AccessControlFormFieldPath =
   | `overrides.${number}.afterLastDeadline.credit`
   | `overrides.${number}.questionVisibility.showAgainDate`
   | `overrides.${number}.questionVisibility.hideAgainDate`
-  | `overrides.${number}.scoreVisibility.showAgainDate`;
+  | `overrides.${number}.scoreVisibility.showAgainDate`
+  | `overrides.${number}.appliesTo`;
 
 function buildValidationRules(formData: AccessControlFormData): AccessControlValidationRule[] {
   return formDataToJson(formData).map((rule, index) => ({
@@ -135,6 +136,18 @@ export function getGlobalDateValidationErrors(formData: AccessControlFormData): 
         seenPaths.add(path);
         results.push({ path, message: issue.message });
       }
+    }
+  }
+
+  for (let i = 0; i < formData.overrides.length; i++) {
+    const { appliesTo } = formData.overrides[i];
+    const hasTargets =
+      appliesTo.targetType === 'enrollment'
+        ? appliesTo.enrollments.length > 0
+        : appliesTo.studentLabels.length > 0;
+    if (!hasTargets) {
+      const path: AccessControlFormFieldPath = `overrides.${i}.appliesTo`;
+      results.push({ path, message: 'At least one student or label is required' });
     }
   }
 

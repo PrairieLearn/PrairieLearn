@@ -11,7 +11,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import { Fragment, type ReactNode, useId, useMemo } from 'react';
 import { Badge, Button } from 'react-bootstrap';
-import { useFormState } from 'react-hook-form';
+import { type FieldErrors, useFormState } from 'react-hook-form';
 
 import {
   DateTableView,
@@ -34,7 +34,7 @@ function SortableOverrideCard({
 }: {
   id: string;
   override: OverrideData;
-  formErrors: RuleFormErrors | undefined;
+  formErrors: FieldErrors<OverrideData> | undefined;
   title: string;
   displayTimezone: string;
   onEdit: () => void;

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Alert, Button, Form, ListGroup } from 'react-bootstrap';
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
+import { get, useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
@@ -62,10 +62,11 @@ export function AppliesToField({
     if (index !== -1) removeStudentLabel(index);
   };
 
+  const { errors } = useFormState<AccessControlFormData>();
+  const appliesToError: string | undefined = get(errors, `${namePrefix}.appliesTo`)?.message;
+
   const excludedStudentLabelIds = new Set(studentLabels.map((sl) => sl.studentLabelId));
   const excludedUids = new Set(enrollments.map((i) => i.uid));
-
-  const hasNoTargets = enrollments.length === 0 && studentLabels.length === 0;
 
   return (
     <div className="mb-3">
@@ -189,10 +190,9 @@ export function AppliesToField({
           </div>
         )}
       </div>
-      {hasNoTargets && (
-        <Alert variant="warning" className="mt-3 mb-0">
-          This override has no targets. Add at least one{' '}
-          {targetType === 'enrollment' ? 'student' : 'student label'} for this rule to take effect.
+      {appliesToError && (
+        <Alert variant="danger" className="mt-3 mb-0">
+          {appliesToError}
         </Alert>
       )}
     </div>

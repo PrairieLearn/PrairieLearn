@@ -109,7 +109,12 @@ export function OverrideDurationField({ index }: { index: number }) {
     fieldState: { error },
   } = useController<AccessControlFormData, `overrides.${number}.durationMinutes`>({
     name: `overrides.${index}.durationMinutes`,
-    rules: { validate: validateDuration },
+    rules: {
+      validate: (v, formValues) => {
+        if (!formValues.overrides[index].overriddenFields.includes('durationMinutes')) return true;
+        return validateDuration(v);
+      },
+    },
   });
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'durationMinutes');

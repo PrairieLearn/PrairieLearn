@@ -752,7 +752,7 @@ export function OverrideRuleSummaryCard({
   title: string;
   onEdit?: () => void;
   displayTimezone: string;
-  formErrors?: RuleFormErrors;
+  formErrors?: FieldErrors<OverrideData>;
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
 }) {
@@ -808,9 +808,15 @@ export function OverrideRuleSummaryCard({
         </div>
       </Card.Header>
       <Card.Body>
+        {formErrors?.appliesTo?.message && (
+          <div className="text-danger small mb-2">
+            <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
+            {formErrors.appliesTo.message}
+          </div>
+        )}
         {overrideFieldItems.length > 0 && <OverrideFieldsList items={overrideFieldItems} />}
 
-        {overrideFieldItems.length === 0 && (
+        {overrideFieldItems.length === 0 && !formErrors?.appliesTo?.message && (
           <p className="text-body-secondary mb-0">No specific settings configured</p>
         )}
       </Card.Body>

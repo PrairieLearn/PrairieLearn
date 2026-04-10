@@ -232,7 +232,8 @@ export function OverrideDueDateField({
   } = useController<AccessControlFormData, `overrides.${number}.dueDate`>({
     name: `overrides.${index}.dueDate`,
     rules: {
-      validate: (value) => {
+      validate: (value, formValues) => {
+        if (!formValues.overrides[index].overriddenFields.includes('dueDate')) return true;
         if (value !== null && !value) return 'Date is required';
         if (value && validationReleaseDate && new Date(value) <= new Date(validationReleaseDate)) {
           const formatted = formatCourseLocalDate(validationReleaseDate, displayTimezone);

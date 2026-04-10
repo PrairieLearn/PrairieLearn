@@ -92,7 +92,10 @@ export function OverridePasswordField({ index }: { index: number }) {
   const { field } = useController<AccessControlFormData, `overrides.${number}.password`>({
     name: `overrides.${index}.password`,
     rules: {
-      validate: (v) => v !== '' || 'Password is required',
+      validate: (v, formValues) => {
+        if (!formValues.overrides[index].overriddenFields.includes('password')) return true;
+        return v !== '' || 'Password is required';
+      },
     },
   });
 
