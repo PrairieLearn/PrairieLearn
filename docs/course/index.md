@@ -442,7 +442,7 @@ Access permissions for course staff can be configured on the "Staff" tab. Course
 
 !!! note
 
-    Course content and student data access roles do not affect access to the course's Git repository. To change repository permissions, visit the GitHub access settings page for the course. If you require access to the repository, please contact PrairieLearn support.
+    Course content and student data access roles do not affect access to the course's Git repository. To change repository permissions, visit the GitHub access settings page for the course. If you require access to the Git repository, please contact the owner of that repository.
 
 ### Course content access roles
 
