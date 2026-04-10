@@ -14,12 +14,13 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Button, Modal } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import {
   CategoricalColumnFilter,
+  IndeterminateCheckbox,
   NuqsAdapter,
   OverlayTrigger,
   TanstackTableCard,
@@ -63,39 +64,6 @@ const LEARN_MORE_LINK = (
     </a>
   </div>
 );
-
-function IndeterminateCheckbox({
-  checked,
-  indeterminate,
-  disabled,
-  onChange,
-  'aria-label': ariaLabel,
-}: {
-  checked: boolean;
-  indeterminate: boolean;
-  disabled?: boolean;
-  onChange: () => void;
-  'aria-label': string;
-}) {
-  const checkboxRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (checkboxRef.current) {
-      checkboxRef.current.indeterminate = indeterminate;
-    }
-  }, [indeterminate]);
-
-  return (
-    <input
-      ref={checkboxRef}
-      type="checkbox"
-      checked={checked}
-      disabled={disabled}
-      aria-label={ariaLabel}
-      onChange={onChange}
-    />
-  );
-}
 
 function SelectAllCheckbox({ table }: { table: Table<CourseUsersRow> }) {
   return (
