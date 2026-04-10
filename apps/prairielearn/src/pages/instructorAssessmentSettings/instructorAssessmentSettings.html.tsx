@@ -839,35 +839,38 @@ function InstructorAssessmentSettingsInner({
                 {appError.message}
               </Alert>
             )}
-            {isDirty && (
-              <div className="d-flex align-items-center justify-content-between gap-2 px-4 py-3">
-                <div className="small text-muted">You have unsaved changes</div>
-                <div className="d-flex gap-2">
-                  <button
-                    id="cancel-button"
-                    type="button"
-                    className="btn btn-sm btn-outline-secondary"
-                    disabled={isSubmitting || saveMutation.isPending}
-                    onClick={() => {
-                      reset();
-                      setUseCustomMaxPoints(getValues('max_points') !== '');
-                      saveMutation.reset();
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    id="save-button"
-                    type="submit"
-                    className="btn btn-sm btn-primary"
-                    disabled={isSubmitting || saveMutation.isPending}
-                  >
-                    <i className="bi bi-save me-1" aria-hidden="true" />
-                    {saveMutation.isPending ? 'Saving...' : 'Save and sync'}
-                  </button>
-                </div>
+            <div
+              className={clsx(
+                'align-items-center justify-content-between gap-2 px-4 py-3',
+                isDirty ? 'd-flex' : 'd-none',
+              )}
+            >
+              <div className="small text-muted">You have unsaved changes</div>
+              <div className="d-flex gap-2">
+                <button
+                  id="cancel-button"
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary"
+                  disabled={isSubmitting || saveMutation.isPending}
+                  onClick={() => {
+                    reset();
+                    setUseCustomMaxPoints(getValues('max_points') !== '');
+                    saveMutation.reset();
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  id="save-button"
+                  type="submit"
+                  className="btn btn-sm btn-primary"
+                  disabled={isSubmitting || saveMutation.isPending}
+                >
+                  <i className="bi bi-save me-1" aria-hidden="true" />
+                  {saveMutation.isPending ? 'Saving...' : 'Save and sync'}
+                </button>
               </div>
-            )}
+            </div>
           </div>
         )}
       </form>
