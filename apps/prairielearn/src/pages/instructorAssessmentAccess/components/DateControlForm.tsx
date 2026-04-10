@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Col, Form, Row } from 'react-bootstrap';
 import { useFormContext, useWatch } from 'react-hook-form';
 
@@ -28,6 +29,13 @@ export function MainDateControlForm({
     name: 'mainRule.dateControlEnabled',
   });
 
+  // Re-validate fields inside the date control section when the toggle changes.
+  // Enabling: surfaces errors for stale invalid values that persisted while unmounted.
+  // Disabling: clears errors (each field's validator returns true when dateControlEnabled is false).
+  useEffect(() => {
+    void trigger(['mainRule.password', 'mainRule.durationMinutes']);
+  }, [dateControlEnabled, trigger]);
+
   return (
     <div>
       <div className="section-header mb-3">
@@ -43,10 +51,6 @@ export function MainDateControlForm({
                   shouldValidate: true,
                 });
               }
-              // Re-validate fields whose rules depend on dateControlEnabled.
-              // This must happen here (before unmount) because once the children
-              // unmount, their useController rules are gone and deps won't fire.
-              void trigger('mainRule.password');
             },
           })}
           aria-describedby="mainRule-date-control-help"

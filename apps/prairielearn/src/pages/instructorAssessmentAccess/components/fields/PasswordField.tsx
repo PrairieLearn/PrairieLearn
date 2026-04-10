@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
-import { useController, useFormContext, useWatch } from 'react-hook-form';
+import { useController, useWatch } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
@@ -70,9 +70,7 @@ function PasswordInput({
 }
 
 export function MainPasswordField() {
-  const { trigger } = useFormContext<AccessControlFormData>();
   const { field } = useController<AccessControlFormData, 'mainRule.password'>({
-    shouldUnregister: false,
     name: 'mainRule.password',
     rules: {
       validate: (v, otherFields) => {
@@ -82,13 +80,6 @@ export function MainPasswordField() {
       deps: ['mainRule.dateControlEnabled'],
     },
   });
-
-  // Re-validate on mount so that stale invalid values (e.g. an empty password
-  // set before the date-control section was toggled off) surface their error
-  // immediately when the field remounts.
-  useEffect(() => {
-    void trigger('mainRule.password');
-  }, [trigger]);
 
   return <PasswordInput value={field.value} idPrefix="mainRule" onChange={field.onChange} />;
 }

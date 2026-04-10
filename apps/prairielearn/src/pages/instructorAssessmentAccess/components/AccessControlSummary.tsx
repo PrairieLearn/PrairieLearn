@@ -21,16 +21,7 @@ import {
   generateRuleSummary,
 } from './RuleSummary.js';
 import type { AccessControlFormData, MainRuleData, OverrideData } from './types.js';
-
-/**
- * Count leaf errors in a react-hook-form errors object. Leaf nodes have a
- * `message` property; everything else is a container.
- */
-function countErrors(obj: unknown): number {
-  if (!obj || typeof obj !== 'object') return 0;
-  if ('message' in obj && typeof (obj as Record<string, unknown>).message === 'string') return 1;
-  return Object.values(obj).reduce((sum: number, val) => sum + countErrors(val), 0);
-}
+import { countErrors } from './validation.js';
 
 function SortableOverrideCard({
   id,

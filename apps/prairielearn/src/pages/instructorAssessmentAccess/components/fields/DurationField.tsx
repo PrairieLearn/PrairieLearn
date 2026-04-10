@@ -80,7 +80,13 @@ export function MainDurationField() {
     fieldState: { error },
   } = useController<AccessControlFormData, 'mainRule.durationMinutes'>({
     name: 'mainRule.durationMinutes',
-    rules: { validate: validateDuration },
+    rules: {
+      validate: (v, otherFields) => {
+        if (!otherFields.mainRule.dateControlEnabled) return true;
+        return validateDuration(v);
+      },
+      deps: ['mainRule.dateControlEnabled'],
+    },
   });
 
   return (

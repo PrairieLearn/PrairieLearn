@@ -10,6 +10,16 @@ import {
 
 import { type AccessControlFormData, formDataToJson } from './types.js';
 
+/**
+ * Count leaf errors in a react-hook-form errors object. Leaf nodes have a
+ * `message` property; everything else is a container.
+ */
+export function countErrors(obj: unknown): number {
+  if (!obj || typeof obj !== 'object') return 0;
+  if ('message' in obj && typeof (obj as Record<string, unknown>).message === 'string') return 1;
+  return Object.values(obj).reduce((sum: number, val) => sum + countErrors(val), 0);
+}
+
 export type AccessControlFormFieldPath =
   | 'mainRule.releaseDate'
   | 'mainRule.dueDate'

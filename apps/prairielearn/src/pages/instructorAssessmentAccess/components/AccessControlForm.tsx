@@ -19,7 +19,11 @@ import {
   jsonToMainRuleFormData,
   jsonToOverrideFormData,
 } from './types.js';
-import { type AccessControlFormFieldPath, getGlobalDateValidationErrors } from './validation.js';
+import {
+  type AccessControlFormFieldPath,
+  countErrors,
+  getGlobalDateValidationErrors,
+} from './validation.js';
 
 const defaultInitialData: AccessControlJsonWithId[] = [];
 
@@ -69,7 +73,7 @@ export function AccessControlForm({
     setError,
     watch,
     reset,
-    formState: { isDirty, isValid },
+    formState: { isDirty, errors: formErrors },
   } = methods;
 
   const {
@@ -186,12 +190,13 @@ export function AccessControlForm({
   };
 
   const hasManualErrors = globalValidationErrors.length > 0;
+  const hasFieldErrors = countErrors(formErrors) > 0;
 
   const saveDisabledReason = isSaving
     ? 'Saving...'
     : !isDirty
       ? 'No changes to save'
-      : !isValid || hasManualErrors
+      : hasFieldErrors || hasManualErrors
         ? 'Fix validation errors before saving'
         : null;
 
