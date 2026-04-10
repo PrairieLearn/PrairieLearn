@@ -1,4 +1,3 @@
-import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import type { ZoneAssessmentForm, ZoneQuestionBlockForm } from '../types.js';
 
 import { validatePositiveInteger } from './questions.js';
@@ -52,31 +51,9 @@ function questionHasMissingPoints(question: ZoneQuestionBlockForm): boolean {
   return !hasPoints(question);
 }
 
-/**
- * Returns true if any zone, question, or alt pool in the tree has
- * `allowRealTimeGrading` explicitly set to `false`, which is invalid
- * for Homework assessments.
- */
-function hasRealTimeGradingDisabled(zones: ZoneAssessmentForm[]): boolean {
-  return zones.some((zone) => {
-    if (zone.allowRealTimeGrading === false) return true;
-    return zone.questions.some((question) => {
-      if (question.allowRealTimeGrading === false) return true;
-      return question.alternatives?.some((alt) => alt.allowRealTimeGrading === false) ?? false;
-    });
-  });
-}
-
-export type StructuralSaveValidationErrorKind =
-  | 'zone'
-  | 'altPool'
-  | 'questionPoints'
-  | 'homeworkRealTimeGrading';
-
 export function getStructuralSaveValidationErrorKind(
   zones: ZoneAssessmentForm[],
-  assessmentType: EnumAssessmentType,
-): StructuralSaveValidationErrorKind | undefined {
+): 'zone' | 'altPool' | 'questionPoints' | undefined {
   if (zones.some(zoneHasStructuralValidationError)) {
     return 'zone';
   }
@@ -87,10 +64,6 @@ export function getStructuralSaveValidationErrorKind(
 
   if (zones.some((zone) => zone.questions.some(questionHasMissingPoints))) {
     return 'questionPoints';
-  }
-
-  if (assessmentType === 'Homework' && hasRealTimeGradingDisabled(zones)) {
-    return 'homeworkRealTimeGrading';
   }
 
   return undefined;
