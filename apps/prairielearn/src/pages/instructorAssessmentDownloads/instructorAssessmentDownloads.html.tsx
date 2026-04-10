@@ -217,7 +217,7 @@ export function InstructorAssessmentDownloads({
               description={
                 <>
                   Submitted answers for all {identity}s and all questions, formatted for offline
-                  manual grading and re-upload (see the &quot;Upload&quot; tab). For each {identity}{' '}
+                  manual grading and re-upload (see the "Upload" tab). For each {identity}{' '}
                   and each question, only the most recent submission from the most recent assessment
                   instance is included. Files are stripped from the submitted answer in the CSV and
                   are available as <code>{filenames.filesForManualGradingZipFilename}</code>.
