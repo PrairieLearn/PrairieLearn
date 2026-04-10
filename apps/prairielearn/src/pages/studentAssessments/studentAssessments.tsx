@@ -59,6 +59,7 @@ router.get(
           show_closed_assessment_score: result.show_closed_assessment_score,
           show_before_release: result.show_before_release,
           opens_at: result.next_active_time ?? null,
+          access_timeline: result.access_timeline,
         };
       })
       .filter((row): row is NonNullable<typeof row> => {
@@ -94,8 +95,8 @@ router.get(
             {authz_data.mode === 'Exam' && (
               <p>
                 Don't see your exam? Exams for this course are only made available to students with
-                checked-in exam reservations who have clicked the "Start exam" button in PrairieTest.
-                See a proctor for assistance.
+                checked-in exam reservations who have clicked the "Start exam" button in
+                PrairieTest. See a proctor for assistance.
               </p>
             )}
           </>

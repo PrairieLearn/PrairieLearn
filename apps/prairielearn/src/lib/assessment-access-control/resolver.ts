@@ -64,6 +64,13 @@ export interface AccessControlResolverInput {
   prairieTestReservations: PrairieTestReservation[];
 }
 
+export interface AccessTimelineEntry {
+  credit: number;
+  startDate: Date;
+  endDate: Date | null;
+  active: boolean;
+}
+
 export interface AccessControlResolverResult {
   authorized: boolean;
   credit: number | null;
@@ -89,6 +96,12 @@ export interface AccessControlResolverResult {
    * `listBeforeRelease` config input.
    */
   showBeforeRelease: boolean;
+  /**
+   * Timeline of credit segments for display. Each entry represents a
+   * contiguous period where a specific credit percentage applies.
+   * Raw data — formatting is a UI concern.
+   */
+  accessTimeline: AccessTimelineEntry[];
 }
 
 const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
@@ -102,6 +115,7 @@ const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
   showClosedAssessmentScore: true,
   examAccessEnd: null,
   showBeforeRelease: false,
+  accessTimeline: [],
 };
 
 const COURSE_ROLE_RANK: Record<EnumCourseRole, number> = {
@@ -199,6 +213,80 @@ export function cascadeOverrides(
     dateControl: mergeDateControl(base.dateControl, next.dateControl),
     afterComplete: mergeAfterComplete(base.afterComplete, next.afterComplete),
   };
+}
+
+/**
+ * Builds an access timeline from dateControl for display purposes.
+ * Each entry is a contiguous period [startDate, endDate) with a credit value.
+ * The last entry may have `endDate: null` if it extends indefinitely.
+ */
+export function buildAccessTimeline(
+  dateControl: RuntimeDateControl | undefined,
+  date: Date,
+): AccessTimelineEntry[] {
+  if (!dateControl?.releaseDate) return [];
+
+  const releaseDate = dateControl.releaseDate;
+  const dueDate = dateControl.dueDate ?? null;
+
+  if (dueDate && dueDate <= releaseDate) return [];
+
+  // Build the same sorted deadline list as computeCredit.
+  const deadlines: { date: Date; credit: number }[] = [];
+
+  if (dateControl.earlyDeadlines) {
+    for (const entry of dateControl.earlyDeadlines) {
+      const entryDate = new Date(entry.date);
+      if (entryDate <= releaseDate) continue;
+      if (dueDate && entryDate >= dueDate) continue;
+      deadlines.push({ date: entryDate, credit: entry.credit });
+    }
+  }
+
+  if (dueDate) {
+    deadlines.push({ date: dueDate, credit: 100 });
+  }
+
+  if (dateControl.lateDeadlines) {
+    for (const entry of dateControl.lateDeadlines) {
+      const entryDate = new Date(entry.date);
+      if (entryDate <= releaseDate) continue;
+      if (dueDate && entryDate <= dueDate) continue;
+      deadlines.push({ date: entryDate, credit: entry.credit });
+    }
+  }
+
+  deadlines.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  if (deadlines.length === 0) return [];
+
+  // Convert deadlines into display segments.
+  const segments: AccessTimelineEntry[] = [];
+  let segmentStart = releaseDate;
+
+  for (const deadline of deadlines) {
+    segments.push({
+      credit: deadline.credit,
+      startDate: segmentStart,
+      endDate: deadline.date,
+      active: date >= segmentStart && date < deadline.date,
+    });
+    segmentStart = deadline.date;
+  }
+
+  // After last deadline segment.
+  const afterLast = dateControl.afterLastDeadline;
+  const afterCredit = afterLast?.credit ?? 0;
+  if (afterCredit > 0 || afterLast) {
+    segments.push({
+      credit: afterCredit,
+      startDate: segmentStart,
+      endDate: null,
+      active: date >= segmentStart,
+    });
+  }
+
+  return segments;
 }
 
 interface CreditResult {
@@ -524,6 +612,7 @@ export function resolveAccessControl(
       showClosedAssessmentScore: true,
       examAccessEnd: null,
       showBeforeRelease: false,
+      accessTimeline: [],
     };
   }
 
@@ -627,6 +716,8 @@ export function resolveAccessControl(
     displayTimezone,
   );
 
+  const accessTimeline = buildAccessTimeline(effectiveRule.dateControl, date);
+
   return {
     authorized: true,
     credit: creditResult.credit,
@@ -638,5 +729,6 @@ export function resolveAccessControl(
     showClosedAssessmentScore,
     examAccessEnd,
     showBeforeRelease,
+    accessTimeline,
   };
 }

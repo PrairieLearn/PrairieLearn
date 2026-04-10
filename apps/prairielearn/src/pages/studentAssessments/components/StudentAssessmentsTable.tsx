@@ -3,7 +3,10 @@ import { z } from 'zod';
 
 import { FriendlyDate, TimezoneContext } from '../../../components/FriendlyDate.js';
 import { Scorebar } from '../../../components/Scorebar.js';
-import { StudentAccessRulesPopoverReact } from '../../../components/StudentAccessRulesPopover.js';
+import {
+  StudentAccessRulesPopoverReact,
+  StudentAccessTimelinePopover,
+} from '../../../components/StudentAccessRulesPopover.js';
 import { getStudentAssessmentUrl, getStudentCourseInstanceUrl } from '../../../lib/client/url.js';
 
 const AccessRuleSchema = z.object({
@@ -13,6 +16,13 @@ const AccessRuleSchema = z.object({
   mode: z.enum(['Public', 'Exam', 'SEB']).nullable(),
   start_date: z.string(),
   time_limit_min: z.string(),
+});
+
+const AccessTimelineEntrySchema = z.object({
+  credit: z.number(),
+  start_date: z.string(),
+  end_date: z.string().nullable(),
+  active: z.boolean(),
 });
 
 export const StudentAssessmentsTableRowSchema = z.object({
@@ -26,6 +36,7 @@ export const StudentAssessmentsTableRowSchema = z.object({
   credit_date_string: z.string(),
   active: z.boolean(),
   access_rules: z.array(AccessRuleSchema),
+  access_timeline: z.array(AccessTimelineEntrySchema).optional().default([]),
   show_closed_assessment_score: z.boolean(),
   assessment_instance_id: z.string().nullable(),
   assessment_instance_score_perc: z.number().nullable(),
@@ -92,7 +103,11 @@ function AvailableCredit({ row }: { row: StudentAssessmentsTableRow }) {
     return (
       <>
         {row.credit_date_string}
-        <StudentAccessRulesPopoverReact accessRules={row.access_rules} />
+        {row.modern_access_control ? (
+          <StudentAccessTimelinePopover accessTimeline={row.access_timeline} />
+        ) : (
+          <StudentAccessRulesPopoverReact accessRules={row.access_rules} />
+        )}
       </>
     );
   }

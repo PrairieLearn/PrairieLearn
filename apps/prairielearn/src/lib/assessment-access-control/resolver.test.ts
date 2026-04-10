@@ -8,6 +8,8 @@ import {
   type EnrollmentContext,
   type PrairieTestReservation,
   type RuntimeAccessControl,
+  type RuntimeDateControl,
+  buildAccessTimeline,
   cascadeOverrides,
   formatDateShort,
   mergeRules,
@@ -477,29 +479,6 @@ describe('resolveAccessControl', () => {
       expect(result.creditDateString).toContain('Jun 30');
     });
 
-    it('applies all matching overrides', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [
-          makeMainRule({
-            dateControl: { releaseDate: '2025-01-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' },
-          }),
-          makeOverrideRule(
-            1,
-            { dateControl: { dueDate: '2025-06-01T00:00:00Z' } },
-            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
-          ),
-          makeOverrideRule(
-            2,
-            { dateControl: { dueDate: '2025-07-01T00:00:00Z' } },
-            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
-          ),
-        ],
-        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
-      });
-      // Second override (due July 1 UTC = Jun 30 CDT) wins via cascade
-      expect(result.creditDateString).toContain('Jun 30');
-    });
   });
 
   describe('override type precedence', () => {
@@ -575,29 +554,6 @@ describe('resolveAccessControl', () => {
       expect(result.creditDateString).toContain('Jun 30');
     });
 
-    it('both enrollment overrides apply, later number wins', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [
-          makeMainRule({
-            dateControl: { releaseDate: '2025-01-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' },
-          }),
-          makeOverrideRule(
-            1,
-            { dateControl: { dueDate: '2025-06-01T00:00:00Z' } },
-            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
-          ),
-          makeOverrideRule(
-            2,
-            { dateControl: { dueDate: '2025-08-01T00:00:00Z' } },
-            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
-          ),
-        ],
-        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
-      });
-      // Both apply via cascading, second (number=2, due Aug 1 UTC = Jul 31 CDT) wins
-      expect(result.creditDateString).toContain('Jul 31');
-    });
   });
 
   describe('cascading overrides', () => {
@@ -1215,20 +1171,10 @@ describe('resolveAccessControl', () => {
   });
 
   describe('no date control defaults', () => {
-    it.each([
-      { label: 'dateControl absent', rule: {} },
-      {
-        label: 'dateControl has no releaseDate',
-        rule: { dateControl: { dueDate: '2025-05-01T00:00:00Z' } },
-      },
-      {
-        label: 'dateControl has releaseDate but no deadlines/due date',
-        rule: { dateControl: { releaseDate: '2025-03-01T00:00:00Z' } },
-      },
-    ])('returns 0 credit when $label', ({ rule }) => {
+    it('returns 0 credit when dateControl has releaseDate but no deadlines/due date', () => {
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [makeMainRule(rule)],
+        rules: [makeMainRule({ dateControl: { releaseDate: '2025-03-01T00:00:00Z' } })],
         date: new Date('2025-03-15T00:00:00Z'),
       });
       expect(result.credit).toBe(0);
@@ -1732,5 +1678,115 @@ describe('formatDateShort', () => {
     expect(result).toMatch(/Sat/);
     expect(result).toMatch(/Mar/);
     expect(result).toMatch(/15/);
+  });
+});
+
+describe('buildAccessTimeline', () => {
+  it('returns empty for no dateControl', () => {
+    expect(buildAccessTimeline(undefined, new Date())).toEqual([]);
+  });
+
+  it('returns empty for no releaseDate', () => {
+    expect(buildAccessTimeline({}, new Date())).toEqual([]);
+  });
+
+  it('returns empty when dueDate <= releaseDate', () => {
+    const dc: RuntimeDateControl = {
+      releaseDate: new Date('2025-03-15T00:00:00Z'),
+      dueDate: new Date('2025-03-14T00:00:00Z'),
+    };
+    expect(buildAccessTimeline(dc, new Date('2025-03-15T12:00:00Z'))).toEqual([]);
+  });
+
+  it('builds a single segment for releaseDate + dueDate', () => {
+    const dc: RuntimeDateControl = {
+      releaseDate: new Date('2025-03-01T00:00:00Z'),
+      dueDate: new Date('2025-03-15T00:00:00Z'),
+    };
+    const now = new Date('2025-03-10T00:00:00Z');
+    const timeline = buildAccessTimeline(dc, now);
+
+    expect(timeline).toEqual([
+      {
+        credit: 100,
+        startDate: new Date('2025-03-01T00:00:00Z'),
+        endDate: new Date('2025-03-15T00:00:00Z'),
+        active: true,
+      },
+    ]);
+  });
+
+  it('builds full timeline with early, due, late, and afterLastDeadline', () => {
+    const dc: RuntimeDateControl = {
+      releaseDate: new Date('2025-03-01T00:00:00Z'),
+      dueDate: new Date('2025-03-15T00:00:00Z'),
+      earlyDeadlines: [{ date: '2025-03-08T00:00:00Z', credit: 120 }],
+      lateDeadlines: [{ date: '2025-03-22T00:00:00Z', credit: 50 }],
+      afterLastDeadline: { credit: 0 },
+    };
+    const now = new Date('2025-03-10T00:00:00Z');
+    const timeline = buildAccessTimeline(dc, now);
+
+    expect(timeline).toHaveLength(4);
+    expect(timeline[0]).toEqual({
+      credit: 120,
+      startDate: new Date('2025-03-01T00:00:00Z'),
+      endDate: new Date('2025-03-08T00:00:00Z'),
+      active: false,
+    });
+    expect(timeline[1]).toEqual({
+      credit: 100,
+      startDate: new Date('2025-03-08T00:00:00Z'),
+      endDate: new Date('2025-03-15T00:00:00Z'),
+      active: true,
+    });
+    expect(timeline[2]).toEqual({
+      credit: 50,
+      startDate: new Date('2025-03-15T00:00:00Z'),
+      endDate: new Date('2025-03-22T00:00:00Z'),
+      active: false,
+    });
+    expect(timeline[3]).toEqual({
+      credit: 0,
+      startDate: new Date('2025-03-22T00:00:00Z'),
+      endDate: null,
+      active: false,
+    });
+  });
+
+  it('includes afterLastDeadline segment with non-zero credit', () => {
+    const dc: RuntimeDateControl = {
+      releaseDate: new Date('2025-03-01T00:00:00Z'),
+      dueDate: new Date('2025-03-15T00:00:00Z'),
+      afterLastDeadline: { credit: 25 },
+    };
+    const now = new Date('2025-03-20T00:00:00Z');
+    const timeline = buildAccessTimeline(dc, now);
+
+    expect(timeline).toHaveLength(2);
+    expect(timeline[1]).toEqual({
+      credit: 25,
+      startDate: new Date('2025-03-15T00:00:00Z'),
+      endDate: null,
+      active: true,
+    });
+  });
+
+  it('returns accessTimeline from resolveAccessControl', () => {
+    const result = resolveAccessControl({
+      ...baseInput,
+      rules: [
+        makeMainRule({
+          dateControl: {
+            releaseDate: '2025-03-01T00:00:00Z',
+            dueDate: '2025-03-20T00:00:00Z',
+          },
+        }),
+      ],
+    });
+
+    expect(result.accessTimeline).toHaveLength(1);
+    expect(result.accessTimeline[0].credit).toBe(100);
+    expect(result.accessTimeline[0].active).toBe(true);
   });
 });

@@ -22,7 +22,10 @@ import {
   QuestionVariantHistory,
 } from '../../components/QuestionScore.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
-import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.js';
+import {
+  StudentAccessRulesPopover,
+  StudentAccessTimelinePopoverHtml,
+} from '../../components/StudentAccessRulesPopover.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
@@ -327,6 +330,8 @@ export function StudentAssessmentInstance({
                     ${AssessmentStatus({
                       assessment_instance: resLocals.assessment_instance,
                       authz_result: resLocals.authz_result,
+                      modern_access_control: resLocals.assessment.modern_access_control,
+                      display_timezone: resLocals.course_instance.display_timezone,
                     })}
                   </div>
                 `
@@ -352,6 +357,8 @@ export function StudentAssessmentInstance({
                     ${AssessmentStatus({
                       assessment_instance: resLocals.assessment_instance,
                       authz_result: resLocals.authz_result,
+                      modern_access_control: resLocals.assessment.modern_access_control,
+                      display_timezone: resLocals.course_instance.display_timezone,
                     })}
                   </div>
                 `}
@@ -807,9 +814,13 @@ export function StudentAssessmentInstance({
 function AssessmentStatus({
   assessment_instance,
   authz_result,
+  modern_access_control,
+  display_timezone,
 }: {
   assessment_instance: AssessmentInstance;
   authz_result: StudentAssessmentInstanceAuthzResult;
+  modern_access_control: boolean;
+  display_timezone: string;
 }) {
   if (assessment_instance.open && authz_result.active) {
     return html`
@@ -817,7 +828,12 @@ function AssessmentStatus({
         Assessment is <strong>open</strong> and you can answer questions.
         <br />
         Available credit: ${authz_result.credit_date_string}
-        ${StudentAccessRulesPopover({ accessRules: authz_result.access_rules })}
+        ${modern_access_control
+          ? StudentAccessTimelinePopoverHtml({
+              accessTimeline: authz_result.access_timeline,
+              timezone: display_timezone,
+            })
+          : StudentAccessRulesPopover({ accessRules: authz_result.access_rules })}
       </div>
     `;
   }

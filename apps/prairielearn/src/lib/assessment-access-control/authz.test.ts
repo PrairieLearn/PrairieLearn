@@ -21,6 +21,7 @@ const baseAssessmentResult: SprocAuthzAssessment = {
   show_before_release: false,
   next_active_time: null,
   access_rules: [],
+  access_timeline: [],
 };
 
 const unauthorizedResult: SprocAuthzAssessment = {

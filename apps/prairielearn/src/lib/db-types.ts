@@ -135,9 +135,18 @@ export const SprocTeamInfoSchema = z.object({
 });
 export type SprocTeamInfo = z.infer<typeof SprocTeamInfoSchema>;
 
+// Timeline entry for modern access control display.
+export const AccessTimelineEntrySchema = z.object({
+  active: z.boolean(),
+  credit: z.number(),
+  end_date: z.string().nullable(),
+  start_date: z.string(),
+});
+
 // Result of authz_assessment sproc
 export const SprocAuthzAssessmentSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
+  access_timeline: z.array(AccessTimelineEntrySchema).optional().default([]),
   active: z.boolean(),
   authorized: z.boolean(),
   credit: z.number().nullable(),
@@ -155,6 +164,7 @@ export const SprocAuthzAssessmentSchema = z.object({
 // Result of authz_assessment_instance sproc
 export const SprocAuthzAssessmentInstanceSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
+  access_timeline: z.array(AccessTimelineEntrySchema).optional().default([]),
   active: z.boolean(),
   authorized: z.boolean(),
   authorized_edit: z.boolean(),
