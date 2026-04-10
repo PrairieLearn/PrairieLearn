@@ -54,3 +54,16 @@ export const requireCourseInstancePermissionEdit = t.middleware(async (opts) => 
   }
   return opts.next();
 });
+
+// This mirrors courseInstance/init.ts's requireCoursePermissionEdit but is
+// bound to the assessment scope's `t` instance. Each tRPC scope needs its
+// own middleware created from its own `t` so that the context type is correct.
+export const requireCoursePermissionEdit = t.middleware(async (opts) => {
+  if (!opts.ctx.authz_data.has_course_permission_edit) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Access denied (must be a course editor)',
+    });
+  }
+  return opts.next();
+});
