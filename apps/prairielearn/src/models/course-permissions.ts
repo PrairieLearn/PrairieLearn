@@ -170,6 +170,33 @@ export async function insertCourseInstancePermissions({
 }
 
 /**
+ * Inserts or updates course instance permissions for a user, setting the role
+ * to the exact value provided (unlike {@link insertCourseInstancePermissions},
+ * which only steps up). The user must already have a course_permissions record.
+ */
+export async function upsertCourseInstancePermissionsRole({
+  course_id,
+  course_instance_id,
+  user_id,
+  course_instance_role,
+  authn_user_id,
+}: {
+  course_id: string;
+  course_instance_id: string;
+  user_id: string;
+  course_instance_role: EnumCourseInstanceRole;
+  authn_user_id: string;
+}): Promise<void> {
+  await execute(sql.upsert_course_instance_permissions_role, {
+    course_id,
+    course_instance_id,
+    user_id,
+    course_instance_role,
+    authn_user_id,
+  });
+}
+
+/**
  * Updates the course instance role for an existing course_instance_permissions
  * record. Throws a 404 error if no course instance permissions exist for the user.
  */

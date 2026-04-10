@@ -15,8 +15,8 @@ import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
   selectCourseUsers,
-  updateCourseInstancePermissionsRole,
   updateCoursePermissionsRole,
+  upsertCourseInstancePermissionsRole,
 } from '../../models/course-permissions.js';
 
 import { requireCoursePermissionOwn, t } from './init.js';
@@ -84,23 +84,13 @@ async function upsertOrDeleteInstancePermission({
       authn_user_id: authnUserId,
     });
   } else {
-    try {
-      await updateCourseInstancePermissionsRole({
-        course_id: courseId,
-        user_id: userId,
-        course_instance_id: courseInstanceId,
-        course_instance_role: courseInstanceRole,
-        authn_user_id: authnUserId,
-      });
-    } catch {
-      await insertCourseInstancePermissions({
-        course_id: courseId,
-        user_id: userId,
-        course_instance_id: courseInstanceId,
-        course_instance_role: courseInstanceRole,
-        authn_user_id: authnUserId,
-      });
-    }
+    await upsertCourseInstancePermissionsRole({
+      course_id: courseId,
+      user_id: userId,
+      course_instance_id: courseInstanceId,
+      course_instance_role: courseInstanceRole,
+      authn_user_id: authnUserId,
+    });
   }
 }
 
