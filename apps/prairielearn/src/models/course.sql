@@ -42,8 +42,11 @@ LIMIT
 
 -- BLOCK check_course_title_in_institution
 SELECT
-  TRUE AS exists,
-  BOOL_OR(cp.course_role = 'Owner') AS owned
+  COUNT(*) > 0 AS exists,
+  COUNT(*) FILTER (
+    WHERE
+      cp.course_role = 'Owner'
+  ) > 0 AS owned
 FROM
   courses AS c
   LEFT JOIN course_permissions AS cp ON (
@@ -60,8 +63,11 @@ WHERE
 
 -- BLOCK check_course_short_name_in_institution
 SELECT
-  TRUE AS exists,
-  BOOL_OR(cp.course_role = 'Owner') AS owned
+  COUNT(*) > 0 AS exists,
+  COUNT(*) FILTER (
+    WHERE
+      cp.course_role = 'Owner'
+  ) > 0 AS owned
 FROM
   courses AS c
   LEFT JOIN course_permissions AS cp ON (

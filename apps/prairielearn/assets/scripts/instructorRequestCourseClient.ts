@@ -2,7 +2,7 @@ import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 
 import type { Lti13CourseRequestInput } from '../../src/pages/instructorRequestCourse/instructorRequestCourse.types.js';
 
-const FREE_EMAIL_DOMAINS = new Set([
+const PERSONAL_EMAIL_DOMAINS = new Set([
   'gmail.com',
   'hotmail.com',
   'icloud.com',
@@ -112,8 +112,6 @@ onDocumentReady(() => {
         shortNameResult = data.short_name;
         updateWarnings('title', titleResult);
         updateWarnings('short_name', shortNameResult);
-      } catch {
-        // Non-critical check; ignore network errors.
       } finally {
         if (checkSeq === latestCheckSeq) {
           checkIsLoading = false;
@@ -158,7 +156,7 @@ onDocumentReady(() => {
   const emailWarning = document.querySelector<HTMLElement>('#cr-email-warning');
   emailInput?.addEventListener('input', () => {
     const domain = emailInput.value.split('@')[1]?.toLowerCase();
-    const showWarning = !!domain && FREE_EMAIL_DOMAINS.has(domain);
+    const showWarning = !!domain && PERSONAL_EMAIL_DOMAINS.has(domain);
     emailWarning?.classList.toggle('d-none', !showWarning);
     if (showWarning && emailWarning) {
       emailInput.setAttribute('aria-invalid', 'true');
@@ -180,7 +178,9 @@ onDocumentReady(() => {
       if (!form) return;
       for (const [name, value] of Object.entries(lti13Info)) {
         const input = form.elements.namedItem(name);
-        if (input) (input as HTMLInputElement).value = value;
+        if (input instanceof HTMLInputElement && !input.readOnly && !input.disabled) {
+          input.value = value;
+        }
       }
       modal.hide();
     });

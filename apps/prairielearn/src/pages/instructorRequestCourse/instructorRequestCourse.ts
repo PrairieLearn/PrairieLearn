@@ -66,9 +66,8 @@ router.get(
   }),
 );
 
-// TODO: This endpoint reveals whether courses with a given title/short_name
-// exist at the user's institution. Consider restricting to users who have
-// already been verified as instructors, or only returning the `owned` field.
+// Note: This endpoint reveals whether courses with a given title/short_name
+// exist at the user's institution.
 router.get(
   '/check',
   typedAsyncHandler<'plain'>(async (req, res) => {
@@ -100,7 +99,6 @@ router.post(
     const github_user = req.body['cr-ghuser'] || null;
     const first_name = req.body['cr-firstname'] || '';
     const last_name = req.body['cr-lastname'] || '';
-    const institution = req.body['cr-institution'] || '';
     const referral_source_option = req.body['cr-referral-source'] || '';
     const referral_source_other = req.body['cr-referral-source-other'] || '';
     const referral_source =
@@ -108,8 +106,12 @@ router.post(
 
     const isDefaultInstitution =
       res.locals.authn_institution.short_name === DEFAULT_INSTITUTION_SHORT_NAME;
-    const work_email =
-      req.body['cr-email'] || (isDefaultInstitution ? '' : res.locals.authn_user.uid);
+    const institution = isDefaultInstitution
+      ? req.body['cr-institution'] || ''
+      : res.locals.authn_institution.long_name;
+    const work_email = isDefaultInstitution
+      ? req.body['cr-email'] || ''
+      : res.locals.authn_user.uid;
 
     let error = false;
 
