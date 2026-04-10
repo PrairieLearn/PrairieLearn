@@ -38,12 +38,33 @@ onDocumentReady(() => {
   let shortNameResult: CheckResult = { owned: false, exists: false };
   let checkTimeout: ReturnType<typeof setTimeout> | null = null;
   let checkIsLoading = false;
+  let latestCheckSeq = 0;
 
   const BUTTON_VARIANTS = ['btn-primary', 'btn-warning', 'btn-danger'];
+
+  const inputs = {
+    title: titleInput,
+    short_name: shortNameInput,
+  };
 
   function updateWarnings(field: 'title' | 'short_name', result: CheckResult) {
     warnings[field].owned?.classList.toggle('d-none', !result.owned);
     warnings[field].exists?.classList.toggle('d-none', result.owned || !result.exists);
+
+    const input = inputs[field];
+    if (!input) return;
+    const activeWarningId = result.owned
+      ? warnings[field].owned?.id
+      : result.exists
+        ? warnings[field].exists?.id
+        : null;
+    if (activeWarningId) {
+      input.setAttribute('aria-invalid', 'true');
+      input.setAttribute('aria-errormessage', activeWarningId);
+    } else {
+      input.removeAttribute('aria-invalid');
+      input.removeAttribute('aria-errormessage');
+    }
   }
 
   function updateSubmitButton() {
@@ -76,6 +97,7 @@ onDocumentReady(() => {
 
     checkIsLoading = true;
     updateSubmitButton();
+    const checkSeq = ++latestCheckSeq;
 
     checkTimeout = setTimeout(async () => {
       try {
@@ -85,6 +107,7 @@ onDocumentReady(() => {
         const resp = await fetch(`/pl/request_course/check?${params.toString()}`);
         if (!resp.ok) return;
         const data = (await resp.json()) as { title: CheckResult; short_name: CheckResult };
+        if (checkSeq !== latestCheckSeq) return;
         titleResult = data.title;
         shortNameResult = data.short_name;
         updateWarnings('title', titleResult);
@@ -92,8 +115,10 @@ onDocumentReady(() => {
       } catch {
         // Non-critical check; ignore network errors.
       } finally {
-        checkIsLoading = false;
-        updateSubmitButton();
+        if (checkSeq === latestCheckSeq) {
+          checkIsLoading = false;
+          updateSubmitButton();
+        }
       }
     }, 300);
   }
@@ -133,7 +158,15 @@ onDocumentReady(() => {
   const emailWarning = document.querySelector<HTMLElement>('#cr-email-warning');
   emailInput?.addEventListener('input', () => {
     const domain = emailInput.value.split('@')[1]?.toLowerCase();
-    emailWarning?.classList.toggle('d-none', !domain || !FREE_EMAIL_DOMAINS.has(domain));
+    const showWarning = !!domain && FREE_EMAIL_DOMAINS.has(domain);
+    emailWarning?.classList.toggle('d-none', !showWarning);
+    if (showWarning && emailWarning) {
+      emailInput.setAttribute('aria-invalid', 'true');
+      emailInput.setAttribute('aria-errormessage', emailWarning.id);
+    } else {
+      emailInput.removeAttribute('aria-invalid');
+      emailInput.removeAttribute('aria-errormessage');
+    }
   });
 
   // LTI 1.3 auto-fill.

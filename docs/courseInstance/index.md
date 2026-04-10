@@ -10,8 +10,8 @@ To create a new course instance from the PrairieLearn web interface:
 
 If you want to reuse assessments and settings from a previous semester, you can copy an existing course instance instead of creating one from scratch:
 
-1. Navigate to the course instance you want to copy (e.g., your "Fall 2024" instance).
-2. Navigate to the **Settings** tab (under the "Instance settings" section of the sidebar), scroll to the bottom and click **Make a copy of this course instance**.
+1. Open the course instance you want to copy (e.g., your "Fall 2024" instance).
+2. Go to the **Settings** tab (under the "Instance settings" section of the sidebar), scroll to the bottom and click **Make a copy of this course instance**.
 
 !!! note
 
