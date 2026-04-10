@@ -1512,10 +1512,14 @@ describe('Access control syncing', () => {
         );
         assert.equal(syncedRules.length, 0);
         assert.isTrue(
-          errors.some((e) => e.includes('afterComplete.questions.visibleFrom must be explicitly set on overrides')),
+          errors.some((e) =>
+            e.includes('afterComplete.questions.visibleFrom must be explicitly set on overrides'),
+          ),
         );
         assert.isTrue(
-          errors.some((e) => e.includes('afterComplete.questions.visibleUntil must be explicitly set on overrides')),
+          errors.some((e) =>
+            e.includes('afterComplete.questions.visibleUntil must be explicitly set on overrides'),
+          ),
         );
       }));
 
@@ -1535,7 +1539,9 @@ describe('Access control syncing', () => {
         );
         assert.equal(syncedRules.length, 0);
         assert.isTrue(
-          errors.some((e) => e.includes('afterComplete.questions.visibleUntil must be explicitly set on overrides')),
+          errors.some((e) =>
+            e.includes('afterComplete.questions.visibleUntil must be explicitly set on overrides'),
+          ),
         );
       }));
 
@@ -1553,7 +1559,9 @@ describe('Access control syncing', () => {
         );
         assert.equal(syncedRules.length, 0);
         assert.isTrue(
-          errors.some((e) => e.includes('afterComplete.score.visibleFrom must be explicitly set on overrides')),
+          errors.some((e) =>
+            e.includes('afterComplete.score.visibleFrom must be explicitly set on overrides'),
+          ),
         );
       }));
 
