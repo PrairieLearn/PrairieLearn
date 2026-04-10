@@ -78,7 +78,7 @@ export interface MainRuleData {
   trackingId: string;
   listBeforeRelease: boolean;
   dateControlEnabled: boolean;
-  releaseDate: string;
+  releaseDate: string | null;
   dueDate: string | null;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
@@ -150,8 +150,11 @@ export function jsonToMainRuleFormData(
       dc?.releaseDate != null ||
       dc?.dueDate != null ||
       (dc?.earlyDeadlines?.length ?? 0) > 0 ||
-      (dc?.lateDeadlines?.length ?? 0) > 0,
-    releaseDate: toLocalDatetimeValue(dc?.releaseDate, displayTimezone) ?? '',
+      (dc?.lateDeadlines?.length ?? 0) > 0 ||
+      dc?.afterLastDeadline != null ||
+      dc?.durationMinutes != null ||
+      dc?.password != null,
+    releaseDate: toLocalDatetimeValue(dc?.releaseDate, displayTimezone) ?? null,
     dueDate: toLocalDatetimeValue(dc?.dueDate, displayTimezone) ?? null,
     earlyDeadlines: (dc?.earlyDeadlines ?? []).map((d) => ({
       ...d,
@@ -161,12 +164,7 @@ export function jsonToMainRuleFormData(
       ...d,
       date: toLocalDatetimeValue(d.date, displayTimezone),
     })),
-    afterLastDeadline: dc?.afterLastDeadline
-      ? {
-          allowSubmissions: dc.afterLastDeadline.allowSubmissions ?? undefined,
-          credit: dc.afterLastDeadline.credit ?? undefined,
-        }
-      : null,
+    afterLastDeadline: dc?.afterLastDeadline ?? null,
     durationMinutes: dc?.durationMinutes ?? null,
     password: dc?.password ?? null,
     prairieTestExams: json.integrations?.prairieTest?.exams ?? [],
@@ -244,10 +242,7 @@ export function jsonToOverrideFormData(
 
   let afterLastDeadline: AfterLastDeadlineValue | null = null;
   if (dc?.afterLastDeadline !== undefined) {
-    afterLastDeadline = {
-      allowSubmissions: dc.afterLastDeadline.allowSubmissions ?? undefined,
-      credit: dc.afterLastDeadline.credit ?? undefined,
-    };
+    afterLastDeadline = dc.afterLastDeadline;
     overriddenFields.push('afterLastDeadline');
   }
 
@@ -311,15 +306,9 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   if (rule.dateControlEnabled) {
     output.dateControl = {};
     if (rule.releaseDate) output.dateControl.releaseDate = rule.releaseDate;
-    if (rule.dueDate) output.dateControl.dueDate = rule.dueDate;
+    output.dateControl.dueDate = rule.dueDate;
     if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (rule.lateDeadlines.length > 0) output.dateControl.lateDeadlines = rule.lateDeadlines;
-  }
-
-  // Non-date fields live under dateControl in the schema but should be
-  // preserved regardless of whether the date control toggle is enabled.
-  if (rule.afterLastDeadline || rule.durationMinutes != null || rule.password) {
-    output.dateControl ??= {};
     if (rule.afterLastDeadline) output.dateControl.afterLastDeadline = rule.afterLastDeadline;
     if (rule.durationMinutes != null) output.dateControl.durationMinutes = rule.durationMinutes;
     if (rule.password) output.dateControl.password = rule.password;
@@ -382,9 +371,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
     if (of.has('dueDate')) output.dateControl.dueDate = rule.dueDate;
     if (of.has('earlyDeadlines')) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (of.has('lateDeadlines')) output.dateControl.lateDeadlines = rule.lateDeadlines;
-    if (of.has('afterLastDeadline') && rule.afterLastDeadline) {
-      output.dateControl.afterLastDeadline = rule.afterLastDeadline;
-    }
+    if (of.has('afterLastDeadline')) output.dateControl.afterLastDeadline = rule.afterLastDeadline;
     if (of.has('durationMinutes')) output.dateControl.durationMinutes = rule.durationMinutes;
     if (of.has('password')) output.dateControl.password = rule.password;
   }

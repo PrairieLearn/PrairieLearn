@@ -9,7 +9,7 @@ import type {
   ResLocalsCourseInstance,
 } from '../middlewares/authzCourseOrInstance.js';
 import type { ResLocalsDate } from '../middlewares/date.js';
-import type { ResLocalsAssessment } from '../middlewares/selectAndAuthzAssessment.types.js';
+import type { ResLocalsAssessment } from '../middlewares/selectAndAuthzAssessment.js';
 import type { ResLocalsAssessmentInstance } from '../middlewares/selectAndAuthzAssessmentInstance.js';
 import type { ResLocalsAssessmentQuestion } from '../middlewares/selectAndAuthzAssessmentQuestion.js';
 import type { ResLocalsInstanceQuestion } from '../middlewares/selectAndAuthzInstanceQuestion.js';

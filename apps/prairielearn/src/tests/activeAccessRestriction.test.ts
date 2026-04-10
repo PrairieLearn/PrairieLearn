@@ -128,8 +128,7 @@ describe(
 
       const msg = response.$('[data-testid="assessment-closed-message"]');
       assert.lengthOf(msg, 1);
-      assert.include(msg.text(), 'Assessment is not yet open.');
-      assert.include(msg.text(), '2010-01-01 00:00:01');
+      assert.match(msg.text(), /Assessment will become available on 2010-01-01 00:00:01/);
     });
 
     test.sequential('check that an assessment instance was not created', async () => {
@@ -396,8 +395,7 @@ describe(
 
       const msg = response.$('[data-testid="assessment-closed-message"]');
       assert.lengthOf(msg, 1);
-      assert.include(msg.text(), 'Assessment is not yet open.');
-      assert.include(msg.text(), '2020-01-01 00:00:01');
+      assert.match(msg.text(), /Assessment will become available on 2020-01-01 00:00:01/);
     });
 
     test.sequential('access the homework when it is active', async () => {
@@ -508,8 +506,7 @@ describe(
 
         const msg = response.$('[data-testid="assessment-closed-message"]');
         assert.lengthOf(msg, 1);
-        assert.include(msg.text(), 'Assessment is not yet open.');
-        assert.include(msg.text(), '2030-01-01 00:00:01');
+        assert.match(msg.text(), /Assessment will become available on 2030-01-01 00:00:01/);
 
         assert.lengthOf(response.$('div.progress'), 1); // score should be shown
       },

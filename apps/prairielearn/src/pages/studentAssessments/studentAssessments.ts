@@ -46,12 +46,12 @@ router.get(
 
         return {
           ...row,
-          authorized: result.authzResult.authorized,
-          credit_date_string: result.authzResult.credit_date_string ?? 'None',
-          active: result.authzResult.active,
-          show_closed_assessment_score: result.authzResult.show_closed_assessment_score,
-          show_before_release: result.authzResult.show_before_release,
-          opens_at: result.opensAt?.toISOString() ?? null,
+          authorized: result.authorized,
+          credit_date_string: result.credit_date_string ?? 'None',
+          active: result.active,
+          show_closed_assessment_score: result.show_closed_assessment_score,
+          show_before_release: result.show_before_release,
+          opens_at: result.next_active_time ?? null,
         };
       })
       .filter((row): row is NonNullable<typeof row> => {

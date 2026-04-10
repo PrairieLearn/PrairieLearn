@@ -11,7 +11,7 @@ export interface RuntimeDateControl {
   dueDate?: Date | null;
   earlyDeadlines?: { date: string; credit: number }[] | null;
   lateDeadlines?: { date: string; credit: number }[] | null;
-  afterLastDeadline?: { allowSubmissions?: boolean; credit?: number | null };
+  afterLastDeadline?: { allowSubmissions?: boolean; credit?: number } | null;
   durationMinutes?: number | null;
   password?: string | null;
 }
@@ -64,20 +64,6 @@ export interface AccessControlResolverInput {
   prairieTestReservations: PrairieTestReservation[];
 }
 
-export type AccessAvailabilityState =
-  | 'open'
-  | 'before_release'
-  | 'future_open'
-  | 'closed'
-  | 'prairietest_gated_unavailable';
-
-export interface TimelineEntry {
-  type: 'early' | 'due' | 'late';
-  date: Date;
-  credit: number;
-  index: number;
-}
-
 export interface AccessControlResolverResult {
   authorized: boolean;
   credit: number | null;
@@ -103,10 +89,6 @@ export interface AccessControlResolverResult {
    * `listBeforeRelease` config input.
    */
   showBeforeRelease: boolean;
-  availabilityState: AccessAvailabilityState;
-  availabilityListed: boolean;
-  opensAt: Date | null;
-  timeline: TimelineEntry[];
 }
 
 const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
@@ -120,10 +102,6 @@ const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
   showClosedAssessmentScore: true,
   examAccessEnd: null,
   showBeforeRelease: false,
-  availabilityState: 'closed',
-  availabilityListed: false,
-  opensAt: null,
-  timeline: [],
 };
 
 const COURSE_ROLE_RANK: Record<EnumCourseRole, number> = {
@@ -230,7 +208,6 @@ interface CreditResult {
   nextDeadlineDate: Date | null;
   password: string | null;
   timeLimitMin: number | null;
-  timeline: TimelineEntry[];
 }
 
 /**
@@ -238,26 +215,14 @@ interface CreditResult {
  * the main resolver can handle each case linearly without nested control flow.
  */
 type PrairieTestOutcome =
-  | {
-      action: 'deny';
-      reason: PrairieTestDenyReason;
-      listed: boolean;
-      showBeforeRelease: boolean;
-    }
+  | { action: 'deny'; result: AccessControlResolverResult }
   | { action: 'grant'; examAccessEnd: Date; credit: number; active: boolean }
   | { action: 'continue' };
-
-type PrairieTestDenyReason = 'exam_mode_without_prairietest' | 'prairietest_gated_unavailable';
-
-interface ResolvedAccessRuleContext {
-  effectiveRule: RuntimeAccessControl;
-  prairieTestExamCount: number;
-  prairieTestExams: AccessControlRuleInput['prairietestExams'];
-}
 
 function computeCredit(
   dateControl: RuntimeDateControl | undefined,
   date: Date,
+  effectiveRule: RuntimeAccessControl,
   authzMode: EnumMode | null,
 ): CreditResult {
   if (!dateControl?.releaseDate) {
@@ -268,7 +233,6 @@ function computeCredit(
       nextDeadlineDate: null,
       password: null,
       timeLimitMin: null,
-      timeline: [],
     };
   }
 
@@ -283,7 +247,6 @@ function computeCredit(
       nextDeadlineDate: releaseDate,
       password: null,
       timeLimitMin: null,
-      timeline: [],
     };
   }
 
@@ -296,37 +259,34 @@ function computeCredit(
       nextDeadlineDate: null,
       password: null,
       timeLimitMin: null,
-      timeline: [],
     };
   }
 
   // Build timeline segments: each entry is [deadline, creditBefore]
   // The credit value represents what you get if you submit BEFORE this deadline.
-  const timeline: TimelineEntry[] = [];
+  const timeline: { date: Date; credit: number }[] = [];
 
-  let earlyIndex = 0;
   if (dateControl.earlyDeadlines) {
     for (const entry of dateControl.earlyDeadlines) {
       const entryDate = new Date(entry.date);
       // Filter out early deadlines before release date or after/at due date.
       if (entryDate <= releaseDate) continue;
       if (dueDate && entryDate >= dueDate) continue;
-      timeline.push({ type: 'early', date: entryDate, credit: entry.credit, index: earlyIndex++ });
+      timeline.push({ date: entryDate, credit: entry.credit });
     }
   }
 
   if (dueDate) {
-    timeline.push({ type: 'due', date: dueDate, credit: 100, index: 0 });
+    timeline.push({ date: dueDate, credit: 100 });
   }
 
-  let lateIndex = 0;
   if (dateControl.lateDeadlines) {
     for (const entry of dateControl.lateDeadlines) {
       const entryDate = new Date(entry.date);
       // Filter out late deadlines before release date or before/at due date.
       if (entryDate <= releaseDate) continue;
       if (dueDate && entryDate <= dueDate) continue;
-      timeline.push({ type: 'late', date: entryDate, credit: entry.credit, index: lateIndex++ });
+      timeline.push({ date: entryDate, credit: entry.credit });
     }
   }
 
@@ -341,7 +301,6 @@ function computeCredit(
       nextDeadlineDate: null,
       password: null,
       timeLimitMin: null,
-      timeline,
     };
   }
 
@@ -364,7 +323,6 @@ function computeCredit(
           date,
           authzMode,
         ),
-        timeline,
       };
     }
   }
@@ -382,7 +340,6 @@ function computeCredit(
     nextDeadlineDate: null,
     password: dateControl.password ?? null,
     timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
-    timeline,
   };
 }
 
@@ -478,19 +435,7 @@ function formatCreditDateString(
  * skipped so the normal closed-assessment behavior applies instead of showing
  * "Not yet open" indefinitely.
  */
-function makePrairieTestDeniedOutcome({
-  reason,
-  listed = false,
-  showBeforeRelease = false,
-}: {
-  reason: PrairieTestDenyReason;
-  listed?: boolean;
-  showBeforeRelease?: boolean;
-}): PrairieTestOutcome {
-  return { action: 'deny', reason, listed, showBeforeRelease };
-}
-
-function evaluatePrairieTestAccess({
+function resolvePrairieTestAccess({
   prairieTestExams,
   prairieTestReservations,
   authzMode,
@@ -508,7 +453,7 @@ function evaluatePrairieTestAccess({
   if (!hasPrairieTestExams) {
     // No PT exams configured but student is in PrairieTest exam mode → deny.
     if (authzMode === 'Exam') {
-      return makePrairieTestDeniedOutcome({ reason: 'exam_mode_without_prairietest' });
+      return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
     }
     return { action: 'continue' };
   }
@@ -521,14 +466,10 @@ function evaluatePrairieTestAccess({
     // We ONLY do this outside of Exam mode; when in Exam mode, we only show assessments
     // that the user can actually access.
     if (listBeforeRelease) {
-      return makePrairieTestDeniedOutcome({
-        reason: 'prairietest_gated_unavailable',
-        listed: true,
-        showBeforeRelease: true,
-      });
+      return { action: 'deny', result: { ...UNAUTHORIZED_RESULT, showBeforeRelease: true } };
     }
 
-    return makePrairieTestDeniedOutcome({ reason: 'prairietest_gated_unavailable' });
+    return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
   }
 
   // In Exam mode — find a matching reservation.
@@ -551,15 +492,45 @@ function evaluatePrairieTestAccess({
 
   // No matching reservation — deny unless the assessment is closed.
   if (assessmentClosed) return { action: 'continue' };
-  return makePrairieTestDeniedOutcome({ reason: 'prairietest_gated_unavailable' });
+  return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
 }
 
-export function resolveEffectiveRuleContext({
-  rules,
-  enrollment,
-}: Pick<AccessControlResolverInput, 'rules' | 'enrollment'>): ResolvedAccessRuleContext | null {
+export function resolveAccessControl(
+  input: AccessControlResolverInput,
+): AccessControlResolverResult {
+  const {
+    rules,
+    enrollment,
+    date,
+    displayTimezone,
+    authzMode,
+    courseRole,
+    courseInstanceRole,
+    prairieTestReservations,
+  } = input;
+
+  if (
+    roleAtLeast(courseRole, 'Previewer') ||
+    instanceRoleAtLeast(courseInstanceRole, 'Student Data Viewer')
+  ) {
+    return {
+      authorized: true,
+      credit: 100,
+      creditDateString: '100% (Staff override)',
+      timeLimitMin: null,
+      password: null,
+      active: true,
+      showClosedAssessment: true,
+      showClosedAssessmentScore: true,
+      examAccessEnd: null,
+      showBeforeRelease: false,
+    };
+  }
+
   const mainRuleInput = rules.find((r) => r.number === 0 && r.targetType === 'none');
-  if (!mainRuleInput) return null;
+  if (!mainRuleInput) {
+    return { ...UNAUTHORIZED_RESULT };
+  }
 
   // Sort: student_label first (broader), enrollment second (more specific, wins in cascade).
   const overrides = rules
@@ -595,101 +566,15 @@ export function resolveEffectiveRuleContext({
       ? cascadeOverrides(cascadedOverride, override.rule)
       : override.rule;
   }
+  const effectiveRule = mergeRules(mainRuleInput.rule, cascadedOverride);
 
-  return {
-    effectiveRule: mergeRules(mainRuleInput.rule, cascadedOverride),
-    prairieTestExamCount: mainRuleInput.prairietestExams.length,
-    prairieTestExams: mainRuleInput.prairietestExams,
-  };
-}
-
-function computeDateBasedAvailability({
-  beforeRelease,
-  nextDeadlineDate,
-  hasReleaseDate,
-  active,
-  showBeforeRelease,
-}: {
-  beforeRelease: boolean;
-  nextDeadlineDate: Date | null;
-  hasReleaseDate: boolean;
-  active: boolean;
-  showBeforeRelease: boolean;
-}): {
-  availabilityState: AccessAvailabilityState;
-  availabilityListed: boolean;
-  opensAt: Date | null;
-} {
-  if (beforeRelease) {
-    return {
-      availabilityState: 'future_open',
-      availabilityListed: showBeforeRelease,
-      opensAt: nextDeadlineDate,
-    };
-  }
-  if (!hasReleaseDate) {
-    return {
-      availabilityState: 'before_release',
-      availabilityListed: showBeforeRelease,
-      opensAt: null,
-    };
-  }
-  if (active) {
-    return { availabilityState: 'open', availabilityListed: true, opensAt: null };
-  }
-  return { availabilityState: 'closed', availabilityListed: true, opensAt: null };
-}
-
-export function resolveAccessControlFromRuleContext(
-  input: Omit<AccessControlResolverInput, 'rules' | 'enrollment'> & {
-    ruleContext: ResolvedAccessRuleContext | null;
-  },
-): AccessControlResolverResult {
-  const {
-    ruleContext,
-    date,
-    displayTimezone,
-    authzMode,
-    courseRole,
-    courseInstanceRole,
-    prairieTestReservations,
-  } = input;
-
-  if (
-    roleAtLeast(courseRole, 'Previewer') ||
-    instanceRoleAtLeast(courseInstanceRole, 'Student Data Viewer')
-  ) {
-    return {
-      authorized: true,
-      credit: 100,
-      creditDateString: '100% (Staff override)',
-      timeLimitMin: null,
-      password: null,
-      active: true,
-      showClosedAssessment: true,
-      showClosedAssessmentScore: true,
-      examAccessEnd: null,
-      showBeforeRelease: false,
-      availabilityState: 'open',
-      availabilityListed: true,
-      opensAt: null,
-      timeline: [],
-    };
-  }
-
-  if (!ruleContext) {
-    return { ...UNAUTHORIZED_RESULT };
-  }
-
-  const { effectiveRule, prairieTestExams } = ruleContext;
-
-  let creditResult = computeCredit(effectiveRule.dateControl, date, authzMode);
+  let creditResult = computeCredit(effectiveRule.dateControl, date, effectiveRule, authzMode);
 
   // Resolve PrairieTest access. This is separated from the main flow to keep
   // the resolver linear: it either denies early, grants PT credit overrides,
   // or continues with the normal date-control-based result.
-  const ptOutcome = evaluatePrairieTestAccess({
-    prairieTestExams,
+  const ptOutcome = resolvePrairieTestAccess({
+    prairieTestExams: mainRuleInput.prairietestExams,
     prairieTestReservations,
     authzMode,
     listBeforeRelease: effectiveRule.listBeforeRelease ?? false,
@@ -698,29 +583,7 @@ export function resolveAccessControlFromRuleContext(
       !creditResult.beforeRelease &&
       !creditResult.active,
   });
-  if (ptOutcome.action === 'deny') {
-    if (ptOutcome.reason === 'prairietest_gated_unavailable') {
-      return {
-        ...UNAUTHORIZED_RESULT,
-        showBeforeRelease: ptOutcome.showBeforeRelease,
-        availabilityState: 'prairietest_gated_unavailable',
-        availabilityListed: ptOutcome.listed,
-        timeline: creditResult.timeline,
-      };
-    }
-    return {
-      ...UNAUTHORIZED_RESULT,
-      showBeforeRelease: ptOutcome.showBeforeRelease,
-      ...computeDateBasedAvailability({
-        beforeRelease: creditResult.beforeRelease,
-        nextDeadlineDate: creditResult.nextDeadlineDate,
-        hasReleaseDate: !!effectiveRule.dateControl?.releaseDate,
-        active: false,
-        showBeforeRelease: ptOutcome.showBeforeRelease,
-      }),
-      timeline: creditResult.timeline,
-    };
-  }
+  if (ptOutcome.action === 'deny') return ptOutcome.result;
 
   let examAccessEnd: Date | null = null;
   if (ptOutcome.action === 'grant') {
@@ -754,30 +617,7 @@ export function resolveAccessControlFromRuleContext(
   // If the assessment is before its release date and showBeforeRelease is false,
   // the student should not see or access it at all.
   if (creditResult.beforeRelease && !showBeforeRelease) {
-    return {
-      ...UNAUTHORIZED_RESULT,
-      availabilityState: 'future_open',
-      availabilityListed: false,
-      opensAt: creditResult.nextDeadlineDate,
-      timeline: creditResult.timeline,
-    };
-  }
-
-  // If the assessment is before its release date but showBeforeRelease is true,
-  // the student can see it listed but cannot access it.
-  if (creditResult.beforeRelease && showBeforeRelease) {
-    return {
-      ...UNAUTHORIZED_RESULT,
-      showBeforeRelease: true,
-      ...computeDateBasedAvailability({
-        beforeRelease: true,
-        nextDeadlineDate: creditResult.nextDeadlineDate,
-        hasReleaseDate: true,
-        active: false,
-        showBeforeRelease: true,
-      }),
-      timeline: creditResult.timeline,
-    };
+    return { ...UNAUTHORIZED_RESULT };
   }
 
   const creditDateString = formatCreditDateString(
@@ -798,30 +638,5 @@ export function resolveAccessControlFromRuleContext(
     showClosedAssessmentScore,
     examAccessEnd,
     showBeforeRelease,
-    ...computeDateBasedAvailability({
-      beforeRelease: creditResult.beforeRelease,
-      nextDeadlineDate: creditResult.nextDeadlineDate,
-      hasReleaseDate: !!effectiveRule.dateControl?.releaseDate,
-      active: creditResult.active,
-      showBeforeRelease,
-    }),
-    timeline: creditResult.timeline,
   };
-}
-
-export function resolveAccessControl(
-  input: AccessControlResolverInput,
-): AccessControlResolverResult {
-  return resolveAccessControlFromRuleContext({
-    date: input.date,
-    displayTimezone: input.displayTimezone,
-    authzMode: input.authzMode,
-    courseRole: input.courseRole,
-    courseInstanceRole: input.courseInstanceRole,
-    prairieTestReservations: input.prairieTestReservations,
-    ruleContext: resolveEffectiveRuleContext({
-      rules: input.rules,
-      enrollment: input.enrollment,
-    }),
-  });
 }

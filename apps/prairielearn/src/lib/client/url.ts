@@ -2,26 +2,6 @@ export function getStudentCourseInstanceUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}`;
 }
 
-export function getStudentAssessmentUrl({
-  courseInstanceId,
-  assessmentId,
-}: {
-  courseInstanceId: string;
-  assessmentId: string;
-}): string {
-  return `/pl/course_instance/${courseInstanceId}/assessment/${assessmentId}/`;
-}
-
-export function getStudentAssessmentInstanceUrl({
-  courseInstanceId,
-  assessmentInstanceId,
-}: {
-  courseInstanceId: string;
-  assessmentInstanceId: string;
-}): string {
-  return `/pl/course_instance/${courseInstanceId}/assessment_instance/${assessmentInstanceId}/`;
-}
-
 export type AssessmentUrlParts =
   | { urlPrefix: string; courseInstanceId?: undefined }
   // If urlPrefix is not provided, then course_instance_id

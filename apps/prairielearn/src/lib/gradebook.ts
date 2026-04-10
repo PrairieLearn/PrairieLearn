@@ -44,8 +44,8 @@ async function applyModernAccessControl<
     if (!row.modern_access_control) continue;
     const result = modernResults.get(row.assessment_id);
     if (result) {
-      row.show_closed_assessment_score = result.authzResult.show_closed_assessment_score;
-      if (params.auth === 'student' && !result.authzResult.show_closed_assessment_score) {
+      row.show_closed_assessment_score = result.show_closed_assessment_score;
+      if (params.auth === 'student' && !result.show_closed_assessment_score) {
         row.assessment_instance.points = null;
         row.assessment_instance.score_perc = null;
       }

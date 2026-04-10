@@ -5,7 +5,7 @@ import { FriendlyDate, TimezoneContext } from '../../../components/FriendlyDate.
 import { Scorebar } from '../../../components/Scorebar.js';
 import { StudentAccessRulesPopoverReact } from '../../../components/StudentAccessRulesPopover.js';
 import {
-  getStudentAssessmentInstanceUrl,
+  getStudentCourseInstanceUrl,
   getStudentAssessmentUrl,
 } from '../../../lib/client/url.js';
 
@@ -41,12 +41,9 @@ type StudentAssessmentsTableRow = z.infer<typeof StudentAssessmentsTableRowSchem
 
 function getRowUrl(row: StudentAssessmentsTableRow, courseInstanceId: string): string {
   if (row.assessment_instance_id != null) {
-    return getStudentAssessmentInstanceUrl({
-      courseInstanceId,
-      assessmentInstanceId: row.assessment_instance_id,
-    });
+    return `${getStudentCourseInstanceUrl(courseInstanceId)}/assessment_instance/${row.assessment_instance_id}`;
   }
-  return getStudentAssessmentUrl({ courseInstanceId, assessmentId: row.assessment_id });
+  return getStudentAssessmentUrl(courseInstanceId, row.assessment_id);
 }
 
 function AssessmentScore({ row }: { row: StudentAssessmentsTableRow }) {

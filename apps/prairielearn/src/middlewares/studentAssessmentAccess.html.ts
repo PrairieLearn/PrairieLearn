@@ -11,15 +11,13 @@ import type { AssessmentInstance } from '../lib/db-types.js';
 import { formatPoints } from '../lib/format.js';
 import type { ResLocalsForPage } from '../lib/res-locals.js';
 
-type StudentAssessmentAccessLocals = ResLocalsForPage<'assessment' | 'assessment-instance'>;
-
 export function StudentAssessmentAccess({
   resLocals,
   showClosedScore = true,
   showTimeLimitExpiredModal = false,
   userCanDeleteAssessmentInstance = false,
 }: {
-  resLocals: StudentAssessmentAccessLocals;
+  resLocals: ResLocalsForPage<'assessment' | 'assessment-instance'>;
   showClosedScore?: boolean;
   showTimeLimitExpiredModal?: boolean;
   userCanDeleteAssessmentInstance?: boolean;
@@ -68,10 +66,7 @@ export function StudentAssessmentAccess({
                   })}
                 </div>
               `
-            : AssessmentStatusDescription({
-                assessment_instance,
-                authz_result,
-              })}
+            : AssessmentStatusDescription({ assessment_instance, authz_result })}
         </div>
       </div>
     `,
@@ -84,18 +79,16 @@ function AssessmentStatusDescription({
   extraClasses = '',
 }: {
   assessment_instance?: AssessmentInstance;
-  authz_result: StudentAssessmentAccessLocals['authz_result'];
+  authz_result: any;
   extraClasses?: string;
 }) {
-  const availabilityMessage = authz_result.next_active_time
-    ? `Assessment is not yet open. It will become available on ${authz_result.next_active_time}.`
-    : 'Assessment is no longer available.';
-
   return html`
     <div class="${extraClasses}" data-testid="assessment-closed-message">
       ${assessment_instance?.open === false
         ? html`Assessment is <strong>closed</strong> and is no longer available.`
-        : html`${availabilityMessage}`}
+        : authz_result.next_active_time == null
+          ? html`Assessment is no longer available.`
+          : html`Assessment will become available on ${authz_result.next_active_time}.`}
     </div>
   `;
 }
