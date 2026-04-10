@@ -22,8 +22,8 @@ const defaultMainRule: MainRuleData = {
   durationMinutes: 60,
   password: 'secret',
   prairieTestExams: [],
-  questionVisibility: { hideQuestions: true },
-  scoreVisibility: { hideScore: false },
+  questionVisibility: { hidden: true },
+  scoreVisibility: { hidden: false },
 };
 
 const baseOverride: OverrideData = {
@@ -41,8 +41,8 @@ const baseOverride: OverrideData = {
   afterLastDeadline: null,
   durationMinutes: null,
   password: null,
-  questionVisibility: { hideQuestions: true },
-  scoreVisibility: { hideScore: false },
+  questionVisibility: { hidden: true },
+  scoreVisibility: { hidden: false },
 };
 
 function buildFormData(override: OverrideData): AccessControlFormData {
@@ -55,30 +55,30 @@ describe('jsonToMainRuleFormData', () => {
     expect(mainRule.releaseDate).toBeNull();
   });
 
-  it('defaults hideQuestions to true when afterComplete is not configured', () => {
+  it('defaults hidden to true for questions when afterComplete is not configured', () => {
     const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
-    expect(mainRule.questionVisibility.hideQuestions).toBe(true);
+    expect(mainRule.questionVisibility.hidden).toBe(true);
   });
 
-  it('defaults hideScore to false when afterComplete is not configured', () => {
+  it('defaults hidden to false for score when afterComplete is not configured', () => {
     const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
-    expect(mainRule.scoreVisibility.hideScore).toBe(false);
+    expect(mainRule.scoreVisibility.hidden).toBe(false);
   });
 
-  it('preserves hideQuestions: false when explicitly set in JSON', () => {
+  it('preserves hidden: false for questions when explicitly set in JSON', () => {
     const mainRule = jsonToMainRuleFormData(
-      { afterComplete: { hideQuestions: false } },
+      { afterComplete: { questions: { hidden: false } } },
       TEST_TIMEZONE,
     );
-    expect(mainRule.questionVisibility.hideQuestions).toBe(false);
+    expect(mainRule.questionVisibility.hidden).toBe(false);
   });
 
-  it('preserves hideQuestions: true when explicitly set in JSON', () => {
+  it('preserves hidden: true for questions when explicitly set in JSON', () => {
     const mainRule = jsonToMainRuleFormData(
-      { afterComplete: { hideQuestions: true } },
+      { afterComplete: { questions: { hidden: true } } },
       TEST_TIMEZONE,
     );
-    expect(mainRule.questionVisibility.hideQuestions).toBe(true);
+    expect(mainRule.questionVisibility.hidden).toBe(true);
   });
 });
 
@@ -163,15 +163,15 @@ describe('formDataToJson', () => {
       ...baseOverride,
       trackingId: 'o-7',
       overriddenFields: ['questionVisibility', 'scoreVisibility'],
-      questionVisibility: { hideQuestions: true, showAgainDate: '2025-06-01T00:00:00Z' },
-      scoreVisibility: { hideScore: true },
+      questionVisibility: { hidden: true, visibleFrom: '2025-06-01T00:00:00Z' },
+      scoreVisibility: { hidden: true },
     };
 
     const overrideJson = formDataToJson(buildFormData(override))[1];
     expect(overrideJson.afterComplete).toBeDefined();
-    expect(overrideJson.afterComplete!.hideQuestions).toBe(true);
-    expect(overrideJson.afterComplete!.showQuestionsAgainDate).toBe('2025-06-01T00:00:00Z');
-    expect(overrideJson.afterComplete!.hideScore).toBe(true);
+    expect(overrideJson.afterComplete!.questions!.hidden).toBe(true);
+    expect(overrideJson.afterComplete!.questions!.visibleFrom).toBe('2025-06-01T00:00:00Z');
+    expect(overrideJson.afterComplete!.score!.hidden).toBe(true);
   });
 
   it('omits afterComplete when neither visibility is overridden', () => {

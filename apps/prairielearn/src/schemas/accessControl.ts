@@ -83,68 +83,48 @@ const IntegrationsJsonSchema = z
   .strict()
   .optional();
 
-const HideQuestionsJsonSchema = z.discriminatedUnion('hideQuestions', [
+const QuestionsJsonSchema = z.discriminatedUnion('hidden', [
   z
     .object({
-      hideQuestions: z.literal(false),
-      showQuestionsAgainDate: z.null().optional(),
-      hideQuestionsAgainDate: z.null().optional(),
+      hidden: z.literal(false),
+      visibleFrom: z.null().optional(),
+      visibleUntil: z.null().optional(),
     })
     .strict(),
   z
     .object({
-      hideQuestions: z.literal(true),
-      showQuestionsAgainDate: DatetimeLocalStringSchema.nullable().optional(),
-      hideQuestionsAgainDate: DatetimeLocalStringSchema.nullable().optional(),
-    })
-    .strict(),
-]);
-
-const HideScoreJsonSchema = z.discriminatedUnion('hideScore', [
-  z.object({ hideScore: z.literal(false), showScoreAgainDate: z.null().optional() }).strict(),
-  z
-    .object({
-      hideScore: z.literal(true),
-      showScoreAgainDate: DatetimeLocalStringSchema.nullable().optional(),
+      hidden: z.literal(true),
+      visibleFrom: DatetimeLocalStringSchema.nullable().optional(),
+      visibleUntil: DatetimeLocalStringSchema.nullable().optional(),
     })
     .strict(),
 ]);
 
-const AfterCompleteJsonSchema = z
+const ScoreJsonSchema = z.discriminatedUnion('hidden', [
+  z.object({ hidden: z.literal(false), visibleFrom: z.null().optional() }).strict(),
+  z
+    .object({
+      hidden: z.literal(true),
+      visibleFrom: DatetimeLocalStringSchema.nullable().optional(),
+    })
+    .strict(),
+]);
+
+const AfterCompleteQuestionsJsonSchema = z
   .object({
-    hideQuestions: z.boolean().optional(),
-    showQuestionsAgainDate: DatetimeLocalStringSchema.nullable().optional(),
-    hideQuestionsAgainDate: DatetimeLocalStringSchema.nullable().optional(),
-    hideScore: z.boolean().optional(),
-    showScoreAgainDate: DatetimeLocalStringSchema.nullable().optional(),
+    hidden: z.boolean().optional(),
+    visibleFrom: DatetimeLocalStringSchema.nullable().optional(),
+    visibleUntil: DatetimeLocalStringSchema.nullable().optional(),
   })
   .strict()
   .superRefine((data, ctx) => {
-    if (data.hideQuestions !== undefined) {
+    if (data.hidden !== undefined) {
       const picked = {
-        hideQuestions: data.hideQuestions,
-        ...(data.showQuestionsAgainDate !== undefined && {
-          showQuestionsAgainDate: data.showQuestionsAgainDate,
-        }),
-        ...(data.hideQuestionsAgainDate !== undefined && {
-          hideQuestionsAgainDate: data.hideQuestionsAgainDate,
-        }),
+        hidden: data.hidden,
+        ...(data.visibleFrom !== undefined && { visibleFrom: data.visibleFrom }),
+        ...(data.visibleUntil !== undefined && { visibleUntil: data.visibleUntil }),
       };
-      const result = HideQuestionsJsonSchema.safeParse(picked);
-      if (!result.success) {
-        for (const issue of result.error.issues) {
-          ctx.addIssue(issue);
-        }
-      }
-    }
-    if (data.hideScore !== undefined) {
-      const picked = {
-        hideScore: data.hideScore,
-        ...(data.showScoreAgainDate !== undefined && {
-          showScoreAgainDate: data.showScoreAgainDate,
-        }),
-      };
-      const result = HideScoreJsonSchema.safeParse(picked);
+      const result = QuestionsJsonSchema.safeParse(picked);
       if (!result.success) {
         for (const issue of result.error.issues) {
           ctx.addIssue(issue);
@@ -152,6 +132,36 @@ const AfterCompleteJsonSchema = z
       }
     }
   })
+  .optional();
+
+const AfterCompleteScoreJsonSchema = z
+  .object({
+    hidden: z.boolean().optional(),
+    visibleFrom: DatetimeLocalStringSchema.nullable().optional(),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    if (data.hidden !== undefined) {
+      const picked = {
+        hidden: data.hidden,
+        ...(data.visibleFrom !== undefined && { visibleFrom: data.visibleFrom }),
+      };
+      const result = ScoreJsonSchema.safeParse(picked);
+      if (!result.success) {
+        for (const issue of result.error.issues) {
+          ctx.addIssue(issue);
+        }
+      }
+    }
+  })
+  .optional();
+
+const AfterCompleteJsonSchema = z
+  .object({
+    questions: AfterCompleteQuestionsJsonSchema,
+    score: AfterCompleteScoreJsonSchema,
+  })
+  .strict()
   .optional();
 
 export const AccessControlJsonSchema = z

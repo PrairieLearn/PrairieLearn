@@ -19,11 +19,15 @@ export interface RuntimeDateControl {
 }
 
 export interface RuntimeAfterComplete {
-  hideQuestions?: boolean;
-  showQuestionsAgainDate?: Date | null;
-  hideQuestionsAgainDate?: Date | null;
-  hideScore?: boolean;
-  showScoreAgainDate?: Date | null;
+  questions?: {
+    hidden?: boolean;
+    visibleFrom?: Date | null;
+    visibleUntil?: Date | null;
+  };
+  score?: {
+    hidden?: boolean;
+    visibleFrom?: Date | null;
+  };
 }
 
 /**
@@ -166,18 +170,27 @@ function mergeAfterComplete(
   if (!base) return override;
   if (!override) return { ...base };
 
-  const merged = { ...base };
-  if (override.hideQuestions !== undefined) merged.hideQuestions = override.hideQuestions;
-  if (override.showQuestionsAgainDate !== undefined) {
-    merged.showQuestionsAgainDate = override.showQuestionsAgainDate;
+  const merged: RuntimeAfterComplete = {};
+
+  // Merge questions
+  if (base.questions || override.questions) {
+    const bq = base.questions ?? {};
+    const oq = override.questions ?? {};
+    merged.questions = { ...bq };
+    if (oq.hidden !== undefined) merged.questions.hidden = oq.hidden;
+    if (oq.visibleFrom !== undefined) merged.questions.visibleFrom = oq.visibleFrom;
+    if (oq.visibleUntil !== undefined) merged.questions.visibleUntil = oq.visibleUntil;
   }
-  if (override.hideQuestionsAgainDate !== undefined) {
-    merged.hideQuestionsAgainDate = override.hideQuestionsAgainDate;
+
+  // Merge score
+  if (base.score || override.score) {
+    const bs = base.score ?? {};
+    const os = override.score ?? {};
+    merged.score = { ...bs };
+    if (os.hidden !== undefined) merged.score.hidden = os.hidden;
+    if (os.visibleFrom !== undefined) merged.score.visibleFrom = os.visibleFrom;
   }
-  if (override.hideScore !== undefined) merged.hideScore = override.hideScore;
-  if (override.showScoreAgainDate !== undefined) {
-    merged.showScoreAgainDate = override.showScoreAgainDate;
-  }
+
   return merged;
 }
 
@@ -371,19 +384,19 @@ function computeTimeLimitMin(
 
 export function resolveVisibility(
   hide: boolean | undefined,
-  showAgainDate: Date | null | undefined,
-  hideAgainDate: Date | null | undefined,
+  visibleFrom: Date | null | undefined,
+  visibleUntil: Date | null | undefined,
   date: Date,
 ): boolean {
   if (!hide) return true;
 
   let visible = false;
 
-  if (showAgainDate && date >= showAgainDate) {
+  if (visibleFrom && date >= visibleFrom) {
     visible = true;
   }
 
-  if (visible && hideAgainDate && date >= hideAgainDate) {
+  if (visible && visibleUntil && date >= visibleUntil) {
     visible = false;
   }
 
@@ -604,15 +617,15 @@ export function resolveAccessControl(
   const timeLimitMin = creditResult.timeLimitMin;
 
   const showClosedAssessment = resolveVisibility(
-    effectiveRule.afterComplete?.hideQuestions ?? true,
-    effectiveRule.afterComplete?.showQuestionsAgainDate,
-    effectiveRule.afterComplete?.hideQuestionsAgainDate,
+    effectiveRule.afterComplete?.questions?.hidden ?? true,
+    effectiveRule.afterComplete?.questions?.visibleFrom,
+    effectiveRule.afterComplete?.questions?.visibleUntil,
     date,
   );
 
   const showClosedAssessmentScore = resolveVisibility(
-    effectiveRule.afterComplete?.hideScore,
-    effectiveRule.afterComplete?.showScoreAgainDate,
+    effectiveRule.afterComplete?.score?.hidden,
+    effectiveRule.afterComplete?.score?.visibleFrom,
     undefined,
     date,
   );

@@ -214,14 +214,14 @@ export const SprocSyncAssessmentsSchema = z.object({
 
 export const AssessmentAccessControlRuleSchema = z.object({
   // After complete fields
-  after_complete_hide_questions: z.boolean().nullable(),
-  after_complete_hide_questions_again_date: DateFromISOString.nullable(),
-  after_complete_hide_questions_again_date_overridden: z.boolean(),
-  after_complete_hide_score: z.boolean().nullable(),
-  after_complete_show_questions_again_date: DateFromISOString.nullable(),
-  after_complete_show_questions_again_date_overridden: z.boolean(),
-  after_complete_show_score_again_date: DateFromISOString.nullable(),
-  after_complete_show_score_again_date_overridden: z.boolean(),
+  after_complete_questions_hidden: z.boolean().nullable(),
+  after_complete_questions_visible_from: DateFromISOString.nullable(),
+  after_complete_questions_visible_from_overridden: z.boolean(),
+  after_complete_questions_visible_until: DateFromISOString.nullable(),
+  after_complete_questions_visible_until_overridden: z.boolean(),
+  after_complete_score_hidden: z.boolean().nullable(),
+  after_complete_score_visible_from: DateFromISOString.nullable(),
+  after_complete_score_visible_from_overridden: z.boolean(),
 
   assessment_id: IdSchema,
 

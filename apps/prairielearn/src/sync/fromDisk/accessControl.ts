@@ -93,11 +93,11 @@ function prepareRuleRow(
   const passwordField = mapField(dateControl.password);
   const afterLastDeadlineAllowSubmissionsField = mapField(afterLastDeadline?.allowSubmissions);
   const afterLastDeadlineCreditField = mapField(afterLastDeadline?.credit);
-  const hideQuestionsField = mapField(afterComplete.hideQuestions);
-  const showQuestionsAgainDateField = mapField(afterComplete.showQuestionsAgainDate);
-  const hideQuestionsAgainDateField = mapField(afterComplete.hideQuestionsAgainDate);
-  const hideScoreField = mapField(afterComplete.hideScore);
-  const showScoreAgainDateField = mapField(afterComplete.showScoreAgainDate);
+  const questionsHiddenField = mapField(afterComplete.questions?.hidden);
+  const questionsVisibleFromField = mapField(afterComplete.questions?.visibleFrom);
+  const questionsVisibleUntilField = mapField(afterComplete.questions?.visibleUntil);
+  const scoreHiddenField = mapField(afterComplete.score?.hidden);
+  const scoreVisibleFromField = mapField(afterComplete.score?.visibleFrom);
 
   const ruleLabels = rule.labels ?? [];
   const studentLabelIds = ruleLabels
@@ -126,14 +126,14 @@ function prepareRuleRow(
     date_control_duration_minutes: durationMinutesField.value,
     date_control_password_overridden: passwordField.overridden,
     date_control_password: passwordField.value,
-    after_complete_hide_questions: hideQuestionsField.value,
-    after_complete_show_questions_again_date_overridden: showQuestionsAgainDateField.overridden,
-    after_complete_show_questions_again_date: showQuestionsAgainDateField.value,
-    after_complete_hide_questions_again_date_overridden: hideQuestionsAgainDateField.overridden,
-    after_complete_hide_questions_again_date: hideQuestionsAgainDateField.value,
-    after_complete_hide_score: hideScoreField.value,
-    after_complete_show_score_again_date_overridden: showScoreAgainDateField.overridden,
-    after_complete_show_score_again_date: showScoreAgainDateField.value,
+    after_complete_questions_hidden: questionsHiddenField.value,
+    after_complete_questions_visible_from_overridden: questionsVisibleFromField.overridden,
+    after_complete_questions_visible_from: questionsVisibleFromField.value,
+    after_complete_questions_visible_until_overridden: questionsVisibleUntilField.overridden,
+    after_complete_questions_visible_until: questionsVisibleUntilField.value,
+    after_complete_score_hidden: scoreHiddenField.value,
+    after_complete_score_visible_from_overridden: scoreVisibleFromField.overridden,
+    after_complete_score_visible_from: scoreVisibleFromField.value,
   });
 
   // Child data arrays use [assessment_id, rule_number, ...data] format.

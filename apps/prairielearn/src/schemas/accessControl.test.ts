@@ -22,122 +22,140 @@ describe('AccessControlJsonSchema', () => {
     expect(result.dateControl?.durationMinutes).toBeNull();
   });
 
-  describe('afterComplete hideQuestions union', () => {
-    it('accepts hideQuestions: true with date fields', () => {
+  describe('afterComplete questions union', () => {
+    it('accepts hidden: true with date fields', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
-          hideQuestions: true,
-          showQuestionsAgainDate: '2024-03-25T00:00:00',
-          hideQuestionsAgainDate: '2024-03-30T00:00:00',
+          questions: {
+            hidden: true,
+            visibleFrom: '2024-03-25T00:00:00',
+            visibleUntil: '2024-03-30T00:00:00',
+          },
         },
       });
       expect(result.success).toBe(true);
     });
 
-    it('accepts hideQuestions: true without date fields', () => {
+    it('accepts hidden: true without date fields', () => {
       const result = AccessControlJsonSchema.safeParse({
-        afterComplete: { hideQuestions: true },
+        afterComplete: { questions: { hidden: true } },
       });
       expect(result.success).toBe(true);
     });
 
-    it('accepts hideQuestions: false without date fields', () => {
+    it('accepts hidden: false without date fields', () => {
       const result = AccessControlJsonSchema.safeParse({
-        afterComplete: { hideQuestions: false },
+        afterComplete: { questions: { hidden: false } },
       });
       expect(result.success).toBe(true);
     });
 
-    it('accepts hideQuestions: false with null date fields (override clearing)', () => {
+    it('accepts hidden: false with null date fields (override clearing)', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
-          hideQuestions: false,
-          showQuestionsAgainDate: null,
-          hideQuestionsAgainDate: null,
+          questions: {
+            hidden: false,
+            visibleFrom: null,
+            visibleUntil: null,
+          },
         },
       });
       expect(result.success).toBe(true);
     });
 
-    it('rejects hideQuestions: false with non-null showQuestionsAgainDate', () => {
+    it('rejects hidden: false with non-null visibleFrom', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
-          hideQuestions: false,
-          showQuestionsAgainDate: '2024-03-25T00:00:00',
-        },
-      });
-      expect(result.success).toBe(false);
-    });
-
-    it('rejects hideQuestions: false with non-null hideQuestionsAgainDate', () => {
-      const result = AccessControlJsonSchema.safeParse({
-        afterComplete: {
-          hideQuestions: false,
-          hideQuestionsAgainDate: '2024-03-30T00:00:00',
+          questions: {
+            hidden: false,
+            visibleFrom: '2024-03-25T00:00:00',
+          },
         },
       });
       expect(result.success).toBe(false);
     });
 
-    it('allows date fields when hideQuestions is absent (override inheriting boolean)', () => {
+    it('rejects hidden: false with non-null visibleUntil', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
-          showQuestionsAgainDate: '2024-03-25T00:00:00',
+          questions: {
+            hidden: false,
+            visibleUntil: '2024-03-30T00:00:00',
+          },
+        },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('allows date fields when hidden is absent (override inheriting boolean)', () => {
+      const result = AccessControlJsonSchema.safeParse({
+        afterComplete: {
+          questions: {
+            visibleFrom: '2024-03-25T00:00:00',
+          },
         },
       });
       expect(result.success).toBe(true);
     });
   });
 
-  describe('afterComplete hideScore union', () => {
-    it('accepts hideScore: true with showScoreAgainDate', () => {
+  describe('afterComplete score union', () => {
+    it('accepts hidden: true with visibleFrom', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
-          hideScore: true,
-          showScoreAgainDate: '2024-03-25T00:00:00',
+          score: {
+            hidden: true,
+            visibleFrom: '2024-03-25T00:00:00',
+          },
         },
       });
       expect(result.success).toBe(true);
     });
 
-    it('accepts hideScore: true without showScoreAgainDate', () => {
+    it('accepts hidden: true without visibleFrom', () => {
       const result = AccessControlJsonSchema.safeParse({
-        afterComplete: { hideScore: true },
+        afterComplete: { score: { hidden: true } },
       });
       expect(result.success).toBe(true);
     });
 
-    it('accepts hideScore: false without showScoreAgainDate', () => {
+    it('accepts hidden: false without visibleFrom', () => {
       const result = AccessControlJsonSchema.safeParse({
-        afterComplete: { hideScore: false },
+        afterComplete: { score: { hidden: false } },
       });
       expect(result.success).toBe(true);
     });
 
-    it('accepts hideScore: false with null showScoreAgainDate (override clearing)', () => {
+    it('accepts hidden: false with null visibleFrom (override clearing)', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
-          hideScore: false,
-          showScoreAgainDate: null,
+          score: {
+            hidden: false,
+            visibleFrom: null,
+          },
         },
       });
       expect(result.success).toBe(true);
     });
 
-    it('rejects hideScore: false with non-null showScoreAgainDate', () => {
+    it('rejects hidden: false with non-null visibleFrom', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
-          hideScore: false,
-          showScoreAgainDate: '2024-03-25T00:00:00',
+          score: {
+            hidden: false,
+            visibleFrom: '2024-03-25T00:00:00',
+          },
         },
       });
       expect(result.success).toBe(false);
     });
 
-    it('allows showScoreAgainDate when hideScore is absent (override inheriting boolean)', () => {
+    it('allows visibleFrom when hidden is absent (override inheriting boolean)', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
-          showScoreAgainDate: '2024-03-25T00:00:00',
+          score: {
+            visibleFrom: '2024-03-25T00:00:00',
+          },
         },
       });
       expect(result.success).toBe(true);
@@ -145,36 +163,46 @@ describe('AccessControlJsonSchema', () => {
   });
 
   describe('afterComplete combined groups', () => {
-    it('accepts both groups with hideQuestions: true and hideScore: true', () => {
+    it('accepts both groups with questions hidden: true and score hidden: true', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
-          hideQuestions: true,
-          showQuestionsAgainDate: '2024-03-25T00:00:00',
-          hideScore: true,
-          showScoreAgainDate: '2024-03-25T00:00:00',
+          questions: {
+            hidden: true,
+            visibleFrom: '2024-03-25T00:00:00',
+          },
+          score: {
+            hidden: true,
+            visibleFrom: '2024-03-25T00:00:00',
+          },
         },
       });
       expect(result.success).toBe(true);
     });
 
-    it('accepts hideQuestions: false with hideScore: true and date', () => {
+    it('accepts questions hidden: false with score hidden: true and date', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
-          hideQuestions: false,
-          hideScore: true,
-          showScoreAgainDate: '2024-03-25T00:00:00',
+          questions: { hidden: false },
+          score: {
+            hidden: true,
+            visibleFrom: '2024-03-25T00:00:00',
+          },
         },
       });
       expect(result.success).toBe(true);
     });
 
-    it('rejects hideQuestions: false with date even when hideScore is valid', () => {
+    it('rejects questions hidden: false with date even when score is valid', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
-          hideQuestions: false,
-          showQuestionsAgainDate: '2024-03-25T00:00:00',
-          hideScore: true,
-          showScoreAgainDate: '2024-03-25T00:00:00',
+          questions: {
+            hidden: false,
+            visibleFrom: '2024-03-25T00:00:00',
+          },
+          score: {
+            hidden: true,
+            visibleFrom: '2024-03-25T00:00:00',
+          },
         },
       });
       expect(result.success).toBe(false);

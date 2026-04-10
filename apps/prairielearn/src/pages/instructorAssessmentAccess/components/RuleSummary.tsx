@@ -258,17 +258,17 @@ export function generateRuleSummary(
   if ((showAfterComplete || qvNonDefault) && isOverrideFieldActive(rule, 'questionVisibility')) {
     const qv = rule.questionVisibility;
     const qvError =
-      formErrors?.questionVisibility?.showAgainDate?.message ||
-      formErrors?.questionVisibility?.hideAgainDate?.message ||
+      formErrors?.questionVisibility?.visibleFrom?.message ||
+      formErrors?.questionVisibility?.visibleUntil?.message ||
       formErrors?.questionVisibility?.message;
-    if (!qv.hideQuestions) {
+    if (!qv.hidden) {
       items.push({
         key: 'question-visibility',
         icon: 'bi-eye',
         text: 'Questions visible after completion',
         error: qvError,
       });
-    } else if (qv.showAgainDate && qv.hideAgainDate) {
+    } else if (qv.visibleFrom && qv.visibleUntil) {
       items.push({
         key: 'question-visibility',
         icon: 'bi-eye-slash',
@@ -276,14 +276,14 @@ export function generateRuleSummary(
           <>
             Questions hidden after completion, shown{' '}
             <FriendlyDate
-              date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+              date={Temporal.PlainDateTime.from(qv.visibleFrom)}
               timezone={displayTimezone}
               options={{ includeTz: false }}
               tooltip
             />
             {' – '}
             <FriendlyDate
-              date={Temporal.PlainDateTime.from(qv.hideAgainDate)}
+              date={Temporal.PlainDateTime.from(qv.visibleUntil)}
               timezone={displayTimezone}
               options={{ includeTz: false }}
               tooltip
@@ -292,7 +292,7 @@ export function generateRuleSummary(
         ),
         error: qvError,
       });
-    } else if (qv.showAgainDate) {
+    } else if (qv.visibleFrom) {
       items.push({
         key: 'question-visibility',
         icon: 'bi-eye-slash',
@@ -300,7 +300,7 @@ export function generateRuleSummary(
           <>
             Questions hidden after completion until{' '}
             <FriendlyDate
-              date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+              date={Temporal.PlainDateTime.from(qv.visibleFrom)}
               timezone={displayTimezone}
               options={{ includeTz: false }}
               tooltip
@@ -321,8 +321,8 @@ export function generateRuleSummary(
   if ((showAfterComplete || svNonDefault) && isOverrideFieldActive(rule, 'scoreVisibility')) {
     const sv = rule.scoreVisibility;
     const svError =
-      formErrors?.scoreVisibility?.showAgainDate?.message || formErrors?.scoreVisibility?.message;
-    if (sv.hideScore && sv.showAgainDate) {
+      formErrors?.scoreVisibility?.visibleFrom?.message || formErrors?.scoreVisibility?.message;
+    if (sv.hidden && sv.visibleFrom) {
       items.push({
         key: 'score-visibility',
         icon: 'bi-eye-slash',
@@ -330,7 +330,7 @@ export function generateRuleSummary(
           <>
             Score hidden after completion until{' '}
             <FriendlyDate
-              date={Temporal.PlainDateTime.from(sv.showAgainDate)}
+              date={Temporal.PlainDateTime.from(sv.visibleFrom)}
               timezone={displayTimezone}
               options={{ includeTz: false }}
               tooltip
@@ -339,7 +339,7 @@ export function generateRuleSummary(
         ),
         error: svError,
       });
-    } else if (sv.hideScore) {
+    } else if (sv.hidden) {
       items.push({
         key: 'score-visibility',
         icon: 'bi-eye-slash',
@@ -507,25 +507,25 @@ function generateOverrideFieldItems(
   if (overriddenFields.has('questionVisibility')) {
     const qv = rule.questionVisibility;
     const qvError =
-      formErrors?.questionVisibility?.showAgainDate?.message ||
-      formErrors?.questionVisibility?.hideAgainDate?.message ||
+      formErrors?.questionVisibility?.visibleFrom?.message ||
+      formErrors?.questionVisibility?.visibleUntil?.message ||
       formErrors?.questionVisibility?.message;
-    if (qv.hideQuestions) {
-      if (qv.showAgainDate && qv.hideAgainDate) {
+    if (qv.hidden) {
+      if (qv.visibleFrom && qv.visibleUntil) {
         items.push({
           label: 'Question visibility',
           value: (
             <>
               Hidden, shown again{' '}
               <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+                date={Temporal.PlainDateTime.from(qv.visibleFrom)}
                 timezone={displayTimezone}
                 options={{ includeTz: false }}
                 tooltip
               />
               , hidden again{' '}
               <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.hideAgainDate)}
+                date={Temporal.PlainDateTime.from(qv.visibleUntil)}
                 timezone={displayTimezone}
                 options={{ includeTz: false }}
                 tooltip
@@ -534,14 +534,14 @@ function generateOverrideFieldItems(
           ),
           error: qvError,
         });
-      } else if (qv.showAgainDate) {
+      } else if (qv.visibleFrom) {
         items.push({
           label: 'Question visibility',
           value: (
             <>
               Hidden, shown again{' '}
               <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+                date={Temporal.PlainDateTime.from(qv.visibleFrom)}
                 timezone={displayTimezone}
                 options={{ includeTz: false }}
                 tooltip
@@ -569,16 +569,16 @@ function generateOverrideFieldItems(
   if (overriddenFields.has('scoreVisibility')) {
     const sv = rule.scoreVisibility;
     const svError =
-      formErrors?.scoreVisibility?.showAgainDate?.message || formErrors?.scoreVisibility?.message;
-    if (sv.hideScore) {
-      if (sv.showAgainDate) {
+      formErrors?.scoreVisibility?.visibleFrom?.message || formErrors?.scoreVisibility?.message;
+    if (sv.hidden) {
+      if (sv.visibleFrom) {
         items.push({
           label: 'Score visibility',
           value: (
             <>
               Hidden, shown again{' '}
               <FriendlyDate
-                date={Temporal.PlainDateTime.from(sv.showAgainDate)}
+                date={Temporal.PlainDateTime.from(sv.visibleFrom)}
                 timezone={displayTimezone}
                 options={{ includeTz: false }}
                 tooltip

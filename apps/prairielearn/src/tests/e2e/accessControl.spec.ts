@@ -235,7 +235,7 @@ test.describe('Access control UI', () => {
     const records = await getAccessControlRecords(assessment.id);
     const sectionARule = records.find((r) => r.number > 0);
     expect(sectionARule?.date_control_duration_minutes).toBe(60);
-    expect(sectionARule?.after_complete_hide_questions).toBe(true);
+    expect(sectionARule?.after_complete_questions_hidden).toBe(true);
 
     // Verify disk: Section A override has duration and afterComplete
     const json = await readAssessmentJson(testCoursePath);
@@ -243,6 +243,6 @@ test.describe('Access control UI', () => {
       r.labels?.includes('Section A'),
     );
     expect(sectionAJson.dateControl.durationMinutes).toBe(60);
-    expect(sectionAJson.afterComplete.hideQuestions).toBe(true);
+    expect(sectionAJson.afterComplete.questions.hidden).toBe(true);
   });
 });

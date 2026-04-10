@@ -49,14 +49,14 @@ export interface EnrollmentAccessControlRuleData {
   durationMinutes: number | null;
   passwordOverridden: boolean;
   password: string | null;
-  hideQuestions: boolean | null;
-  showQuestionsAgainDateOverridden: boolean;
-  showQuestionsAgainDate: string | null;
-  hideQuestionsAgainDateOverridden: boolean;
-  hideQuestionsAgainDate: string | null;
-  hideScore: boolean | null;
-  showScoreAgainDateOverridden: boolean;
-  showScoreAgainDate: string | null;
+  questionsHidden: boolean | null;
+  questionsVisibleFromOverridden: boolean;
+  questionsVisibleFrom: string | null;
+  questionsVisibleUntilOverridden: boolean;
+  questionsVisibleUntil: string | null;
+  scoreHidden: boolean | null;
+  scoreVisibleFromOverridden: boolean;
+  scoreVisibleFrom: string | null;
   earlyDeadlines: { date: string; credit: number }[];
   lateDeadlines: { date: string; credit: number }[];
 }
@@ -144,31 +144,36 @@ function dbBaseRowToAccessControlJson(
     dateControl.password = rule.date_control_password;
   }
 
+  const questions: NonNullable<AccessControlJson['afterComplete']>['questions'] = {};
+  if (rule.after_complete_questions_hidden !== null) {
+    questions.hidden = rule.after_complete_questions_hidden;
+  }
+  // Only emit date fields when hidden is not explicitly false.
+  // When hidden is false, dates are irrelevant (questions are always shown).
+  if (rule.after_complete_questions_hidden !== false) {
+    if (rule.after_complete_questions_visible_from_overridden) {
+      questions.visibleFrom = rule.after_complete_questions_visible_from?.toISOString() ?? null;
+    }
+    if (rule.after_complete_questions_visible_until_overridden) {
+      questions.visibleUntil = rule.after_complete_questions_visible_until?.toISOString() ?? null;
+    }
+  }
+  const score: NonNullable<AccessControlJson['afterComplete']>['score'] = {};
+  if (rule.after_complete_score_hidden !== null) {
+    score.hidden = rule.after_complete_score_hidden;
+  }
+  // Only emit date field when hidden is not explicitly false.
+  if (rule.after_complete_score_hidden !== false) {
+    if (rule.after_complete_score_visible_from_overridden) {
+      score.visibleFrom = rule.after_complete_score_visible_from?.toISOString() ?? null;
+    }
+  }
   const afterComplete: AccessControlJson['afterComplete'] = {};
-  if (rule.after_complete_hide_questions !== null) {
-    afterComplete.hideQuestions = rule.after_complete_hide_questions;
+  if (Object.keys(questions).length > 0) {
+    afterComplete.questions = questions;
   }
-  // Only emit date fields when hideQuestions is not explicitly false.
-  // When hideQuestions is false, dates are irrelevant (questions are always shown).
-  if (rule.after_complete_hide_questions !== false) {
-    if (rule.after_complete_show_questions_again_date_overridden) {
-      afterComplete.showQuestionsAgainDate =
-        rule.after_complete_show_questions_again_date?.toISOString() ?? null;
-    }
-    if (rule.after_complete_hide_questions_again_date_overridden) {
-      afterComplete.hideQuestionsAgainDate =
-        rule.after_complete_hide_questions_again_date?.toISOString() ?? null;
-    }
-  }
-  if (rule.after_complete_hide_score !== null) {
-    afterComplete.hideScore = rule.after_complete_hide_score;
-  }
-  // Only emit date field when hideScore is not explicitly false.
-  if (rule.after_complete_hide_score !== false) {
-    if (rule.after_complete_show_score_again_date_overridden) {
-      afterComplete.showScoreAgainDate =
-        rule.after_complete_show_score_again_date?.toISOString() ?? null;
-    }
+  if (Object.keys(score).length > 0) {
+    afterComplete.score = score;
   }
 
   const isMainRule = rule.number === 0 && rule.target_type === 'none';
@@ -258,14 +263,14 @@ export async function syncEnrollmentAccessControl(
     date_control_duration_minutes: ruleData.durationMinutes,
     date_control_password_overridden: ruleData.passwordOverridden,
     date_control_password: ruleData.password,
-    after_complete_hide_questions: ruleData.hideQuestions,
-    after_complete_show_questions_again_date_overridden: ruleData.showQuestionsAgainDateOverridden,
-    after_complete_show_questions_again_date: ruleData.showQuestionsAgainDate,
-    after_complete_hide_questions_again_date_overridden: ruleData.hideQuestionsAgainDateOverridden,
-    after_complete_hide_questions_again_date: ruleData.hideQuestionsAgainDate,
-    after_complete_hide_score: ruleData.hideScore,
-    after_complete_show_score_again_date_overridden: ruleData.showScoreAgainDateOverridden,
-    after_complete_show_score_again_date: ruleData.showScoreAgainDate,
+    after_complete_questions_hidden: ruleData.questionsHidden,
+    after_complete_questions_visible_from_overridden: ruleData.questionsVisibleFromOverridden,
+    after_complete_questions_visible_from: ruleData.questionsVisibleFrom,
+    after_complete_questions_visible_until_overridden: ruleData.questionsVisibleUntilOverridden,
+    after_complete_questions_visible_until: ruleData.questionsVisibleUntil,
+    after_complete_score_hidden: ruleData.scoreHidden,
+    after_complete_score_visible_from_overridden: ruleData.scoreVisibleFromOverridden,
+    after_complete_score_visible_from: ruleData.scoreVisibleFrom,
   });
 
   const earlyDeadlinesJson = ruleData.earlyDeadlines.map((d) =>
