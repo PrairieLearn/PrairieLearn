@@ -255,12 +255,11 @@ export function ExamQuestionStatus({
   realTimeGradingPartiallyDisabled,
   allowGradeLeftMs,
 }: {
-  instance_question: { status: InstanceQuestion['status'] };
-  assessment_question: {
-    max_auto_points: AssessmentQuestion['max_auto_points'];
-    max_manual_points: AssessmentQuestion['max_manual_points'];
-    allow_real_time_grading: AssessmentQuestion['allow_real_time_grading'];
-  };
+  instance_question: Pick<InstanceQuestion, 'status'>;
+  assessment_question: Pick<
+    AssessmentQuestion,
+    'max_auto_points' | 'max_manual_points' | 'allow_real_time_grading'
+  >;
   /**
    * On exam with mixed real-time grading settings, this flag allows us to
    * differentiate between questions that are saved and which can be graded by
@@ -391,19 +390,19 @@ export function InstanceQuestionPoints({
   assessment_question,
   component,
 }: {
-  instance_question: {
-    auto_points: InstanceQuestion['auto_points'];
-    manual_points: InstanceQuestion['manual_points'];
-    points: InstanceQuestion['points'];
-    status: InstanceQuestion['status'];
-    requires_manual_grading: InstanceQuestion['requires_manual_grading'];
-    last_grader: InstanceQuestion['last_grader'];
-  };
-  assessment_question: {
-    max_auto_points: AssessmentQuestion['max_auto_points'];
-    max_manual_points: AssessmentQuestion['max_manual_points'];
-    max_points: AssessmentQuestion['max_points'];
-  };
+  instance_question: Pick<
+    InstanceQuestion,
+    | 'auto_points'
+    | 'manual_points'
+    | 'points'
+    | 'status'
+    | 'requires_manual_grading'
+    | 'last_grader'
+  >;
+  assessment_question: Pick<
+    AssessmentQuestion,
+    'max_auto_points' | 'max_manual_points' | 'max_points'
+  >;
   component: 'manual' | 'auto' | 'total';
 }) {
   const points =
