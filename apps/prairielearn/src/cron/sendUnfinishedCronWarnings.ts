@@ -5,6 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { CronJobSchema } from '../lib/db-types.js';
 import * as opsbot from '../lib/opsbot.js';
+
 import { jobs } from './index.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
