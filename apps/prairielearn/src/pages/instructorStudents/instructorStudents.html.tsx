@@ -714,11 +714,7 @@ function StudentsCard({
             name: row.user?.name ?? null,
             email: row.user?.email ?? null,
             enrollment_status: row.enrollment.status,
-            first_joined_at: row.enrollment.first_joined_at
-              ? formatDate(row.enrollment.first_joined_at, course.display_timezone, {
-                  includeTz: false,
-                })
-              : null,
+            first_joined_at: row.enrollment.first_joined_at?.toISOString() ?? null,
             labels:
               row.student_label_ids.length > 0
                 ? row.student_label_ids
