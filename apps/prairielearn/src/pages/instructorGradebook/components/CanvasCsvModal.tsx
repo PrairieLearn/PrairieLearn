@@ -180,7 +180,6 @@ function CanvasCsvModalContent({
         // first student who has a score for this assessment.
 
         const scoreWithMax = validRows.find(
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           (r) => r.scores[a.assessment_id]?.max_points != null,
         );
 
@@ -201,7 +200,6 @@ function CanvasCsvModalContent({
         null,
         ...selectedAssessments.map((a) => {
           const scoreData = row.scores[a.assessment_id];
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           if (!scoreData) return null;
 
           switch (scoreFormat) {
