@@ -1,4 +1,7 @@
 /* eslint-disable @eslint-react/dom-no-dangerously-set-innerhtml -- Pre-rendered HTML from shared template components */
+import { useState } from 'react';
+import { Modal } from 'react-bootstrap';
+
 import { Scorebar } from '../../../components/Scorebar.js';
 import { formatPoints } from '../../../lib/format.js';
 
@@ -29,10 +32,17 @@ export function StudentAssessmentInstanceBody({
   suspendedSavedAnswers,
   zoneTitleColspan,
   firstUncrossedLockpointZoneNumber,
+  allQuestionsAnswered,
   urlPrefix,
   csrfToken,
   userGroupRoles,
+  isGroupAssessment,
+  showTimeLimitExpiredModal,
 }: StudentAssessmentInstanceBodyProps) {
+  const [showConfirmFinish, setShowConfirmFinish] = useState(false);
+  const [showTimeLimitExpired, setShowTimeLimitExpired] = useState(showTimeLimitExpiredModal);
+  const [activeLockpointZoneId, setActiveLockpointZoneId] = useState<string | null>(null);
+  const [lockpointConfirmed, setLockpointConfirmed] = useState(false);
   const { active, authorizedEdit, creditDateString, hasPassword, showClosedAssessment } =
     authzResult;
 
@@ -183,6 +193,10 @@ export function StudentAssessmentInstanceBody({
                 userGroupRoles={userGroupRoles}
                 isLockpointCrossable={isLockpointCrossable}
                 hasUnmetAdvanceScorePercBeforeLockpoint={hasUnmetAdvanceScorePercBeforeLockpoint}
+                onCrossLockpoint={(zoneId) => {
+                  setActiveLockpointZoneId(zoneId);
+                  setLockpointConfirmed(false);
+                }}
               />
             </tbody>
           </table>
@@ -200,6 +214,7 @@ export function StudentAssessmentInstanceBody({
                 hasPassword={hasPassword}
                 showClosedAssessment={showClosedAssessment}
                 csrfToken={csrfToken}
+                onFinish={() => setShowConfirmFinish(true)}
               />
             )}
             {showUnauthorizedEditWarning && (
@@ -211,6 +226,28 @@ export function StudentAssessmentInstanceBody({
           </div>
         )}
       </div>
+
+      <ConfirmFinishModal
+        show={showConfirmFinish}
+        allQuestionsAnswered={allQuestionsAnswered}
+        csrfToken={csrfToken}
+        onHide={() => setShowConfirmFinish(false)}
+      />
+
+      <CrossLockpointModal
+        show={activeLockpointZoneId != null}
+        zoneId={activeLockpointZoneId}
+        isGroupAssessment={isGroupAssessment}
+        confirmed={lockpointConfirmed}
+        csrfToken={csrfToken}
+        onHide={() => setActiveLockpointZoneId(null)}
+        onConfirmChange={setLockpointConfirmed}
+      />
+
+      <TimeLimitExpiredModalReact
+        show={showTimeLimitExpired}
+        onHide={() => setShowTimeLimitExpired(false)}
+      />
     </>
   );
 }
@@ -426,6 +463,7 @@ function QuestionTableBody({
   userGroupRoles,
   isLockpointCrossable,
   hasUnmetAdvanceScorePercBeforeLockpoint,
+  onCrossLockpoint,
 }: {
   questionRows: ClientQuestionRow[];
   rowRenderedHtml: RowRenderedHtml[];
@@ -439,6 +477,7 @@ function QuestionTableBody({
   userGroupRoles: string | null;
   isLockpointCrossable: (row: ClientQuestionRow) => boolean;
   hasUnmetAdvanceScorePercBeforeLockpoint: (zoneNumber: number) => boolean;
+  onCrossLockpoint: (zoneId: string) => void;
 }) {
   let previousZoneHadInfo = false;
 
@@ -484,6 +523,7 @@ function QuestionTableBody({
             userGroupRoles={userGroupRoles}
             isLockpointCrossable={isLockpointCrossable}
             hasUnmetAdvanceScorePercBeforeLockpoint={hasUnmetAdvanceScorePercBeforeLockpoint}
+            onCrossLockpoint={onCrossLockpoint}
           />
         );
       })}
@@ -508,6 +548,7 @@ function QuestionRowGroup({
   userGroupRoles,
   isLockpointCrossable,
   hasUnmetAdvanceScorePercBeforeLockpoint,
+  onCrossLockpoint,
 }: {
   row: ClientQuestionRow;
   rendered: RowRenderedHtml;
@@ -525,6 +566,7 @@ function QuestionRowGroup({
   userGroupRoles: string | null;
   isLockpointCrossable: (row: ClientQuestionRow) => boolean;
   hasUnmetAdvanceScorePercBeforeLockpoint: (zoneNumber: number) => boolean;
+  onCrossLockpoint: (zoneId: string) => void;
 }) {
   const hasStatusColumn = assessmentType === 'Exam';
 
@@ -536,6 +578,7 @@ function QuestionRowGroup({
           colspan={zoneTitleColspan}
           crossable={isLockpointCrossable(row)}
           blockedByAdvanceScorePerc={hasUnmetAdvanceScorePercBeforeLockpoint(row.zoneNumber)}
+          onCrossLockpoint={onCrossLockpoint}
         />
       )}
       {showZoneInfo && (
@@ -735,11 +778,13 @@ function LockpointRow({
   colspan,
   crossable,
   blockedByAdvanceScorePerc,
+  onCrossLockpoint,
 }: {
   row: ClientQuestionRow;
   colspan: number;
   crossable: boolean;
   blockedByAdvanceScorePerc: boolean;
+  onCrossLockpoint: (zoneId: string) => void;
 }) {
   if (row.lockpointCrossed) {
     return (
@@ -774,8 +819,7 @@ function LockpointRow({
             <button
               type="button"
               className="btn btn-warning btn-sm text-nowrap"
-              data-bs-toggle="modal"
-              data-bs-target={`#crossLockpointModal-${row.zoneId}`}
+              onClick={() => onCrossLockpoint(row.zoneId)}
             >
               Proceed to next questions
             </button>
@@ -891,6 +935,7 @@ function ExamFooterContent({
   hasPassword,
   showClosedAssessment,
   csrfToken,
+  onFinish,
 }: {
   someQuestionsAllowRealTimeGrading: boolean;
   someQuestionsForbidRealTimeGrading: boolean;
@@ -900,6 +945,7 @@ function ExamFooterContent({
   hasPassword: boolean;
   showClosedAssessment: boolean;
   csrfToken: string;
+  onFinish: () => void;
 }) {
   if (someQuestionsAllowRealTimeGrading) {
     return (
@@ -950,8 +996,7 @@ function ExamFooterContent({
                 className="btn btn-danger"
                 disabled={!authorizedEdit}
                 type="button"
-                data-bs-toggle="modal"
-                data-bs-target="#confirmFinishModal"
+                onClick={onFinish}
               >
                 Finish assessment
               </button>
@@ -979,12 +1024,142 @@ function ExamFooterContent({
           className="btn btn-danger"
           disabled={!authorizedEdit}
           type="button"
-          data-bs-toggle="modal"
-          data-bs-target="#confirmFinishModal"
+          onClick={onFinish}
         >
           Finish assessment
         </button>
       </li>
     </ul>
+  );
+}
+
+// ============================================================
+// React-Bootstrap modals
+// ============================================================
+
+function ConfirmFinishModal({
+  show,
+  onHide,
+  allQuestionsAnswered,
+  csrfToken,
+}: {
+  show: boolean;
+  onHide: () => void;
+  allQuestionsAnswered: boolean;
+  csrfToken: string;
+}) {
+  return (
+    <Modal show={show} onHide={onHide}>
+      <form method="POST">
+        <Modal.Header closeButton>
+          <Modal.Title>All done?</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {!allQuestionsAnswered && (
+            <div className="alert alert-warning">There are still unanswered questions.</div>
+          )}
+          <p className="text-danger">
+            <strong>Warning</strong>: You will not be able to answer any more questions after
+            finishing the assessment.
+          </p>
+          <p>Are you sure you want to finish, complete, and close out the assessment?</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <input type="hidden" name="__csrf_token" value={csrfToken} />
+          <button type="button" className="btn btn-secondary" onClick={onHide}>
+            Cancel
+          </button>
+          <button type="submit" className="btn btn-danger" name="__action" value="finish">
+            Finish assessment
+          </button>
+        </Modal.Footer>
+      </form>
+    </Modal>
+  );
+}
+
+function CrossLockpointModal({
+  show,
+  onHide,
+  zoneId,
+  isGroupAssessment,
+  confirmed,
+  onConfirmChange,
+  csrfToken,
+}: {
+  show: boolean;
+  onHide: () => void;
+  zoneId: string | null;
+  isGroupAssessment: boolean;
+  confirmed: boolean;
+  onConfirmChange: (confirmed: boolean) => void;
+  csrfToken: string;
+}) {
+  return (
+    <Modal show={show} onHide={onHide}>
+      <form method="POST">
+        <Modal.Header closeButton>
+          <Modal.Title>Proceed to next questions?</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>
+            After proceeding, you will not be able to submit answers to previous questions. You can
+            still review your previous submissions.
+          </p>
+          {isGroupAssessment && (
+            <p className="fw-bold">
+              This will affect all group members. No one in your group will be able to submit
+              answers to previous questions.
+            </p>
+          )}
+          <div className="form-check">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              id="lockpoint-confirm"
+              checked={confirmed}
+              onChange={(e) => onConfirmChange(e.target.checked)}
+            />
+            <label className="form-check-label" htmlFor="lockpoint-confirm">
+              I understand that I will not be able to submit answers to previous questions
+            </label>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <input type="hidden" name="__csrf_token" value={csrfToken} />
+          <input type="hidden" name="zone_id" value={zoneId ?? ''} />
+          <button type="button" className="btn btn-secondary" onClick={onHide}>
+            Cancel
+          </button>
+          <button
+            type="submit"
+            name="__action"
+            value="cross_lockpoint"
+            className="btn btn-warning"
+            disabled={!confirmed}
+          >
+            Confirm
+          </button>
+        </Modal.Footer>
+      </form>
+    </Modal>
+  );
+}
+
+function TimeLimitExpiredModalReact({ show, onHide }: { show: boolean; onHide: () => void }) {
+  return (
+    <Modal show={show} onHide={onHide}>
+      <Modal.Header closeButton>
+        <Modal.Title>Time limit expired</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <p>Your time limit expired and your assessment is now finished.</p>
+      </Modal.Body>
+      <Modal.Footer>
+        <button type="button" className="btn btn-primary" onClick={onHide}>
+          OK
+        </button>
+      </Modal.Footer>
+    </Modal>
   );
 }

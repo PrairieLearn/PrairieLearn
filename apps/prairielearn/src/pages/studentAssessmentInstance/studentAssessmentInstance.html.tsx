@@ -13,7 +13,6 @@ import {
 } from '../../components/AssessmentRegenerate.js';
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
-import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
 import {
@@ -23,7 +22,6 @@ import {
   QuestionVariantHistory,
 } from '../../components/QuestionScore.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.js';
-import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   StudentAssessmentInstanceAuthzResultSchema,
@@ -156,30 +154,6 @@ export function StudentAssessmentInstance({
     .filter((row) => row.start_new_zone && row.zone.lockpoint && !row.lockpoint_crossed)
     .map((row) => row.zone.number)
     .sort((a, b) => a - b)[0];
-
-  const hasUnmetAdvanceScorePercBeforeLockpoint = (zoneNumber: number) =>
-    instance_question_rows.some(
-      (row) =>
-        row.question_access_mode === 'blocked_sequence' &&
-        (row.zone.number < zoneNumber || (row.zone.number === zoneNumber && row.start_new_zone)),
-    );
-
-  const isLockpointCrossable = (row: InstanceQuestionRow) =>
-    resLocals.assessment_instance.open &&
-    resLocals.authz_result.active &&
-    resLocals.authz_result.authorized_edit &&
-    row.zone.lockpoint &&
-    !row.lockpoint_crossed &&
-    row.zone.number === firstUncrossedLockpointZoneNumber &&
-    !hasUnmetAdvanceScorePercBeforeLockpoint(row.zone.number);
-
-  const crossableLockpointRows = instance_question_rows.filter(
-    (row) =>
-      row.start_new_zone &&
-      row.zone.lockpoint &&
-      !row.lockpoint_crossed &&
-      isLockpointCrossable(row),
-  );
 
   // Pre-render shared HTML-template components for the question table cells.
   const rowRenderedHtml: RowRenderedHtml[] = instance_question_rows.map((row) => {
@@ -332,6 +306,9 @@ export function StudentAssessmentInstance({
     zoneQuestionCount: row.zone_question_count,
   }));
 
+  const allQuestionsAnswered = instance_question_rows.every(
+    (row) => row.instance_question.status !== 'unanswered',
+  );
   const assessment = StudentAssessmentSchema.parse(resLocals.assessment);
   const assessmentSet = StudentAssessmentSetSchema.parse(resLocals.assessment_set);
   const assessmentInstance = StudentAssessmentInstanceSchema.parse(resLocals.assessment_instance);
@@ -361,65 +338,9 @@ export function StudentAssessmentInstance({
           )}`
         : ''}
     `,
-    preContent: html`
-      ${userCanDeleteAssessmentInstance
-        ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
-        : ''}
-      ${resLocals.assessment.type === 'Exam'
-        ? ConfirmFinishModalHtml({
-            instance_question_rows,
-            csrfToken: resLocals.__csrf_token,
-          })
-        : ''}
-      ${crossableLockpointRows.map((row) =>
-        Modal({
-          id: `crossLockpointModal-${row.zone.id}`,
-          title: 'Proceed to next questions?',
-          body: html`
-            <p>
-              After proceeding, you will not be able to submit answers to previous questions. You
-              can still review your previous submissions.
-            </p>
-            ${groupConfig != null
-              ? html`
-                  <p class="fw-bold">
-                    This will affect all group members. No one in your group will be able to submit
-                    answers to previous questions.
-                  </p>
-                `
-              : ''}
-            <div class="form-check">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                id="lockpoint-confirm-${row.zone.id}"
-                onchange="document.getElementById('lockpoint-submit-${row.zone
-                  .id}').disabled = !this.checked"
-              />
-              <label class="form-check-label" for="lockpoint-confirm-${row.zone.id}">
-                I understand that I will not be able to submit answers to previous questions
-              </label>
-            </div>
-          `,
-          footer: html`
-            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <input type="hidden" name="zone_id" value="${row.zone.id}" />
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button
-              type="submit"
-              name="__action"
-              value="cross_lockpoint"
-              class="btn btn-warning"
-              id="lockpoint-submit-${row.zone.id}"
-              disabled
-            >
-              Confirm
-            </button>
-          `,
-        }),
-      )}
-      ${showTimeLimitExpiredModal ? TimeLimitExpiredModal({ showAutomatically: true }) : ''}
-    `,
+    preContent: userCanDeleteAssessmentInstance
+      ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
+      : '',
     content: (
       <>
         {userCanDeleteAssessmentInstance && (
@@ -446,9 +367,12 @@ export function StudentAssessmentInstance({
             suspendedSavedAnswers={suspendedSavedAnswers}
             zoneTitleColspan={zoneTitleColspan}
             firstUncrossedLockpointZoneNumber={firstUncrossedLockpointZoneNumber}
+            allQuestionsAnswered={allQuestionsAnswered}
             urlPrefix={resLocals.urlPrefix}
             csrfToken={resLocals.__csrf_token}
             userGroupRoles={userGroupRoles}
+            isGroupAssessment={isGroupAssessment}
+            showTimeLimitExpiredModal={showTimeLimitExpiredModal}
           />
         </Hydrate>
         {resLocals.assessment.allow_personal_notes && (
@@ -486,38 +410,5 @@ export function StudentAssessmentInstance({
         />
       </>
     ),
-  });
-}
-
-function ConfirmFinishModalHtml({
-  instance_question_rows,
-  csrfToken,
-}: {
-  instance_question_rows: InstanceQuestionRow[];
-  csrfToken: string;
-}) {
-  const allQuestionsAnswered = instance_question_rows.every(
-    (row) => row.instance_question.status !== 'unanswered',
-  );
-  return Modal({
-    id: 'confirmFinishModal',
-    title: 'All done?',
-    body: html`
-      ${!allQuestionsAnswered
-        ? html`<div class="alert alert-warning">There are still unanswered questions.</div>`
-        : ''}
-      <p class="text-danger">
-        <strong>Warning</strong>: You will not be able to answer any more questions after finishing
-        the assessment.
-      </p>
-      <p>Are you sure you want to finish, complete, and close out the assessment?</p>
-    `,
-    footer: html`
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" data-bs-dismiss="modal" class="btn btn-secondary">Cancel</button>
-      <button type="submit" class="btn btn-danger" name="__action" value="finish">
-        Finish assessment
-      </button>
-    `,
   });
 }

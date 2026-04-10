@@ -16,7 +16,7 @@ export const StudentAssessmentInstanceSchema = RawStudentAssessmentInstanceSchem
     return data;
   },
 );
-type StudentAssessmentInstance = z.infer<typeof StudentAssessmentInstanceSchema>;
+export type StudentAssessmentInstance = z.infer<typeof StudentAssessmentInstanceSchema>;
 
 // Client-safe row type for the hydrated component. This mirrors the fields
 // from InstanceQuestionRow that the client actually needs, without pulling
@@ -79,8 +79,11 @@ export interface StudentAssessmentInstanceBodyProps {
   suspendedSavedAnswers: number;
   zoneTitleColspan: number;
   firstUncrossedLockpointZoneNumber: number | undefined;
+  allQuestionsAnswered: boolean;
 
   urlPrefix: string;
   csrfToken: string;
   userGroupRoles: string | null;
+  isGroupAssessment: boolean;
+  showTimeLimitExpiredModal: boolean;
 }
