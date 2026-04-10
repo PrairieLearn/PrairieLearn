@@ -482,9 +482,7 @@ function AddUsersModal({
               </div>
             </>
           )}
-          {appError && (
-            <div className="alert alert-danger mt-3 mb-0">{appError.message}</div>
-          )}
+          {appError && <div className="alert alert-danger mt-3 mb-0">{appError.message}</div>}
           {LEARN_MORE_LINK}
         </Modal.Body>
         <Modal.Footer>
@@ -569,9 +567,7 @@ function BulkDeleteModal({
             <li key={u.user.id}>{u.user.name ?? u.user.uid}</li>
           ))}
         </ul>
-        {appError && (
-          <div className="alert alert-danger mt-3 mb-0">{appError.message}</div>
-        )}
+        {appError && <div className="alert alert-danger mt-3 mb-0">{appError.message}</div>}
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onHide}>
@@ -699,9 +695,7 @@ function BulkEditAccessModal({
             </div>
           </>
         )}
-        {appError && (
-          <div className="alert alert-danger mt-3 mb-0">{appError.message}</div>
-        )}
+        {appError && <div className="alert alert-danger mt-3 mb-0">{appError.message}</div>}
         {LEARN_MORE_LINK}
       </Modal.Body>
       <Modal.Footer>
