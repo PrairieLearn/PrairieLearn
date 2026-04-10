@@ -1,12 +1,19 @@
 import { Router } from 'express';
+import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/react/server';
 
+import { PageLayout } from '../../components/PageLayout.js';
 import { resolveModernAssessmentAccessBatch } from '../../lib/assessment-access-control/authz.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import logPageView from '../../middlewares/logPageView.js';
 
-import { StudentAssessments, StudentAssessmentsRowSchema } from './studentAssessments.html.js';
+import {
+  StudentAssessmentsTable,
+  StudentAssessmentsTableRowSchema,
+} from './components/StudentAssessmentsTable.js';
+import { StudentAssessmentsRowSchema } from './studentAssessments.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -59,7 +66,42 @@ router.get(
         return row.authorized || (row.show_before_release ?? false);
       });
 
-    res.send(StudentAssessments({ resLocals: res.locals, rows: rowsWithAccessDisplay }));
+    const { authz_data, course_instance } = res.locals;
+    const safeRows = z.array(StudentAssessmentsTableRowSchema).parse(rowsWithAccessDisplay);
+
+    res.send(
+      PageLayout({
+        resLocals: res.locals,
+        pageTitle: 'Assessments',
+        navContext: {
+          type: 'student',
+          page: 'assessments',
+        },
+        content: (
+          <>
+            <div className="card mb-4">
+              <div className="card-header bg-primary text-white">
+                <h1>Assessments</h1>
+              </div>
+              <Hydrate>
+                <StudentAssessmentsTable
+                  rows={safeRows}
+                  courseInstanceId={course_instance.id}
+                  displayTimezone={course_instance.display_timezone}
+                />
+              </Hydrate>
+            </div>
+            {authz_data.mode === 'Exam' && (
+              <p>
+                Don't see your exam? Exams for this course are only made available to students with
+                checked-in exam reservations who have clicked the "Start exam" button in PrairieTest.
+                See a proctor for assistance.
+              </p>
+            )}
+          </>
+        ),
+      }),
+    );
   }),
 );
 
