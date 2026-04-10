@@ -428,14 +428,21 @@ export function MainAfterCompleteForm({
   });
   const hasPrairieTest = prairieTestExams.length > 0;
 
-  const dateControlEnabled = useWatch<AccessControlFormData, 'mainRule.dateControlEnabled'>({
-    name: 'mainRule.dateControlEnabled',
+  const dueDate = useWatch<AccessControlFormData, 'mainRule.dueDate'>({
+    name: 'mainRule.dueDate',
   });
+  const lateDeadlines = useWatch<AccessControlFormData, 'mainRule.lateDeadlines'>({
+    name: 'mainRule.lateDeadlines',
+  });
+  const durationMinutes = useWatch<AccessControlFormData, 'mainRule.durationMinutes'>({
+    name: 'mainRule.durationMinutes',
+  });
+  const hasCompletionMechanism =
+    hasPrairieTest || dueDate != null || lateDeadlines.length > 0 || durationMinutes != null;
 
   const qvNonDefault = isNonDefaultQuestionVisibility(qvField.value);
   const svNonDefault = isNonDefaultScoreVisibility(svField.value);
-  const showNoCompletionWarning =
-    !dateControlEnabled && !hasPrairieTest && (qvNonDefault || svNonDefault);
+  const showNoCompletionWarning = !hasCompletionMechanism && (qvNonDefault || svNonDefault);
 
   return (
     <AfterCompleteCard title={title}>
