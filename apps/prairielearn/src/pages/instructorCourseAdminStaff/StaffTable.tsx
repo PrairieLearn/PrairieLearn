@@ -15,7 +15,7 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useMemo, useRef, useState } from 'react';
-import { Button, Modal } from 'react-bootstrap';
+import { Button, ButtonGroup, Modal } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import {
@@ -218,6 +218,8 @@ function CoursePermissionCell({
     </OverlayTrigger>
   );
 }
+
+const SEMESTER_FILTER_VALUES = ['all', 'current'] as const;
 
 const INSTANCE_ROLE_VALUES = ['None', 'Student Data Viewer', 'Student Data Editor'] as const;
 type InstanceRole = (typeof INSTANCE_ROLE_VALUES)[number];
@@ -792,6 +794,26 @@ function StaffTableInner({
     staleTime: Infinity,
   });
 
+  const [semesterFilter, setSemesterFilter] = useQueryState(
+    'semester',
+    parseAsStringLiteral(SEMESTER_FILTER_VALUES).withDefault('all'),
+  );
+
+  const filteredUsers = useMemo(() => {
+    if (semesterFilter !== 'current' || courseInstances.length === 0) return liveUsers;
+
+    const currentCiId = String(courseInstances[0].id);
+    return liveUsers.filter((user) => {
+      const courseRole = user.course_permission.course_role;
+      if (courseRole && courseRole !== 'None') return true;
+
+      const instanceRole = user.course_instance_roles?.find(
+        (cir) => String(cir.id) === currentCiId,
+      );
+      return instanceRole != null && instanceRole.course_instance_role !== 'None';
+    });
+  }, [liveUsers, semesterFilter, courseInstances]);
+
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -1019,7 +1041,7 @@ function StaffTableInner({
   );
 
   const table = useReactTable({
-    data: liveUsers,
+    data: filteredUsers,
     columns,
     columnResizeMode: 'onChange',
     enableRowSelection: true,
@@ -1116,6 +1138,28 @@ function StaffTableInner({
     </>
   );
 
+  const semesterFilterButtons =
+    courseInstances.length > 0 ? (
+      <ButtonGroup size="sm">
+        <Button
+          variant={semesterFilter === 'current' ? 'primary' : 'outline-secondary'}
+          title={`Show staff members with access to course content or student data for ${courseInstances[0].short_name}`}
+          aria-label={`Show staff members with access to course content or student data for ${courseInstances[0].short_name}`}
+          onClick={() => void setSemesterFilter('current')}
+        >
+          Current semester
+        </Button>
+        <Button
+          variant={semesterFilter === 'all' ? 'primary' : 'outline-secondary'}
+          title="Show staff members with access to course content or student data for all instances"
+          aria-label="Show staff members with access to course content or student data for all instances"
+          onClick={() => void setSemesterFilter('all')}
+        >
+          All semesters
+        </Button>
+      </ButtonGroup>
+    ) : null;
+
   return (
     <div className="d-flex flex-column h-100">
       <div className="staff-table flex-grow-1" style={{ minHeight: 0 }}>
@@ -1128,6 +1172,7 @@ function StaffTableInner({
           globalFilter={{ placeholder: 'Search by UID or name...' }}
           tableOptions={{ filters, rowHeight: 72 }}
           headerButtons={headerButtons}
+          columnManager={{ buttons: semesterFilterButtons }}
           statusContent={statusContent}
         />
       </div>
