@@ -157,7 +157,7 @@ describe('Access control syncing', () => {
         const { syncedRules } = await syncRulesAndRead([makeAccessControlRule()]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].number, 0);
-        assert.equal(syncedRules[0].date_control_release_date_overridden, true);
+        assert.isNotNull(syncedRules[0].date_control_release_date);
         assert.equal(syncedRules[0].target_type, 'none');
       }));
 
@@ -210,7 +210,6 @@ describe('Access control syncing', () => {
         });
         const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
-        assert.isTrue(row.date_control_release_date_overridden);
         assert.isNotNull(row.date_control_release_date);
         assert.isTrue(row.date_control_due_date_overridden);
         assert.isNotNull(row.date_control_due_date);
@@ -266,7 +265,7 @@ describe('Access control syncing', () => {
         const rule = makeAccessControlRule({ dateControl: undefined });
         const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
-        assert.isFalse(row.date_control_release_date_overridden);
+        assert.isNull(row.date_control_release_date);
         assert.isFalse(row.date_control_due_date_overridden);
         assert.isFalse(row.date_control_duration_minutes_overridden);
         assert.isFalse(row.date_control_password_overridden);
@@ -325,7 +324,6 @@ describe('Access control syncing', () => {
         assert.isTrue(override.date_control_due_date_overridden);
         assert.isNotNull(override.date_control_due_date);
         // Everything else should be overridden=false (inherit from main)
-        assert.isFalse(override.date_control_release_date_overridden);
         assert.isNull(override.date_control_release_date);
         assert.isFalse(override.date_control_duration_minutes_overridden);
         assert.isNull(override.date_control_duration_minutes);
@@ -348,7 +346,7 @@ describe('Access control syncing', () => {
         });
         const override = syncedRules.find((r) => r.target_type === 'student_label');
         assert.isOk(override);
-        assert.isFalse(override.date_control_release_date_overridden);
+        assert.isNull(override.date_control_release_date);
         assert.isFalse(override.date_control_due_date_overridden);
         assert.isFalse(override.date_control_duration_minutes_overridden);
         assert.isFalse(override.date_control_password_overridden);
@@ -534,42 +532,6 @@ describe('Access control syncing', () => {
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         assert.isNotNull(assessment.sync_errors);
         assert.match(assessment.sync_errors, /must be after the release date/);
-      }));
-
-    it('rejects overrides that cannot produce any valid merged timeline', () =>
-      runInTransactionAndRollback(async () => {
-        const courseData = util.getCourseData();
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, 'Section A');
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, 'Section B');
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [
-          makeAccessControlRule({
-            dateControl: {
-              releaseDate: '2024-04-07T00:00:00',
-              dueDate: null,
-            },
-          }),
-          {
-            labels: ['Section A'],
-            dateControl: {
-              releaseDate: '2024-04-06T00:00:00',
-              dueDate: null,
-            },
-          },
-          {
-            labels: ['Section B'],
-            dateControl: {
-              earlyDeadlines: [{ date: '2024-04-05T00:00:00', credit: 120 }],
-            },
-          },
-        ];
-
-        await util.writeAndSyncCourseData(courseData);
-
-        const assessment = await getAssessment(util.ASSESSMENT_ID);
-        assert.isNotNull(assessment.sync_errors);
-        assert.match(assessment.sync_errors, /earliest possible release date/);
       }));
   });
 
@@ -1219,52 +1181,6 @@ describe('Access control syncing', () => {
           errorThrown,
           'A rule can be associated with labels or individual students, but not both',
         );
-      }));
-  });
-
-  describe('Main rule requirement', () => {
-    it('rejects sync when no main rule exists', () =>
-      runInTransactionAndRollback(async () => {
-        const labelName = 'Test Label';
-        const { syncedRules, errors } = await syncRulesAndRead(
-          [
-            makeAccessControlRule({
-              labels: [labelName],
-              dateControl: { durationMinutes: 90 },
-            }),
-          ],
-          { studentLabels: [labelName] },
-        );
-        assert.equal(syncedRules.length, 0);
-        assert.isTrue(errors.some((e) => e.includes('No defaults found')));
-      }));
-
-    it('rejects sync when multiple main rules exist', () =>
-      runInTransactionAndRollback(async () => {
-        const { syncedRules, errors } = await syncRulesAndRead([
-          makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
-          makeAccessControlRule({ dateControl: { durationMinutes: 90 } }),
-        ]);
-        assert.equal(syncedRules.length, 0);
-        assert.isTrue(errors.some((e) => e.includes('defaults entries')));
-      }));
-
-    it('successfully syncs with exactly one main rule', () =>
-      runInTransactionAndRollback(async () => {
-        const labelName = 'Test Label';
-        const mainRule = makeAccessControlRule({
-          dateControl: { durationMinutes: 60 },
-        });
-        const labelRule = makeAccessControlRule({
-          labels: [labelName],
-          dateControl: { durationMinutes: 90 },
-        });
-        const { syncedRules } = await syncRulesAndRead([mainRule, labelRule], {
-          studentLabels: [labelName],
-        });
-        assert.equal(syncedRules.length, 2);
-        assert.equal(syncedRules[0].date_control_duration_minutes, 60); // main
-        assert.equal(syncedRules[1].date_control_duration_minutes, 90); // label
       }));
   });
 

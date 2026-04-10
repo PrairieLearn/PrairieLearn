@@ -355,7 +355,7 @@ describe('Date fields must be dates', () => {
           },
         },
       },
-      expectedPath: ['afterComplete', 'questions', 'visibleFrom'],
+      expectedPath: ['afterComplete', 'questions'],
     },
     {
       config: {
@@ -974,38 +974,49 @@ describe('Duplicate detection', () => {
 });
 
 describe('afterLastDeadline validation', () => {
-  it('should reject credit when allowSubmissions is false', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        releaseDate: '2024-03-14T00:01:00',
-        dueDate: '2024-03-21T23:59:00',
-        afterLastDeadline: {
-          allowSubmissions: false,
-          credit: 50,
+  it('should reject numeric credit when allowSubmissions is false', () => {
+    assert.throws(() =>
+      AccessControlJsonSchema.parse({
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+          afterLastDeadline: {
+            allowSubmissions: false,
+            credit: 50,
+          },
         },
-      },
-    });
-    const errors = validateRule(rule, 'none');
-    assert.isTrue(
-      errors.some((e) => e.includes('allowSubmissions must be true when credit is configured')),
+      }),
     );
   });
 
   it('should reject zero credit when allowSubmissions is false', () => {
+    assert.throws(() =>
+      AccessControlJsonSchema.parse({
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+          afterLastDeadline: {
+            allowSubmissions: false,
+            credit: 0,
+          },
+        },
+      }),
+    );
+  });
+
+  it('should accept null credit when allowSubmissions is false', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         releaseDate: '2024-03-14T00:01:00',
         dueDate: '2024-03-21T23:59:00',
         afterLastDeadline: {
           allowSubmissions: false,
-          credit: 0,
+          credit: null,
         },
       },
     });
     const errors = validateRule(rule, 'none');
-    assert.isTrue(
-      errors.some((e) => e.includes('allowSubmissions must be true when credit is configured')),
-    );
+    assert.deepEqual(errors, []);
   });
 
   it('should accept credit when allowSubmissions is true', () => {
@@ -1024,18 +1035,16 @@ describe('afterLastDeadline validation', () => {
   });
 
   it('should reject credit without allowSubmissions', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        releaseDate: '2024-03-14T00:01:00',
-        dueDate: '2024-03-21T23:59:00',
-        afterLastDeadline: {
-          credit: null,
+    assert.throws(() =>
+      AccessControlJsonSchema.parse({
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+          afterLastDeadline: {
+            credit: null,
+          },
         },
-      },
-    });
-    const errors = validateRule(rule, 'none');
-    assert.isTrue(
-      errors.some((e) => e.includes('allowSubmissions must be true when credit is configured')),
+      }),
     );
   });
 

@@ -114,7 +114,6 @@ function formJsonToEnrollmentRuleData(
   return {
     id: rule.id,
     listBeforeRelease: rule.listBeforeRelease ?? null,
-    releaseDateOverridden: dc?.releaseDate !== undefined,
     releaseDate: dc?.releaseDate ?? null,
     dueDateOverridden: dc?.dueDate !== undefined,
     dueDate: dc?.dueDate ?? null,

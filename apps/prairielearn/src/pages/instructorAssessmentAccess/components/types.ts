@@ -39,7 +39,7 @@ export interface ScoreVisibilityValue {
 }
 
 export function isNonDefaultQuestionVisibility(qv: QuestionVisibilityValue): boolean {
-  return !qv.hidden || !!qv.visibleFrom;
+  return !qv.hidden || qv.visibleFrom !== undefined || qv.visibleUntil !== undefined;
 }
 
 export function isNonDefaultScoreVisibility(sv: ScoreVisibilityValue): boolean {

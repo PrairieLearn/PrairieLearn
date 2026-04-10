@@ -61,15 +61,8 @@ function mapIssueToFormFieldPath(
           default:
             return null;
         }
-      } else if (issue.path[1] === 'score') {
-        switch (issue.path[2]) {
-          case 'visibleFrom':
-            return `${prefix}.scoreVisibility.visibleFrom`;
-          default:
-            return null;
-        }
       }
-      return null;
+      return `${prefix}.scoreVisibility.visibleFrom`;
     default:
       return null;
   }

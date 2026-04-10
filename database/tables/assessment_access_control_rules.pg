@@ -20,7 +20,6 @@ columns
     date_control_password: text
     date_control_password_overridden: boolean not null default false
     date_control_release_date: timestamp with time zone
-    date_control_release_date_overridden: boolean not null default false
     id: bigint not null default nextval('assessment_access_control_rules_id_seq'::regclass)
     list_before_release: boolean
     number: integer not null

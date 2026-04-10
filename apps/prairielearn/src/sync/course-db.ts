@@ -16,6 +16,7 @@ import { validateAccessControlRules } from '../lib/assessment-access-control/val
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
+import { validatePreferencesSchema } from '../lib/question-settings/validation.js';
 import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
@@ -1077,29 +1078,7 @@ function validateQuestion({
   }
 
   if (question.preferences) {
-    for (const [key, field] of Object.entries(question.preferences)) {
-      if (typeof field.default !== field.type) {
-        errors.push(
-          `preferences.${key}: default value must be of type "${field.type}", got ${typeof field.default}`,
-        );
-      }
-      if (field.enum) {
-        if (field.type === 'boolean') {
-          errors.push(`preferences.${key}: boolean preferences cannot have enum values`);
-        } else {
-          for (const [i, val] of field.enum.entries()) {
-            if (typeof val !== field.type) {
-              errors.push(
-                `preferences.${key}.enum[${i}]: enum values must be of type "${field.type}", got ${typeof val}`,
-              );
-            }
-          }
-          if (!field.enum.includes(field.default as string | number)) {
-            errors.push(`preferences.${key}: default value must be present in the enum options`);
-          }
-        }
-      }
-    }
+    errors.push(...validatePreferencesSchema(question.preferences));
   }
 
   if (question.authors.length > 0) {

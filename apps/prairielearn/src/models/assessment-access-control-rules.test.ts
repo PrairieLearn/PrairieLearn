@@ -10,7 +10,6 @@ function makeBaseRule(overrides: Record<string, unknown> = {}) {
     target_type: 'none' as const,
     list_before_release: null,
     date_control_release_date: null,
-    date_control_release_date_overridden: false,
     date_control_due_date: null,
     date_control_due_date_overridden: false,
     date_control_early_deadlines_overridden: false,
