@@ -25,36 +25,6 @@ export function endOfDayDatetime(date: Temporal.PlainDate): string {
     .toString({ smallestUnit: 'second' });
 }
 
-interface DateRange {
-  start: Temporal.PlainDateTime | null;
-  end: Temporal.PlainDateTime;
-}
-
-export function getDeadlineRange(
-  index: number,
-  deadlines: DeadlineEntry[],
-  anchorDate: string | null | undefined,
-): DateRange | null {
-  const currentDeadline = deadlines[index];
-  if (!currentDeadline.date) return null;
-
-  const end = Temporal.PlainDateTime.from(currentDeadline.date);
-  let start: Temporal.PlainDateTime | null = null;
-
-  if (index === 0) {
-    if (anchorDate) {
-      start = Temporal.PlainDateTime.from(anchorDate);
-    }
-  } else {
-    const previousDeadline = deadlines[index - 1];
-    if (previousDeadline.date) {
-      start = Temporal.PlainDateTime.from(previousDeadline.date);
-    }
-  }
-
-  return { start, end };
-}
-
 export function getLastDeadlineDate(
   lateDeadlines: DeadlineEntry[] | undefined,
   dueDate: string | null | undefined,
