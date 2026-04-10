@@ -12,13 +12,14 @@ import { type ZodSchema, z } from 'zod';
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 
+import { validateAccessControlRules } from '../lib/assessment-access-control/validation.js';
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
+import { validatePreferencesSchema } from '../lib/question-settings/validation.js';
 import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
-  type AccessControlJson,
   type AssessmentJson,
   type AssessmentJsonInput,
   type AssessmentSetJson,
@@ -28,8 +29,6 @@ import {
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
-  validateRuleCreditMonotonicity,
-  validateRuleDateOrdering,
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
@@ -1079,29 +1078,7 @@ function validateQuestion({
   }
 
   if (question.preferences) {
-    for (const [key, field] of Object.entries(question.preferences)) {
-      if (typeof field.default !== field.type) {
-        errors.push(
-          `preferences.${key}: default value must be of type "${field.type}", got ${typeof field.default}`,
-        );
-      }
-      if (field.enum) {
-        if (field.type === 'boolean') {
-          errors.push(`preferences.${key}: boolean preferences cannot have enum values`);
-        } else {
-          for (const [i, val] of field.enum.entries()) {
-            if (typeof val !== field.type) {
-              errors.push(
-                `preferences.${key}.enum[${i}]: enum values must be of type "${field.type}", got ${typeof val}`,
-              );
-            }
-          }
-          if (!field.enum.includes(field.default as string | number)) {
-            errors.push(`preferences.${key}: default value must be present in the enum options`);
-          }
-        }
-      }
-    }
+    errors.push(...validatePreferencesSchema(question.preferences));
   }
 
   if (question.authors.length > 0) {
@@ -1142,100 +1119,6 @@ function formatValues(qids: Set<string> | string[]) {
   return Array.from(qids)
     .map((qid) => `"${qid}"`)
     .join(', ');
-}
-
-/**
- * Validates an array of access control rules.
- * Returns a single object with all accumulated errors and warnings.
- */
-export function validateAccessControlArray({
-  accessControlJsonArray,
-  validStudentLabelNames,
-}: {
-  accessControlJsonArray: AccessControlJson[];
-  validStudentLabelNames?: Set<string>;
-}): { warnings: string[]; errors: string[] } {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  if (accessControlJsonArray.length === 0) {
-    return { errors, warnings };
-  }
-
-  // A main rule has no `labels` property (applies to everyone)
-  const mainRules = accessControlJsonArray.filter(
-    (rule) => rule.labels == null || rule.labels.length === 0,
-  );
-
-  if (mainRules.length === 0) {
-    errors.push('No defaults found. The first element of accessControl must apply to everyone.');
-  } else if (mainRules.length > 1) {
-    errors.push(
-      `Found ${mainRules.length} defaults entries. Only one element of accessControl should apply to everyone.`,
-    );
-  } else {
-    // The DB constraint `check_first_rule_is_none` requires the main rule at index 0
-    const firstRule = accessControlJsonArray[0];
-    const isFirstRuleMain = firstRule.labels == null || firstRule.labels.length === 0;
-    if (!isFirstRuleMain) {
-      errors.push('The defaults (without labels) must be the first element in the array.');
-    }
-  }
-
-  for (const rule of accessControlJsonArray) {
-    const labels = rule.labels ?? [];
-    const seenLabels = new Set<string>();
-    const duplicateLabels = new Set<string>();
-
-    for (const label of labels) {
-      if (seenLabels.has(label)) {
-        duplicateLabels.add(label);
-      } else {
-        seenLabels.add(label);
-      }
-    }
-
-    if (duplicateLabels.size > 0) {
-      errors.push(
-        `Found duplicate student labels in this access control rule: ${formatValues(duplicateLabels)}.`,
-      );
-    }
-
-    if (validStudentLabelNames !== undefined) {
-      const invalidLabels = [...seenLabels].filter((label) => !validStudentLabelNames.has(label));
-      if (invalidLabels.length > 0) {
-        errors.push(
-          `The access control rule targets non-existent student labels: ${formatValues(invalidLabels)}.`,
-        );
-      }
-    }
-
-    if (rule.dateControl?.password === '') {
-      errors.push('Password cannot be empty.');
-    }
-
-    const isMainRule = rule.labels == null || rule.labels.length === 0;
-    if (!isMainRule && rule.integrations != null) {
-      errors.push(
-        'integrations can only be specified on the defaults (the first element, without labels).',
-      );
-    }
-    if (!isMainRule && rule.listBeforeRelease !== undefined) {
-      errors.push(
-        'listBeforeRelease can only be specified on the defaults (the first element, without labels).',
-      );
-    }
-
-    const dateErrors = validateRuleDateOrdering(rule);
-    errors.push(...dateErrors);
-    // Credit monotonicity assumes deadlines are chronological; skip if dates
-    // are out of order to avoid misleading "not monotonically decreasing" errors.
-    if (dateErrors.length === 0) {
-      errors.push(...validateRuleCreditMonotonicity(rule));
-    }
-  }
-
-  return { errors, warnings };
 }
 
 /**
@@ -1670,8 +1553,8 @@ function validateAssessment({
 
   // Validate access control rules if defined
   if (assessment.accessControl) {
-    const accessControlValidation = validateAccessControlArray({
-      accessControlJsonArray: assessment.accessControl,
+    const accessControlValidation = validateAccessControlRules({
+      rules: assessment.accessControl,
       validStudentLabelNames,
     });
     errors.push(...accessControlValidation.errors);
