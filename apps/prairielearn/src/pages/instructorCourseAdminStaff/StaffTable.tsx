@@ -35,7 +35,6 @@ import type { CourseUsersRow } from '../../models/course-permissions.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
 
-
 function useInvalidateStaffList() {
   const queryClient = useQueryClient();
   const trpc = useTRPC();

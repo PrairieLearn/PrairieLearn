@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { idsEqual } from '../../lib/id.js';
@@ -240,12 +241,12 @@ const bulkDelete = t.procedure
   .mutation(async ({ input, ctx }) => {
     for (const userId of input.userIds) {
       assertCanModifyUser(ctx.authz_data, userId, 'remove themselves from the course staff');
-      await deleteCoursePermissions({
-        course_id: ctx.course.id,
-        user_id: userId,
-        authn_user_id: ctx.authz_data.authn_user.id,
-      });
     }
+    await deleteCoursePermissions({
+      course_id: ctx.course.id,
+      user_id: input.userIds,
+      authn_user_id: ctx.authz_data.authn_user.id,
+    });
   });
 
 const bulkEditAccess = t.procedure
@@ -274,34 +275,36 @@ const bulkEditAccess = t.procedure
       }
     }
 
-    // Apply course role changes
-    if (input.courseRole) {
-      for (const userId of input.userIds) {
-        assertCanModifyUser(ctx.authz_data, userId, 'change their own course content access');
-        await updateCoursePermissionsRole({
-          course_id: ctx.course.id,
-          user_id: userId,
-          course_role: input.courseRole,
-          authn_user_id: ctx.authz_data.authn_user.id,
-        });
-      }
-    }
-
-    // Apply course instance role changes
-    if (input.courseInstanceChanges) {
-      for (const change of input.courseInstanceChanges) {
+    await runInTransactionAsync(async () => {
+      // Apply course role changes
+      if (input.courseRole) {
         for (const userId of input.userIds) {
-          assertCanModifyUser(ctx.authz_data, userId, 'change their own student data access');
-          await upsertOrDeleteInstancePermission({
-            courseId: ctx.course.id,
-            userId,
-            courseInstanceId: change.courseInstanceId,
-            courseInstanceRole: change.courseInstanceRole,
-            authnUserId: ctx.authz_data.authn_user.id,
+          assertCanModifyUser(ctx.authz_data, userId, 'change their own course content access');
+          await updateCoursePermissionsRole({
+            course_id: ctx.course.id,
+            user_id: userId,
+            course_role: input.courseRole,
+            authn_user_id: ctx.authz_data.authn_user.id,
           });
         }
       }
-    }
+
+      // Apply course instance role changes
+      if (input.courseInstanceChanges) {
+        for (const change of input.courseInstanceChanges) {
+          for (const userId of input.userIds) {
+            assertCanModifyUser(ctx.authz_data, userId, 'change their own student data access');
+            await upsertOrDeleteInstancePermission({
+              courseId: ctx.course.id,
+              userId,
+              courseInstanceId: change.courseInstanceId,
+              courseInstanceRole: change.courseInstanceRole,
+              authnUserId: ctx.authz_data.authn_user.id,
+            });
+          }
+        }
+      }
+    });
   });
 
 export const courseStaffRouter = t.router({
