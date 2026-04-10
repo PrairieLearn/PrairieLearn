@@ -66,9 +66,8 @@ router.get(
   }),
 );
 
-// TODO: This endpoint reveals whether courses with a given title/short_name
-// exist at the user's institution. Consider restricting to users who have
-// already been verified as instructors, or only returning the `owned` field.
+// Note: This endpoint reveals whether courses with a given title/short_name
+// exist at the user's institution.
 router.get(
   '/check',
   typedAsyncHandler<'plain'>(async (req, res) => {

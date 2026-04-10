@@ -2,7 +2,7 @@ import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 
 import type { Lti13CourseRequestInput } from '../../src/pages/instructorRequestCourse/instructorRequestCourse.types.js';
 
-const FREE_EMAIL_DOMAINS = new Set([
+const PERSONAL_EMAIL_DOMAINS = new Set([
   'gmail.com',
   'hotmail.com',
   'icloud.com',
@@ -89,8 +89,6 @@ onDocumentReady(() => {
         shortNameResult = data.short_name;
         updateWarnings('title', titleResult);
         updateWarnings('short_name', shortNameResult);
-      } catch {
-        // Non-critical check; ignore network errors.
       } finally {
         checkIsLoading = false;
         updateSubmitButton();
@@ -133,7 +131,7 @@ onDocumentReady(() => {
   const emailWarning = document.querySelector<HTMLElement>('#cr-email-warning');
   emailInput?.addEventListener('input', () => {
     const domain = emailInput.value.split('@')[1]?.toLowerCase();
-    emailWarning?.classList.toggle('d-none', !domain || !FREE_EMAIL_DOMAINS.has(domain));
+    emailWarning?.classList.toggle('d-none', !domain || !PERSONAL_EMAIL_DOMAINS.has(domain));
   });
 
   // LTI 1.3 auto-fill.
