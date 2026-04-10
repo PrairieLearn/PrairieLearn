@@ -6,14 +6,16 @@ import * as sqldb from '@prairielearn/postgres';
 import { CronJobSchema } from '../lib/db-types.js';
 import * as opsbot from '../lib/opsbot.js';
 
-import { jobs } from './index.js';
-
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+let activeJobNames: string[] = [];
+
+export function setActiveJobNames(names: string[]) {
+  activeJobNames = names;
+}
 
 export async function run() {
   if (!opsbot.canSendMessages()) return;
-
-  const activeJobNames = new Set(jobs.map((job) => job.name));
 
   const rows = await sqldb.queryRows(
     sql.select_unfinished_cron_jobs,
@@ -22,7 +24,8 @@ export async function run() {
       formatted_started_at: z.string(),
     }),
   );
-  const unfinishedJobs = rows.filter((row) => activeJobNames.has(row.name));
+  const activeJobNameSet = new Set(activeJobNames);
+  const unfinishedJobs = rows.filter((row) => activeJobNameSet.has(row.name));
   if (unfinishedJobs.length === 0) return;
 
   let msg = '_Unfinished cron jobs:_\n';

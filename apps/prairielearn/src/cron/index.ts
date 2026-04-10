@@ -150,6 +150,11 @@ export async function init() {
     }
   });
 
+  // Tell sendUnfinishedCronWarnings which jobs are active so it only
+  // alerts on currently-registered jobs, not stale database entries.
+  const { setActiveJobNames } = await import('./sendUnfinishedCronWarnings.js');
+  setActiveJobNames(jobs.map((job) => job.name));
+
   logger.verbose(
     'initializing cron',
     jobs.map(({ name, intervalSec }) => ({ name, intervalSec })),
