@@ -1428,6 +1428,204 @@ describe('Access control syncing', () => {
       ));
   });
 
+  describe('Override afterLastDeadline validation', () => {
+    it('rejects override with afterLastDeadline missing credit', () =>
+      runInTransactionAndRollback(async () => {
+        const { syncedRules, errors } = await syncRulesAndRead(
+          [
+            makeAccessControlRule(),
+            {
+              labels: ['label1'],
+              dateControl: { afterLastDeadline: { allowSubmissions: true } },
+            },
+          ],
+          { studentLabels: ['label1'] },
+        );
+        assert.equal(syncedRules.length, 0);
+        assert.isTrue(
+          errors.some((e) =>
+            e.includes('afterLastDeadline.credit must be explicitly set on overrides'),
+          ),
+        );
+      }));
+
+    it('accepts override with all afterLastDeadline properties', () =>
+      runInTransactionAndRollback(async () => {
+        const { syncedRules, errors } = await syncRulesAndRead(
+          [
+            makeAccessControlRule(),
+            {
+              labels: ['label1'],
+              dateControl: { afterLastDeadline: { allowSubmissions: true, credit: 50 } },
+            },
+          ],
+          { studentLabels: ['label1'] },
+        );
+        assert.isFalse(errors.some((e) => e.includes('afterLastDeadline')));
+        assert.equal(syncedRules.length, 2);
+      }));
+
+    it('accepts override with afterLastDeadline credit as null', () =>
+      runInTransactionAndRollback(async () => {
+        const { syncedRules, errors } = await syncRulesAndRead(
+          [
+            makeAccessControlRule(),
+            {
+              labels: ['label1'],
+              dateControl: { afterLastDeadline: { allowSubmissions: false, credit: null } },
+            },
+          ],
+          { studentLabels: ['label1'] },
+        );
+        assert.isFalse(errors.some((e) => e.includes('afterLastDeadline')));
+        assert.equal(syncedRules.length, 2);
+      }));
+
+    it('allows afterLastDeadline without credit on the main rule', () =>
+      runInTransactionAndRollback(async () => {
+        const { syncedRules, errors } = await syncRulesAndRead([
+          makeAccessControlRule({
+            dateControl: {
+              releaseDate: '2024-03-14T00:01:00',
+              dueDate: '2024-03-21T23:59:00',
+              afterLastDeadline: { allowSubmissions: false },
+            },
+          }),
+        ]);
+        assert.isFalse(errors.some((e) => e.includes('afterLastDeadline')));
+        assert.equal(syncedRules.length, 1);
+      }));
+  });
+
+  describe('Override afterComplete validation', () => {
+    it('rejects override with partial afterComplete.questions (hidden only)', () =>
+      runInTransactionAndRollback(async () => {
+        const { syncedRules, errors } = await syncRulesAndRead(
+          [
+            makeAccessControlRule(),
+            {
+              labels: ['label1'],
+              afterComplete: { questions: { hidden: true } },
+            },
+          ],
+          { studentLabels: ['label1'] },
+        );
+        assert.equal(syncedRules.length, 0);
+        assert.isTrue(
+          errors.some((e) => e.includes('afterComplete.questions.visibleFrom must be explicitly set on overrides')),
+        );
+        assert.isTrue(
+          errors.some((e) => e.includes('afterComplete.questions.visibleUntil must be explicitly set on overrides')),
+        );
+      }));
+
+    it('rejects override with partial afterComplete.questions (missing visibleUntil)', () =>
+      runInTransactionAndRollback(async () => {
+        const { syncedRules, errors } = await syncRulesAndRead(
+          [
+            makeAccessControlRule(),
+            {
+              labels: ['label1'],
+              afterComplete: {
+                questions: { hidden: true, visibleFrom: '2024-04-01T00:00:00' },
+              },
+            },
+          ],
+          { studentLabels: ['label1'] },
+        );
+        assert.equal(syncedRules.length, 0);
+        assert.isTrue(
+          errors.some((e) => e.includes('afterComplete.questions.visibleUntil must be explicitly set on overrides')),
+        );
+      }));
+
+    it('rejects override with partial afterComplete.score (hidden only)', () =>
+      runInTransactionAndRollback(async () => {
+        const { syncedRules, errors } = await syncRulesAndRead(
+          [
+            makeAccessControlRule(),
+            {
+              labels: ['label1'],
+              afterComplete: { score: { hidden: true } },
+            },
+          ],
+          { studentLabels: ['label1'] },
+        );
+        assert.equal(syncedRules.length, 0);
+        assert.isTrue(
+          errors.some((e) => e.includes('afterComplete.score.visibleFrom must be explicitly set on overrides')),
+        );
+      }));
+
+    it('accepts override with all afterComplete.questions properties', () =>
+      runInTransactionAndRollback(async () => {
+        const { syncedRules, errors } = await syncRulesAndRead(
+          [
+            makeAccessControlRule(),
+            {
+              labels: ['label1'],
+              afterComplete: {
+                questions: {
+                  hidden: true,
+                  visibleFrom: '2024-04-01T00:00:00',
+                  visibleUntil: '2024-05-01T00:00:00',
+                },
+              },
+            },
+          ],
+          { studentLabels: ['label1'] },
+        );
+        assert.isFalse(errors.some((e) => e.includes('afterComplete')));
+        assert.equal(syncedRules.length, 2);
+      }));
+
+    it('accepts override with all afterComplete.score properties', () =>
+      runInTransactionAndRollback(async () => {
+        const { syncedRules, errors } = await syncRulesAndRead(
+          [
+            makeAccessControlRule(),
+            {
+              labels: ['label1'],
+              afterComplete: { score: { hidden: true, visibleFrom: '2024-04-01T00:00:00' } },
+            },
+          ],
+          { studentLabels: ['label1'] },
+        );
+        assert.isFalse(errors.some((e) => e.includes('afterComplete')));
+        assert.equal(syncedRules.length, 2);
+      }));
+
+    it('accepts override with null visibility dates (explicit nulls count as set)', () =>
+      runInTransactionAndRollback(async () => {
+        const { syncedRules, errors } = await syncRulesAndRead(
+          [
+            makeAccessControlRule(),
+            {
+              labels: ['label1'],
+              afterComplete: {
+                questions: { hidden: false, visibleFrom: null, visibleUntil: null },
+                score: { hidden: false, visibleFrom: null },
+              },
+            },
+          ],
+          { studentLabels: ['label1'] },
+        );
+        assert.isFalse(errors.some((e) => e.includes('afterComplete')));
+        assert.equal(syncedRules.length, 2);
+      }));
+
+    it('allows partial afterComplete.questions on the main rule', () =>
+      runInTransactionAndRollback(async () => {
+        const { syncedRules, errors } = await syncRulesAndRead([
+          makeAccessControlRule({
+            afterComplete: { questions: { hidden: true } },
+          }),
+        ]);
+        assert.isFalse(errors.some((e) => e.includes('afterComplete')));
+        assert.equal(syncedRules.length, 1);
+      }));
+  });
+
   // TODO: should we make more constants in util.ts for this?
   describe('Multiple assessments', () => {
     it('syncs access control for multiple assessments independently', () =>
