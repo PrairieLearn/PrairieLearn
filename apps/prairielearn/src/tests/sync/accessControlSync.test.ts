@@ -1677,7 +1677,7 @@ describe('Access control syncing', () => {
           dateControl: {
             durationMinutes: null,
             password: null,
-            afterLastDeadline: undefined,
+            afterLastDeadline: null,
           },
         };
 
@@ -1693,8 +1693,7 @@ describe('Access control syncing', () => {
         assert.isOk(override.rule.dateControl);
         assert.strictEqual(override.rule.dateControl.durationMinutes, null);
         assert.strictEqual(override.rule.dateControl.password, null);
-        // afterLastDeadline: undefined means "not overridden", so it's not present in read-back
-        assert.isUndefined(override.rule.dateControl.afterLastDeadline);
+        assert.strictEqual(override.rule.dateControl.afterLastDeadline, null);
       }));
 
     it('explicit null override removals change resolved access behavior', () =>
@@ -1717,7 +1716,7 @@ describe('Access control syncing', () => {
           dateControl: {
             durationMinutes: null,
             password: null,
-            afterLastDeadline: undefined,
+            afterLastDeadline: null,
           },
         };
 
@@ -1762,10 +1761,8 @@ describe('Access control syncing', () => {
           courseInstanceRole: 'None',
           prairieTestReservations: [],
         });
-        // afterLastDeadline is not overridden (undefined), so main rule's
-        // afterLastDeadline { credit: 10, allowSubmissions: true } applies
-        assert.equal(afterDueResult.credit, 10);
-        assert.isTrue(afterDueResult.active);
+        assert.equal(afterDueResult.credit, 0);
+        assert.isFalse(afterDueResult.active);
       }));
 
     it('only configured fields appear in the round-tripped JSON', () =>

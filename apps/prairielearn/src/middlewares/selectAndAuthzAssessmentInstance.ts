@@ -74,7 +74,7 @@ async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
       reqDate: res.locals.req_date,
       assessmentInstance: row.assessment_instance,
     });
-    row.authz_result = modernResult.authzResult;
+    row.authz_result = modernResult;
   }
 
   if (!row.authz_result.authorized) {

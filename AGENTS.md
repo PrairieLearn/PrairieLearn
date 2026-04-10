@@ -207,10 +207,6 @@ When changing element properties or options, you MUST update the corresponding d
 - For Python tests, use `uv run pytest path/to/testfile.py` from the root directory.
 - To run all Python tests, use `make test-python` from the root directory.
 
-## Approach to fixes
-
-- When a bug fix or feature request touches poorly architected code, flag the architectural issue and propose a broader refactor rather than making the smallest possible patch. Let the user decide scope, but DO NOT silently paper over design problems.
-
 ## Meta-management
 
 When you get corrected or discover a codebase convention through trial and error, consider whether adding a rule to this file would prevent the same mistake in future sessions. Only propose an addition if:

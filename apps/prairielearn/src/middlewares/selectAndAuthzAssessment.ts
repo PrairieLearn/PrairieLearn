@@ -1,15 +1,29 @@
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { resolveModernAssessmentAccess } from '../lib/assessment-access-control/authz.js';
-import type { ResLocalsForPage } from '../lib/res-locals.js';
+import {
+  AssessmentModuleSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
+  SprocAuthzAssessmentSchema,
+} from '../lib/db-types.js';
 
 import { AccessDenied } from './selectAndAuthzAssessment.html.js';
-import { SelectAndAuthzAssessmentSchema } from './selectAndAuthzAssessment.types.js';
-import { StudentAssessmentAccess } from './studentAssessmentAccess.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+const SelectAndAuthzAssessmentSchema = z.object({
+  assessment: AssessmentSchema,
+  assessment_set: AssessmentSetSchema,
+  assessment_module: AssessmentModuleSchema.nullable(),
+  authz_result: SprocAuthzAssessmentSchema,
+  assessment_label: z.string(),
+});
+
+export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema>;
 
 export default asyncHandler(async (req, res, next) => {
   const row = await queryOptionalRow(
@@ -26,7 +40,6 @@ export default asyncHandler(async (req, res, next) => {
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;
   }
-
   if (row.assessment.modern_access_control) {
     const modernResult = await resolveModernAssessmentAccess({
       assessment: row.assessment,
@@ -35,15 +48,9 @@ export default asyncHandler(async (req, res, next) => {
       authzData: res.locals.authz_data,
       reqDate: res.locals.req_date,
     });
-    row.authz_result = modernResult.authzResult;
+    row.authz_result = modernResult;
   }
-
   if (!row.authz_result.authorized) {
-    if (row.assessment.modern_access_control && row.authz_result.show_before_release) {
-      const responseLocals = { ...res.locals, ...row } as ResLocalsForPage<'assessment'>;
-      res.status(403).send(StudentAssessmentAccess({ resLocals: responseLocals }));
-      return;
-    }
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;
   }

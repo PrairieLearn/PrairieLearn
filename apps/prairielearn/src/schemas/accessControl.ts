@@ -12,7 +12,7 @@ export const DeadlineEntryJsonSchema = z
 const AfterLastDeadlineJsonSchema = z
   .object({
     allowSubmissions: z.boolean().optional(),
-    credit: z.number().min(0).nullable().optional(),
+    credit: z.number().min(0).optional(),
   })
   .strict();
 
@@ -30,9 +30,9 @@ const DateControlJsonSchema = z
       .nullable()
       .optional()
       .describe('Array of late deadlines with credit as percentages'),
-    afterLastDeadline: AfterLastDeadlineJsonSchema.describe(
-      'Controls for assessment behaviour after last deadline',
-    ).optional(),
+    afterLastDeadline: AfterLastDeadlineJsonSchema.nullable()
+      .describe('Controls for assessment behaviour after last deadline')
+      .optional(),
     durationMinutes: z
       .number()
       .int()
