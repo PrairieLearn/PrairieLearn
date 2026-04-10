@@ -8,11 +8,7 @@ import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
-import {
-  endOfDayDatetime,
-  getLatestEarlyDeadlineDate,
-  getUserTimezone,
-} from '../utils/dateUtils.js';
+import { endOfDayDatetime, getLatestDeadlineEntry } from '../utils/dateUtils.js';
 
 function localDatetimeToTimezoneDate(value: string, timezone: string): Date {
   return new Date(Temporal.PlainDateTime.from(value).toZonedDateTime(timezone).epochMilliseconds);
@@ -42,34 +38,44 @@ function DueDateInput({
   error?: string;
   displayTimezone: string;
 }) {
-  const userTimezone = getUserTimezone();
-
   const getCreditPeriodText = () => {
     if (!value) return null;
 
-    const dueDateObj = new Date(value);
-    const latestEarly = earlyDeadlines ? getLatestEarlyDeadlineDate(earlyDeadlines) : null;
+    const dueDatePlain = Temporal.PlainDateTime.from(value);
+    const latestEarly = earlyDeadlines ? getLatestDeadlineEntry(earlyDeadlines) : null;
 
     if (latestEarly) {
       return (
         <>
-          <FriendlyDate date={latestEarly} timezone={userTimezone} options={{ includeTz: false }} />{' '}
+          <FriendlyDate
+            date={latestEarly}
+            timezone={displayTimezone}
+            options={{ includeTz: false }}
+          />{' '}
           –{' '}
-          <FriendlyDate date={dueDateObj} timezone={userTimezone} options={{ includeTz: false }} />{' '}
+          <FriendlyDate
+            date={dueDatePlain}
+            timezone={displayTimezone}
+            options={{ includeTz: false }}
+          />{' '}
           (100% credit)
         </>
       );
     } else if (releaseDate) {
-      const releaseDateObj = new Date(releaseDate);
+      const releaseDatePlain = Temporal.PlainDateTime.from(releaseDate);
       return (
         <>
           <FriendlyDate
-            date={releaseDateObj}
-            timezone={userTimezone}
+            date={releaseDatePlain}
+            timezone={displayTimezone}
             options={{ includeTz: false }}
           />{' '}
           –{' '}
-          <FriendlyDate date={dueDateObj} timezone={userTimezone} options={{ includeTz: false }} />{' '}
+          <FriendlyDate
+            date={dueDatePlain}
+            timezone={displayTimezone}
+            options={{ includeTz: false }}
+          />{' '}
           (100% credit)
         </>
       );
@@ -77,7 +83,11 @@ function DueDateInput({
       return (
         <>
           While accessible –{' '}
-          <FriendlyDate date={dueDateObj} timezone={userTimezone} options={{ includeTz: false }} />{' '}
+          <FriendlyDate
+            date={dueDatePlain}
+            timezone={displayTimezone}
+            options={{ includeTz: false }}
+          />{' '}
           (100% credit)
         </>
       );

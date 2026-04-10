@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Alert, Form, InputGroup } from 'react-bootstrap';
 import { get, useController, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
@@ -7,7 +8,7 @@ import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, AfterLastDeadlineValue, DeadlineEntry } from '../types.js';
-import { getLastDeadlineDate, getUserTimezone } from '../utils/dateUtils.js';
+import { getLastDeadlineDate } from '../utils/dateUtils.js';
 
 type AfterLastDeadlineMode = 'no_submissions' | 'practice_submissions' | 'partial_credit';
 
@@ -44,6 +45,7 @@ function AfterLastDeadlineInput({
   dueDate,
   lateDeadlines,
   creditFieldPath,
+  displayTimezone,
   showNoDueDateWarning = true,
 }: {
   value: AfterLastDeadlineValue | null;
@@ -54,12 +56,24 @@ function AfterLastDeadlineInput({
   creditFieldPath:
     | 'mainRule.afterLastDeadline.credit'
     | `overrides.${number}.afterLastDeadline.credit`;
+  displayTimezone: string;
   showNoDueDateWarning?: boolean;
 }) {
-  const { register } = useFormContext<AccessControlFormData>();
-  const userTimezone = getUserTimezone();
+  const { register, trigger } = useFormContext<AccessControlFormData>();
   const { errors } = useFormState();
   const creditError: string | undefined = get(errors, creditFieldPath)?.message;
+
+  // Store constraint values in refs so the validate function (which is captured
+  // once by register()) always reads current values instead of stale closures.
+  const lateDeadlinesRef = useRef(lateDeadlines);
+  const dueDateRef = useRef(dueDate);
+  lateDeadlinesRef.current = lateDeadlines;
+  dueDateRef.current = dueDate;
+
+  // Re-validate credit when late deadlines or due date change.
+  useEffect(() => {
+    void trigger(creditFieldPath);
+  }, [lateDeadlines, dueDate, creditFieldPath, trigger]);
 
   const mode = getMode(value);
 
@@ -69,7 +83,7 @@ function AfterLastDeadlineInput({
       return (
         <>
           This will take effect after{' '}
-          <FriendlyDate date={lastDate} timezone={userTimezone} options={{ includeTz: false }} />
+          <FriendlyDate date={lastDate} timezone={displayTimezone} options={{ includeTz: false }} />
         </>
       );
     }
@@ -135,6 +149,12 @@ function AfterLastDeadlineInput({
                 validate: (v) => {
                   if (v == null || Number.isNaN(v)) return 'Credit is required';
                   if (v < 0 || v > 200) return 'Must be 0–200%';
+                  const precedingCredit =
+                    lateDeadlinesRef.current?.at(-1)?.credit ??
+                    (dueDateRef.current != null ? 100 : undefined);
+                  if (precedingCredit != null && v > precedingCredit) {
+                    return `Must not exceed ${precedingCredit}% (the preceding deadline's credit)`;
+                  }
                   return true;
                 },
               })}
@@ -159,7 +179,7 @@ function AfterLastDeadlineInput({
   );
 }
 
-export function MainAfterLastDeadlineField() {
+export function MainAfterLastDeadlineField({ displayTimezone }: { displayTimezone: string }) {
   const { field } = useController<AccessControlFormData, 'mainRule.afterLastDeadline'>({
     name: 'mainRule.afterLastDeadline',
   });
@@ -179,12 +199,19 @@ export function MainAfterLastDeadlineField() {
       dueDate={dueDate}
       lateDeadlines={lateDeadlines}
       creditFieldPath="mainRule.afterLastDeadline.credit"
+      displayTimezone={displayTimezone}
       onChange={field.onChange}
     />
   );
 }
 
-export function OverrideAfterLastDeadlineField({ index }: { index: number }) {
+export function OverrideAfterLastDeadlineField({
+  index,
+  displayTimezone,
+}: {
+  index: number;
+  displayTimezone: string;
+}) {
   const mainValue = useWatch<AccessControlFormData, 'mainRule.afterLastDeadline'>({
     name: 'mainRule.afterLastDeadline',
   });
@@ -230,6 +257,7 @@ export function OverrideAfterLastDeadlineField({ index }: { index: number }) {
         dueDate={dueDateOverridden ? dueDate : mainDueDate}
         lateDeadlines={lateDeadlinesOverridden ? lateDeadlines : mainLateDeadlines}
         creditFieldPath={`overrides.${index}.afterLastDeadline.credit`}
+        displayTimezone={displayTimezone}
         showNoDueDateWarning={false}
         onChange={field.onChange}
       />

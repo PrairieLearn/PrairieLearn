@@ -82,6 +82,89 @@ function findLastDeadlineMs(rule: AccessControlJson): number | null {
   return findDueMs(rule);
 }
 
+function hasAnyDeadline(rule: AccessControlJson): boolean {
+  const dc = rule.dateControl;
+  if (!dc) return false;
+  if (dc.dueDate) return true;
+  if (dc.lateDeadlines && dc.lateDeadlines.length > 0) return true;
+  return false;
+}
+
+/**
+ * Validates structural field dependencies within a single rule.
+ * These are constraints where certain fields are meaningless without
+ * prerequisite fields being set.
+ */
+export function validateRuleStructuralDependencyIssues(
+  validationRule: AccessControlValidationRule,
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  const rule = validationRule.rule;
+  const dc = rule.dateControl;
+
+  // Constraint 1: Late deadlines require a due date.
+  // Late deadlines define credit after the due date, so they need one as an anchor.
+  // Early deadlines are standalone bonus-credit windows and don't need a due date.
+  // On overrides, dueDate === undefined means "inherit from main rule" (valid),
+  // while dueDate === null means "explicitly no due date" (invalid with late deadlines).
+  if (dc) {
+    const dueDateMissing = validationRule.targetType === 'none' ? !dc.dueDate : dc.dueDate === null;
+
+    if (dc.lateDeadlines && dc.lateDeadlines.length > 0 && dueDateMissing) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['dateControl', 'lateDeadlines', 0, 'date'],
+        'Late deadlines require a due date.',
+      );
+    }
+  }
+
+  // Constraint 2: After-complete date fields require at least one deadline.
+  // The date fields (visibleFrom, visibleUntil) are meant to fire relative
+  // to the last deadline. Boolean fields (hidden) are fine without deadlines.
+  // PrairieTest and timed assessments manage completion independently,
+  // so after-complete dates are valid without deadlines in those cases.
+  // Only enforced on the main rule — overrides may inherit deadlines.
+  const hasPrairieTest = (rule.integrations?.prairieTest?.exams ?? []).length > 0;
+  const hasDuration = dc?.durationMinutes != null;
+  const ac = rule.afterComplete;
+  if (
+    validationRule.targetType === 'none' &&
+    ac &&
+    !hasAnyDeadline(rule) &&
+    !hasPrairieTest &&
+    !hasDuration
+  ) {
+    if (ac.questions?.visibleFrom) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['afterComplete', 'questions', 'visibleFrom'],
+        'After-complete dates require at least one deadline (due date or late deadline).',
+      );
+    }
+    if (ac.questions?.visibleUntil) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['afterComplete', 'questions', 'visibleUntil'],
+        'After-complete dates require at least one deadline (due date or late deadline).',
+      );
+    }
+    if (ac.score?.visibleFrom) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['afterComplete', 'score', 'visibleFrom'],
+        'After-complete dates require at least one deadline (due date or late deadline).',
+      );
+    }
+  }
+
+  return issues;
+}
+
 export function validateRuleDateOrderingIssues(
   validationRule: AccessControlValidationRule,
 ): AccessControlValidationIssue[] {
@@ -367,6 +450,19 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
     }
   }
 
+  const afterCredit = dc.afterLastDeadline?.credit;
+  if (afterCredit != null) {
+    // Determine the preceding credit in the timeline.
+    const precedingCredit =
+      dc.lateDeadlines?.at(-1)?.credit ?? (dc.dueDate != null ? 100 : undefined);
+
+    if (precedingCredit != null && afterCredit > precedingCredit) {
+      errors.push(
+        `After-last-deadline credit (${afterCredit}%) must not exceed the preceding deadline's credit (${precedingCredit}%).`,
+      );
+    }
+  }
+
   return errors;
 }
 
@@ -421,6 +517,14 @@ export function validateRule(
     }
     lateDates.add(d.date);
   }
+
+  errors.push(
+    ...validateRuleStructuralDependencyIssues({
+      rule,
+      targetType,
+      ruleIndex: 0,
+    }).map((issue) => issue.message),
+  );
 
   const dateErrors = validateRuleDateOrdering(rule);
   errors.push(...dateErrors);
