@@ -2,7 +2,9 @@ import {
   type AccessControlValidationIssue,
   type AccessControlValidationRule,
   validateGlobalDateConsistencyIssues,
+  validateRuleCreditMonotonicityIssues,
   validateRuleDateOrderingIssues,
+  validateRuleDuplicateDateIssues,
   validateRuleStructuralDependencyIssues,
 } from '../../../lib/assessment-access-control/validation.js';
 
@@ -12,14 +14,20 @@ export type AccessControlFormFieldPath =
   | 'mainRule.releaseDate'
   | 'mainRule.dueDate'
   | `mainRule.earlyDeadlines.${number}.date`
+  | `mainRule.earlyDeadlines.${number}.credit`
   | `mainRule.lateDeadlines.${number}.date`
+  | `mainRule.lateDeadlines.${number}.credit`
+  | 'mainRule.afterLastDeadline.credit'
   | 'mainRule.questionVisibility.showAgainDate'
   | 'mainRule.questionVisibility.hideAgainDate'
   | 'mainRule.scoreVisibility.showAgainDate'
   | `overrides.${number}.releaseDate`
   | `overrides.${number}.dueDate`
   | `overrides.${number}.earlyDeadlines.${number}.date`
+  | `overrides.${number}.earlyDeadlines.${number}.credit`
   | `overrides.${number}.lateDeadlines.${number}.date`
+  | `overrides.${number}.lateDeadlines.${number}.credit`
+  | `overrides.${number}.afterLastDeadline.credit`
   | `overrides.${number}.questionVisibility.showAgainDate`
   | `overrides.${number}.questionVisibility.hideAgainDate`
   | `overrides.${number}.scoreVisibility.showAgainDate`;
@@ -46,9 +54,17 @@ function mapIssueToFormFieldPath(
         case 'dueDate':
           return `${prefix}.dueDate`;
         case 'earlyDeadlines':
+          if (issue.path[3] === 'credit') {
+            return `${prefix}.earlyDeadlines.${issue.path[2]}.credit`;
+          }
           return `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
         case 'lateDeadlines':
+          if (issue.path[3] === 'credit') {
+            return `${prefix}.lateDeadlines.${issue.path[2]}.credit`;
+          }
           return `${prefix}.lateDeadlines.${issue.path[2]}.date`;
+        case 'afterLastDeadline':
+          return `${prefix}.afterLastDeadline.credit`;
         default:
           return null;
       }
@@ -85,11 +101,25 @@ export function getGlobalDateValidationErrors(formData: AccessControlFormData): 
   }
 
   for (const validationRule of validationRules) {
+    const dateOrderingIssues = validateRuleDateOrderingIssues(validationRule);
+
     for (const issues of [
       validateRuleStructuralDependencyIssues(validationRule),
-      validateRuleDateOrderingIssues(validationRule),
+      dateOrderingIssues,
+      validateRuleDuplicateDateIssues(validationRule),
     ]) {
       for (const issue of issues) {
+        const path = mapIssueToFormFieldPath(issue);
+        if (!path || seenPaths.has(path)) continue;
+        seenPaths.add(path);
+        results.push({ path, message: issue.message });
+      }
+    }
+
+    // Credit monotonicity assumes deadlines are chronological; skip if dates
+    // are out of order to avoid misleading errors.
+    if (dateOrderingIssues.length === 0) {
+      for (const issue of validateRuleCreditMonotonicityIssues(validationRule)) {
         const path = mapIssueToFormFieldPath(issue);
         if (!path || seenPaths.has(path)) continue;
         seenPaths.add(path);

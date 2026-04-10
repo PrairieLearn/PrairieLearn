@@ -144,6 +144,11 @@ function AfterLastDeadlineInput({
               placeholder="Credit percentage"
               isInvalid={!!creditError}
               {...register(creditFieldPath, {
+                // This field is conditionally rendered (only when mode === 'partial_credit'),
+                // so we unregister to avoid submitting stale credit values. Note: this also
+                // clears the field's error from RHF state on unmount; the global validation
+                // layer in getGlobalDateValidationErrors() compensates by re-detecting the
+                // error independently of field mounting state.
                 shouldUnregister: true,
                 valueAsNumber: true,
                 validate: (v) => {

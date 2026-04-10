@@ -24,7 +24,10 @@ export type AccessControlIssuePath =
   | ['dateControl', 'releaseDate']
   | ['dateControl', 'dueDate']
   | ['dateControl', 'earlyDeadlines', number, 'date']
+  | ['dateControl', 'earlyDeadlines', number, 'credit']
   | ['dateControl', 'lateDeadlines', number, 'date']
+  | ['dateControl', 'lateDeadlines', number, 'credit']
+  | ['dateControl', 'afterLastDeadline', 'credit']
   | ['afterComplete', 'showQuestionsAgainDate']
   | ['afterComplete', 'hideQuestionsAgainDate']
   | ['afterComplete', 'showScoreAgainDate'];
@@ -409,17 +412,24 @@ export function validateRuleDateOrdering(rule: AccessControlJson): string[] {
 
 /**
  * Validates credit monotonicity within a single access control rule.
- * Returns an array of error messages (empty if valid).
+ * Returns structured issues with field paths.
  */
-export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[] {
-  const errors: string[] = [];
-  const dc = rule.dateControl;
-  if (!dc) return errors;
+export function validateRuleCreditMonotonicityIssues(
+  validationRule: AccessControlValidationRule,
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  const dc = validationRule.rule.dateControl;
+  if (!dc) return issues;
 
   if (dc.earlyDeadlines) {
-    for (const d of dc.earlyDeadlines) {
+    for (const [index, d] of dc.earlyDeadlines.entries()) {
       if (d.credit < 101 || d.credit > 200) {
-        errors.push(`Early deadline credit must be between 101% and 200%, got ${d.credit}%.`);
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'earlyDeadlines', index, 'credit'],
+          `Early deadline credit must be between 101% and 200%, got ${d.credit}%.`,
+        );
         break;
       }
     }
@@ -428,16 +438,26 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
   if (dc.earlyDeadlines && dc.earlyDeadlines.length > 1) {
     for (let i = 1; i < dc.earlyDeadlines.length; i++) {
       if (dc.earlyDeadlines[i].credit > dc.earlyDeadlines[i - 1].credit) {
-        errors.push('Early deadline credits must be monotonically decreasing.');
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'earlyDeadlines', i, 'credit'],
+          'Early deadline credits must be monotonically decreasing.',
+        );
         break;
       }
     }
   }
 
   if (dc.lateDeadlines) {
-    for (const d of dc.lateDeadlines) {
+    for (const [index, d] of dc.lateDeadlines.entries()) {
       if (d.credit < 0 || d.credit > 99) {
-        errors.push(`Late deadline credit must be between 0% and 99%, got ${d.credit}%.`);
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'lateDeadlines', index, 'credit'],
+          `Late deadline credit must be between 0% and 99%, got ${d.credit}%.`,
+        );
         break;
       }
     }
@@ -446,7 +466,12 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
   if (dc.lateDeadlines && dc.lateDeadlines.length > 1) {
     for (let i = 1; i < dc.lateDeadlines.length; i++) {
       if (dc.lateDeadlines[i].credit > dc.lateDeadlines[i - 1].credit) {
-        errors.push('Late deadline credits must be monotonically decreasing.');
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'lateDeadlines', i, 'credit'],
+          'Late deadline credits must be monotonically decreasing.',
+        );
         break;
       }
     }
@@ -454,18 +479,76 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
 
   const afterCredit = dc.afterLastDeadline?.credit;
   if (afterCredit != null) {
-    // Determine the preceding credit in the timeline.
     const precedingCredit =
       dc.lateDeadlines?.at(-1)?.credit ?? (dc.dueDate != null ? 100 : undefined);
 
     if (precedingCredit != null && afterCredit > precedingCredit) {
-      errors.push(
+      pushIssue(
+        issues,
+        validationRule,
+        ['dateControl', 'afterLastDeadline', 'credit'],
         `After-last-deadline credit (${afterCredit}%) must not exceed the preceding deadline's credit (${precedingCredit}%).`,
       );
     }
   }
 
-  return errors;
+  return issues;
+}
+
+/**
+ * Validates credit monotonicity within a single access control rule.
+ * Returns an array of error messages (empty if valid).
+ */
+export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[] {
+  return validateRuleCreditMonotonicityIssues({
+    rule,
+    targetType: 'none',
+    ruleIndex: 0,
+  }).map((issue) => issue.message);
+}
+
+/**
+ * Validates that deadline dates within a single rule are not duplicated.
+ * Returns structured issues with field paths.
+ */
+export function validateRuleDuplicateDateIssues(
+  validationRule: AccessControlValidationRule,
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  const dc = validationRule.rule.dateControl;
+  if (!dc) return issues;
+
+  if (dc.earlyDeadlines) {
+    const seenDates = new Set<string>();
+    for (const [index, d] of dc.earlyDeadlines.entries()) {
+      if (seenDates.has(d.date)) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'earlyDeadlines', index, 'date'],
+          `Duplicate early deadline date: ${d.date}.`,
+        );
+      }
+      seenDates.add(d.date);
+    }
+  }
+
+  if (dc.lateDeadlines) {
+    const seenDates = new Set<string>();
+    for (const [index, d] of dc.lateDeadlines.entries()) {
+      if (seenDates.has(d.date)) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'lateDeadlines', index, 'date'],
+          `Duplicate late deadline date: ${d.date}.`,
+        );
+      }
+      seenDates.add(d.date);
+    }
+  }
+
+  return issues;
 }
 
 /**
@@ -504,23 +587,10 @@ export function validateRule(
     seenUuids.add(e.examUuid);
   }
 
-  const earlyDates = new Set<string>();
-  for (const d of rule.dateControl?.earlyDeadlines ?? []) {
-    if (earlyDates.has(d.date)) {
-      errors.push(`Duplicate early deadline date: ${d.date}.`);
-    }
-    earlyDates.add(d.date);
-  }
-
-  const lateDates = new Set<string>();
-  for (const d of rule.dateControl?.lateDeadlines ?? []) {
-    if (lateDates.has(d.date)) {
-      errors.push(`Duplicate late deadline date: ${d.date}.`);
-    }
-    lateDates.add(d.date);
-  }
-
   errors.push(
+    ...validateRuleDuplicateDateIssues({ rule, targetType, ruleIndex: 0 }).map(
+      (issue) => issue.message,
+    ),
     ...validateRuleStructuralDependencyIssues({
       rule,
       targetType,

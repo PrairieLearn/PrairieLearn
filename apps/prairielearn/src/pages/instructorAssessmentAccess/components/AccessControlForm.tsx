@@ -85,11 +85,13 @@ export function AccessControlForm({
   const watchedData = watch();
   const manualErrorPathsRef = useRef<Set<AccessControlFormFieldPath>>(new Set());
 
-  // Sync cross-field date validation errors into react-hook-form as manual errors,
+  const globalValidationErrors = getGlobalDateValidationErrors(watchedData);
+
+  // Sync cross-field validation errors into react-hook-form as manual errors,
   // and clear them when the underlying issues are resolved.
   useEffect(() => {
     const nextManualErrors = new Map<AccessControlFormFieldPath, string>();
-    for (const error of getGlobalDateValidationErrors(watchedData)) {
+    for (const error of globalValidationErrors) {
       nextManualErrors.set(error.path, error.message);
     }
 
@@ -116,7 +118,7 @@ export function AccessControlForm({
     }
 
     manualErrorPathsRef.current = new Set(nextManualErrors.keys());
-  }, [clearErrors, getFieldState, setError, watchedData]);
+  }, [clearErrors, getFieldState, globalValidationErrors, setError]);
 
   const handleFormSubmit = (data: AccessControlFormData) => {
     onSubmit(formDataToJson(data));
@@ -183,7 +185,7 @@ export function AccessControlForm({
     }
   };
 
-  const hasManualErrors = getGlobalDateValidationErrors(watchedData).length > 0;
+  const hasManualErrors = globalValidationErrors.length > 0;
 
   const saveDisabledReason = isSaving
     ? 'Saving...'

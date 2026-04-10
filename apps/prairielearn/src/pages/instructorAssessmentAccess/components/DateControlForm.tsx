@@ -22,7 +22,7 @@ export function MainDateControlForm({
   description?: string;
   displayTimezone: string;
 }) {
-  const { register, setValue, getValues } = useFormContext<AccessControlFormData>();
+  const { register, setValue, getValues, trigger } = useFormContext<AccessControlFormData>();
 
   const dateControlEnabled = useWatch<AccessControlFormData, 'mainRule.dateControlEnabled'>({
     name: 'mainRule.dateControlEnabled',
@@ -43,6 +43,10 @@ export function MainDateControlForm({
                   shouldValidate: true,
                 });
               }
+              // Re-validate fields whose rules depend on dateControlEnabled.
+              // This must happen here (before unmount) because once the children
+              // unmount, their useController rules are gone and deps won't fire.
+              void trigger('mainRule.password');
             },
           })}
           aria-describedby="mainRule-date-control-help"
