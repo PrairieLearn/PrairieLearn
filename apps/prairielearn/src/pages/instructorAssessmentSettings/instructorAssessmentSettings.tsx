@@ -123,6 +123,7 @@ router.get(
               origHash={origHash}
               assessment={assessment}
               assessmentSet={assessment_set}
+              hasCoursePermissionView={authz_data.has_course_permission_view}
               assessmentGHLink={assessmentGHLink}
               tids={tids}
               studentLink={studentLink}

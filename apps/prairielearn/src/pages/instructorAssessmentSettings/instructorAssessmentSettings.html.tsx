@@ -34,13 +34,13 @@ interface SettingsFormValues {
   auto_close: boolean;
   require_honor_code: boolean;
   honor_code?: string;
-  max_points: number | null;
-  max_bonus_points: number | null;
+  max_points: string;
+  max_bonus_points: string;
   constant_question_value: boolean;
   shuffle_questions: boolean;
-  advance_score_perc: number | null;
+  advance_score_perc: string;
   allow_real_time_grading: boolean;
-  grade_rate_minutes: number | null;
+  grade_rate_minutes: string;
   tools?: Record<string, boolean>;
 }
 
@@ -149,13 +149,16 @@ function InstructorAssessmentSettingsInner({
     auto_close: assessment.auto_close ?? true,
     require_honor_code: assessment.require_honor_code ?? true,
     honor_code: assessment.honor_code ?? '',
-    max_points: assessment.max_points,
-    max_bonus_points: assessment.max_bonus_points,
+    max_points: assessment.max_points != null ? String(assessment.max_points) : '',
+    max_bonus_points:
+      assessment.max_bonus_points != null ? String(assessment.max_bonus_points) : '',
     constant_question_value: assessment.constant_question_value ?? false,
     shuffle_questions: assessment.shuffle_questions ?? assessment.type === 'Exam',
-    advance_score_perc: assessment.advance_score_perc,
+    advance_score_perc:
+      assessment.advance_score_perc != null ? String(assessment.advance_score_perc) : '',
     allow_real_time_grading: assessment.json_allow_real_time_grading !== false,
-    grade_rate_minutes: assessment.json_grade_rate_minutes,
+    grade_rate_minutes:
+      assessment.json_grade_rate_minutes != null ? String(assessment.json_grade_rate_minutes) : '',
     tools: Object.fromEntries(assessmentTools.map(({ name, enabled }) => [name, enabled])),
   };
 
@@ -164,6 +167,7 @@ function InstructorAssessmentSettingsInner({
     reset,
     watch,
     setValue,
+    getValues,
     handleSubmit,
     formState: { isDirty, errors, isSubmitting },
   } = useForm<SettingsFormValues>({
@@ -183,18 +187,23 @@ function InstructorAssessmentSettingsInner({
     deleteMutation.error,
   );
 
+  const toNullableNumber = (v: string) => (v === '' ? null : Number(v));
+
   const onFormSubmit = (data: SettingsFormValues) => {
-    const sanitized = {
-      ...data,
-      max_points: useCustomMaxPoints ? data.max_points : null,
-    };
     saveMutation.mutate(
-      { ...sanitized, origHash: currentOrigHash },
+      {
+        ...data,
+        max_points: useCustomMaxPoints ? toNullableNumber(data.max_points) : null,
+        max_bonus_points: toNullableNumber(data.max_bonus_points),
+        advance_score_perc: toNullableNumber(data.advance_score_perc),
+        grade_rate_minutes: toNullableNumber(data.grade_rate_minutes),
+        origHash: currentOrigHash,
+      },
       {
         onSuccess: (result) => {
           setCurrentOrigHash(result.origHash);
-          reset(sanitized);
-          setUseCustomMaxPoints(sanitized.max_points != null);
+          reset(data);
+          setUseCustomMaxPoints(data.max_points !== '');
         },
       },
     );
@@ -202,6 +211,7 @@ function InstructorAssessmentSettingsInner({
 
   const requireHonorCode = watch('require_honor_code');
   const currentAid = watch('aid');
+
   const currentGHLink =
     assessmentGHLink && assessment.tid
       ? assessmentGHLink.replace(
@@ -479,9 +489,7 @@ function InstructorAssessmentSettingsInner({
                 onChange={(e) => {
                   setUseCustomMaxPoints(e.target.checked);
                   if (!e.target.checked) {
-                    const input = document.getElementById('max_points') as HTMLInputElement;
-                    input.value = '';
-                    setValue('max_points', null, { shouldDirty: true });
+                    setValue('max_points', '', { shouldDirty: true });
                   }
                 }}
               />
@@ -506,10 +514,8 @@ function InstructorAssessmentSettingsInner({
                   min="0"
                   step="any"
                   disabled={!canEdit || !useCustomMaxPoints}
-                  defaultValue={defaultValues.max_points ?? ''}
-                  {...register('max_points', {
-                    setValueAs: (v) => (v === '' ? null : Number(v)),
-                  })}
+                  defaultValue={defaultValues.max_points}
+                  {...register('max_points')}
                 />
                 <small id="max-points-help" className="form-text text-muted">
                   {useCustomMaxPoints
@@ -530,10 +536,8 @@ function InstructorAssessmentSettingsInner({
                   min="0"
                   step="any"
                   disabled={!canEdit}
-                  defaultValue={defaultValues.max_bonus_points ?? ''}
-                  {...register('max_bonus_points', {
-                    setValueAs: (v) => (v === '' ? null : Number(v)),
-                  })}
+                  defaultValue={defaultValues.max_bonus_points}
+                  {...register('max_bonus_points')}
                 />
                 <small id="max-bonus-points-help" className="form-text text-muted">
                   Maximum additional points beyond the maximum.
@@ -603,8 +607,8 @@ function InstructorAssessmentSettingsInner({
                         max="100"
                         step="1"
                         disabled={!canEdit}
-                        defaultValue={defaultValues.advance_score_perc ?? 0}
-                        {...register('advance_score_perc', { valueAsNumber: true })}
+                        defaultValue={defaultValues.advance_score_perc}
+                        {...register('advance_score_perc')}
                       />
                       <InputGroup.Text>%</InputGroup.Text>
                     </InputGroup>
@@ -658,10 +662,8 @@ function InstructorAssessmentSettingsInner({
                     min="0"
                     step="any"
                     disabled={!canEdit}
-                    defaultValue={defaultValues.grade_rate_minutes ?? ''}
-                    {...register('grade_rate_minutes', {
-                      setValueAs: (v) => (v === '' ? null : Number(v)),
-                    })}
+                    defaultValue={defaultValues.grade_rate_minutes}
+                    {...register('grade_rate_minutes')}
                   />
                 </div>
               </div>
@@ -847,7 +849,8 @@ function InstructorAssessmentSettingsInner({
                     className="btn btn-sm btn-outline-secondary"
                     disabled={isSubmitting || saveMutation.isPending}
                     onClick={() => {
-                      reset(defaultValues);
+                      reset();
+                      setUseCustomMaxPoints(getValues('max_points') !== '');
                       saveMutation.reset();
                     }}
                   >
