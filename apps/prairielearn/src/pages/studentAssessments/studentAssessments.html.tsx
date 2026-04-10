@@ -1,8 +1,5 @@
 import { z } from 'zod';
 
-import { Hydrate } from '@prairielearn/react/server';
-
-import { PageLayout } from '../../components/PageLayout.js';
 import {
   AssessmentAccessRuleSchema,
   AssessmentInstanceSchema,
@@ -10,12 +7,6 @@ import {
   AssessmentSetSchema,
   SprocAuthzAssessmentSchema,
 } from '../../lib/db-types.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
-
-import {
-  StudentAssessmentsTable,
-  StudentAssessmentsTableRowSchema,
-} from './components/StudentAssessmentsTable.js';
 
 export const StudentAssessmentsRowSchema = z.object({
   assessment_id: AssessmentSchema.shape.id,
@@ -40,46 +31,3 @@ export const StudentAssessmentsRowSchema = z.object({
   show_before_release: z.boolean().optional(),
   opens_at: z.string().nullable().optional(),
 });
-type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowSchema>;
-
-export function StudentAssessments({
-  resLocals,
-  rows,
-}: {
-  resLocals: ResLocalsForPage<'course-instance'>;
-  rows: StudentAssessmentsRow[];
-}) {
-  const { authz_data, course_instance } = resLocals;
-  const safeRows = z.array(StudentAssessmentsTableRowSchema).parse(rows);
-  return PageLayout({
-    resLocals,
-    pageTitle: 'Assessments',
-    navContext: {
-      type: 'student',
-      page: 'assessments',
-    },
-    content: (
-      <>
-        <div className="card mb-4">
-          <div className="card-header bg-primary text-white">
-            <h1>Assessments</h1>
-          </div>
-          <Hydrate>
-            <StudentAssessmentsTable
-              rows={safeRows}
-              courseInstanceId={course_instance.id}
-              displayTimezone={course_instance.display_timezone}
-            />
-          </Hydrate>
-        </div>
-        {authz_data.mode === 'Exam' && (
-          <p>
-            Don't see your exam? Exams for this course are only made available to students with
-            checked-in exam reservations who have clicked the "Start exam" button in PrairieTest.
-            See a proctor for assistance.
-          </p>
-        )}
-      </>
-    ),
-  });
-}
