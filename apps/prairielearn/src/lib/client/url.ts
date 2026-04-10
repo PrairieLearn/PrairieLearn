@@ -2,14 +2,14 @@ export function getStudentCourseInstanceUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}`;
 }
 
-export function getStudentAssessmentUrl({
-  courseInstanceId,
-  assessmentId,
-}: {
-  courseInstanceId: string;
-  assessmentId: string;
-}): string {
-  return `/pl/course_instance/${courseInstanceId}/assessment/${assessmentId}/`;
+export function getStudentAssessmentUrl(
+  courseInstanceIdOrOpts: string | { courseInstanceId: string; assessmentId: string },
+  assessmentId?: string,
+): string {
+  if (typeof courseInstanceIdOrOpts === 'string') {
+    return `${getStudentCourseInstanceUrl(courseInstanceIdOrOpts)}/assessment/${assessmentId}`;
+  }
+  return `/pl/course_instance/${courseInstanceIdOrOpts.courseInstanceId}/assessment/${courseInstanceIdOrOpts.assessmentId}/`;
 }
 
 export function getStudentAssessmentInstanceUrl({
@@ -41,10 +41,6 @@ export function getAssessmentUrl({
   }
 
   return `${urlPrefix}/assessment/${assessmentId}`;
-}
-
-export function getStudentAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
-  return `${getStudentCourseInstanceUrl(courseInstanceId)}/assessment/${assessmentId}`;
 }
 
 export function getPublicAssessmentUrl(courseInstanceId: string, assessmentId: string): string {

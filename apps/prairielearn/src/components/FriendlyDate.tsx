@@ -1,5 +1,5 @@
 import { type Temporal } from '@js-temporal/polyfill';
-import { type FC, createContext, use } from 'react';
+import { type FC, createContext, use, useState } from 'react';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 
@@ -25,8 +25,10 @@ export const FriendlyDate: FC<FriendlyDateProps> = ({
   const timezoneContext = use(TimezoneContext);
   timezone = timezone ?? timezoneContext;
 
+  // Capture "now" once on mount to avoid impure new Date() calls during re-renders.
+  const [baseDate] = useState(() => new Date());
   const friendlyString = formatDateFriendly(date, timezone, {
-    baseDate: relative ? new Date() : undefined,
+    baseDate: relative ? baseDate : undefined,
     ...options,
   });
   const fullString = formatDate(date, timezone, fullOptions);
