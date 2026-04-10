@@ -121,8 +121,8 @@ function DeadlineArrayInput({
     if (!value) return 'Date is required';
 
     const currentDueDate = dueDateRef.current ? new Date(dueDateRef.current) : null;
-    if (!currentDueDate) {
-      return isEarly ? 'Early deadlines require a due date' : 'Late deadlines require a due date';
+    if (!currentDueDate && !isEarly) {
+      return 'Late deadlines require a due date';
     }
 
     const deadlineDate = new Date(value);
@@ -137,7 +137,7 @@ function DeadlineArrayInput({
     }
 
     if (isEarly) {
-      if (deadlineDate >= currentDueDate) {
+      if (currentDueDate && deadlineDate >= currentDueDate) {
         return 'Early deadline is out of range';
       }
       if (index > 0 && currentDeadlines[index - 1]?.date) {
@@ -152,7 +152,7 @@ function DeadlineArrayInput({
       if (currentReleaseDate && deadlineDate <= currentReleaseDate) {
         return 'Deadline is out of range';
       }
-      if (deadlineDate <= currentDueDate) {
+      if (currentDueDate && deadlineDate <= currentDueDate) {
         return 'Late deadline is out of range';
       }
       if (index > 0 && currentDeadlines[index - 1]?.date) {

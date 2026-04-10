@@ -102,22 +102,14 @@ export function validateRuleStructuralDependencyIssues(
   const rule = validationRule.rule;
   const dc = rule.dateControl;
 
-  // Constraint 1: Early/late deadlines require a due date.
-  // Early deadlines are "before the due date" and late deadlines are "after
-  // the due date" — they're defined relative to the due date.
+  // Constraint 1: Late deadlines require a due date.
+  // Late deadlines define credit after the due date, so they need one as an anchor.
+  // Early deadlines are standalone bonus-credit windows and don't need a due date.
   // On overrides, dueDate === undefined means "inherit from main rule" (valid),
-  // while dueDate === null means "explicitly no due date" (invalid with deadlines).
+  // while dueDate === null means "explicitly no due date" (invalid with late deadlines).
   if (dc) {
     const dueDateMissing = validationRule.targetType === 'none' ? !dc.dueDate : dc.dueDate === null;
 
-    if (dc.earlyDeadlines && dc.earlyDeadlines.length > 0 && dueDateMissing) {
-      pushIssue(
-        issues,
-        validationRule,
-        ['dateControl', 'earlyDeadlines', 0, 'date'],
-        'Early deadlines require a due date.',
-      );
-    }
     if (dc.lateDeadlines && dc.lateDeadlines.length > 0 && dueDateMissing) {
       pushIssue(
         issues,

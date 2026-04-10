@@ -945,7 +945,7 @@ describe('Duplicate detection', () => {
 });
 
 describe('Structural field dependency validation', () => {
-  it('should reject early deadlines without a due date', () => {
+  it('should accept early deadlines without a due date', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 120 }],
@@ -956,7 +956,7 @@ describe('Structural field dependency validation', () => {
       targetType: 'none',
       ruleIndex: 0,
     });
-    assert.isTrue(issues.some((i) => i.message.includes('Early deadlines require a due date')));
+    assert.deepEqual(issues, []);
   });
 
   it('should reject late deadlines without a due date', () => {
@@ -1084,12 +1084,12 @@ describe('Structural field dependency validation', () => {
     assert.deepEqual(issues, []);
   });
 
-  it('should reject overrides that explicitly clear due date with deadlines', () => {
+  it('should reject overrides that explicitly clear due date with late deadlines', () => {
     const rule = AccessControlJsonSchema.parse({
       labels: ['Section A'],
       dateControl: {
         dueDate: null,
-        earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 120 }],
+        lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
       },
     });
     const issues = validateRuleStructuralDependencyIssues({
@@ -1097,6 +1097,6 @@ describe('Structural field dependency validation', () => {
       targetType: 'student_label',
       ruleIndex: 1,
     });
-    assert.isTrue(issues.some((i) => i.message.includes('Early deadlines require a due date')));
+    assert.isTrue(issues.some((i) => i.message.includes('Late deadlines require a due date')));
   });
 });
