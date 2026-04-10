@@ -325,22 +325,25 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   // (questions.hidden: true, score.hidden: false).
   const qv = rule.questionVisibility;
   const sv = rule.scoreVisibility;
-  const hasNonDefaultAfterComplete =
-    !qv.hidden || qv.visibleFrom || qv.visibleUntil || sv.hidden || sv.visibleFrom;
+  const hasNonDefaultQuestions = !qv.hidden || qv.visibleFrom || qv.visibleUntil;
+  const hasNonDefaultScore = sv.hidden || sv.visibleFrom;
 
-  if (hasNonDefaultAfterComplete) {
-    output.afterComplete = {
-      questions: qv.hidden
+  if (hasNonDefaultQuestions || hasNonDefaultScore) {
+    output.afterComplete = {};
+    if (hasNonDefaultQuestions) {
+      output.afterComplete.questions = qv.hidden
         ? qv.visibleFrom
           ? { hidden: true, visibleFrom: qv.visibleFrom, visibleUntil: qv.visibleUntil }
           : { hidden: true }
-        : { hidden: false },
-      score: sv.hidden
+        : { hidden: false };
+    }
+    if (hasNonDefaultScore) {
+      output.afterComplete.score = sv.hidden
         ? sv.visibleFrom
           ? { hidden: true, visibleFrom: sv.visibleFrom }
           : { hidden: true }
-        : { hidden: false },
-    };
+        : { hidden: false };
+    }
   }
 
   return output;

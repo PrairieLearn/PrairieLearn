@@ -89,6 +89,21 @@ describe('formDataToJson', () => {
     expect(mainRule.listBeforeRelease).toBe(false);
   });
 
+  it('omits default score visibility when only main-rule question visibility is non-default', () => {
+    const result = formDataToJson({
+      mainRule: {
+        ...defaultMainRule,
+        questionVisibility: { hidden: false },
+        scoreVisibility: { hidden: false },
+      },
+      overrides: [],
+    });
+
+    expect(result[0].afterComplete).toEqual({
+      questions: { hidden: false },
+    });
+  });
+
   it('omits dateControl when no date fields are overridden', () => {
     const override: OverrideData = {
       ...baseOverride,
