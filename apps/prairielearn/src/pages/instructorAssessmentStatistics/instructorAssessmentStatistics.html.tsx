@@ -124,14 +124,16 @@ export function InstructorAssessmentStatistics({
                       <td>Number of 0%</td>
                       <td>
                         ${assessment.score_stat_n_zero}
-                        (${Math.round(assessment.score_stat_n_zero_perc)}% of class)
+                        (${Math.round(assessment.score_stat_n_zero_perc)}% of
+                        ${assessment.score_stat_number})
                       </td>
                     </tr>
                     <tr>
                       <td>Number of 100%</td>
                       <td>
                         ${assessment.score_stat_n_hundred}
-                        (${Math.round(assessment.score_stat_n_hundred_perc)}% of class)
+                        (${Math.round(assessment.score_stat_n_hundred_perc)}% of
+                        ${assessment.score_stat_number})
                       </td>
                     </tr>
                   </tbody>
