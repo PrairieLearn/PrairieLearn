@@ -8,7 +8,7 @@ import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
-import { endOfDayDatetime, getLatestEarlyDeadlineDate } from '../utils/dateUtils.js';
+import { endOfDayDatetime, getLatestDeadlineEntry } from '../utils/dateUtils.js';
 
 function localDatetimeToTimezoneDate(value: string, timezone: string): Date {
   return new Date(Temporal.PlainDateTime.from(value).toZonedDateTime(timezone).epochMilliseconds);
@@ -42,7 +42,7 @@ function DueDateInput({
     if (!value) return null;
 
     const dueDatePlain = Temporal.PlainDateTime.from(value);
-    const latestEarly = earlyDeadlines ? getLatestEarlyDeadlineDate(earlyDeadlines) : null;
+    const latestEarly = earlyDeadlines ? getLatestDeadlineEntry(earlyDeadlines) : null;
 
     if (latestEarly) {
       return (

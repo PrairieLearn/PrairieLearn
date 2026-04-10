@@ -25,7 +25,7 @@ export function endOfDayDatetime(date: Temporal.PlainDate): string {
     .toString({ smallestUnit: 'second' });
 }
 
-function getLatestDeadlineEntry(deadlines: DeadlineEntry[]): Temporal.PlainDateTime | null {
+export function getLatestDeadlineEntry(deadlines: DeadlineEntry[]): Temporal.PlainDateTime | null {
   let latest = '';
   for (const d of deadlines) {
     if (d.date && d.date > latest) latest = d.date;
@@ -49,8 +49,3 @@ export function getLastDeadlineDate(
   return null;
 }
 
-export function getLatestEarlyDeadlineDate(
-  earlyDeadlines: DeadlineEntry[],
-): Temporal.PlainDateTime | null {
-  return getLatestDeadlineEntry(earlyDeadlines);
-}
