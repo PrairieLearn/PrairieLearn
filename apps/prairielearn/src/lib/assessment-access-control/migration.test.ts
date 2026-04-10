@@ -1159,4 +1159,3 @@ describe('migrateAssessmentJson fallback release date', () => {
     assert.isUndefined(parsed.accessControl[0].dateControl?.releaseDate);
   });
 });
-
