@@ -40,14 +40,14 @@ BEGIN
             date_control_password_overridden = (rule_data ->> 'date_control_password_overridden')::boolean,
             date_control_password = (rule_data ->> 'date_control_password')::text,
 
-            after_complete_hide_questions = (rule_data ->> 'after_complete_hide_questions')::boolean,
-            after_complete_show_questions_again_date_overridden = (rule_data ->> 'after_complete_show_questions_again_date_overridden')::boolean,
-            after_complete_show_questions_again_date = input_date(rule_data ->> 'after_complete_show_questions_again_date', ci_timezone),
-            after_complete_hide_questions_again_date_overridden = (rule_data ->> 'after_complete_hide_questions_again_date_overridden')::boolean,
-            after_complete_hide_questions_again_date = input_date(rule_data ->> 'after_complete_hide_questions_again_date', ci_timezone),
-            after_complete_hide_score = (rule_data ->> 'after_complete_hide_score')::boolean,
-            after_complete_show_score_again_date_overridden = (rule_data ->> 'after_complete_show_score_again_date_overridden')::boolean,
-            after_complete_show_score_again_date = input_date(rule_data ->> 'after_complete_show_score_again_date', ci_timezone)
+            after_complete_questions_hidden = (rule_data ->> 'after_complete_questions_hidden')::boolean,
+            after_complete_questions_visible_from_overridden = (rule_data ->> 'after_complete_questions_visible_from_overridden')::boolean,
+            after_complete_questions_visible_from = input_date(rule_data ->> 'after_complete_questions_visible_from', ci_timezone),
+            after_complete_questions_visible_until_overridden = (rule_data ->> 'after_complete_questions_visible_until_overridden')::boolean,
+            after_complete_questions_visible_until = input_date(rule_data ->> 'after_complete_questions_visible_until', ci_timezone),
+            after_complete_score_hidden = (rule_data ->> 'after_complete_score_hidden')::boolean,
+            after_complete_score_visible_from_overridden = (rule_data ->> 'after_complete_score_visible_from_overridden')::boolean,
+            after_complete_score_visible_from = input_date(rule_data ->> 'after_complete_score_visible_from', ci_timezone)
         FROM assessments AS a
         WHERE assessment_access_control_rules.id = existing_rule_id
             AND assessment_access_control_rules.assessment_id = syncing_assessment_id
@@ -94,14 +94,14 @@ BEGIN
             date_control_password_overridden,
             date_control_password,
 
-            after_complete_hide_questions,
-            after_complete_show_questions_again_date_overridden,
-            after_complete_show_questions_again_date,
-            after_complete_hide_questions_again_date_overridden,
-            after_complete_hide_questions_again_date,
-            after_complete_hide_score,
-            after_complete_show_score_again_date_overridden,
-            after_complete_show_score_again_date
+            after_complete_questions_hidden,
+            after_complete_questions_visible_from_overridden,
+            after_complete_questions_visible_from,
+            after_complete_questions_visible_until_overridden,
+            after_complete_questions_visible_until,
+            after_complete_score_hidden,
+            after_complete_score_visible_from_overridden,
+            after_complete_score_visible_from
         ) VALUES (
             syncing_assessment_id,
             next_number,
@@ -120,14 +120,14 @@ BEGIN
             (rule_data ->> 'date_control_password_overridden')::boolean,
             (rule_data ->> 'date_control_password')::text,
 
-            (rule_data ->> 'after_complete_hide_questions')::boolean,
-            (rule_data ->> 'after_complete_show_questions_again_date_overridden')::boolean,
-            input_date(rule_data ->> 'after_complete_show_questions_again_date', ci_timezone),
-            (rule_data ->> 'after_complete_hide_questions_again_date_overridden')::boolean,
-            input_date(rule_data ->> 'after_complete_hide_questions_again_date', ci_timezone),
-            (rule_data ->> 'after_complete_hide_score')::boolean,
-            (rule_data ->> 'after_complete_show_score_again_date_overridden')::boolean,
-            input_date(rule_data ->> 'after_complete_show_score_again_date', ci_timezone)
+            (rule_data ->> 'after_complete_questions_hidden')::boolean,
+            (rule_data ->> 'after_complete_questions_visible_from_overridden')::boolean,
+            input_date(rule_data ->> 'after_complete_questions_visible_from', ci_timezone),
+            (rule_data ->> 'after_complete_questions_visible_until_overridden')::boolean,
+            input_date(rule_data ->> 'after_complete_questions_visible_until', ci_timezone),
+            (rule_data ->> 'after_complete_score_hidden')::boolean,
+            (rule_data ->> 'after_complete_score_visible_from_overridden')::boolean,
+            input_date(rule_data ->> 'after_complete_score_visible_from', ci_timezone)
         ) RETURNING id INTO new_rule_id;
     END IF;
 

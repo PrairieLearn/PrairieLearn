@@ -48,14 +48,14 @@ BEGIN
         date_control_password_overridden,
         date_control_password,
 
-        after_complete_hide_questions,
-        after_complete_show_questions_again_date_overridden,
-        after_complete_show_questions_again_date,
-        after_complete_hide_questions_again_date_overridden,
-        after_complete_hide_questions_again_date,
-        after_complete_hide_score,
-        after_complete_show_score_again_date_overridden,
-        after_complete_show_score_again_date
+        after_complete_questions_hidden,
+        after_complete_questions_visible_from_overridden,
+        after_complete_questions_visible_from,
+        after_complete_questions_visible_until_overridden,
+        after_complete_questions_visible_until,
+        after_complete_score_hidden,
+        after_complete_score_visible_from_overridden,
+        after_complete_score_visible_from
     )
     SELECT
         (rule ->> 'assessment_id')::bigint,
@@ -75,14 +75,14 @@ BEGIN
         (rule ->> 'date_control_password_overridden')::boolean,
         (rule ->> 'date_control_password')::text,
 
-        (rule ->> 'after_complete_hide_questions')::boolean,
-        (rule ->> 'after_complete_show_questions_again_date_overridden')::boolean,
-        input_date(rule ->> 'after_complete_show_questions_again_date', ci_timezone),
-        (rule ->> 'after_complete_hide_questions_again_date_overridden')::boolean,
-        input_date(rule ->> 'after_complete_hide_questions_again_date', ci_timezone),
-        (rule ->> 'after_complete_hide_score')::boolean,
-        (rule ->> 'after_complete_show_score_again_date_overridden')::boolean,
-        input_date(rule ->> 'after_complete_show_score_again_date', ci_timezone)
+        (rule ->> 'after_complete_questions_hidden')::boolean,
+        (rule ->> 'after_complete_questions_visible_from_overridden')::boolean,
+        input_date(rule ->> 'after_complete_questions_visible_from', ci_timezone),
+        (rule ->> 'after_complete_questions_visible_until_overridden')::boolean,
+        input_date(rule ->> 'after_complete_questions_visible_until', ci_timezone),
+        (rule ->> 'after_complete_score_hidden')::boolean,
+        (rule ->> 'after_complete_score_visible_from_overridden')::boolean,
+        input_date(rule ->> 'after_complete_score_visible_from', ci_timezone)
     FROM UNNEST(rules_data) AS rule
     ON CONFLICT (assessment_id, number, target_type) DO UPDATE SET
         list_before_release = EXCLUDED.list_before_release,
@@ -99,14 +99,14 @@ BEGIN
         date_control_password_overridden = EXCLUDED.date_control_password_overridden,
         date_control_password = EXCLUDED.date_control_password,
 
-        after_complete_hide_questions = EXCLUDED.after_complete_hide_questions,
-        after_complete_show_questions_again_date_overridden = EXCLUDED.after_complete_show_questions_again_date_overridden,
-        after_complete_show_questions_again_date = EXCLUDED.after_complete_show_questions_again_date,
-        after_complete_hide_questions_again_date_overridden = EXCLUDED.after_complete_hide_questions_again_date_overridden,
-        after_complete_hide_questions_again_date = EXCLUDED.after_complete_hide_questions_again_date,
-        after_complete_hide_score = EXCLUDED.after_complete_hide_score,
-        after_complete_show_score_again_date_overridden = EXCLUDED.after_complete_show_score_again_date_overridden,
-        after_complete_show_score_again_date = EXCLUDED.after_complete_show_score_again_date;
+        after_complete_questions_hidden = EXCLUDED.after_complete_questions_hidden,
+        after_complete_questions_visible_from_overridden = EXCLUDED.after_complete_questions_visible_from_overridden,
+        after_complete_questions_visible_from = EXCLUDED.after_complete_questions_visible_from,
+        after_complete_questions_visible_until_overridden = EXCLUDED.after_complete_questions_visible_until_overridden,
+        after_complete_questions_visible_until = EXCLUDED.after_complete_questions_visible_until,
+        after_complete_score_hidden = EXCLUDED.after_complete_score_hidden,
+        after_complete_score_visible_from_overridden = EXCLUDED.after_complete_score_visible_from_overridden,
+        after_complete_score_visible_from = EXCLUDED.after_complete_score_visible_from;
 
     -- Upsert student labels by joining on (assessment_id, number) to resolve the
     -- access control ID. Student labels always have target_type='student_label'.

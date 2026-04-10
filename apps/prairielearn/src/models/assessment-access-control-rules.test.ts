@@ -76,4 +76,32 @@ describe('dbRowToAccessControlJson', () => {
       },
     });
   });
+
+  it('omits hidden-absent afterComplete questions with date overrides', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          after_complete_questions_hidden: null,
+          after_complete_questions_visible_from: new Date('2025-03-01T00:00:00Z'),
+          after_complete_questions_visible_from_overridden: true,
+        },
+      }),
+    );
+
+    expect(result.afterComplete?.questions).toBeUndefined();
+  });
+
+  it('omits hidden-absent afterComplete score with date overrides', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          after_complete_score_hidden: null,
+          after_complete_score_visible_from: new Date('2025-03-01T00:00:00Z'),
+          after_complete_score_visible_from_overridden: true,
+        },
+      }),
+    );
+
+    expect(result.afterComplete?.score).toBeUndefined();
+  });
 });

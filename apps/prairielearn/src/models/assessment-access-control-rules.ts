@@ -153,19 +153,7 @@ function dbBaseRowToAccessControlJson(
   type QuestionsJson = NonNullable<NonNullable<AccessControlJson['afterComplete']>['questions']>;
   let questions: QuestionsJson | undefined;
   if (qHidden === null) {
-    // No hidden set — override inheriting from main rule.
-    if (qVisibleFrom != null && qVisibleFrom.length > 0) {
-      questions = {
-        visibleFrom: qVisibleFrom,
-        ...(qVisibleUntil !== undefined && { visibleUntil: qVisibleUntil }),
-      };
-    } else if (qVisibleFrom !== undefined || qVisibleUntil !== undefined) {
-      // visibleFrom is absent/null, so visibleUntil must also be null per schema.
-      questions = {
-        ...(qVisibleFrom !== undefined && { visibleFrom: null }),
-        ...(qVisibleUntil !== undefined && { visibleUntil: null }),
-      };
-    }
+    questions = undefined;
   } else if (qHidden === false) {
     questions = { hidden: false as const };
   } else if (qVisibleFrom != null && qVisibleFrom.length > 0) {
@@ -186,9 +174,7 @@ function dbBaseRowToAccessControlJson(
     : undefined;
 
   if (sHidden === null) {
-    if (sVisibleFrom !== undefined) {
-      score = { visibleFrom: sVisibleFrom };
-    }
+    score = undefined;
   } else if (sHidden === false) {
     score = { hidden: false as const };
   } else if (sVisibleFrom !== undefined) {

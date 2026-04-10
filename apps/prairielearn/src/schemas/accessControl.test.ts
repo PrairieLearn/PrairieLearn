@@ -87,7 +87,7 @@ describe('AccessControlJsonSchema', () => {
       expect(result.success).toBe(false);
     });
 
-    it('allows date fields when hidden is absent (override inheriting boolean)', () => {
+    it('rejects visibleFrom when hidden is absent', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
           questions: {
@@ -95,7 +95,7 @@ describe('AccessControlJsonSchema', () => {
           },
         },
       });
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
     });
 
     it('rejects visibleUntil without visibleFrom', () => {
@@ -186,7 +186,7 @@ describe('AccessControlJsonSchema', () => {
       expect(result.success).toBe(false);
     });
 
-    it('allows visibleFrom when hidden is absent (override inheriting boolean)', () => {
+    it('rejects visibleFrom when hidden is absent', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
           score: {
@@ -194,7 +194,7 @@ describe('AccessControlJsonSchema', () => {
           },
         },
       });
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
     });
   });
 

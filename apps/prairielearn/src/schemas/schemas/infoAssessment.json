@@ -912,7 +912,7 @@
                 {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": ["visibleFrom"],
+                  "required": ["hidden", "visibleFrom"],
                   "properties": {
                     "hidden": {
                       "type": "boolean",
@@ -952,7 +952,7 @@
                 {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": ["visibleFrom"],
+                  "required": ["hidden", "visibleFrom"],
                   "properties": {
                     "hidden": {
                       "type": "boolean",

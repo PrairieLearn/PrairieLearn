@@ -618,7 +618,7 @@ Below are common legacy patterns and their modern equivalents.
             "dueDate": "2025-02-15T23:59:59"
           },
           "afterComplete": {
-            "hideQuestions": true
+            "questions": { "hidden": true }
           }
         }
       ]
@@ -657,7 +657,7 @@ Below are common legacy patterns and their modern equivalents.
             "dueDate": "2025-02-15T23:59:59"
           },
           "afterComplete": {
-            "hideScore": true
+            "score": { "hidden": true }
           }
         }
       ]
