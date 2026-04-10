@@ -62,7 +62,7 @@ function hasRealTimeGradingDisabled(zones: ZoneAssessmentForm[]): boolean {
     if (zone.allowRealTimeGrading === false) return true;
     return zone.questions.some((question) => {
       if (question.allowRealTimeGrading === false) return true;
-      return question.alternatives?.some((alt) => alt.allowRealTimeGrading === false);
+      return question.alternatives?.some((alt) => alt.allowRealTimeGrading === false) ?? false;
     });
   });
 }
