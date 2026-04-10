@@ -142,7 +142,7 @@ export function validateRuleStructuralDependencyIssues(
         issues,
         validationRule,
         ['afterComplete', 'showQuestionsAgainDate'],
-        'After-complete dates require at least one deadline (due date, early deadline, or late deadline).',
+        'After-complete dates require at least one deadline (due date or late deadline).',
       );
     }
     if (ac.hideQuestionsAgainDate) {
@@ -150,7 +150,7 @@ export function validateRuleStructuralDependencyIssues(
         issues,
         validationRule,
         ['afterComplete', 'hideQuestionsAgainDate'],
-        'After-complete dates require at least one deadline (due date, early deadline, or late deadline).',
+        'After-complete dates require at least one deadline (due date or late deadline).',
       );
     }
     if (ac.showScoreAgainDate) {
@@ -158,7 +158,7 @@ export function validateRuleStructuralDependencyIssues(
         issues,
         validationRule,
         ['afterComplete', 'showScoreAgainDate'],
-        'After-complete dates require at least one deadline (due date, early deadline, or late deadline).',
+        'After-complete dates require at least one deadline (due date or late deadline).',
       );
     }
   }
