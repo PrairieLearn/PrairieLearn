@@ -579,12 +579,9 @@ function GradebookTable({
               { name: 'Enrollment', value: row.enrollment?.status ?? null },
               {
                 name: 'Labels',
-                value:
-                  row.student_label_ids.length > 0
-                    ? row.student_label_ids
-                        .map((id) => studentLabelsById.get(id)?.name)
-                        .filter((name): name is string => name != null)
-                    : null,
+                value: row.student_label_ids
+                  .map((id) => studentLabelsById.get(id)?.name)
+                  .filter((name): name is string => name != null),
               },
             ];
             for (const assessment of courseAssessments) {
@@ -601,12 +598,9 @@ function GradebookTable({
             uin: row.uin,
             role: row.role,
             enrollment_status: row.enrollment?.status ?? null,
-            labels:
-              row.student_label_ids.length > 0
-                ? row.student_label_ids
-                    .map((id) => studentLabelsById.get(id)?.name)
-                    .filter((name): name is string => name != null)
-                : [],
+            labels: row.student_label_ids
+              .map((id) => studentLabelsById.get(id)?.name)
+              .filter((name): name is string => name != null),
             assessments: courseAssessments.map((assessment) => ({
               assessment_id: assessment.assessment_id,
               short_name: assessment.tid,

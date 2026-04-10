@@ -715,12 +715,9 @@ function StudentsCard({
             email: row.user?.email ?? null,
             enrollment_status: row.enrollment.status,
             first_joined_at: row.enrollment.first_joined_at?.toISOString() ?? null,
-            labels:
-              row.student_label_ids.length > 0
-                ? row.student_label_ids
-                    .map((id) => studentLabelsById.get(id)?.name)
-                    .filter((name): name is string => name != null)
-                : [],
+            labels: row.student_label_ids
+              .map((id) => studentLabelsById.get(id)?.name)
+              .filter((name): name is string => name != null),
           }),
           hasSelection: false,
         }}
