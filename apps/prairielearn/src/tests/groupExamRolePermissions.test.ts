@@ -293,7 +293,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       let $ = $assessmentInstanceFirstUserPage;
 
       // The second and third questions should not be viewable
-      const lockedRows = $('tr [data-test-id="locked-instance-question-row"]');
+      const lockedRows = $('tr [data-testid="locked-instance-question-row"]');
       assert.lengthOf(lockedRows, 2);
 
       lockedRows.each((_, element) => {

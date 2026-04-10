@@ -11,6 +11,8 @@ import type {
   StudentAssessmentInstanceBodyProps,
 } from './types.js';
 
+StudentAssessmentInstanceBody.displayName = 'StudentAssessmentInstanceBody';
+
 export function StudentAssessmentInstanceBody({
   assessmentType,
   assessmentSetAbbreviation,
