@@ -179,9 +179,7 @@ function CanvasCsvModalContent({
         // zones). Fall back to the instance-level max_points from the
         // first student who has a score for this assessment.
 
-        const scoreWithMax = validRows.find(
-          (r) => r.scores[a.assessment_id]?.max_points != null,
-        );
+        const scoreWithMax = validRows.find((r) => r.scores[a.assessment_id]?.max_points != null);
 
         return canvasPointsPossibleValue(
           canvasFormat,
