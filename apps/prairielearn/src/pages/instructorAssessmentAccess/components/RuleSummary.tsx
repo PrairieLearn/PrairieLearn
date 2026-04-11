@@ -154,7 +154,8 @@ export function generateDateTableRows(
         date: '',
         label: 'After last deadline',
         credit: afterLastDeadline?.allowSubmissions ? `${afterLastDeadline.credit ?? 0}%` : '—',
-        error: formErrors?.afterLastDeadline?.credit?.message,
+        error: (formErrors?.afterLastDeadline as FieldErrors<{ credit: number }> | undefined)
+          ?.credit?.message,
       });
     }
   } else {
@@ -167,7 +168,8 @@ export function generateDateTableRows(
         date: '',
         label: 'After last deadline',
         credit: afterLastDeadline?.allowSubmissions ? `${afterLastDeadline.credit ?? 0}%` : '—',
-        error: formErrors?.afterLastDeadline?.credit?.message,
+        error: (formErrors?.afterLastDeadline as FieldErrors<{ credit: number }> | undefined)
+          ?.credit?.message,
       });
     }
   }
@@ -392,7 +394,7 @@ function formatDeadlineEntries(
 
 function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): string {
   const parts: string[] = [];
-  if (afterLastDeadline.credit != null) {
+  if (afterLastDeadline.allowSubmissions && afterLastDeadline.credit != null) {
     parts.push(`${afterLastDeadline.credit}% credit`);
   }
   if (afterLastDeadline.allowSubmissions) {
@@ -484,7 +486,8 @@ function generateOverrideFieldItems(
     items.push({
       label: 'After last deadline',
       value: rule.afterLastDeadline ? formatAfterLastDeadline(rule.afterLastDeadline) : 'None',
-      error: formErrors?.afterLastDeadline?.credit?.message,
+      error: (formErrors?.afterLastDeadline as FieldErrors<{ credit: number }> | undefined)?.credit
+        ?.message,
     });
   }
 
