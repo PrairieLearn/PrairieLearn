@@ -184,8 +184,11 @@ describe('formDataToJson', () => {
 
     const overrideJson = formDataToJson(buildFormData(override))[1];
     expect(overrideJson.afterComplete).toBeDefined();
-    expect(overrideJson.afterComplete!.questions!.hidden).toBe(true);
-    expect(overrideJson.afterComplete!.questions!.visibleFromDate).toBe('2025-06-01T00:00:00Z');
+    const questions = overrideJson.afterComplete!.questions!;
+    expect(questions.hidden).toBe(true);
+    expect('visibleFromDate' in questions && questions.visibleFromDate).toBe(
+      '2025-06-01T00:00:00Z',
+    );
     expect(overrideJson.afterComplete!.score!.hidden).toBe(true);
   });
 
