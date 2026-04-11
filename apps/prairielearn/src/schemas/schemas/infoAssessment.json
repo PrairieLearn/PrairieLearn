@@ -891,6 +891,12 @@
                   "properties": {
                     "hidden": {
                       "type": "boolean"
+                    },
+                    "visibleFromDate": {
+                      "type": "null"
+                    },
+                    "visibleUntilDate": {
+                      "type": "null"
                     }
                   }
                 },
