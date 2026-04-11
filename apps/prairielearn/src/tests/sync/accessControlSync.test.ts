@@ -350,7 +350,7 @@ describe('Access control syncing', () => {
         assert.isFalse(override.date_control_late_deadlines_overridden);
       }));
 
-    it('afterComplete override with explicit null visibility dates sets those fields', () =>
+    it('afterComplete override with hidden: false clears visibility dates', () =>
       runInTransactionAndRollback(async () => {
         const labelName = 'Test Label';
         const mainRule = makeAccessControlRule({
@@ -369,7 +369,7 @@ describe('Access control syncing', () => {
         const overrideRule: AccessControlJsonInput = {
           labels: [labelName],
           afterComplete: {
-            questions: { hidden: false, visibleFromDate: null, visibleUntilDate: null },
+            questions: { hidden: false },
           },
         };
         const { syncedRules } = await syncRulesAndRead([mainRule, overrideRule], {
@@ -1449,14 +1449,14 @@ describe('Access control syncing', () => {
         assert.equal(syncedRules.length, 2);
       }));
 
-    it('accepts override with afterLastDeadline credit as null', () =>
+    it('accepts override with afterLastDeadline allowSubmissions false without credit', () =>
       runInTransactionAndRollback(async () => {
         const { syncedRules, errors } = await syncRulesAndRead(
           [
             makeAccessControlRule(),
             {
               labels: ['label1'],
-              dateControl: { afterLastDeadline: { allowSubmissions: false, credit: null } },
+              dateControl: { afterLastDeadline: { allowSubmissions: false } },
             },
           ],
           { studentLabels: ['label1'] },
@@ -1570,7 +1570,7 @@ describe('Access control syncing', () => {
         assert.equal(syncedRules.length, 2);
       }));
 
-    it('accepts override with null visibility dates', () =>
+    it('accepts override with visibility without dates', () =>
       runInTransactionAndRollback(async () => {
         const { syncedRules, errors } = await syncRulesAndRead(
           [
@@ -1578,7 +1578,7 @@ describe('Access control syncing', () => {
             {
               labels: ['label1'],
               afterComplete: {
-                questions: { hidden: false, visibleFromDate: null, visibleUntilDate: null },
+                questions: { hidden: false },
                 score: { hidden: false, visibleFromDate: null },
               },
             },
@@ -1731,7 +1731,7 @@ describe('Access control syncing', () => {
   describe('Round-trip', () => {
     const timezone = 'America/Chicago';
 
-    it('preserves explicit null afterLastDeadline credit on override', () =>
+    it('preserves afterLastDeadline allowSubmissions false on override', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
         const labelName = 'Test Label';
@@ -1747,7 +1747,7 @@ describe('Access control syncing', () => {
         const overrideRule: AccessControlJsonInput = {
           labels: [labelName],
           dateControl: {
-            afterLastDeadline: { allowSubmissions: false, credit: null },
+            afterLastDeadline: { allowSubmissions: false },
           },
         };
 
@@ -1764,7 +1764,7 @@ describe('Access control syncing', () => {
         assert.isNull(override.rule.dateControl?.afterLastDeadline?.credit);
       }));
 
-    it('preserves explicit null afterComplete question visibility on override', () =>
+    it('preserves afterComplete question hidden: true without dates on override', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
         const labelName = 'Test Label';
@@ -1774,7 +1774,7 @@ describe('Access control syncing', () => {
         const overrideRule: AccessControlJsonInput = {
           labels: [labelName],
           afterComplete: {
-            questions: { hidden: true, visibleFromDate: null, visibleUntilDate: null },
+            questions: { hidden: true },
           },
         };
 
@@ -1871,7 +1871,7 @@ describe('Access control syncing', () => {
           dateControl: {
             durationMinutes: null,
             password: null,
-            afterLastDeadline: { allowSubmissions: true, credit: null },
+            afterLastDeadline: { allowSubmissions: true },
           },
         };
 
@@ -1890,7 +1890,7 @@ describe('Access control syncing', () => {
         assert.strictEqual(override.rule.dateControl.afterLastDeadline?.credit, null);
       }));
 
-    it('explicit null override removals change resolved access behavior', () =>
+    it('override removals change resolved access behavior', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
         const labelName = 'Test Label';
@@ -1910,7 +1910,7 @@ describe('Access control syncing', () => {
           dateControl: {
             durationMinutes: null,
             password: null,
-            afterLastDeadline: { allowSubmissions: true, credit: null },
+            afterLastDeadline: { allowSubmissions: true },
           },
         };
 
@@ -1955,9 +1955,9 @@ describe('Access control syncing', () => {
           courseInstanceRole: 'None',
           prairieTestReservations: [],
         });
-        // afterLastDeadline.credit: null overrides main rule's credit: 10,
-        // resolving to credit 0 (via ?? 0); allowSubmissions: true is still
-        // set from the main rule so the assessment remains active
+        // Omitting credit on the override clears main rule's credit: 10,
+        // resolving to credit 0 (via ?? 0); allowSubmissions: true keeps
+        // the assessment active
         assert.equal(afterDueResult.credit, 0);
         assert.isTrue(afterDueResult.active);
       }));

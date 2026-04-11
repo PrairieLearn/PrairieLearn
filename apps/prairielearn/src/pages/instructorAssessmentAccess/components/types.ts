@@ -24,8 +24,8 @@ export interface DeadlineEntry {
 }
 
 export type AfterLastDeadlineValue =
-  | { allowSubmissions: false; credit?: null }
-  | { allowSubmissions: true; credit?: number | null };
+  | { allowSubmissions: false }
+  | { allowSubmissions: true; credit?: number };
 
 export interface QuestionVisibilityValue {
   hidden: boolean;
@@ -170,9 +170,19 @@ export function jsonToMainRuleFormData(
     questionVisibility: {
       hidden: ac?.questions?.hidden ?? true,
       visibleFromDate:
-        toLocalDatetimeValue(ac?.questions?.visibleFromDate, displayTimezone) ?? undefined,
+        toLocalDatetimeValue(
+          ac?.questions && 'visibleFromDate' in ac.questions
+            ? ac.questions.visibleFromDate
+            : undefined,
+          displayTimezone,
+        ) ?? undefined,
       visibleUntilDate:
-        toLocalDatetimeValue(ac?.questions?.visibleUntilDate, displayTimezone) ?? undefined,
+        toLocalDatetimeValue(
+          ac?.questions && 'visibleUntilDate' in ac.questions
+            ? ac.questions.visibleUntilDate
+            : undefined,
+          displayTimezone,
+        ) ?? undefined,
     },
     scoreVisibility: {
       hidden: ac?.score?.hidden ?? false,
@@ -262,12 +272,19 @@ export function jsonToOverrideFormData(
 
   let questionVisibility: QuestionVisibilityValue = { hidden: true };
   if (ac?.questions?.hidden !== undefined) {
+    const q = ac.questions;
     questionVisibility = {
-      hidden: ac.questions.hidden,
+      hidden: q.hidden,
       visibleFromDate:
-        toLocalDatetimeValue(ac.questions.visibleFromDate, displayTimezone) ?? undefined,
+        toLocalDatetimeValue(
+          'visibleFromDate' in q ? q.visibleFromDate : undefined,
+          displayTimezone,
+        ) ?? undefined,
       visibleUntilDate:
-        toLocalDatetimeValue(ac.questions.visibleUntilDate, displayTimezone) ?? undefined,
+        toLocalDatetimeValue(
+          'visibleUntilDate' in q ? q.visibleUntilDate : undefined,
+          displayTimezone,
+        ) ?? undefined,
     };
     overriddenFields.push('questionVisibility');
   }

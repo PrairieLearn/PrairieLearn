@@ -114,14 +114,21 @@ function prepareRuleRow(
     date_control_late_deadlines_overridden: lateDeadlinesField.overridden,
     date_control_after_last_deadline_allow_submissions:
       afterLastDeadlineAllowSubmissionsField.value,
-    date_control_after_last_deadline_credit: afterLastDeadline?.credit ?? null,
+    date_control_after_last_deadline_credit:
+      afterLastDeadline?.allowSubmissions === true ? (afterLastDeadline.credit ?? null) : null,
     date_control_duration_minutes_overridden: durationMinutesField.overridden,
     date_control_duration_minutes: durationMinutesField.value,
     date_control_password_overridden: passwordField.overridden,
     date_control_password: passwordField.value,
     after_complete_questions_hidden: questionsHiddenField.value,
-    after_complete_questions_visible_from_date: afterComplete.questions?.visibleFromDate ?? null,
-    after_complete_questions_visible_until_date: afterComplete.questions?.visibleUntilDate ?? null,
+    after_complete_questions_visible_from_date:
+      afterComplete.questions && 'visibleFromDate' in afterComplete.questions
+        ? afterComplete.questions.visibleFromDate
+        : null,
+    after_complete_questions_visible_until_date:
+      afterComplete.questions && 'visibleUntilDate' in afterComplete.questions
+        ? (afterComplete.questions.visibleUntilDate ?? null)
+        : null,
     after_complete_score_hidden: scoreHiddenField.value,
     after_complete_score_visible_from_date: afterComplete.score?.visibleFromDate ?? null,
   });

@@ -136,7 +136,8 @@ export function validateRuleStructuralDependencyIssues(
     !hasPrairieTest &&
     !hasDuration
   ) {
-    if (ac.questions?.visibleFromDate) {
+    const q = ac.questions;
+    if (q && 'visibleFromDate' in q && q.visibleFromDate) {
       pushIssue(
         issues,
         validationRule,
@@ -144,7 +145,7 @@ export function validateRuleStructuralDependencyIssues(
         'After-complete dates require at least one deadline (due date or late deadline).',
       );
     }
-    if (ac.questions?.visibleUntilDate) {
+    if (q && 'visibleUntilDate' in q && q.visibleUntilDate) {
       pushIssue(
         issues,
         validationRule,
@@ -273,11 +274,12 @@ export function validateRuleDateOrderingIssues(
   }
 
   const questions = rule.afterComplete?.questions;
-  if (questions?.visibleFromDate && questions.visibleUntilDate) {
-    if (
-      new Date(questions.visibleFromDate).getTime() >=
-      new Date(questions.visibleUntilDate).getTime()
-    ) {
+  const qVisibleFrom =
+    questions && 'visibleFromDate' in questions ? questions.visibleFromDate : undefined;
+  const qVisibleUntil =
+    questions && 'visibleUntilDate' in questions ? questions.visibleUntilDate : undefined;
+  if (qVisibleFrom && qVisibleUntil) {
+    if (new Date(qVisibleFrom).getTime() >= new Date(qVisibleUntil).getTime()) {
       pushIssue(
         issues,
         validationRule,
@@ -289,8 +291,8 @@ export function validateRuleDateOrderingIssues(
 
   const lastDeadlineMs = findLastDeadlineMs(rule);
   if (lastDeadlineMs != null) {
-    if (questions?.visibleFromDate) {
-      if (new Date(questions.visibleFromDate).getTime() <= lastDeadlineMs) {
+    if (qVisibleFrom) {
+      if (new Date(qVisibleFrom).getTime() <= lastDeadlineMs) {
         pushIssue(
           issues,
           validationRule,
@@ -453,7 +455,8 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
     }
   }
 
-  const afterCredit = dc.afterLastDeadline?.credit;
+  const afterCredit =
+    dc.afterLastDeadline?.allowSubmissions === true ? dc.afterLastDeadline.credit : undefined;
   if (afterCredit != null) {
     // Determine the preceding credit in the timeline.
     const precedingCredit =

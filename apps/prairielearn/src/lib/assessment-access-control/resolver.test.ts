@@ -33,9 +33,11 @@ function toRuntime(json: AccessControlJson): RuntimeAccessControl {
   if (afterComplete) {
     result.afterComplete = {};
     if (afterComplete.questions) {
-      const { visibleFromDate, visibleUntilDate, ...qRest } = afterComplete.questions;
+      const q = afterComplete.questions;
+      const visibleFromDate = 'visibleFromDate' in q ? q.visibleFromDate : undefined;
+      const visibleUntilDate = 'visibleUntilDate' in q ? q.visibleUntilDate : undefined;
       result.afterComplete.questions = {
-        ...qRest,
+        hidden: q.hidden,
         visibleFromDate: visibleFromDate != null ? new Date(visibleFromDate) : visibleFromDate,
         visibleUntilDate: visibleUntilDate != null ? new Date(visibleUntilDate) : visibleUntilDate,
       };
@@ -277,7 +279,7 @@ describe('resolveAccessControl', () => {
           }),
           makeOverrideRule(
             1,
-            { dateControl: { afterLastDeadline: { allowSubmissions: false, credit: null } } },
+            { dateControl: { afterLastDeadline: { allowSubmissions: false } } },
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
@@ -1562,7 +1564,7 @@ describe('mergeRules', () => {
     expect(result.afterComplete?.score?.hidden).toBe(true);
   });
 
-  it('allows override to clear main rule after-complete dates via null', () => {
+  it('allows override to clear main rule after-complete dates', () => {
     const result = mergeRules(
       toRuntime({
         afterComplete: {
@@ -1581,8 +1583,6 @@ describe('mergeRules', () => {
         afterComplete: {
           questions: {
             hidden: true,
-            visibleFromDate: null,
-            visibleUntilDate: null,
           },
           score: {
             hidden: true,
@@ -1592,8 +1592,8 @@ describe('mergeRules', () => {
       }),
     );
     expect(result.afterComplete?.questions?.hidden).toBe(true);
-    expect(result.afterComplete?.questions?.visibleFromDate).toBeNull();
-    expect(result.afterComplete?.questions?.visibleUntilDate).toBeNull();
+    expect(result.afterComplete?.questions?.visibleFromDate).toBeUndefined();
+    expect(result.afterComplete?.questions?.visibleUntilDate).toBeUndefined();
     expect(result.afterComplete?.score?.hidden).toBe(true);
     expect(result.afterComplete?.score?.visibleFromDate).toBeNull();
   });
@@ -1634,7 +1634,7 @@ describe('mergeRules', () => {
     expect(result.dateControl?.password).toBe('secret');
   });
 
-  it('clears main afterLastDeadline credit with explicit null when override disables submissions', () => {
+  it('clears main afterLastDeadline credit when override disables submissions', () => {
     const result = mergeRules(
       toRuntime({
         dateControl: {
@@ -1644,13 +1644,12 @@ describe('mergeRules', () => {
       }),
       toRuntime({
         dateControl: {
-          afterLastDeadline: { allowSubmissions: false, credit: null },
+          afterLastDeadline: { allowSubmissions: false },
         },
       }),
     );
     expect(result.dateControl?.afterLastDeadline).toEqual({
       allowSubmissions: false,
-      credit: null,
     });
     expect(result.dateControl?.password).toBe('secret');
   });
@@ -1691,7 +1690,7 @@ describe('cascadeOverrides', () => {
     expect(result.dateControl?.dueDate).toEqual(new Date('2025-05-01T00:00:00Z'));
   });
 
-  it('clears cascaded afterLastDeadline credit with explicit null when next disables submissions', () => {
+  it('clears cascaded afterLastDeadline credit when next disables submissions', () => {
     const result = cascadeOverrides(
       toRuntime({
         dateControl: {
@@ -1701,13 +1700,12 @@ describe('cascadeOverrides', () => {
       }),
       toRuntime({
         dateControl: {
-          afterLastDeadline: { allowSubmissions: false, credit: null },
+          afterLastDeadline: { allowSubmissions: false },
         },
       }),
     );
     expect(result.dateControl?.afterLastDeadline).toEqual({
       allowSubmissions: false,
-      credit: null,
     });
     expect(result.dateControl?.password).toBe('secret');
   });

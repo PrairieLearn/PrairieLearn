@@ -800,9 +800,6 @@
                     "allowSubmissions": {
                       "type": "boolean",
                       "const": false
-                    },
-                    "credit": {
-                      "type": "null"
                     }
                   }
                 },
@@ -816,15 +813,8 @@
                       "const": true
                     },
                     "credit": {
-                      "anyOf": [
-                        {
-                          "type": "number",
-                          "minimum": 0
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
+                      "type": "number",
+                      "minimum": 0
                     }
                   }
                 }
@@ -897,15 +887,10 @@
                 {
                   "type": "object",
                   "additionalProperties": false,
+                  "required": ["hidden"],
                   "properties": {
                     "hidden": {
                       "type": "boolean"
-                    },
-                    "visibleFromDate": {
-                      "type": "null"
-                    },
-                    "visibleUntilDate": {
-                      "type": "null"
                     }
                   }
                 },
@@ -922,14 +907,7 @@
                       "$ref": "#/definitions/DatetimeLocalStringSchema"
                     },
                     "visibleUntilDate": {
-                      "anyOf": [
-                        {
-                          "$ref": "#/definitions/DatetimeLocalStringSchema"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
+                      "$ref": "#/definitions/DatetimeLocalStringSchema"
                     }
                   }
                 }

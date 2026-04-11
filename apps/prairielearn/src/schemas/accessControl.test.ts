@@ -11,14 +11,14 @@ describe('AccessControlJsonSchema', () => {
         dueDate: null,
         earlyDeadlines: null,
         lateDeadlines: null,
-        afterLastDeadline: { allowSubmissions: true, credit: null },
+        afterLastDeadline: { allowSubmissions: true },
         durationMinutes: null,
         password: null,
       },
     });
 
     expect(result.dateControl?.releaseDate).toBe('2024-03-14T00:01:00');
-    expect(result.dateControl?.afterLastDeadline).toEqual({ allowSubmissions: true, credit: null });
+    expect(result.dateControl?.afterLastDeadline).toEqual({ allowSubmissions: true });
     expect(result.dateControl?.durationMinutes).toBeNull();
   });
 
@@ -50,7 +50,7 @@ describe('AccessControlJsonSchema', () => {
       expect(result.success).toBe(true);
     });
 
-    it('accepts hidden: false with null date fields (override clearing)', () => {
+    it('rejects hidden: false with null date fields', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
           questions: {
@@ -60,7 +60,7 @@ describe('AccessControlJsonSchema', () => {
           },
         },
       });
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
     });
 
     it('rejects hidden: false with non-null visibleFromDate', () => {

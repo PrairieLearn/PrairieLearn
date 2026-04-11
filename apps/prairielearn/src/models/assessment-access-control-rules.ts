@@ -108,18 +108,15 @@ function dbBaseRowToAccessControlJson(
   if (rule.date_control_late_deadlines_overridden) {
     dateControl.lateDeadlines = row.late_deadlines ?? [];
   }
-  const isOverride = rule.target_type !== 'none';
   const allowSubmissions = rule.date_control_after_last_deadline_allow_submissions;
   if (allowSubmissions === true) {
     const credit = rule.date_control_after_last_deadline_credit;
     dateControl.afterLastDeadline = {
       allowSubmissions,
-      ...(credit != null || isOverride ? { credit: credit ?? null } : {}),
+      ...(credit != null ? { credit } : {}),
     };
   } else if (allowSubmissions === false) {
-    dateControl.afterLastDeadline = isOverride
-      ? { allowSubmissions, credit: null }
-      : { allowSubmissions };
+    dateControl.afterLastDeadline = { allowSubmissions };
   }
   if (rule.date_control_duration_minutes_overridden) {
     dateControl.durationMinutes = rule.date_control_duration_minutes;

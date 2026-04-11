@@ -10,11 +10,11 @@ export const DeadlineEntryJsonSchema = z
   .strict();
 
 const AfterLastDeadlineJsonSchema = z.discriminatedUnion('allowSubmissions', [
-  z.object({ allowSubmissions: z.literal(false), credit: z.null().optional() }).strict(),
+  z.object({ allowSubmissions: z.literal(false) }).strict(),
   z
     .object({
       allowSubmissions: z.literal(true),
-      credit: z.number().min(0).nullable().optional(),
+      credit: z.number().min(0).optional(),
     })
     .strict(),
 ]);
@@ -88,9 +88,7 @@ const AfterCompleteQuestionsJsonSchema = z
     // No dates — hidden can be any value or absent.
     z
       .object({
-        hidden: z.boolean().optional(),
-        visibleFromDate: z.null().optional(),
-        visibleUntilDate: z.null().optional(),
+        hidden: z.boolean(),
       })
       .strict(),
     // With dates — hidden must be true.
@@ -98,7 +96,7 @@ const AfterCompleteQuestionsJsonSchema = z
       .object({
         hidden: z.literal(true),
         visibleFromDate: DatetimeLocalStringSchema,
-        visibleUntilDate: DatetimeLocalStringSchema.nullable().optional(),
+        visibleUntilDate: DatetimeLocalStringSchema.optional(),
       })
       .strict(),
   ])
