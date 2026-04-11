@@ -153,7 +153,7 @@ export function validateRuleStructuralDependencyIssues(
         'After-complete dates require at least one deadline (due date or late deadline).',
       );
     }
-    if (ac.score?.visibleFromDate) {
+    if (ac.score && 'visibleFromDate' in ac.score && ac.score.visibleFromDate) {
       pushIssue(
         issues,
         validationRule,
@@ -302,7 +302,7 @@ export function validateRuleDateOrderingIssues(
       }
     }
     const score = rule.afterComplete?.score;
-    if (score?.visibleFromDate) {
+    if (score && 'visibleFromDate' in score && score.visibleFromDate) {
       if (new Date(score.visibleFromDate).getTime() <= lastDeadlineMs) {
         pushIssue(
           issues,

@@ -130,7 +130,10 @@ function prepareRuleRow(
         ? (afterComplete.questions.visibleUntilDate ?? null)
         : null,
     after_complete_score_hidden: scoreHiddenField.value,
-    after_complete_score_visible_from_date: afterComplete.score?.visibleFromDate ?? null,
+    after_complete_score_visible_from_date:
+      afterComplete.score && 'visibleFromDate' in afterComplete.score
+        ? afterComplete.score.visibleFromDate
+        : null,
   });
 
   // Child data arrays use [assessment_id, rule_number, ...data] format.

@@ -162,7 +162,7 @@ describe('AccessControlJsonSchema', () => {
       expect(result.success).toBe(true);
     });
 
-    it('accepts hidden: false with null visibleFromDate (override clearing)', () => {
+    it('rejects hidden: false with null visibleFromDate', () => {
       const result = AccessControlJsonSchema.safeParse({
         afterComplete: {
           score: {
@@ -171,7 +171,7 @@ describe('AccessControlJsonSchema', () => {
           },
         },
       });
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
     });
 
     it('rejects hidden: false with non-null visibleFromDate', () => {

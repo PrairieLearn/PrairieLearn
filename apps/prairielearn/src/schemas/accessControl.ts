@@ -89,8 +89,6 @@ const AfterCompleteQuestionsJsonSchema = z
     z
       .object({
         hidden: z.boolean(),
-        visibleFromDate: z.null().optional(),
-        visibleUntilDate: z.null().optional(),
       })
       .strict(),
     // With dates — hidden must be true.
@@ -110,7 +108,6 @@ const AfterCompleteScoreJsonSchema = z
     z
       .object({
         hidden: z.boolean().optional(),
-        visibleFromDate: z.null().optional(),
       })
       .strict(),
     // With dates — hidden must be true.

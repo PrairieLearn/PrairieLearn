@@ -187,7 +187,10 @@ export function jsonToMainRuleFormData(
     scoreVisibility: {
       hidden: ac?.score?.hidden ?? false,
       visibleFromDate:
-        toLocalDatetimeValue(ac?.score?.visibleFromDate, displayTimezone) ?? undefined,
+        toLocalDatetimeValue(
+          ac?.score && 'visibleFromDate' in ac.score ? ac.score.visibleFromDate : undefined,
+          displayTimezone,
+        ) ?? undefined,
     },
   };
 }
@@ -292,8 +295,12 @@ export function jsonToOverrideFormData(
   let scoreVisibility: ScoreVisibilityValue = { hidden: false };
   if (ac?.score?.hidden !== undefined) {
     scoreVisibility = {
-      hidden: ac.score.hidden,
-      visibleFromDate: toLocalDatetimeValue(ac.score.visibleFromDate, displayTimezone) ?? undefined,
+      hidden: ac.score.hidden ?? false,
+      visibleFromDate:
+        toLocalDatetimeValue(
+          'visibleFromDate' in ac.score ? ac.score.visibleFromDate : undefined,
+          displayTimezone,
+        ) ?? undefined,
     };
     overriddenFields.push('scoreVisibility');
   }
