@@ -130,7 +130,9 @@ function formJsonToEnrollmentRuleData(
     password: dc?.password ?? null,
     questionsHidden: ac?.questions?.hidden ?? null,
     questionsVisibleFromDate:
-      ac?.questions && 'visibleFromDate' in ac.questions ? ac.questions.visibleFromDate : null,
+      ac?.questions && 'visibleFromDate' in ac.questions
+        ? (ac.questions.visibleFromDate ?? null)
+        : null,
     questionsVisibleUntilDate:
       ac?.questions && 'visibleUntilDate' in ac.questions
         ? (ac.questions.visibleUntilDate ?? null)
