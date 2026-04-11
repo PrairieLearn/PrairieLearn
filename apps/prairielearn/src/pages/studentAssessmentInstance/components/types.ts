@@ -43,16 +43,77 @@ export interface ClientQuestionRow {
   zoneBestQuestions: number | null;
   zoneHasBestQuestions: boolean;
   zoneQuestionCount: number;
+
+  /** Instance question scoring data (used by React score/status components). */
+  autoPoints: number | null;
+  manualPoints: number | null;
+  points: number | null;
+  status: string | null;
+  requiresManualGrading: boolean;
+  hasLastGrader: boolean;
+  maxAutoPoints: number | null;
+  maxManualPoints: number | null;
+  maxPoints: number | null;
+  allowRealTimeGrading: boolean;
+  allowGradeLeftMs: number;
+  instanceQuestionOpen: boolean;
+  pointsListOriginal: number[] | null;
+  numberAttempts: number;
+  pointsList: number[] | null;
+  highestSubmissionScore: number | null;
+  currentValue: number | null;
+  previousVariants: ClientVariantWithScore[] | null;
 }
 
-// Pre-rendered HTML for each question row's score/status cells.
-export interface RowRenderedHtml {
-  statusHtml?: string;
-  availablePointsHtml?: string;
-  autoPointsHtml?: string;
-  manualPointsHtml?: string;
-  totalPointsHtml?: string;
-  variantHistoryHtml?: string;
+export interface ClientVariantWithScore {
+  id: string;
+  open: boolean | null;
+  maxSubmissionScore: number;
+}
+
+// Client-safe access rule for the popover.
+export interface ClientAccessRule {
+  credit: string;
+  startDate: string;
+  endDate: string;
+}
+
+// Client-safe group work info for the hydrated component.
+export interface ClientGroupConfig {
+  studentAuthzJoin: boolean | null;
+  studentAuthzLeave: boolean | null;
+  hasRoles: boolean;
+  minimum: number | null;
+  maximum: number | null;
+}
+
+export interface ClientGroupRoleAssignment {
+  roleName: string;
+  teamRoleId: string;
+}
+
+export interface ClientGroupRole {
+  id: string;
+  roleName: string;
+  minimum: number | null;
+  maximum: number | null;
+  canAssignRoles: boolean | null;
+  count: number;
+}
+
+export interface ClientGroupInfo {
+  groupName: string;
+  joinCode: string;
+  groupMembers: { uid: string; id: string }[];
+  groupSize: number;
+  rolesInfo?: {
+    roleAssignments: Record<string, ClientGroupRoleAssignment[]>;
+    groupRoles: ClientGroupRole[];
+    validationErrors: ClientGroupRole[];
+    disabledRoles: string[];
+    rolesAreBalanced: boolean;
+    usersWithoutRoles: { uid: string; id: string }[];
+  };
 }
 
 export interface StudentAssessmentInstanceBodyProps {
@@ -69,11 +130,12 @@ export interface StudentAssessmentInstanceBodyProps {
   someQuestionsForbidRealTimeGrading: boolean;
 
   assessmentTextHtml: string | null;
-  accessRulesPopoverHtml: string;
-  groupWorkInfoHtml: string | null;
+  accessRules: ClientAccessRule[];
+  groupConfig: ClientGroupConfig | null;
+  groupInfo: ClientGroupInfo | null;
+  userCanAssignRoles: boolean;
 
   questionRows: ClientQuestionRow[];
-  rowRenderedHtml: RowRenderedHtml[];
 
   savedAnswers: number;
   suspendedSavedAnswers: number;
