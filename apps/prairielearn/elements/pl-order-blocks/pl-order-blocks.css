@@ -40,6 +40,11 @@ li.pl-order-blocks-code .pl-order-block-handle {
   margin-bottom: 0px !important;
 }
 
+.pl-order-blocks-code .pl-code td.code pre {
+  /* spacing for the code content within the code block */
+  padding-left: 0.25rem;
+}
+
 ul.pl-order-blocks-connected-sortable .pl-order-block:hover:not(.nodrag) {
   cursor: move; /* For UX: The answer tiles shows a 'move' cursor on mouse over */
   outline: 2px solid blue;
