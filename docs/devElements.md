@@ -22,7 +22,7 @@ for a real example of this.
 By convention,
 all element files are named the same as the element they belong to. That directory
 should contain an `info.json` file that contains metadata about the element, including
-which file is the element controller and any dependencies of the element. See [the section on dependencies](#element-dependencies) for more information
+which file is the element controller and any dependencies of the element. See [the section on dependencies](#element-dependencies) for more information.
 
 Each element should have a `.py` controller that contains the functions listed
 in the next section. This controller is responsible for rendering the element,
@@ -69,25 +69,26 @@ Note that not all functions have the same return type. The arguments are:
 
 The `data` dictionary has the following possible keys (not all keys will be present in all element functions):
 
-| Key                             | Type    | Description                                                                                                                                                      |
-| ------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data["ai_grading"]`            | boolean | Whether the question is being rendered for AI grading.                                                                                                           |
-| `data["correct_answers"]`       | dict    | The true answer (if any) for the variant.                                                                                                                        |
-| `data["editable"]`              | boolean | Whether the question is currently in an editable state.                                                                                                          |
-| `data["extensions"]`            | dict    | A list of extensions that are available to be loaded by this element. For more information see the [element extensions](./elementExtensions.md) documentation.   |
-| `data["feedback"]`              | dict    | Any feedback to the student on their submitted answer.                                                                                                           |
-| `data["format_errors"]`         | dict    | Any errors encountered while parsing the student input.                                                                                                          |
-| `data["gradable"]`              | boolean | Whether the submission can be graded. Automatically set to `false` if there are format errors.                                                                   |
-| `data["manual_grading"]`        | boolean | Whether manual-grading content should be shown. This is `true` in the manual grading view, and also for question and answer panels when rendered for AI grading. |
-| `data["num_valid_submissions"]` | int     | The number of valid (not containing format errors) submissions by the student for the current variant.                                                           |
-| `data["options"]`               | dict    | Any options associated with the question.                                                                                                                        |
-| `data["panel"]`                 | string  | Which panel is being rendered (`question`, `submission`, or `answer`).                                                                                           |
-| `data["params"]`                | dict    | Parameters that describe the question variant.                                                                                                                   |
-| `data["partial_scores"]`        | dict    | Partial scores for individual variables in the question.                                                                                                         |
-| `data["raw_submitted_answers"]` | dict    | The answer submitted by the student before parsing.                                                                                                              |
-| `data["score"]`                 | float   | The total final score for the question.                                                                                                                          |
-| `data["submitted_answers"]`     | dict    | The answer submitted by the student (after parsing).                                                                                                             |
-| `data["variant_seed"]`          | integer | The random seed for this question variant.                                                                                                                       |
+| Key                             | Type    | Description                                                                                                                                                                  |
+| ------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data["ai_grading"]`            | boolean | Whether the question is being rendered for AI grading.                                                                                                                       |
+| `data["correct_answers"]`       | dict    | The true answer (if any) for the variant.                                                                                                                                    |
+| `data["editable"]`              | boolean | Whether the question is currently in an editable state.                                                                                                                      |
+| `data["extensions"]`            | dict    | A list of extensions that are available to be loaded by this element. For more information see the [element extensions](./elementExtensions.md) documentation.               |
+| `data["feedback"]`              | dict    | Any feedback to the student on their submitted answer.                                                                                                                       |
+| `data["format_errors"]`         | dict    | Any errors encountered while parsing the student input.                                                                                                                      |
+| `data["gradable"]`              | boolean | Whether the submission can be graded. Automatically set to `false` if there are format errors.                                                                               |
+| `data["manual_grading"]`        | boolean | Whether manual-grading content should be shown. This is `true` in the manual grading view, and also for question and answer panels when rendered for AI grading.             |
+| `data["num_valid_submissions"]` | int     | The number of valid (not containing format errors) submissions by the student for the current variant.                                                                       |
+| `data["options"]`               | dict    | Any options associated with the question.                                                                                                                                    |
+| `data["panel"]`                 | string  | Which panel is being rendered (`question`, `submission`, or `answer`).                                                                                                       |
+| `data["params"]`                | dict    | Parameters that describe the question variant.                                                                                                                               |
+| `data["preferences"]`           | dict    | Read-only [question preferences](question/preferences.md) for the current assessment context. Values come from the question's defaults merged with any assessment overrides. |
+| `data["partial_scores"]`        | dict    | Partial scores for individual variables in the question.                                                                                                                     |
+| `data["raw_submitted_answers"]` | dict    | The answer submitted by the student before parsing.                                                                                                                          |
+| `data["score"]`                 | float   | The total final score for the question.                                                                                                                                      |
+| `data["submitted_answers"]`     | dict    | The answer submitted by the student (after parsing).                                                                                                                         |
+| `data["variant_seed"]`          | integer | The random seed for this question variant.                                                                                                                                   |
 
 So that multiple elements can exist together in one question, the convention is that each element instance is associated with one or more **variables**. These variables are keys in the dictionaries for the data elements. For example, if there are variables `x` and `y` then we might have:
 
@@ -102,13 +103,13 @@ This structure, where dictionaries have variables as keys, is used for all dicti
 
 The element functions are:
 
-| Function    | Return object | Modifiable `data` keys                                                                                   | Unmodifiable `data` keys                                                                                                                                                                                                                    | Description                                                                                                                                                                                                                                                                                                                                                                      |
-| ----------- | ------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `prepare()` | `None`        | `correct_answers`, `params`                                                                              | `extensions`, `options`, `variant_seed`                                                                                                                                                                                                     | Validates and prepares initial data for the element. Is executed after the question's `generate()` function has executed, and has access to the data created by that function.                                                                                                                                                                                                   |
-| `render()`  | `str` (html)  |                                                                                                          | `correct_answers`, `editable`, `extensions`, `feedback`, `format_errors`, `manual_grading`, `num_valid_submissions`, `options`, `panel`, `params`, `partial_scores`, `raw_submitted_answers`, `score`, `submitted_answers`, `variant_seed`, | Render the HTML for one panel and return it as a string.                                                                                                                                                                                                                                                                                                                         |
-| `parse()`   | `None`        | `correct_answers`, `feedback`, `format_errors`, `params`, `submitted_answers`                            | `extensions`, `options`, `raw_submitted_answers`, `variant_seed`                                                                                                                                                                            | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable.                                                                                                                                                                                                                                                                                 |
-| `grade()`   | `None`        | `correct_answers`, `feedback`, `format_errors`, `params`, `partial_scores`, `score`, `submitted_answers` | `extensions`, `options`, `raw_submitted_answers`, `variant_seed`                                                                                                                                                                            | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]` respectively. **Note:** Avoid modifying the `data["feedback"]` dictionary, as this is meant to be used by custom questions.                                                                |
-| `test()`    | `None`        | `format_errors`, `partial_scores`, `raw_submitted_answers`, `score`                                      | `extensions`, `gradable`, `test_type`                                                                                                                                                                                                       | Creates a test submission for this element, used when running tests from the "Settings" panel. Should set a value in `data["raw_submitted_answers"][var]` and expected score in `data["partial_scores"][var]` (or `data["format_errors"][var]` if `invalid`). The type of input to test is given in `data["test_type"]`, and can be one of `correct`, `incorrect`, or `invalid`. |
+| Function    | Return object | Modifiable `data` keys                                                                                   | Unmodifiable `data` keys                                                                                                                                                                                                                                  | Description                                                                                                                                                                                                                                                                                                                                                                      |
+| ----------- | ------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prepare()` | `None`        | `correct_answers`, `params`                                                                              | `extensions`, `options`, `preferences`, `variant_seed`                                                                                                                                                                                                    | Validates and prepares initial data for the element. Is executed after the question's `generate()` function has executed, and has access to the data created by that function.                                                                                                                                                                                                   |
+| `render()`  | `str` (html)  |                                                                                                          | `correct_answers`, `editable`, `extensions`, `feedback`, `format_errors`, `manual_grading`, `num_valid_submissions`, `options`, `panel`, `params`, `partial_scores`, `preferences`, `raw_submitted_answers`, `score`, `submitted_answers`, `variant_seed` | Render the HTML for one panel and return it as a string.                                                                                                                                                                                                                                                                                                                         |
+| `parse()`   | `None`        | `correct_answers`, `feedback`, `format_errors`, `params`, `submitted_answers`                            | `extensions`, `options`, `preferences`, `raw_submitted_answers`, `variant_seed`                                                                                                                                                                           | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable.                                                                                                                                                                                                                                                                                 |
+| `grade()`   | `None`        | `correct_answers`, `feedback`, `format_errors`, `params`, `partial_scores`, `score`, `submitted_answers` | `extensions`, `options`, `preferences`, `raw_submitted_answers`, `variant_seed`                                                                                                                                                                           | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]` respectively. **Note:** Avoid modifying the `data["feedback"]` dictionary, as this is meant to be used by custom questions.                                                                |
+| `test()`    | `None`        | `format_errors`, `partial_scores`, `raw_submitted_answers`, `score`                                      | `extensions`, `gradable`, `preferences`, `test_type`                                                                                                                                                                                                      | Creates a test submission for this element, used when running tests from the "Settings" panel. Should set a value in `data["raw_submitted_answers"][var]` and expected score in `data["partial_scores"][var]` (or `data["format_errors"][var]` if `invalid`). The type of input to test is given in `data["test_type"]`, and can be one of `correct`, `incorrect`, or `invalid`. |
 
 !!! note
 
@@ -149,8 +150,6 @@ The different types of dependency properties currently available are summarized 
 
 The `coreScripts` and `coreStyles` properties are used in legacy elements and questions, but are deprecated and should not be used in new objects. It lists scripts and styles required by this element, relative to `[PrairieLearn directory]/public/javascripts` and `[PrairieLearn directory]/public/stylesheets`, respectively. Scripts in `[PrairieLearn directory]/public/javascripts` are mainly used for compatibility with legacy elements and questions, while styles in `[PrairieLearn directory]/public/stylesheets` are reserved for [styles used by specific pages rather than individual elements](./dev-guide/guide.md#html-style).
 
-While the use of node module dependencies in course elements is supported, it is recommended that caution be used when doing so. In particular, note that node modules may be updated without warning, which in some cases may break your element. If your code relies on a particular version of a node module, it is recommended that you copy the module into your element directory or `courseFilesCourse` and link to that module from there instead.
-
 In addition to static dependencies, elements can also declare dynamic dependencies, corresponding to scripts that are loaded only if they are deemed necessary. For example, if an element may use the `d3` library, but only in certain cases, it can declare a dependency on `d3`:
 
 ```json title="info.json"
@@ -175,7 +174,9 @@ if (options.use_d3) {
 }
 ```
 
-Dynamic dependencies are implemented using [import maps](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap), which allow the `import` call in the element script to refer to the module by the name defined in the `info.json` file instead of the full URL. Dynamic dependencies may point to:
+Dynamic dependencies are implemented using [import maps](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap), which allow the `import` call in the element script to refer to the module by the name defined in the `info.json` file instead of the full URL. This may also be used as an alternative to static dependencies for ESM modules, as it allows the module to be imported using ESM syntax.
+
+Dynamic dependencies may point to:
 
 | Property                   | Description                                                                                                                                                                                                                     |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -185,7 +186,7 @@ Dynamic dependencies are implemented using [import maps](https://developer.mozil
 
 Note that the key used in the dynamic dependencies will be shared among all elements available in a question. For example, if two elements in a question both declare a dynamic dependency on `d3`, then the `d3` library will only be loaded once, even if both elements use it. For this reason, it is important that the following convention is used when defining keys for dynamic dependencies:
 
-- For node modules: use the name of the module, as defined in the `package.json` file. This will allow multiple elements that use the same module to share the same dependency without loading the module twice.
+- For node modules: use the name of the module, as defined in the `package.json` file. This will allow multiple elements that use the same module to share the same dependency without loading the module twice. That said, for course elements, you should avoid using node module dependencies directly if possible, [as described below](#using-node-dependencies-in-element-code).
 - For element scripts: use the name of the element, followed by a slash, followed by the name of the script. For example, if the element is named `pl-my-element` and the script is named `my-element.js`, then the key should be `pl-my-element/my-element.js`.
 - For `clientFilesCourse` scripts: use any course-specific convention that does not clash with the naming above.
 
@@ -193,3 +194,53 @@ You can also find more detail about the types of dependencies in the schema refe
 
 - [System-wide elements](./schemas/infoElementCore.md)
 - [Course-specific elements](./schemas/infoElementCourse.md)
+
+### Using node dependencies in element code
+
+Note that the use of node modules (`nodeModulesScripts` and `nodeModulesStyles`) is only supported for dependencies that PrairieLearn itself depends on. These dependencies can be found in the `dependencies` section of the [`apps/prairielearn/package.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/package.json) file in the PrairieLearn repository.
+
+!!! warning
+
+    While the use of node module dependencies in course elements is supported, it should be avoided if possible. In particular, note that node modules may be updated without warning, which in some cases may break your element. Also note that, although transitive dependencies (i.e., dependencies of dependencies) may work in some cases, they are not guaranteed to continue working in the future, as dependency updates or updates in the PrairieLearn configuration may change the availability of transitive dependencies.
+
+    If your code relies on a node module, the recommended course of action is that you copy the module into your element directory or `clientFilesCourse` and link to that module from there instead. This way, you have control over when the module is updated, and you can ensure that updates do not break your element.
+
+To copy a node module into your element directory, first obtain the appropriate bundle for the module (e.g., from the module's home page, from a CDN or by building it yourself), and then place it in your element directory. For example, if you want to use the `moment` library, you can obtain the bundle from the module web page (`https://momentjs.com/`) or a CDN (e.g., `https://cdn.jsdelivr.net/npm/moment@2.30.1/dist/moment.min.js`) and place it in your element directory as `moment.min.js`. Then, you can link to this file in your `info.json` as follows:
+
+```json title="info.json"
+{
+  "controller": "pl-my-element.py",
+  "dependencies": {
+    "elementScripts": ["moment.min.js"]
+  }
+}
+```
+
+Alternatively, if you use a module that will be used by multiple elements, or by questions directly, then it may be better to place the module in `clientFilesCourse` instead of copying it into each element directory. In this case, you can link to the module from your `info.json` as follows:
+
+```json title="info.json"
+{
+  "controller": "pl-my-element.py",
+  "dependencies": {
+    "clientFilesCourseScripts": ["moment.min.js"]
+  }
+}
+```
+
+For dynamic dependencies, the same recommendations apply. In that case, you are encouraged to use a key that is unlikely to clash with other dynamic dependencies, such as `pl-my-element/moment` for a `moment` dependency used by `pl-my-element`, or `course-specific-name/moment` for a `moment` dependency used by multiple elements in a course. In that case, make sure that your element script imports the module using the same key as defined in the `info.json` file, such as `import('pl-my-element/moment')` for an element script dependency. For example, if you copy the `moment` library into your element directory as `moment.min.js`, you can define a dynamic dependency on this file as follows:
+
+```json title="info.json"
+{
+  "controller": "pl-my-element.py",
+  "dependencies": {
+    "elementScripts": ["pl-my-element.js"]
+  },
+  "dynamicDependencies": {
+    "elementScripts": { "pl-my-element/moment": "moment.min.js" }
+  }
+}
+```
+
+!!! note
+
+    Note that, by using the methods above, you become responsible for ensuring that the module is up-to-date with latest changes and security updates. If you choose to copy a node module into your element directory, you may choose to include the version number in the file name (e.g., `moment-2.30.1.min.js`) to make it easier to keep track of which version you are using and to update it when necessary.

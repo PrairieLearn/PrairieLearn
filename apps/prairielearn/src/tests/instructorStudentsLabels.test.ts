@@ -1,15 +1,15 @@
 import * as path from 'path';
 
-import { TRPCClientError } from '@trpc/client';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { queryOptionalRow, queryRows } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { getAppError } from '../lib/client/errors.js';
 import { config } from '../lib/config.js';
 import { EnrollmentSchema } from '../lib/db-types.js';
-import { getOriginalHash } from '../lib/editors.js';
+import { computeScopedJsonHash } from '../lib/editorUtil.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
@@ -22,8 +22,9 @@ import {
   selectStudentLabelsInCourseInstance,
 } from '../models/student-label.js';
 import { getStudentLabelsWithUserData } from '../pages/instructorStudentsLabels/queries.js';
+import type { CourseInstanceJsonInput } from '../schemas/infoCourseInstance.js';
 import { createCourseInstanceTrpcClient } from '../trpc/courseInstance/client.js';
-import type { CourseInstanceRouter } from '../trpc/courseInstance/trpc.js';
+import type { StudentLabelError } from '../trpc/courseInstance/student-labels.js';
 
 import * as helperClient from './helperClient.js';
 import {
@@ -134,8 +135,9 @@ describe('Instructor student labels page', () => {
 
   test.sequential('should handle create label operations', async () => {
     const trpcClient = createTrpcClient();
-    let origHash = await getOriginalHash(
+    let origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+      (json) => json.studentLabels ?? [],
     );
 
     await trpcClient.studentLabels.upsert.mutate({
@@ -151,8 +153,9 @@ describe('Instructor student labels page', () => {
     assert.isDefined(labelA);
     assert.equal(labelA.color, 'blue1');
 
-    origHash = await getOriginalHash(
+    origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+      (json) => json.studentLabels ?? [],
     );
 
     await trpcClient.studentLabels.upsert.mutate({
@@ -169,8 +172,9 @@ describe('Instructor student labels page', () => {
     assert.equal(studentsWithLabelB.length, 2);
     assert.includeMembers(studentsWithLabelB, [enrollmentIds[0], enrollmentIds[1]]);
 
-    origHash = await getOriginalHash(
+    origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+      (json) => json.studentLabels ?? [],
     );
 
     try {
@@ -182,8 +186,9 @@ describe('Instructor student labels page', () => {
       });
       assert.fail('Expected error for duplicate name');
     } catch (err) {
-      assert.instanceOf(err, TRPCClientError);
-      assert.include((err as TRPCClientError<CourseInstanceRouter>).message, 'LABEL_NAME_TAKEN');
+      const appError = getAppError<StudentLabelError['Upsert']>(err);
+      assert.isNotNull(appError);
+      assert.include(appError.message, 'A label with this name already exists');
     }
 
     try {
@@ -195,7 +200,7 @@ describe('Instructor student labels page', () => {
       });
       assert.fail('Expected error for empty name');
     } catch (err) {
-      assert.instanceOf(err, TRPCClientError);
+      assert.isNotNull(getAppError<StudentLabelError['Upsert']>(err));
     }
   });
 
@@ -234,8 +239,9 @@ describe('Instructor student labels page', () => {
 
   test.sequential('should handle edit label operations', async () => {
     const trpcClient = createTrpcClient();
-    let origHash = await getOriginalHash(
+    let origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+      (json) => json.studentLabels ?? [],
     );
 
     let labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
@@ -254,8 +260,9 @@ describe('Instructor student labels page', () => {
     labelA = labels.find((l) => l.name === 'Test Label A Renamed');
     assert.isDefined(labelA);
 
-    origHash = await getOriginalHash(
+    origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+      (json) => json.studentLabels ?? [],
     );
 
     await trpcClient.studentLabels.upsert.mutate({
@@ -275,8 +282,9 @@ describe('Instructor student labels page', () => {
     assert.equal(studentsWithLabel.length, 1);
     assert.include(studentsWithLabel, enrollmentIds[2]);
 
-    origHash = await getOriginalHash(
+    origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+      (json) => json.studentLabels ?? [],
     );
 
     await trpcClient.studentLabels.upsert.mutate({
@@ -290,8 +298,9 @@ describe('Instructor student labels page', () => {
     assert.equal(studentsWithLabel.length, 1);
     assert.include(studentsWithLabel, enrollmentIds[2]);
 
-    origHash = await getOriginalHash(
+    origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+      (json) => json.studentLabels ?? [],
     );
 
     await trpcClient.studentLabels.upsert.mutate({
@@ -305,8 +314,9 @@ describe('Instructor student labels page', () => {
     studentsWithLabel = (await selectEnrollmentsInStudentLabel(labelA)).map((e) => e.id);
     assert.equal(studentsWithLabel.length, 0);
 
-    origHash = await getOriginalHash(
+    origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+      (json) => json.studentLabels ?? [],
     );
 
     const labelB = labels.find((l) => l.name === 'Test Label B');
@@ -322,15 +332,17 @@ describe('Instructor student labels page', () => {
       });
       assert.fail('Expected error for duplicate name');
     } catch (err) {
-      assert.instanceOf(err, TRPCClientError);
-      assert.include((err as TRPCClientError<CourseInstanceRouter>).message, 'LABEL_NAME_TAKEN');
+      const appError = getAppError<StudentLabelError['Upsert']>(err);
+      assert.isNotNull(appError);
+      assert.include(appError.message, 'A label with this name already exists');
     }
   });
 
   test.sequential('should handle delete label operations', async () => {
     const trpcClient = createTrpcClient();
-    let origHash = await getOriginalHash(
+    let origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+      (json) => json.studentLabels ?? [],
     );
 
     let labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
@@ -346,8 +358,9 @@ describe('Instructor student labels page', () => {
     const deletedLabel = labels.find((l) => l.name === 'Test Label A Renamed');
     assert.isUndefined(deletedLabel);
 
-    origHash = await getOriginalHash(
+    origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+      (json) => json.studentLabels ?? [],
     );
 
     try {
@@ -357,7 +370,7 @@ describe('Instructor student labels page', () => {
       });
       assert.fail('Expected error for non-existent label');
     } catch (err) {
-      assert.instanceOf(err, TRPCClientError);
+      assert.isNotNull(getAppError<StudentLabelError['Destroy']>(err));
     }
   });
 
@@ -383,8 +396,9 @@ describe('Instructor student labels page', () => {
     });
     assert.deepEqual(mixedResult.unenrolledUids, [unknownUid]);
 
-    const origHash = await getOriginalHash(
+    const origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+      (json) => json.studentLabels ?? [],
     );
     await trpcClient.studentLabels.upsert.mutate({
       name: 'Invited Label',

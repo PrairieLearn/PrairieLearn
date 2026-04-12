@@ -7,7 +7,7 @@ import type {
   ZoneQuestionBlockJson,
 } from '../../../schemas/infoAssessment.js';
 import type {
-  AltGroupBlockForm,
+  AltPoolBlockForm,
   QuestionAlternativeForm,
   StandaloneQuestionBlockForm,
   TrackingId,
@@ -68,14 +68,14 @@ function normalizeQuestionPoints<T extends QuestionPointsJson>(
 }
 
 /**
- * Returns the effective grading method for an alt group by examining its alternatives.
+ * Returns the effective grading method for an alt pool by examining its alternatives.
  *
- * Alternatives with missing metadata are treated as unknown. If the group
+ * Alternatives with missing metadata are treated as unknown. If the pool
  * contains both Manual and unknown alternatives, this returns 'mixed' to
  * avoid silently rewriting points when the unknown alternative may be
  * auto-graded.
  */
-function getAltGroupGradingMethod(
+function getAltPoolGradingMethod(
   alternatives: QuestionAlternativeJson[],
   getGradingMethod: (id?: string) => string | null | undefined,
 ): 'manual' | 'auto' | 'mixed' {
@@ -106,13 +106,13 @@ function firstPointValue(points: QuestionPointsJson['points']): number | undefin
 }
 
 /**
- * Materializes group-level legacy `points`/`maxPoints` onto a single alternative
+ * Materializes pool-level legacy `points`/`maxPoints` onto a single alternative
  * while preserving any point fields the alternative already defines.
  */
-function normalizeMixedGroupAlternativePoints(
+function normalizeMixedPoolAlternativePoints(
   alternative: QuestionAlternativeJson,
-  groupPoints: QuestionPointsJson['points'],
-  groupMaxPoints: QuestionPointsJson['maxPoints'],
+  poolPoints: QuestionPointsJson['points'],
+  poolMaxPoints: QuestionPointsJson['maxPoints'],
   isManualGrading: boolean,
 ): QuestionAlternativeJson {
   const normalized = normalizeQuestionPoints(alternative, isManualGrading);
@@ -122,15 +122,13 @@ function normalizeMixedGroupAlternativePoints(
     // one. `normalizeQuestionPoints` may have already derived manualPoints
     // from the alternative's own `points`, but the sync code
     // (sync_assessments.ts) resolves manual points as
-    // `maxPoints ?? points`, preferring the group's values when the
+    // `maxPoints ?? points`, preferring the pool's values when the
     // alternative doesn't define its own. We intentionally overwrite
-    // to match that priority: alt maxPoints > group maxPoints > alt points
-    // > group points.
+    // to match that priority: alt maxPoints > pool maxPoints > alt points
+    // > pool points.
     if (alternative.manualPoints == null) {
       const effectiveManualPoints =
-        alternative.maxPoints ??
-        groupMaxPoints ??
-        firstPointValue(alternative.points ?? groupPoints);
+        alternative.maxPoints ?? poolMaxPoints ?? firstPointValue(alternative.points ?? poolPoints);
       if (effectiveManualPoints != null) {
         normalized.manualPoints = effectiveManualPoints;
       }
@@ -138,11 +136,11 @@ function normalizeMixedGroupAlternativePoints(
   } else {
     // `autoPoints` can be `number | number[]` so we assign directly;
     // `manualPoints` above uses `firstPointValue` because it must be scalar.
-    if (normalized.autoPoints == null && (alternative.points ?? groupPoints) != null) {
-      normalized.autoPoints = alternative.points ?? groupPoints;
+    if (normalized.autoPoints == null && (alternative.points ?? poolPoints) != null) {
+      normalized.autoPoints = alternative.points ?? poolPoints;
     }
-    if (normalized.maxAutoPoints == null && (alternative.maxPoints ?? groupMaxPoints) != null) {
-      normalized.maxAutoPoints = alternative.maxPoints ?? groupMaxPoints;
+    if (normalized.maxAutoPoints == null && (alternative.maxPoints ?? poolMaxPoints) != null) {
+      normalized.maxAutoPoints = alternative.maxPoints ?? poolMaxPoints;
     }
   }
 
@@ -152,21 +150,21 @@ function normalizeMixedGroupAlternativePoints(
 }
 
 /**
- * For mixed-grading alt groups, copies group-level `points`/`maxPoints` to each
+ * For mixed-grading alt pools, copies pool-level `points`/`maxPoints` to each
  * alternative as needed, then normalizes per-alternative based on grading
- * method. Clears points from the group.
+ * method. Clears points from the pool.
  */
 function pushPointsToAlternatives(
   question: ZoneQuestionBlockJson,
   getGradingMethod: (id?: string) => string | null | undefined,
-): AltGroupBlockForm {
-  const { points, maxPoints, ...groupRest } = question;
+): AltPoolBlockForm {
+  const { points, maxPoints, ...poolRest } = question;
   return {
-    ...groupRest,
+    ...poolRest,
     pointsDistributedInfoBanner: true,
     trackingId: createTrackingId(),
     alternatives: (question.alternatives ?? []).map((alt) => ({
-      ...normalizeMixedGroupAlternativePoints(
+      ...normalizeMixedPoolAlternativePoints(
         alt,
         points,
         maxPoints,
@@ -174,7 +172,7 @@ function pushPointsToAlternatives(
       ),
       trackingId: createTrackingId(),
     })),
-  } as AltGroupBlockForm;
+  } as AltPoolBlockForm;
 }
 
 /**
@@ -194,20 +192,20 @@ export function prepareZonesForEditor(
     ...zone,
     trackingId: createTrackingId(),
     questions: zone.questions.map((question) => {
-      // Alt groups have no `id`, so we can't look up a grading method directly.
+      // Alt pools have no `id`, so we can't look up a grading method directly.
       // Determine it from the alternatives' grading methods instead.
-      const altGroupGradingMethod =
+      const altPoolGradingMethod =
         question.alternatives && !question.id
-          ? getAltGroupGradingMethod(question.alternatives, getGradingMethod)
+          ? getAltPoolGradingMethod(question.alternatives, getGradingMethod)
           : undefined;
 
-      if (altGroupGradingMethod === 'mixed' && hasLegacyPoints(question)) {
+      if (altPoolGradingMethod === 'mixed' && hasLegacyPoints(question)) {
         return pushPointsToAlternatives(question, getGradingMethod);
       }
 
       const isManualGrading =
-        altGroupGradingMethod === 'manual' || altGroupGradingMethod === 'auto'
-          ? altGroupGradingMethod === 'manual'
+        altPoolGradingMethod === 'manual' || altPoolGradingMethod === 'auto'
+          ? altPoolGradingMethod === 'manual'
           : getGradingMethod(question.id) === 'Manual';
 
       return {
@@ -303,17 +301,17 @@ export function createAlternativeWithTrackingId(): QuestionAlternativeForm {
 }
 
 /**
- * Creates a new alternative group with a trackingId and empty alternatives.
+ * Creates a new alternative pool with a trackingId and empty alternatives.
  * Point defaults are chosen when the first question is added, since a blank
- * group does not yet have a grading method to inherit from.
+ * pool does not yet have a grading method to inherit from.
  */
-export function createAltGroupWithTrackingId(): AltGroupBlockForm {
+export function createAltPoolWithTrackingId(): AltPoolBlockForm {
   return {
     trackingId: createTrackingId(),
     alternatives: [],
     canSubmit: [],
     canView: [],
-  } as AltGroupBlockForm;
+  } as AltPoolBlockForm;
 }
 
 /**
@@ -322,25 +320,25 @@ export function createAltGroupWithTrackingId(): AltGroupBlockForm {
  * Strips undefined own properties so they don't appear as explicit keys
  * in the resulting object.
  *
- * When {@link parentGroup} is provided, any inheritable fields that the
+ * When {@link parentPool} is provided, any inheritable fields that the
  * alternative was inheriting (i.e. undefined on the alternative itself)
  * are filled in from the parent so the standalone question preserves
  * the same effective behavior.
  */
 export function alternativeToQuestionBlock(
   alt: QuestionAlternativeForm,
-  parentGroup?: ZoneQuestionBlockForm,
+  parentPool?: ZoneQuestionBlockForm,
 ): StandaloneQuestionBlockForm {
   const merged = { ...alt };
-  if (parentGroup) {
-    merged.autoPoints ??= parentGroup.autoPoints;
-    merged.manualPoints ??= parentGroup.manualPoints;
-    merged.maxAutoPoints ??= parentGroup.maxAutoPoints;
-    merged.triesPerVariant ??= parentGroup.triesPerVariant;
-    merged.forceMaxPoints ??= parentGroup.forceMaxPoints;
-    merged.advanceScorePerc ??= parentGroup.advanceScorePerc;
-    merged.gradeRateMinutes ??= parentGroup.gradeRateMinutes;
-    merged.allowRealTimeGrading ??= parentGroup.allowRealTimeGrading;
+  if (parentPool) {
+    merged.autoPoints ??= parentPool.autoPoints;
+    merged.manualPoints ??= parentPool.manualPoints;
+    merged.maxAutoPoints ??= parentPool.maxAutoPoints;
+    merged.triesPerVariant ??= parentPool.triesPerVariant;
+    merged.forceMaxPoints ??= parentPool.forceMaxPoints;
+    merged.advanceScorePerc ??= parentPool.advanceScorePerc;
+    merged.gradeRateMinutes ??= parentPool.gradeRateMinutes;
+    merged.allowRealTimeGrading ??= parentPool.allowRealTimeGrading;
   }
   return omitUndefined(merged) as StandaloneQuestionBlockForm;
 }
@@ -396,11 +394,11 @@ function serializeQuestionAlternative(alternative: QuestionAlternativeJson) {
 
 /** Serializes a question block for JSON output, stripping default values where appropriate. */
 function serializeQuestionBlock(question: ZoneQuestionBlockJson) {
-  const isAlternativeGroup = 'alternatives' in question && question.alternatives;
+  const isAlternativePool = 'alternatives' in question && question.alternatives;
 
   return omitUndefined({
-    id: isAlternativeGroup ? undefined : question.id,
-    alternatives: isAlternativeGroup
+    id: isAlternativePool ? undefined : question.id,
+    alternatives: isAlternativePool
       ? question.alternatives!.map(serializeQuestionAlternative)
       : undefined,
     numberChoose: question.numberChoose,
@@ -443,6 +441,8 @@ export function serializeZonesForJson(zones: ZoneAssessmentJson[]): ZoneAssessme
       // Preserve as-is: stripping `true` would change behavior when the
       // assessment-level default is `false`, since sync inherits zone → assessment.
       allowRealTimeGrading: zone.allowRealTimeGrading,
+      // Preserve zone-level tool overrides as-is.
+      tools: zone.tools,
       // For some reason, comment gets set to the empty string if it's not set.
       comment: zone.comment || undefined,
       canSubmit: propertyValueWithDefault(undefined, zone.canSubmit, isEmptyArray),

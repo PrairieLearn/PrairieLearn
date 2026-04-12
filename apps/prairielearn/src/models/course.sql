@@ -15,6 +15,31 @@ WHERE
   c.short_name = $short_name
   AND c.deleted_at IS NULL;
 
+-- BLOCK select_course_by_repository_name
+SELECT
+  c.*
+FROM
+  courses AS c
+WHERE
+  (
+    c.repository ILIKE '%/' || $repo_name || '.git' ESCAPE '\'
+    OR c.repository ILIKE '%:' || $repo_name || '.git' ESCAPE '\'
+  )
+  AND c.deleted_at IS NULL
+LIMIT
+  1;
+
+-- BLOCK select_course_by_path
+SELECT
+  c.*
+FROM
+  courses AS c
+WHERE
+  c.path = $path
+  AND c.deleted_at IS NULL
+LIMIT
+  1;
+
 -- BLOCK update_course_commit_hash
 UPDATE courses
 SET

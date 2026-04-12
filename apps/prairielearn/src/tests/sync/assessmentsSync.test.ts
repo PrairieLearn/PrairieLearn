@@ -2786,7 +2786,7 @@ describe('Assessment syncing', () => {
         },
         {
           points: 1,
-          comment: 'alternative group comment',
+          comment: 'alternative pool comment',
           alternatives: [
             {
               id: util.ALTERNATIVE_QUESTION_ID,
@@ -2820,7 +2820,7 @@ describe('Assessment syncing', () => {
       (aq) => aq.question.qid === util.QUESTION_ID,
     );
     assert.equal(firstAssessmentQuestion?.json_comment, 'question comment');
-    assert.equal(syncedData.alternative_groups[1].json_comment, 'alternative group comment');
+    assert.equal(syncedData.alternative_groups[1].json_comment, 'alternative pool comment');
     const alternativeQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
     );
@@ -2847,7 +2847,7 @@ describe('Assessment syncing', () => {
         },
         {
           points: 1,
-          comment: ['alternative group comment 1', 'alternative group comment 2'],
+          comment: ['alternative pool comment 1', 'alternative pool comment 2'],
           alternatives: [
             {
               id: util.ALTERNATIVE_QUESTION_ID,
@@ -2891,8 +2891,8 @@ describe('Assessment syncing', () => {
       'question comment 2',
     ]);
     assert.deepEqual(syncedData.alternative_groups[1].json_comment, [
-      'alternative group comment 1',
-      'alternative group comment 2',
+      'alternative pool comment 1',
+      'alternative pool comment 2',
     ]);
     const alternativeQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
@@ -2936,8 +2936,8 @@ describe('Assessment syncing', () => {
         {
           points: 1,
           comment: {
-            comment: 'alternative group comment',
-            comment2: 'alternative group comment 2',
+            comment: 'alternative pool comment',
+            comment2: 'alternative pool comment 2',
           },
           alternatives: [
             {
@@ -2988,8 +2988,8 @@ describe('Assessment syncing', () => {
       comment2: 'question comment 2',
     });
     assert.deepEqual(syncedData.alternative_groups[1].json_comment, {
-      comment: 'alternative group comment',
-      comment2: 'alternative group comment 2',
+      comment: 'alternative pool comment',
+      comment2: 'alternative pool comment 2',
     });
     const alternativeQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
@@ -3305,7 +3305,7 @@ describe('Assessment syncing', () => {
       assert.isNotEmpty(syncedData.zones);
       assert.isNull(syncedData.zones[0].json_allow_real_time_grading);
 
-      // Alternative group JSON config is not explicitly set.
+      // Alternative pool JSON config is not explicitly set.
       assert.isNotEmpty(syncedData.alternative_groups);
       assert.isNull(syncedData.alternative_groups[0].json_allow_real_time_grading);
 
@@ -3690,7 +3690,7 @@ describe('Assessment syncing', () => {
         },
       },
       {
-        name: 'alternative group level with own points',
+        name: 'alternative pool level with own points',
         zone: {
           questions: [
             {
@@ -3737,7 +3737,7 @@ describe('Assessment syncing', () => {
         },
       },
       {
-        name: 'alternative group level with inherited points',
+        name: 'alternative pool level with inherited points',
         zone: {
           questions: [
             {

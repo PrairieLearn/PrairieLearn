@@ -11,10 +11,11 @@ import type {
 import {
   buildHierarchicalAssessment,
   compactPoints,
-  computeAltGroupChosenRange,
+  computeAltPoolChosenRange,
   computeQuestionTotalPoints,
   computeZonePointTotals,
   computeZoneQuestionCount,
+  getZoneMixedToolsWarning,
   getZonePointsMismatch,
   hasPointsMismatch,
   normalizeQuestionPoints,
@@ -99,27 +100,27 @@ describe('buildHierarchicalAssessment', () => {
         question: { qid: 'q1', course_id: 'course-1' },
         course: { sharing_name: 'test' },
         zone: { number: 1, title: 'Zone 1' },
-        alternative_group: {
+        alternative_pool: {
           number: 1,
           id: 'ag1',
           json_has_alternatives: false,
           number_choose: 1,
         },
         assessment_question: { number: 1 },
-        start_new_alternative_group: true,
+        start_new_alternative_pool: true,
       } as StaffAssessmentQuestionRow,
       {
         question: { qid: 'q2', course_id: 'course-1' },
         course: { sharing_name: 'test' },
         zone: { number: 1, title: 'Zone 1' },
-        alternative_group: {
+        alternative_pool: {
           number: 2,
           id: 'ag2',
           json_has_alternatives: false,
           number_choose: 1,
         },
         assessment_question: { number: 2 },
-        start_new_alternative_group: true,
+        start_new_alternative_pool: true,
       } as StaffAssessmentQuestionRow,
     ];
 
@@ -132,31 +133,31 @@ describe('buildHierarchicalAssessment', () => {
     expect(result[0].questions[1].id).toBe('q2');
   });
 
-  it('groups alternatives within the same alternative group', () => {
+  it('collects alternatives within the same alternative pool', () => {
     const rows: StaffAssessmentQuestionRow[] = [
       {
         question: { qid: 'alt1', course_id: 'course-1' },
         course: { sharing_name: 'test' },
         zone: { number: 1, title: 'Zone 1' },
-        alternative_group: {
+        alternative_pool: {
           number: 1,
           json_has_alternatives: true,
           number_choose: 1,
         },
         assessment_question: { number: 1, number_in_alternative_group: 1 },
-        start_new_alternative_group: true,
+        start_new_alternative_pool: true,
       } as StaffAssessmentQuestionRow,
       {
         question: { qid: 'alt2', course_id: 'course-1' },
         course: { sharing_name: 'test' },
         zone: { number: 1, title: 'Zone 1' },
-        alternative_group: {
+        alternative_pool: {
           number: 1,
           json_has_alternatives: true,
           number_choose: 1,
         },
         assessment_question: { number: 2, number_in_alternative_group: 2 },
-        start_new_alternative_group: false,
+        start_new_alternative_pool: false,
       } as StaffAssessmentQuestionRow,
     ];
 
@@ -179,7 +180,7 @@ describe('buildHierarchicalAssessment', () => {
           title: 'Zone 1',
           json_allow_real_time_grading: false,
         },
-        alternative_group: {
+        alternative_pool: {
           number: 1,
           id: 'ag1',
           json_has_alternatives: false,
@@ -190,7 +191,7 @@ describe('buildHierarchicalAssessment', () => {
           number: 1,
           json_comment: { note: 'standalone question comment' },
         },
-        start_new_alternative_group: true,
+        start_new_alternative_pool: true,
       } as unknown as StaffAssessmentQuestionRow,
     ];
 
@@ -477,7 +478,7 @@ describe('computeZonePointTotals', () => {
       expectedManual: 0,
     },
     {
-      name: 'caps alt group numberChoose at alternatives.length',
+      name: 'caps alt pool numberChoose at alternatives.length',
       questions: [
         {
           trackingId: 'q1',
@@ -517,7 +518,7 @@ describe('computeZonePointTotals', () => {
     expect(result.autoPoints).toBe(5);
   });
 
-  it('uses maxAutoPoints cap for alternatives within an alt group', () => {
+  it('uses maxAutoPoints cap for alternatives within an alt pool', () => {
     const questions = [
       {
         trackingId: 'q1',
@@ -532,7 +533,7 @@ describe('computeZonePointTotals', () => {
     ] as ZoneQuestionBlockForm[];
 
     const result = computeZonePointTotals(questions);
-    // Alternative a2 overrides with max 10; a1 inherits group max 5.
+    // Alternative a2 overrides with max 10; a1 inherits pool max 5.
     // numberChoose=1, so pick the best = 10.
     expect(result.autoPoints).toBe(10);
   });
@@ -549,7 +550,7 @@ describe('computeZoneQuestionCount', () => {
       expected: 2,
     },
     {
-      name: 'uses numberChoose for alt groups',
+      name: 'uses numberChoose for alt pools',
       questions: [
         {
           trackingId: 'q1',
@@ -581,7 +582,7 @@ describe('computeZoneQuestionCount', () => {
     expect(computeZoneQuestionCount(questions as ZoneQuestionBlockForm[])).toBe(expected);
   });
 
-  it('counts questions in zone with mixed questions and alternative groups', () => {
+  it('counts questions in zone with mixed questions and alternative pools', () => {
     const questions = [
       { trackingId: 'q1', id: 'q1' },
       {
@@ -598,12 +599,81 @@ describe('computeZoneQuestionCount', () => {
   });
 });
 
-describe('computeAltGroupChosenRange', () => {
+describe('getZoneMixedToolsWarning', () => {
+  function makeZone(
+    trackingId: string,
+    tools?: Record<string, { enabled: boolean }>,
+  ): ZoneAssessmentForm {
+    return { trackingId, questions: [], tools } as unknown as ZoneAssessmentForm;
+  }
+
+  it('returns null for a single zone', () => {
+    const zone = makeZone('z1');
+    expect(
+      getZoneMixedToolsWarning({ zone, zones: [zone], assessmentToolDefaults: {} }),
+    ).toBeNull();
+  });
+
+  it('returns null when all zones inherit the same default', () => {
+    const z1 = makeZone('z1');
+    const z2 = makeZone('z2');
+    const zones = [z1, z2];
+    expect(
+      getZoneMixedToolsWarning({ zone: z2, zones, assessmentToolDefaults: { calculator: true } }),
+    ).toBeNull();
+  });
+
+  it('warns when a tool is enabled in an earlier zone and disabled in a later zone', () => {
+    const z1 = makeZone('z1', { calculator: { enabled: true } });
+    const z2 = makeZone('z2', { calculator: { enabled: false } });
+    const zones = [z1, z2];
+    const result = getZoneMixedToolsWarning({ zone: z2, zones, assessmentToolDefaults: {} });
+    expect(result).toContain('Calculator');
+    expect(result).toContain('earlier zone');
+  });
+
+  it('does not warn for the zone where the tool is enabled', () => {
+    const z1 = makeZone('z1', { calculator: { enabled: true } });
+    const z2 = makeZone('z2', { calculator: { enabled: false } });
+    const zones = [z1, z2];
+    expect(getZoneMixedToolsWarning({ zone: z1, zones, assessmentToolDefaults: {} })).toBeNull();
+  });
+
+  it('returns null when tool is disabled in earlier zone and enabled in later zone', () => {
+    const z1 = makeZone('z1', { calculator: { enabled: false } });
+    const z2 = makeZone('z2', { calculator: { enabled: true } });
+    const zones = [z1, z2];
+    expect(getZoneMixedToolsWarning({ zone: z2, zones, assessmentToolDefaults: {} })).toBeNull();
+  });
+
+  it('warns when assessment default is enabled and a later zone disables it', () => {
+    const z1 = makeZone('z1');
+    const z2 = makeZone('z2', { calculator: { enabled: false } });
+    const zones = [z1, z2];
+    const result = getZoneMixedToolsWarning({
+      zone: z2,
+      zones,
+      assessmentToolDefaults: { calculator: true },
+    });
+    expect(result).toContain('Calculator');
+  });
+
+  it('returns null when assessment default is disabled and no zone enables it', () => {
+    const z1 = makeZone('z1');
+    const z2 = makeZone('z2');
+    const zones = [z1, z2];
+    expect(
+      getZoneMixedToolsWarning({ zone: z2, zones, assessmentToolDefaults: { calculator: false } }),
+    ).toBeNull();
+  });
+});
+
+describe('computeAltPoolChosenRange', () => {
   function makeAlt(id: string) {
     return { trackingId: id, id } as ZoneQuestionBlockForm;
   }
 
-  function makeAltGroup(id: string, altCount: number, numberChoose?: number) {
+  function makeAltPool(id: string, altCount: number, numberChoose?: number) {
     return {
       trackingId: id,
       numberChoose,
@@ -615,51 +685,55 @@ describe('computeAltGroupChosenRange', () => {
   }
 
   it.each([
-    { name: 'no zone numberChoose', zoneChoose: undefined, agChoose: 2, alts: 3, expected: 2 },
-    { name: 'zone numberChoose >= effective', zoneChoose: 3, agChoose: 2, alts: 3, expected: 2 },
-    { name: 'zone numberChoose < effective', zoneChoose: 2, agChoose: 3, alts: 3, expected: 2 },
+    { name: 'no zone numberChoose', zoneChoose: undefined, poolChoose: 2, alts: 3, expected: 2 },
+    { name: 'zone numberChoose >= effective', zoneChoose: 3, poolChoose: 2, alts: 3, expected: 2 },
+    { name: 'zone numberChoose < effective', zoneChoose: 2, poolChoose: 3, alts: 3, expected: 2 },
     {
-      name: 'null ag numberChoose (all)',
+      name: 'null pool numberChoose (all)',
       zoneChoose: undefined,
-      agChoose: undefined,
+      poolChoose: undefined,
       alts: 3,
       expected: 3,
     },
-    { name: 'empty alt group', zoneChoose: 2, agChoose: undefined, alts: 0, expected: 0 },
-  ])('single group: $name -> min=max=$expected', ({ zoneChoose, agChoose, alts, expected }) => {
-    const ag = makeAltGroup('ag1', alts, agChoose);
+    { name: 'empty alt pool', zoneChoose: 2, poolChoose: undefined, alts: 0, expected: 0 },
+  ])('single pool: $name -> min=max=$expected', ({ zoneChoose, poolChoose, alts, expected }) => {
+    const pool = makeAltPool('ag1', alts, poolChoose);
     const zone = {
       trackingId: 'z1',
       numberChoose: zoneChoose,
-      questions: [ag],
+      questions: [pool],
     } as ZoneAssessmentForm;
-    expect(computeAltGroupChosenRange(zone, ag)).toEqual({ min: expected, max: expected });
+    expect(computeAltPoolChosenRange(zone, pool)).toEqual({ min: expected, max: expected });
   });
 
-  it('spreads evenly across multiple alt groups, producing a range', () => {
-    // Two groups each effective=2, zone picks 3 of 4.
+  it('spreads evenly across multiple alt pools, producing a range', () => {
+    // Two pools each effective=2, zone picks 3 of 4.
     // Layer 1: 2 questions, layer 2: 2 questions. C=[0,2,4].
     // guaranteed=1 (C[1]=2 <= 3), max=2 (has layer 2 and 3 > C[1]).
-    const ag1 = makeAltGroup('ag1', 2, 2);
-    const ag2 = makeAltGroup('ag2', 2, 2);
-    const zone = { trackingId: 'z1', numberChoose: 3, questions: [ag1, ag2] } as ZoneAssessmentForm;
+    const pool1 = makeAltPool('ag1', 2, 2);
+    const pool2 = makeAltPool('ag2', 2, 2);
+    const zone = {
+      trackingId: 'z1',
+      numberChoose: 3,
+      questions: [pool1, pool2],
+    } as ZoneAssessmentForm;
 
-    expect(computeAltGroupChosenRange(zone, ag1)).toEqual({ min: 1, max: 2 });
-    expect(computeAltGroupChosenRange(zone, ag2)).toEqual({ min: 1, max: 2 });
+    expect(computeAltPoolChosenRange(zone, pool1)).toEqual({ min: 1, max: 2 });
+    expect(computeAltPoolChosenRange(zone, pool2)).toEqual({ min: 1, max: 2 });
   });
 
-  it('caps alt group at guaranteed when zone budget is exhausted by layer 1', () => {
-    // Standalone(1) + alt group(effective=2). Zone picks 2.
+  it('caps alt pool at guaranteed when zone budget is exhausted by layer 1', () => {
+    // Standalone(1) + alt pool(effective=2). Zone picks 2.
     // Layer 1: 2 items. C=[0,2,3]. Z=2.
-    // For alt group: guaranteed=1 (C[1]=2 <= 2), no budget left → max=1.
+    // For alt pool: guaranteed=1 (C[1]=2 <= 2), no budget left → max=1.
     const standalone = makeAlt('q1');
-    const ag = makeAltGroup('ag1', 2, 2);
+    const pool = makeAltPool('ag1', 2, 2);
     const zone = {
       trackingId: 'z1',
       numberChoose: 2,
-      questions: [standalone, ag],
+      questions: [standalone, pool],
     } as ZoneAssessmentForm;
 
-    expect(computeAltGroupChosenRange(zone, ag)).toEqual({ min: 1, max: 1 });
+    expect(computeAltPoolChosenRange(zone, pool)).toEqual({ min: 1, max: 1 });
   });
 });

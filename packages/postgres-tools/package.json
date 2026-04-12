@@ -24,15 +24,16 @@
     "async": "^3.2.6",
     "chalk": "^5.6.2",
     "commander": "^14.0.3",
-    "diff": "^8.0.3",
+    "diff": "^8.0.4",
     "es-toolkit": "^1.45.1",
     "fs-extra": "^11.3.4",
     "postgres-array": "^3.0.4"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
+    "@types/async": "^3.2.25",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^24.11.0",
+    "@types/node": "^24.12.2",
     "@typescript/native-preview": "^7.0.0-dev.20260305.1",
     "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9"

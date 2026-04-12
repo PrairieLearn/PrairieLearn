@@ -1,0 +1,46 @@
+columns
+    after_complete_hide_questions: boolean
+    after_complete_hide_questions_again_date: timestamp with time zone
+    after_complete_hide_questions_again_date_overridden: boolean not null default false
+    after_complete_hide_score: boolean
+    after_complete_show_questions_again_date: timestamp with time zone
+    after_complete_show_questions_again_date_overridden: boolean not null default false
+    after_complete_show_score_again_date: timestamp with time zone
+    after_complete_show_score_again_date_overridden: boolean not null default false
+    assessment_id: bigint not null
+    date_control_after_last_deadline_allow_submissions: boolean
+    date_control_after_last_deadline_credit: integer
+    date_control_after_last_deadline_credit_overridden: boolean not null default false
+    date_control_due_date: timestamp with time zone
+    date_control_due_date_overridden: boolean not null default false
+    date_control_duration_minutes: integer
+    date_control_duration_minutes_overridden: boolean not null default false
+    date_control_early_deadlines_overridden: boolean not null default false
+    date_control_late_deadlines_overridden: boolean not null default false
+    date_control_password: text
+    date_control_password_overridden: boolean not null default false
+    date_control_release_date: timestamp with time zone
+    id: bigint not null default nextval('assessment_access_control_rules_id_seq'::regclass)
+    list_before_release: boolean
+    number: integer not null
+    target_type: enum_assessment_access_control_target_type not null
+
+indexes
+    assessment_access_control_rules_pkey: PRIMARY KEY (id) USING btree (id)
+    aacr_assessment_number_target_type_unique: UNIQUE (assessment_id, number, target_type) USING btree (assessment_id, number, target_type)
+    assessment_access_control_rules_id_target_type_idx: UNIQUE USING btree (id, target_type)
+
+check constraints
+    assessment_access_control_ru_date_control_after_last_dead_check: CHECK (date_control_after_last_deadline_credit >= 0)
+    assessment_access_control_ru_date_control_duration_minute_check: CHECK (date_control_duration_minutes > 0)
+    check_first_rule_is_none: CHECK ((number = 0) = (target_type = 'none'::enum_assessment_access_control_target_type))
+
+foreign-key constraints
+    assessment_access_control_rules_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    assessment_access_control_early_deadlines: FOREIGN KEY (assessment_access_control_rule_id) REFERENCES assessment_access_control_rules(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_access_control_enrollments: FOREIGN KEY (assessment_access_control_rule_id, target_type) REFERENCES assessment_access_control_rules(id, target_type) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_access_control_late_deadlines: FOREIGN KEY (assessment_access_control_rule_id) REFERENCES assessment_access_control_rules(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_access_control_prairietest_exams: FOREIGN KEY (assessment_access_control_rule_id) REFERENCES assessment_access_control_rules(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_access_control_student_labels: FOREIGN KEY (assessment_access_control_rule_id, target_type) REFERENCES assessment_access_control_rules(id, target_type) ON UPDATE CASCADE ON DELETE CASCADE

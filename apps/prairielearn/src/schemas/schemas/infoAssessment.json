@@ -51,8 +51,14 @@
       "type": "array",
       "items": {
         "$ref": "#/definitions/AssessmentAccessRuleJsonSchema"
-      },
-      "default": []
+      }
+    },
+    "accessControl": {
+      "description": "Access control settings for the assessment.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/AccessControlJsonSchema"
+      }
     },
     "text": {
       "description": "HTML text shown on the assessment overview page.",
@@ -200,6 +206,7 @@
         "studentPermissions": {
           "description": "Student permissions for group management.",
           "type": "object",
+          "additionalProperties": false,
           "properties": {
             "canCreateGroup": {
               "description": "Whether students can create groups.",
@@ -227,6 +234,7 @@
         "rolePermissions": {
           "description": "Role-based permissions for group assessments.",
           "type": "object",
+          "additionalProperties": false,
           "properties": {
             "canAssignRoles": {
               "description": "Role names that can assign other users to roles.",
@@ -494,7 +502,7 @@
           "minItems": 1
         },
         "numberChoose": {
-          "description": "Number of questions to choose from this group.",
+          "description": "Number of questions to choose from this pool.",
           "type": "integer",
           "minimum": 0
         },
@@ -685,6 +693,7 @@
     "GroupsRoleJsonSchema": {
       "description": "A custom role for use in group assessments.",
       "type": "object",
+      "additionalProperties": false,
       "required": ["name"],
       "properties": {
         "name": {
@@ -717,6 +726,217 @@
           "properties": {}
         }
       ]
+    },
+    "AccessControlJsonSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "labels": {
+          "description": "Array of student label names this set targets",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "listBeforeRelease": {
+          "description": "Only valid on the first entry (defaults). Whether to list the assessment title before the release date. Students can see the title but cannot open the assessment. Defaults to false.",
+          "type": "boolean"
+        },
+        "dateControl": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "releaseDate": {
+              "description": "Release date as ISO String",
+              "$ref": "#/definitions/DatetimeLocalStringSchema"
+            },
+            "dueDate": {
+              "description": "Due date as ISO String",
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/DatetimeLocalStringSchema"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "earlyDeadlines": {
+              "description": "Array of early deadlines with credit as percentages",
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/DeadlineEntryJsonSchema"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lateDeadlines": {
+              "description": "Array of late deadlines with credit as percentages",
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/DeadlineEntryJsonSchema"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "afterLastDeadline": {
+              "description": "Controls for assessment behaviour after last deadline",
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "allowSubmissions": {
+                      "type": "boolean"
+                    },
+                    "credit": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "durationMinutes": {
+              "description": "Desired duration limit for assessment",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "password": {
+              "description": "Password for assessment",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "integrations": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "prairieTest": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "exams": {
+                  "description": "Array of associated PrairieTest exam configs",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["examUuid"],
+                    "properties": {
+                      "examUuid": {
+                        "description": "UUID of associated PrairieTest exam",
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                      },
+                      "readOnly": {
+                        "description": "Whether the exam is read-only for students",
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "afterComplete": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hideQuestions": {
+              "description": "Whether to hide questions after assessment completion. When false, questions are shown until showQuestionsAgainDate (if set).",
+              "type": "boolean"
+            },
+            "showQuestionsAgainDate": {
+              "description": "Date as ISO String for when hidden questions become visible again after assessment completion",
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/DatetimeLocalStringSchema"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "hideQuestionsAgainDate": {
+              "description": "Date as ISO String for when questions are re-hidden after being shown again",
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/DatetimeLocalStringSchema"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "hideScore": {
+              "description": "Whether to hide scores after assessment completion. When true, scores are hidden until showScoreAgainDate (if set).",
+              "type": "boolean"
+            },
+            "showScoreAgainDate": {
+              "description": "Date as ISO String for when hidden scores become visible again after assessment completion",
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/DatetimeLocalStringSchema"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "DatetimeLocalStringSchema": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2})?$"
+    },
+    "DeadlineEntryJsonSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["date", "credit"],
+      "properties": {
+        "date": {
+          "description": "Date as ISO String for additional deadline",
+          "$ref": "#/definitions/DatetimeLocalStringSchema"
+        },
+        "credit": {
+          "description": "Amount of credit as a percent to allow",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 200
+        }
+      }
     }
   }
 }

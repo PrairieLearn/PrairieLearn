@@ -116,6 +116,10 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
   MathfieldElement.soundsDirectory = null;
   calculatorInputElement.menuItems = [];
+  // Prevent MathLive's built-in virtual keyboard from appearing on touch devices,
+  // since the calculator provides its own custom on-screen keyboard.
+  // Note: the HTML attribute `math-virtual-keyboard-policy` doesn't seem to work, so we set it here via JS.
+  calculatorInputElement.mathVirtualKeyboardPolicy = 'manual';
   calculatorOutput.dataset.displayMode = 'numeric';
   calculatorOutput.dataset.angleMode = 'rad';
 
@@ -247,7 +251,9 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const result = resolveAnsAndEvaluate(items, domIndex, displayMode);
     if (result) {
       const outputField = ensureElement(
-        historyItemEl.querySelector<MathfieldElement>('.history-output .history-text'),
+        historyItemEl.querySelector<MathfieldElement>(
+          '.history-output .pl-calculator-history-text',
+        ),
       );
       outputField.value = `=${result.displayed}`;
     }
@@ -328,7 +334,6 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const { displayed, evaluated } = result;
 
     if (hasError(evaluated.json)) {
-      console.error('Error in evaluated expression:', evaluated.toString());
       calculatorInputGroup.classList.add('error');
       calculatorOutput.value = '';
       copyButton.onclick = null;
@@ -502,7 +507,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     lpar: '(',
     rpar: ')',
     assign: '\\coloneqq',
-    mul: '\\times',
+    mul: '\\cdot',
     minus: '-',
     plus: '+',
     'dec-point': '.',
@@ -663,12 +668,16 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
     // Set input text
     const inputRow = ensureElement(clone.querySelector<HTMLElement>('.history-input'));
-    const inputField = ensureElement(inputRow.querySelector<MathfieldElement>('.history-text'));
+    const inputField = ensureElement(
+      inputRow.querySelector<MathfieldElement>('.pl-calculator-history-text'),
+    );
     inputField.value = input;
 
     // Set output text
     const outputRow = ensureElement(clone.querySelector<HTMLElement>('.history-output'));
-    const outputField = ensureElement(outputRow.querySelector<MathfieldElement>('.history-text'));
+    const outputField = ensureElement(
+      outputRow.querySelector<MathfieldElement>('.pl-calculator-history-text'),
+    );
     outputField.value = `=${displayed}`;
 
     // Only show rad/deg badge if expression contains trig functions
@@ -787,21 +796,18 @@ function initDrawerUI(
   function openDrawer() {
     fab.classList.remove('visible');
     drawer.classList.add('open');
-    drawer.removeAttribute('inert');
     setIsOpen(true);
     drawer.querySelector<MathfieldElement>('#calculator-input')?.focus();
   }
 
   function collapseDrawer() {
     drawer.classList.remove('open');
-    drawer.setAttribute('inert', '');
     fab.classList.add('visible');
     setIsOpen(false);
   }
 
   function dismissCalculator() {
     drawer.classList.remove('open');
-    drawer.setAttribute('inert', '');
     fab.classList.remove('visible');
     setIsOpen(false);
   }
@@ -967,7 +973,6 @@ onDocumentReady(() => {
     initIfNeeded();
     fab.classList.remove('visible');
     drawer.classList.add('no-transition', 'open');
-    drawer.removeAttribute('inert');
     // Remove the no-transition class after the browser has painted the open state
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {

@@ -38,6 +38,27 @@ function getGithubClient() {
 }
 
 /**
+ * Checks whether a repository already exists on GitHub. This catches cases
+ * that can't be detected from the database alone, such as GitHub redirects
+ * from renamed repositories.
+ */
+export async function checkGithubRepositoryExists(repoName: string): Promise<boolean> {
+  const client = getGithubClient();
+  if (client === null) return false;
+
+  try {
+    await client.repos.get({
+      owner: config.githubCourseOwner,
+      repo: repoName,
+    });
+    return true;
+  } catch (err: any) {
+    if (err.status === 404) return false;
+    throw err;
+  }
+}
+
+/**
  * Creates a new, empty repository.
  * @param client Octokit client
  * @param repo Name of the new repository to create
@@ -59,14 +80,28 @@ async function createEmptyRepository(client: Octokit, repo: string) {
  * @param contents Raw contents of the file, stored as a string.
  */
 async function addFileToRepo(client: Octokit, repo: string, path: string, contents: string) {
-  await client.repos.createOrUpdateFileContents({
-    owner: config.githubCourseOwner,
-    repo,
-    path,
-    message: `Update ${path}`,
-    // Add a trailing newline to the contents.
-    content: Buffer.from(contents + '\n', 'ascii').toString('base64'),
-  });
+  const maxRetries = 5;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await client.repos.createOrUpdateFileContents({
+        owner: config.githubCourseOwner,
+        repo,
+        path,
+        message: `Update ${path}`,
+        // Add a trailing newline to the contents.
+        content: Buffer.from(contents + '\n', 'ascii').toString('base64'),
+      });
+      return;
+    } catch (err: any) {
+      // GitHub may return 404 briefly after repository creation due to
+      // eventual consistency. Retry with exponential backoff.
+      if (err.status === 404 && attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
 }
 
 /**
@@ -256,7 +291,7 @@ export async function createCourseRepoJob(
     });
 
     job.info('Sync git repository to database');
-    const syncResult = await syncDiskToSql(inserted_course.id, inserted_course.path, job);
+    const syncResult = await syncDiskToSql(inserted_course, job);
     if (syncResult.status !== 'complete') {
       // Sync should never fail when creating a brand new repository, if we hit this
       // then we have a problem.

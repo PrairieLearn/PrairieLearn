@@ -6,6 +6,7 @@ import { Hydrate } from '@prairielearn/react/server';
 
 import { GitHubButton } from '../../components/GitHubButton.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import { compiledStylesheetTag } from '../../lib/assets.js';
 import {
   StaffCourseInstanceSchema,
   StaffQuestionSchema,
@@ -73,6 +74,7 @@ export function InstructorQuestionSettings({
   return PageLayout({
     resLocals,
     pageTitle: 'Settings',
+    headContent: [compiledStylesheetTag('instructorQuestionSettings.css')],
     navContext: {
       type: 'instructor',
       page: 'question',

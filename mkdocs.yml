@@ -216,6 +216,8 @@ nav:
           - 'Overview': assessment/overview.md
           - 'Configuration': assessment/configuration.md
           - 'Access control': 'assessment/accessControl.md'
+          # TODO: unhide once modern access control is generally available.
+          # - 'Modern access control': 'assessment/accessControlModern.md'
           - 'Remote exams': 'assessment/remoteExams.md'
           - 'Regrading assessments': 'assessment/regrading.md'
       - 'Questions':
@@ -345,6 +347,7 @@ not_in_nav: |
   elements/pl-dropdown.md
   elements/pl-variable-score.md
   dev-guide/contrib/*
+  assessment/accessControlModern.md
 
 validation:
   omitted_files: warn

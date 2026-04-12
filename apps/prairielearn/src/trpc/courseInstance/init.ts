@@ -5,8 +5,7 @@ import superjson from 'superjson';
 import type { CourseInstance, StudentLabel } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { selectOptionalStudentLabelById } from '../../models/student-label.js';
-
-import { AppError } from './app-errors.js';
+import { appErrorFormatter } from '../app-errors.js';
 
 export async function selectStudentLabelByIdOrNotFound({
   id,
@@ -40,15 +39,7 @@ type TRPCContext = Awaited<ReturnType<typeof createContext>>;
 
 export const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,
-  errorFormatter({ shape, error }) {
-    return {
-      ...shape,
-      data: {
-        ...shape.data,
-        ...(error instanceof AppError ? { appError: error.meta } : {}),
-      },
-    };
-  },
+  errorFormatter: appErrorFormatter,
 });
 
 export const requireCourseInstancePermissionView = t.middleware(async (opts) => {

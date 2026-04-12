@@ -1,3 +1,12 @@
+-- BLOCK lock_assessment_row
+SELECT
+  id
+FROM
+  assessments
+WHERE
+  id = $assessment_id
+FOR NO KEY UPDATE;
+
 -- BLOCK select_assessment_by_id
 SELECT
   *
@@ -13,6 +22,16 @@ FROM
   assessments
 WHERE
   tid = $tid
+  AND course_instance_id = $course_instance_id
+  AND deleted_at IS NULL;
+
+-- BLOCK select_assessment_by_uuid
+SELECT
+  *
+FROM
+  assessments
+WHERE
+  uuid = $uuid
   AND course_instance_id = $course_instance_id
   AND deleted_at IS NULL;
 
@@ -124,3 +143,14 @@ ORDER BY
   aset.number,
   a.order_by,
   a.id;
+
+-- BLOCK select_zone_tool_overrides
+SELECT
+  z.number AS zone_number,
+  at.tool,
+  at.enabled
+FROM
+  assessment_tools AS at
+  JOIN zones AS z ON (at.zone_id = z.id)
+WHERE
+  z.assessment_id = $assessment_id;

@@ -1,7 +1,6 @@
 import assert from 'node:assert';
 import * as path from 'path';
 
-import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
@@ -26,6 +25,7 @@ import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
+import { applyMigrationToAssessmentFile } from './assessment-access-control/migration.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import type { StaffCourse } from './client/safe-db-types.js';
@@ -39,6 +39,7 @@ import {
   type Question,
   type User,
 } from './db-types.js';
+import { discoverInfoDirs } from './discover-info-dirs.js';
 import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
 import { EXAMPLE_COURSE_PATH, REPOSITORY_ROOT_PATH } from './paths.js';
@@ -56,12 +57,7 @@ async function syncCourseFromDisk(
 ) {
   const endGitHash = await getCourseCommitHash(course.path);
 
-  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(
-    course.id,
-    course.path,
-    job,
-    courseData,
-  );
+  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course, job, courseData);
 
   if (syncResult.status === 'sharing_error') {
     throw new Error('Sync completely failed due to invalid question sharing edit.');
@@ -100,9 +96,13 @@ async function cleanAndResetRepository(
   });
 }
 
+export function computeFileContentHash(contents: string): string {
+  return sha256(b64EncodeUnicode(contents)).toString();
+}
+
 export async function getOriginalHash(path: string) {
   try {
-    return sha256(b64EncodeUnicode(await fs.readFile(path, 'utf8'))).toString();
+    return computeFileContentHash(await fs.readFile(path, 'utf8'));
   } catch (err: any) {
     if (err.code === 'ENOENT') return null;
     throw err;
@@ -298,7 +298,7 @@ export abstract class Editor {
             this.course.path,
           );
           const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
-            this.course.id,
+            this.course,
             possibleCourseData,
             job,
           );
@@ -317,7 +317,7 @@ export abstract class Editor {
               // an unreasonable amount of time and causing a 504 when we fail
               // to respond to the request in time, we'll use a relatively short
               // timeout to fail the push if it takes too long.
-              cancelSignal: AbortSignal.timeout(10_000),
+              cancelSignal: AbortSignal.timeout(30_000),
             });
             job.data.saveSucceeded = true;
 
@@ -341,7 +341,7 @@ export abstract class Editor {
               env: gitEnv,
               // As with `git push` above, we'll use a timeout here to avoid
               // long delays during GitHub incidents resulting in 504 errors.
-              cancelSignal: AbortSignal.timeout(10_000),
+              cancelSignal: AbortSignal.timeout(30_000),
             });
 
             // This will both discard the commit we made locally and also pull
@@ -356,7 +356,7 @@ export abstract class Editor {
                 cwd: this.course.path,
                 env: gitEnv,
                 // See above `git push` attempt for an explanation of this timeout.
-                cancelSignal: AbortSignal.timeout(10_000),
+                cancelSignal: AbortSignal.timeout(30_000),
               });
               job.data.saveSucceeded = true;
             } finally {
@@ -422,51 +422,6 @@ export abstract class Editor {
       }
     }
   }
-}
-
-/**
- * Get all existing shortnames, recursing on nonempty directories that do not contain
- * an "info" file.
- *
- * TODO: we might be able to get away with querying the database for this information instead.
- * It's unclear why we're going to disk in the first place. Possibly it's to be extra cautious
- * in case we're in a state where there are sync errors, but even in that case, sync errors
- * should not have prevented us from persisting short names in the first place.
- *
- * @param rootDirectory Directory to start searching from.
- * @param infoFile Name of the info file, will stop recursing once a directory contains this.
- */
-async function getExistingShortNames(rootDirectory: string, infoFile: string) {
-  const files: string[] = [];
-  const walk = async (relativeDir: string) => {
-    const directories = await fs.readdir(path.join(rootDirectory, relativeDir)).catch((err) => {
-      // If the directory doesn't exist, then we have nothing to load
-      if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
-        return [] as string[];
-      }
-      throw err;
-    });
-
-    // For each subdirectory, try to find an Info file
-    await async.each(directories, async (dir) => {
-      // Relative path to the current folder
-      const subdirPath = path.join(relativeDir, dir);
-      // Absolute path to the info file
-      const infoPath = path.join(rootDirectory, subdirPath, infoFile);
-      const hasInfoFile = await fs.pathExists(infoPath);
-      if (hasInfoFile) {
-        // Info file exists, we can use this directory
-        files.push(subdirPath);
-      } else {
-        // No info file, let's try recursing
-        await walk(subdirPath);
-      }
-    });
-  };
-
-  await walk('');
-  debug('getExistingShortNames() returning', files);
-  return files;
 }
 
 /**
@@ -554,7 +509,7 @@ export class AssessmentCopyEditor extends Editor {
     const oldNamesLong = assessments.map((row) => row.title).filter((title) => title !== null);
 
     debug('Get all existing short names');
-    const oldNamesShort = await getExistingShortNames(assessmentsPath, 'infoAssessment.json');
+    const oldNamesShort = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
 
     debug('Generate TID and Title');
     const names = getNamesForCopy(
@@ -758,7 +713,7 @@ export class AssessmentAddEditor extends Editor {
       ) + 1;
 
     debug('Get all existing short names');
-    const oldNamesShort = await getExistingShortNames(assessmentsPath, 'infoAssessment.json');
+    const oldNamesShort = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
 
     debug('Generate TID and Title');
     const { shortName: tid, longName: assessmentTitle } = getUniqueNames({
@@ -820,6 +775,10 @@ export class CourseInstanceCopyEditor extends Editor {
   private from_path: string;
   private is_transfer: boolean;
   private metadataOverrides?: Record<string, any>;
+  private accessControlMigration?: {
+    strategy: 'migrate' | 'keep' | 'wipe';
+    preserveIncompatible: boolean;
+  };
 
   public readonly uuid: string;
 
@@ -829,6 +788,10 @@ export class CourseInstanceCopyEditor extends Editor {
       from_path: string;
       course_instance: CourseInstance;
       metadataOverrides?: Record<string, any>;
+      accessControlMigration?: {
+        strategy: 'migrate' | 'keep' | 'wipe';
+        preserveIncompatible: boolean;
+      };
     },
   ) {
     const is_transfer = !idsEqual(params.locals.course.id, params.from_course.id);
@@ -841,6 +804,7 @@ export class CourseInstanceCopyEditor extends Editor {
     this.from_path = params.from_path;
     this.is_transfer = is_transfer;
     this.metadataOverrides = params.metadataOverrides;
+    this.accessControlMigration = params.accessControlMigration;
 
     this.uuid = crypto.randomUUID();
   }
@@ -859,10 +823,7 @@ export class CourseInstanceCopyEditor extends Editor {
     );
 
     debug('Get all existing short names');
-    const oldNamesShort = await getExistingShortNames(
-      courseInstancesPath,
-      'infoCourseInstance.json',
-    );
+    const oldNamesShort = await discoverInfoDirs(courseInstancesPath, 'infoCourseInstance.json');
 
     // NOTE: The public course instance copy page currently does not support customizing these.
     debug('Generate short_name and long_name');
@@ -896,7 +857,7 @@ export class CourseInstanceCopyEditor extends Editor {
 
       const existingQuestionUuids = new Set(await selectQuestionUuidsForCourse(this.course));
       const existingQuestionTitles = await selectQuestionTitlesForCourse(this.course);
-      const existingQuestionQids = await getExistingShortNames(
+      const existingQuestionQids = await discoverInfoDirs(
         path.join(this.course.path, 'questions'),
         'info.json',
       );
@@ -998,6 +959,19 @@ export class CourseInstanceCopyEditor extends Editor {
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
+
+    if (this.accessControlMigration && this.accessControlMigration.strategy !== 'keep') {
+      const assessmentsPath = path.join(courseInstancePath, 'assessments');
+      const assessmentDirs = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
+      for (const dir of assessmentDirs) {
+        const infoPath = path.join(assessmentsPath, dir, 'infoAssessment.json');
+        await applyMigrationToAssessmentFile(
+          infoPath,
+          this.accessControlMigration.strategy,
+          this.accessControlMigration.preserveIncompatible,
+        );
+      }
+    }
 
     pathsToAdd.push(courseInstancePath);
     return {
@@ -1289,7 +1263,7 @@ export class QuestionAddEditor extends Editor {
       const oldNamesLong = await selectQuestionTitlesForCourse(this.course);
 
       debug('Get all existing short names');
-      const oldNamesShort = await getExistingShortNames(questionsPath, 'info.json');
+      const oldNamesShort = await discoverInfoDirs(questionsPath, 'info.json');
 
       debug('Generate qid and title');
       const { shortName, longName } = getUniqueNames({
@@ -1320,7 +1294,7 @@ export class QuestionAddEditor extends Editor {
       });
     }
 
-    const existingQids = await getExistingShortNames(questionsPath, 'info.json');
+    const existingQids = await discoverInfoDirs(questionsPath, 'info.json');
     validateQidNesting(qid, existingQids);
 
     if (this.template_source !== 'empty' && this.template_qid) {
@@ -1692,7 +1666,7 @@ export class QuestionRenameEditor extends Editor {
     }
 
     if (qidChanging) {
-      const existingQids = await getExistingShortNames(questionsPath, 'info.json');
+      const existingQids = await discoverInfoDirs(questionsPath, 'info.json');
       validateQidNesting(this.qid_new, existingQids, this.question.qid);
     }
 
@@ -1869,10 +1843,7 @@ export class QuestionCopyEditor extends Editor {
       from_qid: this.from_qid,
       uuid: this.uuid,
       existingTitles: await selectQuestionTitlesForCourse(this.course),
-      existingQids: await getExistingShortNames(
-        path.join(this.course.path, 'questions'),
-        'info.json',
-      ),
+      existingQids: await discoverInfoDirs(path.join(this.course.path, 'questions'), 'info.json'),
     });
 
     return {
@@ -2520,3 +2491,5 @@ export class MultiEditor extends Editor {
     };
   }
 }
+
+export type AssessmentToolsConfig = { name: string; label: string; enabled: boolean }[];

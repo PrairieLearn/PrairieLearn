@@ -8,7 +8,7 @@ prairielearn_url: https://us.prairielearn.com/pl/course_instance/4970/assessment
 
 Learning can happen in a variety of ways: in classrooms with a teacher-centered style, in flipped lectures, individual work or collaborative activities, asynchronously or synchronously online. Just like there are different teaching methods, people also learn in different ways. Some learners prefer to read, some prefer to watch videos, and others like hands-on work. Mixing different learning approaches can improve the learner engagement. In this assessment, we combine a mixture of text, equations, plots, videos and interactive JupyterLabs to introduce a new topic where students can learn at their own pace. The assessment includes short formative questions, so that students can assess their own learning.
 
-We will use the assessment [L1: Learning new concepts asynchronously](https://us.prairielearn.com/pl/course_instance/128605/assessment/2310475) to highlight some of the PrairieLearn features to deliver course content online.
+We will use the assessment [L1: Learning new concepts asynchronously](https://us.prairielearn.com/pl/course_instance/4970/assessment/2316936) to highlight some of the PrairieLearn features to deliver course content online.
 
 #### Question 1
 

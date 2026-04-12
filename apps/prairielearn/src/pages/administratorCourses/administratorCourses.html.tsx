@@ -1,6 +1,6 @@
 import { QueryClient, useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 
@@ -9,14 +9,15 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import {
   AdministratorCourseFormFields,
   type CourseFormFieldValues,
+  useInstitutionPrefix,
 } from '../../components/AdminstratorCourseFormFields.js';
-import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
+import { getAppError } from '../../lib/client/errors.js';
 import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import type { CourseRequestRow } from '../../lib/course-request.js';
 import type { Timezone } from '../../lib/timezone.shared.js';
 import { createAdministratorTrpcClient } from '../../trpc/administrator/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/administrator/context.js';
+import type { AdminCourseError } from '../../trpc/administrator/courses.js';
 
 import type { CourseWithInstitution } from './administratorCourses.shared.js';
 
@@ -41,145 +42,38 @@ type CourseColumnName =
   | 'branch';
 
 export function AdministratorCourses({
-  courseRequests,
   institutions,
   availableTimezones,
   courses,
   coursesRoot,
   trpcCsrfToken,
-  urlPrefix,
   courseRepoDefaultBranch,
   aiSecretsConfigured,
 }: {
-  courseRequests: CourseRequestRow[];
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
   courses: CourseWithInstitution[];
   coursesRoot: string;
   trpcCsrfToken: string;
-  urlPrefix: string;
   courseRepoDefaultBranch: string;
   aiSecretsConfigured: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => createAdministratorTrpcClient({ csrfToken: trpcCsrfToken }));
 
-  const [showAddCourseModal, setShowAddCourseModal] = useState(false);
-  const [deleteCourseId, setDeleteCourseId] = useState<string | null>(null);
-
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <>
           <h1 className="visually-hidden">Courses</h1>
-          <CourseRequestsTable
-            rows={courseRequests}
+          <CoursesCard
+            courses={courses}
             institutions={institutions}
             availableTimezones={availableTimezones}
             coursesRoot={coursesRoot}
-            urlPrefix={urlPrefix}
-            showAll={false}
+            courseRepoDefaultBranch={courseRepoDefaultBranch}
             aiSecretsConfigured={aiSecretsConfigured}
           />
-          <div id="courses" className="card mb-4">
-            <div className="card-header bg-primary text-white d-flex align-items-center">
-              <h2>Courses</h2>
-              <button
-                type="button"
-                className="btn btn-sm btn-light ms-auto"
-                aria-label="Add course"
-                onClick={() => setShowAddCourseModal(true)}
-              >
-                <i className="fa fa-plus" aria-hidden="true" />
-                <span className="d-none d-sm-inline">Add course</span>
-              </button>
-              <CourseInsertModal
-                institutions={institutions}
-                availableTimezones={availableTimezones}
-                coursesRoot={coursesRoot}
-                courseRepoDefaultBranch={courseRepoDefaultBranch}
-                show={showAddCourseModal}
-                aiSecretsConfigured={aiSecretsConfigured}
-                onCancel={() => setShowAddCourseModal(false)}
-              />
-            </div>
-            <div className="table-responsive">
-              <table className="table table-sm table-hover table-striped" aria-label="Courses">
-                <thead>
-                  <tr>
-                    <th>Institution</th>
-                    <th>Short name</th>
-                    <th>Title</th>
-                    <th>Timezone</th>
-                    <th>Path</th>
-                    <th>Repository</th>
-                    <th>Branch</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {courses.map((row) => {
-                    return (
-                      <tr key={row.course.id}>
-                        <td>
-                          <a href={`/pl/administrator/institution/${row.institution.id}`}>
-                            {row.institution.short_name}
-                          </a>
-                        </td>
-                        <CourseUpdateColumn
-                          row={row}
-                          columnName="short_name"
-                          label="short name"
-                          href={`/pl/course/${row.course.id}`}
-                        />
-                        <CourseUpdateColumn row={row} columnName="title" label="title" />
-                        <CourseUpdateColumn
-                          row={row}
-                          columnName="display_timezone"
-                          label="timezone"
-                        />
-                        <CourseUpdateColumn row={row} columnName="path" label="path" />
-                        <CourseUpdateColumn row={row} columnName="repository" label="repository" />
-                        <CourseUpdateColumn row={row} columnName="branch" label="branch" />
-                        <td className="align-middle">
-                          <OverlayTrigger
-                            trigger="click"
-                            placement="auto"
-                            popover={{
-                              header: `Confirm deletion of ${row.course.short_name}`,
-                              body: (
-                                <CourseDeleteForm
-                                  id={`courseDeleteButton${row.course.id}`}
-                                  row={row}
-                                  onCancel={() => setDeleteCourseId(null)}
-                                />
-                              ),
-                            }}
-                            show={deleteCourseId === row.course.id}
-                            rootClose
-                            onToggle={(open) => setDeleteCourseId(open ? row.course.id : null)}
-                          >
-                            <button type="button" className="btn btn-sm btn-danger text-nowrap">
-                              <i className="fa fa-times" aria-hidden="true" /> Delete course
-                            </button>
-                          </OverlayTrigger>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <div className="card-footer">
-              <small>
-                When a course is synced, if the <strong>path</strong> does not exist on disk then a{' '}
-                <code>git clone</code> is performed from the <strong>repository</strong>, otherwise
-                a <code>git pull</code> is run in the <strong>path</strong> directory. The{' '}
-                <strong>short name</strong> and <strong>title</strong> are updated from the JSON
-                configuration file in the repository during the sync.
-              </small>
-            </div>
-          </div>
         </>
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -187,6 +81,128 @@ export function AdministratorCourses({
 }
 
 AdministratorCourses.displayName = 'AdministratorCourses';
+
+function CoursesCard({
+  courses,
+  institutions,
+  availableTimezones,
+  coursesRoot,
+  courseRepoDefaultBranch,
+  aiSecretsConfigured,
+}: {
+  courses: CourseWithInstitution[];
+  institutions: AdminInstitution[];
+  availableTimezones: Timezone[];
+  coursesRoot: string;
+  courseRepoDefaultBranch: string;
+  aiSecretsConfigured: boolean;
+}) {
+  const [showAddCourseModal, setShowAddCourseModal] = useState(false);
+
+  return (
+    <div id="courses" className="card mb-4">
+      <div className="card-header bg-primary text-white d-flex align-items-center">
+        <h2>Courses</h2>
+        <button
+          type="button"
+          className="btn btn-sm btn-light ms-auto"
+          aria-label="Add course"
+          onClick={() => setShowAddCourseModal(true)}
+        >
+          <i className="fa fa-plus" aria-hidden="true" />
+          <span className="d-none d-sm-inline">Add course</span>
+        </button>
+        <CourseInsertModal
+          institutions={institutions}
+          availableTimezones={availableTimezones}
+          coursesRoot={coursesRoot}
+          courseRepoDefaultBranch={courseRepoDefaultBranch}
+          aiSecretsConfigured={aiSecretsConfigured}
+          show={showAddCourseModal}
+          onCancel={() => setShowAddCourseModal(false)}
+        />
+      </div>
+      <div className="table-responsive">
+        <table className="table table-sm table-hover table-striped" aria-label="Courses">
+          <thead>
+            <tr>
+              <th>Institution</th>
+              <th>Short name</th>
+              <th>Title</th>
+              <th>Timezone</th>
+              <th>Path</th>
+              <th>Repository</th>
+              <th>Branch</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {courses.map((row) => (
+              <CourseRow key={row.course.id} row={row} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="card-footer">
+        <small>
+          When a course is synced, if the <strong>path</strong> does not exist on disk then a{' '}
+          <code>git clone</code> is performed from the <strong>repository</strong>, otherwise a{' '}
+          <code>git pull</code> is run in the <strong>path</strong> directory. The{' '}
+          <strong>short name</strong> and <strong>title</strong> are updated from the JSON
+          configuration file in the repository during the sync.
+        </small>
+      </div>
+    </div>
+  );
+}
+
+const CourseRow = memo(({ row }: { row: CourseWithInstitution }) => {
+  const [showDeletePopover, setShowDeletePopover] = useState(false);
+
+  return (
+    <tr>
+      <td>
+        <a href={`/pl/administrator/institution/${row.institution.id}`}>
+          {row.institution.short_name}
+        </a>
+      </td>
+      <CourseUpdateColumn
+        row={row}
+        columnName="short_name"
+        label="short name"
+        href={`/pl/course/${row.course.id}`}
+      />
+      <CourseUpdateColumn row={row} columnName="title" label="title" />
+      <CourseUpdateColumn row={row} columnName="display_timezone" label="timezone" />
+      <CourseUpdateColumn row={row} columnName="path" label="path" />
+      <CourseUpdateColumn row={row} columnName="repository" label="repository" />
+      <CourseUpdateColumn row={row} columnName="branch" label="branch" />
+      <td className="align-middle">
+        <OverlayTrigger
+          trigger="click"
+          placement="auto"
+          popover={{
+            header: `Confirm deletion of ${row.course.short_name}`,
+            body: (
+              <CourseDeleteForm
+                id={`courseDeleteButton${row.course.id}`}
+                row={row}
+                onCancel={() => setShowDeletePopover(false)}
+              />
+            ),
+          }}
+          show={showDeletePopover}
+          rootClose
+          onToggle={setShowDeletePopover}
+        >
+          <button type="button" className="btn btn-sm btn-danger text-nowrap">
+            <i className="fa fa-times" aria-hidden="true" /> Delete course
+          </button>
+        </OverlayTrigger>
+      </td>
+    </tr>
+  );
+});
 
 function CourseDeleteForm({
   id,
@@ -210,6 +226,8 @@ function CourseDeleteForm({
       short_name: '',
     },
   });
+
+  const appError = getAppError<AdminCourseError>(mutation.error);
 
   const onSubmit = (data: DeleteCourseFormData) => {
     mutation.mutate(
@@ -238,9 +256,9 @@ function CourseDeleteForm({
           </div>
         )}
       </div>
-      {mutation.isError && (
+      {appError && (
         <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-          {mutation.error.message}
+          {appError.message}
         </Alert>
       )}
       <div className="d-flex justify-content-end gap-2">
@@ -274,6 +292,7 @@ function CourseInsertModal({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courses.insert.mutationOptions());
+  const appError = getAppError<AdminCourseError>(mutation.error);
 
   const methods = useForm<InsertCourseFormData>({
     mode: 'onSubmit',
@@ -291,12 +310,10 @@ function CourseInsertModal({
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors, isSubmitting },
   } = methods;
-
-  const institutionId = watch('institution_id');
-  const selectedInstitution = institutions.find((i) => i.id === institutionId);
+  const institutionId = methods.watch('institution_id');
+  const prefixState = useInstitutionPrefix(institutionId, institutions);
 
   const onSubmit = (data: InsertCourseFormData) => {
     mutation.mutate(
@@ -314,7 +331,13 @@ function CourseInsertModal({
   };
 
   return (
-    <Modal show={show} backdrop="static" onHide={onCancel}>
+    <Modal
+      show={show}
+      backdrop="static"
+      size="lg"
+      onHide={onCancel}
+      onEntering={() => methods.reset()}
+    >
       <FormProvider {...methods}>
         <form name="add-course-form" onSubmit={handleSubmit(onSubmit)}>
           <Modal.Header closeButton>
@@ -325,10 +348,7 @@ function CourseInsertModal({
               institutions={institutions}
               availableTimezones={availableTimezones}
               coursesRoot={coursesRoot}
-              suggestPrefixOptions={{
-                institutionName: selectedInstitution?.long_name ?? '',
-                emailDomain: selectedInstitution?.short_name ?? '',
-              }}
+              prefixState={prefixState}
               aiSecretsConfigured={aiSecretsConfigured}
             />
             <div className="mb-3">
@@ -349,9 +369,9 @@ function CourseInsertModal({
                 </div>
               )}
             </div>
-            {mutation.isError && (
+            {appError && (
               <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-                {mutation.error.message}
+                {appError.message}
               </Alert>
             )}
           </Modal.Body>
@@ -362,7 +382,7 @@ function CourseInsertModal({
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={isSubmitting || mutation.isPending}
+              disabled={isSubmitting || mutation.isPending || prefixState.status === 'loading'}
             >
               Add course
             </button>
@@ -432,6 +452,7 @@ function CourseUpdateColumnForm({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courses.updateColumn.mutationOptions());
+  const appError = getAppError<AdminCourseError>(mutation.error);
 
   const {
     register,
@@ -477,9 +498,9 @@ function CourseUpdateColumnForm({
         />
         {errors.value && <div className="invalid-feedback">{errors.value.message}</div>}
       </div>
-      {mutation.isError && (
+      {appError && (
         <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-          {mutation.error.message}
+          {appError.message}
         </Alert>
       )}
       <div className="d-flex justify-content-end gap-2">
