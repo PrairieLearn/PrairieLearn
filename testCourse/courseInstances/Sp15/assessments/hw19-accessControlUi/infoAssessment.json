@@ -28,7 +28,7 @@
       "labels": ["Extra time", "Section A"],
       "dateControl": { "afterLastDeadline": { "allowSubmissions": false, "credit": null } },
       "afterComplete": {
-        "questions": { "hidden": false, "visibleFromDate": null, "visibleUntilDate": null }
+        "questions": { "hidden": false }
       }
     }
   ],
