@@ -1,3 +1,9 @@
+import { Badge } from 'react-bootstrap';
+
+import { OverlayTrigger } from '@prairielearn/ui';
+
+import { getInstanceQuestionUrl } from '../../../lib/client/url.js';
+
 import type { ClientQuestionRow } from './types.js';
 
 export function RowLabel({
@@ -35,40 +41,42 @@ export function RowLabel({
   return (
     <>
       {showLink ? (
-        <a href={`${urlPrefix}/instance_question/${row.id}/`}>{rowLabelText}</a>
+        <a href={getInstanceQuestionUrl({ urlPrefix, instanceQuestionId: row.id })}>
+          {rowLabelText}
+        </a>
       ) : (
         <span className="text-muted">{rowLabelText}</span>
       )}
       {row.questionAccessMode === 'blocked_lockpoint' && !hasStatusColumn ? (
-        <span className="badge bg-secondary ms-1" data-testid="locked-instance-question-row">
+        <Badge bg="secondary" className="ms-1" data-testid="locked-instance-question-row">
           Locked
-        </span>
+        </Badge>
       ) : lockMessage != null ? (
-        <button
-          type="button"
-          className="btn btn-xs border text-secondary ms-1"
-          data-bs-toggle="popover"
-          data-bs-container="body"
-          data-bs-html="true"
-          data-bs-content={lockMessage}
-          data-testid="locked-instance-question-row"
-          aria-label="Locked"
-        >
-          <i className="fas fa-lock" aria-hidden="true" />
-        </button>
+        <OverlayTrigger trigger="click" popover={{ body: lockMessage }} rootClose>
+          <button
+            type="button"
+            className="btn btn-xs border text-secondary ms-1"
+            data-testid="locked-instance-question-row"
+            aria-label="Locked"
+          >
+            <i className="fas fa-lock" aria-hidden="true" />
+          </button>
+        </OverlayTrigger>
       ) : null}
       {row.fileCount > 0 && (
-        <button
-          type="button"
-          className="btn btn-xs border text-secondary ms-1"
-          data-bs-toggle="popover"
-          data-bs-container="body"
-          data-bs-html="true"
-          data-bs-content={`Personal notes: ${row.fileCount}`}
-          aria-label="Has personal note attachments"
+        <OverlayTrigger
+          trigger="click"
+          popover={{ body: `Personal notes: ${row.fileCount}` }}
+          rootClose
         >
-          <i className="fas fa-paperclip" />
-        </button>
+          <button
+            type="button"
+            className="btn btn-xs border text-secondary ms-1"
+            aria-label="Has personal note attachments"
+          >
+            <i className="fas fa-paperclip" />
+          </button>
+        </OverlayTrigger>
       )}
     </>
   );

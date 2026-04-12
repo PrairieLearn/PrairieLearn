@@ -1,3 +1,5 @@
+import { getInstanceQuestionUrl } from '../../../lib/client/url.js';
+
 import type { ClientVariantWithScore } from './types.js';
 
 export function QuestionVariantHistory({
@@ -43,7 +45,7 @@ export function QuestionVariantHistory({
               ? { display: 'none' }
               : undefined
           }
-          href={`${urlPrefix}/instance_question/${instanceQuestionId}/?variant_id=${variant.id}`}
+          href={getInstanceQuestionUrl({ urlPrefix, instanceQuestionId, variantId: variant.id })}
         >
           {variant.open ? 'Open' : `${Math.floor(variant.maxSubmissionScore * 100)}%`}
         </a>

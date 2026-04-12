@@ -1,6 +1,13 @@
-import { ExamQuestionCells } from './ExamQuestionCells.js';
-import { HomeworkQuestionCells } from './HomeworkQuestionCells.js';
+import { Badge } from 'react-bootstrap';
+
+import { OverlayTrigger } from '@prairielearn/ui';
+
+import { formatPoints } from '../../../lib/format.js';
+
+import { ExamQuestionAvailablePoints } from './ExamQuestionAvailablePoints.js';
+import { ExamQuestionStatus } from './ExamQuestionStatus.js';
 import { LockpointRow } from './LockpointRow.js';
+import { QuestionVariantHistory } from './QuestionVariantHistory.js';
 import { RowLabel } from './RowLabel.js';
 import type { ClientQuestionRow } from './types.js';
 
@@ -122,6 +129,8 @@ function QuestionRowGroup({
   onCrossLockpoint: (zoneId: string) => void;
 }) {
   const hasStatusColumn = assessmentType === 'Exam';
+  const realTimeGradingPartiallyDisabled =
+    someQuestionsAllowRealTimeGrading && someQuestionsForbidRealTimeGrading;
 
   return (
     <>
@@ -185,7 +194,7 @@ function QuestionRowGroup({
             hasAutoGradingQuestion={hasAutoGradingQuestion}
             hasManualGradingQuestion={hasManualGradingQuestion}
             someQuestionsAllowRealTimeGrading={someQuestionsAllowRealTimeGrading}
-            someQuestionsForbidRealTimeGrading={someQuestionsForbidRealTimeGrading}
+            realTimeGradingPartiallyDisabled={realTimeGradingPartiallyDisabled}
             assessmentInstanceOpen={assessmentInstanceOpen}
           />
         ) : (
@@ -201,18 +210,171 @@ function QuestionRowGroup({
   );
 }
 
+function ExamQuestionCells({
+  row,
+  hasAutoGradingQuestion,
+  hasManualGradingQuestion,
+  someQuestionsAllowRealTimeGrading,
+  realTimeGradingPartiallyDisabled,
+  assessmentInstanceOpen,
+}: {
+  row: ClientQuestionRow;
+  hasAutoGradingQuestion: boolean;
+  hasManualGradingQuestion: boolean;
+  someQuestionsAllowRealTimeGrading: boolean;
+  realTimeGradingPartiallyDisabled: boolean;
+  assessmentInstanceOpen: boolean;
+}) {
+  return (
+    <>
+      <td className="align-middle lh-1">
+        <ExamQuestionStatus
+          row={row}
+          realTimeGradingPartiallyDisabled={realTimeGradingPartiallyDisabled}
+        />
+      </td>
+      {hasAutoGradingQuestion && someQuestionsAllowRealTimeGrading && (
+        <td className="text-center">
+          <ExamQuestionAvailablePoints row={row} />
+        </td>
+      )}
+      {someQuestionsAllowRealTimeGrading || !assessmentInstanceOpen ? (
+        <>
+          {hasAutoGradingQuestion && hasManualGradingQuestion && (
+            <>
+              <td className="text-center">
+                <InstanceQuestionPoints row={row} component="auto" />
+              </td>
+              <td className="text-center">
+                <InstanceQuestionPoints row={row} component="manual" />
+              </td>
+            </>
+          )}
+          <td className="text-center">
+            <InstanceQuestionPoints row={row} component="total" />
+          </td>
+        </>
+      ) : (
+        <>
+          {hasAutoGradingQuestion && hasManualGradingQuestion && (
+            <>
+              <td className="text-center">{formatPoints(row.maxAutoPoints)}</td>
+              <td className="text-center">{formatPoints(row.maxManualPoints)}</td>
+            </>
+          )}
+          <td className="text-center">{formatPoints(row.maxPoints)}</td>
+        </>
+      )}
+    </>
+  );
+}
+
+function HomeworkQuestionCells({
+  row,
+  hasAutoGradingQuestion,
+  hasManualGradingQuestion,
+  urlPrefix,
+}: {
+  row: ClientQuestionRow;
+  hasAutoGradingQuestion: boolean;
+  hasManualGradingQuestion: boolean;
+  urlPrefix: string;
+}) {
+  return (
+    <>
+      {hasAutoGradingQuestion && (
+        <>
+          <td className="text-center">
+            {!row.maxAutoPoints ? (
+              <>&mdash;</>
+            ) : (
+              formatPoints((row.currentValue ?? 0) - (row.maxManualPoints ?? 0))
+            )}
+          </td>
+          <td className="text-center">
+            <QuestionVariantHistory
+              instanceQuestionId={row.id}
+              previousVariants={row.previousVariants}
+              urlPrefix={urlPrefix}
+            />
+          </td>
+        </>
+      )}
+      {hasAutoGradingQuestion && hasManualGradingQuestion && (
+        <>
+          <td className="text-center">
+            <InstanceQuestionPoints row={row} component="auto" />
+          </td>
+          <td className="text-center">
+            <InstanceQuestionPoints row={row} component="manual" />
+          </td>
+        </>
+      )}
+      <td className="text-center">
+        <InstanceQuestionPoints row={row} component="total" />
+      </td>
+    </>
+  );
+}
+
+function InstanceQuestionPoints({
+  row,
+  component,
+}: {
+  row: ClientQuestionRow;
+  component: 'manual' | 'auto' | 'total';
+}) {
+  const points =
+    component === 'auto' ? row.autoPoints : component === 'manual' ? row.manualPoints : row.points;
+  const maxPoints =
+    component === 'auto'
+      ? row.maxAutoPoints
+      : component === 'manual'
+        ? row.maxManualPoints
+        : row.maxPoints;
+  const pointsPending =
+    (['saved', 'grading'].includes(row.status ?? '') && component !== 'manual') ||
+    (row.requiresManualGrading && component !== 'auto');
+
+  // Special case: if this is a manually-graded question in the saved state, don't show
+  // a "pending" badge for auto points, since there aren't any pending auto points.
+  if (row.status === 'saved' && component === 'auto' && !row.maxAutoPoints && row.maxManualPoints) {
+    return <span className="text-nowrap">&mdash;</span>;
+  }
+
+  const pointsContent =
+    // If the question is unanswered show a dash instead of 0 points, unless
+    // the question was manually graded or a regrading process forced the
+    // points to be increased.
+    row.status === 'unanswered' && !row.hasLastGrader && row.points === 0 ? (
+      <>&mdash;</>
+    ) : pointsPending ? (
+      <Badge bg="info">pending</Badge>
+    ) : !points && !maxPoints ? (
+      <>&mdash;</>
+    ) : (
+      <span data-testid="awarded-points">{formatPoints(points)}</span>
+    );
+
+  return (
+    <span className="text-nowrap">
+      {pointsContent}
+      {maxPoints ? (
+        <small>
+          /<span className="text-muted">{maxPoints}</span>
+        </small>
+      ) : null}
+    </span>
+  );
+}
+
 function ZoneInfoPopover({ label, content }: { label: string; content: string }) {
   return (
-    <button
-      type="button"
-      className="btn btn-xs btn-secondary"
-      data-bs-toggle="popover"
-      data-bs-container="body"
-      data-bs-html="true"
-      data-bs-content={content}
-    >
-      {label}&nbsp;
-      <i className="far fa-question-circle" aria-hidden="true" />
-    </button>
+    <OverlayTrigger trigger="click" popover={{ body: content }} rootClose>
+      <button type="button" className="btn btn-xs btn-secondary">
+        {label}&nbsp;
+        <i className="far fa-question-circle" aria-hidden="true" />
+      </button>
+    </OverlayTrigger>
   );
 }

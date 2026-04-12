@@ -24,6 +24,7 @@ import {
   StudentQuestionSchema,
   StudentZoneSchema,
 } from '../../lib/client/safe-db-types.js';
+import { getAssessmentInstanceTimeRemainingUrl } from '../../lib/client/url.js';
 import { EnumQuestionAccessModeSchema, type GroupConfig } from '../../lib/db-types.js';
 import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
@@ -301,7 +302,10 @@ export function StudentAssessmentInstance({
             {
               serverRemainingMS: resLocals.assessment_instance_remaining_ms,
               serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
-              serverUpdateURL: `${resLocals.urlPrefix}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
+              serverUpdateURL: getAssessmentInstanceTimeRemainingUrl({
+                urlPrefix: resLocals.urlPrefix,
+                assessmentInstanceId: resLocals.assessment_instance.id,
+              }),
               canTriggerFinish: authzResult.authorized_edit,
               showsTimeoutWarning: true,
               reloadOnFail: true,
@@ -311,12 +315,16 @@ export function StudentAssessmentInstance({
           )}`
         : ''}
     `,
+    // TODO: Convert RegenerateInstanceModal to a React component so it can
+    // be rendered directly instead of via preContent raw HTML.
     preContent: userCanDeleteAssessmentInstance
       ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
       : '',
     content: (
       <>
         {userCanDeleteAssessmentInstance && (
+          // TODO: Convert RegenerateInstanceAlert to a React component so it
+          // can be rendered directly instead of via dangerouslySetInnerHTML.
           // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
           <div dangerouslySetInnerHTML={{ __html: RegenerateInstanceAlert().toString() }} />
         )}

@@ -289,7 +289,10 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       assert.equal(badge.eq(1).text().trim(), 'pending');
       assert.equal(badge.eq(2).text().trim(), 'pending');
 
-      // We should now be able to finish the entire assessment.
+      // We should now be able to finish the entire assessment. The confirm-finish
+      // modal is a React Bootstrap modal that only renders client-side when shown,
+      // so we can't assert on its DOM presence in server-rendered HTML. Instead we
+      // verify the finish POST action succeeds.
       const finishResponse = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
         method: 'POST',
         body: new URLSearchParams({

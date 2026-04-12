@@ -146,6 +146,32 @@ export function getQuestionCreateUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/course_admin/questions/create`;
 }
 
+export function getInstanceQuestionUrl({
+  urlPrefix,
+  instanceQuestionId,
+  variantId,
+}: {
+  urlPrefix: string;
+  instanceQuestionId: string;
+  variantId?: string;
+}): string {
+  const base = `${urlPrefix}/instance_question/${instanceQuestionId}/`;
+  if (variantId) {
+    return `${base}?variant_id=${variantId}`;
+  }
+  return base;
+}
+
+export function getAssessmentInstanceTimeRemainingUrl({
+  urlPrefix,
+  assessmentInstanceId,
+}: {
+  urlPrefix: string;
+  assessmentInstanceId: string;
+}): string {
+  return `${urlPrefix}/assessment_instance/${assessmentInstanceId}/time_remaining`;
+}
+
 // tRPC scope URLs
 
 export function getAdministratorTrpcUrl(): string {

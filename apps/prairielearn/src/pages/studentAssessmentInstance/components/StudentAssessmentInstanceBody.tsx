@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import { OverlayTrigger } from '@prairielearn/ui';
+
 import { Scorebar } from '../../../components/Scorebar.js';
 import { formatPoints } from '../../../lib/format.js';
 
@@ -352,7 +354,14 @@ function InstanceQuestionTableHeader({
               Available points{' '}
               <ExamQuestionHelpPopover
                 title="Available points"
-                content="The number of points that would be earned for a 100% correct answer on the next attempt. If retries are available for the question then a list of further points is shown, where the <i>n</i>-th value is the number of points that would be earned for a 100% correct answer on the <i>n</i>-th attempt."
+                content={
+                  <>
+                    The number of points that would be earned for a 100% correct answer on the next
+                    attempt. If retries are available for the question then a list of further points
+                    is shown, where the <i>n</i>-th value is the number of points that would be
+                    earned for a 100% correct answer on the <i>n</i>-th attempt.
+                  </>
+                }
               />
             </th>
             <th className="text-center">
@@ -443,19 +452,19 @@ function InstanceQuestionTableHeader({
   );
 }
 
-function ExamQuestionHelpPopover({ title, content }: { title: string; content: string }) {
+function ExamQuestionHelpPopover({ title, content }: { title: string; content: React.ReactNode }) {
   return (
-    <button
-      type="button"
-      className="btn btn-xs btn-ghost"
-      data-bs-toggle="popover"
-      data-bs-container="body"
-      data-bs-html="true"
-      data-bs-placement="auto"
-      data-bs-title={title}
-      data-bs-content={content}
+    <OverlayTrigger
+      trigger="click"
+      popover={{
+        header: title,
+        body: content,
+      }}
+      rootClose
     >
-      <i className="fa fa-question-circle" aria-hidden="true" />
-    </button>
+      <button type="button" className="btn btn-xs btn-ghost">
+        <i className="fa fa-question-circle" aria-hidden="true" />
+      </button>
+    </OverlayTrigger>
   );
 }
