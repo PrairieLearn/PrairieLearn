@@ -5,13 +5,13 @@ import { PrairieTestControlForm } from './PrairieTestControlForm.js';
 import type { AccessControlFormData } from './types.js';
 
 export function IntegrationsSection() {
-  const { register, setValue } = useFormContext<AccessControlFormData>();
+  const { setValue } = useFormContext<AccessControlFormData>();
 
-  const prairieTestEnabled = useWatch<AccessControlFormData, 'mainRule.prairieTestEnabled'>({
-    name: 'mainRule.prairieTestEnabled',
+  const prairieTestExams = useWatch<AccessControlFormData, 'mainRule.prairieTestExams'>({
+    name: 'mainRule.prairieTestExams',
   });
 
-  const prairieTestRegistration = register('mainRule.prairieTestEnabled');
+  const prairieTestEnabled = prairieTestExams.length > 0;
 
   return (
     <div>
@@ -22,18 +22,17 @@ export function IntegrationsSection() {
         type="checkbox"
         id="mainRule-prairietest-enabled"
         label={<strong>PrairieTest</strong>}
-        defaultChecked={prairieTestEnabled}
-        {...prairieTestRegistration}
+        checked={prairieTestEnabled}
         aria-describedby="mainRule-prairietest-help"
         onChange={(e) => {
-          void prairieTestRegistration.onChange(e);
           if (!e.target.checked) {
-            setValue('mainRule.prairieTestExams', [], { shouldDirty: true });
+            setValue('mainRule.prairieTestExams', [], { shouldDirty: true, shouldValidate: true });
           } else {
             // Add an initial entry when toggling it on so that the user can immediately
             // start configuring it without needing to click "Add Exam" first.
             setValue('mainRule.prairieTestExams', [{ examUuid: '', readOnly: false }], {
               shouldDirty: true,
+              shouldValidate: true,
             });
           }
         }}

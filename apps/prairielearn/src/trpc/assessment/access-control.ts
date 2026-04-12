@@ -5,6 +5,11 @@ import { z } from 'zod';
 
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
+import {
+  MAX_ACCESS_CONTROL_RULES,
+  MAX_ENROLLMENT_RULES,
+  validateAccessControlRules,
+} from '../../lib/assessment-access-control/validation.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { saveJsonFile } from '../../lib/editorUtil.js';
 import { features } from '../../lib/features/index.js';
@@ -21,15 +26,8 @@ import {
   validateEnrollmentIdsInCourseInstance,
 } from '../../models/enrollment.js';
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
-import {
-  type AccessControlJson,
-  AccessControlJsonSchema,
-  MAX_ACCESS_CONTROL_RULES,
-  MAX_ENROLLMENT_RULES,
-} from '../../schemas/accessControl.js';
+import { type AccessControlJson, AccessControlJsonSchema } from '../../schemas/accessControl.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
-import { validateAccessControlArray } from '../../sync/course-db.js';
-import { validateRule } from '../../sync/fromDisk/accessControl.js';
 import { throwAppError } from '../app-errors.js';
 
 import {
@@ -116,7 +114,6 @@ function formJsonToEnrollmentRuleData(
   return {
     id: rule.id,
     listBeforeRelease: rule.listBeforeRelease ?? null,
-    releaseDateOverridden: dc?.releaseDate !== undefined,
     releaseDate: dc?.releaseDate ?? null,
     dueDateOverridden: dc?.dueDate !== undefined,
     dueDate: dc?.dueDate ?? null,
@@ -142,11 +139,7 @@ function formJsonToEnrollmentRuleData(
   };
 }
 
-// TODO: Add client-side validation for duplicate PrairieTest exam UUIDs and
-// duplicate deadline dates before this goes live. Server-side validation
-// (validateRule) catches these for all rule types, but the UI should block
-// saves proactively so users get immediate feedback instead of a server error.
-export const AccessControlJsonInputSchema = AccessControlJsonSchema.extend({
+const AccessControlJsonInputSchema = AccessControlJsonSchema.extend({
   id: z.string().optional(),
 }).strip();
 
@@ -209,25 +202,8 @@ const saveAllRules = t.procedure
   )
   .mutation(async (opts) => {
     const { rules, enrollmentRules, origHash } = opts.input;
-
     // Validate all rules before writing anything to disk or DB.
     const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
-
-    // Validate array-level invariants (exactly one main rule, must be first).
-    const { errors: arrayErrors } = validateAccessControlArray({
-      accessControlJsonArray: rulesToSync,
-    });
-    if (arrayErrors.length > 0) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: arrayErrors[0] });
-    }
-
-    for (const [index, rule] of rulesToSync.entries()) {
-      const targetType = index === 0 ? 'none' : 'student_label';
-      const ruleError = validateRule(rule, targetType);
-      if (ruleError) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
-      }
-    }
 
     if (enrollmentRules !== undefined && enrollmentRules.length > 0) {
       const allEnrollmentIds = new Set(enrollmentRules.flatMap((r) => r.enrollmentIds));
@@ -243,13 +219,14 @@ const saveAllRules = t.procedure
           });
         }
       }
+    }
 
-      for (const enrollmentRule of enrollmentRules) {
-        const ruleError = validateRule(enrollmentRule.ruleJson, 'enrollment');
-        if (ruleError) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: ruleError });
-        }
-      }
+    const { errors: validationErrors } = validateAccessControlRules({
+      rules: rulesToSync,
+      enrollmentRules: enrollmentRules?.map((r) => r.ruleJson),
+    });
+    if (validationErrors.length > 0) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: validationErrors[0] });
     }
 
     const assessmentDir = path.join(

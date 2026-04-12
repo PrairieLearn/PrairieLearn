@@ -36,7 +36,6 @@ type AccessControlJsonWithRequiredId = Required<Pick<AccessControlJsonWithId, 'i
 export interface EnrollmentAccessControlRuleData {
   id?: string;
   listBeforeRelease: boolean | null;
-  releaseDateOverridden: boolean;
   releaseDate: string | null;
   dueDateOverridden: boolean;
   dueDate: string | null;
@@ -112,8 +111,8 @@ function dbBaseRowToAccessControlJson(
   const rule = row.access_control_rule;
   const dateControl: AccessControlJson['dateControl'] = {};
 
-  if (rule.date_control_release_date_overridden) {
-    dateControl.releaseDate = rule.date_control_release_date?.toISOString() ?? null;
+  if (rule.date_control_release_date) {
+    dateControl.releaseDate = rule.date_control_release_date.toISOString();
   }
   if (rule.date_control_due_date_overridden) {
     dateControl.dueDate = rule.date_control_due_date?.toISOString() ?? null;
@@ -246,7 +245,6 @@ export async function syncEnrollmentAccessControl(
   const ruleJson = JSON.stringify({
     id: ruleData.id ?? null,
     list_before_release: ruleData.listBeforeRelease,
-    date_control_release_date_overridden: ruleData.releaseDateOverridden,
     date_control_release_date: ruleData.releaseDate,
     date_control_due_date_overridden: ruleData.dueDateOverridden,
     date_control_due_date: ruleData.dueDate,

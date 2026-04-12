@@ -26,12 +26,7 @@ function toRuntime(json: AccessControlJson): RuntimeAccessControl {
     const { releaseDate, dueDate, ...dcRest } = dateControl;
     result.dateControl = {
       ...dcRest,
-      releaseDate:
-        releaseDate !== undefined
-          ? releaseDate !== null
-            ? new Date(releaseDate)
-            : null
-          : undefined,
+      releaseDate: releaseDate !== undefined ? new Date(releaseDate) : undefined,
       dueDate: dueDate !== undefined ? (dueDate !== null ? new Date(dueDate) : null) : undefined,
     };
   }
@@ -1458,6 +1453,40 @@ describe('resolveAccessControl', () => {
       expect(result.showBeforeRelease).toBe(false);
     });
 
+    it('keeps closed scores hidden when Exam mode outlives the PrairieTest reservation', () => {
+      // Regression test for #12579: `ip_to_mode` can continue reporting Exam
+      // mode for a short grace period after PrairieTest has already ended the
+      // reservation. The migrated PT rule should still respect the closed
+      // assessment visibility settings in that state.
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Exam',
+        rules: [
+          {
+            ...makeMainRule({
+              dateControl: {
+                releaseDate: '2025-01-01T00:00:00Z',
+                dueDate: null,
+              },
+              afterComplete: {
+                hideQuestions: true,
+                hideScore: true,
+              },
+            }),
+            prairietestExams: [ptExam],
+          },
+        ],
+        prairieTestReservations: [],
+      });
+      expect(result.authorized).toBe(true);
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
+      expect(result.examAccessEnd).toBeNull();
+      expect(result.showClosedAssessment).toBe(false);
+      expect(result.showClosedAssessmentScore).toBe(false);
+      expect(result.showBeforeRelease).toBe(false);
+    });
+
     it('still shows "before release" for PT assessment that is open but student lacks access', () => {
       // When a PT-gated assessment has date controls and is within its open
       // period, students without PT access should still see "Not yet open".
@@ -1570,17 +1599,6 @@ describe('mergeRules', () => {
     );
     expect(result.dateControl?.releaseDate).toEqual(new Date('2025-03-01T00:00:00Z'));
     expect(result.dateControl?.dueDate).toEqual(new Date('2025-05-01T00:00:00Z'));
-  });
-
-  it('override can set releaseDate to null to block date-based access', () => {
-    const result = mergeRules(
-      toRuntime({
-        dateControl: { releaseDate: '2025-03-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' },
-      }),
-      toRuntime({ dateControl: { releaseDate: null } }),
-    );
-    expect(result.dateControl?.releaseDate).toBeNull();
-    expect(result.dateControl?.dueDate).toEqual(new Date('2025-04-01T00:00:00Z'));
   });
 
   it('inherits afterComplete from main when override has none', () => {

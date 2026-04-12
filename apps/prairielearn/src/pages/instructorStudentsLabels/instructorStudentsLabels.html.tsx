@@ -18,6 +18,7 @@ interface StudentLabelsPageProps {
   courseInstanceId: string;
   initialLabels: StudentLabelWithUserData[];
   canEdit: boolean;
+  isExampleCourse: boolean;
   isDevMode: boolean;
   origHash: string | null;
 }
@@ -26,11 +27,13 @@ function StudentLabelsCard({
   courseInstanceId,
   initialLabels,
   canEdit,
+  isExampleCourse,
   origHash: initialOrigHash,
 }: {
   courseInstanceId: string;
   initialLabels: StudentLabelWithUserData[];
   canEdit: boolean;
+  isExampleCourse: boolean;
   origHash: string | null;
 }) {
   const trpc = useTRPC();
@@ -107,8 +110,9 @@ function StudentLabelsCard({
 
       {!canEdit && (
         <Alert variant="info">
-          You can view labels on this page, but creating, renaming, deleting, and assigning labels
-          here requires both course editor and student data editor permissions.
+          {isExampleCourse
+            ? "You can't edit student labels in the example course."
+            : 'You can view labels on this page, but creating, renaming, deleting, and assigning labels here requires both course editor and student data editor permissions.'}
         </Alert>
       )}
 
