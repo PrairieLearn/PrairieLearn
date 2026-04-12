@@ -1579,7 +1579,7 @@ describe('Access control syncing', () => {
               labels: ['label1'],
               afterComplete: {
                 questions: { hidden: false },
-                score: { hidden: false, visibleFromDate: null },
+                score: { hidden: false },
               },
             },
           ],
@@ -1803,7 +1803,7 @@ describe('Access control syncing', () => {
         const mainRule = makeAccessControlRule();
         const overrideRule: AccessControlJsonInput = {
           labels: [labelName],
-          afterComplete: { score: { hidden: true, visibleFromDate: null } },
+          afterComplete: { score: { hidden: true } },
         };
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[

@@ -43,9 +43,10 @@ function toRuntime(json: AccessControlJson): RuntimeAccessControl {
       };
     }
     if (afterComplete.score) {
-      const { visibleFromDate, ...sRest } = afterComplete.score;
+      const s = afterComplete.score;
+      const visibleFromDate = 'visibleFromDate' in s ? s.visibleFromDate : undefined;
       result.afterComplete.score = {
-        ...sRest,
+        hidden: s.hidden,
         visibleFromDate: visibleFromDate != null ? new Date(visibleFromDate) : visibleFromDate,
       };
     }
@@ -1586,7 +1587,6 @@ describe('mergeRules', () => {
           },
           score: {
             hidden: true,
-            visibleFromDate: null,
           },
         },
       }),
