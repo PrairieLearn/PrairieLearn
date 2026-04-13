@@ -1,32 +1,16 @@
-import { mapLimit } from 'async';
-import { groupBy } from 'es-toolkit';
+import { mapSeries } from 'async';
 import { z } from 'zod';
 
-import {
-  execute,
-  loadSqlEquiv,
-  queryOptionalRow,
-  queryRow,
-  queryRows,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { closeAssessmentInstance } from '../lib/assessment.js';
 import { config } from '../lib/config.js';
 import {
-  type Assessment,
-  AssessmentQuestionSchema,
-  type Course,
-  type CourseInstance,
   CourseSchema,
-  type InstanceQuestion,
   InstanceQuestionSchema,
-  type Question,
   QuestionSchema,
-  type User,
   UserSchema,
 } from '../lib/db-types.js';
-import { saveAndGradeSubmission, saveSubmission } from '../lib/grading.js';
-import { updateInstanceQuestionScore } from '../lib/manualGrading.js';
+import { saveSubmission } from '../lib/grading.js';
 import { TEST_TYPES, type TestType, createTestSubmissionData } from '../lib/question-testing.js';
 import { ensureVariant } from '../lib/question-variant.js';
 import { selectOptionalAssessmentById } from '../models/assessment.js';
@@ -37,7 +21,7 @@ import { type AdministratorQueryResult, type AdministratorQuerySpecs } from './l
 
 export const specs: AdministratorQuerySpecs = {
   description:
-    'Generates submissions for an assessment. Optionally grades submissions and closes assessment instances. Handles auto-graded, externally-graded, and manually-graded questions.',
+    'Creates a random submission for each assessment instance in an assessment. Assessment instances must already exist and be open. Submission is saved, but not graded.',
   enabled: config.devMode, // This query is dangerous in production environments, so it is only enabled in dev mode
   params: [
     {
@@ -48,22 +32,6 @@ export const specs: AdministratorQuerySpecs = {
       name: 'test_type',
       description: `Type of submission to generate (${TEST_TYPES.map((type) => `"${type}"`).join(', ')} or "random")`,
       default: 'random',
-    },
-    {
-      name: 'grade',
-      description: 'Whether to grade submissions ("true" or "false")',
-      default: 'true',
-    },
-    {
-      name: 'max_attempts',
-      description: 'Maximum number of submission attempts per question (integer)',
-      default: '1',
-    },
-    {
-      name: 'close',
-      description:
-        'Whether to close assessment instances after completing all questions ("true" or "false")',
-      default: 'true',
     },
   ],
 };
@@ -79,13 +47,7 @@ const columns = [
   'uid',
   'qid',
   'test_type',
-  'attempts',
-  'auto_points',
-  'manual_points',
-  'max_auto_points',
-  'max_manual_points',
-  'status',
-  'closed',
+  'submission_id',
 ] as const;
 type ResultRow = Record<(typeof columns)[number], string | number | null>;
 
@@ -94,54 +56,15 @@ const InstanceQuestionQuerySchema = z.object({
   question: QuestionSchema,
   user: UserSchema,
   question_course: CourseSchema,
-  assessment_question: AssessmentQuestionSchema,
 });
 type InstanceQuestionQuery = z.infer<typeof InstanceQuestionQuerySchema>;
-
-interface SharedContext {
-  assessment: Assessment;
-  courseInstance: CourseInstance;
-  assessmentCourse: Course;
-  testType: TestType | 'random';
-  shouldGrade: boolean;
-  maxAttempts: number;
-}
-
-interface QuestionResult {
-  attempts: number;
-  lastSubmissionId: string | null;
-  testType: TestType;
-  gradable: boolean;
-  /**
-   * True when no submissions were needed because the question was already
-   * complete/closed or had already reached max points. Distinguishes "nothing
-   * to do" from "failed to generate" so that allSucceeded treats reruns correctly.
-   */
-  alreadySatisfied: boolean;
-}
-
-interface FinalizedInstanceQuestion {
-  instanceQuestion: InstanceQuestionQuery;
-  attempts: number;
-  testType: TestType;
-  alreadySatisfied: boolean;
-  finalInstanceQuestion: InstanceQuestion;
-}
-
-const CONCURRENCY = 5;
 
 export default async function ({
   assessment_id,
   test_type,
-  grade: grade_str,
-  max_attempts: max_attempts_str,
-  close: close_str,
 }: {
   assessment_id: string;
   test_type: TestType | 'random';
-  grade: string;
-  max_attempts: string;
-  close: string;
 }): Promise<AdministratorQueryResult> {
   const assessment = await selectOptionalAssessmentById(assessment_id);
   if (!assessment) return { rows: [], columns };
@@ -149,298 +72,76 @@ export default async function ({
   if (!courseInstance) return { rows: [], columns };
   const assessmentCourse = await selectCourseById(courseInstance.course_id);
 
-  const parsed = Number.parseInt(max_attempts_str, 10);
-  const ctx: SharedContext = {
-    assessment,
-    courseInstance,
-    assessmentCourse,
-    testType: test_type,
-    shouldGrade: grade_str !== 'false',
-    maxAttempts: Number.isNaN(parsed) ? 1 : parsed,
-  };
-  const shouldClose = close_str === 'true';
-
   const instanceQuestions = await queryRows(
     sql.select_instance_questions,
     { assessment_id },
     InstanceQuestionQuerySchema,
   );
 
-  const byAssessmentInstance = groupBy(
+  const rows = await mapSeries(
     instanceQuestions,
-    (iq) => iq.instance_question.assessment_instance_id,
-  );
-
-  const allResults = await mapLimit(
-    Object.entries(byAssessmentInstance),
-    CONCURRENCY,
-    async ([assessmentInstanceId, questions]: [string, InstanceQuestionQuery[]]) => {
-      const userId = questions[0].user.id;
-
-      const results: FinalizedInstanceQuestion[] = [];
-      for (const instanceQuestion of questions) {
-        const result = await processQuestion(instanceQuestion, ctx);
-        results.push(await finalizeQuestion(instanceQuestion, result, ctx));
-      }
-
-      const allSucceeded = results.every(
-        (r) =>
-          (r.attempts > 0 || r.alreadySatisfied) && r.finalInstanceQuestion.status !== 'invalid',
-      );
-      let closed = false;
-
-      if (shouldClose && allSucceeded) {
-        // We intentionally avoid `gradeAssessmentInstance` here because it calls
-        // `gradeVariant` on all open variants, which would kick off the external
-        // grader for externally-graded questions. Instead, we close the instance
-        // and unset grading_needed directly.
-        await closeAssessmentInstance({
-          assessment_instance_id: assessmentInstanceId,
-          authn_user_id: userId,
-          client_fingerprint_id: null,
-        });
-        await execute(sql.set_assessment_instance_grading_needed, {
-          assessment_instance_id: assessmentInstanceId,
-          grading_needed: false,
-        });
-        closed = true;
-      }
-
-      return results.map((r) => buildResultRow(r, ctx, closed));
-    },
-  );
-
-  return { rows: allResults.flat(), columns };
-}
-
-async function processQuestion(
-  instanceQuestion: InstanceQuestionQuery,
-  ctx: SharedContext,
-): Promise<QuestionResult> {
-  const { question, instance_question, user, question_course, assessment_question } =
-    instanceQuestion;
-  const maxAutoPoints = assessment_question.max_auto_points ?? 0;
-  const mode: 'save-only' | 'save-and-grade' | 'external' = !ctx.shouldGrade
-    ? 'save-only'
-    : question.grading_method === 'External'
-      ? 'external'
-      : 'save-and-grade';
-
-  let currentIq: InstanceQuestion = instance_question;
-  let attempts = 0;
-  let lastSubmissionId: string | null = null;
-  let testType: TestType = ctx.testType === 'random' ? 'correct' : ctx.testType;
-  let gradable = false;
-  let alreadySatisfied = false;
-
-  for (let i = 0; i < ctx.maxAttempts; i++) {
-    // For save-only, break on any complete question. For grading modes,
-    // Homework uses a max-points check instead of the status check.
-    if (!currentIq.open) {
-      alreadySatisfied = true;
-      break;
-    }
-    if (
-      currentIq.status === 'complete' &&
-      (mode === 'save-only' || ctx.assessment.type !== 'Homework')
-    ) {
-      alreadySatisfied = true;
-      break;
-    }
-    if (
-      mode !== 'save-only' &&
-      ctx.assessment.type === 'Homework' &&
-      maxAutoPoints > 0 &&
-      (currentIq.auto_points ?? 0) >= maxAutoPoints
-    ) {
-      alreadySatisfied = true;
-      break;
-    }
-
-    const {
-      submissionData,
-      variant,
-      hasFatalIssue,
-      currentTestType,
-      gradable: isGradable,
-    } = await createVariantAndSubmissionData({
+    async ({
       question,
-      instance_question: currentIq,
+      instance_question,
       user,
       question_course,
-      courseInstance: ctx.courseInstance,
-      assessmentCourse: ctx.assessmentCourse,
-      test_type: ctx.testType,
-    });
-    testType = currentTestType;
-    gradable = isGradable;
-    if (hasFatalIssue) break;
+    }: InstanceQuestionQuery): Promise<ResultRow> => {
+      // Select an existing open variant, or create a new one if none exists.
+      const variant = await ensureVariant({
+        question_id: question.id,
+        instance_question_id: instance_question.id,
+        user_id: user.id,
+        authn_user_id: user.id,
+        course_instance: courseInstance,
+        variant_course: assessmentCourse,
+        question_course,
+        options: { variant_seed: null },
+        require_open: true,
+        client_fingerprint_id: null,
+      });
 
-    if (mode === 'save-and-grade') {
-      lastSubmissionId = await saveAndGradeSubmission(
-        submissionData,
+      const currentTestType =
+        test_type === 'random'
+          ? TEST_TYPES[Math.floor(Math.random() * TEST_TYPES.length)]
+          : test_type;
+      // Create a new submission for the variant.
+      const { data, hasFatalIssue } = await createTestSubmissionData(
         variant,
         question,
-        ctx.assessmentCourse,
-        true,
-        true,
+        assessmentCourse,
+        currentTestType,
+        user.id,
+        user.id,
       );
-    } else {
-      const { submission_id } = await saveSubmission(
-        submissionData,
-        variant,
-        question,
-        ctx.assessmentCourse,
-      );
-      lastSubmissionId = submission_id;
+      const { submission_id } = hasFatalIssue
+        ? { submission_id: null } // If there is a fatal issue on test, we don't save the submission.
+        : await saveSubmission(
+            {
+              ...data,
+              auth_user_id: user.id,
+              user_id: user.id,
+              variant_id: variant.id,
+              submitted_answer: data.raw_submitted_answer,
+              credit: 100,
+            },
+            variant,
+            question,
+            assessmentCourse,
+          );
 
-      // External grading: assign auto points directly instead of triggering
-      // the external grader.
-      if (mode === 'external' && maxAutoPoints > 0 && gradable) {
-        await updateInstanceQuestionScore({
-          assessment: ctx.assessment,
-          instance_question_id: instance_question.id,
-          submission_id,
-          check_modified_at: null,
-          score: { auto_score_perc: currentTestType === 'correct' ? 100 : 0 },
-          authn_user_id: user.id,
-        });
-      }
-    }
-    attempts++;
-
-    // For manual-only questions, gradeVariant is a no-op so one attempt suffices.
-    if (mode === 'save-and-grade' && maxAutoPoints === 0) break;
-
-    const iqRow = await queryOptionalRow(
-      sql.select_instance_question_by_id,
-      { instance_question_id: instance_question.id },
-      InstanceQuestionSchema,
-    );
-    if (!iqRow) break;
-    currentIq = iqRow;
-  }
-
-  return { attempts, lastSubmissionId, testType, gradable, alreadySatisfied };
-}
-
-async function finalizeQuestion(
-  instanceQuestion: InstanceQuestionQuery,
-  result: QuestionResult,
-  ctx: SharedContext,
-): Promise<FinalizedInstanceQuestion> {
-  const maxManualPoints = instanceQuestion.assessment_question.max_manual_points ?? 0;
-
-  if (
-    ctx.shouldGrade &&
-    maxManualPoints > 0 &&
-    result.lastSubmissionId !== null &&
-    result.gradable
-  ) {
-    await updateInstanceQuestionScore({
-      assessment: ctx.assessment,
-      instance_question_id: instanceQuestion.instance_question.id,
-      submission_id: result.lastSubmissionId,
-      check_modified_at: null,
-      score: { manual_score_perc: result.testType === 'correct' ? 100 : 0 },
-      authn_user_id: instanceQuestion.user.id,
-    });
-  }
-
-  const finalInstanceQuestion = await queryRow(
-    sql.select_instance_question_by_id,
-    { instance_question_id: instanceQuestion.instance_question.id },
-    InstanceQuestionSchema,
-  );
-
-  return {
-    instanceQuestion,
-    attempts: result.attempts,
-    testType: result.testType,
-    alreadySatisfied: result.alreadySatisfied,
-    finalInstanceQuestion,
-  };
-}
-
-function buildResultRow(
-  result: FinalizedInstanceQuestion,
-  ctx: SharedContext,
-  closed: boolean,
-): ResultRow {
-  const { instanceQuestion, attempts, testType, finalInstanceQuestion } = result;
-  return {
-    course_instance_id: ctx.assessment.course_instance_id,
-    course_instance: ctx.courseInstance.short_name ?? '',
-    assessment_id: ctx.assessment.id,
-    assessment: ctx.assessment.tid ?? ctx.assessment.id,
-    assessment_instance_id: instanceQuestion.instance_question.assessment_instance_id,
-    uid: instanceQuestion.user.uid,
-    qid: instanceQuestion.question.qid ?? instanceQuestion.question.id,
-    test_type: testType,
-    attempts,
-    auto_points: finalInstanceQuestion.auto_points,
-    manual_points: finalInstanceQuestion.manual_points,
-    max_auto_points: instanceQuestion.assessment_question.max_auto_points ?? 0,
-    max_manual_points: instanceQuestion.assessment_question.max_manual_points ?? 0,
-    status: finalInstanceQuestion.status,
-    closed: closed ? 'true' : 'false',
-  };
-}
-
-async function createVariantAndSubmissionData({
-  question,
-  instance_question,
-  user,
-  question_course,
-  courseInstance,
-  assessmentCourse,
-  test_type,
-}: {
-  question: Question;
-  instance_question: InstanceQuestion;
-  user: User;
-  question_course: Course;
-  courseInstance: CourseInstance;
-  assessmentCourse: Course;
-  test_type: TestType | 'random';
-}) {
-  const variant = await ensureVariant({
-    question_id: question.id,
-    instance_question_id: instance_question.id,
-    user_id: user.id,
-    authn_user_id: user.id,
-    course_instance: courseInstance,
-    variant_course: assessmentCourse,
-    question_course,
-    options: { variant_seed: null },
-    require_open: true,
-    client_fingerprint_id: null,
-  });
-
-  const currentTestType =
-    test_type === 'random' ? TEST_TYPES[Math.floor(Math.random() * TEST_TYPES.length)] : test_type;
-
-  const { data, hasFatalIssue } = await createTestSubmissionData(
-    variant,
-    question,
-    assessmentCourse,
-    currentTestType,
-    user.id,
-    user.id,
-  );
-
-  return {
-    submissionData: {
-      ...data,
-      auth_user_id: user.id,
-      user_id: user.id,
-      variant_id: variant.id,
-      submitted_answer: data.raw_submitted_answer,
-      credit: 100,
+      return {
+        course_instance_id: assessment.course_instance_id,
+        course_instance: courseInstance.short_name ?? '',
+        assessment_id: assessment.id,
+        assessment: assessment.tid ?? assessment.id,
+        assessment_instance_id: instance_question.assessment_instance_id,
+        uid: user.uid,
+        qid: question.qid ?? question.id,
+        test_type: currentTestType,
+        submission_id,
+      };
     },
-    variant,
-    hasFatalIssue,
-    currentTestType,
-    gradable: data.gradable,
-  };
+  );
+
+  return { rows, columns };
 }

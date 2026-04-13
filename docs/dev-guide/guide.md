@@ -27,18 +27,6 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
 
 - If the `PL_KEEP_TEST_DB` environment is set, the test database (normally `pltest_1`, `pltest_2`, etc.) won't be removed when testing ends. This allows you to inspect the state of the database whenever your testing ends. The database will get overwritten when you start a new test run.
 
-## Populating test data with admin queries
-
-Admin queries are available at `/pl/administrator/queries` and provide a quick way to populate a local development server with realistic student data. This is useful for testing features that depend on assessment submissions, grading results, or student activity.
-
-The typical workflow is:
-
-1. **Create and enroll students** using the `generate_and_enroll_users` query. Pass the `course_instance_id` to enroll the generated users in a specific course instance. You can find the `course_instance_id` from the URL when viewing the course instance (e.g., `/pl/course_instance/1/...`).
-
-2. **Open assessment instances** using the `generate_assessment_instances` query. Pass the `assessment_id` for the target assessment. This simulates all enrolled students starting the assessment. You can find the `assessment_id` from the URL when viewing the assessment (e.g., `/pl/course_instance/1/instructor/assessment/3/...`).
-
-3. **Generate submissions** using the `generate_submissions` query (dev mode only). Pass the same `assessment_id`. This generates test submissions for every open assessment instance, grades them, and optionally closes the assessment instances. It handles auto-graded, externally-graded, and manually-graded questions.
-
 ## Debugging server-side JavaScript
 
 - Use the [debug package](https://www.npmjs.com/package/debug) to help trace execution flow in JavaScript. To run the server with debugging output enabled:
