@@ -248,7 +248,7 @@ function AdjustCreditsForm({
         {isDeductionCapped && (
           <div className="text-warning-emphasis small mt-3">
             {currentBalanceMilliDollars === 0
-              ? 'Cannot deduct from a $0 balance.'
+              ? `The ${creditType.replace('_', '-')} balance is $0.00. No credits will be deducted.`
               : `Amount exceeds the ${creditType.replace('_', '-')} balance. ${formatMilliDollars(currentBalanceMilliDollars)} will be deducted.`}
           </div>
         )}
