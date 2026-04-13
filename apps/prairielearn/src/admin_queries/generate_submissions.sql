@@ -11,10 +11,11 @@ WITH
       gc.assessment_id = $assessment_id
   )
 SELECT
-  TO_JSONB(iq.*) AS instance_question,
-  TO_JSONB(q.*) AS question,
-  TO_JSONB(u.*) AS user,
-  TO_JSONB(c.*) AS question_course
+  to_jsonb(iq.*) AS instance_question,
+  to_jsonb(q.*) AS question,
+  to_jsonb(u.*) AS user,
+  to_jsonb(c.*) AS question_course,
+  to_jsonb(aq.*) AS assessment_question
 FROM
   assessment_instances AS ai
   JOIN instance_questions AS iq ON ai.id = iq.assessment_instance_id
@@ -25,5 +26,22 @@ FROM
   JOIN users AS u ON u.id = COALESCE(ai.user_id, rug.user_id)
 WHERE
   ai.assessment_id = $assessment_id
+  -- Only process open assessment instances and open instance questions.
+  -- Re-running this query after a previous run will skip already-closed items.
   AND ai.open
   AND iq.open;
+
+-- BLOCK select_instance_question_by_id
+SELECT
+  iq.*
+FROM
+  instance_questions AS iq
+WHERE
+  iq.id = $instance_question_id;
+
+-- BLOCK set_assessment_instance_grading_needed
+UPDATE assessment_instances AS ai
+SET
+  grading_needed = $grading_needed
+WHERE
+  ai.id = $assessment_instance_id;
