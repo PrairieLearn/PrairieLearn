@@ -208,14 +208,12 @@ export function InstructorInstanceAdminAiGrading({
   initialApiKeyCredentials,
   canEdit,
   isDevMode,
-  aiGradingModelSelectionEnabled,
 }: {
   trpcCsrfToken: string;
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
   canEdit: boolean;
   isDevMode: boolean;
-  aiGradingModelSelectionEnabled: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -229,7 +227,6 @@ export function InstructorInstanceAdminAiGrading({
           initialUseCustomApiKeys={initialUseCustomApiKeys}
           initialApiKeyCredentials={initialApiKeyCredentials}
           canEdit={canEdit}
-          aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -242,21 +239,15 @@ function AiGradingSettingsContent({
   initialUseCustomApiKeys,
   initialApiKeyCredentials,
   canEdit,
-  aiGradingModelSelectionEnabled,
 }: {
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
   canEdit: boolean;
-  aiGradingModelSelectionEnabled: boolean;
 }) {
   const trpc = useTRPC();
 
   const [useCustomApiKeys, setUseCustomApiKeys] = useState(initialUseCustomApiKeys);
   const [credentials, setCredentials] = useState(initialApiKeyCredentials);
-
-  const providerOptions = aiGradingModelSelectionEnabled
-    ? AI_GRADING_PROVIDER_OPTIONS
-    : AI_GRADING_PROVIDER_OPTIONS.filter((p) => p.value === 'openai');
 
   const addModalState = useModalState();
   const deleteModalState = useModalState<AiGradingApiKeyCredential>();
@@ -374,7 +365,7 @@ function AiGradingSettingsContent({
 
       <AddApiKeyModal
         {...addModalState}
-        providerOptions={providerOptions}
+        providerOptions={AI_GRADING_PROVIDER_OPTIONS}
         credentials={credentials}
         onSuccess={(credential) => {
           // The server upserts by provider, so replace any existing credential

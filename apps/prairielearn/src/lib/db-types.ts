@@ -238,7 +238,6 @@ export const AssessmentAccessControlRuleSchema = z.object({
   date_control_password: z.string().nullable(),
   date_control_password_overridden: z.boolean(),
   date_control_release_date: DateFromISOString.nullable(),
-  date_control_release_date_overridden: z.boolean(),
 
   id: IdSchema,
   list_before_release: z.boolean().nullable(),
@@ -516,6 +515,7 @@ export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
 
 export const AssessmentQuestionSchema = z.object({
   advance_score_perc: z.number().nullable(),
+  ai_grading_last_selected_model: z.string().nullable(),
   ai_grading_mode: z.boolean(),
   allow_real_time_grading: z.boolean(),
   alternative_group_id: IdSchema.nullable(),

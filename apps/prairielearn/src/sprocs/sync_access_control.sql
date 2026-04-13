@@ -35,7 +35,6 @@ BEGIN
         number,
         list_before_release,
         target_type,
-        date_control_release_date_overridden,
         date_control_release_date,
         date_control_due_date_overridden,
         date_control_due_date,
@@ -63,7 +62,6 @@ BEGIN
         (rule ->> 'number')::integer,
         (rule ->> 'list_before_release')::boolean,
         (rule ->> 'target_type')::enum_assessment_access_control_target_type,
-        (rule ->> 'date_control_release_date_overridden')::boolean,
         input_date(rule ->> 'date_control_release_date', ci_timezone),
         (rule ->> 'date_control_due_date_overridden')::boolean,
         input_date(rule ->> 'date_control_due_date', ci_timezone),
@@ -88,7 +86,6 @@ BEGIN
     FROM UNNEST(rules_data) AS rule
     ON CONFLICT (assessment_id, number, target_type) DO UPDATE SET
         list_before_release = EXCLUDED.list_before_release,
-        date_control_release_date_overridden = EXCLUDED.date_control_release_date_overridden,
         date_control_release_date = EXCLUDED.date_control_release_date,
         date_control_due_date_overridden = EXCLUDED.date_control_due_date_overridden,
         date_control_due_date = EXCLUDED.date_control_due_date,
