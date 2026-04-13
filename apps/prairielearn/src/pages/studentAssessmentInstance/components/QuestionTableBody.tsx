@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { Badge } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
@@ -10,18 +11,15 @@ import { ExamQuestionStatus } from './ExamQuestionStatus.js';
 import { LockpointRow } from './LockpointRow.js';
 import { QuestionVariantHistory } from './QuestionVariantHistory.js';
 import { RowLabel } from './RowLabel.js';
-import type { ClientQuestionRow } from './types.js';
+import type { ClientQuestionRow, GradingConfig } from './types.js';
 
 export function QuestionTableBody({
   questionRows,
   assessmentType,
-  hasAutoGradingQuestion,
-  hasManualGradingQuestion,
-  someQuestionsAllowRealTimeGrading,
-  someQuestionsForbidRealTimeGrading,
+  gradingConfig,
   assessmentInstanceOpen,
   zoneTitleColspan,
-  urlPrefix,
+  courseInstanceId,
   userGroupRoles,
   isLockpointCrossable,
   hasUnmetAdvanceScorePercBeforeLockpoint,
@@ -29,18 +27,20 @@ export function QuestionTableBody({
 }: {
   questionRows: ClientQuestionRow[];
   assessmentType: string;
-  hasAutoGradingQuestion: boolean;
-  hasManualGradingQuestion: boolean;
-  someQuestionsAllowRealTimeGrading: boolean;
-  someQuestionsForbidRealTimeGrading: boolean;
+  gradingConfig: GradingConfig;
   assessmentInstanceOpen: boolean;
   zoneTitleColspan: number;
-  urlPrefix: string;
+  courseInstanceId: string;
   userGroupRoles: string | null;
   isLockpointCrossable: (row: ClientQuestionRow) => boolean;
   hasUnmetAdvanceScorePercBeforeLockpoint: (zoneNumber: number) => boolean;
   onCrossLockpoint: (zoneId: string) => void;
 }) {
+  const { someQuestionsAllowRealTimeGrading, someQuestionsForbidRealTimeGrading } = gradingConfig;
+  const hasStatusColumn = assessmentType === 'Exam';
+  const realTimeGradingPartiallyDisabled =
+    someQuestionsAllowRealTimeGrading && someQuestionsForbidRealTimeGrading;
+
   const showZoneInfoByIndex = run(() => {
     const result: boolean[] = [];
     let previousZoneHadInfo = false;
@@ -59,6 +59,7 @@ export function QuestionTableBody({
       {questionRows.map((row, index) => {
         const zoneHasInfo =
           row.zoneTitle != null || row.zoneHasMaxPoints || row.zoneHasBestQuestions;
+        const showZoneInfo = showZoneInfoByIndex[index];
 
         const isBlocked =
           row.questionAccessMode === 'blocked_sequence' ||
@@ -72,163 +73,95 @@ export function QuestionTableBody({
               : row.questionNumber;
 
         return (
-          <QuestionRowGroup
-            key={row.id}
-            row={row}
-            assessmentType={assessmentType}
-            hasAutoGradingQuestion={hasAutoGradingQuestion}
-            hasManualGradingQuestion={hasManualGradingQuestion}
-            someQuestionsAllowRealTimeGrading={someQuestionsAllowRealTimeGrading}
-            someQuestionsForbidRealTimeGrading={someQuestionsForbidRealTimeGrading}
-            assessmentInstanceOpen={assessmentInstanceOpen}
-            zoneTitleColspan={zoneTitleColspan}
-            showZoneInfo={showZoneInfoByIndex[index]}
-            zoneHasInfo={zoneHasInfo}
-            isBlocked={isBlocked}
-            rowLabelText={rowLabelText}
-            urlPrefix={urlPrefix}
-            userGroupRoles={userGroupRoles}
-            isLockpointCrossable={isLockpointCrossable}
-            hasUnmetAdvanceScorePercBeforeLockpoint={hasUnmetAdvanceScorePercBeforeLockpoint}
-            onCrossLockpoint={onCrossLockpoint}
-          />
+          <Fragment key={row.id}>
+            {row.startNewZone && row.lockpoint && (
+              <LockpointRow
+                row={row}
+                colspan={zoneTitleColspan}
+                crossable={isLockpointCrossable(row)}
+                blockedByAdvanceScorePerc={hasUnmetAdvanceScorePercBeforeLockpoint(row.zoneNumber)}
+                onCrossLockpoint={onCrossLockpoint}
+              />
+            )}
+            {showZoneInfo && (
+              <tr>
+                <th colSpan={zoneTitleColspan}>
+                  {zoneHasInfo ? (
+                    <div className="d-flex align-items-center gap-2">
+                      {row.zoneTitle && <span>{row.zoneTitle}</span>}
+                      {row.zoneHasMaxPoints && (
+                        <ZoneInfoPopover
+                          label={
+                            row.zoneTitle
+                              ? `maximum ${row.zoneMaxPoints} points`
+                              : `Maximum ${row.zoneMaxPoints} points`
+                          }
+                          content={`Of the points that you are awarded for answering these ${row.zoneQuestionCount} questions, at most ${row.zoneMaxPoints} will count toward your total points.`}
+                        />
+                      )}
+                      {row.zoneHasBestQuestions && (
+                        <ZoneInfoPopover
+                          label={
+                            row.zoneTitle || row.zoneHasMaxPoints
+                              ? `best ${row.zoneBestQuestions} of ${row.zoneQuestionCount} questions`
+                              : `Best ${row.zoneBestQuestions} of ${row.zoneQuestionCount} questions`
+                          }
+                          content={`Of these ${row.zoneQuestionCount} questions, only the ${row.zoneBestQuestions} with the highest number of awarded points will count toward your total points.`}
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    '\u00a0'
+                  )}
+                </th>
+              </tr>
+            )}
+            <tr className={isBlocked ? 'bg-light pl-sequence-locked' : ''}>
+              <td>
+                <div className="d-flex align-items-center">
+                  <RowLabel
+                    row={row}
+                    userGroupRoles={userGroupRoles}
+                    courseInstanceId={courseInstanceId}
+                    hasStatusColumn={hasStatusColumn}
+                    rowLabelText={rowLabelText}
+                  />
+                </div>
+              </td>
+              {assessmentType === 'Exam' ? (
+                <ExamQuestionCells
+                  row={row}
+                  gradingConfig={gradingConfig}
+                  realTimeGradingPartiallyDisabled={realTimeGradingPartiallyDisabled}
+                  assessmentInstanceOpen={assessmentInstanceOpen}
+                />
+              ) : (
+                <HomeworkQuestionCells
+                  row={row}
+                  gradingConfig={gradingConfig}
+                  courseInstanceId={courseInstanceId}
+                />
+              )}
+            </tr>
+          </Fragment>
         );
       })}
     </>
   );
 }
 
-function QuestionRowGroup({
-  row,
-  assessmentType,
-  hasAutoGradingQuestion,
-  hasManualGradingQuestion,
-  someQuestionsAllowRealTimeGrading,
-  someQuestionsForbidRealTimeGrading,
-  assessmentInstanceOpen,
-  zoneTitleColspan,
-  showZoneInfo,
-  zoneHasInfo,
-  isBlocked,
-  rowLabelText,
-  urlPrefix,
-  userGroupRoles,
-  isLockpointCrossable,
-  hasUnmetAdvanceScorePercBeforeLockpoint,
-  onCrossLockpoint,
-}: {
-  row: ClientQuestionRow;
-  assessmentType: string;
-  hasAutoGradingQuestion: boolean;
-  hasManualGradingQuestion: boolean;
-  someQuestionsAllowRealTimeGrading: boolean;
-  someQuestionsForbidRealTimeGrading: boolean;
-  assessmentInstanceOpen: boolean;
-  zoneTitleColspan: number;
-  showZoneInfo: boolean;
-  zoneHasInfo: boolean;
-  isBlocked: boolean;
-  rowLabelText: string;
-  urlPrefix: string;
-  userGroupRoles: string | null;
-  isLockpointCrossable: (row: ClientQuestionRow) => boolean;
-  hasUnmetAdvanceScorePercBeforeLockpoint: (zoneNumber: number) => boolean;
-  onCrossLockpoint: (zoneId: string) => void;
-}) {
-  const hasStatusColumn = assessmentType === 'Exam';
-  const realTimeGradingPartiallyDisabled =
-    someQuestionsAllowRealTimeGrading && someQuestionsForbidRealTimeGrading;
-
-  return (
-    <>
-      {row.startNewZone && row.lockpoint && (
-        <LockpointRow
-          row={row}
-          colspan={zoneTitleColspan}
-          crossable={isLockpointCrossable(row)}
-          blockedByAdvanceScorePerc={hasUnmetAdvanceScorePercBeforeLockpoint(row.zoneNumber)}
-          onCrossLockpoint={onCrossLockpoint}
-        />
-      )}
-      {showZoneInfo && (
-        <tr>
-          <th colSpan={zoneTitleColspan}>
-            {zoneHasInfo ? (
-              <div className="d-flex align-items-center gap-2">
-                {row.zoneTitle && <span>{row.zoneTitle}</span>}
-                {row.zoneHasMaxPoints && (
-                  <ZoneInfoPopover
-                    label={
-                      row.zoneTitle
-                        ? `maximum ${row.zoneMaxPoints} points`
-                        : `Maximum ${row.zoneMaxPoints} points`
-                    }
-                    content={`Of the points that you are awarded for answering these ${row.zoneQuestionCount} questions, at most ${row.zoneMaxPoints} will count toward your total points.`}
-                  />
-                )}
-                {row.zoneHasBestQuestions && (
-                  <ZoneInfoPopover
-                    label={
-                      row.zoneTitle || row.zoneHasMaxPoints
-                        ? `best ${row.zoneBestQuestions} of ${row.zoneQuestionCount} questions`
-                        : `Best ${row.zoneBestQuestions} of ${row.zoneQuestionCount} questions`
-                    }
-                    content={`Of these ${row.zoneQuestionCount} questions, only the ${row.zoneBestQuestions} with the highest number of awarded points will count toward your total points.`}
-                  />
-                )}
-              </div>
-            ) : (
-              '\u00a0'
-            )}
-          </th>
-        </tr>
-      )}
-      <tr className={isBlocked ? 'bg-light pl-sequence-locked' : ''}>
-        <td>
-          <div className="d-flex align-items-center">
-            <RowLabel
-              row={row}
-              userGroupRoles={userGroupRoles}
-              urlPrefix={urlPrefix}
-              hasStatusColumn={hasStatusColumn}
-              rowLabelText={rowLabelText}
-            />
-          </div>
-        </td>
-        {assessmentType === 'Exam' ? (
-          <ExamQuestionCells
-            row={row}
-            hasAutoGradingQuestion={hasAutoGradingQuestion}
-            hasManualGradingQuestion={hasManualGradingQuestion}
-            someQuestionsAllowRealTimeGrading={someQuestionsAllowRealTimeGrading}
-            realTimeGradingPartiallyDisabled={realTimeGradingPartiallyDisabled}
-            assessmentInstanceOpen={assessmentInstanceOpen}
-          />
-        ) : (
-          <HomeworkQuestionCells
-            row={row}
-            hasAutoGradingQuestion={hasAutoGradingQuestion}
-            hasManualGradingQuestion={hasManualGradingQuestion}
-            urlPrefix={urlPrefix}
-          />
-        )}
-      </tr>
-    </>
-  );
-}
-
 function ExamQuestionCells({
   row,
-  hasAutoGradingQuestion,
-  hasManualGradingQuestion,
-  someQuestionsAllowRealTimeGrading,
+  gradingConfig: {
+    hasAutoGradingQuestion,
+    hasManualGradingQuestion,
+    someQuestionsAllowRealTimeGrading,
+  },
   realTimeGradingPartiallyDisabled,
   assessmentInstanceOpen,
 }: {
   row: ClientQuestionRow;
-  hasAutoGradingQuestion: boolean;
-  hasManualGradingQuestion: boolean;
-  someQuestionsAllowRealTimeGrading: boolean;
+  gradingConfig: GradingConfig;
   realTimeGradingPartiallyDisabled: boolean;
   assessmentInstanceOpen: boolean;
 }) {
@@ -278,14 +211,12 @@ function ExamQuestionCells({
 
 function HomeworkQuestionCells({
   row,
-  hasAutoGradingQuestion,
-  hasManualGradingQuestion,
-  urlPrefix,
+  gradingConfig: { hasAutoGradingQuestion, hasManualGradingQuestion },
+  courseInstanceId,
 }: {
   row: ClientQuestionRow;
-  hasAutoGradingQuestion: boolean;
-  hasManualGradingQuestion: boolean;
-  urlPrefix: string;
+  gradingConfig: GradingConfig;
+  courseInstanceId: string;
 }) {
   return (
     <>
@@ -302,7 +233,7 @@ function HomeworkQuestionCells({
             <QuestionVariantHistory
               instanceQuestionId={row.id}
               previousVariants={row.previousVariants}
-              urlPrefix={urlPrefix}
+              courseInstanceId={courseInstanceId}
             />
           </td>
         </>

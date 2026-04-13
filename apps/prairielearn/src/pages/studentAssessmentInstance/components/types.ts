@@ -58,6 +58,13 @@ export interface ClientVariantWithScore {
   maxSubmissionScore: number;
 }
 
+export interface GradingConfig {
+  hasAutoGradingQuestion: boolean;
+  hasManualGradingQuestion: boolean;
+  someQuestionsAllowRealTimeGrading: boolean;
+  someQuestionsForbidRealTimeGrading: boolean;
+}
+
 // Client-safe access rule for the popover.
 export interface ClientAccessRule {
   credit: string;
@@ -111,11 +118,6 @@ export interface StudentAssessmentInstanceBodyProps {
 
   authzResult: StudentAssessmentInstanceAuthzResult;
 
-  hasManualGradingQuestion: boolean;
-  hasAutoGradingQuestion: boolean;
-  someQuestionsAllowRealTimeGrading: boolean;
-  someQuestionsForbidRealTimeGrading: boolean;
-
   assessmentTextHtml: string | null;
   accessRules: ClientAccessRule[];
   groupConfig: ClientGroupConfig | null;
@@ -124,13 +126,6 @@ export interface StudentAssessmentInstanceBodyProps {
 
   questionRows: ClientQuestionRow[];
 
-  savedAnswers: number;
-  suspendedSavedAnswers: number;
-  zoneTitleColspan: number;
-  firstUncrossedLockpointZoneNumber: number | undefined;
-  allQuestionsAnswered: boolean;
-
-  urlPrefix: string;
   csrfToken: string;
   userGroupRoles: string | null;
   isGroupAssessment: boolean;

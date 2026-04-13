@@ -1,6 +1,7 @@
+import type { GradingConfig } from './types.js';
+
 export function ExamFooterContent({
-  someQuestionsAllowRealTimeGrading,
-  someQuestionsForbidRealTimeGrading,
+  gradingConfig: { someQuestionsAllowRealTimeGrading, someQuestionsForbidRealTimeGrading },
   savedAnswers,
   suspendedSavedAnswers,
   authorizedEdit,
@@ -9,8 +10,7 @@ export function ExamFooterContent({
   csrfToken,
   onFinish,
 }: {
-  someQuestionsAllowRealTimeGrading: boolean;
-  someQuestionsForbidRealTimeGrading: boolean;
+  gradingConfig: GradingConfig;
   savedAnswers: number;
   suspendedSavedAnswers: number;
   authorizedEdit: boolean;

@@ -10,13 +10,13 @@ export function RowLabel({
   row,
   userGroupRoles,
   rowLabelText,
-  urlPrefix,
+  courseInstanceId,
   hasStatusColumn,
 }: {
   row: ClientQuestionRow;
   userGroupRoles: string | null;
   rowLabelText: string;
-  urlPrefix: string;
+  courseInstanceId: string;
   hasStatusColumn: boolean;
 }) {
   let lockMessage: string | null = null;
@@ -41,7 +41,7 @@ export function RowLabel({
   return (
     <>
       {showLink ? (
-        <a href={getInstanceQuestionUrl({ urlPrefix, instanceQuestionId: row.id })}>
+        <a href={getInstanceQuestionUrl({ courseInstanceId, instanceQuestionId: row.id })}>
           {rowLabelText}
         </a>
       ) : (

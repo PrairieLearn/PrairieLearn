@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { Scorebar } from '../../../components/Scorebar.js';
@@ -8,11 +9,11 @@ import { formatPoints } from '../../../lib/format.js';
 import { ExamFooterContent } from './ExamFooterContent.js';
 import { GroupWorkInfoContainer } from './GroupWorkInfoContainer.js';
 import { QuestionTableBody } from './QuestionTableBody.js';
-import { StudentAccessRulesPopover } from './StudentAccessRulesPopover.js';
 import { ConfirmFinishModal, CrossLockpointModal, TimeLimitExpiredModal } from './modals.js';
 import type {
   ClientAccessRule,
   ClientQuestionRow,
+  GradingConfig,
   StudentAssessmentInstanceBodyProps,
 } from './types.js';
 
@@ -24,22 +25,12 @@ export function StudentAssessmentInstanceBody({
   assessmentInstance,
   remainingMs,
   authzResult,
-  hasManualGradingQuestion,
-  hasAutoGradingQuestion,
-  someQuestionsAllowRealTimeGrading,
-  someQuestionsForbidRealTimeGrading,
   assessmentTextHtml,
   accessRules,
   groupConfig,
   groupInfo,
   userCanAssignRoles,
   questionRows,
-  savedAnswers,
-  suspendedSavedAnswers,
-  zoneTitleColspan,
-  firstUncrossedLockpointZoneNumber,
-  allQuestionsAnswered,
-  urlPrefix,
   csrfToken,
   userGroupRoles,
   isGroupAssessment,
@@ -58,10 +49,69 @@ export function StudentAssessmentInstanceBody({
   } = authzResult;
 
   const assessmentInstanceOpen = !!assessmentInstance.open;
+
+  const gradingConfig: GradingConfig = {
+    hasAutoGradingQuestion: questionRows.some(
+      (row) => row.maxAutoPoints || row.autoPoints || !row.maxPoints,
+    ),
+    hasManualGradingQuestion: questionRows.some(
+      (row) => row.maxManualPoints || row.manualPoints || row.requiresManualGrading,
+    ),
+    someQuestionsAllowRealTimeGrading: questionRows.some((row) => row.allowRealTimeGrading),
+    someQuestionsForbidRealTimeGrading: questionRows.some((row) => !row.allowRealTimeGrading),
+  };
+  const {
+    hasAutoGradingQuestion,
+    hasManualGradingQuestion,
+    someQuestionsAllowRealTimeGrading,
+    someQuestionsForbidRealTimeGrading,
+  } = gradingConfig;
+
   const allQuestionsDisabled = !someQuestionsAllowRealTimeGrading;
   const showExamFooterContent = assessment.type === 'Exam' && assessmentInstanceOpen && active;
   const showUnauthorizedEditWarning = !authorizedEdit;
   const showCardFooter = showExamFooterContent || showUnauthorizedEditWarning;
+
+  const { savedAnswers, suspendedSavedAnswers } = run(() => {
+    let saved = 0;
+    let suspended = 0;
+    for (const row of questionRows) {
+      if (row.status === 'saved') {
+        if (row.allowGradeLeftMs > 0) {
+          suspended++;
+        } else if ((row.maxAutoPoints || !row.maxManualPoints) && row.allowRealTimeGrading) {
+          saved++;
+        }
+      }
+    }
+    return { savedAnswers: saved, suspendedSavedAnswers: suspended };
+  });
+
+  const allQuestionsAnswered = questionRows.every((row) => row.status !== 'unanswered');
+
+  const firstUncrossedLockpointZoneNumber = questionRows
+    .filter((row) => row.startNewZone && row.lockpoint && !row.lockpointCrossed)
+    .map((row) => row.zoneNumber)
+    .sort((a, b) => a - b)[0];
+
+  const zoneTitleColspan = run(() => {
+    const trailingColumnsCount =
+      assessment.type === 'Exam'
+        ? hasAutoGradingQuestion && someQuestionsAllowRealTimeGrading
+          ? 2
+          : hasAutoGradingQuestion && hasManualGradingQuestion
+            ? 3
+            : 1
+        : (hasAutoGradingQuestion ? 2 : 0) + 1;
+
+    return assessment.type === 'Exam'
+      ? hasAutoGradingQuestion && hasManualGradingQuestion && someQuestionsAllowRealTimeGrading
+        ? 6
+        : 2 + trailingColumnsCount
+      : hasAutoGradingQuestion && hasManualGradingQuestion
+        ? 6
+        : 1 + trailingColumnsCount;
+  });
 
   const hasUnmetAdvanceScorePercBeforeLockpoint = (zoneNumber: number) =>
     questionRows.some(
@@ -191,22 +241,17 @@ export function StudentAssessmentInstanceBody({
             <thead>
               <InstanceQuestionTableHeader
                 assessmentType={assessment.type}
-                hasAutoGradingQuestion={hasAutoGradingQuestion}
-                hasManualGradingQuestion={hasManualGradingQuestion}
-                someQuestionsAllowRealTimeGrading={someQuestionsAllowRealTimeGrading}
+                gradingConfig={gradingConfig}
               />
             </thead>
             <tbody>
               <QuestionTableBody
                 questionRows={questionRows}
                 assessmentType={assessment.type}
-                hasAutoGradingQuestion={hasAutoGradingQuestion}
-                hasManualGradingQuestion={hasManualGradingQuestion}
-                someQuestionsAllowRealTimeGrading={someQuestionsAllowRealTimeGrading}
-                someQuestionsForbidRealTimeGrading={someQuestionsForbidRealTimeGrading}
+                gradingConfig={gradingConfig}
                 assessmentInstanceOpen={assessmentInstanceOpen}
                 zoneTitleColspan={zoneTitleColspan}
-                urlPrefix={urlPrefix}
+                courseInstanceId={assessment.course_instance_id}
                 userGroupRoles={userGroupRoles}
                 isLockpointCrossable={isLockpointCrossable}
                 hasUnmetAdvanceScorePercBeforeLockpoint={hasUnmetAdvanceScorePercBeforeLockpoint}
@@ -223,8 +268,7 @@ export function StudentAssessmentInstanceBody({
           <div className="card-footer d-flex flex-column gap-3">
             {showExamFooterContent && (
               <ExamFooterContent
-                someQuestionsAllowRealTimeGrading={someQuestionsAllowRealTimeGrading}
-                someQuestionsForbidRealTimeGrading={someQuestionsForbidRealTimeGrading}
+                gradingConfig={gradingConfig}
                 savedAnswers={savedAnswers}
                 suspendedSavedAnswers={suspendedSavedAnswers}
                 authorizedEdit={authorizedEdit}
@@ -336,14 +380,14 @@ function RealTimeGradingInformationAlert({
 
 function InstanceQuestionTableHeader({
   assessmentType,
-  hasAutoGradingQuestion,
-  hasManualGradingQuestion,
-  someQuestionsAllowRealTimeGrading,
+  gradingConfig: {
+    hasAutoGradingQuestion,
+    hasManualGradingQuestion,
+    someQuestionsAllowRealTimeGrading,
+  },
 }: {
   assessmentType: string;
-  hasAutoGradingQuestion: boolean;
-  hasManualGradingQuestion: boolean;
-  someQuestionsAllowRealTimeGrading: boolean;
+  gradingConfig: GradingConfig;
 }) {
   const trailingColumns =
     assessmentType === 'Exam' ? (
@@ -449,6 +493,42 @@ function InstanceQuestionTableHeader({
       <th>Question</th>
       {trailingColumns}
     </tr>
+  );
+}
+
+function StudentAccessRulesPopover({ accessRules }: { accessRules: ClientAccessRule[] }) {
+  return (
+    <OverlayTrigger
+      trigger="click"
+      popover={{
+        header: 'Access details',
+        body: (
+          <table className="table" aria-label="Access details">
+            <thead>
+              <tr>
+                <th>Credit</th>
+                <th>Start</th>
+                <th>End</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accessRules.map((rule) => (
+                <tr key={`${rule.credit}-${rule.startDate}-${rule.endDate}`}>
+                  <td>{rule.credit}</td>
+                  <td>{rule.startDate}</td>
+                  <td>{rule.endDate}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ),
+      }}
+      rootClose
+    >
+      <button type="button" className="btn btn-xs btn-ghost" aria-label="Access details">
+        <i className="fa fa-question-circle" aria-hidden="true" />
+      </button>
+    </OverlayTrigger>
   );
 }
 

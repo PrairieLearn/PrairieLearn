@@ -7,11 +7,11 @@ import type { ClientVariantWithScore } from './types.js';
 export function QuestionVariantHistory({
   instanceQuestionId,
   previousVariants,
-  urlPrefix,
+  courseInstanceId,
 }: {
   instanceQuestionId: string;
   previousVariants: ClientVariantWithScore[] | null;
-  urlPrefix: string;
+  courseInstanceId: string;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -40,7 +40,11 @@ export function QuestionVariantHistory({
           <a
             key={variant.id}
             className="badge text-bg-secondary"
-            href={getInstanceQuestionUrl({ urlPrefix, instanceQuestionId, variantId: variant.id })}
+            href={getInstanceQuestionUrl({
+              courseInstanceId,
+              instanceQuestionId,
+              variantId: variant.id,
+            })}
           >
             {variant.open ? 'Open' : `${Math.floor(variant.maxSubmissionScore * 100)}%`}
           </a>
