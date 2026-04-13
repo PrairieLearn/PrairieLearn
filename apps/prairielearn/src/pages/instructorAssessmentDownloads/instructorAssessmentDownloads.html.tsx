@@ -1,8 +1,3 @@
-import { html } from '@prairielearn/html';
-
-import { PageLayout } from '../../components/PageLayout.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
-
 export interface Filenames {
   scoresCsvFilename: string;
   scoresAllCsvFilename: string;
@@ -32,455 +27,291 @@ export interface Filenames {
   pointsGroupAllCsvFilename?: string;
 }
 
+function DownloadRow({
+  downloadUrl,
+  filename,
+  description,
+}: {
+  downloadUrl: string;
+  filename: string;
+  description: React.ReactNode;
+}) {
+  return (
+    <tr>
+      <td>
+        <a href={downloadUrl}>{filename}</a>
+      </td>
+      <td>{description}</td>
+    </tr>
+  );
+}
+
 export function InstructorAssessmentDownloads({
-  resLocals,
+  urlPrefix,
+  assessmentId,
+  assessmentSetName,
+  assessmentNumber,
+  isMultipleInstance,
+  isTeamWork,
   filenames,
 }: {
-  resLocals: ResLocalsForPage<'assessment'>;
+  urlPrefix: string;
+  assessmentId: string;
+  assessmentSetName: string;
+  assessmentNumber: string;
+  isMultipleInstance: boolean;
+  isTeamWork: boolean;
   filenames: Filenames;
 }) {
-  const identity = resLocals.assessment.team_work ? 'group' : 'student';
+  const identity = isTeamWork ? 'group' : 'student';
+  const downloadsBase = `${urlPrefix}/assessment/${assessmentId}/downloads/`;
 
-  return PageLayout({
-    resLocals,
-    pageTitle: 'Downloads',
-    navContext: {
-      type: 'instructor',
-      page: 'assessment',
-      subPage: 'downloads',
-    },
-    options: {
-      fullWidth: true,
-    },
-    content: html`
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-          <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Downloads</h1>
+  return (
+    <div className="card mb-4">
+      <div className="card-header bg-primary text-white">
+        <h1>
+          {assessmentSetName} {assessmentNumber}: Downloads
+        </h1>
+      </div>
+      {isMultipleInstance && (
+        <div className="card-body">
+          <p>
+            <small>
+              This is a <strong>multiple instance</strong> assessment, so each {identity} may have
+              more than one assessment instance. The CSV files are available in plain and{' '}
+              <strong>
+                <code>_all</code>
+              </strong>{' '}
+              versions. The plain versions contain one record per {identity}, which is taken to be
+              the assessment instance for that {identity} with the maximum percentage score. The{' '}
+              <strong>
+                <code>_all</code>
+              </strong>{' '}
+              CSV files contain one record per assessment instance, possibly including more than one
+              record per {identity}.
+            </small>
+          </p>
         </div>
-        ${resLocals.assessment.multiple_instance
-          ? html`
-              <div class="card-body">
-                <p>
-                  <small>
-                    This is a <strong>multiple instance</strong> assessment, so each ${identity} may
-                    have more than one assessment instance. The CSV files are available in plain and
-                    <strong><code>_all</code></strong> versions. The plain versions contain one
-                    record per ${identity}, which is taken to be the assessment instance for that
-                    ${identity} with the maximum percentage score. The
-                    <strong><code>_all</code></strong> CSV files contain one record per assessment
-                    instance, possibly including more than one record per student.
-                  </small>
-                </p>
-              </div>
-            `
-          : ''}
+      )}
 
-        <div class="table-responsive">
-          <table class="table table-sm table-hover" aria-label="File downloads">
-            <thead>
-              <tr>
-                <th>Data file</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>
-                  <a
-                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                      .id}/downloads/${filenames.scoresCsvFilename}"
-                    >${filenames.scoresCsvFilename}</a
-                  >
-                </td>
-                <td>
-                  Total percentage score for each student. Scores range from 0 to 100 (or higher if
-                  bonus credit was given).
-                </td>
-              </tr>
-              ${resLocals.assessment.multiple_instance
-                ? html`
-                    <tr>
-                      <td>
-                        <a
-                          href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                            .id}/downloads/${filenames.scoresAllCsvFilename}"
-                          >${filenames.scoresAllCsvFilename}</a
-                        >
-                      </td>
-                      <td>
-                        Total percentage score for each assessment instance. Scores range from 0 to
-                        100 (or higher if bonus credit was given).
-                      </td>
-                    </tr>
-                  `
-                : ''}
-              <tr>
-                <td>
-                  <a
-                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                      .id}/downloads/${filenames.pointsCsvFilename}"
-                    >${filenames.pointsCsvFilename}</a
-                  >
-                </td>
-                <td>
-                  Total points for each student. Points range from 0 to the maximum for this
-                  assessment.
-                </td>
-              </tr>
-              ${resLocals.assessment.multiple_instance
-                ? html`
-                    <tr>
-                      <td>
-                        <a
-                          href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                            .id}/downloads/${filenames.pointsAllCsvFilename}"
-                          >${filenames.pointsAllCsvFilename}</a
-                        >
-                      </td>
-                      <td>
-                        Total points for each assessment instance. Points range from 0 to the
-                        maximum for this assessment.
-                      </td>
-                    </tr>
-                  `
-                : ''}
-              ${resLocals.assessment.team_work
-                ? html`
-                    <tr>
-                      <td>
-                        <a
-                          href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                            .id}/downloads/${filenames.groupsCsvFilename}"
-                          >${filenames.groupsCsvFilename}</a
-                        >
-                      </td>
-                      <td>
-                        Information about current groups, including group names and group members
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <a
-                          href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                            .id}/downloads/${filenames.scoresGroupCsvFilename}"
-                          >${filenames.scoresGroupCsvFilename}</a
-                        >
-                      </td>
-                      <td>
-                        Total percentage score for each group. Scores range from 0 to 100 (or higher
-                        if bonus credit was given).
-                      </td>
-                    </tr>
-                    ${resLocals.assessment.multiple_instance
-                      ? html`
-                          <tr>
-                            <td>
-                              <a
-                                href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                  .id}/downloads/${filenames.scoresGroupAllCsvFilename}"
-                                >${filenames.scoresGroupAllCsvFilename}</a
-                              >
-                            </td>
-                            <td>
-                              Total percentage score for each assessment instance. Scores range from
-                              0 to 100 (or higher if bonus credit was given).
-                            </td>
-                          </tr>
-                        `
-                      : ''}
-                    <tr>
-                      <td>
-                        <a
-                          href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                            .id}/downloads/${filenames.pointsGroupCsvFilename}"
-                          >${filenames.pointsGroupCsvFilename}</a
-                        >
-                      </td>
-                      <td>
-                        Total points for each group. Points range from 0 to the maximum for this
-                        assessment.
-                      </td>
-                    </tr>
-                    ${resLocals.assessment.multiple_instance
-                      ? html`
-                          <tr>
-                            <td>
-                              <a
-                                href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                  .id}/downloads/${filenames.pointsGroupAllCsvFilename}"
-                                >${filenames.pointsGroupAllCsvFilename}</a
-                              >
-                            </td>
-                            <td>
-                              Total points for each assessment instance. Points range from 0 to the
-                              maximum for this assessment.
-                            </td>
-                          </tr>
-                        `
-                      : ''}
-                  `
-                : ''}
-              <tr>
-                <td>
-                  <a
-                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                      .id}/downloads/${filenames.scoresByUsernameCsvFilename}"
-                    >${filenames.scoresByUsernameCsvFilename}</a
-                  >
-                </td>
-                <td>
-                  Total percentage score for each student, formatted by username for upload into LMS
-                  gradebooks. Scores range from 0 to 100 (or higher if bonus credit was given).
-                </td>
-              </tr>
-              ${resLocals.assessment.multiple_instance
-                ? html`
-                    <tr>
-                      <td>
-                        <a
-                          href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                            .id}/downloads/${filenames.scoresByUsernameAllCsvFilename}"
-                          >${filenames.scoresByUsernameAllCsvFilename}</a
-                        >
-                      </td>
-                      <td>
-                        Total percentage score for each assessment instance, formatted by username
-                        for upload into LMS gradebooks. Scores range from 0 to 100 (or higher if
-                        bonus credit was given).
-                      </td>
-                    </tr>
-                  `
-                : ''}
-              <tr>
-                <td>
-                  <a
-                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                      .id}/downloads/${filenames.pointsByUsernameCsvFilename}"
-                    >${filenames.pointsByUsernameCsvFilename}</a
-                  >
-                </td>
-                <td>
-                  Total points for each student, formatted by username for upload into LMS
-                  gradebooks. Points range from 0 to the maximum for this assessment.
-                </td>
-              </tr>
-              ${resLocals.assessment.multiple_instance
-                ? html`
-                    <tr>
-                      <td>
-                        <a
-                          href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                            .id}/downloads/${filenames.pointsByUsernameAllCsvFilename}"
-                          >${filenames.pointsByUsernameAllCsvFilename}</a
-                        >
-                      </td>
-                      <td>
-                        Total points for each assessment instance, formatted by username for upload
-                        into LMS gradebooks. Points range from 0 to the maximum for this assessment.
-                      </td>
-                    </tr>
-                  `
-                : ''}
-              <tr>
-                <td>
-                  <a
-                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                      .id}/downloads/${filenames.canvasScoresCsvFilename}"
-                    >${filenames.canvasScoresCsvFilename}</a
-                  >
-                </td>
-                <td>
-                  Percentage scores for each student, formatted for import into Canvas. Only users
-                  with the Student role are included. Scores range from 0 to 100 (or higher if bonus
-                  credit was given).
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <a
-                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                      .id}/downloads/${filenames.canvasPointsCsvFilename}"
-                    >${filenames.canvasPointsCsvFilename}</a
-                  >
-                </td>
-                <td>
-                  Total points for each student, formatted for import into Canvas. Only users with
-                  the Student role are included. Points range from 0 to the maximum for this
-                  assessment (or higher if bonus credit was given).
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <a
-                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                      .id}/downloads/${filenames.instancesCsvFilename}"
-                    >${filenames.instancesCsvFilename}</a
-                  >
-                </td>
-                <td>
-                  Detailed data for each ${identity}. Includes points, maximum points, percentage
-                  score, duration, and other information.
-                </td>
-              </tr>
-              ${resLocals.assessment.multiple_instance
-                ? html`
-                    <tr>
-                      <td>
-                        <a
-                          href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                            .id}/downloads/${filenames.instancesAllCsvFilename}"
-                          >${filenames.instancesAllCsvFilename}</a
-                        >
-                      </td>
-                      <td>
-                        Detailed data for each assessment instance. Includes points, maximum points,
-                        percentage score, duration, and other information.
-                      </td>
-                    </tr>
-                  `
-                : ''}
-              <tr>
-                <td>
-                  <a
-                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                      .id}/downloads/${filenames.instanceQuestionsCsvFilename}"
-                    >${filenames.instanceQuestionsCsvFilename}</a
-                  >
-                </td>
-                <td>
-                  All questions for all ${identity}s for all assessment instances. Shows the score
-                  for each question as well as the best submission score and the number of attempts
-                  at the question.
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <a
-                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                      .id}/downloads/${filenames.submissionsForManualGradingCsvFilename}"
-                    >${filenames.submissionsForManualGradingCsvFilename}</a
-                  >
-                </td>
-                <td>
-                  Submitted answers for all ${identity}s and all questions, formatted for offline
-                  manual grading and re-upload (see the "Upload" tab). For each ${identity} and each
+      <div className="table-responsive">
+        <table className="table table-sm table-hover" aria-label="File downloads">
+          <thead>
+            <tr>
+              <th>Data file</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <DownloadRow
+              downloadUrl={`${downloadsBase}${filenames.scoresCsvFilename}`}
+              filename={filenames.scoresCsvFilename}
+              description="Total percentage score for each student. Scores range from 0 to 100 (or higher if bonus credit was given)."
+            />
+            {isMultipleInstance && (
+              <DownloadRow
+                downloadUrl={`${downloadsBase}${filenames.scoresAllCsvFilename}`}
+                filename={filenames.scoresAllCsvFilename}
+                description="Total percentage score for each assessment instance. Scores range from 0 to 100 (or higher if bonus credit was given)."
+              />
+            )}
+            <DownloadRow
+              downloadUrl={`${downloadsBase}${filenames.pointsCsvFilename}`}
+              filename={filenames.pointsCsvFilename}
+              description="Total points for each student. Points range from 0 to the maximum for this assessment."
+            />
+            {isMultipleInstance && (
+              <DownloadRow
+                downloadUrl={`${downloadsBase}${filenames.pointsAllCsvFilename}`}
+                filename={filenames.pointsAllCsvFilename}
+                description="Total points for each assessment instance. Points range from 0 to the maximum for this assessment."
+              />
+            )}
+            {isTeamWork && (
+              <>
+                <DownloadRow
+                  downloadUrl={`${downloadsBase}${filenames.groupsCsvFilename}`}
+                  filename={filenames.groupsCsvFilename!}
+                  description="Information about current groups, including group names and group members"
+                />
+                <DownloadRow
+                  downloadUrl={`${downloadsBase}${filenames.scoresGroupCsvFilename}`}
+                  filename={filenames.scoresGroupCsvFilename!}
+                  description="Total percentage score for each group. Scores range from 0 to 100 (or higher if bonus credit was given)."
+                />
+                {isMultipleInstance && (
+                  <DownloadRow
+                    downloadUrl={`${downloadsBase}${filenames.scoresGroupAllCsvFilename}`}
+                    filename={filenames.scoresGroupAllCsvFilename!}
+                    description="Total percentage score for each assessment instance. Scores range from 0 to 100 (or higher if bonus credit was given)."
+                  />
+                )}
+                <DownloadRow
+                  downloadUrl={`${downloadsBase}${filenames.pointsGroupCsvFilename}`}
+                  filename={filenames.pointsGroupCsvFilename!}
+                  description="Total points for each group. Points range from 0 to the maximum for this assessment."
+                />
+                {isMultipleInstance && (
+                  <DownloadRow
+                    downloadUrl={`${downloadsBase}${filenames.pointsGroupAllCsvFilename}`}
+                    filename={filenames.pointsGroupAllCsvFilename!}
+                    description="Total points for each assessment instance. Points range from 0 to the maximum for this assessment."
+                  />
+                )}
+              </>
+            )}
+            <DownloadRow
+              downloadUrl={`${downloadsBase}${filenames.scoresByUsernameCsvFilename}`}
+              filename={filenames.scoresByUsernameCsvFilename}
+              description="Total percentage score for each student, formatted by username for upload into LMS gradebooks. Scores range from 0 to 100 (or higher if bonus credit was given)."
+            />
+            {isMultipleInstance && (
+              <DownloadRow
+                downloadUrl={`${downloadsBase}${filenames.scoresByUsernameAllCsvFilename}`}
+                filename={filenames.scoresByUsernameAllCsvFilename}
+                description="Total percentage score for each assessment instance, formatted by username for upload into LMS gradebooks. Scores range from 0 to 100 (or higher if bonus credit was given)."
+              />
+            )}
+            <DownloadRow
+              downloadUrl={`${downloadsBase}${filenames.pointsByUsernameCsvFilename}`}
+              filename={filenames.pointsByUsernameCsvFilename}
+              description="Total points for each student, formatted by username for upload into LMS gradebooks. Points range from 0 to the maximum for this assessment."
+            />
+            {isMultipleInstance && (
+              <DownloadRow
+                downloadUrl={`${downloadsBase}${filenames.pointsByUsernameAllCsvFilename}`}
+                filename={filenames.pointsByUsernameAllCsvFilename}
+                description="Total points for each assessment instance, formatted by username for upload into LMS gradebooks. Points range from 0 to the maximum for this assessment."
+              />
+            )}
+            <DownloadRow
+              downloadUrl={`${downloadsBase}${filenames.canvasScoresCsvFilename}`}
+              filename={filenames.canvasScoresCsvFilename}
+              description="Percentage scores for each student, formatted for import into Canvas. Only users with the Student role are included. Scores range from 0 to 100 (or higher if bonus credit was given)."
+            />
+            <DownloadRow
+              downloadUrl={`${downloadsBase}${filenames.canvasPointsCsvFilename}`}
+              filename={filenames.canvasPointsCsvFilename}
+              description="Total points for each student, formatted for import into Canvas. Only users with the Student role are included. Points range from 0 to the maximum for this assessment (or higher if bonus credit was given)."
+            />
+            <DownloadRow
+              downloadUrl={`${downloadsBase}${filenames.instancesCsvFilename}`}
+              filename={filenames.instancesCsvFilename}
+              description={`Detailed data for each ${identity}. Includes points, maximum points, percentage score, duration, and other information.`}
+            />
+            {isMultipleInstance && (
+              <DownloadRow
+                downloadUrl={`${downloadsBase}${filenames.instancesAllCsvFilename}`}
+                filename={filenames.instancesAllCsvFilename}
+                description="Detailed data for each assessment instance. Includes points, maximum points, percentage score, duration, and other information."
+              />
+            )}
+            <DownloadRow
+              downloadUrl={`${downloadsBase}${filenames.instanceQuestionsCsvFilename}`}
+              filename={filenames.instanceQuestionsCsvFilename}
+              description={`All questions for all ${identity}s for all assessment instances. Shows the score for each question as well as the best submission score and the number of attempts at the question.`}
+            />
+            <DownloadRow
+              downloadUrl={`${downloadsBase}${filenames.submissionsForManualGradingCsvFilename}`}
+              filename={filenames.submissionsForManualGradingCsvFilename}
+              description={
+                <>
+                  Submitted answers for all {identity}s and all questions, formatted for offline
+                  manual grading and re-upload (see the "Upload" tab). For each {identity} and each
                   question, only the most recent submission from the most recent assessment instance
                   is included. Files are stripped from the submitted answer in the CSV and are
-                  available as
-                  <code>${filenames.filesForManualGradingZipFilename}</code>.
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <a
-                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                      .id}/downloads/${filenames.filesForManualGradingZipFilename}"
-                    >${filenames.filesForManualGradingZipFilename}</a
-                  >
-                </td>
-                <td>
-                  Submitted files for all ${identity}s and all questions, named for easy use with
-                  offline manual grading. These files match the submissions in
-                  <code>${filenames.submissionsForManualGradingCsvFilename}</code>. For each
-                  ${identity} and each question, only the most recent submitted file from the most
-                  recent assessment instance is included. The filename format is
-                  <code
-                    >&lt;uid&gt;_&lt;qid&gt;_&lt;submission_id&gt;_&lt;uploaded_filename&gt;</code
-                  >
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <a
-                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                      .id}/downloads/${filenames.allSubmissionsCsvFilename}"
-                    >${filenames.allSubmissionsCsvFilename}</a
-                  >
-                </td>
-                <td>
-                  All submitted answers for all ${identity}s for all assessment instances. Not all
-                  submitted answers will have been used to compute the final score, as some may have
-                  been superseded by subsequent attempts.
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <a
-                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                      .id}/downloads/${filenames.finalSubmissionsCsvFilename}"
-                    >${filenames.finalSubmissionsCsvFilename}</a
-                  >
-                </td>
-                <td>
-                  Final submitted answers for each question for all ${identity}s for all assessment
-                  instances.
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <a
-                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                      .id}/downloads/${filenames.bestSubmissionsCsvFilename}"
-                    >${filenames.bestSubmissionsCsvFilename}</a
-                  >
-                </td>
-                <td>
-                  Best submitted answers for each question for all ${identity}s for all assessment
-                  instances. If a ${identity} has no graded submissions for a question, then the
-                  last submission (if any) is used instead.
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <a
-                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                      .id}/downloads/${filenames.allFilesZipFilename}"
-                    >${filenames.allFilesZipFilename}</a
-                  >
-                </td>
-                <td>
-                  All submitted files for all ${identity}s for all assessment instances. Only data
+                  available as <code>{filenames.filesForManualGradingZipFilename}</code>.
+                </>
+              }
+            />
+            <DownloadRow
+              downloadUrl={`${downloadsBase}${filenames.filesForManualGradingZipFilename}`}
+              filename={filenames.filesForManualGradingZipFilename}
+              description={
+                <>
+                  Submitted files for all {identity}s and all questions, named for easy use with
+                  offline manual grading. These files match the submissions in{' '}
+                  <code>{filenames.submissionsForManualGradingCsvFilename}</code>. For each{' '}
+                  {identity} and each question, only the most recent submitted file from the most
+                  recent assessment instance is included. The filename format is{' '}
+                  <code>
+                    {isTeamWork ? (
+                      <>
+                        &lt;group_name&gt;_&lt;qid&gt;_&lt;submission_id&gt;_&lt;uploaded_filename&gt;
+                      </>
+                    ) : (
+                      <>&lt;uid&gt;_&lt;qid&gt;_&lt;submission_id&gt;_&lt;uploaded_filename&gt;</>
+                    )}
+                  </code>
+                </>
+              }
+            />
+            <DownloadRow
+              downloadUrl={`${downloadsBase}${filenames.allSubmissionsCsvFilename}`}
+              filename={filenames.allSubmissionsCsvFilename}
+              description={`All submitted answers for all ${identity}s for all assessment instances. Not all submitted answers will have been used to compute the final score, as some may have been superseded by subsequent attempts.`}
+            />
+            <DownloadRow
+              downloadUrl={`${downloadsBase}${filenames.finalSubmissionsCsvFilename}`}
+              filename={filenames.finalSubmissionsCsvFilename}
+              description={`Final submitted answers for each question for all ${identity}s for all assessment instances.`}
+            />
+            <DownloadRow
+              downloadUrl={`${downloadsBase}${filenames.bestSubmissionsCsvFilename}`}
+              filename={filenames.bestSubmissionsCsvFilename}
+              description={`Best submitted answers for each question for all ${identity}s for all assessment instances. If a ${identity} has no graded submissions for a question, then the last submission (if any) is used instead.`}
+            />
+            <DownloadRow
+              downloadUrl={`${downloadsBase}${filenames.allFilesZipFilename}`}
+              filename={filenames.allFilesZipFilename}
+              description={
+                <>
+                  All submitted files for all {identity}s for all assessment instances. Only data
                   from <code>File</code>-type questions will be included in the zip. Not all
                   submitted files will have been used to compute the final score, as some may have
-                  been superseded by subsequent attempts. The filename format is
-                  <code
-                    >&lt;uid&gt;_&lt;assessment_instance_number&gt;_&lt;qid&gt;_&lt;variant_number&gt;_&lt;submission_number&gt;_&lt;submission_id&gt;_&lt;uploaded_filename&gt;</code
-                  >
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <a
-                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                      .id}/downloads/${filenames.finalFilesZipFilename}"
-                    >${filenames.finalFilesZipFilename}</a
-                  >
-                </td>
-                <td>
-                  Final submitted files for each question for all ${identity}s for all assessment
+                  been superseded by subsequent attempts. The filename format is{' '}
+                  <code>
+                    {isTeamWork ? (
+                      <>
+                        &lt;group_name&gt;_&lt;assessment_instance_number&gt;_&lt;qid&gt;_&lt;variant_number&gt;_&lt;submission_number&gt;_&lt;submission_id&gt;_&lt;uploaded_filename&gt;
+                      </>
+                    ) : (
+                      <>
+                        &lt;uid&gt;_&lt;assessment_instance_number&gt;_&lt;qid&gt;_&lt;variant_number&gt;_&lt;submission_number&gt;_&lt;submission_id&gt;_&lt;uploaded_filename&gt;
+                      </>
+                    )}
+                  </code>
+                </>
+              }
+            />
+            <DownloadRow
+              downloadUrl={`${downloadsBase}${filenames.finalFilesZipFilename}`}
+              filename={filenames.finalFilesZipFilename}
+              description={
+                <>
+                  Final submitted files for each question for all {identity}s for all assessment
                   instances. Only data from <code>File</code>-type questions will be included in the
                   zip.
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <a
-                    href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                      .id}/downloads/${filenames.bestFilesZipFilename}"
-                    >${filenames.bestFilesZipFilename}</a
-                  >
-                </td>
-                <td>
-                  Best submitted files for each question for all ${identity}s for all assessment
+                </>
+              }
+            />
+            <DownloadRow
+              downloadUrl={`${downloadsBase}${filenames.bestFilesZipFilename}`}
+              filename={filenames.bestFilesZipFilename}
+              description={
+                <>
+                  Best submitted files for each question for all {identity}s for all assessment
                   instances. Only data from <code>File</code>-type questions will be included in the
-                  zip. If a ${identity} has no graded submissions for a question then the last
+                  zip. If a {identity} has no graded submissions for a question then the last
                   submission (if any) is used instead.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                </>
+              }
+            />
+          </tbody>
+        </table>
       </div>
-    `,
-  });
+    </div>
+  );
 }
+
+InstructorAssessmentDownloads.displayName = 'InstructorAssessmentDownloads';

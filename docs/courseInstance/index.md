@@ -1,12 +1,25 @@
 # Course instance configuration
 
+A _course instance_ corresponds to a single offering of a [course](../course/index.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". Each time you teach a course in a new semester or section, you should create a new course instance.
+
+## Creating or copying a course instance
+
+To create a new course instance from the PrairieLearn web interface:
+
+1. Navigate to the **Course instances** tab of your course. In the top right, click the **Add course instance** button.
+
+If you want to reuse assessments and settings from a previous semester, you can copy an existing course instance instead of creating one from scratch:
+
+1. Open the course instance you want to copy (e.g., your "Fall 2024" instance).
+2. Go to the **Settings** tab (under the "Instance settings" section of the sidebar), scroll to the bottom, and click **Make a copy of this course instance**.
+
 !!! note
 
     Any time you edit or add an `infoCourseInstance.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the page header so that the local PrairieLearn server reloads the changes.
 
 ## Directory layout
 
-A _course instance_ corresponds to a single offering of a [course](../course/index.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuration file (`infoCourseInstance.json`) and a subdirectory (`assessments`) containing a list of [assessments](../assessment/overview.md). The `assessments` directory should always exist, but may be empty if no assessments have been added. A course instance may be located in the root `courseInstances` directory, or any subfolder that is not a courseInstance itself.
+A course instance like `Fa16` is contained in one directory and has a configuration file (`infoCourseInstance.json`) and a subdirectory (`assessments`) containing a list of [assessments](../assessment/overview.md). The `assessments` directory should always exist, but may be empty if no assessments have been added. A course instance may be located in the root `courseInstances` directory, or any subfolder that is not a courseInstance itself.
 
 ```bash
 exampleCourse
