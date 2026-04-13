@@ -229,6 +229,11 @@
     "gzip": 328,
     "brotli": 243
   },
+  "scripts/esm-bundles/hydrated-components/SampleQuestions.ts": {
+    "raw": 298093,
+    "gzip": 95001,
+    "brotli": 82264
+  },
   "scripts/esm-bundles/hydrated-components/TagsTopicsTable.ts": {
     "raw": 722145,
     "gzip": 215244,
@@ -239,20 +244,25 @@
     "gzip": 164338,
     "brotli": 142579
   },
+  "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminSettings.ts": {
+    "raw": 1162531,
+    "gzip": 350488,
+    "brotli": 303256
+  },
   "scripts/esm-bundles/hydrated-components/InstructorStudentDetail.ts": {
     "raw": 1334245,
-    "gzip": 392454,
-    "brotli": 320801
+    "gzip": 392452,
+    "brotli": 320808
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudents.ts": {
     "raw": 1229553,
     "gzip": 362644,
-    "brotli": 313776
+    "brotli": 313794
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudentsLabels.ts": {
     "raw": 1057901,
-    "gzip": 312461,
-    "brotli": 270584
+    "gzip": 312462,
+    "brotli": 270590
   },
   "scripts/esm-bundles/hydrated-components/QuestionSettingsCardFooter.ts": {
     "raw": 956597,
@@ -274,15 +284,15 @@
     "gzip": 136660,
     "brotli": 119061
   },
-  "scripts/esm-bundles/hydrated-components/SampleQuestions.ts": {
-    "raw": 298093,
-    "gzip": 95001,
-    "brotli": 82264
-  },
   "scripts/esm-bundles/hydrated-components/HomeCards.ts": {
     "raw": 980162,
     "gzip": 287031,
     "brotli": 247782
+  },
+  "scripts/esm-bundles/hydrated-components/InstructorAssessmentDownloads.ts": {
+    "raw": 263340,
+    "gzip": 81212,
+    "brotli": 70056
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentQuestionsTableLegacy.ts": {
     "raw": 631755,
@@ -313,11 +323,6 @@
     "raw": 259623,
     "gzip": 81602,
     "brotli": 70444
-  },
-  "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminSettings.ts": {
-    "raw": 1162531,
-    "gzip": 350488,
-    "brotli": 303256
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionsEditor.ts": {
     "raw": 1441690,
