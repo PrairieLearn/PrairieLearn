@@ -15,7 +15,6 @@ import {
   isNonDefaultQuestionVisibility,
   isNonDefaultScoreVisibility,
 } from './types.js';
-import isDate from 'lodash/isDate.js';
 
 type RuleData = MainRuleData | OverrideData;
 
