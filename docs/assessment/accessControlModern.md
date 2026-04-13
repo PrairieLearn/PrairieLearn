@@ -100,14 +100,14 @@ Controls when the assessment is available and how credit is computed over time.
 
 #### `afterLastDeadline`
 
-| Field              | Type           | Default | Description                                                    |
-| ------------------ | -------------- | ------- | -------------------------------------------------------------- |
-| `allowSubmissions` | boolean        | `false` | Whether students can still submit answers after all deadlines. |
-| `credit`           | number or null | `0`     | Credit percentage after the last deadline.                     |
+| Field              | Type    | Default | Description                                                    |
+| ------------------ | ------- | ------- | -------------------------------------------------------------- |
+| `allowSubmissions` | boolean | `false` | Whether students can still submit answers after all deadlines. |
+| `credit`           | number  | `0`     | Credit percentage after the last deadline.                     |
 
-After the last deadline, the assessment is considered "active" (students can submit) only if `allowSubmissions` is `true`. Set `credit` to a number for post-deadline credit, or use `null`/omit `credit` for practice submissions with 0% credit.
+After the last deadline, the assessment is considered "active" (students can submit) only if `allowSubmissions` is `true`. Set `credit` to a number for post-deadline credit, or omit `credit` for practice submissions with 0% credit.
 
-When overriding `afterLastDeadline`, always include `credit`. Use `credit: null` to clear inherited credit.
+When overriding `afterLastDeadline`, `credit` may be omitted. If omitted, the default of 0% credit is used.
 
 #### Credit timeline
 
@@ -148,18 +148,18 @@ By default, questions are hidden and scores are shown after completion.
 
 #### `afterComplete.questions`
 
-| Field              | Type           | Default | Description                                                   |
-| ------------------ | -------------- | ------- | ------------------------------------------------------------- |
-| `hidden`           | boolean        | `true`  | If `true`, questions are hidden after assessment completion.  |
-| `visibleFromDate`  | string or null |         | ISO datetime. Date to reveal questions back to students.      |
-| `visibleUntilDate` | string or null |         | ISO datetime. Date to re-hide questions after revealing them. |
+| Field              | Type    | Default | Description                                                   |
+| ------------------ | ------- | ------- | ------------------------------------------------------------- |
+| `hidden`           | boolean | `true`  | If `true`, questions are hidden after assessment completion.  |
+| `visibleFromDate`  | string  |         | ISO datetime. Date to reveal questions back to students.      |
+| `visibleUntilDate` | string  |         | ISO datetime. Date to re-hide questions after revealing them. |
 
 #### `afterComplete.score`
 
-| Field             | Type           | Default | Description                                                 |
-| ----------------- | -------------- | ------- | ----------------------------------------------------------- |
-| `hidden`          | boolean        | `false` | If `true`, the score is hidden after assessment completion. |
-| `visibleFromDate` | string or null |         | ISO datetime. Date to reveal the score to students.         |
+| Field             | Type    | Default | Description                                                 |
+| ----------------- | ------- | ------- | ----------------------------------------------------------- |
+| `hidden`          | boolean | `false` | If `true`, the score is hidden after assessment completion. |
+| `visibleFromDate` | string  |         | ISO datetime. Date to reveal the score to students.         |
 
 !!! warning
 
@@ -173,7 +173,7 @@ The visibility logic follows a toggle pattern:
 
 The same logic applies to `score.hidden` / `score.visibleFromDate` (there is no "visible until" for scores).
 
-When overriding `afterComplete.questions`, always include `hidden`, `visibleFromDate`, and `visibleUntilDate`. Use `visibleFromDate: null` and `visibleUntilDate: null` to clear inherited visibility dates. When overriding `afterComplete.score`, always include `hidden` and `visibleFromDate`; use `visibleFromDate: null` to clear the inherited score visibility date.
+When overriding `afterComplete.questions`, you may include just `hidden` without any date fields. To include visibility dates, set `hidden: true` along with `visibleFromDate` (and optionally `visibleUntilDate`). To clear inherited visibility dates, omit the date fields entirely. The same applies to `afterComplete.score`: you may include just `hidden`, or set `hidden: true` with `visibleFromDate`.
 
 ### Other fields
 

@@ -153,7 +153,9 @@ export function generateDateTableRows(
       rows.push({
         date: '',
         label: 'After last deadline',
-        credit: afterLastDeadline?.allowSubmissions ? `${afterLastDeadline.credit ?? 0}%` : '—',
+        credit: afterLastDeadline?.allowSubmissions
+          ? (afterLastDeadline.credit != null ? `${afterLastDeadline.credit}%` : 'Practice')
+          : 'Closed',
         error: (formErrors?.afterLastDeadline as FieldErrors<{ credit: number }> | undefined)
           ?.credit?.message,
       });
@@ -167,7 +169,9 @@ export function generateDateTableRows(
       rows.push({
         date: '',
         label: 'After last deadline',
-        credit: afterLastDeadline?.allowSubmissions ? `${afterLastDeadline.credit ?? 0}%` : '—',
+        credit: afterLastDeadline?.allowSubmissions
+          ? (afterLastDeadline.credit != null ? `${afterLastDeadline.credit}%` : 'Practice')
+          : 'Closed',
         error: (formErrors?.afterLastDeadline as FieldErrors<{ credit: number }> | undefined)
           ?.credit?.message,
       });
