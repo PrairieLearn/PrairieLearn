@@ -202,8 +202,9 @@ li.pl-order-block:not(.pl-order-blocks-code) .pl-order-block-handle {
 
 .pl-order-block-content {
   overflow-x: auto;
+  overflow-y: hidden;
   white-space: normal;
   min-width: 0;
   width: 100%;
-  touch-action: pan-x pan-y;
+  touch-action: pan-x;
 }
