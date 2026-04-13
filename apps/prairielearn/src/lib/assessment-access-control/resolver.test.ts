@@ -34,20 +34,18 @@ function toRuntime(json: AccessControlJson): RuntimeAccessControl {
     result.afterComplete = {};
     if (afterComplete.questions) {
       const q = afterComplete.questions;
-      const visibleFromDate = 'visibleFromDate' in q ? q.visibleFromDate : undefined;
-      const visibleUntilDate = 'visibleUntilDate' in q ? q.visibleUntilDate : undefined;
       result.afterComplete.questions = {
         hidden: q.hidden,
-        visibleFromDate: visibleFromDate != null ? new Date(visibleFromDate) : visibleFromDate,
-        visibleUntilDate: visibleUntilDate != null ? new Date(visibleUntilDate) : visibleUntilDate,
+        visibleFromDate: q.visibleFromDate != null ? new Date(q.visibleFromDate) : q.visibleFromDate,
+        visibleUntilDate:
+          q.visibleUntilDate != null ? new Date(q.visibleUntilDate) : q.visibleUntilDate,
       };
     }
     if (afterComplete.score) {
       const s = afterComplete.score;
-      const visibleFromDate = 'visibleFromDate' in s ? s.visibleFromDate : undefined;
       result.afterComplete.score = {
         hidden: s.hidden,
-        visibleFromDate: visibleFromDate != null ? new Date(visibleFromDate) : visibleFromDate,
+        visibleFromDate: s.visibleFromDate != null ? new Date(s.visibleFromDate) : s.visibleFromDate,
       };
     }
   }
@@ -505,30 +503,6 @@ describe('resolveAccessControl', () => {
       });
       // Both overrides apply, second (due July 1 UTC = Jun 30 CDT) wins
       expect(result.credit).toBe(100);
-      expect(result.creditDateString).toContain('Jun 30');
-    });
-
-    it('applies all matching overrides', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [
-          makeMainRule({
-            dateControl: { releaseDate: '2025-01-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' },
-          }),
-          makeOverrideRule(
-            1,
-            { dateControl: { dueDate: '2025-06-01T00:00:00Z' } },
-            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
-          ),
-          makeOverrideRule(
-            2,
-            { dateControl: { dueDate: '2025-07-01T00:00:00Z' } },
-            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
-          ),
-        ],
-        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
-      });
-      // Second override (due July 1 UTC = Jun 30 CDT) wins via cascade
       expect(result.creditDateString).toContain('Jun 30');
     });
   });
@@ -1273,10 +1247,9 @@ describe('resolveAccessControl', () => {
     });
   });
 
-  describe('afterComplete visibility edge cases', () => {
-    // The schema now prevents invalid combinations like hidden:false with
-    // date fields, or visibleUntilDate without visibleFromDate, so we only test
-    // schema-valid edge cases here.
+  describe('afterComplete visibility', () => {
+    // Sync-time validation prevents invalid combinations like hidden:false
+    // with date fields, so we only test valid cases here.
     it('hides questions when hidden:true with no dates', () => {
       const result = resolveAccessControl({
         ...baseInput,
@@ -1639,7 +1612,6 @@ describe('mergeRules', () => {
       toRuntime({
         dateControl: {
           afterLastDeadline: { allowSubmissions: true, credit: 25 },
-          password: 'secret',
         },
       }),
       toRuntime({
@@ -1651,7 +1623,6 @@ describe('mergeRules', () => {
     expect(result.dateControl?.afterLastDeadline).toEqual({
       allowSubmissions: false,
     });
-    expect(result.dateControl?.password).toBe('secret');
   });
 
   it('ignores listBeforeRelease on overrides', () => {
@@ -1688,26 +1659,6 @@ describe('cascadeOverrides', () => {
       toRuntime({ dateControl: { dueDate: '2025-05-01T00:00:00Z' } }),
     );
     expect(result.dateControl?.dueDate).toEqual(new Date('2025-05-01T00:00:00Z'));
-  });
-
-  it('clears cascaded afterLastDeadline credit when next disables submissions', () => {
-    const result = cascadeOverrides(
-      toRuntime({
-        dateControl: {
-          afterLastDeadline: { allowSubmissions: true, credit: 25 },
-          password: 'secret',
-        },
-      }),
-      toRuntime({
-        dateControl: {
-          afterLastDeadline: { allowSubmissions: false },
-        },
-      }),
-    );
-    expect(result.dateControl?.afterLastDeadline).toEqual({
-      allowSubmissions: false,
-    });
-    expect(result.dateControl?.password).toBe('secret');
   });
 
   it('merges afterComplete sub-fields', () => {

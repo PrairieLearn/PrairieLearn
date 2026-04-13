@@ -186,9 +186,7 @@ describe('formDataToJson', () => {
     expect(overrideJson.afterComplete).toBeDefined();
     const questions = overrideJson.afterComplete!.questions!;
     expect(questions.hidden).toBe(true);
-    expect('visibleFromDate' in questions && questions.visibleFromDate).toBe(
-      '2025-06-01T00:00:00Z',
-    );
+    expect(questions.visibleFromDate).toBe('2025-06-01T00:00:00Z');
     expect(overrideJson.afterComplete!.score!.hidden).toBe(true);
   });
 
@@ -252,42 +250,36 @@ describe('formDataToJson', () => {
     expect(dc.password).toBeNull();
   });
 
-  it('override afterLastDeadline passes through for no_submissions', () => {
-    const override: OverrideData = {
+  it('serializes afterLastDeadline overrides', () => {
+    const noSubmissions: OverrideData = {
       ...baseOverride,
-      trackingId: 'o-ald-nosub',
+      trackingId: 'o-ald-1',
       overriddenFields: ['afterLastDeadline'],
       afterLastDeadline: { allowSubmissions: false },
     };
+    expect(formDataToJson(buildFormData(noSubmissions))[1].dateControl!.afterLastDeadline).toEqual({
+      allowSubmissions: false,
+    });
 
-    const result = formDataToJson(buildFormData(override));
-    const dc = result[1].dateControl!;
-    expect(dc.afterLastDeadline).toEqual({ allowSubmissions: false });
-  });
-
-  it('override afterLastDeadline passes through for practice_submissions', () => {
-    const override: OverrideData = {
+    const practice: OverrideData = {
       ...baseOverride,
-      trackingId: 'o-ald-practice',
+      trackingId: 'o-ald-2',
       overriddenFields: ['afterLastDeadline'],
       afterLastDeadline: { allowSubmissions: true },
     };
+    expect(formDataToJson(buildFormData(practice))[1].dateControl!.afterLastDeadline).toEqual({
+      allowSubmissions: true,
+    });
 
-    const result = formDataToJson(buildFormData(override));
-    const dc = result[1].dateControl!;
-    expect(dc.afterLastDeadline).toEqual({ allowSubmissions: true });
-  });
-
-  it('override afterLastDeadline preserves numeric credit for partial_credit', () => {
-    const override: OverrideData = {
+    const partialCredit: OverrideData = {
       ...baseOverride,
-      trackingId: 'o-ald-partial',
+      trackingId: 'o-ald-3',
       overriddenFields: ['afterLastDeadline'],
       afterLastDeadline: { allowSubmissions: true, credit: 50 },
     };
-
-    const result = formDataToJson(buildFormData(override));
-    const dc = result[1].dateControl!;
-    expect(dc.afterLastDeadline).toEqual({ allowSubmissions: true, credit: 50 });
+    expect(formDataToJson(buildFormData(partialCredit))[1].dateControl!.afterLastDeadline).toEqual({
+      allowSubmissions: true,
+      credit: 50,
+    });
   });
 });

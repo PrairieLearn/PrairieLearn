@@ -122,18 +122,11 @@ function prepareRuleRow(
     date_control_password: passwordField.value,
     after_complete_questions_hidden: questionsHiddenField.value,
     after_complete_questions_visible_from_date:
-      afterComplete.questions && 'visibleFromDate' in afterComplete.questions
-        ? afterComplete.questions.visibleFromDate
-        : null,
+      afterComplete.questions?.visibleFromDate ?? null,
     after_complete_questions_visible_until_date:
-      afterComplete.questions && 'visibleUntilDate' in afterComplete.questions
-        ? (afterComplete.questions.visibleUntilDate ?? null)
-        : null,
+      afterComplete.questions?.visibleUntilDate ?? null,
     after_complete_score_hidden: scoreHiddenField.value,
-    after_complete_score_visible_from_date:
-      afterComplete.score && 'visibleFromDate' in afterComplete.score
-        ? afterComplete.score.visibleFromDate
-        : null,
+    after_complete_score_visible_from_date: afterComplete.score?.visibleFromDate ?? null,
   });
 
   // Child data arrays use [assessment_id, rule_number, ...data] format.

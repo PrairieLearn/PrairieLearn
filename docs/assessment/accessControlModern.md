@@ -105,7 +105,7 @@ Controls when the assessment is available and how credit is computed over time.
 | `allowSubmissions` | boolean | `false` | Whether students can still submit answers after all deadlines. |
 | `credit`           | number  | `0`     | Credit percentage after the last deadline.                     |
 
-After the last deadline, the assessment is considered "active" (students can submit) only if `allowSubmissions` is `true`. Set `credit` to a number for post-deadline credit, or omit `credit` for practice submissions with 0% credit.
+After the last deadline, the assessment is considered "active" (students can start and submit) only if `allowSubmissions` is `true`. Set `credit` to a number for post-deadline credit, or omit `credit` for practice submissions with 0% credit.
 
 When overriding `afterLastDeadline`, `credit` may be omitted. If omitted, the default of 0% credit is used.
 
@@ -140,7 +140,9 @@ When PrairieTest exams are configured, students must be checked in via PrairieTe
 
 ### `afterComplete`
 
-Controls what students can see after completing an assessment. An assessment is considered complete when students can no longer answer questions — typically when the last late deadline passes (or due date if no late deadlines), or when the assessment is closed (e.g., time limit expires, autoclose, or instructor closes it).
+Controls what students can see after completing an assessment. Use this to "hand back" assessments — for example, revealing questions and answers after an exam, or hiding scores until grading is finalized.
+
+An assessment is considered complete when students can no longer answer questions — typically when the last late deadline passes (or due date if no late deadlines), or when the assessment is closed (e.g., time limit expires, autoclose, or instructor closes it).
 
 By default, questions are hidden and scores are shown after completion.
 
@@ -148,18 +150,24 @@ By default, questions are hidden and scores are shown after completion.
 
 #### `afterComplete.questions`
 
+Use this to control when students can review their questions and answers after completion.
+
 | Field              | Type    | Default | Description                                                   |
 | ------------------ | ------- | ------- | ------------------------------------------------------------- |
 | `hidden`           | boolean | `true`  | If `true`, questions are hidden after assessment completion.  |
-| `visibleFromDate`  | string  |         | ISO datetime. Date to reveal questions back to students.      |
+| `visibleFromDate`  | string  |         | ISO datetime. Date to re-reveal questions to students.        |
 | `visibleUntilDate` | string  |         | ISO datetime. Date to re-hide questions after revealing them. |
 
 #### `afterComplete.score`
 
+Use this to control when students can see their score after completion — for example, to hide scores until after a grading period.
+
 | Field             | Type    | Default | Description                                                 |
 | ----------------- | ------- | ------- | ----------------------------------------------------------- |
 | `hidden`          | boolean | `false` | If `true`, the score is hidden after assessment completion. |
-| `visibleFromDate` | string  |         | ISO datetime. Date to reveal the score to students.         |
+| `visibleFromDate` | string  |         | ISO datetime. Date to re-reveal the score to students.      |
+
+#### Visibility logic
 
 !!! warning
 

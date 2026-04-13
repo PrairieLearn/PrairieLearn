@@ -137,7 +137,7 @@ export function validateRuleStructuralDependencyIssues(
     !hasDuration
   ) {
     const q = ac.questions;
-    if (q && 'visibleFromDate' in q && q.visibleFromDate) {
+    if (q?.visibleFromDate) {
       pushIssue(
         issues,
         validationRule,
@@ -145,7 +145,7 @@ export function validateRuleStructuralDependencyIssues(
         'After-complete dates require at least one deadline (due date or late deadline).',
       );
     }
-    if (q && 'visibleUntilDate' in q && q.visibleUntilDate) {
+    if (q?.visibleUntilDate) {
       pushIssue(
         issues,
         validationRule,
@@ -153,7 +153,7 @@ export function validateRuleStructuralDependencyIssues(
         'After-complete dates require at least one deadline (due date or late deadline).',
       );
     }
-    if (ac.score && 'visibleFromDate' in ac.score && ac.score.visibleFromDate) {
+    if (ac.score?.visibleFromDate) {
       pushIssue(
         issues,
         validationRule,
@@ -274,10 +274,8 @@ export function validateRuleDateOrderingIssues(
   }
 
   const questions = rule.afterComplete?.questions;
-  const qVisibleFrom =
-    questions && 'visibleFromDate' in questions ? questions.visibleFromDate : undefined;
-  const qVisibleUntil =
-    questions && 'visibleUntilDate' in questions ? questions.visibleUntilDate : undefined;
+  const qVisibleFrom = questions?.visibleFromDate;
+  const qVisibleUntil = questions?.visibleUntilDate;
   if (qVisibleFrom && qVisibleUntil) {
     if (new Date(qVisibleFrom).getTime() >= new Date(qVisibleUntil).getTime()) {
       pushIssue(
@@ -302,7 +300,7 @@ export function validateRuleDateOrderingIssues(
       }
     }
     const score = rule.afterComplete?.score;
-    if (score && 'visibleFromDate' in score && score.visibleFromDate) {
+    if (score?.visibleFromDate) {
       if (new Date(score.visibleFromDate).getTime() <= lastDeadlineMs) {
         pushIssue(
           issues,

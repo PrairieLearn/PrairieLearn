@@ -170,27 +170,14 @@ export function jsonToMainRuleFormData(
     questionVisibility: {
       hidden: ac?.questions?.hidden ?? true,
       visibleFromDate:
-        toLocalDatetimeValue(
-          ac?.questions && 'visibleFromDate' in ac.questions
-            ? ac.questions.visibleFromDate
-            : undefined,
-          displayTimezone,
-        ) ?? undefined,
+        toLocalDatetimeValue(ac?.questions?.visibleFromDate, displayTimezone) ?? undefined,
       visibleUntilDate:
-        toLocalDatetimeValue(
-          ac?.questions && 'visibleUntilDate' in ac.questions
-            ? ac.questions.visibleUntilDate
-            : undefined,
-          displayTimezone,
-        ) ?? undefined,
+        toLocalDatetimeValue(ac?.questions?.visibleUntilDate, displayTimezone) ?? undefined,
     },
     scoreVisibility: {
       hidden: ac?.score?.hidden ?? false,
       visibleFromDate:
-        toLocalDatetimeValue(
-          ac?.score && 'visibleFromDate' in ac.score ? ac.score.visibleFromDate : undefined,
-          displayTimezone,
-        ) ?? undefined,
+        toLocalDatetimeValue(ac?.score?.visibleFromDate, displayTimezone) ?? undefined,
     },
   };
 }
@@ -278,16 +265,8 @@ export function jsonToOverrideFormData(
     const q = ac.questions;
     questionVisibility = {
       hidden: q.hidden,
-      visibleFromDate:
-        toLocalDatetimeValue(
-          'visibleFromDate' in q ? q.visibleFromDate : undefined,
-          displayTimezone,
-        ) ?? undefined,
-      visibleUntilDate:
-        toLocalDatetimeValue(
-          'visibleUntilDate' in q ? q.visibleUntilDate : undefined,
-          displayTimezone,
-        ) ?? undefined,
+      visibleFromDate: toLocalDatetimeValue(q.visibleFromDate, displayTimezone) ?? undefined,
+      visibleUntilDate: toLocalDatetimeValue(q.visibleUntilDate, displayTimezone) ?? undefined,
     };
     overriddenFields.push('questionVisibility');
   }
@@ -296,11 +275,7 @@ export function jsonToOverrideFormData(
   if (ac?.score?.hidden !== undefined) {
     scoreVisibility = {
       hidden: ac.score.hidden,
-      visibleFromDate:
-        toLocalDatetimeValue(
-          'visibleFromDate' in ac.score ? ac.score.visibleFromDate : undefined,
-          displayTimezone,
-        ) ?? undefined,
+      visibleFromDate: toLocalDatetimeValue(ac.score.visibleFromDate, displayTimezone) ?? undefined,
     };
     overriddenFields.push('scoreVisibility');
   }
@@ -363,20 +338,19 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
     output.afterComplete = {};
     if (hasNonDefaultQuestions) {
       output.afterComplete.questions = qv.hidden
-        ? qv.visibleFromDate
-          ? {
-              hidden: true,
-              visibleFromDate: qv.visibleFromDate,
-              ...(qv.visibleUntilDate && { visibleUntilDate: qv.visibleUntilDate }),
-            }
-          : { hidden: true }
+        ? {
+            hidden: true,
+            ...(qv.visibleFromDate && { visibleFromDate: qv.visibleFromDate }),
+            ...(qv.visibleUntilDate && { visibleUntilDate: qv.visibleUntilDate }),
+          }
         : { hidden: false };
     }
     if (hasNonDefaultScore) {
       output.afterComplete.score = sv.hidden
-        ? sv.visibleFromDate
-          ? { hidden: true, visibleFromDate: sv.visibleFromDate }
-          : { hidden: true }
+        ? {
+            hidden: true,
+            ...(sv.visibleFromDate && { visibleFromDate: sv.visibleFromDate }),
+          }
         : { hidden: false };
     }
   }
@@ -419,21 +393,20 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
     if (of.has('questionVisibility')) {
       const qv = rule.questionVisibility;
       output.afterComplete.questions = qv.hidden
-        ? qv.visibleFromDate
-          ? {
-              hidden: true,
-              visibleFromDate: qv.visibleFromDate,
-              ...(qv.visibleUntilDate && { visibleUntilDate: qv.visibleUntilDate }),
-            }
-          : { hidden: true }
+        ? {
+            hidden: true,
+            ...(qv.visibleFromDate && { visibleFromDate: qv.visibleFromDate }),
+            ...(qv.visibleUntilDate && { visibleUntilDate: qv.visibleUntilDate }),
+          }
         : { hidden: false };
     }
     if (of.has('scoreVisibility')) {
       const sv = rule.scoreVisibility;
       output.afterComplete.score = sv.hidden
-        ? sv.visibleFromDate
-          ? { hidden: true, visibleFromDate: sv.visibleFromDate }
-          : { hidden: true }
+        ? {
+            hidden: true,
+            ...(sv.visibleFromDate && { visibleFromDate: sv.visibleFromDate }),
+          }
         : { hidden: false };
     }
   }

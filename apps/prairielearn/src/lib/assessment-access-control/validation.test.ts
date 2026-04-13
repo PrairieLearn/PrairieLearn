@@ -309,9 +309,7 @@ describe('Date fields without seconds', () => {
     assert.equal(parsed.dateControl?.dueDate, '2024-03-21T23:59:00');
     assert.equal(parsed.dateControl?.earlyDeadlines?.[0].date, '2024-03-17T23:59:00');
     assert.equal(parsed.dateControl?.lateDeadlines?.[0].date, '2024-03-23T23:59:00');
-    const q = parsed.afterComplete?.questions;
-    assert.isOk(q && 'visibleFromDate' in q);
-    assert.equal(q.visibleFromDate, '2024-03-25T12:00:00');
+    assert.equal(parsed.afterComplete?.questions?.visibleFromDate, '2024-03-25T12:00:00');
 
     const result = validateAccessControlRules({
       rules: [parsed],
@@ -1345,7 +1343,9 @@ describe('afterComplete hidden/visibility validation', () => {
     });
     const errors = validateRule(rule, 'none');
     assert.isTrue(
-      errors.some((e) => e.includes('afterComplete.questions cannot have visibleFromDate')),
+      errors.some((e) =>
+        e.includes('afterComplete.questions cannot have visibleFromDate or visibleUntilDate'),
+      ),
     );
   });
 

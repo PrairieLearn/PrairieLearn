@@ -9,7 +9,6 @@
       "listBeforeRelease": true,
       "dateControl": {
         "releaseDate": "2026-04-10T00:00:01",
-        "dueDate": null,
         "afterLastDeadline": { "allowSubmissions": true }
       },
       "afterComplete": { "questions": { "hidden": false } }
