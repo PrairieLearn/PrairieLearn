@@ -129,29 +129,6 @@ const aiGroupInstanceQuestionsMutation = t.procedure
     return { job_sequence_id, job_sequence_token };
   });
 
-const getAiGradingModalDataQuery = t.procedure
-  .use(requireCourseInstancePermissionEdit)
-  .use(requireAiGradingFeature)
-  .input(
-    z.object({
-      selection: z.union([z.literal('all'), z.literal('human_graded'), z.string().array()]),
-    }),
-  )
-  .output(z.object({ num_to_grade: z.number() }))
-  .query(async (opts) => {
-    const numToGrade = run(() => {
-      if (Array.isArray(opts.input.selection)) {
-        return opts.input.selection.length;
-      }
-      // For 'all' and 'human_graded', the exact count is already known
-      // client-side from the table data. Return 0 here as a fallback;
-      // the modal uses the client-side count passed via modalState.numToGrade.
-      return 0;
-    });
-
-    return { num_to_grade: numToGrade };
-  });
-
 const aiGradeInstanceQuestionsMutation = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .use(requireAiGradingFeature)
@@ -182,7 +159,11 @@ const aiGradeInstanceQuestionsMutation = t.procedure
         return opts.input.selection;
       }),
     });
-    await setAiGradingLastSelectedModel(opts.ctx.assessment_question.id, opts.input.model_id);
+    // Best-effort: persist the model preference after the job is created.
+    // If this fails, the grading job is still running — don't fail the request.
+    await setAiGradingLastSelectedModel(opts.ctx.assessment_question.id, opts.input.model_id).catch(
+      () => {},
+    );
     const job_sequence_token = generateJobSequenceToken(job_sequence_id);
     return { job_sequence_id, job_sequence_token };
   });
@@ -243,7 +224,6 @@ export const manualGradingRouter = t.router({
   deleteAiGradingJobs: deleteAiGradingJobsMutation,
   deleteAiInstanceQuestionGroupings: deleteAiInstanceQuestionGroupingsMutation,
   aiGroupInstanceQuestions: aiGroupInstanceQuestionsMutation,
-  getAiGradingModalData: getAiGradingModalDataQuery,
   aiGradeInstanceQuestions: aiGradeInstanceQuestionsMutation,
   setAssignedGrader: setAssignedGraderMutation,
   setRequiresManualGrading: setRequiresManualGradingMutation,

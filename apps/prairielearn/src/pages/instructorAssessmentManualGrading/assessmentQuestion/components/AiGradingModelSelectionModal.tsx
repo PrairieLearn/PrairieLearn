@@ -1,3 +1,4 @@
+import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
 import { Alert, Button, Form, Modal } from 'react-bootstrap';
@@ -12,7 +13,7 @@ import {
   DEFAULT_AI_GRADING_MODEL,
 } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
-import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
+import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
 
 export type AiGradingModelSelectionModalState =
   | { type: 'all'; numToGrade: number }
@@ -155,7 +156,6 @@ function ModelList({
 
 export function AiGradingModelSelectionModal({
   modalState,
-  mutation,
   availableProviders,
   aiGradingLastSelectedModel,
   relativeCosts,
@@ -163,7 +163,6 @@ export function AiGradingModelSelectionModal({
   onHide,
 }: {
   modalState: AiGradingModelSelectionModalState;
-  mutation: ReturnType<typeof useManualGradingActions>['gradeSubmissionsMutation'];
   availableProviders: EnumAiGradingProvider[];
   aiGradingLastSelectedModel: string | null;
   relativeCosts: Record<string, string>;
@@ -173,21 +172,25 @@ export function AiGradingModelSelectionModal({
   ) => void;
   onHide: () => void;
 }) {
+  const trpc = useTRPC();
+  const { mutate, reset, isPending, isError, error } = useMutation(
+    trpc.manualGrading.aiGradeInstanceQuestions.mutationOptions(),
+  );
   const defaultModel = getDefaultModel(aiGradingLastSelectedModel, availableProviders);
   const [selectedModel, setSelectedModel] = useState<AiGradingModelId>(defaultModel);
 
   const handleClose = useCallback(() => {
     setSelectedModel(defaultModel);
-    mutation.reset();
+    reset();
     onHide();
-  }, [onHide, mutation, defaultModel]);
+  }, [onHide, reset, defaultModel]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
       if (!modalState) return;
 
-      mutation.mutate(
+      mutate(
         {
           selection: getSelection(modalState),
           model_id: selectedModel,
@@ -200,7 +203,7 @@ export function AiGradingModelSelectionModal({
         },
       );
     },
-    [modalState, selectedModel, mutation, onSuccess, onHide],
+    [modalState, selectedModel, mutate, onSuccess, onHide],
   );
 
   const isSelectedModelAvailable = availableProviders.includes(
@@ -231,28 +234,28 @@ export function AiGradingModelSelectionModal({
 
         <Modal.Footer>
           <div className="m-0 w-100">
-            {mutation.isError && (
-              <Alert variant="danger" className="mb-2" dismissible onClose={() => mutation.reset()}>
-                <strong>Error:</strong> {mutation.error.message}
+            {isError && (
+              <Alert variant="danger" className="mb-2" dismissible onClose={() => reset()}>
+                <strong>Error:</strong> {error.message}
               </Alert>
             )}
             <div className="d-flex align-items-center justify-content-end gap-2 mb-1">
-              <Button variant="secondary" disabled={mutation.isPending} onClick={handleClose}>
+              <Button variant="secondary" disabled={isPending} onClick={handleClose}>
                 Cancel
               </Button>
               <Button
                 variant="primary"
-                disabled={mutation.isPending || !isSelectedModelAvailable}
+                disabled={isPending || !isSelectedModelAvailable}
                 type="submit"
               >
-                {mutation.isPending
+                {isPending
                   ? 'Submitting...'
                   : modalState
                     ? `Grade ${modalState.numToGrade} ${modalState.numToGrade === 1 ? 'submission' : 'submissions'}`
                     : 'Grade submissions'}
               </Button>
             </div>
-            <small className="text-muted my-0 text-end d-block">
+            <small className="text-muted mt-2 mb-0 text-end d-block">
               AI can make mistakes. Review grades before publishing.
             </small>
           </div>

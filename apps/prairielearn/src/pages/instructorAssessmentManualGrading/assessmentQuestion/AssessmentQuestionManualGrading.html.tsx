@@ -195,7 +195,6 @@ function AssessmentQuestionManualGradingInner({
       <AiGradingModelSelectionModal
         key={lastSelectedModel ?? 'default'}
         modalState={modelSelectionModalState}
-        mutation={mutations.gradeSubmissionsMutation}
         availableProviders={availableAiGradingProviders}
         aiGradingLastSelectedModel={lastSelectedModel}
         relativeCosts={aiGradingRelativeCosts}

@@ -1,4 +1,4 @@
-import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
+import { AiGradingModelIdSchema, type EnumAiGradingProvider } from '../../../lib/db-types.js';
 
 const BASELINE_INPUT_TOKENS = 1_000;
 const BASELINE_OUTPUT_TOKENS = 500;
@@ -49,7 +49,7 @@ export const AI_GRADING_MODELS = [
     provider: 'openai',
     modelId: 'gpt-5.1-2025-11-13',
     name: 'GPT 5.1',
-    sublabel: 'Best accuracy',
+    sublabel: 'Highest accuracy',
   },
   {
     provider: 'google',
@@ -67,7 +67,7 @@ export const AI_GRADING_MODELS = [
     provider: 'google',
     modelId: 'gemini-3.1-pro-preview',
     name: 'Gemini 3.1 Pro',
-    sublabel: 'Best accuracy',
+    sublabel: 'Highest accuracy',
   },
   {
     provider: 'anthropic',
@@ -85,15 +85,13 @@ export const AI_GRADING_MODELS = [
     provider: 'anthropic',
     modelId: 'claude-opus-4-5',
     name: 'Claude Opus 4.5',
-    sublabel: 'Best accuracy',
+    sublabel: 'Highest accuracy',
   },
 ] as const;
 
-export type AiGradingModelId = (typeof AI_GRADING_MODELS)[number]['modelId'];
+export type AiGradingModelId = (typeof AiGradingModelIdSchema)['options'][number];
 
-export const AI_GRADING_MODEL_IDS: AiGradingModelId[] = AI_GRADING_MODELS.map(
-  (model) => model.modelId,
-);
+export const AI_GRADING_MODEL_IDS: AiGradingModelId[] = [...AiGradingModelIdSchema.options];
 
 export const AI_GRADING_MODEL_PROVIDERS = {
   'gpt-5-mini-2025-08-07': 'openai',
