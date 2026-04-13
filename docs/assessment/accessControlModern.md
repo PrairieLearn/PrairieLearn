@@ -105,7 +105,7 @@ Controls when the assessment is available and how credit is computed over time.
 | `allowSubmissions` | boolean | `false` | Whether students can still submit answers after all deadlines. |
 | `credit`           | number  | `0`     | Credit percentage after the last deadline.                     |
 
-After the last deadline, the assessment is considered "active" (students can start and submit) only if `allowSubmissions` is `true`. Set `credit` to a number for post-deadline credit, or omit `credit` for practice submissions with 0% credit.
+After the last deadline, students can only start or submit to the assessment if `allowSubmissions` is `true`. Set `credit` to a number for post-deadline credit, or omit `credit` for practice submissions with 0% credit.
 
 When overriding `afterLastDeadline`, `credit` may be omitted. If omitted, the default of 0% credit is used.
 
@@ -124,7 +124,7 @@ earlyDeadline (110%)    dueDate (100%)    lateDeadline (80%)
 - **Between `releaseDate` and the first deadline**: Credit is the first entry's value (the highest credit in the timeline).
 - **Between each pair of deadlines**: Credit is the later deadline's value.
 - **After the last deadline**: Credit is `afterLastDeadline.credit` (default 0%).
-- **No `dateControl` or no `releaseDate`**: The assessment is listed on the Assessments page but is not active — students cannot start it or submit answers.
+- **No `dateControl` or no `releaseDate`**: The assessment is listed on the Assessments page but students cannot start it or submit answers.
 
 ### `integrations`
 
@@ -303,7 +303,7 @@ Not all fields behave the same way during cascading:
 }
 ```
 
-Students can access the homework from Jan 15 to Feb 15 for 100% credit. After Feb 15, the assessment is no longer active (0% credit by default).
+Students can access the homework from Jan 15 to Feb 15 for 100% credit. After Feb 15, students can no longer start or submit (0% credit by default).
 
 ### Homework with early bonus and late penalty
 
@@ -705,7 +705,7 @@ Below are common legacy patterns and their modern equivalents.
     }
     ```
 
-    A `releaseDate` in the past and a `dueDate` far in the future ensures the assessment is always open with 100% credit. Without a `dateControl`, the assessment is listed but not active — students cannot start it or submit answers.
+    A `releaseDate` in the past and a `dueDate` far in the future ensures the assessment is always open with 100% credit. Without a `dateControl`, the assessment is listed but students cannot start it or submit answers.
 
 ### View-only after close
 
