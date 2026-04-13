@@ -84,7 +84,7 @@ export async function checkCourseTitleInInstitution({
   userId,
 }: {
   title: string;
-  institutionId: string | null;
+  institutionId: string;
   userId: string;
 }): Promise<CourseFieldCheck> {
   const row = await queryOptionalRow(
@@ -101,7 +101,7 @@ export async function checkCourseShortNameInInstitution({
   userId,
 }: {
   shortName: string;
-  institutionId: string | null;
+  institutionId: string;
   userId: string;
 }): Promise<CourseFieldCheck> {
   const row = await queryOptionalRow(

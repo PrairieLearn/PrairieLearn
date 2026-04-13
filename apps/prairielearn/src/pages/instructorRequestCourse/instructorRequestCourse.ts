@@ -73,9 +73,7 @@ router.get(
   typedAsyncHandler<'plain'>(async (req, res) => {
     const title = typeof req.query.title === 'string' ? req.query.title.trim() : '';
     const shortName = typeof req.query.short_name === 'string' ? req.query.short_name.trim() : '';
-    const isDefaultInstitution =
-      res.locals.authn_institution.short_name === DEFAULT_INSTITUTION_SHORT_NAME;
-    const institutionId = isDefaultInstitution ? null : res.locals.authn_institution.id;
+    const institutionId = res.locals.authn_institution.id;
     const userId = res.locals.authn_user.id;
 
     const [titleCheck, shortNameCheck] = await Promise.all([
@@ -166,10 +164,8 @@ router.post(
       error = true;
     }
 
-    // Check if a course with this title or rubric already exists. For Default institution
-    // users, skip the institution filter since their authn institution doesn't reflect
-    // their actual school.
-    const institutionId = isDefaultInstitution ? null : res.locals.authn_institution.id;
+    // Check if a course with this title or rubric already exists at the user's institution.
+    const institutionId = res.locals.authn_institution.id;
     const userId = res.locals.authn_user.id;
 
     const [titleCheck, shortNameCheck] = await Promise.all([
