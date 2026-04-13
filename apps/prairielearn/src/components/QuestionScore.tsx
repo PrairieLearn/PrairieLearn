@@ -249,7 +249,7 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
   `;
 }
 
-export function ExamQuestionStatus({
+function ExamQuestionStatus({
   instance_question,
   assessment_question,
   realTimeGradingPartiallyDisabled,
@@ -332,7 +332,7 @@ export function ExamQuestionStatus({
   `;
 }
 
-export function QuestionVariantHistory({
+function QuestionVariantHistory({
   instanceQuestionId,
   previousVariants,
   currentVariantId,
@@ -453,7 +453,7 @@ export function InstanceQuestionPoints({
   `;
 }
 
-export function ExamQuestionAvailablePoints({
+function ExamQuestionAvailablePoints({
   open,
   pointsList,
   highestSubmissionScore,

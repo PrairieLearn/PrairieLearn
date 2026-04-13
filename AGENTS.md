@@ -169,6 +169,7 @@ To test UI code looks correct, you should try to connect to the development serv
 When writing tests:
 
 - Don't add assertion messages unless they provide information that isn't obvious from reading the assertion itself (e.g., `assert.isNull(linkRecord)` is clear without a message).
+- Use precise assertions. For example, use `assert.equal(items.length, 3)`.
 - Don't use defensive checks in tests -- tests should fail fast if unexpected data exists.
 - In e2e tests, don't use CSS class selectors (e.g. `page.locator('.my-class')`). Prefer Playwright's recommended locators: `getByRole`, `getByText`, `getByTestId`, `getByLabel`. Add `data-testid` attributes or `aria-label` to page components when needed.
 - Don't add comments that narrate what the code already says (e.g., `// Click the button` before a `.click()` call). Only add comments when the intent isn't obvious from reading the code.
