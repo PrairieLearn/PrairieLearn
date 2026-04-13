@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-types.js';
 
@@ -11,17 +13,21 @@ export interface RuntimeDateControl {
   dueDate?: Date | null;
   earlyDeadlines?: { date: string; credit: number }[] | null;
   lateDeadlines?: { date: string; credit: number }[] | null;
-  afterLastDeadline?: { allowSubmissions?: boolean; credit?: number } | null;
+  afterLastDeadline?: { allowSubmissions?: boolean; credit?: number | null };
   durationMinutes?: number | null;
   password?: string | null;
 }
 
 export interface RuntimeAfterComplete {
-  hideQuestions?: boolean;
-  showQuestionsAgainDate?: Date | null;
-  hideQuestionsAgainDate?: Date | null;
-  hideScore?: boolean;
-  showScoreAgainDate?: Date | null;
+  questions?: {
+    hidden?: boolean;
+    visibleFromDate?: Date | null;
+    visibleUntilDate?: Date | null;
+  };
+  score?: {
+    hidden?: boolean;
+    visibleFromDate?: Date | null;
+  };
 }
 
 /**
@@ -142,7 +148,9 @@ function mergeDateControl(
   if (ov.dueDate !== undefined) merged.dueDate = ov.dueDate;
   if (ov.earlyDeadlines !== undefined) merged.earlyDeadlines = ov.earlyDeadlines;
   if (ov.lateDeadlines !== undefined) merged.lateDeadlines = ov.lateDeadlines;
-  if (ov.afterLastDeadline !== undefined) merged.afterLastDeadline = ov.afterLastDeadline;
+  if (ov.afterLastDeadline !== undefined) {
+    merged.afterLastDeadline = ov.afterLastDeadline;
+  }
   if (ov.durationMinutes !== undefined) merged.durationMinutes = ov.durationMinutes;
   if (ov.password !== undefined) merged.password = ov.password;
   return merged;
@@ -156,18 +164,11 @@ function mergeAfterComplete(
   if (!base) return override;
   if (!override) return { ...base };
 
-  const merged = { ...base };
-  if (override.hideQuestions !== undefined) merged.hideQuestions = override.hideQuestions;
-  if (override.showQuestionsAgainDate !== undefined) {
-    merged.showQuestionsAgainDate = override.showQuestionsAgainDate;
-  }
-  if (override.hideQuestionsAgainDate !== undefined) {
-    merged.hideQuestionsAgainDate = override.hideQuestionsAgainDate;
-  }
-  if (override.hideScore !== undefined) merged.hideScore = override.hideScore;
-  if (override.showScoreAgainDate !== undefined) {
-    merged.showScoreAgainDate = override.showScoreAgainDate;
-  }
+  const merged: RuntimeAfterComplete = {
+    questions: override.questions !== undefined ? override.questions : base.questions,
+    score: override.score !== undefined ? override.score : base.score,
+  };
+
   return merged;
 }
 
@@ -222,7 +223,6 @@ type PrairieTestOutcome =
 function computeCredit(
   dateControl: RuntimeDateControl | undefined,
   date: Date,
-  effectiveRule: RuntimeAccessControl,
   authzMode: EnumMode | null,
 ): CreditResult {
   if (!dateControl?.releaseDate) {
@@ -332,7 +332,8 @@ function computeCredit(
   // or if afterLastDeadline is not configured, use defaults.
   const afterLast = dateControl.afterLastDeadline;
   const credit = afterLast?.credit ?? 0;
-  const active = credit > 0 && afterLast?.allowSubmissions !== false;
+  assert(!afterLast || afterLast.allowSubmissions !== undefined);
+  const active = afterLast?.allowSubmissions === true;
   return {
     credit,
     active,
@@ -361,19 +362,19 @@ function computeTimeLimitMin(
 
 export function resolveVisibility(
   hide: boolean | undefined,
-  showAgainDate: Date | null | undefined,
-  hideAgainDate: Date | null | undefined,
+  visibleFromDate: Date | null | undefined,
+  visibleUntilDate: Date | null | undefined,
   date: Date,
 ): boolean {
   if (!hide) return true;
 
   let visible = false;
 
-  if (showAgainDate && date >= showAgainDate) {
+  if (visibleFromDate && date >= visibleFromDate) {
     visible = true;
   }
 
-  if (visible && hideAgainDate && date >= hideAgainDate) {
+  if (visible && visibleUntilDate && date >= visibleUntilDate) {
     visible = false;
   }
 
@@ -568,7 +569,7 @@ export function resolveAccessControl(
   }
   const effectiveRule = mergeRules(mainRuleInput.rule, cascadedOverride);
 
-  let creditResult = computeCredit(effectiveRule.dateControl, date, effectiveRule, authzMode);
+  let creditResult = computeCredit(effectiveRule.dateControl, date, authzMode);
 
   // Resolve PrairieTest access. This is separated from the main flow to keep
   // the resolver linear: it either denies early, grants PT credit overrides,
@@ -594,15 +595,15 @@ export function resolveAccessControl(
   const timeLimitMin = creditResult.timeLimitMin;
 
   const showClosedAssessment = resolveVisibility(
-    effectiveRule.afterComplete?.hideQuestions ?? true,
-    effectiveRule.afterComplete?.showQuestionsAgainDate,
-    effectiveRule.afterComplete?.hideQuestionsAgainDate,
+    effectiveRule.afterComplete?.questions?.hidden ?? true,
+    effectiveRule.afterComplete?.questions?.visibleFromDate,
+    effectiveRule.afterComplete?.questions?.visibleUntilDate,
     date,
   );
 
   const showClosedAssessmentScore = resolveVisibility(
-    effectiveRule.afterComplete?.hideScore,
-    effectiveRule.afterComplete?.showScoreAgainDate,
+    effectiveRule.afterComplete?.score?.hidden,
+    effectiveRule.afterComplete?.score?.visibleFromDate,
     undefined,
     date,
   );
