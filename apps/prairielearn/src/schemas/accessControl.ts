@@ -9,15 +9,12 @@ export const DeadlineEntryJsonSchema = z
   })
   .strict();
 
-const AfterLastDeadlineJsonSchema = z.discriminatedUnion('allowSubmissions', [
-  z.object({ allowSubmissions: z.literal(false) }).strict(),
-  z
-    .object({
-      allowSubmissions: z.literal(true),
-      credit: z.number().min(0).optional(),
-    })
-    .strict(),
-]);
+const AfterLastDeadlineJsonSchema = z
+  .object({
+    allowSubmissions: z.boolean(),
+    credit: z.number().min(0).optional(),
+  })
+  .strict();
 
 const DateControlJsonSchema = z
   .object({
@@ -34,7 +31,7 @@ const DateControlJsonSchema = z
       .optional()
       .describe('Array of late deadlines with credit as percentages'),
     afterLastDeadline: AfterLastDeadlineJsonSchema.describe(
-      'Controls for assessment behaviour after last deadline',
+      'Controls for assessment behavior after last deadline',
     ).optional(),
     durationMinutes: z
       .number()
@@ -84,40 +81,20 @@ const IntegrationsJsonSchema = z
   .optional();
 
 const AfterCompleteQuestionsJsonSchema = z
-  .union([
-    // No dates — hidden can be any value or absent.
-    z
-      .object({
-        hidden: z.boolean(),
-      })
-      .strict(),
-    // With dates — hidden must be true.
-    z
-      .object({
-        hidden: z.literal(true),
-        visibleFromDate: DatetimeLocalStringSchema,
-        visibleUntilDate: DatetimeLocalStringSchema.optional(),
-      })
-      .strict(),
-  ])
+  .object({
+    hidden: z.boolean(),
+    visibleFromDate: DatetimeLocalStringSchema.optional(),
+    visibleUntilDate: DatetimeLocalStringSchema.optional(),
+  })
+  .strict()
   .optional();
 
 const AfterCompleteScoreJsonSchema = z
-  .union([
-    // No dates — hidden can be any value.
-    z
-      .object({
-        hidden: z.boolean(),
-      })
-      .strict(),
-    // With dates — hidden must be true.
-    z
-      .object({
-        hidden: z.literal(true),
-        visibleFromDate: DatetimeLocalStringSchema,
-      })
-      .strict(),
-  ])
+  .object({
+    hidden: z.boolean(),
+    visibleFromDate: DatetimeLocalStringSchema.optional(),
+  })
+  .strict()
   .optional();
 
 const AfterCompleteJsonSchema = z

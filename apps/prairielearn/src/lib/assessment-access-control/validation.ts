@@ -524,6 +524,30 @@ export function validateRule(
     lateDates.add(d.date);
   }
 
+  if (
+    rule.dateControl?.afterLastDeadline?.allowSubmissions === false &&
+    rule.dateControl.afterLastDeadline.credit !== undefined
+  ) {
+    errors.push('afterLastDeadline.credit cannot be set when allowSubmissions is false.');
+  }
+
+  if (
+    rule.afterComplete?.questions?.hidden === false &&
+    (rule.afterComplete.questions.visibleFromDate !== undefined ||
+      rule.afterComplete.questions.visibleUntilDate !== undefined)
+  ) {
+    errors.push(
+      'afterComplete.questions cannot have visibleFromDate or visibleUntilDate when hidden is false.',
+    );
+  }
+
+  if (
+    rule.afterComplete?.score?.hidden === false &&
+    rule.afterComplete.score.visibleFromDate !== undefined
+  ) {
+    errors.push('afterComplete.score cannot have visibleFromDate when hidden is false.');
+  }
+
   errors.push(
     ...validateRuleStructuralDependencyIssues({
       rule,

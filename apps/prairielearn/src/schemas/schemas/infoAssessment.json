@@ -790,35 +790,19 @@
               ]
             },
             "afterLastDeadline": {
-              "description": "Controls for assessment behaviour after last deadline",
-              "anyOf": [
-                {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": ["allowSubmissions"],
-                  "properties": {
-                    "allowSubmissions": {
-                      "type": "boolean",
-                      "const": false
-                    }
-                  }
+              "description": "Controls for assessment behavior after last deadline",
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["allowSubmissions"],
+              "properties": {
+                "allowSubmissions": {
+                  "type": "boolean"
                 },
-                {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": ["allowSubmissions"],
-                  "properties": {
-                    "allowSubmissions": {
-                      "type": "boolean",
-                      "const": true
-                    },
-                    "credit": {
-                      "type": "number",
-                      "minimum": 0
-                    }
-                  }
+                "credit": {
+                  "type": "number",
+                  "minimum": 0
                 }
-              ]
+              }
             },
             "durationMinutes": {
               "description": "Desired duration limit for assessment",
@@ -883,63 +867,33 @@
           "additionalProperties": false,
           "properties": {
             "questions": {
-              "anyOf": [
-                {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": ["hidden"],
-                  "properties": {
-                    "hidden": {
-                      "type": "boolean"
-                    }
-                  }
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["hidden"],
+              "properties": {
+                "hidden": {
+                  "type": "boolean"
                 },
-                {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": ["hidden", "visibleFromDate"],
-                  "properties": {
-                    "hidden": {
-                      "type": "boolean",
-                      "const": true
-                    },
-                    "visibleFromDate": {
-                      "$ref": "#/definitions/DatetimeLocalStringSchema"
-                    },
-                    "visibleUntilDate": {
-                      "$ref": "#/definitions/DatetimeLocalStringSchema"
-                    }
-                  }
+                "visibleFromDate": {
+                  "$ref": "#/definitions/DatetimeLocalStringSchema"
+                },
+                "visibleUntilDate": {
+                  "$ref": "#/definitions/DatetimeLocalStringSchema"
                 }
-              ]
+              }
             },
             "score": {
-              "anyOf": [
-                {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": ["hidden"],
-                  "properties": {
-                    "hidden": {
-                      "type": "boolean"
-                    }
-                  }
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["hidden"],
+              "properties": {
+                "hidden": {
+                  "type": "boolean"
                 },
-                {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": ["hidden", "visibleFromDate"],
-                  "properties": {
-                    "hidden": {
-                      "type": "boolean",
-                      "const": true
-                    },
-                    "visibleFromDate": {
-                      "$ref": "#/definitions/DatetimeLocalStringSchema"
-                    }
-                  }
+                "visibleFromDate": {
+                  "$ref": "#/definitions/DatetimeLocalStringSchema"
                 }
-              ]
+              }
             }
           }
         }

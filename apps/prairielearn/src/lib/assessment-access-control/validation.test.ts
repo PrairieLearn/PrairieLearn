@@ -76,7 +76,7 @@ describe('Valid configs', () => {
       },
     ],
 
-    // Example 6: PrairieTest review session
+    // Example 4: PrairieTest review session
     [
       {
         integrations: {
@@ -90,7 +90,7 @@ describe('Valid configs', () => {
       },
     ],
 
-    // Example 7: Extended time override
+    // Example 5: Extended time override
     [
       {
         // Main rule (no targets)
@@ -109,7 +109,7 @@ describe('Valid configs', () => {
       },
     ],
 
-    // Example 8: Cheat sheet upload + read-only PrairieTest
+    // Example 6: Cheat sheet upload + read-only PrairieTest
     [
       {
         dateControl: {
@@ -124,7 +124,7 @@ describe('Valid configs', () => {
       },
     ],
 
-    // Example 9: Show questions between dates then re-hide
+    // Example 7: Show questions between dates then re-hide
     [
       {
         dateControl: {
@@ -141,7 +141,7 @@ describe('Valid configs', () => {
       },
     ],
 
-    // Example 10: Non-real-time grading, hide score
+    // Example 8: Non-real-time grading, hide score
     [
       {
         dateControl: {
@@ -364,7 +364,7 @@ describe('Date fields must be dates', () => {
           },
         },
       },
-      expectedPath: ['afterComplete', 'questions'],
+      expectedPath: ['afterComplete', 'questions', 'visibleFromDate'],
     },
     {
       config: {
@@ -1056,49 +1056,32 @@ describe('Duplicate detection', () => {
 });
 
 describe('afterLastDeadline validation', () => {
-  it('should reject numeric credit when allowSubmissions is false', () => {
-    assert.throws(() =>
-      AccessControlJsonSchema.parse({
-        dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
-          dueDate: '2024-03-21T23:59:00',
-          afterLastDeadline: {
-            allowSubmissions: false,
-            credit: 50,
-          },
+  it('should accept allowSubmissions false without credit', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        releaseDate: '2024-03-14T00:01:00',
+        dueDate: '2024-03-21T23:59:00',
+        afterLastDeadline: {
+          allowSubmissions: false,
         },
-      }),
-    );
+      },
+    });
+    const errors = validateRule(rule, 'none');
+    assert.deepEqual(errors, []);
   });
 
-  it('should reject zero credit when allowSubmissions is false', () => {
-    assert.throws(() =>
-      AccessControlJsonSchema.parse({
-        dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
-          dueDate: '2024-03-21T23:59:00',
-          afterLastDeadline: {
-            allowSubmissions: false,
-            credit: 0,
-          },
+  it('should accept allowSubmissions true without credit', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        releaseDate: '2024-03-14T00:01:00',
+        dueDate: '2024-03-21T23:59:00',
+        afterLastDeadline: {
+          allowSubmissions: true,
         },
-      }),
-    );
-  });
-
-  it('should reject null credit when allowSubmissions is false', () => {
-    assert.throws(() =>
-      AccessControlJsonSchema.parse({
-        dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
-          dueDate: '2024-03-21T23:59:00',
-          afterLastDeadline: {
-            allowSubmissions: false,
-            credit: null,
-          },
-        },
-      }),
-    );
+      },
+    });
+    const errors = validateRule(rule, 'none');
+    assert.deepEqual(errors, []);
   });
 
   it('should accept credit when allowSubmissions is true', () => {
@@ -1116,44 +1099,23 @@ describe('afterLastDeadline validation', () => {
     assert.deepEqual(errors, []);
   });
 
-  it('should reject credit without allowSubmissions', () => {
-    assert.throws(() =>
-      AccessControlJsonSchema.parse({
-        dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
-          dueDate: '2024-03-21T23:59:00',
-          afterLastDeadline: {
-            credit: null,
-          },
-        },
-      }),
-    );
-  });
-
-  it('should accept allowSubmissions false without credit', () => {
+  it('should reject numeric credit when allowSubmissions is false', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         releaseDate: '2024-03-14T00:01:00',
         dueDate: '2024-03-21T23:59:00',
         afterLastDeadline: {
           allowSubmissions: false,
+          credit: 50,
         },
       },
     });
     const errors = validateRule(rule, 'none');
-    assert.deepEqual(errors, []);
-  });
-
-  it('should accept omitted credit on overrides', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        afterLastDeadline: {
-          allowSubmissions: false,
-        },
-      },
-    });
-    const errors = validateRule(rule, 'student_label');
-    assert.deepEqual(errors, []);
+    assert.isTrue(
+      errors.some((e) =>
+        e.includes('afterLastDeadline.credit cannot be set when allowSubmissions is false'),
+      ),
+    );
   });
 });
 
@@ -1333,5 +1295,89 @@ describe('Structural field dependency validation', () => {
       ruleIndex: 1,
     });
     assert.isTrue(issues.some((i) => i.message.includes('Late deadlines require a due date')));
+  });
+});
+
+describe('AccessControlJsonSchema nullable override fields', () => {
+  it('accepts explicit nulls used to clear inherited override fields', () => {
+    const result = AccessControlJsonSchema.parse({
+      dateControl: {
+        releaseDate: '2024-03-14T00:01:00',
+        dueDate: null,
+        earlyDeadlines: null,
+        lateDeadlines: null,
+        afterLastDeadline: { allowSubmissions: true },
+        durationMinutes: null,
+        password: null,
+      },
+    });
+
+    assert.equal(result.dateControl?.releaseDate, '2024-03-14T00:01:00');
+    assert.deepEqual(result.dateControl?.afterLastDeadline, { allowSubmissions: true });
+    assert.isNull(result.dateControl?.durationMinutes);
+  });
+});
+
+describe('afterComplete hidden/visibility validation', () => {
+  it('rejects questions hidden: false with visibleFromDate', () => {
+    const rule = AccessControlJsonSchema.parse({
+      afterComplete: {
+        questions: {
+          hidden: false,
+          visibleFromDate: '2024-03-25T00:00:00',
+        },
+      },
+    });
+    const errors = validateRule(rule, 'none');
+    assert.isTrue(
+      errors.some((e) => e.includes('afterComplete.questions cannot have visibleFromDate')),
+    );
+  });
+
+  it('rejects questions hidden: false with visibleUntilDate', () => {
+    const rule = AccessControlJsonSchema.parse({
+      afterComplete: {
+        questions: {
+          hidden: false,
+          visibleUntilDate: '2024-03-30T00:00:00',
+        },
+      },
+    });
+    const errors = validateRule(rule, 'none');
+    assert.isTrue(
+      errors.some((e) => e.includes('afterComplete.questions cannot have visibleFromDate')),
+    );
+  });
+
+  it('accepts questions visibleUntilDate without visibleFromDate', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        releaseDate: '2024-03-14T00:01:00',
+        dueDate: '2024-03-21T23:59:00',
+      },
+      afterComplete: {
+        questions: {
+          hidden: true,
+          visibleUntilDate: '2024-03-30T00:00:00',
+        },
+      },
+    });
+    const errors = validateRule(rule, 'none');
+    assert.deepEqual(errors, []);
+  });
+
+  it('rejects score hidden: false with visibleFromDate', () => {
+    const rule = AccessControlJsonSchema.parse({
+      afterComplete: {
+        score: {
+          hidden: false,
+          visibleFromDate: '2024-03-25T00:00:00',
+        },
+      },
+    });
+    const errors = validateRule(rule, 'none');
+    assert.isTrue(
+      errors.some((e) => e.includes('afterComplete.score cannot have visibleFromDate')),
+    );
   });
 });
