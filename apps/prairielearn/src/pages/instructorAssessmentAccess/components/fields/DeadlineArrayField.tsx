@@ -122,8 +122,13 @@ function DeadlineArrayInput({
   // function once, but these constraint values change over the form's lifetime.
   const validateDate = (value: string, index: number) => {
     if (!value) return 'Date is required';
-    const deadlineDate = new Date(value);
+
     const currentDueDate = dueDateRef.current ? new Date(dueDateRef.current) : null;
+    if (!currentDueDate && !isEarly) {
+      return 'Late deadlines require a due date';
+    }
+
+    const deadlineDate = new Date(value);
     const currentReleaseDate = releaseDateRef.current ? new Date(releaseDateRef.current) : null;
     const currentDeadlines = deadlinesRef.current;
 

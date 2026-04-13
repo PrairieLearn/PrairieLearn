@@ -255,7 +255,7 @@ export function ExamQuestionStatus({
   realTimeGradingPartiallyDisabled,
   allowGradeLeftMs,
 }: {
-  instance_question: InstanceQuestion;
+  instance_question: Pick<InstanceQuestion, 'status'>;
   assessment_question: Pick<
     AssessmentQuestion,
     'max_auto_points' | 'max_manual_points' | 'allow_real_time_grading'
