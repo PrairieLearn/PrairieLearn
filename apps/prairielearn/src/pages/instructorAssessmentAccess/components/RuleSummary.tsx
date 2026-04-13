@@ -151,8 +151,8 @@ export function generateMainRuleDateTableRows(
           ? `${afterLastDeadline.credit}%`
           : 'Practice'
         : 'Closed',
-      error: (formErrors?.afterLastDeadline as FieldErrors<{ credit: number }> | undefined)
-        ?.credit?.message,
+      error: (formErrors?.afterLastDeadline as FieldErrors<{ credit: number }> | undefined)?.credit
+        ?.message,
     });
   }
 
@@ -468,8 +468,7 @@ function generateOverrideFieldItems(
     items.push({
       label: 'After last deadline',
       value: formatAfterLastDeadline(rule.afterLastDeadline),
-      error: (formErrors?.afterLastDeadline as FieldErrors<{ credit: number }> | undefined)?.credit
-        ?.message,
+      error: formErrors?.afterLastDeadline?.credit?.message,
     });
   }
 

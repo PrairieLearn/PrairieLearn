@@ -23,9 +23,10 @@ export interface DeadlineEntry {
   credit: number;
 }
 
-export type AfterLastDeadlineValue =
-  | { allowSubmissions: false }
-  | { allowSubmissions: true; credit?: number };
+export interface AfterLastDeadlineValue {
+  allowSubmissions: boolean;
+  credit?: number;
+}
 
 export interface QuestionVisibilityValue {
   hidden: boolean;
