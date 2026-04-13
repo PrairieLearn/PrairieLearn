@@ -31,8 +31,8 @@ export function StudentAccessRulesPopover({ accessRules }: { accessRules: Client
       }}
       rootClose
     >
-      <button type="button" className="btn btn-xs btn-ghost">
-        <i className="fa fa-question-circle" />
+      <button type="button" className="btn btn-xs btn-ghost" aria-label="Access details">
+        <i className="fa fa-question-circle" aria-hidden="true" />
       </button>
     </OverlayTrigger>
   );

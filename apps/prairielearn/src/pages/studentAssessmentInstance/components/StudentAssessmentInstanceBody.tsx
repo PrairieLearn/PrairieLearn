@@ -462,7 +462,7 @@ function ExamQuestionHelpPopover({ title, content }: { title: string; content: R
       }}
       rootClose
     >
-      <button type="button" className="btn btn-xs btn-ghost">
+      <button type="button" className="btn btn-xs btn-ghost" aria-label={title}>
         <i className="fa fa-question-circle" aria-hidden="true" />
       </button>
     </OverlayTrigger>

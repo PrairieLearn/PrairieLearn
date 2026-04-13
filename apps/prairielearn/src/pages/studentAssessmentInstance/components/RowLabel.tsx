@@ -57,6 +57,7 @@ export function RowLabel({
             type="button"
             className="btn btn-xs border text-secondary ms-1"
             data-testid="locked-instance-question-row"
+            data-bs-content={lockMessage}
             aria-label="Locked"
           >
             <i className="fas fa-lock" aria-hidden="true" />

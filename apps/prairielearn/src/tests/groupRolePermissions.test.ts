@@ -490,11 +490,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
 
       // Switch back to first user and assign a valid role config
       const { $: $assessmentInstanceFirstUserPage2, csrfToken: firstUserCsrfToken2 } =
-        await switchUserAndLoadAssessment(
-          studentUsers[0],
-          assessmentInstanceUrl,
-          null,
-        );
+        await switchUserAndLoadAssessment(studentUsers[0], assessmentInstanceUrl, null);
       $ = await updateGroupRoles(
         validRoleConfig,
         groupRoles,
