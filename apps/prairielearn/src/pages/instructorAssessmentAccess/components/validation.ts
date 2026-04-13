@@ -63,7 +63,17 @@ function mapIssueToFormFieldPath(
             return null;
         }
       }
-      return `${prefix}.scoreVisibility.visibleFromDate`;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (issue.path[1] === 'score') {
+        switch (issue.path[2]) {
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          case 'visibleFromDate':
+            return `${prefix}.scoreVisibility.visibleFromDate`;
+          default:
+            return null;
+        }
+      }
+      return null;
     default:
       return null;
   }

@@ -154,7 +154,9 @@ export function generateDateTableRows(
         date: '',
         label: 'After last deadline',
         credit: afterLastDeadline?.allowSubmissions
-          ? (afterLastDeadline.credit != null ? `${afterLastDeadline.credit}%` : 'Practice')
+          ? afterLastDeadline.credit != null
+            ? `${afterLastDeadline.credit}%`
+            : 'Practice'
           : 'Closed',
         error: (formErrors?.afterLastDeadline as FieldErrors<{ credit: number }> | undefined)
           ?.credit?.message,
@@ -170,7 +172,9 @@ export function generateDateTableRows(
         date: '',
         label: 'After last deadline',
         credit: afterLastDeadline?.allowSubmissions
-          ? (afterLastDeadline.credit != null ? `${afterLastDeadline.credit}%` : 'Practice')
+          ? afterLastDeadline.credit != null
+            ? `${afterLastDeadline.credit}%`
+            : 'Practice'
           : 'Closed',
         error: (formErrors?.afterLastDeadline as FieldErrors<{ credit: number }> | undefined)
           ?.credit?.message,
@@ -489,7 +493,7 @@ function generateOverrideFieldItems(
   if (overriddenFields.has('afterLastDeadline')) {
     items.push({
       label: 'After last deadline',
-      value: rule.afterLastDeadline ? formatAfterLastDeadline(rule.afterLastDeadline) : 'None',
+      value: formatAfterLastDeadline(rule.afterLastDeadline),
       error: (formErrors?.afterLastDeadline as FieldErrors<{ credit: number }> | undefined)?.credit
         ?.message,
     });

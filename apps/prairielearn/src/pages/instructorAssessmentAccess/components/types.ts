@@ -102,7 +102,7 @@ export interface OverrideData {
   dueDate: string | null;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
-  afterLastDeadline: AfterLastDeadlineValue | null;
+  afterLastDeadline: AfterLastDeadlineValue;
   durationMinutes: number | null;
   password: string | null;
   questionVisibility: QuestionVisibilityValue;
@@ -255,7 +255,7 @@ export function jsonToOverrideFormData(
     overriddenFields.push('lateDeadlines');
   }
 
-  let afterLastDeadline: AfterLastDeadlineValue | null = null;
+  let afterLastDeadline: AfterLastDeadlineValue = { allowSubmissions: false };
   if (dc?.afterLastDeadline !== undefined) {
     afterLastDeadline = dc.afterLastDeadline;
     overriddenFields.push('afterLastDeadline');
@@ -295,7 +295,7 @@ export function jsonToOverrideFormData(
   let scoreVisibility: ScoreVisibilityValue = { hidden: false };
   if (ac?.score?.hidden !== undefined) {
     scoreVisibility = {
-      hidden: ac.score.hidden ?? false,
+      hidden: ac.score.hidden,
       visibleFromDate:
         toLocalDatetimeValue(
           'visibleFromDate' in ac.score ? ac.score.visibleFromDate : undefined,
@@ -337,7 +337,9 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
     output.dateControl.dueDate = rule.dueDate;
     if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (rule.lateDeadlines.length > 0) output.dateControl.lateDeadlines = rule.lateDeadlines;
-    if (rule.afterLastDeadline) output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+    if (rule.afterLastDeadline) {
+      output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+    }
     if (rule.durationMinutes != null) output.dateControl.durationMinutes = rule.durationMinutes;
     if (rule.password) output.dateControl.password = rule.password;
   }
@@ -365,7 +367,7 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
           ? {
               hidden: true,
               visibleFromDate: qv.visibleFromDate,
-              visibleUntilDate: qv.visibleUntilDate,
+              ...(qv.visibleUntilDate && { visibleUntilDate: qv.visibleUntilDate }),
             }
           : { hidden: true }
         : { hidden: false };
@@ -405,7 +407,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
     if (of.has('dueDate')) output.dateControl.dueDate = rule.dueDate;
     if (of.has('earlyDeadlines')) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (of.has('lateDeadlines')) output.dateControl.lateDeadlines = rule.lateDeadlines;
-    if (of.has('afterLastDeadline') && rule.afterLastDeadline) {
+    if (of.has('afterLastDeadline')) {
       output.dateControl.afterLastDeadline = rule.afterLastDeadline;
     }
     if (of.has('durationMinutes')) output.dateControl.durationMinutes = rule.durationMinutes;
@@ -421,7 +423,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
           ? {
               hidden: true,
               visibleFromDate: qv.visibleFromDate,
-              visibleUntilDate: qv.visibleUntilDate,
+              ...(qv.visibleUntilDate && { visibleUntilDate: qv.visibleUntilDate }),
             }
           : { hidden: true }
         : { hidden: false };
@@ -461,7 +463,9 @@ export function createDefaultOverrideFormData(mainRule?: MainRuleData): Override
     dueDate: mainRule?.dueDate ?? null,
     earlyDeadlines: (mainRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
     lateDeadlines: (mainRule?.lateDeadlines ?? []).map((d) => ({ ...d })),
-    afterLastDeadline: mainRule?.afterLastDeadline ? { ...mainRule.afterLastDeadline } : null,
+    afterLastDeadline: mainRule?.afterLastDeadline
+      ? { ...mainRule.afterLastDeadline }
+      : { allowSubmissions: false },
     durationMinutes: mainRule?.durationMinutes ?? null,
     password: mainRule?.password ?? null,
     questionVisibility: mainRule ? { ...mainRule.questionVisibility } : { hidden: true },

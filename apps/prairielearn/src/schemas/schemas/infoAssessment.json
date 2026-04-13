@@ -918,6 +918,7 @@
                 {
                   "type": "object",
                   "additionalProperties": false,
+                  "required": ["hidden"],
                   "properties": {
                     "hidden": {
                       "type": "boolean"

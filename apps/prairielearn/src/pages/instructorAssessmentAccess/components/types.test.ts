@@ -38,7 +38,7 @@ const baseOverride: OverrideData = {
   dueDate: null,
   earlyDeadlines: [],
   lateDeadlines: [],
-  afterLastDeadline: null,
+  afterLastDeadline: { allowSubmissions: false },
   durationMinutes: null,
   password: null,
   questionVisibility: { hidden: true },
@@ -226,7 +226,7 @@ describe('formDataToJson', () => {
           dueDate: null,
           earlyDeadlines: [],
           lateDeadlines: [],
-          afterLastDeadline: null,
+          afterLastDeadline: { allowSubmissions: false },
           durationMinutes: null,
           password: null,
         },
@@ -244,7 +244,8 @@ describe('formDataToJson', () => {
     expect(dc.earlyDeadlines).toEqual([]);
     expect('lateDeadlines' in dc).toBe(true);
     expect(dc.lateDeadlines).toEqual([]);
-    expect('afterLastDeadline' in dc).toBe(false);
+    expect('afterLastDeadline' in dc).toBe(true);
+    expect(dc.afterLastDeadline).toEqual({ allowSubmissions: false });
     expect('durationMinutes' in dc).toBe(true);
     expect(dc.durationMinutes).toBeNull();
     expect('password' in dc).toBe(true);

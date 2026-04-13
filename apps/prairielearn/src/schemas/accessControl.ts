@@ -104,10 +104,10 @@ const AfterCompleteQuestionsJsonSchema = z
 
 const AfterCompleteScoreJsonSchema = z
   .union([
-    // No dates — hidden can be any value or absent.
+    // No dates — hidden can be any value.
     z
       .object({
-        hidden: z.boolean().optional(),
+        hidden: z.boolean(),
       })
       .strict(),
     // With dates — hidden must be true.
