@@ -172,6 +172,48 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'open-ended full credit (startDate, no endDate)',
+      rules: [{ credit: 100, startDate: '2024-01-01' }],
+      expected: {
+        archetype: { base: 'single-deadline', modifiers: [] },
+        result: { dateControl: { releaseDate: '2024-01-01', dueDate: null } },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'open-ended reduced credit (startDate, no endDate)',
+      rules: [{ credit: 50, startDate: '2024-01-01' }],
+      expected: {
+        archetype: { base: 'single-reduced-credit', modifiers: [] },
+        result: {},
+        errors: ['Open-ended credit windows cannot be automatically migrated.'],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'declining-credit with open-ended trailing rule',
+      rules: [
+        { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
+        { credit: 50, startDate: '2024-03-01' },
+      ],
+      expected: {
+        archetype: { base: 'declining-credit', modifiers: [] },
+        result: {
+          dateControl: {
+            releaseDate: '2024-01-01',
+            dueDate: '2024-03-01',
+            afterLastDeadline: { credit: 50 },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'afterComplete for showClosedAssessment:false',
       rules: [
         {

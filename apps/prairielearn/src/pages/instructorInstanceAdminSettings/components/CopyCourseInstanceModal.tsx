@@ -441,16 +441,18 @@ function AccessControlStep({
                     <td>
                       {a.errors.length === 0 ? (
                         a.notes.length > 0 ? (
-                          <span className="badge text-bg-warning">Migrates with caveats</span>
+                          <span className="badge text-bg-info">Migrates with notes</span>
                         ) : (
                           <span className="badge text-bg-success">Can migrate</span>
                         )
                       ) : (
-                        <span className="badge text-bg-secondary">Manual review</span>
+                        <span className="badge text-bg-warning">Manual review</span>
                       )}
                     </td>
                     <td>
-                      {a.notes.length > 0 ? (
+                      {a.errors.length > 0 ? (
+                        <small className="text-danger">{a.errors.join(' ')}</small>
+                      ) : a.notes.length > 0 ? (
                         <small className="text-muted">{a.notes.join(' ')}</small>
                       ) : (
                         <small className="text-muted">-</small>

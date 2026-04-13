@@ -331,6 +331,14 @@ function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
   const result: AccessControlJsonInput = {};
   const credit = creditRule.credit ?? 0;
 
+  if (credit > 0 && credit !== 100 && !creditRule.endDate) {
+    return {
+      result: {},
+      errors: ['Open-ended credit windows cannot be automatically migrated.'],
+      notes: [],
+    };
+  }
+
   const releaseDate = findReleaseDate(rules);
   if (creditRule.startDate || creditRule.endDate || releaseDate) {
     result.dateControl = {};
@@ -348,6 +356,9 @@ function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
     } else if (creditRule.endDate) {
       // Full credit (100%): set dueDate normally.
       result.dateControl.dueDate = creditRule.endDate;
+    } else if (credit === 100) {
+      // Full credit with no endDate: open forever from release.
+      result.dateControl.dueDate = null;
     }
   }
 
@@ -405,9 +416,22 @@ function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
   const notes: string[] = [];
   const creditRules = getCreditRules(rules);
 
-  const bonusRules = creditRules.filter((r) => (r.credit ?? 0) > 100);
-  const fullRules = creditRules.filter((r) => (r.credit ?? 0) === 100);
-  const reducedRules = creditRules.filter((r) => (r.credit ?? 0) > 0 && (r.credit ?? 0) < 100);
+  const closedCreditRules = creditRules.filter((r) => r.endDate);
+  const openEndedCreditRules = creditRules.filter((r) => !r.endDate);
+
+  if (openEndedCreditRules.length > 0 && closedCreditRules.length === 0) {
+    return {
+      result: {},
+      errors: ['Open-ended credit windows cannot be automatically migrated.'],
+      notes: [],
+    };
+  }
+
+  const bonusRules = closedCreditRules.filter((r) => (r.credit ?? 0) > 100);
+  const fullRules = closedCreditRules.filter((r) => (r.credit ?? 0) === 100);
+  const reducedRules = closedCreditRules.filter(
+    (r) => (r.credit ?? 0) > 0 && (r.credit ?? 0) < 100,
+  );
 
   // Only derive dueDate from full-credit rules. When there are no full-credit
   // rules (e.g. bonus + reduced only), omitting dueDate avoids placing deadline
@@ -436,6 +460,11 @@ function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
     const { deadlines, notes: deadlineNotes } = normalizeCreditDeadlines(reducedRules, 'late');
     notes.push(...deadlineNotes);
     if (deadlines.length > 0) result.dateControl!.lateDeadlines = deadlines;
+  }
+
+  if (openEndedCreditRules.length > 0) {
+    const maxOpenCredit = Math.max(...openEndedCreditRules.map((r) => r.credit ?? 0));
+    result.dateControl!.afterLastDeadline = { credit: maxOpenCredit };
   }
 
   applyVisibilityMigration(result, rules);
