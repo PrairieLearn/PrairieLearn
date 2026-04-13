@@ -151,8 +151,7 @@ export function generateMainRuleDateTableRows(
           ? `${afterLastDeadline.credit}%`
           : 'Practice'
         : 'Closed',
-      error: (formErrors?.afterLastDeadline as FieldErrors<{ credit: number }> | undefined)?.credit
-        ?.message,
+      error: formErrors?.afterLastDeadline?.credit?.message,
     });
   }
 
