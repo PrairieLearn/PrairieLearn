@@ -276,6 +276,8 @@ export function AiGradingModelSelectionModal({
                 </a>
               </>
             ) : hasNoCredits ? (
+              // TODO: Update to "No credits remaining. Purchase credits in the
+              // AI grading settings page." when the Stripe integration PR is merged.
               <>No credits remaining. Request for more credits to continue grading.</>
             ) : (
               <>
