@@ -146,6 +146,12 @@ export type StudentAssessmentInstance__UNSAFE = z.infer<
   typeof StudentAssessmentInstanceSchema__UNSAFE
 >;
 
+// Safe version: the caller has already redacted `points` and `score_perc` as needed.
+export const RawStudentAssessmentInstanceSchema = RawStudentAssessmentInstanceSchema__UNSAFE;
+export const StudentAssessmentInstanceSchema =
+  RawStudentAssessmentInstanceSchema.brand<'StudentAssessmentInstance'>();
+export type StudentAssessmentInstance = z.infer<typeof StudentAssessmentInstanceSchema>;
+
 /** Assessment Instance Authz Results */
 export const RawStudentAssessmentInstanceAuthzResultSchema =
   RawSprocAuthzAssessmentInstanceSchema.pick({

@@ -16,8 +16,8 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
+  RawStudentAssessmentInstanceSchema__UNSAFE,
   StudentAssessmentInstanceAuthzResultSchema,
-  StudentAssessmentInstanceSchema__UNSAFE,
   StudentAssessmentQuestionSchema,
   StudentAssessmentSchema,
   StudentAssessmentSetSchema,
@@ -39,6 +39,22 @@ import {
   type ClientGroupInfo,
   type ClientQuestionRow,
 } from './components/types.js';
+
+const StudentAssessmentInstanceDataSchema = z
+  .object({
+    assessment_instance: RawStudentAssessmentInstanceSchema__UNSAFE,
+    some_questions_allow_real_time_grading: z.boolean(),
+  })
+  .transform((data) => {
+    // When real-time grading is fully disabled and the instance is open,
+    // don't leak score data to the client — the UI only shows max_points.
+    if (!data.some_questions_allow_real_time_grading && data.assessment_instance.open) {
+      data.assessment_instance.points = null;
+      data.assessment_instance.score_perc = null;
+    }
+    return data.assessment_instance;
+  })
+  .brand('StudentAssessmentInstance');
 
 export const InstanceQuestionRowSchema = z.object({
   instance_question: StudentInstanceQuestionSchema__UNSAFE,
@@ -97,58 +113,13 @@ export function StudentAssessmentInstance({
       userCanAssignRoles?: undefined;
     }
 )) {
-  let savedAnswers = 0;
-  let suspendedSavedAnswers = 0;
-
   const someQuestionsAllowRealTimeGrading = instance_question_rows.some(
     (q) => q.assessment_question.allow_real_time_grading,
   );
-  const someQuestionsForbidRealTimeGrading = instance_question_rows.some(
-    (q) => !q.assessment_question.allow_real_time_grading,
-  );
-
-  instance_question_rows.forEach((row) => {
-    if (row.instance_question.status === 'saved') {
-      if (row.allowGradeLeftMs > 0) {
-        suspendedSavedAnswers++;
-      } else if (
-        (row.assessment_question.max_auto_points || !row.assessment_question.max_manual_points) &&
-        row.assessment_question.allow_real_time_grading
-      ) {
-        savedAnswers++;
-      }
-    }
-  });
-
-  const zoneTitleColspan = run(() => {
-    const trailingColumnsCount =
-      resLocals.assessment.type === 'Exam'
-        ? resLocals.has_auto_grading_question && someQuestionsAllowRealTimeGrading
-          ? 2
-          : resLocals.has_auto_grading_question && resLocals.has_manual_grading_question
-            ? 3
-            : 1
-        : (resLocals.has_auto_grading_question ? 2 : 0) + 1;
-
-    return resLocals.assessment.type === 'Exam'
-      ? resLocals.has_auto_grading_question &&
-        resLocals.has_manual_grading_question &&
-        someQuestionsAllowRealTimeGrading
-        ? 6
-        : 2 + trailingColumnsCount
-      : resLocals.has_auto_grading_question && resLocals.has_manual_grading_question
-        ? 6
-        : 1 + trailingColumnsCount;
-  });
 
   const userGroupRoles = groupInfo
     ? getRoleNamesForUser(groupInfo, resLocals.authz_data.user).join(', ')
     : null;
-
-  const firstUncrossedLockpointZoneNumber = instance_question_rows
-    .filter((row) => row.start_new_zone && row.zone.lockpoint && !row.lockpoint_crossed)
-    .map((row) => row.zone.number)
-    .sort((a, b) => a - b)[0];
 
   // Map access rules to client-safe type.
   const accessRules: ClientAccessRule[] = resLocals.authz_result.access_rules.map((rule) => ({
@@ -296,19 +267,11 @@ export function StudentAssessmentInstance({
         })) ?? null),
   }));
 
-  const allQuestionsAnswered = instance_question_rows.every(
-    (row) => row.instance_question.status !== 'unanswered',
-  );
   const assessment = StudentAssessmentSchema.parse(resLocals.assessment);
   const assessmentSet = StudentAssessmentSetSchema.parse(resLocals.assessment_set);
-  const assessmentInstance = run(() => {
-    const parsed = StudentAssessmentInstanceSchema__UNSAFE.parse(resLocals.assessment_instance);
-    // When real-time grading is fully disabled and the instance is open,
-    // don't leak score data to the client — the UI only shows max_points.
-    if (!someQuestionsAllowRealTimeGrading && parsed.open) {
-      return { ...parsed, points: null, score_perc: null };
-    }
-    return parsed;
+  const assessmentInstance = StudentAssessmentInstanceDataSchema.parse({
+    assessment_instance: resLocals.assessment_instance,
+    some_questions_allow_real_time_grading: someQuestionsAllowRealTimeGrading,
   });
   const authzResult = StudentAssessmentInstanceAuthzResultSchema.parse(resLocals.authz_result);
 
@@ -327,7 +290,7 @@ export function StudentAssessmentInstance({
               serverRemainingMS: resLocals.assessment_instance_remaining_ms,
               serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
               serverUpdateURL: getAssessmentInstanceTimeRemainingUrl({
-                urlPrefix: resLocals.urlPrefix,
+                courseInstanceId: resLocals.course_instance.id,
                 assessmentInstanceId: resLocals.assessment_instance.id,
               }),
               canTriggerFinish: authzResult.authorized_edit,
@@ -359,10 +322,6 @@ export function StudentAssessmentInstance({
             assessmentInstance={assessmentInstance}
             remainingMs={resLocals.assessment_instance_remaining_ms ?? null}
             authzResult={authzResult}
-            hasManualGradingQuestion={resLocals.has_manual_grading_question}
-            hasAutoGradingQuestion={resLocals.has_auto_grading_question}
-            someQuestionsAllowRealTimeGrading={someQuestionsAllowRealTimeGrading}
-            someQuestionsForbidRealTimeGrading={someQuestionsForbidRealTimeGrading}
             assessmentTextHtml={resLocals.assessment_text_templated}
             accessRules={accessRules}
             accessTimeline={accessTimeline}
@@ -371,12 +330,6 @@ export function StudentAssessmentInstance({
             groupInfo={clientGroupInfo}
             userCanAssignRoles={userCanAssignRoles ?? false}
             questionRows={questionRows}
-            savedAnswers={savedAnswers}
-            suspendedSavedAnswers={suspendedSavedAnswers}
-            zoneTitleColspan={zoneTitleColspan}
-            firstUncrossedLockpointZoneNumber={firstUncrossedLockpointZoneNumber}
-            allQuestionsAnswered={allQuestionsAnswered}
-            urlPrefix={resLocals.urlPrefix}
             csrfToken={resLocals.__csrf_token}
             userGroupRoles={userGroupRoles}
             isGroupAssessment={isGroupAssessment}

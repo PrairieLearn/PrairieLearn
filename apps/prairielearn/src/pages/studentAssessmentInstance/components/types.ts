@@ -1,7 +1,7 @@
 import {
   type StudentAssessment,
+  type StudentAssessmentInstance,
   type StudentAssessmentInstanceAuthzResult,
-  type StudentAssessmentInstance__UNSAFE,
   type StudentAssessmentSet,
 } from '../../../lib/client/safe-db-types.js';
 
@@ -56,6 +56,13 @@ export interface ClientVariantWithScore {
   id: string;
   open: boolean | null;
   maxSubmissionScore: number;
+}
+
+export interface GradingConfig {
+  hasAutoGradingQuestion: boolean;
+  hasManualGradingQuestion: boolean;
+  someQuestionsAllowRealTimeGrading: boolean;
+  someQuestionsForbidRealTimeGrading: boolean;
 }
 
 // Client-safe access rule for the popover.
@@ -114,15 +121,10 @@ export interface ClientGroupInfo {
 export interface StudentAssessmentInstanceBodyProps {
   assessment: StudentAssessment;
   assessmentSet: StudentAssessmentSet;
-  assessmentInstance: StudentAssessmentInstance__UNSAFE;
+  assessmentInstance: StudentAssessmentInstance;
   remainingMs: number | null;
 
   authzResult: StudentAssessmentInstanceAuthzResult;
-
-  hasManualGradingQuestion: boolean;
-  hasAutoGradingQuestion: boolean;
-  someQuestionsAllowRealTimeGrading: boolean;
-  someQuestionsForbidRealTimeGrading: boolean;
 
   assessmentTextHtml: string | null;
   accessRules: ClientAccessRule[];
@@ -134,13 +136,6 @@ export interface StudentAssessmentInstanceBodyProps {
 
   questionRows: ClientQuestionRow[];
 
-  savedAnswers: number;
-  suspendedSavedAnswers: number;
-  zoneTitleColspan: number;
-  firstUncrossedLockpointZoneNumber: number | undefined;
-  allQuestionsAnswered: boolean;
-
-  urlPrefix: string;
   csrfToken: string;
   userGroupRoles: string | null;
   isGroupAssessment: boolean;

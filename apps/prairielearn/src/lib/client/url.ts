@@ -147,15 +147,15 @@ export function getQuestionCreateUrl(courseInstanceId: string): string {
 }
 
 export function getInstanceQuestionUrl({
-  urlPrefix,
+  courseInstanceId,
   instanceQuestionId,
   variantId,
 }: {
-  urlPrefix: string;
+  courseInstanceId: string;
   instanceQuestionId: string;
   variantId?: string;
 }): string {
-  const base = `${urlPrefix}/instance_question/${instanceQuestionId}/`;
+  const base = `${getStudentCourseInstanceUrl(courseInstanceId)}/instance_question/${instanceQuestionId}/`;
   if (variantId) {
     return `${base}?variant_id=${variantId}`;
   }
@@ -163,13 +163,13 @@ export function getInstanceQuestionUrl({
 }
 
 export function getAssessmentInstanceTimeRemainingUrl({
-  urlPrefix,
+  courseInstanceId,
   assessmentInstanceId,
 }: {
-  urlPrefix: string;
+  courseInstanceId: string;
   assessmentInstanceId: string;
 }): string {
-  return `${urlPrefix}/assessment_instance/${assessmentInstanceId}/time_remaining`;
+  return `${getStudentCourseInstanceUrl(courseInstanceId)}/assessment_instance/${assessmentInstanceId}/time_remaining`;
 }
 
 // tRPC scope URLs

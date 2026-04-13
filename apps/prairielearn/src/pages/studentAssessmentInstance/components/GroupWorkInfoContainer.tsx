@@ -57,13 +57,15 @@ export function GroupWorkInfoContainer({
             <span id="group-member">
               <b>Group members: </b>
             </span>
-            {groupInfo.groupMembers.map((user) => (
-              <li key={user.uid}>
-                {groupConfig.hasRoles
-                  ? `${user.uid} - ${groupInfo.rolesInfo?.roleAssignments[user.uid]?.map((a) => a.roleName).join(', ') || 'No role assigned'}`
-                  : user.uid}
-              </li>
-            ))}
+            <ul className="list-unstyled mb-0">
+              {groupInfo.groupMembers.map((user) => (
+                <li key={user.uid}>
+                  {groupConfig.hasRoles
+                    ? `${user.uid} - ${groupInfo.rolesInfo?.roleAssignments[user.uid]?.map((a) => a.roleName).join(', ') || 'No role assigned'}`
+                    : user.uid}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </div>
