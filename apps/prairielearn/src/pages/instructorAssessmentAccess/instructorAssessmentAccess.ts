@@ -101,7 +101,7 @@ router.get(
       beforeJson: string;
       afterJson: string;
       errors: string[];
-      warnings: string[];
+      notes: string[];
       hasUidRules: boolean;
       isWipe: boolean;
     } | null = null;
@@ -125,7 +125,7 @@ router.get(
             beforeJson,
             afterJson,
             errors: migrationResult.errors,
-            warnings: migrationResult.warnings,
+            notes: migrationResult.notes,
             hasUidRules: migrationAnalysis.hasUidRules,
             isWipe: false,
           };
@@ -138,7 +138,7 @@ router.get(
           beforeJson,
           afterJson: '[]',
           errors: migrationAnalysis.errors,
-          warnings: migrationAnalysis.warnings,
+          notes: migrationAnalysis.notes,
           hasUidRules: migrationAnalysis.hasUidRules,
           isWipe: true,
         };

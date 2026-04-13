@@ -216,12 +216,12 @@ describe('migrateAllowAccess', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
-    const { result, errors, warnings } = migrateAllowAccess('single-deadline', rules);
+    const { result, errors, notes } = migrateAllowAccess('single-deadline', rules);
     assert.deepEqual(result, {
       dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
     });
     assert.lengthOf(errors, 0);
-    assert.lengthOf(warnings, 0);
+    assert.lengthOf(notes, 0);
   });
 
   it('migrates single-deadline-with-viewing', () => {
@@ -300,25 +300,25 @@ describe('migrateAllowAccess', () => {
 
   it('migrates no-op', () => {
     const rules: AssessmentAccessRuleJson[] = [{}];
-    const { result, errors, warnings } = migrateAllowAccess('no-op', rules);
+    const { result, errors, notes } = migrateAllowAccess('no-op', rules);
     assert.deepEqual(result, {});
     assert.lengthOf(errors, 0);
-    assert.lengthOf(warnings, 1);
+    assert.lengthOf(notes, 1);
   });
 
   it('migrates always-open', () => {
     const rules: AssessmentAccessRuleJson[] = [{ credit: 100 }];
-    const { result, errors, warnings } = migrateAllowAccess('always-open', rules);
+    const { result, errors, notes } = migrateAllowAccess('always-open', rules);
     assert.deepEqual(result, {});
     assert.lengthOf(errors, 0);
-    assert.lengthOf(warnings, 0);
+    assert.lengthOf(notes, 0);
   });
 
   it('returns a user-facing error for unclassified', () => {
     const { errors } = migrateAllowAccess('unclassified', []);
     assert.equal(
       errors[0],
-      'These access rules are not supported in the modern access control system.',
+      'This access rule configuration is not supported.',
     );
   });
 
@@ -388,14 +388,14 @@ describe('migrateAllowAccess', () => {
     });
   });
 
-  it('multi-deadline produces collapse warning', () => {
+  it('multi-deadline produces collapse note', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 100, startDate: '2024-01-01', endDate: '2024-02-01' },
       { credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
     ];
-    const { errors, warnings } = migrateAllowAccess('multi-deadline', rules);
+    const { errors, notes } = migrateAllowAccess('multi-deadline', rules);
     assert.lengthOf(errors, 0);
-    assert.match(warnings[0], /collapsed/);
+    assert.match(notes[0], /collapsed/);
   });
 
   it('declining-credit with bonus and reduced (no full) omits dueDate', () => {
@@ -403,7 +403,7 @@ describe('migrateAllowAccess', () => {
       { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
       { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
     ];
-    const { result, errors, warnings } = migrateAllowAccess('declining-credit', rules);
+    const { result, errors, notes } = migrateAllowAccess('declining-credit', rules);
     assert.deepEqual(result, {
       dateControl: {
         releaseDate: '2024-01-01',
@@ -412,7 +412,7 @@ describe('migrateAllowAccess', () => {
       },
     });
     assert.lengthOf(errors, 0);
-    assert.lengthOf(warnings, 0);
+    assert.lengthOf(notes, 0);
   });
 
   it('declining-credit with multiple bonus and reduced (no full) omits dueDate', () => {
@@ -421,7 +421,7 @@ describe('migrateAllowAccess', () => {
       { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
       { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
     ];
-    const { result, errors, warnings } = migrateAllowAccess('declining-credit', rules);
+    const { result, errors, notes } = migrateAllowAccess('declining-credit', rules);
     assert.deepEqual(result, {
       dateControl: {
         releaseDate: '2024-01-01',
@@ -433,7 +433,7 @@ describe('migrateAllowAccess', () => {
       },
     });
     assert.lengthOf(errors, 0);
-    assert.lengthOf(warnings, 0);
+    assert.lengthOf(notes, 0);
   });
 
   it('collapses dominated late deadlines so migrated credit stays monotonic', () => {
@@ -444,10 +444,10 @@ describe('migrateAllowAccess', () => {
       { credit: 80, startDate: '2024-01-01', endDate: '2024-06-01' },
       { credit: 30, startDate: '2024-01-01', endDate: '2024-04-01' },
     ];
-    const { result, errors, warnings } = migrateAllowAccess('declining-credit', rules);
+    const { result, errors, notes } = migrateAllowAccess('declining-credit', rules);
     assert.deepEqual(result.dateControl?.lateDeadlines, [{ date: '2024-06-01', credit: 80 }]);
     assert.lengthOf(errors, 0);
-    assert.match(warnings[0], /collapsed/);
+    assert.match(notes[0], /collapsed/);
     assert.deepEqual(validateRule(result, 'none'), []);
   });
 
@@ -455,7 +455,7 @@ describe('migrateAllowAccess', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
-    const { result, errors, warnings } = migrateAllowAccess('single-reduced-credit', rules);
+    const { result, errors, notes } = migrateAllowAccess('single-reduced-credit', rules);
     assert.deepEqual(result, {
       dateControl: {
         releaseDate: '2024-01-01',
@@ -463,14 +463,14 @@ describe('migrateAllowAccess', () => {
       },
     });
     assert.lengthOf(errors, 0);
-    assert.lengthOf(warnings, 0);
+    assert.lengthOf(notes, 0);
   });
 
   it('migrates single bonus credit as early deadline without dueDate', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 120, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
-    const { result, errors, warnings } = migrateAllowAccess('single-deadline', rules);
+    const { result, errors, notes } = migrateAllowAccess('single-deadline', rules);
     assert.deepEqual(result, {
       dateControl: {
         releaseDate: '2024-01-01',
@@ -478,7 +478,7 @@ describe('migrateAllowAccess', () => {
       },
     });
     assert.lengthOf(errors, 0);
-    assert.lengthOf(warnings, 0);
+    assert.lengthOf(notes, 0);
   });
 
   it('migrates multiple prairietest exams', () => {
@@ -542,9 +542,9 @@ describe('migrateAllowAccess', () => {
     assert.deepEqual(result, {});
   });
 
-  it('no-op returns warning with empty result', () => {
-    const { result, warnings } = migrateAllowAccess('no-op', [{}]);
-    assert.match(warnings[0], /No-op/);
+  it('no-op returns note with empty result', () => {
+    const { result, notes } = migrateAllowAccess('no-op', [{}]);
+    assert.match(notes[0], /No-op/);
     assert.deepEqual(result, {});
   });
 
@@ -628,7 +628,7 @@ describe('analyzeAssessmentFile', () => {
         assert.equal(result.canMigrate, true);
         assert.equal(result.hasUidRules, false);
         assert.deepEqual(result.errors, []);
-        assert.deepEqual(result.warnings, []);
+        assert.deepEqual(result.notes, []);
       },
       { unsafeCleanup: true },
     );
@@ -653,7 +653,7 @@ describe('analyzeAssessmentFile', () => {
         assert.isNotNull(result);
         assert.equal(result.canMigrate, true);
         assert.equal(result.hasUidRules, true);
-        assert(result.warnings.some((warning) => warning.includes('UID-based rules are excluded')));
+        assert(result.notes.some((note) => note.includes('UID-based rules are excluded')));
       },
       { unsafeCleanup: true },
     );
@@ -680,7 +680,7 @@ describe('analyzeAssessmentFile', () => {
         assert.deepEqual(result.archetype, { base: 'declining-credit', modifiers: [] });
         assert.equal(result.hasUidRules, true);
         assert.equal(result.canMigrate, true);
-        assert(result.warnings.some((warning) => warning.includes('UID-based rules are excluded')));
+        assert(result.notes.some((note) => note.includes('UID-based rules are excluded')));
       },
       { unsafeCleanup: true },
     );
@@ -704,13 +704,13 @@ describe('analyzeAssessmentFile', () => {
         assert.equal(result.canMigrate, false);
         assert.equal(result.hasUidRules, true);
         assert(result.errors.some((error) => error.includes('not supported')));
-        assert(result.warnings.some((warning) => warning.includes('UID-based rules are excluded')));
+        assert(result.notes.some((note) => note.includes('UID-based rules are excluded')));
       },
       { unsafeCleanup: true },
     );
   });
 
-  it('reports a specific warning for non-contiguous access windows', async () => {
+  it('reports a specific error for non-contiguous access windows', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
         const filePath = path.join(tmpDir, 'infoAssessment.json');
@@ -732,7 +732,7 @@ describe('analyzeAssessmentFile', () => {
         assert.deepEqual(result.errors, [
           'Non-contiguous access windows are not supported in the modern access control system.',
         ]);
-        assert.deepEqual(result.warnings, []);
+        assert.deepEqual(result.notes, []);
       },
       { unsafeCleanup: true },
     );
@@ -785,7 +785,7 @@ describe('analyzeAssessmentFile', () => {
         assert.isNotNull(result);
         assert.deepEqual(result.archetype, { base: 'no-op', modifiers: [] });
         assert.equal(result.canMigrate, true);
-        assert.match(result.warnings[0], /No-op access rule/);
+        assert.match(result.notes[0], /No-op access rule/);
       },
       { unsafeCleanup: true },
     );

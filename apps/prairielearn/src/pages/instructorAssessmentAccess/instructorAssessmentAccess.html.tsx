@@ -39,7 +39,7 @@ interface MigrationPreview {
   beforeJson: string;
   afterJson: string;
   errors: string[];
-  warnings: string[];
+  notes: string[];
   hasUidRules: boolean;
   isWipe: boolean;
 }
@@ -253,13 +253,13 @@ function MigrationConfirmModal({
               </div>
             `
           : ''}
-        ${migrationPreview.warnings.length > 0
+        ${migrationPreview.notes.length > 0
           ? html`
               <div class="alert alert-info">
                 <i class="bi bi-info-circle-fill"></i>
                 <strong>Migration notes:</strong>
                 <ul class="mb-0 mt-1">
-                  ${migrationPreview.warnings.map((w) => html`<li>${w}</li>`)}
+                  ${migrationPreview.notes.map((w) => html`<li>${w}</li>`)}
                 </ul>
               </div>
             `
