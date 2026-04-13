@@ -337,6 +337,34 @@ describe('migrateAllowAccess', () => {
     });
   });
 
+  it('migrates active access restriction exams with pre-release listing and later reveal', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      { endDate: '2030-01-01T00:00:00', active: false },
+      {
+        credit: 100,
+        timeLimitMin: 50,
+        startDate: '2030-01-01T00:00:01',
+        endDate: '2030-01-01T23:59:59',
+        showClosedAssessment: false,
+      },
+      { active: false, startDate: '2030-01-04T00:00:01' },
+    ];
+    const { result } = migrateAllowAccess('timed-assessment (hides-closed)', rules);
+    assert.deepEqual(result, {
+      listBeforeRelease: true,
+      dateControl: {
+        releaseDate: '2030-01-01T00:00:01',
+        dueDate: '2030-01-01T23:59:59',
+        durationMinutes: 50,
+      },
+      afterComplete: {
+        hideQuestions: true,
+        showQuestionsAgainDate: '2030-01-04T00:00:01',
+      },
+    });
+    assert.deepEqual(validateRule(result, 'none'), []);
+  });
+
   it('ignores UID rules during migration', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
@@ -1157,5 +1185,45 @@ describe('migrateAssessmentJson fallback release date', () => {
     assert.isNotNull(result);
     const parsed = JSON.parse(result.json);
     assert.isUndefined(parsed.accessControl[0].dateControl?.releaseDate);
+  });
+
+  it('preserves active access restriction semantics during migration', () => {
+    const json = JSON.stringify({
+      type: 'Exam',
+      allowAccess: [
+        {
+          endDate: '2030-01-01T00:00:00',
+          active: false,
+        },
+        {
+          credit: 100,
+          timeLimitMin: 50,
+          startDate: '2030-01-01T00:00:01',
+          endDate: '2030-01-01T23:59:59',
+          showClosedAssessment: false,
+        },
+        {
+          active: false,
+          startDate: '2030-01-04T00:00:01',
+        },
+      ],
+    });
+    const result = migrateAssessmentJson(json);
+    assert.isNotNull(result);
+    const parsed = JSON.parse(result.json);
+    assert.deepEqual(parsed.accessControl, [
+      {
+        listBeforeRelease: true,
+        dateControl: {
+          releaseDate: '2030-01-01T00:00:01',
+          dueDate: '2030-01-01T23:59:59',
+          durationMinutes: 50,
+        },
+        afterComplete: {
+          hideQuestions: true,
+          showQuestionsAgainDate: '2030-01-04T00:00:01',
+        },
+      },
+    ]);
   });
 });

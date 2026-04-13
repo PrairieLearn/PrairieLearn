@@ -66,10 +66,29 @@ function getVisibilityRules(rules: AssessmentAccessRuleJson[]): AssessmentAccess
   return rules.filter((r) => (r.active ?? true) === false && !r.examUuid && !r.password);
 }
 
+function findFirstCreditStartDate(rules: AssessmentAccessRuleJson[]): string | undefined {
+  const startDates = getCreditRules(rules)
+    .map((r) => r.startDate)
+    .filter(Boolean)
+    .sort() as string[];
+  return startDates[0];
+}
+
+function findLastCreditEndDate(rules: AssessmentAccessRuleJson[]): string | undefined {
+  const endDates = getCreditRules(rules)
+    .map((r) => r.endDate)
+    .filter(Boolean)
+    .sort() as string[];
+  return endDates[endDates.length - 1];
+}
+
 function findReleaseDate(rules: AssessmentAccessRuleJson[]): string | undefined {
+  const firstCreditStartDate = findFirstCreditStartDate(rules);
   const visibilityDates = getVisibilityRules(rules)
     .map((r) => r.startDate)
-    .filter(Boolean) as string[];
+    .filter(
+      (date): date is string => !!date && (!firstCreditStartDate || date <= firstCreditStartDate),
+    );
   if (visibilityDates.length > 0) return visibilityDates.sort()[0];
 
   const creditDates = getCreditRules(rules)
@@ -98,7 +117,42 @@ function buildAfterComplete(
   const result: AccessControlJsonInput['afterComplete'] = {};
   if (hidesAssessment) result.hideQuestions = true;
   if (hidesScore) result.hideScore = true;
+
+  const lastCreditEndDate = findLastCreditEndDate(rules);
+  if (lastCreditEndDate) {
+    const revealDates = getVisibilityRules(rules)
+      .map((r) => r.startDate)
+      .filter((date): date is string => !!date && date > lastCreditEndDate)
+      .sort();
+    const revealDate = revealDates[0];
+    if (hidesAssessment && revealDate) result.showQuestionsAgainDate = revealDate;
+    if (hidesScore && revealDate) result.showScoreAgainDate = revealDate;
+  }
+
   return result;
+}
+
+function shouldListBeforeRelease(rules: AssessmentAccessRuleJson[]): boolean {
+  const firstCreditStartDate = findFirstCreditStartDate(rules);
+  if (!firstCreditStartDate) return false;
+
+  return getVisibilityRules(rules).some((rule) => {
+    if (rule.showClosedAssessment === false || rule.showClosedAssessmentScore === false) {
+      return false;
+    }
+    if (!rule.endDate || rule.endDate > firstCreditStartDate) return false;
+    if (rule.startDate && rule.startDate > firstCreditStartDate) return false;
+    return true;
+  });
+}
+
+function applyVisibilityMigration(
+  result: AccessControlJsonInput,
+  rules: AssessmentAccessRuleJson[],
+): void {
+  const afterComplete = buildAfterComplete(rules);
+  if (afterComplete) result.afterComplete = afterComplete;
+  if (shouldListBeforeRelease(rules)) result.listBeforeRelease = true;
 }
 
 interface RuleAnalysis {
@@ -295,8 +349,7 @@ function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
     }
   }
 
-  const afterComplete = buildAfterComplete(rules);
-  if (afterComplete) result.afterComplete = afterComplete;
+  applyVisibilityMigration(result, rules);
 
   return { result, warnings };
 }
@@ -389,8 +442,7 @@ function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
     if (deadlines.length > 0) result.dateControl!.lateDeadlines = deadlines;
   }
 
-  const afterComplete = buildAfterComplete(rules);
-  if (afterComplete) result.afterComplete = afterComplete;
+  applyVisibilityMigration(result, rules);
 
   return { result, warnings };
 }
@@ -425,8 +477,7 @@ function migratePrairieTestExam(rules: AssessmentAccessRuleJson[]): {
     };
   }
 
-  const afterComplete = buildAfterComplete(rules);
-  if (afterComplete) result.afterComplete = afterComplete;
+  applyVisibilityMigration(result, rules);
 
   return { result, warnings };
 }
@@ -484,8 +535,7 @@ function migrateMultiDeadline(rules: AssessmentAccessRuleJson[]): {
   if (releaseDate) result.dateControl!.releaseDate = releaseDate;
   if (dueDate) result.dateControl!.dueDate = dueDate;
 
-  const afterComplete = buildAfterComplete(rules);
-  if (afterComplete) result.afterComplete = afterComplete;
+  applyVisibilityMigration(result, rules);
 
   return { result, warnings };
 }
@@ -510,8 +560,7 @@ function migratePasswordGated(rules: AssessmentAccessRuleJson[]): {
   if (passwordRule.startDate) result.dateControl!.releaseDate = passwordRule.startDate;
   if (passwordRule.endDate) result.dateControl!.dueDate = passwordRule.endDate;
 
-  const afterComplete = buildAfterComplete(rules);
-  if (afterComplete) result.afterComplete = afterComplete;
+  applyVisibilityMigration(result, rules);
 
   return { result, warnings };
 }
