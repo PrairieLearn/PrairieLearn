@@ -17,31 +17,37 @@ import {
 import { validateRule } from './validation.js';
 
 describe('classifyArchetype', () => {
-  const cases: { name: string; rules: AssessmentAccessRuleJson[]; expected: string }[] = [
-    { name: 'empty rules', rules: [], expected: 'no-op' },
-    { name: 'no-op rules', rules: [{}], expected: 'no-op' },
+  const archetype = (base: string, modifiers: string[] = []) => ({ base, modifiers });
+
+  const cases: {
+    name: string;
+    rules: AssessmentAccessRuleJson[];
+    expected: { base: string; modifiers: string[] };
+  }[] = [
+    { name: 'empty rules', rules: [], expected: archetype('no-op') },
+    { name: 'no-op rules', rules: [{}], expected: archetype('no-op') },
     {
       name: 'prairietest-exam',
       rules: [
         { examUuid: 'abc-123', mode: 'Exam', credit: 100 },
         { startDate: '2024-01-01', active: false },
       ],
-      expected: 'prairietest-exam',
+      expected: archetype('prairietest-exam'),
     },
     {
       name: 'password-gated',
       rules: [{ password: 'secret', credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
-      expected: 'password-gated',
+      expected: archetype('password-gated'),
     },
     {
       name: 'timed-assessment',
       rules: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01', timeLimitMin: 60 }],
-      expected: 'timed-assessment',
+      expected: archetype('timed-assessment'),
     },
     {
       name: 'single-deadline',
       rules: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
-      expected: 'single-deadline',
+      expected: archetype('single-deadline'),
     },
     {
       name: 'single-deadline-with-viewing',
@@ -49,7 +55,7 @@ describe('classifyArchetype', () => {
         { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
         { startDate: '2024-01-01', active: false },
       ],
-      expected: 'single-deadline-with-viewing',
+      expected: archetype('single-deadline-with-viewing'),
     },
     {
       name: 'declining-credit',
@@ -57,7 +63,7 @@ describe('classifyArchetype', () => {
         { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
         { credit: 50, startDate: '2024-03-01', endDate: '2024-06-01' },
       ],
-      expected: 'declining-credit',
+      expected: archetype('declining-credit'),
     },
     {
       name: 'multi-deadline (contiguous)',
@@ -65,7 +71,7 @@ describe('classifyArchetype', () => {
         { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
         { credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
       ],
-      expected: 'multi-deadline',
+      expected: archetype('multi-deadline'),
     },
     {
       name: 'multi-deadline with gap (unsupported)',
@@ -73,7 +79,7 @@ describe('classifyArchetype', () => {
         { credit: 100, startDate: '2024-01-01', endDate: '2024-02-01' },
         { credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
       ],
-      expected: 'unclassified',
+      expected: archetype('unclassified'),
     },
     {
       name: 'half-open gap (endDate then startDate with gap)',
@@ -81,7 +87,7 @@ describe('classifyArchetype', () => {
         { credit: 100, endDate: '2024-02-01' },
         { credit: 100, startDate: '2024-03-01' },
       ],
-      expected: 'unclassified',
+      expected: archetype('unclassified'),
     },
     {
       name: 'half-open contiguous (endDate meets startDate)',
@@ -89,23 +95,23 @@ describe('classifyArchetype', () => {
         { credit: 100, endDate: '2024-02-01' },
         { credit: 100, startDate: '2024-02-01' },
       ],
-      expected: 'multi-deadline',
+      expected: archetype('multi-deadline'),
     },
     {
       name: 'single full-credit without dates',
       rules: [{ credit: 100 }],
-      expected: 'single-deadline',
+      expected: archetype('single-deadline'),
     },
     {
       name: 'view-only',
       rules: [{ startDate: '2024-01-01', active: false }],
-      expected: 'view-only',
+      expected: archetype('view-only'),
     },
-    { name: 'hidden', rules: [{ active: false }], expected: 'hidden' },
+    { name: 'hidden', rules: [{ active: false }], expected: archetype('hidden') },
     {
       name: 'single-deadline with mode-gated',
       rules: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01', mode: 'Exam' }],
-      expected: 'single-deadline (mode-gated)',
+      expected: archetype('single-deadline', ['mode-gated']),
     },
     {
       name: 'single-deadline with hides-closed',
@@ -117,12 +123,12 @@ describe('classifyArchetype', () => {
           showClosedAssessment: false,
         },
       ],
-      expected: 'single-deadline (hides-closed)',
+      expected: archetype('single-deadline', ['hides-closed']),
     },
     {
       name: 'single-reduced-credit',
       rules: [{ credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' }],
-      expected: 'single-reduced-credit',
+      expected: archetype('single-reduced-credit'),
     },
     {
       name: 'ignores UID rules, classifies remainder',
@@ -130,12 +136,12 @@ describe('classifyArchetype', () => {
         { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
         { uids: ['user@example.com'], credit: 100, endDate: '2024-07-01' },
       ],
-      expected: 'single-deadline',
+      expected: archetype('single-deadline'),
     },
     {
       name: 'all-UID rules',
       rules: [{ uids: ['user@example.com'], credit: 100, endDate: '2024-06-01' }],
-      expected: 'no-op',
+      expected: archetype('no-op'),
     },
     {
       name: 'UID rules mixed with declining-credit',
@@ -144,9 +150,9 @@ describe('classifyArchetype', () => {
         { credit: 50, startDate: '2024-03-01', endDate: '2024-06-01' },
         { uids: ['user@example.com'], credit: 100 },
       ],
-      expected: 'declining-credit',
+      expected: archetype('declining-credit'),
     },
-    { name: 'mode-only rule', rules: [{ mode: 'Exam' }], expected: 'mode-gated' },
+    { name: 'mode-only rule', rules: [{ mode: 'Exam' }], expected: archetype('mode-gated') },
     {
       name: 'combined mode-gated and hides-closed',
       rules: [
@@ -158,7 +164,7 @@ describe('classifyArchetype', () => {
           showClosedAssessment: false,
         },
       ],
-      expected: 'single-deadline (mode-gated, hides-closed)',
+      expected: archetype('single-deadline', ['mode-gated', 'hides-closed']),
     },
     {
       name: 'hides-score modifier',
@@ -170,7 +176,7 @@ describe('classifyArchetype', () => {
           showClosedAssessmentScore: false,
         },
       ],
-      expected: 'single-deadline (hides-score)',
+      expected: archetype('single-deadline', ['hides-score']),
     },
     {
       name: 'declining-credit with bonus and reduced',
@@ -178,7 +184,7 @@ describe('classifyArchetype', () => {
         { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
         { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
       ],
-      expected: 'declining-credit',
+      expected: archetype('declining-credit'),
     },
     {
       name: 'timed-assessment with mode-gated',
@@ -191,17 +197,17 @@ describe('classifyArchetype', () => {
           mode: 'Exam',
         },
       ],
-      expected: 'timed-assessment (mode-gated)',
+      expected: archetype('timed-assessment', ['mode-gated']),
     },
     {
       name: 'single bonus credit',
       rules: [{ credit: 120, startDate: '2024-01-01', endDate: '2024-06-01' }],
-      expected: 'single-deadline',
+      expected: archetype('single-deadline'),
     },
   ];
 
   it.each(cases)('classifies $name as $expected', ({ rules, expected }) => {
-    assert.equal(classifyArchetype(rules), expected);
+    assert.deepEqual(classifyArchetype(rules), expected);
   });
 });
 
@@ -210,10 +216,11 @@ describe('migrateAllowAccess', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
-    const { result, warnings } = migrateAllowAccess('single-deadline', rules);
+    const { result, errors, warnings } = migrateAllowAccess('single-deadline', rules);
     assert.deepEqual(result, {
       dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
     });
+    assert.lengthOf(errors, 0);
     assert.lengthOf(warnings, 0);
   });
 
@@ -293,23 +300,25 @@ describe('migrateAllowAccess', () => {
 
   it('migrates no-op', () => {
     const rules: AssessmentAccessRuleJson[] = [{}];
-    const { result, warnings } = migrateAllowAccess('no-op', rules);
+    const { result, errors, warnings } = migrateAllowAccess('no-op', rules);
     assert.deepEqual(result, {});
+    assert.lengthOf(errors, 0);
     assert.lengthOf(warnings, 1);
   });
 
   it('migrates always-open', () => {
     const rules: AssessmentAccessRuleJson[] = [{ credit: 100 }];
-    const { result, warnings } = migrateAllowAccess('always-open', rules);
+    const { result, errors, warnings } = migrateAllowAccess('always-open', rules);
     assert.deepEqual(result, {});
+    assert.lengthOf(errors, 0);
     assert.lengthOf(warnings, 0);
   });
 
-  it('returns a user-facing warning for unclassified', () => {
-    const { warnings } = migrateAllowAccess('unclassified', []);
+  it('returns a user-facing error for unclassified', () => {
+    const { errors } = migrateAllowAccess('unclassified', []);
     assert.equal(
-      warnings[0],
-      'Cannot migrate automatically: these access rules are not supported in the modern access control system.',
+      errors[0],
+      'These access rules are not supported in the modern access control system.',
     );
   });
 
@@ -384,7 +393,8 @@ describe('migrateAllowAccess', () => {
       { credit: 100, startDate: '2024-01-01', endDate: '2024-02-01' },
       { credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
     ];
-    const { warnings } = migrateAllowAccess('multi-deadline', rules);
+    const { errors, warnings } = migrateAllowAccess('multi-deadline', rules);
+    assert.lengthOf(errors, 0);
     assert.match(warnings[0], /collapsed/);
   });
 
@@ -393,7 +403,7 @@ describe('migrateAllowAccess', () => {
       { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
       { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
     ];
-    const { result, warnings } = migrateAllowAccess('declining-credit', rules);
+    const { result, errors, warnings } = migrateAllowAccess('declining-credit', rules);
     assert.deepEqual(result, {
       dateControl: {
         releaseDate: '2024-01-01',
@@ -401,6 +411,7 @@ describe('migrateAllowAccess', () => {
         lateDeadlines: [{ date: '2024-06-01', credit: 50 }],
       },
     });
+    assert.lengthOf(errors, 0);
     assert.lengthOf(warnings, 0);
   });
 
@@ -410,7 +421,7 @@ describe('migrateAllowAccess', () => {
       { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
       { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
     ];
-    const { result, warnings } = migrateAllowAccess('declining-credit', rules);
+    const { result, errors, warnings } = migrateAllowAccess('declining-credit', rules);
     assert.deepEqual(result, {
       dateControl: {
         releaseDate: '2024-01-01',
@@ -421,6 +432,7 @@ describe('migrateAllowAccess', () => {
         lateDeadlines: [{ date: '2024-06-01', credit: 50 }],
       },
     });
+    assert.lengthOf(errors, 0);
     assert.lengthOf(warnings, 0);
   });
 
@@ -432,8 +444,9 @@ describe('migrateAllowAccess', () => {
       { credit: 80, startDate: '2024-01-01', endDate: '2024-06-01' },
       { credit: 30, startDate: '2024-01-01', endDate: '2024-04-01' },
     ];
-    const { result, warnings } = migrateAllowAccess('declining-credit', rules);
+    const { result, errors, warnings } = migrateAllowAccess('declining-credit', rules);
     assert.deepEqual(result.dateControl?.lateDeadlines, [{ date: '2024-06-01', credit: 80 }]);
+    assert.lengthOf(errors, 0);
     assert.match(warnings[0], /collapsed/);
     assert.deepEqual(validateRule(result, 'none'), []);
   });
@@ -442,13 +455,14 @@ describe('migrateAllowAccess', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
-    const { result, warnings } = migrateAllowAccess('single-reduced-credit', rules);
+    const { result, errors, warnings } = migrateAllowAccess('single-reduced-credit', rules);
     assert.deepEqual(result, {
       dateControl: {
         releaseDate: '2024-01-01',
         lateDeadlines: [{ date: '2024-06-01', credit: 50 }],
       },
     });
+    assert.lengthOf(errors, 0);
     assert.lengthOf(warnings, 0);
   });
 
@@ -456,13 +470,14 @@ describe('migrateAllowAccess', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 120, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
-    const { result, warnings } = migrateAllowAccess('single-deadline', rules);
+    const { result, errors, warnings } = migrateAllowAccess('single-deadline', rules);
     assert.deepEqual(result, {
       dateControl: {
         releaseDate: '2024-01-01',
         earlyDeadlines: [{ date: '2024-06-01', credit: 120 }],
       },
     });
+    assert.lengthOf(errors, 0);
     assert.lengthOf(warnings, 0);
   });
 
@@ -521,9 +536,9 @@ describe('migrateAllowAccess', () => {
     });
   });
 
-  it('returns unsupported warning for unknown archetype', () => {
-    const { result, warnings } = migrateAllowAccess('some-future-thing', []);
-    assert.match(warnings[0], /Unsupported/);
+  it('returns unsupported error for unknown archetype', () => {
+    const { result, errors } = migrateAllowAccess('some-future-thing', []);
+    assert.match(errors[0], /Unsupported/);
     assert.deepEqual(result, {});
   });
 
@@ -533,31 +548,31 @@ describe('migrateAllowAccess', () => {
     assert.deepEqual(result, {});
   });
 
-  it('declining-credit with no credit rules returns warning', () => {
+  it('declining-credit with no credit rules returns error', () => {
     const rules: AssessmentAccessRuleJson[] = [{ startDate: '2024-01-01' }];
-    const { result, warnings } = migrateAllowAccess('declining-credit', rules);
-    assert.match(warnings[0], /No credit rules found/);
+    const { result, errors } = migrateAllowAccess('declining-credit', rules);
+    assert.match(errors[0], /No credit rules found/);
     assert.deepEqual(result, {});
   });
 
-  it('single-deadline with no credit rule returns warning', () => {
+  it('single-deadline with no credit rule returns error', () => {
     const rules: AssessmentAccessRuleJson[] = [{ startDate: '2024-01-01' }];
-    const { result, warnings } = migrateAllowAccess('single-deadline', rules);
-    assert.match(warnings[0], /No credit rule found/);
+    const { result, errors } = migrateAllowAccess('single-deadline', rules);
+    assert.match(errors[0], /No credit rule found/);
     assert.deepEqual(result, {});
   });
 
-  it('prairietest-exam with no examUuid returns warning', () => {
+  it('prairietest-exam with no examUuid returns error', () => {
     const rules: AssessmentAccessRuleJson[] = [{ credit: 100 }];
-    const { result, warnings } = migrateAllowAccess('prairietest-exam', rules);
-    assert.match(warnings[0], /No examUuid rule found/);
+    const { result, errors } = migrateAllowAccess('prairietest-exam', rules);
+    assert.match(errors[0], /No examUuid rule found/);
     assert.deepEqual(result, {});
   });
 
-  it('password-gated with no password returns warning', () => {
+  it('password-gated with no password returns error', () => {
     const rules: AssessmentAccessRuleJson[] = [{ credit: 100 }];
-    const { result, warnings } = migrateAllowAccess('password-gated', rules);
-    assert.match(warnings[0], /No password rule found/);
+    const { result, errors } = migrateAllowAccess('password-gated', rules);
+    assert.match(errors[0], /No password rule found/);
     assert.deepEqual(result, {});
   });
 });
@@ -609,9 +624,10 @@ describe('analyzeAssessmentFile', () => {
         const result = await analyzeAssessmentFile(filePath, 'hw01');
         assert.isNotNull(result);
         assert.equal(result.tid, 'hw01');
-        assert.equal(result.archetype, 'single-deadline');
+        assert.deepEqual(result.archetype, { base: 'single-deadline', modifiers: [] });
         assert.equal(result.canMigrate, true);
         assert.equal(result.hasUidRules, false);
+        assert.deepEqual(result.errors, []);
         assert.deepEqual(result.warnings, []);
       },
       { unsafeCleanup: true },
@@ -661,7 +677,7 @@ describe('analyzeAssessmentFile', () => {
         );
         const result = await analyzeAssessmentFile(filePath, 'e01');
         assert.isNotNull(result);
-        assert.equal(result.archetype, 'declining-credit');
+        assert.deepEqual(result.archetype, { base: 'declining-credit', modifiers: [] });
         assert.equal(result.hasUidRules, true);
         assert.equal(result.canMigrate, true);
         assert(result.warnings.some((warning) => warning.includes('UID-based rules are excluded')));
@@ -684,9 +700,10 @@ describe('analyzeAssessmentFile', () => {
         );
         const result = await analyzeAssessmentFile(filePath, 'e01');
         assert.isNotNull(result);
-        assert.equal(result.archetype, 'unclassified');
+        assert.deepEqual(result.archetype, { base: 'unclassified', modifiers: [] });
         assert.equal(result.canMigrate, false);
         assert.equal(result.hasUidRules, true);
+        assert(result.errors.some((error) => error.includes('not supported')));
         assert(result.warnings.some((warning) => warning.includes('UID-based rules are excluded')));
       },
       { unsafeCleanup: true },
@@ -710,11 +727,12 @@ describe('analyzeAssessmentFile', () => {
         );
         const result = await analyzeAssessmentFile(filePath, 'hw-gap');
         assert.isNotNull(result);
-        assert.equal(result.archetype, 'unclassified');
+        assert.deepEqual(result.archetype, { base: 'unclassified', modifiers: [] });
         assert.equal(result.canMigrate, false);
-        assert.deepEqual(result.warnings, [
-          'Cannot migrate automatically: non-contiguous access windows are not supported in the modern access control system.',
+        assert.deepEqual(result.errors, [
+          'Non-contiguous access windows are not supported in the modern access control system.',
         ]);
+        assert.deepEqual(result.warnings, []);
       },
       { unsafeCleanup: true },
     );
@@ -765,7 +783,7 @@ describe('analyzeAssessmentFile', () => {
         );
         const result = await analyzeAssessmentFile(filePath, 'hw01');
         assert.isNotNull(result);
-        assert.equal(result.archetype, 'no-op');
+        assert.deepEqual(result.archetype, { base: 'no-op', modifiers: [] });
         assert.equal(result.canMigrate, true);
         assert.match(result.warnings[0], /No-op access rule/);
       },

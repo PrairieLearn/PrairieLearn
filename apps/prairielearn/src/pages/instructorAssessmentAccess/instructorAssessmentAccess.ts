@@ -100,6 +100,7 @@ router.get(
     let migrationPreview: {
       beforeJson: string;
       afterJson: string;
+      errors: string[];
       warnings: string[];
       hasUidRules: boolean;
       isWipe: boolean;
@@ -123,6 +124,7 @@ router.get(
           migrationPreview = {
             beforeJson,
             afterJson,
+            errors: migrationResult.errors,
             warnings: migrationResult.warnings,
             hasUidRules: migrationAnalysis.hasUidRules,
             isWipe: false,
@@ -135,6 +137,7 @@ router.get(
         migrationPreview = {
           beforeJson,
           afterJson: '[]',
+          errors: migrationAnalysis.errors,
           warnings: migrationAnalysis.warnings,
           hasUidRules: migrationAnalysis.hasUidRules,
           isWipe: true,

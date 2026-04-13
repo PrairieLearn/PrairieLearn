@@ -38,6 +38,7 @@ type AssessmentAccessRules = z.infer<typeof AssessmentAccessRulesSchema>;
 interface MigrationPreview {
   beforeJson: string;
   afterJson: string;
+  errors: string[];
   warnings: string[];
   hasUidRules: boolean;
   isWipe: boolean;
@@ -242,38 +243,27 @@ function MigrationConfirmModal({
               </div>
             `
           : ''}
-        ${(() => {
-          const dataLossWarnings = migrationPreview.warnings.filter(
-            (w) => w.includes('lost during migration') || w.includes('collapsed'),
-          );
-          const infoWarnings = migrationPreview.warnings.filter(
-            (w) => !w.includes('lost during migration') && !w.includes('collapsed'),
-          );
-          return html`
-            ${dataLossWarnings.length > 0
-              ? html`
-                  <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                    <strong>Data loss:</strong>
-                    <ul class="mb-0 mt-1">
-                      ${dataLossWarnings.map((w) => html`<li>${w}</li>`)}
-                    </ul>
-                  </div>
-                `
-              : ''}
-            ${infoWarnings.length > 0
-              ? html`
-                  <div class="alert alert-info">
-                    <i class="bi bi-info-circle-fill"></i>
-                    <strong>Migration notes:</strong>
-                    <ul class="mb-0 mt-1">
-                      ${infoWarnings.map((w) => html`<li>${w}</li>`)}
-                    </ul>
-                  </div>
-                `
-              : ''}
-          `;
-        })()}
+        ${migrationPreview.errors.length > 0
+          ? html`
+              <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <ul class="mb-0 mt-1">
+                  ${migrationPreview.errors.map((e) => html`<li>${e}</li>`)}
+                </ul>
+              </div>
+            `
+          : ''}
+        ${migrationPreview.warnings.length > 0
+          ? html`
+              <div class="alert alert-info">
+                <i class="bi bi-info-circle-fill"></i>
+                <strong>Migration notes:</strong>
+                <ul class="mb-0 mt-1">
+                  ${migrationPreview.warnings.map((w) => html`<li>${w}</li>`)}
+                </ul>
+              </div>
+            `
+          : ''}
         <p>
           See the
           <a
