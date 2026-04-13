@@ -121,10 +121,8 @@ function prepareRuleRow(
     date_control_password_overridden: passwordField.overridden,
     date_control_password: passwordField.value,
     after_complete_questions_hidden: questionsHiddenField.value,
-    after_complete_questions_visible_from_date:
-      afterComplete.questions?.visibleFromDate ?? null,
-    after_complete_questions_visible_until_date:
-      afterComplete.questions?.visibleUntilDate ?? null,
+    after_complete_questions_visible_from_date: afterComplete.questions?.visibleFromDate ?? null,
+    after_complete_questions_visible_until_date: afterComplete.questions?.visibleUntilDate ?? null,
     after_complete_score_hidden: scoreHiddenField.value,
     after_complete_score_visible_from_date: afterComplete.score?.visibleFromDate ?? null,
   });
