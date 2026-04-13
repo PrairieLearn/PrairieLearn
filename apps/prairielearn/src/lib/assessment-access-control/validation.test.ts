@@ -195,7 +195,9 @@ describe('Main rule requirement', () => {
 
     assert.isTrue(result.errors.length > 0, 'Expected error when no main rule exists');
     assert.isTrue(
-      result.errors.some((err) => err.includes('No defaults found')),
+      result.errors.includes(
+        'No defaults found. The first element of accessControl must apply to everyone.',
+      ),
       `Expected "No defaults found" error, but got: ${result.errors.join(', ')}`,
     );
   });
@@ -223,7 +225,9 @@ describe('Main rule requirement', () => {
 
     assert.isTrue(result.errors.length > 0, 'Expected error when multiple main rules exist');
     assert.isTrue(
-      result.errors.some((err) => err.includes('Found 2 defaults entries')),
+      result.errors.includes(
+        'Found 2 defaults entries. Only one element of accessControl should apply to everyone.',
+      ),
       `Expected "Found 2 defaults entries" error, but got: ${result.errors.join(', ')}`,
     );
   });
@@ -270,7 +274,9 @@ describe('Main rule requirement', () => {
     });
 
     assert.isTrue(
-      result.errors.some((err) => err.includes('listBeforeRelease can only be specified')),
+      result.errors.includes(
+        'listBeforeRelease can only be specified on the defaults.',
+      ),
       `Expected listBeforeRelease validation error, but got: ${result.errors.join(', ')}`,
     );
   });
@@ -408,7 +414,7 @@ describe('Date ordering validation', () => {
       config: {
         dateControl: { releaseDate: '2024-03-25T00:00:00', dueDate: '2024-03-20T00:00:00' },
       },
-      errorMatch: 'Release date must be before due date',
+      errorMatch: 'Release date must be before due date.',
     },
     {
       label: 'early deadline after due date',
@@ -418,7 +424,7 @@ describe('Date ordering validation', () => {
           earlyDeadlines: [{ date: '2024-03-25T00:00:00', credit: 120 }],
         },
       },
-      errorMatch: 'must be on or before the due date',
+      errorMatch: 'Early deadline date 2024-03-25T00:00:00 must be on or before the due date.',
     },
     {
       label: 'early deadline before release date',
@@ -428,7 +434,7 @@ describe('Date ordering validation', () => {
           earlyDeadlines: [{ date: '2024-03-19T00:00:00', credit: 120 }],
         },
       },
-      errorMatch: 'must be after the release date',
+      errorMatch: 'Early deadline date 2024-03-19T00:00:00 must be after the release date.',
     },
     {
       label: 'late deadline before due date',
@@ -438,7 +444,7 @@ describe('Date ordering validation', () => {
           lateDeadlines: [{ date: '2024-03-18T00:00:00', credit: 80 }],
         },
       },
-      errorMatch: 'must be on or after the due date',
+      errorMatch: 'Late deadline date 2024-03-18T00:00:00 must be on or after the due date.',
     },
     {
       label: 'late deadline before release date',
@@ -448,7 +454,7 @@ describe('Date ordering validation', () => {
           lateDeadlines: [{ date: '2024-03-19T00:00:00', credit: 80 }],
         },
       },
-      errorMatch: 'must be after the release date',
+      errorMatch: 'Late deadline date 2024-03-19T00:00:00 must be after the release date.',
     },
     {
       label: 'out-of-order early deadlines',
@@ -460,7 +466,7 @@ describe('Date ordering validation', () => {
           ],
         },
       },
-      errorMatch: 'chronological order',
+      errorMatch: 'Early deadlines must be in chronological order.',
     },
     {
       label: 'out-of-order late deadlines',
@@ -472,7 +478,7 @@ describe('Date ordering validation', () => {
           ],
         },
       },
-      errorMatch: 'chronological order',
+      errorMatch: 'Late deadlines must be in chronological order.',
     },
     {
       label: 'showQuestionsAgainDate after hideQuestionsAgainDate',
@@ -482,7 +488,7 @@ describe('Date ordering validation', () => {
           hideQuestionsAgainDate: '2024-03-25T00:00:00',
         },
       },
-      errorMatch: 'showQuestionsAgainDate must be before',
+      errorMatch: 'showQuestionsAgainDate must be before hideQuestionsAgainDate.',
     },
     {
       label: 'showQuestionsAgainDate before last late deadline',
@@ -493,7 +499,7 @@ describe('Date ordering validation', () => {
         },
         afterComplete: { hideQuestions: true, showQuestionsAgainDate: '2024-03-23T00:00:00' },
       },
-      errorMatch: 'Show questions again date must be after the last deadline',
+      errorMatch: 'Show questions again date must be after the last deadline.',
     },
     {
       label: 'showQuestionsAgainDate before due date (no late deadlines)',
@@ -501,7 +507,7 @@ describe('Date ordering validation', () => {
         dateControl: { dueDate: '2024-03-20T00:00:00' },
         afterComplete: { hideQuestions: true, showQuestionsAgainDate: '2024-03-19T00:00:00' },
       },
-      errorMatch: 'Show questions again date must be after the last deadline',
+      errorMatch: 'Show questions again date must be after the last deadline.',
     },
     {
       label: 'showScoreAgainDate before last deadline',
@@ -512,12 +518,12 @@ describe('Date ordering validation', () => {
         },
         afterComplete: { hideScore: true, showScoreAgainDate: '2024-03-22T00:00:00' },
       },
-      errorMatch: 'Show score again date must be after the last deadline',
+      errorMatch: 'Show score again date must be after the last deadline.',
     },
   ])('rejects $label', ({ config, errorMatch }) => {
     const rule = AccessControlJsonSchema.parse(config);
     const errors = validateRuleDateOrdering(rule);
-    assert.isTrue(errors.some((e) => e.includes(errorMatch)));
+    assert.isTrue(errors.includes(errorMatch));
   });
 
   it.each([
@@ -590,12 +596,12 @@ describe('Credit monotonicity validation', () => {
     {
       label: 'early deadline credit at 80% (below 101%)',
       config: { dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 80 }] } },
-      errorMatch: 'between 101% and 200%',
+      errorMatch: 'Early deadline credit must be between 101% and 200%, got 80%.',
     },
     {
       label: 'early deadline credit at 100% (below 101%)',
       config: { dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 100 }] } },
-      errorMatch: 'between 101% and 200%',
+      errorMatch: 'Early deadline credit must be between 101% and 200%, got 100%.',
     },
     {
       label: 'increasing early deadline credits',
@@ -607,12 +613,12 @@ describe('Credit monotonicity validation', () => {
           ],
         },
       },
-      errorMatch: 'monotonically decreasing',
+      errorMatch: 'Early deadline credits must be monotonically decreasing.',
     },
     {
       label: 'late deadline credit at 100% (above 99%)',
       config: { dateControl: { lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 100 }] } },
-      errorMatch: 'between 0% and 99%',
+      errorMatch: 'Late deadline credit must be between 0% and 99%, got 100%.',
     },
     {
       label: 'increasing late deadline credits',
@@ -624,7 +630,7 @@ describe('Credit monotonicity validation', () => {
           ],
         },
       },
-      errorMatch: 'monotonically decreasing',
+      errorMatch: 'Late deadline credits must be monotonically decreasing.',
     },
     {
       label: 'afterLastDeadline credit exceeding last late deadline',
@@ -638,7 +644,8 @@ describe('Credit monotonicity validation', () => {
           afterLastDeadline: { allowSubmissions: true, credit: 60 },
         },
       },
-      errorMatch: 'must not exceed',
+      errorMatch:
+        "After-last-deadline credit (60%) must not exceed the preceding deadline's credit (50%).",
     },
     {
       label: 'afterLastDeadline credit exceeding 100 when no late deadlines',
@@ -648,12 +655,13 @@ describe('Credit monotonicity validation', () => {
           afterLastDeadline: { allowSubmissions: true, credit: 110 },
         },
       },
-      errorMatch: 'must not exceed',
+      errorMatch:
+        "After-last-deadline credit (110%) must not exceed the preceding deadline's credit (100%).",
     },
   ])('rejects $label', ({ config, errorMatch }) => {
     const rule = AccessControlJsonSchema.parse(config);
     const errors = validateRuleCreditMonotonicity(rule);
-    assert.isTrue(errors.some((e) => e.includes(errorMatch)));
+    assert.isTrue(errors.includes(errorMatch));
   });
 
   it.each([
@@ -733,7 +741,11 @@ describe('Empty accessControl array', () => {
       ],
     });
 
-    assert.isTrue(result.errors.some((error) => error.includes('No defaults found')));
+    assert.isTrue(
+      result.errors.includes(
+        'No defaults found. The first element of accessControl must apply to everyone.',
+      ),
+    );
   });
 });
 
@@ -778,7 +790,12 @@ describe('Global temporal validation', () => {
           JSON.stringify(['dateControl', 'earlyDeadlines', 0, 'date']),
       ),
     );
-    assert.isTrue(issues.some((issue) => issue.message.includes('earliest possible release date')));
+    assert.isTrue(
+      issues.some(
+        (issue) =>
+          issue.message === 'Early deadline must be after the earliest possible release date.',
+      ),
+    );
   });
 
   it('skips due-based global checks when a due date can be unset', () => {
@@ -873,7 +890,10 @@ describe('Global temporal validation', () => {
     ]);
 
     assert.isTrue(
-      issues.some((issue) => issue.message.includes('on or before the latest possible due date')),
+      issues.some(
+        (issue) =>
+          issue.message === 'Early deadline must be on or before the latest possible due date.',
+      ),
     );
   });
 });
@@ -894,7 +914,11 @@ describe('Duplicate detection', () => {
       },
     });
     const errors = validateRule(rule, 'none');
-    assert.isTrue(errors.some((e) => e.includes('Duplicate PrairieTest exam UUID')));
+    assert.isTrue(
+      errors.includes(
+        'Duplicate PrairieTest exam UUID: 11111111-1111-1111-1111-111111111111.',
+      ),
+    );
   });
 
   it('should accept unique PrairieTest exam UUIDs', () => {
@@ -928,7 +952,7 @@ describe('Duplicate detection', () => {
           ],
         },
       },
-      errorMatch: 'Duplicate early deadline date',
+      errorMatch: 'Duplicate early deadline date: 2024-03-17T23:59:00.',
     },
     {
       label: 'late deadline dates',
@@ -942,11 +966,11 @@ describe('Duplicate detection', () => {
           ],
         },
       },
-      errorMatch: 'Duplicate late deadline date',
+      errorMatch: 'Duplicate late deadline date: 2024-03-25T23:59:00.',
     },
   ])('rejects duplicate $label', ({ config, errorMatch }) => {
     const rule = AccessControlJsonSchema.parse(config);
-    assert.isTrue(validateRule(rule, 'none').some((e) => e.includes(errorMatch)));
+    assert.isTrue(validateRule(rule, 'none').includes(errorMatch));
   });
 
   it('should surface duplicate errors through validateAccessControlRules', () => {
@@ -963,7 +987,9 @@ describe('Duplicate detection', () => {
       }),
     ];
     const result = validateAccessControlRules({ rules });
-    assert.isTrue(result.errors.some((e) => e.includes('Duplicate early deadline date')));
+    assert.isTrue(
+      result.errors.includes('Duplicate early deadline date: 2024-03-17T23:59:00.'),
+    );
   });
 });
 
@@ -993,7 +1019,7 @@ describe('Structural field dependency validation', () => {
       targetType: 'none',
       ruleIndex: 0,
     });
-    assert.isTrue(issues.some((i) => i.message.includes('Late deadlines require a due date')));
+    assert.isTrue(issues.some((i) => i.message === 'Late deadlines require a due date.'));
   });
 
   it('should reject after-complete dates without any deadline', () => {
@@ -1013,14 +1039,16 @@ describe('Structural field dependency validation', () => {
     assert.isTrue(
       issues.some(
         (i) =>
-          i.message.includes('require at least one deadline') &&
+          i.message ===
+            'After-complete dates require at least one deadline (due date or late deadline).' &&
           JSON.stringify(i.path) === JSON.stringify(['afterComplete', 'showQuestionsAgainDate']),
       ),
     );
     assert.isTrue(
       issues.some(
         (i) =>
-          i.message.includes('require at least one deadline') &&
+          i.message ===
+            'After-complete dates require at least one deadline (due date or late deadline).' &&
           JSON.stringify(i.path) === JSON.stringify(['afterComplete', 'showScoreAgainDate']),
       ),
     );
@@ -1067,7 +1095,7 @@ describe('Structural field dependency validation', () => {
       }),
     ];
     const result = validateAccessControlRules({ rules });
-    assert.isTrue(result.errors.some((e) => e.includes('Late deadlines require a due date')));
+    assert.isTrue(result.errors.includes('Late deadlines require a due date.'));
   });
 
   it('should allow overrides to inherit due date from main rule', () => {
@@ -1098,6 +1126,6 @@ describe('Structural field dependency validation', () => {
       targetType: 'student_label',
       ruleIndex: 1,
     });
-    assert.isTrue(issues.some((i) => i.message.includes('Late deadlines require a due date')));
+    assert.isTrue(issues.some((i) => i.message === 'Late deadlines require a due date.'));
   });
 });
