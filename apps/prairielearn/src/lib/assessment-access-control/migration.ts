@@ -316,10 +316,12 @@ export function classifyArchetype(rules: AssessmentAccessRuleJson[]): Archetype 
     return { base, modifiers };
   }
   if (hasFullCredit && creditRules.length > 1) return { base: 'multi-deadline', modifiers };
-  if (hasReducedCredit && creditRules.length === 1) return { base: 'single-reduced-credit', modifiers };
+  if (hasReducedCredit && creditRules.length === 1)
+    return { base: 'single-reduced-credit', modifiers };
   if (hasOpenCredit) return { base: 'always-open', modifiers };
   if (hasViewing && creditRules.length === 0) return { base: 'view-only', modifiers };
-  if (hasHiding && creditRules.length === 0 && !hasViewing) return { base: 'hidden', modifiers: [] };
+  if (hasHiding && creditRules.length === 0 && !hasViewing)
+    return { base: 'hidden', modifiers: [] };
   if (hasModeGate && creditRules.length === 0) return { base: 'mode-gated', modifiers: [] };
   return { base: 'unclassified', modifiers: [] };
 }

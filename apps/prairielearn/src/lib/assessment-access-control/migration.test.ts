@@ -216,7 +216,10 @@ describe('migrateAllowAccess', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
-    const { result, errors, notes } = migrateAllowAccess({ base: 'single-deadline', modifiers: [] }, rules);
+    const { result, errors, notes } = migrateAllowAccess(
+      { base: 'single-deadline', modifiers: [] },
+      rules,
+    );
     assert.deepEqual(result, {
       dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
     });
@@ -229,7 +232,10 @@ describe('migrateAllowAccess', () => {
       { credit: 100, startDate: '2024-02-01', endDate: '2024-06-01' },
       { startDate: '2024-01-01', active: false },
     ];
-    const { result } = migrateAllowAccess({ base: 'single-deadline-with-viewing', modifiers: [] }, rules);
+    const { result } = migrateAllowAccess(
+      { base: 'single-deadline-with-viewing', modifiers: [] },
+      rules,
+    );
     assert.deepEqual(result, {
       dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
     });
@@ -308,7 +314,10 @@ describe('migrateAllowAccess', () => {
 
   it('migrates always-open', () => {
     const rules: AssessmentAccessRuleJson[] = [{ credit: 100 }];
-    const { result, errors, notes } = migrateAllowAccess({ base: 'always-open', modifiers: [] }, rules);
+    const { result, errors, notes } = migrateAllowAccess(
+      { base: 'always-open', modifiers: [] },
+      rules,
+    );
     assert.deepEqual(result, {});
     assert.lengthOf(errors, 0);
     assert.lengthOf(notes, 0);
@@ -358,7 +367,10 @@ describe('migrateAllowAccess', () => {
       },
       { active: false, startDate: '2030-01-04T00:00:01' },
     ];
-    const { result } = migrateAllowAccess({ base: 'timed-assessment', modifiers: ['hides-closed'] }, rules);
+    const { result } = migrateAllowAccess(
+      { base: 'timed-assessment', modifiers: ['hides-closed'] },
+      rules,
+    );
     assert.deepEqual(result, {
       listBeforeRelease: true,
       dateControl: {
@@ -400,7 +412,10 @@ describe('migrateAllowAccess', () => {
       { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
       { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
     ];
-    const { result, errors, notes } = migrateAllowAccess({ base: 'declining-credit', modifiers: [] }, rules);
+    const { result, errors, notes } = migrateAllowAccess(
+      { base: 'declining-credit', modifiers: [] },
+      rules,
+    );
     assert.deepEqual(result, {
       dateControl: {
         releaseDate: '2024-01-01',
@@ -418,7 +433,10 @@ describe('migrateAllowAccess', () => {
       { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
       { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
     ];
-    const { result, errors, notes } = migrateAllowAccess({ base: 'declining-credit', modifiers: [] }, rules);
+    const { result, errors, notes } = migrateAllowAccess(
+      { base: 'declining-credit', modifiers: [] },
+      rules,
+    );
     assert.deepEqual(result, {
       dateControl: {
         releaseDate: '2024-01-01',
@@ -441,7 +459,10 @@ describe('migrateAllowAccess', () => {
       { credit: 80, startDate: '2024-01-01', endDate: '2024-06-01' },
       { credit: 30, startDate: '2024-01-01', endDate: '2024-04-01' },
     ];
-    const { result, errors, notes } = migrateAllowAccess({ base: 'declining-credit', modifiers: [] }, rules);
+    const { result, errors, notes } = migrateAllowAccess(
+      { base: 'declining-credit', modifiers: [] },
+      rules,
+    );
     assert.deepEqual(result.dateControl?.lateDeadlines, [{ date: '2024-06-01', credit: 80 }]);
     assert.lengthOf(errors, 0);
     assert.match(notes[0], /collapsed/);
@@ -452,7 +473,10 @@ describe('migrateAllowAccess', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
-    const { result, errors, notes } = migrateAllowAccess({ base: 'single-reduced-credit', modifiers: [] }, rules);
+    const { result, errors, notes } = migrateAllowAccess(
+      { base: 'single-reduced-credit', modifiers: [] },
+      rules,
+    );
     assert.deepEqual(result, {
       dateControl: {
         releaseDate: '2024-01-01',
@@ -467,7 +491,10 @@ describe('migrateAllowAccess', () => {
     const rules: AssessmentAccessRuleJson[] = [
       { credit: 120, startDate: '2024-01-01', endDate: '2024-06-01' },
     ];
-    const { result, errors, notes } = migrateAllowAccess({ base: 'single-deadline', modifiers: [] }, rules);
+    const { result, errors, notes } = migrateAllowAccess(
+      { base: 'single-deadline', modifiers: [] },
+      rules,
+    );
     assert.deepEqual(result, {
       dateControl: {
         releaseDate: '2024-01-01',
@@ -518,7 +545,10 @@ describe('migrateAllowAccess', () => {
         showClosedAssessment: false,
       },
     ];
-    const { result } = migrateAllowAccess({ base: 'single-deadline', modifiers: ['mode-gated', 'hides-closed'] }, rules);
+    const { result } = migrateAllowAccess(
+      { base: 'single-deadline', modifiers: ['mode-gated', 'hides-closed'] },
+      rules,
+    );
     assert.deepEqual(result, {
       dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
       afterComplete: { hideQuestions: true },
@@ -541,21 +571,30 @@ describe('migrateAllowAccess', () => {
 
   it('declining-credit with no credit rules returns error', () => {
     const rules: AssessmentAccessRuleJson[] = [{ startDate: '2024-01-01' }];
-    const { result, errors } = migrateAllowAccess({ base: 'declining-credit', modifiers: [] }, rules);
+    const { result, errors } = migrateAllowAccess(
+      { base: 'declining-credit', modifiers: [] },
+      rules,
+    );
     assert.match(errors[0], /No credit rules found/);
     assert.deepEqual(result, {});
   });
 
   it('single-deadline with no credit rule returns error', () => {
     const rules: AssessmentAccessRuleJson[] = [{ startDate: '2024-01-01' }];
-    const { result, errors } = migrateAllowAccess({ base: 'single-deadline', modifiers: [] }, rules);
+    const { result, errors } = migrateAllowAccess(
+      { base: 'single-deadline', modifiers: [] },
+      rules,
+    );
     assert.match(errors[0], /No credit rule found/);
     assert.deepEqual(result, {});
   });
 
   it('prairietest-exam with no examUuid returns error', () => {
     const rules: AssessmentAccessRuleJson[] = [{ credit: 100 }];
-    const { result, errors } = migrateAllowAccess({ base: 'prairietest-exam', modifiers: [] }, rules);
+    const { result, errors } = migrateAllowAccess(
+      { base: 'prairietest-exam', modifiers: [] },
+      rules,
+    );
     assert.match(errors[0], /No examUuid rule found/);
     assert.deepEqual(result, {});
   });
