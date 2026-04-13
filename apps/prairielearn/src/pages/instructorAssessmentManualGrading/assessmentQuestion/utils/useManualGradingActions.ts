@@ -24,10 +24,6 @@ export function useManualGradingActions() {
     trpc.manualGrading.aiGroupInstanceQuestions.mutationOptions(),
   );
 
-  const gradeSubmissionsMutation = useMutation(
-    trpc.manualGrading.aiGradeInstanceQuestions.mutationOptions(),
-  );
-
   const setAssignedGraderMutation = useMutation({
     ...trpc.manualGrading.setAssignedGrader.mutationOptions(),
     onSuccess: () => {
@@ -50,7 +46,6 @@ export function useManualGradingActions() {
     deleteAiGradingJobsMutation,
     deleteAiGroupingsMutation,
     groupSubmissionMutation,
-    gradeSubmissionsMutation,
     setAssignedGraderMutation,
     setRequiresManualGradingMutation,
     setAiGradingModeMutation,

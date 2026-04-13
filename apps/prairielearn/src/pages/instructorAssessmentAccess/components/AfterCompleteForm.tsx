@@ -94,6 +94,7 @@ function QuestionVisibilityInput({
   onChange,
   idPrefix,
   hasPrairieTest = false,
+  hasCompletionMechanism = true,
   showAgainDateError,
   hideAgainDateError,
   displayTimezone,
@@ -102,6 +103,7 @@ function QuestionVisibilityInput({
   onChange: (value: QuestionVisibilityValue) => void;
   idPrefix: string;
   hasPrairieTest?: boolean;
+  hasCompletionMechanism?: boolean;
   showAgainDateError?: string;
   hideAgainDateError?: string;
   displayTimezone: string;
@@ -250,7 +252,7 @@ function QuestionVisibilityInput({
           connected. Students may be able to view exam content when their assessment is closed.
         </Alert>
       )}
-      {!hasPrairieTest && hideQuestionsMode !== 'show_questions' && (
+      {!hasPrairieTest && hasCompletionMechanism && hideQuestionsMode !== 'show_questions' && (
         <Alert variant="info" className="mt-2 mb-0">
           If this is not an exam, consider setting question visibility to "Show questions after
           completion" so students can review their work.
@@ -462,6 +464,7 @@ export function MainAfterCompleteForm({
           value={qvField.value}
           idPrefix="mainRule"
           hasPrairieTest={hasPrairieTest}
+          hasCompletionMechanism={hasCompletionMechanism}
           showAgainDateError={qvShowAgainDateError}
           hideAgainDateError={hideAgainDateError}
           displayTimezone={displayTimezone}
