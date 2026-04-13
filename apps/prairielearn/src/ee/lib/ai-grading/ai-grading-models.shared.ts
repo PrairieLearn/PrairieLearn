@@ -125,12 +125,6 @@ export const AI_GRADING_PROVIDER_DISPLAY_NAMES: Record<EnumAiGradingProvider, st
   anthropic: 'Anthropic',
 };
 
-export const AI_GRADING_PROVIDER_SUBLABELS: Record<EnumAiGradingProvider, string> = {
-  openai: 'General grading',
-  google: 'Images and multimodal',
-  anthropic: 'Code and reasoning',
-};
-
 export const AI_GRADING_PROVIDER_OPTIONS = AI_GRADING_PROVIDERS.map((provider) => ({
   value: provider,
   label: AI_GRADING_PROVIDER_DISPLAY_NAMES[provider],
