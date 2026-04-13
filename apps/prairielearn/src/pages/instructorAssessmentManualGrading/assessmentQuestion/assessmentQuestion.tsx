@@ -9,6 +9,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
+import { computeAiGradingRelativeCosts } from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import {
   calculateAiGradingStats,
   fillInstanceQuestionColumnEntries,
@@ -53,10 +54,6 @@ router.get(
       }),
     );
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
-      'ai-grading-model-selection',
-      res.locals,
-    );
 
     const rubric_data = await manualGrading.selectRubricData({
       assessment_question: res.locals.assessment_question,
@@ -134,6 +131,10 @@ router.get(
       ? await getAvailableAiGradingProviders(course_instance)
       : [];
 
+    const aiGradingRelativeCosts = aiGradingEnabled
+      ? computeAiGradingRelativeCosts(config.costPerMillionTokens)
+      : {};
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -169,7 +170,6 @@ router.get(
                 assessmentQuestion={assessment_question}
                 questionQid={question.qid!}
                 aiGradingEnabled={aiGradingEnabled}
-                aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
                 initialAiGradingMode={
                   aiGradingEnabled &&
                   assessment_question.ai_grading_mode &&
@@ -189,6 +189,7 @@ router.get(
                 questionTitle={question.title ?? ''}
                 questionNumber={Number(number_in_alternative_group)}
                 availableAiGradingProviders={availableAiGradingProviders}
+                aiGradingRelativeCosts={aiGradingRelativeCosts}
               />
             </Hydrate>
           </>

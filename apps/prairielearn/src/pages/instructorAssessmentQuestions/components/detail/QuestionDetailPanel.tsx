@@ -222,7 +222,6 @@ export function QuestionDetailPanel({
   // not update until user interaction with mode: 'onChange'.
   useEffect(() => {
     void trigger().then((valid) => {
-      // TODO: you can easily click off the item and save the form to bypass this validation.
       onFormValidChange(valid);
     });
   }, [trigger, onFormValidChange]);
@@ -572,6 +571,7 @@ export function QuestionDetailPanel({
         variant="question"
         editMode={editMode}
         inheritance={advancedInheritance}
+        assessmentType={assessmentType}
       />
 
       {/* Action buttons */}

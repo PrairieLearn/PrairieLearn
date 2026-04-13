@@ -830,6 +830,8 @@ function AssessmentEditorInner({
         return 'Cannot save: one or more zones have configuration errors';
       case 'altPool':
         return 'Cannot save: one or more alternative pools have configuration errors';
+      case 'questionPoints':
+        return 'Cannot save: one or more questions have no points configured';
       default:
         return undefined;
     }
