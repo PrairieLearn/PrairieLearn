@@ -4,12 +4,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import { StudentLabelSchema } from '../../lib/db-types.js';
-import {
-  type AccessControlJson,
-  MAX_ACCESS_CONTROL_RULES,
-  validateRuleCreditMonotonicity,
-  validateRuleDateOrdering,
-} from '../../schemas/accessControl.js';
+import type { AccessControlJson } from '../../schemas/accessControl.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -32,63 +27,8 @@ const JSON_RULE_START = 0;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Validates a single access control rule. Checks duplicates, date ordering,
- * credit monotonicity, and target-type constraints (e.g. integrations and
- * listBeforeRelease are only valid on the main rule).
- *
- * @param rule The access control rule to validate.
- * @param targetType 'none' for the main rule, 'student_label' or 'enrollment' for overrides.
- */
-export function validateRule(
-  rule: AccessControlJson,
-  targetType: 'none' | 'student_label' | 'enrollment',
-): string | null {
-  if (targetType !== 'none') {
-    if (rule.listBeforeRelease !== undefined) {
-      return 'listBeforeRelease can only be specified on the defaults.';
-    }
-    if (rule.integrations != null) {
-      return 'integrations can only be specified on the defaults.';
-    }
-  }
-
-  const exams = rule.integrations?.prairieTest?.exams ?? [];
-  const seenUuids = new Set<string>();
-  for (const e of exams) {
-    if (seenUuids.has(e.examUuid)) {
-      return `Duplicate PrairieTest exam UUID: ${e.examUuid}.`;
-    }
-    seenUuids.add(e.examUuid);
-  }
-
-  const earlyDates = new Set<string>();
-  for (const d of rule.dateControl?.earlyDeadlines ?? []) {
-    if (earlyDates.has(d.date)) {
-      return `Duplicate early deadline date: ${d.date}.`;
-    }
-    earlyDates.add(d.date);
-  }
-
-  const lateDates = new Set<string>();
-  for (const d of rule.dateControl?.lateDeadlines ?? []) {
-    if (lateDates.has(d.date)) {
-      return `Duplicate late deadline date: ${d.date}.`;
-    }
-    lateDates.add(d.date);
-  }
-
-  const dateErrors = validateRuleDateOrdering(rule);
-  if (dateErrors.length > 0) return dateErrors[0];
-
-  const creditErrors = validateRuleCreditMonotonicity(rule);
-  if (creditErrors.length > 0) return creditErrors[0];
-
-  return null;
-}
-
-/**
- * Validates and prepares rules for a single assessment. Returns an error
- * string if validation fails, or null if the rules are valid.
+ * Validates constraints that require database state: student label existence
+ * and PrairieTest exam UUID existence.
  */
 function validateAssessmentRules(
   rules: AccessControlJson[],
@@ -97,43 +37,16 @@ function validateAssessmentRules(
 ): string | null {
   if (rules.length === 0) return null;
 
-  if (rules.length > MAX_ACCESS_CONTROL_RULES) {
-    return `Too many access control rules: ${rules.length}. Maximum allowed is ${MAX_ACCESS_CONTROL_RULES}.`;
-  }
-
-  // Keep label validation here even though course-db validates it earlier.
-  // If the course instance config is invalid, course-db skips label existence
-  // checks to avoid cascading errors, and student label syncing is skipped.
-  // We still need to reject labels missing from the database here so that
-  // label-targeted rules are not silently treated as main rules.
-  for (const [index, rule] of rules.entries()) {
+  // When the course instance config is invalid, student label syncing is
+  // skipped, so labels that appear valid in JSON may not exist in the DB.
+  // Reject them here to prevent label-targeted rules from being silently
+  // treated as main rules.
+  for (const rule of rules) {
     const ruleLabels = rule.labels ?? [];
-    const seenLabels = new Set<string>();
-    const duplicateLabels = new Set<string>();
-
-    for (const label of ruleLabels) {
-      if (seenLabels.has(label)) {
-        duplicateLabels.add(label);
-      } else {
-        seenLabels.add(label);
-      }
-    }
-
-    if (duplicateLabels.size > 0) {
-      return (
-        `Duplicate student label(s): ${[...duplicateLabels].join(', ')}. ` +
-        'Each label can only be targeted once per access control rule.'
-      );
-    }
-
-    const invalidLabels = [...seenLabels].filter((label) => !studentLabelIdByName.has(label));
+    const invalidLabels = ruleLabels.filter((label) => !studentLabelIdByName.has(label));
     if (invalidLabels.length > 0) {
       return `Invalid student label(s): ${invalidLabels.join(', ')}.`;
     }
-
-    const targetType = index === 0 ? 'none' : 'student_label';
-    const ruleError = validateRule(rule, targetType);
-    if (ruleError) return ruleError;
   }
 
   const assessmentInvalidUuids: string[] = [];
@@ -172,7 +85,6 @@ function prepareRuleRow(
   const isMainRule = ruleNumber === JSON_RULE_START;
 
   const listBeforeRelease = mapField(rule.listBeforeRelease);
-  const releaseDateField = mapField(dateControl.releaseDate);
   const dueDateField = mapField(dateControl.dueDate);
   const earlyDeadlinesField = mapField(dateControl.earlyDeadlines);
   const lateDeadlinesField = mapField(dateControl.lateDeadlines);
@@ -200,8 +112,7 @@ function prepareRuleRow(
     // listBeforeRelease is only configurable on the main rule.
     list_before_release: isMainRule ? (listBeforeRelease.value ?? false) : null,
     target_type: targetType,
-    date_control_release_date_overridden: releaseDateField.overridden,
-    date_control_release_date: releaseDateField.value,
+    date_control_release_date: dateControl.releaseDate ?? null,
     date_control_due_date_overridden: dueDateField.overridden,
     date_control_due_date: dueDateField.value,
     date_control_early_deadlines_overridden: earlyDeadlinesField.overridden,
