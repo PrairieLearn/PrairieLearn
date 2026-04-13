@@ -8,7 +8,7 @@ import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
-import { endOfDayDatetime, getDeadlineRange, getUserTimezone } from '../utils/dateUtils.js';
+import { endOfDayDatetime } from '../utils/dateUtils.js';
 
 function DeadlineArrayInput({
   type,
@@ -36,7 +36,6 @@ function DeadlineArrayInput({
   displayTimezone: string;
 }) {
   const { register, trigger } = useFormContext<AccessControlFormData>();
-  const userTimezone = getUserTimezone();
   const isEarly = type === 'early';
 
   const {
@@ -81,27 +80,40 @@ function DeadlineArrayInput({
   };
 
   const getTimeRangeText = (index: number) => {
-    const currentDeadlines = structuredClone(deadlines);
+    const deadline = deadlines.at(index);
+    if (!deadline?.date) return null;
 
     const anchorDate = isEarly ? releaseDate : dueDate;
-    const range = getDeadlineRange(index, currentDeadlines, anchorDate);
+    const start = (index > 0 ? deadlines[index - 1].date : null) ?? anchorDate;
+    const end = deadline.date;
 
-    if (!range) return null;
-
-    if (!range.start) {
+    if (!start) {
       const prefix = isEarly ? 'While accessible' : 'After due date';
       return (
         <>
           {prefix} –{' '}
-          <FriendlyDate date={range.end} timezone={userTimezone} options={{ includeTz: false }} />
+          <FriendlyDate
+            date={Temporal.PlainDateTime.from(end)}
+            timezone={displayTimezone}
+            options={{ includeTz: false }}
+          />
         </>
       );
     }
 
     return (
       <>
-        <FriendlyDate date={range.start} timezone={userTimezone} options={{ includeTz: false }} /> –{' '}
-        <FriendlyDate date={range.end} timezone={userTimezone} options={{ includeTz: false }} />
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(start)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+        />{' '}
+        –{' '}
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(end)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+        />
       </>
     );
   };
@@ -110,8 +122,13 @@ function DeadlineArrayInput({
   // function once, but these constraint values change over the form's lifetime.
   const validateDate = (value: string, index: number) => {
     if (!value) return 'Date is required';
-    const deadlineDate = new Date(value);
+
     const currentDueDate = dueDateRef.current ? new Date(dueDateRef.current) : null;
+    if (!currentDueDate && !isEarly) {
+      return 'Late deadlines require a due date';
+    }
+
+    const deadlineDate = new Date(value);
     const currentReleaseDate = releaseDateRef.current ? new Date(releaseDateRef.current) : null;
     const currentDeadlines = deadlinesRef.current;
 
