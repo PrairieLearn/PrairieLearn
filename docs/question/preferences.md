@@ -1,14 +1,25 @@
 # Question preferences
 
-!!! warning "UI coming soon"
-
-    Question preferences are currently configured only through JSON files (`info.json` and `infoAssessment.json`). A UI for managing preferences is coming soon.
-
 Question preferences allow a single question to be customized for different assessments without duplicating the question. A question defines a **preferences schema** in its `info.json`, and each assessment can **override** the default values when including the question.
 
 Preferences are available in both `server.py` (via `data["preferences"]`) and `question.html` (via `{{preferences.key}}`).
 
 ## Defining preferences
+
+Preferences can be managed through the **Question Settings** page or by editing `info.json` directly.
+
+### Using the question settings page
+
+On the question settings page, the **Preferences** section displays a table where you can add, edit, reorder, and remove preferences. Each preference has:
+
+- **Name**: a unique identifier used to reference the preference in code (e.g., `show_hints`).
+- **Type**: `string`, `number`, or `boolean`.
+- **Default**: the value used when the assessment does not provide an override.
+- **Allowed values**: an optional set of allowed values. When set, the default and any assessment override must be one of these values. If left empty (shown as "Any value"), any value matching the type is accepted.
+
+Preferences can be reordered by dragging the handle on the left side of each row.
+
+### Using JSON
 
 Add a `preferences` object to your question's `info.json`. Each key defines a preference field with a `type`, a `default` value, and an optional `enum` of allowed values.
 
@@ -42,7 +53,15 @@ Add a `preferences` object to your question's `info.json`. Each key defines a pr
 
 ## Overriding preferences in assessments
 
-When adding a question to an assessment, you can override any of its preference values in `infoAssessment.json`. Only the preferences you specify are overridden; the rest use their defaults.
+Preference overrides can be set through the **Assessment Questions** editor or by editing `infoAssessment.json` directly.
+
+### Using the assessment questions editor
+
+In the assessment questions page, click **Edit** to enter edit mode, then expand a question that defines preferences. Each preference is shown with its current override value. Select a value from the dropdown or type one in to override the question default. To revert to the question default, clear the field or select the "Default" option.
+
+### Using JSON
+
+In `infoAssessment.json`, add a `preferences` object to a question entry. Only the preferences you specify are overridden; the rest use their defaults.
 
 ```json title="infoAssessment.json"
 {

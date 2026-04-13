@@ -406,6 +406,7 @@ function buildLocals({
   if (group_config?.has_roles && !group_role_permissions?.can_submit) {
     locals.disableGradeButton = true;
     locals.disableSaveButton = true;
+    locals.allowAnswerEditing = false;
   }
 
   return locals;
