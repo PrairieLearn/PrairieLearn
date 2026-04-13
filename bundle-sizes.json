@@ -125,9 +125,9 @@
     "brotli": 44305
   },
   "scripts/instructorRequestCourseClient.ts": {
-    "raw": 3209,
-    "gzip": 1518,
-    "brotli": 1334
+    "raw": 5417,
+    "gzip": 2331,
+    "brotli": 2091
   },
   "scripts/jobSequenceClient.ts": {
     "raw": 45243,
