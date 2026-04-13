@@ -140,6 +140,7 @@ const aiGradeInstanceQuestionsMutation = t.procedure
   )
   .output(z.object({ job_sequence_id: z.string(), job_sequence_token: z.string() }))
   .mutation(async (opts) => {
+    await setAiGradingLastSelectedModel(opts.ctx.assessment_question.id, opts.input.model_id);
     const job_sequence_id = await aiGrade({
       question: opts.ctx.question,
       course: opts.ctx.course,
@@ -159,11 +160,6 @@ const aiGradeInstanceQuestionsMutation = t.procedure
         return opts.input.selection;
       }),
     });
-    // Best-effort: persist the model preference after the job is created.
-    // If this fails, the grading job is still running — don't fail the request.
-    await setAiGradingLastSelectedModel(opts.ctx.assessment_question.id, opts.input.model_id).catch(
-      () => {},
-    );
     const job_sequence_token = generateJobSequenceToken(job_sequence_id);
     return { job_sequence_id, job_sequence_token };
   });
