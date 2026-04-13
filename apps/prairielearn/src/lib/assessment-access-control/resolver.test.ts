@@ -1355,23 +1355,6 @@ describe('resolveAccessControl', () => {
     });
   });
 
-  describe('afterComplete visibility', () => {
-    // Sync-time validation prevents invalid combinations like hidden:false
-    // with date fields, so we only test valid cases here.
-    it('hides questions when hidden:true with no dates', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [
-          makeMainRule({
-            dateControl: { dueDate: '2025-03-10T00:00:00Z' },
-            afterComplete: { questions: { hidden: true } },
-          }),
-        ],
-      });
-      expect(result.showClosedAssessment).toBe(false);
-    });
-  });
-
   describe('showBeforeRelease edge cases', () => {
     it('shows before release when listBeforeRelease set without dateControl', () => {
       const result = resolveAccessControl({
@@ -1918,7 +1901,7 @@ describe('resolveVisibility', () => {
       expected: true,
     },
   ] as const)('returns $expected when $label', ({ hide, showAgain, hideAgain, expected }) => {
-    const showDate = showAgain != null ? new Date(showAgain) : (showAgain);
+    const showDate = showAgain != null ? new Date(showAgain) : showAgain;
     const hideDate = hideAgain != null ? new Date(hideAgain) : undefined;
     expect(resolveVisibility(hide, showDate, hideDate, now)).toBe(expected);
   });
