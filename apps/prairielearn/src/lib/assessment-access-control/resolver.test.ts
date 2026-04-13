@@ -36,7 +36,8 @@ function toRuntime(json: AccessControlJson): RuntimeAccessControl {
       const q = afterComplete.questions;
       result.afterComplete.questions = {
         hidden: q.hidden,
-        visibleFromDate: q.visibleFromDate != null ? new Date(q.visibleFromDate) : q.visibleFromDate,
+        visibleFromDate:
+          q.visibleFromDate != null ? new Date(q.visibleFromDate) : q.visibleFromDate,
         visibleUntilDate:
           q.visibleUntilDate != null ? new Date(q.visibleUntilDate) : q.visibleUntilDate,
       };
@@ -45,7 +46,8 @@ function toRuntime(json: AccessControlJson): RuntimeAccessControl {
       const s = afterComplete.score;
       result.afterComplete.score = {
         hidden: s.hidden,
-        visibleFromDate: s.visibleFromDate != null ? new Date(s.visibleFromDate) : s.visibleFromDate,
+        visibleFromDate:
+          s.visibleFromDate != null ? new Date(s.visibleFromDate) : s.visibleFromDate,
       };
     }
   }
