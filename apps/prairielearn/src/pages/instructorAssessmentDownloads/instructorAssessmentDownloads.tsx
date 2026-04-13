@@ -8,16 +8,23 @@ import { z } from 'zod';
 import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/react/server';
 
+import { PageLayout } from '../../components/PageLayout.js';
 import {
   CANVAS_CSV_FIXED_COLUMNS,
   CANVAS_CSV_POINTS_POSSIBLE_NAME,
   canvasPointsPossibleValue,
   canvasStudentRecord,
 } from '../../lib/canvas-csv.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import {
+  type Assessment,
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
+  type AssessmentSet,
+  type Course,
+  type CourseInstance,
   GroupRoleSchema,
   GroupSchema,
   InstanceQuestionSchema,
@@ -180,12 +187,26 @@ const InstanceQuestionRowSchema = z.object({
 });
 
 export function getFilenames(locals: ResLocalsForPage<'assessment'>) {
-  const prefix = assessmentFilenamePrefix(
-    locals.assessment,
-    locals.assessment_set,
-    locals.course_instance,
-    locals.course,
-  );
+  return buildFilenames({
+    assessment: locals.assessment,
+    assessmentSet: locals.assessment_set,
+    courseInstance: locals.course_instance,
+    course: locals.course,
+  });
+}
+
+function buildFilenames({
+  assessment,
+  assessmentSet,
+  courseInstance,
+  course,
+}: {
+  assessment: Pick<Assessment, 'number' | 'team_work'>;
+  assessmentSet: Pick<AssessmentSet, 'abbreviation'>;
+  courseInstance: Pick<CourseInstance, 'short_name'>;
+  course: Pick<Course, 'short_name'>;
+}): Filenames {
+  const prefix = assessmentFilenamePrefix(assessment, assessmentSet, courseInstance, course);
 
   const filenames: Filenames = {
     scoresCsvFilename: prefix + 'scores.csv',
@@ -210,7 +231,7 @@ export function getFilenames(locals: ResLocalsForPage<'assessment'>) {
     canvasScoresCsvFilename: prefix + 'scores_for_canvas.csv',
     canvasPointsCsvFilename: prefix + 'points_for_canvas.csv',
   };
-  if (locals.assessment.team_work) {
+  if (assessment.team_work) {
     filenames.groupsCsvFilename = prefix + 'groups.csv';
     filenames.scoresGroupCsvFilename = prefix + 'scores_by_group.csv';
     filenames.scoresGroupAllCsvFilename = prefix + 'scores_by_group_all.csv';
@@ -342,11 +363,49 @@ async function pipeCursorToArchive<T>(
 router.get(
   '/',
   typedAsyncHandler<'assessment'>(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
+    const { assessment, assessment_set, course, course_instance, urlPrefix, authz_data } =
+      extractPageContext(res.locals, {
+        pageType: 'assessment',
+        accessType: 'instructor',
+      });
+
+    if (!authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
+
+    const filenames = buildFilenames({
+      assessment,
+      assessmentSet: assessment_set,
+      courseInstance: course_instance,
+      course,
+    });
+
     res.send(
-      InstructorAssessmentDownloads({ resLocals: res.locals, filenames: getFilenames(res.locals) }),
+      PageLayout({
+        resLocals: res.locals,
+        pageTitle: 'Downloads',
+        navContext: {
+          type: 'instructor',
+          page: 'assessment',
+          subPage: 'downloads',
+        },
+        options: {
+          fullWidth: true,
+        },
+        content: (
+          <Hydrate>
+            <InstructorAssessmentDownloads
+              urlPrefix={urlPrefix}
+              assessmentId={assessment.id}
+              assessmentSetName={assessment_set.name}
+              assessmentNumber={assessment.number}
+              isMultipleInstance={assessment.multiple_instance}
+              isTeamWork={assessment.team_work}
+              filenames={filenames}
+            />
+          </Hydrate>
+        ),
+      }),
     );
   }),
 );
