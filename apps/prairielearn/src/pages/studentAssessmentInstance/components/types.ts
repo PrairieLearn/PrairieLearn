@@ -65,6 +65,14 @@ export interface ClientAccessRule {
   endDate: string;
 }
 
+// Serialized form of AccessTimelineEntry (Date objects become ISO strings via Hydrate).
+export interface ClientAccessTimelineEntry {
+  credit: number;
+  startDate: string | null;
+  endDate: string | null;
+  active: boolean;
+}
+
 // Client-safe group work info for the hydrated component.
 export interface ClientGroupConfig {
   studentAuthzJoin: boolean | null;
@@ -118,6 +126,8 @@ export interface StudentAssessmentInstanceBodyProps {
 
   assessmentTextHtml: string | null;
   accessRules: ClientAccessRule[];
+  accessTimeline: ClientAccessTimelineEntry[];
+  displayTimezone: string;
   groupConfig: ClientGroupConfig | null;
   groupInfo: ClientGroupInfo | null;
   userCanAssignRoles: boolean;

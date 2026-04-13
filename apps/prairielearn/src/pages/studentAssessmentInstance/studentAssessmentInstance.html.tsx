@@ -34,6 +34,7 @@ import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 import { StudentAssessmentInstanceBody } from './components/StudentAssessmentInstanceBody.js';
 import {
   type ClientAccessRule,
+  type ClientAccessTimelineEntry,
   type ClientGroupConfig,
   type ClientGroupInfo,
   type ClientQuestionRow,
@@ -155,6 +156,16 @@ export function StudentAssessmentInstance({
     startDate: rule.start_date,
     endDate: rule.end_date,
   }));
+
+  // Map access timeline to client-safe type (Date objects become ISO strings via Hydrate).
+  const accessTimeline: ClientAccessTimelineEntry[] = resLocals.authz_result.access_timeline.map(
+    (entry) => ({
+      credit: entry.credit,
+      startDate: entry.startDate?.toISOString() ?? null,
+      endDate: entry.endDate?.toISOString() ?? null,
+      active: entry.active,
+    }),
+  );
 
   // Map group config/info to client-safe types.
   const clientGroupConfig: ClientGroupConfig | null = groupConfig
@@ -354,6 +365,8 @@ export function StudentAssessmentInstance({
             someQuestionsForbidRealTimeGrading={someQuestionsForbidRealTimeGrading}
             assessmentTextHtml={resLocals.assessment_text_templated}
             accessRules={accessRules}
+            accessTimeline={accessTimeline}
+            displayTimezone={resLocals.course_instance.display_timezone}
             groupConfig={clientGroupConfig}
             groupInfo={clientGroupInfo}
             userCanAssignRoles={userCanAssignRoles ?? false}

@@ -2,7 +2,9 @@ import { useState } from 'react';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { TimezoneContext } from '../../../components/FriendlyDate.js';
 import { Scorebar } from '../../../components/Scorebar.js';
+import { StudentAccessTimelinePopover } from '../../../components/StudentAccessRulesPopover.js';
 import { formatPoints } from '../../../lib/format.js';
 
 import { ExamFooterContent } from './ExamFooterContent.js';
@@ -12,6 +14,7 @@ import { StudentAccessRulesPopover } from './StudentAccessRulesPopover.js';
 import { ConfirmFinishModal, CrossLockpointModal, TimeLimitExpiredModal } from './modals.js';
 import type {
   ClientAccessRule,
+  ClientAccessTimelineEntry,
   ClientQuestionRow,
   StudentAssessmentInstanceBodyProps,
 } from './types.js';
@@ -30,6 +33,8 @@ export function StudentAssessmentInstanceBody({
   someQuestionsForbidRealTimeGrading,
   assessmentTextHtml,
   accessRules,
+  accessTimeline,
+  displayTimezone,
   groupConfig,
   groupInfo,
   userCanAssignRoles,
@@ -83,7 +88,7 @@ export function StudentAssessmentInstanceBody({
   }
 
   return (
-    <>
+    <TimezoneContext value={displayTimezone}>
       <div className="card mb-4">
         <div className="card-header bg-primary text-white d-flex align-items-center">
           <h1>
@@ -121,7 +126,9 @@ export function StudentAssessmentInstanceBody({
                     assessmentInstanceOpen={assessmentInstanceOpen}
                     active={active}
                     creditDateString={creditDateString}
+                    modernAccessControl={assessment.modern_access_control}
                     accessRules={accessRules}
+                    accessTimeline={accessTimeline}
                   />
                 </div>
               </>
@@ -145,7 +152,9 @@ export function StudentAssessmentInstanceBody({
                     assessmentInstanceOpen={assessmentInstanceOpen}
                     active={active}
                     creditDateString={creditDateString}
+                    modernAccessControl={assessment.modern_access_control}
                     accessRules={accessRules}
+                    accessTimeline={accessTimeline}
                   />
                 </div>
               </>
@@ -265,7 +274,7 @@ export function StudentAssessmentInstanceBody({
         show={showTimeLimitExpired}
         onHide={() => setShowTimeLimitExpired(false)}
       />
-    </>
+    </TimezoneContext>
   );
 }
 
@@ -277,19 +286,28 @@ function AssessmentStatus({
   assessmentInstanceOpen,
   active,
   creditDateString,
+  modernAccessControl,
   accessRules,
+  accessTimeline,
 }: {
   assessmentInstanceOpen: boolean;
   active: boolean;
   creditDateString: string | null;
+  modernAccessControl: boolean;
   accessRules: ClientAccessRule[];
+  accessTimeline: ClientAccessTimelineEntry[];
 }) {
   if (assessmentInstanceOpen && active) {
     return (
       <>
         Assessment is <strong>open</strong> and you can answer questions.
         <br />
-        Available credit: {creditDateString} <StudentAccessRulesPopover accessRules={accessRules} />
+        Available credit: {creditDateString}{' '}
+        {modernAccessControl ? (
+          <StudentAccessTimelinePopover accessTimeline={accessTimeline} />
+        ) : (
+          <StudentAccessRulesPopover accessRules={accessRules} />
+        )}
       </>
     );
   }

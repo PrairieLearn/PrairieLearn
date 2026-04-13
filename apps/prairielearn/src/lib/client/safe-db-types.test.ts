@@ -207,6 +207,7 @@ const minimalStudentAssessment: z.input<typeof StudentAssessmentSchema> = {
   id: '2',
   max_bonus_points: null,
   max_points: null,
+  modern_access_control: false,
   multiple_instance: false,
   number: 'A1',
   require_honor_code: null,

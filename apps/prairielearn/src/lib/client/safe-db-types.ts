@@ -88,6 +88,7 @@ export const RawStudentAssessmentSchema = RawStaffAssessmentSchema.pick({
   id: true,
   max_bonus_points: true,
   max_points: true,
+  modern_access_control: true,
   multiple_instance: true,
   number: true,
   require_honor_code: true,
