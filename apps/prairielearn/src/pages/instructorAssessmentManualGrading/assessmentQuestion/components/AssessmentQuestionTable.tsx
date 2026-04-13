@@ -83,6 +83,7 @@ interface AssessmentQuestionTableProps {
   aiGradingMode: boolean;
   aiGradingModelSelectionEnabled: boolean;
   rubricData: RubricData | null;
+  rubricEditingDisabled?: boolean;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
@@ -91,6 +92,9 @@ interface AssessmentQuestionTableProps {
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: ReturnType<typeof useManualGradingActions>;
+  onServerJobProgressRef?: React.MutableRefObject<
+    ((jobSequenceId: string, jobSequenceToken: string) => void) | null
+  >;
 }
 
 function AiGradingOptionContent({ text, numToGrade }: { text: string; numToGrade: number }) {
@@ -173,6 +177,7 @@ export function AssessmentQuestionTable({
   aiGradingMode,
   aiGradingModelSelectionEnabled,
   rubricData,
+  rubricEditingDisabled = false,
   instanceQuestionGroups,
   courseStaff,
   course,
@@ -183,6 +188,7 @@ export function AssessmentQuestionTable({
   onSetGroupInfoModalState,
   onSetConflictModalState,
   mutations,
+  onServerJobProgressRef,
 }: AssessmentQuestionTableProps) {
   const trpc = useTRPC();
   // Query state management
@@ -403,6 +409,19 @@ export function AssessmentQuestionTable({
       });
     },
   });
+
+  // Expose handleAddOngoingJobSequence to the parent via ref so the chat panel
+  // can trigger progress bars when the AI agent starts a grading job.
+  useEffect(() => {
+    if (onServerJobProgressRef) {
+      onServerJobProgressRef.current = serverJobProgress.handleAddOngoingJobSequence;
+    }
+    return () => {
+      if (onServerJobProgressRef) {
+        onServerJobProgressRef.current = null;
+      }
+    };
+  }, [onServerJobProgressRef, serverJobProgress.handleAddOngoingJobSequence]);
 
   // Create columns using the extracted function
   const columns = useMemo(
@@ -647,7 +666,9 @@ export function AssessmentQuestionTable({
     <>
       <div className="mb-3">
         <RubricSettings
-          hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+          hasCourseInstancePermissionEdit={
+            hasCourseInstancePermissionEdit && !rubricEditingDisabled
+          }
           assessmentQuestion={assessmentQuestion}
           rubricData={rubricData}
           csrfToken={csrfToken}

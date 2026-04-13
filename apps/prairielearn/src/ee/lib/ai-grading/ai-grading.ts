@@ -67,6 +67,7 @@ import {
   insertAiGradingJob,
   insertAiGradingJobWithRotationCorrection,
   parseAiRubricItems,
+  sanitizeSchemaKey,
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastVariantAndSubmission,
 } from './ai-grading-util.js';
@@ -619,11 +620,13 @@ export async function aiGrade({
 
       if (rubric_items.length > 0) {
         // Dynamically generate the rubric schema based on the rubric items.
+        // Sanitize descriptions for use as JSON schema property keys since
+        // structured output APIs reject certain characters (quotes, backslashes).
         let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
         for (const item of rubric_items) {
           RubricGradingItemsSchema = RubricGradingItemsSchema.merge(
             z.object({
-              [item.description]: z.boolean(),
+              [sanitizeSchemaKey(item.description)]: z.boolean(),
             }),
           );
         }
