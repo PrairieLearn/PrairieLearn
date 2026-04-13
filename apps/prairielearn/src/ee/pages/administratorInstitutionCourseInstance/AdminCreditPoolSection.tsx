@@ -158,9 +158,8 @@ function AdjustCreditsForm({
     amountStr !== '' &&
     currentBalanceMilliDollars != null &&
     Math.round(parsedAmount * 1000) > currentBalanceMilliDollars;
-  const isZeroBalance =
-    action === 'deduct' && currentBalanceMilliDollars != null && currentBalanceMilliDollars === 0;
-  const isSubmitDisabled = isPending || isAmountInvalid || isZeroBalance;
+  const isSubmitDisabled =
+    isPending || isAmountInvalid || (action === 'deduct' && !currentBalanceMilliDollars);
 
   function handleSubmit() {
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return;
@@ -248,8 +247,9 @@ function AdjustCreditsForm({
         )}
         {isDeductionCapped && (
           <div className="text-warning-emphasis small mt-3">
-            Amount exceeds the {creditType.replace('_', '-')} balance.{' '}
-            {formatMilliDollars(currentBalanceMilliDollars)} will be deducted.
+            {currentBalanceMilliDollars === 0
+              ? 'Cannot deduct from a $0 balance.'
+              : `Amount exceeds the ${creditType.replace('_', '-')} balance. ${formatMilliDollars(currentBalanceMilliDollars)} will be deducted.`}
           </div>
         )}
       </form>
