@@ -1,7 +1,7 @@
 import {
   type StudentAssessment,
+  type StudentAssessmentInstance,
   type StudentAssessmentInstanceAuthzResult,
-  type StudentAssessmentInstance__UNSAFE,
   type StudentAssessmentSet,
 } from '../../../lib/client/safe-db-types.js';
 
@@ -106,7 +106,7 @@ export interface ClientGroupInfo {
 export interface StudentAssessmentInstanceBodyProps {
   assessment: StudentAssessment;
   assessmentSet: StudentAssessmentSet;
-  assessmentInstance: StudentAssessmentInstance__UNSAFE;
+  assessmentInstance: StudentAssessmentInstance;
   remainingMs: number | null;
 
   authzResult: StudentAssessmentInstanceAuthzResult;

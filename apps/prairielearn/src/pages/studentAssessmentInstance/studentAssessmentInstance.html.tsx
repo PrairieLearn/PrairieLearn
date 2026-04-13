@@ -16,8 +16,8 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
+  RawStudentAssessmentInstanceSchema__UNSAFE,
   StudentAssessmentInstanceAuthzResultSchema,
-  StudentAssessmentInstanceSchema__UNSAFE,
   StudentAssessmentQuestionSchema,
   StudentAssessmentSchema,
   StudentAssessmentSetSchema,
@@ -38,6 +38,22 @@ import {
   type ClientGroupInfo,
   type ClientQuestionRow,
 } from './components/types.js';
+
+const StudentAssessmentInstanceDataSchema = z
+  .object({
+    assessment_instance: RawStudentAssessmentInstanceSchema__UNSAFE,
+    some_questions_allow_real_time_grading: z.boolean(),
+  })
+  .transform((data) => {
+    // When real-time grading is fully disabled and the instance is open,
+    // don't leak score data to the client — the UI only shows max_points.
+    if (!data.some_questions_allow_real_time_grading && data.assessment_instance.open) {
+      data.assessment_instance.points = null;
+      data.assessment_instance.score_perc = null;
+    }
+    return data.assessment_instance;
+  })
+  .brand('StudentAssessmentInstance');
 
 export const InstanceQuestionRowSchema = z.object({
   instance_question: StudentInstanceQuestionSchema__UNSAFE,
@@ -290,14 +306,9 @@ export function StudentAssessmentInstance({
   );
   const assessment = StudentAssessmentSchema.parse(resLocals.assessment);
   const assessmentSet = StudentAssessmentSetSchema.parse(resLocals.assessment_set);
-  const assessmentInstance = run(() => {
-    const parsed = StudentAssessmentInstanceSchema__UNSAFE.parse(resLocals.assessment_instance);
-    // When real-time grading is fully disabled and the instance is open,
-    // don't leak score data to the client — the UI only shows max_points.
-    if (!someQuestionsAllowRealTimeGrading && parsed.open) {
-      return { ...parsed, points: null, score_perc: null };
-    }
-    return parsed;
+  const assessmentInstance = StudentAssessmentInstanceDataSchema.parse({
+    assessment_instance: resLocals.assessment_instance,
+    some_questions_allow_real_time_grading: someQuestionsAllowRealTimeGrading,
   });
   const authzResult = StudentAssessmentInstanceAuthzResultSchema.parse(resLocals.authz_result);
 
