@@ -360,9 +360,9 @@
     "brotli": 113233
   },
   "scripts/esm-bundles/hydrated-components/AdminCreditPoolSection.ts": {
-    "raw": 2041964,
-    "gzip": 649000,
-    "brotli": 540691
+    "raw": 2042459,
+    "gzip": 649208,
+    "brotli": 540872
   },
   "scripts/esm-bundles/hydrated-components/AdministratorCourseRequests.ts": {
     "raw": 1079235,
