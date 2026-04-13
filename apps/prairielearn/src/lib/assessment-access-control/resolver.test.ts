@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AccessControlJson, AccessControlJsonInput } from '../../schemas/accessControl.js';
-import type { AssessmentAccessRuleJson } from '../../schemas/infoAssessment.js';
 
-import { classifyArchetype, migrateAllowAccess } from './migration.js';
+import { migrateAllowAccess } from './migration.js';
 import {
   type AccessControlResolverInput,
   type AccessControlRuleInput,
@@ -1970,35 +1969,30 @@ function resolveMigratedAt(migrated: AccessControlJsonInput, date: string): numb
   return resolveAccessControl(input).credit;
 }
 
-function migrateRules(rules: AssessmentAccessRuleJson[]): AccessControlJsonInput {
-  const archetype = classifyArchetype(rules);
-  return migrateAllowAccess(archetype, rules).result;
-}
-
 describe('migration → resolver round-trip', () => {
   it('single-reduced-credit preserves reduced credit through the resolver', () => {
-    const migrated = migrateRules([
+    const migrated = migrateAllowAccess([
       { credit: 50, startDate: '2024-01-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
-    ]);
+    ]).result;
 
     expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(50);
     expect(resolveMigratedAt(migrated, '2024-07-01T00:00:00Z')).toBe(0);
   });
 
   it('single bonus credit preserves bonus credit through the resolver', () => {
-    const migrated = migrateRules([
+    const migrated = migrateAllowAccess([
       { credit: 120, startDate: '2024-01-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
-    ]);
+    ]).result;
 
     expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(120);
     expect(resolveMigratedAt(migrated, '2024-07-01T00:00:00Z')).toBe(0);
   });
 
   it('declining-credit with bonus + reduced (no full) preserves all credit tiers', () => {
-    const migrated = migrateRules([
+    const migrated = migrateAllowAccess([
       { credit: 120, startDate: '2024-01-01T00:00:00Z', endDate: '2024-02-01T00:00:00Z' },
       { credit: 50, startDate: '2024-02-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
-    ]);
+    ]).result;
 
     expect(resolveMigratedAt(migrated, '2024-01-15T00:00:00Z')).toBe(120);
     expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(50);
@@ -2006,11 +2000,11 @@ describe('migration → resolver round-trip', () => {
   });
 
   it('declining-credit with multiple bonus + reduced (no full) preserves all tiers', () => {
-    const migrated = migrateRules([
+    const migrated = migrateAllowAccess([
       { credit: 130, startDate: '2024-01-01T00:00:00Z', endDate: '2024-01-15T00:00:00Z' },
       { credit: 120, startDate: '2024-01-01T00:00:00Z', endDate: '2024-02-01T00:00:00Z' },
       { credit: 50, startDate: '2024-02-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
-    ]);
+    ]).result;
 
     expect(resolveMigratedAt(migrated, '2024-01-10T00:00:00Z')).toBe(130);
     expect(resolveMigratedAt(migrated, '2024-01-20T00:00:00Z')).toBe(120);
@@ -2019,11 +2013,11 @@ describe('migration → resolver round-trip', () => {
   });
 
   it('declining-credit with bonus + full + reduced preserves all tiers', () => {
-    const migrated = migrateRules([
+    const migrated = migrateAllowAccess([
       { credit: 110, startDate: '2024-01-01T00:00:00Z', endDate: '2024-02-01T00:00:00Z' },
       { credit: 100, startDate: '2024-01-01T00:00:00Z', endDate: '2024-03-01T00:00:00Z' },
       { credit: 50, startDate: '2024-01-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
-    ]);
+    ]).result;
 
     expect(resolveMigratedAt(migrated, '2024-01-15T00:00:00Z')).toBe(110);
     expect(resolveMigratedAt(migrated, '2024-02-15T00:00:00Z')).toBe(100);
@@ -2032,9 +2026,9 @@ describe('migration → resolver round-trip', () => {
   });
 
   it('single-deadline with full credit preserves 100% through the resolver', () => {
-    const migrated = migrateRules([
+    const migrated = migrateAllowAccess([
       { credit: 100, startDate: '2024-01-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
-    ]);
+    ]).result;
 
     expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(100);
     expect(resolveMigratedAt(migrated, '2024-07-01T00:00:00Z')).toBe(0);

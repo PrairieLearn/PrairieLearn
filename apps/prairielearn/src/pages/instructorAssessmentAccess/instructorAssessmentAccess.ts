@@ -104,20 +104,20 @@ router.get(
       notes: string[];
       hasUidRules: boolean;
       isWipe: boolean;
+      fallbackReleaseDate: string;
     } | null = null;
 
     if (enhancedAccessControlEnabled) {
       migrationAnalysis = await analyzeAssessmentFile(assessmentPath, res.locals.assessment.tid!);
+
+      const fallbackReleaseDate = todayAsDatetimeLocal(res.locals.course_instance.display_timezone);
 
       if (migrationAnalysis?.errors.length === 0) {
         const content = await fs.readFile(assessmentPath, 'utf-8');
         const parsed = JSON.parse(content);
         const beforeJson = JSON.stringify(parsed.allowAccess, null, 2);
 
-        const migrationResult = migrateAssessmentJson(
-          content,
-          todayAsDatetimeLocal(res.locals.course_instance.display_timezone),
-        );
+        const migrationResult = migrateAssessmentJson(content, fallbackReleaseDate);
         if (migrationResult) {
           const migratedParsed = JSON.parse(migrationResult.json);
           const afterJson = JSON.stringify(migratedParsed.accessControl, null, 2);
@@ -128,6 +128,7 @@ router.get(
             notes: migrationResult.notes,
             hasUidRules: migrationAnalysis.hasUidRules,
             isWipe: false,
+            fallbackReleaseDate,
           };
         }
       } else if (migrationAnalysis && migrationAnalysis.errors.length > 0) {
@@ -141,6 +142,7 @@ router.get(
           notes: migrationAnalysis.notes,
           hasUidRules: migrationAnalysis.hasUidRules,
           isWipe: true,
+          fallbackReleaseDate,
         };
       }
     }
@@ -182,10 +184,10 @@ router.post(
       const assessmentPath = getAssessmentPath(res.locals);
       const content = await fs.readFile(assessmentPath, 'utf-8');
 
-      const migrationResult = migrateAssessmentJson(
-        content,
-        todayAsDatetimeLocal(res.locals.course_instance.display_timezone),
-      );
+      const fallbackReleaseDate =
+        req.body.fallback_release_date ??
+        todayAsDatetimeLocal(res.locals.course_instance.display_timezone);
+      const migrationResult = migrateAssessmentJson(content, fallbackReleaseDate);
 
       let formattedJson: string;
       if (migrationResult) {

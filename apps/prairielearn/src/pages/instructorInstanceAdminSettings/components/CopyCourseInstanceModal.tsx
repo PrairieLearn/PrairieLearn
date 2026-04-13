@@ -419,13 +419,11 @@ function AccessControlStep({
             </Alert>
           )}
 
-          <div
-            className="border rounded mb-3"
-            style={{ maxHeight: '240px', overflowY: 'auto' }}
-            role="list"
-            aria-label="Assessments with legacy access control"
-          >
-            <table className="table table-sm table-hover mb-0">
+          <div className="border rounded mb-3" style={{ maxHeight: '240px', overflowY: 'auto' }}>
+            <table
+              className="table table-sm table-hover mb-0"
+              aria-label="Assessments with legacy access control"
+            >
               <thead className="table-light sticky-top">
                 <tr>
                   <th>Assessment</th>

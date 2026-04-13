@@ -42,6 +42,7 @@ interface MigrationPreview {
   notes: string[];
   hasUidRules: boolean;
   isWipe: boolean;
+  fallbackReleaseDate: string;
 }
 
 export function InstructorAssessmentAccess({
@@ -329,6 +330,11 @@ function MigrationConfirmModal({
       <input type="hidden" name="__action" value="migrate_access_control" />
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
       <input type="hidden" name="orig_hash" value="${origHash}" />
+      <input
+        type="hidden"
+        name="fallback_release_date"
+        value="${migrationPreview.fallbackReleaseDate}"
+      />
       ${migrationPreview.isWipe
         ? html`<input type="hidden" name="migrate_strategy" value="wipe" />`
         : ''}

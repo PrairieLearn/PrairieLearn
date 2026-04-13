@@ -33,6 +33,14 @@ export interface Archetype {
   modifiers: ArchetypeModifier[];
 }
 
+export interface MigrationResult {
+  archetype: Archetype;
+  result: AccessControlJsonInput;
+  errors: string[];
+  notes: string[];
+  hasUidRules: boolean;
+}
+
 export interface AssessmentMigrationAnalysis {
   tid: string;
   title: string;
@@ -52,43 +60,6 @@ interface CourseInstanceMigrationAnalysis {
 const NON_CONTIGUOUS_ACCESS_WINDOWS_ERROR = 'Non-contiguous access windows are not supported.';
 const UNCLASSIFIED_ACCESS_RULES_ERROR = 'This access rule configuration is not supported.';
 const MODE_ONLY_ACCESS_RULES_ERROR = 'Mode-only access rules are not supported.';
-
-function analyzeAllowAccessRules(allowAccess: AssessmentAccessRuleJson[]) {
-  const hasUidRules = allowAccess.some((rule) => rule.uids);
-  const rulesForClassification = allowAccess.filter((rule) => !rule.uids);
-
-  const archetype: Archetype =
-    rulesForClassification.length > 0
-      ? classifyArchetype(rulesForClassification)
-      : { base: 'unclassified', modifiers: [] };
-
-  const { errors: migrationErrors, notes: migrationNotes } = migrateAllowAccess(
-    archetype,
-    rulesForClassification,
-  );
-
-  const errors: string[] =
-    archetype.base === 'unclassified' && hasAccessGaps(rulesForClassification)
-      ? [NON_CONTIGUOUS_ACCESS_WINDOWS_ERROR]
-      : [...migrationErrors];
-  const notes =
-    archetype.base === 'unclassified' && hasAccessGaps(rulesForClassification)
-      ? []
-      : [...migrationNotes];
-
-  if (hasUidRules) {
-    notes.push(
-      'UID-based rules are excluded from the migrated JSON and must be recreated as enrollment overrides if needed.',
-    );
-  }
-
-  return {
-    archetype,
-    hasUidRules,
-    errors,
-    notes,
-  };
-}
 
 function getCreditRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
   return rules
@@ -150,13 +121,25 @@ function buildAfterComplete(
 
   const lastCreditEndDate = findLastCreditEndDate(rules);
   if (lastCreditEndDate) {
-    const revealDates = getVisibilityRules(rules)
-      .map((r) => r.startDate)
-      .filter((date): date is string => !!date && date > lastCreditEndDate)
-      .sort();
-    const revealDate = revealDates[0];
-    if (hidesAssessment && revealDate) result.showQuestionsAgainDate = revealDate;
-    if (hidesScore && revealDate) result.showScoreAgainDate = revealDate;
+    const visibilityRules = getVisibilityRules(rules);
+
+    if (hidesAssessment) {
+      const questionRevealDates = visibilityRules
+        .filter((r) => r.showClosedAssessment !== false)
+        .map((r) => r.startDate)
+        .filter((date): date is string => !!date && date > lastCreditEndDate)
+        .sort();
+      if (questionRevealDates[0]) result.showQuestionsAgainDate = questionRevealDates[0];
+    }
+
+    if (hidesScore) {
+      const scoreRevealDates = visibilityRules
+        .filter((r) => r.showClosedAssessmentScore !== false)
+        .map((r) => r.startDate)
+        .filter((date): date is string => !!date && date > lastCreditEndDate)
+        .sort();
+      if (scoreRevealDates[0]) result.showScoreAgainDate = scoreRevealDates[0];
+    }
   }
 
   return result;
@@ -256,7 +239,7 @@ function hasAccessGaps(rules: AssessmentAccessRuleJson[]): boolean {
   return false;
 }
 
-export function classifyArchetype(rules: AssessmentAccessRuleJson[]): Archetype {
+function classifyArchetype(rules: AssessmentAccessRuleJson[]): Archetype {
   rules = rules.filter((r) => !r.uids);
   const analyzed = rules.map(analyzeRule);
   const creditRules = analyzed.filter((r) => r.creditType !== 'none');
@@ -317,6 +300,8 @@ export function classifyArchetype(rules: AssessmentAccessRuleJson[]): Archetype 
     (hasBonusCredit && hasFullCredit)
   ) {
     return { base: 'declining-credit', modifiers };
+  } else if (hasOpenCredit) {
+    return { base: 'always-open', modifiers };
   } else if ((hasFullCredit || hasBonusCredit) && creditRules.length === 1) {
     const base = hasViewing || hasHiding ? 'single-deadline-with-viewing' : 'single-deadline';
     return { base, modifiers };
@@ -324,8 +309,6 @@ export function classifyArchetype(rules: AssessmentAccessRuleJson[]): Archetype 
     return { base: 'multi-deadline', modifiers };
   } else if (hasReducedCredit && creditRules.length === 1) {
     return { base: 'single-reduced-credit', modifiers };
-  } else if (hasOpenCredit) {
-    return { base: 'always-open', modifiers };
   } else if (hasViewing && creditRules.length === 0) {
     return { base: 'view-only', modifiers };
   } else if (hasHiding && creditRules.length === 0 && !hasViewing) {
@@ -342,14 +325,8 @@ function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
   errors: string[];
   notes: string[];
 } {
-  const errors: string[] = [];
   const creditRules = getCreditRules(rules);
-  const creditRule = creditRules[0] as AssessmentAccessRuleJson | undefined;
-
-  if (!creditRule) {
-    errors.push('No credit rule found');
-    return { result: {}, errors, notes: [] };
-  }
+  const creditRule = creditRules[0];
 
   const result: AccessControlJsonInput = {};
   const credit = creditRule.credit ?? 0;
@@ -376,7 +353,7 @@ function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
 
   applyVisibilityMigration(result, rules);
 
-  return { result, errors, notes: [] };
+  return { result, errors: [], notes: [] };
 }
 
 function normalizeCreditDeadlines(
@@ -427,9 +404,6 @@ function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
 } {
   const notes: string[] = [];
   const creditRules = getCreditRules(rules);
-  if (creditRules.length === 0) {
-    return { result: {}, errors: ['No credit rules found'], notes: [] };
-  }
 
   const bonusRules = creditRules.filter((r) => (r.credit ?? 0) > 100);
   const fullRules = creditRules.filter((r) => (r.credit ?? 0) === 100);
@@ -475,11 +449,6 @@ function migratePrairieTestExam(rules: AssessmentAccessRuleJson[]): {
   notes: string[];
 } {
   const examRules = rules.filter((r) => r.examUuid);
-
-  if (examRules.length === 0) {
-    return { result: {}, errors: ['No examUuid rule found'], notes: [] };
-  }
-
   const exams = examRules.map((r) => ({ examUuid: r.examUuid! }));
 
   const result: AccessControlJsonInput = {
@@ -529,10 +498,6 @@ function migrateMultiDeadline(rules: AssessmentAccessRuleJson[]): {
   const notes: string[] = [];
   const creditRules = getCreditRules(rules);
 
-  if (creditRules.length === 0) {
-    return { result: {}, errors: ['No credit rules found'], notes: [] };
-  }
-
   const startDates = creditRules
     .map((r) => r.startDate)
     .filter(Boolean)
@@ -566,11 +531,7 @@ function migratePasswordGated(rules: AssessmentAccessRuleJson[]): {
   errors: string[];
   notes: string[];
 } {
-  const passwordRule = rules.find((r) => r.password);
-
-  if (!passwordRule) {
-    return { result: {}, errors: ['No password rule found'], notes: [] };
-  }
+  const passwordRule = rules.find((r) => r.password)!;
 
   const result: AccessControlJsonInput = {
     dateControl: {
@@ -641,8 +602,20 @@ function migrateKnownAllowAccess(
     case 'no-op':
       return migrateNoOp(rules);
 
-    case 'always-open':
+    case 'always-open': {
+      const creditRules = getCreditRules(rules);
+      const nonStandardCredit = creditRules.find((r) => (r.credit ?? 0) !== 100);
+      if (nonStandardCredit) {
+        return {
+          result: {},
+          errors: [
+            `Credit of ${nonStandardCredit.credit}% cannot be expressed in the modern always-open format.`,
+          ],
+          notes: [],
+        };
+      }
       return { result: {}, errors: [], notes: [] };
+    }
 
     case 'mode-gated':
       return {
@@ -659,12 +632,28 @@ function migrateKnownAllowAccess(
   }
 }
 
-export function migrateAllowAccess(
-  archetype: Archetype,
-  rules: AssessmentAccessRuleJson[],
-): { result: AccessControlJsonInput; errors: string[]; notes: string[] } {
+export function migrateAllowAccess(rules: AssessmentAccessRuleJson[]): MigrationResult {
+  const hasUidRules = rules.some((r) => r.uids);
   rules = rules.filter((r) => !r.uids);
-  return migrateKnownAllowAccess(archetype.base, rules);
+  const archetype: Archetype = classifyArchetype(rules);
+
+  if (archetype.base === 'unclassified' && hasAccessGaps(rules)) {
+    return {
+      archetype,
+      result: {},
+      errors: [NON_CONTIGUOUS_ACCESS_WINDOWS_ERROR],
+      notes: [],
+      hasUidRules,
+    };
+  }
+
+  const migration = migrateKnownAllowAccess(archetype.base, rules);
+  if (hasUidRules) {
+    migration.notes.push(
+      'UID-based rules are excluded from the migrated JSON and must be recreated as enrollment overrides if needed.',
+    );
+  }
+  return { archetype, ...migration, hasUidRules };
 }
 
 /**
@@ -690,12 +679,7 @@ export function migrateAssessmentJson(
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
   if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) return null;
 
-  const rulesForMigration = allowAccess.filter((rule) => !rule.uids);
-  const archetype: Archetype =
-    rulesForMigration.length > 0
-      ? classifyArchetype(rulesForMigration)
-      : { base: 'unclassified', modifiers: [] };
-  const { result, errors, notes } = migrateAllowAccess(archetype, rulesForMigration);
+  const { result, errors, notes } = migrateAllowAccess(allowAccess);
 
   if (errors.length > 0) return null;
 
@@ -728,7 +712,7 @@ export async function analyzeAssessmentFile(
     return null;
   }
 
-  const { archetype, hasUidRules, errors, notes } = analyzeAllowAccessRules(allowAccess);
+  const { archetype, errors, notes, hasUidRules } = migrateAllowAccess(allowAccess);
 
   return {
     tid,
@@ -794,12 +778,7 @@ export async function applyMigrationToAssessmentFile(
   }
 
   // strategy === 'migrate'
-  const rulesForMigration = allowAccess.filter((rule) => !rule.uids);
-  const archetype: Archetype =
-    rulesForMigration.length > 0
-      ? classifyArchetype(rulesForMigration)
-      : { base: 'unclassified', modifiers: [] };
-  const { result, errors } = migrateAllowAccess(archetype, rulesForMigration);
+  const { result, errors } = migrateAllowAccess(allowAccess);
 
   if (errors.length === 0) {
     applyFallbackReleaseDate(result, fallbackReleaseDate);
