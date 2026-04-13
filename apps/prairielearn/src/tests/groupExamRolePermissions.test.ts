@@ -209,7 +209,6 @@ async function prepareGroup() {
     studentUsers[0],
     assessmentUrl,
     null,
-    '#leaveGroupModal',
   );
   const validRoleConfig = [
     { roleId: manager.id, groupUserId: studentUsers[0].id },
@@ -288,7 +287,6 @@ describe('Assessment instance with group roles & permissions - Exam', function (
         studentUsers[0],
         assessmentInstanceUrl,
         null,
-        '#leaveGroupModal',
       );
       let $ = $assessmentInstanceFirstUserPage;
 
@@ -442,7 +440,6 @@ describe('Assessment instance with group roles & permissions - Exam', function (
         studentUsers[0],
         assessmentInstanceUrl,
         null,
-        '#leaveGroupModal',
       );
       const invalidRoleConfig = [
         { roleId: manager.id, groupUserId: studentUsers[0].id },
@@ -475,7 +472,6 @@ describe('Assessment instance with group roles & permissions - Exam', function (
         studentUsers[1],
         assessmentInstanceUrl,
         null,
-        '#leaveGroupModal',
       );
       $ = assessmentInstanceSecondUserPage;
 
@@ -492,7 +488,6 @@ describe('Assessment instance with group roles & permissions - Exam', function (
           studentUsers[0],
           assessmentInstanceUrl,
           null,
-          '#leaveGroupModal',
         );
       $ = await updateGroupRoles(
         validRoleConfig,
