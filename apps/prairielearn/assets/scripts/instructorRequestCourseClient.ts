@@ -100,6 +100,7 @@ onDocumentReady(() => {
 
   function scheduleCheck() {
     if (checkTimeout) clearTimeout(checkTimeout);
+    const checkSeq = ++latestCheckSeq;
 
     const title = titleInput?.value.trim() ?? '';
     const short_name = shortNameInput?.value.trim().toUpperCase() ?? '';
@@ -116,7 +117,6 @@ onDocumentReady(() => {
 
     checkIsLoading = true;
     updateSubmitButton();
-    const checkSeq = ++latestCheckSeq;
 
     checkTimeout = setTimeout(async () => {
       try {
