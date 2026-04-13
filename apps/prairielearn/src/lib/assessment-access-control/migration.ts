@@ -116,29 +116,29 @@ function buildAfterComplete(
   if (!hidesAssessment && !hidesScore) return undefined;
 
   const result: AccessControlJsonInput['afterComplete'] = {};
-  if (hidesAssessment) result.hideQuestions = true;
-  if (hidesScore) result.hideScore = true;
+  if (hidesAssessment) result.questions = { hidden: true };
+  if (hidesScore) result.score = { hidden: true };
 
   const lastCreditEndDate = findLastCreditEndDate(rules);
   if (lastCreditEndDate) {
     const visibilityRules = getVisibilityRules(rules);
 
-    if (hidesAssessment) {
+    if (hidesAssessment && result.questions) {
       const questionRevealDates = visibilityRules
         .filter((r) => r.showClosedAssessment !== false)
         .map((r) => r.startDate)
         .filter((date): date is string => !!date && date > lastCreditEndDate)
         .sort();
-      if (questionRevealDates[0]) result.showQuestionsAgainDate = questionRevealDates[0];
+      if (questionRevealDates[0]) result.questions.visibleFromDate = questionRevealDates[0];
     }
 
-    if (hidesScore) {
+    if (hidesScore && result.score) {
       const scoreRevealDates = visibilityRules
         .filter((r) => r.showClosedAssessmentScore !== false)
         .map((r) => r.startDate)
         .filter((date): date is string => !!date && date > lastCreditEndDate)
         .sort();
-      if (scoreRevealDates[0]) result.showScoreAgainDate = scoreRevealDates[0];
+      if (scoreRevealDates[0]) result.score.visibleFromDate = scoreRevealDates[0];
     }
   }
 
@@ -464,7 +464,7 @@ function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
 
   if (openEndedCreditRules.length > 0) {
     const maxOpenCredit = Math.max(...openEndedCreditRules.map((r) => r.credit ?? 0));
-    result.dateControl!.afterLastDeadline = { credit: maxOpenCredit };
+    result.dateControl!.afterLastDeadline = { allowSubmissions: true, credit: maxOpenCredit };
   }
 
   applyVisibilityMigration(result, rules);

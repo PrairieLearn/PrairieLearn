@@ -205,7 +205,7 @@ describe('migrateAllowAccess', () => {
           dateControl: {
             releaseDate: '2024-01-01',
             dueDate: '2024-03-01',
-            afterLastDeadline: { credit: 50 },
+            afterLastDeadline: { allowSubmissions: true, credit: 50 },
           },
         },
         errors: [],
@@ -227,7 +227,7 @@ describe('migrateAllowAccess', () => {
         archetype: { base: 'single-deadline', modifiers: ['hides-closed'] },
         result: {
           dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
-          afterComplete: { hideQuestions: true },
+          afterComplete: { questions: { hidden: true } },
         },
         errors: [],
         notes: [],
@@ -248,7 +248,7 @@ describe('migrateAllowAccess', () => {
         archetype: { base: 'single-deadline', modifiers: ['hides-score'] },
         result: {
           dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
-          afterComplete: { hideScore: true },
+          afterComplete: { score: { hidden: true } },
         },
         errors: [],
         notes: [],
@@ -256,7 +256,7 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
-      name: 'both hideQuestions and hideScore in afterComplete',
+      name: 'both questions and score hidden in afterComplete',
       rules: [
         {
           credit: 100,
@@ -270,7 +270,7 @@ describe('migrateAllowAccess', () => {
         archetype: { base: 'single-deadline', modifiers: ['hides-closed'] },
         result: {
           dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
-          afterComplete: { hideQuestions: true, hideScore: true },
+          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
         },
         errors: [],
         notes: [],
@@ -295,10 +295,8 @@ describe('migrateAllowAccess', () => {
         result: {
           dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
           afterComplete: {
-            hideQuestions: true,
-            hideScore: true,
-            showQuestionsAgainDate: '2024-07-01',
-            showScoreAgainDate: '2024-09-01',
+            questions: { hidden: true, visibleFromDate: '2024-07-01' },
+            score: { hidden: true, visibleFromDate: '2024-09-01' },
           },
         },
         errors: [],
@@ -323,10 +321,8 @@ describe('migrateAllowAccess', () => {
         result: {
           dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
           afterComplete: {
-            hideQuestions: true,
-            hideScore: true,
-            showQuestionsAgainDate: '2024-09-01',
-            showScoreAgainDate: '2024-09-01',
+            questions: { hidden: true, visibleFromDate: '2024-09-01' },
+            score: { hidden: true, visibleFromDate: '2024-09-01' },
           },
         },
         errors: [],
@@ -357,8 +353,7 @@ describe('migrateAllowAccess', () => {
             durationMinutes: 50,
           },
           afterComplete: {
-            hideQuestions: true,
-            showQuestionsAgainDate: '2030-01-04T00:00:01',
+            questions: { hidden: true, visibleFromDate: '2030-01-04T00:00:01' },
           },
         },
         errors: [],
@@ -528,7 +523,7 @@ describe('migrateAllowAccess', () => {
         archetype: { base: 'single-deadline', modifiers: ['mode-gated', 'hides-closed'] },
         result: {
           dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
-          afterComplete: { hideQuestions: true },
+          afterComplete: { questions: { hidden: true } },
         },
         errors: [],
         notes: [],
@@ -1290,8 +1285,7 @@ describe('migrateAssessmentJson fallback release date', () => {
           durationMinutes: 50,
         },
         afterComplete: {
-          hideQuestions: true,
-          showQuestionsAgainDate: '2030-01-04T00:00:01',
+          questions: { hidden: true, visibleFromDate: '2030-01-04T00:00:01' },
         },
       },
     ]);

@@ -83,55 +83,32 @@ function buildDateControl(
       })) ?? null;
   }
 
-  {
-    const includeCredit = rule.date_control_after_last_deadline_credit_overridden;
-    const includeAllowSubmissions = rule.date_control_after_last_deadline_allow_submissions != null;
-
-    if (includeCredit || includeAllowSubmissions) {
-      if (
-        rule.date_control_after_last_deadline_credit_overridden &&
-        rule.date_control_after_last_deadline_credit == null &&
-        rule.date_control_after_last_deadline_allow_submissions == null
-      ) {
-        dateControl.afterLastDeadline = null;
-      } else {
-        dateControl.afterLastDeadline = {};
-        if (rule.date_control_after_last_deadline_credit != null) {
-          dateControl.afterLastDeadline.credit = rule.date_control_after_last_deadline_credit;
-        }
-        if (includeAllowSubmissions) {
-          dateControl.afterLastDeadline.allowSubmissions =
-            rule.date_control_after_last_deadline_allow_submissions!;
-        }
-      }
-    }
+  if (rule.date_control_after_last_deadline_allow_submissions != null) {
+    dateControl.afterLastDeadline = {
+      allowSubmissions: rule.date_control_after_last_deadline_allow_submissions,
+      credit: rule.date_control_after_last_deadline_credit,
+    };
   }
 
   return Object.keys(dateControl).length > 0 ? dateControl : undefined;
 }
 
 function buildAfterComplete(rule: AssessmentAccessControlRule): RuntimeAfterComplete | undefined {
-  const override = isOverride(rule);
-  const includeField = (overridden: boolean) => !override || overridden;
-
   const afterComplete: RuntimeAfterComplete = {};
 
-  if (rule.after_complete_hide_questions != null) {
-    afterComplete.hideQuestions = rule.after_complete_hide_questions;
-  }
-  if (includeField(rule.after_complete_hide_questions_again_date_overridden)) {
-    afterComplete.hideQuestionsAgainDate = rule.after_complete_hide_questions_again_date ?? null;
-  }
-
-  if (includeField(rule.after_complete_show_questions_again_date_overridden)) {
-    afterComplete.showQuestionsAgainDate = rule.after_complete_show_questions_again_date ?? null;
+  if (rule.after_complete_questions_hidden != null) {
+    afterComplete.questions = {
+      hidden: rule.after_complete_questions_hidden,
+      visibleFromDate: rule.after_complete_questions_visible_from_date ?? null,
+      visibleUntilDate: rule.after_complete_questions_visible_until_date ?? null,
+    };
   }
 
-  if (rule.after_complete_hide_score != null) {
-    afterComplete.hideScore = rule.after_complete_hide_score;
-  }
-  if (includeField(rule.after_complete_show_score_again_date_overridden)) {
-    afterComplete.showScoreAgainDate = rule.after_complete_show_score_again_date ?? null;
+  if (rule.after_complete_score_hidden != null) {
+    afterComplete.score = {
+      hidden: rule.after_complete_score_hidden,
+      visibleFromDate: rule.after_complete_score_visible_from_date ?? null,
+    };
   }
 
   return Object.keys(afterComplete).length > 0 ? afterComplete : undefined;

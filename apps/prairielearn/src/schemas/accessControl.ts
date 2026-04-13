@@ -11,7 +11,7 @@ export const DeadlineEntryJsonSchema = z
 
 const AfterLastDeadlineJsonSchema = z
   .object({
-    allowSubmissions: z.boolean().optional(),
+    allowSubmissions: z.boolean(),
     credit: z.number().min(0).optional(),
   })
   .strict();
@@ -30,9 +30,9 @@ const DateControlJsonSchema = z
       .nullable()
       .optional()
       .describe('Array of late deadlines with credit as percentages'),
-    afterLastDeadline: AfterLastDeadlineJsonSchema.nullable()
-      .describe('Controls for assessment behaviour after last deadline')
-      .optional(),
+    afterLastDeadline: AfterLastDeadlineJsonSchema.describe(
+      'Controls for assessment behavior after last deadline',
+    ).optional(),
     durationMinutes: z
       .number()
       .int()
@@ -80,33 +80,27 @@ const IntegrationsJsonSchema = z
   .strict()
   .optional();
 
+const AfterCompleteQuestionsJsonSchema = z
+  .object({
+    hidden: z.boolean(),
+    visibleFromDate: DatetimeLocalStringSchema.optional(),
+    visibleUntilDate: DatetimeLocalStringSchema.optional(),
+  })
+  .strict()
+  .optional();
+
+const AfterCompleteScoreJsonSchema = z
+  .object({
+    hidden: z.boolean(),
+    visibleFromDate: DatetimeLocalStringSchema.optional(),
+  })
+  .strict()
+  .optional();
+
 const AfterCompleteJsonSchema = z
   .object({
-    hideQuestions: z
-      .boolean()
-      .optional()
-      .describe(
-        'Whether to hide questions after assessment completion. When false, questions are shown until showQuestionsAgainDate (if set).',
-      ),
-    showQuestionsAgainDate: DatetimeLocalStringSchema.nullable()
-      .optional()
-      .describe(
-        'Date as ISO String for when hidden questions become visible again after assessment completion',
-      ),
-    hideQuestionsAgainDate: DatetimeLocalStringSchema.nullable()
-      .optional()
-      .describe('Date as ISO String for when questions are re-hidden after being shown again'),
-    hideScore: z
-      .boolean()
-      .optional()
-      .describe(
-        'Whether to hide scores after assessment completion. When true, scores are hidden until showScoreAgainDate (if set).',
-      ),
-    showScoreAgainDate: DatetimeLocalStringSchema.nullable()
-      .optional()
-      .describe(
-        'Date as ISO String for when hidden scores become visible again after assessment completion',
-      ),
+    questions: AfterCompleteQuestionsJsonSchema,
+    score: AfterCompleteScoreJsonSchema,
   })
   .strict()
   .optional();
