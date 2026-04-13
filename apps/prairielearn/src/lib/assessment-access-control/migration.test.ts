@@ -316,10 +316,7 @@ describe('migrateAllowAccess', () => {
 
   it('returns a user-facing error for unclassified', () => {
     const { errors } = migrateAllowAccess('unclassified', []);
-    assert.equal(
-      errors[0],
-      'This access rule configuration is not supported.',
-    );
+    assert.equal(errors[0], 'This access rule configuration is not supported.');
   });
 
   it('includes afterComplete for showClosedAssessment:false', () => {
@@ -625,7 +622,7 @@ describe('analyzeAssessmentFile', () => {
         assert.isNotNull(result);
         assert.equal(result.tid, 'hw01');
         assert.deepEqual(result.archetype, { base: 'single-deadline', modifiers: [] });
-        assert.equal(result.canMigrate, true);
+        assert.equal(result.errors.length, 0);
         assert.equal(result.hasUidRules, false);
         assert.deepEqual(result.errors, []);
         assert.deepEqual(result.notes, []);
@@ -651,7 +648,7 @@ describe('analyzeAssessmentFile', () => {
         );
         const result = await analyzeAssessmentFile(filePath, 'e01');
         assert.isNotNull(result);
-        assert.equal(result.canMigrate, true);
+        assert.equal(result.errors.length, 0);
         assert.equal(result.hasUidRules, true);
         assert(result.notes.some((note) => note.includes('UID-based rules are excluded')));
       },
@@ -679,14 +676,14 @@ describe('analyzeAssessmentFile', () => {
         assert.isNotNull(result);
         assert.deepEqual(result.archetype, { base: 'declining-credit', modifiers: [] });
         assert.equal(result.hasUidRules, true);
-        assert.equal(result.canMigrate, true);
+        assert.equal(result.errors.length, 0);
         assert(result.notes.some((note) => note.includes('UID-based rules are excluded')));
       },
       { unsafeCleanup: true },
     );
   });
 
-  it('all-UID rules produces unclassified and canMigrate=false', async () => {
+  it('all-UID rules produces unclassified with errors', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
         const filePath = path.join(tmpDir, 'infoAssessment.json');
@@ -701,7 +698,7 @@ describe('analyzeAssessmentFile', () => {
         const result = await analyzeAssessmentFile(filePath, 'e01');
         assert.isNotNull(result);
         assert.deepEqual(result.archetype, { base: 'unclassified', modifiers: [] });
-        assert.equal(result.canMigrate, false);
+        assert.isAbove(result.errors.length, 0);
         assert.equal(result.hasUidRules, true);
         assert(result.errors.some((error) => error.includes('not supported')));
         assert(result.notes.some((note) => note.includes('UID-based rules are excluded')));
@@ -728,10 +725,8 @@ describe('analyzeAssessmentFile', () => {
         const result = await analyzeAssessmentFile(filePath, 'hw-gap');
         assert.isNotNull(result);
         assert.deepEqual(result.archetype, { base: 'unclassified', modifiers: [] });
-        assert.equal(result.canMigrate, false);
-        assert.deepEqual(result.errors, [
-          'Non-contiguous access windows are not supported in the modern access control system.',
-        ]);
+        assert.isAbove(result.errors.length, 0);
+        assert.deepEqual(result.errors, ['Non-contiguous access windows are not supported.']);
         assert.deepEqual(result.notes, []);
       },
       { unsafeCleanup: true },
@@ -784,7 +779,7 @@ describe('analyzeAssessmentFile', () => {
         const result = await analyzeAssessmentFile(filePath, 'hw01');
         assert.isNotNull(result);
         assert.deepEqual(result.archetype, { base: 'no-op', modifiers: [] });
-        assert.equal(result.canMigrate, true);
+        assert.equal(result.errors.length, 0);
         assert.match(result.notes[0], /No-op access rule/);
       },
       { unsafeCleanup: true },
@@ -831,7 +826,7 @@ describe('analyzeCourseInstanceAssessments', () => {
         assert.equal(result.hasLegacyRules, true);
         assert.lengthOf(result.assessments, 1);
         assert.equal(result.assessments[0].tid, 'hw01');
-        assert.equal(result.allCanMigrate, true);
+        assert.isTrue(result.assessments.every((a) => a.errors.length === 0));
       },
       { unsafeCleanup: true },
     );

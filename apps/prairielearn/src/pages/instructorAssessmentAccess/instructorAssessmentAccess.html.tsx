@@ -96,7 +96,7 @@ export function InstructorAssessmentAccess({
               <div
                 class="alert alert-warning mb-0 rounded-0 border-start-0 border-end-0 border-top-0"
               >
-                ${migrationAnalysis && !migrationAnalysis.canMigrate
+                ${migrationAnalysis && migrationAnalysis.errors.length > 0
                   ? html`This assessment uses the legacy access control system. Automatic migration
                     is not available for this assessment's access rules.`
                   : html`This assessment uses the legacy access control system. Consider migrating

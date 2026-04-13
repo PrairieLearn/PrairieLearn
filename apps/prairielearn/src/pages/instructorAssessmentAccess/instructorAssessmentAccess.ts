@@ -109,7 +109,7 @@ router.get(
     if (enhancedAccessControlEnabled) {
       migrationAnalysis = await analyzeAssessmentFile(assessmentPath, res.locals.assessment.tid!);
 
-      if (migrationAnalysis?.canMigrate) {
+      if (migrationAnalysis?.errors.length === 0) {
         const content = await fs.readFile(assessmentPath, 'utf-8');
         const parsed = JSON.parse(content);
         const beforeJson = JSON.stringify(parsed.allowAccess, null, 2);
@@ -130,7 +130,7 @@ router.get(
             isWipe: false,
           };
         }
-      } else if (migrationAnalysis && !migrationAnalysis.canMigrate) {
+      } else if (migrationAnalysis && migrationAnalysis.errors.length > 0) {
         const content = await fs.readFile(assessmentPath, 'utf-8');
         const parsed = JSON.parse(content);
         const beforeJson = JSON.stringify(parsed.allowAccess, null, 2);

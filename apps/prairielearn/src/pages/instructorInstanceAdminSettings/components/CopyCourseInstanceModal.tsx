@@ -362,12 +362,14 @@ function AccessControlStep({
   }
 
   const assessments = analysis?.assessments ?? [];
-  const allCanMigrate = analysis?.allCanMigrate ?? false;
+  const allCanMigrate = analysis?.assessments.every((a) => a.errors.length === 0) ?? false;
   const appError = analysisQuery.isError
     ? getAppError<InstanceAdminSettingsError>(analysisQuery.error)
     : null;
-  const assessmentsWithWarnings = assessments.filter((a) => a.canMigrate && a.warnings.length > 0);
-  const blockedAssessments = assessments.filter((a) => !a.canMigrate);
+  const assessmentsWithNotes = assessments.filter(
+    (a) => a.errors.length === 0 && a.notes.length > 0,
+  );
+  const blockedAssessments = assessments.filter((a) => a.errors.length > 0);
   const showPreserveOption =
     accessControlStrategy === 'migrate' && (analysisQuery.isError || !allCanMigrate);
 
@@ -399,12 +401,12 @@ function AccessControlStep({
             .
           </p>
 
-          {(assessmentsWithWarnings.length > 0 || blockedAssessments.length > 0) && (
+          {(assessmentsWithNotes.length > 0 || blockedAssessments.length > 0) && (
             <Alert variant="warning">
-              {assessmentsWithWarnings.length > 0 && (
+              {assessmentsWithNotes.length > 0 && (
                 <div>
-                  <strong>{assessmentsWithWarnings.length}</strong> assessment
-                  {assessmentsWithWarnings.length !== 1 ? 's' : ''} can migrate with caveats.
+                  <strong>{assessmentsWithNotes.length}</strong> assessment
+                  {assessmentsWithNotes.length !== 1 ? 's' : ''} can migrate with caveats.
                 </div>
               )}
               {blockedAssessments.length > 0 && (
@@ -439,8 +441,8 @@ function AccessControlStep({
                       <small className="text-muted d-block">{a.title}</small>
                     </td>
                     <td>
-                      {a.canMigrate ? (
-                        a.warnings.length > 0 ? (
+                      {a.errors.length === 0 ? (
+                        a.notes.length > 0 ? (
                           <span className="badge text-bg-warning">Migrates with caveats</span>
                         ) : (
                           <span className="badge text-bg-success">Can migrate</span>
@@ -450,8 +452,8 @@ function AccessControlStep({
                       )}
                     </td>
                     <td>
-                      {a.warnings.length > 0 ? (
-                        <small className="text-muted">{a.warnings.join(' ')}</small>
+                      {a.notes.length > 0 ? (
+                        <small className="text-muted">{a.notes.join(' ')}</small>
                       ) : (
                         <small className="text-muted">-</small>
                       )}
@@ -474,16 +476,15 @@ function AccessControlStep({
           value="migrate"
           {...register('access_control_strategy')}
         />
-        {accessControlStrategy === 'migrate' &&
-          assessmentsWithWarnings.some((a) => a.hasUidRules) && (
-            <div className="ms-4 mt-1 mb-2">
-              <small className="text-muted d-block">
-                UID-based rules are copied only in legacy format. If you migrate the copy, those
-                individual-student rules are omitted and should be recreated later as enrollment
-                overrides if needed.
-              </small>
-            </div>
-          )}
+        {accessControlStrategy === 'migrate' && assessmentsWithNotes.some((a) => a.hasUidRules) && (
+          <div className="ms-4 mt-1 mb-2">
+            <small className="text-muted d-block">
+              UID-based rules are copied only in legacy format. If you migrate the copy, those
+              individual-student rules are omitted and should be recreated later as enrollment
+              overrides if needed.
+            </small>
+          </div>
+        )}
         {showPreserveOption && (
           <div className="ms-4 mt-1 mb-2">
             <Form.Check

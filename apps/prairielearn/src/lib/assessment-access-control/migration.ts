@@ -54,7 +54,6 @@ export interface AssessmentMigrationAnalysis {
   title: string;
   type: string;
   archetype: Archetype;
-  canMigrate: boolean;
   ruleCount: number;
   hasUidRules: boolean;
   errors: string[];
@@ -64,16 +63,11 @@ export interface AssessmentMigrationAnalysis {
 interface CourseInstanceMigrationAnalysis {
   assessments: AssessmentMigrationAnalysis[];
   hasLegacyRules: boolean;
-  allCanMigrate: boolean;
 }
 
 const NON_CONTIGUOUS_ACCESS_WINDOWS_ERROR = 'Non-contiguous access windows are not supported.';
 const UNCLASSIFIED_ACCESS_RULES_ERROR = 'This access rule configuration is not supported.';
 const MODE_ONLY_ACCESS_RULES_ERROR = 'Mode-only access rules are not supported.';
-const NON_MIGRATABLE_ARCHETYPES: ReadonlySet<BaseArchetype> = new Set([
-  'mode-gated',
-  'unclassified',
-]);
 
 function isBaseArchetype(value: string): value is BaseArchetype {
   return BASE_ARCHETYPES.includes(value as BaseArchetype);
@@ -135,11 +129,8 @@ function analyzeAllowAccessRules(allowAccess: AssessmentAccessRuleJson[]) {
     );
   }
 
-  const canMigrate = isMigratable(archetype);
-
   return {
     archetype,
-    canMigrate,
     hasUidRules,
     errors,
     notes,
@@ -742,10 +733,6 @@ export function migrateAllowAccess(
   return migrateKnownAllowAccess(parsedArchetype.base, rules);
 }
 
-function isMigratable(archetype: Archetype): boolean {
-  return !NON_MIGRATABLE_ARCHETYPES.has(archetype.base);
-}
-
 /**
  * Ensures a release date exists on the migrated result when dateControl is present.
  * If the migration didn't extract a release date from the legacy rules, the
@@ -775,9 +762,8 @@ export function migrateAssessmentJson(
       ? classifyArchetype(rulesForMigration)
       : makeArchetype('unclassified');
   const { result, errors, notes } = migrateAllowAccess(archetype, rulesForMigration);
-  const canMigrate = isMigratable(archetype);
 
-  if (!canMigrate) return null;
+  if (errors.length > 0) return null;
 
   applyFallbackReleaseDate(result, fallbackReleaseDate);
 
@@ -808,15 +794,13 @@ export async function analyzeAssessmentFile(
     return null;
   }
 
-  const { archetype, canMigrate, hasUidRules, errors, notes } =
-    analyzeAllowAccessRules(allowAccess);
+  const { archetype, hasUidRules, errors, notes } = analyzeAllowAccessRules(allowAccess);
 
   return {
     tid,
     title: (data.title as string | undefined) ?? tid,
     type: (data.type as string | undefined) ?? 'unknown',
     archetype,
-    canMigrate,
     ruleCount: allowAccess.length,
     hasUidRules,
     errors,
@@ -842,7 +826,6 @@ export async function analyzeCourseInstanceAssessments(
   return {
     assessments,
     hasLegacyRules: assessments.length > 0,
-    allCanMigrate: assessments.every((a) => a.canMigrate),
   };
 }
 
@@ -882,10 +865,9 @@ export async function applyMigrationToAssessmentFile(
     rulesForMigration.length > 0
       ? classifyArchetype(rulesForMigration)
       : makeArchetype('unclassified');
-  const { result } = migrateAllowAccess(archetype, rulesForMigration);
-  const canMigrate = isMigratable(archetype);
+  const { result, errors } = migrateAllowAccess(archetype, rulesForMigration);
 
-  if (canMigrate) {
+  if (errors.length === 0) {
     applyFallbackReleaseDate(result, fallbackReleaseDate);
     data.accessControl = [result];
     delete data.allowAccess;
