@@ -37,7 +37,7 @@ export const FriendlyDate: FC<FriendlyDateProps> = ({
 
     const targetMs =
       date instanceof Temporal.PlainDateTime
-        ? date.toZonedDateTime(timezone!).epochMilliseconds
+        ? date.toZonedDateTime(timezone).epochMilliseconds
         : date.getTime();
     if (Math.abs(targetMs - Date.now()) > 2 * 24 * 60 * 60 * 1000) return;
 

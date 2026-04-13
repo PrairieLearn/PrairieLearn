@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-types.js';
 
@@ -70,6 +72,8 @@ export interface AccessTimelineEntry {
   endDate: Date | null;
   active: boolean;
 }
+
+export const AccessTimelineEntrySchema = z.custom<AccessTimelineEntry>();
 
 export interface AccessControlResolverResult {
   authorized: boolean;

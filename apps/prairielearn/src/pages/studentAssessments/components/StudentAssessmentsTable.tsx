@@ -89,7 +89,7 @@ function AvailableCredit({ row }: { row: StudentAssessmentsTableRow }) {
       return (
         <span className="text-muted">
           Available{' '}
-          <FriendlyDate date={new Date(row.opens_at)} live options={{ dateOnly: true }} tooltip />
+          <FriendlyDate date={new Date(row.opens_at)} options={{ dateOnly: true }} live tooltip />
         </span>
       );
     }

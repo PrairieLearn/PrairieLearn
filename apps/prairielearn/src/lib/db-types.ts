@@ -7,6 +7,8 @@ import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
 
+import { AccessTimelineEntrySchema } from './assessment-access-control/resolver.js';
+
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
@@ -134,12 +136,6 @@ export const SprocTeamInfoSchema = z.object({
   user_roles_list: z.array(SprocUsersGetDisplayedRoleSchema),
 });
 export type SprocTeamInfo = z.infer<typeof SprocTeamInfoSchema>;
-
-// Timeline entry for modern access control display.
-// This is only produced programmatically by the modern resolver (never from SQL),
-// so we use z.custom to carry the Date-based interface through.
-export const AccessTimelineEntrySchema =
-  z.custom<import('./assessment-access-control/resolver.js').AccessTimelineEntry>();
 
 // Result of authz_assessment sproc
 export const SprocAuthzAssessmentSchema = z.object({
