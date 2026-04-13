@@ -54,19 +54,7 @@ export function GroupWorkInfoContainer({
           </div>
           <div className="col-sm bg-light py-4 px-4 border">
             {groupConfig.studentAuthzLeave && (
-              <>
-                <div className="text-end">
-                  <button
-                    type="button"
-                    className="btn btn-danger"
-                    data-bs-toggle="modal"
-                    data-bs-target="#leaveGroupModal"
-                  >
-                    Leave the group
-                  </button>
-                </div>
-                <LeaveGroupModal csrfToken={csrfToken} />
-              </>
+              <LeaveGroupButton csrfToken={csrfToken} />
             )}
             <span id="group-member">
               <b>Group members: </b>
@@ -92,34 +80,41 @@ export function GroupWorkInfoContainer({
   );
 }
 
-function LeaveGroupModal({ csrfToken }: { csrfToken: string }) {
+function LeaveGroupButton({ csrfToken }: { csrfToken: string }) {
   const [show, setShow] = useState(false);
 
   return (
-    <Modal show={show} onHide={() => setShow(false)}>
-      <form method="POST">
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm leave group</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>Are you sure you want to leave the group?</p>
-          <p>
-            You will lose access to any work done by the group and you might not be able to re-join
-            later.
-          </p>
-        </Modal.Body>
-        <Modal.Footer>
-          <input type="hidden" name="__action" value="leave_group" />
-          <input type="hidden" name="__csrf_token" value={csrfToken} />
-          <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
-            Close
-          </button>
-          <button id="leave-group" type="submit" className="btn btn-danger">
-            Leave group
-          </button>
-        </Modal.Footer>
-      </form>
-    </Modal>
+    <>
+      <div className="text-end">
+        <button type="button" className="btn btn-danger" onClick={() => setShow(true)}>
+          Leave the group
+        </button>
+      </div>
+      <Modal show={show} onHide={() => setShow(false)}>
+        <form method="POST">
+          <Modal.Header closeButton>
+            <Modal.Title>Confirm leave group</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <p>Are you sure you want to leave the group?</p>
+            <p>
+              You will lose access to any work done by the group and you might not be able to
+              re-join later.
+            </p>
+          </Modal.Body>
+          <Modal.Footer>
+            <input type="hidden" name="__action" value="leave_group" />
+            <input type="hidden" name="__csrf_token" value={csrfToken} />
+            <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
+              Close
+            </button>
+            <button id="leave-group" type="submit" className="btn btn-danger">
+              Leave group
+            </button>
+          </Modal.Footer>
+        </form>
+      </Modal>
+    </>
   );
 }
 
