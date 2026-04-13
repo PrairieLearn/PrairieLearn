@@ -269,9 +269,9 @@ function CourseNewRequestCard({
               from within your existing course instead of requesting a new one.
             </div>
             <div class="d-none alert alert-warning mt-2 mb-0" id="cr-shortname-exists" role="alert">
-              A course with this short name already exists on PrairieLearn. If you'd like to share
-              content with the existing instructor, consider reaching out to them. If you prefer a
-              separate course, you may continue and your request will be reviewed.
+              A course with this short name already exists in your institution. If you'd like to
+              share content with the existing instructor, consider reaching out to them. If you
+              prefer a separate course, you may continue and your request will be reviewed.
             </div>
           </div>
           <div class="mb-3">
@@ -302,7 +302,7 @@ function CourseNewRequestCard({
               from within your existing course instead of requesting a new one.
             </div>
             <div class="d-none alert alert-warning mt-2 mb-0" id="cr-title-exists" role="alert">
-              A course with this title already exists on PrairieLearn. If you'd like to share
+              A course with this title already exists in your institution. If you'd like to share
               content with the existing instructor, consider reaching out to them. If you prefer a
               separate course, you may continue and your request will be reviewed.
             </div>
