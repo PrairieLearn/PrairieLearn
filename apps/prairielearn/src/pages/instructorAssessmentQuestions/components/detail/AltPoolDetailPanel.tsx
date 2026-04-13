@@ -106,7 +106,6 @@ export function AltPoolDetailPanel({
     // We use the result of trigger() directly because formState.isValid may
     // not update until user interaction with mode: 'onChange'.
     void trigger().then((valid) => {
-      // TODO: you can easily click off the item and save the form to bypass this validation.
       onFormValidChange(valid);
     });
   }, [alternativeCount, trigger, onFormValidChange]);
@@ -486,6 +485,7 @@ export function AltPoolDetailPanel({
         variant="altPool"
         editMode={editMode}
         inheritance={advancedInheritance}
+        assessmentType={assessmentType}
       />
     </div>
   );
