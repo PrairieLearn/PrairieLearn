@@ -190,6 +190,65 @@ function ModelList({
   );
 }
 
+function BillingAlert({
+  useCustomApiKeys,
+  hasKeys,
+  hasCredits,
+  creditBalanceMilliDollars,
+  aiGradingSettingsUrl,
+}: {
+  useCustomApiKeys: boolean;
+  hasKeys: boolean;
+  hasCredits: boolean;
+  creditBalanceMilliDollars: number;
+  aiGradingSettingsUrl: string;
+}) {
+  if (useCustomApiKeys) {
+    return (
+      <Alert variant={hasKeys ? 'info' : 'danger'} className="mb-3 py-2 small">
+        {hasKeys ? (
+          <>
+            Billing to custom API key &middot;{' '}
+            <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
+              Manage keys
+            </a>
+          </>
+        ) : (
+          <>
+            No custom API keys configured &middot;{' '}
+            <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
+              Manage keys
+            </a>
+          </>
+        )}
+      </Alert>
+    );
+  }
+
+  return (
+    <Alert variant={hasCredits ? 'info' : 'danger'} className="mb-3 py-2 small">
+      {hasCredits ? (
+        <>
+          Billing to credit pool &middot; {formatMilliDollars(creditBalanceMilliDollars)} available
+          &middot;{' '}
+          <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
+            Manage credits
+          </a>
+        </>
+      ) : (
+        // TODO: Update to "No credits remaining. Purchase credits in the
+        // AI grading settings page." when the Stripe integration PR is merged.
+        <>
+          No credits remaining. Request for more credits to continue grading.{' '}
+          <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
+            More info
+          </a>
+        </>
+      )}
+    </Alert>
+  );
+}
+
 export function AiGradingModelSelectionModal({
   modalState,
   availableProviders,
@@ -248,10 +307,16 @@ export function AiGradingModelSelectionModal({
     [modalState, selectedModel, mutate, onSuccess, onHide],
   );
 
-  const isSelectedModelAvailable = availableProviders.includes(
-    AI_GRADING_MODELS.find((m) => m.modelId === selectedModel)!.provider,
-  );
-  const hasNoCredits = !useCustomApiKeys && creditBalanceMilliDollars <= 0;
+  const selectedModelProvider = AI_GRADING_MODELS.find(
+    (m) => m.modelId === selectedModel,
+  )?.provider;
+
+  const isSelectedModelAvailable = selectedModelProvider
+    ? availableProviders.includes(selectedModelProvider)
+    : false;
+  const hasCredits = creditBalanceMilliDollars > 0;
+  const hasKeys = availableProviders.length > 0;
+  const isGradingEnabled = useCustomApiKeys ? hasKeys : hasCredits;
 
   return (
     <Modal
@@ -267,33 +332,13 @@ export function AiGradingModelSelectionModal({
         </Modal.Header>
 
         <Modal.Body>
-          <Alert variant={hasNoCredits ? 'danger' : 'info'} className="mb-3 py-2 small">
-            {useCustomApiKeys ? (
-              <>
-                Billing to custom API key &middot;{' '}
-                <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
-                  Manage keys
-                </a>
-              </>
-            ) : hasNoCredits ? (
-              // TODO: Update to "No credits remaining. Purchase credits in the
-              // AI grading settings page." when the Stripe integration PR is merged.
-              <>
-                No credits remaining. Request for more credits to continue grading.{' '}
-                <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
-                  More info
-                </a>
-              </>
-            ) : (
-              <>
-                Billing to credit pool &middot; {formatMilliDollars(creditBalanceMilliDollars)}{' '}
-                available &middot;{' '}
-                <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
-                  Manage credits
-                </a>
-              </>
-            )}
-          </Alert>
+          <BillingAlert
+            useCustomApiKeys={useCustomApiKeys}
+            hasKeys={hasKeys}
+            hasCredits={hasCredits}
+            creditBalanceMilliDollars={creditBalanceMilliDollars}
+            aiGradingSettingsUrl={aiGradingSettingsUrl}
+          />
           <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}
@@ -315,7 +360,7 @@ export function AiGradingModelSelectionModal({
               </Button>
               <Button
                 variant="primary"
-                disabled={isPending || !isSelectedModelAvailable || hasNoCredits}
+                disabled={isPending || !isSelectedModelAvailable || !isGradingEnabled}
                 type="submit"
               >
                 {isPending

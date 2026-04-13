@@ -584,8 +584,6 @@ export function AssessmentQuestionTable({
     groupSubmissionMutation,
   } = mutations;
 
-  const aiGradingDisabledNoKeys = availableAiGradingProviders.length === 0;
-
   const columnFiltersComponents = createColumnFilters({
     allGraders,
     allSubmissionGroups,
@@ -702,66 +700,49 @@ export function AssessmentQuestionTable({
           hasCourseInstancePermissionEdit ? (
             aiGradingMode ? (
               <>
-                {aiGradingDisabledNoKeys ? (
-                  <OverlayTrigger
-                    tooltip={{
-                      body: 'No AI grading API keys are configured. Add a key in AI grading settings.',
-                      props: { id: 'ai-grading-no-keys-tooltip' },
-                    }}
-                  >
-                    {/* Wrap in an inline-block span so the tooltip triggers despite the button being disabled */}
-                    <span style={{ display: 'inline-block' }}>
-                      <Button variant="light" size="sm" style={{ pointerEvents: 'none' }} disabled>
-                        <i className="bi bi-stars" aria-hidden="true" />
-                        <span>AI grading</span>
-                      </Button>
-                    </span>
-                  </OverlayTrigger>
-                ) : (
-                  <Dropdown>
-                    <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm">
-                      <i className="bi bi-stars" aria-hidden="true" />
-                      <span>AI grading</span>
-                    </Dropdown.Toggle>
-                    <Dropdown.Menu align="end">
-                      <AiGradingOption
-                        text="Grade all human-graded"
-                        numToGrade={aiGradingCounts.humanGraded}
-                        onSelect={() =>
-                          setModelSelectionModalState({
-                            type: 'human_graded',
-                            numToGrade: aiGradingCounts.humanGraded,
-                          })
-                        }
-                      />
-                      <AiGradingOption
-                        text="Grade selected"
-                        numToGrade={aiGradingCounts.selected}
-                        onSelect={() =>
-                          setModelSelectionModalState({
-                            type: 'selected',
-                            ids: selectedIds,
-                            numToGrade: aiGradingCounts.selected,
-                          })
-                        }
-                      />
-                      <AiGradingOption
-                        text="Grade all"
-                        numToGrade={aiGradingCounts.all}
-                        onSelect={() =>
-                          setModelSelectionModalState({
-                            type: 'all',
-                            numToGrade: aiGradingCounts.all,
-                          })
-                        }
-                      />
-                      <Dropdown.Divider />
-                      <Dropdown.Item onClick={() => setShowDeleteAiGradingModal(true)}>
-                        Delete all AI grading results
-                      </Dropdown.Item>
-                    </Dropdown.Menu>
-                  </Dropdown>
-                )}
+                <Dropdown>
+                  <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm">
+                    <i className="bi bi-stars" aria-hidden="true" />
+                    <span>AI grading</span>
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu align="end">
+                    <AiGradingOption
+                      text="Grade all human-graded"
+                      numToGrade={aiGradingCounts.humanGraded}
+                      onSelect={() =>
+                        setModelSelectionModalState({
+                          type: 'human_graded',
+                          numToGrade: aiGradingCounts.humanGraded,
+                        })
+                      }
+                    />
+                    <AiGradingOption
+                      text="Grade selected"
+                      numToGrade={aiGradingCounts.selected}
+                      onSelect={() =>
+                        setModelSelectionModalState({
+                          type: 'selected',
+                          ids: selectedIds,
+                          numToGrade: aiGradingCounts.selected,
+                        })
+                      }
+                    />
+                    <AiGradingOption
+                      text="Grade all"
+                      numToGrade={aiGradingCounts.all}
+                      onSelect={() =>
+                        setModelSelectionModalState({
+                          type: 'all',
+                          numToGrade: aiGradingCounts.all,
+                        })
+                      }
+                    />
+                    <Dropdown.Divider />
+                    <Dropdown.Item onClick={() => setShowDeleteAiGradingModal(true)}>
+                      Delete all AI grading results
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown>
                 {!availableAiGradingProviders.includes('openai') ? (
                   <OverlayTrigger
                     tooltip={{
