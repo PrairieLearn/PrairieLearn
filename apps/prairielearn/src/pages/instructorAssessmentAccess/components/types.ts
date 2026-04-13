@@ -331,8 +331,8 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   // (questions.hidden: true, score.hidden: false).
   const qv = rule.questionVisibility;
   const sv = rule.scoreVisibility;
-  const hasNonDefaultQuestions = !qv.hidden || qv.visibleFromDate || qv.visibleUntilDate;
-  const hasNonDefaultScore = sv.hidden || sv.visibleFromDate;
+  const hasNonDefaultQuestions = isNonDefaultQuestionVisibility(qv);
+  const hasNonDefaultScore = isNonDefaultScoreVisibility(sv);
 
   if (hasNonDefaultQuestions || hasNonDefaultScore) {
     output.afterComplete = {};
