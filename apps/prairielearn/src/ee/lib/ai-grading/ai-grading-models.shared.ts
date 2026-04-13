@@ -1,4 +1,4 @@
-import { AiGradingModelIdSchema, type EnumAiGradingProvider } from '../../../lib/db-types.js';
+import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 
 const BASELINE_INPUT_TOKENS = 1_000;
 const BASELINE_OUTPUT_TOKENS = 500;
@@ -43,55 +43,65 @@ export const AI_GRADING_MODELS = [
     provider: 'openai',
     modelId: 'gpt-5-mini-2025-08-07',
     name: 'GPT 5-mini',
-    sublabel: 'Fast and affordable',
+    sublabel: 'Good for most grading tasks',
+    recommended: true,
   },
   {
     provider: 'openai',
     modelId: 'gpt-5.1-2025-11-13',
     name: 'GPT 5.1',
-    sublabel: 'Highest accuracy',
+    sublabel: 'Best for text-based submissions',
+    recommended: true,
   },
   {
     provider: 'google',
     modelId: 'gemini-2.5-flash',
     name: 'Gemini 2.5 Flash',
-    sublabel: 'Most affordable',
+    sublabel: 'Lower-cost image grading',
+    recommended: false,
   },
   {
     provider: 'google',
     modelId: 'gemini-3-flash-preview',
     name: 'Gemini 3 Flash',
-    sublabel: 'Fast and affordable',
+    sublabel: 'Fast, accurate image grading',
+    recommended: false,
   },
   {
     provider: 'google',
     modelId: 'gemini-3.1-pro-preview',
     name: 'Gemini 3.1 Pro',
-    sublabel: 'Highest accuracy',
+    sublabel: 'Best for handwriting and images',
+    recommended: true,
   },
   {
     provider: 'anthropic',
     modelId: 'claude-haiku-4-5',
     name: 'Claude Haiku 4.5',
-    sublabel: 'Fast and affordable',
+    sublabel: 'Fast code and reasoning',
+    recommended: false,
   },
   {
     provider: 'anthropic',
     modelId: 'claude-sonnet-4-5',
     name: 'Claude Sonnet 4.5',
-    sublabel: 'Balanced accuracy and speed',
+    sublabel: 'Balanced code and reasoning',
+    recommended: false,
   },
   {
     provider: 'anthropic',
     modelId: 'claude-opus-4-5',
     name: 'Claude Opus 4.5',
-    sublabel: 'Highest accuracy',
+    sublabel: 'Best code and reasoning',
+    recommended: false,
   },
 ] as const;
 
-export type AiGradingModelId = (typeof AiGradingModelIdSchema)['options'][number];
+export type AiGradingModelId = (typeof AI_GRADING_MODELS)[number]['modelId'];
 
-export const AI_GRADING_MODEL_IDS: AiGradingModelId[] = [...AiGradingModelIdSchema.options];
+export const AI_GRADING_MODEL_IDS: AiGradingModelId[] = AI_GRADING_MODELS.map(
+  (model) => model.modelId,
+);
 
 export const AI_GRADING_MODEL_PROVIDERS = {
   'gpt-5-mini-2025-08-07': 'openai',

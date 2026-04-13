@@ -7,8 +7,6 @@ import { OverlayTrigger } from '@prairielearn/ui';
 
 import {
   AI_GRADING_MODELS,
-  AI_GRADING_PROVIDER_DISPLAY_NAMES,
-  AI_GRADING_PROVIDER_SUBLABELS,
   type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
 } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
@@ -50,7 +48,66 @@ function getDefaultModel(
   return DEFAULT_AI_GRADING_MODEL;
 }
 
-const PROVIDER_ORDER: EnumAiGradingProvider[] = ['openai', 'google', 'anthropic'];
+function ModelOption({
+  model,
+  isSelected,
+  isAvailable,
+  relativeCost,
+  onSelect,
+}: {
+  model: (typeof AI_GRADING_MODELS)[number];
+  isSelected: boolean;
+  isAvailable: boolean;
+  relativeCost: string;
+  onSelect: () => void;
+}) {
+  const option = (
+    <label
+      key={model.modelId}
+      htmlFor={`model-${model.modelId}`}
+      className={clsx('rounded-2 px-3 py-2 mb-0 border', {
+        'border-primary bg-primary bg-opacity-10': isSelected,
+        'border-transparent': !isSelected && isAvailable,
+        'opacity-75 border-transparent': !isAvailable,
+      })}
+      style={{ cursor: isAvailable ? 'pointer' : 'default' }}
+    >
+      <div className="d-flex align-items-center justify-content-between">
+        <Form.Check
+          type="radio"
+          id={`model-${model.modelId}`}
+          name="ai-grading-model"
+          className="mb-0"
+          disabled={!isAvailable}
+          checked={isSelected}
+          label={
+            <div>
+              <span className="fw-medium">{model.name}</span>
+              <div className="text-muted small">{model.sublabel}</div>
+            </div>
+          }
+          onChange={onSelect}
+        />
+        <span className="text-muted small text-nowrap ms-3">{relativeCost}</span>
+      </div>
+    </label>
+  );
+
+  return isAvailable ? (
+    option
+  ) : (
+    <OverlayTrigger
+      key={model.modelId}
+      placement="top"
+      tooltip={{
+        props: { id: `model-tooltip-${model.modelId}` },
+        body: 'No API key configured for this provider',
+      }}
+    >
+      {option}
+    </OverlayTrigger>
+  );
+}
 
 function ModelList({
   selectedModel,
@@ -63,94 +120,69 @@ function ModelList({
   relativeCosts: Record<string, string>;
   onSelect: (modelId: AiGradingModelId) => void;
 }) {
-  const modelsByProvider = PROVIDER_ORDER.map((provider) => ({
-    provider,
-    models: AI_GRADING_MODELS.filter((m) => m.provider === provider),
-  }));
+  const recommended = AI_GRADING_MODELS.filter((m) => m.recommended);
+  const other = AI_GRADING_MODELS.filter((m) => !m.recommended);
+  const hasOtherSelected = other.some((m) => m.modelId === selectedModel);
+  const [otherExpanded, setOtherExpanded] = useState(hasOtherSelected);
 
   return (
     <div className="d-flex flex-column gap-4">
-      {modelsByProvider.map(({ provider, models }, providerIndex) => (
-        <div key={provider}>
-          <div className="d-flex justify-content-between align-items-baseline mb-2">
-            <div>
-              <span className="fw-semibold">{AI_GRADING_PROVIDER_DISPLAY_NAMES[provider]}</span>
-              <span className="text-muted ms-2 small">
-                {AI_GRADING_PROVIDER_SUBLABELS[provider]}
-              </span>
-            </div>
-            {providerIndex === 0 && (
-              <span className="text-muted small">
-                Relative cost{' '}
-                <OverlayTrigger
-                  placement="top"
-                  tooltip={{
-                    props: { id: 'cost-tooltip' },
-                    body: 'Relative cost compared to the least expensive model, based on standard token usage.',
-                  }}
-                >
-                  <i className="bi bi-question-circle" aria-hidden="true" />
-                </OverlayTrigger>
-              </span>
-            )}
-          </div>
-          <div className="d-flex flex-column gap-1">
-            {models.map((model) => {
-              const isSelected = selectedModel === model.modelId;
-              const isAvailable = availableProviders.includes(model.provider);
-
-              const modelOption = (
-                <label
-                  key={model.modelId}
-                  htmlFor={`model-${model.modelId}`}
-                  className={clsx('rounded-2 px-3 py-2 mb-0 border', {
-                    'border-primary bg-primary bg-opacity-10': isSelected,
-                    'border-transparent': !isSelected && isAvailable,
-                    'opacity-75 border-transparent': !isAvailable,
-                  })}
-                  style={{ cursor: isAvailable ? 'pointer' : 'default' }}
-                >
-                  <div className="d-flex align-items-center justify-content-between">
-                    <Form.Check
-                      type="radio"
-                      id={`model-${model.modelId}`}
-                      name="ai-grading-model"
-                      className="mb-0"
-                      disabled={!isAvailable}
-                      checked={isSelected}
-                      label={
-                        <div>
-                          <span className="fw-medium">{model.name}</span>
-                          <div className="text-muted small">{model.sublabel}</div>
-                        </div>
-                      }
-                      onChange={() => onSelect(model.modelId)}
-                    />
-                    <span className="text-muted small text-nowrap ms-3">
-                      {relativeCosts[model.modelId]}
-                    </span>
-                  </div>
-                </label>
-              );
-
-              return isAvailable ? (
-                modelOption
-              ) : (
-                <OverlayTrigger
-                  key={model.modelId}
-                  placement="top"
-                  tooltip={{
-                    props: { id: `model-tooltip-${model.modelId}` },
-                    body: 'No API key configured for this provider',
-                  }}
-                >
-                  {modelOption}
-                </OverlayTrigger>
-              );
-            })}
-          </div>
+      <div>
+        <div className="d-flex justify-content-between align-items-baseline mb-2">
+          <span className="fw-semibold">Recommended</span>
+          <span className="text-muted small">
+            Relative cost{' '}
+            <OverlayTrigger
+              placement="top"
+              tooltip={{
+                props: { id: 'cost-tooltip' },
+                body: 'Relative cost compared to the least expensive model, based on standard token usage.',
+              }}
+            >
+              <i className="bi bi-question-circle" aria-hidden="true" />
+            </OverlayTrigger>
+          </span>
         </div>
-      ))}
+        <div className="d-flex flex-column gap-1">
+          {recommended.map((model) => (
+            <ModelOption
+              key={model.modelId}
+              model={model}
+              isSelected={selectedModel === model.modelId}
+              isAvailable={availableProviders.includes(model.provider)}
+              relativeCost={relativeCosts[model.modelId]}
+              onSelect={() => onSelect(model.modelId)}
+            />
+          ))}
+        </div>
+      </div>
+      <div>
+        <button
+          type="button"
+          className="btn btn-sm btn-link p-0 text-muted text-decoration-none"
+          onClick={() => setOtherExpanded((prev) => !prev)}
+        >
+          <i
+            className={`bi bi-chevron-${otherExpanded ? 'down' : 'right'} me-1`}
+            aria-hidden="true"
+          />
+          Other models
+        </button>
+        {otherExpanded && (
+          <div className="d-flex flex-column gap-1 mt-2">
+            {other.map((model) => (
+              <ModelOption
+                key={model.modelId}
+                model={model}
+                isSelected={selectedModel === model.modelId}
+                isAvailable={availableProviders.includes(model.provider)}
+                relativeCost={relativeCosts[model.modelId]}
+                onSelect={() => onSelect(model.modelId)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -236,19 +268,19 @@ export function AiGradingModelSelectionModal({
             {useCustomApiKeys ? (
               <>
                 Billing to custom API key &middot;{' '}
-                <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">Manage keys</a>
+                <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
+                  Manage keys
+                </a>
               </>
             ) : hasNoCredits ? (
-              <>
-                No credits remaining.{' '}
-                <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">Add credits</a>{' '}
-                to continue grading.
-              </>
+              <>No credits remaining. Request for more credits to continue grading.</>
             ) : (
               <>
-                Billing to credit pool &middot;{' '}
-                {formatMilliDollars(creditBalanceMilliDollars)} available &middot;{' '}
-                <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">Manage credits</a>
+                Billing to credit pool &middot; {formatMilliDollars(creditBalanceMilliDollars)}{' '}
+                available &middot;{' '}
+                <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
+                  Manage credits
+                </a>
               </>
             )}
           </Alert>

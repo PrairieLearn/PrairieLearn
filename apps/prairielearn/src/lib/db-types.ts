@@ -11,17 +11,6 @@ import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '.
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
-export const AiGradingModelIdSchema = z.enum([
-  'gpt-5-mini-2025-08-07',
-  'gpt-5.1-2025-11-13',
-  'gemini-2.5-flash',
-  'gemini-3-flash-preview',
-  'gemini-3.1-pro-preview',
-  'claude-haiku-4-5',
-  'claude-sonnet-4-5',
-  'claude-opus-4-5',
-]);
-
 export const EnumAiGradingProviderSchema = z.enum(['openai', 'google', 'anthropic']);
 export type EnumAiGradingProvider = z.infer<typeof EnumAiGradingProviderSchema>;
 
@@ -526,7 +515,7 @@ export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
 
 export const AssessmentQuestionSchema = z.object({
   advance_score_perc: z.number().nullable(),
-  ai_grading_last_selected_model: AiGradingModelIdSchema.nullable(),
+  ai_grading_last_selected_model: z.string().nullable(),
   ai_grading_mode: z.boolean(),
   allow_real_time_grading: z.boolean(),
   alternative_group_id: IdSchema.nullable(),
