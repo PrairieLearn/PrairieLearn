@@ -125,13 +125,14 @@ describe(
           .get();
         assert.deepEqual(computedLocks, initialExpectedLocks);
 
-        assert.include(
+        // The locked row should contain exactly one lock icon button.
+        assert.equal(
           response
             .$('table[data-testid="assessment-questions"] tbody tr')
             .filter((i, elem) => response.$(elem).find('td').length > 0)
             .eq(2)
-            .html(),
-          '60% on Question 2',
+            .find('[data-testid="locked-instance-question-row"]').length,
+          1,
         );
       },
     );

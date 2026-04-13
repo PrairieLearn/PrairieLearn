@@ -134,23 +134,8 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const model_id = req.body.model_id as AiGradingModelId | undefined;
-
-      if (!model_id) {
-        throw new HttpStatusError(400, 'No AI grading model specified');
-      }
-
-      const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
-        'ai-grading-model-selection',
-        res.locals,
-      );
-
-      if (!aiGradingModelSelectionEnabled && model_id !== DEFAULT_AI_GRADING_MODEL) {
-        throw new HttpStatusError(
-          403,
-          `AI grading model selection not available. Must use default model: ${DEFAULT_AI_GRADING_MODEL}`,
-        );
-      }
+      const model_id =
+        (req.body.model_id as AiGradingModelId | undefined) ?? DEFAULT_AI_GRADING_MODEL;
 
       if (!AI_GRADING_MODEL_IDS.includes(model_id)) {
         throw new HttpStatusError(400, 'Invalid AI grading model specified');

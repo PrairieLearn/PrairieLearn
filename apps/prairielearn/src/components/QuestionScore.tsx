@@ -249,13 +249,13 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
   `;
 }
 
-export function ExamQuestionStatus({
+function ExamQuestionStatus({
   instance_question,
   assessment_question,
   realTimeGradingPartiallyDisabled,
   allowGradeLeftMs,
 }: {
-  instance_question: InstanceQuestion;
+  instance_question: Pick<InstanceQuestion, 'status'>;
   assessment_question: Pick<
     AssessmentQuestion,
     'max_auto_points' | 'max_manual_points' | 'allow_real_time_grading'
@@ -332,7 +332,7 @@ export function ExamQuestionStatus({
   `;
 }
 
-export function QuestionVariantHistory({
+function QuestionVariantHistory({
   instanceQuestionId,
   previousVariants,
   currentVariantId,
@@ -453,7 +453,7 @@ export function InstanceQuestionPoints({
   `;
 }
 
-export function ExamQuestionAvailablePoints({
+function ExamQuestionAvailablePoints({
   open,
   pointsList,
   highestSubmissionScore,

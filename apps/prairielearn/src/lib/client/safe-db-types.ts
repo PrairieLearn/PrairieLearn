@@ -38,6 +38,7 @@ import {
   QuestionSchema as RawQuestionSchema,
   RubricItemSchema as RawRubricItemSchema,
   RubricSchema as RawRubricSchema,
+  SprocAuthzAssessmentInstanceSchema as RawSprocAuthzAssessmentInstanceSchema,
   StudentLabelSchema as RawStudentLabelSchema,
   TagSchema as RawTagSchema,
   TopicSchema as RawTopicSchema,
@@ -136,13 +137,30 @@ export const RawStudentAssessmentInstanceSchema__UNSAFE = RawStaffAssessmentInst
   // '__UNSAFE' indicates that this schema needs further transformations before being sent to the client.
   points: true, // potentially sensitive
   score_perc: true, // potentially sensitive
-  score_perc_pending: true, // potentially sensitive
   user_id: true,
 });
 export const StudentAssessmentInstanceSchema__UNSAFE =
   RawStudentAssessmentInstanceSchema__UNSAFE.brand<'StudentAssessmentInstance'>();
 export type StudentAssessmentInstance__UNSAFE = z.infer<
   typeof StudentAssessmentInstanceSchema__UNSAFE
+>;
+
+/** Assessment Instance Authz Results */
+export const RawStudentAssessmentInstanceAuthzResultSchema =
+  RawSprocAuthzAssessmentInstanceSchema.pick({
+    active: true,
+    authorized_edit: true,
+    credit_date_string: true,
+    password: true,
+    show_closed_assessment: true,
+  }).transform(({ password, ...rest }) => ({
+    ...rest,
+    has_password: password != null,
+  }));
+export const StudentAssessmentInstanceAuthzResultSchema =
+  RawStudentAssessmentInstanceAuthzResultSchema.brand<'StudentAssessmentInstanceAuthzResult'>();
+export type StudentAssessmentInstanceAuthzResult = z.infer<
+  typeof StudentAssessmentInstanceAuthzResultSchema
 >;
 
 /** Assessment Modules */
@@ -192,6 +210,18 @@ export const RawStaffAssessmentQuestionSchema = RawAssessmentQuestionSchema;
 export const StaffAssessmentQuestionSchema =
   RawStaffAssessmentQuestionSchema.brand<'StaffAssessmentQuestion'>();
 export type StaffAssessmentQuestion = z.infer<typeof StaffAssessmentQuestionSchema>;
+
+export const RawStudentAssessmentQuestionSchema = RawStaffAssessmentQuestionSchema.pick({
+  allow_real_time_grading: true,
+  grade_rate_minutes: true,
+  init_points: true,
+  max_auto_points: true,
+  max_manual_points: true,
+  max_points: true,
+});
+export const StudentAssessmentQuestionSchema =
+  RawStudentAssessmentQuestionSchema.brand<'StudentAssessmentQuestion'>();
+export type StudentAssessmentQuestion = z.infer<typeof StudentAssessmentQuestionSchema>;
 
 /** Audit Events */
 export const StaffAuditEventSchema = RawAuditEventSchema.brand<'StaffAuditEvent'>();
@@ -345,6 +375,32 @@ export const StaffInstanceQuestionSchema =
   RawStaffInstanceQuestionSchema.brand<'StaffInstanceQuestion'>();
 export type StaffInstanceQuestion = z.infer<typeof StaffInstanceQuestionSchema>;
 
+// '__UNSAFE' indicates that score fields (points, auto_points, manual_points,
+// score_perc, highest_submission_score, current_value) may need redaction
+// depending on whether real-time grading is enabled.
+export const RawStudentInstanceQuestionSchema__UNSAFE = RawStaffInstanceQuestionSchema.pick({
+  auto_points: true,
+  current_value: true,
+  highest_submission_score: true,
+  id: true,
+  last_grader: true,
+  manual_points: true,
+  number_attempts: true,
+  open: true,
+  points: true,
+  points_list: true,
+  points_list_original: true,
+  requires_manual_grading: true,
+  score_perc: true,
+  status: true,
+}).transform(({ last_grader, ...rest }) => ({
+  ...rest,
+  has_last_grader: last_grader != null,
+}));
+export const StudentInstanceQuestionSchema__UNSAFE =
+  RawStudentInstanceQuestionSchema__UNSAFE.brand<'StudentInstanceQuestion'>();
+export type StudentInstanceQuestion__UNSAFE = z.infer<typeof StudentInstanceQuestionSchema__UNSAFE>;
+
 /** Institutions */
 export const RawAdminInstitutionSchema = RawInstitutionSchema.pick({
   course_instance_enrollment_limit: true,
@@ -380,6 +436,13 @@ export type StaffCourseInstancePublishingExtension = z.infer<
 export const RawStaffQuestionSchema = RawQuestionSchema;
 export const StaffQuestionSchema = RawStaffQuestionSchema.brand<'StaffQuestion'>();
 export type StaffQuestion = z.infer<typeof StaffQuestionSchema>;
+
+export const RawStudentQuestionSchema = RawStaffQuestionSchema.pick({
+  id: true,
+  title: true,
+});
+export const StudentQuestionSchema = RawStudentQuestionSchema.brand<'StudentQuestion'>();
+export type StudentQuestion = z.infer<typeof StudentQuestionSchema>;
 
 export const RawPublicQuestionSchema = RawStaffQuestionSchema.pick({
   id: true,
@@ -423,6 +486,17 @@ export type StudentUser = z.infer<typeof StudentUserSchema>;
 /** Zones */
 export const StaffZoneSchema = RawZoneSchema.brand<'StaffZone'>();
 export type StaffZone = z.infer<typeof StaffZoneSchema>;
+
+export const RawStudentZoneSchema = RawZoneSchema.pick({
+  best_questions: true,
+  id: true,
+  lockpoint: true,
+  max_points: true,
+  number: true,
+  title: true,
+});
+export const StudentZoneSchema = RawStudentZoneSchema.brand<'StudentZone'>();
+export type StudentZone = z.infer<typeof StudentZoneSchema>;
 
 export const StaffRubricSchema = RawRubricSchema.brand<'StaffRubric'>();
 export type StaffRubric = z.infer<typeof StaffRubricSchema>;

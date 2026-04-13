@@ -40,7 +40,6 @@ interface AssessmentQuestionManualGradingProps {
   assessmentQuestion: StaffAssessmentQuestion;
   questionQid: string;
   aiGradingEnabled: boolean;
-  aiGradingModelSelectionEnabled: boolean;
   initialAiGradingMode: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
@@ -53,6 +52,7 @@ interface AssessmentQuestionManualGradingProps {
   questionTitle: string;
   questionNumber: number;
   availableAiGradingProviders: EnumAiGradingProvider[];
+  aiGradingRelativeCosts: Record<string, string>;
 }
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
@@ -71,7 +71,6 @@ function AssessmentQuestionManualGradingInner({
   assessmentQuestion,
   questionQid,
   aiGradingEnabled,
-  aiGradingModelSelectionEnabled,
   initialAiGradingMode,
   rubricData,
   instanceQuestionGroups,
@@ -82,6 +81,7 @@ function AssessmentQuestionManualGradingInner({
   questionTitle,
   questionNumber,
   availableAiGradingProviders,
+  aiGradingRelativeCosts,
 }: AssessmentQuestionManualGradingInnerProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -165,7 +165,6 @@ function AssessmentQuestionManualGradingInner({
         assessmentQuestion={assessmentQuestion}
         questionQid={questionQid}
         aiGradingMode={aiGradingMode}
-        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
         rubricData={rubricData}
         instanceQuestionGroups={instanceQuestionGroups}
         courseStaff={courseStaff}
@@ -173,6 +172,7 @@ function AssessmentQuestionManualGradingInner({
         mutations={mutations}
         initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
         availableAiGradingProviders={availableAiGradingProviders}
+        aiGradingRelativeCosts={aiGradingRelativeCosts}
         onSetGroupInfoModalState={setGroupInfoModalState}
         onSetConflictModalState={setConflictModalState}
       />

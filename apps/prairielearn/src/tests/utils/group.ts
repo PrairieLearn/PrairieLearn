@@ -3,10 +3,11 @@ import { assert } from 'vitest';
 
 import { config } from '../../lib/config.js';
 import type { User } from '../../lib/db-types.js';
+import { getCSRFToken } from '../helperClient.js';
 
 /**
  * Switches active user and loads assessment, returning the user's CSRF
- * token value from a form on the page
+ * token value from a form on the page.
  */
 export async function switchUserAndLoadAssessment(
   studentUser: User,
@@ -25,19 +26,16 @@ export async function switchUserAndLoadAssessment(
   const page = await res.text();
   const $ = cheerio.load(page);
 
-  // Find the form. We look in three places:
-  // - A form with the given name.
-  // - A form in the given container.
-  // - The closest form to the given container.
+  // Try to find a CSRF token from a specific form first. If no matching form
+  // is found (e.g. because the form lives inside a React modal that isn't
+  // server-rendered), fall back to the page-level test CSRF token span.
   const form =
     $(`form[name="${formName}"]`).get(0) ??
     $(formContainer).find('form').get(0) ??
     $(formContainer).closest('form').get(0);
 
-  // Extract the CSRF token from the form
-  const csrfTokenElement = $(form).find('input[name="__csrf_token"]');
-  assert.nestedProperty(csrfTokenElement[0], 'attribs.value');
-  const csrfToken = csrfTokenElement.attr('value');
+  const csrfTokenElement = form ? $(form).find('input[name="__csrf_token"]') : undefined;
+  const csrfToken = csrfTokenElement?.attr('value') ?? getCSRFToken($);
   assert.ok(csrfToken);
 
   return { $, csrfToken };
