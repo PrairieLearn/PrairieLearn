@@ -88,7 +88,7 @@ export function InstructorAssessmentDownloads({
                 <code>_all</code>
               </strong>{' '}
               CSV files contain one record per assessment instance, possibly including more than one
-              record per student.
+              record per {identity}.
             </small>
           </p>
         </div>
@@ -217,10 +217,10 @@ export function InstructorAssessmentDownloads({
               description={
                 <>
                   Submitted answers for all {identity}s and all questions, formatted for offline
-                  manual grading and re-upload (see the "Upload" tab). For each {identity}{' '}
-                  and each question, only the most recent submission from the most recent assessment
-                  instance is included. Files are stripped from the submitted answer in the CSV and
-                  are available as <code>{filenames.filesForManualGradingZipFilename}</code>.
+                  manual grading and re-upload (see the "Upload" tab). For each {identity} and each
+                  question, only the most recent submission from the most recent assessment instance
+                  is included. Files are stripped from the submitted answer in the CSV and are
+                  available as <code>{filenames.filesForManualGradingZipFilename}</code>.
                 </>
               }
             />
@@ -235,7 +235,13 @@ export function InstructorAssessmentDownloads({
                   {identity} and each question, only the most recent submitted file from the most
                   recent assessment instance is included. The filename format is{' '}
                   <code>
-                    &lt;uid&gt;_&lt;qid&gt;_&lt;submission_id&gt;_&lt;uploaded_filename&gt;
+                    {isTeamWork ? (
+                      <>
+                        &lt;group_name&gt;_&lt;qid&gt;_&lt;submission_id&gt;_&lt;uploaded_filename&gt;
+                      </>
+                    ) : (
+                      <>&lt;uid&gt;_&lt;qid&gt;_&lt;submission_id&gt;_&lt;uploaded_filename&gt;</>
+                    )}
                   </code>
                 </>
               }
@@ -265,7 +271,15 @@ export function InstructorAssessmentDownloads({
                   submitted files will have been used to compute the final score, as some may have
                   been superseded by subsequent attempts. The filename format is{' '}
                   <code>
-                    &lt;uid&gt;_&lt;assessment_instance_number&gt;_&lt;qid&gt;_&lt;variant_number&gt;_&lt;submission_number&gt;_&lt;submission_id&gt;_&lt;uploaded_filename&gt;
+                    {isTeamWork ? (
+                      <>
+                        &lt;group_name&gt;_&lt;assessment_instance_number&gt;_&lt;qid&gt;_&lt;variant_number&gt;_&lt;submission_number&gt;_&lt;submission_id&gt;_&lt;uploaded_filename&gt;
+                      </>
+                    ) : (
+                      <>
+                        &lt;uid&gt;_&lt;assessment_instance_number&gt;_&lt;qid&gt;_&lt;variant_number&gt;_&lt;submission_number&gt;_&lt;submission_id&gt;_&lt;uploaded_filename&gt;
+                      </>
+                    )}
                   </code>
                 </>
               }
