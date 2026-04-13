@@ -28,7 +28,7 @@ import {
   StudentAssessmentSetSchema,
   StudentCourseInstanceSchema,
   StudentCourseSchema,
-  StudentInstanceQuestionSchema,
+  StudentInstanceQuestionSchema__UNSAFE,
   StudentQuestionSchema,
   StudentUserSchema,
   StudentZoneSchema,
@@ -551,7 +551,7 @@ const minimalStudentZone: z.input<typeof StudentZoneSchema> = {
   title: null,
 };
 
-const minimalStudentInstanceQuestion: z.input<typeof StudentInstanceQuestionSchema> = {
+const minimalStudentInstanceQuestion: z.input<typeof StudentInstanceQuestionSchema__UNSAFE> = {
   auto_points: null,
   current_value: null,
   highest_submission_score: null,
@@ -765,12 +765,13 @@ describe('safe-db-types schemas', () => {
   });
 
   it('parses valid StudentInstanceQuestion and drops extra fields', () => {
-    const parsed = StudentInstanceQuestionSchema.parse({
+    const parsed = StudentInstanceQuestionSchema__UNSAFE.parse({
       ...minimalStudentInstanceQuestion,
       extra: 123,
     });
     expect(parsed).not.toHaveProperty('extra');
-    expect(parsed).toMatchObject(minimalStudentInstanceQuestion);
+    expect(parsed).not.toHaveProperty('last_grader');
+    expect(parsed).toHaveProperty('has_last_grader', false);
   });
 
   it('parses valid StudentAssessmentQuestion and drops extra fields', () => {

@@ -17,10 +17,11 @@ import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   StudentAssessmentInstanceAuthzResultSchema,
+  StudentAssessmentInstanceSchema__UNSAFE,
   StudentAssessmentQuestionSchema,
   StudentAssessmentSchema,
   StudentAssessmentSetSchema,
-  StudentInstanceQuestionSchema,
+  StudentInstanceQuestionSchema__UNSAFE,
   StudentQuestionSchema,
   StudentZoneSchema,
 } from '../../lib/client/safe-db-types.js';
@@ -36,11 +37,10 @@ import {
   type ClientGroupConfig,
   type ClientGroupInfo,
   type ClientQuestionRow,
-  StudentAssessmentInstanceSchema,
 } from './components/types.js';
 
 export const InstanceQuestionRowSchema = z.object({
-  instance_question: StudentInstanceQuestionSchema,
+  instance_question: StudentInstanceQuestionSchema__UNSAFE,
   zone: StudentZoneSchema,
   assessment_question: StudentAssessmentQuestionSchema,
   question: StudentQuestionSchema,
@@ -214,6 +214,10 @@ export function StudentAssessmentInstance({
   // Map rows to client-safe type with scoring data (no db-types.ts references).
   const isGroupAssessment = groupConfig != null;
   const assessmentInstanceOpen = !!resLocals.assessment_instance.open;
+  // When real-time grading is fully disabled and the instance is open, the UI
+  // only shows max points per question — redact actual scored values so they
+  // aren't leaked in the hydration payload.
+  const redactScores = !someQuestionsAllowRealTimeGrading && assessmentInstanceOpen;
   const questionRows: ClientQuestionRow[] = instance_question_rows.map((row) => ({
     id: row.instance_question.id,
     startNewZone: row.start_new_zone,
@@ -255,12 +259,12 @@ export function StudentAssessmentInstance({
     zoneQuestionCount: row.zone_question_count,
 
     // Instance question scoring data.
-    autoPoints: row.instance_question.auto_points,
-    manualPoints: row.instance_question.manual_points,
-    points: row.instance_question.points,
+    autoPoints: redactScores ? null : row.instance_question.auto_points,
+    manualPoints: redactScores ? null : row.instance_question.manual_points,
+    points: redactScores ? null : row.instance_question.points,
     status: row.instance_question.status,
     requiresManualGrading: row.instance_question.requires_manual_grading,
-    hasLastGrader: row.instance_question.last_grader != null,
+    hasLastGrader: row.instance_question.has_last_grader,
     maxAutoPoints: row.assessment_question.max_auto_points,
     maxManualPoints: row.assessment_question.max_manual_points,
     maxPoints: row.assessment_question.max_points,
@@ -270,14 +274,15 @@ export function StudentAssessmentInstance({
     pointsListOriginal: row.instance_question.points_list_original,
     numberAttempts: row.instance_question.number_attempts,
     pointsList: row.instance_question.points_list,
-    highestSubmissionScore: row.instance_question.highest_submission_score,
-    currentValue: row.instance_question.current_value,
-    previousVariants:
-      row.previous_variants?.map((v) => ({
-        id: v.id,
-        open: v.open,
-        maxSubmissionScore: v.max_submission_score,
-      })) ?? null,
+    highestSubmissionScore: redactScores ? null : row.instance_question.highest_submission_score,
+    currentValue: redactScores ? null : row.instance_question.current_value,
+    previousVariants: redactScores
+      ? null
+      : (row.previous_variants?.map((v) => ({
+          id: v.id,
+          open: v.open,
+          maxSubmissionScore: v.max_submission_score,
+        })) ?? null),
   }));
 
   const allQuestionsAnswered = instance_question_rows.every(
@@ -285,7 +290,15 @@ export function StudentAssessmentInstance({
   );
   const assessment = StudentAssessmentSchema.parse(resLocals.assessment);
   const assessmentSet = StudentAssessmentSetSchema.parse(resLocals.assessment_set);
-  const assessmentInstance = StudentAssessmentInstanceSchema.parse(resLocals.assessment_instance);
+  const assessmentInstance = run(() => {
+    const parsed = StudentAssessmentInstanceSchema__UNSAFE.parse(resLocals.assessment_instance);
+    // When real-time grading is fully disabled and the instance is open,
+    // don't leak score data to the client — the UI only shows max_points.
+    if (!someQuestionsAllowRealTimeGrading && parsed.open) {
+      return { ...parsed, points: null, score_perc: null };
+    }
+    return parsed;
+  });
   const authzResult = StudentAssessmentInstanceAuthzResultSchema.parse(resLocals.authz_result);
 
   return PageLayout({

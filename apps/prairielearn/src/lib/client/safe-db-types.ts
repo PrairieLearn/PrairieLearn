@@ -376,30 +376,31 @@ export const StaffInstanceQuestionSchema =
   RawStaffInstanceQuestionSchema.brand<'StaffInstanceQuestion'>();
 export type StaffInstanceQuestion = z.infer<typeof StaffInstanceQuestionSchema>;
 
-export const RawStudentInstanceQuestionSchema = RawStaffInstanceQuestionSchema
-  .pick({
-    auto_points: true,
-    current_value: true,
-    highest_submission_score: true,
-    id: true,
-    last_grader: true,
-    manual_points: true,
-    number_attempts: true,
-    open: true,
-    points: true,
-    points_list: true,
-    points_list_original: true,
-    requires_manual_grading: true,
-    score_perc: true,
-    status: true,
-  })
-  .transform(({ last_grader, ...rest }) => ({
-    ...rest,
-    has_last_grader: last_grader != null,
-  }));
-export const StudentInstanceQuestionSchema =
-  RawStudentInstanceQuestionSchema.brand<'StudentInstanceQuestion'>();
-export type StudentInstanceQuestion = z.infer<typeof StudentInstanceQuestionSchema>;
+// '__UNSAFE' indicates that score fields (points, auto_points, manual_points,
+// score_perc, highest_submission_score, current_value) may need redaction
+// depending on whether real-time grading is enabled.
+export const RawStudentInstanceQuestionSchema__UNSAFE = RawStaffInstanceQuestionSchema.pick({
+  auto_points: true,
+  current_value: true,
+  highest_submission_score: true,
+  id: true,
+  last_grader: true,
+  manual_points: true,
+  number_attempts: true,
+  open: true,
+  points: true,
+  points_list: true,
+  points_list_original: true,
+  requires_manual_grading: true,
+  score_perc: true,
+  status: true,
+}).transform(({ last_grader, ...rest }) => ({
+  ...rest,
+  has_last_grader: last_grader != null,
+}));
+export const StudentInstanceQuestionSchema__UNSAFE =
+  RawStudentInstanceQuestionSchema__UNSAFE.brand<'StudentInstanceQuestion'>();
+export type StudentInstanceQuestion__UNSAFE = z.infer<typeof StudentInstanceQuestionSchema__UNSAFE>;
 
 /** Institutions */
 export const RawAdminInstitutionSchema = RawInstitutionSchema.pick({

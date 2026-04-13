@@ -1,20 +1,9 @@
-import { type z } from 'zod';
-
 import {
-  RawStudentAssessmentInstanceSchema__UNSAFE,
   type StudentAssessment,
+  type StudentAssessmentInstance__UNSAFE,
   type StudentAssessmentInstanceAuthzResult,
   type StudentAssessmentSet,
 } from '../../../lib/client/safe-db-types.js';
-
-// The __UNSAFE schema requires a .transform() to acknowledge that raw score
-// fields (points, score_perc) are being used intentionally. On this page both
-// are always shown to the student — even when real-time grading is disabled,
-// the assessment-level totals are visible — so the transform is a no-op.
-export const StudentAssessmentInstanceSchema = RawStudentAssessmentInstanceSchema__UNSAFE.transform(
-  (data) => data,
-);
-export type StudentAssessmentInstance = z.infer<typeof StudentAssessmentInstanceSchema>;
 
 // Client-safe row type for the hydrated component. This mirrors the fields
 // from InstanceQuestionRow that the client actually needs, without pulling
@@ -117,7 +106,7 @@ export interface ClientGroupInfo {
 export interface StudentAssessmentInstanceBodyProps {
   assessment: StudentAssessment;
   assessmentSet: StudentAssessmentSet;
-  assessmentInstance: StudentAssessmentInstance;
+  assessmentInstance: StudentAssessmentInstance__UNSAFE;
   remainingMs: number | null;
 
   authzResult: StudentAssessmentInstanceAuthzResult;
