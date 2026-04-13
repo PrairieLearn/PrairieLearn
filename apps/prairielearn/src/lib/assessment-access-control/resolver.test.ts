@@ -1595,7 +1595,7 @@ describe('mergeRules', () => {
     expect(result.afterComplete?.questions?.visibleFromDate).toBeUndefined();
     expect(result.afterComplete?.questions?.visibleUntilDate).toBeUndefined();
     expect(result.afterComplete?.score?.hidden).toBe(true);
-    expect(result.afterComplete?.score?.visibleFromDate).toBeNull();
+    expect(result.afterComplete?.score?.visibleFromDate).toBeUndefined();
   });
 
   it.each<{ field: keyof RuntimeAccessControl; main: AccessControlJson }>([

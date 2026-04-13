@@ -14,23 +14,7 @@
       },
       "afterComplete": { "questions": { "hidden": false } }
     },
-    {
-      "labels": ["Extra time"],
-      "afterComplete": {
-        "questions": {
-          "hidden": true,
-          "visibleFromDate": "2026-04-11T00:00:01",
-          "visibleUntilDate": "2026-04-25T23:59:59"
-        }
-      }
-    },
-    {
-      "labels": ["Extra time", "Section A"],
-      "dateControl": { "afterLastDeadline": { "allowSubmissions": false } },
-      "afterComplete": {
-        "questions": { "hidden": false }
-      }
-    }
+    { "labels": ["Section A"], "dateControl": { "dueDate": "2026-01-28T20:15:00" } }
   ],
   "zones": [
     { "title": "Access Control Test Zone", "questions": [{ "id": "addNumbers", "points": 1 }] }
