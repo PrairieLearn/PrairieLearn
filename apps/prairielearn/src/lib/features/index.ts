@@ -8,7 +8,6 @@ const featureNames = [
   'question-sharing', // This also controls course instance sharing.
   'consume-public-questions',
   'ai-grading',
-  'ai-grading-model-selection',
   'disable-public-workspaces',
   'enhanced-access-control',
 
