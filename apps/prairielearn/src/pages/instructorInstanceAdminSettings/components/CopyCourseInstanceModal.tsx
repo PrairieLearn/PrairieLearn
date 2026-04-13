@@ -366,7 +366,7 @@ function AccessControlStep({
   const appError = analysisQuery.isError
     ? getAppError<InstanceAdminSettingsError>(analysisQuery.error)
     : null;
-  const assessmentsWithWarnings = assessments.filter((a) => a.warnings.length > 0);
+  const assessmentsWithWarnings = assessments.filter((a) => a.canMigrate && a.warnings.length > 0);
   const blockedAssessments = assessments.filter((a) => !a.canMigrate);
   const showPreserveOption =
     accessControlStrategy === 'migrate' && (analysisQuery.isError || !allCanMigrate);
@@ -404,13 +404,13 @@ function AccessControlStep({
               {assessmentsWithWarnings.length > 0 && (
                 <div>
                   <strong>{assessmentsWithWarnings.length}</strong> assessment
-                  {assessmentsWithWarnings.length !== 1 ? 's' : ''} will migrate with caveats.
+                  {assessmentsWithWarnings.length !== 1 ? 's' : ''} can migrate with caveats.
                 </div>
               )}
               {blockedAssessments.length > 0 && (
                 <div>
                   <strong>{blockedAssessments.length}</strong> assessment
-                  {blockedAssessments.length !== 1 ? 's' : ''} cannot be migrated automatically.
+                  {blockedAssessments.length !== 1 ? 's' : ''} require manual review.
                 </div>
               )}
             </Alert>
@@ -452,7 +452,7 @@ function AccessControlStep({
                       {a.warnings.length > 0 ? (
                         <small className="text-muted">{a.warnings.join(' ')}</small>
                       ) : (
-                        <small className="text-muted">No known caveats.</small>
+                        <small className="text-muted">-</small>
                       )}
                     </td>
                   </tr>
@@ -478,7 +478,7 @@ function AccessControlStep({
             <div className="ms-4 mt-1 mb-2">
               <small className="text-muted d-block">
                 UID-based rules are copied only in legacy format. If you migrate the copy, those
-                individual-student rules are omitted and can be recreated later as enrollment
+                individual-student rules are omitted and should be recreated later as enrollment
                 overrides if needed.
               </small>
             </div>
@@ -510,7 +510,7 @@ function AccessControlStep({
         <Form.Check
           type="radio"
           id="strategy-wipe"
-          label="Migrate to modern format and wipe all rules"
+          label="Migrate to modern format and clear all rules"
           value="wipe"
           {...register('access_control_strategy')}
         />
