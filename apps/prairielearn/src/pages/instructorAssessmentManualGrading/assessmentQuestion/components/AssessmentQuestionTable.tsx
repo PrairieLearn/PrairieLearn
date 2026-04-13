@@ -90,6 +90,25 @@ interface AssessmentQuestionTableProps {
   mutations: ReturnType<typeof useManualGradingActions>;
 }
 
+function AiGradingOption({
+  text,
+  numToGrade,
+  onSelect,
+}: {
+  text: string;
+  numToGrade: number;
+  onSelect: () => void;
+}) {
+  return (
+    <Dropdown.Item disabled={numToGrade === 0} onClick={onSelect}>
+      <div className="d-flex justify-content-between align-items-center w-100">
+        <span>{text}</span>
+        <span className="badge bg-secondary ms-2">{numToGrade}</span>
+      </div>
+    </Dropdown.Item>
+  );
+}
+
 export function AssessmentQuestionTable({
   hasCourseInstancePermissionEdit,
   csrfToken,
@@ -712,53 +731,37 @@ export function AssessmentQuestionTable({
                       <span>AI grading</span>
                     </Dropdown.Toggle>
                     <Dropdown.Menu align="end">
-                      <Dropdown.Item
-                        disabled={aiGradingCounts.humanGraded === 0}
-                        onClick={() =>
+                      <AiGradingOption
+                        text="Grade all human-graded"
+                        numToGrade={aiGradingCounts.humanGraded}
+                        onSelect={() =>
                           onSetModelSelectionModalState({
                             type: 'human_graded',
                             numToGrade: aiGradingCounts.humanGraded,
                           })
                         }
-                      >
-                        <div className="d-flex justify-content-between align-items-center w-100">
-                          <span>Grade all human-graded</span>
-                          <span className="badge bg-secondary ms-2">
-                            {aiGradingCounts.humanGraded}
-                          </span>
-                        </div>
-                      </Dropdown.Item>
-                      <Dropdown.Item
-                        disabled={aiGradingCounts.selected === 0}
-                        onClick={() =>
+                      />
+                      <AiGradingOption
+                        text="Grade selected"
+                        numToGrade={aiGradingCounts.selected}
+                        onSelect={() =>
                           onSetModelSelectionModalState({
                             type: 'selected',
                             ids: selectedIds,
                             numToGrade: aiGradingCounts.selected,
                           })
                         }
-                      >
-                        <div className="d-flex justify-content-between align-items-center w-100">
-                          <span>Grade selected</span>
-                          <span className="badge bg-secondary ms-2">
-                            {aiGradingCounts.selected}
-                          </span>
-                        </div>
-                      </Dropdown.Item>
-                      <Dropdown.Item
-                        disabled={aiGradingCounts.all === 0}
-                        onClick={() =>
+                      />
+                      <AiGradingOption
+                        text="Grade all"
+                        numToGrade={aiGradingCounts.all}
+                        onSelect={() =>
                           onSetModelSelectionModalState({
                             type: 'all',
                             numToGrade: aiGradingCounts.all,
                           })
                         }
-                      >
-                        <div className="d-flex justify-content-between align-items-center w-100">
-                          <span>Grade all</span>
-                          <span className="badge bg-secondary ms-2">{aiGradingCounts.all}</span>
-                        </div>
-                      </Dropdown.Item>
+                      />
                       <Dropdown.Divider />
                       <Dropdown.Item onClick={() => setShowDeleteAiGradingModal(true)}>
                         Delete all AI grading results

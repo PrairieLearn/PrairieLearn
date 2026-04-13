@@ -239,7 +239,7 @@ export function AiGradingModelSelectionModal({
                 <strong>Error:</strong> {error.message}
               </Alert>
             )}
-            <div className="d-flex align-items-center justify-content-end gap-2 mb-1">
+            <div className="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-end gap-2 mb-1">
               <Button variant="secondary" disabled={isPending} onClick={handleClose}>
                 Cancel
               </Button>
