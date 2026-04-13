@@ -57,7 +57,7 @@ export function MainDateControlForm({
           <MainDeadlineArrayField type="early" displayTimezone={displayTimezone} />
           <MainDueDateField displayTimezone={displayTimezone} />
           <MainDeadlineArrayField type="late" displayTimezone={displayTimezone} />
-          <MainAfterLastDeadlineField />
+          <MainAfterLastDeadlineField displayTimezone={displayTimezone} />
           <Row className="gy-3">
             <Col md={6}>
               <MainDurationField />
@@ -100,7 +100,7 @@ export function OverrideDateControlForm({
         <OverrideDeadlineArrayField index={index} type="early" displayTimezone={displayTimezone} />
         <OverrideDueDateField index={index} displayTimezone={displayTimezone} />
         <OverrideDeadlineArrayField index={index} type="late" displayTimezone={displayTimezone} />
-        <OverrideAfterLastDeadlineField index={index} />
+        <OverrideAfterLastDeadlineField index={index} displayTimezone={displayTimezone} />
         <Row className="gy-3">
           <Col md={6}>
             <OverrideDurationField index={index} />
