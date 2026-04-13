@@ -188,6 +188,7 @@ function CourseNewRequestCard({
                       class="form-control"
                       name="cr-email"
                       id="cr-email"
+                      aria-invalid="false"
                       placeholder="login@yourinstitution.edu"
                       minlength="1"
                       required
@@ -250,6 +251,7 @@ function CourseNewRequestCard({
               class="form-control"
               name="cr-shortname"
               id="cr-shortname"
+              aria-invalid="false"
               placeholder="MATH 101"
               pattern="[a-zA-Z]+ [a-zA-Z0-9]+"
               required
@@ -279,6 +281,7 @@ function CourseNewRequestCard({
               class="form-control"
               name="cr-title"
               id="cr-title"
+              aria-invalid="false"
               placeholder="Elementary Mathematics"
               minlength="1"
               maxlength="75"

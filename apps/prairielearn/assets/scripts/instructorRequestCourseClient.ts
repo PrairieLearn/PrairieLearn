@@ -47,24 +47,43 @@ onDocumentReady(() => {
     short_name: shortNameInput,
   };
 
+  function updateInputValidationState(
+    input: HTMLInputElement | null | undefined,
+    warningId: string | null,
+  ) {
+    if (!input || input.disabled) return;
+
+    if (warningId) {
+      input.setAttribute('aria-invalid', 'true');
+      input.setAttribute('aria-errormessage', warningId);
+    } else {
+      input.setAttribute('aria-invalid', 'false');
+      input.removeAttribute('aria-errormessage');
+    }
+  }
+
   function updateWarnings(field: 'title' | 'short_name', result: CheckResult) {
     warnings[field].owned?.classList.toggle('d-none', !result.owned);
     warnings[field].exists?.classList.toggle('d-none', result.owned || !result.exists);
 
     const input = inputs[field];
-    if (!input) return;
     const activeWarningId = result.owned
       ? warnings[field].owned?.id
       : result.exists
         ? warnings[field].exists?.id
         : null;
-    if (activeWarningId) {
-      input.setAttribute('aria-invalid', 'true');
-      input.setAttribute('aria-errormessage', activeWarningId);
-    } else {
-      input.removeAttribute('aria-invalid');
-      input.removeAttribute('aria-errormessage');
-    }
+    updateInputValidationState(input, activeWarningId ?? null);
+  }
+
+  const emailInput = document.querySelector<HTMLInputElement>('#cr-email');
+  const emailWarning = document.querySelector<HTMLElement>('#cr-email-warning');
+
+  function updateEmailWarning() {
+    const domain = emailInput?.value.split('@')[1]?.toLowerCase();
+    const showWarning = !!domain && PERSONAL_EMAIL_DOMAINS.has(domain);
+
+    emailWarning?.classList.toggle('d-none', !showWarning);
+    updateInputValidationState(emailInput, showWarning ? (emailWarning?.id ?? null) : null);
   }
 
   function updateSubmitButton() {
@@ -152,20 +171,11 @@ onDocumentReady(() => {
     });
 
   // Non-institutional email warning (only rendered for default-institution users).
-  const emailInput = document.querySelector<HTMLInputElement>('#cr-email');
-  const emailWarning = document.querySelector<HTMLElement>('#cr-email-warning');
-  emailInput?.addEventListener('input', () => {
-    const domain = emailInput.value.split('@')[1]?.toLowerCase();
-    const showWarning = !!domain && PERSONAL_EMAIL_DOMAINS.has(domain);
-    emailWarning?.classList.toggle('d-none', !showWarning);
-    if (showWarning && emailWarning) {
-      emailInput.setAttribute('aria-invalid', 'true');
-      emailInput.setAttribute('aria-errormessage', emailWarning.id);
-    } else {
-      emailInput.removeAttribute('aria-invalid');
-      emailInput.removeAttribute('aria-errormessage');
-    }
-  });
+  emailInput?.addEventListener('input', updateEmailWarning);
+
+  updateWarnings('title', titleResult);
+  updateWarnings('short_name', shortNameResult);
+  updateEmailWarning();
 
   // LTI 1.3 auto-fill.
   const lti13Info = decodeData<Lti13CourseRequestInput>('course-request-lti13-info');
@@ -182,6 +192,8 @@ onDocumentReady(() => {
           input.value = value;
         }
       }
+      updateEmailWarning();
+      scheduleCheck();
       modal.hide();
     });
   }
