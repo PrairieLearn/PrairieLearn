@@ -72,7 +72,7 @@ export function ExamQuestionAvailablePoints({ row }: { row: ClientQuestionRow })
         }}
         rootClose
       >
-        <button type="button" className="btn btn-xs btn-ghost js-available-points-popover">
+        <button type="button" className="btn btn-xs btn-ghost">
           <i className="fa fa-question-circle" aria-hidden="true" />
         </button>
       </OverlayTrigger>

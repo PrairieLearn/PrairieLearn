@@ -7,14 +7,12 @@ import {
   type StudentAssessmentSet,
 } from '../../../lib/client/safe-db-types.js';
 
-// Assessment instance parsed from the __UNSAFE schema and transformed
-// to null out score fields when real-time grading is fully disabled.
+// The __UNSAFE schema requires a .transform() to acknowledge that raw score
+// fields (points, score_perc) are being used intentionally. On this page both
+// are always shown to the student — even when real-time grading is disabled,
+// the assessment-level totals are visible — so the transform is a no-op.
 export const StudentAssessmentInstanceSchema = RawStudentAssessmentInstanceSchema__UNSAFE.transform(
-  (data) => {
-    // On this page, points and score_perc are always available to the student.
-    // The transform is a no-op here but satisfies the __UNSAFE contract.
-    return data;
-  },
+  (data) => data,
 );
 export type StudentAssessmentInstance = z.infer<typeof StudentAssessmentInstanceSchema>;
 

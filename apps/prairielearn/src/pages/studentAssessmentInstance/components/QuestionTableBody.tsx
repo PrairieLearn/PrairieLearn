@@ -1,5 +1,6 @@
 import { Badge } from 'react-bootstrap';
 
+import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { formatPoints } from '../../../lib/format.js';
@@ -40,18 +41,24 @@ export function QuestionTableBody({
   hasUnmetAdvanceScorePercBeforeLockpoint: (zoneNumber: number) => boolean;
   onCrossLockpoint: (zoneId: string) => void;
 }) {
-  let previousZoneHadInfo = false;
+  const showZoneInfoByIndex = run(() => {
+    const result: boolean[] = [];
+    let previousZoneHadInfo = false;
+    for (const row of questionRows) {
+      const zoneHasInfo = row.zoneTitle != null || row.zoneHasMaxPoints || row.zoneHasBestQuestions;
+      result.push(row.startNewZone && (zoneHasInfo || previousZoneHadInfo));
+      if (row.startNewZone) {
+        previousZoneHadInfo = zoneHasInfo;
+      }
+    }
+    return result;
+  });
 
   return (
     <>
-      {questionRows.map((row) => {
+      {questionRows.map((row, index) => {
         const zoneHasInfo =
           row.zoneTitle != null || row.zoneHasMaxPoints || row.zoneHasBestQuestions;
-        const showZoneInfo = row.startNewZone && (zoneHasInfo || previousZoneHadInfo);
-
-        if (row.startNewZone) {
-          previousZoneHadInfo = zoneHasInfo;
-        }
 
         const isBlocked =
           row.questionAccessMode === 'blocked_sequence' ||
@@ -75,7 +82,7 @@ export function QuestionTableBody({
             someQuestionsForbidRealTimeGrading={someQuestionsForbidRealTimeGrading}
             assessmentInstanceOpen={assessmentInstanceOpen}
             zoneTitleColspan={zoneTitleColspan}
-            showZoneInfo={showZoneInfo}
+            showZoneInfo={showZoneInfoByIndex[index]}
             zoneHasInfo={zoneHasInfo}
             isBlocked={isBlocked}
             rowLabelText={rowLabelText}

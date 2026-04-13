@@ -16,11 +16,11 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
-  StaffInstanceQuestionSchema,
   StudentAssessmentInstanceAuthzResultSchema,
   StudentAssessmentQuestionSchema,
   StudentAssessmentSchema,
   StudentAssessmentSetSchema,
+  StudentInstanceQuestionSchema,
   StudentQuestionSchema,
   StudentZoneSchema,
 } from '../../lib/client/safe-db-types.js';
@@ -40,7 +40,7 @@ import {
 } from './components/types.js';
 
 export const InstanceQuestionRowSchema = z.object({
-  instance_question: StaffInstanceQuestionSchema,
+  instance_question: StudentInstanceQuestionSchema,
   zone: StudentZoneSchema,
   assessment_question: StudentAssessmentQuestionSchema,
   question: StudentQuestionSchema,

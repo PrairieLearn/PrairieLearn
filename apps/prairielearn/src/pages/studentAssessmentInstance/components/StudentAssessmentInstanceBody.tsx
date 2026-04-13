@@ -70,7 +70,7 @@ export function StudentAssessmentInstanceBody({
         (row.zoneNumber < zoneNumber || (row.zoneNumber === zoneNumber && row.startNewZone)),
     );
 
-  function isLockpointCrossable(row: ClientQuestionRow) {
+  function isLockpointCrossable(row: ClientQuestionRow): boolean {
     return (
       assessmentInstanceOpen &&
       active &&

@@ -67,7 +67,7 @@ export function ExamQuestionStatus({
           }}
           rootClose
         >
-          <button type="button" className="grade-rate-limit-popover btn btn-xs">
+          <button type="button" className="btn btn-xs">
             <i className="fa fa-hourglass-half" aria-hidden="true" />
           </button>
         </OverlayTrigger>

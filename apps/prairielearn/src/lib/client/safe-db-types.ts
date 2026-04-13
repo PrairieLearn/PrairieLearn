@@ -376,21 +376,27 @@ export const StaffInstanceQuestionSchema =
   RawStaffInstanceQuestionSchema.brand<'StaffInstanceQuestion'>();
 export type StaffInstanceQuestion = z.infer<typeof StaffInstanceQuestionSchema>;
 
-export const RawStudentInstanceQuestionSchema = RawStaffInstanceQuestionSchema.pick({
-  auto_points: true,
-  current_value: true,
-  highest_submission_score: true,
-  id: true,
-  manual_points: true,
-  number_attempts: true,
-  open: true,
-  points: true,
-  points_list: true,
-  points_list_original: true,
-  requires_manual_grading: true,
-  score_perc: true,
-  status: true,
-});
+export const RawStudentInstanceQuestionSchema = RawStaffInstanceQuestionSchema
+  .pick({
+    auto_points: true,
+    current_value: true,
+    highest_submission_score: true,
+    id: true,
+    last_grader: true,
+    manual_points: true,
+    number_attempts: true,
+    open: true,
+    points: true,
+    points_list: true,
+    points_list_original: true,
+    requires_manual_grading: true,
+    score_perc: true,
+    status: true,
+  })
+  .transform(({ last_grader, ...rest }) => ({
+    ...rest,
+    has_last_grader: last_grader != null,
+  }));
 export const StudentInstanceQuestionSchema =
   RawStudentInstanceQuestionSchema.brand<'StudentInstanceQuestion'>();
 export type StudentInstanceQuestion = z.infer<typeof StudentInstanceQuestionSchema>;
