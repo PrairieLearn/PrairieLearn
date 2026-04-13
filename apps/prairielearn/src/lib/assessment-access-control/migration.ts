@@ -286,7 +286,9 @@ export function classifyArchetype(rules: AssessmentAccessRuleJson[]): Archetype 
 
   // Detect gaps between access windows (ACCESS <-> NO ACCESS <-> ACCESS).
   // The modern format cannot represent non-contiguous access periods.
-  if (hasAccessGaps(rules)) return { base: 'unclassified', modifiers: [] };
+  if (hasAccessGaps(rules)) {
+    return { base: 'unclassified', modifiers: [] };
+  }
 
   const allNoOp = analyzed.every(
     (r) =>
@@ -300,30 +302,39 @@ export function classifyArchetype(rules: AssessmentAccessRuleJson[]): Archetype 
       !r.hidesClosedAssessment &&
       !r.hidesClosedScore,
   );
-  if (allNoOp) return { base: 'no-op', modifiers: [] };
-  if (hasPrairieTest) return { base: 'prairietest-exam', modifiers: [] };
-  if (hasPassword) return { base: 'password-gated', modifiers: [] };
-  if (hasTimed) return { base: 'timed-assessment', modifiers };
-  if (
+
+  if (allNoOp) {
+    return { base: 'no-op', modifiers: [] };
+  } else if (hasPrairieTest) {
+    return { base: 'prairietest-exam', modifiers: [] };
+  } else if (hasPassword) {
+    return { base: 'password-gated', modifiers: [] };
+  } else if (hasTimed) {
+    return { base: 'timed-assessment', modifiers };
+  } else if (
     (hasFullCredit && hasReducedCredit) ||
     (hasBonusCredit && hasReducedCredit) ||
     (hasBonusCredit && hasFullCredit)
   ) {
     return { base: 'declining-credit', modifiers };
-  }
-  if ((hasFullCredit || hasBonusCredit) && creditRules.length === 1) {
+  } else if ((hasFullCredit || hasBonusCredit) && creditRules.length === 1) {
     const base = hasViewing || hasHiding ? 'single-deadline-with-viewing' : 'single-deadline';
     return { base, modifiers };
-  }
-  if (hasFullCredit && creditRules.length > 1) return { base: 'multi-deadline', modifiers };
-  if (hasReducedCredit && creditRules.length === 1)
+  } else if (hasFullCredit && creditRules.length > 1) {
+    return { base: 'multi-deadline', modifiers };
+  } else if (hasReducedCredit && creditRules.length === 1) {
     return { base: 'single-reduced-credit', modifiers };
-  if (hasOpenCredit) return { base: 'always-open', modifiers };
-  if (hasViewing && creditRules.length === 0) return { base: 'view-only', modifiers };
-  if (hasHiding && creditRules.length === 0 && !hasViewing)
+  } else if (hasOpenCredit) {
+    return { base: 'always-open', modifiers };
+  } else if (hasViewing && creditRules.length === 0) {
+    return { base: 'view-only', modifiers };
+  } else if (hasHiding && creditRules.length === 0 && !hasViewing) {
     return { base: 'hidden', modifiers: [] };
-  if (hasModeGate && creditRules.length === 0) return { base: 'mode-gated', modifiers: [] };
-  return { base: 'unclassified', modifiers: [] };
+  } else if (hasModeGate && creditRules.length === 0) {
+    return { base: 'mode-gated', modifiers: [] };
+  } else {
+    return { base: 'unclassified', modifiers: [] };
+  }
 }
 
 function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
