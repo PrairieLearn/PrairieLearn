@@ -253,6 +253,7 @@ async function updateInstanceQuestionFromCsvRow(
         submission_id: IdSchema.nullable(),
         instance_question_id: IdSchema,
         uid_or_group: z.string(),
+        sharing_name: z.string().nullable(),
         qid: z.string(),
       }),
     );
@@ -267,7 +268,13 @@ async function updateInstanceQuestionFromCsvRow(
         `Found submission with id=${record.submission_id}, but uid/group does not match ${uid_or_group}.`,
       );
     }
-    if (record.qid !== null && submission_data.qid !== record.qid) {
+
+    // For the QID, accept either the raw QID or the sharing QID format
+    const sharing_qid =
+      submission_data.sharing_name == null
+        ? submission_data.qid
+        : `@${submission_data.sharing_name}/${submission_data.qid}`;
+    if (record.qid !== null && submission_data.qid !== record.qid && sharing_qid !== record.qid) {
       throw new Error(
         `Found submission with id=${record.submission_id}, but QID does not match ${record.qid}.`,
       );
