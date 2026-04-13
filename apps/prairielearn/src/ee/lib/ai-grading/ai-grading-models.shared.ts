@@ -55,6 +55,13 @@ export const AI_GRADING_MODELS = [
   },
   {
     provider: 'google',
+    modelId: 'gemini-3.1-pro-preview',
+    name: 'Gemini 3.1 Pro',
+    sublabel: 'Best for handwriting and images',
+    recommended: true,
+  },
+  {
+    provider: 'google',
     modelId: 'gemini-2.5-flash',
     name: 'Gemini 2.5 Flash',
     sublabel: 'Lower-cost image grading',
@@ -66,13 +73,6 @@ export const AI_GRADING_MODELS = [
     name: 'Gemini 3 Flash',
     sublabel: 'Fast, accurate image grading',
     recommended: false,
-  },
-  {
-    provider: 'google',
-    modelId: 'gemini-3.1-pro-preview',
-    name: 'Gemini 3.1 Pro',
-    sublabel: 'Best for handwriting and images',
-    recommended: true,
   },
   {
     provider: 'anthropic',

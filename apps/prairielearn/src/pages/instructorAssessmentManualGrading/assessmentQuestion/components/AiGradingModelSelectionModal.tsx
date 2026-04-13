@@ -84,11 +84,14 @@ function ModelOption({
             <div>
               <span className="fw-medium">{model.name}</span>
               <div className="text-muted small">{model.sublabel}</div>
+              {/* Cost shown below sublabel on xs viewports */}
+              <div className="text-muted small d-sm-none">{relativeCost}</div>
             </div>
           }
           onChange={onSelect}
         />
-        <span className="text-muted small text-nowrap ms-3">{relativeCost}</span>
+        {/* Cost shown inline on sm+ viewports */}
+        <span className="text-muted small text-nowrap ms-3 d-none d-sm-inline">{relativeCost}</span>
       </div>
     </label>
   );
@@ -128,9 +131,9 @@ function ModelList({
   return (
     <div className="d-flex flex-column gap-4">
       <div>
-        <div className="d-flex justify-content-between align-items-baseline mb-2">
+        <div className="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
           <span className="fw-semibold">Recommended</span>
-          <span className="text-muted small">
+          <span className="text-muted small text-end">
             Relative cost{' '}
             <OverlayTrigger
               placement="top"
