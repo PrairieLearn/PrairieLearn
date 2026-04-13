@@ -305,9 +305,12 @@ describe('migrateAllowAccess', () => {
     assert.lengthOf(warnings, 0);
   });
 
-  it('returns unsupported warning for unclassified', () => {
+  it('returns a user-facing warning for unclassified', () => {
     const { warnings } = migrateAllowAccess('unclassified', []);
-    assert.match(warnings[0], /Unsupported/);
+    assert.equal(
+      warnings[0],
+      'Cannot migrate automatically: these access rules are not supported in the modern access control system.',
+    );
   });
 
   it('includes afterComplete for showClosedAssessment:false', () => {
@@ -685,6 +688,33 @@ describe('analyzeAssessmentFile', () => {
         assert.equal(result.canMigrate, false);
         assert.equal(result.hasUidRules, true);
         assert(result.warnings.some((warning) => warning.includes('UID-based rules are excluded')));
+      },
+      { unsafeCleanup: true },
+    );
+  });
+
+  it('reports a specific warning for non-contiguous access windows', async () => {
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW gap',
+            allowAccess: [
+              { credit: 100, startDate: '2024-01-01', endDate: '2024-02-01' },
+              { credit: 50, startDate: '2024-03-01', endDate: '2024-04-01' },
+            ],
+          }),
+        );
+        const result = await analyzeAssessmentFile(filePath, 'hw-gap');
+        assert.isNotNull(result);
+        assert.equal(result.archetype, 'unclassified');
+        assert.equal(result.canMigrate, false);
+        assert.deepEqual(result.warnings, [
+          'Cannot migrate automatically: non-contiguous access windows are not supported in the modern access control system.',
+        ]);
       },
       { unsafeCleanup: true },
     );

@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import * as path from 'path';
 
+import { Temporal } from '@js-temporal/polyfill';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
@@ -48,6 +49,14 @@ import { type ServerJob, type ServerJobExecutor, createServerJob } from './serve
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
+
+function todayAsDatetimeLocal(
+  timezone: string,
+  instant: Temporal.Instant = Temporal.Now.instant(),
+): string {
+  const today = instant.toZonedDateTimeISO(timezone).toPlainDate();
+  return `${today.toString()}T00:00:00`;
+}
 
 async function syncCourseFromDisk(
   course: Course,
@@ -970,7 +979,8 @@ export class CourseInstanceCopyEditor extends Editor {
           infoPath,
           this.accessControlMigration.strategy,
           this.accessControlMigration.preserveIncompatible,
-          this.metadataOverrides?.publishing?.startDate ?? new Date().toISOString().slice(0, 19),
+          this.metadataOverrides?.publishing?.startDate ??
+            todayAsDatetimeLocal(this.course_instance.display_timezone),
         );
       }
 

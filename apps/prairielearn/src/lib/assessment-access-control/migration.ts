@@ -27,6 +27,11 @@ interface CourseInstanceMigrationAnalysis {
   allCanMigrate: boolean;
 }
 
+const NON_CONTIGUOUS_ACCESS_WINDOWS_WARNING =
+  'Non-contiguous access windows are not supported in the modern access control system.';
+const UNCLASSIFIED_ACCESS_RULES_WARNING =
+  'These access rules are not supported in the modern access control system.';
+
 function analyzeAllowAccessRules(allowAccess: AssessmentAccessRuleJson[]) {
   const hasUidRules = allowAccess.some((rule) => rule.uids);
   const rulesForClassification = allowAccess.filter((rule) => !rule.uids);
@@ -35,7 +40,10 @@ function analyzeAllowAccessRules(allowAccess: AssessmentAccessRuleJson[]) {
     rulesForClassification.length > 0 ? classifyArchetype(rulesForClassification) : 'unclassified';
 
   const { warnings: migrationWarnings } = migrateAllowAccess(archetype, rulesForClassification);
-  const warnings = [...migrationWarnings];
+  const warnings =
+    archetype === 'unclassified' && hasAccessGaps(rulesForClassification)
+      ? [NON_CONTIGUOUS_ACCESS_WINDOWS_WARNING]
+      : [...migrationWarnings];
   if (hasUidRules) {
     warnings.push(
       'UID-based rules are excluded from the migrated JSON and must be recreated as enrollment overrides if needed.',
@@ -246,7 +254,7 @@ function hasAccessGaps(rules: AssessmentAccessRuleJson[]): boolean {
   return false;
 }
 
-export function classifyArchetype(rules: AssessmentAccessRuleJson[]): string {
+export function classifyArchetype(rules: AssessmentAccessRuleJson[]) {
   rules = rules.filter((r) => !r.uids);
   const analyzed = rules.map(analyzeRule);
   const creditRules = analyzed.filter((r) => r.creditType !== 'none');
@@ -624,6 +632,9 @@ export function migrateAllowAccess(
 
     case 'always-open':
       return { result: {}, warnings: [] };
+
+    case 'unclassified':
+      return { result: {}, warnings: [UNCLASSIFIED_ACCESS_RULES_WARNING] };
 
     default:
       return { result: {}, warnings: [`Unsupported archetype: ${archetype}`] };

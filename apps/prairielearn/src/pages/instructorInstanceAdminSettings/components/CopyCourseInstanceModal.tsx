@@ -410,7 +410,8 @@ function AccessControlStep({
               {blockedAssessments.length > 0 && (
                 <div>
                   <strong>{blockedAssessments.length}</strong> assessment
-                  {blockedAssessments.length !== 1 ? 's' : ''} require manual review.
+                  {blockedAssessments.length !== 1 ? 's' : ''} require
+                  {blockedAssessments.length === 1 ? 's' : ''} manual review.
                 </div>
               )}
             </Alert>
