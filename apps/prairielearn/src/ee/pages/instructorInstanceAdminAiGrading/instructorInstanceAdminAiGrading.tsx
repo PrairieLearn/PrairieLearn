@@ -34,7 +34,6 @@ router.get(
 
     const {
       course_instance: courseInstance,
-      course,
       authz_data: authzData,
       authn_user,
     } = extractPageContext(res.locals, {
@@ -43,13 +42,6 @@ router.get(
     });
 
     const canEdit = authzData.has_course_permission_own;
-
-    const aiGradingModelSelectionEnabled = await features.enabled('ai-grading-model-selection', {
-      institution_id: course.institution_id,
-      course_id: course.id,
-      course_instance_id: courseInstance.id,
-      user_id: authn_user.id,
-    });
 
     const dbCredentials = await selectCredentials(courseInstance.id);
     const credentials = dbCredentials.map((c) =>
@@ -84,7 +76,6 @@ router.get(
               initialApiKeyCredentials={credentials}
               canEdit={!!canEdit}
               isDevMode={config.devMode}
-              aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
             />
           </Hydrate>
         ),
