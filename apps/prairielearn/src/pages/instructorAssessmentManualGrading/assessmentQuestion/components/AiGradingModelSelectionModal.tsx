@@ -12,6 +12,7 @@ import {
   type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
 } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
+import { formatMilliDollars } from '../../../../lib/ai-grading-credits.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
 import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
 
@@ -159,6 +160,9 @@ export function AiGradingModelSelectionModal({
   availableProviders,
   aiGradingLastSelectedModel,
   relativeCosts,
+  useCustomApiKeys,
+  creditBalanceMilliDollars,
+  aiGradingSettingsUrl,
   onSuccess,
   onHide,
 }: {
@@ -166,6 +170,9 @@ export function AiGradingModelSelectionModal({
   availableProviders: EnumAiGradingProvider[];
   aiGradingLastSelectedModel: string | null;
   relativeCosts: Record<string, string>;
+  useCustomApiKeys: boolean;
+  creditBalanceMilliDollars: number;
+  aiGradingSettingsUrl: string;
   onSuccess: (
     data: { job_sequence_id: string; job_sequence_token: string },
     modelId: AiGradingModelId,
@@ -209,6 +216,7 @@ export function AiGradingModelSelectionModal({
   const isSelectedModelAvailable = availableProviders.includes(
     AI_GRADING_MODELS.find((m) => m.modelId === selectedModel)!.provider,
   );
+  const hasNoCredits = !useCustomApiKeys && creditBalanceMilliDollars <= 0;
 
   return (
     <Modal
@@ -224,6 +232,26 @@ export function AiGradingModelSelectionModal({
         </Modal.Header>
 
         <Modal.Body>
+          <Alert variant={hasNoCredits ? 'danger' : 'info'} className="mb-3 py-2 small">
+            {useCustomApiKeys ? (
+              <>
+                Billing to custom API key &middot;{' '}
+                <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">Manage keys</a>
+              </>
+            ) : hasNoCredits ? (
+              <>
+                No credits remaining.{' '}
+                <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">Add credits</a>{' '}
+                to continue grading.
+              </>
+            ) : (
+              <>
+                Billing to credit pool &middot;{' '}
+                {formatMilliDollars(creditBalanceMilliDollars)} available &middot;{' '}
+                <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">Manage credits</a>
+              </>
+            )}
+          </Alert>
           <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}
@@ -245,7 +273,7 @@ export function AiGradingModelSelectionModal({
               </Button>
               <Button
                 variant="primary"
-                disabled={isPending || !isSelectedModelAvailable}
+                disabled={isPending || !isSelectedModelAvailable || hasNoCredits}
                 type="submit"
               >
                 {isPending
@@ -256,7 +284,7 @@ export function AiGradingModelSelectionModal({
               </Button>
             </div>
             <small className="text-muted mt-2 mb-0 text-end d-block">
-              AI can make mistakes. Review grades before publishing.
+              AI can make mistakes. Review grades before finalizing.
             </small>
           </div>
         </Modal.Footer>
