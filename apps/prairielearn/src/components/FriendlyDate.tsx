@@ -1,5 +1,5 @@
-import { type Temporal } from '@js-temporal/polyfill';
-import { type FC, createContext, use, useState } from 'react';
+import { Temporal } from '@js-temporal/polyfill';
+import { type FC, createContext, use, useEffect, useState } from 'react';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 
@@ -9,7 +9,7 @@ interface FriendlyDateProps {
   date: Date | Temporal.PlainDateTime;
   timezone?: string;
   tooltip?: boolean;
-  relative?: boolean;
+  live?: boolean;
   options?: Parameters<typeof formatDateFriendly>[2];
   fullOptions?: Parameters<typeof formatDate>[2];
 }
@@ -18,7 +18,7 @@ export const FriendlyDate: FC<FriendlyDateProps> = ({
   date,
   timezone = null,
   tooltip = false,
-  relative = true,
+  live = false,
   options,
   fullOptions,
 }) => {
@@ -26,9 +26,27 @@ export const FriendlyDate: FC<FriendlyDateProps> = ({
   timezone = timezone ?? timezoneContext;
 
   // Capture "now" once on mount to avoid impure new Date() calls during re-renders.
-  const [baseDate] = useState(() => new Date());
+  const [baseDate, setBaseDate] = useState(() => new Date());
+
+  // Refresh baseDate every 60s so relative labels (today/tomorrow/yesterday)
+  // stay accurate when the page is left open across day boundaries.
+  // Only runs when `live` is true and the date is within ±2 days of now
+  // (the range where relative labels apply).
+  useEffect(() => {
+    if (!live) return;
+
+    const targetMs =
+      date instanceof Temporal.PlainDateTime
+        ? date.toZonedDateTime(timezone!).epochMilliseconds
+        : date.getTime();
+    if (Math.abs(targetMs - Date.now()) > 2 * 24 * 60 * 60 * 1000) return;
+
+    const id = setInterval(() => setBaseDate(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, [live, date, timezone]);
+
   const friendlyString = formatDateFriendly(date, timezone, {
-    baseDate: relative ? baseDate : undefined,
+    baseDate,
     ...options,
   });
   const fullString = formatDate(date, timezone, fullOptions);

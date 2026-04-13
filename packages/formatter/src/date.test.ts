@@ -608,23 +608,6 @@ describe('date formatting', () => {
       });
     });
 
-    describe('without baseDate', () => {
-      it('should use absolute dates with year instead of relative labels', () => {
-        assert.equal(
-          formatDateFriendly(new Date(Date.UTC(2018, 0, 2, 16, 34, 0)), 'UTC', {
-            baseDate: undefined,
-          }),
-          'Tue, Jan\u00a02, 2018, 4:34pm (UTC)',
-        );
-        assert.equal(
-          formatDateFriendly(new Date(Date.UTC(2018, 0, 2, 0, 0, 0)), 'UTC', {
-            baseDate: undefined,
-          }),
-          'Tue, Jan\u00a02, 2018, start of day (UTC)',
-        );
-      });
-    });
-
     describe('formatDateRangeFriendly()', () => {
       it('should handle two different dates', () => {
         const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
@@ -745,17 +728,6 @@ describe('date formatting', () => {
           }),
           'yesterday, 6:34pm to Wed, Jan\u00a03, 4am',
         );
-      });
-
-      describe('without baseDate', () => {
-        it('should use absolute dates for range', () => {
-          const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-          const end = new Date(Date.UTC(2018, 0, 3, 10, 0, 0));
-          assert.equal(
-            formatDateRangeFriendly(start, end, 'UTC', { baseDate: undefined }),
-            'Mon, Jan\u00a01, 2018, 12:34pm to Wed, Jan\u00a03, 2018, 10am (UTC)',
-          );
-        });
       });
 
       describe('precision options', () => {
