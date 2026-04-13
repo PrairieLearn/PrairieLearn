@@ -19,10 +19,6 @@ import { createAssessmentQuestionTrpcClient } from '../../../trpc/assessmentQues
 import { TRPCProvider, useTRPC } from '../../../trpc/assessmentQuestion/context.js';
 
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
-import {
-  AiGradingModelSelectionModal,
-  type AiGradingModelSelectionModalState,
-} from './components/AiGradingModelSelectionModal.js';
 import { AiGradingUnavailableModal } from './components/AiGradingUnavailableModal.js';
 import { AssessmentQuestionTable } from './components/AssessmentQuestionTable.js';
 import {
@@ -92,17 +88,8 @@ function AssessmentQuestionManualGradingInner({
   const [groupInfoModalState, setGroupInfoModalState] = useState<GroupInfoModalState>(null);
   const [conflictModalState, setConflictModalState] = useState<ConflictModalState>(null);
   const [showAiGradingUnavailableModal, setShowAiGradingUnavailableModal] = useState(false);
-  const [modelSelectionModalState, setModelSelectionModalState] =
-    useState<AiGradingModelSelectionModalState>(null);
-  const [pendingGradingJob, setPendingGradingJob] = useState<{
-    job_sequence_id: string;
-    job_sequence_token: string;
-  } | null>(null);
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
-  const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
-    assessmentQuestion.ai_grading_last_selected_model ?? null,
-  );
 
   // AI grading is available only if the question uses manual grading.
   const isAiGradingAvailable = (assessmentQuestion.max_manual_points ?? 0) > 0;
@@ -185,24 +172,9 @@ function AssessmentQuestionManualGradingInner({
         mutations={mutations}
         initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
         availableAiGradingProviders={availableAiGradingProviders}
-        pendingGradingJob={pendingGradingJob}
+        aiGradingRelativeCosts={aiGradingRelativeCosts}
         onSetGroupInfoModalState={setGroupInfoModalState}
         onSetConflictModalState={setConflictModalState}
-        onSetModelSelectionModalState={setModelSelectionModalState}
-        onPendingGradingJobHandled={() => setPendingGradingJob(null)}
-      />
-
-      <AiGradingModelSelectionModal
-        key={lastSelectedModel ?? 'default'}
-        modalState={modelSelectionModalState}
-        availableProviders={availableAiGradingProviders}
-        aiGradingLastSelectedModel={lastSelectedModel}
-        relativeCosts={aiGradingRelativeCosts}
-        onSuccess={(data, modelId) => {
-          setLastSelectedModel(modelId);
-          setPendingGradingJob(data);
-        }}
-        onHide={() => setModelSelectionModalState(null)}
       />
 
       <GroupInfoModal

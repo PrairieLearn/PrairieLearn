@@ -51,7 +51,10 @@ import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
-import type { AiGradingModelSelectionModalState } from './AiGradingModelSelectionModal.js';
+import {
+  AiGradingModelSelectionModal,
+  type AiGradingModelSelectionModalState,
+} from './AiGradingModelSelectionModal.js';
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
 import { QueryErrors } from './QueryErrors.js';
@@ -82,11 +85,9 @@ interface AssessmentQuestionTableProps {
   aiGradingStats: AiGradingGeneralStats | null;
   initialOngoingJobSequenceTokens: Record<string, string> | null;
   availableAiGradingProviders: EnumAiGradingProvider[];
+  aiGradingRelativeCosts: Record<string, string>;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
-  onSetModelSelectionModalState: (modalState: AiGradingModelSelectionModalState) => void;
-  pendingGradingJob: { job_sequence_id: string; job_sequence_token: string } | null;
-  onPendingGradingJobHandled: () => void;
   mutations: ReturnType<typeof useManualGradingActions>;
 }
 
@@ -126,11 +127,9 @@ export function AssessmentQuestionTable({
   aiGradingStats,
   initialOngoingJobSequenceTokens,
   availableAiGradingProviders,
+  aiGradingRelativeCosts,
   onSetGroupInfoModalState,
   onSetConflictModalState,
-  onSetModelSelectionModalState,
-  pendingGradingJob,
-  onPendingGradingJobHandled,
   mutations,
 }: AssessmentQuestionTableProps) {
   const trpc = useTRPC();
@@ -195,6 +194,14 @@ export function AssessmentQuestionTable({
   const [rowSelection, setRowSelection] = useState({});
   const [showDeleteAiGradingModal, setShowDeleteAiGradingModal] = useState(false);
   const [showDeleteAiGroupingsModal, setShowDeleteAiGroupingsModal] = useState(false);
+
+  // Controls the AI grading model selection modal: null = hidden, otherwise
+  // holds the grading mode ('all', 'human_graded', or 'selected') and count.
+  const [modelSelectionModalState, setModelSelectionModalState] =
+    useState<AiGradingModelSelectionModalState>(null);
+  const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
+    assessmentQuestion.ai_grading_last_selected_model ?? null,
+  );
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const queryClientInstance = useQueryClient();
@@ -352,20 +359,6 @@ export function AssessmentQuestionTable({
       });
     },
   });
-
-  // When the parent signals a new grading job from the modal, start tracking it
-  // and reset row selection so checkboxes don't remain checked after grading.
-  useEffect(() => {
-    if (pendingGradingJob) {
-      serverJobProgress.handleAddOngoingJobSequence(
-        pendingGradingJob.job_sequence_id,
-        pendingGradingJob.job_sequence_token,
-      );
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/set-state-in-effect
-      setRowSelection({});
-      onPendingGradingJobHandled();
-    }
-  }, [pendingGradingJob, serverJobProgress, onPendingGradingJobHandled]);
 
   // Create columns using the extracted function
   const columns = useMemo(
@@ -735,7 +728,7 @@ export function AssessmentQuestionTable({
                         text="Grade all human-graded"
                         numToGrade={aiGradingCounts.humanGraded}
                         onSelect={() =>
-                          onSetModelSelectionModalState({
+                          setModelSelectionModalState({
                             type: 'human_graded',
                             numToGrade: aiGradingCounts.humanGraded,
                           })
@@ -745,7 +738,7 @@ export function AssessmentQuestionTable({
                         text="Grade selected"
                         numToGrade={aiGradingCounts.selected}
                         onSelect={() =>
-                          onSetModelSelectionModalState({
+                          setModelSelectionModalState({
                             type: 'selected',
                             ids: selectedIds,
                             numToGrade: aiGradingCounts.selected,
@@ -756,7 +749,7 @@ export function AssessmentQuestionTable({
                         text="Grade all"
                         numToGrade={aiGradingCounts.all}
                         onSelect={() =>
-                          onSetModelSelectionModalState({
+                          setModelSelectionModalState({
                             type: 'all',
                             numToGrade: aiGradingCounts.all,
                           })
@@ -965,6 +958,23 @@ export function AssessmentQuestionTable({
           ],
           hasSelection: true,
         }}
+      />
+
+      <AiGradingModelSelectionModal
+        key={lastSelectedModel ?? 'default'}
+        modalState={modelSelectionModalState}
+        availableProviders={availableAiGradingProviders}
+        aiGradingLastSelectedModel={lastSelectedModel}
+        relativeCosts={aiGradingRelativeCosts}
+        onSuccess={(data, modelId) => {
+          serverJobProgress.handleAddOngoingJobSequence(
+            data.job_sequence_id,
+            data.job_sequence_token,
+          );
+          setLastSelectedModel(modelId);
+          setRowSelection({});
+        }}
+        onHide={() => setModelSelectionModalState(null)}
       />
 
       {/* Delete AI Grading Results Modal */}
