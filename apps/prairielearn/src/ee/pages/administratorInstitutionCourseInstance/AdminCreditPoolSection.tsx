@@ -158,6 +158,9 @@ function AdjustCreditsForm({
     amountStr !== '' &&
     currentBalanceMilliDollars != null &&
     Math.round(parsedAmount * 1000) > currentBalanceMilliDollars;
+  const isZeroBalance =
+    action === 'deduct' && currentBalanceMilliDollars != null && currentBalanceMilliDollars === 0;
+  const isSubmitDisabled = isPending || isAmountInvalid || isZeroBalance;
 
   function handleSubmit() {
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return;
@@ -205,15 +208,12 @@ function AdjustCreditsForm({
                 type="number"
                 className="form-control"
                 id="amount_dollars"
-                min="0.01"
-                max={maxForAction}
                 step="0.01"
                 placeholder="0.00"
                 value={amountStr}
                 disabled={isDeleted}
                 aria-invalid={isAmountInvalid || undefined}
                 aria-errormessage={isAmountInvalid ? 'amount-error' : undefined}
-                required
                 onChange={(e) => setAmountStr(e.target.value)}
               />
             </div>
@@ -235,7 +235,7 @@ function AdjustCreditsForm({
           </div>
           {!isDeleted && (
             <div className="col-auto">
-              <button type="submit" className="btn btn-primary" disabled={isPending}>
+              <button type="submit" className="btn btn-primary" disabled={isSubmitDisabled}>
                 {isPending ? 'Applying...' : 'Apply'}
               </button>
             </div>
@@ -247,7 +247,7 @@ function AdjustCreditsForm({
           </div>
         )}
         {isDeductionCapped && (
-          <div className="text-muted small mt-3">
+          <div className="text-warning-emphasis small mt-3">
             Amount exceeds the {creditType.replace('_', '-')} balance.{' '}
             {formatMilliDollars(currentBalanceMilliDollars)} will be deducted.
           </div>
