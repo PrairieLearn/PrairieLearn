@@ -284,9 +284,7 @@ describe('Main rule requirement', () => {
     });
 
     assert.isTrue(
-      result.errors.includes(
-        'listBeforeRelease can only be specified on the defaults.',
-      ),
+      result.errors.includes('listBeforeRelease can only be specified on the defaults.'),
       `Expected listBeforeRelease validation error, but got: ${result.errors.join(', ')}`,
     );
   });
@@ -942,9 +940,7 @@ describe('Duplicate detection', () => {
     });
     const errors = validateRule(rule, 'none');
     assert.isTrue(
-      errors.includes(
-        'Duplicate PrairieTest exam UUID: 11111111-1111-1111-1111-111111111111.',
-      ),
+      errors.includes('Duplicate PrairieTest exam UUID: 11111111-1111-1111-1111-111111111111.'),
     );
   });
 
@@ -1014,9 +1010,7 @@ describe('Duplicate detection', () => {
       }),
     ];
     const result = validateAccessControlRules({ rules });
-    assert.isTrue(
-      result.errors.includes('Duplicate early deadline date: 2024-03-17T23:59:00.'),
-    );
+    assert.isTrue(result.errors.includes('Duplicate early deadline date: 2024-03-17T23:59:00.'));
   });
 });
 
