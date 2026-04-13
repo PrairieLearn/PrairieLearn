@@ -91,6 +91,19 @@ describe('getStructuralSaveValidationErrorKind', () => {
       ).toBeUndefined();
     });
 
+    it('treats zero as a valid points value', () => {
+      expect(
+        getStructuralSaveValidationErrorKind([
+          makeZone({ questions: [makeQuestion({ points: 0 })] }),
+        ]),
+      ).toBeUndefined();
+      expect(
+        getStructuralSaveValidationErrorKind([
+          makeZone({ questions: [makeQuestion({ autoPoints: 0, manualPoints: 0 })] }),
+        ]),
+      ).toBeUndefined();
+    });
+
     it('returns questionPoints when an alternative has no points and pool has no points', () => {
       expect(
         getStructuralSaveValidationErrorKind([
