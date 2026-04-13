@@ -12,41 +12,25 @@ import type { AssessmentAccessRuleJson } from '../../schemas/infoAssessment.js';
 import { discoverInfoDirs } from '../discover-info-dirs.js';
 import { formatJsonWithPrettier } from '../prettier.js';
 
-const BASE_ARCHETYPES = [
-  'always-open',
-  'declining-credit',
-  'hidden',
-  'mode-gated',
-  'multi-deadline',
-  'no-op',
-  'password-gated',
-  'prairietest-exam',
-  'single-deadline',
-  'single-deadline-with-viewing',
-  'single-reduced-credit',
-  'timed-assessment',
-  'unclassified',
-  'view-only',
-] as const;
-
-type BaseArchetype = (typeof BASE_ARCHETYPES)[number];
-type ModdableArchetype =
+type BaseArchetype =
   | 'always-open'
   | 'declining-credit'
+  | 'hidden'
+  | 'mode-gated'
   | 'multi-deadline'
+  | 'no-op'
+  | 'password-gated'
+  | 'prairietest-exam'
   | 'single-deadline'
   | 'single-deadline-with-viewing'
   | 'single-reduced-credit'
   | 'timed-assessment'
+  | 'unclassified'
   | 'view-only';
 export type ArchetypeModifier = 'mode-gated' | 'hides-closed' | 'hides-score';
 export interface Archetype {
   base: BaseArchetype;
   modifiers: ArchetypeModifier[];
-}
-
-function makeArchetype(base: BaseArchetype, modifiers: ArchetypeModifier[] = []): Archetype {
-  return { base, modifiers };
 }
 
 export interface AssessmentMigrationAnalysis {
@@ -69,45 +53,14 @@ const NON_CONTIGUOUS_ACCESS_WINDOWS_ERROR = 'Non-contiguous access windows are n
 const UNCLASSIFIED_ACCESS_RULES_ERROR = 'This access rule configuration is not supported.';
 const MODE_ONLY_ACCESS_RULES_ERROR = 'Mode-only access rules are not supported.';
 
-function isBaseArchetype(value: string): value is BaseArchetype {
-  return BASE_ARCHETYPES.includes(value as BaseArchetype);
-}
-
-function parseBaseArchetype(
-  archetype: string,
-): { base: BaseArchetype; modifiers: string[] } | null {
-  const match = archetype.match(/^(?<base>[^()]+?)(?: \((?<mods>.+)\))?$/);
-  if (!match?.groups) return null;
-  const base = match.groups.base.trim();
-  if (!base || !isBaseArchetype(base)) return null;
-  const modifiers = match.groups.mods ? match.groups.mods.split(',').map((mod) => mod.trim()) : [];
-  return { base, modifiers };
-}
-
-function isArchetypeModifier(value: string): value is ArchetypeModifier {
-  return value === 'mode-gated' || value === 'hides-closed' || value === 'hides-score';
-}
-
-function parseArchetype(archetype: string): Archetype | null {
-  const parsed = parseBaseArchetype(archetype);
-  if (parsed == null) return null;
-  if (!parsed.modifiers.every(isArchetypeModifier)) return null;
-  return makeArchetype(parsed.base, parsed.modifiers);
-}
-
-export function formatArchetype(archetype: Archetype): string {
-  if (archetype.modifiers.length === 0) return archetype.base;
-  return `${archetype.base} (${archetype.modifiers.join(', ')})`;
-}
-
 function analyzeAllowAccessRules(allowAccess: AssessmentAccessRuleJson[]) {
   const hasUidRules = allowAccess.some((rule) => rule.uids);
   const rulesForClassification = allowAccess.filter((rule) => !rule.uids);
 
-  const archetype =
+  const archetype: Archetype =
     rulesForClassification.length > 0
       ? classifyArchetype(rulesForClassification)
-      : makeArchetype('unclassified');
+      : { base: 'unclassified', modifiers: [] };
 
   const { errors: migrationErrors, notes: migrationNotes } = migrateAllowAccess(
     archetype,
@@ -184,19 +137,11 @@ function findReleaseDate(rules: AssessmentAccessRuleJson[]): string | undefined 
   return undefined;
 }
 
-function anyHidesClosedAssessment(rules: AssessmentAccessRuleJson[]): boolean {
-  return rules.some((r) => r.showClosedAssessment === false);
-}
-
-function anyHidesClosedScore(rules: AssessmentAccessRuleJson[]): boolean {
-  return rules.some((r) => r.showClosedAssessmentScore === false);
-}
-
 function buildAfterComplete(
   rules: AssessmentAccessRuleJson[],
 ): AccessControlJsonInput['afterComplete'] | undefined {
-  const hidesAssessment = anyHidesClosedAssessment(rules);
-  const hidesScore = anyHidesClosedScore(rules);
+  const hidesAssessment = rules.some((r) => r.showClosedAssessment === false);
+  const hidesScore = rules.some((r) => r.showClosedAssessmentScore === false);
   if (!hidesAssessment && !hidesScore) return undefined;
 
   const result: AccessControlJsonInput['afterComplete'] = {};
@@ -278,25 +223,6 @@ function analyzeRule(rule: AssessmentAccessRuleJson): RuleAnalysis {
   };
 }
 
-function withMods(
-  base: ModdableArchetype,
-  has: {
-    creditModeGated: boolean;
-    modeGate: boolean;
-    viewing: boolean;
-    hiding: boolean;
-    creditHidesClosed: boolean;
-    creditHidesScore: boolean;
-  },
-): Archetype {
-  const modifiers: ArchetypeModifier[] = [];
-  if (has.creditModeGated) modifiers.push('mode-gated');
-  else if (has.modeGate && !has.viewing && !has.hiding) modifiers.push('mode-gated');
-  if (has.creditHidesClosed) modifiers.push('hides-closed');
-  else if (has.creditHidesScore) modifiers.push('hides-score');
-  return makeArchetype(base, modifiers);
-}
-
 function hasAccessGaps(rules: AssessmentAccessRuleJson[]): boolean {
   const accessRules = rules.filter((r) => (r.credit ?? 0) > 0);
   if (accessRules.length === 0) return false;
@@ -336,30 +262,31 @@ export function classifyArchetype(rules: AssessmentAccessRuleJson[]): Archetype 
   const creditRules = analyzed.filter((r) => r.creditType !== 'none');
   const nonCreditRules = analyzed.filter((r) => r.creditType === 'none');
 
-  const has = {
-    prairieTest: analyzed.some((r) => r.isPrairieTest),
-    password: analyzed.some((r) => r.hasPassword),
-    timed: analyzed.some((r) => r.isTimed && r.creditType !== 'none'),
-    bonusCredit: creditRules.some((r) => r.creditType === 'bonus'),
-    fullCredit: creditRules.some((r) => r.creditType === 'full'),
-    reducedCredit: creditRules.some((r) => r.creditType === 'reduced'),
-    openCredit: creditRules.some((r) => r.isOpenCredit),
-    viewing: nonCreditRules.some(
-      (r) =>
-        !r.isActive && r.hasDates && !r.isPrairieTest && !r.hasPassword && !r.hidesClosedAssessment,
-    ),
-    hiding: nonCreditRules.some(
-      (r) => !r.isActive || r.hidesClosedAssessment || r.hidesClosedScore,
-    ),
-    modeGate: analyzed.some((r) => r.hasMode),
-    creditModeGated: creditRules.some((r) => r.hasMode),
-    creditHidesClosed: creditRules.some((r) => r.hidesClosedAssessment),
-    creditHidesScore: creditRules.some((r) => r.hidesClosedScore),
-  };
+  const hasPrairieTest = analyzed.some((r) => r.isPrairieTest);
+  const hasPassword = analyzed.some((r) => r.hasPassword);
+  const hasTimed = analyzed.some((r) => r.isTimed && r.creditType !== 'none');
+  const hasBonusCredit = creditRules.some((r) => r.creditType === 'bonus');
+  const hasFullCredit = creditRules.some((r) => r.creditType === 'full');
+  const hasReducedCredit = creditRules.some((r) => r.creditType === 'reduced');
+  const hasOpenCredit = creditRules.some((r) => r.isOpenCredit);
+  const hasViewing = nonCreditRules.some(
+    (r) =>
+      !r.isActive && r.hasDates && !r.isPrairieTest && !r.hasPassword && !r.hidesClosedAssessment,
+  );
+  const hasHiding = nonCreditRules.some(
+    (r) => !r.isActive || r.hidesClosedAssessment || r.hidesClosedScore,
+  );
+  const hasModeGate = analyzed.some((r) => r.hasMode);
+
+  const modifiers: ArchetypeModifier[] = [];
+  if (creditRules.some((r) => r.hasMode)) modifiers.push('mode-gated');
+  else if (hasModeGate && !hasViewing && !hasHiding) modifiers.push('mode-gated');
+  if (creditRules.some((r) => r.hidesClosedAssessment)) modifiers.push('hides-closed');
+  else if (creditRules.some((r) => r.hidesClosedScore)) modifiers.push('hides-score');
 
   // Detect gaps between access windows (ACCESS <-> NO ACCESS <-> ACCESS).
   // The modern format cannot represent non-contiguous access periods.
-  if (hasAccessGaps(rules)) return makeArchetype('unclassified');
+  if (hasAccessGaps(rules)) return { base: 'unclassified', modifiers: [] };
 
   const allNoOp = analyzed.every(
     (r) =>
@@ -373,28 +300,28 @@ export function classifyArchetype(rules: AssessmentAccessRuleJson[]): Archetype 
       !r.hidesClosedAssessment &&
       !r.hidesClosedScore,
   );
-  if (allNoOp) return makeArchetype('no-op');
-  if (has.prairieTest) return makeArchetype('prairietest-exam');
-  if (has.password) return makeArchetype('password-gated');
-  if (has.timed) return withMods('timed-assessment', has);
+  if (allNoOp) return { base: 'no-op', modifiers: [] };
+  if (hasPrairieTest) return { base: 'prairietest-exam', modifiers: [] };
+  if (hasPassword) return { base: 'password-gated', modifiers: [] };
+  if (hasTimed) return { base: 'timed-assessment', modifiers };
   if (
-    (has.fullCredit && has.reducedCredit) ||
-    (has.bonusCredit && has.reducedCredit) ||
-    (has.bonusCredit && has.fullCredit)
+    (hasFullCredit && hasReducedCredit) ||
+    (hasBonusCredit && hasReducedCredit) ||
+    (hasBonusCredit && hasFullCredit)
   ) {
-    return withMods('declining-credit', has);
+    return { base: 'declining-credit', modifiers };
   }
-  if ((has.fullCredit || has.bonusCredit) && creditRules.length === 1) {
-    const base = has.viewing || has.hiding ? 'single-deadline-with-viewing' : 'single-deadline';
-    return withMods(base, has);
+  if ((hasFullCredit || hasBonusCredit) && creditRules.length === 1) {
+    const base = hasViewing || hasHiding ? 'single-deadline-with-viewing' : 'single-deadline';
+    return { base, modifiers };
   }
-  if (has.fullCredit && creditRules.length > 1) return withMods('multi-deadline', has);
-  if (has.reducedCredit && creditRules.length === 1) return withMods('single-reduced-credit', has);
-  if (has.openCredit) return withMods('always-open', has);
-  if (has.viewing && creditRules.length === 0) return withMods('view-only', has);
-  if (has.hiding && creditRules.length === 0 && !has.viewing) return makeArchetype('hidden');
-  if (has.modeGate && creditRules.length === 0) return makeArchetype('mode-gated');
-  return makeArchetype('unclassified');
+  if (hasFullCredit && creditRules.length > 1) return { base: 'multi-deadline', modifiers };
+  if (hasReducedCredit && creditRules.length === 1) return { base: 'single-reduced-credit', modifiers };
+  if (hasOpenCredit) return { base: 'always-open', modifiers };
+  if (hasViewing && creditRules.length === 0) return { base: 'view-only', modifiers };
+  if (hasHiding && creditRules.length === 0 && !hasViewing) return { base: 'hidden', modifiers: [] };
+  if (hasModeGate && creditRules.length === 0) return { base: 'mode-gated', modifiers: [] };
+  return { base: 'unclassified', modifiers: [] };
 }
 
 function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
@@ -665,7 +592,7 @@ function migrateNoOp(_rules: AssessmentAccessRuleJson[]): {
   return {
     result: {},
     errors: [],
-    notes: ['No-op access rule — produces empty accessControl entry'],
+    notes: ['An empty accessControl list signifies that no access is granted.'],
   };
 }
 
@@ -720,17 +647,11 @@ function migrateKnownAllowAccess(
 }
 
 export function migrateAllowAccess(
-  archetype: Archetype | string,
+  archetype: Archetype,
   rules: AssessmentAccessRuleJson[],
 ): { result: AccessControlJsonInput; errors: string[]; notes: string[] } {
   rules = rules.filter((r) => !r.uids);
-  const parsedArchetype = typeof archetype === 'string' ? parseArchetype(archetype) : archetype;
-  if (parsedArchetype == null) {
-    const unsupportedLabel = typeof archetype === 'string' ? archetype : formatArchetype(archetype);
-    return { result: {}, errors: [`Unsupported archetype: ${unsupportedLabel}`], notes: [] };
-  }
-
-  return migrateKnownAllowAccess(parsedArchetype.base, rules);
+  return migrateKnownAllowAccess(archetype.base, rules);
 }
 
 /**
@@ -757,10 +678,10 @@ export function migrateAssessmentJson(
   if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) return null;
 
   const rulesForMigration = allowAccess.filter((rule) => !rule.uids);
-  const archetype =
+  const archetype: Archetype =
     rulesForMigration.length > 0
       ? classifyArchetype(rulesForMigration)
-      : makeArchetype('unclassified');
+      : { base: 'unclassified', modifiers: [] };
   const { result, errors, notes } = migrateAllowAccess(archetype, rulesForMigration);
 
   if (errors.length > 0) return null;
@@ -861,10 +782,10 @@ export async function applyMigrationToAssessmentFile(
 
   // strategy === 'migrate'
   const rulesForMigration = allowAccess.filter((rule) => !rule.uids);
-  const archetype =
+  const archetype: Archetype =
     rulesForMigration.length > 0
       ? classifyArchetype(rulesForMigration)
-      : makeArchetype('unclassified');
+      : { base: 'unclassified', modifiers: [] };
   const { result, errors } = migrateAllowAccess(archetype, rulesForMigration);
 
   if (errors.length === 0) {
