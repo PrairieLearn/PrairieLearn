@@ -1,7 +1,7 @@
 import {
   type StudentAssessment,
-  type StudentAssessmentInstance__UNSAFE,
   type StudentAssessmentInstanceAuthzResult,
+  type StudentAssessmentInstance__UNSAFE,
   type StudentAssessmentSet,
 } from '../../../lib/client/safe-db-types.js';
 

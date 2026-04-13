@@ -262,7 +262,6 @@ const minimalStudentAssessmentInstance: z.input<typeof StudentAssessmentInstance
   open: null,
   points: null,
   score_perc: null,
-  score_perc_pending: 0,
   team_id: null,
   user_id: null,
 };
