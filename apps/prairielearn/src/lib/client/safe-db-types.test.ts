@@ -373,6 +373,7 @@ const minimalStaffAlternativePool: z.input<typeof StaffAlternativePoolSchema> = 
 
 const minimalStaffAssessmentQuestion: z.input<typeof StaffAssessmentQuestionSchema> = {
   advance_score_perc: null,
+  ai_grading_last_selected_model: null,
   ai_grading_mode: false,
   allow_real_time_grading: true,
   alternative_group_id: null,
