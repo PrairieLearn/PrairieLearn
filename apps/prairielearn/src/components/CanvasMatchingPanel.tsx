@@ -121,6 +121,13 @@ export function CanvasMatchingPanel({
     (s) => s.result.matched.length > 0,
   ) ?? false;
 
+  const hasComprehensiveStrategy = matchingState?.strategyResults.some(
+    (s) => s.result.matched.length > 0 && s.result.ambiguous.length === 0 && s.result.unmatchedPl.length === 0,
+  ) ?? false;
+
+  const isComprehensive = (sr: StrategyResult) =>
+    sr.result.matched.length > 0 && sr.result.ambiguous.length === 0 && sr.result.unmatchedPl.length === 0;
+
   return (
     <div>
       <h6>Canvas gradebook import (optional)</h6>
@@ -166,7 +173,9 @@ export function CanvasMatchingPanel({
             onChange={handleStrategyChange}
           >
             {matchingState.strategyResults.map((sr) => {
-              const disabled = hasAnyMatches && sr.result.matched.length === 0;
+              const disabled =
+                (hasAnyMatches && sr.result.matched.length === 0) ||
+                (hasComprehensiveStrategy && !isComprehensive(sr));
               return (
               <Radio key={sr.strategy} value={sr.strategy} isDisabled={disabled}>
                 <span
