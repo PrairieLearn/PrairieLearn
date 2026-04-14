@@ -46,7 +46,7 @@ export function QuestionVariantHistory({
               variantId: variant.id,
             })}
           >
-            {variant.open ? 'Open' : `${Math.floor(variant.maxSubmissionScore * 100)}%`}
+            {variant.open ? 'Open' : `${Math.floor(variant.max_submission_score * 100)}%`}
           </a>
         );
       })}

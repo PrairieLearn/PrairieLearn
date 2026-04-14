@@ -5,15 +5,18 @@ import { formatPoints, formatPointsOrList } from '../../../lib/format.js';
 import type { StudentQuestionRow } from './types.js';
 
 export function ExamQuestionAvailablePoints({ row }: { row: StudentQuestionRow }) {
-  if (!row.maxAutoPoints) {
+  if (!row.assessment_question.max_auto_points) {
     return <>&mdash;</>;
   }
 
-  const open = row.instanceQuestionOpen;
-  const pointsList = row.pointsList?.map((p) => p - (row.maxManualPoints ?? 0));
+  const open = row.instance_question.open;
+  const pointsList = row.instance_question.points_list?.map(
+    (p) => p - (row.assessment_question.max_manual_points ?? 0),
+  );
   const currentWeight =
-    (row.pointsListOriginal?.[row.numberAttempts] ?? 0) - (row.maxManualPoints ?? 0);
-  const highestSubmissionScore = row.highestSubmissionScore;
+    (row.instance_question.points_list_original?.[row.instance_question.number_attempts] ?? 0) -
+    (row.assessment_question.max_manual_points ?? 0);
+  const highestSubmissionScore = row.instance_question.highest_submission_score;
 
   if (!open || pointsList == null || pointsList.length === 0) {
     return <>&mdash;</>;

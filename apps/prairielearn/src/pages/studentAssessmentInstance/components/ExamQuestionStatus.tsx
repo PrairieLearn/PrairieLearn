@@ -32,7 +32,7 @@ export function ExamQuestionStatus({
   row: StudentQuestionRow;
   realTimeGradingPartiallyDisabled: boolean;
 }) {
-  if (row.questionAccessMode === 'blocked_lockpoint') {
+  if (row.question_access_mode === 'blocked_lockpoint') {
     return <Badge bg="secondary">Locked</Badge>;
   }
 
@@ -40,16 +40,24 @@ export function ExamQuestionStatus({
   // we want to differentiate it from saved auto-graded questions which can
   // be graded immediately. We'll use a green badge so that student can drive
   // towards all status badges being green.
-  if (row.status === 'saved' && !row.maxAutoPoints && row.maxManualPoints) {
+  if (
+    row.instance_question.status === 'saved' &&
+    !row.assessment_question.max_auto_points &&
+    row.assessment_question.max_manual_points
+  ) {
     return <Badge bg="success">saved for manual grading</Badge>;
   }
 
   const { badgeText, badgeColor } = run(() => {
-    if (realTimeGradingPartiallyDisabled && row.status === 'saved' && !row.allowRealTimeGrading) {
+    if (
+      realTimeGradingPartiallyDisabled &&
+      row.instance_question.status === 'saved' &&
+      !row.assessment_question.allow_real_time_grading
+    ) {
       return { badgeText: 'saved for grading after finish', badgeColor: 'success' };
     }
 
-    const status = (row.status ?? 'unanswered') as QuestionStatus;
+    const status = (row.instance_question.status ?? 'unanswered') as QuestionStatus;
     return {
       badgeText: status,
       badgeColor: badgeColorMap[status],
@@ -59,11 +67,11 @@ export function ExamQuestionStatus({
   return (
     <>
       <Badge bg={badgeColor}>{badgeText}</Badge>
-      {row.allowGradeLeftMs > 0 && (
+      {row.allow_grade_left_ms > 0 && (
         <OverlayTrigger
           trigger="click"
           popover={{
-            body: `This question limits the rate of submissions. Further grade allowed in ${formatInterval(row.allowGradeLeftMs, { fullPartNames: true, firstOnly: true })} (as of the loading of this page).`,
+            body: `This question limits the rate of submissions. Further grade allowed in ${formatInterval(row.allow_grade_left_ms, { fullPartNames: true, firstOnly: true })} (as of the loading of this page).`,
           }}
           rootClose
         >

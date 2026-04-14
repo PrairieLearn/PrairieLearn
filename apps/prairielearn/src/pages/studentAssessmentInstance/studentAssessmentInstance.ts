@@ -30,10 +30,8 @@ import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.j
 import { computeNextAllowedGradingTimeMs } from '../../models/instance-question.js';
 import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
-import {
-  InstanceQuestionRowSchema,
-  StudentAssessmentInstance,
-} from './studentAssessmentInstance.html.js';
+import { InstanceQuestionRowSchema } from './components/types.js';
+import { StudentAssessmentInstance } from './studentAssessmentInstance.html.js';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
@@ -237,8 +235,6 @@ router.get(
   typedAsyncHandler<
     'assessment-instance',
     {
-      has_manual_grading_question: boolean;
-      has_auto_grading_question: boolean;
       assessment_text_templated: string | null;
     }
   >(async (req, res, _next) => {
@@ -264,18 +260,6 @@ router.get(
       }
     }
 
-    res.locals.has_manual_grading_question = instance_question_rows.some(
-      (q) =>
-        q.assessment_question.max_manual_points ||
-        q.instance_question.manual_points ||
-        q.instance_question.requires_manual_grading,
-    );
-    res.locals.has_auto_grading_question = instance_question_rows.some(
-      (q) =>
-        q.assessment_question.max_auto_points ||
-        q.instance_question.auto_points ||
-        !q.assessment_question.max_points,
-    );
     const assessment_text_templated = renderText(res.locals.assessment, res.locals.urlPrefix);
     res.locals.assessment_text_templated = assessment_text_templated;
 

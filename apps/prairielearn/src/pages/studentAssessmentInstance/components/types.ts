@@ -1,17 +1,28 @@
 import { z } from 'zod';
 
+import { DateFromISOString } from '@prairielearn/zod';
+
 import {
   type StudentAccessRule,
   type StudentAssessment,
   type StudentAssessmentInstanceAuthzResult,
   StudentAssessmentInstanceSchema__UNSAFE,
+  StudentAssessmentQuestionSchema,
   type StudentAssessmentSet,
   type StudentGroupConfig,
   StudentGroupRoleWithCountSchema,
+  StudentInstanceQuestionSchema__UNSAFE,
+  StudentQuestionSchema,
   type StudentUser,
   StudentUserSchema,
+  StudentZoneSchema,
 } from '../../../lib/client/safe-db-types.js';
+import { EnumQuestionAccessModeSchema } from '../../../lib/db-types.js';
 import { RoleAssignmentSchema } from '../../../lib/groups.shared.js';
+import {
+  type SimpleVariantWithScore,
+  SimpleVariantWithScoreSchema,
+} from '../../../models/variant.js';
 
 export const SafeStudentAssessmentInstanceSchema = z
   .object({
@@ -30,58 +41,72 @@ export const SafeStudentAssessmentInstanceSchema = z
   .brand('SafeStudentAssessmentInstance');
 export type SafeStudentAssessmentInstance = z.output<typeof SafeStudentAssessmentInstanceSchema>;
 
-// Client-safe row type for the hydrated component. This mirrors the fields
-// from InstanceQuestionRow that the client actually needs, without pulling
-// in db-types.ts schemas that the safe-db-types lint rule forbids.
-export interface StudentQuestionRow {
-  id: string;
-  startNewZone: boolean;
-  zoneId: string;
-  zoneNumber: number;
-  zoneTitle: string | null;
-  lockpoint: boolean;
-  lockpointCrossed: boolean;
-  lockpointCrossedInfo: string | null;
-  questionNumber: string;
-  questionTitle: string | null;
-  questionAccessMode: string;
-  prevAdvanceScorePerc: number | null;
-  prevTitle: string | null;
-  prevQuestionAccessMode: string | null;
-  groupRolePermissions?: { canView: boolean; canSubmit: boolean };
-  fileCount: number;
-  zoneMaxPoints: number | null;
-  zoneHasMaxPoints: boolean;
-  zoneBestQuestions: number | null;
-  zoneHasBestQuestions: boolean;
-  zoneQuestionCount: number;
+export type StudentVariantWithScore = Pick<
+  SimpleVariantWithScore,
+  'id' | 'open' | 'max_submission_score'
+>;
 
-  /** Instance question scoring data (used by React score/status components). */
-  autoPoints: number | null;
-  manualPoints: number | null;
-  points: number | null;
-  status: string | null;
-  requiresManualGrading: boolean;
-  hasLastGrader: boolean;
-  maxAutoPoints: number | null;
-  maxManualPoints: number | null;
-  maxPoints: number | null;
-  allowRealTimeGrading: boolean;
-  allowGradeLeftMs: number;
-  instanceQuestionOpen: boolean;
-  pointsListOriginal: number[] | null;
-  numberAttempts: number;
-  pointsList: number[] | null;
-  highestSubmissionScore: number | null;
-  currentValue: number | null;
-  previousVariants: StudentVariantWithScore[] | null;
-}
+export const InstanceQuestionRowSchema = z.object({
+  zone: StudentZoneSchema,
+  instance_question: StudentInstanceQuestionSchema__UNSAFE,
+  assessment_question: StudentAssessmentQuestionSchema,
+  question: StudentQuestionSchema,
+  start_new_zone: z.boolean(),
+  lockpoint_crossed: z.boolean(),
+  lockpoint_crossed_at: DateFromISOString.nullable(),
+  lockpoint_crossed_authn_user_uid: z.string().nullable(),
+  row_order: z.number(),
+  question_number: z.string(),
+  question_access_mode: EnumQuestionAccessModeSchema,
+  zone_question_count: z.number(),
+  file_count: z.number(),
+  prev_advance_score_perc: z.number().nullable(),
+  prev_title: z.string().nullable(),
+  prev_question_access_mode: EnumQuestionAccessModeSchema.nullable(),
+  allowGradeLeftMs: z.number().default(0),
+  previous_variants: z.array(SimpleVariantWithScoreSchema).optional(),
+  group_role_permissions: z
+    .object({
+      can_view: z.boolean(),
+      can_submit: z.boolean(),
+    })
+    .optional(),
+});
+export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
-export interface StudentVariantWithScore {
-  id: string;
-  open: boolean | null;
-  maxSubmissionScore: number;
-}
+export const StudentQuestionRowSchema = InstanceQuestionRowSchema.omit({ row_order: true })
+  .extend({ assessmentInstanceOpen: z.boolean() })
+  .transform(({ assessmentInstanceOpen, allowGradeLeftMs, previous_variants, ...rest }) => {
+    const redactScores =
+      assessmentInstanceOpen && !rest.assessment_question.allow_real_time_grading;
+
+    return {
+      ...rest,
+      instance_question: {
+        ...rest.instance_question,
+        auto_points: redactScores ? null : rest.instance_question.auto_points,
+        manual_points: redactScores ? null : rest.instance_question.manual_points,
+        points: redactScores ? null : rest.instance_question.points,
+        score_perc: redactScores ? null : rest.instance_question.score_perc,
+        open: assessmentInstanceOpen && rest.instance_question.open,
+        points_list_original: redactScores ? null : rest.instance_question.points_list_original,
+        points_list: redactScores ? null : rest.instance_question.points_list,
+        highest_submission_score: redactScores
+          ? null
+          : rest.instance_question.highest_submission_score,
+        current_value: redactScores ? null : rest.instance_question.current_value,
+      },
+      allow_grade_left_ms: allowGradeLeftMs,
+      previous_variants: redactScores
+        ? null
+        : (previous_variants?.map(({ id, open, max_submission_score }) => ({
+            id,
+            open,
+            max_submission_score,
+          })) ?? null),
+    };
+  });
+export type StudentQuestionRow = z.output<typeof StudentQuestionRowSchema>;
 
 export interface GradingConfig {
   hasAutoGradingQuestion: boolean;
@@ -114,6 +139,7 @@ export interface StudentAssessmentInstanceBodyProps {
   assessmentSet: StudentAssessmentSet;
   assessmentInstance: SafeStudentAssessmentInstance;
   remainingMs: number | null;
+  displayTimezone: string;
 
   authzResult: StudentAssessmentInstanceAuthzResult;
 
