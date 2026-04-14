@@ -677,9 +677,10 @@ def create_table_for_html_display(
         display_array += (
             f'<td class="pl-matrix-component-input-close-right" rowspan="{m}"></td>'
         )
-        display_array += (
-            f'<td rowspan="0">&nbsp;{suffix}</td>'
-        )
+        if suffix is not None:
+            display_array += (
+                f'<td rowspan="0">&nbsp;{suffix}</td>'
+            )
         if score_message:
             display_array += f'<td rowspan="0">&nbsp;{score_message}</td>'
         display_array += "</tr>"
