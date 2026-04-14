@@ -24,27 +24,27 @@ export interface DeadlineEntry {
 }
 
 export interface AfterLastDeadlineValue {
-  allowSubmissions?: boolean;
+  allowSubmissions: boolean;
   credit?: number;
 }
 
 export interface QuestionVisibilityValue {
-  hideQuestions: boolean;
-  showAgainDate?: string;
-  hideAgainDate?: string;
+  hidden: boolean;
+  visibleFromDate?: string;
+  visibleUntilDate?: string;
 }
 
 export interface ScoreVisibilityValue {
-  hideScore: boolean;
-  showAgainDate?: string;
+  hidden: boolean;
+  visibleFromDate?: string;
 }
 
 export function isNonDefaultQuestionVisibility(qv: QuestionVisibilityValue): boolean {
-  return !qv.hideQuestions || qv.showAgainDate !== undefined || qv.hideAgainDate !== undefined;
+  return !qv.hidden || qv.visibleFromDate !== undefined || qv.visibleUntilDate !== undefined;
 }
 
 export function isNonDefaultScoreVisibility(sv: ScoreVisibilityValue): boolean {
-  return sv.hideScore;
+  return sv.hidden;
 }
 
 interface PrairieTestExam {
@@ -103,7 +103,7 @@ export interface OverrideData {
   dueDate: string | null;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
-  afterLastDeadline: AfterLastDeadlineValue | null;
+  afterLastDeadline: AfterLastDeadlineValue;
   durationMinutes: number | null;
   password: string | null;
   questionVisibility: QuestionVisibilityValue;
@@ -169,13 +169,16 @@ export function jsonToMainRuleFormData(
     password: dc?.password ?? null,
     prairieTestExams: json.integrations?.prairieTest?.exams ?? [],
     questionVisibility: {
-      hideQuestions: ac?.hideQuestions ?? true,
-      showAgainDate: toLocalDatetimeValue(ac?.showQuestionsAgainDate, displayTimezone) ?? undefined,
-      hideAgainDate: toLocalDatetimeValue(ac?.hideQuestionsAgainDate, displayTimezone) ?? undefined,
+      hidden: ac?.questions?.hidden ?? true,
+      visibleFromDate:
+        toLocalDatetimeValue(ac?.questions?.visibleFromDate, displayTimezone) ?? undefined,
+      visibleUntilDate:
+        toLocalDatetimeValue(ac?.questions?.visibleUntilDate, displayTimezone) ?? undefined,
     },
     scoreVisibility: {
-      hideScore: ac?.hideScore ?? false,
-      showAgainDate: toLocalDatetimeValue(ac?.showScoreAgainDate, displayTimezone) ?? undefined,
+      hidden: ac?.score?.hidden ?? false,
+      visibleFromDate:
+        toLocalDatetimeValue(ac?.score?.visibleFromDate, displayTimezone) ?? undefined,
     },
   };
 }
@@ -240,7 +243,7 @@ export function jsonToOverrideFormData(
     overriddenFields.push('lateDeadlines');
   }
 
-  let afterLastDeadline: AfterLastDeadlineValue | null = null;
+  let afterLastDeadline: AfterLastDeadlineValue = { allowSubmissions: false };
   if (dc?.afterLastDeadline !== undefined) {
     afterLastDeadline = dc.afterLastDeadline;
     overriddenFields.push('afterLastDeadline');
@@ -258,21 +261,22 @@ export function jsonToOverrideFormData(
     overriddenFields.push('password');
   }
 
-  let questionVisibility: QuestionVisibilityValue = { hideQuestions: true };
-  if (ac?.hideQuestions !== undefined) {
+  let questionVisibility: QuestionVisibilityValue = { hidden: true };
+  if (ac?.questions?.hidden !== undefined) {
+    const q = ac.questions;
     questionVisibility = {
-      hideQuestions: ac.hideQuestions,
-      showAgainDate: toLocalDatetimeValue(ac.showQuestionsAgainDate, displayTimezone) ?? undefined,
-      hideAgainDate: toLocalDatetimeValue(ac.hideQuestionsAgainDate, displayTimezone) ?? undefined,
+      hidden: q.hidden,
+      visibleFromDate: toLocalDatetimeValue(q.visibleFromDate, displayTimezone) ?? undefined,
+      visibleUntilDate: toLocalDatetimeValue(q.visibleUntilDate, displayTimezone) ?? undefined,
     };
     overriddenFields.push('questionVisibility');
   }
 
-  let scoreVisibility: ScoreVisibilityValue = { hideScore: false };
-  if (ac?.hideScore !== undefined) {
+  let scoreVisibility: ScoreVisibilityValue = { hidden: false };
+  if (ac?.score?.hidden !== undefined) {
     scoreVisibility = {
-      hideScore: ac.hideScore,
-      showAgainDate: toLocalDatetimeValue(ac.showScoreAgainDate, displayTimezone) ?? undefined,
+      hidden: ac.score.hidden,
+      visibleFromDate: toLocalDatetimeValue(ac.score.visibleFromDate, displayTimezone) ?? undefined,
     };
     overriddenFields.push('scoreVisibility');
   }
@@ -306,10 +310,12 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   if (rule.dateControlEnabled) {
     output.dateControl = {};
     if (rule.releaseDate) output.dateControl.releaseDate = rule.releaseDate;
-    output.dateControl.dueDate = rule.dueDate;
+    if (rule.dueDate) output.dateControl.dueDate = rule.dueDate;
     if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (rule.lateDeadlines.length > 0) output.dateControl.lateDeadlines = rule.lateDeadlines;
-    if (rule.afterLastDeadline) output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+    if (rule.afterLastDeadline) {
+      output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+    }
     if (rule.durationMinutes != null) output.dateControl.durationMinutes = rule.durationMinutes;
     if (rule.password) output.dateControl.password = rule.password;
   }
@@ -323,25 +329,30 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   }
 
   // Only write afterComplete when values differ from defaults
-  // (hideQuestions: true, hideScore: false).
+  // (questions.hidden: true, score.hidden: false).
   const qv = rule.questionVisibility;
   const sv = rule.scoreVisibility;
-  const hasNonDefaultAfterComplete =
-    !qv.hideQuestions || qv.showAgainDate || qv.hideAgainDate || sv.hideScore || sv.showAgainDate;
+  const hasNonDefaultQuestions = isNonDefaultQuestionVisibility(qv);
+  const hasNonDefaultScore = isNonDefaultScoreVisibility(sv);
 
-  if (hasNonDefaultAfterComplete) {
-    output.afterComplete = {
-      hideQuestions: qv.hideQuestions,
-    };
-    if (qv.showAgainDate) {
-      output.afterComplete.showQuestionsAgainDate = qv.showAgainDate;
+  if (hasNonDefaultQuestions || hasNonDefaultScore) {
+    output.afterComplete = {};
+    if (hasNonDefaultQuestions) {
+      output.afterComplete.questions = qv.hidden
+        ? {
+            hidden: true,
+            ...(qv.visibleFromDate && { visibleFromDate: qv.visibleFromDate }),
+            ...(qv.visibleUntilDate && { visibleUntilDate: qv.visibleUntilDate }),
+          }
+        : { hidden: false };
     }
-    if (qv.hideAgainDate) {
-      output.afterComplete.hideQuestionsAgainDate = qv.hideAgainDate;
-    }
-    output.afterComplete.hideScore = sv.hideScore;
-    if (sv.showAgainDate) {
-      output.afterComplete.showScoreAgainDate = sv.showAgainDate;
+    if (hasNonDefaultScore) {
+      output.afterComplete.score = sv.hidden
+        ? {
+            hidden: true,
+            ...(sv.visibleFromDate && { visibleFromDate: sv.visibleFromDate }),
+          }
+        : { hidden: false };
     }
   }
 
@@ -371,7 +382,9 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
     if (of.has('dueDate')) output.dateControl.dueDate = rule.dueDate;
     if (of.has('earlyDeadlines')) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (of.has('lateDeadlines')) output.dateControl.lateDeadlines = rule.lateDeadlines;
-    if (of.has('afterLastDeadline')) output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+    if (of.has('afterLastDeadline')) {
+      output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+    }
     if (of.has('durationMinutes')) output.dateControl.durationMinutes = rule.durationMinutes;
     if (of.has('password')) output.dateControl.password = rule.password;
   }
@@ -379,19 +392,23 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
   if (of.has('questionVisibility') || of.has('scoreVisibility')) {
     output.afterComplete = {};
     if (of.has('questionVisibility')) {
-      output.afterComplete.hideQuestions = rule.questionVisibility.hideQuestions;
-      if (rule.questionVisibility.showAgainDate) {
-        output.afterComplete.showQuestionsAgainDate = rule.questionVisibility.showAgainDate;
-      }
-      if (rule.questionVisibility.hideAgainDate) {
-        output.afterComplete.hideQuestionsAgainDate = rule.questionVisibility.hideAgainDate;
-      }
+      const qv = rule.questionVisibility;
+      output.afterComplete.questions = qv.hidden
+        ? {
+            hidden: true,
+            ...(qv.visibleFromDate && { visibleFromDate: qv.visibleFromDate }),
+            ...(qv.visibleUntilDate && { visibleUntilDate: qv.visibleUntilDate }),
+          }
+        : { hidden: false };
     }
     if (of.has('scoreVisibility')) {
-      output.afterComplete.hideScore = rule.scoreVisibility.hideScore;
-      if (rule.scoreVisibility.showAgainDate) {
-        output.afterComplete.showScoreAgainDate = rule.scoreVisibility.showAgainDate;
-      }
+      const sv = rule.scoreVisibility;
+      output.afterComplete.score = sv.hidden
+        ? {
+            hidden: true,
+            ...(sv.visibleFromDate && { visibleFromDate: sv.visibleFromDate }),
+          }
+        : { hidden: false };
     }
   }
 
@@ -420,10 +437,12 @@ export function createDefaultOverrideFormData(mainRule?: MainRuleData): Override
     dueDate: mainRule?.dueDate ?? null,
     earlyDeadlines: (mainRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
     lateDeadlines: (mainRule?.lateDeadlines ?? []).map((d) => ({ ...d })),
-    afterLastDeadline: mainRule?.afterLastDeadline ? { ...mainRule.afterLastDeadline } : null,
+    afterLastDeadline: mainRule?.afterLastDeadline
+      ? { ...mainRule.afterLastDeadline }
+      : { allowSubmissions: false },
     durationMinutes: mainRule?.durationMinutes ?? null,
     password: mainRule?.password ?? null,
-    questionVisibility: mainRule ? { ...mainRule.questionVisibility } : { hideQuestions: true },
-    scoreVisibility: mainRule ? { ...mainRule.scoreVisibility } : { hideScore: false },
+    questionVisibility: mainRule ? { ...mainRule.questionVisibility } : { hidden: true },
+    scoreVisibility: mainRule ? { ...mainRule.scoreVisibility } : { hidden: false },
   };
 }

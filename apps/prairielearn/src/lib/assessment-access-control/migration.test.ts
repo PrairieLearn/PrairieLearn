@@ -291,7 +291,7 @@ describe('migrateAllowAccess', () => {
     const { result } = migrateAllowAccess('single-deadline', rules);
     assert.deepEqual(result, {
       dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
-      afterComplete: { hideQuestions: true },
+      afterComplete: { questions: { hidden: true } },
     });
   });
 
@@ -307,7 +307,7 @@ describe('migrateAllowAccess', () => {
     const { result } = migrateAllowAccess('single-deadline', rules);
     assert.deepEqual(result, {
       dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
-      afterComplete: { hideScore: true },
+      afterComplete: { score: { hidden: true } },
     });
   });
 
@@ -369,7 +369,7 @@ describe('migrateAllowAccess', () => {
     });
   });
 
-  it('includes both hideQuestions and hideScore in afterComplete', () => {
+  it('includes both questions.hidden and score.hidden in afterComplete', () => {
     const rules: AssessmentAccessRuleJson[] = [
       {
         credit: 100,
@@ -382,7 +382,7 @@ describe('migrateAllowAccess', () => {
     const { result } = migrateAllowAccess('single-deadline', rules);
     assert.deepEqual(result, {
       dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
-      afterComplete: { hideQuestions: true, hideScore: true },
+      afterComplete: { questions: { hidden: true }, score: { hidden: true } },
     });
   });
 
@@ -399,7 +399,7 @@ describe('migrateAllowAccess', () => {
     const { result } = migrateAllowAccess('single-deadline (mode-gated, hides-closed)', rules);
     assert.deepEqual(result, {
       dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
-      afterComplete: { hideQuestions: true },
+      afterComplete: { questions: { hidden: true } },
     });
   });
 

@@ -16,6 +16,11 @@ import * as github from '../../lib/github.js';
 import { isEnterprise } from '../../lib/license.js';
 import * as opsbot from '../../lib/opsbot.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import {
+  checkCourseShortNameInInstitution,
+  checkCourseTitleInInstitution,
+} from '../../models/course.js';
+import { DEFAULT_INSTITUTION_SHORT_NAME } from '../../models/institution.js';
 
 import { RequestCourse } from './instructorRequestCourse.html.js';
 import {
@@ -61,6 +66,29 @@ router.get(
   }),
 );
 
+// Note: This endpoint reveals whether courses with a given title/short_name
+// exist at the user's institution.
+router.get(
+  '/check',
+  typedAsyncHandler<'plain'>(async (req, res) => {
+    const title = typeof req.query.title === 'string' ? req.query.title.trim() : '';
+    const shortName = typeof req.query.short_name === 'string' ? req.query.short_name.trim() : '';
+    const institutionId = res.locals.authn_institution.id;
+    const userId = res.locals.authn_user.id;
+
+    const [titleCheck, shortNameCheck] = await Promise.all([
+      title
+        ? checkCourseTitleInInstitution({ title, institutionId, userId })
+        : { exists: false, owned: false },
+      shortName
+        ? checkCourseShortNameInInstitution({ shortName, institutionId, userId })
+        : { exists: false, owned: false },
+    ]);
+
+    res.json({ title: titleCheck, short_name: shortNameCheck });
+  }),
+);
+
 router.post(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
@@ -69,12 +97,19 @@ router.post(
     const github_user = req.body['cr-ghuser'] || null;
     const first_name = req.body['cr-firstname'] || '';
     const last_name = req.body['cr-lastname'] || '';
-    const work_email = req.body['cr-email'] || '';
-    const institution = req.body['cr-institution'] || '';
     const referral_source_option = req.body['cr-referral-source'] || '';
     const referral_source_other = req.body['cr-referral-source-other'] || '';
     const referral_source =
       referral_source_option === 'other' ? referral_source_other : referral_source_option;
+
+    const isDefaultInstitution =
+      res.locals.authn_institution.short_name === DEFAULT_INSTITUTION_SHORT_NAME;
+    const institution = isDefaultInstitution
+      ? req.body['cr-institution'] || ''
+      : res.locals.authn_institution.long_name;
+    const work_email = isDefaultInstitution
+      ? req.body['cr-email'] || ''
+      : res.locals.authn_user.uid;
 
     let error = false;
 
@@ -101,7 +136,8 @@ router.post(
       flash('error', 'The last name should not be empty.');
       error = true;
     }
-    if (work_email.length === 0) {
+
+    if (isDefaultInstitution && work_email.length === 0) {
       flash('error', 'The work email should not be empty.');
       error = true;
     }
@@ -125,6 +161,30 @@ router.post(
 
     if (hasExistingCourseRequest) {
       flash('error', 'You already have a request for this course.');
+      error = true;
+    }
+
+    // Check if a course with this title or rubric already exists at the user's institution.
+    const institutionId = res.locals.authn_institution.id;
+    const userId = res.locals.authn_user.id;
+
+    const [titleCheck, shortNameCheck] = await Promise.all([
+      checkCourseTitleInInstitution({ title, institutionId, userId }),
+      checkCourseShortNameInInstitution({ shortName: short_name, institutionId, userId }),
+    ]);
+
+    if (titleCheck.owned) {
+      flash(
+        'error',
+        `You already own a course with the name "${title}". If you want to offer a new semester or section, create a new course instance from within your existing course instead of requesting a new one.`,
+      );
+      error = true;
+    }
+    if (shortNameCheck.owned) {
+      flash(
+        'error',
+        `You already own a course with the rubric "${short_name}". If you want to offer a new semester or section, create a new course instance from within your existing course instead of requesting a new one.`,
+      );
       error = true;
     }
 
@@ -186,6 +246,7 @@ router.post(
             `Course repo: ${repo_short_name}\n` +
             `Course rubric: ${short_name}\n` +
             `Course title: ${title}\n` +
+            `Institution: ${institution}\n` +
             `Requested by: ${first_name} ${last_name} (${work_email})\n` +
             `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
             `GitHub username: ${github_user || 'not provided'}`,
@@ -204,6 +265,7 @@ router.post(
           '*Incoming course request*\n' +
             `Course rubric: ${short_name}\n` +
             `Course title: ${title}\n` +
+            `Institution: ${institution}\n` +
             `Requested by: ${first_name} ${last_name} (${work_email})\n` +
             `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
             `GitHub username: ${github_user || 'not provided'}`,
