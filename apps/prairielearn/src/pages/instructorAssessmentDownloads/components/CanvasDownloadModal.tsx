@@ -8,7 +8,12 @@ import {
   CanvasMatchingPanel,
   type CanvasMatchingState,
 } from '../../../components/CanvasMatchingPanel.js';
-import { type PlStudent, buildCanvasLookup, parseCanvasCsv } from '../../../lib/canvas-matching.js';
+import {
+  type PlStudent,
+  buildCanvasLookup,
+  parseCanvasCsv,
+  parseCsvRows,
+} from '../../../lib/canvas-matching.js';
 
 interface CanvasDownloadModalProps {
   show: boolean;
@@ -121,63 +126,9 @@ function parseCsvWithHeaders(csvText: string): { headers: string[]; dataRows: st
   const { students: _unused, error } = parseCanvasCsv(csvText);
   if (error) return null;
 
-  // Re-parse manually to get all rows including Points Possible
-  const lines = csvText.split('\n').filter((l) => l.trim().length > 0);
-  if (lines.length === 0) return null;
+  const rows = parseCsvRows(csvText);
+  if (rows.length === 0) return null;
 
-  const headers = parseSimpleCsvRow(lines[0]);
-
-  const dataRows: string[][] = [];
-  for (let i = 1; i < lines.length; i++) {
-    dataRows.push(parseSimpleCsvRow(lines[i]));
-  }
-
+  const [headers, ...dataRows] = rows;
   return { headers, dataRows };
-}
-
-/**
- * Parses a single CSV row, handling quoted fields.
- */
-function parseSimpleCsvRow(line: string): string[] {
-  const fields: string[] = [];
-  let i = 0;
-
-  while (i <= line.length) {
-    if (i === line.length) {
-      fields.push('');
-      break;
-    }
-
-    if (line[i] === '"') {
-      let value = '';
-      i++; // skip opening quote
-      while (i < line.length) {
-        if (line[i] === '"') {
-          if (i + 1 < line.length && line[i + 1] === '"') {
-            value += '"';
-            i += 2;
-          } else {
-            i++; // skip closing quote
-            break;
-          }
-        } else {
-          value += line[i];
-          i++;
-        }
-      }
-      fields.push(value);
-      if (i < line.length && line[i] === ',') i++;
-    } else {
-      const commaIdx = line.indexOf(',', i);
-      if (commaIdx === -1) {
-        fields.push(line.slice(i));
-        break;
-      } else {
-        fields.push(line.slice(i, commaIdx));
-        i = commaIdx + 1;
-      }
-    }
-  }
-
-  return fields;
 }

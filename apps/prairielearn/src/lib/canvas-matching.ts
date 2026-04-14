@@ -3,6 +3,7 @@
  * users. Used by the Canvas CSV export modals on the Gradebook and Assessment
  * Downloads pages.
  */
+import { parse as csvParse } from 'csv-parse/browser/esm/sync';
 
 // --------------------------------------------------------------------------
 // Types
@@ -62,11 +63,22 @@ function validateCanvasHeaders(headers: string[]): string | null {
   return null;
 }
 
+/**
+ * Parses CSV text into an array of rows (each row is an array of field strings)
+ * using the csv-parse library.
+ */
+export function parseCsvRows(csvText: string): string[][] {
+  return csvParse(csvText, {
+    relaxColumnCount: true,
+    skipEmptyLines: true,
+  });
+}
+
 export function parseCanvasCsv(csvText: string): {
   students: CanvasStudent[];
   error: string | null;
 } {
-  const lines = parseCsvLines(csvText);
+  const lines = parseCsvRows(csvText);
   if (lines.length < 2) {
     return { students: [], error: 'CSV file is empty or has no data rows.' };
   }
@@ -99,78 +111,6 @@ export function parseCanvasCsv(csvText: string): {
   }
 
   return { students, error: null };
-}
-
-/**
- * Minimal RFC 4180 CSV parser for browser use. Handles quoted fields (with
- * escaped quotes) and fields that contain commas or newlines.
- */
-function parseCsvLines(csv: string): string[][] {
-  const rows: string[][] = [];
-  let i = 0;
-  while (i < csv.length) {
-    const { row, nextIndex } = parseCsvRow(csv, i);
-    rows.push(row);
-    i = nextIndex;
-  }
-  return rows;
-}
-
-function parseCsvRow(csv: string, start: number): { row: string[]; nextIndex: number } {
-  const fields: string[] = [];
-  let i = start;
-
-  while (i < csv.length) {
-    if (csv[i] === '"') {
-      const { value, nextIndex } = parseQuotedField(csv, i);
-      fields.push(value);
-      i = nextIndex;
-    } else {
-      const end = findFieldEnd(csv, i);
-      fields.push(csv.slice(i, end));
-      i = end;
-    }
-
-    if (i >= csv.length || csv[i] === '\n' || csv[i] === '\r') {
-      // consume \r\n or \n or \r
-      if (i < csv.length && csv[i] === '\r') i++;
-      if (i < csv.length && csv[i] === '\n') i++;
-      break;
-    }
-
-    // skip comma delimiter
-    if (csv[i] === ',') i++;
-  }
-
-  return { row: fields, nextIndex: i };
-}
-
-function parseQuotedField(csv: string, start: number): { value: string; nextIndex: number } {
-  let i = start + 1; // skip opening quote
-  let value = '';
-  while (i < csv.length) {
-    if (csv[i] === '"') {
-      if (i + 1 < csv.length && csv[i + 1] === '"') {
-        value += '"';
-        i += 2;
-      } else {
-        i++; // skip closing quote
-        break;
-      }
-    } else {
-      value += csv[i];
-      i++;
-    }
-  }
-  return { value, nextIndex: i };
-}
-
-function findFieldEnd(csv: string, start: number): number {
-  let i = start;
-  while (i < csv.length && csv[i] !== ',' && csv[i] !== '\n' && csv[i] !== '\r') {
-    i++;
-  }
-  return i;
 }
 
 // --------------------------------------------------------------------------
