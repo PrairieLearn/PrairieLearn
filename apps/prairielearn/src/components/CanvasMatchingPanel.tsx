@@ -167,6 +167,17 @@ export function CanvasMatchingPanel({
       {matchingState && (
         <>
           <h6>Matching strategy</h6>
+          {hasComprehensiveStrategy ? (
+            <p className="small text-secondary mb-2">
+              Some strategies are disabled because{' '}
+              {strategyLabel(matchingState.strategyResults.find((s) => isComprehensive(s))!.strategy)}{' '}
+              accounts for all students.
+            </p>
+          ) : hasAnyMatches && matchingState.strategyResults.some((s) => s.result.matched.length === 0) ? (
+            <p className="small text-secondary mb-2">
+              Some strategies are disabled because they produced no matches.
+            </p>
+          ) : null}
           <RadioGroup
             className="d-flex flex-column gap-3 w-100"
             value={matchingState.selectedStrategy}
