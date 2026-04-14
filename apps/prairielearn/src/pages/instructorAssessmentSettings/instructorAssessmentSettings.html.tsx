@@ -759,7 +759,9 @@ function InstructorAssessmentSettingsInner({
         <div className="card m-4 mt-0">
           <div className="card-body">
             <h2 className="h5 card-title">Student options</h2>
-            <p className="text-muted small">Configure student-facing options and assessment behaviour.</p>
+            <p className="text-muted small">
+              Configure student-facing options and assessment behaviour.
+            </p>
             <div className="form-check mb-3">
               <input
                 className="form-check-input"
