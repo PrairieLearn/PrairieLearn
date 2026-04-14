@@ -98,10 +98,13 @@ To fix this, you can upload a gradebook CSV exported from Canvas so that Prairie
 
 1. Open the Canvas CSV export dialog in PrairieLearn (from either the Gradebook page or the Assessment Downloads page).
 2. In the **Canvas gradebook import** section, upload the CSV file you exported from Canvas.
-3. PrairieLearn will automatically try several matching strategies and select the best one:
+3. PrairieLearn will automatically try several matching strategies and select the best one. You can hover over the tooltip icon next to each strategy to learn how it works.
    - **Sign-in identifier match** — the PrairieLearn sign-in identifier is compared against both the SIS Login ID and SIS User ID columns in the Canvas export.
    - **Campus student ID match** — PrairieLearn's stored student ID is compared against both the SIS User ID and SIS Login ID columns in the Canvas export. This handles institutions that place the campus student ID in either column.
    - **Name-based match** — student names are compared across different formats (e.g., "Last, First" vs "First Last").
+
+   Strategies that produce no matches are automatically disabled. If a strategy matches all PrairieLearn students without ambiguity, other strategies are disabled as well.
+
 4. A summary shows how many students were matched, how many are ambiguous, and how many are unmatched.
 5. If any matches are ambiguous (one PrairieLearn student matched multiple Canvas students), you can manually select the correct Canvas student from a dropdown.
 6. Click **Download** to generate the CSV with the matched Canvas identity columns.
@@ -109,5 +112,5 @@ To fix this, you can upload a gradebook CSV exported from Canvas so that Prairie
 !!! note
 
     - Unmatched PrairieLearn students will still appear in the export using their PrairieLearn sign-in identifier in the login column.
-    - Unmatched Canvas students (those with no PrairieLearn grades) are omitted from the export.
+    - Unmatched Canvas students may be omitted from the export because no matching PrairieLearn account was found.
     - The matching step is optional — you can always download without uploading a Canvas CSV.
