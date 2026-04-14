@@ -45,8 +45,9 @@ HIDE_LETTER_KEYS_DEFAULT = False
 HIDE_SCORE_BADGE_DEFAULT = False
 SHOW_NUMBER_CORRECT_DEFAULT = False
 MIN_CORRECT_DEFAULT = 1
-MIN_SELECT_DEFAULT = 1
+MIN_SELECT_DEFAULT = 0
 FEEDBACK_DEFAULT = None
+ALLOW_BLANK_DEFAULT = False
 
 CHECKBOX_MUSTACHE_TEMPLATE_NAME = "pl-checkbox.mustache"
 
@@ -378,6 +379,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         # Deprecated
         "fixed-order",
         "inline",
+        "allow-blank",
     ]
 
     pl.check_attribs(element, required_attribs, optional_attribs)
@@ -594,6 +596,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 num_display_answers=num_display_answers,
                 partial_credit_mode=partial_credit_mode,
             )
+            allow_blank = pl.get_boolean_attrib(
+                element, "allow-blank", ALLOW_BLANK_DEFAULT
+            )
 
         html_params: dict[str, Any] = {
             "question": True,
@@ -701,13 +706,20 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
 
+    allow_blank = pl.get_boolean_attrib(
+        element, "allow-blank", ALLOW_BLANK_DEFAULT
+    )
+
     submitted_key = data["submitted_answers"].get(name, None)
     all_keys = [a["key"] for a in data["params"][name]]
 
     # Check that at least one option was selected
     if submitted_key is None:
-        data["format_errors"][name] = "You must select at least one option."
-        return
+        if not allow_blank:
+            data["format_errors"][name] = "You must select at least one option."
+            return
+        else:
+            submitted_key = []
 
     # Check that the selected options are a subset of the valid options
     submitted_key_set = set(submitted_key)
