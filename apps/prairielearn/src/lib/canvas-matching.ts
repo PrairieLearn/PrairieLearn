@@ -5,10 +5,6 @@
  */
 import { parse as csvParse } from 'csv-parse/browser/esm/sync';
 
-// --------------------------------------------------------------------------
-// Types
-// --------------------------------------------------------------------------
-
 export interface CanvasStudent {
   name: string;
   id: string;
