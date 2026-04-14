@@ -6,10 +6,15 @@ import { downloadAsCSV } from '@prairielearn/browser-utils';
 import { ExpandableCheckboxGroup, Radio, RadioGroup } from '@prairielearn/ui';
 
 import {
+  CanvasMatchingPanel,
+  type CanvasMatchingState,
+} from '../../../components/CanvasMatchingPanel.js';
+import {
   CANVAS_CSV_FIXED_HEADERS,
   CANVAS_CSV_POINTS_POSSIBLE_NAME,
   canvasPointsPossibleValue,
 } from '../../../lib/canvas-csv.js';
+import { buildCanvasLookup } from '../../../lib/canvas-matching.js';
 import type { CourseAssessmentRow, GradebookRow } from '../instructorGradebook.types.js';
 
 type ScoreFormat = 'percentage' | 'points_original';
@@ -95,6 +100,7 @@ function CanvasCsvModalContent({
     () => new Set(allAssessmentIds),
   );
   const [scoreFormat, setScoreFormat] = useState<ScoreFormat>('percentage');
+  const [matchingState, setMatchingState] = useState<CanvasMatchingState | null>(null);
 
   const assessmentGroups = useMemo(() => {
     const groups = new Map<string, AssessmentGroup>();
@@ -156,6 +162,14 @@ function CanvasCsvModalContent({
     [courseAssessments, selectedAssessmentIds],
   );
 
+  const plStudents = useMemo(
+    () =>
+      rows
+        .filter((row) => row.role === 'Student' && row.user_name != null)
+        .map((row) => ({ uid: row.uid, userName: row.user_name, uin: row.uin })),
+    [rows],
+  );
+
   const handleDownload = () => {
     const validRows = rows.filter((row) => row.role === 'Student' && row.user_name != null);
     const header = [
@@ -191,27 +205,32 @@ function CanvasCsvModalContent({
       }),
     ];
 
+    const canvasLookup = matchingState ? buildCanvasLookup(matchingState.currentResult) : null;
+
     const data = [
       pointsPossibleRow,
-      ...validRows.map((row) => [
-        row.user_name,
-        null,
-        null,
-        row.uid,
-        null,
-        ...selectedAssessments.map((a) => {
-          const scoreData = row.scores[a.assessment_id];
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          if (!scoreData) return null;
+      ...validRows.map((row) => {
+        const canvas = canvasLookup?.get(row.uid);
+        return [
+          canvas?.name ?? row.user_name,
+          canvas?.id ?? null,
+          canvas?.sisUserId ?? null,
+          canvas?.sisLoginId ?? row.uid,
+          canvas?.section ?? null,
+          ...selectedAssessments.map((a) => {
+            const scoreData = row.scores[a.assessment_id];
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            if (!scoreData) return null;
 
-          switch (scoreFormat) {
-            case 'percentage':
-              return scoreData.score_perc ?? null;
-            case 'points_original':
-              return scoreData.points ?? null;
-          }
-        }),
-      ]),
+            switch (scoreFormat) {
+              case 'percentage':
+                return scoreData.score_perc ?? null;
+              case 'points_original':
+                return scoreData.points ?? null;
+            }
+          }),
+        ];
+      }),
     ];
 
     downloadAsCSV(header, data, filename);
@@ -251,6 +270,14 @@ function CanvasCsvModalContent({
           <Radio value="percentage">Percentage score (0–100)</Radio>
           <Radio value="points_original">Original point values</Radio>
         </RadioGroup>
+
+        <hr />
+
+        <CanvasMatchingPanel
+          plStudents={plStudents}
+          matchingState={matchingState}
+          onMatchingStateChange={setMatchingState}
+        />
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onHide}>
