@@ -911,7 +911,7 @@ interface UpdateChunksForCourseFullOptions extends BaseUpdateChunksForCourseOpti
   mode: 'full';
 }
 
-export type UpdateChunksForCourseOptions =
+type UpdateChunksForCourseOptions =
   | UpdateChunksForCourseGitDiffOptions
   | UpdateChunksForCourseChangedFilesOptions
   | UpdateChunksForCourseFullOptions;
