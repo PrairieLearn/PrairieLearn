@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import Alert from 'react-bootstrap/Alert';
 import Form from 'react-bootstrap/Form';
 
-import { Radio, RadioGroup } from '@prairielearn/ui';
+import { OverlayTrigger, Radio, RadioGroup } from '@prairielearn/ui';
 
 import {
   type AmbiguousMatch,
@@ -13,6 +13,7 @@ import {
   type StrategyResult,
   parseCanvasCsv,
   runAllStrategies,
+  strategyDescription,
   strategyLabel,
 } from '../lib/canvas-matching.js';
 
@@ -118,10 +119,19 @@ export function CanvasMatchingPanel({
   return (
     <div>
       <h6>Canvas gradebook import (optional)</h6>
-      <p className="text-muted small mb-2">
+      <p className="text-muted small mb-1">
         Upload a gradebook CSV exported from Canvas so PrairieLearn can reuse each student&apos;s
         roster identity from that file. Without this, values that identify students to Canvas will
         use each student&apos;s PrairieLearn sign-in identifier instead.
+      </p>
+      <p className="small mb-3">
+        <a
+          href="https://prairielearn.readthedocs.io/en/latest/lmsIntegrationInstructor/#exporting-canvas-compatible-csv-files"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Learn more about exporting grades to Canvas
+        </a>
       </p>
 
       <Form.Group controlId="canvas-csv-upload" className="mb-3">
@@ -152,8 +162,18 @@ export function CanvasMatchingPanel({
           >
             {matchingState.strategyResults.map((sr) => (
               <Radio key={sr.strategy} value={sr.strategy}>
-                <span className="d-inline-flex flex-column gap-1 min-w-0">
-                  <span>{strategyLabel(sr.strategy)}</span>
+                <span className="d-inline-flex flex-column gap-1 min-w-0 justify-content-start">
+                  <span>
+                    {strategyLabel(sr.strategy)}{' '}
+                    <OverlayTrigger
+                      tooltip={{
+                        body: strategyDescription(sr.strategy),
+                        props: { id: `strategy-tooltip-${sr.strategy}` },
+                      }}
+                    >
+                      <i className="bi bi-question-circle text-muted" aria-hidden="true" />
+                    </OverlayTrigger>
+                  </span>
                   <span className="text-muted small">
                     {sr.result.matched.length} matched, {sr.result.ambiguous.length} ambiguous,{' '}
                     {sr.result.unmatchedPl.length} unmatched PL, {sr.result.unmatchedCanvas.length}{' '}

@@ -412,6 +412,19 @@ export function strategyLabel(strategy: MatchStrategy): string {
   }
 }
 
+export function strategyDescription(strategy: MatchStrategy): string {
+  switch (strategy) {
+    case 'uid':
+      return 'Matches each student\u2019s PrairieLearn sign-in identifier against the SIS Login ID and SIS User ID columns in the Canvas export.';
+    case 'uin':
+      return 'Matches each student\u2019s campus student ID (UIN) stored in PrairieLearn against the SIS User ID and SIS Login ID columns in the Canvas export. Leading zeros are ignored.';
+    case 'email':
+      return 'Compares the local part of each student\u2019s email address (the portion before the @) against the SIS Login ID and SIS User ID columns in the Canvas export.';
+    case 'name':
+      return 'Compares student names across different formats (e.g. "Last, First" vs. "First Last"), ignoring case and punctuation.';
+  }
+}
+
 // --------------------------------------------------------------------------
 // Build the Canvas identity columns from match results
 // --------------------------------------------------------------------------
