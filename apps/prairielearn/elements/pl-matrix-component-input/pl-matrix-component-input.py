@@ -37,6 +37,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     optional_attribs = [
         "weight",
         "label",
+        "suffix",
         "comparison",
         "rtol",
         "atol",
@@ -79,6 +80,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # get the name of the element, in this case, the name of the array
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    suffix = pl.get_string_attrib(element, "suffix", None)
     aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     allow_partial_credit = pl.get_boolean_attrib(
         element, "allow-partial-credit", ALLOW_PARTIAL_CREDIT_DEFAULT
@@ -117,6 +119,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             n,
             name,
             label=label,
+            suffix=suffix,
             aria_label=aria_label,
             label_uuid=uuid,
             data=data,
@@ -175,6 +178,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "question": True,
             "name": name,
             "label": label,
+            "suffix": suffix,
             "editable": editable,
             "info": info,
             "shortinfo": shortinfo,
@@ -202,6 +206,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if parse_error is None:
             a_submitted = pl.from_json(data["submitted_answers"].get(name, None))
+            html_params["suffix"] = suffix
+
             if (
                 a_submitted is not None
                 and isinstance(a_submitted, np.ndarray)
@@ -247,6 +253,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 n,
                 name,
                 label=label,
+                suffix=suffix,
                 aria_label=aria_label,
                 label_uuid=uuid,
                 data=data,
@@ -269,6 +276,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 n,
                 name,
                 label=label,
+                suffix=suffix,
                 aria_label=aria_label,
                 label_uuid=uuid,
                 data=data,
@@ -323,6 +331,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params = {
                 "answer": True,
                 "label": label,
+                "suffix": suffix,
                 "latex_data": latex_data,
             }
 
@@ -552,6 +561,7 @@ def create_table_for_html_display(
     n: int,
     name: str,
     label: str | None,
+    suffix: str | None,
     aria_label: str | None,
     label_uuid: str,
     data: pl.QuestionData,
@@ -666,6 +676,9 @@ def create_table_for_html_display(
         display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         display_array += (
             f'<td class="pl-matrix-component-input-close-right" rowspan="{m}"></td>'
+        )
+        display_array += (
+            f'<td rowspan="0">&nbsp;{suffix}</td>'
         )
         if score_message:
             display_array += f'<td rowspan="0">&nbsp;{score_message}</td>'
