@@ -23,20 +23,13 @@ interface CanvasDownloadModalProps {
   students: Student[];
 }
 
-export function CanvasDownloadModal({ show, ...rest }: CanvasDownloadModalProps) {
-  return (
-    <Modal show={show} size="lg" onHide={rest.onHide}>
-      <CanvasDownloadModalContent {...rest} />
-    </Modal>
-  );
-}
-
-function CanvasDownloadModalContent({
+export function CanvasDownloadModal({
+  show,
   onHide,
   downloadUrl,
   filename,
   students,
-}: Omit<CanvasDownloadModalProps, 'show'>) {
+}: CanvasDownloadModalProps) {
   const [matchingState, setMatchingState] = useState<CanvasMatchingState | null>(null);
   const [downloading, setDownloading] = useState(false);
 
@@ -95,7 +88,7 @@ function CanvasDownloadModalContent({
   };
 
   return (
-    <>
+    <Modal show={show} size="lg" onHide={onHide}>
       <Modal.Header closeButton>
         <Modal.Title>Download Canvas CSV</Modal.Title>
       </Modal.Header>
@@ -114,7 +107,7 @@ function CanvasDownloadModalContent({
           {downloading ? 'Downloading...' : matchingState ? 'Download with matching' : 'Download'}
         </Button>
       </Modal.Footer>
-    </>
+    </Modal>
   );
 }
 
