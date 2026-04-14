@@ -631,7 +631,9 @@ function GradebookTable({
       <CanvasCsvModal
         show={canvasCsvTarget != null}
         courseAssessments={courseAssessments}
-        studentRows={(canvasCsvTarget === 'filtered' ? filteredRows : allRows).filter((row) => row.role === 'Student' && row.user_name != null)}
+        studentRows={(canvasCsvTarget === 'filtered' ? filteredRows : allRows).filter(
+          (row) => row.role === 'Student' && row.user_name != null,
+        )}
         filename={`${filenameBase}_canvas${canvasCsvTarget === 'filtered' ? '_filtered' : ''}.csv`}
         onHide={() => setCanvasCsvTarget(null)}
       />

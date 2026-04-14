@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import type { Student } from '../../lib/canvas-matching.js';
+
 import { CanvasDownloadModal } from './components/CanvasDownloadModal.js';
 
 export interface Filenames {
