@@ -34,7 +34,7 @@
     "**/exampleCourse/questions/**/question.html": "htmlmustache",
     "**/testCourse/questions/**/question.html": "htmlmustache"
   },
-  "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, UseTab: Never, SortIncludes: false, PointerAlignment: Right, SpaceAfterCStyleCast: true }",
+  "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, UseTab: Never, SortIncludes: false, PointerAlignment: Right, SpaceAfterCStyleCast: true, ColumnLimit: 100 }",
   "knip.configFilePath": ".knip.ts",
   "knip.requireConfig": true,
   "knip.codeLens.enabled": false,

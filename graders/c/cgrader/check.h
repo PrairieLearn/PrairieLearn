@@ -7,9 +7,8 @@
 // Source - https://stackoverflow.com/a/78444624
 // Retrieved 2026-04-14, License - CC BY-SA 4.0
 #if defined(__has_feature)
-#if __has_feature(address_sanitizer) && \
-    !defined(__SANITIZE_ADDRESS__)  // for clang
-#define __SANITIZE_ADDRESS__        // GCC already sets this
+#if __has_feature(address_sanitizer) && !defined(__SANITIZE_ADDRESS__)  // for clang
+#define __SANITIZE_ADDRESS__                                            // GCC already sets this
 #endif
 #endif
 
@@ -33,17 +32,15 @@ static char sanitizer_output[200] = "";
 
 static inline void pl_fixture_sandbox_setup(void) {
 #ifndef PLCHECK_NO_EXTRA_FORK
-  plcheck_final_check =
-      (long *) mmap(NULL, sizeof(*plcheck_final_check), PROT_READ | PROT_WRITE,
-                    MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  plcheck_final_check = (long *) mmap(NULL, sizeof(*plcheck_final_check), PROT_READ | PROT_WRITE,
+                                      MAP_SHARED | MAP_ANONYMOUS, -1, 0);
   *plcheck_final_check = 1;
 
   // Fork before calling test, to control what kind of return is received back
   int child_pid = fork();
   if (child_pid < 0) {
     ck_abort_msg(
-        "Error attempting to set up sandboxed process for test. "
-        "Contact your instructor.\n%s",
+        "Error attempting to set up sandboxed process for test. Contact your instructor.\n%s",
         strerror(errno));
   } else if (child_pid == 0) {
     // DO NOTHING
@@ -53,20 +50,16 @@ static inline void pl_fixture_sandbox_setup(void) {
       int rv = waitpid(child_pid, &status, 0);
 
       if (rv != -1 && WIFEXITED(status)) {
-        // If process exited before the teardown fixture, abort with a
-        // message
+        // If process exited before the teardown fixture, abort with a message
         if (!WEXITSTATUS(status) &&
-            (!plcheck_final_check ||
-             *plcheck_final_check != CORRECT_FINAL_CHECK))
-          ck_abort_msg(
-              "Illegal attempt to call exit() or equivalent "
-              "function in student code.");
+            (!plcheck_final_check || *plcheck_final_check != CORRECT_FINAL_CHECK))
+          ck_abort_msg("Illegal attempt to call exit() or equivalent function in student code.");
         // If process exited normally, exit with the same exit code
         _exit(WEXITSTATUS(status));
       }
 
-      // If process exited via a signal, raise the same signal, exiting as
-      // a precaution if the signal doesn't cause a termination
+      // If process exited via a signal, raise the same signal, exiting as a precaution if the
+      // signal doesn't cause a termination
       if (rv != -1 && WIFSIGNALED(status)) {
         raise(WTERMSIG(status));
         _exit(255);
@@ -77,34 +70,32 @@ static inline void pl_fixture_sandbox_setup(void) {
 #endif
 
 #ifndef PLCHECK_KEEP_FD
-  // Close all file descriptors from the test program, such as logs and result
-  // outputs (keep FD #3, used for error message piping)
+  // Close all file descriptors from the test program, such as logs and result outputs (keep FD #3,
+  // used for error message piping)
   closefrom(4);
 #endif
 
 #ifndef PLCHECK_KEEP_UID
-  // Set the user/group based on sandbox user and group set up by the test
-  // script
+  // Set the user/group based on sandbox user and group set up by the test script
   char *uid = getenv("SANDBOX_UID"), *gid = getenv("SANDBOX_GID");
   if (gid) {
     int setgid_rv = setgid(atoi(gid));
-    ck_assert_msg(!setgid_rv,
-                  "Error attempting to set up sandboxed group ID for test. "
-                  "Contact your instructor.\n%s",
-                  strerror(errno));
+    ck_assert_msg(
+        !setgid_rv,
+        "Error attempting to set up sandboxed group ID for test. Contact your instructor.\n%s",
+        strerror(errno));
   }
   if (uid) {
     int setuid_rv = setuid(atoi(uid));
-    ck_assert_msg(!setuid_rv,
-                  "Error attempting to set up sandboxed user ID for test. "
-                  "Contact your instructor.\n%s",
-                  strerror(errno));
+    ck_assert_msg(
+        !setuid_rv,
+        "Error attempting to set up sandboxed user ID for test. Contact your instructor.\n%s",
+        strerror(errno));
   }
 #endif
 
 #ifndef PLCHECK_KEEP_ENV
-  // Clear all environment variables, including those used to configure
-  // libcheck
+  // Clear all environment variables, including those used to configure libcheck
   clearenv();
 #endif
 
@@ -127,8 +118,7 @@ static inline void pl_fixture_sandbox_teardown(void) {
 }
 
 static inline TCase *pl_tcase_add_sandbox_fixtures(TCase *tc) {
-  tcase_add_checked_fixture(tc, pl_fixture_sandbox_setup,
-                            pl_fixture_sandbox_teardown);
+  tcase_add_checked_fixture(tc, pl_fixture_sandbox_setup, pl_fixture_sandbox_teardown);
   return tc;
 }
 
@@ -156,8 +146,7 @@ static void pl_asan_death_hook(void) {
   sprintf(filename, "%s.%d", sanitizer_output, getpid());
   int fd = open(filename, O_RDONLY | O_EXCL);
   if (fd < 0 || (size = read(fd, msg, 2048)) <= 0) {
-    ck_abort_msg(
-        "Detected a memory leak or similar issue. No details available.");
+    ck_abort_msg("Detected a memory leak or similar issue. No details available.");
   }
   msg[size] = 0;
   close(fd);
