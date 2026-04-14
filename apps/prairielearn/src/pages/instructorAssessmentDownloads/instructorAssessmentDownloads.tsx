@@ -382,14 +382,16 @@ router.get(
 
     const students = (
       await sqldb.queryRows(
-        sql.select_assessment_students,
+        sql.select_assessment_users,
         {
           assessment_id: assessment.id,
           course_instance_id: course_instance.id,
         },
-        UserSchema,
+        UserSchema.extend({ role: SprocUsersGetDisplayedRoleSchema }),
       )
-    ).map((u) => ({ uid: u.uid, userName: u.name, uin: u.uin }));
+    )
+      .filter((u) => u.role === 'Student')
+      .map((u) => ({ uid: u.uid, userName: u.name, uin: u.uin }));
 
     res.send(
       PageLayout({

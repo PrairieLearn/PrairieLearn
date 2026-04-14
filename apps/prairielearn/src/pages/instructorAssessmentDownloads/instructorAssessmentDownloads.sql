@@ -407,15 +407,15 @@ WHERE
 LIMIT
   1;
 
--- BLOCK select_assessment_students
+-- BLOCK select_assessment_users
 SELECT DISTINCT
-  ON (u.id) u.*
+  ON (u.id) u.*,
+  users_get_displayed_role (u.id, ci.id) AS role
 FROM
   assessment_instances AS ai
   JOIN users AS u ON (u.id = ai.user_id)
   JOIN course_instances AS ci ON (ci.id = $course_instance_id)
 WHERE
   ai.assessment_id = $assessment_id
-  AND users_get_displayed_role (u.id, ci.id) = 'Student'
 ORDER BY
   u.id;
