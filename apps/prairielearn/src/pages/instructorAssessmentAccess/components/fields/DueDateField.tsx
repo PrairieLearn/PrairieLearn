@@ -1,16 +1,25 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { Form } from 'react-bootstrap';
-import { type Path, useController, useWatch } from 'react-hook-form';
+import { useController, useWatch } from 'react-hook-form';
+
+import { formatDateFriendly } from '@prairielearn/formatter';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
-import {
-  endOfDayDatetime,
-  getLatestEarlyDeadlineDate,
-  getUserTimezone,
-} from '../utils/dateUtils.js';
+import { endOfDayDatetime, getLatestDeadlineEntry } from '../utils/dateUtils.js';
+
+function localDatetimeToTimezoneDate(value: string, timezone: string): Date {
+  return new Date(Temporal.PlainDateTime.from(value).toZonedDateTime(timezone).epochMilliseconds);
+}
+
+function formatCourseLocalDate(value: string, displayTimezone: string): string {
+  return formatDateFriendly(localDatetimeToTimezoneDate(value, displayTimezone), displayTimezone, {
+    dateOnly: true,
+    includeTz: false,
+  });
+}
 
 function DueDateInput({
   value,
@@ -19,6 +28,7 @@ function DueDateInput({
   releaseDate,
   earlyDeadlines,
   error,
+  displayTimezone,
 }: {
   value: string | null;
   onChange: (value: string | null) => void;
@@ -26,35 +36,46 @@ function DueDateInput({
   releaseDate: string | null | undefined;
   earlyDeadlines: DeadlineEntry[] | undefined;
   error?: string;
+  displayTimezone: string;
 }) {
-  const userTimezone = getUserTimezone();
-
   const getCreditPeriodText = () => {
     if (!value) return null;
 
-    const dueDateObj = new Date(value);
-    const latestEarly = earlyDeadlines ? getLatestEarlyDeadlineDate(earlyDeadlines) : null;
+    const dueDatePlain = Temporal.PlainDateTime.from(value);
+    const latestEarly = earlyDeadlines ? getLatestDeadlineEntry(earlyDeadlines) : null;
 
     if (latestEarly) {
       return (
         <>
-          <FriendlyDate date={latestEarly} timezone={userTimezone} options={{ includeTz: false }} />{' '}
+          <FriendlyDate
+            date={latestEarly}
+            timezone={displayTimezone}
+            options={{ includeTz: false }}
+          />{' '}
           –{' '}
-          <FriendlyDate date={dueDateObj} timezone={userTimezone} options={{ includeTz: false }} />{' '}
+          <FriendlyDate
+            date={dueDatePlain}
+            timezone={displayTimezone}
+            options={{ includeTz: false }}
+          />{' '}
           (100% credit)
         </>
       );
     } else if (releaseDate) {
-      const releaseDateObj = new Date(releaseDate);
+      const releaseDatePlain = Temporal.PlainDateTime.from(releaseDate);
       return (
         <>
           <FriendlyDate
-            date={releaseDateObj}
-            timezone={userTimezone}
+            date={releaseDatePlain}
+            timezone={displayTimezone}
             options={{ includeTz: false }}
           />{' '}
           –{' '}
-          <FriendlyDate date={dueDateObj} timezone={userTimezone} options={{ includeTz: false }} />{' '}
+          <FriendlyDate
+            date={dueDatePlain}
+            timezone={displayTimezone}
+            options={{ includeTz: false }}
+          />{' '}
           (100% credit)
         </>
       );
@@ -62,7 +83,11 @@ function DueDateInput({
       return (
         <>
           While accessible –{' '}
-          <FriendlyDate date={dueDateObj} timezone={userTimezone} options={{ includeTz: false }} />{' '}
+          <FriendlyDate
+            date={dueDatePlain}
+            timezone={displayTimezone}
+            options={{ includeTz: false }}
+          />{' '}
           (100% credit)
         </>
       );
@@ -90,14 +115,14 @@ function DueDateInput({
           checked={value !== null}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
-              const latestEarlyDate = earlyDeadlines?.filter((d) => d.date).pop()?.date;
+              const latestEarlyDate = earlyDeadlines?.at(-1)?.date;
               let baseDate: Temporal.PlainDate;
               if (latestEarlyDate) {
                 baseDate = Temporal.PlainDateTime.from(latestEarlyDate).toPlainDate();
               } else if (releaseDate) {
                 baseDate = Temporal.PlainDateTime.from(releaseDate).toPlainDate();
               } else {
-                baseDate = Temporal.Now.plainDateISO();
+                baseDate = Temporal.Now.plainDateISO(displayTimezone);
               }
               onChange(endOfDayDatetime(baseDate.add({ weeks: 1 })));
             }
@@ -127,7 +152,7 @@ function DueDateInput({
   );
 }
 
-export function MainDueDateField() {
+export function MainDueDateField({ displayTimezone }: { displayTimezone: string }) {
   const releaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
   });
@@ -143,8 +168,10 @@ export function MainDueDateField() {
     name: 'mainRule.dueDate',
     rules: {
       validate: (value) => {
+        if (value !== null && !value) return 'Date is required';
         if (value && releaseDate && new Date(value) <= new Date(releaseDate)) {
-          return 'Due date must be after release date';
+          const formatted = formatCourseLocalDate(releaseDate, displayTimezone);
+          return `Must be after release date (${formatted})`;
         }
         return true;
       },
@@ -160,13 +187,20 @@ export function MainDueDateField() {
         releaseDate={releaseDate}
         earlyDeadlines={earlyDeadlines}
         error={error?.message}
+        displayTimezone={displayTimezone}
         onChange={field.onChange}
       />
     </div>
   );
 }
 
-export function OverrideDueDateField({ index }: { index: number }) {
+export function OverrideDueDateField({
+  index,
+  displayTimezone,
+}: {
+  index: number;
+  displayTimezone: string;
+}) {
   const mainValue = useWatch<AccessControlFormData, 'mainRule.dueDate'>({
     name: 'mainRule.dueDate',
   });
@@ -174,40 +208,42 @@ export function OverrideDueDateField({ index }: { index: number }) {
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'dueDate');
 
   const { isOverridden: releaseDateOverridden } = useOverrideField(index, 'releaseDate');
-  const releaseDate = useWatch({
-    name: `overrides.${index}.releaseDate` as Path<AccessControlFormData>,
-  }) as string | null;
+  const releaseDate = useWatch<AccessControlFormData, `overrides.${number}.releaseDate`>({
+    name: `overrides.${index}.releaseDate`,
+  });
   const mainReleaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
   });
 
   const { isOverridden: earlyDeadlinesOverridden } = useOverrideField(index, 'earlyDeadlines');
-  const earlyDeadlines = useWatch({
-    name: `overrides.${index}.earlyDeadlines` as Path<AccessControlFormData>,
-  }) as DeadlineEntry[];
+  const earlyDeadlines = useWatch<AccessControlFormData, `overrides.${number}.earlyDeadlines`>({
+    name: `overrides.${index}.earlyDeadlines`,
+  });
   const mainEarlyDeadlines = useWatch<AccessControlFormData, 'mainRule.earlyDeadlines'>({
     name: 'mainRule.earlyDeadlines',
   });
 
   const effectiveReleaseDate = releaseDateOverridden ? releaseDate : mainReleaseDate;
+  const validationReleaseDate = releaseDateOverridden ? releaseDate : undefined;
 
   const {
     field,
     fieldState: { error },
-  } = useController({
-    name: `overrides.${index}.dueDate` as Path<AccessControlFormData>,
+  } = useController<AccessControlFormData, `overrides.${number}.dueDate`>({
+    name: `overrides.${index}.dueDate`,
     rules: {
       validate: (value) => {
-        const v = value as string | null;
-        if (v && effectiveReleaseDate && new Date(v) <= new Date(effectiveReleaseDate)) {
-          return 'Due date must be after release date';
+        if (value !== null && !value) return 'Date is required';
+        if (value && validationReleaseDate && new Date(value) <= new Date(validationReleaseDate)) {
+          const formatted = formatCourseLocalDate(validationReleaseDate, displayTimezone);
+          return `Must be after release date (${formatted})`;
         }
         return true;
       },
     },
   });
 
-  const value = field.value as string | null;
+  const value = field.value;
 
   return (
     <FieldWrapper
@@ -226,6 +262,7 @@ export function OverrideDueDateField({ index }: { index: number }) {
         releaseDate={effectiveReleaseDate}
         earlyDeadlines={earlyDeadlinesOverridden ? earlyDeadlines : mainEarlyDeadlines}
         error={error?.message}
+        displayTimezone={displayTimezone}
         onChange={field.onChange}
       />
     </FieldWrapper>

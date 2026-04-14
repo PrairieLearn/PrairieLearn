@@ -11,7 +11,6 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import clsx from 'clsx';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
@@ -29,11 +28,6 @@ import {
 import { RubricSettings } from '../../../../components/RubricSettings.js';
 import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
 import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
-import {
-  AI_GRADING_MODELS,
-  type AiGradingModelId,
-  DEFAULT_AI_GRADING_MODEL,
-} from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import type { AiGradingGeneralStats } from '../../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../../lib/client/page-context.js';
 import type {
@@ -57,6 +51,10 @@ import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
+import {
+  AiGradingModelSelectionModal,
+  type AiGradingModelSelectionModalState,
+} from './AiGradingModelSelectionModal.js';
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
 import { QueryErrors } from './QueryErrors.js';
@@ -81,84 +79,34 @@ interface AssessmentQuestionTableProps {
   assessmentQuestion: StaffAssessmentQuestion;
   questionQid: string;
   aiGradingMode: boolean;
-  aiGradingModelSelectionEnabled: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
   initialOngoingJobSequenceTokens: Record<string, string> | null;
   availableAiGradingProviders: EnumAiGradingProvider[];
+  aiGradingRelativeCosts: Record<string, string>;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: ReturnType<typeof useManualGradingActions>;
 }
 
-function AiGradingOptionContent({ text, numToGrade }: { text: string; numToGrade: number }) {
-  return (
-    <div className="d-flex justify-content-between align-items-center w-100">
-      <span>{text}</span>
-      <span className="badge bg-secondary ms-2">{numToGrade}</span>
-    </div>
-  );
-}
-
 function AiGradingOption({
   text,
   numToGrade,
-  aiGradingModelSelectionEnabled,
-  availableProviders,
-  onSelectModel,
+  onSelect,
 }: {
   text: string;
   numToGrade: number;
-  aiGradingModelSelectionEnabled: boolean;
-  availableProviders: EnumAiGradingProvider[];
-  onSelectModel: (modelId: AiGradingModelId) => void;
+  onSelect: () => void;
 }) {
-  const isDefaultModelAvailable = availableProviders.includes(
-    AI_GRADING_MODELS.find((m) => m.modelId === DEFAULT_AI_GRADING_MODEL)!.provider,
-  );
-
-  if (!aiGradingModelSelectionEnabled) {
-    return (
-      <Dropdown.Item
-        disabled={numToGrade === 0 || !isDefaultModelAvailable}
-        onClick={() => onSelectModel(DEFAULT_AI_GRADING_MODEL)}
-      >
-        <AiGradingOptionContent text={text} numToGrade={numToGrade} />
-      </Dropdown.Item>
-    );
-  }
-
-  const hasAnyAvailableModel = AI_GRADING_MODELS.some((model) =>
-    availableProviders.includes(model.provider),
-  );
-
   return (
-    <Dropdown drop="end">
-      <Dropdown.Toggle
-        className={clsx('dropdown-item', !(numToGrade > 0 && hasAnyAvailableModel) && 'disabled')}
-      >
-        <AiGradingOptionContent text={text} numToGrade={numToGrade} />
-      </Dropdown.Toggle>
-      <Dropdown.Menu>
-        <p className="my-0 text-muted px-3">AI grader model</p>
-        <Dropdown.Divider />
-        {AI_GRADING_MODELS.map((model) => {
-          const isAvailable = availableProviders.includes(model.provider);
-          return (
-            <Dropdown.Item
-              key={model.modelId}
-              disabled={!isAvailable}
-              onClick={() => onSelectModel(model.modelId)}
-            >
-              {model.name}
-              {!isAvailable && <span className="text-muted ms-2">(no API key)</span>}
-            </Dropdown.Item>
-          );
-        })}
-      </Dropdown.Menu>
-    </Dropdown>
+    <Dropdown.Item disabled={numToGrade === 0} onClick={onSelect}>
+      <div className="d-flex justify-content-between align-items-center w-100">
+        <span>{text}</span>
+        <span className="badge bg-secondary ms-2">{numToGrade}</span>
+      </div>
+    </Dropdown.Item>
   );
 }
 
@@ -171,7 +119,6 @@ export function AssessmentQuestionTable({
   assessmentQuestion,
   questionQid,
   aiGradingMode,
-  aiGradingModelSelectionEnabled,
   rubricData,
   instanceQuestionGroups,
   courseStaff,
@@ -180,6 +127,7 @@ export function AssessmentQuestionTable({
   aiGradingStats,
   initialOngoingJobSequenceTokens,
   availableAiGradingProviders,
+  aiGradingRelativeCosts,
   onSetGroupInfoModalState,
   onSetConflictModalState,
   mutations,
@@ -246,6 +194,14 @@ export function AssessmentQuestionTable({
   const [rowSelection, setRowSelection] = useState({});
   const [showDeleteAiGradingModal, setShowDeleteAiGradingModal] = useState(false);
   const [showDeleteAiGroupingsModal, setShowDeleteAiGroupingsModal] = useState(false);
+
+  // Controls the AI grading model selection modal: null = hidden, otherwise
+  // holds the grading mode ('all', 'human_graded', or 'selected') and count.
+  const [modelSelectionModalState, setModelSelectionModalState] =
+    useState<AiGradingModelSelectionModalState>(null);
+  const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
+    assessmentQuestion.ai_grading_last_selected_model ?? null,
+  );
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const queryClientInstance = useQueryClient();
@@ -625,17 +581,8 @@ export function AssessmentQuestionTable({
     deleteAiGroupingsMutation,
     setRequiresManualGradingMutation,
     setAssignedGraderMutation,
-    gradeSubmissionsMutation,
     groupSubmissionMutation,
   } = mutations;
-
-  // If model selection is disabled, grading will use an OpenAI model, so we
-  // specifically check for an OpenAI key.
-  //
-  // If model selection is enabled, we check key availability across all providers.
-  const aiGradingDisabledNoKeys = aiGradingModelSelectionEnabled
-    ? availableAiGradingProviders.length === 0
-    : !availableAiGradingProviders.includes('openai');
 
   const columnFiltersComponents = createColumnFilters({
     allGraders,
@@ -680,7 +627,6 @@ export function AssessmentQuestionTable({
         queries={[
           deleteAiGradingJobsMutation,
           deleteAiGroupingsMutation,
-          gradeSubmissionsMutation,
           groupSubmissionMutation,
           setAssignedGraderMutation,
           setRequiresManualGradingMutation,
@@ -754,104 +700,49 @@ export function AssessmentQuestionTable({
           hasCourseInstancePermissionEdit ? (
             aiGradingMode ? (
               <>
-                {aiGradingDisabledNoKeys ? (
-                  <OverlayTrigger
-                    tooltip={{
-                      body: aiGradingModelSelectionEnabled
-                        ? 'No AI grading API keys are configured. Add a key in AI grading settings.'
-                        : 'No OpenAI API key is configured. Add a key in AI grading settings.',
-                      props: { id: 'ai-grading-no-keys-tooltip' },
-                    }}
-                  >
-                    {/* Wrap in an inline-block span so the tooltip triggers despite the button being disabled */}
-                    <span style={{ display: 'inline-block' }}>
-                      <Button variant="light" size="sm" style={{ pointerEvents: 'none' }} disabled>
-                        <i className="bi bi-stars" aria-hidden="true" />
-                        <span>AI grading</span>
-                      </Button>
-                    </span>
-                  </OverlayTrigger>
-                ) : (
-                  <Dropdown>
-                    <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm">
-                      <i className="bi bi-stars" aria-hidden="true" />
-                      <span>AI grading</span>
-                    </Dropdown.Toggle>
-                    <Dropdown.Menu align="end">
-                      <AiGradingOption
-                        text="Grade all human-graded"
-                        numToGrade={aiGradingCounts.humanGraded}
-                        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                        availableProviders={availableAiGradingProviders}
-                        onSelectModel={(modelId) => {
-                          gradeSubmissionsMutation.mutate(
-                            {
-                              selection: 'human_graded',
-                              model_id: modelId,
-                            },
-                            {
-                              onSuccess: (data) => {
-                                serverJobProgress.handleAddOngoingJobSequence(
-                                  data.job_sequence_id,
-                                  data.job_sequence_token,
-                                );
-                              },
-                            },
-                          );
-                        }}
-                      />
-                      <AiGradingOption
-                        text="Grade selected"
-                        numToGrade={aiGradingCounts.selected}
-                        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                        availableProviders={availableAiGradingProviders}
-                        onSelectModel={(modelId) => {
-                          gradeSubmissionsMutation.mutate(
-                            {
-                              selection: selectedIds,
-                              model_id: modelId,
-                            },
-                            {
-                              onSuccess: (data) => {
-                                serverJobProgress.handleAddOngoingJobSequence(
-                                  data.job_sequence_id,
-                                  data.job_sequence_token,
-                                );
-                                table.resetRowSelection();
-                              },
-                            },
-                          );
-                        }}
-                      />
-                      <AiGradingOption
-                        text="Grade all"
-                        numToGrade={aiGradingCounts.all}
-                        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                        availableProviders={availableAiGradingProviders}
-                        onSelectModel={(modelId) => {
-                          gradeSubmissionsMutation.mutate(
-                            {
-                              selection: 'all',
-                              model_id: modelId,
-                            },
-                            {
-                              onSuccess: (data) => {
-                                serverJobProgress.handleAddOngoingJobSequence(
-                                  data.job_sequence_id,
-                                  data.job_sequence_token,
-                                );
-                              },
-                            },
-                          );
-                        }}
-                      />
-                      <Dropdown.Divider />
-                      <Dropdown.Item onClick={() => setShowDeleteAiGradingModal(true)}>
-                        Delete all AI grading results
-                      </Dropdown.Item>
-                    </Dropdown.Menu>
-                  </Dropdown>
-                )}
+                <Dropdown>
+                  <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm">
+                    <i className="bi bi-stars" aria-hidden="true" />
+                    <span>AI grading</span>
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu align="end">
+                    <AiGradingOption
+                      text="Grade all human-graded"
+                      numToGrade={aiGradingCounts.humanGraded}
+                      onSelect={() =>
+                        setModelSelectionModalState({
+                          type: 'human_graded',
+                          numToGrade: aiGradingCounts.humanGraded,
+                        })
+                      }
+                    />
+                    <AiGradingOption
+                      text="Grade selected"
+                      numToGrade={aiGradingCounts.selected}
+                      onSelect={() =>
+                        setModelSelectionModalState({
+                          type: 'selected',
+                          ids: selectedIds,
+                          numToGrade: aiGradingCounts.selected,
+                        })
+                      }
+                    />
+                    <AiGradingOption
+                      text="Grade all"
+                      numToGrade={aiGradingCounts.all}
+                      onSelect={() =>
+                        setModelSelectionModalState({
+                          type: 'all',
+                          numToGrade: aiGradingCounts.all,
+                        })
+                      }
+                    />
+                    <Dropdown.Divider />
+                    <Dropdown.Item onClick={() => setShowDeleteAiGradingModal(true)}>
+                      Delete all AI grading results
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown>
                 {!availableAiGradingProviders.includes('openai') ? (
                   <OverlayTrigger
                     tooltip={{
@@ -1048,6 +939,29 @@ export function AssessmentQuestionTable({
           ],
           hasSelection: true,
         }}
+      />
+
+      <AiGradingModelSelectionModal
+        key={lastSelectedModel ?? 'default'}
+        modalState={modelSelectionModalState}
+        availableProviders={availableAiGradingProviders}
+        aiGradingLastSelectedModel={lastSelectedModel}
+        relativeCosts={aiGradingRelativeCosts}
+        useCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
+        creditBalanceMilliDollars={
+          courseInstance.credit_transferable_milli_dollars +
+          courseInstance.credit_non_transferable_milli_dollars
+        }
+        aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
+        onSuccess={(data, modelId) => {
+          serverJobProgress.handleAddOngoingJobSequence(
+            data.job_sequence_id,
+            data.job_sequence_token,
+          );
+          setLastSelectedModel(modelId);
+          setRowSelection({});
+        }}
+        onHide={() => setModelSelectionModalState(null)}
       />
 
       {/* Delete AI Grading Results Modal */}

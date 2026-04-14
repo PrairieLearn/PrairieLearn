@@ -18,13 +18,12 @@ const defaultMainRule: MainRuleData = {
   dueDate: '2025-04-01T00:00:00Z',
   earlyDeadlines: [{ date: '2025-03-15T00:00:00Z', credit: 110 }],
   lateDeadlines: [{ date: '2025-04-15T00:00:00Z', credit: 50 }],
-  afterLastDeadline: { credit: 0, allowSubmissions: false },
+  afterLastDeadline: { allowSubmissions: false },
   durationMinutes: 60,
   password: 'secret',
-  prairieTestEnabled: false,
   prairieTestExams: [],
-  questionVisibility: { hideQuestions: true },
-  scoreVisibility: { hideScore: false },
+  questionVisibility: { hidden: true },
+  scoreVisibility: { hidden: false },
 };
 
 const baseOverride: OverrideData = {
@@ -39,11 +38,11 @@ const baseOverride: OverrideData = {
   dueDate: null,
   earlyDeadlines: [],
   lateDeadlines: [],
-  afterLastDeadline: null,
+  afterLastDeadline: { allowSubmissions: false },
   durationMinutes: null,
   password: null,
-  questionVisibility: { hideQuestions: true },
-  scoreVisibility: { hideScore: false },
+  questionVisibility: { hidden: true },
+  scoreVisibility: { hidden: false },
 };
 
 function buildFormData(override: OverrideData): AccessControlFormData {
@@ -51,30 +50,35 @@ function buildFormData(override: OverrideData): AccessControlFormData {
 }
 
 describe('jsonToMainRuleFormData', () => {
-  it('defaults hideQuestions to true when afterComplete is not configured', () => {
+  it('defaults releaseDate to null when dateControl is not configured', () => {
     const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
-    expect(mainRule.questionVisibility.hideQuestions).toBe(true);
+    expect(mainRule.releaseDate).toBeNull();
   });
 
-  it('defaults hideScore to false when afterComplete is not configured', () => {
+  it('defaults hidden to true for questions when afterComplete is not configured', () => {
     const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
-    expect(mainRule.scoreVisibility.hideScore).toBe(false);
+    expect(mainRule.questionVisibility.hidden).toBe(true);
   });
 
-  it('preserves hideQuestions: false when explicitly set in JSON', () => {
+  it('defaults hidden to false for score when afterComplete is not configured', () => {
+    const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
+    expect(mainRule.scoreVisibility.hidden).toBe(false);
+  });
+
+  it('preserves hidden: false for questions when explicitly set in JSON', () => {
     const mainRule = jsonToMainRuleFormData(
-      { afterComplete: { hideQuestions: false } },
+      { afterComplete: { questions: { hidden: false } } },
       TEST_TIMEZONE,
     );
-    expect(mainRule.questionVisibility.hideQuestions).toBe(false);
+    expect(mainRule.questionVisibility.hidden).toBe(false);
   });
 
-  it('preserves hideQuestions: true when explicitly set in JSON', () => {
+  it('preserves hidden: true for questions when explicitly set in JSON', () => {
     const mainRule = jsonToMainRuleFormData(
-      { afterComplete: { hideQuestions: true } },
+      { afterComplete: { questions: { hidden: true } } },
       TEST_TIMEZONE,
     );
-    expect(mainRule.questionVisibility.hideQuestions).toBe(true);
+    expect(mainRule.questionVisibility.hidden).toBe(true);
   });
 });
 
@@ -83,6 +87,21 @@ describe('formDataToJson', () => {
     const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
 
     expect(mainRule.listBeforeRelease).toBe(false);
+  });
+
+  it('omits default score visibility when only main-rule question visibility is non-default', () => {
+    const result = formDataToJson({
+      mainRule: {
+        ...defaultMainRule,
+        questionVisibility: { hidden: false },
+        scoreVisibility: { hidden: false },
+      },
+      overrides: [],
+    });
+
+    expect(result[0].afterComplete).toEqual({
+      questions: { hidden: false },
+    });
   });
 
   it('omits dateControl when no date fields are overridden', () => {
@@ -159,15 +178,16 @@ describe('formDataToJson', () => {
       ...baseOverride,
       trackingId: 'o-7',
       overriddenFields: ['questionVisibility', 'scoreVisibility'],
-      questionVisibility: { hideQuestions: true, showAgainDate: '2025-06-01T00:00:00Z' },
-      scoreVisibility: { hideScore: true },
+      questionVisibility: { hidden: true, visibleFromDate: '2025-06-01T00:00:00Z' },
+      scoreVisibility: { hidden: true },
     };
 
     const overrideJson = formDataToJson(buildFormData(override))[1];
     expect(overrideJson.afterComplete).toBeDefined();
-    expect(overrideJson.afterComplete!.hideQuestions).toBe(true);
-    expect(overrideJson.afterComplete!.showQuestionsAgainDate).toBe('2025-06-01T00:00:00Z');
-    expect(overrideJson.afterComplete!.hideScore).toBe(true);
+    const questions = overrideJson.afterComplete!.questions!;
+    expect(questions.hidden).toBe(true);
+    expect(questions.visibleFromDate).toBe('2025-06-01T00:00:00Z');
+    expect(overrideJson.afterComplete!.score!.hidden).toBe(true);
   });
 
   it('omits afterComplete when neither visibility is overridden', () => {
@@ -193,7 +213,6 @@ describe('formDataToJson', () => {
             studentLabels: [],
           },
           overriddenFields: [
-            'releaseDate',
             'dueDate',
             'earlyDeadlines',
             'lateDeadlines',
@@ -201,11 +220,11 @@ describe('formDataToJson', () => {
             'durationMinutes',
             'password',
           ],
-          releaseDate: null,
+          // Release date as null is not allowed, so this is false.
           dueDate: null,
           earlyDeadlines: [],
           lateDeadlines: [],
-          afterLastDeadline: null,
+          afterLastDeadline: { allowSubmissions: false },
           durationMinutes: null,
           password: null,
         },
@@ -217,8 +236,6 @@ describe('formDataToJson', () => {
 
     expect(overrideJson.dateControl).toBeDefined();
     const dc = overrideJson.dateControl!;
-    expect('releaseDate' in dc).toBe(true);
-    expect(dc.releaseDate).toBeNull();
     expect('dueDate' in dc).toBe(true);
     expect(dc.dueDate).toBeNull();
     expect('earlyDeadlines' in dc).toBe(true);
@@ -226,10 +243,43 @@ describe('formDataToJson', () => {
     expect('lateDeadlines' in dc).toBe(true);
     expect(dc.lateDeadlines).toEqual([]);
     expect('afterLastDeadline' in dc).toBe(true);
-    expect(dc.afterLastDeadline).toBeNull();
+    expect(dc.afterLastDeadline).toEqual({ allowSubmissions: false });
     expect('durationMinutes' in dc).toBe(true);
     expect(dc.durationMinutes).toBeNull();
     expect('password' in dc).toBe(true);
     expect(dc.password).toBeNull();
+  });
+
+  it('serializes afterLastDeadline overrides', () => {
+    const noSubmissions: OverrideData = {
+      ...baseOverride,
+      trackingId: 'o-ald-1',
+      overriddenFields: ['afterLastDeadline'],
+      afterLastDeadline: { allowSubmissions: false },
+    };
+    expect(formDataToJson(buildFormData(noSubmissions))[1].dateControl!.afterLastDeadline).toEqual({
+      allowSubmissions: false,
+    });
+
+    const practice: OverrideData = {
+      ...baseOverride,
+      trackingId: 'o-ald-2',
+      overriddenFields: ['afterLastDeadline'],
+      afterLastDeadline: { allowSubmissions: true },
+    };
+    expect(formDataToJson(buildFormData(practice))[1].dateControl!.afterLastDeadline).toEqual({
+      allowSubmissions: true,
+    });
+
+    const partialCredit: OverrideData = {
+      ...baseOverride,
+      trackingId: 'o-ald-3',
+      overriddenFields: ['afterLastDeadline'],
+      afterLastDeadline: { allowSubmissions: true, credit: 50 },
+    };
+    expect(formDataToJson(buildFormData(partialCredit))[1].dateControl!.afterLastDeadline).toEqual({
+      allowSubmissions: true,
+      credit: 50,
+    });
   });
 });

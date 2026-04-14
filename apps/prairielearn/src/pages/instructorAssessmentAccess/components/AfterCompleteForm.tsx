@@ -1,14 +1,16 @@
 import { Alert, Button, Col, Form, Row } from 'react-bootstrap';
-import { useController, useWatch } from 'react-hook-form';
+import { get, useController, useFormState, useWatch } from 'react-hook-form';
 
 import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
 import { FieldWrapper } from './FieldWrapper.js';
 import { useOverrideField } from './hooks/useOverrideField.js';
-import type {
-  AccessControlFormData,
-  QuestionVisibilityValue,
-  ScoreVisibilityValue,
+import {
+  type AccessControlFormData,
+  type QuestionVisibilityValue,
+  type ScoreVisibilityValue,
+  isNonDefaultQuestionVisibility,
+  isNonDefaultScoreVisibility,
 } from './types.js';
 import { endOfDayDatetime, startOfDayDatetime, tomorrowDate } from './utils/dateUtils.js';
 
@@ -62,16 +64,29 @@ const SCORE_VISIBILITY_ITEMS: RichSelectItem<HideScoreMode>[] = [
 ];
 
 function getHideQuestionsMode(value: QuestionVisibilityValue): HideQuestionsMode {
-  if (!value.hideQuestions) return 'show_questions';
-  if (value.showAgainDate === undefined) return 'hide_questions_forever';
-  if (value.hideAgainDate === undefined) return 'hide_questions_until_date';
+  if (!value.hidden) return 'show_questions';
+  if (value.visibleFromDate === undefined) return 'hide_questions_forever';
+  if (value.visibleUntilDate === undefined) return 'hide_questions_until_date';
   return 'hide_questions_between_dates';
 }
 
 function getHideScoreMode(value: ScoreVisibilityValue): HideScoreMode {
-  if (!value.hideScore) return 'show_score';
-  if (value.showAgainDate === undefined) return 'hide_score_forever';
+  if (!value.hidden) return 'show_score';
+  if (value.visibleFromDate === undefined) return 'hide_score_forever';
   return 'hide_score_until_date';
+}
+
+const DATE_REQUIRED_MESSAGE = 'Date is required';
+
+function isDateFieldEmpty(value: string | undefined): boolean {
+  return value !== undefined && !value;
+}
+
+function validateQuestionVisibility(value: QuestionVisibilityValue): string | true {
+  if (!value.hidden) return true;
+  if (isDateFieldEmpty(value.visibleFromDate)) return DATE_REQUIRED_MESSAGE;
+  if (isDateFieldEmpty(value.visibleUntilDate)) return DATE_REQUIRED_MESSAGE;
+  return true;
 }
 
 function QuestionVisibilityInput({
@@ -79,38 +94,51 @@ function QuestionVisibilityInput({
   onChange,
   idPrefix,
   hasPrairieTest = false,
+  hasCompletionMechanism = true,
+  visibleFromDateError,
+  visibleUntilDateError,
+  displayTimezone,
 }: {
   value: QuestionVisibilityValue;
   onChange: (value: QuestionVisibilityValue) => void;
   idPrefix: string;
   hasPrairieTest?: boolean;
+  hasCompletionMechanism?: boolean;
+  visibleFromDateError?: string;
+  visibleUntilDateError?: string;
+  displayTimezone: string;
 }) {
   const hideQuestionsMode = getHideQuestionsMode(value);
 
   const handleModeChange = (newMode: HideQuestionsMode) => {
     switch (newMode) {
       case 'show_questions':
-        onChange({ hideQuestions: false });
+        onChange({ hidden: false });
         break;
       case 'hide_questions_forever':
-        onChange({ hideQuestions: true });
+        onChange({ hidden: true });
         break;
       case 'hide_questions_between_dates': {
-        const tomorrow = tomorrowDate();
+        const tomorrow = tomorrowDate(displayTimezone);
         onChange({
-          hideQuestions: true,
-          showAgainDate: startOfDayDatetime(tomorrow),
-          hideAgainDate: endOfDayDatetime(tomorrow.add({ weeks: 2 })),
+          hidden: true,
+          visibleFromDate: startOfDayDatetime(tomorrow),
+          visibleUntilDate: endOfDayDatetime(tomorrow.add({ weeks: 2 })),
         });
         break;
       }
       case 'hide_questions_until_date': {
-        const tomorrow = tomorrowDate();
-        onChange({ hideQuestions: true, showAgainDate: startOfDayDatetime(tomorrow) });
+        const tomorrow = tomorrowDate(displayTimezone);
+        onChange({ hidden: true, visibleFromDate: startOfDayDatetime(tomorrow) });
         break;
       }
     }
   };
+
+  const visibleFromDateEmpty = isDateFieldEmpty(value.visibleFromDate);
+  const visibleFromDateInvalid = visibleFromDateEmpty || !!visibleFromDateError;
+  const visibleUntilDateEmpty = isDateFieldEmpty(value.visibleUntilDate);
+  const visibleUntilDateInvalid = visibleUntilDateEmpty || !!visibleUntilDateError;
 
   return (
     <Form.Group>
@@ -135,15 +163,30 @@ function QuestionVisibilityInput({
                 id={`${idPrefix}-show-questions-between-start`}
                 type="datetime-local"
                 step={1}
-                value={value.showAgainDate ?? ''}
+                value={value.visibleFromDate ?? ''}
+                isInvalid={visibleFromDateInvalid}
+                aria-invalid={visibleFromDateInvalid}
+                aria-errormessage={
+                  visibleFromDateInvalid
+                    ? `${idPrefix}-show-questions-between-start-error`
+                    : undefined
+                }
                 onChange={({ currentTarget }) =>
                   onChange({
-                    hideQuestions: true,
-                    showAgainDate: currentTarget.value,
-                    hideAgainDate: value.hideAgainDate,
+                    hidden: true,
+                    visibleFromDate: currentTarget.value,
+                    visibleUntilDate: value.visibleUntilDate,
                   })
                 }
               />
+              {visibleFromDateInvalid && (
+                <Form.Control.Feedback
+                  type="invalid"
+                  id={`${idPrefix}-show-questions-between-start-error`}
+                >
+                  {visibleFromDateEmpty ? DATE_REQUIRED_MESSAGE : visibleFromDateError}
+                </Form.Control.Feedback>
+              )}
             </Col>
             <Col md={6}>
               <Form.Label htmlFor={`${idPrefix}-hide-questions-between-end`}>
@@ -153,15 +196,30 @@ function QuestionVisibilityInput({
                 id={`${idPrefix}-hide-questions-between-end`}
                 type="datetime-local"
                 step={1}
-                value={value.hideAgainDate ?? ''}
+                value={value.visibleUntilDate ?? ''}
+                isInvalid={visibleUntilDateInvalid}
+                aria-invalid={visibleUntilDateInvalid}
+                aria-errormessage={
+                  visibleUntilDateInvalid
+                    ? `${idPrefix}-hide-questions-between-end-error`
+                    : undefined
+                }
                 onChange={({ currentTarget }) =>
                   onChange({
-                    hideQuestions: true,
-                    showAgainDate: value.showAgainDate,
-                    hideAgainDate: currentTarget.value,
+                    hidden: true,
+                    visibleFromDate: value.visibleFromDate,
+                    visibleUntilDate: currentTarget.value,
                   })
                 }
               />
+              {visibleUntilDateInvalid && (
+                <Form.Control.Feedback
+                  type="invalid"
+                  id={`${idPrefix}-hide-questions-between-end-error`}
+                >
+                  {visibleUntilDateEmpty ? DATE_REQUIRED_MESSAGE : visibleUntilDateError}
+                </Form.Control.Feedback>
+              )}
             </Col>
           </Row>
         </div>
@@ -173,11 +231,21 @@ function QuestionVisibilityInput({
             type="datetime-local"
             step={1}
             aria-label="Show questions on"
-            value={value.showAgainDate ?? ''}
+            value={value.visibleFromDate ?? ''}
+            isInvalid={visibleFromDateInvalid}
+            aria-invalid={visibleFromDateInvalid}
+            aria-errormessage={
+              visibleFromDateInvalid ? `${idPrefix}-show-questions-date-error` : undefined
+            }
             onChange={({ currentTarget }) =>
-              onChange({ hideQuestions: true, showAgainDate: currentTarget.value })
+              onChange({ hidden: true, visibleFromDate: currentTarget.value })
             }
           />
+          {visibleFromDateInvalid && (
+            <Form.Control.Feedback type="invalid" id={`${idPrefix}-show-questions-date-error`}>
+              {visibleFromDateEmpty ? DATE_REQUIRED_MESSAGE : visibleFromDateError}
+            </Form.Control.Feedback>
+          )}
         </div>
       )}
       {hasPrairieTest && hideQuestionsMode === 'show_questions' && (
@@ -186,36 +254,55 @@ function QuestionVisibilityInput({
           connected. Students may be able to view exam content when their assessment is closed.
         </Alert>
       )}
+      {!hasPrairieTest && hasCompletionMechanism && hideQuestionsMode !== 'show_questions' && (
+        <Alert variant="info" className="mt-2 mb-0">
+          If this is not an exam, consider setting question visibility to "Show questions after
+          completion" so students can review their work.
+        </Alert>
+      )}
     </Form.Group>
   );
+}
+
+function validateScoreVisibility(value: ScoreVisibilityValue): string | true {
+  if (!value.hidden) return true;
+  if (isDateFieldEmpty(value.visibleFromDate)) return DATE_REQUIRED_MESSAGE;
+  return true;
 }
 
 function ScoreVisibilityInput({
   value,
   onChange,
   idPrefix,
+  visibleFromDateError,
+  displayTimezone,
 }: {
   value: ScoreVisibilityValue;
   onChange: (value: ScoreVisibilityValue) => void;
   idPrefix: string;
+  visibleFromDateError?: string;
+  displayTimezone: string;
 }) {
   const hideScoreMode = getHideScoreMode(value);
 
   const handleModeChange = (newMode: HideScoreMode) => {
     switch (newMode) {
       case 'show_score':
-        onChange({ hideScore: false });
+        onChange({ hidden: false });
         break;
       case 'hide_score_forever':
-        onChange({ hideScore: true });
+        onChange({ hidden: true });
         break;
       case 'hide_score_until_date': {
-        const tomorrow = tomorrowDate();
-        onChange({ hideScore: true, showAgainDate: startOfDayDatetime(tomorrow) });
+        const tomorrow = tomorrowDate(displayTimezone);
+        onChange({ hidden: true, visibleFromDate: startOfDayDatetime(tomorrow) });
         break;
       }
     }
   };
+
+  const visibleFromDateEmpty = isDateFieldEmpty(value.visibleFromDate);
+  const visibleFromDateInvalid = visibleFromDateEmpty || !!visibleFromDateError;
 
   return (
     <Form.Group>
@@ -236,11 +323,21 @@ function ScoreVisibilityInput({
             type="datetime-local"
             step={1}
             aria-label="Show score again on"
-            value={value.showAgainDate ?? ''}
+            value={value.visibleFromDate ?? ''}
+            isInvalid={visibleFromDateInvalid}
+            aria-invalid={visibleFromDateInvalid}
+            aria-errormessage={
+              visibleFromDateInvalid ? `${idPrefix}-show-score-date-error` : undefined
+            }
             onChange={({ currentTarget }) =>
-              onChange({ hideScore: true, showAgainDate: currentTarget.value })
+              onChange({ hidden: true, visibleFromDate: currentTarget.value })
             }
           />
+          {visibleFromDateInvalid && (
+            <Form.Control.Feedback type="invalid" id={`${idPrefix}-show-score-date-error`}>
+              {visibleFromDateEmpty ? DATE_REQUIRED_MESSAGE : visibleFromDateError}
+            </Form.Control.Feedback>
+          )}
         </div>
       )}
     </Form.Group>
@@ -299,22 +396,68 @@ function AfterCompleteCard({
   );
 }
 
-export function MainAfterCompleteForm({ title }: { title?: string }) {
+export function MainAfterCompleteForm({
+  title,
+  displayTimezone,
+}: {
+  title?: string;
+  displayTimezone: string;
+}) {
   const { field: qvField } = useController<AccessControlFormData, 'mainRule.questionVisibility'>({
     name: 'mainRule.questionVisibility',
+    rules: { validate: validateQuestionVisibility },
   });
 
   const { field: svField } = useController<AccessControlFormData, 'mainRule.scoreVisibility'>({
     name: 'mainRule.scoreVisibility',
+    rules: { validate: validateScoreVisibility },
   });
+
+  const { errors } = useFormState<AccessControlFormData>();
+  const qvVisibleFromError: string | undefined = get(
+    errors,
+    'mainRule.questionVisibility.visibleFromDate',
+  )?.message;
+  const visibleUntilDateError: string | undefined = get(
+    errors,
+    'mainRule.questionVisibility.visibleUntilDate',
+  )?.message;
+  const svVisibleFromError: string | undefined = get(
+    errors,
+    'mainRule.scoreVisibility.visibleFromDate',
+  )?.message;
 
   const prairieTestExams = useWatch<AccessControlFormData, 'mainRule.prairieTestExams'>({
     name: 'mainRule.prairieTestExams',
   });
   const hasPrairieTest = prairieTestExams.length > 0;
 
+  const dueDate = useWatch<AccessControlFormData, 'mainRule.dueDate'>({
+    name: 'mainRule.dueDate',
+  });
+  const lateDeadlines = useWatch<AccessControlFormData, 'mainRule.lateDeadlines'>({
+    name: 'mainRule.lateDeadlines',
+  });
+  const durationMinutes = useWatch<AccessControlFormData, 'mainRule.durationMinutes'>({
+    name: 'mainRule.durationMinutes',
+  });
+  const hasCompletionMechanism =
+    hasPrairieTest || dueDate != null || lateDeadlines.length > 0 || durationMinutes != null;
+
+  const qvNonDefault = isNonDefaultQuestionVisibility(qvField.value);
+  const svNonDefault = isNonDefaultScoreVisibility(svField.value);
+  const showNoCompletionWarning = !hasCompletionMechanism && (qvNonDefault || svNonDefault);
+
   return (
     <AfterCompleteCard title={title}>
+      {showNoCompletionWarning && (
+        <Col xs={12}>
+          <Alert variant="warning" className="py-2 mb-0">
+            These settings will have no effect because there is no way for the assessment to be
+            completed.
+          </Alert>
+        </Col>
+      )}
       <Col md={6}>
         <Form.Label className="fw-bold" htmlFor="mainRule-question-visibility-mode">
           Question visibility
@@ -323,6 +466,10 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
           value={qvField.value}
           idPrefix="mainRule"
           hasPrairieTest={hasPrairieTest}
+          hasCompletionMechanism={hasCompletionMechanism}
+          visibleFromDateError={qvVisibleFromError}
+          visibleUntilDateError={visibleUntilDateError}
+          displayTimezone={displayTimezone}
           onChange={qvField.onChange}
         />
       </Col>
@@ -333,6 +480,8 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
         <ScoreVisibilityInput
           value={svField.value}
           idPrefix="mainRule"
+          visibleFromDateError={svVisibleFromError}
+          displayTimezone={displayTimezone}
           onChange={svField.onChange}
         />
       </Col>
@@ -340,7 +489,15 @@ export function MainAfterCompleteForm({ title }: { title?: string }) {
   );
 }
 
-export function OverrideAfterCompleteForm({ index, title }: { index: number; title?: string }) {
+export function OverrideAfterCompleteForm({
+  index,
+  title,
+  displayTimezone,
+}: {
+  index: number;
+  title?: string;
+  displayTimezone: string;
+}) {
   const mainQV = useWatch<AccessControlFormData, 'mainRule.questionVisibility'>({
     name: 'mainRule.questionVisibility',
   });
@@ -352,17 +509,33 @@ export function OverrideAfterCompleteForm({ index, title }: { index: number; tit
   });
   const hasPrairieTest = prairieTestExams.length > 0;
 
+  const { errors } = useFormState<AccessControlFormData>();
+  const qvVisibleFromError: string | undefined = get(
+    errors,
+    `overrides.${index}.questionVisibility.visibleFromDate`,
+  )?.message;
+  const visibleUntilDateError: string | undefined = get(
+    errors,
+    `overrides.${index}.questionVisibility.visibleUntilDate`,
+  )?.message;
+  const svVisibleFromError: string | undefined = get(
+    errors,
+    `overrides.${index}.scoreVisibility.visibleFromDate`,
+  )?.message;
+
   const { field: qvField } = useController<
     AccessControlFormData,
     `overrides.${number}.questionVisibility`
   >({
     name: `overrides.${index}.questionVisibility`,
+    rules: { validate: validateQuestionVisibility },
   });
   const { field: svField } = useController<
     AccessControlFormData,
     `overrides.${number}.scoreVisibility`
   >({
     name: `overrides.${index}.scoreVisibility`,
+    rules: { validate: validateScoreVisibility },
   });
 
   const {
@@ -393,6 +566,9 @@ export function OverrideAfterCompleteForm({ index, title }: { index: number; tit
             value={qvField.value}
             idPrefix={`overrides-${index}`}
             hasPrairieTest={hasPrairieTest}
+            visibleFromDateError={qvVisibleFromError}
+            visibleUntilDateError={visibleUntilDateError}
+            displayTimezone={displayTimezone}
             onChange={qvField.onChange}
           />
         </FieldWrapper>
@@ -411,6 +587,8 @@ export function OverrideAfterCompleteForm({ index, title }: { index: number; tit
           <ScoreVisibilityInput
             value={svField.value}
             idPrefix={`overrides-${index}`}
+            visibleFromDateError={svVisibleFromError}
+            displayTimezone={displayTimezone}
             onChange={svField.onChange}
           />
         </FieldWrapper>
