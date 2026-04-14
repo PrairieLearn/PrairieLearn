@@ -1013,7 +1013,7 @@ async function renderPanel({
     }),
     ai_grading: locals.questionRenderContext === 'ai_grading',
     panel,
-    correct_answer_shown: locals.showTrueAnswer ?? false,
+    correct_answer_shown: locals.showCorrectAnswer ?? false,
     num_valid_submissions: variant.num_tries,
   } satisfies ExecutionData;
 

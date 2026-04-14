@@ -248,7 +248,7 @@ interface ResLocalsBuildLocals {
   disableSaveButton: boolean;
   showNewVariantButton: boolean;
   showTryAgainButton: boolean;
-  showTrueAnswer: boolean;
+  showCorrectAnswer: boolean;
   showGradingRequested: boolean;
   allowAnswerEditing: boolean;
   hasAttemptsOtherVariants: boolean;
@@ -294,7 +294,7 @@ function buildLocals({
     disableSaveButton: false,
     showNewVariantButton: false,
     showTryAgainButton: false,
-    showTrueAnswer: false,
+    showCorrectAnswer: false,
     showGradingRequested: false,
     allowAnswerEditing: false,
     hasAttemptsOtherVariants: false,
@@ -329,7 +329,7 @@ function buildLocals({
       }
       // TODO: can get rid of the nullish coalescing if we mark `score_perc` as `NOT NULL`.
       if (question.single_variant && (instance_question.score_perc ?? 0) >= 100) {
-        locals.showTrueAnswer = true;
+        locals.showCorrectAnswer = true;
       }
     }
     if (assessment.type === 'Exam') {
@@ -340,7 +340,7 @@ function buildLocals({
         locals.variantAttemptsLeft = (instance_question.points_list ?? []).length;
         locals.variantAttemptsTotal = (instance_question.points_list_original ?? []).length;
       } else {
-        locals.showTrueAnswer = true;
+        locals.showCorrectAnswer = true;
       }
     }
     if (assessment_question.allow_real_time_grading === false) {
@@ -367,7 +367,7 @@ function buildLocals({
     locals.allowAnswerEditing = false;
     if (assessment?.type === 'Homework') {
       locals.showTryAgainButton = true;
-      locals.showTrueAnswer = true;
+      locals.showCorrectAnswer = true;
     }
   }
 
@@ -395,12 +395,12 @@ function buildLocals({
     locals.allowAnswerEditing = false;
     locals.showTryAgainButton = false;
     locals.hasAttemptsOtherVariants = false;
-    locals.showTrueAnswer = true;
+    locals.showCorrectAnswer = true;
   }
 
   // Manually disable correct answer panel
   if (!question.show_correct_answer) {
-    locals.showTrueAnswer = false;
+    locals.showCorrectAnswer = false;
   }
 
   if (group_config?.has_roles && !group_role_permissions?.can_submit) {
@@ -551,7 +551,7 @@ export async function getAndRenderVariant(
       locals.questionRenderContext === 'ai_grading') &&
     question.show_correct_answer
   ) {
-    newLocals.showTrueAnswer = true;
+    newLocals.showCorrectAnswer = true;
   }
   Object.assign(locals, newLocals);
 
@@ -603,15 +603,15 @@ export async function getAndRenderVariant(
 
   if (!locals.assessment && locals.question.show_correct_answer && submissionCount > 0) {
     // On instructor question pages, only show if true answer is allowed for this question and there is at least one submission.
-    locals.showTrueAnswer = true;
+    locals.showCorrectAnswer = true;
   }
   // We don't want to unconditionally hide things in the "else" case here,
-  // there's other code elsewhere that could have set showTrueAnswer to true, and we should respect that.
+  // there's other code elsewhere that could have set showCorrectAnswer to true, and we should respect that.
 
   const renderSelection: questionServers.RenderSelection = {
     question: true,
     submissions: submissions.length > 0,
-    answer: locals.showTrueAnswer ?? false,
+    answer: locals.showCorrectAnswer ?? false,
   };
   const htmls = await render({
     variant_course: course,
@@ -660,7 +660,7 @@ export async function getAndRenderVariant(
       },
       submittedAnswer: submission?.submitted_answer ?? null,
       feedback: submission?.feedback ?? null,
-      trueAnswer: locals.showTrueAnswer ? variant.true_answer : null,
+      showCorrectAnswer: locals.showCorrectAnswer ? variant.true_answer : null,
       submissions: submissions.length > 0 ? submissions : null,
     });
 
@@ -776,7 +776,7 @@ export async function renderPanelsForSubmission({
       const htmls = await render({
         variant_course,
         renderSelection: {
-          answer: renderScorePanels && locals.showTrueAnswer,
+          answer: renderScorePanels && locals.showCorrectAnswer,
           submissions: true,
           question: false,
         },
@@ -788,7 +788,7 @@ export async function renderPanelsForSubmission({
         locals,
       });
 
-      panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
+      panels.answerPanel = locals.showCorrectAnswer ? htmls.answerHtml : null;
       panels.extraHeadersHtml = htmls.extraHeadersHtml;
 
       const rubric_data = await manualGrading.selectRubricData({
