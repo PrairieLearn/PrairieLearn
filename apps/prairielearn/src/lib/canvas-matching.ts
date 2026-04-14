@@ -229,7 +229,7 @@ function matchByUid(plStudents: PlStudent[], canvasStudents: CanvasStudent[]): M
   return matchByKey(
     plStudents,
     canvasStudents,
-    (pl) => pl.uid.toLowerCase(),
+    (pl) => [pl.uid.toLowerCase()],
     (c) => [c.sisLoginId.toLowerCase(), c.sisUserId.toLowerCase()],
   );
 }
@@ -251,7 +251,12 @@ function matchByUin(plStudents: PlStudent[], canvasStudents: CanvasStudent[]): M
   return matchByKey(
     plStudents,
     canvasStudents,
-    (pl) => (pl.uin ? normalizeSisIdentifier(pl.uin) : ''),
+    (pl) => {
+      const keys: string[] = [];
+      if (pl.uin) keys.push(normalizeSisIdentifier(pl.uin));
+      if (pl.uid) keys.push(normalizeSisIdentifier(pl.uid));
+      return keys;
+    },
     (c) => [normalizeSisIdentifier(c.sisUserId), normalizeSisIdentifier(c.sisLoginId)],
   );
 }
@@ -259,7 +264,7 @@ function matchByUin(plStudents: PlStudent[], canvasStudents: CanvasStudent[]): M
 function matchByKey(
   plStudents: PlStudent[],
   canvasStudents: CanvasStudent[],
-  plKey: (pl: PlStudent) => string,
+  plKeys: (pl: PlStudent) => string[],
   canvasKeys: (c: CanvasStudent) => string[],
 ): MatchResult {
   const canvasByKey = new Map<string, CanvasStudent[]>();
@@ -280,16 +285,23 @@ function matchByKey(
   const usedCanvas = new Set<CanvasStudent>();
 
   for (const pl of plStudents) {
-    const key = plKey(pl);
-    if (!key) {
+    const keys = plKeys(pl).filter(Boolean);
+    if (keys.length === 0) {
       unmatchedPl.push(pl);
       continue;
     }
 
-    const rawCandidates = canvasByKey.get(key);
-    // Deduplicate: the same Canvas student may appear under multiple keys.
-    const candidates = rawCandidates ? [...new Set(rawCandidates)] : undefined;
-    if (!candidates || candidates.length === 0) {
+    // Collect candidates across all PL keys, deduplicating by identity.
+    const candidateSet = new Set<CanvasStudent>();
+    for (const key of keys) {
+      const found = canvasByKey.get(key);
+      if (found) {
+        for (const c of found) candidateSet.add(c);
+      }
+    }
+
+    const candidates = [...candidateSet];
+    if (candidates.length === 0) {
       unmatchedPl.push(pl);
     } else if (candidates.length === 1) {
       matched.push({ plStudent: pl, canvasStudent: candidates[0] });
@@ -397,7 +409,7 @@ export function strategyDescription(strategy: MatchStrategy): string {
     case 'uid':
       return 'Matches each student\u2019s PrairieLearn sign-in identifier against the SIS Login ID and SIS User ID columns in the Canvas export.';
     case 'uin':
-      return 'Matches each student\u2019s campus student ID (UIN) stored in PrairieLearn against the SIS User ID and SIS Login ID columns in the Canvas export. Leading zeros are ignored.';
+      return 'Matches each student\u2019s campus student ID (UIN) or sign-in identifier (UID) stored in PrairieLearn against the SIS User ID and SIS Login ID columns in the Canvas export. Leading zeros are ignored for numeric identifiers.';
     case 'name':
       return 'Compares student names across different formats (e.g. "Last, First" vs. "First Last"), ignoring case and punctuation.';
   }

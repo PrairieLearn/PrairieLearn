@@ -100,7 +100,7 @@ To fix this, you can upload a gradebook CSV exported from Canvas so that Prairie
 2. In the **Canvas gradebook import** section, upload the CSV file you exported from Canvas.
 3. PrairieLearn will automatically try several matching strategies and select the best one. You can hover over the tooltip icon next to each strategy to learn how it works.
    - **Sign-in identifier match** — the PrairieLearn sign-in identifier is compared against both the SIS Login ID and SIS User ID columns in the Canvas export.
-   - **Campus student ID match** — PrairieLearn's stored student ID is compared against both the SIS User ID and SIS Login ID columns in the Canvas export. This handles institutions that place the campus student ID in either column.
+   - **Campus student ID match** — PrairieLearn's stored student ID (UIN) and sign-in identifier (UID) are both compared against the SIS User ID and SIS Login ID columns in the Canvas export. Leading zeros are ignored for numeric identifiers. This handles institutions that place the campus student ID in either column and allows matching even when a student has no UIN stored.
    - **Name-based match** — student names are compared across different formats (e.g., "Last, First" vs "First Last").
 
    Strategies that produce no matches are automatically disabled. If a strategy matches all PrairieLearn students without ambiguity, other strategies are disabled as well.

@@ -208,6 +208,56 @@ describe('runAllStrategies', () => {
     assert.equal(uidResult.result.ambiguous.length, 0);
   });
 
+  it('matches by UIN strategy using UID when UIN is missing', () => {
+    const canvasWithSis: CanvasStudent[] = [
+      {
+        name: 'Block, Jasen',
+        id: '11',
+        sisUserId: 'jblock3430',
+        sisLoginId: '',
+        section: 'XC 101',
+      },
+      {
+        name: 'Buckridge, Billy',
+        id: '2',
+        sisUserId: '',
+        sisLoginId: 'billy7670',
+        section: 'XC 101',
+      },
+    ];
+
+    const plStudents: PlStudent[] = [
+      { uid: 'jblock3430', userName: 'Jasen Block', uin: null },
+      { uid: 'billy7670', userName: 'Billy Buckridge', uin: null },
+    ];
+
+    const results = runAllStrategies(plStudents, canvasWithSis);
+    const uinResult = results.find((r) => r.strategy === 'uin')!;
+    assert.equal(uinResult.result.matched.length, 2);
+    assert.equal(uinResult.result.unmatchedPl.length, 0);
+  });
+
+  it('does not create duplicate matches in UIN strategy when both UID and UIN match the same Canvas student', () => {
+    const canvasWithSis: CanvasStudent[] = [
+      {
+        name: 'Block, Jasen',
+        id: '11',
+        sisUserId: '658001234',
+        sisLoginId: 'jasen@school.edu',
+        section: 'XC 101',
+      },
+    ];
+
+    const plStudents: PlStudent[] = [
+      { uid: 'jasen@school.edu', userName: 'Jasen Block', uin: '658001234' },
+    ];
+
+    const results = runAllStrategies(plStudents, canvasWithSis);
+    const uinResult = results.find((r) => r.strategy === 'uin')!;
+    assert.equal(uinResult.result.matched.length, 1);
+    assert.equal(uinResult.result.ambiguous.length, 0);
+  });
+
   it('identifies unmatched PL students', () => {
     const plStudents: PlStudent[] = [
       { uid: 'nonexistent_user', userName: 'Nonexistent User', uin: null },
