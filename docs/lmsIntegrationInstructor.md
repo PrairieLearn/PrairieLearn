@@ -72,3 +72,43 @@ If you receive errors about students not being found in the course, check that y
 You can unlink a single PrairieLearn assessment from Canvas. This can be helpful if you want to link it to a different Canvas assignment. Unlinking does not change any grades in Canvas or PrairieLearn.
 
 To do this, go to your course instance in PrairieLearn, then the "LMS connections" tab. For the assessment you want to unlink, select the dropdown arrow on the right of the "Send grades" button and select "Unlink assignment".
+
+## Exporting Canvas-compatible CSV files
+
+If your institution does not use LTI 1.3, or if you prefer to upload grades manually, PrairieLearn can generate CSV files formatted for Canvas's gradebook import. These CSV files include the column headers and "Points Possible" row that Canvas expects.
+
+Canvas CSV exports are available from two places:
+
+- **Gradebook page** — export scores for multiple assessments at once.
+- **Assessment Downloads page** — export scores or points for a single assessment.
+
+### Matching PrairieLearn students to Canvas students
+
+By default, the CSV export uses each student's PrairieLearn sign-in identifier in the column Canvas uses for login IDs from your student information system. If those identifiers differ between PrairieLearn and Canvas, the import into Canvas will fail to match students correctly.
+
+To fix this, you can upload a gradebook CSV exported from Canvas so that PrairieLearn can match students and fill in the identity columns from that file with the exact values Canvas expects.
+
+#### How to export a gradebook from Canvas
+
+1. In your Canvas course, go to **Grades**.
+2. Click **Export** (or **Export Entire Gradebook**) to download a CSV file.
+3. Save this file — you will upload it into PrairieLearn in the next step.
+
+#### Using the Canvas matching feature
+
+1. Open the Canvas CSV export dialog in PrairieLearn (from either the Gradebook page or the Assessment Downloads page).
+2. In the **Canvas gradebook import** section, upload the CSV file you exported from Canvas.
+3. PrairieLearn will automatically try several matching strategies and select the best one:
+   - **Sign-in identifier match** — the PrairieLearn sign-in identifier is compared against both the SIS Login ID and SIS User ID columns in the Canvas export.
+   - **Campus student ID match** — PrairieLearn's stored student ID is compared against both the SIS User ID and SIS Login ID columns in the Canvas export. This handles institutions that place the campus student ID in either column.
+   - **Email-based match** — the local part of the email address (before the `@`) is compared across both SIS columns (e.g., `jblock3430` matches `jblock3430@university.edu`).
+   - **Name-based match** — student names are compared across different formats (e.g., "Last, First" vs "First Last").
+4. A summary shows how many students were matched, how many are ambiguous, and how many are unmatched.
+5. If any matches are ambiguous (one PrairieLearn student matched multiple Canvas students), you can manually select the correct Canvas student from a dropdown.
+6. Click **Download** to generate the CSV with the matched Canvas identity columns.
+
+!!! note
+
+    - Unmatched PrairieLearn students will still appear in the export using their PrairieLearn sign-in identifier in the login column.
+    - Unmatched Canvas students (those with no PrairieLearn grades) are omitted from the export.
+    - The matching step is optional — you can always download without uploading a Canvas CSV.
