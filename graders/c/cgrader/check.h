@@ -52,8 +52,9 @@ static inline void pl_fixture_sandbox_setup(void) {
       if (rv != -1 && WIFEXITED(status)) {
         // If process exited before the teardown fixture, abort with a message
         if (!WEXITSTATUS(status) &&
-            (!plcheck_final_check || *plcheck_final_check != CORRECT_FINAL_CHECK))
+            (!plcheck_final_check || *plcheck_final_check != CORRECT_FINAL_CHECK)) {
           ck_abort_msg("Illegal attempt to call exit() or equivalent function in student code.");
+        }
         // If process exited normally, exit with the same exit code
         _exit(WEXITSTATUS(status));
       }
@@ -109,7 +110,9 @@ static inline void pl_fixture_sandbox_setup(void) {
 
 static inline void pl_fixture_sandbox_teardown(void) {
 #ifdef __SANITIZE_ADDRESS__
-  if (*sanitizer_output) __lsan_do_leak_check();
+  if (*sanitizer_output) {
+    __lsan_do_leak_check();
+  }
 #endif
 
 #ifndef PLCHECK_NO_EXTRA_FORK
