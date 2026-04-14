@@ -13,6 +13,7 @@ import { InstanceQuestionPoints } from '../../components/QuestionScore.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import { getInstanceQuestionUrl, getQuestionUrl } from '../../lib/client/url.js';
 import {
   type Assessment,
   AssessmentQuestionSchema,
@@ -405,9 +406,11 @@ export function InstructorAssessmentInstance({
                     <tr>
                       <td>
                         S-${instance_question.question_number}. (<a
-                          href="/pl/course_instance/${resLocals.course_instance
-                            .id}/instance_question/${instance_question.id}/?variant_id=${instance_question.last_variant_id ??
-                          ''}"
+                          href="${getInstanceQuestionUrl({
+                            courseInstanceId: resLocals.course_instance.id,
+                            instanceQuestionId: instance_question.id,
+                            variantId: instance_question.last_variant_id,
+                          })}"
                           >student view</a
                         >)
                       </td>
@@ -416,8 +419,11 @@ export function InstructorAssessmentInstance({
                         ${resLocals.authz_data.has_course_permission_preview
                           ? html`
                               (<a
-                                href="${resLocals.urlPrefix}/question/${instance_question.question_id}/preview/?variant_seed=${instance_question.last_variant_seed ??
-                                ''}"
+                                href="${getQuestionUrl({
+                                  courseInstanceId: resLocals.course_instance.id,
+                                  questionId: instance_question.question_id,
+                                  variantSeed: instance_question.last_variant_seed,
+                                })}"
                                 >instructor view</a
                               >)
                             `
@@ -574,8 +580,11 @@ export function InstructorAssessmentInstance({
                       ${resLocals.authz_data.has_course_permission_preview
                         ? html`
                             <a
-                              href="${resLocals.urlPrefix}/question/${row.question_id}/preview/?variant_seed=${instance_question?.last_variant_seed ??
-                              ''}"
+                              href="${getQuestionUrl({
+                                courseInstanceId: resLocals.course_instance.id,
+                                questionId: row.question_id,
+                                variantSeed: instance_question?.last_variant_seed,
+                              })}"
                               >${row.qid}</a
                             >
                           `
@@ -678,7 +687,7 @@ export function InstructorAssessmentInstance({
                     <td><span class="badge color-${row.event_color}">${row.event_name}</span></td>
                     <td>
                       ${run(() => {
-                        if (!row.qid) return '';
+                        if (!row.qid || !row.question_id) return '';
                         // Instructor question number may be null if this
                         // question was deleted from the assessment after the
                         // event was logged
@@ -690,8 +699,11 @@ export function InstructorAssessmentInstance({
                         if (!resLocals.authz_data.has_course_permission_preview) return text;
                         return html`
                           <a
-                            href="${resLocals.urlPrefix}/question/${row.question_id}/?variant_seed=${row.variant_seed ??
-                            ''}"
+                            href="${getQuestionUrl({
+                              courseInstanceId: resLocals.course_instance.id,
+                              questionId: row.question_id,
+                              variantSeed: row.variant_seed,
+                            })}"
                             >${text}</a
                           >
                         `;
@@ -699,11 +711,14 @@ export function InstructorAssessmentInstance({
                     </td>
                     <td>
                       ${row.student_question_number
-                        ? row.variant_id
+                        ? row.instance_question_id && row.variant_id
                           ? html`
                               <a
-                                href="/pl/course_instance/${resLocals.course_instance
-                                  .id}/instance_question/${row.instance_question_id}/?variant_id=${row.variant_id}"
+                                href="${getInstanceQuestionUrl({
+                                  courseInstanceId: resLocals.course_instance.id,
+                                  instanceQuestionId: row.instance_question_id,
+                                  variantId: row.variant_id,
+                                })}"
                               >
                                 S-${row.student_question_number}#${row.variant_number}
                               </a>
