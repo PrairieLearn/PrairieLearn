@@ -365,6 +365,7 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'full',
       });
 
       const chunksToLoad: chunksLib.Chunk[] = [{ type: 'question', questionId }];
@@ -389,6 +390,7 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'full',
       });
 
       // Reload chunks.
@@ -419,6 +421,7 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'full',
       });
 
       const chunksToLoad: chunksLib.Chunk[] = [{ type: 'question', questionId: nestedQuestionId }];
@@ -444,6 +447,7 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'full',
       });
 
       // Reload chunks.
@@ -495,6 +499,7 @@ describe('chunks', () => {
         coursePath: tempTestCourseDir.path,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'full',
       });
 
       // Load and unpack chunks
@@ -541,6 +546,7 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'full',
       });
 
       // Reload the chunks
@@ -618,6 +624,7 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'full',
       });
 
       // Reload the chunks
@@ -681,6 +688,7 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'full',
       });
 
       // Verify that an initial chunk exists for this course instance.
@@ -721,6 +729,7 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'full',
       });
 
       // Re-read chunks from DB
@@ -767,6 +776,7 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'changed-files',
         changedFiles: [
           path.relative(courseDir, infoCourseInstancePath),
           path.relative(courseDir, clientFilePath),
@@ -817,6 +827,7 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'changed-files',
         changedFiles: [path.relative(courseDir, clientFilePath)],
       });
 
@@ -852,6 +863,7 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'changed-files',
         changedFiles: [path.relative(courseDir, infoCourseInstancePath)],
       });
 
@@ -873,6 +885,7 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'full',
       });
 
       // Verify that an initial chunk exists for this assessment.
@@ -914,6 +927,7 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'full',
       });
 
       // Re-read chunks from DB
@@ -926,6 +940,91 @@ describe('chunks', () => {
           (chunk) =>
             chunk.type === 'clientFilesAssessment' && chunk.assessment_id === newAssessmentId,
         ),
+      );
+    });
+
+    it('full mode regenerates existing question chunks', async () => {
+      const courseDir = tempTestCourseDir.path;
+      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({
+        id: course.id,
+        path: courseDir,
+      });
+      const sourceQuestionPath = path.join(courseDir, 'questions', 'addNumbers', 'question.html');
+      const runtimeQuestionPath = path.join(
+        courseRuntimeDir,
+        'questions',
+        'addNumbers',
+        'question.html',
+      );
+      const chunksToLoad: chunksLib.Chunk[] = [{ type: 'question', questionId }];
+
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'full',
+      });
+      await chunksLib.ensureChunksForCourseAsync(course.id, chunksToLoad);
+
+      await fs.writeFile(
+        sourceQuestionPath,
+        '<pl-question-panel>Full regeneration</pl-question-panel>',
+      );
+
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'full',
+      });
+      await chunksLib.ensureChunksForCourseAsync(course.id, chunksToLoad);
+
+      assert.equal(
+        await fs.readFile(runtimeQuestionPath, 'utf-8'),
+        '<pl-question-panel>Full regeneration</pl-question-panel>',
+      );
+    });
+
+    it('changed-files mode treats question directory roots as changed questions', async () => {
+      const courseDir = tempTestCourseDir.path;
+      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({
+        id: course.id,
+        path: courseDir,
+      });
+      const sourceQuestionPath = path.join(courseDir, 'questions', 'addNumbers', 'question.html');
+      const runtimeQuestionPath = path.join(
+        courseRuntimeDir,
+        'questions',
+        'addNumbers',
+        'question.html',
+      );
+      const chunksToLoad: chunksLib.Chunk[] = [{ type: 'question', questionId }];
+
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'full',
+      });
+      await chunksLib.ensureChunksForCourseAsync(course.id, chunksToLoad);
+
+      await fs.writeFile(
+        sourceQuestionPath,
+        '<pl-question-panel>Directory root change</pl-question-panel>',
+      );
+
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'changed-files',
+        changedFiles: [path.join('questions', 'addNumbers')],
+      });
+      await chunksLib.ensureChunksForCourseAsync(course.id, chunksToLoad);
+
+      assert.equal(
+        await fs.readFile(runtimeQuestionPath, 'utf-8'),
+        '<pl-question-panel>Directory root change</pl-question-panel>',
       );
     });
 
@@ -961,6 +1060,7 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'full',
       });
 
       // Load and unpack the serverFilesCourse chunk
@@ -993,6 +1093,7 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'full',
       });
 
       // Capture baseline chunk set and counts
@@ -1013,6 +1114,7 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        mode: 'full',
       });
 
       // Fetch again and ensure counts are unchanged

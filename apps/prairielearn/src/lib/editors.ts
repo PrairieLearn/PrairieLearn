@@ -49,14 +49,23 @@ import { type ServerJob, type ServerJobExecutor, createServerJob } from './serve
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
 
+type ChunkUpdateMode =
+  | {
+      mode: 'changed-files';
+      changedFiles: string[];
+    }
+  | {
+      mode: 'git-diff';
+      oldHash: string;
+      newHash: string;
+    };
+
 async function syncCourseFromDisk(
   course: Course,
-  startGitHash: string | null,
+  chunkUpdateMode: ChunkUpdateMode,
   job: ServerJob,
   courseData?: courseDB.CourseData,
 ) {
-  const endGitHash = config.fileEditorUseGit ? await getCourseCommitHash(course.path) : null;
-
   const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course, job, courseData);
 
   if (syncResult.status === 'sharing_error') {
@@ -68,14 +77,13 @@ async function syncCourseFromDisk(
       coursePath: course.path,
       courseId: course.id,
       courseData: syncResult.courseData,
-      oldHash: startGitHash,
-      newHash: endGitHash,
+      ...chunkUpdateMode,
     });
     logChunkChangesToJob(chunkChanges, job);
   }
 
   if (config.fileEditorUseGit) {
-    await updateCourseCommitHash(course);
+    course.commit_hash = await updateCourseCommitHash(course);
   }
 
   if (syncResult.hadJsonErrors) {
@@ -194,16 +202,23 @@ export abstract class Editor {
           //
           // Either the job ends with a thrown error or with the return statement.
 
-          const startGitHash = this.course.commit_hash ?? null;
-
           job.info('Write changes to disk');
           job.data.saveAttempted = true;
-          await this.write();
+          const writeResult = await this.write();
           job.data.saveSucceeded = true;
 
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
-          await syncCourseFromDisk(this.course, startGitHash, job);
+          await syncCourseFromDisk(
+            this.course,
+            {
+              mode: 'changed-files',
+              changedFiles: (writeResult?.pathsToAdd ?? []).map((p) =>
+                path.relative(this.course.path, p),
+              ),
+            },
+            job,
+          );
           job.data.syncSucceeded = true;
 
           return;
@@ -386,7 +401,16 @@ export abstract class Editor {
           // syncing the changes we pulled from the remote git repository.
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
-          await syncCourseFromDisk(this.course, startGitHash, job, courseData);
+          await syncCourseFromDisk(
+            this.course,
+            {
+              mode: 'git-diff',
+              oldHash: startGitHash,
+              newHash: await getCourseCommitHash(this.course.path),
+            },
+            job,
+            courseData,
+          );
           job.data.syncSucceeded = true;
         }
       });

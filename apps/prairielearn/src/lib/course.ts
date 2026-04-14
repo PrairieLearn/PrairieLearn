@@ -188,8 +188,15 @@ export async function pullAndUpdateCourse({
             coursePath: path,
             courseId: course.id,
             courseData: syncResult.courseData,
-            oldHash: startGitHash,
-            newHash: endGitHash,
+            ...(startGitHash
+              ? {
+                  mode: 'git-diff' as const,
+                  oldHash: startGitHash,
+                  newHash: endGitHash,
+                }
+              : {
+                  mode: 'full' as const,
+                }),
           });
           chunks.logChunkChangesToJob(chunkChanges, job);
         }
