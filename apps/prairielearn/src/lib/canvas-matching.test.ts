@@ -88,18 +88,6 @@ describe('runAllStrategies', () => {
     assert.equal(uidResult.result.unmatchedCanvas.length, 1);
   });
 
-  it('matches by email normalization', () => {
-    const plStudents: PlStudent[] = [
-      { uid: 'jblock3430@university.edu', userName: 'Jasen Block', uin: null },
-      { uid: 'billy7670@university.edu', userName: 'Billy Buckridge', uin: null },
-    ];
-
-    const results = runAllStrategies(plStudents, canvasStudents);
-    const emailResult = results.find((r) => r.strategy === 'email')!;
-    assert.equal(emailResult.result.matched.length, 2);
-    assert.equal(emailResult.result.unmatchedPl.length, 0);
-  });
-
   it('matches by name across formats', () => {
     const plStudents: PlStudent[] = [
       { uid: 'user1@test.edu', userName: 'Jasen Block', uin: null },
@@ -235,7 +223,7 @@ describe('runAllStrategies', () => {
 
   it('handles empty inputs', () => {
     const results = runAllStrategies([], []);
-    assert.lengthOf(results, 4);
+    assert.lengthOf(results, 3);
     for (const r of results) {
       assert.equal(r.result.matched.length, 0);
       assert.equal(r.result.ambiguous.length, 0);

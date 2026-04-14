@@ -22,7 +22,7 @@ export interface PlStudent {
   uin: string | null;
 }
 
-export type MatchStrategy = 'uid' | 'uin' | 'email' | 'name';
+export type MatchStrategy = 'uid' | 'uin' | 'name';
 
 export interface MatchedPair {
   plStudent: PlStudent;
@@ -256,21 +256,6 @@ function matchByUin(plStudents: PlStudent[], canvasStudents: CanvasStudent[]): M
   );
 }
 
-function matchByEmail(plStudents: PlStudent[], canvasStudents: CanvasStudent[]): MatchResult {
-  const normalizeToLocal = (value: string) => {
-    const lower = value.toLowerCase().trim();
-    const atIndex = lower.indexOf('@');
-    return atIndex !== -1 ? lower.slice(0, atIndex) : lower;
-  };
-
-  return matchByKey(
-    plStudents,
-    canvasStudents,
-    (pl) => normalizeToLocal(pl.uid),
-    (c) => [normalizeToLocal(c.sisLoginId), normalizeToLocal(c.sisUserId)],
-  );
-}
-
 function matchByKey(
   plStudents: PlStudent[],
   canvasStudents: CanvasStudent[],
@@ -387,7 +372,6 @@ export function runAllStrategies(
   const strategies: { strategy: MatchStrategy; fn: typeof matchByUid }[] = [
     { strategy: 'uid', fn: matchByUid },
     { strategy: 'uin', fn: matchByUin },
-    { strategy: 'email', fn: matchByEmail },
     { strategy: 'name', fn: matchByName },
   ];
 
@@ -405,8 +389,6 @@ export function strategyLabel(strategy: MatchStrategy): string {
       return 'Sign-in identifier match';
     case 'uin':
       return 'Campus student ID match';
-    case 'email':
-      return 'Email-based match';
     case 'name':
       return 'Name-based match';
   }
@@ -418,8 +400,6 @@ export function strategyDescription(strategy: MatchStrategy): string {
       return 'Matches each student\u2019s PrairieLearn sign-in identifier against the SIS Login ID and SIS User ID columns in the Canvas export.';
     case 'uin':
       return 'Matches each student\u2019s campus student ID (UIN) stored in PrairieLearn against the SIS User ID and SIS Login ID columns in the Canvas export. Leading zeros are ignored.';
-    case 'email':
-      return 'Compares the local part of each student\u2019s email address (the portion before the @) against the SIS Login ID and SIS User ID columns in the Canvas export.';
     case 'name':
       return 'Compares student names across different formats (e.g. "Last, First" vs. "First Last"), ignoring case and punctuation.';
   }

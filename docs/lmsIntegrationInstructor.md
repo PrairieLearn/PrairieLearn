@@ -101,7 +101,6 @@ To fix this, you can upload a gradebook CSV exported from Canvas so that Prairie
 3. PrairieLearn will automatically try several matching strategies and select the best one:
    - **Sign-in identifier match** — the PrairieLearn sign-in identifier is compared against both the SIS Login ID and SIS User ID columns in the Canvas export.
    - **Campus student ID match** — PrairieLearn's stored student ID is compared against both the SIS User ID and SIS Login ID columns in the Canvas export. This handles institutions that place the campus student ID in either column.
-   - **Email-based match** — the local part of the email address (before the `@`) is compared across both SIS columns (e.g., `jblock3430` matches `jblock3430@university.edu`).
    - **Name-based match** — student names are compared across different formats (e.g., "Last, First" vs "First Last").
 4. A summary shows how many students were matched, how many are ambiguous, and how many are unmatched.
 5. If any matches are ambiguous (one PrairieLearn student matched multiple Canvas students), you can manually select the correct Canvas student from a dropdown.
