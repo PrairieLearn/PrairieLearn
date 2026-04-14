@@ -103,6 +103,11 @@ check-dependencies:
 
 check-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts check
+compile-badge-colors:
+	@npx sass --no-source-map apps/prairielearn/public/stylesheets/colors.scss apps/prairielearn/public/stylesheets/colors.css
+	@yarn prettier --write apps/prairielearn/public/stylesheets/colors.css
+check-badge-contrast:
+	@node scripts/check-badge-contrast.mjs
 check-npm-packages:
 	@node scripts/check-npm-packages.mjs
 update-jsonschema:

@@ -406,6 +406,7 @@ function buildLocals({
   if (group_config?.has_roles && !group_role_permissions?.can_submit) {
     locals.disableGradeButton = true;
     locals.disableSaveButton = true;
+    locals.allowAnswerEditing = false;
   }
 
   return locals;
@@ -485,19 +486,16 @@ export async function getAndRenderVariant(
         publicQuestionPreview,
       });
     } else {
-      const require_open = !!locals.assessment && locals.assessment.type !== 'Exam';
-      const instance_question_id = locals.instance_question?.id ?? null;
-      const options = { variant_seed };
       return await ensureVariant({
         question_id: locals.question.id,
-        instance_question_id,
+        instance_question_id: locals.instance_question?.id ?? null,
         user_id: locals.user.id,
         authn_user_id: locals.authn_user.id,
         course_instance: locals.course_instance ?? null,
         variant_course: locals.course,
         question_course,
-        options,
-        require_open,
+        options: { variant_seed },
+        require_open: !!locals.assessment && locals.assessment.type !== 'Exam',
         client_fingerprint_id: locals.client_fingerprint_id ?? null,
       });
     }

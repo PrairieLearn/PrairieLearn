@@ -45,10 +45,10 @@ function groupByAbbreviation(
  */
 export function AssessmentBadges({
   assessments,
-  urlPrefix,
+  courseInstanceId,
 }: {
   assessments: AssessmentForPicker[];
-  urlPrefix: string;
+  courseInstanceId: string;
 }) {
   if (assessments.length === 0) {
     return null;
@@ -61,7 +61,10 @@ export function AssessmentBadges({
       <>
         {assessments.slice(0, 3).map((assessment) => (
           <span key={assessment.assessment_id} className="d-inline-block me-1">
-            <AssessmentBadge urlPrefix={urlPrefix} assessment={toBadgeProps(assessment, false)} />
+            <AssessmentBadge
+              courseInstanceId={courseInstanceId}
+              assessment={toBadgeProps(assessment, false)}
+            />
           </span>
         ))}
         {assessments.length > 3 && (
@@ -78,7 +81,10 @@ export function AssessmentBadges({
       for (const assessment of items) {
         elements.push(
           <span key={assessment.assessment_id} className="d-inline-block me-1">
-            <AssessmentBadge urlPrefix={urlPrefix} assessment={toBadgeProps(assessment)} />
+            <AssessmentBadge
+              courseInstanceId={courseInstanceId}
+              assessment={toBadgeProps(assessment)}
+            />
           </span>,
         );
       }
@@ -98,7 +104,7 @@ export function AssessmentBadges({
                   {items.map((assessment) => (
                     <AssessmentBadge
                       key={assessment.assessment_id}
-                      urlPrefix={urlPrefix}
+                      courseInstanceId={courseInstanceId}
                       assessment={toBadgeProps(assessment)}
                     />
                   ))}
@@ -109,11 +115,16 @@ export function AssessmentBadges({
           >
             <button
               type="button"
-              className={`btn btn-badge color-${color}`}
+              className={`btn btn-badge color-${color} tree-interactive-badge`}
               aria-label={`${abbrev}: ${items.length} assessments`}
               onClick={(e) => e.stopPropagation()}
             >
-              {abbrev} ×{items.length}
+              {abbrev} ×{items.length}{' '}
+              <i
+                className="bi bi-caret-down-fill"
+                style={{ fontSize: '0.6em' }}
+                aria-hidden="true"
+              />
             </button>
           </OverlayTrigger>
         </span>,

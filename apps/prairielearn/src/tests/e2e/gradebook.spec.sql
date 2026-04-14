@@ -1,3 +1,20 @@
+-- BLOCK clear_assessment_instances
+DELETE FROM assessment_instances
+WHERE
+  assessment_id IN (
+    SELECT
+      id
+    FROM
+      assessments
+    WHERE
+      course_instance_id = $course_instance_id
+  );
+
+-- BLOCK clear_enrollments
+DELETE FROM enrollments
+WHERE
+  course_instance_id = $course_instance_id;
+
 -- BLOCK select_first_assessment
 SELECT
   a.id,
@@ -53,5 +70,4 @@ VALUES
     $score_perc,
     $score_perc,
     100
-  )
-ON CONFLICT DO NOTHING;
+  );

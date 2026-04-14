@@ -11,7 +11,7 @@
   display: grid;
   grid-template-areas: 'preview-tabs chat' 'preview chat';
   grid-template-rows: min-content 1fr;
-  grid-template-columns: 1fr var(--chat-width, 500px);
+  grid-template-columns: 1fr auto;
 }
 
 .app-chat-container {
@@ -103,6 +103,14 @@
 
 .app-chat-resizer:hover {
   background: rgba(0, 0, 0, 0.05);
+}
+
+.app-chat-resizer:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  background-color: var(--bs-primary-bg-subtle);
+  /* Elevate above adjacent grid areas (e.g. preview-tabs with z-1)
+     so the focus ring is not obscured. */
+  z-index: 2;
 }
 
 .question-wrapper {

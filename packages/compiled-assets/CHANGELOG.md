@@ -1,5 +1,11 @@
 # @prairielearn/compiled-assets
 
+## 4.1.2
+
+### Patch Changes
+
+- 144cd19: Upgrade all JavaScript dependencies
+
 ## 4.1.1
 
 ### Patch Changes

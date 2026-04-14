@@ -75,7 +75,7 @@ export async function syncCourse(course: Course) {
       },
       async () => {
         job.info('Sync git repository to database');
-        await syncDiskToSqlWithLock(course.id, course.path, job);
+        await syncDiskToSqlWithLock(course, job);
       },
     );
   });

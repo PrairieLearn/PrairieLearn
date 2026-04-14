@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "command-line-args": "^6.0.1",
-    "command-line-usage": "^7.0.3",
+    "command-line-usage": "^7.0.4",
     "express": "^4.22.1",
     "express-ws": "^5.0.2",
     "node-pty": "^1.1.0",

@@ -100,6 +100,7 @@ The `info.json` file for each question defines properties of the question. For e
 | `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                                                                                                                                                                                                                   |
 | `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](../externalGrading.md). (Optional; default: none)                                                                                                                                                                                         |
 | `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                                                                                                                                                                                                              |
+| `preferences`            | object  | A schema defining [question preferences](preferences.md) that can be overridden per-assessment. (Optional; default: none)                                                                                                                                                                                          |
 | `sharePublicly`          | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                                                                                                                                                              |
 | `shareSourcePublicly`    | boolean | Whether the source code of the question should be available                                                                                                                                                                                                                                                        |
 | `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                                                                                                                                                                         |
@@ -151,6 +152,10 @@ The different types of dependency properties available are summarized in this ta
 | `clientFilesCourseScripts`   | The scripts required by this question relative to `[course directory]/clientFilesCourse`.         |
 
 Additional details about how to access these fields from `server.py` can be found in the [`server.py` documentation](server.md#accessing-files-on-disk).
+
+!!! warning
+
+    Keep in mind that node module dependencies should be avoided, as they may be updated without warning, which in some cases may break your question. More information can be found in the [element developer guide](../devElements.md#using-node-dependencies-in-element-code).
 
 ### Non-randomized questions
 

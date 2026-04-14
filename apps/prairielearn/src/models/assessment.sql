@@ -1,3 +1,12 @@
+-- BLOCK lock_assessment_row
+SELECT
+  id
+FROM
+  assessments
+WHERE
+  id = $assessment_id
+FOR NO KEY UPDATE;
+
 -- BLOCK select_assessment_by_id
 SELECT
   *
@@ -16,6 +25,16 @@ WHERE
   AND course_instance_id = $course_instance_id
   AND deleted_at IS NULL;
 
+-- BLOCK select_assessment_by_uuid
+SELECT
+  *
+FROM
+  assessments
+WHERE
+  uuid = $uuid
+  AND course_instance_id = $course_instance_id
+  AND deleted_at IS NULL;
+
 -- BLOCK select_assessment_info_for_job
 SELECT
   aset.abbreviation || a.number AS assessment_label,
@@ -28,6 +47,26 @@ FROM
   JOIN courses AS c ON (c.id = ci.course_id)
 WHERE
   a.id = $assessment_id;
+
+-- BLOCK select_zone_id_for_instance_question
+SELECT
+  z.id
+FROM
+  instance_questions AS iq
+  JOIN assessment_questions AS aq ON aq.id = iq.assessment_question_id
+  LEFT JOIN alternative_groups AS ag ON ag.id = aq.alternative_group_id
+  LEFT JOIN zones AS z ON z.id = ag.zone_id
+WHERE
+  iq.id = $instance_question_id;
+
+-- BLOCK select_assessment_tools
+SELECT
+  *
+FROM
+  assessment_tools
+WHERE
+  zone_id = $zone_id
+  OR assessment_id = $assessment_id;
 
 -- BLOCK select_assessments_for_course_instance
 WITH
@@ -104,3 +143,14 @@ ORDER BY
   aset.number,
   a.order_by,
   a.id;
+
+-- BLOCK select_zone_tool_overrides
+SELECT
+  z.number AS zone_number,
+  at.tool,
+  at.enabled
+FROM
+  assessment_tools AS at
+  JOIN zones AS z ON (at.zone_id = z.id)
+WHERE
+  z.assessment_id = $assessment_id;

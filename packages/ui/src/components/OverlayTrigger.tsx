@@ -105,7 +105,10 @@ export function OverlayTrigger({
       triggerElementRef.current = document.activeElement;
     }
 
-    if (shouldTrapFocus && overlayBodyRef.current && props.trigger === 'click') {
+    const isClickTriggered = Array.isArray(props.trigger)
+      ? props.trigger.includes('click')
+      : props.trigger === 'click';
+    if (shouldTrapFocus && overlayBodyRef.current && isClickTriggered) {
       // Trap focus inside the overlay body
       focusTrapRef.current = trapFocus(overlayBodyRef.current);
 
@@ -131,8 +134,13 @@ export function OverlayTrigger({
       focusTrapRef.current = null;
     }
 
-    // Return focus to the trigger element
-    if (returnFocus && triggerElementRef.current) {
+    // Return focus to the trigger element (only for click-triggered overlays;
+    // for focus-triggered tooltips this would create an infinite loop since
+    // refocusing the trigger re-shows the tooltip).
+    const isClickTriggered = Array.isArray(props.trigger)
+      ? props.trigger.includes('click')
+      : props.trigger === 'click';
+    if (returnFocus && triggerElementRef.current && isClickTriggered) {
       triggerElementRef.current.focus();
       triggerElementRef.current = null;
     }

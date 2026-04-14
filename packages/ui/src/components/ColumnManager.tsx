@@ -4,6 +4,8 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
 
+import { ExpandableCheckboxGroup } from './ExpandableCheckboxGroup.js';
+
 interface ColumnMenuItemProps<RowDataModel> {
   column: Column<RowDataModel>;
   onPinningBoundary: boolean;
@@ -76,24 +78,17 @@ function ColumnGroupItem<RowDataModel>({
   onTogglePin: (columnId: string) => void;
   getIsOnPinningBoundary: (columnId: string) => boolean;
 }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const checkboxRef = useRef<HTMLInputElement>(null);
-
   const leafColumns = column.getLeafColumns();
   const visibleLeafColumns = leafColumns.filter((c) => c.getIsVisible());
   const isAllVisible = visibleLeafColumns.length === leafColumns.length;
   const isSomeVisible = visibleLeafColumns.length > 0 && !isAllVisible;
 
-  // Set indeterminate state via ref since it's a DOM property, not an HTML attribute
-  useEffect(() => {
-    if (checkboxRef.current) {
-      checkboxRef.current.indeterminate = isSomeVisible;
-    }
-  }, [isSomeVisible]);
+  // Use meta.label if available, otherwise fall back to header or column.id
+  const header =
+    column.columnDef.meta?.label ??
+    (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
 
-  const handleToggleVisibility = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleToggleVisibility = () => {
     const targetVisibility = !isAllVisible;
     // Batch all visibility changes into a single update
     // Doing rapid state updates caused the state updates to not be applied correctly.
@@ -109,57 +104,24 @@ function ColumnGroupItem<RowDataModel>({
     });
   };
 
-  // Use meta.label if available, otherwise fall back to header or column.id
-  const header =
-    column.columnDef.meta?.label ??
-    (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
-
   return (
-    <div className="d-flex flex-column">
-      <div className="px-2 py-1 d-flex align-items-center justify-content-between">
-        <div className="d-flex align-items-center flex-grow-1">
-          <input
-            ref={checkboxRef}
-            type="checkbox"
-            className="form-check-input flex-shrink-0"
-            checked={isAllVisible}
-            aria-label={`Toggle visibility for group '${header}'`}
-            onChange={handleToggleVisibility}
-          />
-          <button
-            type="button"
-            className="btn btn-link text-decoration-none text-reset w-100 text-start d-flex align-items-center justify-content-between ps-2 py-0 pe-0"
-            aria-expanded={isExpanded}
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsExpanded(!isExpanded);
-            }}
-          >
-            <span className="fw-bold text-truncate">{header}</span>
-            <i
-              className={clsx(
-                'bi ms-2 text-muted',
-                isExpanded ? 'bi-chevron-down' : 'bi-chevron-right',
-              )}
-              aria-hidden="true"
-            />
-          </button>
-        </div>
-      </div>
-      {isExpanded && (
-        <div className="ps-3 border-start ms-3 mb-1">
-          {column.columns.map((childCol) => (
-            <ColumnItem
-              key={childCol.id}
-              column={childCol}
-              table={table}
-              getIsOnPinningBoundary={getIsOnPinningBoundary}
-              onTogglePin={onTogglePin}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+    <ExpandableCheckboxGroup
+      label={header}
+      checked={isAllVisible}
+      indeterminate={isSomeVisible}
+      aria-label={`Toggle visibility for group '${header}'`}
+      onToggle={handleToggleVisibility}
+    >
+      {column.columns.map((childCol) => (
+        <ColumnItem
+          key={childCol.id}
+          column={childCol}
+          table={table}
+          getIsOnPinningBoundary={getIsOnPinningBoundary}
+          onTogglePin={onTogglePin}
+        />
+      ))}
+    </ExpandableCheckboxGroup>
   );
 }
 
@@ -334,7 +296,16 @@ export function ColumnManager<RowDataModel>({
       >
         <i className="bi bi-view-list me-2" aria-hidden="true" /> View{' '}
       </Dropdown.Toggle>
-      <Dropdown.Menu style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+      <Dropdown.Menu
+        style={{ maxHeight: '60vh', overflowY: 'auto' }}
+        onMouseDown={(e: React.MouseEvent) => {
+          // Prevent mousedown from moving focus away from the toggle button.
+          // Without this, clicking non-focusable elements like label text causes
+          // a blur with relatedTarget=null, which closes the dropdown before the
+          // click event can fire and toggle the checkbox.
+          e.preventDefault();
+        }}
+      >
         {topContent && (
           <>
             {topContent}

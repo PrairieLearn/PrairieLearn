@@ -13,10 +13,10 @@
     "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@types/express": "^4.17.25"
+    "@types/express": "^4.17.25 <5"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@typescript/native-preview": "^7.0.0-dev.20260302.1"
+    "@typescript/native-preview": "^7.0.0-dev.20260305.1"
   }
 }

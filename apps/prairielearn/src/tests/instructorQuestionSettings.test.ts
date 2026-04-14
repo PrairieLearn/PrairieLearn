@@ -9,7 +9,7 @@ import { config } from '../lib/config.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 import { selectQuestionById } from '../models/question.js';
 
-import { fetchCheerio } from './helperClient.js';
+import { assertEditError, fetchCheerio } from './helperClient.js';
 import {
   type CourseRepoFixture,
   createCourseRepoFixture,
@@ -419,7 +419,6 @@ describe('Editing question settings', () => {
 
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
     assert.equal(questionInfo.externalGradingOptions.image, 'test_image');
-    assert.notExists(questionInfo.externalGradingOptions.enabled);
     assert.notExists(questionInfo.externalGradingOptions.entrypoint);
     assert.notExists(questionInfo.externalGradingOptions.files);
     assert.notExists(questionInfo.externalGradingOptions.timeout);
@@ -444,7 +443,6 @@ describe('Editing question settings', () => {
         topic: 'Test',
         grading_method: 'External',
         external_grading_image: 'test_image',
-        external_grading_enabled: 'true',
         external_grading_entrypoint: '/test',
         external_grading_files: 'test_file.txt',
         external_grading_timeout: '10',
@@ -458,11 +456,120 @@ describe('Editing question settings', () => {
 
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
     assert.equal(questionInfo.externalGradingOptions.image, 'test_image');
-    assert.equal(questionInfo.externalGradingOptions.enabled, true);
     assert.equal(questionInfo.externalGradingOptions.entrypoint, '/test');
     assert.equal(questionInfo.externalGradingOptions.serverFilesCourse, 'test_file.txt');
     assert.equal(questionInfo.externalGradingOptions.timeout, 10);
     assert.equal(questionInfo.externalGradingOptions.enableNetworking, true);
     assert.deepEqual(questionInfo.externalGradingOptions.environment, { test: 'value' });
   });
+
+  test.sequential('create a second question for nesting tests', async () => {
+    const createPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+    );
+    assert.equal(createPageResponse.status, 200);
+
+    const response = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_question',
+          __csrf_token: createPageResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: createPageResponse.$('input[name=orig_hash]').val() as string,
+          title: 'Second question',
+          qid: 'secondQuestion',
+          start_from: 'empty',
+        }),
+      },
+    );
+    assert.equal(response.status, 200);
+  });
+
+  test.sequential(
+    'should not be able to rename a question to a subdirectory of an existing question',
+    async () => {
+      // Question 1 has QID "question2", question 2 has QID "secondQuestion".
+      // Try to rename question 1 to "secondQuestion/nested" — this would nest
+      // it inside question 2's directory, making it invisible during sync.
+      const settingsPageResponse = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+      );
+      assert.equal(settingsPageResponse.status, 200);
+
+      const response = await fetch(
+        `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'update_question',
+            __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+            orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+            title: 'Test title - changed',
+            qid: 'secondQuestion/nested',
+            topic: 'Test',
+            grading_method: 'Internal',
+          }),
+        },
+      );
+
+      await assertEditError(response, 'is a subdirectory of the existing question');
+    },
+  );
+
+  test.sequential('rename question 1 to a nested QID for parent directory test', async () => {
+    // Rename question 1 from "question2" to "parent/child" so we can test
+    // that renaming question 2 to "parent" is blocked.
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+    );
+    assert.equal(settingsPageResponse.status, 200);
+
+    const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+        title: 'Test title - changed',
+        qid: 'parent/child',
+        topic: 'Test',
+        grading_method: 'Internal',
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
+  });
+
+  test.sequential(
+    'should not be able to rename a question to a parent directory of an existing question',
+    async () => {
+      // Question 1 now has QID "parent/child". Try to rename question 2
+      // ("secondQuestion") to "parent" — this would make question 1 invisible
+      // during sync because "parent/info.json" would stop recursion.
+      const settingsPageResponse = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/question/2/settings`,
+      );
+      assert.equal(settingsPageResponse.status, 200);
+
+      const response = await fetch(
+        `${siteUrl}/pl/course_instance/1/instructor/question/2/settings`,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'update_question',
+            __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+            orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+            title: 'Second question',
+            qid: 'parent',
+            topic: 'Default',
+            grading_method: 'Internal',
+          }),
+        },
+      );
+
+      await assertEditError(response, 'would be a parent directory of the existing question');
+    },
+  );
 });

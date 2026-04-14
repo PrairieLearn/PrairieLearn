@@ -1,6 +1,5 @@
 import * as cheerio from 'cheerio';
-import { ElementType } from 'domelementtype';
-import type { Element } from 'domhandler';
+import { type Element, isTag } from 'domhandler';
 
 import { formatHtmlWithPrettier } from '../../../lib/prettier.js';
 
@@ -106,7 +105,7 @@ export async function stripHtmlForAiGrading(html: string) {
 
   // Filter out more irrelevant elements/attributes.
   $('*').each((_, el) => {
-    if (el.type !== ElementType.Tag) return;
+    if (!isTag(el)) return;
 
     // Remove elements that are hidden from screen readers.
     if (el.attribs['aria-hidden'] === 'true') {
@@ -122,7 +121,7 @@ export async function stripHtmlForAiGrading(html: string) {
 
   // Remove all elements that have no text content.
   $('*').each((_, el) => {
-    if (el.type !== ElementType.Tag) return;
+    if (!isTag(el)) return;
     if ($(el).text().trim() === '') {
       $(el).remove();
     }
