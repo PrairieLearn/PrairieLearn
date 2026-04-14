@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import type { Student } from '../../lib/canvas-matching.js';
 import { CanvasDownloadModal } from './components/CanvasDownloadModal.js';
 
 export interface Filenames {
@@ -29,12 +30,6 @@ export interface Filenames {
   scoresGroupAllCsvFilename?: string;
   pointsGroupCsvFilename?: string;
   pointsGroupAllCsvFilename?: string;
-}
-
-interface AssessmentPlStudent {
-  uid: string;
-  user_name: string | null;
-  uin: string | null;
 }
 
 function DownloadRow({
@@ -85,7 +80,7 @@ export function InstructorAssessmentDownloads({
   isMultipleInstance,
   isTeamWork,
   filenames,
-  plStudents,
+  students,
 }: {
   urlPrefix: string;
   assessmentId: string;
@@ -94,7 +89,7 @@ export function InstructorAssessmentDownloads({
   isMultipleInstance: boolean;
   isTeamWork: boolean;
   filenames: Filenames;
-  plStudents: AssessmentPlStudent[];
+  students: Student[];
 }) {
   const identity = isTeamWork ? 'group' : 'student';
   const downloadsBase = `${urlPrefix}/assessment/${assessmentId}/downloads/`;
@@ -103,12 +98,6 @@ export function InstructorAssessmentDownloads({
     filename: string;
     downloadUrl: string;
   } | null>(null);
-
-  const plStudentsMapped = plStudents.map((s) => ({
-    uid: s.uid,
-    userName: s.user_name,
-    uin: s.uin,
-  }));
 
   return (
     <>
@@ -371,7 +360,7 @@ export function InstructorAssessmentDownloads({
         <CanvasDownloadModal
           downloadUrl={canvasModal.downloadUrl}
           filename={canvasModal.filename}
-          plStudents={plStudentsMapped}
+          students={students}
           show
           onHide={() => setCanvasModal(null)}
         />

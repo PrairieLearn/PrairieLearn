@@ -409,9 +409,7 @@ LIMIT
 
 -- BLOCK select_assessment_students
 SELECT DISTINCT
-  ON (u.id) u.uid,
-  u.name AS user_name,
-  u.uin
+  ON (u.id) u.*
 FROM
   assessment_instances AS ai
   JOIN users AS u ON (u.id = ai.user_id)

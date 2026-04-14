@@ -380,18 +380,16 @@ router.get(
       course,
     });
 
-    const plStudents = await sqldb.queryRows(
-      sql.select_assessment_students,
-      {
-        assessment_id: assessment.id,
-        course_instance_id: course_instance.id,
-      },
-      z.object({
-        uid: UserSchema.shape.uid,
-        user_name: UserSchema.shape.name,
-        uin: UserSchema.shape.uin,
-      }),
-    );
+    const students = (
+      await sqldb.queryRows(
+        sql.select_assessment_students,
+        {
+          assessment_id: assessment.id,
+          course_instance_id: course_instance.id,
+        },
+        UserSchema,
+      )
+    ).map((u) => ({ uid: u.uid, userName: u.name, uin: u.uin }));
 
     res.send(
       PageLayout({
@@ -415,7 +413,7 @@ router.get(
               isMultipleInstance={assessment.multiple_instance}
               isTeamWork={assessment.team_work}
               filenames={filenames}
-              plStudents={plStudents}
+              students={students}
             />
           </Hydrate>
         ),

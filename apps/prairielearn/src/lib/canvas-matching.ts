@@ -17,7 +17,7 @@ export interface CanvasStudent {
   section: string;
 }
 
-export interface PlStudent {
+export interface Student {
   uid: string;
   userName: string | null;
   uin: string | null;
@@ -26,12 +26,12 @@ export interface PlStudent {
 export type MatchStrategy = 'uid' | 'uin' | 'name';
 
 export interface MatchedPair {
-  plStudent: PlStudent;
+  plStudent: Student;
   canvasStudent: CanvasStudent;
 }
 
 export interface AmbiguousMatch {
-  plStudent: PlStudent;
+  plStudent: Student;
   candidates: CanvasStudent[];
   selectedCanvasIndex: number | null;
 }
@@ -39,7 +39,7 @@ export interface AmbiguousMatch {
 export interface MatchResult {
   matched: MatchedPair[];
   ambiguous: AmbiguousMatch[];
-  unmatchedPl: PlStudent[];
+  unmatchedPl: Student[];
   unmatchedCanvas: CanvasStudent[];
 }
 
@@ -165,7 +165,7 @@ function nameVariants(name: string): Set<string> {
 // Matching strategies
 // --------------------------------------------------------------------------
 
-function matchByUid(plStudents: PlStudent[], canvasStudents: CanvasStudent[]): MatchResult {
+function matchByUid(plStudents: Student[], canvasStudents: CanvasStudent[]): MatchResult {
   return matchByKey(
     plStudents,
     canvasStudents,
@@ -187,7 +187,7 @@ function normalizeSisIdentifier(value: string): string {
   return trimmed;
 }
 
-function matchByUin(plStudents: PlStudent[], canvasStudents: CanvasStudent[]): MatchResult {
+function matchByUin(plStudents: Student[], canvasStudents: CanvasStudent[]): MatchResult {
   return matchByKey(
     plStudents,
     canvasStudents,
@@ -202,9 +202,9 @@ function matchByUin(plStudents: PlStudent[], canvasStudents: CanvasStudent[]): M
 }
 
 function matchByKey(
-  plStudents: PlStudent[],
+  plStudents: Student[],
   canvasStudents: CanvasStudent[],
-  plKeys: (pl: PlStudent) => string[],
+  plKeys: (pl: Student) => string[],
   canvasKeys: (c: CanvasStudent) => string[],
 ): MatchResult {
   const canvasByKey = new Map<string, CanvasStudent[]>();
@@ -221,7 +221,7 @@ function matchByKey(
 
   const matched: MatchedPair[] = [];
   const ambiguous: AmbiguousMatch[] = [];
-  const unmatchedPl: PlStudent[] = [];
+  const unmatchedPl: Student[] = [];
   const usedCanvas = new Set<CanvasStudent>();
 
   for (const pl of plStudents) {
@@ -256,7 +256,7 @@ function matchByKey(
   return { matched, ambiguous, unmatchedPl, unmatchedCanvas };
 }
 
-function matchByName(plStudents: PlStudent[], canvasStudents: CanvasStudent[]): MatchResult {
+function matchByName(plStudents: Student[], canvasStudents: CanvasStudent[]): MatchResult {
   const canvasNameMap = new Map<string, CanvasStudent[]>();
   for (const c of canvasStudents) {
     for (const variant of nameVariants(c.name)) {
@@ -268,7 +268,7 @@ function matchByName(plStudents: PlStudent[], canvasStudents: CanvasStudent[]): 
 
   const matched: MatchedPair[] = [];
   const ambiguous: AmbiguousMatch[] = [];
-  const unmatchedPl: PlStudent[] = [];
+  const unmatchedPl: Student[] = [];
   const usedCanvas = new Set<CanvasStudent>();
 
   for (const pl of plStudents) {
@@ -318,7 +318,7 @@ function scoreResult(result: MatchResult): number {
 }
 
 export function runAllStrategies(
-  plStudents: PlStudent[],
+  plStudents: Student[],
   canvasStudents: CanvasStudent[],
 ): StrategyResult[] {
   const strategies: { strategy: MatchStrategy; fn: typeof matchByUid }[] = [

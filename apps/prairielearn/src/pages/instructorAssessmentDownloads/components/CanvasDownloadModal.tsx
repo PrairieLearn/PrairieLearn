@@ -9,7 +9,7 @@ import {
   type CanvasMatchingState,
 } from '../../../components/CanvasMatchingPanel.js';
 import {
-  type PlStudent,
+  type Student,
   buildCanvasLookup,
   parseCanvasCsv,
   parseCsvRows,
@@ -20,7 +20,7 @@ interface CanvasDownloadModalProps {
   onHide: () => void;
   downloadUrl: string;
   filename: string;
-  plStudents: PlStudent[];
+  students: Student[];
 }
 
 export function CanvasDownloadModal({ show, ...rest }: CanvasDownloadModalProps) {
@@ -35,7 +35,7 @@ function CanvasDownloadModalContent({
   onHide,
   downloadUrl,
   filename,
-  plStudents,
+  students,
 }: Omit<CanvasDownloadModalProps, 'show'>) {
   const [matchingState, setMatchingState] = useState<CanvasMatchingState | null>(null);
   const [downloading, setDownloading] = useState(false);
@@ -101,7 +101,7 @@ function CanvasDownloadModalContent({
       </Modal.Header>
       <Modal.Body>
         <CanvasMatchingPanel
-          plStudents={plStudents}
+          students={students}
           matchingState={matchingState}
           onMatchingStateChange={setMatchingState}
         />

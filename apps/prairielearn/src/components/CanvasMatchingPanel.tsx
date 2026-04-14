@@ -10,7 +10,7 @@ import {
   type CanvasStudent,
   type MatchResult,
   type MatchStrategy,
-  type PlStudent,
+  type Student,
   type StrategyResult,
   parseCanvasCsv,
   runAllStrategies,
@@ -31,11 +31,11 @@ export interface CanvasMatchingState {
  * modals.
  */
 export function CanvasMatchingPanel({
-  plStudents,
+  students,
   matchingState,
   onMatchingStateChange,
 }: {
-  plStudents: PlStudent[];
+  students: Student[];
   matchingState: CanvasMatchingState | null;
   onMatchingStateChange: (state: CanvasMatchingState | null) => void;
 }) {
@@ -52,7 +52,7 @@ export function CanvasMatchingPanel({
       }
 
       const text = await file.text();
-      const { students, error } = parseCanvasCsv(text);
+      const { students: canvasStudents, error } = parseCanvasCsv(text);
 
       if (error) {
         setParseError(error);
@@ -60,7 +60,7 @@ export function CanvasMatchingPanel({
         return;
       }
 
-      if (students.length === 0) {
+      if (canvasStudents.length === 0) {
         setParseError('No student rows found in the uploaded CSV.');
         onMatchingStateChange(null);
         return;
@@ -68,17 +68,17 @@ export function CanvasMatchingPanel({
 
       setParseError(null);
 
-      const results = runAllStrategies(plStudents, students);
+      const results = runAllStrategies(students, canvasStudents);
       const best = results.reduce((a, b) => (b.score > a.score ? b : a));
 
       onMatchingStateChange({
-        canvasStudents: students,
+        canvasStudents,
         strategyResults: results,
         selectedStrategy: best.strategy,
         currentResult: best.result,
       });
     },
-    [plStudents, onMatchingStateChange],
+    [students, onMatchingStateChange],
   );
 
   const handleStrategyChange = useCallback(

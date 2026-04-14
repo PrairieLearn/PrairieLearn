@@ -2,7 +2,7 @@ import { assert, describe, it } from 'vitest';
 
 import {
   type CanvasStudent,
-  type PlStudent,
+  type Student,
   buildCanvasLookup,
   parseCanvasCsv,
   runAllStrategies,
@@ -76,7 +76,7 @@ describe('runAllStrategies', () => {
   ];
 
   it('matches by UID when SIS Login ID equals PL uid', () => {
-    const plStudents: PlStudent[] = [
+    const plStudents: Student[] = [
       { uid: 'jblock3430', userName: 'Jasen Block', uin: null },
       { uid: 'billy7670', userName: 'Billy Buckridge', uin: null },
     ];
@@ -89,7 +89,7 @@ describe('runAllStrategies', () => {
   });
 
   it('matches by name across formats', () => {
-    const plStudents: PlStudent[] = [
+    const plStudents: Student[] = [
       { uid: 'user1@test.edu', userName: 'Jasen Block', uin: null },
       { uid: 'user2@test.edu', userName: 'Billy Buckridge', uin: null },
     ];
@@ -100,7 +100,7 @@ describe('runAllStrategies', () => {
   });
 
   it('preserves strategy display order (uid, uin, name)', () => {
-    const plStudents: PlStudent[] = [
+    const plStudents: Student[] = [
       { uid: 'jblock3430', userName: 'Someone Else', uin: null },
       { uid: 'billy7670', userName: 'Another Person', uin: null },
     ];
@@ -130,7 +130,7 @@ describe('runAllStrategies', () => {
       },
     ];
 
-    const plStudents: PlStudent[] = [
+    const plStudents: Student[] = [
       { uid: 'jasen@school.edu', userName: 'Jasen Block', uin: '0658001234' },
       { uid: 'billy@school.edu', userName: 'Billy Buckridge', uin: '658005678' },
     ];
@@ -159,7 +159,7 @@ describe('runAllStrategies', () => {
       },
     ];
 
-    const plStudents: PlStudent[] = [
+    const plStudents: Student[] = [
       { uid: 'jasen@school.edu', userName: 'Jasen Block', uin: '658001234' },
       { uid: 'billy@school.edu', userName: 'Billy Buckridge', uin: '0658005678' },
     ];
@@ -181,7 +181,7 @@ describe('runAllStrategies', () => {
       },
     ];
 
-    const plStudents: PlStudent[] = [{ uid: 'jblock3430', userName: 'Jasen Block', uin: null }];
+    const plStudents: Student[] = [{ uid: 'jblock3430', userName: 'Jasen Block', uin: null }];
 
     const results = runAllStrategies(plStudents, canvasWithSisUser);
     const uidResult = results.find((r) => r.strategy === 'uid')!;
@@ -200,7 +200,7 @@ describe('runAllStrategies', () => {
       },
     ];
 
-    const plStudents: PlStudent[] = [{ uid: 'jblock3430', userName: 'Jasen Block', uin: null }];
+    const plStudents: Student[] = [{ uid: 'jblock3430', userName: 'Jasen Block', uin: null }];
 
     const results = runAllStrategies(plStudents, canvasDuplicate);
     const uidResult = results.find((r) => r.strategy === 'uid')!;
@@ -226,7 +226,7 @@ describe('runAllStrategies', () => {
       },
     ];
 
-    const plStudents: PlStudent[] = [
+    const plStudents: Student[] = [
       { uid: 'jblock3430', userName: 'Jasen Block', uin: null },
       { uid: 'billy7670', userName: 'Billy Buckridge', uin: null },
     ];
@@ -248,7 +248,7 @@ describe('runAllStrategies', () => {
       },
     ];
 
-    const plStudents: PlStudent[] = [
+    const plStudents: Student[] = [
       { uid: 'jasen@school.edu', userName: 'Jasen Block', uin: '658001234' },
     ];
 
@@ -259,7 +259,7 @@ describe('runAllStrategies', () => {
   });
 
   it('identifies unmatched PL students', () => {
-    const plStudents: PlStudent[] = [
+    const plStudents: Student[] = [
       { uid: 'nonexistent_user', userName: 'Nonexistent User', uin: null },
     ];
 

@@ -162,7 +162,7 @@ function CanvasCsvModalContent({
     [courseAssessments, selectedAssessmentIds],
   );
 
-  const plStudents = useMemo(
+  const students = useMemo(
     () =>
       rows
         .filter((row) => row.role === 'Student' && row.user_name != null)
@@ -274,7 +274,7 @@ function CanvasCsvModalContent({
         <hr />
 
         <CanvasMatchingPanel
-          plStudents={plStudents}
+          students={students}
           matchingState={matchingState}
           onMatchingStateChange={setMatchingState}
         />
