@@ -32,7 +32,7 @@ import {
 } from '../../lib/client/safe-db-types.js';
 import { getAssessmentInstanceTimeRemainingUrl } from '../../lib/client/url.js';
 import { EnumQuestionAccessModeSchema, type GroupConfig } from '../../lib/db-types.js';
-import type { GroupInfo } from '../../lib/groups.js';
+import type { GroupInfo } from '../../lib/groups.shared.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 
@@ -258,7 +258,9 @@ export function StudentAssessmentInstance({
             accessRules={accessRules}
             groupConfig={clientGroupConfig}
             groupInfo={clientGroupInfo}
-            hasCourseInstancePermissionEdit={resLocals.authz_data.has_course_instance_permission_edit}
+            hasCourseInstancePermissionEdit={
+              resLocals.authz_data.has_course_instance_permission_edit
+            }
             questionRows={questionRows}
             csrfToken={resLocals.__csrf_token}
             user={StudentUserSchema.parse(resLocals.authz_data.user)}
