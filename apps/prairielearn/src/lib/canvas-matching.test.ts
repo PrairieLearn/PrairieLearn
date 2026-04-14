@@ -99,15 +99,17 @@ describe('runAllStrategies', () => {
     assert.equal(nameResult.result.matched.length, 2);
   });
 
-  it('ranks the best strategy first', () => {
+  it('preserves strategy display order (uid, uin, name)', () => {
     const plStudents: PlStudent[] = [
       { uid: 'jblock3430', userName: 'Someone Else', uin: null },
       { uid: 'billy7670', userName: 'Another Person', uin: null },
     ];
 
     const results = runAllStrategies(plStudents, canvasStudents);
-    // UID should score highest since it matches exactly
-    assert.equal(results[0].strategy, 'uid');
+    assert.deepEqual(
+      results.map((r) => r.strategy),
+      ['uid', 'uin', 'name'],
+    );
   });
 
   it('matches by UIN against Canvas SIS User ID', () => {

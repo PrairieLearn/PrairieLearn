@@ -375,12 +375,10 @@ export function runAllStrategies(
     { strategy: 'name', fn: matchByName },
   ];
 
-  return strategies
-    .map(({ strategy, fn }) => {
-      const result = fn(plStudents, canvasStudents);
-      return { strategy, result, score: scoreResult(result) };
-    })
-    .sort((a, b) => b.score - a.score);
+  return strategies.map(({ strategy, fn }) => {
+    const result = fn(plStudents, canvasStudents);
+    return { strategy, result, score: scoreResult(result) };
+  });
 }
 
 export function strategyLabel(strategy: MatchStrategy): string {

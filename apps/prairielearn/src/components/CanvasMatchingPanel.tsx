@@ -69,7 +69,7 @@ export function CanvasMatchingPanel({
       setParseError(null);
 
       const results = runAllStrategies(plStudents, students);
-      const best = results[0];
+      const best = results.reduce((a, b) => (b.score > a.score ? b : a));
 
       onMatchingStateChange({
         canvasStudents: students,
