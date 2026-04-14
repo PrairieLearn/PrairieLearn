@@ -408,6 +408,8 @@ LIMIT
   1;
 
 -- BLOCK select_assessment_users
+-- A user can have multiple assessment instances (e.g. multi-instance exams),
+-- so dedupe to one row per user.
 SELECT DISTINCT
   ON (u.id) u.*,
   users_get_displayed_role (u.id, ci.id) AS role
