@@ -366,29 +366,22 @@ export function identifyChunksFromChangedFiles(
     questions: new Set(),
   };
 
+  const isInDir = (filePath: string, dir: string) => contains(`/${dir}`, `/${filePath}`);
+
   changedFiles.forEach((changedFile) => {
-    if (changedFile === 'elements' || changedFile.startsWith(`elements${path.sep}`)) {
+    if (isInDir(changedFile, 'elements')) {
       courseChunks.elements = true;
     }
-    if (
-      changedFile === 'elementExtensions' ||
-      changedFile.startsWith(`elementExtensions${path.sep}`)
-    ) {
+    if (isInDir(changedFile, 'elementExtensions')) {
       courseChunks.elementExtensions = true;
     }
-    if (
-      changedFile === 'serverFilesCourse' ||
-      changedFile.startsWith(`serverFilesCourse${path.sep}`)
-    ) {
+    if (isInDir(changedFile, 'serverFilesCourse')) {
       courseChunks.serverFilesCourse = true;
     }
-    if (
-      changedFile === 'clientFilesCourse' ||
-      changedFile.startsWith(`clientFilesCourse${path.sep}`)
-    ) {
+    if (isInDir(changedFile, 'clientFilesCourse')) {
       courseChunks.clientFilesCourse = true;
     }
-    if (changedFile === 'questions' || changedFile.startsWith(`questions${path.sep}`)) {
+    if (isInDir(changedFile, 'questions')) {
       // Here's where things get interesting. Questions can be nested in
       // directories, so we need to figure out which of the potentially
       // deeply-nested directories is the root of a particular question.
@@ -413,7 +406,7 @@ export function identifyChunksFromChangedFiles(
         courseChunks.questions.add(questionId);
       }
     }
-    if (changedFile === 'courseInstances' || changedFile.startsWith(`courseInstances${path.sep}`)) {
+    if (isInDir(changedFile, 'courseInstances')) {
       // This could be one of two things: `clientFilesCourseInstance` or
       // `clientFileAssessment`.
 
