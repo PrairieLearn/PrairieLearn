@@ -116,6 +116,10 @@ export function CanvasMatchingPanel({
     }
   }, [onMatchingStateChange]);
 
+  const hasAnyMatches = matchingState?.strategyResults.some(
+    (s) => s.result.matched.length > 0,
+  ) ?? false;
+
   return (
     <div>
       <h6>Canvas gradebook import (optional)</h6>
@@ -160,8 +164,10 @@ export function CanvasMatchingPanel({
             value={matchingState.selectedStrategy}
             onChange={handleStrategyChange}
           >
-            {matchingState.strategyResults.map((sr) => (
-              <Radio key={sr.strategy} value={sr.strategy}>
+            {matchingState.strategyResults.map((sr) => {
+              const disabled = hasAnyMatches && sr.result.matched.length === 0;
+              return (
+              <Radio key={sr.strategy} value={sr.strategy} isDisabled={disabled}>
                 <span className="d-inline-flex flex-column gap-1 min-w-0 justify-content-start">
                   <span>
                     {strategyLabel(sr.strategy)}{' '}
@@ -181,7 +187,8 @@ export function CanvasMatchingPanel({
                   </span>
                 </span>
               </Radio>
-            ))}
+              );
+            })}
           </RadioGroup>
 
           <MatchSummary result={matchingState.currentResult} />
