@@ -53,10 +53,13 @@ export interface StrategyResult {
 // CSV Parsing
 // --------------------------------------------------------------------------
 
-const REQUIRED_CANVAS_HEADERS = ['Student', 'ID', 'SIS User ID', 'SIS Login ID', 'Section'];
+const CANVAS_FIXED_HEADERS = ['Student', 'ID', 'SIS User ID', 'SIS Login ID', 'Section'] as const;
+const [NAME_IDX, ID_IDX, SIS_USER_IDX, SIS_LOGIN_IDX, SECTION_IDX] = CANVAS_FIXED_HEADERS.map(
+  (_, i) => i,
+);
 
 function validateCanvasHeaders(headers: string[]): string | null {
-  const missing = REQUIRED_CANVAS_HEADERS.filter((h) => !headers.includes(h));
+  const missing = CANVAS_FIXED_HEADERS.filter((h, i) => headers[i] !== h);
   if (missing.length > 0) {
     return `Missing required Canvas columns: ${missing.join(', ')}`;
   }
@@ -89,24 +92,18 @@ export function parseCanvasCsv(csvText: string): {
     return { students: [], error: headerError };
   }
 
-  const nameIdx = headers.indexOf('Student');
-  const idIdx = headers.indexOf('ID');
-  const sisUserIdx = headers.indexOf('SIS User ID');
-  const sisLoginIdx = headers.indexOf('SIS Login ID');
-  const sectionIdx = headers.indexOf('Section');
-
   const students: CanvasStudent[] = [];
   // Start from row 1; skip the "Points Possible" sentinel row if present.
   for (let i = 1; i < lines.length; i++) {
     const row = lines[i];
-    const name = row[nameIdx]?.trim() ?? '';
+    const name = row[NAME_IDX]?.trim() ?? '';
     if (!name || name === 'Points Possible' || name.startsWith('Points Possible')) continue;
     students.push({
       name,
-      id: row[idIdx]?.trim() ?? '',
-      sisUserId: row[sisUserIdx]?.trim() ?? '',
-      sisLoginId: row[sisLoginIdx]?.trim() ?? '',
-      section: row[sectionIdx]?.trim() ?? '',
+      id: row[ID_IDX]?.trim() ?? '',
+      sisUserId: row[SIS_USER_IDX]?.trim() ?? '',
+      sisLoginId: row[SIS_LOGIN_IDX]?.trim() ?? '',
+      section: row[SECTION_IDX]?.trim() ?? '',
     });
   }
 
