@@ -15,7 +15,6 @@ import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
 import { AssessmentInstanceSchema, type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import {
-  canUserAssignGroupRoles,
   getGroupConfig,
   getGroupInfo,
   getQuestionGroupPermissions,
@@ -297,11 +296,6 @@ router.get(
     // Get the group config info
     const groupConfig = await getGroupConfig(res.locals.assessment.id);
     const groupInfo = await getGroupInfo(res.locals.assessment_instance.team_id!, groupConfig);
-    const userCanAssignRoles =
-      groupConfig.has_roles &&
-      (canUserAssignGroupRoles(groupInfo, res.locals.user.id) ||
-        res.locals.authz_data.has_course_instance_permission_edit);
-
     if (groupConfig.has_roles) {
       // Get the role permissions. If the authorized user has course instance
       // permission, then role restrictions don't apply.
@@ -322,7 +316,6 @@ router.get(
         showTimeLimitExpiredModal,
         groupConfig,
         groupInfo,
-        userCanAssignRoles,
         userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
         resLocals: res.locals,
       }),

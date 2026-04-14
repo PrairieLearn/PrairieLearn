@@ -25,19 +25,19 @@ import {
   StudentAssessmentSetSchema,
   type StudentGroupConfig,
   StudentGroupConfigSchema,
-  StudentGroupRoleSchema,
   StudentInstanceQuestionSchema__UNSAFE,
   StudentQuestionSchema,
+  StudentUserSchema,
   StudentZoneSchema,
 } from '../../lib/client/safe-db-types.js';
 import { getAssessmentInstanceTimeRemainingUrl } from '../../lib/client/url.js';
 import { EnumQuestionAccessModeSchema, type GroupConfig } from '../../lib/db-types.js';
-import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.js';
+import type { GroupInfo } from '../../lib/groups.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 
 import { StudentAssessmentInstanceBody } from './components/StudentAssessmentInstanceBody.js';
-import type { StudentGroupInfo, StudentQuestionRow } from './components/types.js';
+import { StudentGroupInfoSchema, type StudentQuestionRow } from './components/types.js';
 
 const StudentAssessmentInstanceDataSchema = z
   .object({
@@ -88,7 +88,6 @@ export function StudentAssessmentInstance({
   showTimeLimitExpiredModal,
   groupConfig,
   groupInfo,
-  userCanAssignRoles,
   userCanDeleteAssessmentInstance,
   resLocals,
 }: {
@@ -104,21 +103,15 @@ export function StudentAssessmentInstance({
   | {
       groupConfig: GroupConfig;
       groupInfo: GroupInfo;
-      userCanAssignRoles: boolean;
     }
   | {
       groupConfig?: undefined;
       groupInfo?: undefined;
-      userCanAssignRoles?: undefined;
     }
 )) {
   const someQuestionsAllowRealTimeGrading = instance_question_rows.some(
     (q) => q.assessment_question.allow_real_time_grading,
   );
-
-  const userGroupRoles = groupInfo
-    ? getRoleNamesForUser(groupInfo, resLocals.authz_data.user).join(', ')
-    : null;
 
   // Map access rules to client-safe type.
   const accessRules: StudentAccessRule[] = resLocals.authz_result.access_rules.map((rule) =>
@@ -130,41 +123,7 @@ export function StudentAssessmentInstance({
     ? StudentGroupConfigSchema.parse(groupConfig)
     : null;
 
-  const clientGroupInfo: StudentGroupInfo | null = groupInfo
-    ? {
-        groupName: groupInfo.groupName,
-        joinCode: groupInfo.joinCode,
-        groupMembers: groupInfo.groupMembers.map((u) => ({ uid: u.uid, id: u.id })),
-        groupSize: groupInfo.groupSize,
-        rolesInfo: groupInfo.rolesInfo
-          ? {
-              roleAssignments: Object.fromEntries(
-                Object.entries(groupInfo.rolesInfo.roleAssignments).map(([uid, assignments]) => [
-                  uid,
-                  assignments.map((a) => ({
-                    roleName: a.role_name,
-                    teamRoleId: a.team_role_id,
-                  })),
-                ]),
-              ),
-              groupRoles: groupInfo.rolesInfo.groupRoles.map((r) => ({
-                ...StudentGroupRoleSchema.parse(r),
-                count: r.count,
-              })),
-              validationErrors: groupInfo.rolesInfo.validationErrors.map((r) => ({
-                ...StudentGroupRoleSchema.parse(r),
-                count: r.count,
-              })),
-              disabledRoles: groupInfo.rolesInfo.disabledRoles,
-              rolesAreBalanced: groupInfo.rolesInfo.rolesAreBalanced,
-              usersWithoutRoles: groupInfo.rolesInfo.usersWithoutRoles.map((u) => ({
-                uid: u.uid,
-                id: u.id,
-              })),
-            }
-          : undefined,
-      }
-    : null;
+  const clientGroupInfo = groupInfo ? StudentGroupInfoSchema.parse(groupInfo) : null;
 
   // Map rows to client-safe type with scoring data (no db-types.ts references).
   const isGroupAssessment = groupConfig != null;
@@ -299,11 +258,10 @@ export function StudentAssessmentInstance({
             accessRules={accessRules}
             groupConfig={clientGroupConfig}
             groupInfo={clientGroupInfo}
-            userCanAssignRoles={userCanAssignRoles ?? false}
+            hasCourseInstancePermissionEdit={resLocals.authz_data.has_course_instance_permission_edit}
             questionRows={questionRows}
             csrfToken={resLocals.__csrf_token}
-            userGroupRoles={userGroupRoles}
-            isGroupAssessment={isGroupAssessment}
+            user={StudentUserSchema.parse(resLocals.authz_data.user)}
             showTimeLimitExpiredModal={showTimeLimitExpiredModal}
           />
         </Hydrate>

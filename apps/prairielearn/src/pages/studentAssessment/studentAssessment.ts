@@ -8,7 +8,6 @@ import { markdownToHtml } from '@prairielearn/markdown';
 import { makeAssessmentInstance } from '../../lib/assessment.js';
 import {
   GroupOperationError,
-  canUserAssignGroupRoles,
   createGroup,
   getGroupConfig,
   getGroupId,
@@ -17,6 +16,7 @@ import {
   leaveGroup,
   updateGroupRoles,
 } from '../../lib/groups.js';
+import { canUserAssignGroupRoles } from '../../lib/groups.shared.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getClientFingerprintId } from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
@@ -111,7 +111,7 @@ router.get(
     const userCanAssignRoles =
       groupInfo != null &&
       groupConfig.has_roles &&
-      (canUserAssignGroupRoles(groupInfo, res.locals.user.id) ||
+      (canUserAssignGroupRoles(groupInfo.rolesInfo?.groupRoles, groupInfo.rolesInfo?.roleAssignments, res.locals.user.id) ||
         res.locals.authz_data.has_course_instance_permission_edit);
 
     res.send(

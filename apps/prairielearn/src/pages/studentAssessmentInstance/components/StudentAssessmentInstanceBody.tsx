@@ -6,6 +6,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import { Scorebar } from '../../../components/Scorebar.js';
 import type { StudentAccessRule } from '../../../lib/client/safe-db-types.js';
 import { formatPoints } from '../../../lib/format.js';
+import { getRoleNamesForUser } from '../../../lib/groups.shared.js';
 
 import { ExamFooterContent } from './ExamFooterContent.js';
 import { GroupWorkInfoContainer } from './GroupWorkInfoContainer.js';
@@ -29,11 +30,10 @@ export function StudentAssessmentInstanceBody({
   accessRules,
   groupConfig,
   groupInfo,
-  userCanAssignRoles,
+  hasCourseInstancePermissionEdit,
   questionRows,
   csrfToken,
-  userGroupRoles,
-  isGroupAssessment,
+  user,
   showTimeLimitExpiredModal,
 }: StudentAssessmentInstanceBodyProps) {
   const [showConfirmFinish, setShowConfirmFinish] = useState(false);
@@ -205,7 +205,8 @@ export function StudentAssessmentInstanceBody({
                 <GroupWorkInfoContainer
                   groupConfig={groupConfig}
                   groupInfo={groupInfo}
-                  userCanAssignRoles={userCanAssignRoles}
+                  user={user}
+                  hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
                   csrfToken={csrfToken}
                 />
               </div>
@@ -252,7 +253,7 @@ export function StudentAssessmentInstanceBody({
                 assessmentInstanceOpen={assessmentInstanceOpen}
                 zoneTitleColspan={zoneTitleColspan}
                 courseInstanceId={assessment.course_instance_id}
-                userGroupRoles={userGroupRoles}
+                userGroupRoles={groupInfo?.rolesInfo ? getRoleNamesForUser(groupInfo.rolesInfo.roleAssignments, user.uid).join(', ') : null}
                 isLockpointCrossable={isLockpointCrossable}
                 hasUnmetAdvanceScorePercBeforeLockpoint={hasUnmetAdvanceScorePercBeforeLockpoint}
                 onCrossLockpoint={(zoneId) => {
@@ -298,7 +299,7 @@ export function StudentAssessmentInstanceBody({
       <CrossLockpointModal
         show={activeLockpointZoneId != null}
         zoneId={activeLockpointZoneId}
-        isGroupAssessment={isGroupAssessment}
+        isGroupAssessment={groupConfig != null}
         confirmed={lockpointConfirmed}
         csrfToken={csrfToken}
         onHide={() => setActiveLockpointZoneId(null)}

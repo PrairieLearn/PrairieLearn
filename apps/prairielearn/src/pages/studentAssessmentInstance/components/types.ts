@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import {
   type StudentAccessRule,
   type StudentAssessment,
@@ -5,8 +7,11 @@ import {
   type StudentAssessmentInstanceAuthzResult,
   type StudentAssessmentSet,
   type StudentGroupConfig,
-  type StudentGroupRole,
+  StudentGroupRoleWithCountSchema,
+  type StudentUser,
+  StudentUserSchema,
 } from '../../../lib/client/safe-db-types.js';
+import { RoleAssignmentSchema } from '../../../lib/groups.shared.js';
 
 // Client-safe row type for the hydrated component. This mirrors the fields
 // from InstanceQuestionRow that the client actually needs, without pulling
@@ -69,25 +74,23 @@ export interface GradingConfig {
 }
 
 // Client-safe group work info for the hydrated component.
-export interface StudentGroupRoleAssignment {
-  roleName: string;
-  teamRoleId: string;
-}
+const StudentRolesInfoSchema = z.object({
+  roleAssignments: z.record(z.array(RoleAssignmentSchema)),
+  groupRoles: z.array(StudentGroupRoleWithCountSchema),
+  validationErrors: z.array(StudentGroupRoleWithCountSchema),
+  disabledRoles: z.array(z.string()),
+  rolesAreBalanced: z.boolean(),
+  usersWithoutRoles: z.array(StudentUserSchema),
+});
 
-export interface StudentGroupInfo {
-  groupName: string;
-  joinCode: string;
-  groupMembers: { uid: string; id: string }[];
-  groupSize: number;
-  rolesInfo?: {
-    roleAssignments: Record<string, StudentGroupRoleAssignment[]>;
-    groupRoles: (StudentGroupRole & { count: number })[];
-    validationErrors: (StudentGroupRole & { count: number })[];
-    disabledRoles: string[];
-    rolesAreBalanced: boolean;
-    usersWithoutRoles: { uid: string; id: string }[];
-  };
-}
+export const StudentGroupInfoSchema = z.object({
+  groupName: z.string(),
+  joinCode: z.string(),
+  groupMembers: z.array(StudentUserSchema),
+  groupSize: z.number(),
+  rolesInfo: StudentRolesInfoSchema.optional(),
+});
+export type StudentGroupInfo = z.infer<typeof StudentGroupInfoSchema>;
 
 export interface StudentAssessmentInstanceBodyProps {
   assessment: StudentAssessment;
@@ -101,12 +104,11 @@ export interface StudentAssessmentInstanceBodyProps {
   accessRules: StudentAccessRule[];
   groupConfig: StudentGroupConfig | null;
   groupInfo: StudentGroupInfo | null;
-  userCanAssignRoles: boolean;
+  hasCourseInstancePermissionEdit: boolean;
 
   questionRows: StudentQuestionRow[];
 
   csrfToken: string;
-  userGroupRoles: string | null;
-  isGroupAssessment: boolean;
+  user: StudentUser;
   showTimeLimitExpiredModal: boolean;
 }

@@ -15,7 +15,7 @@
  * you should use the branded schema for type safety.
  */
 
-import { type z } from 'zod';
+import { z } from 'zod';
 
 import {
   AccessTokenSchema as RawAccessTokenSchema,
@@ -402,6 +402,13 @@ export const RawStudentGroupRoleSchema = RawGroupRoleSchema.pick({
 });
 export const StudentGroupRoleSchema = RawStudentGroupRoleSchema.brand<'StudentGroupRole'>();
 export type StudentGroupRole = z.infer<typeof StudentGroupRoleSchema>;
+
+export const RawStudentGroupRoleWithCountSchema = RawStudentGroupRoleSchema.extend({
+  count: z.number(),
+});
+export const StudentGroupRoleWithCountSchema =
+  RawStudentGroupRoleWithCountSchema.brand<'StudentGroupRoleWithCount'>();
+export type StudentGroupRoleWithCount = z.infer<typeof StudentGroupRoleWithCountSchema>;
 
 /** Instance Question Groups */
 export const RawStaffInstanceQuestionGroupSchema = RawInstanceQuestionGroupSchema;

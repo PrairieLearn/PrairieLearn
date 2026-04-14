@@ -1,21 +1,32 @@
 import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
-import type { StudentGroupConfig } from '../../../lib/client/safe-db-types.js';
+import type { StudentGroupConfig, StudentUser } from '../../../lib/client/safe-db-types.js';
+import { canUserAssignGroupRoles } from '../../../lib/groups.shared.js';
 
 import type { StudentGroupInfo } from './types.js';
 
 export function GroupWorkInfoContainer({
   groupConfig,
   groupInfo,
-  userCanAssignRoles,
+  user,
+  hasCourseInstancePermissionEdit,
   csrfToken,
 }: {
   groupConfig: StudentGroupConfig;
   groupInfo: StudentGroupInfo;
-  userCanAssignRoles: boolean;
+  user: StudentUser;
+  hasCourseInstancePermissionEdit: boolean;
   csrfToken: string;
 }) {
+  const userCanAssignRoles =
+    groupConfig.has_roles &&
+    (canUserAssignGroupRoles(
+      groupInfo.rolesInfo?.groupRoles,
+      groupInfo.rolesInfo?.roleAssignments,
+      user.id,
+    ) ||
+      hasCourseInstancePermissionEdit);
   return (
     <>
       <div className="container-fluid">
@@ -63,7 +74,7 @@ export function GroupWorkInfoContainer({
               {groupInfo.groupMembers.map((user) => (
                 <li key={user.uid}>
                   {groupConfig.has_roles
-                    ? `${user.uid} - ${groupInfo.rolesInfo?.roleAssignments[user.uid]?.map((a) => a.roleName).join(', ') || 'No role assigned'}`
+                    ? `${user.uid} - ${groupInfo.rolesInfo?.roleAssignments[user.uid]?.map((a) => a.role_name).join(', ') || 'No role assigned'}`
                     : user.uid}
                 </li>
               ))}
@@ -202,7 +213,7 @@ function GroupRoleTable({
                                 }
                                 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- index access may be undefined at runtime
                                 defaultChecked={rolesInfo.roleAssignments[user.uid]?.some(
-                                  (a) => a.teamRoleId === role.id,
+                                  (a) => a.team_role_id === role.id,
                                 )}
                               />
                               {role.role_name}
