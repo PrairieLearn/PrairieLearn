@@ -4,7 +4,7 @@ import { formatInterval } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import type { ClientQuestionRow } from './types.js';
+import type { StudentQuestionRow } from './types.js';
 
 type QuestionStatus =
   | 'unanswered'
@@ -29,7 +29,7 @@ export function ExamQuestionStatus({
   row,
   realTimeGradingPartiallyDisabled,
 }: {
-  row: ClientQuestionRow;
+  row: StudentQuestionRow;
   realTimeGradingPartiallyDisabled: boolean;
 }) {
   if (row.questionAccessMode === 'blocked_lockpoint') {

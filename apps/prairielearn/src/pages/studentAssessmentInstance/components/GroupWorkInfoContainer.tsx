@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
-import type { ClientGroupConfig, ClientGroupInfo } from './types.js';
+import type { StudentGroupConfig } from '../../../lib/client/safe-db-types.js';
+
+import type { StudentGroupInfo } from './types.js';
 
 export function GroupWorkInfoContainer({
   groupConfig,
@@ -9,8 +11,8 @@ export function GroupWorkInfoContainer({
   userCanAssignRoles,
   csrfToken,
 }: {
-  groupConfig: ClientGroupConfig;
-  groupInfo: ClientGroupInfo;
+  groupConfig: StudentGroupConfig;
+  groupInfo: StudentGroupInfo;
   userCanAssignRoles: boolean;
   csrfToken: string;
 }) {
@@ -22,7 +24,7 @@ export function GroupWorkInfoContainer({
             <div>
               <strong>Group name:</strong> <span id="group-name">{groupInfo.groupName}</span>
             </div>
-            {groupConfig.studentAuthzJoin && (
+            {groupConfig.student_authz_join && (
               <>
                 <div>
                   <strong>Join code:</strong> <span id="join-code">{groupInfo.joinCode}</span>
@@ -53,14 +55,14 @@ export function GroupWorkInfoContainer({
             )}
           </div>
           <div className="col-sm bg-light py-4 px-4 border">
-            {groupConfig.studentAuthzLeave && <LeaveGroupButton csrfToken={csrfToken} />}
+            {groupConfig.student_authz_leave && <LeaveGroupButton csrfToken={csrfToken} />}
             <span id="group-member">
               <b>Group members: </b>
             </span>
             <ul className="list-unstyled mb-0">
               {groupInfo.groupMembers.map((user) => (
                 <li key={user.uid}>
-                  {groupConfig.hasRoles
+                  {groupConfig.has_roles
                     ? `${user.uid} - ${groupInfo.rolesInfo?.roleAssignments[user.uid]?.map((a) => a.roleName).join(', ') || 'No role assigned'}`
                     : user.uid}
                 </li>
@@ -69,7 +71,7 @@ export function GroupWorkInfoContainer({
           </div>
         </div>
       </div>
-      {groupConfig.hasRoles && groupInfo.rolesInfo && (
+      {groupConfig.has_roles && groupInfo.rolesInfo && (
         <GroupRoleTable
           groupInfo={groupInfo}
           userCanAssignRoles={userCanAssignRoles}
@@ -123,7 +125,7 @@ function GroupRoleTable({
   userCanAssignRoles,
   csrfToken,
 }: {
-  groupInfo: ClientGroupInfo;
+  groupInfo: StudentGroupInfo;
   userCanAssignRoles: boolean;
   csrfToken: string;
 }) {
@@ -188,14 +190,14 @@ function GroupRoleTable({
                           {rolesInfo.groupRoles.map((role) => (
                             <label
                               key={role.id}
-                              className={`d-inline-flex gap-1 ${rolesInfo.disabledRoles.includes(role.roleName) ? 'text-muted' : ''}`}
+                              className={`d-inline-flex gap-1 ${rolesInfo.disabledRoles.includes(role.role_name) ? 'text-muted' : ''}`}
                             >
                               <input
                                 type="checkbox"
                                 id={`user_role_${role.id}-${user.id}`}
                                 name={`user_role_${role.id}-${user.id}`}
                                 disabled={
-                                  rolesInfo.disabledRoles.includes(role.roleName) ||
+                                  rolesInfo.disabledRoles.includes(role.role_name) ||
                                   !userCanAssignRoles
                                 }
                                 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- index access may be undefined at runtime
@@ -203,7 +205,7 @@ function GroupRoleTable({
                                   (a) => a.teamRoleId === role.id,
                                 )}
                               />
-                              {role.roleName}
+                              {role.role_name}
                             </label>
                           ))}
                         </div>
@@ -241,10 +243,10 @@ function GroupRoleTable({
               <tbody>
                 {rolesInfo.groupRoles.map((groupRole) => (
                   <tr key={groupRole.id}>
-                    <td>{groupRole.roleName}</td>
+                    <td>{groupRole.role_name}</td>
                     <td>{groupRole.minimum ?? 0}</td>
                     <td>{groupRole.maximum ?? 'Unlimited'}</td>
-                    <td>{groupRole.canAssignRoles ? 'Yes' : 'No'}</td>
+                    <td>{groupRole.can_assign_roles ? 'Yes' : 'No'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -260,7 +262,7 @@ function GroupRoleErrors({
   rolesInfo,
   groupSize,
 }: {
-  rolesInfo: NonNullable<ClientGroupInfo['rolesInfo']>;
+  rolesInfo: NonNullable<StudentGroupInfo['rolesInfo']>;
   groupSize: number;
 }) {
   return (
@@ -271,17 +273,17 @@ function GroupRoleErrors({
           student must be assigned to exactly <strong>one</strong> role.
         </div>
       )}
-      {rolesInfo.validationErrors.map(({ roleName, count, minimum, maximum }) => (
-        <div key={roleName} className="alert alert-danger" role="alert">
+      {rolesInfo.validationErrors.map(({ role_name, count, minimum, maximum }) => (
+        <div key={role_name} className="alert alert-danger" role="alert">
           {minimum != null && count < minimum ? (
             <>
               {minimum - count} more {minimum - count === 1 ? 'student needs' : 'students need'} to
-              be assigned to the role &quot;{roleName}&quot;
+              be assigned to the role &quot;{role_name}&quot;
             </>
           ) : maximum != null && count > maximum ? (
             <>
               {count - maximum} less {count - maximum === 1 ? 'student needs' : 'students need'} to
-              be assigned to the role &quot;{roleName}&quot;
+              be assigned to the role &quot;{role_name}&quot;
             </>
           ) : null}
           {maximum === minimum ? (
