@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { getInstanceQuestionUrl } from '../../../lib/client/url.js';
 
-import type { ClientVariantWithScore } from './types.js';
+import type { StudentVariantWithScore } from './types.js';
 
 export function QuestionVariantHistory({
   instanceQuestionId,
@@ -10,7 +10,7 @@ export function QuestionVariantHistory({
   courseInstanceId,
 }: {
   instanceQuestionId: string;
-  previousVariants: ClientVariantWithScore[] | null;
+  previousVariants: StudentVariantWithScore[] | null;
   courseInstanceId: string;
 }) {
   const [expanded, setExpanded] = useState(false);

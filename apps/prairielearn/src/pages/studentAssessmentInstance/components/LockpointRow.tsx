@@ -1,4 +1,4 @@
-import type { ClientQuestionRow } from './types.js';
+import type { StudentQuestionRow } from './types.js';
 
 export function LockpointRow({
   row,
@@ -7,7 +7,7 @@ export function LockpointRow({
   blockedByAdvanceScorePerc,
   onCrossLockpoint,
 }: {
-  row: ClientQuestionRow;
+  row: StudentQuestionRow;
   colspan: number;
   crossable: boolean;
   blockedByAdvanceScorePerc: boolean;

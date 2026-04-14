@@ -114,7 +114,7 @@ export const QuestionPreferenceValuesSchema = z.record(
 // *******************************************************************************
 
 // Result of check_assessment_access sproc
-const SprocCheckAssessmentAccessSchema = z.object({
+export const SprocCheckAssessmentAccessSchema = z.object({
   active: z.boolean().nullable(),
   credit: z.union([z.string(), z.literal('None')]),
   end_date: z.union([z.string(), z.literal('—')]),
@@ -156,6 +156,7 @@ export const SprocAuthzAssessmentSchema = z.object({
   show_closed_assessment_score: z.boolean(),
   time_limit_min: z.number().nullable(),
 });
+export type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 
 // Result of authz_assessment_instance sproc
 export const SprocAuthzAssessmentInstanceSchema = z.object({
@@ -176,6 +177,7 @@ export const SprocAuthzAssessmentInstanceSchema = z.object({
   time_limit_expired: z.boolean(),
   time_limit_min: z.number().nullable(),
 });
+export type SprocAuthzAssessmentInstance = z.infer<typeof SprocAuthzAssessmentInstanceSchema>;
 
 // Result of users_is_instructor_in_course_instance sproc
 export const SprocUsersIsInstructorInCourseInstanceSchema = z.object({

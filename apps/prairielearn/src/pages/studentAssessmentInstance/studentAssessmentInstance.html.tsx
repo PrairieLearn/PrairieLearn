@@ -17,10 +17,15 @@ import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   RawStudentAssessmentInstanceSchema__UNSAFE,
+  type StudentAccessRule,
+  StudentAccessRuleSchema,
   StudentAssessmentInstanceAuthzResultSchema,
   StudentAssessmentQuestionSchema,
   StudentAssessmentSchema,
   StudentAssessmentSetSchema,
+  type StudentGroupConfig,
+  StudentGroupConfigSchema,
+  StudentGroupRoleSchema,
   StudentInstanceQuestionSchema__UNSAFE,
   StudentQuestionSchema,
   StudentZoneSchema,
@@ -32,13 +37,7 @@ import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 
 import { StudentAssessmentInstanceBody } from './components/StudentAssessmentInstanceBody.js';
-import {
-  type ClientAccessRule,
-  type ClientAccessTimelineEntry,
-  type ClientGroupConfig,
-  type ClientGroupInfo,
-  type ClientQuestionRow,
-} from './components/types.js';
+import type { StudentGroupInfo, StudentQuestionRow } from './components/types.js';
 
 const StudentAssessmentInstanceDataSchema = z
   .object({
@@ -122,11 +121,9 @@ export function StudentAssessmentInstance({
     : null;
 
   // Map access rules to client-safe type.
-  const accessRules: ClientAccessRule[] = resLocals.authz_result.access_rules.map((rule) => ({
-    credit: rule.credit,
-    startDate: rule.start_date,
-    endDate: rule.end_date,
-  }));
+  const accessRules: StudentAccessRule[] = resLocals.authz_result.access_rules.map((rule) =>
+    StudentAccessRuleSchema.parse(rule),
+  );
 
   // Map access timeline to client-safe type (Date objects become ISO strings via Hydrate).
   const accessTimeline: ClientAccessTimelineEntry[] = resLocals.authz_result.access_timeline.map(
@@ -139,17 +136,11 @@ export function StudentAssessmentInstance({
   );
 
   // Map group config/info to client-safe types.
-  const clientGroupConfig: ClientGroupConfig | null = groupConfig
-    ? {
-        studentAuthzJoin: groupConfig.student_authz_join,
-        studentAuthzLeave: groupConfig.student_authz_leave,
-        hasRoles: groupConfig.has_roles,
-        minimum: groupConfig.minimum,
-        maximum: groupConfig.maximum,
-      }
+  const clientGroupConfig: StudentGroupConfig | null = groupConfig
+    ? StudentGroupConfigSchema.parse(groupConfig)
     : null;
 
-  const clientGroupInfo: ClientGroupInfo | null = groupInfo
+  const clientGroupInfo: StudentGroupInfo | null = groupInfo
     ? {
         groupName: groupInfo.groupName,
         joinCode: groupInfo.joinCode,
@@ -167,19 +158,11 @@ export function StudentAssessmentInstance({
                 ]),
               ),
               groupRoles: groupInfo.rolesInfo.groupRoles.map((r) => ({
-                id: r.id,
-                roleName: r.role_name,
-                minimum: r.minimum,
-                maximum: r.maximum,
-                canAssignRoles: r.can_assign_roles,
+                ...StudentGroupRoleSchema.parse(r),
                 count: r.count,
               })),
               validationErrors: groupInfo.rolesInfo.validationErrors.map((r) => ({
-                id: r.id,
-                roleName: r.role_name,
-                minimum: r.minimum,
-                maximum: r.maximum,
-                canAssignRoles: r.can_assign_roles,
+                ...StudentGroupRoleSchema.parse(r),
                 count: r.count,
               })),
               disabledRoles: groupInfo.rolesInfo.disabledRoles,
@@ -200,7 +183,7 @@ export function StudentAssessmentInstance({
   // only shows max points per question — redact actual scored values so they
   // aren't leaked in the hydration payload.
   const redactScores = !someQuestionsAllowRealTimeGrading && assessmentInstanceOpen;
-  const questionRows: ClientQuestionRow[] = instance_question_rows.map((row) => ({
+  const questionRows: StudentQuestionRow[] = instance_question_rows.map((row) => ({
     id: row.instance_question.id,
     startNewZone: row.start_new_zone,
     zoneId: row.zone.id,

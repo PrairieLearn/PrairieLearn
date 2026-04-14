@@ -6,6 +6,8 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import { TimezoneContext } from '../../../components/FriendlyDate.js';
 import { Scorebar } from '../../../components/Scorebar.js';
 import { StudentAccessTimelinePopover } from '../../../components/StudentAccessRulesPopover.js';
+import type { AccessTimelineEntry } from '../../../lib/assessment-access-control/resolver.js';
+import type { StudentAccessRule } from '../../../lib/client/safe-db-types.js';
 import { formatPoints } from '../../../lib/format.js';
 
 import { ExamFooterContent } from './ExamFooterContent.js';
@@ -13,11 +15,9 @@ import { GroupWorkInfoContainer } from './GroupWorkInfoContainer.js';
 import { QuestionTableBody } from './QuestionTableBody.js';
 import { ConfirmFinishModal, CrossLockpointModal, TimeLimitExpiredModal } from './modals.js';
 import type {
-  ClientAccessRule,
-  ClientAccessTimelineEntry,
-  ClientQuestionRow,
   GradingConfig,
   StudentAssessmentInstanceBodyProps,
+  StudentQuestionRow,
 } from './types.js';
 
 StudentAssessmentInstanceBody.displayName = 'StudentAssessmentInstanceBody';
@@ -125,7 +125,7 @@ export function StudentAssessmentInstanceBody({
         (row.zoneNumber < zoneNumber || (row.zoneNumber === zoneNumber && row.startNewZone)),
     );
 
-  function isLockpointCrossable(row: ClientQuestionRow): boolean {
+  function isLockpointCrossable(row: StudentQuestionRow): boolean {
     return (
       assessmentInstanceOpen &&
       active &&
@@ -338,8 +338,8 @@ function AssessmentStatus({
   active: boolean;
   creditDateString: string | null;
   modernAccessControl: boolean;
-  accessRules: ClientAccessRule[];
-  accessTimeline: ClientAccessTimelineEntry[];
+  accessRules: StudentAccessRule[];
+  accessTimeline: AccessTimelineEntry[];
 }) {
   if (assessmentInstanceOpen && active) {
     return (
@@ -514,7 +514,7 @@ function InstanceQuestionTableHeader({
   );
 }
 
-function StudentAccessRulesPopover({ accessRules }: { accessRules: ClientAccessRule[] }) {
+function StudentAccessRulesPopover({ accessRules }: { accessRules: StudentAccessRule[] }) {
   return (
     <OverlayTrigger
       trigger="click"
@@ -531,10 +531,10 @@ function StudentAccessRulesPopover({ accessRules }: { accessRules: ClientAccessR
             </thead>
             <tbody>
               {accessRules.map((rule) => (
-                <tr key={`${rule.credit}-${rule.startDate}-${rule.endDate}`}>
+                <tr key={`${rule.credit}-${rule.start_date}-${rule.end_date}`}>
                   <td>{rule.credit}</td>
-                  <td>{rule.startDate}</td>
-                  <td>{rule.endDate}</td>
+                  <td>{rule.start_date}</td>
+                  <td>{rule.end_date}</td>
                 </tr>
               ))}
             </tbody>

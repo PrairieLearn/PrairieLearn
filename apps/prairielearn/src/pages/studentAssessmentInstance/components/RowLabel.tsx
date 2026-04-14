@@ -4,7 +4,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 
 import { getInstanceQuestionUrl } from '../../../lib/client/url.js';
 
-import type { ClientQuestionRow } from './types.js';
+import type { StudentQuestionRow } from './types.js';
 
 export function RowLabel({
   row,
@@ -13,7 +13,7 @@ export function RowLabel({
   courseInstanceId,
   hasStatusColumn,
 }: {
-  row: ClientQuestionRow;
+  row: StudentQuestionRow;
   userGroupRoles: string | null;
   rowLabelText: string;
   courseInstanceId: string;

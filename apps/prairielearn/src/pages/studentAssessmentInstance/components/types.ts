@@ -1,14 +1,18 @@
+import type { AccessTimelineEntry } from '../../../lib/assessment-access-control/resolver.js';
 import {
+  type StudentAccessRule,
   type StudentAssessment,
   type StudentAssessmentInstance,
   type StudentAssessmentInstanceAuthzResult,
   type StudentAssessmentSet,
+  type StudentGroupConfig,
+  type StudentGroupRole,
 } from '../../../lib/client/safe-db-types.js';
 
 // Client-safe row type for the hydrated component. This mirrors the fields
 // from InstanceQuestionRow that the client actually needs, without pulling
 // in db-types.ts schemas that the safe-db-types lint rule forbids.
-export interface ClientQuestionRow {
+export interface StudentQuestionRow {
   id: string;
   startNewZone: boolean;
   zoneId: string;
@@ -49,10 +53,10 @@ export interface ClientQuestionRow {
   pointsList: number[] | null;
   highestSubmissionScore: number | null;
   currentValue: number | null;
-  previousVariants: ClientVariantWithScore[] | null;
+  previousVariants: StudentVariantWithScore[] | null;
 }
 
-export interface ClientVariantWithScore {
+export interface StudentVariantWithScore {
   id: string;
   open: boolean | null;
   maxSubmissionScore: number;
@@ -65,53 +69,21 @@ export interface GradingConfig {
   someQuestionsForbidRealTimeGrading: boolean;
 }
 
-// Client-safe access rule for the popover.
-export interface ClientAccessRule {
-  credit: string;
-  startDate: string;
-  endDate: string;
-}
-
-// Serialized form of AccessTimelineEntry (Date objects become ISO strings via Hydrate).
-export interface ClientAccessTimelineEntry {
-  credit: number;
-  startDate: string | null;
-  endDate: string | null;
-  active: boolean;
-}
-
 // Client-safe group work info for the hydrated component.
-export interface ClientGroupConfig {
-  studentAuthzJoin: boolean | null;
-  studentAuthzLeave: boolean | null;
-  hasRoles: boolean;
-  minimum: number | null;
-  maximum: number | null;
-}
-
-export interface ClientGroupRoleAssignment {
+export interface StudentGroupRoleAssignment {
   roleName: string;
   teamRoleId: string;
 }
 
-export interface ClientGroupRole {
-  id: string;
-  roleName: string;
-  minimum: number | null;
-  maximum: number | null;
-  canAssignRoles: boolean | null;
-  count: number;
-}
-
-export interface ClientGroupInfo {
+export interface StudentGroupInfo {
   groupName: string;
   joinCode: string;
   groupMembers: { uid: string; id: string }[];
   groupSize: number;
   rolesInfo?: {
-    roleAssignments: Record<string, ClientGroupRoleAssignment[]>;
-    groupRoles: ClientGroupRole[];
-    validationErrors: ClientGroupRole[];
+    roleAssignments: Record<string, StudentGroupRoleAssignment[]>;
+    groupRoles: (StudentGroupRole & { count: number })[];
+    validationErrors: (StudentGroupRole & { count: number })[];
     disabledRoles: string[];
     rolesAreBalanced: boolean;
     usersWithoutRoles: { uid: string; id: string }[];
@@ -127,14 +99,14 @@ export interface StudentAssessmentInstanceBodyProps {
   authzResult: StudentAssessmentInstanceAuthzResult;
 
   assessmentTextHtml: string | null;
-  accessRules: ClientAccessRule[];
-  accessTimeline: ClientAccessTimelineEntry[];
+  accessRules: StudentAccessRule[];
+  accessTimeline: AccessTimelineEntry[];
   displayTimezone: string;
-  groupConfig: ClientGroupConfig | null;
-  groupInfo: ClientGroupInfo | null;
+  groupConfig: StudentGroupConfig | null;
+  groupInfo: StudentGroupInfo | null;
   userCanAssignRoles: boolean;
 
-  questionRows: ClientQuestionRow[];
+  questionRows: StudentQuestionRow[];
 
   csrfToken: string;
   userGroupRoles: string | null;

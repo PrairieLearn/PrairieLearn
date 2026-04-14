@@ -21,6 +21,7 @@ import {
   StaffTopicSchema,
   StaffUserSchema,
   StaffZoneSchema,
+  StudentAccessRuleSchema,
   StudentAssessmentInstanceAuthzResultSchema,
   StudentAssessmentInstanceSchema__UNSAFE,
   StudentAssessmentQuestionSchema,
@@ -28,6 +29,8 @@ import {
   StudentAssessmentSetSchema,
   StudentCourseInstanceSchema,
   StudentCourseSchema,
+  StudentGroupConfigSchema,
+  StudentGroupRoleSchema,
   StudentInstanceQuestionSchema__UNSAFE,
   StudentQuestionSchema,
   StudentUserSchema,
@@ -582,6 +585,28 @@ const minimalStudentQuestion: z.input<typeof StudentQuestionSchema> = {
   title: null,
 };
 
+const minimalStudentAccessRule: z.input<typeof StudentAccessRuleSchema> = {
+  credit: '100%',
+  end_date: '2025-12-31T23:59:59',
+  start_date: '2025-01-01T00:00:00',
+};
+
+const minimalStudentGroupConfig: z.input<typeof StudentGroupConfigSchema> = {
+  has_roles: false,
+  maximum: null,
+  minimum: null,
+  student_authz_join: true,
+  student_authz_leave: true,
+};
+
+const minimalStudentGroupRole: z.input<typeof StudentGroupRoleSchema> = {
+  can_assign_roles: null,
+  id: '1',
+  maximum: null,
+  minimum: null,
+  role_name: 'Manager',
+};
+
 describe('safe-db-types schemas', () => {
   it('parses valid StaffCourse and drops extra fields', () => {
     const parsed = StaffCourseSchema.parse({ ...minimalStaffCourse, extra: 123 });
@@ -787,5 +812,23 @@ describe('safe-db-types schemas', () => {
     const parsed = StudentQuestionSchema.parse({ ...minimalStudentQuestion, extra: 123 });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).toMatchObject(minimalStudentQuestion);
+  });
+
+  it('parses valid StudentAccessRule and drops extra fields', () => {
+    const parsed = StudentAccessRuleSchema.parse({ ...minimalStudentAccessRule, extra: 123 });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStudentAccessRule);
+  });
+
+  it('parses valid StudentGroupConfig and drops extra fields', () => {
+    const parsed = StudentGroupConfigSchema.parse({ ...minimalStudentGroupConfig, extra: 123 });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStudentGroupConfig);
+  });
+
+  it('parses valid StudentGroupRole and drops extra fields', () => {
+    const parsed = StudentGroupRoleSchema.parse({ ...minimalStudentGroupRole, extra: 123 });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStudentGroupRole);
   });
 });

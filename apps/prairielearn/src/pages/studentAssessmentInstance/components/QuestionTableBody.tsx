@@ -11,7 +11,7 @@ import { ExamQuestionStatus } from './ExamQuestionStatus.js';
 import { LockpointRow } from './LockpointRow.js';
 import { QuestionVariantHistory } from './QuestionVariantHistory.js';
 import { RowLabel } from './RowLabel.js';
-import type { ClientQuestionRow, GradingConfig } from './types.js';
+import type { GradingConfig, StudentQuestionRow } from './types.js';
 
 export function QuestionTableBody({
   questionRows,
@@ -25,14 +25,14 @@ export function QuestionTableBody({
   hasUnmetAdvanceScorePercBeforeLockpoint,
   onCrossLockpoint,
 }: {
-  questionRows: ClientQuestionRow[];
+  questionRows: StudentQuestionRow[];
   assessmentType: string;
   gradingConfig: GradingConfig;
   assessmentInstanceOpen: boolean;
   zoneTitleColspan: number;
   courseInstanceId: string;
   userGroupRoles: string | null;
-  isLockpointCrossable: (row: ClientQuestionRow) => boolean;
+  isLockpointCrossable: (row: StudentQuestionRow) => boolean;
   hasUnmetAdvanceScorePercBeforeLockpoint: (zoneNumber: number) => boolean;
   onCrossLockpoint: (zoneId: string) => void;
 }) {
@@ -160,7 +160,7 @@ function ExamQuestionCells({
   realTimeGradingPartiallyDisabled,
   assessmentInstanceOpen,
 }: {
-  row: ClientQuestionRow;
+  row: StudentQuestionRow;
   gradingConfig: GradingConfig;
   realTimeGradingPartiallyDisabled: boolean;
   assessmentInstanceOpen: boolean;
@@ -214,7 +214,7 @@ function HomeworkQuestionCells({
   gradingConfig: { hasAutoGradingQuestion, hasManualGradingQuestion },
   courseInstanceId,
 }: {
-  row: ClientQuestionRow;
+  row: StudentQuestionRow;
   gradingConfig: GradingConfig;
   courseInstanceId: string;
 }) {
@@ -259,7 +259,7 @@ function InstanceQuestionPoints({
   row,
   component,
 }: {
-  row: ClientQuestionRow;
+  row: StudentQuestionRow;
   component: 'manual' | 'auto' | 'total';
 }) {
   const points =

@@ -2,9 +2,9 @@ import { OverlayTrigger } from '@prairielearn/ui';
 
 import { formatPoints, formatPointsOrList } from '../../../lib/format.js';
 
-import type { ClientQuestionRow } from './types.js';
+import type { StudentQuestionRow } from './types.js';
 
-export function ExamQuestionAvailablePoints({ row }: { row: ClientQuestionRow }) {
+export function ExamQuestionAvailablePoints({ row }: { row: StudentQuestionRow }) {
   if (!row.maxAutoPoints) {
     return <>&mdash;</>;
   }

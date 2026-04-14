@@ -32,6 +32,8 @@ import {
   CourseInstanceSchema as RawCourseInstanceSchema,
   CourseSchema as RawCourseSchema,
   EnrollmentSchema as RawEnrollmentSchema,
+  GroupConfigSchema as RawGroupConfigSchema,
+  GroupRoleSchema as RawGroupRoleSchema,
   InstanceQuestionGroupSchema as RawInstanceQuestionGroupSchema,
   InstanceQuestionSchema as RawInstanceQuestionSchema,
   InstitutionSchema as RawInstitutionSchema,
@@ -39,6 +41,7 @@ import {
   RubricItemSchema as RawRubricItemSchema,
   RubricSchema as RawRubricSchema,
   SprocAuthzAssessmentInstanceSchema as RawSprocAuthzAssessmentInstanceSchema,
+  SprocCheckAssessmentAccessSchema as RawSprocCheckAssessmentAccessSchema,
   StudentLabelSchema as RawStudentLabelSchema,
   TagSchema as RawTagSchema,
   TopicSchema as RawTopicSchema,
@@ -169,6 +172,15 @@ export const StudentAssessmentInstanceAuthzResultSchema =
 export type StudentAssessmentInstanceAuthzResult = z.infer<
   typeof StudentAssessmentInstanceAuthzResultSchema
 >;
+
+/** Access Rules (sproc result) */
+export const RawStudentAccessRuleSchema = RawSprocCheckAssessmentAccessSchema.pick({
+  credit: true,
+  end_date: true,
+  start_date: true,
+});
+export const StudentAccessRuleSchema = RawStudentAccessRuleSchema.brand<'StudentAccessRule'>();
+export type StudentAccessRule = z.infer<typeof StudentAccessRuleSchema>;
 
 /** Assessment Modules */
 
@@ -369,6 +381,28 @@ export const RawStudentEnrollmentSchema = RawStaffEnrollmentSchema.pick({
 });
 export const StudentEnrollmentSchema = RawStudentEnrollmentSchema.brand<'StudentEnrollment'>();
 export type StudentEnrollment = z.infer<typeof StudentEnrollmentSchema>;
+
+/** Group Configs */
+export const RawStudentGroupConfigSchema = RawGroupConfigSchema.pick({
+  has_roles: true,
+  maximum: true,
+  minimum: true,
+  student_authz_join: true,
+  student_authz_leave: true,
+});
+export const StudentGroupConfigSchema = RawStudentGroupConfigSchema.brand<'StudentGroupConfig'>();
+export type StudentGroupConfig = z.infer<typeof StudentGroupConfigSchema>;
+
+/** Group Roles */
+export const RawStudentGroupRoleSchema = RawGroupRoleSchema.pick({
+  can_assign_roles: true,
+  id: true,
+  maximum: true,
+  minimum: true,
+  role_name: true,
+});
+export const StudentGroupRoleSchema = RawStudentGroupRoleSchema.brand<'StudentGroupRole'>();
+export type StudentGroupRole = z.infer<typeof StudentGroupRoleSchema>;
 
 /** Instance Question Groups */
 export const RawStaffInstanceQuestionGroupSchema = RawInstanceQuestionGroupSchema;
