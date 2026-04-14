@@ -31,7 +31,7 @@ export interface Filenames {
   pointsGroupAllCsvFilename?: string;
 }
 
-export interface AssessmentPlStudent {
+interface AssessmentPlStudent {
   uid: string;
   user_name: string | null;
   uin: string | null;

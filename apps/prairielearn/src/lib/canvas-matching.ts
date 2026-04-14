@@ -54,7 +54,7 @@ export interface StrategyResult {
 
 const REQUIRED_CANVAS_HEADERS = ['Student', 'ID', 'SIS User ID', 'SIS Login ID', 'Section'];
 
-export function validateCanvasHeaders(headers: string[]): string | null {
+function validateCanvasHeaders(headers: string[]): string | null {
   const missing = REQUIRED_CANVAS_HEADERS.filter((h) => !headers.includes(h));
   if (missing.length > 0) {
     return `Missing required Canvas columns: ${missing.join(', ')}`;
