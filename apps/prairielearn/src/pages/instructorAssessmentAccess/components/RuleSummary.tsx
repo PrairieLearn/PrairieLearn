@@ -8,7 +8,6 @@ import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
 
 import {
   type AfterLastDeadlineValue,
-  DATE_CONTROL_FIELD_NAMES,
   type DeadlineEntry,
   type MainRuleData,
   type OverridableFieldName,
@@ -38,148 +37,122 @@ interface DateTableRow {
   error?: string;
 }
 
-export function generateDateTableRows(
-  rule: RuleData,
+export function generateMainRuleDateTableRows(
+  rule: MainRuleData,
   displayTimezone: string,
   formErrors?: RuleFormErrors,
 ): DateTableRow[] {
+  if (!rule.dateControlEnabled) return [];
+
   const rows: DateTableRow[] = [];
 
-  // For main rule: check dateControlEnabled flag
-  // For override: check if any date field is overridden
-  const isMain = isMainRuleData(rule);
-  const isDateControlEnabled = isMain
-    ? rule.dateControlEnabled
-    : DATE_CONTROL_FIELD_NAMES.some((f) => isOverrideFieldActive(rule, f));
+  const releaseDate = rule.releaseDate;
+  const dueDate = rule.dueDate;
+  const earlyDeadlines = rule.earlyDeadlines;
+  const lateDeadlines = rule.lateDeadlines;
 
-  if (isDateControlEnabled) {
-    const releaseDate = rule.releaseDate;
-    const dueDate = rule.dueDate;
-    const earlyDeadlines = rule.earlyDeadlines;
-    const lateDeadlines = rule.lateDeadlines;
+  // Build rows in logical order: release, early deadlines, due date, late deadlines.
+  const afterLastDeadline = rule.afterLastDeadline;
 
-    // Build rows in logical order: release, early deadlines, due date, late deadlines.
-    const afterLastDeadline = rule.afterLastDeadline;
-
-    if (releaseDate) {
-      rows.push({
-        date: (
-          <FriendlyDate
-            date={Temporal.PlainDateTime.from(releaseDate)}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-            tooltip
-          />
-        ),
-        label: 'Release',
-        credit: '—',
-      });
-    }
-
-    earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
-      const dateErr = formErrors?.earlyDeadlines?.[index]?.date?.message;
-      const creditErr = formErrors?.earlyDeadlines?.[index]?.credit?.message;
-      rows.push({
-        date: deadline.date ? (
-          <FriendlyDate
-            date={Temporal.PlainDateTime.from(deadline.date)}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-            tooltip
-          />
-        ) : (
-          'No date set'
-        ),
-        label: `Early ${index + 1}`,
-        credit: `${deadline.credit}%`,
-        error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
-      });
+  if (releaseDate) {
+    rows.push({
+      date: (
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(releaseDate)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+          tooltip
+        />
+      ),
+      label: 'Release',
+      credit: '—',
     });
+  }
 
-    if (dueDate) {
-      rows.push({
-        date: (
-          <FriendlyDate
-            date={Temporal.PlainDateTime.from(dueDate)}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-            tooltip
-          />
-        ),
-        label: 'Due',
-        credit: '100%',
-        error: formErrors?.dueDate?.message,
-      });
-    } else if (dueDate === null) {
-      rows.push({
-        date: 'No due date',
-        label: 'Due',
-        credit: '100%',
-      });
-    } else {
-      // dueDate is an empty string — "Due on date" selected but no date entered
-      rows.push({
-        date: 'No date set',
-        label: 'Due',
-        credit: '100%',
-        error: formErrors?.dueDate?.message,
-      });
-    }
-
-    lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
-      const dateErr = formErrors?.lateDeadlines?.[index]?.date?.message;
-      const creditErr = formErrors?.lateDeadlines?.[index]?.credit?.message;
-      rows.push({
-        date: deadline.date ? (
-          <FriendlyDate
-            date={Temporal.PlainDateTime.from(deadline.date)}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-            tooltip
-          />
-        ) : (
-          'No date set'
-        ),
-        label: `Late ${index + 1}`,
-        credit: `${deadline.credit}%`,
-        error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
-      });
+  earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+    const dateErr = formErrors?.earlyDeadlines?.[index]?.date?.message;
+    const creditErr = formErrors?.earlyDeadlines?.[index]?.credit?.message;
+    rows.push({
+      date: deadline.date ? (
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(deadline.date)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+          tooltip
+        />
+      ) : (
+        'No date set'
+      ),
+      label: `Early ${index + 1}`,
+      credit: `${deadline.credit}%`,
+      error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
     });
+  });
 
-    // Show "After last deadline" only when there is a deadline it can apply to.
-    const hasAnyDeadline = rule.dueDate || rule.lateDeadlines.some((d) => d.date);
-
-    if (hasAnyDeadline) {
-      rows.push({
-        date: '',
-        label: 'After last deadline',
-        credit: afterLastDeadline?.allowSubmissions
-          ? afterLastDeadline.credit != null
-            ? `${afterLastDeadline.credit}%`
-            : 'Practice'
-          : 'Closed',
-        error: (formErrors?.afterLastDeadline as FieldErrors<{ credit: number }> | undefined)
-          ?.credit?.message,
-      });
-    }
+  if (dueDate) {
+    rows.push({
+      date: (
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(dueDate)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+          tooltip
+        />
+      ),
+      label: 'Due',
+      credit: '100%',
+      error: formErrors?.dueDate?.message,
+    });
+  } else if (dueDate === null) {
+    rows.push({
+      date: 'No due date',
+      label: 'Due',
+      credit: '100%',
+    });
   } else {
-    // No date control — still show "After last deadline" if configured.
-    const afterLastDeadline = rule.afterLastDeadline;
-    const hasAnyDeadline = rule.dueDate || rule.lateDeadlines.some((d) => d.date);
+    // dueDate is an empty string — "Due on date" selected but no date entered
+    rows.push({
+      date: 'No date set',
+      label: 'Due',
+      credit: '100%',
+      error: formErrors?.dueDate?.message,
+    });
+  }
 
-    if (hasAnyDeadline) {
-      rows.push({
-        date: '',
-        label: 'After last deadline',
-        credit: afterLastDeadline?.allowSubmissions
-          ? afterLastDeadline.credit != null
-            ? `${afterLastDeadline.credit}%`
-            : 'Practice'
-          : 'Closed',
-        error: (formErrors?.afterLastDeadline as FieldErrors<{ credit: number }> | undefined)
-          ?.credit?.message,
-      });
-    }
+  lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+    const dateErr = formErrors?.lateDeadlines?.[index]?.date?.message;
+    const creditErr = formErrors?.lateDeadlines?.[index]?.credit?.message;
+    rows.push({
+      date: deadline.date ? (
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(deadline.date)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+          tooltip
+        />
+      ) : (
+        'No date set'
+      ),
+      label: `Late ${index + 1}`,
+      credit: `${deadline.credit}%`,
+      error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
+    });
+  });
+
+  // Show "After last deadline" only when there is a deadline it can apply to.
+  const hasAnyDeadline = rule.dueDate || rule.lateDeadlines.some((d) => d.date);
+
+  if (hasAnyDeadline) {
+    rows.push({
+      date: '',
+      label: 'After last deadline',
+      credit: afterLastDeadline?.allowSubmissions
+        ? afterLastDeadline.credit != null
+          ? `${afterLastDeadline.credit}%`
+          : 'Practice'
+        : 'Closed',
+      error: formErrors?.afterLastDeadline?.credit?.message,
+    });
   }
 
   return rows;
@@ -494,8 +467,7 @@ function generateOverrideFieldItems(
     items.push({
       label: 'After last deadline',
       value: formatAfterLastDeadline(rule.afterLastDeadline),
-      error: (formErrors?.afterLastDeadline as FieldErrors<{ credit: number }> | undefined)?.credit
-        ?.message,
+      error: formErrors?.afterLastDeadline?.credit?.message,
     });
   }
 
