@@ -111,7 +111,11 @@ router.get(
     const userCanAssignRoles =
       groupInfo != null &&
       groupConfig.has_roles &&
-      (canUserAssignGroupRoles(groupInfo.rolesInfo?.groupRoles, groupInfo.rolesInfo?.roleAssignments, res.locals.user.id) ||
+      (canUserAssignGroupRoles(
+        groupInfo.rolesInfo?.groupRoles,
+        groupInfo.rolesInfo?.roleAssignments,
+        res.locals.user.id,
+      ) ||
         res.locals.authz_data.has_course_instance_permission_edit);
 
     res.send(

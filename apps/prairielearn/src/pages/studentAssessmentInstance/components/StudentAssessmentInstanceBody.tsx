@@ -253,7 +253,11 @@ export function StudentAssessmentInstanceBody({
                 assessmentInstanceOpen={assessmentInstanceOpen}
                 zoneTitleColspan={zoneTitleColspan}
                 courseInstanceId={assessment.course_instance_id}
-                userGroupRoles={groupInfo?.rolesInfo ? getRoleNamesForUser(groupInfo.rolesInfo.roleAssignments, user.uid).join(', ') : null}
+                userGroupRoles={
+                  groupInfo?.rolesInfo
+                    ? getRoleNamesForUser(groupInfo.rolesInfo.roleAssignments, user.uid).join(', ')
+                    : null
+                }
                 isLockpointCrossable={isLockpointCrossable}
                 hasUnmetAdvanceScorePercBeforeLockpoint={hasUnmetAdvanceScorePercBeforeLockpoint}
                 onCrossLockpoint={(zoneId) => {
