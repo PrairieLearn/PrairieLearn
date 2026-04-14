@@ -679,7 +679,7 @@ def create_table_for_html_display(
         )
         if suffix is not None:
             display_array += (
-                f'<td rowspan="0">&nbsp;{suffix}</td>'
+                f'<td rowspan="0">&nbsp;{escape(suffix)}</td>'
             )
         if score_message:
             display_array += f'<td rowspan="0">&nbsp;{score_message}</td>'
