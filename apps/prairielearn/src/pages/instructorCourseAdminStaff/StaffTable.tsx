@@ -13,6 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+import clsx from 'clsx';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useMemo, useRef, useState } from 'react';
 import { Button, ButtonGroup, Modal } from 'react-bootstrap';
@@ -141,7 +142,11 @@ function CoursePermissionCell({
   if (!canChangeCourseRole) {
     return (
       <span
-        className={`btn btn-sm bg-${courseRoleColor(currentRole)}-subtle text-${courseRoleColor(currentRole)}-emphasis disabled`}
+        className={clsx(
+          'btn btn-sm disabled',
+          `bg-${courseRoleColor(currentRole)}-subtle`,
+          `text-${courseRoleColor(currentRole)}-emphasis`,
+        )}
         style={{ width: 110 }}
       >
         {currentRole}
@@ -210,7 +215,12 @@ function CoursePermissionCell({
     >
       <button
         type="button"
-        className={`btn btn-sm bg-${courseRoleColor(currentRole)}-subtle text-${courseRoleColor(currentRole)}-emphasis ${currentRole === 'None' ? 'btn-outline-dark' : ''} dropdown-toggle`}
+        className={clsx(
+          'btn btn-sm dropdown-toggle',
+          `bg-${courseRoleColor(currentRole)}-subtle`,
+          `text-${courseRoleColor(currentRole)}-emphasis`,
+          currentRole === 'None' && 'btn-outline-dark',
+        )}
         style={{ width: 110 }}
       >
         {currentRole}
@@ -340,7 +350,12 @@ function CourseInstanceAccessCell({
     >
       <button
         type="button"
-        className={`btn btn-sm bg-${instanceRoleColor(currentRole)}-subtle text-${instanceRoleColor(currentRole)}-emphasis ${currentRole === 'None' ? 'btn-outline-dark' : ''} dropdown-toggle`}
+        className={clsx(
+          'btn btn-sm dropdown-toggle',
+          `bg-${instanceRoleColor(currentRole)}-subtle`,
+          `text-${instanceRoleColor(currentRole)}-emphasis`,
+          currentRole === 'None' && 'btn-outline-dark',
+        )}
         style={{ width: 90 }}
       >
         {INSTANCE_ROLE_LABELS[currentRole]}
