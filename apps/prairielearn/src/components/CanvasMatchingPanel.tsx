@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { useCallback, useRef, useState } from 'react';
 import Alert from 'react-bootstrap/Alert';
 import Form from 'react-bootstrap/Form';
@@ -168,7 +169,9 @@ export function CanvasMatchingPanel({
               const disabled = hasAnyMatches && sr.result.matched.length === 0;
               return (
               <Radio key={sr.strategy} value={sr.strategy} isDisabled={disabled}>
-                <span className="d-inline-flex flex-column gap-1 min-w-0 justify-content-start">
+                <span
+                  className={clsx('d-inline-flex flex-column gap-1 min-w-0 justify-content-start', disabled && 'text-secondary')}
+                >
                   <span>
                     {strategyLabel(sr.strategy)}{' '}
                     <OverlayTrigger
