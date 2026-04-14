@@ -337,6 +337,7 @@ As shown in the table, all functions (except for `render`) accept a single argum
 | `test_type`             | `str`   | The type of test being run in the [`test()` function](#testing-questions-with-test).                                                                                |
 | `answers_names`         | `dict`  | A dictionary whose keys list the names of the answers in the question.                                                                                              |
 | `panel`                 | `str`   | Which panel is being rendered (`question`, `submission`, or `answer`).                                                                                              |
+| `correct_answer_shown`  | `bool`  | Whether the answer panel is being rendered (for use when rendering other panels).                                                                                   |
 | `editable`              | `bool`  | Whether the question is currently in an editable state.                                                                                                             |
 | `num_valid_submissions` | `int`   | The number of valid (not containing format errors) submissions by the student for the current variant.                                                              |
 | `manual_grading`        | `bool`  | Whether manual-grading content should be shown. This is `true` in the manual grading view, and also for question and answer panels when rendered for AI grading.    |
@@ -366,6 +367,7 @@ Each field in the `data` dictionary is either stored **per-variant** (shared acr
 | `test_type`             | None (not saved) | Only in `test()`.                               |
 | `answers_names`         | None (not saved) | Only in `prepare()`.                            |
 | `panel`                 | None (not saved) | Only in `render()`.                             |
+| `correct_answer_shown`  | None (not saved) | Only in `render()`.                             |
 | `editable`              | None (not saved) | Only in `render()`.                             |
 | `num_valid_submissions` | None (not saved) | Only in `render()`.                             |
 | `manual_grading`        | None (not saved) | Only in `render()`.                             |

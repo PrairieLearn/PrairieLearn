@@ -8,7 +8,6 @@ import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
 
 import {
   type AfterLastDeadlineValue,
-  DATE_CONTROL_FIELD_NAMES,
   type DeadlineEntry,
   type MainRuleData,
   type OverridableFieldName,
@@ -38,138 +37,122 @@ interface DateTableRow {
   error?: string;
 }
 
-export function generateDateTableRows(
-  rule: RuleData,
+export function generateMainRuleDateTableRows(
+  rule: MainRuleData,
   displayTimezone: string,
   formErrors?: RuleFormErrors,
 ): DateTableRow[] {
+  if (!rule.dateControlEnabled) return [];
+
   const rows: DateTableRow[] = [];
 
-  // For main rule: check dateControlEnabled flag
-  // For override: check if any date field is overridden
-  const isMain = isMainRuleData(rule);
-  const isDateControlEnabled = isMain
-    ? rule.dateControlEnabled
-    : DATE_CONTROL_FIELD_NAMES.some((f) => isOverrideFieldActive(rule, f));
+  const releaseDate = rule.releaseDate;
+  const dueDate = rule.dueDate;
+  const earlyDeadlines = rule.earlyDeadlines;
+  const lateDeadlines = rule.lateDeadlines;
 
-  if (isDateControlEnabled) {
-    const releaseDate = rule.releaseDate;
-    const dueDate = rule.dueDate;
-    const earlyDeadlines = rule.earlyDeadlines;
-    const lateDeadlines = rule.lateDeadlines;
+  // Build rows in logical order: release, early deadlines, due date, late deadlines.
+  const afterLastDeadline = rule.afterLastDeadline;
 
-    // Build rows in logical order: release, early deadlines, due date, late deadlines.
-    const afterLastDeadline = rule.afterLastDeadline;
-
-    if (releaseDate) {
-      rows.push({
-        date: (
-          <FriendlyDate
-            date={Temporal.PlainDateTime.from(releaseDate)}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-            tooltip
-          />
-        ),
-        label: 'Release',
-        credit: '—',
-      });
-    }
-
-    earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
-      const dateErr = formErrors?.earlyDeadlines?.[index]?.date?.message;
-      const creditErr = formErrors?.earlyDeadlines?.[index]?.credit?.message;
-      rows.push({
-        date: deadline.date ? (
-          <FriendlyDate
-            date={Temporal.PlainDateTime.from(deadline.date)}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-            tooltip
-          />
-        ) : (
-          'No date set'
-        ),
-        label: `Early ${index + 1}`,
-        credit: `${deadline.credit}%`,
-        error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
-      });
+  if (releaseDate) {
+    rows.push({
+      date: (
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(releaseDate)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+          tooltip
+        />
+      ),
+      label: 'Release',
+      credit: '—',
     });
+  }
 
-    if (dueDate) {
-      rows.push({
-        date: (
-          <FriendlyDate
-            date={Temporal.PlainDateTime.from(dueDate)}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-            tooltip
-          />
-        ),
-        label: 'Due',
-        credit: '100%',
-        error: formErrors?.dueDate?.message,
-      });
-    } else if (dueDate === null) {
-      rows.push({
-        date: 'No due date',
-        label: 'Due',
-        credit: '100%',
-      });
-    } else {
-      // dueDate is an empty string — "Due on date" selected but no date entered
-      rows.push({
-        date: 'No date set',
-        label: 'Due',
-        credit: '100%',
-        error: formErrors?.dueDate?.message,
-      });
-    }
-
-    lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
-      const dateErr = formErrors?.lateDeadlines?.[index]?.date?.message;
-      const creditErr = formErrors?.lateDeadlines?.[index]?.credit?.message;
-      rows.push({
-        date: deadline.date ? (
-          <FriendlyDate
-            date={Temporal.PlainDateTime.from(deadline.date)}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-            tooltip
-          />
-        ) : (
-          'No date set'
-        ),
-        label: `Late ${index + 1}`,
-        credit: `${deadline.credit}%`,
-        error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
-      });
+  earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+    const dateErr = formErrors?.earlyDeadlines?.[index]?.date?.message;
+    const creditErr = formErrors?.earlyDeadlines?.[index]?.credit?.message;
+    rows.push({
+      date: deadline.date ? (
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(deadline.date)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+          tooltip
+        />
+      ) : (
+        'No date set'
+      ),
+      label: `Early ${index + 1}`,
+      credit: `${deadline.credit}%`,
+      error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
     });
+  });
 
-    // Show "After last deadline" only when there is a deadline it can apply to.
-    const hasAnyDeadline = rule.dueDate || rule.lateDeadlines.some((d) => d.date);
-
-    if (hasAnyDeadline) {
-      rows.push({
-        date: '',
-        label: 'After last deadline',
-        credit: afterLastDeadline?.allowSubmissions ? `${afterLastDeadline.credit ?? 0}%` : '—',
-        error: formErrors?.afterLastDeadline?.credit?.message,
-      });
-    }
+  if (dueDate) {
+    rows.push({
+      date: (
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(dueDate)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+          tooltip
+        />
+      ),
+      label: 'Due',
+      credit: '100%',
+      error: formErrors?.dueDate?.message,
+    });
+  } else if (dueDate === null) {
+    rows.push({
+      date: 'No due date',
+      label: 'Due',
+      credit: '100%',
+    });
   } else {
-    // No date control — still show "After last deadline" if configured.
-    const afterLastDeadline = rule.afterLastDeadline;
-    const hasAnyDeadline = rule.dueDate || rule.lateDeadlines.some((d) => d.date);
+    // dueDate is an empty string — "Due on date" selected but no date entered
+    rows.push({
+      date: 'No date set',
+      label: 'Due',
+      credit: '100%',
+      error: formErrors?.dueDate?.message,
+    });
+  }
 
-    if (hasAnyDeadline) {
-      rows.push({
-        date: '',
-        label: 'After last deadline',
-        credit: afterLastDeadline?.allowSubmissions ? `${afterLastDeadline.credit ?? 0}%` : '—',
-        error: formErrors?.afterLastDeadline?.credit?.message,
-      });
-    }
+  lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+    const dateErr = formErrors?.lateDeadlines?.[index]?.date?.message;
+    const creditErr = formErrors?.lateDeadlines?.[index]?.credit?.message;
+    rows.push({
+      date: deadline.date ? (
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(deadline.date)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+          tooltip
+        />
+      ) : (
+        'No date set'
+      ),
+      label: `Late ${index + 1}`,
+      credit: `${deadline.credit}%`,
+      error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
+    });
+  });
+
+  // Show "After last deadline" only when there is a deadline it can apply to.
+  const hasAnyDeadline = rule.dueDate || rule.lateDeadlines.some((d) => d.date);
+
+  if (hasAnyDeadline) {
+    rows.push({
+      date: '',
+      label: 'After last deadline',
+      credit: afterLastDeadline?.allowSubmissions
+        ? afterLastDeadline.credit != null
+          ? `${afterLastDeadline.credit}%`
+          : 'Practice'
+        : 'Closed',
+      error: formErrors?.afterLastDeadline?.credit?.message,
+    });
   }
 
   return rows;
@@ -258,17 +241,17 @@ export function generateRuleSummary(
   if ((showAfterComplete || qvNonDefault) && isOverrideFieldActive(rule, 'questionVisibility')) {
     const qv = rule.questionVisibility;
     const qvError =
-      formErrors?.questionVisibility?.showAgainDate?.message ||
-      formErrors?.questionVisibility?.hideAgainDate?.message ||
+      formErrors?.questionVisibility?.visibleFromDate?.message ||
+      formErrors?.questionVisibility?.visibleUntilDate?.message ||
       formErrors?.questionVisibility?.message;
-    if (!qv.hideQuestions) {
+    if (!qv.hidden) {
       items.push({
         key: 'question-visibility',
         icon: 'bi-eye',
         text: 'Questions visible after completion',
         error: qvError,
       });
-    } else if (qv.showAgainDate && qv.hideAgainDate) {
+    } else if (qv.visibleFromDate && qv.visibleUntilDate) {
       items.push({
         key: 'question-visibility',
         icon: 'bi-eye-slash',
@@ -276,14 +259,14 @@ export function generateRuleSummary(
           <>
             Questions hidden after completion, shown{' '}
             <FriendlyDate
-              date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+              date={Temporal.PlainDateTime.from(qv.visibleFromDate)}
               timezone={displayTimezone}
               options={{ includeTz: false }}
               tooltip
             />
             {' – '}
             <FriendlyDate
-              date={Temporal.PlainDateTime.from(qv.hideAgainDate)}
+              date={Temporal.PlainDateTime.from(qv.visibleUntilDate)}
               timezone={displayTimezone}
               options={{ includeTz: false }}
               tooltip
@@ -292,7 +275,7 @@ export function generateRuleSummary(
         ),
         error: qvError,
       });
-    } else if (qv.showAgainDate) {
+    } else if (qv.visibleFromDate) {
       items.push({
         key: 'question-visibility',
         icon: 'bi-eye-slash',
@@ -300,7 +283,7 @@ export function generateRuleSummary(
           <>
             Questions hidden after completion until{' '}
             <FriendlyDate
-              date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+              date={Temporal.PlainDateTime.from(qv.visibleFromDate)}
               timezone={displayTimezone}
               options={{ includeTz: false }}
               tooltip
@@ -321,8 +304,8 @@ export function generateRuleSummary(
   if ((showAfterComplete || svNonDefault) && isOverrideFieldActive(rule, 'scoreVisibility')) {
     const sv = rule.scoreVisibility;
     const svError =
-      formErrors?.scoreVisibility?.showAgainDate?.message || formErrors?.scoreVisibility?.message;
-    if (sv.hideScore && sv.showAgainDate) {
+      formErrors?.scoreVisibility?.visibleFromDate?.message || formErrors?.scoreVisibility?.message;
+    if (sv.hidden && sv.visibleFromDate) {
       items.push({
         key: 'score-visibility',
         icon: 'bi-eye-slash',
@@ -330,7 +313,7 @@ export function generateRuleSummary(
           <>
             Score hidden after completion until{' '}
             <FriendlyDate
-              date={Temporal.PlainDateTime.from(sv.showAgainDate)}
+              date={Temporal.PlainDateTime.from(sv.visibleFromDate)}
               timezone={displayTimezone}
               options={{ includeTz: false }}
               tooltip
@@ -339,7 +322,7 @@ export function generateRuleSummary(
         ),
         error: svError,
       });
-    } else if (sv.hideScore) {
+    } else if (sv.hidden) {
       items.push({
         key: 'score-visibility',
         icon: 'bi-eye-slash',
@@ -392,7 +375,7 @@ function formatDeadlineEntries(
 
 function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): string {
   const parts: string[] = [];
-  if (afterLastDeadline.credit !== undefined) {
+  if (afterLastDeadline.allowSubmissions && afterLastDeadline.credit != null) {
     parts.push(`${afterLastDeadline.credit}% credit`);
   }
   if (afterLastDeadline.allowSubmissions) {
@@ -483,7 +466,7 @@ function generateOverrideFieldItems(
   if (overriddenFields.has('afterLastDeadline')) {
     items.push({
       label: 'After last deadline',
-      value: rule.afterLastDeadline ? formatAfterLastDeadline(rule.afterLastDeadline) : 'None',
+      value: formatAfterLastDeadline(rule.afterLastDeadline),
       error: formErrors?.afterLastDeadline?.credit?.message,
     });
   }
@@ -507,25 +490,25 @@ function generateOverrideFieldItems(
   if (overriddenFields.has('questionVisibility')) {
     const qv = rule.questionVisibility;
     const qvError =
-      formErrors?.questionVisibility?.showAgainDate?.message ||
-      formErrors?.questionVisibility?.hideAgainDate?.message ||
+      formErrors?.questionVisibility?.visibleFromDate?.message ||
+      formErrors?.questionVisibility?.visibleUntilDate?.message ||
       formErrors?.questionVisibility?.message;
-    if (qv.hideQuestions) {
-      if (qv.showAgainDate && qv.hideAgainDate) {
+    if (qv.hidden) {
+      if (qv.visibleFromDate && qv.visibleUntilDate) {
         items.push({
           label: 'Question visibility',
           value: (
             <>
               Hidden, shown again{' '}
               <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+                date={Temporal.PlainDateTime.from(qv.visibleFromDate)}
                 timezone={displayTimezone}
                 options={{ includeTz: false }}
                 tooltip
               />
               , hidden again{' '}
               <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.hideAgainDate)}
+                date={Temporal.PlainDateTime.from(qv.visibleUntilDate)}
                 timezone={displayTimezone}
                 options={{ includeTz: false }}
                 tooltip
@@ -534,14 +517,14 @@ function generateOverrideFieldItems(
           ),
           error: qvError,
         });
-      } else if (qv.showAgainDate) {
+      } else if (qv.visibleFromDate) {
         items.push({
           label: 'Question visibility',
           value: (
             <>
               Hidden, shown again{' '}
               <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.showAgainDate)}
+                date={Temporal.PlainDateTime.from(qv.visibleFromDate)}
                 timezone={displayTimezone}
                 options={{ includeTz: false }}
                 tooltip
@@ -569,16 +552,16 @@ function generateOverrideFieldItems(
   if (overriddenFields.has('scoreVisibility')) {
     const sv = rule.scoreVisibility;
     const svError =
-      formErrors?.scoreVisibility?.showAgainDate?.message || formErrors?.scoreVisibility?.message;
-    if (sv.hideScore) {
-      if (sv.showAgainDate) {
+      formErrors?.scoreVisibility?.visibleFromDate?.message || formErrors?.scoreVisibility?.message;
+    if (sv.hidden) {
+      if (sv.visibleFromDate) {
         items.push({
           label: 'Score visibility',
           value: (
             <>
               Hidden, shown again{' '}
               <FriendlyDate
-                date={Temporal.PlainDateTime.from(sv.showAgainDate)}
+                date={Temporal.PlainDateTime.from(sv.visibleFromDate)}
                 timezone={displayTimezone}
                 options={{ includeTz: false }}
                 tooltip

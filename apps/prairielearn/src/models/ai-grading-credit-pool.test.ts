@@ -262,40 +262,38 @@ describe('adjustCreditPool', () => {
     assert.equal(changes[0].credit_after_milli_dollars, 3000);
   });
 
-  it('throws when deducting more than the transferable balance', async () => {
+  it('caps deduction to the transferable balance when deducting more', async () => {
     const userId = await createTestUser();
     await seedCreditBalances(ciId, userId, 2000, 5000);
 
-    await expect(
-      adjustCreditPool({
-        course_instance_id: ciId,
-        delta_milli_dollars: -3000,
-        credit_type: 'transferable',
-        user_id: userId,
-        reason: 'Admin deduction',
-      }),
-    ).rejects.toThrow(/Cannot deduct more than the current transferable balance/);
+    await adjustCreditPool({
+      course_instance_id: ciId,
+      delta_milli_dollars: -3000,
+      credit_type: 'transferable',
+      user_id: userId,
+      reason: 'Admin deduction',
+    });
 
     const pool = await selectCreditPool(ciId);
-    assert.equal(pool.credit_transferable_milli_dollars, 2000);
+    assert.equal(pool.credit_transferable_milli_dollars, 0);
+    assert.equal(pool.credit_non_transferable_milli_dollars, 5000);
   });
 
-  it('throws when deducting more than the non-transferable balance', async () => {
+  it('caps deduction to the non-transferable balance when deducting more', async () => {
     const userId = await createTestUser();
     await seedCreditBalances(ciId, userId, 5000, 2000);
 
-    await expect(
-      adjustCreditPool({
-        course_instance_id: ciId,
-        delta_milli_dollars: -3000,
-        credit_type: 'non_transferable',
-        user_id: userId,
-        reason: 'Admin deduction',
-      }),
-    ).rejects.toThrow(/Cannot deduct more than the current non-transferable balance/);
+    await adjustCreditPool({
+      course_instance_id: ciId,
+      delta_milli_dollars: -3000,
+      credit_type: 'non_transferable',
+      user_id: userId,
+      reason: 'Admin deduction',
+    });
 
     const pool = await selectCreditPool(ciId);
-    assert.equal(pool.credit_non_transferable_milli_dollars, 2000);
+    assert.equal(pool.credit_non_transferable_milli_dollars, 0);
+    assert.equal(pool.credit_transferable_milli_dollars, 5000);
   });
 
   it('does nothing when delta is zero', async () => {

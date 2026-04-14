@@ -6,10 +6,13 @@ import { run } from '@prairielearn/run';
 import {
   AI_GRADING_MODEL_IDS,
   type AiGradingModelId,
-  DEFAULT_AI_GRADING_MODEL,
 } from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { fillInstanceQuestionColumnEntries } from '../../ee/lib/ai-grading/ai-grading-stats.js';
-import { deleteAiGradingJobs, setAiGradingMode } from '../../ee/lib/ai-grading/ai-grading-util.js';
+import {
+  deleteAiGradingJobs,
+  setAiGradingLastSelectedModel,
+  setAiGradingMode,
+} from '../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../ee/lib/ai-grading/ai-grading.js';
 import { deleteAiInstanceQuestionGroups } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
@@ -137,20 +140,7 @@ const aiGradeInstanceQuestionsMutation = t.procedure
   )
   .output(z.object({ job_sequence_id: z.string(), job_sequence_token: z.string() }))
   .mutation(async (opts) => {
-    const aiGradingModelSelectionEnabled = await features.enabled('ai-grading-model-selection', {
-      institution_id: opts.ctx.course.institution_id,
-      course_id: opts.ctx.course.id,
-      course_instance_id: opts.ctx.course_instance.id,
-      user_id: opts.ctx.authn_user.id,
-    });
-
-    if (!aiGradingModelSelectionEnabled && opts.input.model_id !== DEFAULT_AI_GRADING_MODEL) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'AI grading model selection is not available. The default model must be used.',
-      });
-    }
-
+    await setAiGradingLastSelectedModel(opts.ctx.assessment_question.id, opts.input.model_id);
     const job_sequence_id = await aiGrade({
       question: opts.ctx.question,
       course: opts.ctx.course,

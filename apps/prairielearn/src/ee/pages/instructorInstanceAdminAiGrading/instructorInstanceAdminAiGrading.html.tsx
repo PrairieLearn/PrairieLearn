@@ -210,7 +210,6 @@ export function InstructorInstanceAdminAiGrading({
   initialApiKeyCredentials,
   canEdit,
   isDevMode,
-  aiGradingModelSelectionEnabled,
   stripePurchasingEnabled,
   initialCheckoutStatus,
   initialCheckoutAmountMilliDollars,
@@ -220,7 +219,6 @@ export function InstructorInstanceAdminAiGrading({
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
   canEdit: boolean;
   isDevMode: boolean;
-  aiGradingModelSelectionEnabled: boolean;
   stripePurchasingEnabled: boolean;
   initialCheckoutStatus: 'success' | 'cancelled' | null;
   initialCheckoutAmountMilliDollars: number | null;
@@ -237,7 +235,6 @@ export function InstructorInstanceAdminAiGrading({
           initialUseCustomApiKeys={initialUseCustomApiKeys}
           initialApiKeyCredentials={initialApiKeyCredentials}
           canEdit={canEdit}
-          aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
           stripePurchasingEnabled={stripePurchasingEnabled}
           initialCheckoutStatus={initialCheckoutStatus}
           initialCheckoutAmountMilliDollars={initialCheckoutAmountMilliDollars}
@@ -253,7 +250,6 @@ function AiGradingSettingsContent({
   initialUseCustomApiKeys,
   initialApiKeyCredentials,
   canEdit,
-  aiGradingModelSelectionEnabled,
   stripePurchasingEnabled,
   initialCheckoutStatus,
   initialCheckoutAmountMilliDollars,
@@ -261,7 +257,6 @@ function AiGradingSettingsContent({
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
   canEdit: boolean;
-  aiGradingModelSelectionEnabled: boolean;
   stripePurchasingEnabled: boolean;
   initialCheckoutStatus: 'success' | 'cancelled' | null;
   initialCheckoutAmountMilliDollars: number | null;
@@ -270,10 +265,6 @@ function AiGradingSettingsContent({
 
   const [useCustomApiKeys, setUseCustomApiKeys] = useState(initialUseCustomApiKeys);
   const [credentials, setCredentials] = useState(initialApiKeyCredentials);
-
-  const providerOptions = aiGradingModelSelectionEnabled
-    ? AI_GRADING_PROVIDER_OPTIONS
-    : AI_GRADING_PROVIDER_OPTIONS.filter((p) => p.value === 'openai');
 
   const addModalState = useModalState();
   const deleteModalState = useModalState<AiGradingApiKeyCredential>();
@@ -397,7 +388,7 @@ function AiGradingSettingsContent({
 
       <AddApiKeyModal
         {...addModalState}
-        providerOptions={providerOptions}
+        providerOptions={AI_GRADING_PROVIDER_OPTIONS}
         credentials={credentials}
         onSuccess={(credential) => {
           // The server upserts by provider, so replace any existing credential
