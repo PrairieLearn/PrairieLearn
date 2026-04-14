@@ -117,16 +117,21 @@ export function CanvasMatchingPanel({
     }
   }, [onMatchingStateChange]);
 
-  const hasAnyMatches = matchingState?.strategyResults.some(
-    (s) => s.result.matched.length > 0,
-  ) ?? false;
+  const hasAnyMatches =
+    matchingState?.strategyResults.some((s) => s.result.matched.length > 0) ?? false;
 
-  const hasComprehensiveStrategy = matchingState?.strategyResults.some(
-    (s) => s.result.matched.length > 0 && s.result.ambiguous.length === 0 && s.result.unmatchedPl.length === 0,
-  ) ?? false;
+  const hasComprehensiveStrategy =
+    matchingState?.strategyResults.some(
+      (s) =>
+        s.result.matched.length > 0 &&
+        s.result.ambiguous.length === 0 &&
+        s.result.unmatchedPl.length === 0,
+    ) ?? false;
 
   const isComprehensive = (sr: StrategyResult) =>
-    sr.result.matched.length > 0 && sr.result.ambiguous.length === 0 && sr.result.unmatchedPl.length === 0;
+    sr.result.matched.length > 0 &&
+    sr.result.ambiguous.length === 0 &&
+    sr.result.unmatchedPl.length === 0;
 
   return (
     <div>
@@ -170,10 +175,13 @@ export function CanvasMatchingPanel({
           {hasComprehensiveStrategy ? (
             <p className="small text-secondary mb-2">
               Some strategies are disabled because{' '}
-              {strategyLabel(matchingState.strategyResults.find((s) => isComprehensive(s))!.strategy)}{' '}
+              {strategyLabel(
+                matchingState.strategyResults.find((s) => isComprehensive(s))!.strategy,
+              )}{' '}
               accounts for all students.
             </p>
-          ) : hasAnyMatches && matchingState.strategyResults.some((s) => s.result.matched.length === 0) ? (
+          ) : hasAnyMatches &&
+            matchingState.strategyResults.some((s) => s.result.matched.length === 0) ? (
             <p className="small text-secondary mb-2">
               Some strategies are disabled because they produced no matches.
             </p>
@@ -188,28 +196,31 @@ export function CanvasMatchingPanel({
                 (hasAnyMatches && sr.result.matched.length === 0) ||
                 (hasComprehensiveStrategy && !isComprehensive(sr));
               return (
-              <Radio key={sr.strategy} value={sr.strategy} isDisabled={disabled}>
-                <span
-                  className={clsx('d-inline-flex flex-column gap-1 min-w-0 justify-content-start', disabled && 'text-secondary')}
-                >
-                  <span>
-                    {strategyLabel(sr.strategy)}{' '}
-                    <OverlayTrigger
-                      tooltip={{
-                        body: strategyDescription(sr.strategy),
-                        props: { id: `strategy-tooltip-${sr.strategy}` },
-                      }}
-                    >
-                      <i className="bi bi-question-circle text-muted" aria-hidden="true" />
-                    </OverlayTrigger>
+                <Radio key={sr.strategy} value={sr.strategy} isDisabled={disabled}>
+                  <span
+                    className={clsx(
+                      'd-inline-flex flex-column gap-1 min-w-0 justify-content-start',
+                      disabled && 'text-secondary',
+                    )}
+                  >
+                    <span>
+                      {strategyLabel(sr.strategy)}{' '}
+                      <OverlayTrigger
+                        tooltip={{
+                          body: strategyDescription(sr.strategy),
+                          props: { id: `strategy-tooltip-${sr.strategy}` },
+                        }}
+                      >
+                        <i className="bi bi-question-circle text-muted" aria-hidden="true" />
+                      </OverlayTrigger>
+                    </span>
+                    <span className="text-muted small">
+                      {sr.result.matched.length} matched, {sr.result.ambiguous.length} ambiguous,{' '}
+                      {sr.result.unmatchedPl.length} unmatched PL,{' '}
+                      {sr.result.unmatchedCanvas.length} unmatched Canvas
+                    </span>
                   </span>
-                  <span className="text-muted small">
-                    {sr.result.matched.length} matched, {sr.result.ambiguous.length} ambiguous,{' '}
-                    {sr.result.unmatchedPl.length} unmatched PL, {sr.result.unmatchedCanvas.length}{' '}
-                    unmatched Canvas
-                  </span>
-                </span>
-              </Radio>
+                </Radio>
               );
             })}
           </RadioGroup>
@@ -258,8 +269,8 @@ function MatchSummary({ result }: { result: MatchResult }) {
         {unmatchedCanvas.length > 0 && (
           <div className="mt-1 small">
             {unmatchedCanvas.length} unmatched Canvas{' '}
-            {unmatchedCanvas.length === 1 ? 'student' : 'students'} may be omitted from the
-            export because no matching PrairieLearn account was found.
+            {unmatchedCanvas.length === 1 ? 'student' : 'students'} may be omitted from the export
+            because no matching PrairieLearn account was found.
           </div>
         )}
       </div>

@@ -179,9 +179,7 @@ describe('runAllStrategies', () => {
       },
     ];
 
-    const plStudents: PlStudent[] = [
-      { uid: 'jblock3430', userName: 'Jasen Block', uin: null },
-    ];
+    const plStudents: PlStudent[] = [{ uid: 'jblock3430', userName: 'Jasen Block', uin: null }];
 
     const results = runAllStrategies(plStudents, canvasWithSisUser);
     const uidResult = results.find((r) => r.strategy === 'uid')!;
@@ -200,9 +198,7 @@ describe('runAllStrategies', () => {
       },
     ];
 
-    const plStudents: PlStudent[] = [
-      { uid: 'jblock3430', userName: 'Jasen Block', uin: null },
-    ];
+    const plStudents: PlStudent[] = [{ uid: 'jblock3430', userName: 'Jasen Block', uin: null }];
 
     const results = runAllStrategies(plStudents, canvasDuplicate);
     const uidResult = results.find((r) => r.strategy === 'uid')!;
@@ -242,7 +238,10 @@ describe('buildCanvasLookup', () => {
     };
     const lookup = buildCanvasLookup({
       matched: [
-        { plStudent: { uid: 'jblock3430', userName: 'Jasen Block', uin: null }, canvasStudent: canvas },
+        {
+          plStudent: { uid: 'jblock3430', userName: 'Jasen Block', uin: null },
+          canvasStudent: canvas,
+        },
       ],
       ambiguous: [],
       unmatchedPl: [],
