@@ -25,8 +25,8 @@ interface CanvasDownloadModalProps {
 
 export function CanvasDownloadModal({ show, ...rest }: CanvasDownloadModalProps) {
   return (
-    <Modal show={show} size="lg" onHide={rest.onHide} onExited={() => {}}>
-      {show && <CanvasDownloadModalContent {...rest} />}
+    <Modal show={show} size="lg" onHide={rest.onHide}>
+      <CanvasDownloadModalContent {...rest} />
     </Modal>
   );
 }
