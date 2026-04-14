@@ -193,7 +193,7 @@ function MatchSummary({ result }: { result: MatchResult }) {
 
   return (
     <Alert variant={variant} className="mt-3 d-flex align-items-start gap-2">
-      <i className={`bi ${icon} mt-1`} />
+      <i className={`bi ${icon}`} />
       <div>
         <strong>{matched.length}</strong> matched, <strong>{ambiguous.length}</strong> ambiguous,{' '}
         <strong>{unmatchedPl.length}</strong> unmatched from PrairieLearn,{' '}
