@@ -18,8 +18,10 @@ import {
   AssessmentQuestionSchema,
   type ClientFingerprint,
   InstanceQuestionSchema,
+  VariantSchema,
 } from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
+import { idsEqual } from '../../lib/id.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
@@ -46,6 +48,8 @@ type AssessmentInstanceStats = z.infer<typeof AssessmentInstanceStatsSchema>;
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   instructor_question_number: z.string(),
   assessment_question: AssessmentQuestionSchema,
+  last_variant_id: VariantSchema.shape.id.nullable(),
+  last_variant_seed: VariantSchema.shape.variant_seed.nullable(),
   lockpoint: z.boolean(),
   lockpoint_crossed: z.boolean(),
   lockpoint_crossed_at: DateFromISOString.nullable(),
@@ -402,7 +406,8 @@ export function InstructorAssessmentInstance({
                       <td>
                         S-${instance_question.question_number}. (<a
                           href="/pl/course_instance/${resLocals.course_instance
-                            .id}/instance_question/${instance_question.id}/"
+                            .id}/instance_question/${instance_question.id}/?variant_id=${instance_question.last_variant_id ??
+                          ''}"
                           >student view</a
                         >)
                       </td>
@@ -411,7 +416,8 @@ export function InstructorAssessmentInstance({
                         ${resLocals.authz_data.has_course_permission_preview
                           ? html`
                               (<a
-                                href="${resLocals.urlPrefix}/question/${instance_question.question_id}/"
+                                href="${resLocals.urlPrefix}/question/${instance_question.question_id}/preview/?variant_seed=${instance_question.last_variant_seed ??
+                                ''}"
                                 >instructor view</a
                               >)
                             `
@@ -558,13 +564,18 @@ export function InstructorAssessmentInstance({
             </thead>
             <tbody>
               ${assessment_instance_stats.map((row) => {
+                const instance_question = instance_questions.find((iq) =>
+                  idsEqual(iq.id, row.instance_question_id),
+                );
                 return html`
                   <tr>
                     <td>
                       I-${row.number}.
                       ${resLocals.authz_data.has_course_permission_preview
                         ? html`
-                            <a href="${resLocals.urlPrefix}/question/${row.question_id}/"
+                            <a
+                              href="${resLocals.urlPrefix}/question/${row.question_id}/preview/?variant_seed=${instance_question?.last_variant_seed ??
+                              ''}"
                               >${row.qid}</a
                             >
                           `
@@ -668,10 +679,21 @@ export function InstructorAssessmentInstance({
                     <td>
                       ${run(() => {
                         if (!row.qid) return '';
-                        const text = `I-${row.instructor_question_number}. ${row.qid}`;
+                        // Instructor question number may be null if this
+                        // question was deleted from the assessment after the
+                        // event was logged
+                        const number =
+                          row.instructor_question_number != null
+                            ? `${row.instructor_question_number}. `
+                            : '';
+                        const text = `${number}${row.qid}`;
                         if (!resLocals.authz_data.has_course_permission_preview) return text;
                         return html`
-                          <a href="${resLocals.urlPrefix}/question/${row.question_id}/">${text}</a>
+                          <a
+                            href="${resLocals.urlPrefix}/question/${row.question_id}/?variant_seed=${row.variant_seed ??
+                            ''}"
+                            >${text}</a
+                          >
                         `;
                       })}
                     </td>
