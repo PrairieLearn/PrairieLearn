@@ -3,8 +3,8 @@ import { z } from 'zod';
 import {
   type StudentAccessRule,
   type StudentAssessment,
-  type StudentAssessmentInstance,
   type StudentAssessmentInstanceAuthzResult,
+  StudentAssessmentInstanceSchema__UNSAFE,
   type StudentAssessmentSet,
   type StudentGroupConfig,
   StudentGroupRoleWithCountSchema,
@@ -12,6 +12,23 @@ import {
   StudentUserSchema,
 } from '../../../lib/client/safe-db-types.js';
 import { RoleAssignmentSchema } from '../../../lib/groups.shared.js';
+
+export const SafeStudentAssessmentInstanceSchema = z
+  .object({
+    assessment_instance: StudentAssessmentInstanceSchema__UNSAFE,
+    some_questions_allow_real_time_grading: z.boolean(),
+  })
+  .transform((data) => {
+    // When real-time grading is fully disabled and the instance is open,
+    // don't leak score data to the client — the UI only shows max_points.
+    if (!data.some_questions_allow_real_time_grading && data.assessment_instance.open) {
+      data.assessment_instance.points = null;
+      data.assessment_instance.score_perc = null;
+    }
+    return data.assessment_instance;
+  })
+  .brand('SafeStudentAssessmentInstance');
+export type SafeStudentAssessmentInstance = z.output<typeof SafeStudentAssessmentInstanceSchema>;
 
 // Client-safe row type for the hydrated component. This mirrors the fields
 // from InstanceQuestionRow that the client actually needs, without pulling
@@ -95,7 +112,7 @@ export type StudentGroupInfo = z.infer<typeof StudentGroupInfoSchema>;
 export interface StudentAssessmentInstanceBodyProps {
   assessment: StudentAssessment;
   assessmentSet: StudentAssessmentSet;
-  assessmentInstance: StudentAssessmentInstance;
+  assessmentInstance: SafeStudentAssessmentInstance;
   remainingMs: number | null;
 
   authzResult: StudentAssessmentInstanceAuthzResult;

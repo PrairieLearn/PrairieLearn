@@ -16,7 +16,6 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
-  RawStudentAssessmentInstanceSchema__UNSAFE,
   type StudentAccessRule,
   StudentAccessRuleSchema,
   StudentAssessmentInstanceAuthzResultSchema,
@@ -37,23 +36,11 @@ import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 
 import { StudentAssessmentInstanceBody } from './components/StudentAssessmentInstanceBody.js';
-import { StudentGroupInfoSchema, type StudentQuestionRow } from './components/types.js';
-
-const StudentAssessmentInstanceDataSchema = z
-  .object({
-    assessment_instance: RawStudentAssessmentInstanceSchema__UNSAFE,
-    some_questions_allow_real_time_grading: z.boolean(),
-  })
-  .transform((data) => {
-    // When real-time grading is fully disabled and the instance is open,
-    // don't leak score data to the client — the UI only shows max_points.
-    if (!data.some_questions_allow_real_time_grading && data.assessment_instance.open) {
-      data.assessment_instance.points = null;
-      data.assessment_instance.score_perc = null;
-    }
-    return data.assessment_instance;
-  })
-  .brand('StudentAssessmentInstance');
+import {
+  SafeStudentAssessmentInstanceSchema,
+  StudentGroupInfoSchema,
+  type StudentQuestionRow,
+} from './components/types.js';
 
 export const InstanceQuestionRowSchema = z.object({
   instance_question: StudentInstanceQuestionSchema__UNSAFE,
@@ -128,80 +115,82 @@ export function StudentAssessmentInstance({
   // Map rows to client-safe type with scoring data (no db-types.ts references).
   const isGroupAssessment = groupConfig != null;
   const assessmentInstanceOpen = !!resLocals.assessment_instance.open;
-  // When real-time grading is fully disabled and the instance is open, the UI
-  // only shows max points per question — redact actual scored values so they
-  // aren't leaked in the hydration payload.
-  const redactScores = !someQuestionsAllowRealTimeGrading && assessmentInstanceOpen;
-  const questionRows: StudentQuestionRow[] = instance_question_rows.map((row) => ({
-    id: row.instance_question.id,
-    startNewZone: row.start_new_zone,
-    zoneId: row.zone.id,
-    zoneNumber: row.zone.number,
-    zoneTitle: row.zone.title,
-    lockpoint: row.zone.lockpoint,
-    lockpointCrossed: row.lockpoint_crossed,
-    lockpointCrossedInfo: run(() => {
-      if (!row.lockpoint_crossed) return null;
-      const parts: string[] = ['Previous questions locked'];
-      if (isGroupAssessment && row.lockpoint_crossed_authn_user_uid) {
-        parts.push(`by ${row.lockpoint_crossed_authn_user_uid}`);
-      }
-      if (row.lockpoint_crossed_at) {
-        parts.push(
-          `at ${formatDate(row.lockpoint_crossed_at, resLocals.course_instance.display_timezone)}`,
-        );
-      }
-      return parts.join(' ');
-    }),
-    questionNumber: row.question_number,
-    questionTitle: row.question.title,
-    questionAccessMode: row.question_access_mode,
-    prevAdvanceScorePerc: row.prev_advance_score_perc,
-    prevTitle: row.prev_title,
-    prevQuestionAccessMode: row.prev_question_access_mode,
-    groupRolePermissions: row.group_role_permissions
-      ? {
-          canView: row.group_role_permissions.can_view,
-          canSubmit: row.group_role_permissions.can_submit,
-        }
-      : undefined,
-    fileCount: row.file_count,
-    zoneMaxPoints: row.zone.max_points,
-    zoneHasMaxPoints: row.zone.max_points != null,
-    zoneBestQuestions: row.zone.best_questions,
-    zoneHasBestQuestions: row.zone.best_questions != null,
-    zoneQuestionCount: row.zone_question_count,
+  const questionRows: StudentQuestionRow[] = instance_question_rows.map((row) => {
+    // When real-time grading is disabled for this question and the instance is
+    // open, redact scored values so they aren't leaked in the hydration payload.
+    const redactScores = assessmentInstanceOpen && !row.assessment_question.allow_real_time_grading;
 
-    // Instance question scoring data.
-    autoPoints: redactScores ? null : row.instance_question.auto_points,
-    manualPoints: redactScores ? null : row.instance_question.manual_points,
-    points: redactScores ? null : row.instance_question.points,
-    status: row.instance_question.status,
-    requiresManualGrading: row.instance_question.requires_manual_grading,
-    hasLastGrader: row.instance_question.has_last_grader,
-    maxAutoPoints: row.assessment_question.max_auto_points,
-    maxManualPoints: row.assessment_question.max_manual_points,
-    maxPoints: row.assessment_question.max_points,
-    allowRealTimeGrading: row.assessment_question.allow_real_time_grading,
-    allowGradeLeftMs: row.allowGradeLeftMs,
-    instanceQuestionOpen: assessmentInstanceOpen && row.instance_question.open,
-    pointsListOriginal: row.instance_question.points_list_original,
-    numberAttempts: row.instance_question.number_attempts,
-    pointsList: row.instance_question.points_list,
-    highestSubmissionScore: redactScores ? null : row.instance_question.highest_submission_score,
-    currentValue: redactScores ? null : row.instance_question.current_value,
-    previousVariants: redactScores
-      ? null
-      : (row.previous_variants?.map((v) => ({
-          id: v.id,
-          open: v.open,
-          maxSubmissionScore: v.max_submission_score,
-        })) ?? null),
-  }));
+    return {
+      id: row.instance_question.id,
+      startNewZone: row.start_new_zone,
+      zoneId: row.zone.id,
+      zoneNumber: row.zone.number,
+      zoneTitle: row.zone.title,
+      lockpoint: row.zone.lockpoint,
+      lockpointCrossed: row.lockpoint_crossed,
+      lockpointCrossedInfo: run(() => {
+        if (!row.lockpoint_crossed) return null;
+        const parts: string[] = ['Previous questions locked'];
+        if (isGroupAssessment && row.lockpoint_crossed_authn_user_uid) {
+          parts.push(`by ${row.lockpoint_crossed_authn_user_uid}`);
+        }
+        if (row.lockpoint_crossed_at) {
+          parts.push(
+            `at ${formatDate(row.lockpoint_crossed_at, resLocals.course_instance.display_timezone)}`,
+          );
+        }
+        return parts.join(' ');
+      }),
+      questionNumber: row.question_number,
+      questionTitle: row.question.title,
+      questionAccessMode: row.question_access_mode,
+      prevAdvanceScorePerc: row.prev_advance_score_perc,
+      prevTitle: row.prev_title,
+      prevQuestionAccessMode: row.prev_question_access_mode,
+      groupRolePermissions: row.group_role_permissions
+        ? {
+            canView: row.group_role_permissions.can_view,
+            canSubmit: row.group_role_permissions.can_submit,
+          }
+        : undefined,
+      fileCount: row.file_count,
+      zoneMaxPoints: row.zone.max_points,
+      zoneHasMaxPoints: row.zone.max_points != null,
+      zoneBestQuestions: row.zone.best_questions,
+      zoneHasBestQuestions: row.zone.best_questions != null,
+      zoneQuestionCount: row.zone_question_count,
+
+      // Instance question scoring data.
+      autoPoints: redactScores ? null : row.instance_question.auto_points,
+      manualPoints: redactScores ? null : row.instance_question.manual_points,
+      points: redactScores ? null : row.instance_question.points,
+      status: row.instance_question.status,
+      requiresManualGrading: row.instance_question.requires_manual_grading,
+      hasLastGrader: row.instance_question.has_last_grader,
+      maxAutoPoints: row.assessment_question.max_auto_points,
+      maxManualPoints: row.assessment_question.max_manual_points,
+      maxPoints: row.assessment_question.max_points,
+      allowRealTimeGrading: row.assessment_question.allow_real_time_grading,
+      allowGradeLeftMs: row.allowGradeLeftMs,
+      instanceQuestionOpen: assessmentInstanceOpen && row.instance_question.open,
+      pointsListOriginal: redactScores ? null : row.instance_question.points_list_original,
+      numberAttempts: row.instance_question.number_attempts,
+      pointsList: redactScores ? null : row.instance_question.points_list,
+      highestSubmissionScore: redactScores ? null : row.instance_question.highest_submission_score,
+      currentValue: redactScores ? null : row.instance_question.current_value,
+      previousVariants: redactScores
+        ? null
+        : (row.previous_variants?.map((v) => ({
+            id: v.id,
+            open: v.open,
+            maxSubmissionScore: v.max_submission_score,
+          })) ?? null),
+    };
+  });
 
   const assessment = StudentAssessmentSchema.parse(resLocals.assessment);
   const assessmentSet = StudentAssessmentSetSchema.parse(resLocals.assessment_set);
-  const assessmentInstance = StudentAssessmentInstanceDataSchema.parse({
+  const assessmentInstance = SafeStudentAssessmentInstanceSchema.parse({
     assessment_instance: resLocals.assessment_instance,
     some_questions_allow_real_time_grading: someQuestionsAllowRealTimeGrading,
   });
