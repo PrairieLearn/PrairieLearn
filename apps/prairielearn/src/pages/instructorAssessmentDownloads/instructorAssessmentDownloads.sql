@@ -412,11 +412,10 @@ LIMIT
 -- so dedupe to one row per user.
 SELECT DISTINCT
   ON (u.id) u.*,
-  users_get_displayed_role (u.id, ci.id) AS role
+  users_get_displayed_role (u.id, $course_instance_id) AS role
 FROM
   assessment_instances AS ai
   JOIN users AS u ON (u.id = ai.user_id)
-  JOIN course_instances AS ci ON (ci.id = $course_instance_id)
 WHERE
   ai.assessment_id = $assessment_id
 ORDER BY
