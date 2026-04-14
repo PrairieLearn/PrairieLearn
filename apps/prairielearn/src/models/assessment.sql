@@ -154,3 +154,29 @@ FROM
   JOIN zones AS z ON (at.zone_id = z.id)
 WHERE
   z.assessment_id = $assessment_id;
+
+-- BLOCK select_assessment_zone_points_total
+SELECT
+  coalesce(
+    sum(
+      CASE
+        WHEN z.max_points IS NOT NULL THEN LEAST(zq.question_points, z.max_points)
+        ELSE zq.question_points
+      END
+    ),
+    0
+  ) AS total
+FROM
+  zones AS z
+  LEFT JOIN LATERAL (
+    SELECT
+      coalesce(sum(aq.max_points), 0) AS question_points
+    FROM
+      alternative_groups AS ag
+      JOIN assessment_questions AS aq ON (aq.alternative_group_id = ag.id)
+    WHERE
+      ag.zone_id = z.id
+      AND aq.deleted_at IS NULL
+  ) AS zq ON true
+WHERE
+  z.assessment_id = $assessment_id;

@@ -9,6 +9,7 @@ import {
   queryOptionalScalar,
   queryRow,
   queryRows,
+  queryScalar,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -185,5 +186,17 @@ export function selectAssessmentsCursor({
     sql.select_assessments_for_course_instance,
     { course_instance_id },
     AssessmentRowSchema,
+  );
+}
+
+export async function selectAssessmentZonePointsTotal({
+  assessment_id,
+}: {
+  assessment_id: string;
+}): Promise<number> {
+  return await queryScalar(
+    sql.select_assessment_zone_points_total,
+    { assessment_id },
+    z.coerce.number(),
   );
 }

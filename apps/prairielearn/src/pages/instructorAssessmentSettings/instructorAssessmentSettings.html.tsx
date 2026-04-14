@@ -60,6 +60,7 @@ interface InstructorAssessmentSettingsProps {
   courseInstance: StaffCourseInstance;
   isDevMode: boolean;
   assessmentTools: AssessmentToolsConfig;
+  zonePointsTotal: number;
 }
 
 export function InstructorAssessmentSettings({
@@ -78,6 +79,7 @@ export function InstructorAssessmentSettings({
   courseInstance,
   isDevMode,
   assessmentTools,
+  zonePointsTotal,
 }: InstructorAssessmentSettingsProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -104,6 +106,7 @@ export function InstructorAssessmentSettings({
           assessmentSets={assessmentSets}
           assessmentModules={assessmentModules}
           assessmentTools={assessmentTools}
+          zonePointsTotal={zonePointsTotal}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -125,9 +128,11 @@ function InstructorAssessmentSettingsInner({
   assessmentSets,
   assessmentModules,
   assessmentTools,
+  zonePointsTotal,
 }: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'isDevMode' | 'courseInstance'>) {
   const trpc = useTRPC();
   const [currentOrigHash, setCurrentOrigHash] = useState(origHash);
+  const [showCopyModal, setShowCopyModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const tidSet = new Set(tids);
@@ -222,6 +227,40 @@ function InstructorAssessmentSettingsInner({
 
   return (
     <>
+      <Modal show={showCopyModal} onHide={() => setShowCopyModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Copy assessment</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {copyError && (
+            <Alert variant="danger" dismissible onClose={() => copyMutation.reset()}>
+              {copyError.message}
+            </Alert>
+          )}
+          <p>
+            Are you sure you want to copy the assessment <b>{assessment.tid}</b>?
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowCopyModal(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            disabled={copyMutation.isPending}
+            onClick={() =>
+              copyMutation.mutate(undefined, {
+                onSuccess: (result) => {
+                  window.location.href = `${urlPrefix}/assessment/${result.assessmentId}/settings`;
+                },
+              })
+            }
+          >
+            {copyMutation.isPending ? 'Copying...' : 'Copy'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Delete</Modal.Title>
@@ -272,17 +311,9 @@ function InstructorAssessmentSettingsInner({
                     <Button
                       size="sm"
                       variant="outline-secondary"
-                      disabled={copyMutation.isPending}
-                      onClick={() =>
-                        copyMutation.mutate(undefined, {
-                          onSuccess: (result) => {
-                            window.location.href = `${urlPrefix}/assessment/${result.assessmentId}/settings`;
-                          },
-                        })
-                      }
+                      onClick={() => setShowCopyModal(true)}
                     >
-                      <i className="bi bi-copy" aria-hidden="true" />{' '}
-                      {copyMutation.isPending ? 'Copying...' : 'Copy'}
+                      <i className="bi bi-copy" aria-hidden="true" /> Copy
                     </Button>
                     <Button
                       size="sm"
@@ -296,11 +327,6 @@ function InstructorAssessmentSettingsInner({
                 <GitHubButton gitHubLink={currentGHLink} />
               </div>
             </div>
-            {copyError && (
-              <Alert variant="danger" dismissible onClose={() => copyMutation.reset()}>
-                {copyError.message}
-              </Alert>
-            )}
             <div className="row">
               <div className="col-md-6 mb-3">
                 <label className="form-label" htmlFor="aid">
@@ -354,7 +380,11 @@ function InstructorAssessmentSettingsInner({
                   readOnly
                 />
                 <small id="type-help" className="form-text text-muted">
-                  Homework or Exam.
+                  The type of the assessment. This can be either{' '}
+                  <a href="https://docs.prairielearn.com/assessment/configuration/#assessment-types">
+                    Homework or Exam
+                  </a>
+                  .
                 </small>
               </div>
             </div>
@@ -372,7 +402,7 @@ function InstructorAssessmentSettingsInner({
                 {...register('title')}
               />
               <small id="title-help" className="form-text text-muted">
-                The title of the assessment.
+                The full name of the assessment, visible to users.
               </small>
             </div>
             <div className="row">
@@ -505,21 +535,32 @@ function InstructorAssessmentSettingsInner({
                 <label className="form-label" htmlFor="max_points">
                   Maximum points
                 </label>
-                <input
-                  type="number"
-                  className={clsx('form-control', errors.max_points && 'is-invalid')}
-                  id="max_points"
-                  aria-describedby="max-points-help"
-                  aria-invalid={errors.max_points ? 'true' : 'false'}
-                  {...(errors.max_points ? { 'aria-errormessage': 'max-points-error' } : {})}
-                  placeholder="Auto (sum of zones)"
-                  step="any"
-                  disabled={!canEdit || !useCustomMaxPoints}
-                  defaultValue={defaultValues.max_points}
-                  {...register('max_points', {
-                    validate: (v) => v === '' || Number(v) >= 0 || 'Must be 0 or greater',
-                  })}
-                />
+                {useCustomMaxPoints ? (
+                  <input
+                    type="number"
+                    className={clsx('form-control', errors.max_points && 'is-invalid')}
+                    id="max_points"
+                    aria-describedby="max-points-help"
+                    aria-invalid={errors.max_points ? 'true' : 'false'}
+                    {...(errors.max_points ? { 'aria-errormessage': 'max-points-error' } : {})}
+                    step="any"
+                    disabled={!canEdit}
+                    defaultValue={defaultValues.max_points}
+                    {...register('max_points', {
+                      validate: (v) => v === '' || Number(v) >= 0 || 'Must be 0 or greater',
+                    })}
+                  />
+                ) : (
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="max_points"
+                    aria-describedby="max-points-help"
+                    value={zonePointsTotal}
+                    disabled
+                    readOnly
+                  />
+                )}
                 {errors.max_points && (
                   <div id="max-points-error" className="invalid-feedback">
                     {errors.max_points.message}
@@ -528,7 +569,7 @@ function InstructorAssessmentSettingsInner({
                 <small id="max-points-help" className="form-text text-muted">
                   {useCustomMaxPoints
                     ? 'Points needed for 100% score.'
-                    : 'Automatically computed as the sum of all zone points.'}
+                    : `Automatically computed as the sum of all zone points (currently ${zonePointsTotal}).`}
                 </small>
               </div>
               <div className="col-md-6 mb-3">
@@ -602,10 +643,7 @@ function InstructorAssessmentSettingsInner({
                 Shuffle questions
               </label>
               <div id="shuffle-questions-help" className="small text-muted">
-                Randomize question order within zones.{' '}
-                {assessment.type === 'Exam'
-                  ? 'Enabled by default for exams.'
-                  : 'Disabled by default for homework.'}
+                Randomize question order within zones.
               </div>
             </div>
             {assessment.type === 'Exam' && (
@@ -647,7 +685,8 @@ function InstructorAssessmentSettingsInner({
                   </div>
                 )}
                 <small id="advance-score-perc-help" className="form-text text-muted">
-                  Minimum score percentage to unlock the next question.
+                  Default minimum autograding score percentage on each question to unlock the
+                  following question. May be overridden for individual questions.
                 </small>
               </div>
             )}
@@ -675,7 +714,8 @@ function InstructorAssessmentSettingsInner({
                   Allow real-time grading
                 </label>
                 <div id="allow-real-time-grading-help" className="small text-muted">
-                  Allow students to grade submissions during the assessment. Enabled by default.
+                  Allow autograding results to be presented to students while the assessment is in
+                  progress. Enabled by default.
                 </div>
               </div>
             )}
@@ -719,7 +759,7 @@ function InstructorAssessmentSettingsInner({
         <div className="card m-4 mt-0">
           <div className="card-body">
             <h2 className="h5 card-title">Student options</h2>
-            <p className="text-muted small">Control what students can do during the assessment.</p>
+            <p className="text-muted small">Configure student-facing options and assessment behaviour.</p>
             <div className="form-check mb-3">
               <input
                 className="form-check-input"

@@ -26,7 +26,10 @@ import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectAssessmentModulesForCourse } from '../../models/assessment-module.js';
 import { selectAssessmentSetsForCourse } from '../../models/assessment-set.js';
-import { selectAssessmentToolDefaults } from '../../models/assessment.js';
+import {
+  selectAssessmentToolDefaults,
+  selectAssessmentZonePointsTotal,
+} from '../../models/assessment.js';
 import { EnumAssessmentToolSchema } from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentSettings } from './instructorAssessmentSettings.html.js';
@@ -74,9 +77,10 @@ router.get(
 
     const origHash = (await getOriginalHash(fullInfoAssessmentPath)) ?? '';
 
-    const toolDefaultRows = await selectAssessmentToolDefaults({
-      assessment_id: assessment.id,
-    });
+    const [toolDefaultRows, zonePointsTotal] = await Promise.all([
+      selectAssessmentToolDefaults({ assessment_id: assessment.id }),
+      selectAssessmentZonePointsTotal({ assessment_id: assessment.id }),
+    ]);
     const enabledTools = new Set(toolDefaultRows.filter((r) => r.enabled).map((r) => r.tool));
     const assessmentTools: AssessmentToolsConfig = EnumAssessmentToolSchema.options.map((tool) => ({
       name: tool,
@@ -132,6 +136,7 @@ router.get(
               courseInstance={course_instance}
               isDevMode={config.devMode}
               assessmentTools={assessmentTools}
+              zonePointsTotal={zonePointsTotal}
             />
           </Hydrate>
         ),
