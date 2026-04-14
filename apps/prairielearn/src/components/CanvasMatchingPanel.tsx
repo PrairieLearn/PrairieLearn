@@ -230,13 +230,16 @@ function MatchSummary({ result }: { result: MatchResult }) {
         <strong>{unmatchedCanvas.length}</strong> unmatched from Canvas.
         {unmatchedPl.length > 0 && (
           <div className="mt-1 small">
-            Unmatched PrairieLearn students will be exported using their PrairieLearn sign-in
-            identifier where Canvas expects a login value.
+            {unmatchedPl.length} unmatched PrairieLearn{' '}
+            {unmatchedPl.length === 1 ? 'student' : 'students'} will be exported using their
+            PrairieLearn sign-in identifier where Canvas expects a login value.
           </div>
         )}
         {unmatchedCanvas.length > 0 && (
           <div className="mt-1 small">
-            Unmatched Canvas students will be omitted (they have no PrairieLearn grades).
+            {unmatchedCanvas.length} unmatched Canvas{' '}
+            {unmatchedCanvas.length === 1 ? 'student' : 'students'} may be omitted from the
+            export because no matching PrairieLearn account was found.
           </div>
         )}
       </div>
