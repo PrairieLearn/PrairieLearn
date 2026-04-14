@@ -22,12 +22,12 @@ export function GroupWorkInfoContainer({
         <div className="row">
           <div className="col-sm bg-light py-4 px-4 border">
             <div>
-              <strong>Group name:</strong> <span id="group-name">{groupInfo.groupName}</span>
+              <strong>Group name:</strong> <span id="group-name">{groupInfo.group_name}</span>
             </div>
             {groupConfig.student_authz_join && (
               <>
                 <div>
-                  <strong>Join code:</strong> <span id="join-code">{groupInfo.joinCode}</span>
+                  <strong>Join code:</strong> <span id="join-code">{groupInfo.join_code}</span>
                 </div>
                 <div className="mt-3">
                   {(groupConfig.minimum ?? 0) > 1 ? (
@@ -60,10 +60,10 @@ export function GroupWorkInfoContainer({
               <b>Group members: </b>
             </span>
             <ul className="list-unstyled mb-0">
-              {groupInfo.groupMembers.map((user) => (
+              {groupInfo.group_members.map((user) => (
                 <li key={user.uid}>
                   {groupConfig.has_roles
-                    ? `${user.uid} - ${groupInfo.rolesInfo?.roleAssignments[user.uid]?.map((a) => a.roleName).join(', ') || 'No role assigned'}`
+                    ? `${user.uid} - ${groupInfo.roles_info?.role_assignments[user.uid]?.map((a) => a.role_name).join(', ') || 'No role assigned'}`
                     : user.uid}
                 </li>
               ))}
@@ -71,7 +71,7 @@ export function GroupWorkInfoContainer({
           </div>
         </div>
       </div>
-      {groupConfig.has_roles && groupInfo.rolesInfo && (
+      {groupConfig.has_roles && groupInfo.roles_info && (
         <GroupRoleTable
           groupInfo={groupInfo}
           userCanAssignRoles={userCanAssignRoles}
@@ -129,11 +129,11 @@ function GroupRoleTable({
   userCanAssignRoles: boolean;
   csrfToken: string;
 }) {
-  const rolesInfo = groupInfo.rolesInfo!;
+  const rolesInfo = groupInfo.roles_info!;
   const roleConfigProblems =
-    rolesInfo.validationErrors.length +
-    (rolesInfo.usersWithoutRoles.length > 0 ? 1 : 0) +
-    (rolesInfo.rolesAreBalanced ? 0 : 1);
+    rolesInfo.validation_errors.length +
+    (rolesInfo.users_without_roles.length > 0 ? 1 : 0) +
+    (rolesInfo.roles_are_balanced ? 0 : 1);
 
   return (
     <>
@@ -163,7 +163,7 @@ function GroupRoleTable({
           )}
         </summary>
         <div className="card-body">
-          <GroupRoleErrors rolesInfo={rolesInfo} groupSize={groupInfo.groupSize} />
+          <GroupRoleErrors rolesInfo={rolesInfo} groupSize={groupInfo.group_size} />
           <p>
             This assessment contains group roles, which selectively allow students to view
             questions, submit answers, and change group role assignments.
@@ -182,27 +182,27 @@ function GroupRoleTable({
                   </tr>
                 </thead>
                 <tbody>
-                  {groupInfo.groupMembers.map((user) => (
+                  {groupInfo.group_members.map((user) => (
                     <tr key={user.uid}>
                       <td>{user.uid}</td>
                       <td>
                         <div className="d-flex gap-3">
-                          {rolesInfo.groupRoles.map((role) => (
+                          {rolesInfo.group_roles.map((role) => (
                             <label
                               key={role.id}
-                              className={`d-inline-flex gap-1 ${rolesInfo.disabledRoles.includes(role.role_name) ? 'text-muted' : ''}`}
+                              className={`d-inline-flex gap-1 ${rolesInfo.disabled_roles.includes(role.role_name) ? 'text-muted' : ''}`}
                             >
                               <input
                                 type="checkbox"
                                 id={`user_role_${role.id}-${user.id}`}
                                 name={`user_role_${role.id}-${user.id}`}
                                 disabled={
-                                  rolesInfo.disabledRoles.includes(role.role_name) ||
+                                  rolesInfo.disabled_roles.includes(role.role_name) ||
                                   !userCanAssignRoles
                                 }
                                 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- index access may be undefined at runtime
-                                defaultChecked={rolesInfo.roleAssignments[user.uid]?.some(
-                                  (a) => a.teamRoleId === role.id,
+                                defaultChecked={rolesInfo.role_assignments[user.uid]?.some(
+                                  (a) => a.team_role_id === role.id,
                                 )}
                               />
                               {role.role_name}
@@ -241,7 +241,7 @@ function GroupRoleTable({
                 </tr>
               </thead>
               <tbody>
-                {rolesInfo.groupRoles.map((groupRole) => (
+                {rolesInfo.group_roles.map((groupRole) => (
                   <tr key={groupRole.id}>
                     <td>{groupRole.role_name}</td>
                     <td>{groupRole.minimum ?? 0}</td>
@@ -262,18 +262,18 @@ function GroupRoleErrors({
   rolesInfo,
   groupSize,
 }: {
-  rolesInfo: NonNullable<StudentGroupInfo['rolesInfo']>;
+  rolesInfo: NonNullable<StudentGroupInfo['roles_info']>;
   groupSize: number;
 }) {
   return (
     <>
-      {!rolesInfo.rolesAreBalanced && (
+      {!rolesInfo.roles_are_balanced && (
         <div className="alert alert-danger" role="alert">
           At least one student has too many roles. In a group with {groupSize} students, every
           student must be assigned to exactly <strong>one</strong> role.
         </div>
       )}
-      {rolesInfo.validationErrors.map(({ role_name, count, minimum, maximum }) => (
+      {rolesInfo.validation_errors.map(({ role_name, count, minimum, maximum }) => (
         <div key={role_name} className="alert alert-danger" role="alert">
           {minimum != null && count < minimum ? (
             <>
@@ -304,7 +304,7 @@ function GroupRoleErrors({
           )}
         </div>
       ))}
-      {rolesInfo.usersWithoutRoles.length > 0 && (
+      {rolesInfo.users_without_roles.length > 0 && (
         <div className="alert alert-danger" role="alert">
           At least one user does not have a role. All users must have a role.
         </div>

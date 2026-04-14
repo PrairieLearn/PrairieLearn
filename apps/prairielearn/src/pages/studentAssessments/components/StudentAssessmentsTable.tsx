@@ -1,11 +1,13 @@
 import { Fragment } from 'react';
 import { z } from 'zod';
 
+import { DateFromISOString } from '@prairielearn/zod';
+
 import { FriendlyDate, TimezoneContext } from '../../../components/FriendlyDate.js';
 import { Scorebar } from '../../../components/Scorebar.js';
 import {
-  StudentAccessRulesPopoverReact,
   StudentAccessTimelinePopover,
+  StudentLegacyAccessRulesPopover,
 } from '../../../components/StudentAccessRulesPopover.js';
 import { getStudentAssessmentUrl, getStudentCourseInstanceUrl } from '../../../lib/client/url.js';
 
@@ -18,12 +20,10 @@ const AccessRuleSchema = z.object({
   time_limit_min: z.string(),
 });
 
-// Serialized form of AccessTimelineEntry after Hydrate JSON serialization
-// (Date objects become ISO strings).
 const AccessTimelineEntrySchema = z.object({
   credit: z.number(),
-  startDate: z.string().nullable(),
-  endDate: z.string().nullable(),
+  startDate: DateFromISOString.nullable(),
+  endDate: DateFromISOString.nullable(),
   active: z.boolean(),
 });
 
@@ -103,7 +103,7 @@ function AvailableCredit({ row }: { row: StudentAssessmentsTableRow }) {
         {row.modern_access_control ? (
           <StudentAccessTimelinePopover accessTimeline={row.access_timeline} />
         ) : (
-          <StudentAccessRulesPopoverReact accessRules={row.access_rules} />
+          <StudentLegacyAccessRulesPopover accessRules={row.access_rules} />
         )}
       </>
     );

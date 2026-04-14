@@ -13,7 +13,7 @@ export function LockpointRow({
   blockedByAdvanceScorePerc: boolean;
   onCrossLockpoint: (zoneId: string) => void;
 }) {
-  if (row.lockpointCrossed) {
+  if (row.lockpoint_crossed) {
     return (
       <tr className="table-light">
         <td colSpan={colspan} className="py-2">
@@ -21,7 +21,7 @@ export function LockpointRow({
             <i className="fas fa-check-circle text-success me-2 mt-1" aria-hidden="true" />
             <div>
               <span className="fw-bold">Lockpoint</span>
-              <small className="text-muted d-block">{row.lockpointCrossedInfo}</small>
+              <small className="text-muted d-block">{row.lockpoint_crossed_info}</small>
             </div>
           </div>
         </td>
@@ -46,7 +46,7 @@ export function LockpointRow({
             <button
               type="button"
               className="btn btn-warning btn-sm text-nowrap"
-              onClick={() => onCrossLockpoint(row.zoneId)}
+              onClick={() => onCrossLockpoint(row.zone.id)}
             >
               Proceed to next questions
             </button>

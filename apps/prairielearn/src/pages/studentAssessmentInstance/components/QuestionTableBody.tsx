@@ -45,9 +45,12 @@ export function QuestionTableBody({
     const result: boolean[] = [];
     let previousZoneHadInfo = false;
     for (const row of questionRows) {
-      const zoneHasInfo = row.zoneTitle != null || row.zoneHasMaxPoints || row.zoneHasBestQuestions;
-      result.push(row.startNewZone && (zoneHasInfo || previousZoneHadInfo));
-      if (row.startNewZone) {
+      const zoneHasInfo =
+        row.zone.title != null ||
+        row.zone.max_points != null ||
+        row.zone.best_questions != null;
+      result.push(row.start_new_zone && (zoneHasInfo || previousZoneHadInfo));
+      if (row.start_new_zone) {
         previousZoneHadInfo = zoneHasInfo;
       }
     }
@@ -58,28 +61,30 @@ export function QuestionTableBody({
     <>
       {questionRows.map((row, index) => {
         const zoneHasInfo =
-          row.zoneTitle != null || row.zoneHasMaxPoints || row.zoneHasBestQuestions;
+          row.zone.title != null ||
+          row.zone.max_points != null ||
+          row.zone.best_questions != null;
         const showZoneInfo = showZoneInfoByIndex[index];
 
         const isBlocked =
-          row.questionAccessMode === 'blocked_sequence' ||
-          row.questionAccessMode === 'blocked_lockpoint';
+          row.question_access_mode === 'blocked_sequence' ||
+          row.question_access_mode === 'blocked_lockpoint';
 
         const rowLabelText =
           assessmentType === 'Exam'
-            ? `Question ${row.questionNumber}`
-            : row.questionTitle?.trim()
-              ? `${row.questionNumber}. ${row.questionTitle}`
-              : row.questionNumber;
+            ? `Question ${row.question_number}`
+            : row.question.title?.trim()
+              ? `${row.question_number}. ${row.question.title}`
+              : row.question_number;
 
         return (
-          <Fragment key={row.id}>
-            {row.startNewZone && row.lockpoint && (
+          <Fragment key={row.instance_question.id}>
+            {row.start_new_zone && row.zone.lockpoint && (
               <LockpointRow
                 row={row}
                 colspan={zoneTitleColspan}
                 crossable={isLockpointCrossable(row)}
-                blockedByAdvanceScorePerc={hasUnmetAdvanceScorePercBeforeLockpoint(row.zoneNumber)}
+                blockedByAdvanceScorePerc={hasUnmetAdvanceScorePercBeforeLockpoint(row.zone.number)}
                 onCrossLockpoint={onCrossLockpoint}
               />
             )}
@@ -88,25 +93,25 @@ export function QuestionTableBody({
                 <th colSpan={zoneTitleColspan}>
                   {zoneHasInfo ? (
                     <div className="d-flex align-items-center gap-2">
-                      {row.zoneTitle && <span>{row.zoneTitle}</span>}
-                      {row.zoneHasMaxPoints && (
+                      {row.zone.title && <span>{row.zone.title}</span>}
+                      {row.zone.max_points != null && (
                         <ZoneInfoPopover
                           label={
-                            row.zoneTitle
-                              ? `maximum ${row.zoneMaxPoints} points`
-                              : `Maximum ${row.zoneMaxPoints} points`
+                            row.zone.title
+                              ? `maximum ${row.zone.max_points} points`
+                              : `Maximum ${row.zone.max_points} points`
                           }
-                          content={`Of the points that you are awarded for answering these ${row.zoneQuestionCount} questions, at most ${row.zoneMaxPoints} will count toward your total points.`}
+                          content={`Of the points that you are awarded for answering these ${row.zone_question_count} questions, at most ${row.zone.max_points} will count toward your total points.`}
                         />
                       )}
-                      {row.zoneHasBestQuestions && (
+                      {row.zone.best_questions != null && (
                         <ZoneInfoPopover
                           label={
-                            row.zoneTitle || row.zoneHasMaxPoints
-                              ? `best ${row.zoneBestQuestions} of ${row.zoneQuestionCount} questions`
-                              : `Best ${row.zoneBestQuestions} of ${row.zoneQuestionCount} questions`
+                            row.zone.title || row.zone.max_points != null
+                              ? `best ${row.zone.best_questions} of ${row.zone_question_count} questions`
+                              : `Best ${row.zone.best_questions} of ${row.zone_question_count} questions`
                           }
-                          content={`Of these ${row.zoneQuestionCount} questions, only the ${row.zoneBestQuestions} with the highest number of awarded points will count toward your total points.`}
+                          content={`Of these ${row.zone_question_count} questions, only the ${row.zone.best_questions} with the highest number of awarded points will count toward your total points.`}
                         />
                       )}
                     </div>
@@ -198,11 +203,15 @@ function ExamQuestionCells({
         <>
           {hasAutoGradingQuestion && hasManualGradingQuestion && (
             <>
-              <td className="text-center">{formatPoints(row.maxAutoPoints)}</td>
-              <td className="text-center">{formatPoints(row.maxManualPoints)}</td>
+              <td className="text-center">
+                {formatPoints(row.assessment_question.max_auto_points)}
+              </td>
+              <td className="text-center">
+                {formatPoints(row.assessment_question.max_manual_points)}
+              </td>
             </>
           )}
-          <td className="text-center">{formatPoints(row.maxPoints)}</td>
+          <td className="text-center">{formatPoints(row.assessment_question.max_points)}</td>
         </>
       )}
     </>
@@ -223,16 +232,19 @@ function HomeworkQuestionCells({
       {hasAutoGradingQuestion && (
         <>
           <td className="text-center">
-            {!row.maxAutoPoints ? (
+            {!row.assessment_question.max_auto_points ? (
               <>&mdash;</>
             ) : (
-              formatPoints((row.currentValue ?? 0) - (row.maxManualPoints ?? 0))
+              formatPoints(
+                (row.instance_question.current_value ?? 0) -
+                  (row.assessment_question.max_manual_points ?? 0),
+              )
             )}
           </td>
           <td className="text-center">
             <QuestionVariantHistory
-              instanceQuestionId={row.id}
-              previousVariants={row.previousVariants}
+              instanceQuestionId={row.instance_question.id}
+              previousVariants={row.previous_variants}
               courseInstanceId={courseInstanceId}
             />
           </td>
@@ -263,28 +275,35 @@ function InstanceQuestionPoints({
   component: 'manual' | 'auto' | 'total';
 }) {
   const points =
-    component === 'auto' ? row.autoPoints : component === 'manual' ? row.manualPoints : row.points;
+    component === 'auto'
+      ? row.instance_question.auto_points
+      : component === 'manual'
+        ? row.instance_question.manual_points
+        : row.instance_question.points;
   const maxPoints =
     component === 'auto'
-      ? row.maxAutoPoints
+      ? row.assessment_question.max_auto_points
       : component === 'manual'
-        ? row.maxManualPoints
-        : row.maxPoints;
+        ? row.assessment_question.max_manual_points
+        : row.assessment_question.max_points;
   const pointsPending =
-    (['saved', 'grading'].includes(row.status ?? '') && component !== 'manual') ||
-    (row.requiresManualGrading && component !== 'auto');
+    (['saved', 'grading'].includes(row.instance_question.status ?? '') &&
+      component !== 'manual') ||
+    (row.instance_question.requires_manual_grading && component !== 'auto');
 
-  // Special case: if this is a manually-graded question in the saved state, don't show
-  // a "pending" badge for auto points, since there aren't any pending auto points.
-  if (row.status === 'saved' && component === 'auto' && !row.maxAutoPoints && row.maxManualPoints) {
+  if (
+    row.instance_question.status === 'saved' &&
+    component === 'auto' &&
+    !row.assessment_question.max_auto_points &&
+    row.assessment_question.max_manual_points
+  ) {
     return <span className="text-nowrap">&mdash;</span>;
   }
 
   const pointsContent =
-    // If the question is unanswered show a dash instead of 0 points, unless
-    // the question was manually graded or a regrading process forced the
-    // points to be increased.
-    row.status === 'unanswered' && !row.hasLastGrader && row.points === 0 ? (
+    row.instance_question.status === 'unanswered' &&
+    !row.instance_question.has_last_grader &&
+    row.instance_question.points === 0 ? (
       <>&mdash;</>
     ) : pointsPending ? (
       <Badge bg="info">pending</Badge>

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import type { AccessTimelineEntry } from '../../lib/assessment-access-control/resolver.js';
 import {
   AssessmentAccessRuleSchema,
   AssessmentInstanceSchema,
@@ -7,6 +8,8 @@ import {
   AssessmentSetSchema,
   SprocAuthzAssessmentSchema,
 } from '../../lib/db-types.js';
+
+const AccessTimelineEntrySchema = z.custom<AccessTimelineEntry>();
 
 export const StudentAssessmentsRowSchema = z.object({
   assessment_id: AssessmentSchema.shape.id,
@@ -22,7 +25,7 @@ export const StudentAssessmentsRowSchema = z.object({
   credit_date_string: z.string(),
   active: AssessmentAccessRuleSchema.shape.active,
   access_rules: SprocAuthzAssessmentSchema.shape.access_rules,
-  access_timeline: SprocAuthzAssessmentSchema.shape.access_timeline,
+  access_timeline: z.array(AccessTimelineEntrySchema).optional().default([]),
   show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
   assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),
   assessment_instance_score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),

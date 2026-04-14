@@ -22,18 +22,18 @@ export function RowLabel({
   let lockMessage: string | null = null;
   let showLink = true;
 
-  if (row.questionAccessMode === 'blocked_sequence') {
+  if (row.question_access_mode === 'blocked_sequence') {
     showLink = false;
     lockMessage =
-      row.prevQuestionAccessMode === 'blocked_sequence'
+      row.prev_question_access_mode === 'blocked_sequence'
         ? 'A previous question must be completed before you can access this one.'
-        : `You must score at least ${row.prevAdvanceScorePerc}% on ${row.prevTitle} to unlock this question.`;
-  } else if (row.questionAccessMode === 'blocked_lockpoint') {
+        : `You must score at least ${row.prev_advance_score_perc}% on ${row.prev_title} to unlock this question.`;
+  } else if (row.question_access_mode === 'blocked_lockpoint') {
     showLink = false;
-  } else if (!(row.groupRolePermissions?.canView ?? true)) {
+  } else if (!(row.group_role_permissions?.can_view ?? true)) {
     showLink = false;
     lockMessage = `Your current group role (${userGroupRoles}) restricts access to this question.`;
-  } else if (row.questionAccessMode === 'read_only_lockpoint') {
+  } else if (row.question_access_mode === 'read_only_lockpoint') {
     lockMessage =
       'You can no longer submit answers to this question because you have advanced past a lockpoint.';
   }
@@ -41,13 +41,18 @@ export function RowLabel({
   return (
     <>
       {showLink ? (
-        <a href={getInstanceQuestionUrl({ courseInstanceId, instanceQuestionId: row.id })}>
+        <a
+          href={getInstanceQuestionUrl({
+            courseInstanceId,
+            instanceQuestionId: row.instance_question.id,
+          })}
+        >
           {rowLabelText}
         </a>
       ) : (
         <span className="text-muted">{rowLabelText}</span>
       )}
-      {row.questionAccessMode === 'blocked_lockpoint' && !hasStatusColumn ? (
+      {row.question_access_mode === 'blocked_lockpoint' && !hasStatusColumn ? (
         <Badge bg="secondary" className="ms-1" data-testid="locked-instance-question-row">
           Locked
         </Badge>
@@ -64,10 +69,10 @@ export function RowLabel({
           </button>
         </OverlayTrigger>
       ) : null}
-      {row.fileCount > 0 && (
+      {row.file_count > 0 && (
         <OverlayTrigger
           trigger="click"
-          popover={{ body: `Personal notes: ${row.fileCount}` }}
+          popover={{ body: `Personal notes: ${row.file_count}` }}
           rootClose
         >
           <button

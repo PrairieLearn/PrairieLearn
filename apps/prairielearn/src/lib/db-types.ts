@@ -7,8 +7,6 @@ import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
 
-import type { AccessTimelineEntry } from './assessment-access-control/resolver.js';
-
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
@@ -137,12 +135,9 @@ export const SprocTeamInfoSchema = z.object({
 });
 export type SprocTeamInfo = z.infer<typeof SprocTeamInfoSchema>;
 
-const AccessTimelineEntrySchema = z.custom<AccessTimelineEntry>();
-
 // Result of authz_assessment sproc
 export const SprocAuthzAssessmentSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
-  access_timeline: z.array(AccessTimelineEntrySchema).optional().default([]),
   active: z.boolean(),
   authorized: z.boolean(),
   credit: z.number().nullable(),
@@ -161,7 +156,6 @@ export type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 // Result of authz_assessment_instance sproc
 export const SprocAuthzAssessmentInstanceSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
-  access_timeline: z.array(AccessTimelineEntrySchema).optional().default([]),
   active: z.boolean(),
   authorized: z.boolean(),
   authorized_edit: z.boolean(),

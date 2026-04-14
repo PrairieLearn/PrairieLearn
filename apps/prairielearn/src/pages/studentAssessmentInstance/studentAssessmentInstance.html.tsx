@@ -17,13 +17,11 @@ import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   RawStudentAssessmentInstanceSchema__UNSAFE,
-  type StudentAccessRule,
   StudentAccessRuleSchema,
   StudentAssessmentInstanceAuthzResultSchema,
   StudentAssessmentQuestionSchema,
   StudentAssessmentSchema,
   StudentAssessmentSetSchema,
-  type StudentGroupConfig,
   StudentGroupConfigSchema,
   StudentGroupRoleSchema,
   StudentInstanceQuestionSchema__UNSAFE,
@@ -120,54 +118,42 @@ export function StudentAssessmentInstance({
     ? getRoleNamesForUser(groupInfo, resLocals.authz_data.user).join(', ')
     : null;
 
-  // Map access rules to client-safe type.
-  const accessRules: StudentAccessRule[] = resLocals.authz_result.access_rules.map((rule) =>
+  const accessRules = resLocals.authz_result.access_rules.map((rule) =>
     StudentAccessRuleSchema.parse(rule),
   );
 
-  // Map access timeline to client-safe type (Date objects become ISO strings via Hydrate).
-  const accessTimeline: ClientAccessTimelineEntry[] = resLocals.authz_result.access_timeline.map(
-    (entry) => ({
-      credit: entry.credit,
-      startDate: entry.startDate?.toISOString() ?? null,
-      endDate: entry.endDate?.toISOString() ?? null,
-      active: entry.active,
-    }),
-  );
+  const accessTimeline = resLocals.authz_result.access_timeline ?? [];
 
-  // Map group config/info to client-safe types.
-  const clientGroupConfig: StudentGroupConfig | null = groupConfig
-    ? StudentGroupConfigSchema.parse(groupConfig)
-    : null;
+  const studentGroupConfig = groupConfig ? StudentGroupConfigSchema.parse(groupConfig) : null;
 
-  const clientGroupInfo: StudentGroupInfo | null = groupInfo
+  const studentGroupInfo: StudentGroupInfo | null = groupInfo
     ? {
-        groupName: groupInfo.groupName,
-        joinCode: groupInfo.joinCode,
-        groupMembers: groupInfo.groupMembers.map((u) => ({ uid: u.uid, id: u.id })),
-        groupSize: groupInfo.groupSize,
-        rolesInfo: groupInfo.rolesInfo
+        group_name: groupInfo.groupName,
+        join_code: groupInfo.joinCode,
+        group_members: groupInfo.groupMembers.map((u) => ({ uid: u.uid, id: u.id })),
+        group_size: groupInfo.groupSize,
+        roles_info: groupInfo.rolesInfo
           ? {
-              roleAssignments: Object.fromEntries(
+              role_assignments: Object.fromEntries(
                 Object.entries(groupInfo.rolesInfo.roleAssignments).map(([uid, assignments]) => [
                   uid,
                   assignments.map((a) => ({
-                    roleName: a.role_name,
-                    teamRoleId: a.team_role_id,
+                    role_name: a.role_name,
+                    team_role_id: a.team_role_id,
                   })),
                 ]),
               ),
-              groupRoles: groupInfo.rolesInfo.groupRoles.map((r) => ({
+              group_roles: groupInfo.rolesInfo.groupRoles.map((r) => ({
                 ...StudentGroupRoleSchema.parse(r),
                 count: r.count,
               })),
-              validationErrors: groupInfo.rolesInfo.validationErrors.map((r) => ({
+              validation_errors: groupInfo.rolesInfo.validationErrors.map((r) => ({
                 ...StudentGroupRoleSchema.parse(r),
                 count: r.count,
               })),
-              disabledRoles: groupInfo.rolesInfo.disabledRoles,
-              rolesAreBalanced: groupInfo.rolesInfo.rolesAreBalanced,
-              usersWithoutRoles: groupInfo.rolesInfo.usersWithoutRoles.map((u) => ({
+              disabled_roles: groupInfo.rolesInfo.disabledRoles,
+              roles_are_balanced: groupInfo.rolesInfo.rolesAreBalanced,
+              users_without_roles: groupInfo.rolesInfo.usersWithoutRoles.map((u) => ({
                 uid: u.uid,
                 id: u.id,
               })),
@@ -176,79 +162,67 @@ export function StudentAssessmentInstance({
       }
     : null;
 
-  // Map rows to client-safe type with scoring data (no db-types.ts references).
   const isGroupAssessment = groupConfig != null;
   const assessmentInstanceOpen = !!resLocals.assessment_instance.open;
-  // When real-time grading is fully disabled and the instance is open, the UI
-  // only shows max points per question — redact actual scored values so they
-  // aren't leaked in the hydration payload.
   const redactScores = !someQuestionsAllowRealTimeGrading && assessmentInstanceOpen;
-  const questionRows: StudentQuestionRow[] = instance_question_rows.map((row) => ({
-    id: row.instance_question.id,
-    startNewZone: row.start_new_zone,
-    zoneId: row.zone.id,
-    zoneNumber: row.zone.number,
-    zoneTitle: row.zone.title,
-    lockpoint: row.zone.lockpoint,
-    lockpointCrossed: row.lockpoint_crossed,
-    lockpointCrossedInfo: run(() => {
-      if (!row.lockpoint_crossed) return null;
-      const parts: string[] = ['Previous questions locked'];
-      if (isGroupAssessment && row.lockpoint_crossed_authn_user_uid) {
-        parts.push(`by ${row.lockpoint_crossed_authn_user_uid}`);
-      }
-      if (row.lockpoint_crossed_at) {
-        parts.push(
-          `at ${formatDate(row.lockpoint_crossed_at, resLocals.course_instance.display_timezone)}`,
-        );
-      }
-      return parts.join(' ');
-    }),
-    questionNumber: row.question_number,
-    questionTitle: row.question.title,
-    questionAccessMode: row.question_access_mode,
-    prevAdvanceScorePerc: row.prev_advance_score_perc,
-    prevTitle: row.prev_title,
-    prevQuestionAccessMode: row.prev_question_access_mode,
-    groupRolePermissions: row.group_role_permissions
-      ? {
-          canView: row.group_role_permissions.can_view,
-          canSubmit: row.group_role_permissions.can_submit,
-        }
-      : undefined,
-    fileCount: row.file_count,
-    zoneMaxPoints: row.zone.max_points,
-    zoneHasMaxPoints: row.zone.max_points != null,
-    zoneBestQuestions: row.zone.best_questions,
-    zoneHasBestQuestions: row.zone.best_questions != null,
-    zoneQuestionCount: row.zone_question_count,
+  const questionRows: StudentQuestionRow[] = instance_question_rows.map((row) => {
+    const zone = StudentZoneSchema.parse(row.zone);
+    const instanceQuestion = StudentInstanceQuestionSchema__UNSAFE.parse(row.instance_question);
+    const assessmentQuestion = StudentAssessmentQuestionSchema.parse(row.assessment_question);
+    const question = StudentQuestionSchema.parse(row.question);
 
-    // Instance question scoring data.
-    autoPoints: redactScores ? null : row.instance_question.auto_points,
-    manualPoints: redactScores ? null : row.instance_question.manual_points,
-    points: redactScores ? null : row.instance_question.points,
-    status: row.instance_question.status,
-    requiresManualGrading: row.instance_question.requires_manual_grading,
-    hasLastGrader: row.instance_question.has_last_grader,
-    maxAutoPoints: row.assessment_question.max_auto_points,
-    maxManualPoints: row.assessment_question.max_manual_points,
-    maxPoints: row.assessment_question.max_points,
-    allowRealTimeGrading: row.assessment_question.allow_real_time_grading,
-    allowGradeLeftMs: row.allowGradeLeftMs,
-    instanceQuestionOpen: assessmentInstanceOpen && row.instance_question.open,
-    pointsListOriginal: row.instance_question.points_list_original,
-    numberAttempts: row.instance_question.number_attempts,
-    pointsList: row.instance_question.points_list,
-    highestSubmissionScore: redactScores ? null : row.instance_question.highest_submission_score,
-    currentValue: redactScores ? null : row.instance_question.current_value,
-    previousVariants: redactScores
-      ? null
-      : (row.previous_variants?.map((v) => ({
-          id: v.id,
-          open: v.open,
-          maxSubmissionScore: v.max_submission_score,
-        })) ?? null),
-  }));
+    if (redactScores) {
+      instanceQuestion.auto_points = null;
+      instanceQuestion.manual_points = null;
+      instanceQuestion.points = null;
+      instanceQuestion.highest_submission_score = null;
+      instanceQuestion.current_value = null;
+    }
+
+    return {
+      zone,
+      instance_question: instanceQuestion,
+      assessment_question: assessmentQuestion,
+      question,
+      start_new_zone: row.start_new_zone,
+      lockpoint_crossed: row.lockpoint_crossed,
+      lockpoint_crossed_info: run(() => {
+        if (!row.lockpoint_crossed) return null;
+        const parts: string[] = ['Previous questions locked'];
+        if (isGroupAssessment && row.lockpoint_crossed_authn_user_uid) {
+          parts.push(`by ${row.lockpoint_crossed_authn_user_uid}`);
+        }
+        if (row.lockpoint_crossed_at) {
+          parts.push(
+            `at ${formatDate(row.lockpoint_crossed_at, resLocals.course_instance.display_timezone)}`,
+          );
+        }
+        return parts.join(' ');
+      }),
+      question_number: row.question_number,
+      question_access_mode: row.question_access_mode,
+      prev_advance_score_perc: row.prev_advance_score_perc,
+      prev_title: row.prev_title,
+      prev_question_access_mode: row.prev_question_access_mode,
+      group_role_permissions: row.group_role_permissions
+        ? {
+            can_view: row.group_role_permissions.can_view,
+            can_submit: row.group_role_permissions.can_submit,
+          }
+        : undefined,
+      file_count: row.file_count,
+      zone_question_count: row.zone_question_count,
+      allow_grade_left_ms: row.allowGradeLeftMs,
+      instance_question_open: assessmentInstanceOpen && row.instance_question.open,
+      previous_variants: redactScores
+        ? null
+        : (row.previous_variants?.map((v) => ({
+            id: v.id,
+            open: v.open,
+            max_submission_score: v.max_submission_score,
+          })) ?? null),
+    };
+  });
 
   const assessment = StudentAssessmentSchema.parse(resLocals.assessment);
   const assessmentSet = StudentAssessmentSetSchema.parse(resLocals.assessment_set);
@@ -309,8 +283,8 @@ export function StudentAssessmentInstance({
             accessRules={accessRules}
             accessTimeline={accessTimeline}
             displayTimezone={resLocals.course_instance.display_timezone}
-            groupConfig={clientGroupConfig}
-            groupInfo={clientGroupInfo}
+            groupConfig={studentGroupConfig}
+            groupInfo={studentGroupInfo}
             userCanAssignRoles={userCanAssignRoles ?? false}
             questionRows={questionRows}
             csrfToken={resLocals.__csrf_token}

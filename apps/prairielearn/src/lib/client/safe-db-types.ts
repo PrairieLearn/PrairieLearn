@@ -32,14 +32,14 @@ import {
   CourseInstanceSchema as RawCourseInstanceSchema,
   CourseSchema as RawCourseSchema,
   EnrollmentSchema as RawEnrollmentSchema,
-  GroupConfigSchema as RawGroupConfigSchema,
-  GroupRoleSchema as RawGroupRoleSchema,
   InstanceQuestionGroupSchema as RawInstanceQuestionGroupSchema,
   InstanceQuestionSchema as RawInstanceQuestionSchema,
   InstitutionSchema as RawInstitutionSchema,
   QuestionSchema as RawQuestionSchema,
   RubricItemSchema as RawRubricItemSchema,
   RubricSchema as RawRubricSchema,
+  GroupConfigSchema as RawGroupConfigSchema,
+  GroupRoleSchema as RawGroupRoleSchema,
   SprocAuthzAssessmentInstanceSchema as RawSprocAuthzAssessmentInstanceSchema,
   SprocCheckAssessmentAccessSchema as RawSprocCheckAssessmentAccessSchema,
   StudentLabelSchema as RawStudentLabelSchema,
@@ -390,7 +390,8 @@ export const RawStudentGroupConfigSchema = RawGroupConfigSchema.pick({
   student_authz_join: true,
   student_authz_leave: true,
 });
-export const StudentGroupConfigSchema = RawStudentGroupConfigSchema.brand<'StudentGroupConfig'>();
+export const StudentGroupConfigSchema =
+  RawStudentGroupConfigSchema.brand<'StudentGroupConfig'>();
 export type StudentGroupConfig = z.infer<typeof StudentGroupConfigSchema>;
 
 /** Group Roles */

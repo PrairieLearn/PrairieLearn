@@ -7,7 +7,6 @@ import { TimezoneContext } from '../../../components/FriendlyDate.js';
 import { Scorebar } from '../../../components/Scorebar.js';
 import { StudentAccessTimelinePopover } from '../../../components/StudentAccessRulesPopover.js';
 import type { AccessTimelineEntry } from '../../../lib/assessment-access-control/resolver.js';
-import type { StudentAccessRule } from '../../../lib/client/safe-db-types.js';
 import { formatPoints } from '../../../lib/format.js';
 
 import { ExamFooterContent } from './ExamFooterContent.js';
@@ -19,6 +18,7 @@ import type {
   StudentAssessmentInstanceBodyProps,
   StudentQuestionRow,
 } from './types.js';
+import type { StudentAccessRule } from '../../../lib/client/safe-db-types.js';
 
 StudentAssessmentInstanceBody.displayName = 'StudentAssessmentInstanceBody';
 
@@ -57,13 +57,23 @@ export function StudentAssessmentInstanceBody({
 
   const gradingConfig: GradingConfig = {
     hasAutoGradingQuestion: questionRows.some(
-      (row) => row.maxAutoPoints || row.autoPoints || !row.maxPoints,
+      (row) =>
+        row.assessment_question.max_auto_points ||
+        row.instance_question.auto_points ||
+        !row.assessment_question.max_points,
     ),
     hasManualGradingQuestion: questionRows.some(
-      (row) => row.maxManualPoints || row.manualPoints || row.requiresManualGrading,
+      (row) =>
+        row.assessment_question.max_manual_points ||
+        row.instance_question.manual_points ||
+        row.instance_question.requires_manual_grading,
     ),
-    someQuestionsAllowRealTimeGrading: questionRows.some((row) => row.allowRealTimeGrading),
-    someQuestionsForbidRealTimeGrading: questionRows.some((row) => !row.allowRealTimeGrading),
+    someQuestionsAllowRealTimeGrading: questionRows.some(
+      (row) => row.assessment_question.allow_real_time_grading,
+    ),
+    someQuestionsForbidRealTimeGrading: questionRows.some(
+      (row) => !row.assessment_question.allow_real_time_grading,
+    ),
   };
   const {
     hasAutoGradingQuestion,
@@ -81,10 +91,14 @@ export function StudentAssessmentInstanceBody({
     let saved = 0;
     let suspended = 0;
     for (const row of questionRows) {
-      if (row.status === 'saved') {
-        if (row.allowGradeLeftMs > 0) {
+      if (row.instance_question.status === 'saved') {
+        if (row.allow_grade_left_ms > 0) {
           suspended++;
-        } else if ((row.maxAutoPoints || !row.maxManualPoints) && row.allowRealTimeGrading) {
+        } else if (
+          (row.assessment_question.max_auto_points ||
+            !row.assessment_question.max_manual_points) &&
+          row.assessment_question.allow_real_time_grading
+        ) {
           saved++;
         }
       }
@@ -92,11 +106,13 @@ export function StudentAssessmentInstanceBody({
     return { savedAnswers: saved, suspendedSavedAnswers: suspended };
   });
 
-  const allQuestionsAnswered = questionRows.every((row) => row.status !== 'unanswered');
+  const allQuestionsAnswered = questionRows.every(
+    (row) => row.instance_question.status !== 'unanswered',
+  );
 
   const firstUncrossedLockpointZoneNumber = questionRows
-    .filter((row) => row.startNewZone && row.lockpoint && !row.lockpointCrossed)
-    .map((row) => row.zoneNumber)
+    .filter((row) => row.start_new_zone && row.zone.lockpoint && !row.lockpoint_crossed)
+    .map((row) => row.zone.number)
     .sort((a, b) => a - b)[0];
 
   const zoneTitleColspan = run(() => {
@@ -121,8 +137,8 @@ export function StudentAssessmentInstanceBody({
   const hasUnmetAdvanceScorePercBeforeLockpoint = (zoneNumber: number) =>
     questionRows.some(
       (row) =>
-        row.questionAccessMode === 'blocked_sequence' &&
-        (row.zoneNumber < zoneNumber || (row.zoneNumber === zoneNumber && row.startNewZone)),
+        row.question_access_mode === 'blocked_sequence' &&
+        (row.zone.number < zoneNumber || (row.zone.number === zoneNumber && row.start_new_zone)),
     );
 
   function isLockpointCrossable(row: StudentQuestionRow): boolean {
@@ -130,10 +146,10 @@ export function StudentAssessmentInstanceBody({
       assessmentInstanceOpen &&
       active &&
       authorizedEdit &&
-      row.lockpoint &&
-      !row.lockpointCrossed &&
-      row.zoneNumber === firstUncrossedLockpointZoneNumber &&
-      !hasUnmetAdvanceScorePercBeforeLockpoint(row.zoneNumber)
+      row.zone.lockpoint &&
+      !row.lockpoint_crossed &&
+      row.zone.number === firstUncrossedLockpointZoneNumber &&
+      !hasUnmetAdvanceScorePercBeforeLockpoint(row.zone.number)
     );
   }
 

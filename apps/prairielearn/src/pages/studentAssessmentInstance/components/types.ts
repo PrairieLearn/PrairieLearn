@@ -1,65 +1,44 @@
 import type { AccessTimelineEntry } from '../../../lib/assessment-access-control/resolver.js';
-import {
-  type StudentAccessRule,
-  type StudentAssessment,
-  type StudentAssessmentInstance,
-  type StudentAssessmentInstanceAuthzResult,
-  type StudentAssessmentSet,
-  type StudentGroupConfig,
-  type StudentGroupRole,
+import type {
+  StudentAccessRule,
+  StudentAssessment,
+  StudentAssessmentInstance,
+  StudentAssessmentInstanceAuthzResult,
+  StudentAssessmentQuestion,
+  StudentAssessmentSet,
+  StudentGroupConfig,
+  StudentGroupRole,
+  StudentInstanceQuestion__UNSAFE,
+  StudentQuestion,
+  StudentUser,
+  StudentZone,
 } from '../../../lib/client/safe-db-types.js';
 
-// Client-safe row type for the hydrated component. This mirrors the fields
-// from InstanceQuestionRow that the client actually needs, without pulling
-// in db-types.ts schemas that the safe-db-types lint rule forbids.
 export interface StudentQuestionRow {
-  id: string;
-  startNewZone: boolean;
-  zoneId: string;
-  zoneNumber: number;
-  zoneTitle: string | null;
-  lockpoint: boolean;
-  lockpointCrossed: boolean;
-  lockpointCrossedInfo: string | null;
-  questionNumber: string;
-  questionTitle: string | null;
-  questionAccessMode: string;
-  prevAdvanceScorePerc: number | null;
-  prevTitle: string | null;
-  prevQuestionAccessMode: string | null;
-  groupRolePermissions?: { canView: boolean; canSubmit: boolean };
-  fileCount: number;
-  zoneMaxPoints: number | null;
-  zoneHasMaxPoints: boolean;
-  zoneBestQuestions: number | null;
-  zoneHasBestQuestions: boolean;
-  zoneQuestionCount: number;
-
-  /** Instance question scoring data (used by React score/status components). */
-  autoPoints: number | null;
-  manualPoints: number | null;
-  points: number | null;
-  status: string | null;
-  requiresManualGrading: boolean;
-  hasLastGrader: boolean;
-  maxAutoPoints: number | null;
-  maxManualPoints: number | null;
-  maxPoints: number | null;
-  allowRealTimeGrading: boolean;
-  allowGradeLeftMs: number;
-  instanceQuestionOpen: boolean;
-  pointsListOriginal: number[] | null;
-  numberAttempts: number;
-  pointsList: number[] | null;
-  highestSubmissionScore: number | null;
-  currentValue: number | null;
-  previousVariants: StudentVariantWithScore[] | null;
+  zone: StudentZone;
+  instance_question: StudentInstanceQuestion__UNSAFE;
+  assessment_question: StudentAssessmentQuestion;
+  question: StudentQuestion;
+  start_new_zone: boolean;
+  lockpoint_crossed: boolean;
+  lockpoint_crossed_info: string | null;
+  question_number: string;
+  question_access_mode: string;
+  prev_advance_score_perc: number | null;
+  prev_title: string | null;
+  prev_question_access_mode: string | null;
+  group_role_permissions?: { can_view: boolean; can_submit: boolean };
+  file_count: number;
+  zone_question_count: number;
+  allow_grade_left_ms: number;
+  instance_question_open: boolean;
+  previous_variants: StudentVariantWithScore[] | null;
 }
 
 export interface StudentVariantWithScore {
   id: string;
   open: boolean | null;
-  maxSubmissionScore: number;
+  max_submission_score: number;
 }
 
 export interface GradingConfig {
@@ -69,24 +48,27 @@ export interface GradingConfig {
   someQuestionsForbidRealTimeGrading: boolean;
 }
 
-// Client-safe group work info for the hydrated component.
-export interface StudentGroupRoleAssignment {
-  roleName: string;
-  teamRoleId: string;
+export interface StudentGroupRoleWithCount extends StudentGroupRole {
+  count: number;
+}
+
+export interface StudentRoleAssignment {
+  role_name: string;
+  team_role_id: string;
 }
 
 export interface StudentGroupInfo {
-  groupName: string;
-  joinCode: string;
-  groupMembers: { uid: string; id: string }[];
-  groupSize: number;
-  rolesInfo?: {
-    roleAssignments: Record<string, StudentGroupRoleAssignment[]>;
-    groupRoles: (StudentGroupRole & { count: number })[];
-    validationErrors: (StudentGroupRole & { count: number })[];
-    disabledRoles: string[];
-    rolesAreBalanced: boolean;
-    usersWithoutRoles: { uid: string; id: string }[];
+  group_name: string;
+  join_code: string;
+  group_members: Pick<StudentUser, 'uid' | 'id'>[];
+  group_size: number;
+  roles_info?: {
+    role_assignments: Record<string, StudentRoleAssignment[]>;
+    group_roles: StudentGroupRoleWithCount[];
+    validation_errors: StudentGroupRoleWithCount[];
+    disabled_roles: string[];
+    roles_are_balanced: boolean;
+    users_without_roles: Pick<StudentUser, 'uid' | 'id'>[];
   };
 }
 
