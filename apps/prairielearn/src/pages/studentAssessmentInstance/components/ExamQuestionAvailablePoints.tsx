@@ -72,7 +72,11 @@ export function ExamQuestionAvailablePoints({ row }: { row: StudentQuestionRow }
         }}
         rootClose
       >
-        <button type="button" className="btn btn-xs btn-ghost">
+        <button
+          type="button"
+          className="btn btn-xs btn-ghost"
+          aria-label="Explanation of available points"
+        >
           <i className="fa fa-question-circle" aria-hidden="true" />
         </button>
       </OverlayTrigger>

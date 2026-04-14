@@ -231,7 +231,7 @@ function GroupRoleTable({
                 <input type="hidden" name="__action" value="update_group_roles" />
                 <input type="hidden" name="__csrf_token" value={csrfToken} />
                 <button type="submit" className="btn btn-primary">
-                  Update Roles
+                  Update roles
                 </button>
               </div>
             )}

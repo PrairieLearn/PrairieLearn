@@ -26,16 +26,22 @@ export async function switchUserAndLoadAssessment(
   const page = await res.text();
   const $ = cheerio.load(page);
 
-  // Try to find a CSRF token from a specific form first. If no matching form
-  // is found (e.g. because the form lives inside a React modal that isn't
-  // server-rendered), fall back to the page-level test CSRF token span.
+  // When a specific form is requested, only look up that form and fail if it's
+  // missing. Otherwise fall back to the nearest form or the page-level token.
   const form =
-    $(`form[name="${formName}"]`).get(0) ??
-    $(formContainer).find('form').get(0) ??
-    $(formContainer).closest('form').get(0);
+    formName != null
+      ? $(`form[name="${formName}"]`).get(0)
+      : ($(formContainer).find('form').get(0) ?? $(formContainer).closest('form').get(0));
+
+  if (formName != null) {
+    assert.ok(form, `Expected form "${formName}" to be present`);
+  }
 
   const csrfTokenElement = form ? $(form).find('input[name="__csrf_token"]') : undefined;
-  const csrfToken = csrfTokenElement?.attr('value') ?? getCSRFToken($);
+  const csrfToken =
+    formName != null
+      ? csrfTokenElement?.attr('value')
+      : (csrfTokenElement?.attr('value') ?? getCSRFToken($));
   assert.ok(csrfToken);
 
   return { $, csrfToken };

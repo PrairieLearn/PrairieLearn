@@ -32,7 +32,7 @@ export function RowLabel({
     showLink = false;
   } else if (!(row.groupRolePermissions?.canView ?? true)) {
     showLink = false;
-    lockMessage = `Your current group role (${userGroupRoles}) restricts access to this question.`;
+    lockMessage = `Your current group role (${userGroupRoles ?? 'no assigned roles'}) restricts access to this question.`;
   } else if (row.questionAccessMode === 'read_only_lockpoint') {
     lockMessage =
       'You can no longer submit answers to this question because you have advanced past a lockpoint.';
