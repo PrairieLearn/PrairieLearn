@@ -155,7 +155,7 @@ describe('migrateAllowAccess', () => {
       expected: {
         archetype: { base: 'always-open', modifiers: [] },
         result: {},
-        errors: [],
+        errors: ['Always-open rules cannot be automatically migrated without a release date.'],
         notes: [],
         hasUidRules: false,
       },
@@ -166,7 +166,7 @@ describe('migrateAllowAccess', () => {
       expected: {
         archetype: { base: 'always-open', modifiers: [] },
         result: {},
-        errors: ['Credit of 120% cannot be expressed in the modern always-open format.'],
+        errors: ['Always-open rules cannot be automatically migrated without a release date.'],
         notes: [],
         hasUidRules: false,
       },
@@ -664,6 +664,42 @@ describe('migrateAllowAccess', () => {
             releaseDate: '2024-01-01',
             dueDate: '2024-06-01',
             durationMinutes: 60,
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'near-contiguous windows with small gaps treated as contiguous',
+      rules: [
+        {
+          credit: 100,
+          startDate: '2023-02-14T11:00:01',
+          endDate: '2023-02-18T23:59:59',
+          showClosedAssessment: true,
+        },
+        {
+          credit: 95,
+          startDate: '2023-02-19T00:00:01',
+          endDate: '2023-02-20T23:59:59',
+          showClosedAssessment: true,
+        },
+        {
+          credit: 0,
+          startDate: '2023-02-21T00:00:01',
+          endDate: '2023-04-30T23:59:59',
+          showClosedAssessment: true,
+        },
+      ],
+      expected: {
+        archetype: { base: 'declining-credit', modifiers: [] },
+        result: {
+          dateControl: {
+            releaseDate: '2023-02-14T11:00:01',
+            dueDate: '2023-02-18T23:59:59',
+            lateDeadlines: [{ date: '2023-02-20T23:59:59', credit: 95 }],
           },
         },
         errors: [],
@@ -1263,18 +1299,6 @@ describe('migrateAssessmentJson fallback release date', () => {
     assert.isNotNull(result);
     const parsed = JSON.parse(result.json);
     assert.isUndefined(parsed.accessControl[0].dateControl?.releaseDate);
-  });
-
-  it('migrates always-open rules to empty accessControl entry', () => {
-    const json = JSON.stringify({
-      type: 'Homework',
-      allowAccess: [{ credit: 100 }],
-    });
-    const result = migrateAssessmentJson(json, '2025-01-15T00:00:00');
-    assert.isNotNull(result);
-    const parsed = JSON.parse(result.json);
-    assert.isUndefined(parsed.allowAccess);
-    assert.deepEqual(parsed.accessControl, [{}]);
   });
 
   it('preserves active access restriction semantics during migration', () => {

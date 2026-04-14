@@ -1,7 +1,7 @@
 /**
- * Migration harness: scans all infoAssessment.json files, normalizes allowAccess
- * shapes, runs each unique shape through migrateAllowAccess(), and generates an
- * HTML report comparing old vs new.
+ * Migration harness: scans all infoAssessment.json files, runs each through
+ * migrateAllowAccess(), normalizes shapes and error signatures, and generates
+ * an HTML report comparing old vs new for each unique (shape, outcome) pair.
  */
 
 import * as fs from 'fs/promises';
@@ -54,15 +54,14 @@ interface NormalizedRule {
   [key: string]: unknown;
 }
 
-/** Fields to strip entirely from normalization. */
-const STRIP_FIELDS = new Set(['mode', 'comment', 'role']);
-
 function normalizeRules(rules: AssessmentAccessRuleJson[]): {
   shape: string;
   normalized: NormalizedRule[];
 } {
-  // Strip rules containing uids
-  const filtered = rules.filter((r) => !r.uids);
+  // Match the filtering in migration.ts normalizeRules():
+  // - Strip rules with uids
+  // - Strip rules with non-Student roles (not synced)
+  const filtered = rules.filter((r) => !r.uids).filter((r) => r.role == null || r.role === 'Student');
   if (filtered.length === 0) {
     return { shape: '[]', normalized: [] };
   }
@@ -126,34 +125,53 @@ function normalizeRules(rules: AssessmentAccessRuleJson[]): {
 }
 
 // ---------------------------------------------------------------------------
-// 5-6. Group by shape, pick representative
+// Normalize error/note messages to stable signatures
 // ---------------------------------------------------------------------------
 
-interface ShapeGroup {
+/**
+ * Replaces concrete values in error/note messages with placeholders so that
+ * messages differing only in specific numbers or dates produce the same
+ * signature. For example:
+ *   "Credit of 120% cannot be..." -> "Credit of N% cannot be..."
+ *   "3 full-credit windows collapsed into single span: 2024-01-01 to 2024-06-01"
+ *     -> "N full-credit windows collapsed into single span: DATE to DATE"
+ */
+function normalizeMessage(msg: string): string {
+  return msg
+    // ISO-ish dates (with or without time component)
+    .replace(/\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?)?/g, 'DATE')
+    // Numbers (standalone, not inside words)
+    .replace(/\b\d+\b/g, 'N');
+}
+
+function normalizeMessages(msgs: string[]): string {
+  return msgs.map(normalizeMessage).join('|');
+}
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface OutcomeGroup {
   shape: string;
   normalized: NormalizedRule[];
+  /** The outcome key: archetype + normalized errors + normalized notes */
+  outcomeKey: string;
   representative: AssessmentAccessRuleJson[];
+  migrationResult: ReturnType<typeof migrateAllowAccess>;
   count: number;
   filePaths: string[];
 }
 
 // ---------------------------------------------------------------------------
-// 7. Run migration on each representative
-// ---------------------------------------------------------------------------
-
-interface ShapeResult extends ShapeGroup {
-  migrationResult: ReturnType<typeof migrateAllowAccess>;
-}
-
-// ---------------------------------------------------------------------------
-// 8. Generate HTML report
+// Generate HTML report
 // ---------------------------------------------------------------------------
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function generateHtml(results: ShapeResult[], totalFiles: number, totalWithAccess: number): string {
+function generateHtml(results: OutcomeGroup[], totalFiles: number, totalWithAccess: number): string {
   // Sort by count descending
   results.sort((a, b) => b.count - a.count);
 
@@ -233,8 +251,8 @@ function generateHtml(results: ShapeResult[], totalFiles: number, totalWithAcces
 <div class="summary">
   <span class="stat"><strong>${totalFiles.toLocaleString()}</strong> total files scanned</span>
   <span class="stat"><strong>${totalWithAccess.toLocaleString()}</strong> with allowAccess</span>
-  <span class="stat"><strong>${results.length}</strong> unique shapes</span>
-  <span class="stat"><strong>${errorCount}</strong> shapes with errors (${assessmentsWithErrors.toLocaleString()} assessments)</span>
+  <span class="stat"><strong>${results.length}</strong> unique (shape, outcome) groups</span>
+  <span class="stat"><strong>${errorCount}</strong> groups with errors (${assessmentsWithErrors.toLocaleString()} assessments)</span>
 </div>
 <div class="filter-bar">
   <label>Filter by archetype:
@@ -283,7 +301,9 @@ async function main() {
   const files = await findInfoAssessmentFiles(REPOS_DIR);
   console.log(`Found ${files.length} files`);
 
-  const shapeMap = new Map<string, ShapeGroup>();
+  // We need to build the dist first for imports to work.
+  // Group by (shape, outcome) where outcome = archetype + normalized errors/notes.
+  const groupMap = new Map<string, OutcomeGroup>();
   let withAccess = 0;
   let processed = 0;
 
@@ -312,21 +332,45 @@ async function main() {
 
     withAccess++;
 
+    // Match the filtering in migration.ts normalizeRules()
+    const rulesForMigration = allowAccess
+      .filter((r) => !r.uids)
+      .filter((r) => r.role == null || r.role === 'Student');
     const { shape, normalized } = normalizeRules(allowAccess);
 
-    const existing = shapeMap.get(shape);
+    // Run migration on this specific assessment
+    let migrationResult;
+    try {
+      migrationResult = migrateAllowAccess(rulesForMigration);
+    } catch (err: any) {
+      migrationResult = {
+        archetype: { base: 'unclassified' as const, modifiers: [] as ('mode-gated' | 'hides-closed' | 'hides-score')[] },
+        result: {} as any,
+        errors: [`Exception: ${err.message}`],
+        notes: [] as string[],
+        hasUidRules: false,
+      };
+    }
+
+    // Build outcome key from archetype + normalized error/note signatures
+    const archetypeKey = `${migrationResult.archetype.base}:${migrationResult.archetype.modifiers.join(',')}`;
+    const errorSig = normalizeMessages(migrationResult.errors);
+    const noteSig = normalizeMessages(migrationResult.notes);
+    const outcomeKey = `${shape}||${archetypeKey}||${errorSig}||${noteSig}`;
+
+    const existing = groupMap.get(outcomeKey);
     if (existing) {
       existing.count++;
       if (existing.filePaths.length < 3) {
         existing.filePaths.push(filePath);
       }
     } else {
-      // Strip uid rules from representative for migration
-      const representative = allowAccess.filter((r) => !r.uids);
-      shapeMap.set(shape, {
+      groupMap.set(outcomeKey, {
         shape,
         normalized,
-        representative,
+        outcomeKey,
+        representative: rulesForMigration,
+        migrationResult,
         count: 1,
         filePaths: [filePath],
       });
@@ -334,31 +378,9 @@ async function main() {
   }
 
   console.log(`\n${withAccess} assessments with allowAccess`);
-  console.log(`${shapeMap.size} unique shapes\n`);
+  console.log(`${groupMap.size} unique (shape, outcome) groups\n`);
 
-  // Run migration on each representative
-  console.log('Running migration on each unique shape...');
-  const results: ShapeResult[] = [];
-
-  for (const group of shapeMap.values()) {
-    let migrationResult;
-    try {
-      migrationResult = migrateAllowAccess(group.representative);
-    } catch (err: any) {
-      migrationResult = {
-        archetype: { base: 'unclassified' as const, modifiers: [] as const },
-        result: [] as any,
-        errors: [`Exception: ${err.message}`],
-        notes: [],
-        hasUidRules: false,
-      };
-    }
-
-    results.push({
-      ...group,
-      migrationResult,
-    });
-  }
+  const results = [...groupMap.values()];
 
   // Aggregate stats
   const archetypeCounts = new Map<string, number>();
@@ -372,7 +394,10 @@ async function main() {
   }
 
   const errorCount = results.filter((r) => r.migrationResult.errors.length > 0).length;
-  console.log(`\n${errorCount} shapes with migration errors`);
+  const assessmentsWithErrors = results
+    .filter((r) => r.migrationResult.errors.length > 0)
+    .reduce((sum, r) => sum + r.count, 0);
+  console.log(`\n${errorCount} groups with migration errors (${assessmentsWithErrors} assessments)`);
 
   // Generate HTML report
   console.log('\nGenerating HTML report...');

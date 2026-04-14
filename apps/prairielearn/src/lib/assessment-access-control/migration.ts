@@ -230,6 +230,12 @@ function analyzeRule(rule: AssessmentAccessRuleJson): RuleAnalysis {
   };
 }
 
+// Maximum gap in milliseconds between consecutive access windows that is
+// still treated as contiguous. Course authors commonly write windows like
+// endDate "23:59:59" / startDate "00:00:01" the next day, producing small
+// gaps that are clearly intended to be contiguous.
+const MAX_CONTIGUOUS_GAP_MS = 90 * 1000; // 90 seconds
+
 function hasAccessGaps(rules: AssessmentAccessRuleJson[]): boolean {
   const accessRules = rules.filter((r) => (r.credit ?? 0) > 0);
   if (accessRules.length === 0) return false;
@@ -250,8 +256,13 @@ function hasAccessGaps(rules: AssessmentAccessRuleJson[]): boolean {
     const rule = sorted[i];
     // Once coverage extends to +∞, no further gaps are possible.
     if (furthestEnd === null) break;
-    // A gap exists if this rule starts after the current coverage ends.
-    if (rule.startDate && rule.startDate > furthestEnd) return true;
+    // A gap exists if this rule starts sufficiently after the current
+    // coverage ends. Small gaps (≤ 1 day) are tolerated since they
+    // typically arise from authors using "23:59:59" / "00:00:01" boundaries.
+    if (rule.startDate && rule.startDate > furthestEnd) {
+      const gapMs = new Date(rule.startDate).getTime() - new Date(furthestEnd).getTime();
+      if (gapMs > MAX_CONTIGUOUS_GAP_MS) return true;
+    }
     // Extend coverage.
     if (!rule.endDate) {
       furthestEnd = null;
@@ -655,20 +666,16 @@ function migrateKnownAllowAccess(
     case 'no-op':
       return migrateNoOp(rules);
 
-    case 'always-open': {
-      const creditRules = getCreditRules(rules);
-      const nonStandardCredit = creditRules.find((r) => (r.credit ?? 0) !== 100);
-      if (nonStandardCredit) {
-        return {
-          result: {},
-          errors: [
-            `Credit of ${nonStandardCredit.credit}% cannot be expressed in the modern always-open format.`,
-          ],
-          notes: [],
-        };
-      }
-      return { result: {}, errors: [], notes: [] };
-    }
+    // TODO: revisit always-open migration. The modern format requires a
+    // releaseDate to grant access, so we can't express "100% credit forever"
+    // without one. For now, treat this as an error rather than silently
+    // producing an empty result that the resolver interprets as "no access."
+    case 'always-open':
+      return {
+        result: {},
+        errors: ['Always-open rules cannot be automatically migrated without a release date.'],
+        notes: [],
+      };
 
     case 'mode-gated':
       return {
