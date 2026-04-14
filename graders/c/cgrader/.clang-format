@@ -1,0 +1,6 @@
+BasedOnStyle: Google
+UseTab: Never
+SortIncludes: false
+PointerAlignment: Right
+SpaceAfterCStyleCast: true
+ColumnLimit: 100
