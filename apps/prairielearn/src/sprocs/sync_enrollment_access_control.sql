@@ -33,21 +33,17 @@ BEGIN
             date_control_early_deadlines_overridden = (rule_data ->> 'date_control_early_deadlines_overridden')::boolean,
             date_control_late_deadlines_overridden = (rule_data ->> 'date_control_late_deadlines_overridden')::boolean,
             date_control_after_last_deadline_allow_submissions = (rule_data ->> 'date_control_after_last_deadline_allow_submissions')::boolean,
-            date_control_after_last_deadline_credit_overridden = (rule_data ->> 'date_control_after_last_deadline_credit_overridden')::boolean,
             date_control_after_last_deadline_credit = (rule_data ->> 'date_control_after_last_deadline_credit')::integer,
             date_control_duration_minutes_overridden = (rule_data ->> 'date_control_duration_minutes_overridden')::boolean,
             date_control_duration_minutes = (rule_data ->> 'date_control_duration_minutes')::integer,
             date_control_password_overridden = (rule_data ->> 'date_control_password_overridden')::boolean,
             date_control_password = (rule_data ->> 'date_control_password')::text,
 
-            after_complete_hide_questions = (rule_data ->> 'after_complete_hide_questions')::boolean,
-            after_complete_show_questions_again_date_overridden = (rule_data ->> 'after_complete_show_questions_again_date_overridden')::boolean,
-            after_complete_show_questions_again_date = input_date(rule_data ->> 'after_complete_show_questions_again_date', ci_timezone),
-            after_complete_hide_questions_again_date_overridden = (rule_data ->> 'after_complete_hide_questions_again_date_overridden')::boolean,
-            after_complete_hide_questions_again_date = input_date(rule_data ->> 'after_complete_hide_questions_again_date', ci_timezone),
-            after_complete_hide_score = (rule_data ->> 'after_complete_hide_score')::boolean,
-            after_complete_show_score_again_date_overridden = (rule_data ->> 'after_complete_show_score_again_date_overridden')::boolean,
-            after_complete_show_score_again_date = input_date(rule_data ->> 'after_complete_show_score_again_date', ci_timezone)
+            after_complete_questions_hidden = (rule_data ->> 'after_complete_questions_hidden')::boolean,
+            after_complete_questions_visible_from_date = input_date(rule_data ->> 'after_complete_questions_visible_from_date', ci_timezone),
+            after_complete_questions_visible_until_date = input_date(rule_data ->> 'after_complete_questions_visible_until_date', ci_timezone),
+            after_complete_score_hidden = (rule_data ->> 'after_complete_score_hidden')::boolean,
+            after_complete_score_visible_from_date = input_date(rule_data ->> 'after_complete_score_visible_from_date', ci_timezone)
         FROM assessments AS a
         WHERE assessment_access_control_rules.id = existing_rule_id
             AND assessment_access_control_rules.assessment_id = syncing_assessment_id
@@ -87,21 +83,17 @@ BEGIN
             date_control_early_deadlines_overridden,
             date_control_late_deadlines_overridden,
             date_control_after_last_deadline_allow_submissions,
-            date_control_after_last_deadline_credit_overridden,
             date_control_after_last_deadline_credit,
             date_control_duration_minutes_overridden,
             date_control_duration_minutes,
             date_control_password_overridden,
             date_control_password,
 
-            after_complete_hide_questions,
-            after_complete_show_questions_again_date_overridden,
-            after_complete_show_questions_again_date,
-            after_complete_hide_questions_again_date_overridden,
-            after_complete_hide_questions_again_date,
-            after_complete_hide_score,
-            after_complete_show_score_again_date_overridden,
-            after_complete_show_score_again_date
+            after_complete_questions_hidden,
+            after_complete_questions_visible_from_date,
+            after_complete_questions_visible_until_date,
+            after_complete_score_hidden,
+            after_complete_score_visible_from_date
         ) VALUES (
             syncing_assessment_id,
             next_number,
@@ -113,21 +105,17 @@ BEGIN
             (rule_data ->> 'date_control_early_deadlines_overridden')::boolean,
             (rule_data ->> 'date_control_late_deadlines_overridden')::boolean,
             (rule_data ->> 'date_control_after_last_deadline_allow_submissions')::boolean,
-            (rule_data ->> 'date_control_after_last_deadline_credit_overridden')::boolean,
             (rule_data ->> 'date_control_after_last_deadline_credit')::integer,
             (rule_data ->> 'date_control_duration_minutes_overridden')::boolean,
             (rule_data ->> 'date_control_duration_minutes')::integer,
             (rule_data ->> 'date_control_password_overridden')::boolean,
             (rule_data ->> 'date_control_password')::text,
 
-            (rule_data ->> 'after_complete_hide_questions')::boolean,
-            (rule_data ->> 'after_complete_show_questions_again_date_overridden')::boolean,
-            input_date(rule_data ->> 'after_complete_show_questions_again_date', ci_timezone),
-            (rule_data ->> 'after_complete_hide_questions_again_date_overridden')::boolean,
-            input_date(rule_data ->> 'after_complete_hide_questions_again_date', ci_timezone),
-            (rule_data ->> 'after_complete_hide_score')::boolean,
-            (rule_data ->> 'after_complete_show_score_again_date_overridden')::boolean,
-            input_date(rule_data ->> 'after_complete_show_score_again_date', ci_timezone)
+            (rule_data ->> 'after_complete_questions_hidden')::boolean,
+            input_date(rule_data ->> 'after_complete_questions_visible_from_date', ci_timezone),
+            input_date(rule_data ->> 'after_complete_questions_visible_until_date', ci_timezone),
+            (rule_data ->> 'after_complete_score_hidden')::boolean,
+            input_date(rule_data ->> 'after_complete_score_visible_from_date', ci_timezone)
         ) RETURNING id INTO new_rule_id;
     END IF;
 

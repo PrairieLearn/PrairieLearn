@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import {
-  AccessTimelineEntrySchema,
   AssessmentAccessRuleSchema,
   AssessmentInstanceSchema,
   AssessmentSchema,
@@ -23,7 +22,7 @@ export const StudentAssessmentsRowSchema = z.object({
   credit_date_string: z.string(),
   active: AssessmentAccessRuleSchema.shape.active,
   access_rules: SprocAuthzAssessmentSchema.shape.access_rules,
-  access_timeline: z.array(AccessTimelineEntrySchema).optional().default([]),
+  access_timeline: SprocAuthzAssessmentSchema.shape.access_timeline,
   show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
   assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),
   assessment_instance_score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),

@@ -16,19 +16,15 @@ function makeBaseRule(overrides: Record<string, unknown> = {}) {
     date_control_late_deadlines_overridden: false,
     date_control_after_last_deadline_allow_submissions: null,
     date_control_after_last_deadline_credit: null,
-    date_control_after_last_deadline_credit_overridden: false,
     date_control_duration_minutes: null,
     date_control_duration_minutes_overridden: false,
     date_control_password: null,
     date_control_password_overridden: false,
-    after_complete_hide_questions: null,
-    after_complete_show_questions_again_date: null,
-    after_complete_show_questions_again_date_overridden: false,
-    after_complete_hide_questions_again_date: null,
-    after_complete_hide_questions_again_date_overridden: false,
-    after_complete_hide_score: null,
-    after_complete_show_score_again_date: null,
-    after_complete_show_score_again_date_overridden: false,
+    after_complete_questions_hidden: null,
+    after_complete_questions_visible_from_date: null,
+    after_complete_questions_visible_until_date: null,
+    after_complete_score_hidden: null,
+    after_complete_score_visible_from_date: null,
     ...overrides,
   };
 }
@@ -75,5 +71,85 @@ describe('dbRowToAccessControlJson', () => {
         exams: [{ examUuid: 'abc-123', readOnly: false }],
       },
     });
+  });
+
+  it('omits afterComplete questions when hidden is null', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          after_complete_questions_hidden: null,
+          after_complete_questions_visible_from_date: new Date('2025-03-01T00:00:00Z'),
+        },
+      }),
+    );
+
+    expect(result.afterComplete?.questions).toBeUndefined();
+  });
+
+  it('omits afterComplete score when hidden is null', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          after_complete_score_hidden: null,
+          after_complete_score_visible_from_date: new Date('2025-03-01T00:00:00Z'),
+        },
+      }),
+    );
+
+    expect(result.afterComplete?.score).toBeUndefined();
+  });
+
+  it('omits credit for main rule afterLastDeadline when not set', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          date_control_after_last_deadline_allow_submissions: false,
+        },
+      }),
+    );
+
+    expect(result.dateControl?.afterLastDeadline).toEqual({
+      allowSubmissions: false,
+    });
+  });
+
+  it('omits credit for override afterLastDeadline when submissions disabled', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          target_type: 'student_label',
+          number: 1,
+          date_control_after_last_deadline_allow_submissions: false,
+        },
+      }),
+    );
+
+    expect(result.dateControl?.afterLastDeadline).toEqual({
+      allowSubmissions: false,
+    });
+  });
+
+  it('reconstructs afterComplete questions as simple hidden: true', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          after_complete_questions_hidden: true,
+        },
+      }),
+    );
+
+    expect(result.afterComplete?.questions).toEqual({ hidden: true });
+  });
+
+  it('reconstructs afterComplete score as simple hidden: true', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          after_complete_score_hidden: true,
+        },
+      }),
+    );
+
+    expect(result.afterComplete?.score).toEqual({ hidden: true });
   });
 });
