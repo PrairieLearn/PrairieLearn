@@ -393,7 +393,6 @@ router.get(
       }),
     );
 
-
     res.send(
       PageLayout({
         resLocals: res.locals,
