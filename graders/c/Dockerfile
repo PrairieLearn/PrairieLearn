@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 ARG CACHEBUST=2026-03-15-14-27-00
 
 LABEL maintainer="jonatan@yorku.ca"
@@ -29,7 +29,7 @@ RUN apt-get update \
     #
     # See https://documentation.ubuntu.com/ubuntu-for-developers/reference/availability/llvm/
     # for llvm version availability.
-    && ln -s /usr/lib/llvm-18/lib/libclang.so.1 /usr/lib/libclang.so \
+    && ln -s /usr/lib/llvm-21/lib/libclang-21.so.1 /usr/lib/libclang.so \
     && groupadd sbuser && useradd -g sbuser sbuser \
     # Install uv and Python
     && curl -LO https://astral.sh/uv/install.sh \

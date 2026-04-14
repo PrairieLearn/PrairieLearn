@@ -34,6 +34,7 @@
     "**/exampleCourse/questions/**/question.html": "htmlmustache",
     "**/testCourse/questions/**/question.html": "htmlmustache"
   },
+  "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, UseTab: Never, SortIncludes: false, PointerAlignment: Right, SpaceAfterCStyleCast: true }",
   "knip.configFilePath": ".knip.ts",
   "knip.requireConfig": true,
   "knip.codeLens.enabled": false,
@@ -83,7 +84,7 @@
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "sqlfluff.executablePath": "${workspaceFolder}/.venv/bin/sqlfluff",
-  "typescript.tsdk": "node_modules/typescript/lib",
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
   "vitest.maximumConfigs": 100,
   // https://squidfunk.github.io/mkdocs-material/creating-your-site/#minimal-configuration
   "yaml.schemas": {
