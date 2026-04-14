@@ -150,7 +150,7 @@ export interface ExecutionData {
   manual_grading?: boolean;
   ai_grading?: boolean;
   panel?: 'question' | 'answer' | 'submission';
-  answer_shown?: boolean;
+  correct_answer_shown?: boolean;
   num_valid_submissions?: number;
   filename?: string;
   gradable?: boolean;

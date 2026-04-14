@@ -1,2 +1,2 @@
 def render(data, _html):
-    return data["answer_shown"]
+    return data["correct_answer_shown"]

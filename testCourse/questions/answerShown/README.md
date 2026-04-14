@@ -1,1 +1,1 @@
-This is a question that tests the answer_shown key in data.
+This is a question that tests the correct_answer_shown key in data.

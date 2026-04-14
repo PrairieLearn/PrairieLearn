@@ -476,7 +476,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
              || checkProp('manual_grading',        'boolean', ['render'],                           [])
              || checkProp('ai_grading',            'boolean', ['render'],                           [])
              || checkProp('panel',                 'string',  ['render'],                           [])
-             || checkProp('answer_shown',          'boolean', ['render'],                           [])
+             || checkProp('correct_answer_shown',  'boolean', ['render'],                           [])
              || checkProp('num_valid_submissions', 'integer', ['render'],                           [])
              || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           [])
              || checkProp('filename',              'string',  ['file'],                             [])
@@ -1013,7 +1013,7 @@ async function renderPanel({
     }),
     ai_grading: locals.questionRenderContext === 'ai_grading',
     panel,
-    answer_shown: locals.showTrueAnswer ?? false,
+    correct_answer_shown: locals.showTrueAnswer ?? false,
     num_valid_submissions: variant.num_tries,
   } satisfies ExecutionData;
 
