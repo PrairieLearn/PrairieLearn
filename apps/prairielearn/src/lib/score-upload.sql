@@ -52,9 +52,10 @@ WHERE
       $submission_id IS NULL
       AND COALESCE(g.name, u.uid) = $uid_or_group
       AND ai.number = $ai_number
+      AND q.qid = $qid
       AND (
-        q.qid = $qid
-        OR ('@' || c.sharing_name || '/' || q.qid) = $qid
+        $sharing_name::text IS NULL
+        OR c.sharing_name = $sharing_name
       )
     )
   )
