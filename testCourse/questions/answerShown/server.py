@@ -1,2 +1,2 @@
 def render(data, _html):
-    return data["correct_answer_shown"]
+    return f'The current value of data["correct_answer_shown"] is: {data["correct_answer_shown"]}'
