@@ -73,7 +73,7 @@ interface CanvasCsvModalProps {
   show: boolean;
   onHide: () => void;
   courseAssessments: CourseAssessmentRow[];
-  rows: GradebookRow[];
+  studentRows: GradebookRow[];
   filename: string;
 }
 
@@ -88,7 +88,7 @@ export function CanvasCsvModal({ show, ...rest }: CanvasCsvModalProps) {
 function CanvasCsvModalContent({
   onHide,
   courseAssessments,
-  rows,
+  studentRows,
   filename,
 }: Omit<CanvasCsvModalProps, 'show'>) {
   const allAssessmentIds = useMemo(
@@ -163,15 +163,11 @@ function CanvasCsvModalContent({
   );
 
   const students = useMemo(
-    () =>
-      rows
-        .filter((row) => row.role === 'Student' && row.user_name != null)
-        .map((row) => ({ uid: row.uid, userName: row.user_name, uin: row.uin })),
-    [rows],
+    () => studentRows.map((row) => ({ uid: row.uid, userName: row.user_name, uin: row.uin })),
+    [studentRows],
   );
 
   const handleDownload = () => {
-    const validRows = rows.filter((row) => row.role === 'Student' && row.user_name != null);
     const header = [
       ...CANVAS_CSV_FIXED_HEADERS,
       ...selectedAssessments.map((a) => `${a.assessment_set_name} ${a.assessment_number}`),
@@ -193,7 +189,7 @@ function CanvasCsvModalContent({
         // zones). Fall back to the instance-level max_points from the
         // first student who has a score for this assessment.
 
-        const scoreWithMax = validRows.find(
+        const scoreWithMax = studentRows.find(
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           (r) => r.scores[a.assessment_id]?.max_points != null,
         );
@@ -209,7 +205,7 @@ function CanvasCsvModalContent({
 
     const data = [
       pointsPossibleRow,
-      ...validRows.map((row) => {
+      ...studentRows.map((row) => {
         const canvas = canvasLookup?.get(row.uid);
         return [
           canvas?.name ?? row.user_name,
