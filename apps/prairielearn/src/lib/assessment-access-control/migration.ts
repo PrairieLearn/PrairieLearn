@@ -168,6 +168,30 @@ function applyVisibilityMigration(
   if (shouldListBeforeRelease(rules)) result.listBeforeRelease = true;
 }
 
+/**
+ * Filters and normalizes legacy rules before classification/migration:
+ * - Removes rules with `uids` (handled separately as enrollment overrides).
+ * - Removes rules with a `role` that is neither absent nor 'Student' (these
+ *   are not synced; see assessments.ts fromDisk).
+ * - Strips `mode: 'Public'`. Public is the default server mode, so this is
+ *   effectively a no-op for students (only blocks access during Exam mode,
+ *   which doesn't happen in practice for non-exam assessments). The modern
+ *   accessControl format has no `mode` field, and PR #10505 removed
+ *   `mode: 'Public'` from docs/examples as unnecessary.
+ */
+function normalizeRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
+  return rules
+    .filter((r) => !r.uids)
+    .filter((r) => r.role == null || r.role === 'Student')
+    .map((r) => {
+      if (r.mode === 'Public') {
+        const { mode: _mode, ...rest } = r;
+        return rest;
+      }
+      return r;
+    });
+}
+
 interface RuleAnalysis {
   isPrairieTest: boolean;
   hasPassword: boolean;
@@ -240,7 +264,7 @@ function hasAccessGaps(rules: AssessmentAccessRuleJson[]): boolean {
 }
 
 function classifyArchetype(rules: AssessmentAccessRuleJson[]): Archetype {
-  rules = rules.filter((r) => !r.uids);
+  rules = normalizeRules(rules);
   const analyzed = rules.map(analyzeRule);
   const creditRules = analyzed.filter((r) => r.creditType !== 'none');
   const nonCreditRules = analyzed.filter((r) => r.creditType === 'none');
@@ -663,7 +687,7 @@ function migrateKnownAllowAccess(
 
 export function migrateAllowAccess(rules: AssessmentAccessRuleJson[]): MigrationResult {
   const hasUidRules = rules.some((r) => r.uids);
-  rules = rules.filter((r) => !r.uids);
+  rules = normalizeRules(rules);
   const archetype: Archetype = classifyArchetype(rules);
 
   if (archetype.base === 'unclassified' && hasAccessGaps(rules)) {

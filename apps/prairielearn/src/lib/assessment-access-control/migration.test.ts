@@ -671,6 +671,31 @@ describe('migrateAllowAccess', () => {
         hasUidRules: false,
       },
     },
+    {
+      name: 'filters non-Student role rules and treats mode:Public as no-op',
+      rules: [
+        { role: 'TA', endDate: '2019-12-20T23:59:59' },
+        {
+          role: 'Student',
+          mode: 'Public',
+          credit: 100,
+          startDate: '2019-09-03T12:00:01',
+          endDate: '2019-12-20T23:59:59',
+        },
+      ],
+      expected: {
+        archetype: { base: 'single-deadline', modifiers: [] },
+        result: {
+          dateControl: {
+            releaseDate: '2019-09-03T12:00:01',
+            dueDate: '2019-12-20T23:59:59',
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
   ];
 
   it.each(cases)('$name', ({ rules, expected }) => {
