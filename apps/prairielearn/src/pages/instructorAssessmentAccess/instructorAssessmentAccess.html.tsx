@@ -86,7 +86,9 @@ export function InstructorAssessmentAccess({
                   data-bs-toggle="modal"
                   data-bs-target="#migrationConfirmModal"
                 >
-                  ${migrationPreview.isIncompatible ? 'Migrate and clear' : 'Migrate to modern format'}
+                  ${migrationPreview.isIncompatible
+                    ? 'Migrate and clear'
+                    : 'Migrate to modern format'}
                 </button>
               `
             : ''}
@@ -343,7 +345,10 @@ function MigrationConfirmModal({
         This can be reverted through the file editor or git history.
       </small>
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn ${migrationPreview.isIncompatible ? 'btn-danger' : 'btn-primary'}">
+      <button
+        type="submit"
+        class="btn ${migrationPreview.isIncompatible ? 'btn-danger' : 'btn-primary'}"
+      >
         ${migrationPreview.isIncompatible ? 'Migrate and clear' : 'Confirm migration'}
       </button>
     `,
