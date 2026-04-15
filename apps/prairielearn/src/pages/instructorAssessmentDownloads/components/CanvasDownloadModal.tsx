@@ -104,7 +104,7 @@ export function CanvasDownloadModal({
           Cancel
         </Button>
         <Button variant="primary" disabled={downloading} onClick={handleDownload}>
-          {downloading ? 'Downloading...' : matchingState ? 'Download with matching' : 'Download'}
+          {downloading ? 'Downloading...' : 'Download'}
         </Button>
       </Modal.Footer>
     </Modal>
