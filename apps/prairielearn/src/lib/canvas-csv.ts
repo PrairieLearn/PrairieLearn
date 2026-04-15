@@ -43,15 +43,15 @@ export function canvasPointsPossibleValue(
 }
 
 /**
- * Maps a database record to Canvas CSV field values for the fixed identity
- * columns. Canvas expects ID and SIS User ID to be null, SIS Login ID to
- * be the user's uid, and Section to be null.
+ * Returns default (empty) Canvas CSV field values for the fixed identity
+ * columns. All identity columns are null unless overwritten with matched
+ * Canvas student data.
  */
-export function canvasStudentRecord(record: { uid: string | null }) {
+export function canvasStudentRecord() {
   return {
     id_col: null,
     sis_user_id: null,
-    sis_login_id: record.uid,
+    sis_login_id: null,
     // TODO: implement once we've got singular sections [https://github.com/PrairieLearn/PrairieLearn/issues/13919]
     section: null,
   };

@@ -763,7 +763,7 @@ router.get(
       const scoreFormat = isPoints ? 'points' : 'percentage';
       const pointsPossibleRow = {
         name: CANVAS_CSV_POINTS_POSSIBLE_NAME,
-        ...canvasStudentRecord({ uid: null }),
+        ...canvasStudentRecord(),
         [scoreKey]: canvasPointsPossibleValue(scoreFormat, maxPoints),
       };
 
@@ -782,7 +782,7 @@ router.get(
           if (record.role !== 'Student') return null;
           return {
             ...record,
-            ...canvasStudentRecord(record),
+            ...canvasStudentRecord(),
           };
         }),
         res,
