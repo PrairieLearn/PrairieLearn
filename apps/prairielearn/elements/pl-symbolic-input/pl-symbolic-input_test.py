@@ -312,6 +312,57 @@ def test_interval_submission_parses_and_grades() -> None:
     assert data["partial_scores"]["test"]["score"] == 1
 
 
+@pytest.mark.parametrize(
+    ("answer", "expected_expr"),
+    [
+        (
+            "[sin(x), cos(y)]",
+            sympy.Interval(sympy.sin(sympy.Symbol("x")), sympy.cos(sympy.Symbol("y"))),
+        ),
+        (
+            "[x^2 + 2*x - 1, y^2 - 3*y + 4]",
+            sympy.Interval(
+                sympy.Symbol("x") ** 2 + 2 * sympy.Symbol("x") - 1,
+                sympy.Symbol("y") ** 2 - 3 * sympy.Symbol("y") + 4,
+            ),
+        ),
+    ],
+)
+def test_interval_endpoints_support_trig_and_arithmetic_expressions(
+    answer: str, expected_expr: sympy.Basic
+) -> None:
+    element_html = f"""
+    <pl-symbolic-interval
+        answers-name="test"
+        allow-sets="true"
+        variables="x,y"
+        correct-answer="{answer}"
+    ></pl-symbolic-interval>
+    """
+    data: dict[str, Any] = {
+        "submitted_answers": {"test": answer},
+        "raw_submitted_answers": {"test": answer},
+        "correct_answers": {},
+        "answers_names": {},
+        "format_errors": {},
+        "partial_scores": {},
+        "panel": "question",
+        "editable": True,
+    }
+
+    symbolic_input.prepare(element_html, data)
+    assert data["correct_answers"]["test"] == answer
+
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+    assert isinstance(data["submitted_answers"]["test"], dict)
+    assert data["submitted_answers"]["test"]["_type"] == "sympy"
+    assert sympy.sympify(data["submitted_answers"]["test"]["_value"]) == expected_expr
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
 def test_interval_correct_answer_renders(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -417,3 +468,47 @@ def test_set_expression_supports_interval_operations(
     assert isinstance(out, psu.SympyParseSuccess)
     parsed = out.expr
     assert parsed == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("[1, oo]", sympy.Interval(1, sympy.oo)),
+        ("[-oo, 1]", sympy.Interval(-sympy.oo, 1)),
+        ("[1, infty]", sympy.Interval(1, sympy.oo)),
+    ],
+)
+def test_interval_endpoints_accept_infinity(text: str, expected: sympy.Basic) -> None:
+    out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
+    assert isinstance(out, psu.SympyParseSuccess)
+    assert out.expr == expected
+
+
+@pytest.mark.parametrize(
+    "submitted",
+    ["[1, oo]", "[1, infty]"],
+)
+def test_infinite_interval_submissions_are_accepted(submitted: str) -> None:
+    element_html = """
+    <pl-symbolic-interval
+        answers-name="test"
+        allow-sets="true"
+    ></pl-symbolic-interval>
+    """
+    data: dict[str, Any] = {
+        "submitted_answers": {"test": submitted},
+        "raw_submitted_answers": {"test": submitted},
+        "correct_answers": {"test": "[1, oo]"},
+        "answers_names": {},
+        "format_errors": {},
+        "partial_scores": {},
+        "panel": "question",
+        "editable": True,
+    }
+
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+    assert isinstance(data["submitted_answers"]["test"], dict)
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
