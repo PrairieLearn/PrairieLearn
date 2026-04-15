@@ -432,6 +432,34 @@ def test_disallowed_interval_literal_is_rejected() -> None:
     assert interval is None
 
 
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("{1, 2, 3}", sympy.FiniteSet(1, 2, 3)),
+        ("({1, 2, 3})", sympy.FiniteSet(1, 2, 3)),
+    ],
+)
+def test_set_builder_notation_compiles_to_finite_sets(
+    text: str, expected: sympy.Basic
+) -> None:
+    out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
+    assert isinstance(out, psu.SympyParseSuccess)
+    assert out.expr == expected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "({1, 2, 3})",
+        "([1, 2])",
+        "(({1, 2, 3}) U ([1, 2]))",
+    ],
+)
+def test_parentheses_around_sets_and_intervals_do_not_error(text: str) -> None:
+    out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
+    assert isinstance(out, psu.SympyParseSuccess)
+
+
 def test_union_parser_uses_interval_transformation() -> None:
     out = psu.try_parse_string_as_sympy(
         "[1, 2] U (3, 4]", None, allow_set_notation=True
@@ -468,6 +496,31 @@ def test_set_expression_supports_interval_operations(
     assert isinstance(out, psu.SympyParseSuccess)
     parsed = out.expr
     assert parsed == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        (
+            "({1, 3} U (2, 4])",
+            sympy.Union(sympy.FiniteSet(1), sympy.Interval.Lopen(2, 4)),
+        ),
+        (
+            "({1, 3} U (2, 4]) & {1, 2, 4}",
+            sympy.Union(sympy.FiniteSet(1, 4)),
+        ),
+        (
+            "(({1, 3} U (2, 4]) & {1, 2, 4})",
+            sympy.Union(sympy.FiniteSet(1, 4)),
+        ),
+    ],
+)
+def test_set_expression_supports_grouped_compound_operations(
+    text: str, expected: sympy.Basic
+) -> None:
+    out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
+    assert isinstance(out, psu.SympyParseSuccess)
+    assert out.expr == expected
 
 
 @pytest.mark.parametrize(

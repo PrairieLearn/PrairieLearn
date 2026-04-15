@@ -26,7 +26,7 @@ from tokenize import (
     TokenError,
 )
 from types import CodeType
-from typing import Any, Literal, NoReturn, TypeAlias, TypedDict, TypeGuard, cast
+from typing import Any, Literal, TypeAlias, TypedDict, TypeGuard, cast
 
 import sympy
 from sympy.parsing.sympy_parser import (
@@ -426,8 +426,6 @@ def ast_check_str(
             (
                 ast.BitOr,
                 ast.BitAnd,
-                ast.List,
-                ast.Set,
             )
             if allow_set_notation
             else ()
@@ -594,6 +592,7 @@ def evaluate_with_source(
     )
     if allow_set_notation:
         transformations = (
+            set_literal_transformation,
             set_operation_transformation,
             interval_transformation,
             *transformations,
@@ -1118,63 +1117,13 @@ def get_items_list(items_string: str | None) -> list[str]:
 _INTERVAL_TRIVIAL = {NL, NEWLINE, INDENT, DEDENT, ENDMARKER}
 _INTERVAL_OPEN = {"(", "["}
 _INTERVAL_CLOSE = {")", "]"}
+_SET_LITERAL_NESTED_OPEN = {"(", "[", "{"}
+_SET_LITERAL_NESTED_CLOSE = {")", "]", "}"}
 _INTERVAL_OPS = {"u": "|", "U": "|", "cup": "|", "∪": "|", "cap": "&", "∩": "&"}  # noqa: RUF001
 
 
 def _is_interval_trivial(token: TOKEN) -> bool:
     return token[0] in _INTERVAL_TRIVIAL
-
-
-def _rewrite_interval_literal(
-    tokens: Iterable[TOKEN], start: TOKEN
-) -> tuple[tuple[TOKEN, ...] | None, TOKEN]:
-    if start[1] not in _INTERVAL_OPEN:
-        return None, start
-
-    def _seek_comma_or_closer() -> Generator[
-        tuple[bool, list[TOKEN], TOKEN], Any, NoReturn
-    ]:
-        operand, depth = [], 0
-        for token in tokens:
-            _, text = token
-            if text in _INTERVAL_OPEN:
-                depth += 1
-            elif text in _INTERVAL_CLOSE:
-                if depth == 0:
-                    yield True, operand, token
-                    operand = []
-                    continue
-                depth -= 1
-            elif text == "," and depth == 0:
-                yield False, operand, token
-                operand = []
-                continue
-            operand.append(token)
-        raise TokenError("interval notation is incomplete")
-
-    comma_or_closer_iter = _seek_comma_or_closer()
-    # consume until the first top-level comma or closing bracket.
-    closed, left_side, end = next(comma_or_closer_iter)
-    if closed:
-        return None, end
-
-    # consume until the matching top-level closing bracket.
-    closed, right_side, end = next(comma_or_closer_iter)
-    if not closed:
-        raise TokenError("interval contains more than one separator")
-
-    return (
-        (NAME, "Interval"),
-        (OP, "("),
-        *left_side,
-        (OP, ","),
-        *right_side,
-        (OP, ","),
-        (NAME, "True" if start[1] == "(" else "False"),
-        (OP, ","),
-        (NAME, "True" if end[1] == ")" else "False"),
-        (OP, ")"),
-    ), end
 
 
 def _literal_or_set_end(token: TOKEN | None) -> bool:
@@ -1189,6 +1138,99 @@ def _literal_or_set_start(token: TOKEN | None) -> bool:
     )
 
 
+def _rewrite_set_literal_from_tokens(
+    tokens: list[TOKEN], start_index: int
+) -> tuple[tuple[TOKEN, ...] | None, int]:
+    start = tokens[start_index]
+    if start[1] != "{":
+        return None, start_index
+
+    content: list[TOKEN] = []
+    depth = 0
+    start_index += 1
+    for i, token in enumerate(tokens[start_index:], start=start_index):
+        _, text = token
+        if text in _SET_LITERAL_NESTED_OPEN:
+            depth += 1
+        elif text in _SET_LITERAL_NESTED_CLOSE:
+            if depth == 0:
+                if text != "}":
+                    raise TokenError("mismatched brackets in set literal")
+                return (((NAME, "FiniteSet"), (OP, "("), *content, (OP, ")")), i)
+            depth -= 1
+        content.append(token)
+
+    raise TokenError("set notation is incomplete")
+
+
+def set_literal_transformation(
+    tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
+) -> list[TOKEN]:
+    """A SymPy token transformation that rewrites set literals to FiniteSet calls."""
+    if not tokens:
+        return tokens
+
+    result = []
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+        if not _is_interval_trivial(token):
+            rewritten_tokens, end_index = _rewrite_set_literal_from_tokens(tokens, i)
+            if rewritten_tokens is not None:
+                result.extend(rewritten_tokens)
+                i = end_index + 1
+                continue
+        result.append(token)
+        i += 1
+    return result
+
+
+def _rewrite_interval_literal_from_tokens(
+    tokens: list[TOKEN], start_index: int
+) -> tuple[tuple[TOKEN, ...] | None, int]:
+    _, start_text = tokens[start_index]
+    if start_text not in _INTERVAL_OPEN:
+        return None, start_index
+
+    def _seek_comma_or_closer(start_index: int) -> tuple[bool, list[TOKEN], int, TOKEN]:
+        operand, depth = [], 0
+        for i, token in enumerate(tokens[start_index:], start=start_index):
+            _, text = token
+            if text in _INTERVAL_OPEN:
+                depth += 1
+            elif text in _INTERVAL_CLOSE:
+                if depth == 0:
+                    return True, operand, i, token
+                depth -= 1
+            elif text == "," and depth == 0:
+                return False, operand, i, token
+            operand.append(token)
+        raise TokenError("interval notation is incomplete")
+
+    # consume until the first top-level comma or closing bracket.
+    closed, left_side, mid_index, _comma = _seek_comma_or_closer(start_index + 1)
+    if closed:
+        return None, mid_index
+
+    # consume until the matching top-level closing bracket.
+    closed, right_side, end_index, (_, end_text) = _seek_comma_or_closer(mid_index + 1)
+    if not closed:
+        raise TokenError("interval contains more than one separator")
+
+    return (
+        (NAME, "Interval"),
+        (OP, "("),
+        *left_side,
+        (OP, ","),
+        *right_side,
+        (OP, ","),
+        (NAME, "True" if start_text == "(" else "False"),
+        (OP, ","),
+        (NAME, "True" if end_text == ")" else "False"),
+        (OP, ")"),
+    ), end_index
+
+
 def interval_transformation(
     tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
 ) -> list[TOKEN]:
@@ -1200,20 +1242,27 @@ def interval_transformation(
     if not tokens:
         return tokens
     result = []
-    stream = iter(tokens)
     prev: TOKEN | None = None
-    # careful: stream is shared!
-    for token in stream:
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
         if not _is_interval_trivial(token):
-            rewritten_tokens, prev = (
-                (None, token)
-                if _literal_or_set_end(prev)
-                else _rewrite_interval_literal(stream, token)
+            if token[1] in _INTERVAL_OPEN and prev is not None and prev[0] == NAME:
+                result.append(token)
+                prev = token
+                i += 1
+                continue
+            rewritten_tokens, end_index = _rewrite_interval_literal_from_tokens(
+                tokens, i
             )
             if rewritten_tokens is not None:
                 result.extend(rewritten_tokens)
+                prev = tokens[end_index]
+                i = end_index + 1
                 continue
         result.append(token)
+        prev = token
+        i += 1
     return result
 
 
