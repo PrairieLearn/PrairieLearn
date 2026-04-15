@@ -63,7 +63,7 @@ export function QuestionContainer({
     course_instance,
     authz_data,
     is_administrator,
-    showTrueAnswer,
+    showCorrectAnswer,
     submissions,
     submissionHtmls,
     answerHtml,
@@ -103,12 +103,12 @@ export function QuestionContainer({
         // it here to avoid confusion.
         questionRenderContext !== 'ai_grading'
           ? html`
-              <div class="card mb-3 grading-block${showTrueAnswer ? '' : ' d-none'}">
+              <div class="card mb-3 grading-block${showCorrectAnswer ? '' : ' d-none'}">
                 <div class="card-header bg-secondary text-white">
                   <h2>Correct answer</h2>
                 </div>
                 <div class="card-body overflow-x-auto answer-body">
-                  ${showTrueAnswer ? unsafeHtml(answerHtml) : ''}
+                  ${showCorrectAnswer ? unsafeHtml(answerHtml) : ''}
                 </div>
               </div>
             `
