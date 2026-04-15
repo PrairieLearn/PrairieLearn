@@ -10,7 +10,7 @@ import copy
 import html
 import re
 from collections import deque
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Generator, Iterable
 from dataclasses import dataclass
 from tokenize import (
     DEDENT,
@@ -26,7 +26,7 @@ from tokenize import (
     TokenError,
 )
 from types import CodeType
-from typing import Any, Literal, TypeAlias, TypedDict, TypeGuard, cast
+from typing import Any, Literal, NoReturn, TypeAlias, TypedDict, TypeGuard, cast
 
 import sympy
 from sympy.parsing.sympy_parser import (
@@ -1125,81 +1125,74 @@ def _is_interval_trivial(token: TOKEN) -> bool:
     return token[0] in _INTERVAL_TRIVIAL
 
 
-def _nontrivial_or_end(token: TOKEN | None) -> bool:
+def _rewrite_interval_literal(
+    tokens: Iterable[TOKEN], start: TOKEN
+) -> tuple[tuple[TOKEN, ...] | None, TOKEN]:
+    if start[1] not in _INTERVAL_OPEN:
+        return None, start
+
+    def _seek_comma_or_closer() -> Generator[
+        tuple[bool, list[TOKEN], TOKEN], Any, NoReturn
+    ]:
+        operand, depth = [], 0
+        for token in tokens:
+            _, text = token
+            if text in _INTERVAL_OPEN:
+                depth += 1
+            elif text in _INTERVAL_CLOSE:
+                if depth == 0:
+                    yield True, operand, token
+                    operand = []
+                    continue
+                depth -= 1
+            elif text == "," and depth == 0:
+                yield False, operand, token
+                operand = []
+                continue
+            operand.append(token)
+        raise TokenError("interval notation is incomplete")
+
+    comma_or_closer_iter = _seek_comma_or_closer()
+    # consume until the first top-level comma or closing bracket.
+    closed, left_side, end = next(comma_or_closer_iter)
+    if closed:
+        return None, end
+
+    # consume until the matching top-level closing bracket.
+    closed, right_side, end = next(comma_or_closer_iter)
+    if not closed:
+        raise TokenError("interval contains more than one separator")
+
+    return (
+        (NAME, "Interval"),
+        (OP, "("),
+        *left_side,
+        (OP, ","),
+        *right_side,
+        (OP, ","),
+        (NAME, "True" if start[1] == "(" else "False"),
+        (OP, ","),
+        (NAME, "True" if end[1] == ")" else "False"),
+        (OP, ")"),
+    ), end
+
+
+def _literal_or_set_end(token: TOKEN | None) -> bool:
     return token is not None and (
         token[0] in {NAME, NUMBER, STRING} or token[1] in {")", "]", "}"}
     )
 
 
-def _nontrivial_or_start(token: TOKEN | None) -> bool:
+def _literal_or_set_start(token: TOKEN | None) -> bool:
     return token is not None and (
         token[0] in {NAME, NUMBER, STRING} or token[1] in {"(", "[", "{"}
     )
 
 
-def _seek_nontrivial(tokens: list[TOKEN], index: int, step: int) -> TOKEN | None:
-    if step == 0:
-        raise ValueError("Step must be non-zero")
-    while True:
-        index += step
-        if not (0 <= index < len(tokens)):
-            return None
-        if not _is_interval_trivial(tokens[index]):
-            return tokens[index]
-
-
-def _rewrite_interval_literal(
-    tokens: Iterable[tuple[int, TOKEN]], start: TOKEN
-) -> list[TOKEN] | None:
-    if start[1] not in _INTERVAL_OPEN:
-        return None
-    left_open = start[1] == "("
-    parts, side, depth, seen_sep = ([], []), 0, 1, False
-    for _, token in tokens:
-        _, value = token
-        if (
-            _is_interval_trivial(token)
-            or value in _INTERVAL_OPEN
-            or (depth > 1 and value in _INTERVAL_CLOSE)
-            or (depth > 1 and value == ",")
-        ):
-            parts[side].append(token)
-        elif value in _INTERVAL_CLOSE:
-            if value not in {")", "]"}:
-                raise TokenError("interval must close with ')' or ']'")
-            if not seen_sep:
-                return None
-            return [
-                (NAME, "Interval"),
-                (OP, "("),
-                *parts[0],
-                (OP, ","),
-                *parts[1],
-                (OP, ","),
-                (NAME, "True" if left_open else "False"),
-                (OP, ","),
-                (NAME, "True" if value == ")" else "False"),
-                (OP, ")"),
-            ]
-        elif value == ",":
-            if depth == 1:
-                if seen_sep:
-                    raise TokenError("interval contains more than one separator")
-                seen_sep, side = True, 1
-            else:
-                parts[side].append(token)
-        else:
-            parts[side].append(token)
-        depth += value in _INTERVAL_OPEN
-        depth -= value in _INTERVAL_CLOSE and depth > 1
-    raise TokenError("interval notation is incomplete")
-
-
 def interval_transformation(
     tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
 ) -> list[TOKEN]:
-    """A SymPy token transformation that interprets mathematical intervals like
-    `(-inf, 0]` into `sympy.Interval(-inf, 0, True, False)`
+    """A SymPy token transformation that interprets mathematical intervals like `(-inf, 0]` or `[pi/2, pi]`
 
     Returns:
         A transformed sequence of SymPy tokens.
@@ -1207,21 +1200,20 @@ def interval_transformation(
     if not tokens:
         return tokens
     result = []
-    stream = enumerate(tokens)
-    for i, token in stream:
-        if _is_interval_trivial(token):
-            result.append(token)
-        else:
-            prev = _seek_nontrivial(tokens, i, -1)
-            rewritten = (
-                None
-                if _nontrivial_or_end(prev)
+    stream = iter(tokens)
+    prev: TOKEN | None = None
+    # careful: stream is shared!
+    for token in stream:
+        if not _is_interval_trivial(token):
+            rewritten_tokens, prev = (
+                (None, token)
+                if _literal_or_set_end(prev)
                 else _rewrite_interval_literal(stream, token)
             )
-            if rewritten is None:
-                result.append(token)
-            else:
-                result.extend(rewritten)
+            if rewritten_tokens is not None:
+                result.extend(rewritten_tokens)
+                continue
+        result.append(token)
     return result
 
 
@@ -1235,21 +1227,45 @@ def set_operation_transformation(
     """
     if not tokens:
         return tokens
-    result, i = [], 0
-    for i, token in enumerate(tokens):
-        if _is_interval_trivial(token):
-            result.append(token)
-        else:
-            op = _INTERVAL_OPS.get(token[1]) if token[0] in {NAME, ERRORTOKEN} else None
-            if op is not None:
-                prev, nxt = (
-                    _seek_nontrivial(tokens, i, -1),
-                    _seek_nontrivial(tokens, i, 1),
-                )
-                if _nontrivial_or_end(prev) and _nontrivial_or_start(nxt):
-                    result.append((OP, op))
-                    continue
-            result.append(token)
+
+    def _seek_nontrivial() -> Generator[tuple[list[TOKEN], TOKEN | None], Any, None]:
+        delayed = []
+        for t in tokens:
+            if not _is_interval_trivial(t):
+                yield delayed, t
+                delayed.clear()
+            else:
+                delayed.append(t)
+        yield delayed, None
+
+    result = []
+    nontrivial_iter = _seek_nontrivial()
+    # previous, current, next pointers into tokens
+    prev_nt, (delayed, curr_nt) = None, next(nontrivial_iter)
+
+    while curr_nt is not None:
+        # consume skipped
+        result.extend(delayed)
+        delayed, next_nt = next(nontrivial_iter)
+
+        # transform current
+        trans_curr = (curr_type, curr_value) = curr_nt
+        if curr_type in {NAME, ERRORTOKEN}:
+            op = _INTERVAL_OPS.get(curr_value)
+            if (
+                op is not None
+                and _literal_or_set_end(prev_nt)
+                and _literal_or_set_start(next_nt)
+            ):
+                trans_curr = (OP, op)
+        result.append(trans_curr)
+
+        # update pointers
+        prev_nt, curr_nt = curr_nt, next_nt
+
+    # consume final skipped
+    result.extend(delayed)
+
     return result
 
 

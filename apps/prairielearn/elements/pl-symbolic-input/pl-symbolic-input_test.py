@@ -476,6 +476,9 @@ def test_set_expression_supports_interval_operations(
         ("[1, oo]", sympy.Interval(1, sympy.oo)),
         ("[-oo, 1]", sympy.Interval(-sympy.oo, 1)),
         ("[1, infty]", sympy.Interval(1, sympy.oo)),
+        ("(1, oo]", sympy.Interval.Lopen(1, sympy.oo)),
+        ("[1, oo)", sympy.Interval.Ropen(1, sympy.oo)),
+        ("(1, oo)", sympy.Interval.open(1, sympy.oo)),
     ],
 )
 def test_interval_endpoints_accept_infinity(text: str, expected: sympy.Basic) -> None:
@@ -512,3 +515,41 @@ def test_infinite_interval_submissions_are_accepted(submitted: str) -> None:
 
     symbolic_input.grade(element_html, data)
     assert data["partial_scores"]["test"]["score"] == 1
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "[1, 2",
+        "[1, 2, 3]",
+        "[1, 2}",
+        "{1, 2]",
+    ],
+)
+def test_malformed_interval_notation_is_rejected(text: str) -> None:
+    out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
+    assert isinstance(out, psu.SympyParseFailure)
+    assert "syntax error" in out.error
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        (
+            "(sin((x/2) + 1), cos(y - 1)]",
+            sympy.Interval.Lopen(
+                sympy.sin(sympy.Symbol("x") / 2 + 1), sympy.cos(sympy.Symbol("y") - 1)
+            ),
+        ),
+        (
+            "[1, exp(z + 1)]",
+            sympy.Interval(1, sympy.exp(sympy.Symbol("z") + 1)),
+        ),
+    ],
+)
+def test_interval_endpoints_with_parenthesized_arguments_parse(
+    text: str, expected: sympy.Basic
+) -> None:
+    out = psu.try_parse_string_as_sympy(text, ["x", "y", "z"], allow_set_notation=True)
+    assert isinstance(out, psu.SympyParseSuccess)
+    assert out.expr == expected
