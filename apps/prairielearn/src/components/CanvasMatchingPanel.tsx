@@ -1,34 +1,25 @@
-import clsx from 'clsx';
 import { useCallback, useRef, useState } from 'react';
 import Alert from 'react-bootstrap/Alert';
 import Form from 'react-bootstrap/Form';
 
-import { OverlayTrigger, Radio, RadioGroup } from '@prairielearn/ui';
-
 import {
-  type AmbiguousMatch,
   type CanvasStudent,
-  type MatchResult,
-  type MatchStrategy,
   type StrategyResult,
   type Student,
   parseCanvasCsv,
   runAllStrategies,
-  strategyDescription,
-  strategyLabel,
 } from '../lib/canvas-matching.js';
 
 export interface CanvasMatchingState {
   canvasStudents: CanvasStudent[];
-  strategyResults: StrategyResult[];
-  selectedStrategy: MatchStrategy;
-  currentResult: MatchResult;
+  allResults: StrategyResult[];
+  bestResult: StrategyResult;
 }
 
 /**
- * Shared panel for uploading a Canvas gradebook CSV and selecting a matching
- * strategy. Used in both the Gradebook and Assessment Downloads Canvas export
- * modals.
+ * Shared panel for uploading a Canvas gradebook CSV and displaying the
+ * auto-selected matching strategy result. Used in both the Gradebook and
+ * Assessment Downloads Canvas export modals.
  */
 export function CanvasMatchingPanel({
   students,
@@ -73,40 +64,11 @@ export function CanvasMatchingPanel({
 
       onMatchingStateChange({
         canvasStudents,
-        strategyResults: results,
-        selectedStrategy: best.strategy,
-        currentResult: best.result,
+        allResults: results,
+        bestResult: best,
       });
     },
     [students, onMatchingStateChange],
-  );
-
-  const handleStrategyChange = useCallback(
-    (strategy: MatchStrategy) => {
-      if (!matchingState) return;
-      const found = matchingState.strategyResults.find((r) => r.strategy === strategy);
-      if (!found) return;
-      onMatchingStateChange({
-        ...matchingState,
-        selectedStrategy: strategy,
-        currentResult: found.result,
-      });
-    },
-    [matchingState, onMatchingStateChange],
-  );
-
-  const handleAmbiguousSelection = useCallback(
-    (plUid: string, canvasIndex: number) => {
-      if (!matchingState) return;
-      const updatedAmbiguous = matchingState.currentResult.ambiguous.map((a) =>
-        a.plStudent.uid === plUid ? { ...a, selectedCanvasIndex: canvasIndex } : a,
-      );
-      onMatchingStateChange({
-        ...matchingState,
-        currentResult: { ...matchingState.currentResult, ambiguous: updatedAmbiguous },
-      });
-    },
-    [matchingState, onMatchingStateChange],
   );
 
   const handleClear = useCallback(() => {
@@ -117,29 +79,13 @@ export function CanvasMatchingPanel({
     }
   }, [onMatchingStateChange]);
 
-  const hasAnyMatches =
-    matchingState?.strategyResults.some((s) => s.result.matched.length > 0) ?? false;
-
-  const hasComprehensiveStrategy =
-    matchingState?.strategyResults.some(
-      (s) =>
-        s.result.matched.length > 0 &&
-        s.result.ambiguous.length === 0 &&
-        s.result.unmatchedPl.length === 0,
-    ) ?? false;
-
-  const isComprehensive = (sr: StrategyResult) =>
-    sr.result.matched.length > 0 &&
-    sr.result.ambiguous.length === 0 &&
-    sr.result.unmatchedPl.length === 0;
-
   return (
     <div>
-      <h6>Canvas gradebook import (optional)</h6>
+      <h6>Canvas gradebook import</h6>
       <p className="text-muted small mb-1">
         Upload a gradebook CSV exported from Canvas so PrairieLearn can reuse each student&apos;s
         roster identity from that file. Without this, values that identify students to Canvas will
-        use each student&apos;s PrairieLearn sign-in identifier instead.
+        leave identity columns empty.
       </p>
       <p className="small mb-3">
         <a
@@ -169,167 +115,171 @@ export function CanvasMatchingPanel({
 
       {parseError && <Alert variant="danger">{parseError}</Alert>}
 
-      {matchingState && (
-        <>
-          <h6>Matching strategy</h6>
-          {hasComprehensiveStrategy ? (
-            <p className="small text-secondary mb-2">
-              Some strategies are disabled because{' '}
-              {strategyLabel(
-                matchingState.strategyResults.find((s) => isComprehensive(s))!.strategy,
-              )}{' '}
-              accounts for all students.
-            </p>
-          ) : hasAnyMatches &&
-            matchingState.strategyResults.some((s) => s.result.matched.length === 0) ? (
-            <p className="small text-secondary mb-2">
-              Some strategies are disabled because they produced no matches.
-            </p>
-          ) : null}
-          <RadioGroup
-            className="d-flex flex-column gap-3 w-100"
-            value={matchingState.selectedStrategy}
-            onChange={handleStrategyChange}
-          >
-            {matchingState.strategyResults.map((sr) => {
-              const disabled =
-                (hasAnyMatches && sr.result.matched.length === 0) ||
-                (hasComprehensiveStrategy && !isComprehensive(sr));
-              return (
-                <Radio key={sr.strategy} value={sr.strategy} isDisabled={disabled}>
-                  <span
-                    className={clsx(
-                      'd-inline-flex flex-column gap-1 min-w-0 justify-content-start',
-                      disabled && 'text-secondary',
-                    )}
-                  >
-                    <span>
-                      {strategyLabel(sr.strategy)}{' '}
-                      <OverlayTrigger
-                        tooltip={{
-                          body: strategyDescription(sr.strategy),
-                          props: { id: `strategy-tooltip-${sr.strategy}` },
-                        }}
-                      >
-                        <i className="bi bi-question-circle text-muted" aria-hidden="true" />
-                      </OverlayTrigger>
-                    </span>
-                    <span className="text-muted small">
-                      {sr.result.matched.length} matched, {sr.result.ambiguous.length} ambiguous,{' '}
-                      {sr.result.unmatchedPl.length} unmatched PL,{' '}
-                      {sr.result.unmatchedCanvas.length} unmatched Canvas
-                    </span>
-                  </span>
-                </Radio>
-              );
-            })}
-          </RadioGroup>
+      {matchingState && <MatchingSummary bestResult={matchingState.bestResult} />}
+    </div>
+  );
+}
 
-          <MatchSummary result={matchingState.currentResult} />
+function MatchingSummary({ bestResult }: { bestResult: StrategyResult }) {
+  const { result, strategy } = bestResult;
+  const { matched, ambiguousPl, ambiguousCanvas, unmatchedPl, unmatchedCanvas } = result;
 
-          {matchingState.currentResult.ambiguous.length > 0 && (
-            <AmbiguousMatchTable
-              ambiguous={matchingState.currentResult.ambiguous}
-              onSelect={handleAmbiguousSelection}
-            />
+  if (matched.length === 0) {
+    return (
+      <Alert variant="danger" className="d-flex align-items-start gap-2">
+        <i className="bi bi-x-circle-fill" />
+        <div>
+          No matching strategy was able to match any students. Identity columns in the exported CSV
+          will be empty. Verify that the uploaded file is a gradebook CSV exported from Canvas.
+        </div>
+      </Alert>
+    );
+  }
+
+  const hasProblems =
+    ambiguousPl.length > 0 ||
+    ambiguousCanvas.length > 0 ||
+    unmatchedPl.length > 0 ||
+    unmatchedCanvas.length > 0;
+
+  const variant = hasProblems ? 'warning' : 'success';
+  const icon = hasProblems ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill';
+
+  return (
+    <div>
+      <Alert variant={variant} className="d-flex align-items-start gap-2">
+        <i className={`bi ${icon}`} />
+        <div>
+          <div className="mb-1">
+            Matched using <strong>{strategy.label}</strong>
+          </div>
+          <div>
+            <strong>{matched.length}</strong> matched
+            {ambiguousPl.length > 0 && (
+              <>
+                , <strong>{ambiguousPl.length}</strong> ambiguous PrairieLearn
+              </>
+            )}
+            {ambiguousCanvas.length > 0 && (
+              <>
+                , <strong>{ambiguousCanvas.length}</strong> ambiguous Canvas
+              </>
+            )}
+            {unmatchedPl.length > 0 && (
+              <>
+                , <strong>{unmatchedPl.length}</strong> unmatched PrairieLearn
+              </>
+            )}
+            {unmatchedCanvas.length > 0 && (
+              <>
+                , <strong>{unmatchedCanvas.length}</strong> unmatched Canvas
+              </>
+            )}
+          </div>
+          {unmatchedPl.length > 0 && (
+            <div className="mt-1 small">
+              Unmatched PrairieLearn students will have empty identity columns in the exported CSV.
+            </div>
           )}
-        </>
+        </div>
+      </Alert>
+
+      {(ambiguousPl.length > 0 || ambiguousCanvas.length > 0) && (
+        <AmbiguousStudentsList ambiguousPl={ambiguousPl} ambiguousCanvas={ambiguousCanvas} />
+      )}
+
+      {(unmatchedPl.length > 0 || unmatchedCanvas.length > 0) && (
+        <UnmatchedStudentsList unmatchedPl={unmatchedPl} unmatchedCanvas={unmatchedCanvas} />
       )}
     </div>
   );
 }
 
-function MatchSummary({ result }: { result: MatchResult }) {
-  const { matched, ambiguous, unmatchedPl, unmatchedCanvas } = result;
-  const hasAmbiguous = ambiguous.length > 0;
-  const hasUnmatched = unmatchedPl.length > 0;
-  const allGood = !hasAmbiguous && !hasUnmatched;
-
-  const variant = allGood ? 'success' : hasUnmatched ? 'danger' : 'warning';
-  const icon = allGood
-    ? 'bi-check-circle-fill'
-    : hasUnmatched
-      ? 'bi-exclamation-triangle-fill'
-      : 'bi-exclamation-circle-fill';
-
+function AmbiguousStudentsList({
+  ambiguousPl,
+  ambiguousCanvas,
+}: {
+  ambiguousPl: Student[];
+  ambiguousCanvas: CanvasStudent[];
+}) {
   return (
-    <Alert variant={variant} className="mt-3 d-flex align-items-start gap-2">
-      <i className={`bi ${icon}`} />
-      <div>
-        <strong>{matched.length}</strong> matched, <strong>{ambiguous.length}</strong> ambiguous,{' '}
-        <strong>{unmatchedPl.length}</strong> unmatched from PrairieLearn,{' '}
-        <strong>{unmatchedCanvas.length}</strong> unmatched from Canvas.
-        {unmatchedPl.length > 0 && (
-          <div className="mt-1 small">
-            {unmatchedPl.length} unmatched PrairieLearn{' '}
-            {unmatchedPl.length === 1 ? 'student' : 'students'} will be exported using their
-            PrairieLearn sign-in identifier where Canvas expects a login value.
-          </div>
-        )}
-        {unmatchedCanvas.length > 0 && (
-          <div className="mt-1 small">
-            {unmatchedCanvas.length} unmatched Canvas{' '}
-            {unmatchedCanvas.length === 1 ? 'student' : 'students'} may be omitted from the export
-            because no matching PrairieLearn account was found.
-          </div>
-        )}
-      </div>
-    </Alert>
+    <details className="mb-3">
+      <summary className="fw-semibold small">
+        Ambiguous students ({ambiguousPl.length + ambiguousCanvas.length})
+      </summary>
+      <p className="text-muted small mt-1">
+        These students share an identifier with another student on the same side and cannot be
+        matched automatically.
+      </p>
+      {ambiguousPl.length > 0 && (
+        <div className="mb-2">
+          <div className="fw-semibold small">PrairieLearn</div>
+          <StudentList students={ambiguousPl} />
+        </div>
+      )}
+      {ambiguousCanvas.length > 0 && (
+        <div>
+          <div className="fw-semibold small">Canvas</div>
+          <CanvasStudentList students={ambiguousCanvas} />
+        </div>
+      )}
+    </details>
   );
 }
 
-function AmbiguousMatchTable({
-  ambiguous,
-  onSelect,
+function UnmatchedStudentsList({
+  unmatchedPl,
+  unmatchedCanvas,
 }: {
-  ambiguous: AmbiguousMatch[];
-  onSelect: (plUid: string, canvasIndex: number) => void;
+  unmatchedPl: Student[];
+  unmatchedCanvas: CanvasStudent[];
 }) {
   return (
-    <div className="mt-3">
-      <h6>Resolve ambiguous matches</h6>
-      <p className="text-muted small">
-        The following PrairieLearn students matched multiple Canvas students. Select the correct
-        Canvas student for each.
-      </p>
-      <div className="table-responsive">
-        <table className="table table-sm" aria-label="Ambiguous matches">
-          <thead>
-            <tr>
-              <th>PrairieLearn student</th>
-              <th>Canvas match</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ambiguous.map((a) => (
-              <tr key={a.plStudent.uid}>
-                <td>
-                  <div>{a.plStudent.userName ?? '(no name)'}</div>
-                  <small className="text-muted">{a.plStudent.uid}</small>
-                </td>
-                <td>
-                  <Form.Select
-                    size="sm"
-                    value={a.selectedCanvasIndex ?? ''}
-                    aria-label={`Select Canvas match for ${a.plStudent.userName ?? a.plStudent.uid}`}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val !== '') onSelect(a.plStudent.uid, Number(val));
-                    }}
-                  >
-                    <option value="">Select a Canvas student...</option>
-                    {a.candidates.map((c, i) => (
-                      <option key={`${c.id}-${c.sisLoginId}`} value={i}>
-                        {c.name} ({c.sisLoginId})
-                      </option>
-                    ))}
-                  </Form.Select>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <>
+      {unmatchedPl.length > 0 && (
+        <details className="mb-3">
+          <summary className="fw-semibold small">
+            Unmatched PrairieLearn students ({unmatchedPl.length})
+          </summary>
+          <div className="mt-1">
+            <StudentList students={unmatchedPl} />
+          </div>
+        </details>
+      )}
+      {unmatchedCanvas.length > 0 && (
+        <details className="mb-3">
+          <summary className="fw-semibold small">
+            Unmatched Canvas students ({unmatchedCanvas.length})
+          </summary>
+          <div className="mt-1">
+            <CanvasStudentList students={unmatchedCanvas} />
+          </div>
+        </details>
+      )}
+    </>
+  );
+}
+
+function StudentList({ students }: { students: Student[] }) {
+  return (
+    <ul className="list-unstyled small ps-3">
+      {students.map((s) => (
+        <li key={s.uid}>
+          {s.userName ?? '(no name)'} <span className="text-muted">({s.uid})</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function CanvasStudentList({ students }: { students: CanvasStudent[] }) {
+  return (
+    <ul className="list-unstyled small ps-3">
+      {students.map((c) => (
+        <li key={`${c.id}-${c.sisLoginId}-${c.sisUserId}`}>
+          {c.name} <span className="text-muted">({c.sisLoginId || c.sisUserId || c.id})</span>
+        </li>
+      ))}
+    </ul>
   );
 }
