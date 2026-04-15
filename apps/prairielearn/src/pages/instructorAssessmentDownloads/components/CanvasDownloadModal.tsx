@@ -44,6 +44,11 @@ export function CanvasDownloadModal({
     setDownloading(true);
     try {
       const response = await fetch(downloadUrl);
+      if (!response.ok) {
+        window.location.href = downloadUrl;
+        onHide();
+        return;
+      }
       const csvText = await response.text();
 
       const lines = parseCsvWithHeaders(csvText);
@@ -73,6 +78,11 @@ export function CanvasDownloadModal({
           if (sisUserIdx !== -1) newRow[sisUserIdx] = canvas.sisUserId;
           if (sisLoginIdx !== -1) newRow[sisLoginIdx] = canvas.sisLoginId;
           if (sectionIdx !== -1) newRow[sectionIdx] = canvas.section;
+        } else {
+          if (idIdx !== -1) newRow[idIdx] = '';
+          if (sisUserIdx !== -1) newRow[sisUserIdx] = '';
+          if (sisLoginIdx !== -1) newRow[sisLoginIdx] = '';
+          if (sectionIdx !== -1) newRow[sectionIdx] = '';
         }
         return newRow;
       });
@@ -113,7 +123,8 @@ export function CanvasDownloadModal({
 
 /**
  * Parses a PrairieLearn-generated Canvas CSV (which has a "Points Possible"
- * sentinel row) into headers + data rows. Returns null if parsing fails.
+ * sentinel row) into headers + data rows. Skips the sentinel row so only
+ * actual student rows are returned. Returns null if parsing fails.
  */
 function parseCsvWithHeaders(csvText: string): { headers: string[]; dataRows: string[][] } | null {
   const { error } = parseCanvasCsv(csvText);
@@ -122,6 +133,10 @@ function parseCsvWithHeaders(csvText: string): { headers: string[]; dataRows: st
   const rows = parseCsvRows(csvText);
   if (rows.length === 0) return null;
 
-  const [headers, ...dataRows] = rows;
+  const [headers, ...rest] = rows;
+  const dataRows = rest.filter((row) => {
+    const name = row[0]?.trim() ?? '';
+    return name !== '' && !name.startsWith('Points Possible');
+  });
   return { headers, dataRows };
 }
