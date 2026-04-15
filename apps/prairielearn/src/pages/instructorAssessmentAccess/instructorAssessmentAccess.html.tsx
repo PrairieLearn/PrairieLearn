@@ -231,7 +231,8 @@ function MigrationConfirmModal({
                 <i class="bi bi-exclamation-triangle-fill"></i>
                 This assessment's access rules cannot be automatically migrated. Proceeding will
                 <strong>remove all existing access rules</strong> and switch to the modern format
-                with no rules configured. You will need to recreate your access rules from scratch.
+                with no access control configured. You will need to set up access control from
+                scratch.
               </div>
             `
           : ''}
