@@ -1,5 +1,3 @@
-import * as path from 'path';
-
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
@@ -11,7 +9,7 @@ import {
   validateAccessControlRules,
 } from '../../lib/assessment-access-control/validation.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
-import { saveJsonFile } from '../../lib/editorUtil.js';
+import { getAssessmentDir, getAssessmentInfoJsonPath, saveJsonFile } from '../../lib/editorUtil.js';
 import { features } from '../../lib/features/index.js';
 import {
   type EnrollmentAccessControlRuleData,
@@ -228,14 +226,8 @@ const saveAllRules = t.procedure
       throw new TRPCError({ code: 'BAD_REQUEST', message: validationErrors[0] });
     }
 
-    const assessmentDir = path.join(
-      opts.ctx.course.path,
-      'courseInstances',
-      opts.ctx.course_instance.short_name!,
-      'assessments',
-      opts.ctx.assessment.tid!,
-    );
-    const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
+    const assessmentDir = getAssessmentDir(opts.ctx);
+    const assessmentPath = getAssessmentInfoJsonPath(opts.ctx);
 
     const saveResult = await saveJsonFile<AssessmentJsonInput>({
       applyChanges: (jsonContents) => {

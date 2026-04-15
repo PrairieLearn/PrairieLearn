@@ -1,5 +1,3 @@
-import * as path from 'path';
-
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
@@ -17,6 +15,7 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
 import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -61,14 +60,8 @@ router.get(
       assessment_id: res.locals.assessment.id,
     });
 
-    const assessmentPath = path.join(
-      res.locals.course.path,
-      'courseInstances',
-      res.locals.course_instance.short_name,
-      'assessments',
-      res.locals.assessment.tid,
-      'infoAssessment.json',
-    );
+    const { course, course_instance, assessment } = res.locals;
+    const assessmentPath = getAssessmentInfoJsonPath({ course, course_instance, assessment });
 
     const origHash = (await getOriginalHash(assessmentPath)) ?? '';
 
@@ -226,14 +219,8 @@ router.post(
 
       const body = SaveQuestionsSchema.parse(req.body);
 
-      const assessmentPath = path.join(
-        res.locals.course.path,
-        'courseInstances',
-        res.locals.course_instance.short_name,
-        'assessments',
-        res.locals.assessment.tid,
-        'infoAssessment.json',
-      );
+      const { course, course_instance, assessment } = res.locals;
+      const assessmentPath = getAssessmentInfoJsonPath({ course, course_instance, assessment });
 
       if (!(await fs.pathExists(assessmentPath))) {
         throw new HttpStatusError(400, 'infoAssessment.json does not exist');

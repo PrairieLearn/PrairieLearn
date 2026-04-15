@@ -8,6 +8,7 @@ import { flash } from '@prairielearn/flash';
 import { run } from '@prairielearn/run';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { getAssessmentDir, getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   AssessmentCopyEditor,
@@ -59,14 +60,11 @@ const updateAssessment = t.procedure
   .mutation(async ({ input, ctx }) => {
     const { course, course_instance, assessment, locals } = ctx;
 
-    const infoAssessmentPath = path.join(
-      course.path,
-      'courseInstances',
-      course_instance.short_name!,
-      'assessments',
-      assessment.tid!,
-      'infoAssessment.json',
-    );
+    const infoAssessmentPath = getAssessmentInfoJsonPath({
+      course,
+      course_instance,
+      assessment,
+    });
 
     if (!(await fs.pathExists(infoAssessmentPath))) {
       throw new TRPCError({
@@ -83,13 +81,7 @@ const updateAssessment = t.procedure
       });
     }
 
-    const rootPath = path.join(
-      course.path,
-      'courseInstances',
-      course_instance.short_name!,
-      'assessments',
-      assessment.tid!,
-    );
+    const rootPath = getAssessmentDir({ course, course_instance, assessment });
 
     const assessmentInfo: AssessmentJsonInput = JSON.parse(
       await fs.readFile(infoAssessmentPath, 'utf8'),

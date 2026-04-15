@@ -1,5 +1,3 @@
-import * as path from 'path';
-
 import { Router } from 'express';
 import fs from 'fs-extra';
 
@@ -15,12 +13,12 @@ import {
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { computeScopedJsonHash } from '../../lib/editorUtil.js';
+import { computeScopedJsonHash, getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
 import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectAccessControlRules } from '../../models/assessment-access-control-rules.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 
@@ -33,19 +31,6 @@ import {
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
-function getAssessmentPath(
-  resLocals: Pick<ResLocalsForPage<'assessment'>, 'course' | 'course_instance' | 'assessment'>,
-): string {
-  return path.join(
-    resLocals.course.path,
-    'courseInstances',
-    resLocals.course_instance.short_name!,
-    'assessments',
-    resLocals.assessment.tid!,
-    'infoAssessment.json',
-  );
-}
-
 router.get(
   '/',
   typedAsyncHandler<'assessment'>(async (req, res) => {
@@ -56,7 +41,7 @@ router.get(
 
     if (enhancedAccessControlEnabled && res.locals.assessment.modern_access_control) {
       const jsonRules = await selectAccessControlRules(res.locals.assessment);
-      const assessmentPath = getAssessmentPath(res.locals);
+      const assessmentPath = getAssessmentInfoJsonPath(res.locals);
       const origHash = await computeScopedJsonHash<AssessmentJsonInput>(
         assessmentPath,
         (json) => json.accessControl ?? [],
@@ -88,7 +73,7 @@ router.get(
       AssessmentAccessRulesSchema,
     );
 
-    const assessmentPath = getAssessmentPath(res.locals);
+    const assessmentPath = getAssessmentInfoJsonPath(res.locals);
 
     let migrationAnalysis: Awaited<ReturnType<typeof analyzeAssessmentFile>> = null;
     let migrationPreview: {
@@ -154,7 +139,7 @@ router.post(
         throw new HttpStatusError(403, 'Enhanced access control is not enabled for this course.');
       }
 
-      const assessmentPath = getAssessmentPath(res.locals);
+      const assessmentPath = getAssessmentInfoJsonPath(res.locals);
       const content = await fs.readFile(assessmentPath, 'utf-8');
 
       const migrationResult = migrateAssessmentJson(content);

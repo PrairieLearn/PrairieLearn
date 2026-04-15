@@ -15,6 +15,37 @@ import { formatJsonWithPrettier } from './prettier.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+/**
+ * Structural type matching the subset of `res.locals` (or an equivalent context
+ * object) needed to locate an assessment's files on disk.
+ */
+interface AssessmentLocation {
+  course: { path: string };
+  course_instance: { short_name: string | null };
+  assessment: { tid: string | null };
+}
+
+/**
+ * Returns the absolute filesystem path to an assessment's directory under its
+ * course (`{course.path}/courseInstances/{short_name}/assessments/{tid}`).
+ */
+export function getAssessmentDir(loc: AssessmentLocation): string {
+  return path.join(
+    loc.course.path,
+    'courseInstances',
+    loc.course_instance.short_name!,
+    'assessments',
+    loc.assessment.tid!,
+  );
+}
+
+/**
+ * Returns the absolute filesystem path to an assessment's `infoAssessment.json`.
+ */
+export function getAssessmentInfoJsonPath(loc: AssessmentLocation): string {
+  return path.join(getAssessmentDir(loc), 'infoAssessment.json');
+}
+
 export function getDetailsForFile(filePath: string): FileDetails {
   const normalizedPath = path.normalize(filePath);
   const pathComponents = normalizedPath.split(path.posix.sep);
