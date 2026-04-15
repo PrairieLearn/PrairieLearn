@@ -84,29 +84,29 @@ const INVERSE_TRIG_FUNCTIONS = new Set([
 ]);
 
 export function initCalculator(storageKey: string, { drawer, fab, fabClose }: DrawerElements) {
-  showPanel('main');
-  initColumnNavigation();
+  showPanel('main', drawer);
+  initColumnNavigation(drawer);
   initDrawerUI(drawer, fab, fabClose, storageKey);
   const ce = new ComputeEngine();
   ce.timeLimit = 500;
   ce.pushScope();
   const calculatorInputElement = ensureElement(
-    document.querySelector<MathfieldElement>('#calculator-input'),
+    drawer.querySelector<MathfieldElement>('#calculator-input'),
   );
   const calculatorInputGroup = ensureElement(
     calculatorInputElement.closest<HTMLElement>('.calculator-input-group'),
   );
   const calculatorOutput = ensureElement(
-    document.querySelector<MathfieldElement>('#calculator-output'),
+    drawer.querySelector<MathfieldElement>('#calculator-output'),
   );
-  const copyButton = ensureElement(document.getElementById('calculator-output-copy'));
-  const historyPanel = ensureElement(document.getElementById('history-panel'));
-  const clearHistoryBtn = ensureElement(document.getElementById('calculatorClearHistory'));
+  const copyButton = ensureElement(drawer.querySelector<HTMLElement>('#calculator-output-copy'));
+  const historyPanel = ensureElement(drawer.querySelector<HTMLElement>('#history-panel'));
+  const clearHistoryBtn = ensureElement(drawer.querySelector<HTMLElement>('#calculatorClearHistory'));
   const historyTemplate = ensureElement(
-    document.querySelector<HTMLTemplateElement>('#history-item-template'),
+    drawer.querySelector<HTMLTemplateElement>('#history-item-template'),
   );
-  const displayModeSwitch = ensureElement(document.getElementById('displayModeSwitch'));
-  const angleModeSwitch = ensureElement(document.getElementById('angleModeSwitch'));
+  const displayModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#displayModeSwitch'));
+  const angleModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#angleModeSwitch'));
 
   const onExport = (_mf: unknown, latex: string) => {
     return ce.parse(latex).toString();
@@ -409,7 +409,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   registerCustomFunctions(ce);
 
   // Buttons for number and letter inputs
-  document.querySelectorAll<HTMLButtonElement>('.btn-key').forEach((button) => {
+  drawer.querySelectorAll<HTMLButtonElement>('.btn-key').forEach((button) => {
     prepareButton(button);
     button.addEventListener('click', () => {
       shouldAutoInsertAns = false;
@@ -421,18 +421,18 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   });
 
   // Upper/lowercase switch
-  document.getElementsByName('shift').forEach((button) =>
+  drawer.querySelectorAll<HTMLElement>('[name="shift"]').forEach((button) =>
     button.addEventListener('click', () => {
       button.classList.toggle('btn-light');
       button.classList.toggle('btn-secondary');
-      document.querySelectorAll<HTMLButtonElement>('.btn-key[data-key]').forEach((btn) => {
+      drawer.querySelectorAll<HTMLButtonElement>('.btn-key[data-key]').forEach((btn) => {
         btn.classList.toggle('uppercase');
       });
     }),
   );
 
   // Backspace button
-  document.getElementsByName('backspace').forEach((button) => {
+  drawer.querySelectorAll<HTMLElement>('[name="backspace"]').forEach((button) => {
     prepareButton(button);
     button.addEventListener('click', () => {
       calculatorInputElement.executeCommand(['deleteBackward']);
@@ -441,14 +441,14 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   });
 
   // Left/right
-  document.getElementsByName('left').forEach((button) => {
+  drawer.querySelectorAll<HTMLElement>('[name="left"]').forEach((button) => {
     prepareButton(button);
     button.addEventListener('click', () => {
       calculatorInputElement.executeCommand(['moveToPreviousChar']);
       calculatorInputElement.focus();
     });
   });
-  document.getElementsByName('right').forEach((button) => {
+  drawer.querySelectorAll<HTMLElement>('[name="right"]').forEach((button) => {
     prepareButton(button);
     button.addEventListener('click', () => {
       calculatorInputElement.executeCommand(['moveToNextChar']);
@@ -457,7 +457,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   });
 
   // Clear all
-  document.getElementsByName('clear').forEach((button) => {
+  drawer.querySelectorAll<HTMLElement>('[name="clear"]').forEach((button) => {
     prepareButton(button);
     button.addEventListener('click', () => {
       calculatorInputElement.executeCommand('deleteAll');
@@ -519,10 +519,10 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   setupButtonEvents(buttonActions);
 
   // Panel switching (main / abc / func keyboards)
-  document.querySelectorAll<HTMLInputElement>('[data-panel]').forEach((radio) => {
+  drawer.querySelectorAll<HTMLInputElement>('[data-panel]').forEach((radio) => {
     radio.addEventListener('click', () => {
       const panel = radio.dataset.panel;
-      if (panel) showPanel(panel);
+      if (panel) showPanel(panel, drawer);
     });
   });
 
@@ -633,7 +633,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
   function setupButtonEvents(actions: Record<string, string>) {
     for (const [buttonName, action] of Object.entries(actions)) {
-      document.getElementsByName(buttonName).forEach((button) => {
+      drawer.querySelectorAll<HTMLElement>(`[name="${buttonName}"]`).forEach((button) => {
         prepareButton(button);
         button.addEventListener('click', () => {
           if (
@@ -756,20 +756,20 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   }
 }
 
-function showPanel(panelClass: string) {
-  const panels = document.querySelectorAll<HTMLElement>('.keyboard');
+function showPanel(panelClass: string, container: HTMLElement) {
+  const panels = container.querySelectorAll<HTMLElement>('.keyboard');
   panels.forEach((panel) => (panel.style.display = 'none'));
 
-  const panelToShow = document.querySelectorAll<HTMLElement>(`.${panelClass}`);
+  const panelToShow = container.querySelectorAll<HTMLElement>(`.${panelClass}`);
   panelToShow.forEach((panel) => (panel.style.display = 'flex'));
 }
 
-function initColumnNavigation() {
+function initColumnNavigation(container: HTMLElement) {
   setupKeyboardNav('main-keyboard', 'show-functions');
   setupKeyboardNav('func-keyboard', 'show-trig');
 
   function setupKeyboardNav(keyboardId: string, toggleClass: string) {
-    const keyboard = document.getElementById(keyboardId);
+    const keyboard = container.querySelector<HTMLElement>(`#${keyboardId}`);
     if (!keyboard) return;
 
     keyboard.querySelectorAll('.col-nav').forEach((btn) => {
@@ -825,7 +825,7 @@ function initDrawerUI(
   }
 
   // Left-edge resize handle
-  const resizeHandle = document.getElementById('calculatorResizeHandle');
+  const resizeHandle = drawer.querySelector<HTMLElement>('#calculatorResizeHandle');
   if (resizeHandle) {
     let startX = 0;
     let startWidth = 0;
