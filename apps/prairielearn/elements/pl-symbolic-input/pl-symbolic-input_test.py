@@ -281,7 +281,7 @@ def test_interval_submission_parses_and_grades() -> None:
     element_html = """
     <pl-symbolic-interval
         answers-name="test"
-        allow-sets="true"
+        allow-set-notation="true"
         correct-answer="[1, 2] U [3, 4]"
     ></pl-symbolic-interval>
     """
@@ -334,7 +334,7 @@ def test_interval_endpoints_support_trig_and_arithmetic_expressions(
     element_html = f"""
     <pl-symbolic-interval
         answers-name="test"
-        allow-sets="true"
+        allow-set-notation="true"
         variables="x,y"
         correct-answer="{answer}"
     ></pl-symbolic-interval>
@@ -370,7 +370,7 @@ def test_interval_correct_answer_renders(
     element_html = """
     <pl-symbolic-interval
         answers-name="test"
-        allow-sets="true"
+        allow-set-notation="true"
         correct-answer="[1, 2] U [3, 4]"
     ></pl-symbolic-interval>
     """
@@ -548,7 +548,7 @@ def test_infinite_interval_submissions_are_accepted(submitted: str) -> None:
     element_html = """
     <pl-symbolic-interval
         answers-name="test"
-        allow-sets="true"
+        allow-set-notation="true"
     ></pl-symbolic-interval>
     """
     data: dict[str, Any] = {

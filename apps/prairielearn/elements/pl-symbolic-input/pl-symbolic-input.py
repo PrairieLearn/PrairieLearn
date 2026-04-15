@@ -24,7 +24,7 @@ ARIA_LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_COMPLEX_DEFAULT = False
-ALLOW_SETS_DEFAULT = False
+ALLOW_SET_NOTATION_DEFAULT = False
 DISPLAY_LOG_AS_LN_DEFAULT = False
 DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT = True
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
@@ -84,7 +84,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "label",
         "aria-label",
         "display",
-        "allow-sets",
+        "allow-set-notation",
         "allow-complex",
         "imaginary-unit-for-display",
         "allow-trig-functions",
@@ -118,7 +118,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
+    allow_set_notation = pl.get_boolean_attrib(
+        element, "allow-set-notation", ALLOW_SET_NOTATION_DEFAULT
+    )
     simplify_expression = pl.get_boolean_attrib(
         element,
         "display-simplified-expression",
@@ -149,7 +151,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     a_true,
                     variables,
                     allow_complex=allow_complex,
-                    allow_set_notation=allow_sets,
+                    allow_set_notation=allow_set_notation,
                     allow_trig_functions=allow_trig,
                     custom_functions=custom_functions,
                     simplify_expression=simplify_expression,
@@ -183,7 +185,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 initial_value,
                 variables,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_sets,
+                allow_set_notation=allow_set_notation,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
                 simplify_expression=simplify_expression,
@@ -236,7 +238,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
+    allow_set_notation = pl.get_boolean_attrib(
+        element, "allow-set-notation", ALLOW_SET_NOTATION_DEFAULT
+    )
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
@@ -263,6 +267,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "operators": operators,
         "constants": constants,
         "allow_complex": allow_complex,
+        "allow_sets": allow_set_notation,
     }
 
     with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
@@ -286,7 +291,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     a_sub,
                     variables,
                     allow_complex=allow_complex,
-                    allow_set_notation=allow_sets,
+                    allow_set_notation=allow_set_notation,
                     custom_functions=custom_functions,
                     allow_trig_functions=allow_trig,
                     simplify_expression=simplify_expression,
@@ -298,7 +303,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 psu.json_to_sympy(
                     a_sub,
                     allow_complex=allow_complex,
-                    allow_set_notation=allow_sets,
+                    allow_set_notation=allow_set_notation,
                     allow_trig_functions=allow_trig,
                     simplify_expression=simplify_expression,
                 ),
@@ -341,7 +346,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 initial_value,
                 _get_variables_with_fallback(element, data, name),
                 allow_complex=allow_complex,
-                allow_set_notation=allow_sets,
+                allow_set_notation=allow_set_notation,
                 custom_functions=custom_functions,
                 allow_trig_functions=allow_trig,
                 simplify_expression=simplify_expression,
@@ -426,7 +431,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                         a_tru,
                         variables,
                         allow_complex=allow_complex,
-                        allow_set_notation=allow_sets,
+                        allow_set_notation=allow_set_notation,
                         allow_trig_functions=allow_trig,
                         custom_functions=custom_functions,
                         simplify_expression=simplify_expression,
@@ -438,7 +443,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 psu.json_to_sympy(
                     a_tru,
                     allow_complex=allow_complex,
-                    allow_set_notation=allow_sets,
+                    allow_set_notation=allow_set_notation,
                     allow_trig_functions=allow_trig,
                     simplify_expression=simplify_expression,
                 ),
@@ -480,7 +485,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
+    allow_set_notation = pl.get_boolean_attrib(
+        element, "allow-set-notation", ALLOW_SET_NOTATION_DEFAULT
+    )
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
@@ -532,7 +539,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         variables,
         allow_hidden=True,
         allow_complex=allow_complex,
-        allow_set_notation=allow_sets,
+        allow_set_notation=allow_set_notation,
         allow_trig_functions=allow_trig,
         imaginary_unit=imaginary_unit,
         custom_functions=custom_functions,
@@ -555,7 +562,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         psu.json_to_sympy(
             a_sub_json,
             allow_complex=allow_complex,
-            allow_set_notation=allow_sets,
+            allow_set_notation=allow_set_notation,
             simplify_expression=simplify_expression,
         )
 
@@ -802,7 +809,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
+    allow_set_notation = pl.get_boolean_attrib(
+        element, "allow-set-notation", ALLOW_SET_NOTATION_DEFAULT
+    )
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
@@ -839,7 +848,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 a_tru,
                 variables,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_sets,
+                allow_set_notation=allow_set_notation,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
                 simplify_expression=simplify_expression,
@@ -848,7 +857,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             a_tru_sympy = psu.json_to_sympy(
                 a_tru,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_sets,
+                allow_set_notation=allow_set_notation,
                 simplify_expression=simplify_expression,
             )
 
@@ -859,7 +868,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 a_sub,
                 variables,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_sets,
+                allow_set_notation=allow_set_notation,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
                 assumptions=a_tru_sympy.assumptions0,
@@ -869,7 +878,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             a_sub_sympy = psu.json_to_sympy(
                 a_sub,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_sets,
+                allow_set_notation=allow_set_notation,
                 allow_trig_functions=allow_trig,
                 simplify_expression=simplify_expression,
             )
@@ -929,7 +938,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
+    allow_set_notation = pl.get_boolean_attrib(
+        element, "allow-set-notation", ALLOW_SET_NOTATION_DEFAULT
+    )
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
@@ -954,7 +965,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                     a_tru,
                     variables,
                     allow_complex=allow_complex,
-                    allow_set_notation=allow_sets,
+                    allow_set_notation=allow_set_notation,
                     allow_trig_functions=allow_trig,
                     custom_functions=custom_functions,
                     simplify_expression=simplify_expression,
@@ -963,7 +974,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             a_tru = psu.json_to_sympy(
                 a_tru,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_sets,
+                allow_set_notation=allow_set_notation,
                 allow_trig_functions=allow_trig,
             )
 
