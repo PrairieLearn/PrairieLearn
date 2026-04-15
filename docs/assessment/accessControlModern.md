@@ -416,10 +416,12 @@ Students with the "Extended time" label get a later due date (Feb 22 instead of 
 
 Migration from the legacy `allowAccess` format to the modern `accessControl` format can be done in two ways:
 
-- On the **Assessment Access** tab, click **Migrate to modern format**. Automatic migration is
-  only available when the legacy rules do not include `uids`.
-- When **copying a course instance**, PrairieLearn migrates compatible assessment-level rules and
-  reports any caveats before you confirm the copy.
+- On an assessment's **Access** tab, click **Migrate to modern format**. You can see the migrated changes and review any warnings or caveats before confirming the migration.
+- When **copying a course instance**, PrairieLearn migrates compatible assessment-level rules and reports any caveats before you confirm the copy.
+
+!!! note
+
+    UID-based rules from the legacy system (the `uids` array) don't have a direct JSON equivalent in the modern format. After migrating, visit an assessment's Access tab to configure overrides for [students with specific labels](#student-labels-and-overrides) or individual enrolled students.
 
 Below are common legacy patterns and their modern equivalents.
 
@@ -747,10 +749,6 @@ Below are common legacy patterns and their modern equivalents.
       ]
     }
     ```
-
-!!! note
-
-    UID-based rules from the legacy system (the `uids` field) don't have a direct JSON equivalent in the modern format. On the Assessment Access page, automatic migration is disabled until those rules are removed or recreated as enrollment overrides. During course-instance copy, migrating to modern access control omits UID-based rules from the copied assessment JSON. Use [student labels](#student-labels-and-overrides) or individual enrollment overrides (configured via the UI on the Assessment Access tab) instead.
 
 ## Limitations
 
