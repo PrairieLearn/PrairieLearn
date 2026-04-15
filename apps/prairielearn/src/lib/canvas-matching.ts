@@ -19,22 +19,23 @@ export interface Student {
   uin: string | null;
 }
 
-export type MatchStrategy = 'uid' | 'uin' | 'name';
+export interface MatchStrategy {
+  name: string;
+  label: string;
+  description: string;
+  prairielearnKey: (student: Student) => string;
+  canvasKey: (student: CanvasStudent) => string;
+}
 
 export interface MatchedPair {
   plStudent: Student;
   canvasStudent: CanvasStudent;
 }
 
-export interface AmbiguousMatch {
-  plStudent: Student;
-  candidates: CanvasStudent[];
-  selectedCanvasIndex: number | null;
-}
-
 export interface MatchResult {
   matched: MatchedPair[];
-  ambiguous: AmbiguousMatch[];
+  ambiguousPl: Student[];
+  ambiguousCanvas: CanvasStudent[];
   unmatchedPl: Student[];
   unmatchedCanvas: CanvasStudent[];
 }
@@ -107,65 +108,8 @@ export function parseCanvasCsv(csvText: string): {
 }
 
 // --------------------------------------------------------------------------
-// Name normalization
+// Key extraction helpers
 // --------------------------------------------------------------------------
-
-function normalizeName(name: string): string {
-  return name.toLowerCase().replaceAll(/[^a-z]/g, '');
-}
-
-/**
- * Parses a name that might be "Last, First Middle" or "First Middle Last" into
- * a set of normalized comparison keys. Returns multiple variants so we can
- * match across different formatting conventions.
- */
-function nameVariants(name: string): Set<string> {
-  const variants = new Set<string>();
-  const trimmed = name.trim();
-  if (!trimmed) return variants;
-
-  // Always add the fully-normalized version (all alpha chars, lowered)
-  variants.add(normalizeName(trimmed));
-
-  if (trimmed.includes(',')) {
-    // "Last, First Middle" → try "firstmiddlelast" and "firstlast"
-    const [last, ...rest] = trimmed.split(',');
-    const firstMiddle = rest.join(',').trim();
-    const parts = firstMiddle.split(/\s+/).filter(Boolean);
-    const lastNorm = normalizeName(last);
-
-    if (parts.length > 0) {
-      const allParts = parts.map(normalizeName).join('');
-      variants.add(allParts + lastNorm);
-      // First + Last only (drop middle names)
-      variants.add(normalizeName(parts[0]) + lastNorm);
-    }
-  } else {
-    // "First Middle Last" → try "lastfirstmiddle" and "lastfirst"
-    const parts = trimmed.split(/\s+/).filter(Boolean);
-    if (parts.length >= 2) {
-      const first = parts.slice(0, -1).map(normalizeName).join('');
-      const last = normalizeName(parts[parts.length - 1]);
-      variants.add(last + first);
-      variants.add(last + normalizeName(parts[0]));
-    }
-  }
-
-  return variants;
-}
-
-// --------------------------------------------------------------------------
-// Matching strategies
-// --------------------------------------------------------------------------
-
-function matchByUid(plStudents: Student[], canvasStudents: CanvasStudent[]): MatchResult {
-  return matchByKey(
-    plStudents,
-    canvasStudents,
-    (pl) => [pl.uid.toLowerCase()],
-    (c) => [c.sisLoginId.toLowerCase(), c.sisUserId.toLowerCase()],
-  );
-}
 
 /**
  * Normalizes identifiers for comparison. Numeric strings are compared without
@@ -180,172 +124,184 @@ function normalizeSisIdentifier(value: string): string {
   return trimmed;
 }
 
-function matchByUin(plStudents: Student[], canvasStudents: CanvasStudent[]): MatchResult {
-  return matchByKey(
-    plStudents,
-    canvasStudents,
-    (pl) => {
-      const keys: string[] = [];
-      if (pl.uin) keys.push(normalizeSisIdentifier(pl.uin));
-      if (pl.uid) keys.push(normalizeSisIdentifier(pl.uid));
-      return keys;
-    },
-    (c) => [normalizeSisIdentifier(c.sisUserId), normalizeSisIdentifier(c.sisLoginId)],
-  );
+/**
+ * Normalizes a name into "first [middle...] last" canonical form so that
+ * "Last, First Middle" and "First Middle Last" produce the same key.
+ */
+function canonicalName(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return '';
+
+  let parts: string[];
+  if (trimmed.includes(',')) {
+    // "Last, First Middle" → [First, Middle, Last]
+    const [last, ...rest] = trimmed.split(',');
+    const firstMiddle = rest.join(',').trim();
+    parts = [...firstMiddle.split(/\s+/).filter(Boolean), last.trim()];
+  } else {
+    // "First Middle Last" → [First, Middle, Last]
+    parts = trimmed.split(/\s+/).filter(Boolean);
+  }
+
+  return parts
+    .map((p) => p.toLowerCase().replaceAll(/[^a-z]/g, ''))
+    .filter(Boolean)
+    .join(' ');
 }
 
-function matchByKey(
+// --------------------------------------------------------------------------
+// Strategy definitions
+// --------------------------------------------------------------------------
+
+export const MATCH_STRATEGIES: MatchStrategy[] = [
+  {
+    name: 'uid-sislogin',
+    label: 'UID \u2194 SIS Login ID',
+    description:
+      'Matches each student\u2019s PrairieLearn UID against the SIS Login ID column in the Canvas export.',
+    prairielearnKey: (s) => s.uid.toLowerCase(),
+    canvasKey: (c) => c.sisLoginId.toLowerCase(),
+  },
+  {
+    name: 'uid-sisuser',
+    label: 'UID \u2194 SIS User ID',
+    description:
+      'Matches each student\u2019s PrairieLearn UID against the SIS User ID column in the Canvas export.',
+    prairielearnKey: (s) => s.uid.toLowerCase(),
+    canvasKey: (c) => c.sisUserId.toLowerCase(),
+  },
+  {
+    name: 'uin-sisuser',
+    label: 'UIN \u2194 SIS User ID',
+    description:
+      'Matches each student\u2019s campus student ID (UIN) against the SIS User ID column in the Canvas export. Leading zeros are ignored for numeric identifiers.',
+    prairielearnKey: (s) => (s.uin ? normalizeSisIdentifier(s.uin) : ''),
+    canvasKey: (c) => normalizeSisIdentifier(c.sisUserId),
+  },
+  {
+    name: 'uin-sislogin',
+    label: 'UIN \u2194 SIS Login ID',
+    description:
+      'Matches each student\u2019s campus student ID (UIN) against the SIS Login ID column in the Canvas export. Leading zeros are ignored for numeric identifiers.',
+    prairielearnKey: (s) => (s.uin ? normalizeSisIdentifier(s.uin) : ''),
+    canvasKey: (c) => normalizeSisIdentifier(c.sisLoginId),
+  },
+  {
+    name: 'name',
+    label: 'Student name',
+    description:
+      'Compares student names across different formats (e.g. "Last, First" vs. "First Last"), ignoring case and punctuation.',
+    prairielearnKey: (s) => (s.userName ? canonicalName(s.userName) : ''),
+    canvasKey: (c) => canonicalName(c.name),
+  },
+];
+
+// --------------------------------------------------------------------------
+// Matching algorithm
+// --------------------------------------------------------------------------
+
+/**
+ * Runs a single match strategy:
+ * 1. Builds a map of key → record(s) on both sides.
+ * 2. Discards ambiguous entries (multiple records sharing a key).
+ * 3. Matches remaining entries by key intersection.
+ */
+function runStrategy(
+  strategy: MatchStrategy,
   plStudents: Student[],
   canvasStudents: CanvasStudent[],
-  plKeys: (pl: Student) => string[],
-  canvasKeys: (c: CanvasStudent) => string[],
 ): MatchResult {
+  // Step 1: Build maps on both sides.
+  const plByKey = new Map<string, Student[]>();
+  const plNoKey: Student[] = [];
+  for (const pl of plStudents) {
+    const key = strategy.prairielearnKey(pl);
+    if (!key) {
+      plNoKey.push(pl);
+      continue;
+    }
+    const arr = plByKey.get(key) ?? [];
+    arr.push(pl);
+    plByKey.set(key, arr);
+  }
+
   const canvasByKey = new Map<string, CanvasStudent[]>();
+  const canvasNoKey: CanvasStudent[] = [];
   for (const c of canvasStudents) {
-    const seen = new Set<string>();
-    for (const key of canvasKeys(c)) {
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      const arr = canvasByKey.get(key) ?? [];
-      arr.push(c);
-      canvasByKey.set(key, arr);
-    }
-  }
-
-  const matched: MatchedPair[] = [];
-  const ambiguous: AmbiguousMatch[] = [];
-  const unmatchedPl: Student[] = [];
-  const usedCanvas = new Set<CanvasStudent>();
-
-  for (const pl of plStudents) {
-    const keys = plKeys(pl).filter(Boolean);
-    if (keys.length === 0) {
-      unmatchedPl.push(pl);
+    const key = strategy.canvasKey(c);
+    if (!key) {
+      canvasNoKey.push(c);
       continue;
     }
+    const arr = canvasByKey.get(key) ?? [];
+    arr.push(c);
+    canvasByKey.set(key, arr);
+  }
 
-    // Collect candidates across all PL keys, deduplicating by identity.
-    const candidateSet = new Set<CanvasStudent>();
-    for (const key of keys) {
-      const found = canvasByKey.get(key);
-      if (found) {
-        for (const c of found) candidateSet.add(c);
-      }
-    }
-
-    const candidates = [...candidateSet];
-    if (candidates.length === 0) {
-      unmatchedPl.push(pl);
-    } else if (candidates.length === 1) {
-      matched.push({ plStudent: pl, canvasStudent: candidates[0] });
-      usedCanvas.add(candidates[0]);
+  // Step 2: Discard ambiguous entries (multiple records sharing a key).
+  const ambiguousPl: Student[] = [];
+  const uniquePl = new Map<string, Student>();
+  for (const [key, records] of plByKey) {
+    if (records.length > 1) {
+      ambiguousPl.push(...records);
     } else {
-      ambiguous.push({ plStudent: pl, candidates, selectedCanvasIndex: null });
-      for (const c of candidates) usedCanvas.add(c);
+      uniquePl.set(key, records[0]);
     }
   }
 
-  const unmatchedCanvas = canvasStudents.filter((c) => !usedCanvas.has(c));
-  return { matched, ambiguous, unmatchedPl, unmatchedCanvas };
-}
-
-function matchByName(plStudents: Student[], canvasStudents: CanvasStudent[]): MatchResult {
-  const canvasNameMap = new Map<string, CanvasStudent[]>();
-  for (const c of canvasStudents) {
-    for (const variant of nameVariants(c.name)) {
-      const arr = canvasNameMap.get(variant) ?? [];
-      arr.push(c);
-      canvasNameMap.set(variant, arr);
+  const ambiguousCanvas: CanvasStudent[] = [];
+  const uniqueCanvas = new Map<string, CanvasStudent>();
+  for (const [key, records] of canvasByKey) {
+    if (records.length > 1) {
+      ambiguousCanvas.push(...records);
+    } else {
+      uniqueCanvas.set(key, records[0]);
     }
   }
 
+  // Step 3: Match by key intersection.
   const matched: MatchedPair[] = [];
-  const ambiguous: AmbiguousMatch[] = [];
-  const unmatchedPl: Student[] = [];
-  const usedCanvas = new Set<CanvasStudent>();
+  const unmatchedPl: Student[] = [...plNoKey];
+  const matchedCanvasKeys = new Set<string>();
 
-  for (const pl of plStudents) {
-    if (!pl.userName) {
-      unmatchedPl.push(pl);
-      continue;
-    }
-
-    const plVariants = nameVariants(pl.userName);
-    const candidateSet = new Set<CanvasStudent>();
-    for (const v of plVariants) {
-      const found = canvasNameMap.get(v);
-      if (found) {
-        for (const c of found) candidateSet.add(c);
-      }
-    }
-
-    const candidates = [...candidateSet];
-    if (candidates.length === 0) {
-      unmatchedPl.push(pl);
-    } else if (candidates.length === 1) {
-      matched.push({ plStudent: pl, canvasStudent: candidates[0] });
-      usedCanvas.add(candidates[0]);
+  for (const [key, pl] of uniquePl) {
+    const canvas = uniqueCanvas.get(key);
+    if (canvas) {
+      matched.push({ plStudent: pl, canvasStudent: canvas });
+      matchedCanvasKeys.add(key);
     } else {
-      ambiguous.push({ plStudent: pl, candidates, selectedCanvasIndex: null });
-      for (const c of candidates) usedCanvas.add(c);
+      unmatchedPl.push(pl);
     }
   }
 
-  const unmatchedCanvas = canvasStudents.filter((c) => !usedCanvas.has(c));
-  return { matched, ambiguous, unmatchedPl, unmatchedCanvas };
-}
+  const unmatchedCanvas: CanvasStudent[] = [...canvasNoKey];
+  for (const [key, canvas] of uniqueCanvas) {
+    if (!matchedCanvasKeys.has(key)) {
+      unmatchedCanvas.push(canvas);
+    }
+  }
 
-// --------------------------------------------------------------------------
-// Run all strategies and pick the best
-// --------------------------------------------------------------------------
+  return { matched, ambiguousPl, ambiguousCanvas, unmatchedPl, unmatchedCanvas };
+}
 
 function scoreResult(result: MatchResult): number {
-  const total =
-    result.matched.length +
-    result.ambiguous.length +
-    result.unmatchedPl.length +
-    result.unmatchedCanvas.length;
-  if (total === 0) return 0;
-  // Heavily weight exact matches; penalize ambiguous and unmatched.
-  return result.matched.length * 3 - result.ambiguous.length - result.unmatchedPl.length * 2;
+  if (result.matched.length === 0) return 0;
+  return (
+    result.matched.length * 3 -
+    result.ambiguousPl.length -
+    result.ambiguousCanvas.length -
+    result.unmatchedPl.length * 2
+  );
 }
 
 export function runAllStrategies(
   plStudents: Student[],
   canvasStudents: CanvasStudent[],
 ): StrategyResult[] {
-  const strategies: { strategy: MatchStrategy; fn: typeof matchByUid }[] = [
-    { strategy: 'uid', fn: matchByUid },
-    { strategy: 'uin', fn: matchByUin },
-    { strategy: 'name', fn: matchByName },
-  ];
-
-  return strategies.map(({ strategy, fn }) => {
-    const result = fn(plStudents, canvasStudents);
+  return MATCH_STRATEGIES.map((strategy) => {
+    const result = runStrategy(strategy, plStudents, canvasStudents);
     return { strategy, result, score: scoreResult(result) };
   });
-}
-
-export function strategyLabel(strategy: MatchStrategy): string {
-  switch (strategy) {
-    case 'uid':
-      return 'Sign-in identifier match';
-    case 'uin':
-      return 'Campus student ID match';
-    case 'name':
-      return 'Name-based match';
-  }
-}
-
-export function strategyDescription(strategy: MatchStrategy): string {
-  switch (strategy) {
-    case 'uid':
-      return 'Matches each student\u2019s PrairieLearn sign-in identifier against the SIS Login ID and SIS User ID columns in the Canvas export.';
-    case 'uin':
-      return 'Matches each student\u2019s campus student ID (UIN) or sign-in identifier (UID) stored in PrairieLearn against the SIS User ID and SIS Login ID columns in the Canvas export. Leading zeros are ignored for numeric identifiers.';
-    case 'name':
-      return 'Compares student names across different formats (e.g. "Last, First" vs. "First Last"), ignoring case and punctuation.';
-  }
 }
 
 // --------------------------------------------------------------------------
@@ -353,18 +309,13 @@ export function strategyDescription(strategy: MatchStrategy): string {
 // --------------------------------------------------------------------------
 
 /**
- * Given a final MatchResult (with ambiguous selections resolved), returns a
- * Map from PL uid → CanvasStudent for all successfully matched students.
+ * Given a final MatchResult, returns a Map from PL uid → CanvasStudent for all
+ * successfully matched students.
  */
 export function buildCanvasLookup(result: MatchResult): Map<string, CanvasStudent> {
   const lookup = new Map<string, CanvasStudent>();
   for (const { plStudent, canvasStudent } of result.matched) {
     lookup.set(plStudent.uid, canvasStudent);
-  }
-  for (const { plStudent, candidates, selectedCanvasIndex } of result.ambiguous) {
-    if (selectedCanvasIndex != null && candidates[selectedCanvasIndex]) {
-      lookup.set(plStudent.uid, candidates[selectedCanvasIndex]);
-    }
   }
   return lookup;
 }
