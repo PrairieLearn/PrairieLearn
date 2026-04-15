@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { afterAll, assert, beforeAll, beforeEach, describe, it, vi } from 'vitest';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
@@ -13,6 +15,119 @@ import {
 import type { CourseInstance, CourseInstancePublishingExtension, Enrollment } from './db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+const institutions = [
+  { id: 100, short_name: 'host', long_name: 'Generic host', uid_regexp: '@host\\.com$' },
+  { id: 101, short_name: 'school', long_name: 'School of testing', uid_regexp: '@school\\.edu$' },
+  {
+    id: 102,
+    short_name: 'anotherschool',
+    long_name: 'Another School',
+    uid_regexp: '@anotherschool\\.edu$',
+  },
+];
+
+const courses = [
+  { id: 10, institution_id: 1, display_timezone: 'UTC', path: '/path/to/course/10' },
+];
+
+const courseInstances = [
+  { id: 11, course_id: 10, enrollment_code: 'KN5Y4HNHX1' },
+  { id: 12, course_id: 10, enrollment_code: 'KN5Y4HNHX2' },
+  { id: 13, course_id: 10, enrollment_code: 'KN5Y4HNHX3' },
+  { id: 14, course_id: 10, enrollment_code: 'KN5Y4HNHX4' },
+  { id: 15, course_id: 10, enrollment_code: 'KN5Y4HNHX5' },
+  { id: 16, course_id: 10, enrollment_code: 'KN5Y4HNHX6' },
+  { id: 17, course_id: 10, enrollment_code: 'KN5Y4HNHX7' },
+];
+
+const users = [
+  { uid: 'person1@host.com', institution_id: 100 },
+  { uid: 'person2@host.com', institution_id: 100 },
+  { uid: 'person1@school.edu', institution_id: 101 },
+  { uid: 'user@school.edu', institution_id: 101 },
+  { uid: 'unknown@host.com', institution_id: 100 },
+  { uid: 'person1@anotherschool.edu', institution_id: 102 },
+  { uid: 'defaultuser@example.com', institution_id: 1 },
+  { uid: 'normaluser@host.com', institution_id: 100 },
+  { uid: 'ltiuserci15@host.com', institution_id: 100, lti_course_instance_id: 15 },
+  { uid: 'ltiuserci12@host.com', institution_id: 100, lti_course_instance_id: 12 },
+];
+
+const courseInstanceAccessRules = [
+  {
+    course_instance_id: 11,
+    number: 1,
+    uids: ['person1@host.com', 'person2@host.com'],
+    start_date: '2010-01-01 00:00:00-00',
+    end_date: '2010-12-31 23:59:59-00',
+    institution: 'Any',
+  },
+  {
+    course_instance_id: 12,
+    number: 1,
+    start_date: '2011-01-01 00:00:00-00',
+    end_date: '2011-12-31 23:59:59-00',
+    institution: 'school',
+  },
+  {
+    course_instance_id: 13,
+    number: 1,
+    start_date: '2012-01-01 00:00:00-00',
+    end_date: '2012-12-31 23:59:59-00',
+    institution: 'notInDb',
+  },
+  {
+    course_instance_id: 14,
+    number: 1,
+    start_date: null,
+    end_date: null,
+    institution: null,
+  },
+  {
+    course_instance_id: 15,
+    number: 1,
+    start_date: '2013-01-01 00:00:00-00',
+    end_date: '2013-12-31 23:59:59-00',
+    institution: 'LTI',
+  },
+  {
+    course_instance_id: 16,
+    number: 1,
+    start_date: null,
+    end_date: '2014-12-31 23:59:59-00',
+    institution: 'Any',
+  },
+  {
+    course_instance_id: 17,
+    number: 1,
+    start_date: '2015-01-01 00:00:00-00',
+    end_date: null,
+    institution: 'school',
+  },
+];
+
+async function setupCheckCourseInstanceLegacyAccessTests() {
+  for (const row of institutions) {
+    await execute(sql.insert_institution, row);
+  }
+
+  for (const row of courses) {
+    await execute(sql.insert_course, row);
+  }
+
+  for (const row of courseInstances) {
+    await execute(sql.insert_course_instance, { uuid: randomUUID(), ...row });
+  }
+
+  for (const row of users) {
+    await execute(sql.insert_user, { lti_course_instance_id: null, ...row });
+  }
+
+  for (const row of courseInstanceAccessRules) {
+    await execute(sql.insert_course_instance_access_rule, { uids: null, ...row });
+  }
+}
 
 describe('calculateModernCourseInstanceStudentAccess', () => {
   beforeEach(() => {
@@ -293,7 +408,7 @@ describe('checkCourseInstanceLegacyAccess', () => {
   afterAll(helperDb.after);
 
   beforeAll(async () => {
-    await execute(sql.setup_check_course_instance_legacy_access_tests);
+    await setupCheckCourseInstanceLegacyAccessTests();
   });
 
   it('passes if all parameters match', async () => {
