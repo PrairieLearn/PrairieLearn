@@ -70,6 +70,13 @@ export interface AccessControlResolverInput {
   prairieTestReservations: PrairieTestReservation[];
 }
 
+export interface AccessTimelineEntry {
+  credit: number;
+  startDate: Date | null;
+  endDate: Date | null;
+  active: boolean;
+}
+
 export interface AccessControlResolverResult {
   authorized: boolean;
   credit: number | null;
@@ -95,6 +102,17 @@ export interface AccessControlResolverResult {
    * `listBeforeRelease` config input.
    */
   showBeforeRelease: boolean;
+  /**
+   * Timeline of credit segments for display. Each entry represents a
+   * contiguous period where a specific credit percentage applies.
+   * Raw data — formatting is a UI concern.
+   */
+  accessTimeline: AccessTimelineEntry[];
+  /**
+   * The next date when the assessment becomes active (e.g. the release date
+   * when before release). Null when already active or no future open date.
+   */
+  nextActiveDate: Date | null;
 }
 
 const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
@@ -108,6 +126,8 @@ const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
   showClosedAssessmentScore: true,
   examAccessEnd: null,
   showBeforeRelease: false,
+  accessTimeline: [],
+  nextActiveDate: null,
 };
 
 const COURSE_ROLE_RANK: Record<EnumCourseRole, number> = {
@@ -200,6 +220,90 @@ export function cascadeOverrides(
     dateControl: mergeDateControl(base.dateControl, next.dateControl),
     afterComplete: mergeAfterComplete(base.afterComplete, next.afterComplete),
   };
+}
+
+/**
+ * Builds an access timeline from dateControl for display purposes.
+ * Each entry is a contiguous period [startDate, endDate) with a credit value.
+ *
+ * - A before-release entry (startDate: null) is included when the current
+ *   date is before the release date.
+ * - An after-last-deadline entry (endDate: null) is always appended.
+ */
+export function buildAccessTimeline(
+  dateControl: RuntimeDateControl | undefined,
+  date: Date,
+): AccessTimelineEntry[] {
+  if (!dateControl?.releaseDate) return [];
+
+  const releaseDate = dateControl.releaseDate;
+  const dueDate = dateControl.dueDate ?? null;
+
+  if (dueDate && dueDate <= releaseDate) return [];
+
+  // Build the same sorted deadline list as computeCredit.
+  const deadlines: { date: Date; credit: number }[] = [];
+
+  if (dateControl.earlyDeadlines) {
+    for (const entry of dateControl.earlyDeadlines) {
+      const entryDate = new Date(entry.date);
+      if (entryDate <= releaseDate) continue;
+      if (dueDate && entryDate >= dueDate) continue;
+      deadlines.push({ date: entryDate, credit: entry.credit });
+    }
+  }
+
+  if (dueDate) {
+    deadlines.push({ date: dueDate, credit: 100 });
+  }
+
+  if (dateControl.lateDeadlines) {
+    for (const entry of dateControl.lateDeadlines) {
+      const entryDate = new Date(entry.date);
+      if (entryDate <= releaseDate) continue;
+      if (dueDate && entryDate <= dueDate) continue;
+      deadlines.push({ date: entryDate, credit: entry.credit });
+    }
+  }
+
+  deadlines.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  if (deadlines.length === 0) return [];
+
+  const segments: AccessTimelineEntry[] = [];
+
+  // Before-release entry when the current date precedes the release date.
+  if (date < releaseDate) {
+    segments.push({
+      credit: 0,
+      startDate: null,
+      endDate: releaseDate,
+      active: true,
+    });
+  }
+
+  // Credit segments derived from deadlines.
+  let segmentStart = releaseDate;
+  for (const deadline of deadlines) {
+    segments.push({
+      credit: deadline.credit,
+      startDate: segmentStart,
+      endDate: deadline.date,
+      active: date >= segmentStart && date < deadline.date,
+    });
+    segmentStart = deadline.date;
+  }
+
+  // After-last-deadline entry is always shown.
+  const afterCredit = dateControl.afterLastDeadline?.credit ?? 0;
+  segments.push({
+    credit: afterCredit,
+    startDate: segmentStart,
+    endDate: null,
+    active: date >= segmentStart,
+  });
+
+  return segments;
 }
 
 interface CreditResult {
@@ -525,6 +629,8 @@ export function resolveAccessControl(
       showClosedAssessmentScore: true,
       examAccessEnd: null,
       showBeforeRelease: false,
+      accessTimeline: [],
+      nextActiveDate: null,
     };
   }
 
@@ -621,12 +727,24 @@ export function resolveAccessControl(
     return { ...UNAUTHORIZED_RESULT };
   }
 
+  // If the assessment is before its release date but showBeforeRelease is true,
+  // the student can see it listed but cannot access it.
+  if (creditResult.beforeRelease && showBeforeRelease) {
+    return {
+      ...UNAUTHORIZED_RESULT,
+      showBeforeRelease: true,
+      nextActiveDate: creditResult.nextDeadlineDate,
+    };
+  }
+
   const creditDateString = formatCreditDateString(
     creditResult.credit,
     creditResult.active,
     creditResult.nextDeadlineDate,
     displayTimezone,
   );
+
+  const accessTimeline = buildAccessTimeline(effectiveRule.dateControl, date);
 
   return {
     authorized: true,
@@ -639,5 +757,7 @@ export function resolveAccessControl(
     showClosedAssessmentScore,
     examAccessEnd,
     showBeforeRelease,
+    accessTimeline,
+    nextActiveDate: null,
   };
 }

@@ -22,8 +22,12 @@ import {
   QuestionVariantHistory,
 } from '../../components/QuestionScore.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
-import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.js';
+import {
+  StudentAccessRulesPopover,
+  StudentAccessTimelinePopover,
+} from '../../components/StudentAccessRulesPopover.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
+import type { AccessTimelineEntry } from '../../lib/assessment-access-control/resolver.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   type AssessmentInstance,
@@ -325,6 +329,10 @@ export function StudentAssessmentInstance({
                   <div class="col-md-9 col-sm-12">
                     ${AssessmentStatus({
                       assessment_instance: resLocals.assessment_instance,
+                      displayTimezone: resLocals.course_instance.display_timezone,
+                      accessTimeline: resLocals.assessment.modern_access_control
+                        ? (resLocals.authz_result.access_timeline ?? null)
+                        : null,
                       authz_result: resLocals.authz_result,
                     })}
                   </div>
@@ -350,6 +358,10 @@ export function StudentAssessmentInstance({
                   <div class="col-md-6 col-sm-12">
                     ${AssessmentStatus({
                       assessment_instance: resLocals.assessment_instance,
+                      displayTimezone: resLocals.course_instance.display_timezone,
+                      accessTimeline: resLocals.assessment.modern_access_control
+                        ? (resLocals.authz_result.access_timeline ?? null)
+                        : null,
                       authz_result: resLocals.authz_result,
                     })}
                   </div>
@@ -805,9 +817,13 @@ export function StudentAssessmentInstance({
 
 function AssessmentStatus({
   assessment_instance,
+  accessTimeline,
+  displayTimezone,
   authz_result,
 }: {
   assessment_instance: AssessmentInstance;
+  accessTimeline: AccessTimelineEntry[] | null;
+  displayTimezone: string;
   authz_result: any;
 }) {
   if (assessment_instance.open && authz_result.active) {
@@ -815,9 +831,14 @@ function AssessmentStatus({
       Assessment is <strong>open</strong> and you can answer questions.
       <br />
       Available credit: ${authz_result.credit_date_string}
-      ${StudentAccessRulesPopover({
-        accessRules: authz_result.access_rules,
-      })}
+      ${accessTimeline
+        ? StudentAccessTimelinePopover({
+            accessTimeline,
+            displayTimezone,
+          })
+        : StudentAccessRulesPopover({
+            accessRules: authz_result.access_rules,
+          })}
     `;
   }
 

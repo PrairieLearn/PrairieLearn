@@ -2,12 +2,15 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
+import { FriendlyDateHtml } from '../../components/FriendlyDate.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import {
   AuthzAccessRuleSchema,
   StudentAccessRulesPopover,
+  StudentAccessTimelinePopover,
 } from '../../components/StudentAccessRulesPopover.js';
+import type { AccessTimelineEntry } from '../../lib/assessment-access-control/resolver.js';
 import {
   AssessmentAccessRuleSchema,
   AssessmentInstanceSchema,
@@ -15,6 +18,8 @@ import {
   AssessmentSetSchema,
 } from '../../lib/db-types.js';
 import { type ResLocalsForPage } from '../../lib/res-locals.js';
+
+const AccessTimelineEntrySchema = z.custom<AccessTimelineEntry>();
 
 export const StudentAssessmentsRowSchema = z.object({
   assessment_id: AssessmentSchema.shape.id,
@@ -30,6 +35,7 @@ export const StudentAssessmentsRowSchema = z.object({
   credit_date_string: z.string(),
   active: AssessmentAccessRuleSchema.shape.active,
   access_rules: AuthzAccessRuleSchema.array(),
+  access_timeline: z.array(AccessTimelineEntrySchema).optional().default([]),
   show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
   assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),
   assessment_instance_score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
@@ -38,6 +44,7 @@ export const StudentAssessmentsRowSchema = z.object({
   start_new_assessment_group: z.boolean(),
   assessment_group_heading: z.string(),
   show_before_release: z.boolean().optional(),
+  opens_at: z.string().nullable().optional(),
 });
 type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowSchema>;
 
@@ -109,18 +116,10 @@ export function StudentAssessments({
                             `}
                     </td>
                     <td class="text-center align-middle">
-                      ${row.show_before_release
-                        ? html`<span class="text-muted">Not yet open</span>`
-                        : row.credit_date_string === 'None'
-                          ? ''
-                          : row.assessment_instance_open !== false
-                            ? row.credit_date_string
-                            : 'Assessment closed.'}
-                      ${row.modern_access_control
-                        ? ''
-                        : StudentAccessRulesPopover({
-                            accessRules: row.access_rules,
-                          })}
+                      ${AvailableCredit({
+                        row,
+                        displayTimezone: resLocals.course_instance.display_timezone,
+                      })}
                     </td>
                     <td class="text-center align-middle">
                       ${row.multiple_instance_header
@@ -161,4 +160,39 @@ function NewInstanceButton({ urlPrefix, row }: { urlPrefix: string; row: Student
       New instance
     </button>`;
   }
+}
+
+function AvailableCredit({
+  row,
+  displayTimezone,
+}: {
+  row: StudentAssessmentsRow;
+  displayTimezone: string;
+}) {
+  if (row.modern_access_control && row.assessment_instance_id == null && !row.active) {
+    if (row.opens_at) {
+      return html`
+        <span class="text-muted">
+          Available{' '}
+          ${FriendlyDateHtml({
+            date: new Date(row.opens_at),
+            timezone: displayTimezone,
+            options: { dateOnly: true },
+            tooltip: true,
+          })}
+        </span>
+      `;
+    }
+    return html`<span class="text-muted">Not yet available</span>`;
+  }
+  if (row.credit_date_string === 'None') return null;
+  if (row.assessment_instance_open !== false) {
+    return html`
+      ${row.credit_date_string}
+      ${row.modern_access_control
+        ? StudentAccessTimelinePopover({ accessTimeline: row.access_timeline, displayTimezone })
+        : StudentAccessRulesPopover({ accessRules: row.access_rules })}
+    `;
+  }
+  return html`Assessment closed.`;
 }
