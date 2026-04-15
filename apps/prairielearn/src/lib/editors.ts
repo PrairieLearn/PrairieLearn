@@ -785,7 +785,7 @@ export class CourseInstanceCopyEditor extends Editor {
   private is_transfer: boolean;
   private metadataOverrides?: Record<string, any>;
   private accessControlMigration?: {
-    strategy: 'migrate' | 'keep' | 'wipe';
+    strategy: 'migrate' | 'keep' | 'clear';
     clearIncompatible: boolean;
   };
 
@@ -798,7 +798,7 @@ export class CourseInstanceCopyEditor extends Editor {
       course_instance: CourseInstance;
       metadataOverrides?: Record<string, any>;
       accessControlMigration?: {
-        strategy: 'migrate' | 'keep' | 'wipe';
+        strategy: 'migrate' | 'keep' | 'clear';
         clearIncompatible: boolean;
       };
     },

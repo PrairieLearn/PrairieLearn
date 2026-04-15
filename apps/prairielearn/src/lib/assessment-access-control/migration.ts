@@ -862,7 +862,7 @@ export async function analyzeCourseInstanceAssessments(
 
 export async function applyMigrationToAssessmentFile(
   filePath: string,
-  strategy: 'migrate' | 'keep' | 'wipe',
+  strategy: 'migrate' | 'keep' | 'clear',
   clearIncompatible: boolean,
   fallbackReleaseDate?: string,
 ): Promise<void> {
@@ -879,7 +879,7 @@ export async function applyMigrationToAssessmentFile(
     return;
   }
 
-  if (strategy === 'wipe') {
+  if (strategy === 'clear') {
     delete data.allowAccess;
     const formatted = await formatJsonWithPrettier(JSON.stringify(data));
     await fs.writeFile(filePath, formatted);

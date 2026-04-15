@@ -38,7 +38,7 @@ interface CopyFormValues
   extends PublishingFormValues, SelfEnrollmentFormValues, PermissionsFormValues {
   short_name: string;
   long_name: string;
-  access_control_strategy: 'migrate' | 'keep' | 'wipe';
+  access_control_strategy: 'migrate' | 'keep' | 'clear';
   clear_incompatible: boolean;
 }
 
@@ -511,9 +511,9 @@ function AccessControlStep({
 
         <Form.Check
           type="radio"
-          id="strategy-wipe"
+          id="strategy-clear"
           label="Migrate to modern format and clear all rules"
-          value="wipe"
+          value="clear"
           {...register('access_control_strategy')}
         />
       </fieldset>

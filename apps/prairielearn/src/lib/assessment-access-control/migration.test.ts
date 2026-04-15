@@ -833,7 +833,6 @@ describe('migrateAllowAccess', () => {
 
     assert.deepEqual(result, expected);
   });
-
 });
 
 describe('analyzeAssessmentFile', () => {
@@ -1016,7 +1015,7 @@ describe('applyMigrationToAssessmentFile', () => {
     );
   });
 
-  it('wipe strategy removes allowAccess', async () => {
+  it('clear strategy removes allowAccess', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
         const filePath = path.join(tmpDir, 'infoAssessment.json');
@@ -1029,7 +1028,7 @@ describe('applyMigrationToAssessmentFile', () => {
           }),
         );
 
-        await applyMigrationToAssessmentFile(filePath, 'wipe', false);
+        await applyMigrationToAssessmentFile(filePath, 'clear', false);
 
         const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
         assert.isUndefined(result.allowAccess);
@@ -1129,7 +1128,7 @@ describe('applyMigrationToAssessmentFile', () => {
         };
         await fs.writeFile(filePath, JSON.stringify(originalData));
 
-        await applyMigrationToAssessmentFile(filePath, 'wipe', false);
+        await applyMigrationToAssessmentFile(filePath, 'clear', false);
 
         const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
         // File is unchanged because it already has accessControl
@@ -1210,7 +1209,7 @@ describe('applyMigrationToAssessmentFile', () => {
     );
   });
 
-  it('wipe with UID-only rules removes allowAccess without accessControl', async () => {
+  it('clear with UID-only rules removes allowAccess without accessControl', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
         const filePath = path.join(tmpDir, 'infoAssessment.json');
@@ -1223,7 +1222,7 @@ describe('applyMigrationToAssessmentFile', () => {
           }),
         );
 
-        await applyMigrationToAssessmentFile(filePath, 'wipe', false);
+        await applyMigrationToAssessmentFile(filePath, 'clear', false);
 
         const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
         assert.isUndefined(result.allowAccess);
