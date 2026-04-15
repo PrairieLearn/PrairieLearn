@@ -153,7 +153,7 @@ function canonicalName(name: string): string {
 // Strategy definitions
 // --------------------------------------------------------------------------
 
-export const MATCH_STRATEGIES: MatchStrategy[] = [
+const MATCH_STRATEGIES: MatchStrategy[] = [
   {
     name: 'uid-sislogin',
     label: 'UID \u2194 SIS Login ID',
