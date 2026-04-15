@@ -794,8 +794,7 @@ describe('safe-db-types schemas', () => {
       extra: 123,
     });
     expect(parsed).not.toHaveProperty('extra');
-    expect(parsed).not.toHaveProperty('last_grader');
-    expect(parsed).toHaveProperty('has_last_grader', false);
+    expect(parsed).toMatchObject(minimalStudentInstanceQuestion);
   });
 
   it('parses valid StudentAssessmentQuestion and drops extra fields', () => {

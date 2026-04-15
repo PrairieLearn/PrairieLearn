@@ -434,10 +434,7 @@ export const RawStudentInstanceQuestionSchema__UNSAFE = RawStaffInstanceQuestion
   requires_manual_grading: true,
   score_perc: true,
   status: true,
-}).transform(({ last_grader, ...rest }) => ({
-  ...rest,
-  has_last_grader: last_grader != null,
-}));
+});
 export const StudentInstanceQuestionSchema__UNSAFE =
   RawStudentInstanceQuestionSchema__UNSAFE.brand<'StudentInstanceQuestion'>();
 export type StudentInstanceQuestion__UNSAFE = z.infer<typeof StudentInstanceQuestionSchema__UNSAFE>;

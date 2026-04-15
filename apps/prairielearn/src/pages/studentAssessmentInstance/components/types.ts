@@ -19,10 +19,7 @@ import {
 } from '../../../lib/client/safe-db-types.js';
 import { EnumQuestionAccessModeSchema } from '../../../lib/db-types.js';
 import { RoleAssignmentSchema } from '../../../lib/groups.shared.js';
-import {
-  type SimpleVariantWithScore,
-  SimpleVariantWithScoreSchema,
-} from '../../../models/variant.js';
+import { SimpleVariantWithScoreSchema } from '../../../models/variant.js';
 
 export const SafeStudentAssessmentInstanceSchema = z
   .object({
@@ -39,11 +36,6 @@ export const SafeStudentAssessmentInstanceSchema = z
   })
   .brand('SafeStudentAssessmentInstance');
 export type SafeStudentAssessmentInstance = z.output<typeof SafeStudentAssessmentInstanceSchema>;
-
-export type StudentVariantWithScore = Pick<
-  SimpleVariantWithScore,
-  'id' | 'open' | 'max_submission_score'
->;
 
 export const InstanceQuestionRowSchema = z.object({
   zone: StudentZoneSchema,
@@ -78,22 +70,22 @@ export const StudentQuestionRowSchema = InstanceQuestionRowSchema.omit({ row_ord
   .transform(({ assessmentInstanceOpen, allowGradeLeftMs, previous_variants, ...rest }) => {
     const redactScores =
       assessmentInstanceOpen && !rest.assessment_question.allow_real_time_grading;
+    const { last_grader, ...instanceQuestion } = rest.instance_question;
 
     return {
       ...rest,
       instance_question: {
-        ...rest.instance_question,
-        auto_points: redactScores ? null : rest.instance_question.auto_points,
-        manual_points: redactScores ? null : rest.instance_question.manual_points,
-        points: redactScores ? null : rest.instance_question.points,
-        score_perc: redactScores ? null : rest.instance_question.score_perc,
-        open: assessmentInstanceOpen && rest.instance_question.open,
-        points_list_original: redactScores ? null : rest.instance_question.points_list_original,
-        points_list: redactScores ? null : rest.instance_question.points_list,
-        highest_submission_score: redactScores
-          ? null
-          : rest.instance_question.highest_submission_score,
-        current_value: redactScores ? null : rest.instance_question.current_value,
+        ...instanceQuestion,
+        has_last_grader: last_grader != null,
+        auto_points: redactScores ? null : instanceQuestion.auto_points,
+        manual_points: redactScores ? null : instanceQuestion.manual_points,
+        points: redactScores ? null : instanceQuestion.points,
+        score_perc: redactScores ? null : instanceQuestion.score_perc,
+        open: assessmentInstanceOpen && instanceQuestion.open,
+        points_list_original: redactScores ? null : instanceQuestion.points_list_original,
+        points_list: redactScores ? null : instanceQuestion.points_list,
+        highest_submission_score: redactScores ? null : instanceQuestion.highest_submission_score,
+        current_value: redactScores ? null : instanceQuestion.current_value,
       },
       allow_grade_left_ms: allowGradeLeftMs,
       previous_variants: redactScores
