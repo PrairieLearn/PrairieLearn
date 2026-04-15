@@ -71,3 +71,49 @@ WHERE
   ci.id = $course_instance_id
   AND ci.deleted_at IS NULL
   AND c.deleted_at IS NULL;
+
+-- BLOCK check_course_instance_legacy_access
+SELECT
+  ci.id
+FROM
+  course_instances AS ci
+  JOIN courses AS c ON (c.id = ci.course_id)
+  JOIN users AS u ON (u.id = $user_id)
+  JOIN institutions AS i ON (i.id = u.institution_id)
+WHERE
+  ci.id = ANY ($course_instance_ids::BIGINT[])
+  AND EXISTS (
+    SELECT
+      *
+    FROM
+      course_instance_access_rules AS ciar
+    WHERE
+      ciar.course_instance_id = ci.id
+      AND (
+        ciar.uids IS NULL
+        OR u.uid = ANY (ciar.uids)
+      )
+      AND (
+        ciar.start_date IS NULL
+        OR $req_date >= ciar.start_date
+      )
+      AND (
+        ciar.end_date IS NULL
+        OR $req_date <= ciar.end_date
+      )
+      AND (
+        (
+          ciar.institution IS NULL
+          AND u.institution_id = c.institution_id
+        )
+        OR ciar.institution = 'Any'
+        OR (
+          ciar.institution = 'LTI'
+          AND u.lti_course_instance_id = ci.id
+        )
+        OR (
+          ciar.institution != 'LTI'
+          AND i.short_name = ciar.institution
+        )
+      )
+  );

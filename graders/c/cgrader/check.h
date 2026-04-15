@@ -34,6 +34,11 @@ static inline void pl_fixture_sandbox_setup(void) {
 #ifndef PLCHECK_NO_EXTRA_FORK
   plcheck_final_check = (long *) mmap(NULL, sizeof(*plcheck_final_check), PROT_READ | PROT_WRITE,
                                       MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  if (plcheck_final_check == MAP_FAILED) {
+    ck_abort_msg(
+        "Error attempting to set up sandboxed process for test. Contact your instructor.\n%s",
+        strerror(errno));
+  }
   *plcheck_final_check = 1;
 
   // Fork before calling test, to control what kind of return is received back
