@@ -122,12 +122,7 @@ WITH
       dest.short_name AS src_short_name,
       dest.id AS inserted_dest_id
   )
-  -- At this point, there will be exactly one non-deleted row for
-  -- all short_names that we loaded from disk. It is now safe to
-  -- update all those rows with the new information from disk (if we
-  -- have any).
 SELECT
-  -- Make a map from CIID to ID to return to the caller
   COALESCE(
     jsonb_object_agg(
       short_name,
@@ -139,6 +134,16 @@ FROM
   json_course_instances AS src
   LEFT JOIN update_matched_dest_rows AS uci ON (uci.src_short_name = src.short_name)
   LEFT JOIN insert_unmatched_src_rows AS ici ON (ici.src_short_name = src.short_name);
+
+-- BLOCK select_course_instances_for_consistency_check
+SELECT
+  ci.short_name,
+  ci.uuid
+FROM
+  course_instances AS ci
+WHERE
+  ci.course_id = $course_id
+  AND ci.deleted_at IS NULL;
 
 -- BLOCK sync_course_instances_update
 WITH

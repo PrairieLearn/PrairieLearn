@@ -1,13 +1,16 @@
 import { randomInt } from 'node:crypto';
 
+import { countBy, difference } from 'es-toolkit';
 import { z } from 'zod';
 
+import { AugmentedError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
+import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { type CourseInstanceJson } from '../../schemas/index.js';
-import { type CourseData } from '../course-db.js';
+import { type CourseData, type CourseInstanceData } from '../course-db.js';
 import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
@@ -134,6 +137,8 @@ export async function sync(
       z.record(z.string(), IdSchema),
     );
 
+    await courseInstanceConsistencyCheck({ courseId, courseInstances: courseData.courseInstances });
+
     const courseInstanceGeneralParams = Object.entries(courseData.courseInstances).map(
       ([shortName, courseInstanceData]) => {
         const courseInstanceId = shortNameToIdMapping[shortName];
@@ -159,4 +164,63 @@ export async function sync(
 
     return shortNameToIdMapping;
   });
+}
+
+/**
+ * Perform some internal consistency checks to ensure that the course instances
+ * in the database match the course instances in the disk data, before we
+ * proceed with updates. We check that the list on both sides are the same, that
+ * short names are unique, and that the UUIDs match for each instance.
+ */
+async function courseInstanceConsistencyCheck({
+  courseId,
+  courseInstances,
+}: {
+  courseId: string;
+  courseInstances: Record<string, CourseInstanceData>;
+}) {
+  const courseInstancesForConsistencyCheck = await sqldb.queryRows(
+    sql.select_course_instances_for_consistency_check,
+    { course_id: courseId },
+    CourseInstanceSchema.pick({ short_name: true, uuid: true }),
+  );
+  const shortNamesInDb = courseInstancesForConsistencyCheck.map((ci) => ci.short_name);
+  const shortNamesInDisk = Object.keys(courseInstances);
+
+  const duplicateShortNames = Object.entries(countBy(shortNamesInDisk, (name) => name))
+    .filter(([, count]) => count > 1)
+    .map(([shortName]) => shortName);
+  if (duplicateShortNames.length > 0) {
+    throw new AugmentedError(
+      'Assertion: Duplicate course instance short names found in disk data',
+      { data: { duplicateShortNames } },
+    );
+  }
+
+  const dbInstancesNotInDisk = difference(shortNamesInDb, shortNamesInDisk);
+  if (dbInstancesNotInDisk.length > 0) {
+    throw new AugmentedError(
+      'Assertion: Course instances exist in the database that are not in disk data',
+      { data: { dbInstancesNotInDisk } },
+    );
+  }
+  const diskInstancesNotInDb = difference(shortNamesInDisk, shortNamesInDb);
+  if (diskInstancesNotInDb.length > 0) {
+    throw new AugmentedError(
+      'Assertion: Course instances exist in disk data that are not in the database',
+      { data: { diskInstancesNotInDb } },
+    );
+  }
+  const mismatchedInstanceUuids = courseInstancesForConsistencyCheck
+    .map((ci) => ({
+      ...ci,
+      diskUuid: courseInstances[ci.short_name!].courseInstance.uuid,
+    }))
+    .filter((ci) => ci.diskUuid !== ci.uuid);
+  if (mismatchedInstanceUuids.length > 0) {
+    throw new AugmentedError(
+      'Assertion: Course instances exist where the UUID in the database does not match the UUID in disk data',
+      { data: { mismatchedInstanceUuids } },
+    );
+  }
 }
