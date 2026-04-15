@@ -348,8 +348,8 @@ export function AiGradingModelSelectionModal({
             </Alert>
           ) : isAtConcurrencyLimit ? (
             <Alert variant="warning" className="mb-3 py-2 small">
-              You can only run {concurrencyStatus.max_concurrent_jobs} AI grading jobs at a time.
-              Please wait for existing jobs to complete before starting new ones.
+              You've reached the limit of {concurrencyStatus.max_concurrent_jobs} concurrent AI
+              grading jobs. Please try again later.
             </Alert>
           ) : (
             <BillingAlert
