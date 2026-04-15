@@ -116,7 +116,7 @@ export function CanvasDownloadModal({
  * sentinel row) into headers + data rows. Returns null if parsing fails.
  */
 function parseCsvWithHeaders(csvText: string): { headers: string[]; dataRows: string[][] } | null {
-  const { students: _unused, error } = parseCanvasCsv(csvText);
+  const { error } = parseCanvasCsv(csvText);
   if (error) return null;
 
   const rows = parseCsvRows(csvText);
