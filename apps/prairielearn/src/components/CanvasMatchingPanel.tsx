@@ -272,8 +272,8 @@ function UnmatchedStudentsList({
 function StudentList({ students }: { students: Student[] }) {
   return (
     <ul className="list-unstyled small ps-3">
-      {students.map((s) => (
-        <li key={s.uid}>
+      {students.map((s, i) => (
+        <li key={`${s.uid}-${i}`}>
           {s.userName ?? '(no name)'} <span className="text-muted">({s.uid})</span>
         </li>
       ))}
