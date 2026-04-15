@@ -7,14 +7,14 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-import { migrateAllowAccess } from '../apps/prairielearn/dist/lib/assessment-access-control/migration.js';
+import {
+  migrateAllowAccess,
+  normalizeRules,
+} from '../apps/prairielearn/dist/lib/assessment-access-control/migration.js';
 import type { AssessmentAccessRuleJson } from '../apps/prairielearn/dist/schemas/infoAssessment.js';
 
 const REPOS_DIR = path.resolve(process.env.HOME!, 'git/python-upgrade-exploration/repos');
-const OUTPUT_FILE = path.resolve(
-  new URL('.', import.meta.url).pathname,
-  'migration-report.html',
-);
+const OUTPUT_FILE = path.resolve(new URL('.', import.meta.url).pathname, 'migration-report.html');
 
 // ---------------------------------------------------------------------------
 // 1. Scan all infoAssessment.json files
@@ -50,18 +50,13 @@ async function findInfoAssessmentFiles(baseDir: string): Promise<string[]> {
 // 2-4. Extract allowAccess, strip uid rules, normalize to shape
 // ---------------------------------------------------------------------------
 
-interface NormalizedRule {
-  [key: string]: unknown;
-}
+type NormalizedRule = Record<string, unknown>;
 
-function normalizeRules(rules: AssessmentAccessRuleJson[]): {
+function normalizeRulesForHarness(rules: AssessmentAccessRuleJson[]): {
   shape: string;
   normalized: NormalizedRule[];
 } {
-  // Match the filtering in migration.ts normalizeRules():
-  // - Strip rules with uids
-  // - Strip rules with non-Student roles (not synced)
-  const filtered = rules.filter((r) => !r.uids).filter((r) => r.role == null || r.role === 'Student');
+  const filtered = normalizeRules(rules);
   if (filtered.length === 0) {
     return { shape: '[]', normalized: [] };
   }
@@ -77,10 +72,12 @@ function normalizeRules(rules: AssessmentAccessRuleJson[]): {
     if (rule.startDate != null && !dates.includes(rule.startDate)) dates.push(rule.startDate);
     if (rule.endDate != null && !dates.includes(rule.endDate)) dates.push(rule.endDate);
     if (rule.password != null && !passwords.includes(rule.password)) passwords.push(rule.password);
-    if (rule.examUuid != null && !examUuids.includes(rule.examUuid))
+    if (rule.examUuid != null && !examUuids.includes(rule.examUuid)) {
       examUuids.push(rule.examUuid);
-    if (rule.timeLimitMin != null && !timeLimits.includes(rule.timeLimitMin))
+    }
+    if (rule.timeLimitMin != null && !timeLimits.includes(rule.timeLimitMin)) {
       timeLimits.push(rule.timeLimitMin);
+    }
     if (rule.credit != null && rule.credit !== 0 && rule.credit !== 100) {
       if (!credits.includes(rule.credit)) credits.push(rule.credit);
     }
@@ -113,8 +110,9 @@ function normalizeRules(rules: AssessmentAccessRuleJson[]): {
     if (rule.examUuid != null) out.examUuid = examUuidToken(rule.examUuid);
     if (rule.active != null) out.active = rule.active;
     if (rule.showClosedAssessment != null) out.showClosedAssessment = rule.showClosedAssessment;
-    if (rule.showClosedAssessmentScore != null)
+    if (rule.showClosedAssessmentScore != null) {
       out.showClosedAssessmentScore = rule.showClosedAssessmentScore;
+    }
 
     // mode, comment, role are stripped (not included)
     return out;
@@ -137,11 +135,13 @@ function normalizeRules(rules: AssessmentAccessRuleJson[]): {
  *     -> "N full-credit windows collapsed into single span: DATE to DATE"
  */
 function normalizeMessage(msg: string): string {
-  return msg
-    // ISO-ish dates (with or without time component)
-    .replace(/\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?)?/g, 'DATE')
-    // Numbers (standalone, not inside words)
-    .replace(/\b\d+\b/g, 'N');
+  return (
+    msg
+      // ISO-ish dates (with or without time component)
+      .replaceAll(/\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?)?/g, 'DATE')
+      // Numbers (standalone, not inside words)
+      .replaceAll(/\b\d+\b/g, 'N')
+  );
 }
 
 function normalizeMessages(msgs: string[]): string {
@@ -168,22 +168,28 @@ interface OutcomeGroup {
 // ---------------------------------------------------------------------------
 
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
-function generateHtml(results: OutcomeGroup[], totalFiles: number, totalWithAccess: number): string {
+function generateHtml(
+  results: OutcomeGroup[],
+  totalFiles: number,
+  totalWithAccess: number,
+): string {
   // Sort by count descending
   results.sort((a, b) => b.count - a.count);
 
   const rows = results
     .map((r, i) => {
       const hasErrors = r.migrationResult.errors.length > 0;
-      const errors = r.migrationResult.errors.length
-        ? `<div class="errors">${r.migrationResult.errors.map((e) => escapeHtml(e)).join('<br>')}</div>`
-        : '';
-      const notes = r.migrationResult.notes.length
-        ? `<div class="notes">${r.migrationResult.notes.map((n) => escapeHtml(n)).join('<br>')}</div>`
-        : '';
+      const errors =
+        r.migrationResult.errors.length > 0
+          ? `<div class="errors">${r.migrationResult.errors.map((e) => escapeHtml(e)).join('<br>')}</div>`
+          : '';
+      const notes =
+        r.migrationResult.notes.length > 0
+          ? `<div class="notes">${r.migrationResult.notes.map((n) => escapeHtml(n)).join('<br>')}</div>`
+          : '';
 
       return `
       <tr id="shape-${i}">
@@ -316,16 +322,12 @@ async function main() {
 
     withAccess++;
 
-    // Match the filtering in migration.ts normalizeRules()
-    const rulesForMigration = allowAccess
-      .filter((r) => !r.uids)
-      .filter((r) => r.role == null || r.role === 'Student');
-    const { shape, normalized } = normalizeRules(allowAccess);
+    const { shape, normalized } = normalizeRulesForHarness(allowAccess);
 
-    // Run migration on this specific assessment
+    // Pass raw allowAccess — migrateAllowAccess handles normalization internally.
     let migrationResult;
     try {
-      migrationResult = migrateAllowAccess(rulesForMigration);
+      migrationResult = migrateAllowAccess(allowAccess);
     } catch (err: any) {
       migrationResult = {
         result: {} as any,
@@ -351,7 +353,7 @@ async function main() {
         shape,
         normalized,
         outcomeKey,
-        representative: rulesForMigration,
+        representative: allowAccess,
         migrationResult,
         count: 1,
         filePaths: [filePath],
@@ -368,7 +370,9 @@ async function main() {
   const assessmentsWithErrors = results
     .filter((r) => r.migrationResult.errors.length > 0)
     .reduce((sum, r) => sum + r.count, 0);
-  console.log(`\n${errorCount} groups with migration errors (${assessmentsWithErrors} assessments)`);
+  console.log(
+    `\n${errorCount} groups with migration errors (${assessmentsWithErrors} assessments)`,
+  );
 
   // Generate HTML report
   console.log('\nGenerating HTML report...');

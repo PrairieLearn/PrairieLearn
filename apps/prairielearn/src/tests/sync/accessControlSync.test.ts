@@ -1806,7 +1806,6 @@ describe('Access control syncing', () => {
         const rules = await selectAccessControlRulesForAssessment(assessment);
         const main = rules.find((r) => r.number === 0);
         assert.isOk(main);
-        assert.deepEqual(main.prairietestExams, [{ uuid: TEST_EXAM_UUID, readOnly: false }]);
         assert.deepEqual(main.rule.integrations, {
           prairieTest: {
             exams: [{ examUuid: TEST_EXAM_UUID, readOnly: false }],
@@ -1835,7 +1834,11 @@ describe('Access control syncing', () => {
         const rules = await selectAccessControlRulesForAssessment(assessment);
         const main = rules.find((r) => r.number === 0);
         assert.isOk(main);
-        assert.deepEqual(main.prairietestExams, [{ uuid: TEST_EXAM_UUID, readOnly: true }]);
+        assert.deepEqual(main.rule.integrations, {
+          prairieTest: {
+            exams: [{ examUuid: TEST_EXAM_UUID, readOnly: true }],
+          },
+        });
       }));
 
     it('removes stale PrairieTest exam rows on re-sync', () =>
@@ -1853,7 +1856,7 @@ describe('Access control syncing', () => {
         let rules = await selectAccessControlRulesForAssessment(assessment);
         let main = rules.find((r) => r.number === 0);
         assert.isOk(main);
-        assert.equal(main.prairietestExams.length, 1);
+        assert.equal(main.rule.integrations?.prairieTest?.exams?.length, 1);
 
         // Re-sync without the exam — stale row should be cleaned up.
         await syncRulesAndRead([makeAccessControlRule()], { courseDir });
@@ -1861,7 +1864,7 @@ describe('Access control syncing', () => {
         rules = await selectAccessControlRulesForAssessment(assessment);
         main = rules.find((r) => r.number === 0);
         assert.isOk(main);
-        assert.equal(main.prairietestExams.length, 0);
+        assert.isUndefined(main.rule.integrations);
       }));
   });
 });

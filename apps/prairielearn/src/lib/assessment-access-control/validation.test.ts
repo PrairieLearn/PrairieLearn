@@ -685,6 +685,17 @@ describe('Credit monotonicity validation', () => {
       errorMatch:
         "After-last-deadline credit (110%) must not exceed the preceding deadline's credit (100%).",
     },
+    {
+      label: 'afterLastDeadline credit exceeding last early deadline (early-deadlines-only)',
+      config: {
+        dateControl: {
+          earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 120 }],
+          afterLastDeadline: { allowSubmissions: true, credit: 150 },
+        },
+      },
+      errorMatch:
+        "After-last-deadline credit (150%) must not exceed the preceding deadline's credit (120%).",
+    },
   ])('rejects $label', ({ config, errorMatch }) => {
     const rule = AccessControlJsonSchema.parse(config);
     const errors = validateRuleCreditMonotonicity(rule);
@@ -738,8 +749,17 @@ describe('Credit monotonicity validation', () => {
       },
     },
     {
-      label: 'afterLastDeadline skipped when no due date or late deadlines',
+      label: 'afterLastDeadline skipped when no deadlines at all',
       config: { dateControl: { afterLastDeadline: { allowSubmissions: true, credit: 50 } } },
+    },
+    {
+      label: 'afterLastDeadline credit equal to last early deadline',
+      config: {
+        dateControl: {
+          earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 120 }],
+          afterLastDeadline: { allowSubmissions: true, credit: 120 },
+        },
+      },
     },
   ])('accepts $label', ({ config }) => {
     const rule = AccessControlJsonSchema.parse(config);
@@ -918,8 +938,7 @@ describe('Global temporal validation', () => {
 
     assert.isTrue(
       issues.some(
-        (issue) =>
-          issue.message === 'Early deadline must be before the latest possible due date.',
+        (issue) => issue.message === 'Early deadline must be before the latest possible due date.',
       ),
     );
   });

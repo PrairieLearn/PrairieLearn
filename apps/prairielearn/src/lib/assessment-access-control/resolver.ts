@@ -46,7 +46,6 @@ export interface AccessControlRuleInput {
   targetType: 'none' | 'enrollment' | 'student_label';
   enrollmentIds: string[];
   studentLabelIds: string[];
-  prairietestExams: { uuid: string; readOnly: boolean }[];
 }
 
 export interface EnrollmentContext {
@@ -277,6 +276,9 @@ function computeCredit(
   }
 
   if (dueDate) {
+    // TODO: Use dueDateCredit from dateControl once the DB column is added.
+    // The migration already outputs dueDateCredit in the JSON, but the
+    // resolver currently hardcodes 100.
     timeline.push({ date: dueDate, credit: 100 });
   }
 
@@ -605,8 +607,13 @@ export function resolveAccessControl(
   // Resolve PrairieTest access. This is separated from the main flow to keep
   // the resolver linear: it either denies early, grants PT credit overrides,
   // or continues with the normal date-control-based result.
+  const prairieTestExams = (mainRuleInput.rule.integrations?.prairieTest?.exams ?? []).map((e) => ({
+    uuid: e.examUuid,
+    readOnly: e.readOnly ?? false,
+  }));
+
   const ptOutcome = resolvePrairieTestAccess({
-    prairieTestExams: mainRuleInput.prairietestExams,
+    prairieTestExams,
     prairieTestReservations,
     authzMode,
     listBeforeRelease: effectiveRule.listBeforeRelease ?? false,

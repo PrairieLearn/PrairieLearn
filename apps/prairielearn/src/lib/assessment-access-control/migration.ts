@@ -105,7 +105,7 @@ function findReleaseDate(rules: AssessmentAccessRuleJson[]): string | undefined 
  * - Removes rules with a `role` that is neither absent nor 'Student'.
  * - Strips `mode: 'Public'` (effectively a no-op for students).
  */
-function normalizeRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
+export function normalizeRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
   return rules
     .filter((r) => !r.uids)
     .filter((r) => r.role == null || r.role === 'Student')
@@ -265,6 +265,27 @@ function normalizeCreditDeadlines(
 // Unified credit-timeline builder
 // ---------------------------------------------------------------------------
 
+/**
+ * If afterLastDeadline grants credit >= dueDateCredit, the dueDate is
+ * meaningless — credit continues at the same or higher level forever.
+ * Collapse to dueDate: null (always open from release).
+ */
+function simplifyTimeline(
+  dateControl: NonNullable<AccessControlJsonInput['dateControl']>,
+  dueDateCredit: number,
+): void {
+  if (
+    dateControl.afterLastDeadline &&
+    (dateControl.afterLastDeadline.credit ?? 0) >= dueDateCredit
+  ) {
+    dateControl.dueDate = null;
+    delete dateControl.afterLastDeadline;
+    delete dateControl.earlyDeadlines;
+    delete dateControl.lateDeadlines;
+    delete dateControl.dueDateCredit;
+  }
+}
+
 interface BuilderResult {
   dateControl: AccessControlJsonInput['dateControl'];
   errors: string[];
@@ -387,19 +408,7 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
     }
   }
 
-  // --- Simplification: if afterLastDeadline grants credit >= dueDateCredit,
-  // the dueDate is meaningless — credit continues at the same or higher level
-  // forever. Collapse to dueDate: null (always open from release). ---
-  if (
-    dateControl.afterLastDeadline &&
-    (dateControl.afterLastDeadline.credit ?? 0) >= dueDateCredit
-  ) {
-    dateControl.dueDate = null;
-    delete dateControl.afterLastDeadline;
-    delete dateControl.earlyDeadlines;
-    delete dateControl.lateDeadlines;
-    delete dateControl.dueDateCredit;
-  }
+  simplifyTimeline(dateControl, dueDateCredit);
 
   // --- Duration ---
   const timedRule = creditRules.find((r) => r.timeLimitMin);
@@ -421,13 +430,14 @@ function extractPassword(
   if (!passwordRule) return null;
 
   // Strip the password from rules. Keep the rule itself for credit/date
-  // processing. Password rules without explicit credit but with dates are
-  // treated as 100% credit (the implicit meaning of a password-gated exam).
+  // processing. Password rules without explicit credit (credit omitted) but
+  // with dates are treated as 100% credit (the implicit meaning of a
+  // password-gated exam). Rules with explicit credit: 0 are left as-is.
   const remainingRules = rules
     .map((r) => {
       if (!r.password) return r;
       const { password: _pw, ...rest } = r;
-      if ((rest.credit ?? 0) === 0 && (rest.startDate || rest.endDate)) {
+      if (rest.credit == null && (rest.startDate || rest.endDate)) {
         return { ...rest, credit: 100 };
       }
       if ((rest.credit ?? 0) > 0 || rest.startDate || rest.endDate) return rest;
@@ -438,9 +448,7 @@ function extractPassword(
   return { password: passwordRule.password!, remainingRules };
 }
 
-function extractPrairieTest(
-  rules: AssessmentAccessRuleJson[],
-): {
+function extractPrairieTest(rules: AssessmentAccessRuleJson[]): {
   integrations: AccessControlJsonInput['integrations'];
   remainingRules: AssessmentAccessRuleJson[];
 } | null {
@@ -460,7 +468,10 @@ function extractPrairieTest(
 // Main migration pipeline
 // ---------------------------------------------------------------------------
 
-export function migrateAllowAccess(rules: AssessmentAccessRuleJson[]): MigrationResult {
+export function migrateAllowAccess(
+  rules: AssessmentAccessRuleJson[],
+  fallbackReleaseDate?: string,
+): MigrationResult {
   const hasUidRules = rules.some((r) => r.uids);
   rules = normalizeRules(rules);
 
@@ -491,9 +502,7 @@ export function migrateAllowAccess(rules: AssessmentAccessRuleJson[]): Migration
   if (!hasCreditRules && hasPracticeRules) {
     return {
       result: {},
-      errors: [
-        'Using 0 credit to indicate overall weight within the course is not supported.',
-      ],
+      errors: ['Using 0 credit to indicate overall weight within the course is not supported.'],
       notes: [],
       hasUidRules,
     };
@@ -538,9 +547,7 @@ export function migrateAllowAccess(rules: AssessmentAccessRuleJson[]): Migration
     // (active: false with dates) that indicate a release date.
     const viewOnlyRules = getVisibilityRules(schedulingRules).filter((r) => r.startDate);
     if (viewOnlyRules.length > 0) {
-      const releaseDate = viewOnlyRules
-        .map((r) => r.startDate!)
-        .sort()[0];
+      const releaseDate = viewOnlyRules.map((r) => r.startDate!).sort()[0];
       result.dateControl = { releaseDate, dueDate: null };
     }
   }
@@ -573,24 +580,17 @@ export function migrateAllowAccess(rules: AssessmentAccessRuleJson[]): Migration
     );
   }
 
+  // Apply fallback release date when the migration produced a dateControl
+  // without a releaseDate (e.g. password-only or always-open rules).
+  if (result.dateControl && !result.dateControl.releaseDate && fallbackReleaseDate) {
+    result.dateControl.releaseDate = fallbackReleaseDate;
+  }
+
   return { result, errors, notes, hasUidRules };
 }
 
 // ---------------------------------------------------------------------------
-// Fallback release date
-// ---------------------------------------------------------------------------
-
-function applyFallbackReleaseDate(
-  result: AccessControlJsonInput,
-  fallbackReleaseDate: string | undefined,
-): void {
-  if (result.dateControl && !result.dateControl.releaseDate && fallbackReleaseDate) {
-    result.dateControl.releaseDate = fallbackReleaseDate;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// File-level operations (unchanged)
+// File-level operations
 // ---------------------------------------------------------------------------
 
 /** Migrates assessment JSON from legacy allowAccess to modern accessControl format. */
@@ -602,11 +602,9 @@ export function migrateAssessmentJson(
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
   if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) return null;
 
-  const { result, errors, notes } = migrateAllowAccess(allowAccess);
+  const { result, errors, notes } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
 
   if (errors.length > 0) return null;
-
-  applyFallbackReleaseDate(result, fallbackReleaseDate);
 
   data.accessControl = [result];
   delete data.allowAccess;
@@ -698,10 +696,9 @@ export async function applyMigrationToAssessmentFile(
   }
 
   // strategy === 'migrate'
-  const { result, errors } = migrateAllowAccess(allowAccess);
+  const { result, errors } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
 
   if (errors.length === 0) {
-    applyFallbackReleaseDate(result, fallbackReleaseDate);
     data.accessControl = [result];
     delete data.allowAccess;
   } else if (!preserveIncompatible) {

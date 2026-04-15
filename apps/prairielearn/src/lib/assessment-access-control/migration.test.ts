@@ -26,7 +26,6 @@ describe('migrateAllowAccess', () => {
       name: 'single-deadline',
       rules: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
       expected: {
-
         result: { dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' } },
         errors: [],
         notes: [],
@@ -40,7 +39,6 @@ describe('migrateAllowAccess', () => {
         { startDate: '2024-01-01', active: false },
       ],
       expected: {
-
         result: { dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' } },
         errors: [],
         notes: [],
@@ -51,7 +49,6 @@ describe('migrateAllowAccess', () => {
       name: 'timed-assessment',
       rules: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01', timeLimitMin: 90 }],
       expected: {
-
         result: {
           dateControl: {
             releaseDate: '2024-01-01',
@@ -199,7 +196,6 @@ describe('migrateAllowAccess', () => {
         },
       ],
       expected: {
-
         result: {
           dateControl: {
             releaseDate: '2021-03-20T00:00:01',
@@ -216,7 +212,6 @@ describe('migrateAllowAccess', () => {
       name: 'open-ended full credit (startDate, no endDate)',
       rules: [{ credit: 100, startDate: '2024-01-01' }],
       expected: {
-
         result: { dateControl: { releaseDate: '2024-01-01', dueDate: null } },
         errors: [],
         notes: [],
@@ -401,7 +396,6 @@ describe('migrateAllowAccess', () => {
         { uids: ['user@example.com'], credit: 100, endDate: '2024-12-01' },
       ],
       expected: {
-
         result: { dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' } },
         errors: [],
         notes: [
@@ -501,7 +495,6 @@ describe('migrateAllowAccess', () => {
       name: 'single bonus credit uses dueDateCredit',
       rules: [{ credit: 120, startDate: '2024-01-01', endDate: '2024-06-01' }],
       expected: {
-
         result: {
           dateControl: {
             releaseDate: '2024-01-01',
@@ -594,6 +587,16 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'password-gated with explicit credit:0 preserved as practice-only error',
+      rules: [{ password: 'secret', credit: 0, startDate: '2024-01-01', endDate: '2024-06-01' }],
+      expected: {
+        result: {},
+        errors: ['Using 0 credit to indicate overall weight within the course is not supported.'],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'unclassified (non-contiguous access windows)',
       rules: [
         { credit: 100, startDate: '2024-01-01', endDate: '2024-02-01' },
@@ -633,9 +636,7 @@ describe('migrateAllowAccess', () => {
           },
         },
         errors: [],
-        notes: [
-          '2 100% credit windows collapsed into single span: 2024-02-01 to 2024-02-01',
-        ],
+        notes: ['2 100% credit windows collapsed into single span: 2024-02-01 to 2024-02-01'],
         hasUidRules: false,
       },
     },
@@ -769,7 +770,6 @@ describe('migrateAllowAccess', () => {
         },
       ],
       expected: {
-
         result: {
           dateControl: {
             releaseDate: '2019-09-03T12:00:01',

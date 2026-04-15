@@ -130,14 +130,10 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
 
   // Integrations are only on main rules (number 0)
   const prairietestExamsRaw = (!isOverride(rule) && row.prairietest_exams) || [];
-  const prairietestExams = prairietestExamsRaw.map((e) => ({
-    uuid: e.uuid,
-    readOnly: e.read_only,
-  }));
-  if (prairietestExams.length > 0) {
+  if (prairietestExamsRaw.length > 0) {
     runtimeRule.integrations = {
       prairieTest: {
-        exams: prairietestExams.map((e) => ({ examUuid: e.uuid, readOnly: e.readOnly })),
+        exams: prairietestExamsRaw.map((e) => ({ examUuid: e.uuid, readOnly: e.read_only })),
       },
     };
   }
@@ -148,7 +144,6 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
     targetType: rule.target_type,
     enrollmentIds: row.enrollment_ids,
     studentLabelIds: row.student_label_ids,
-    prairietestExams,
   };
 }
 
