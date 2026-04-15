@@ -424,37 +424,6 @@ function formatCreditDateString(
 }
 
 /**
- * Determines whether a PT-gated assessment is actually closed (past its
- * deadline structure) as opposed to merely inactive because it has no
- * deadlines configured (open-ended).
- *
- * An open-ended assessment (released, no dueDate, no lateDeadlines, no
- * afterLastDeadline) is NOT considered closed — PT gating must still deny
- * non-reserved users. Only assessments that have been released AND have a
- * terminal deadline structure AND are past that terminal point are closed.
- */
-function isAssessmentClosedForPrairieTest(
-  dateControl: RuntimeDateControl | undefined,
-  creditResult: CreditResult,
-): boolean {
-  if (!dateControl?.releaseDate) return false;
-  if (creditResult.beforeRelease) return false;
-  if (creditResult.active) return false;
-
-  // If there is no configured terminal deadline structure, the assessment
-  // is open-ended — not closed.
-  const hasTerminalStructure =
-    dateControl.dueDate != null || (dateControl.lateDeadlines?.length ?? 0) > 0;
-  if (!hasTerminalStructure) return false;
-
-  // Practice submissions keep the assessment open even when the student is
-  // not earning credit.
-  if (dateControl.afterLastDeadline?.allowSubmissions === true) return false;
-
-  return true;
-}
-
-/**
  * PrairieTest exam-mode access control.
  *
  * Core invariants (matching legacy `check_assessment_access_rule` sproc):
@@ -610,18 +579,16 @@ export function resolveAccessControl(
     prairieTestReservations,
     authzMode,
     listBeforeRelease: effectiveRule.listBeforeRelease ?? false,
-    assessmentClosed: isAssessmentClosedForPrairieTest(effectiveRule.dateControl, creditResult),
+    assessmentClosed:
+      !!effectiveRule.dateControl?.releaseDate &&
+      !creditResult.beforeRelease &&
+      !creditResult.active,
   });
   if (ptOutcome.action === 'deny') return ptOutcome.result;
 
   let examAccessEnd: Date | null = null;
   if (ptOutcome.action === 'grant') {
-    creditResult = {
-      ...creditResult,
-      credit: ptOutcome.credit,
-      active: ptOutcome.active,
-      beforeRelease: false,
-    };
+    creditResult = { ...creditResult, credit: ptOutcome.credit, active: ptOutcome.active };
     examAccessEnd = ptOutcome.examAccessEnd;
   }
 
