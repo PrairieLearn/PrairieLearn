@@ -84,32 +84,23 @@ Canvas CSV exports are available from two places:
 
 ### Matching PrairieLearn students to Canvas students
 
-By default, the CSV export uses each student's PrairieLearn sign-in identifier in the column Canvas uses for login IDs from your student information system. If those identifiers differ between PrairieLearn and Canvas, the import into Canvas will fail to match students correctly.
-
-To fix this, you can upload a gradebook CSV exported from Canvas so that PrairieLearn can match students and fill in the identity columns from that file with the exact values Canvas expects.
+By default, the CSV export leaves identity columns (ID, SIS User ID, SIS Login ID, Section) empty. To have Canvas correctly associate rows with students, upload a Canvas gradebook CSV so PrairieLearn can fill in those columns with the values Canvas expects.
 
 #### How to export a gradebook from Canvas
 
 1. In your Canvas course, go to **Grades**.
 2. Click **Export** (or **Export Entire Gradebook**) to download the CSV file.
 
-#### Using the Canvas matching feature
+#### Exporting grades with matched identity values
 
 1. Open the Canvas CSV export dialog in PrairieLearn (from either the Gradebook page or the Assessment Downloads page).
 2. In the **Canvas gradebook import** section, upload the CSV file you exported from Canvas.
-3. PrairieLearn will automatically try several matching strategies and attempt to select the best one. Each listed strategy has a tooltip explaining how it attempts to reconcile student identities.
-   - **Sign-in identifier match** — the PrairieLearn sign-in identifier is compared against both the SIS Login ID and SIS User ID columns in the Canvas export.
-   - **Campus student ID match** — PrairieLearn's stored student ID (UIN) and UID are both compared against the SIS User ID and SIS Login ID columns in the Canvas export. Leading zeros are ignored for numeric identifiers. This is appropriate for institutions that use a campus student ID in either column.
-   - **Name-based match** — student names are compared across different formats (e.g., "Last, First" vs "First Last").
-
-   Strategies that produce no matches are automatically disabled. If a strategy matches all PrairieLearn students without ambiguity, other strategies are disabled as well.
-
-4. Observe the summary at bottom to see how many students were matched, how many are ambiguous, and how many are unmatched.
-5. If any matches are ambiguous (one PrairieLearn student matched multiple Canvas students), you can correctly assign the grades during the import step within Canvas.
-6. Click **Download** to generate the CSV with the matched Canvas identity columns.
+3. PrairieLearn will automatically match students and show a summary of how many were matched, ambiguous, and unmatched.
+4. If any students are ambiguous or unmatched, expand the detail sections below the summary to see which students are affected. You will be able to correctly assign the grades during the import step within Canvas.
+5. Click **Download** to generate the CSV with the matched identity columns.
 
 !!! note
 
-    - Unmatched PrairieLearn students will still appear in the export using their PrairieLearn sign-in identifier in the login column.
-    - Unmatched Canvas students may be omitted from the export when no matching PrairieLearn account could be found.
-    - Automatic matching is optional, and the PrairieLearn CSV can be exported without needing to upload a Canvas gradebook file. In this case, PrairieLearn student UIDs will optimistically populate the exported "SIS Login ID" column.
+    - Unmatched PrairieLearn students will appear in the export with empty identity columns.
+    - Unmatched Canvas students are not included in the export because no related PrairieLearn student record could be found.
+    - Matching is optional — the CSV can be exported without uploading a Canvas gradebook file. In this case, identity columns will be empty.
