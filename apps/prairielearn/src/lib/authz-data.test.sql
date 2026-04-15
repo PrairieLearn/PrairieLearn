@@ -24,9 +24,14 @@ VALUES
 
 -- BLOCK insert_user
 INSERT INTO
-  users (uid, institution_id, lti_course_instance_id)
+  users (id, uid, institution_id, lti_course_instance_id)
 VALUES
-  ($uid, $institution_id, $lti_course_instance_id);
+  (
+    $id,
+    $uid,
+    $institution_id,
+    $lti_course_instance_id
+  );
 
 -- BLOCK insert_course_instance_access_rule
 INSERT INTO

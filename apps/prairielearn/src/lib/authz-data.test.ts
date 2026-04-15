@@ -42,16 +42,16 @@ const courseInstances = [
 ];
 
 const users = [
-  { uid: 'person1@host.com', institution_id: 100 },
-  { uid: 'person2@host.com', institution_id: 100 },
-  { uid: 'person1@school.edu', institution_id: 101 },
-  { uid: 'user@school.edu', institution_id: 101 },
-  { uid: 'unknown@host.com', institution_id: 100 },
-  { uid: 'person1@anotherschool.edu', institution_id: 102 },
-  { uid: 'defaultuser@example.com', institution_id: 1 },
-  { uid: 'normaluser@host.com', institution_id: 100 },
-  { uid: 'ltiuserci15@host.com', institution_id: 100, lti_course_instance_id: 15 },
-  { uid: 'ltiuserci12@host.com', institution_id: 100, lti_course_instance_id: 12 },
+  { id: 1000, uid: 'person1@host.com', institution_id: 100 },
+  { id: 1001, uid: 'person2@host.com', institution_id: 100 },
+  { id: 1002, uid: 'person1@school.edu', institution_id: 101 },
+  { id: 1003, uid: 'user@school.edu', institution_id: 101 },
+  { id: 1004, uid: 'unknown@host.com', institution_id: 100 },
+  { id: 1005, uid: 'person1@anotherschool.edu', institution_id: 102 },
+  { id: 1006, uid: 'defaultuser@example.com', institution_id: 1 },
+  { id: 1007, uid: 'normaluser@host.com', institution_id: 100 },
+  { id: 1008, uid: 'ltiuserci15@host.com', institution_id: 100, lti_course_instance_id: 15 },
+  { id: 1009, uid: 'ltiuserci12@host.com', institution_id: 100, lti_course_instance_id: 12 },
 ];
 
 const courseInstanceAccessRules = [
