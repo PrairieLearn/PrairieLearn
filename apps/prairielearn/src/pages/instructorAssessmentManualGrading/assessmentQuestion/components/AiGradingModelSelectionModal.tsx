@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
 import { Alert, Button, Form, Modal } from 'react-bootstrap';
@@ -277,6 +277,9 @@ export function AiGradingModelSelectionModal({
   const { mutate, reset, isPending, isError, error } = useMutation(
     trpc.manualGrading.aiGradeInstanceQuestions.mutationOptions(),
   );
+  const { data: concurrencyStatus } = useQuery(
+    trpc.manualGrading.aiGradingConcurrencyStatus.queryOptions(),
+  );
   const defaultModel = getDefaultModel(aiGradingLastSelectedModel, availableProviders);
   const [selectedModel, setSelectedModel] = useState<AiGradingModelId>(defaultModel);
 
@@ -316,7 +319,10 @@ export function AiGradingModelSelectionModal({
     : false;
   const hasCredits = creditBalanceMilliDollars > 0;
   const hasKeys = availableProviders.length > 0;
-  const isGradingEnabled = useCustomApiKeys ? hasKeys : hasCredits;
+  const isAtConcurrencyLimit =
+    concurrencyStatus != null &&
+    concurrencyStatus.running_job_count >= concurrencyStatus.max_concurrent_jobs;
+  const isGradingEnabled = (useCustomApiKeys ? hasKeys : hasCredits) && !isAtConcurrencyLimit;
 
   return (
     <Modal
@@ -332,13 +338,20 @@ export function AiGradingModelSelectionModal({
         </Modal.Header>
 
         <Modal.Body>
-          <BillingAlert
-            useCustomApiKeys={useCustomApiKeys}
-            hasKeys={hasKeys}
-            hasCredits={hasCredits}
-            creditBalanceMilliDollars={creditBalanceMilliDollars}
-            aiGradingSettingsUrl={aiGradingSettingsUrl}
-          />
+          {isAtConcurrencyLimit ? (
+            <Alert variant="warning" className="mb-3 py-2 small">
+              You can only run {concurrencyStatus.max_concurrent_jobs} AI grading jobs at a time.
+              Please wait for existing jobs to complete before starting new ones.
+            </Alert>
+          ) : (
+            <BillingAlert
+              useCustomApiKeys={useCustomApiKeys}
+              hasKeys={hasKeys}
+              hasCredits={hasCredits}
+              creditBalanceMilliDollars={creditBalanceMilliDollars}
+              aiGradingSettingsUrl={aiGradingSettingsUrl}
+            />
+          )}
           <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}

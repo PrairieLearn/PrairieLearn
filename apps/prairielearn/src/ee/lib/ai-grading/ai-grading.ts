@@ -274,7 +274,16 @@ async function finalizeAiGradingPersistence({
 }
 
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
-const MAX_CONCURRENT_AI_GRADING_JOBS_PER_USER = 3;
+export const MAX_CONCURRENT_AI_GRADING_JOBS_PER_USER = 5;
+
+export async function getRunningAiGradingJobCount(authn_user_id: string): Promise<number> {
+  return await queryScalar(
+    sql.count_running_ai_grading_jobs_for_user,
+    { authn_user_id },
+    z.number(),
+  );
+}
+
 const HOURLY_USAGE_CAP_REACHED_MESSAGE = 'Hourly usage cap reached. Try again later.';
 const INSUFFICIENT_CREDITS_MESSAGE = 'Insufficient AI grading credits.';
 
@@ -356,11 +365,7 @@ export async function aiGrade({
 
   const question_course = await getQuestionCourse(question, course);
 
-  const runningJobCount = await queryScalar(
-    sql.count_running_ai_grading_jobs_for_user,
-    { authn_user_id },
-    z.number(),
-  );
+  const runningJobCount = await getRunningAiGradingJobCount(authn_user_id);
   if (runningJobCount >= MAX_CONCURRENT_AI_GRADING_JOBS_PER_USER) {
     throw new error.HttpStatusError(
       429,

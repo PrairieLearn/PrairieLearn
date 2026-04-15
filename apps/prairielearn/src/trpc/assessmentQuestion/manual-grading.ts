@@ -13,7 +13,11 @@ import {
   setAiGradingLastSelectedModel,
   setAiGradingMode,
 } from '../../ee/lib/ai-grading/ai-grading-util.js';
-import { aiGrade } from '../../ee/lib/ai-grading/ai-grading.js';
+import {
+  MAX_CONCURRENT_AI_GRADING_JOBS_PER_USER,
+  aiGrade,
+  getRunningAiGradingJobCount,
+} from '../../ee/lib/ai-grading/ai-grading.js';
 import { deleteAiInstanceQuestionGroups } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
 import { features } from '../../lib/features/index.js';
@@ -214,8 +218,26 @@ const setRequiresManualGradingMutation = t.procedure
     });
   });
 
+const aiGradingConcurrencyStatus = t.procedure
+  .use(requireCourseInstancePermissionView)
+  .use(requireAiGradingFeature)
+  .output(
+    z.object({
+      running_job_count: z.number(),
+      max_concurrent_jobs: z.number(),
+    }),
+  )
+  .query(async (opts) => {
+    const running_job_count = await getRunningAiGradingJobCount(opts.ctx.authn_user.id);
+    return {
+      running_job_count,
+      max_concurrent_jobs: MAX_CONCURRENT_AI_GRADING_JOBS_PER_USER,
+    };
+  });
+
 export const manualGradingRouter = t.router({
   instances,
+  aiGradingConcurrencyStatus,
   setAiGradingMode: setAiGradingModeMutation,
   deleteAiGradingJobs: deleteAiGradingJobsMutation,
   deleteAiInstanceQuestionGroupings: deleteAiInstanceQuestionGroupingsMutation,
