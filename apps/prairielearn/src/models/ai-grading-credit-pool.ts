@@ -91,8 +91,7 @@ async function deductCreditsForAiGradingWithLockedPool(
     return 0;
   }
 
-  // Clamp the deduction to whatever credits remain. The grading job records
-  // the full API cost; the ledger records only what was actually deducted.
+  // Clamp to available balance.
   const effectiveCost = Math.min(cost_milli_dollars, before.total_milli_dollars);
 
   const { nonTransferableDeduction, transferableDeduction } = splitDeduction(
@@ -203,7 +202,9 @@ export async function insertAiGradingJobAndDeductCreditsIfNeeded({
 /**
  * Atomically deduct credits from the pool for AI grading.
  * Deducts from non-transferable credits first, then transferable.
- * Clamps the deduction to the available balance instead of throwing.
+ *
+ * If the pool has insufficient credits, clamps the deduction to
+ * the remaining balance rather than throwing.
  *
  * Exported for testing. Production callers should use
  * {@link insertAiGradingJobAndDeductCreditsIfNeeded} instead to ensure
