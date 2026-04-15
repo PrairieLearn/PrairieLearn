@@ -221,7 +221,7 @@ export function InstructorAssessmentDownloads({
               )}
               <CanvasDownloadRow
                 filename={filenames.canvasScoresCsvFilename}
-                description="Percentage scores for each student, formatted for import into Canvas. Only users with the Student role are included. Scores range from 0 to 100 (or higher if bonus credit was given)."
+                description="Percentage scores for each student, formatted for import into Canvas. Scores range from 0 to 100 (or higher if bonus credit was given)."
                 onClick={() =>
                   setCanvasModal({
                     filename: filenames.canvasScoresCsvFilename,
@@ -231,7 +231,7 @@ export function InstructorAssessmentDownloads({
               />
               <CanvasDownloadRow
                 filename={filenames.canvasPointsCsvFilename}
-                description="Total points for each student, formatted for import into Canvas. Only users with the Student role are included. Points range from 0 to the maximum for this assessment (or higher if bonus credit was given)."
+                description="Total points for each student, formatted for import into Canvas. Points range from 0 to the maximum for this assessment (or higher if bonus credit was given)."
                 onClick={() =>
                   setCanvasModal({
                     filename: filenames.canvasPointsCsvFilename,
