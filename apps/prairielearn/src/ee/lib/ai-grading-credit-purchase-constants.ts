@@ -1,5 +1,5 @@
-/** Minimum credit purchase amount in milli-dollars ($5.00). */
-export const MIN_PURCHASE_MILLI_DOLLARS = 5_000;
+/** Minimum credit purchase amount in milli-dollars ($10.00). */
+export const MIN_PURCHASE_MILLI_DOLLARS = 10_000;
 
 /** Maximum credit purchase amount in milli-dollars ($10,000.00). */
 export const MAX_PURCHASE_MILLI_DOLLARS = 10_000_000;
