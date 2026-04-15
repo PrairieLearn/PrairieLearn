@@ -177,6 +177,6 @@ FROM
     WHERE
       ag.zone_id = z.id
       AND aq.deleted_at IS NULL
-  ) AS zq ON true
+  ) AS zq ON TRUE
 WHERE
   z.assessment_id = $assessment_id;
