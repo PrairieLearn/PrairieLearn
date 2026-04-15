@@ -8,7 +8,6 @@
  *   4. Unified credit-timeline builder (releaseDate, dueDate, deadlines, afterLastDeadline, duration)
  *   5. Apply visibility (afterComplete, listBeforeRelease)
  *   6. Merge all pieces into final result
- *   7. Label archetype (read-only, for reporting)
  */
 
 import * as fs from 'fs/promises';
@@ -23,29 +22,7 @@ import { formatJsonWithPrettier } from '../prettier.js';
 // Types
 // ---------------------------------------------------------------------------
 
-type BaseArchetype =
-  | 'always-open'
-  | 'practice-only'
-  | 'declining-credit'
-  | 'hidden'
-  | 'mode-gated'
-  | 'multi-deadline'
-  | 'no-op'
-  | 'password-gated'
-  | 'single-deadline'
-  | 'single-deadline-with-viewing'
-  | 'single-reduced-credit'
-  | 'timed-assessment'
-  | 'unclassified'
-  | 'view-only';
-export type ArchetypeModifier = 'mode-gated' | 'hides-closed' | 'hides-score' | 'prairietest';
-export interface Archetype {
-  base: BaseArchetype;
-  modifiers: ArchetypeModifier[];
-}
-
 export interface MigrationResult {
-  archetype: Archetype;
   result: AccessControlJsonInput;
   errors: string[];
   notes: string[];
@@ -56,7 +33,6 @@ export interface AssessmentMigrationAnalysis {
   tid: string;
   title: string;
   type: string;
-  archetype: Archetype;
   ruleCount: number;
   hasUidRules: boolean;
   errors: string[];
@@ -481,137 +457,12 @@ function extractPrairieTest(
 }
 
 // ---------------------------------------------------------------------------
-// Archetype labeling (read-only, for reporting)
-// ---------------------------------------------------------------------------
-
-interface RuleAnalysis {
-  hasPassword: boolean;
-  creditType: 'bonus' | 'full' | 'reduced' | 'none';
-  hasDates: boolean;
-  isActive: boolean;
-  isTimed: boolean;
-  hasMode: boolean;
-  hidesClosedAssessment: boolean;
-  hidesClosedScore: boolean;
-  isOpenCredit: boolean;
-}
-
-function analyzeRule(rule: AssessmentAccessRuleJson): RuleAnalysis {
-  const hasStart = 'startDate' in rule;
-  const hasEnd = 'endDate' in rule;
-  const credit = rule.credit ?? 0;
-  const active = rule.active ?? true;
-
-  let creditType: RuleAnalysis['creditType'] = 'none';
-  if (credit > 100) creditType = 'bonus';
-  else if (credit === 100) creditType = 'full';
-  else if (credit > 0) creditType = 'reduced';
-
-  return {
-    hasPassword: !!rule.password,
-    creditType,
-    hasDates: hasStart || hasEnd,
-    isActive: active,
-    isTimed: !!rule.timeLimitMin,
-    hasMode: !!rule.mode,
-    hidesClosedAssessment: (rule.showClosedAssessment ?? true) === false,
-    hidesClosedScore: (rule.showClosedAssessmentScore ?? true) === false,
-    isOpenCredit: credit > 0 && !hasStart && !hasEnd,
-  };
-}
-
-function labelArchetype(rules: AssessmentAccessRuleJson[]): Archetype {
-  // Strip exam rules — PrairieTest is always a modifier, not a base.
-  const hasPrairieTest = rules.some((r) => r.examUuid);
-  const nonExamRules = rules.filter((r) => !r.examUuid);
-
-  const analyzed = nonExamRules.map(analyzeRule);
-  const creditRules = analyzed.filter((r) => r.creditType !== 'none');
-  const nonCreditRules = analyzed.filter((r) => r.creditType === 'none');
-
-  const hasPassword = analyzed.some((r) => r.hasPassword);
-  const hasTimed = analyzed.some((r) => r.isTimed && r.creditType !== 'none');
-  const hasBonusCredit = creditRules.some((r) => r.creditType === 'bonus');
-  const hasFullCredit = creditRules.some((r) => r.creditType === 'full');
-  const hasReducedCredit = creditRules.some((r) => r.creditType === 'reduced');
-  const hasOpenCredit = creditRules.some((r) => r.isOpenCredit);
-  const hasViewing = nonCreditRules.some(
-    (r) => !r.isActive && r.hasDates && !r.hasPassword && !r.hidesClosedAssessment,
-  );
-  const hasHiding = nonCreditRules.some(
-    (r) => !r.isActive || r.hidesClosedAssessment || r.hidesClosedScore,
-  );
-  const hasModeGate = analyzed.some((r) => r.hasMode);
-
-  const modifiers: ArchetypeModifier[] = [];
-  if (hasPrairieTest) modifiers.push('prairietest');
-  if (creditRules.some((r) => r.hasMode)) modifiers.push('mode-gated');
-  else if (hasModeGate && !hasViewing && !hasHiding) modifiers.push('mode-gated');
-  if (creditRules.some((r) => r.hidesClosedAssessment)) modifiers.push('hides-closed');
-  else if (creditRules.some((r) => r.hidesClosedScore)) modifiers.push('hides-score');
-
-  if (hasAccessGaps(nonExamRules)) {
-    return { base: 'unclassified', modifiers: [] };
-  }
-
-  const allNoOp = analyzed.every(
-    (r) =>
-      r.creditType === 'none' &&
-      r.isActive &&
-      !r.hasDates &&
-      !r.isTimed &&
-      !r.hasMode &&
-      !r.hasPassword &&
-      !r.hidesClosedAssessment &&
-      !r.hidesClosedScore,
-  );
-
-  let base: BaseArchetype;
-  if (allNoOp) {
-    base = 'no-op';
-  } else if (hasPassword) {
-    base = 'password-gated';
-  } else if (hasTimed) {
-    base = 'timed-assessment';
-  } else if (
-    (hasFullCredit && hasReducedCredit) ||
-    (hasBonusCredit && hasReducedCredit) ||
-    (hasBonusCredit && hasFullCredit)
-  ) {
-    base = 'declining-credit';
-  } else if (hasOpenCredit) {
-    base = 'always-open';
-  } else if ((hasFullCredit || hasBonusCredit) && creditRules.length === 1) {
-    base = hasViewing || hasHiding ? 'single-deadline-with-viewing' : 'single-deadline';
-  } else if (hasFullCredit && creditRules.length > 1) {
-    base = 'multi-deadline';
-  } else if (hasReducedCredit && creditRules.length === 1) {
-    base = 'single-reduced-credit';
-  } else if (creditRules.length === 0 && nonCreditRules.some((r) => r.isActive && r.hasDates)) {
-    base = 'practice-only';
-  } else if (hasViewing && creditRules.length === 0) {
-    base = 'view-only';
-  } else if (hasHiding && creditRules.length === 0 && !hasViewing) {
-    base = 'hidden';
-  } else if (hasModeGate && creditRules.length === 0) {
-    base = 'mode-gated';
-  } else {
-    base = 'unclassified';
-  }
-
-  return { base, modifiers };
-}
-
-// ---------------------------------------------------------------------------
 // Main migration pipeline
 // ---------------------------------------------------------------------------
 
 export function migrateAllowAccess(rules: AssessmentAccessRuleJson[]): MigrationResult {
   const hasUidRules = rules.some((r) => r.uids);
   rules = normalizeRules(rules);
-
-  // Label archetype (read-only, for reporting).
-  const archetype = labelArchetype(rules);
 
   // --- Step 1: Extract orthogonal concerns ---
   let schedulingRules = rules;
@@ -625,7 +476,6 @@ export function migrateAllowAccess(rules: AssessmentAccessRuleJson[]): Migration
   // --- Step 2: Precondition check ---
   if (hasAccessGaps(schedulingRules)) {
     return {
-      archetype,
       result: {},
       errors: ['Non-contiguous access windows are not supported.'],
       notes: [],
@@ -640,7 +490,6 @@ export function migrateAllowAccess(rules: AssessmentAccessRuleJson[]): Migration
   );
   if (!hasCreditRules && hasPracticeRules) {
     return {
-      archetype,
       result: {},
       errors: [
         'Using 0 credit to indicate overall weight within the course is not supported.',
@@ -665,7 +514,6 @@ export function migrateAllowAccess(rules: AssessmentAccessRuleJson[]): Migration
     );
   if (hasModeOnly && !ptExtract) {
     return {
-      archetype,
       result: {},
       errors: ['Mode-only access rules are not supported.'],
       notes: [],
@@ -677,7 +525,7 @@ export function migrateAllowAccess(rules: AssessmentAccessRuleJson[]): Migration
   const { dateControl, errors, notes } = buildCreditTimeline(schedulingRules);
 
   if (errors.length > 0) {
-    return { archetype, result: {}, errors, notes, hasUidRules };
+    return { result: {}, errors, notes, hasUidRules };
   }
 
   // --- Step 6: Assemble result ---
@@ -725,7 +573,7 @@ export function migrateAllowAccess(rules: AssessmentAccessRuleJson[]): Migration
     );
   }
 
-  return { archetype, result, errors, notes, hasUidRules };
+  return { result, errors, notes, hasUidRules };
 }
 
 // ---------------------------------------------------------------------------
@@ -786,13 +634,12 @@ export async function analyzeAssessmentFile(
     return null;
   }
 
-  const { archetype, errors, notes, hasUidRules } = migrateAllowAccess(allowAccess);
+  const { errors, notes, hasUidRules } = migrateAllowAccess(allowAccess);
 
   return {
     tid,
     title: (data.title as string | undefined) ?? tid,
     type: (data.type as string | undefined) ?? 'unknown',
-    archetype,
     ruleCount: allowAccess.length,
     hasUidRules,
     errors,

@@ -155,7 +155,7 @@ function normalizeMessages(msgs: string[]): string {
 interface OutcomeGroup {
   shape: string;
   normalized: NormalizedRule[];
-  /** The outcome key: archetype + normalized errors + normalized notes */
+  /** The outcome key: normalized errors + normalized notes */
   outcomeKey: string;
   representative: AssessmentAccessRuleJson[];
   migrationResult: ReturnType<typeof migrateAllowAccess>;
@@ -177,11 +177,7 @@ function generateHtml(results: OutcomeGroup[], totalFiles: number, totalWithAcce
 
   const rows = results
     .map((r, i) => {
-      const archetype = `${r.migrationResult.archetype.base}${
-        r.migrationResult.archetype.modifiers.length
-          ? ' + ' + r.migrationResult.archetype.modifiers.join(', ')
-          : ''
-      }`;
+      const hasErrors = r.migrationResult.errors.length > 0;
       const errors = r.migrationResult.errors.length
         ? `<div class="errors">${r.migrationResult.errors.map((e) => escapeHtml(e)).join('<br>')}</div>`
         : '';
@@ -193,7 +189,7 @@ function generateHtml(results: OutcomeGroup[], totalFiles: number, totalWithAcce
       <tr id="shape-${i}">
         <td class="meta">
           <div class="count">${r.count} assessment${r.count === 1 ? '' : 's'}</div>
-          <div class="archetype">${escapeHtml(archetype)}</div>
+          <div class="status">${hasErrors ? 'Has errors' : 'OK'}</div>
           ${errors}${notes}
           <details><summary>Example files (${Math.min(3, r.filePaths.length)})</summary>
             <ul>${r.filePaths
@@ -235,7 +231,7 @@ function generateHtml(results: OutcomeGroup[], totalFiles: number, totalWithAcce
   td.old, td.new { width: 37.5%; }
   pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-size: 12px; max-height: 500px; overflow: auto; }
   .count { font-size: 1.2em; font-weight: bold; }
-  .archetype { color: #0066cc; margin: 4px 0; font-weight: 600; }
+  .status { color: #0066cc; margin: 4px 0; font-weight: 600; }
   .errors { background: #fee; border-left: 3px solid #c33; padding: 4px 8px; margin: 4px 0; font-size: 0.9em; }
   .notes { background: #ffe; border-left: 3px solid #cc9; padding: 4px 8px; margin: 4px 0; font-size: 0.9em; }
   details { margin-top: 4px; font-size: 0.85em; }
@@ -255,15 +251,6 @@ function generateHtml(results: OutcomeGroup[], totalFiles: number, totalWithAcce
   <span class="stat"><strong>${errorCount}</strong> groups with errors (${assessmentsWithErrors.toLocaleString()} assessments)</span>
 </div>
 <div class="filter-bar">
-  <label>Filter by archetype:
-    <select id="archFilter" onchange="filterRows()">
-      <option value="">All</option>
-      ${[...new Set(results.map((r) => r.migrationResult.archetype.base))]
-        .sort()
-        .map((a) => `<option value="${a}">${a}</option>`)
-        .join('')}
-    </select>
-  </label>
   <label>
     <input type="checkbox" id="errorsOnly" onchange="filterRows()"> Errors only
   </label>
@@ -276,13 +263,10 @@ function generateHtml(results: OutcomeGroup[], totalFiles: number, totalWithAcce
 </table>
 <script>
 function filterRows() {
-  const arch = document.getElementById('archFilter').value;
   const errOnly = document.getElementById('errorsOnly').checked;
   document.querySelectorAll('tbody tr').forEach(tr => {
-    const archEl = tr.querySelector('.archetype');
     const errEl = tr.querySelector('.errors');
     let show = true;
-    if (arch && !archEl.textContent.startsWith(arch)) show = false;
     if (errOnly && !errEl) show = false;
     tr.style.display = show ? '' : 'none';
   });
@@ -302,7 +286,7 @@ async function main() {
   console.log(`Found ${files.length} files`);
 
   // We need to build the dist first for imports to work.
-  // Group by (shape, outcome) where outcome = archetype + normalized errors/notes.
+  // Group by (shape, outcome) where outcome = normalized errors/notes.
   const groupMap = new Map<string, OutcomeGroup>();
   let withAccess = 0;
   let processed = 0;
@@ -344,7 +328,6 @@ async function main() {
       migrationResult = migrateAllowAccess(rulesForMigration);
     } catch (err: any) {
       migrationResult = {
-        archetype: { base: 'unclassified' as const, modifiers: [] as ('mode-gated' | 'hides-closed' | 'hides-score')[] },
         result: {} as any,
         errors: [`Exception: ${err.message}`],
         notes: [] as string[],
@@ -352,11 +335,10 @@ async function main() {
       };
     }
 
-    // Build outcome key from archetype + normalized error/note signatures
-    const archetypeKey = `${migrationResult.archetype.base}:${migrationResult.archetype.modifiers.join(',')}`;
+    // Build outcome key from normalized error/note signatures
     const errorSig = normalizeMessages(migrationResult.errors);
     const noteSig = normalizeMessages(migrationResult.notes);
-    const outcomeKey = `${shape}||${archetypeKey}||${errorSig}||${noteSig}`;
+    const outcomeKey = `${shape}||${errorSig}||${noteSig}`;
 
     const existing = groupMap.get(outcomeKey);
     if (existing) {
@@ -381,17 +363,6 @@ async function main() {
   console.log(`${groupMap.size} unique (shape, outcome) groups\n`);
 
   const results = [...groupMap.values()];
-
-  // Aggregate stats
-  const archetypeCounts = new Map<string, number>();
-  for (const r of results) {
-    const key = r.migrationResult.archetype.base;
-    archetypeCounts.set(key, (archetypeCounts.get(key) ?? 0) + r.count);
-  }
-  console.log('Archetype distribution:');
-  for (const [arch, count] of [...archetypeCounts.entries()].sort((a, b) => b[1] - a[1])) {
-    console.log(`  ${arch}: ${count}`);
-  }
 
   const errorCount = results.filter((r) => r.migrationResult.errors.length > 0).length;
   const assessmentsWithErrors = results
