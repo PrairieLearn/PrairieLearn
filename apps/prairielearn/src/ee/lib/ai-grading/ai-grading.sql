@@ -1,3 +1,13 @@
+-- BLOCK count_running_ai_grading_jobs_for_user
+SELECT
+  COUNT(*)::integer
+FROM
+  job_sequences
+WHERE
+  authn_user_id = $authn_user_id
+  AND type = 'ai_grading'
+  AND status = 'Running';
+
 -- BLOCK insert_grading_job
 INSERT INTO
   grading_jobs (
