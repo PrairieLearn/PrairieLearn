@@ -786,7 +786,7 @@ export class CourseInstanceCopyEditor extends Editor {
   private metadataOverrides?: Record<string, any>;
   private accessControlMigration?: {
     strategy: 'migrate' | 'keep' | 'wipe';
-    preserveIncompatible: boolean;
+    clearIncompatible: boolean;
   };
 
   public readonly uuid: string;
@@ -799,7 +799,7 @@ export class CourseInstanceCopyEditor extends Editor {
       metadataOverrides?: Record<string, any>;
       accessControlMigration?: {
         strategy: 'migrate' | 'keep' | 'wipe';
-        preserveIncompatible: boolean;
+        clearIncompatible: boolean;
       };
     },
   ) {
@@ -978,7 +978,7 @@ export class CourseInstanceCopyEditor extends Editor {
         await applyMigrationToAssessmentFile(
           infoPath,
           this.accessControlMigration.strategy,
-          this.accessControlMigration.preserveIncompatible,
+          this.accessControlMigration.clearIncompatible,
           this.metadataOverrides?.publishing?.startDate ??
             todayAsDatetimeLocal(this.course_instance.display_timezone),
         );

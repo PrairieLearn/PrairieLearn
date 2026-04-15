@@ -1088,33 +1088,7 @@ describe('applyMigrationToAssessmentFile', () => {
     );
   });
 
-  it('migrate strategy with preserveIncompatible and incompatible rules keeps allowAccess', async () => {
-    await tmp.withDir(
-      async ({ path: tmpDir }) => {
-        const filePath = path.join(tmpDir, 'infoAssessment.json');
-        await fs.writeFile(
-          filePath,
-          JSON.stringify({
-            type: 'Exam',
-            title: 'E1',
-            allowAccess: [
-              { credit: 100, startDate: '2024-01-01', endDate: '2024-02-01' },
-              { credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
-            ],
-          }),
-        );
-
-        await applyMigrationToAssessmentFile(filePath, 'migrate', true);
-
-        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-        assert.isDefined(result.allowAccess);
-        assert.isUndefined(result.accessControl);
-      },
-      { unsafeCleanup: true },
-    );
-  });
-
-  it('migrate strategy without preserveIncompatible removes incompatible rules', async () => {
+  it('migrate strategy without clearIncompatible and incompatible rules keeps allowAccess', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
         const filePath = path.join(tmpDir, 'infoAssessment.json');
@@ -1131,6 +1105,32 @@ describe('applyMigrationToAssessmentFile', () => {
         );
 
         await applyMigrationToAssessmentFile(filePath, 'migrate', false);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.isDefined(result.allowAccess);
+        assert.isUndefined(result.accessControl);
+      },
+      { unsafeCleanup: true },
+    );
+  });
+
+  it('migrate strategy with clearIncompatible removes incompatible rules', async () => {
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Exam',
+            title: 'E1',
+            allowAccess: [
+              { credit: 100, startDate: '2024-01-01', endDate: '2024-02-01' },
+              { credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
+            ],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', true);
 
         const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
         assert.isUndefined(result.allowAccess);

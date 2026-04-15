@@ -279,7 +279,7 @@ router.post(
         },
         accessControlMigration: {
           strategy: access_control_strategy,
-          preserveIncompatible: !clear_incompatible,
+          clearIncompatible: clear_incompatible,
         },
       });
 

@@ -863,7 +863,7 @@ export async function analyzeCourseInstanceAssessments(
 export async function applyMigrationToAssessmentFile(
   filePath: string,
   strategy: 'migrate' | 'keep' | 'wipe',
-  preserveIncompatible: boolean,
+  clearIncompatible: boolean,
   fallbackReleaseDate?: string,
 ): Promise<void> {
   const content = await fs.readFile(filePath, 'utf-8');
@@ -897,10 +897,10 @@ export async function applyMigrationToAssessmentFile(
     applyFallbackReleaseDate(result, fallbackReleaseDate);
     data.accessControl = [result];
     delete data.allowAccess;
-  } else if (!preserveIncompatible) {
+  } else if (clearIncompatible) {
     delete data.allowAccess;
   } else {
-    // preserveIncompatible: keep allowAccess as-is
+    // keep allowAccess as-is
     return;
   }
 
