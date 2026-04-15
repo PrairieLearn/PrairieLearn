@@ -1,11 +1,10 @@
 import { QueryClient, useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'react';
-import { Alert, Dropdown, Modal } from 'react-bootstrap';
+import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
-import { OverlayTrigger } from '@prairielearn/ui';
 
 import { getAppError } from '../../lib/client/errors.js';
 import { type StaffGroupConfig } from '../../lib/client/safe-db-types.js';
@@ -315,225 +314,192 @@ function InstructorAssessmentGroupsInner({
   );
 }
 
-function AddMembersForm({
+function EditGroupModal({
   row,
-  onCancel,
-  onMembersAdded,
+  show,
+  onHide,
+  onGroupEdited,
 }: {
   row: GroupUsersRow;
-  onCancel: () => void;
-  onMembersAdded: (group: GroupUsersRow, notAssigned: string[]) => void;
+  show: boolean;
+  onHide: () => void;
+  onGroupEdited: (group: GroupUsersRow, notAssigned: string[]) => void;
 }) {
   const trpc = useTRPC();
-  const mutation = useMutation(trpc.assessmentGroups.addMember.mutationOptions());
+  const mutation = useMutation(trpc.assessmentGroups.editGroup.mutationOptions());
+  const appError = getAppError<AssessmentGroupsError['EditGroup']>(mutation.error);
   const failures = mutation.data?.failures ?? [];
+
+  const currentUids = row.users.map((u) => u.uid).join(', ');
 
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<{ uids: string }>({ defaultValues: { uids: '' } });
+  } = useForm<{ uids: string }>({ values: { uids: currentUids } });
 
   const onSubmit = (data: { uids: string }) => {
     mutation.mutate(
       { group_id: row.group_id, uids: data.uids },
       {
         onSuccess: ({ group, notAssigned, failures }) => {
-          onMembersAdded(group, notAssigned);
+          onGroupEdited(group, notAssigned);
           if (failures.length === 0) {
             reset();
             mutation.reset();
+            onHide();
           }
         },
       },
     );
   };
 
+  const handleHide = () => {
+    reset();
+    mutation.reset();
+    onHide();
+  };
+
+  const uidsInputId = `editGroupUids-${row.group_id}`;
+  const uidsErrorId = `editGroupUidsError-${row.group_id}`;
+
   return (
-    <form name="add-member-form" onSubmit={handleSubmit(onSubmit)}>
-      {mutation.error && (
-        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-          {mutation.error.message}
-        </Alert>
-      )}
-      {failures.length > 0 && (
-        <Alert variant="warning" dismissible onClose={() => mutation.reset()}>
-          <strong>Some users could not be added:</strong>
-          <ul className="mb-0">
-            {failures.map((f) => (
-              <li key={f.uid}>
-                {f.uid}: {f.message}
-              </li>
-            ))}
-          </ul>
-        </Alert>
-      )}
-      <div className="mb-3">
-        <label className="form-label" htmlFor="add_member_uids">
-          UIDs
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.uids && 'is-invalid')}
-          placeholder="student@example.com"
-          id="add_member_uids"
-          aria-describedby="add_member_uids_help"
-          aria-invalid={errors.uids ? 'true' : undefined}
-          {...(errors.uids ? { 'aria-errormessage': 'add_member_uids_error' } : {})}
-          defaultValue=""
-          {...register('uids', { required: 'At least one UID is required.' })}
-        />
-        {errors.uids && (
-          <div id="add_member_uids_error" className="invalid-feedback">
-            {errors.uids.message}
+    <Modal show={show} onHide={handleHide}>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Modal.Header>
+          <Modal.Title>Edit group</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {appError && (
+            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+              {appError.message}
+            </Alert>
+          )}
+          {failures.length > 0 && (
+            <Alert variant="warning" dismissible onClose={() => mutation.reset()}>
+              <strong>Some users could not be added:</strong>
+              <ul className="mb-0">
+                {failures.map((f) => (
+                  <li key={f.uid}>
+                    {f.uid}: {f.message}
+                  </li>
+                ))}
+              </ul>
+            </Alert>
+          )}
+          <div className="mb-3">
+            <label className="form-label" htmlFor={`editGroupName-${row.group_id}`}>
+              Group name
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              id={`editGroupName-${row.group_id}`}
+              value={row.name}
+              readOnly
+            />
           </div>
-        )}
-        <small id="add_member_uids_help" className="form-text text-muted">
-          Separate multiple UIDs with commas.
-        </small>
-      </div>
-      <div className="d-flex gap-2">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={isSubmitting || mutation.isPending}
-        >
-          Add
-        </button>
-      </div>
-    </form>
+          <div className="mb-3">
+            <label className="form-label" htmlFor={uidsInputId}>
+              UIDs
+            </label>
+            <textarea
+              className={clsx('form-control', errors.uids && 'is-invalid')}
+              id={uidsInputId}
+              rows={5}
+              placeholder="student1@example.com, student2@example.com"
+              aria-invalid={errors.uids ? 'true' : undefined}
+              {...(errors.uids ? { 'aria-errormessage': uidsErrorId } : {})}
+              defaultValue={currentUids}
+              {...register('uids', { required: 'At least one UID is required.' })}
+            />
+            {errors.uids && (
+              <div id={uidsErrorId} className="invalid-feedback">
+                {errors.uids.message}
+              </div>
+            )}
+            <small className="form-text text-muted">
+              Separate multiple UIDs with commas. This list replaces the current members.
+            </small>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <button type="button" className="btn btn-secondary" onClick={handleHide}>
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={isSubmitting || mutation.isPending}
+          >
+            Save
+          </button>
+        </Modal.Footer>
+      </form>
+    </Modal>
   );
 }
 
-function DeleteGroupForm({
+function DeleteGroupModal({
   row,
-  onCancel,
+  show,
+  onHide,
   onGroupDeleted,
 }: {
   row: GroupUsersRow;
-  onCancel: () => void;
+  show: boolean;
+  onHide: () => void;
   onGroupDeleted: (groupId: string, notAssigned: string[]) => void;
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.deleteGroup.mutationOptions());
   const appError = getAppError<AssessmentGroupsError['DeleteGroup']>(mutation.error);
 
-  const submitDelete = () => {
-    mutation.mutate(
-      { group_id: row.group_id },
-      {
-        onSuccess: ({ notAssigned }) => {
-          onGroupDeleted(row.group_id, notAssigned);
-          mutation.reset();
-        },
-      },
-    );
+  const handleHide = () => {
+    mutation.reset();
+    onHide();
   };
 
   return (
-    <form
-      name="delete-group-form"
-      onSubmit={(e) => {
-        e.preventDefault();
-        submitDelete();
-      }}
-    >
-      {appError && (
-        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-          {appError.message}
-        </Alert>
-      )}
-      <p>
-        Are you sure you want to delete the group <strong>{row.name}</strong>?
-      </p>
-      <div className="d-flex gap-2">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          Cancel
-        </button>
-        <button type="submit" className="btn btn-danger" disabled={mutation.isPending}>
-          Delete
-        </button>
-      </div>
-    </form>
-  );
-}
-
-function RemoveMembersForm({
-  row,
-  onCancel,
-  onMemberRemoved,
-}: {
-  row: GroupUsersRow;
-  onCancel: () => void;
-  onMemberRemoved: (group: GroupUsersRow, notAssigned: string[]) => void;
-}) {
-  const trpc = useTRPC();
-  const mutation = useMutation(trpc.assessmentGroups.deleteMember.mutationOptions());
-  const appError = getAppError<AssessmentGroupsError['DeleteMember']>(mutation.error);
-
-  const firstUserId = row.users[0]?.id ?? '';
-
-  const {
-    register,
-    handleSubmit,
-    formState: { isSubmitting },
-  } = useForm<{ user_id: string }>({ defaultValues: { user_id: firstUserId } });
-
-  const onSubmit = (data: { user_id: string }) => {
-    mutation.mutate(
-      { group_id: row.group_id, user_id: data.user_id },
-      {
-        onSuccess: ({ group, notAssigned }) => {
-          onMemberRemoved(group, notAssigned);
-          mutation.reset();
-        },
-      },
-    );
-  };
-
-  const selectId = `delete-member-form-${row.group_id}`;
-
-  return (
-    <form name="delete-member-form" onSubmit={handleSubmit(onSubmit)}>
-      {appError && (
-        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-          {appError.message}
-        </Alert>
-      )}
-      <div className="mb-3">
-        <label className="form-label" htmlFor={selectId}>
-          UID:
-        </label>
-        <select
-          className="form-select"
-          id={selectId}
-          defaultValue={firstUserId}
-          {...register('user_id')}
-        >
-          {row.users.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.uid}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="d-flex gap-2">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="btn btn-danger"
-          disabled={row.users.length === 0 || isSubmitting || mutation.isPending}
-        >
-          Remove
-        </button>
-      </div>
-    </form>
+    <Modal show={show} onHide={handleHide}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          mutation.mutate(
+            { group_id: row.group_id },
+            {
+              onSuccess: ({ notAssigned }) => {
+                onGroupDeleted(row.group_id, notAssigned);
+                mutation.reset();
+              },
+            },
+          );
+        }}
+      >
+        <Modal.Header>
+          <Modal.Title>Delete group</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {appError && (
+            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+              {appError.message}
+            </Alert>
+          )}
+          <p>
+            Are you sure you want to delete the group <strong>{row.name}</strong>?
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <button type="button" className="btn btn-secondary" onClick={handleHide}>
+            Cancel
+          </button>
+          <button type="submit" className="btn btn-danger" disabled={mutation.isPending}>
+            Delete
+          </button>
+        </Modal.Footer>
+      </form>
+    </Modal>
   );
 }
 
@@ -746,10 +712,10 @@ function AddGroupModal({
             <label className="form-label" htmlFor="addGroupUids">
               UIDs
             </label>
-            <input
-              type="text"
+            <textarea
               className={clsx('form-control', errors.uids && 'is-invalid')}
               id="addGroupUids"
+              rows={5}
               placeholder="student1@example.com, student2@example.com"
               aria-describedby="addGroupUidsHelp"
               aria-invalid={errors.uids ? 'true' : undefined}
@@ -859,8 +825,8 @@ function GroupRow({
   onGroupUpdated: (group: GroupUsersRow, notAssigned: string[]) => void;
   onGroupDeleted: (groupId: string, notAssigned: string[]) => void;
 }) {
-  type PopoverEnum = 'add' | 'remove' | 'delete' | null;
-  const [showPopover, setShowPopover] = useState<PopoverEnum>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   return (
     <tr>
@@ -874,93 +840,37 @@ function GroupRow({
 
       {canEdit && (
         <td className="text-center">
-          <Dropdown autoClose="outside">
-            <Dropdown.Toggle className="btn-xs btn-ghost">Action</Dropdown.Toggle>
-
-            <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
-              <OverlayTrigger
-                trigger="click"
-                placement="auto"
-                show={showPopover === 'add'}
-                popperConfig={{ strategy: 'fixed' }}
-                popover={{
-                  header: 'Add members',
-                  body: (
-                    <AddMembersForm
-                      row={row}
-                      onCancel={() => setShowPopover(null)}
-                      onMembersAdded={(group, notAssigned) => {
-                        onGroupUpdated(group, notAssigned);
-                        setShowPopover(null);
-                      }}
-                    />
-                  ),
-                }}
-                rootClose
-                onToggle={(next) => setShowPopover(next ? 'add' : null)}
-              >
-                <Dropdown.Item as="button" onClick={() => setShowPopover('add')}>
-                  <i className="fa fa-user-plus" /> Add members
-                </Dropdown.Item>
-              </OverlayTrigger>
-
-              <OverlayTrigger
-                trigger="click"
-                placement="auto"
-                show={showPopover === 'remove'}
-                popperConfig={{ strategy: 'fixed' }}
-                popover={{
-                  header: 'Remove members',
-                  body: (
-                    <RemoveMembersForm
-                      row={row}
-                      onCancel={() => setShowPopover(null)}
-                      onMemberRemoved={(group, notAssigned) => {
-                        onGroupUpdated(group, notAssigned);
-                        setShowPopover(null);
-                      }}
-                    />
-                  ),
-                }}
-                rootClose
-                onToggle={(next) => setShowPopover(next ? 'remove' : null)}
-              >
-                <Dropdown.Item
-                  as="button"
-                  disabled={row.users.length === 0}
-                  onClick={() => setShowPopover('remove')}
-                >
-                  <i className="fa fa-user-minus" /> Remove members
-                </Dropdown.Item>
-              </OverlayTrigger>
-
-              <OverlayTrigger
-                trigger="click"
-                placement="auto"
-                show={showPopover === 'delete'}
-                popperConfig={{ strategy: 'fixed' }}
-                popover={{
-                  header: 'Delete group',
-                  body: (
-                    <DeleteGroupForm
-                      row={row}
-                      onCancel={() => setShowPopover(null)}
-                      onGroupDeleted={(groupId, notAssigned) => {
-                        onGroupDeleted(groupId, notAssigned);
-                        setShowPopover(null);
-                      }}
-                    />
-                  ),
-                }}
-                rootClose
-                onToggle={(next) => setShowPopover(next ? 'delete' : null)}
-              >
-                <Dropdown.Item as="button" onClick={() => setShowPopover('delete')}>
-                  <i className="fa fa-times" /> Delete group
-                </Dropdown.Item>
-              </OverlayTrigger>
-            </Dropdown.Menu>
-          </Dropdown>
+          <div className="d-flex justify-content-center gap-2">
+            <button
+              type="button"
+              className="btn btn-sm btn-primary"
+              onClick={() => setShowEditModal(true)}
+            >
+              <i className="bi bi-pencil" aria-hidden="true" /> Edit
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-danger"
+              onClick={() => setShowDeleteModal(true)}
+            >
+              <i className="bi bi-trash" aria-hidden="true" /> Delete
+            </button>
+          </div>
+          <EditGroupModal
+            row={row}
+            show={showEditModal}
+            onHide={() => setShowEditModal(false)}
+            onGroupEdited={onGroupUpdated}
+          />
+          <DeleteGroupModal
+            row={row}
+            show={showDeleteModal}
+            onHide={() => setShowDeleteModal(false)}
+            onGroupDeleted={(groupId, notAssigned) => {
+              onGroupDeleted(groupId, notAssigned);
+              setShowDeleteModal(false);
+            }}
+          />
         </td>
       )}
     </tr>

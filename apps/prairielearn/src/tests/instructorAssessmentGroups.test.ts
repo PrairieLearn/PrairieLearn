@@ -98,9 +98,9 @@ describe('Instructor group controls', () => {
 
   test.sequential('can add a user to an existing group', async () => {
     assert.isDefined(group1RowId);
-    const { group, failures } = await trpcClient.assessmentGroups.addMember.mutate({
+    const { group, failures } = await trpcClient.assessmentGroups.editGroup.mutate({
       group_id: group1RowId,
-      uids: users[4].uid,
+      uids: [users[0].uid, users[1].uid, users[4].uid].join(','),
     });
     assert.lengthOf(failures, 0);
     assert.ok(group.users.some((u) => u.uid === users[4].uid));
@@ -108,9 +108,9 @@ describe('Instructor group controls', () => {
 
   test.sequential('cannot add a user to a group if they are already in another group', async () => {
     assert.isDefined(group2RowId);
-    const { group, failures } = await trpcClient.assessmentGroups.addMember.mutate({
+    const { group, failures } = await trpcClient.assessmentGroups.editGroup.mutate({
       group_id: group2RowId,
-      uids: users[4].uid,
+      uids: [users[2].uid, users[3].uid, users[4].uid].join(','),
     });
     assert.lengthOf(failures, 1);
     assert.equal(failures[0].uid, users[4].uid);

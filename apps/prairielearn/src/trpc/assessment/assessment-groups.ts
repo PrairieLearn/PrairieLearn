@@ -20,7 +20,7 @@ const MAX_UIDS = 50;
 
 export interface AssessmentGroupsError {
   AddGroup: { code: 'GROUP_OPERATION_FAILED' };
-  DeleteMember: { code: 'GROUP_OPERATION_FAILED' };
+  EditGroup: { code: 'GROUP_OPERATION_FAILED' };
   DeleteGroup: { code: 'GROUP_OPERATION_FAILED' };
 }
 
@@ -66,7 +66,7 @@ const addGroup = t.procedure
     return { group, notAssigned };
   });
 
-const addMember = t.procedure
+const editGroup = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
@@ -77,9 +77,35 @@ const addMember = t.procedure
   .mutation(async ({ input, ctx }) => {
     const { course_instance, assessment, authn_user, authz_data } = ctx;
 
+    const desiredUids = parseUniqueValuesFromString(input.uids, MAX_UIDS);
+    if (desiredUids.length === 0) {
+      throwAppError<AssessmentGroupsError['EditGroup']>({
+        code: 'GROUP_OPERATION_FAILED',
+        message: 'There must be at least one user in the group.',
+      });
+    }
+
+    const currentGroup = await selectGroupById(input.group_id);
+    const desiredSet = new Set(desiredUids);
+    const currentSet = new Set(currentGroup.users.map((u) => u.uid));
+    const toAdd = desiredUids.filter((uid) => !currentSet.has(uid));
+    const toRemove = currentGroup.users.filter((u) => !desiredSet.has(u.uid));
+
     const failures: { uid: string; message: string }[] = [];
 
-    for (const uid of parseUniqueValuesFromString(input.uids, MAX_UIDS)) {
+    for (const user of toRemove) {
+      try {
+        await leaveGroup(assessment.id, user.id, authn_user.id, input.group_id);
+      } catch (err) {
+        if (err instanceof GroupOperationError) {
+          failures.push({ uid: user.uid, message: err.message });
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    for (const uid of toAdd) {
       try {
         await addUserToGroup({
           course_instance,
@@ -107,39 +133,6 @@ const addMember = t.procedure
       }),
     ]);
     return { group, notAssigned, failures };
-  });
-
-const deleteMember = t.procedure
-  .use(requireCourseInstancePermissionEdit)
-  .input(
-    z.object({
-      group_id: IdSchema,
-      user_id: IdSchema,
-    }),
-  )
-  .mutation(async ({ input, ctx }) => {
-    const { assessment, authn_user, course_instance } = ctx;
-
-    try {
-      await leaveGroup(assessment.id, input.user_id, authn_user.id, input.group_id);
-    } catch (err) {
-      if (err instanceof GroupOperationError) {
-        throwAppError<AssessmentGroupsError['DeleteMember']>({
-          code: 'GROUP_OPERATION_FAILED',
-          message: err.message,
-        });
-      }
-      throw err;
-    }
-
-    const [group, notAssigned] = await Promise.all([
-      selectGroupById(input.group_id),
-      selectNotAssignedForAssessment({
-        assessment_id: assessment.id,
-        course_instance_id: course_instance.id,
-      }),
-    ]);
-    return { group, notAssigned };
   });
 
 const deleteGroupProcedure = t.procedure
@@ -185,8 +178,7 @@ const deleteAll = t.procedure.use(requireCourseInstancePermissionEdit).mutation(
 
 export const assessmentGroupsRouter = t.router({
   addGroup,
-  addMember,
-  deleteMember,
+  editGroup,
   deleteGroup: deleteGroupProcedure,
   deleteAll,
 });
