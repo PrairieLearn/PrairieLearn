@@ -34,31 +34,22 @@ export function CanvasDownloadModal({
   const [downloading, setDownloading] = useState(false);
 
   const handleDownload = async () => {
-    if (!matchingState) {
-      // No matching — download directly from the server
-      window.location.href = downloadUrl;
-      onHide();
-      return;
-    }
-
     setDownloading(true);
     try {
       const response = await fetch(downloadUrl);
       if (!response.ok) {
-        window.location.href = downloadUrl;
-        onHide();
-        return;
+        throw new Error(`Failed to fetch CSV: ${response.status}`);
       }
       const csvText = await response.text();
 
       const lines = parseCsvWithHeaders(csvText);
       if (!lines) {
-        window.location.href = downloadUrl;
-        onHide();
-        return;
+        throw new Error('Failed to parse CSV');
       }
 
-      const canvasLookup = buildCanvasLookup(matchingState.bestResult.result);
+      const canvasLookup = matchingState
+        ? buildCanvasLookup(matchingState.bestResult.result)
+        : null;
       const { headers, dataRows } = lines;
 
       const sisLoginIdx = headers.indexOf('SIS Login ID');
@@ -69,7 +60,7 @@ export function CanvasDownloadModal({
 
       const transformedData = dataRows.map((row) => {
         const uid = sisLoginIdx !== -1 ? row[sisLoginIdx] : null;
-        const canvas = uid ? canvasLookup.get(uid) : null;
+        const canvas = uid ? (canvasLookup?.get(uid) ?? null) : null;
 
         const newRow = [...row];
         if (canvas) {
