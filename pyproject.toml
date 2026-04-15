@@ -46,7 +46,7 @@ dependencies = [
 [dependency-groups]
 dev = [
   "pandas-stubs==2.3.3.260113",
-  "pytest==9.0.2",
+  "pytest==9.0.3",
   "pytest-cov==7.1.0",
   "pytest-github-actions-annotate-failures==0.4.0",
   "pytest-repeat==0.9.4",
