@@ -154,8 +154,8 @@ describe('migrateAllowAccess', () => {
       rules: [{ credit: 100 }],
       expected: {
         archetype: { base: 'always-open', modifiers: [] },
-        result: {},
-        errors: ['Always-open rules cannot be automatically migrated without a release date.'],
+        result: { dateControl: { dueDate: null } },
+        errors: [],
         notes: [],
         hasUidRules: false,
       },
@@ -166,7 +166,33 @@ describe('migrateAllowAccess', () => {
       expected: {
         archetype: { base: 'always-open', modifiers: [] },
         result: {},
-        errors: ['Always-open rules cannot be automatically migrated without a release date.'],
+        errors: ['A 100% credit window is required.'],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'practice-only (credit 0 with dates)',
+      rules: [{ credit: 0, startDate: '2021-10-13T00:00:00', endDate: '2022-01-18T23:59:59' }],
+      expected: {
+        archetype: { base: 'practice-only', modifiers: [] },
+        result: {},
+        errors: [
+          'Modern access control does not support using 0 credit to indicate overall weight within the course.',
+        ],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'practice-only (implicit credit 0 with startDate only)',
+      rules: [{ startDate: '2000-01-01T12:00:00' }],
+      expected: {
+        archetype: { base: 'practice-only', modifiers: [] },
+        result: {},
+        errors: [
+          'Modern access control does not support using 0 credit to indicate overall weight within the course.',
+        ],
         notes: [],
         hasUidRules: false,
       },

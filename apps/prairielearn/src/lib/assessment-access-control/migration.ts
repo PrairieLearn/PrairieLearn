@@ -14,6 +14,7 @@ import { formatJsonWithPrettier } from '../prettier.js';
 
 type BaseArchetype =
   | 'always-open'
+  | 'practice-only'
   | 'declining-credit'
   | 'hidden'
   | 'mode-gated'
@@ -344,6 +345,8 @@ function classifyArchetype(rules: AssessmentAccessRuleJson[]): Archetype {
     return { base: 'multi-deadline', modifiers };
   } else if (hasReducedCredit && creditRules.length === 1) {
     return { base: 'single-reduced-credit', modifiers };
+  } else if (creditRules.length === 0 && nonCreditRules.some((r) => r.isActive && r.hasDates)) {
+    return { base: 'practice-only', modifiers: [] };
   } else if (hasViewing && creditRules.length === 0) {
     return { base: 'view-only', modifiers };
   } else if (hasHiding && creditRules.length === 0 && !hasViewing) {
@@ -634,6 +637,34 @@ function migrateNoOp(_rules: AssessmentAccessRuleJson[]): {
   };
 }
 
+function migrateAlwaysOpen(rules: AssessmentAccessRuleJson[]): {
+  result: AccessControlJsonInput;
+  errors: string[];
+  notes: string[];
+} {
+  const creditRules = getCreditRules(rules);
+  const hasNonStandardCredit = creditRules.some((r) => (r.credit ?? 0) !== 100);
+
+  // TODO: revisit this. We might want to support an assessment where it is always open for >100% credit.
+  if (hasNonStandardCredit) {
+    return {
+      result: {},
+      errors: ['A 100% credit window is required.'],
+      notes: [],
+    };
+  }
+
+  const result: AccessControlJsonInput = {
+    dateControl: {
+      dueDate: null,
+    },
+  };
+
+  applyVisibilityMigration(result, rules);
+
+  return { result, errors: [], notes: [] };
+}
+
 function migrateKnownAllowAccess(
   baseArchetype: BaseArchetype,
   rules: AssessmentAccessRuleJson[],
@@ -665,15 +696,20 @@ function migrateKnownAllowAccess(
 
     case 'no-op':
       return migrateNoOp(rules);
-
     // TODO: revisit always-open migration. The modern format requires a
     // releaseDate to grant access, so we can't express "100% credit forever"
     // without one. For now, treat this as an error rather than silently
     // producing an empty result that the resolver interprets as "no access."
     case 'always-open':
+      return migrateAlwaysOpen(rules);
+
+    // TODO: revisit practice-only migration. The modern format does not support
+    // using 0 credit to indicate overall weight within the course. For now, treat
+    // this as an error rather than falling back to unclassified.
+    case 'practice-only':
       return {
         result: {},
-        errors: ['Always-open rules cannot be automatically migrated without a release date.'],
+        errors: ['Using 0 credit to indicate overall weight within the course is not supported.'],
         notes: [],
       };
 
