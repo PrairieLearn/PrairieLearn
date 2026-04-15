@@ -761,7 +761,13 @@ describe('migrateAllowAccess', () => {
   ];
 
   it.each(cases)('$name', ({ rules, expected }) => {
-    assert.deepEqual(migrateAllowAccess(rules), expected);
+    const result = migrateAllowAccess(rules);
+
+    // Ensure that the result, whatever it is, passes validation.
+    const validationErrors = validateRule(result.result, 'none');
+    assert.deepEqual(validationErrors, []);
+
+    assert.deepEqual(result, expected);
   });
 
   it('collapses dominated late deadlines produces valid result', () => {
