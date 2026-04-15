@@ -447,9 +447,9 @@ export async function aiGrade({
 
     // Check credit pool before starting the batch. This is a best-effort
     // check without FOR UPDATE — concurrent batches may both pass this check.
-    // Credits are deducted per-submission *after* the API call. If the pool is
-    // exhausted mid-batch, the deduction clamps to the remaining balance and
-    // the grading still succeeds.
+    // Credits are deducted per-submission *after* the API call. If the credit
+    // pool becomes empty mid-batch, the deduction clamps to the remaining
+    // balance and the grading still succeeds.
     if (trackRateLimitAndCost) {
       const creditPool = await selectCreditPool(course_instance.id);
       if (creditPool.total_milli_dollars <= 0) {
@@ -524,11 +524,14 @@ export async function aiGrade({
         if (pool.total_milli_dollars <= 0) {
           hasAiGradingCredits = false;
           logger.error(
-            'No credits remaining. Purchase credits on the AI grading settings page. AI grading jobs still in progress will finish.',
+            'No credits remaining. Purchase credits on the AI grading settings page. AI grading jobs that are still in progress will continue to completion.',
           );
         }
       }
       if (!hasAiGradingCredits) {
+        logger.error(
+          `Skipping instance question ${instance_question.id} since there are no credits remaining.`,
+        );
         return false;
       }
 
@@ -1135,6 +1138,12 @@ export async function aiGrade({
           ? { total_cost_milli_dollars, num_items_incurred_cost }
           : {};
 
+        const getJobFailureMessage = () => {
+          if (!hasAiGradingCredits) return INSUFFICIENT_CREDITS_MESSAGE;
+          if (rateLimitExceeded) return HOURLY_USAGE_CAP_REACHED_MESSAGE;
+          return undefined;
+        };
+
         try {
           item_statuses[instance_question.id] = JobItemStatus.in_progress;
           await emitServerJobProgressUpdate({
@@ -1143,11 +1152,7 @@ export async function aiGrade({
             num_failed,
             num_total: instance_questions.length,
             item_statuses,
-            job_failure_message: !hasAiGradingCredits
-              ? INSUFFICIENT_CREDITS_MESSAGE
-              : rateLimitExceeded
-                ? HOURLY_USAGE_CAP_REACHED_MESSAGE
-                : undefined,
+            job_failure_message: getJobFailureMessage(),
             ...costFields,
           });
 
@@ -1175,11 +1180,7 @@ export async function aiGrade({
             num_failed,
             num_total: instance_questions.length,
             item_statuses,
-            job_failure_message: !hasAiGradingCredits
-              ? INSUFFICIENT_CREDITS_MESSAGE
-              : rateLimitExceeded
-                ? HOURLY_USAGE_CAP_REACHED_MESSAGE
-                : undefined,
+            job_failure_message: getJobFailureMessage(),
             ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
           });
           for (const log of logs) {
