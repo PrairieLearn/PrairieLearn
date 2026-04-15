@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { useCallback, useRef, useState } from 'react';
 import Alert from 'react-bootstrap/Alert';
 import Form from 'react-bootstrap/Form';
@@ -152,35 +153,41 @@ function MatchingSummary({ bestResult }: { bestResult: StrategyResult }) {
         <i className={`bi ${icon}`} />
         <div>
           <div className="mb-1">
-            Matched using <strong>{strategy.label}</strong>
+            Matched <strong>{matched.length}</strong> students using{' '}
+            <strong>{strategy.label}</strong>
           </div>
-          <div>
-            <strong>{matched.length}</strong> matched
-            {ambiguousPl.length > 0 && (
-              <>
-                , <strong>{ambiguousPl.length}</strong> ambiguous PrairieLearn
-              </>
-            )}
-            {ambiguousCanvas.length > 0 && (
-              <>
-                , <strong>{ambiguousCanvas.length}</strong> ambiguous Canvas
-              </>
-            )}
-            {unmatchedPl.length > 0 && (
-              <>
-                , <strong>{unmatchedPl.length}</strong> unmatched PrairieLearn
-              </>
-            )}
-            {unmatchedCanvas.length > 0 && (
-              <>
-                , <strong>{unmatchedCanvas.length}</strong> unmatched Canvas
-              </>
-            )}
-          </div>
+          {(ambiguousPl.length > 0 || ambiguousCanvas.length > 0) && (
+            <div
+              className={clsx(
+                'small',
+                unmatchedPl.length > 0 || unmatchedCanvas.length > 0 ? 'mb-1' : '',
+              )}
+            >
+              {ambiguousPl.length > 0 && (
+                <>
+                  <strong>{ambiguousPl.length}</strong> PrairieLearn
+                </>
+              )}
+              {ambiguousCanvas.length > 0 && (
+                <>
+                  {ambiguousPl.length > 0 ? ' and ' : ''}
+                  <strong>{ambiguousCanvas.length}</strong> Canvas
+                </>
+              )}{' '}
+              students could not be disambiguated, and will have populated names but empty identity
+              columns in the exported CSV.
+            </div>
+          )}
           {unmatchedPl.length > 0 && (
-            <div className="mt-1 small">
-              Unmatched PrairieLearn students will have populated names but empty identity columns
-              in the exported CSV.
+            <div className={clsx('small', unmatchedCanvas.length > 0 ? 'mb-1' : '')}>
+              <strong>{unmatchedPl.length}</strong> unmatched PrairieLearn students will have
+              populated names but empty identity columns in the exported CSV.
+            </div>
+          )}
+          {unmatchedCanvas.length > 0 && (
+            <div className="small">
+              <strong>{unmatchedCanvas.length}</strong> unmatched Canvas students will be excluded
+              from the export.
             </div>
           )}
         </div>
