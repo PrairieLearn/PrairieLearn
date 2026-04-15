@@ -12,12 +12,26 @@ import re
 from collections import deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from tokenize import TokenError
+from tokenize import (
+    DEDENT,
+    ENDMARKER,
+    ERRORTOKEN,
+    INDENT,
+    NAME,
+    NEWLINE,
+    NL,
+    NUMBER,
+    OP,
+    STRING,
+    TokenError,
+)
 from types import CodeType
 from typing import Any, Literal, TypeAlias, TypedDict, TypeGuard, cast
 
 import sympy
 from sympy.parsing.sympy_parser import (
+    DICT,
+    TOKEN,
     eval_expr,
     evaluateFalse,
     implicit_multiplication_application,
@@ -99,6 +113,7 @@ class _Constants:
     hidden_complex_variables: SympyMapT
     functions: SympyFunctionMapT
     trig_functions: SympyFunctionMapT
+    set_functions: SympyFunctionMapT
 
     def __init__(self) -> None:
         self.helpers = {
@@ -158,6 +173,14 @@ class _Constants:
             "atanh": sympy.atanh,
             "acosh": sympy.acosh,
             "asinh": sympy.asinh,
+        }
+
+        self.set_functions = {
+            "Interval": sympy.Interval,
+            "Set": sympy.Set,
+            "FiniteSet": sympy.FiniteSet,
+            "Union": sympy.Union,
+            "Intersection": sympy.Intersection,
         }
 
 
@@ -228,6 +251,11 @@ class HasFloatError(BaseSympyError):
 
 
 class HasComplexError(BaseSympyError):
+    pass
+
+
+@dataclass
+class HasSetNotationError(BaseSympyError):
     pass
 
 
@@ -360,7 +388,9 @@ class CheckAST(ast.NodeVisitor):
         self.__parents = {}
 
 
-def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
+def ast_check_str(
+    expr: str, locals_for_eval: LocalsForEval, *, allow_set_notation: bool
+) -> None:
     """Check the AST of the expression for security, whitelisting only certain nodes.
 
     This prevents the user from executing arbitrary code through `eval_expr`.
@@ -392,6 +422,16 @@ def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
         ast.Div,
         ast.Mod,
         ast.Pow,
+        *(
+            (
+                ast.BitOr,
+                ast.BitAnd,
+                ast.List,
+                ast.Set,
+            )
+            if allow_set_notation
+            else ()
+        ),
     )
 
     CheckAST(
@@ -400,7 +440,11 @@ def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
 
 
 def sympy_check(
-    expr: sympy.Expr, locals_for_eval: LocalsForEval, *, allow_complex: bool
+    expr: sympy.Expr,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool,
+    allow_set_notation: bool,
 ) -> None:
     """Check the SymPy expression for complex numbers, invalid symbols, and floats."""
     valid_symbols = set().union(
@@ -417,6 +461,8 @@ def sympy_check(
             raise HasInvalidSymbolError(str_item)
         if isinstance(item, sympy.Float):
             raise HasFloatError(float(str_item))
+        if not allow_set_notation and isinstance(item, sympy.Set):
+            raise HasSetNotationError
         # Detect complex numbers both in simplified form (sympy.I) and in
         # unevaluated form (e.g. sqrt(-2) kept as Pow(-2, 1/2) by evaluateFalse).
         # The is_finite guard excludes zoo (complex infinity from 1/0) and similar
@@ -430,7 +476,8 @@ def sympy_check(
                 raise HasComplexError("complex values not allowed")
             try:
                 is_complex = (
-                    item.is_extended_real is False and item.is_finite is not False
+                    item.is_extended_real is False
+                    and getattr(item, "is_finite", None) is not False
                 )
             except AttributeError:
                 is_complex = False
@@ -441,14 +488,23 @@ def sympy_check(
 
 
 def evaluate(
-    expr: str, locals_for_eval: LocalsForEval, *, allow_complex: bool = False
+    expr: str,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool = False,
+    allow_set_notation: bool = False,
 ) -> sympy.Expr:
     """Evaluate a SymPy expression string with a given set of locals, and return only the result.
 
     Returns:
         A SymPy expression.
     """
-    return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)[0]
+    return evaluate_with_source(
+        expr,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_set_notation=allow_set_notation,
+    )[0]
 
 
 def _normalize_expr(expr: str) -> str:
@@ -472,6 +528,7 @@ def evaluate_with_source(
     locals_for_eval: LocalsForEval,
     *,
     allow_complex: bool = False,
+    allow_set_notation: bool = False,
     simplify_expression: bool = True,
 ) -> tuple[sympy.Expr, str | CodeType]:
     """Evaluate a SymPy expression string with a given set of locals.
@@ -531,7 +588,16 @@ def evaluate_with_source(
     global_dict = {}
     exec("from sympy import *", global_dict)
 
-    transformations = (*standard_transformations, implicit_multiplication_application)
+    transformations = (
+        *standard_transformations,
+        implicit_multiplication_application,
+    )
+    if allow_set_notation:
+        transformations = (
+            set_operation_transformation,
+            interval_transformation,
+            *transformations,
+        )
 
     try:
         code = stringify_expr(expr, local_dict, global_dict, transformations)
@@ -547,6 +613,9 @@ def evaluate_with_source(
         Integer=sympy.Integer,
         Symbol=sympy.Symbol,
         Float=sympy.Float,
+        Interval=sympy.Interval,
+        Union=sympy.Union,
+        Intersection=sympy.Intersection,
     )
 
     parsed_locals_to_eval["variables"].update(
@@ -554,7 +623,7 @@ def evaluate_with_source(
         oo=sympy.oo,
     )
 
-    ast_check_str(code, parsed_locals_to_eval)
+    ast_check_str(code, parsed_locals_to_eval, allow_set_notation=allow_set_notation)
 
     if not simplify_expression:
         code = compile(evaluateFalse(code), "<string>", "eval")
@@ -566,7 +635,12 @@ def evaluate_with_source(
         raise BaseSympyError from exc
 
     # Finally, check for invalid symbols
-    sympy_check(res, locals_for_eval, allow_complex=allow_complex)
+    sympy_check(
+        res,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_set_notation=allow_set_notation,
+    )
 
     return res, code
 
@@ -577,6 +651,7 @@ def convert_string_to_sympy(
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
+    allow_set_notation: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
@@ -611,6 +686,7 @@ def convert_string_to_sympy(
         expr,
         variables=variables,
         allow_hidden=allow_hidden,
+        allow_set_notation=allow_set_notation,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
         simplify_expression=simplify_expression,
@@ -625,6 +701,7 @@ def convert_string_to_sympy_with_source(
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
+    allow_set_notation: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
@@ -662,6 +739,9 @@ def convert_string_to_sympy_with_source(
 
     if allow_trig_functions:
         locals_for_eval["functions"].update(const.trig_functions)
+
+    if allow_set_notation:
+        locals_for_eval["functions"].update(const.set_functions)
 
     used_names = set().union(
         *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
@@ -717,6 +797,7 @@ def convert_string_to_sympy_with_source(
         expr,
         locals_for_eval,
         allow_complex=allow_complex,
+        allow_set_notation=allow_set_notation,
         simplify_expression=simplify_expression,
     )
 
@@ -806,6 +887,7 @@ def sympy_to_json(
 def json_to_sympy(
     sympy_expr_dict: SympyJson,
     *,
+    allow_set_notation: bool = True,
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
@@ -832,6 +914,7 @@ def json_to_sympy(
         sympy_expr_dict["_variables"],
         allow_hidden=True,
         allow_complex=allow_complex,
+        allow_set_notation=allow_set_notation,
         allow_trig_functions=allow_trig_functions,
         simplify_expression=simplify_expression,
         custom_functions=sympy_expr_dict.get("_custom_functions"),
@@ -843,8 +926,9 @@ def try_parse_string_as_sympy(
     expr: str,
     variables: Iterable[str] | None,
     *,
-    allow_hidden: bool = False,
     allow_complex: bool = False,
+    allow_hidden: bool = False,
+    allow_set_notation: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
     imaginary_unit: str | None = None,
@@ -870,6 +954,7 @@ def try_parse_string_as_sympy(
             variables,
             allow_hidden=allow_hidden,
             allow_complex=allow_complex,
+            allow_set_notation=allow_set_notation,
             allow_trig_functions=allow_trig_functions,
             custom_functions=custom_functions,
             simplify_expression=simplify_expression,
@@ -989,6 +1074,7 @@ def validate_string_as_sympy(
     expr: str,
     variables: Iterable[str] | None,
     *,
+    allow_set_notation: bool = False,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
@@ -1006,6 +1092,7 @@ def validate_string_as_sympy(
         expr,
         variables,
         allow_hidden=allow_hidden,
+        allow_set_notation=allow_set_notation,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
         custom_functions=custom_functions,
@@ -1026,6 +1113,144 @@ def get_items_list(items_string: str | None) -> list[str]:
         return []
 
     return list(map(str.strip, items_string.split(",")))
+
+
+_INTERVAL_TRIVIAL = {NL, NEWLINE, INDENT, DEDENT, ENDMARKER}
+_INTERVAL_OPEN = {"(", "["}
+_INTERVAL_CLOSE = {")", "]"}
+_INTERVAL_OPS = {"u": "|", "U": "|", "cup": "|", "∪": "|", "cap": "&", "∩": "&"}  # noqa: RUF001
+
+
+def _is_interval_trivial(token: TOKEN) -> bool:
+    return token[0] in _INTERVAL_TRIVIAL
+
+
+def _nontrivial_or_end(token: TOKEN | None) -> bool:
+    return token is not None and (
+        token[0] in {NAME, NUMBER, STRING} or token[1] in {")", "]", "}"}
+    )
+
+
+def _nontrivial_or_start(token: TOKEN | None) -> bool:
+    return token is not None and (
+        token[0] in {NAME, NUMBER, STRING} or token[1] in {"(", "[", "{"}
+    )
+
+
+def _seek_nontrivial(tokens: list[TOKEN], index: int, step: int) -> TOKEN | None:
+    if step == 0:
+        raise ValueError("Step must be non-zero")
+    while True:
+        index += step
+        if not (0 <= index < len(tokens)):
+            return None
+        if not _is_interval_trivial(tokens[index]):
+            return tokens[index]
+
+
+def _rewrite_interval_literal(
+    tokens: Iterable[tuple[int, TOKEN]], start: TOKEN
+) -> list[TOKEN] | None:
+    if start[1] not in _INTERVAL_OPEN:
+        return None
+    left_open = start[1] == "("
+    parts, side, depth, seen_sep = ([], []), 0, 1, False
+    for _, token in tokens:
+        _, value = token
+        if (
+            _is_interval_trivial(token)
+            or value in _INTERVAL_OPEN
+            or (depth > 1 and value in _INTERVAL_CLOSE)
+            or (depth > 1 and value == ",")
+        ):
+            parts[side].append(token)
+        elif value in _INTERVAL_CLOSE:
+            if value not in {")", "]"}:
+                raise TokenError("interval must close with ')' or ']'")
+            if not seen_sep:
+                return None
+            return [
+                (NAME, "Interval"),
+                (OP, "("),
+                *parts[0],
+                (OP, ","),
+                *parts[1],
+                (OP, ","),
+                (NAME, "True" if left_open else "False"),
+                (OP, ","),
+                (NAME, "True" if value == ")" else "False"),
+                (OP, ")"),
+            ]
+        elif value == ",":
+            if depth == 1:
+                if seen_sep:
+                    raise TokenError("interval contains more than one separator")
+                seen_sep, side = True, 1
+            else:
+                parts[side].append(token)
+        else:
+            parts[side].append(token)
+        depth += value in _INTERVAL_OPEN
+        depth -= value in _INTERVAL_CLOSE and depth > 1
+    raise TokenError("interval notation is incomplete")
+
+
+def interval_transformation(
+    tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
+) -> list[TOKEN]:
+    """A SymPy token transformation that interprets mathematical intervals like
+    `(-inf, 0]` into `sympy.Interval(-inf, 0, True, False)`
+
+    Returns:
+        A transformed sequence of SymPy tokens.
+    """
+    if not tokens:
+        return tokens
+    result = []
+    stream = enumerate(tokens)
+    for i, token in stream:
+        if _is_interval_trivial(token):
+            result.append(token)
+        else:
+            prev = _seek_nontrivial(tokens, i, -1)
+            rewritten = (
+                None
+                if _nontrivial_or_end(prev)
+                else _rewrite_interval_literal(stream, token)
+            )
+            if rewritten is None:
+                result.append(token)
+            else:
+                result.extend(rewritten)
+    return result
+
+
+def set_operation_transformation(
+    tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
+) -> list[TOKEN]:
+    """A SymPy token transformation that de-sugars set union/intersection.
+
+    Returns:
+        A transformed sequence of SymPy tokens.
+    """
+    if not tokens:
+        return tokens
+    result, i = [], 0
+    for i, token in enumerate(tokens):
+        if _is_interval_trivial(token):
+            result.append(token)
+        else:
+            op = _INTERVAL_OPS.get(token[1]) if token[0] in {NAME, ERRORTOKEN} else None
+            if op is not None:
+                prev, nxt = (
+                    _seek_nontrivial(tokens, i, -1),
+                    _seek_nontrivial(tokens, i, 1),
+                )
+                if _nontrivial_or_end(prev) and _nontrivial_or_start(nxt):
+                    result.append((OP, op))
+                    continue
+            result.append(token)
+    return result
 
 
 def get_builtin_constants(*, allow_complex: bool = False) -> set[str]:

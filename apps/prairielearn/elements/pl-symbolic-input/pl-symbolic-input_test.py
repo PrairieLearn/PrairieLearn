@@ -112,7 +112,7 @@ def test_parse_without_variables_attribute_with_assumptions() -> None:
     """Test that parse works when no variables attribute is specified but correct answer has assumptions.
 
     This is a regression test for https://github.com/PrairieLearn/PrairieLearn/issues/12053
-    where using pl-symbolic-input without a variables attribute would fail with
+    where using pl-symbolic-interval without a variables attribute would fail with
     HasInvalidAssumptionError when the correct answer had variable assumptions.
     """
     # Create a sympy expression with assumptions (like an instructor would in server.py)
@@ -124,7 +124,7 @@ def test_parse_without_variables_attribute_with_assumptions() -> None:
     correct_json = psu.sympy_to_json(correct_expr)
 
     # Simulate element HTML without variables attribute
-    element_html = '<pl-symbolic-input answers-name="test"></pl-symbolic-input>'
+    element_html = '<pl-symbolic-interval answers-name="test"></pl-symbolic-interval>'
 
     # Create mock data structure (simulating what the system passes to parse)
     data: dict[str, Any] = {
@@ -154,11 +154,11 @@ def test_implicit_complex_rejected_with_no_simplify(a_sub: str) -> None:
     correct_answer = psu.sympy_to_json(sympy.Integer(42))
 
     element_html = """
-    <pl-symbolic-input
+    <pl-symbolic-interval
         answers-name="test"
         variables="x"
         display-simplified-expression="false"
-    ></pl-symbolic-input>
+    ></pl-symbolic-interval>
     """
 
     data: dict[str, Any] = {
@@ -187,10 +187,10 @@ def test_complex_from_real_assumptions_produces_format_error(a_sub: str) -> None
     correct_answer = psu.sympy_to_json(x ** (-1) - 1)
 
     element_html = """
-    <pl-symbolic-input
+    <pl-symbolic-interval
         answers-name="test"
         variables="x"
-    ></pl-symbolic-input>
+    ></pl-symbolic-interval>
     """
 
     data: dict[str, Any] = {
@@ -223,11 +223,11 @@ def test_trig_no_crash_with_no_simplify(a_sub: str) -> None:
     correct_answer = psu.sympy_to_json(sympy.Integer(2))
 
     element_html = """
-    <pl-symbolic-input
+    <pl-symbolic-interval
         answers-name="test"
         variables="x"
         display-simplified-expression="false"
-    ></pl-symbolic-input>
+    ></pl-symbolic-interval>
     """
 
     data: dict[str, Any] = {
@@ -251,13 +251,13 @@ def test_formula_editor_initial_value_respects_display_log_as_ln(
 ) -> None:
     monkeypatch.chdir(Path(__file__).parent)
     element_html = """
-    <pl-symbolic-input
+    <pl-symbolic-interval
         answers-name="test"
         variables="x"
         formula-editor="true"
         display-log-as-ln="true"
         initial-value="log(x)"
-    ></pl-symbolic-input>
+    ></pl-symbolic-interval>
     """
     data: dict[str, Any] = {
         "submitted_answers": {},
@@ -275,3 +275,145 @@ def test_formula_editor_initial_value_respects_display_log_as_ln(
 
     assert "\\ln{\\left(x \\right)}" in rendered
     assert "\\log{\\left(x \\right)}" not in rendered
+
+
+def test_interval_submission_parses_and_grades() -> None:
+    element_html = """
+    <pl-symbolic-interval
+        answers-name="test"
+        allow-sets="true"
+        correct-answer="[1, 2] U [3, 4]"
+    ></pl-symbolic-interval>
+    """
+    data: dict[str, Any] = {
+        "submitted_answers": {"test": "[1, 2] U [3, 4]"},
+        "raw_submitted_answers": {"test": "[1, 2] U [3, 4]"},
+        "correct_answers": {},
+        "answers_names": {},
+        "format_errors": {},
+        "partial_scores": {},
+        "panel": "question",
+        "editable": True,
+    }
+
+    symbolic_input.prepare(element_html, data)
+    assert data["correct_answers"]["test"] == "[1, 2] U [3, 4]"
+
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+    assert isinstance(data["submitted_answers"]["test"], dict)
+    assert data["submitted_answers"]["test"]["_type"] == "sympy"
+    assert (
+        data["submitted_answers"]["test"]["_value"]
+        == "Union(Interval(1, 2), Interval(3, 4))"
+    )
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_interval_correct_answer_renders(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    element_html = """
+    <pl-symbolic-interval
+        answers-name="test"
+        allow-sets="true"
+        correct-answer="[1, 2] U [3, 4]"
+    ></pl-symbolic-interval>
+    """
+    data: dict[str, Any] = {
+        "submitted_answers": {},
+        "raw_submitted_answers": {},
+        "correct_answers": {},
+        "answers_names": {},
+        "format_errors": {},
+        "partial_scores": {},
+        "panel": "answer",
+        "editable": False,
+    }
+
+    symbolic_input.prepare(element_html, data)
+    rendered = symbolic_input.render(element_html, data)
+
+    assert "\\left[1, 2\\right]" in rendered
+
+
+def test_closed_interval_literal_parses() -> None:
+    out = psu.try_parse_string_as_sympy("[1, 2]", None, allow_set_notation=True)
+    assert isinstance(out, psu.SympyParseSuccess)
+    interval = out.expr
+    assert interval == sympy.Interval(1, 2)
+
+
+def test_open_right_interval_literal_parses() -> None:
+    x, y = sympy.symbols("x y")
+    out = psu.try_parse_string_as_sympy(
+        "(sin(x), y]", ["x", "y"], allow_set_notation=True
+    )
+    assert isinstance(out, psu.SympyParseSuccess)
+    interval = out.expr
+    assert interval == sympy.Interval.Lopen(sympy.sin(x), y)
+
+
+def test_nested_interval_literal_is_rejected() -> None:
+    out = psu.try_parse_string_as_sympy("[1, [2, 3]]", None, allow_set_notation=True)
+    assert isinstance(out, psu.SympyParseFailure)
+    err, interval = out.error, None
+    assert err is not None
+    assert interval is None
+
+
+def test_disallowed_set_literal_is_rejected() -> None:
+    out = psu.try_parse_string_as_sympy("{1,2,3}", None, allow_set_notation=False)
+    assert isinstance(out, psu.SympyParseFailure)
+    err, interval = out.error, None
+    assert err is not None
+    assert interval is None
+
+
+def test_disallowed_interval_literal_is_rejected() -> None:
+    out = psu.try_parse_string_as_sympy("(0, 1]", None, allow_set_notation=False)
+    assert isinstance(out, psu.SympyParseFailure)
+    err, interval = out.error, None
+    assert err is not None
+    assert interval is None
+
+
+def test_union_parser_uses_interval_transformation() -> None:
+    out = psu.try_parse_string_as_sympy(
+        "[1, 2] U (3, 4]", None, allow_set_notation=True
+    )
+    assert isinstance(out, psu.SympyParseSuccess)
+    interval_union = out.expr
+    assert interval_union == sympy.Union(
+        sympy.Interval(1, 2), sympy.Interval.Lopen(3, 4)
+    )
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        (
+            "[1, 2] u (3, 4]",
+            sympy.Union(sympy.Interval(1, 2), sympy.Interval.Lopen(3, 4)),
+        ),
+        (
+            "[1, 2] cup (3, 4]",
+            sympy.Union(sympy.Interval(1, 2), sympy.Interval.Lopen(3, 4)),
+        ),
+        ("[1, 3] cap [2, 4]", sympy.Interval(2, 3)),
+        (
+            "[1, 2] u {3, 4, 5}",
+            sympy.Union(sympy.Interval(1, 2), sympy.FiniteSet(3, 4, 5)),
+        ),
+    ],
+)
+def test_set_expression_supports_interval_operations(
+    text: str, expected: sympy.Basic
+) -> None:
+    out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
+    assert isinstance(out, psu.SympyParseSuccess)
+    parsed = out.expr
+    assert parsed == expected
