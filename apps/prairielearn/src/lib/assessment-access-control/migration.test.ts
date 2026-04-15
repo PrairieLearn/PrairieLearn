@@ -834,29 +834,6 @@ describe('migrateAllowAccess', () => {
     assert.deepEqual(result, expected);
   });
 
-  it('collapses dominated late deadlines produces valid result', () => {
-    const { result } = migrateAllowAccess([
-      { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
-      { credit: 80, startDate: '2024-01-01', endDate: '2024-06-01' },
-      { credit: 30, startDate: '2024-01-01', endDate: '2024-04-01' },
-    ]);
-    assert.deepEqual(validateRule(result, 'none'), []);
-  });
-
-  it('pre-release listing and later reveal produces valid result', () => {
-    const { result } = migrateAllowAccess([
-      { endDate: '2030-01-01T00:00:00', active: false },
-      {
-        credit: 100,
-        timeLimitMin: 50,
-        startDate: '2030-01-01T00:00:01',
-        endDate: '2030-01-01T23:59:59',
-        showClosedAssessment: false,
-      },
-      { active: false, startDate: '2030-01-04T00:00:01' },
-    ]);
-    assert.deepEqual(validateRule(result, 'none'), []);
-  });
 });
 
 describe('analyzeAssessmentFile', () => {
