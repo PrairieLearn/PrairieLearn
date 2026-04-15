@@ -48,6 +48,19 @@ WHERE
   ai.id = $assessment_instance_id;
 
 -- BLOCK select_instance_questions
+WITH
+  last_variant AS (
+    SELECT DISTINCT
+      ON (v.instance_question_id) v.*
+    FROM
+      instance_questions AS iq
+      JOIN variants AS v ON (v.instance_question_id = iq.id)
+    WHERE
+      iq.assessment_instance_id = $assessment_instance_id
+    ORDER BY
+      v.instance_question_id ASC,
+      v.date DESC
+  )
 SELECT
   iq.*,
   ((lag(z.id) OVER w) IS DISTINCT FROM z.id) AS start_new_zone,
@@ -67,7 +80,9 @@ SELECT
   z.max_points AS zone_max_points,
   (z.max_points IS NOT NULL) AS zone_has_max_points,
   z.best_questions AS zone_best_questions,
-  (z.best_questions IS NOT NULL) AS zone_has_best_questions
+  (z.best_questions IS NOT NULL) AS zone_has_best_questions,
+  v.id AS last_variant_id,
+  v.variant_seed AS last_variant_seed
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -81,6 +96,7 @@ FROM
   LEFT JOIN users AS lockpoint_user ON (lockpoint_user.id = aicl.authn_user_id)
   JOIN questions AS q ON (q.id = aq.question_id)
   JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
+  LEFT JOIN last_variant AS v ON (v.instance_question_id = iq.id)
 WHERE
   ai.id = $assessment_instance_id
 WINDOW
