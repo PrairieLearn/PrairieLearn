@@ -188,7 +188,7 @@ export const MATCH_STRATEGIES: MatchStrategy[] = [
   },
   {
     name: 'name',
-    label: 'Student name',
+    label: 'student name',
     description:
       'Compares student names across different formats (e.g. "Last, First" vs. "First Last"), ignoring case and punctuation.',
     prairielearnKey: (s) => (s.userName ? canonicalName(s.userName) : ''),
