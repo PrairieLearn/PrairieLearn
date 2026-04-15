@@ -306,6 +306,12 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     }
   }
 
+  function showCalculationError() {
+    calculatorInputGroup.classList.add('error');
+    calculatorOutput.value = '';
+    copyButton.onclick = null;
+  }
+
   function calculate(addToHistory = false) {
     const input = calculatorInputElement.value;
     if (input.length === 0) {
@@ -317,6 +323,14 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       return;
     }
 
+    const data = getCalculatorData(storageKey);
+
+    // Reject expressions using `ans` when there is no prior history
+    if (data.history.length === 0 && input.includes('{ans}')) {
+      showCalculationError();
+      return;
+    }
+
     const angleMode = (calculatorOutput.dataset.angleMode ?? 'rad') as AngleMode;
     const displayMode = calculatorOutput.dataset.displayMode as DisplayMode;
     const result = evaluateExpression(input, angleMode, displayMode, {
@@ -325,18 +339,14 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     });
 
     if (!result) {
-      calculatorInputGroup.classList.add('error');
-      calculatorOutput.value = '';
-      copyButton.onclick = null;
+      showCalculationError();
       return;
     }
 
     const { displayed, evaluated } = result;
 
     if (hasError(evaluated.json)) {
-      calculatorInputGroup.classList.add('error');
-      calculatorOutput.value = '';
-      copyButton.onclick = null;
+      showCalculationError();
       return;
     }
 
@@ -347,8 +357,6 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       window.bootstrap.Tooltip.getInstance(copyButton)?.hide();
       void navigator.clipboard.writeText(ce.parse(displayed).toString());
     };
-
-    const data = getCalculatorData(storageKey);
 
     // Add to history
     if (addToHistory) {
