@@ -161,13 +161,13 @@ By default, the Java compiler will show all compilation warnings to the user, ex
 }
 ```
 
-The example above disables the `static` warning (use of static fields applied to object expressions) and limits the number of errors to 3. A more comprehensive list of options can be found in the [`javac` documentation page](https://docs.oracle.com/en/java/javase/21/docs/specs/man/javac.html#options). Some options of interest may include:
+The example above disables the `static` warning (use of static fields applied to object expressions) and limits the number of errors to 3. A more comprehensive list of options can be found in the [`javac` documentation page](https://docs.oracle.com/en/java/javase/25/docs/specs/man/javac.html#options). Some options of interest may include:
 
 - `-Xlint:none` or `-nowarn` to disable all warnings;
 - `-Xdoclint` to enable warnings for javadoc comments;
 - `--release 11` to compile using the Java 11 language version.
 
-Similarly, you may set specific options to the `java` command line using the `JDK_JAVA_OPTIONS`. A list of valid options can be found in the [`java` documentation page](https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html#standard-options-for-java). Some options of interest may include:
+Similarly, you may set specific options to the `java` command line using the `JDK_JAVA_OPTIONS`. A list of valid options can be found in the [`java` documentation page](https://docs.oracle.com/en/java/javase/25/docs/specs/man/java.html#standard-options-for-java). Some options of interest may include:
 
 - `-Dproperty=value` to set system properties that may be retrieved with `System.getProperty(name)`;
   - This may be useful to set JUnit configuration properties, as described in [the JUnit documentation](https://docs.junit.org/5.14.3/user-guide/#running-tests-config-params).
