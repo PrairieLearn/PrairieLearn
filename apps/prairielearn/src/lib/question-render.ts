@@ -841,6 +841,7 @@ export async function renderPanelsForSubmission({
         assessment,
         question,
         variant,
+        // course_instance is always present when the above are non-null.
         courseInstanceId: course_instance!.id,
         instance_question_info: { question_number, previous_variants },
         allowGradeLeftMs,

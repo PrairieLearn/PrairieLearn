@@ -350,7 +350,7 @@ function ZoneInfoPopover({ label, content }: { label: string; content: string })
     <OverlayTrigger trigger="click" popover={{ body: content }} rootClose>
       <button type="button" className="btn btn-xs btn-secondary">
         {label}&nbsp;
-        <i className="far fa-question-circle" aria-hidden="true" />
+        <i className="bi bi-question-circle" aria-hidden="true" />
       </button>
     </OverlayTrigger>
   );

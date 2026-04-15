@@ -47,7 +47,7 @@ export function ExamQuestionAvailablePoints({
         data-bs-content={popoverContent}
         data-bs-placement="auto"
       >
-        <i className="fa fa-question-circle" aria-hidden="true" />
+        <i className="bi bi-question-circle" aria-hidden="true" />
       </button>
     </>
   );

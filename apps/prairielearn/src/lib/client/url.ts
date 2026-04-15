@@ -170,22 +170,6 @@ export function getQuestionCreateUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/course_admin/questions/create`;
 }
 
-export function getInstanceQuestionUrl({
-  courseInstanceId,
-  instanceQuestionId,
-  variantId,
-}: {
-  courseInstanceId: string;
-  instanceQuestionId: string;
-  variantId?: string;
-}): string {
-  const base = `${getStudentCourseInstanceUrl(courseInstanceId)}/instance_question/${instanceQuestionId}/`;
-  if (variantId) {
-    return `${base}?variant_id=${variantId}`;
-  }
-  return base;
-}
-
 export function getAssessmentInstanceTimeRemainingUrl({
   courseInstanceId,
   assessmentInstanceId,

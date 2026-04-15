@@ -27,7 +27,7 @@ export function ExamQuestionStatus({
   questionAccessMode,
   realTimeGradingPartiallyDisabled,
 }: {
-  instanceQuestion: { status: string | null };
+  instanceQuestion: { status: QuestionStatus | null };
   assessmentQuestion: {
     max_auto_points: number | null;
     max_manual_points: number | null;
@@ -58,7 +58,7 @@ export function ExamQuestionStatus({
       return { badgeText: 'saved for grading after finish', badgeColor: 'success' };
     }
 
-    const status = (instanceQuestion.status ?? 'unanswered') as QuestionStatus;
+    const status = instanceQuestion.status ?? 'unanswered';
     return {
       badgeText: status,
       badgeColor: badgeColorMap[status],
@@ -72,6 +72,7 @@ export function ExamQuestionStatus({
         <button
           type="button"
           className="grade-rate-limit-popover btn btn-xs"
+          aria-label="Submission rate limit details"
           data-bs-toggle="popover"
           data-bs-container="body"
           data-bs-html="true"
