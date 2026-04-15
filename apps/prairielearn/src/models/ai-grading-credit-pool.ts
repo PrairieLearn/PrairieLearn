@@ -191,7 +191,8 @@ export async function deductCreditsForAiGrading(
 /**
  * Adjust the credit pool for a course instance by a delta amount (admin operation).
  * Positive delta adds credits, negative delta removes credits.
- * Throws if the resulting balance would be negative.
+ * If a deduction exceeds the selected pool balance, the deduction is capped
+ * to the remaining balance so balances never go negative.
  */
 export async function adjustCreditPool({
   course_instance_id,
@@ -220,27 +221,26 @@ export async function adjustCreditPool({
         ? before.credit_transferable_milli_dollars
         : before.credit_non_transferable_milli_dollars;
 
-    if (currentBalance + delta_milli_dollars < 0) {
-      throw new Error(
-        `Cannot deduct more than the current ${credit_type.replace('_', '-')} balance of $${(currentBalance / 1000).toFixed(2)}.`,
-      );
-    }
+    // Cap deductions so the balance doesn't go negative.
+    const cappedDelta = Math.max(delta_milli_dollars, -currentBalance);
+
+    if (cappedDelta === 0) return;
 
     await execute(sql.update_credit_balances, {
       course_instance_id,
       credit_transferable_milli_dollars:
         before.credit_transferable_milli_dollars +
-        (credit_type === 'transferable' ? delta_milli_dollars : 0),
+        (credit_type === 'transferable' ? cappedDelta : 0),
       credit_non_transferable_milli_dollars:
         before.credit_non_transferable_milli_dollars +
-        (credit_type === 'non_transferable' ? delta_milli_dollars : 0),
+        (credit_type === 'non_transferable' ? cappedDelta : 0),
     });
 
     await execute(sql.insert_credit_pool_change, {
       course_instance_id,
       credit_before_milli_dollars: before.total_milli_dollars,
-      credit_after_milli_dollars: before.total_milli_dollars + delta_milli_dollars,
-      delta_milli_dollars,
+      credit_after_milli_dollars: before.total_milli_dollars + cappedDelta,
+      delta_milli_dollars: cappedDelta,
       credit_type,
       reason,
       user_id,

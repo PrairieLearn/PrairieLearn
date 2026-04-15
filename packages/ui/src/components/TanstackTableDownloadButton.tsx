@@ -15,6 +15,7 @@ export interface TanstackTableDownloadButtonProps<RowDataModel> {
   singularLabel: string;
   pluralLabel: string;
   hasSelection: boolean;
+  additionalMenuItems?: React.ReactNode[];
 }
 /**
  * @param params
@@ -27,6 +28,7 @@ export interface TanstackTableDownloadButtonProps<RowDataModel> {
  * @param params.singularLabel - The singular label for a single row in the table, e.g. "student"
  * @param params.pluralLabel - The plural label for multiple rows in the table, e.g. "students"
  * @param params.hasSelection - Whether the table has selection enabled
+ * @param params.additionalMenuItems - Additional menu items to render at the end of the dropdown
  */
 export function TanstackTableDownloadButton<RowDataModel>({
   table,
@@ -35,6 +37,7 @@ export function TanstackTableDownloadButton<RowDataModel>({
   singularLabel,
   pluralLabel,
   hasSelection,
+  additionalMenuItems,
 }: TanstackTableDownloadButtonProps<RowDataModel>) {
   const allRows = table.getCoreRowModel().rows.map((row) => row.original);
   const allRowsJSON = allRows.map(mapRowToData).filter((row) => row !== null);
@@ -149,6 +152,12 @@ export function TanstackTableDownloadButton<RowDataModel>({
             {filteredRowsJSON.length}) as JSON
           </button>
         </li>
+        {additionalMenuItems?.map((item, index) => (
+          // eslint-disable-next-line @eslint-react/no-array-index-key
+          <li key={index} role="presentation">
+            {item}
+          </li>
+        ))}
       </ul>
     </div>
   );

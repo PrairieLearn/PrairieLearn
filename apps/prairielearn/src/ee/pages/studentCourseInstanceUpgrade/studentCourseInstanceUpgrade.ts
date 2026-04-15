@@ -168,7 +168,9 @@ router.post(
 
       const planNames = PlanNamesSchema.parse(body.unsafe_plan_names);
 
-      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+      const lineItems: NonNullable<
+        Parameters<Stripe['checkout']['sessions']['create']>[0]
+      >['line_items'] = [];
 
       if (planNames.includes('basic')) {
         const price = await getPriceForPlan('basic');

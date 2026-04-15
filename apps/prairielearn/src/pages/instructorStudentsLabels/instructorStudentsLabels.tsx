@@ -11,8 +11,9 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { getOriginalHash } from '../../lib/editors.js';
+import { computeScopedJsonHash } from '../../lib/editorUtil.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
+import type { CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 
 import { InstructorStudentsLabels } from './instructorStudentsLabels.html.js';
 import { getStudentLabelsWithUserData } from './queries.js';
@@ -56,20 +57,22 @@ router.get(
     const initialLabels = await getStudentLabelsWithUserData(courseInstance);
     const canEdit =
       authz_data.has_course_permission_edit &&
-      (authz_data.has_course_instance_permission_edit ?? false);
+      (authz_data.has_course_instance_permission_edit ?? false) &&
+      !course.example_course;
 
     const trpcUrl = `/pl/course_instance/${courseInstance.id}/instructor/trpc`;
     const trpcCsrfToken = generatePrefixCsrfToken(
       { url: trpcUrl, authn_user_id: res.locals.authn_user.id },
       config.secretKey,
     );
-    const origHash = await getOriginalHash(
+    const origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       path.join(
         course.path,
         'courseInstances',
         courseInstance.short_name,
         'infoCourseInstance.json',
       ),
+      (json) => json.studentLabels ?? [],
     );
 
     res.send(
@@ -88,6 +91,7 @@ router.get(
               courseInstanceId={courseInstance.id}
               initialLabels={initialLabels}
               canEdit={canEdit}
+              isExampleCourse={course.example_course}
               isDevMode={config.devMode}
               origHash={origHash}
             />

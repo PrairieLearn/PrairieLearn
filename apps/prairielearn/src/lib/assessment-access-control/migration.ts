@@ -70,8 +70,8 @@ function buildAfterComplete(
   if (!hidesAssessment && !hidesScore) return undefined;
 
   const result: AccessControlJsonInput['afterComplete'] = {};
-  if (hidesAssessment) result.hideQuestions = true;
-  if (hidesScore) result.hideScore = true;
+  if (hidesAssessment) result.questions = { hidden: true };
+  if (hidesScore) result.score = { hidden: true };
   return result;
 }
 

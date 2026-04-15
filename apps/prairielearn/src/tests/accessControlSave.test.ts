@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 
+import { merge } from 'es-toolkit';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
@@ -7,14 +8,12 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
+import { computeScopedJsonHash } from '../lib/editorUtil.js';
 import { features } from '../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import {
-  computeHash,
-  fetchAllAccessControlRules,
-} from '../pages/instructorAssessmentAccess/rules.js';
 import type { AccessControlJsonInput } from '../schemas/accessControl.js';
+import type { AssessmentJsonInput } from '../schemas/infoAssessment.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import {
@@ -28,13 +27,15 @@ import { getConfiguredUser } from './utils/auth.js';
 const siteUrl = `http://localhost:${config.serverPort}`;
 
 function makeRule(overrides: Partial<AccessControlJsonInput> = {}): AccessControlJsonInput {
-  return {
-    dateControl: {
-      releaseDate: '2024-03-14T00:01:00',
-      dueDate: '2024-03-21T23:59:00',
+  return merge(
+    {
+      dateControl: {
+        releaseDate: '2024-03-14T00:01:00',
+        dueDate: '2024-03-21T23:59:00',
+      },
     },
-    ...overrides,
-  };
+    overrides,
+  ) as AccessControlJsonInput;
 }
 
 describe('Access control save via tRPC', () => {
@@ -78,12 +79,11 @@ describe('Access control save via tRPC', () => {
   }
 
   async function getOrigHash() {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'hw19-accessControlUi',
-    });
-    const rules = await fetchAllAccessControlRules(assessment);
-    return computeHash(rules);
+    const hash = await computeScopedJsonHash<AssessmentJsonInput>(
+      assessmentPath(),
+      (json) => json.accessControl ?? [],
+    );
+    return hash;
   }
 
   function assessmentPath() {
@@ -133,9 +133,7 @@ describe('Access control save via tRPC', () => {
     const client = await createClient();
     const origHash = await getOrigHash();
 
-    const rules: AccessControlJsonInput[] = [
-      { listBeforeRelease: false, dateControl: {}, afterComplete: {} },
-    ];
+    const rules: AccessControlJsonInput[] = [{ listBeforeRelease: false }];
 
     const result = await client.accessControl.saveAllRules.mutate({ rules, origHash });
     assert.isString(result.newHash);
@@ -145,8 +143,6 @@ describe('Access control save via tRPC', () => {
 
     assert.equal(parsed.accessControl.length, 1);
     assert.notProperty(parsed.accessControl[0], 'listBeforeRelease');
-    assert.notProperty(parsed.accessControl[0], 'dateControl');
-    assert.notProperty(parsed.accessControl[0], 'afterComplete');
   });
 
   test.sequential('rejects save with stale origHash', async () => {
@@ -166,44 +162,5 @@ describe('Access control save via tRPC', () => {
         origHash: staleHash,
       }),
     ).rejects.toThrow(/modified since you loaded/);
-  });
-
-  test.sequential('rejects save with no main rule', async () => {
-    const client = await createClient();
-    const origHash = await getOrigHash();
-
-    await expect(
-      client.accessControl.saveAllRules.mutate({
-        rules: [{ labels: ['Section A'], dateControl: { dueDate: '2024-04-01T23:59:00' } }],
-        origHash,
-      }),
-    ).rejects.toThrow(/No defaults found/);
-  });
-
-  test.sequential('rejects save with multiple defaults entries', async () => {
-    const client = await createClient();
-    const origHash = await getOrigHash();
-
-    await expect(
-      client.accessControl.saveAllRules.mutate({
-        rules: [makeRule(), makeRule()],
-        origHash,
-      }),
-    ).rejects.toThrow(/defaults entries/);
-  });
-
-  test.sequential('rejects save with defaults not first', async () => {
-    const client = await createClient();
-    const origHash = await getOrigHash();
-
-    await expect(
-      client.accessControl.saveAllRules.mutate({
-        rules: [
-          { labels: ['Section A'], dateControl: { dueDate: '2024-04-01T23:59:00' } },
-          makeRule(),
-        ],
-        origHash,
-      }),
-    ).rejects.toThrow(/defaults.*must be the first element/);
   });
 });

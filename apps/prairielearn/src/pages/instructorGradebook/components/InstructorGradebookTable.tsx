@@ -51,6 +51,7 @@ import {
   GradebookRowSchema,
 } from '../instructorGradebook.types.js';
 
+import { CanvasCsvModal } from './CanvasCsvModal.js';
 import { EditScoreButton } from './EditScoreModal.js';
 
 const DEFAULT_SORT: SortingState = [{ id: 'uid', desc: false }];
@@ -532,6 +533,35 @@ function GradebookTable({
     },
   });
 
+  const allRows = table.getCoreRowModel().rows.map((row) => row.original);
+  const filteredRows = table.getRowModel().rows.map((row) => row.original);
+
+  const [canvasCsvTarget, setCanvasCsvTarget] = useState<'all' | 'filtered' | null>(null);
+
+  const canvasCsvMenuItems = [
+    <hr key="divider" className="dropdown-divider" />,
+    <button
+      key="all"
+      className="dropdown-item"
+      type="button"
+      role="menuitem"
+      disabled={allRows.length === 0}
+      onClick={() => setCanvasCsvTarget('all')}
+    >
+      All users' grades ({allRows.length}) as Canvas CSV
+    </button>,
+    <button
+      key="filtered"
+      className="dropdown-item"
+      type="button"
+      role="menuitem"
+      disabled={filteredRows.length === 0}
+      onClick={() => setCanvasCsvTarget('filtered')}
+    >
+      Filtered users' grades ({filteredRows.length}) as Canvas CSV
+    </button>,
+  ];
+
   return (
     <>
       <TanstackTableCard
@@ -571,6 +601,7 @@ function GradebookTable({
           pluralLabel: "users' grades",
           singularLabel: "user's grades",
           hasSelection: false,
+          additionalMenuItems: canvasCsvMenuItems,
         }}
         columnManager={{
           buttons: (
@@ -596,6 +627,13 @@ function GradebookTable({
           filters,
           scrollRef: tableRef,
         }}
+      />
+      <CanvasCsvModal
+        show={canvasCsvTarget != null}
+        courseAssessments={courseAssessments}
+        rows={canvasCsvTarget === 'filtered' ? filteredRows : allRows}
+        filename={`${filenameBase}_canvas${canvasCsvTarget === 'filtered' ? '_filtered' : ''}.csv`}
+        onHide={() => setCanvasCsvTarget(null)}
       />
     </>
   );

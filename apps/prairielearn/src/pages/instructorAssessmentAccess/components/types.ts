@@ -1,24 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 
-import type { AccessControlJson } from '../../../schemas/accessControl.js';
-
-interface AccessControlIndividual {
-  enrollmentId: string;
-  uid: string;
-  name: string | null;
-}
-
-export interface AccessControlJsonWithId extends AccessControlJson {
-  /** Database ID (undefined for new/unsaved rules) */
-  id?: string;
-  /** Database rule number for sorting */
-  number?: number;
-  /** Rule type: 'student_label' for label-based rules, 'enrollment' for individual student rules, 'none' for rules without specific targeting */
-  ruleType?: 'student_label' | 'enrollment' | 'none' | null;
-  individuals?: AccessControlIndividual[];
-  /** Student label details (id, name, color) from the database, used for rendering colored badges. */
-  labelDetails?: { id: string; name: string; color: string }[];
-}
+import type { AccessControlJsonWithId } from '../../../models/assessment-access-control-rules.js';
 
 /** Field names that belong to the date control section of an access control rule. */
 export const DATE_CONTROL_FIELD_NAMES = [
@@ -31,25 +13,38 @@ export const DATE_CONTROL_FIELD_NAMES = [
   'password',
 ] as const;
 
+export type OverridableFieldName =
+  | (typeof DATE_CONTROL_FIELD_NAMES)[number]
+  | 'questionVisibility'
+  | 'scoreVisibility';
+
 export interface DeadlineEntry {
   date: string;
   credit: number;
 }
 
 export interface AfterLastDeadlineValue {
-  allowSubmissions?: boolean;
+  allowSubmissions: boolean;
   credit?: number;
 }
 
 export interface QuestionVisibilityValue {
-  hideQuestions: boolean;
-  showAgainDate?: string;
-  hideAgainDate?: string;
+  hidden: boolean;
+  visibleFromDate?: string;
+  visibleUntilDate?: string;
 }
 
 export interface ScoreVisibilityValue {
-  hideScore: boolean;
-  showAgainDate?: string;
+  hidden: boolean;
+  visibleFromDate?: string;
+}
+
+export function isNonDefaultQuestionVisibility(qv: QuestionVisibilityValue): boolean {
+  return !qv.hidden || qv.visibleFromDate !== undefined || qv.visibleUntilDate !== undefined;
+}
+
+export function isNonDefaultScoreVisibility(sv: ScoreVisibilityValue): boolean {
+  return sv.hidden;
 }
 
 interface PrairieTestExam {
@@ -57,8 +52,8 @@ interface PrairieTestExam {
   readOnly?: boolean;
 }
 
-export interface IndividualTarget {
-  enrollmentId?: string;
+export interface EnrollmentTarget {
+  enrollmentId: string;
   uid: string;
   name: string | null;
 }
@@ -69,11 +64,11 @@ export interface StudentLabelTarget {
   color?: string;
 }
 
-export type TargetType = 'individual' | 'student_label';
+export type TargetType = 'enrollment' | 'student_label';
 
 export interface AppliesTo {
   targetType: TargetType;
-  individuals: IndividualTarget[];
+  enrollments: EnrollmentTarget[];
   studentLabels: StudentLabelTarget[];
 }
 
@@ -90,7 +85,6 @@ export interface MainRuleData {
   afterLastDeadline: AfterLastDeadlineValue | null;
   durationMinutes: number | null;
   password: string | null;
-  prairieTestEnabled: boolean;
   prairieTestExams: PrairieTestExam[];
   questionVisibility: QuestionVisibilityValue;
   scoreVisibility: ScoreVisibilityValue;
@@ -104,12 +98,12 @@ export interface OverrideData {
   id?: string;
   trackingId: string;
   appliesTo: AppliesTo;
-  overriddenFields: string[];
+  overriddenFields: OverridableFieldName[];
   releaseDate: string | null;
   dueDate: string | null;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
-  afterLastDeadline: AfterLastDeadlineValue | null;
+  afterLastDeadline: AfterLastDeadlineValue;
   durationMinutes: number | null;
   password: string | null;
   questionVisibility: QuestionVisibilityValue;
@@ -156,7 +150,10 @@ export function jsonToMainRuleFormData(
       dc?.releaseDate != null ||
       dc?.dueDate != null ||
       (dc?.earlyDeadlines?.length ?? 0) > 0 ||
-      (dc?.lateDeadlines?.length ?? 0) > 0,
+      (dc?.lateDeadlines?.length ?? 0) > 0 ||
+      dc?.afterLastDeadline != null ||
+      dc?.durationMinutes != null ||
+      dc?.password != null,
     releaseDate: toLocalDatetimeValue(dc?.releaseDate, displayTimezone) ?? null,
     dueDate: toLocalDatetimeValue(dc?.dueDate, displayTimezone) ?? null,
     earlyDeadlines: (dc?.earlyDeadlines ?? []).map((d) => ({
@@ -170,16 +167,18 @@ export function jsonToMainRuleFormData(
     afterLastDeadline: dc?.afterLastDeadline ?? null,
     durationMinutes: dc?.durationMinutes ?? null,
     password: dc?.password ?? null,
-    prairieTestEnabled: (json.integrations?.prairieTest?.exams?.length ?? 0) > 0,
     prairieTestExams: json.integrations?.prairieTest?.exams ?? [],
     questionVisibility: {
-      hideQuestions: ac?.hideQuestions ?? false,
-      showAgainDate: toLocalDatetimeValue(ac?.showQuestionsAgainDate, displayTimezone) ?? undefined,
-      hideAgainDate: toLocalDatetimeValue(ac?.hideQuestionsAgainDate, displayTimezone) ?? undefined,
+      hidden: ac?.questions?.hidden ?? true,
+      visibleFromDate:
+        toLocalDatetimeValue(ac?.questions?.visibleFromDate, displayTimezone) ?? undefined,
+      visibleUntilDate:
+        toLocalDatetimeValue(ac?.questions?.visibleUntilDate, displayTimezone) ?? undefined,
     },
     scoreVisibility: {
-      hideScore: ac?.hideScore ?? false,
-      showAgainDate: toLocalDatetimeValue(ac?.showScoreAgainDate, displayTimezone) ?? undefined,
+      hidden: ac?.score?.hidden ?? false,
+      visibleFromDate:
+        toLocalDatetimeValue(ac?.score?.visibleFromDate, displayTimezone) ?? undefined,
     },
   };
 }
@@ -192,10 +191,10 @@ export function jsonToOverrideFormData(
   const ac = json.afterComplete;
 
   let appliesTo: AppliesTo;
-  if (json.ruleType === 'enrollment' && json.individuals && json.individuals.length > 0) {
+  if (json.ruleType === 'enrollment' && json.enrollments && json.enrollments.length > 0) {
     appliesTo = {
-      targetType: 'individual',
-      individuals: json.individuals.map((i) => ({
+      targetType: 'enrollment',
+      enrollments: json.enrollments.map((i) => ({
         enrollmentId: i.enrollmentId,
         uid: i.uid,
         name: i.name,
@@ -205,18 +204,18 @@ export function jsonToOverrideFormData(
   } else {
     appliesTo = {
       targetType: 'student_label',
-      individuals: [],
+      enrollments: [],
       studentLabels: json.labelDetails
         ? json.labelDetails.map((l) => ({ studentLabelId: l.id, name: l.name, color: l.color }))
         : (json.labels ?? []).map((name: string) => ({ studentLabelId: '', name })),
     };
   }
 
-  const overriddenFields: string[] = [];
+  const overriddenFields: OverridableFieldName[] = [];
 
   let releaseDate: string | null = null;
   if (dc?.releaseDate !== undefined) {
-    releaseDate = toLocalDatetimeValue(dc.releaseDate, displayTimezone) ?? null;
+    releaseDate = toLocalDatetimeValue(dc.releaseDate, displayTimezone);
     overriddenFields.push('releaseDate');
   }
 
@@ -244,7 +243,7 @@ export function jsonToOverrideFormData(
     overriddenFields.push('lateDeadlines');
   }
 
-  let afterLastDeadline: AfterLastDeadlineValue | null = null;
+  let afterLastDeadline: AfterLastDeadlineValue = { allowSubmissions: false };
   if (dc?.afterLastDeadline !== undefined) {
     afterLastDeadline = dc.afterLastDeadline;
     overriddenFields.push('afterLastDeadline');
@@ -262,21 +261,22 @@ export function jsonToOverrideFormData(
     overriddenFields.push('password');
   }
 
-  let questionVisibility: QuestionVisibilityValue = { hideQuestions: false };
-  if (ac?.hideQuestions !== undefined) {
+  let questionVisibility: QuestionVisibilityValue = { hidden: true };
+  if (ac?.questions?.hidden !== undefined) {
+    const q = ac.questions;
     questionVisibility = {
-      hideQuestions: ac.hideQuestions,
-      showAgainDate: toLocalDatetimeValue(ac.showQuestionsAgainDate, displayTimezone) ?? undefined,
-      hideAgainDate: toLocalDatetimeValue(ac.hideQuestionsAgainDate, displayTimezone) ?? undefined,
+      hidden: q.hidden,
+      visibleFromDate: toLocalDatetimeValue(q.visibleFromDate, displayTimezone) ?? undefined,
+      visibleUntilDate: toLocalDatetimeValue(q.visibleUntilDate, displayTimezone) ?? undefined,
     };
     overriddenFields.push('questionVisibility');
   }
 
-  let scoreVisibility: ScoreVisibilityValue = { hideScore: false };
-  if (ac?.hideScore !== undefined) {
+  let scoreVisibility: ScoreVisibilityValue = { hidden: false };
+  if (ac?.score?.hidden !== undefined) {
     scoreVisibility = {
-      hideScore: ac.hideScore,
-      showAgainDate: toLocalDatetimeValue(ac.showScoreAgainDate, displayTimezone) ?? undefined,
+      hidden: ac.score.hidden,
+      visibleFromDate: toLocalDatetimeValue(ac.score.visibleFromDate, displayTimezone) ?? undefined,
     };
     overriddenFields.push('scoreVisibility');
   }
@@ -298,40 +298,29 @@ export function jsonToOverrideFormData(
   };
 }
 
-function mainRuleToJson(rule: MainRuleData, displayTimezone: string): AccessControlJsonWithId {
+function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   const output: AccessControlJsonWithId = {
     id: rule.id,
-    listBeforeRelease: rule.listBeforeRelease,
   };
+
+  if (rule.listBeforeRelease) {
+    output.listBeforeRelease = true;
+  }
 
   if (rule.dateControlEnabled) {
     output.dateControl = {};
-    if (rule.releaseDate) {
-      output.dateControl.releaseDate = rule.releaseDate;
-    } else {
-      // "Released immediately" with dates configured: persist as the current
-      // timestamp so the assessment is open now (matching the course-instance
-      // publishing pattern). Truncate to minutes to satisfy the datetime-local
-      // schema.
-      output.dateControl.releaseDate = Temporal.Now.zonedDateTimeISO(displayTimezone)
-        .toPlainDateTime()
-        .toString({ smallestUnit: 'minute' });
-    }
+    if (rule.releaseDate) output.dateControl.releaseDate = rule.releaseDate;
     if (rule.dueDate) output.dateControl.dueDate = rule.dueDate;
     if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (rule.lateDeadlines.length > 0) output.dateControl.lateDeadlines = rule.lateDeadlines;
-  }
-
-  // Non-date fields live under dateControl in the schema but should be
-  // preserved regardless of whether the date control toggle is enabled.
-  if (rule.afterLastDeadline || rule.durationMinutes != null || rule.password) {
-    output.dateControl ??= {};
-    if (rule.afterLastDeadline) output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+    if (rule.afterLastDeadline) {
+      output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+    }
     if (rule.durationMinutes != null) output.dateControl.durationMinutes = rule.durationMinutes;
     if (rule.password) output.dateControl.password = rule.password;
   }
 
-  if (rule.prairieTestEnabled && rule.prairieTestExams.length > 0) {
+  if (rule.prairieTestExams.length > 0) {
     output.integrations = {
       prairieTest: {
         exams: rule.prairieTestExams,
@@ -339,18 +328,32 @@ function mainRuleToJson(rule: MainRuleData, displayTimezone: string): AccessCont
     };
   }
 
-  output.afterComplete = {
-    hideQuestions: rule.questionVisibility.hideQuestions,
-  };
-  if (rule.questionVisibility.showAgainDate) {
-    output.afterComplete.showQuestionsAgainDate = rule.questionVisibility.showAgainDate;
-  }
-  if (rule.questionVisibility.hideAgainDate) {
-    output.afterComplete.hideQuestionsAgainDate = rule.questionVisibility.hideAgainDate;
-  }
-  output.afterComplete.hideScore = rule.scoreVisibility.hideScore;
-  if (rule.scoreVisibility.showAgainDate) {
-    output.afterComplete.showScoreAgainDate = rule.scoreVisibility.showAgainDate;
+  // Only write afterComplete when values differ from defaults
+  // (questions.hidden: true, score.hidden: false).
+  const qv = rule.questionVisibility;
+  const sv = rule.scoreVisibility;
+  const hasNonDefaultQuestions = isNonDefaultQuestionVisibility(qv);
+  const hasNonDefaultScore = isNonDefaultScoreVisibility(sv);
+
+  if (hasNonDefaultQuestions || hasNonDefaultScore) {
+    output.afterComplete = {};
+    if (hasNonDefaultQuestions) {
+      output.afterComplete.questions = qv.hidden
+        ? {
+            hidden: true,
+            ...(qv.visibleFromDate && { visibleFromDate: qv.visibleFromDate }),
+            ...(qv.visibleUntilDate && { visibleUntilDate: qv.visibleUntilDate }),
+          }
+        : { hidden: false };
+    }
+    if (hasNonDefaultScore) {
+      output.afterComplete.score = sv.hidden
+        ? {
+            hidden: true,
+            ...(sv.visibleFromDate && { visibleFromDate: sv.visibleFromDate }),
+          }
+        : { hidden: false };
+    }
   }
 
   return output;
@@ -373,11 +376,15 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
 
   if (hasDateControl) {
     output.dateControl = {};
-    if (of.has('releaseDate')) output.dateControl.releaseDate = rule.releaseDate;
+    if (of.has('releaseDate') && rule.releaseDate) {
+      output.dateControl.releaseDate = rule.releaseDate;
+    }
     if (of.has('dueDate')) output.dateControl.dueDate = rule.dueDate;
     if (of.has('earlyDeadlines')) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (of.has('lateDeadlines')) output.dateControl.lateDeadlines = rule.lateDeadlines;
-    if (of.has('afterLastDeadline')) output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+    if (of.has('afterLastDeadline')) {
+      output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+    }
     if (of.has('durationMinutes')) output.dateControl.durationMinutes = rule.durationMinutes;
     if (of.has('password')) output.dateControl.password = rule.password;
   }
@@ -385,61 +392,57 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
   if (of.has('questionVisibility') || of.has('scoreVisibility')) {
     output.afterComplete = {};
     if (of.has('questionVisibility')) {
-      output.afterComplete.hideQuestions = rule.questionVisibility.hideQuestions;
-      if (rule.questionVisibility.showAgainDate) {
-        output.afterComplete.showQuestionsAgainDate = rule.questionVisibility.showAgainDate;
-      }
-      if (rule.questionVisibility.hideAgainDate) {
-        output.afterComplete.hideQuestionsAgainDate = rule.questionVisibility.hideAgainDate;
-      }
+      const qv = rule.questionVisibility;
+      output.afterComplete.questions = qv.hidden
+        ? {
+            hidden: true,
+            ...(qv.visibleFromDate && { visibleFromDate: qv.visibleFromDate }),
+            ...(qv.visibleUntilDate && { visibleUntilDate: qv.visibleUntilDate }),
+          }
+        : { hidden: false };
     }
     if (of.has('scoreVisibility')) {
-      output.afterComplete.hideScore = rule.scoreVisibility.hideScore;
-      if (rule.scoreVisibility.showAgainDate) {
-        output.afterComplete.showScoreAgainDate = rule.scoreVisibility.showAgainDate;
-      }
+      const sv = rule.scoreVisibility;
+      output.afterComplete.score = sv.hidden
+        ? {
+            hidden: true,
+            ...(sv.visibleFromDate && { visibleFromDate: sv.visibleFromDate }),
+          }
+        : { hidden: false };
     }
   }
 
-  if (rule.appliesTo.targetType === 'individual') {
+  if (rule.appliesTo.targetType === 'enrollment') {
     output.ruleType = 'enrollment';
-    output.individuals = rule.appliesTo.individuals.map((ind) => ({
-      enrollmentId: ind.enrollmentId ?? '',
-      uid: ind.uid,
-      name: ind.name,
-    }));
+    output.enrollments = rule.appliesTo.enrollments;
   }
 
   return output;
 }
 
-export function formDataToJson(
-  formData: AccessControlFormData,
-  displayTimezone: string,
-): AccessControlJsonWithId[] {
-  return [
-    mainRuleToJson(formData.mainRule, displayTimezone),
-    ...formData.overrides.map(overrideToJson),
-  ];
+export function formDataToJson(formData: AccessControlFormData): AccessControlJsonWithId[] {
+  return [mainRuleToJson(formData.mainRule), ...formData.overrides.map(overrideToJson)];
 }
 
-export function createDefaultOverrideFormData(): OverrideData {
+export function createDefaultOverrideFormData(mainRule?: MainRuleData): OverrideData {
   return {
     trackingId: crypto.randomUUID(),
     appliesTo: {
-      targetType: 'individual',
-      individuals: [],
+      targetType: 'enrollment',
+      enrollments: [],
       studentLabels: [],
     },
     overriddenFields: [],
-    releaseDate: null,
-    dueDate: null,
-    earlyDeadlines: [],
-    lateDeadlines: [],
-    afterLastDeadline: null,
-    durationMinutes: null,
-    password: null,
-    questionVisibility: { hideQuestions: false },
-    scoreVisibility: { hideScore: false },
+    releaseDate: mainRule?.releaseDate ?? null,
+    dueDate: mainRule?.dueDate ?? null,
+    earlyDeadlines: (mainRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
+    lateDeadlines: (mainRule?.lateDeadlines ?? []).map((d) => ({ ...d })),
+    afterLastDeadline: mainRule?.afterLastDeadline
+      ? { ...mainRule.afterLastDeadline }
+      : { allowSubmissions: false },
+    durationMinutes: mainRule?.durationMinutes ?? null,
+    password: mainRule?.password ?? null,
+    questionVisibility: mainRule ? { ...mainRule.questionVisibility } : { hidden: true },
+    scoreVisibility: mainRule ? { ...mainRule.scoreVisibility } : { hidden: false },
   };
 }

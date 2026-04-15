@@ -10,7 +10,14 @@ CREATE FUNCTION
     )
 RETURNS void
 AS $$
+DECLARE
+    ci_timezone text;
 BEGIN
+    -- Safe to read here because course instances are synced before assessments
+    -- in syncDiskToSqlWithLock.
+    SELECT display_timezone INTO ci_timezone FROM course_instances WHERE id = syncing_course_instance_id;
+
+
     -- Delete rows where the target_type changed for a given (assessment, number)
     -- to avoid unique constraint conflicts (the conflict key includes target_type).
     -- Child rows are cascade-deleted via FK constraints.
@@ -28,81 +35,66 @@ BEGIN
         number,
         list_before_release,
         target_type,
-        date_control_release_date_overridden,
         date_control_release_date,
         date_control_due_date_overridden,
         date_control_due_date,
         date_control_early_deadlines_overridden,
         date_control_late_deadlines_overridden,
         date_control_after_last_deadline_allow_submissions,
-        date_control_after_last_deadline_credit_overridden,
         date_control_after_last_deadline_credit,
         date_control_duration_minutes_overridden,
         date_control_duration_minutes,
         date_control_password_overridden,
         date_control_password,
 
-        after_complete_hide_questions,
-        after_complete_show_questions_again_date_overridden,
-        after_complete_show_questions_again_date,
-        after_complete_hide_questions_again_date_overridden,
-        after_complete_hide_questions_again_date,
-        after_complete_hide_score,
-        after_complete_show_score_again_date_overridden,
-        after_complete_show_score_again_date
+        after_complete_questions_hidden,
+        after_complete_questions_visible_from_date,
+        after_complete_questions_visible_until_date,
+        after_complete_score_hidden,
+        after_complete_score_visible_from_date
     )
     SELECT
         (rule ->> 'assessment_id')::bigint,
         (rule ->> 'number')::integer,
         (rule ->> 'list_before_release')::boolean,
         (rule ->> 'target_type')::enum_assessment_access_control_target_type,
-        (rule ->> 'date_control_release_date_overridden')::boolean,
-        (rule ->> 'date_control_release_date')::timestamp with time zone,
+        input_date(rule ->> 'date_control_release_date', ci_timezone),
         (rule ->> 'date_control_due_date_overridden')::boolean,
-        (rule ->> 'date_control_due_date')::timestamp with time zone,
+        input_date(rule ->> 'date_control_due_date', ci_timezone),
         (rule ->> 'date_control_early_deadlines_overridden')::boolean,
         (rule ->> 'date_control_late_deadlines_overridden')::boolean,
         (rule ->> 'date_control_after_last_deadline_allow_submissions')::boolean,
-        (rule ->> 'date_control_after_last_deadline_credit_overridden')::boolean,
         (rule ->> 'date_control_after_last_deadline_credit')::integer,
         (rule ->> 'date_control_duration_minutes_overridden')::boolean,
         (rule ->> 'date_control_duration_minutes')::integer,
         (rule ->> 'date_control_password_overridden')::boolean,
         (rule ->> 'date_control_password')::text,
 
-        (rule ->> 'after_complete_hide_questions')::boolean,
-        (rule ->> 'after_complete_show_questions_again_date_overridden')::boolean,
-        (rule ->> 'after_complete_show_questions_again_date')::timestamp with time zone,
-        (rule ->> 'after_complete_hide_questions_again_date_overridden')::boolean,
-        (rule ->> 'after_complete_hide_questions_again_date')::timestamp with time zone,
-        (rule ->> 'after_complete_hide_score')::boolean,
-        (rule ->> 'after_complete_show_score_again_date_overridden')::boolean,
-        (rule ->> 'after_complete_show_score_again_date')::timestamp with time zone
+        (rule ->> 'after_complete_questions_hidden')::boolean,
+        input_date(rule ->> 'after_complete_questions_visible_from_date', ci_timezone),
+        input_date(rule ->> 'after_complete_questions_visible_until_date', ci_timezone),
+        (rule ->> 'after_complete_score_hidden')::boolean,
+        input_date(rule ->> 'after_complete_score_visible_from_date', ci_timezone)
     FROM UNNEST(rules_data) AS rule
     ON CONFLICT (assessment_id, number, target_type) DO UPDATE SET
         list_before_release = EXCLUDED.list_before_release,
-        date_control_release_date_overridden = EXCLUDED.date_control_release_date_overridden,
         date_control_release_date = EXCLUDED.date_control_release_date,
         date_control_due_date_overridden = EXCLUDED.date_control_due_date_overridden,
         date_control_due_date = EXCLUDED.date_control_due_date,
         date_control_early_deadlines_overridden = EXCLUDED.date_control_early_deadlines_overridden,
         date_control_late_deadlines_overridden = EXCLUDED.date_control_late_deadlines_overridden,
         date_control_after_last_deadline_allow_submissions = EXCLUDED.date_control_after_last_deadline_allow_submissions,
-        date_control_after_last_deadline_credit_overridden = EXCLUDED.date_control_after_last_deadline_credit_overridden,
         date_control_after_last_deadline_credit = EXCLUDED.date_control_after_last_deadline_credit,
         date_control_duration_minutes_overridden = EXCLUDED.date_control_duration_minutes_overridden,
         date_control_duration_minutes = EXCLUDED.date_control_duration_minutes,
         date_control_password_overridden = EXCLUDED.date_control_password_overridden,
         date_control_password = EXCLUDED.date_control_password,
 
-        after_complete_hide_questions = EXCLUDED.after_complete_hide_questions,
-        after_complete_show_questions_again_date_overridden = EXCLUDED.after_complete_show_questions_again_date_overridden,
-        after_complete_show_questions_again_date = EXCLUDED.after_complete_show_questions_again_date,
-        after_complete_hide_questions_again_date_overridden = EXCLUDED.after_complete_hide_questions_again_date_overridden,
-        after_complete_hide_questions_again_date = EXCLUDED.after_complete_hide_questions_again_date,
-        after_complete_hide_score = EXCLUDED.after_complete_hide_score,
-        after_complete_show_score_again_date_overridden = EXCLUDED.after_complete_show_score_again_date_overridden,
-        after_complete_show_score_again_date = EXCLUDED.after_complete_show_score_again_date;
+        after_complete_questions_hidden = EXCLUDED.after_complete_questions_hidden,
+        after_complete_questions_visible_from_date = EXCLUDED.after_complete_questions_visible_from_date,
+        after_complete_questions_visible_until_date = EXCLUDED.after_complete_questions_visible_until_date,
+        after_complete_score_hidden = EXCLUDED.after_complete_score_hidden,
+        after_complete_score_visible_from_date = EXCLUDED.after_complete_score_visible_from_date;
 
     -- Upsert student labels by joining on (assessment_id, number) to resolve the
     -- access control ID. Student labels always have target_type='student_label'.
@@ -123,7 +115,7 @@ BEGIN
         SELECT
             (d ->> 0)::bigint AS assessment_id,
             (d ->> 1)::integer AS rule_number,
-            (d ->> 2)::timestamp with time zone AS date,
+            input_date(d ->> 2, ci_timezone) AS date,
             (d ->> 3)::integer AS credit
         FROM UNNEST(early_deadlines_data) AS d
     ) sub
@@ -142,7 +134,7 @@ BEGIN
         SELECT
             (d ->> 0)::bigint AS assessment_id,
             (d ->> 1)::integer AS rule_number,
-            (d ->> 2)::timestamp with time zone AS date,
+            input_date(d ->> 2, ci_timezone) AS date,
             (d ->> 3)::integer AS credit
         FROM UNNEST(late_deadlines_data) AS d
     ) sub
@@ -220,7 +212,7 @@ BEGIN
             SELECT 1 FROM UNNEST(early_deadlines_data) AS d
             WHERE (d ->> 0)::bigint = aacr.assessment_id
                 AND (d ->> 1)::integer = aacr.number
-                AND (d ->> 2)::timestamp with time zone = aced.date
+                AND input_date(d ->> 2, ci_timezone) = aced.date
         );
 
     DELETE FROM assessment_access_control_late_deadlines acld
@@ -233,7 +225,7 @@ BEGIN
             SELECT 1 FROM UNNEST(late_deadlines_data) AS d
             WHERE (d ->> 0)::bigint = aacr.assessment_id
                 AND (d ->> 1)::integer = aacr.number
-                AND (d ->> 2)::timestamp with time zone = acld.date
+                AND input_date(d ->> 2, ci_timezone) = acld.date
         );
 
     DELETE FROM assessment_access_control_prairietest_exams acpe
