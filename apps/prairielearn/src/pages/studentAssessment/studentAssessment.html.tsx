@@ -1,5 +1,6 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/react';
 
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -181,12 +182,14 @@ function StudentGroupControls({
   }
 
   return html`
-    ${GroupWorkInfoContainer({
-      groupConfig,
-      groupInfo,
-      userCanAssignRoles,
-      csrfToken: __csrf_token,
-    })}
+    ${renderHtml(
+      <GroupWorkInfoContainer
+        groupConfig={groupConfig}
+        groupInfo={groupInfo}
+        userCanAssignRoles={userCanAssignRoles}
+        csrfToken={__csrf_token}
+      />,
+    )}
     ${StartAssessmentForm({ assessment, user, __csrf_token, startAllowed: groupInfo.start })}
     ${groupConfig.minimum != null && groupConfig.minimum - groupInfo.groupSize > 0
       ? html`

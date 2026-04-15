@@ -4,12 +4,12 @@ import { Badge } from 'react-bootstrap';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { ExamQuestionAvailablePoints } from '../../../components/ExamQuestionAvailablePoints.js';
+import { ExamQuestionStatus } from '../../../components/ExamQuestionStatus.js';
+import { QuestionVariantHistory } from '../../../components/QuestionVariantHistory.js';
 import { formatPoints } from '../../../lib/format.js';
 
-import { ExamQuestionAvailablePoints } from './ExamQuestionAvailablePoints.js';
-import { ExamQuestionStatus } from './ExamQuestionStatus.js';
 import { LockpointRow } from './LockpointRow.js';
-import { QuestionVariantHistory } from './QuestionVariantHistory.js';
 import { RowLabel } from './RowLabel.js';
 import type { GradingConfig, StudentQuestionRow } from './types.js';
 
@@ -176,13 +176,27 @@ function ExamQuestionCells({
     <>
       <td className="align-middle lh-1">
         <ExamQuestionStatus
-          row={row}
+          instanceQuestion={row.instance_question}
+          assessmentQuestion={row.assessment_question}
+          allowGradeLeftMs={row.allow_grade_left_ms}
+          questionAccessMode={row.question_access_mode}
           realTimeGradingPartiallyDisabled={realTimeGradingPartiallyDisabled}
         />
       </td>
       {hasAutoGradingQuestion && someQuestionsAllowRealTimeGrading && (
         <td className="text-center">
-          <ExamQuestionAvailablePoints row={row} />
+          <ExamQuestionAvailablePoints
+            open={row.instance_question.open}
+            pointsList={row.instance_question.points_list?.map(
+              (p) => p - (row.assessment_question.max_manual_points ?? 0),
+            )}
+            currentWeight={
+              (row.instance_question.points_list_original?.[
+                row.instance_question.number_attempts
+              ] ?? 0) - (row.assessment_question.max_manual_points ?? 0)
+            }
+            highestSubmissionScore={row.instance_question.highest_submission_score}
+          />
         </td>
       )}
       {someQuestionsAllowRealTimeGrading || !assessmentInstanceOpen ? (

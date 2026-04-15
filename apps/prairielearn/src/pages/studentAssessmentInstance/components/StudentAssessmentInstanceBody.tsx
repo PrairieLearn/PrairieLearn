@@ -3,13 +3,13 @@ import { useState } from 'react';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { GroupWorkInfoContainer } from '../../../components/GroupWorkInfoContainer.js';
 import { Scorebar } from '../../../components/Scorebar.js';
 import type { StudentAccessRule } from '../../../lib/client/safe-db-types.js';
 import { formatPoints } from '../../../lib/format.js';
-import { getRoleNamesForUser } from '../../../lib/groups.shared.js';
+import { canUserAssignGroupRoles, getRoleNamesForUser } from '../../../lib/groups.shared.js';
 
 import { ExamFooterContent } from './ExamFooterContent.js';
-import { GroupWorkInfoContainer } from './GroupWorkInfoContainer.js';
 import { QuestionTableBody } from './QuestionTableBody.js';
 import { ConfirmFinishModal, CrossLockpointModal, TimeLimitExpiredModal } from './modals.js';
 import type {
@@ -221,8 +221,15 @@ export function StudentAssessmentInstanceBody({
                 <GroupWorkInfoContainer
                   groupConfig={groupConfig}
                   groupInfo={groupInfo}
-                  user={user}
-                  hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+                  userCanAssignRoles={
+                    groupConfig.has_roles &&
+                    (canUserAssignGroupRoles(
+                      groupInfo.rolesInfo?.groupRoles,
+                      groupInfo.rolesInfo?.roleAssignments,
+                      user.id,
+                    ) ||
+                      hasCourseInstancePermissionEdit)
+                  }
                   csrfToken={csrfToken}
                 />
               </div>

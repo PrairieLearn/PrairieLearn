@@ -841,7 +841,7 @@ export async function renderPanelsForSubmission({
         assessment,
         question,
         variant,
-        urlPrefix,
+        courseInstanceId: course_instance!.id,
         instance_question_info: { question_number, previous_variants },
         allowGradeLeftMs,
       }).toString();
