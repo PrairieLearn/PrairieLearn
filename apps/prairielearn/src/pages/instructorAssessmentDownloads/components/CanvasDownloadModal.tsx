@@ -53,7 +53,7 @@ export function CanvasDownloadModal({
         return;
       }
 
-      const canvasLookup = buildCanvasLookup(matchingState.currentResult);
+      const canvasLookup = buildCanvasLookup(matchingState.bestResult.result);
       const { headers, dataRows } = lines;
 
       const sisLoginIdx = headers.indexOf('SIS Login ID');

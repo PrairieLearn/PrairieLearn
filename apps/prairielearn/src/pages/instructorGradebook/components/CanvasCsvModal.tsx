@@ -201,7 +201,7 @@ function CanvasCsvModalContent({
       }),
     ];
 
-    const canvasLookup = matchingState ? buildCanvasLookup(matchingState.currentResult) : null;
+    const canvasLookup = matchingState ? buildCanvasLookup(matchingState.bestResult.result) : null;
 
     const data = [
       pointsPossibleRow,
@@ -211,7 +211,7 @@ function CanvasCsvModalContent({
           canvas?.name ?? row.user_name,
           canvas?.id ?? null,
           canvas?.sisUserId ?? null,
-          canvas?.sisLoginId ?? row.uid,
+          canvas?.sisLoginId ?? null,
           canvas?.section ?? null,
           ...selectedAssessments.map((a) => {
             const scoreData = row.scores[a.assessment_id];
