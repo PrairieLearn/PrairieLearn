@@ -381,7 +381,4 @@ async function main() {
   console.log(`Report written to ${OUTPUT_FILE}`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+await main();
