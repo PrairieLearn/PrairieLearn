@@ -116,6 +116,8 @@ router.get(
           subPage: 'settings',
         },
         options: {
+          // Disabled so the sticky save/cancel bar can span the full viewport width.
+          // The form content uses its own `container` wrapper for constrained width.
           contentPadding: false,
         },
         content: (
