@@ -149,15 +149,18 @@ function InstructorAssessmentGroupsInner({
 
   if (!groupConfigInfo) {
     return (
-      <div className="card mb-4">
-        <div className="card-header bg-primary text-white d-flex align-items-center">
-          <h1>
-            {resLocals.assessment_set.name} {resLocals.assessment.number}: Groups
-          </h1>
-        </div>
-        <div className="card-body">
-          This is not a group assessment. To enable this functionality, please set
-          <code>"groupWork": true</code> in <code>infoAssessment.json</code>.
+      <div className="container py-3">
+        <div className="card">
+          <div className="card-body text-center">
+            <i className="bi bi-people fs-1 mb-2" />
+            <h5>This is not a group assessment.</h5>
+            <div className="text-muted">
+              Enable group work to allow students to collaborate and submit as teams.
+            </div>
+            <button type="button" className="btn btn-outline-primary mt-3">
+              Enable group work
+            </button>
+          </div>
         </div>
       </div>
     );
