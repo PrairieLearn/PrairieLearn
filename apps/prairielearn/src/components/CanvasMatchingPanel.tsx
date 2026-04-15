@@ -272,7 +272,9 @@ function UnmatchedStudentsList({
 function StudentList({ students }: { students: Student[] }) {
   return (
     <ul className="list-unstyled small ps-3">
+      {/* Students in the ambiguous list share the same uid by definition */}
       {students.map((s, i) => (
+        // eslint-disable-next-line @eslint-react/no-array-index-key
         <li key={`${s.uid}-${i}`}>
           {s.userName ?? '(no name)'} <span className="text-muted">({s.uid})</span>
         </li>
