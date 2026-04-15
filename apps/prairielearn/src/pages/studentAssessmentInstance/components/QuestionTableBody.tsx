@@ -100,20 +100,20 @@ export function QuestionTableBody({
                         <ZoneInfoPopover
                           label={
                             row.zone.title
-                              ? `maximum ${row.zone.max_points} points`
-                              : `Maximum ${row.zone.max_points} points`
+                              ? `maximum ${row.zone.max_points} ${row.zone.max_points === 1 ? 'point' : 'points'}`
+                              : `Maximum ${row.zone.max_points} ${row.zone.max_points === 1 ? 'point' : 'points'}`
                           }
-                          content={`Of the points that you are awarded for answering these ${row.zone_question_count} questions, at most ${row.zone.max_points} will count toward your total points.`}
+                          content={`Of the points that you are awarded for answering ${row.zone_question_count === 1 ? 'this question' : `these ${row.zone_question_count} questions`}, at most ${row.zone.max_points} will count toward your total points.`}
                         />
                       )}
                       {row.zone.best_questions != null && (
                         <ZoneInfoPopover
                           label={
                             row.zone.title || row.zone.max_points != null
-                              ? `best ${row.zone.best_questions} of ${row.zone_question_count} questions`
-                              : `Best ${row.zone.best_questions} of ${row.zone_question_count} questions`
+                              ? `best ${row.zone.best_questions} of ${row.zone_question_count} ${row.zone_question_count === 1 ? 'question' : 'questions'}`
+                              : `Best ${row.zone.best_questions} of ${row.zone_question_count} ${row.zone_question_count === 1 ? 'question' : 'questions'}`
                           }
-                          content={`Of these ${row.zone_question_count} questions, only the ${row.zone.best_questions} with the highest number of awarded points will count toward your total points.`}
+                          content={`Of ${row.zone_question_count === 1 ? 'this question' : `these ${row.zone_question_count} questions`}, only the ${row.zone.best_questions} with the highest number of awarded points will count toward your total points.`}
                         />
                       )}
                     </div>

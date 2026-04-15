@@ -29,14 +29,13 @@ export const SafeStudentAssessmentInstanceSchema = z
     assessment_instance: StudentAssessmentInstanceSchema__UNSAFE,
     some_questions_allow_real_time_grading: z.boolean(),
   })
-  .transform((data) => {
+  .transform(({ assessment_instance, some_questions_allow_real_time_grading }) => {
     // When real-time grading is fully disabled and the instance is open,
     // don't leak score data to the client — the UI only shows max_points.
-    if (!data.some_questions_allow_real_time_grading && data.assessment_instance.open) {
-      data.assessment_instance.points = null;
-      data.assessment_instance.score_perc = null;
+    if (!some_questions_allow_real_time_grading && assessment_instance.open) {
+      return { ...assessment_instance, points: null, score_perc: null };
     }
-    return data.assessment_instance;
+    return { ...assessment_instance };
   })
   .brand('SafeStudentAssessmentInstance');
 export type SafeStudentAssessmentInstance = z.output<typeof SafeStudentAssessmentInstanceSchema>;

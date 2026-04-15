@@ -89,7 +89,7 @@ export function StudentAssessmentInstance({
 
   return PageLayout({
     resLocals,
-    pageTitle: '',
+    pageTitle: '', // Calculated automatically
     navContext: {
       type: 'student',
       page: 'assessment_instance',
