@@ -9,7 +9,6 @@ import {
   queryOptionalScalar,
   queryRow,
   queryRows,
-  queryScalar,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -189,14 +188,15 @@ export function selectAssessmentsCursor({
   );
 }
 
-export async function selectAssessmentZonePointsTotal({
+export async function selectAssessmentZonePointsRange({
   assessment_id,
 }: {
   assessment_id: string;
-}): Promise<number> {
-  return await queryScalar(
-    sql.select_assessment_zone_points_total,
+}): Promise<{ min: number; max: number }> {
+  const row = await queryRow(
+    sql.select_assessment_zone_points_range,
     { assessment_id },
-    z.coerce.number(),
+    z.object({ min_total: z.coerce.number(), max_total: z.coerce.number() }),
   );
+  return { min: row.min_total, max: row.max_total };
 }

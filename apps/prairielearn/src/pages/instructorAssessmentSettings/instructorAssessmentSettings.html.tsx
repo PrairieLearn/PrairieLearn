@@ -22,34 +22,62 @@ import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
 
 function ScoringSummary({
-  zonePointsTotal,
+  zonePointsRange,
   useCustomMaxPoints,
   customMaxPoints,
   bonusPoints,
 }: {
-  zonePointsTotal: number;
+  zonePointsRange: { min: number; max: number };
   useCustomMaxPoints: boolean;
   customMaxPoints: number;
   bonusPoints: number;
 }) {
-  const maxPoints = useCustomMaxPoints
-    ? customMaxPoints
-    : Math.max(zonePointsTotal - bonusPoints, 0);
+  const totalPoints = useCustomMaxPoints ? customMaxPoints + bonusPoints : zonePointsRange.max;
 
-  if (bonusPoints >= zonePointsTotal && bonusPoints > 0 && !useCustomMaxPoints) {
+  if (useCustomMaxPoints) {
+    const maxPerc =
+      bonusPoints > 0 ? Math.round(((customMaxPoints + bonusPoints) / customMaxPoints) * 100) : 100;
     return (
-      <div className="text-muted small">
-        This assessment has {zonePointsTotal} points across all zones. All points are treated as
-        bonus &mdash; students achieve 100% with 0 points.
-      </div>
+      <Alert variant="light" className="mb-0 small">
+        {bonusPoints > 0 ? (
+          <>
+            Students get up to {totalPoints} points: 100% at {customMaxPoints} points, and up to{' '}
+            {maxPerc}% with {bonusPoints} bonus points.
+          </>
+        ) : (
+          <>Students need {customMaxPoints} points for 100%.</>
+        )}
+      </Alert>
     );
   }
 
+  if (bonusPoints >= zonePointsRange.max && bonusPoints > 0) {
+    return (
+      <Alert variant="light" className="mb-0 small">
+        Students get up to {totalPoints} points: all zone points are treated as bonus &mdash; 100%
+        is achieved with 0 points.
+      </Alert>
+    );
+  }
+
+  const effectiveMax = Math.max(zonePointsRange.max - bonusPoints, 0);
+  const effectiveMin = Math.max(zonePointsRange.min - bonusPoints, 0);
+  const isRange = effectiveMin !== effectiveMax;
+  const neededText = isRange ? `${effectiveMin}–${effectiveMax}` : String(effectiveMax);
+  const maxPerc =
+    bonusPoints > 0 ? Math.round(((effectiveMax + bonusPoints) / effectiveMax) * 100) : 100;
+
   return (
-    <div className="text-muted small">
-      This assessment has {zonePointsTotal} points across all zones. Students need {maxPoints}{' '}
-      points for 100%{bonusPoints > 0 ? `, with up to ${bonusPoints} bonus points` : ''}.
-    </div>
+    <Alert variant="light" className="mb-0 small">
+      {bonusPoints > 0 ? (
+        <>
+          Students get up to {totalPoints} points: 100% at {neededText} points, and up to {maxPerc}%
+          with {bonusPoints} bonus points.
+        </>
+      ) : (
+        <>Students need {neededText} points for 100%.</>
+      )}
+    </Alert>
   );
 }
 
@@ -92,7 +120,7 @@ interface InstructorAssessmentSettingsProps {
   courseInstance: StaffCourseInstance;
   isDevMode: boolean;
   assessmentTools: AssessmentToolsConfig;
-  zonePointsTotal: number;
+  zonePointsRange: { min: number; max: number };
 }
 
 export function InstructorAssessmentSettings({
@@ -111,7 +139,7 @@ export function InstructorAssessmentSettings({
   courseInstance,
   isDevMode,
   assessmentTools,
-  zonePointsTotal,
+  zonePointsRange,
 }: InstructorAssessmentSettingsProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -138,7 +166,7 @@ export function InstructorAssessmentSettings({
           assessmentSets={assessmentSets}
           assessmentModules={assessmentModules}
           assessmentTools={assessmentTools}
-          zonePointsTotal={zonePointsTotal}
+          zonePointsRange={zonePointsRange}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -160,7 +188,7 @@ function InstructorAssessmentSettingsInner({
   assessmentSets,
   assessmentModules,
   assessmentTools,
-  zonePointsTotal,
+  zonePointsRange,
 }: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'isDevMode' | 'courseInstance'>) {
   const trpc = useTRPC();
   const [currentOrigHash, setCurrentOrigHash] = useState(origHash);
@@ -249,7 +277,12 @@ function InstructorAssessmentSettingsInner({
   const requireHonorCode = watch('require_honor_code');
   const currentAid = watch('aid');
   const currentBonusPoints = Number(watch('max_bonus_points')) || 0;
-  const effectiveMaxPoints = Math.max(zonePointsTotal - currentBonusPoints, 0);
+  const effectiveMaxPoints = Math.max(zonePointsRange.max - currentBonusPoints, 0);
+  const effectiveMinPoints = Math.max(zonePointsRange.min - currentBonusPoints, 0);
+  const effectiveMaxPointsDisplay =
+    effectiveMinPoints !== effectiveMaxPoints
+      ? `${effectiveMinPoints}–${effectiveMaxPoints}`
+      : String(effectiveMaxPoints);
 
   const currentGHLink =
     assessmentGHLink && assessment.tid
@@ -577,11 +610,11 @@ function InstructorAssessmentSettingsInner({
                     />
                   ) : (
                     <input
-                      type="number"
+                      type="text"
                       className="form-control"
                       id="max_points"
                       aria-describedby="max-points-help"
-                      value={effectiveMaxPoints}
+                      value={effectiveMaxPointsDisplay}
                       disabled
                       readOnly
                     />
@@ -595,9 +628,15 @@ function InstructorAssessmentSettingsInner({
                     The number of points that must be earned in this assessment to achieve a score
                     of 100%.
                     {useCustomMaxPoints
-                      ? ` Overriding the computed sum of zone points (${zonePointsTotal}).`
+                      ? ` Overriding the computed sum of zone points (${zonePointsRange.min !== zonePointsRange.max ? `${zonePointsRange.min}–${zonePointsRange.max}` : zonePointsRange.max}).`
                       : ''}
                   </small>
+                  {zonePointsRange.min !== zonePointsRange.max && (
+                    <small className="form-text text-warning-emphasis d-block">
+                      Point total varies because zones or question pools randomly select questions
+                      with different point values.
+                    </small>
+                  )}
                 </div>
                 <div className="col-md-6 mb-3">
                   <label className="form-label" htmlFor="max_bonus_points">
@@ -631,7 +670,7 @@ function InstructorAssessmentSettingsInner({
                 </div>
               </div>
               <ScoringSummary
-                zonePointsTotal={zonePointsTotal}
+                zonePointsRange={zonePointsRange}
                 useCustomMaxPoints={useCustomMaxPoints}
                 customMaxPoints={Number(watch('max_points')) || 0}
                 bonusPoints={currentBonusPoints}

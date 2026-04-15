@@ -155,28 +155,148 @@ FROM
 WHERE
   z.assessment_id = $assessment_id;
 
--- BLOCK select_assessment_zone_points_total
-SELECT
-  coalesce(
-    sum(
-      CASE
-        WHEN z.max_points IS NOT NULL THEN LEAST(zq.question_points, z.max_points)
-        ELSE zq.question_points
-      END
-    ),
-    0
-  ) AS total
-FROM
-  zones AS z
-  LEFT JOIN LATERAL (
+-- BLOCK select_assessment_zone_points_range
+WITH
+  -- For each alternative group, rank questions by max_points (best and worst).
+  -- When number_choose is set, only a subset of questions is selected.
+  alt_group_questions AS (
     SELECT
-      coalesce(sum(aq.max_points), 0) AS question_points
+      ag.id AS ag_id,
+      ag.zone_id,
+      ag.number_choose,
+      aq.max_points,
+      row_number() OVER (
+        PARTITION BY
+          ag.id
+        ORDER BY
+          aq.max_points DESC
+      ) AS rank_desc,
+      row_number() OVER (
+        PARTITION BY
+          ag.id
+        ORDER BY
+          aq.max_points ASC
+      ) AS rank_asc,
+      count(*) OVER (
+        PARTITION BY
+          ag.id
+      ) AS total_in_group
     FROM
       alternative_groups AS ag
       JOIN assessment_questions AS aq ON (aq.alternative_group_id = ag.id)
     WHERE
-      ag.zone_id = z.id
+      ag.zone_id IN (
+        SELECT
+          id
+        FROM
+          zones
+        WHERE
+          assessment_id = $assessment_id
+      )
       AND aq.deleted_at IS NULL
-  ) AS zq ON TRUE
-WHERE
-  z.assessment_id = $assessment_id;
+  ),
+  -- Sum the best-case and worst-case points per alternative group.
+  alt_group_totals AS (
+    SELECT
+      ag_id,
+      zone_id,
+      sum(
+        CASE
+          WHEN rank_desc <= coalesce(number_choose, total_in_group) THEN max_points
+          ELSE 0
+        END
+      ) AS max_points,
+      sum(
+        CASE
+          WHEN rank_asc <= coalesce(number_choose, total_in_group) THEN max_points
+          ELSE 0
+        END
+      ) AS min_points
+    FROM
+      alt_group_questions
+    GROUP BY
+      ag_id,
+      zone_id
+  ),
+  -- Within each zone, rank alternative group totals for best_questions / number_choose.
+  zone_blocks AS (
+    SELECT
+      agt.zone_id,
+      agt.max_points,
+      agt.min_points,
+      z.best_questions,
+      z.number_choose AS zone_number_choose,
+      z.max_points AS zone_max_points,
+      row_number() OVER (
+        PARTITION BY
+          agt.zone_id
+        ORDER BY
+          agt.max_points DESC
+      ) AS rank_best,
+      row_number() OVER (
+        PARTITION BY
+          agt.zone_id
+        ORDER BY
+          agt.min_points ASC
+      ) AS rank_worst,
+      count(*) OVER (
+        PARTITION BY
+          agt.zone_id
+      ) AS total_blocks
+    FROM
+      alt_group_totals AS agt
+      JOIN zones AS z ON (z.id = agt.zone_id)
+  ),
+  -- Compute per-zone best-case and worst-case totals.
+  zone_totals AS (
+    SELECT
+      zone_id,
+      zone_max_points,
+      sum(
+        CASE
+          WHEN rank_best <= coalesce(
+            best_questions,
+            coalesce(zone_number_choose, total_blocks)
+          ) THEN max_points
+          ELSE 0
+        END
+      ) AS zone_max,
+      sum(
+        CASE
+          WHEN rank_worst <= coalesce(
+            best_questions,
+            coalesce(zone_number_choose, total_blocks)
+          ) THEN min_points
+          ELSE 0
+        END
+      ) AS zone_min
+    FROM
+      zone_blocks
+    GROUP BY
+      zone_id,
+      zone_max_points,
+      best_questions,
+      zone_number_choose,
+      total_blocks
+  )
+SELECT
+  coalesce(
+    sum(
+      CASE
+        WHEN zone_max_points IS NOT NULL THEN LEAST(zone_max, zone_max_points)
+        ELSE zone_max
+      END
+    ),
+    0
+  ) AS max_total,
+  coalesce(
+    sum(
+      CASE
+        WHEN zone_max_points IS NOT NULL THEN LEAST(zone_min, zone_max_points)
+        ELSE zone_min
+      END
+    ),
+    0
+  ) AS min_total
+FROM
+  zone_totals;

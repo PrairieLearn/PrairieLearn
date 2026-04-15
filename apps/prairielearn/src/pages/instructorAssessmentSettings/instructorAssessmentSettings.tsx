@@ -28,7 +28,7 @@ import { selectAssessmentModulesForCourse } from '../../models/assessment-module
 import { selectAssessmentSetsForCourse } from '../../models/assessment-set.js';
 import {
   selectAssessmentToolDefaults,
-  selectAssessmentZonePointsTotal,
+  selectAssessmentZonePointsRange,
 } from '../../models/assessment.js';
 import { EnumAssessmentToolSchema } from '../../schemas/infoAssessment.js';
 
@@ -77,9 +77,9 @@ router.get(
 
     const origHash = (await getOriginalHash(fullInfoAssessmentPath)) ?? '';
 
-    const [toolDefaultRows, zonePointsTotal] = await Promise.all([
+    const [toolDefaultRows, zonePointsRange] = await Promise.all([
       selectAssessmentToolDefaults({ assessment_id: assessment.id }),
-      selectAssessmentZonePointsTotal({ assessment_id: assessment.id }),
+      selectAssessmentZonePointsRange({ assessment_id: assessment.id }),
     ]);
     const enabledTools = new Set(toolDefaultRows.filter((r) => r.enabled).map((r) => r.tool));
     const assessmentTools: AssessmentToolsConfig = EnumAssessmentToolSchema.options.map((tool) => ({
@@ -138,7 +138,7 @@ router.get(
               courseInstance={course_instance}
               isDevMode={config.devMode}
               assessmentTools={assessmentTools}
-              zonePointsTotal={zonePointsTotal}
+              zonePointsRange={zonePointsRange}
             />
           </Hydrate>
         ),
