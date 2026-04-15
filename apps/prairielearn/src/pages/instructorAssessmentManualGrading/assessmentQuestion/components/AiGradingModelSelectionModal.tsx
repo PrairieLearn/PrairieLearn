@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
-import { Alert, Button, Form, Modal } from 'react-bootstrap';
+import { Alert, Button, Form, Modal, Spinner } from 'react-bootstrap';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
@@ -277,9 +277,12 @@ export function AiGradingModelSelectionModal({
   const { mutate, reset, isPending, isError, error } = useMutation(
     trpc.manualGrading.aiGradeInstanceQuestions.mutationOptions(),
   );
-  const { data: concurrencyStatus } = useQuery(
-    trpc.manualGrading.aiGradingConcurrencyStatus.queryOptions(),
-  );
+  const isModalOpen = modalState != null;
+  const { data: concurrencyStatus, isLoading: isConcurrencyLoading } = useQuery({
+    ...trpc.manualGrading.aiGradingConcurrencyStatus.queryOptions(),
+    enabled: isModalOpen,
+    refetchOnMount: 'always',
+  });
   const defaultModel = getDefaultModel(aiGradingLastSelectedModel, availableProviders);
   const [selectedModel, setSelectedModel] = useState<AiGradingModelId>(defaultModel);
 
@@ -338,7 +341,12 @@ export function AiGradingModelSelectionModal({
         </Modal.Header>
 
         <Modal.Body>
-          {isAtConcurrencyLimit ? (
+          {isConcurrencyLoading ? (
+            <Alert variant="info" className="mb-3 py-2 small d-flex align-items-center gap-2">
+              <Spinner animation="border" size="sm" />
+              Checking grading availability...
+            </Alert>
+          ) : isAtConcurrencyLimit ? (
             <Alert variant="warning" className="mb-3 py-2 small">
               You can only run {concurrencyStatus.max_concurrent_jobs} AI grading jobs at a time.
               Please wait for existing jobs to complete before starting new ones.
@@ -373,7 +381,12 @@ export function AiGradingModelSelectionModal({
               </Button>
               <Button
                 variant="primary"
-                disabled={isPending || !isSelectedModelAvailable || !isGradingEnabled}
+                disabled={
+                  isPending ||
+                  isConcurrencyLoading ||
+                  !isSelectedModelAvailable ||
+                  !isGradingEnabled
+                }
                 type="submit"
               >
                 {isPending

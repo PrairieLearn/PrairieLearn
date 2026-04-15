@@ -274,7 +274,7 @@ async function finalizeAiGradingPersistence({
 }
 
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
-export const MAX_CONCURRENT_AI_GRADING_JOBS_PER_USER = 5;
+export const MAX_CONCURRENT_AI_GRADING_JOBS_PER_USER = 1;
 
 export async function getRunningAiGradingJobCount(authn_user_id: string): Promise<number> {
   return await queryScalar(
