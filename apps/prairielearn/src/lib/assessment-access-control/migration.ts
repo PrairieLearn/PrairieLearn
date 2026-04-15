@@ -105,7 +105,7 @@ function findReleaseDate(rules: AssessmentAccessRuleJson[]): string | undefined 
  * - Removes rules with a `role` that is neither absent nor 'Student'.
  * - Strips `mode: 'Public'` (effectively a no-op for students).
  */
-export function normalizeRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
+function normalizeRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
   return rules
     .filter((r) => !r.uids)
     .filter((r) => r.role == null || r.role === 'Student')
