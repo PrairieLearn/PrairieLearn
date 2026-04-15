@@ -442,7 +442,7 @@ describe('Date ordering validation', () => {
           earlyDeadlines: [{ date: '2024-03-25T00:00:00', credit: 120 }],
         },
       },
-      errorMatch: 'Early deadline date 2024-03-25T00:00:00 must be on or before the due date.',
+      errorMatch: 'Early deadline date 2024-03-25T00:00:00 must be before the due date.',
     },
     {
       label: 'early deadline before release date',
@@ -462,7 +462,27 @@ describe('Date ordering validation', () => {
           lateDeadlines: [{ date: '2024-03-18T00:00:00', credit: 80 }],
         },
       },
-      errorMatch: 'Late deadline date 2024-03-18T00:00:00 must be on or after the due date.',
+      errorMatch: 'Late deadline date 2024-03-18T00:00:00 must be after the due date.',
+    },
+    {
+      label: 'early deadline equal to due date',
+      config: {
+        dateControl: {
+          dueDate: '2024-03-20T00:00:00',
+          earlyDeadlines: [{ date: '2024-03-20T00:00:00', credit: 120 }],
+        },
+      },
+      errorMatch: 'Early deadline date 2024-03-20T00:00:00 must be before the due date.',
+    },
+    {
+      label: 'late deadline equal to due date',
+      config: {
+        dateControl: {
+          dueDate: '2024-03-20T00:00:00',
+          lateDeadlines: [{ date: '2024-03-20T00:00:00', credit: 80 }],
+        },
+      },
+      errorMatch: 'Late deadline date 2024-03-20T00:00:00 must be after the due date.',
     },
     {
       label: 'late deadline before release date',
@@ -548,24 +568,6 @@ describe('Date ordering validation', () => {
   });
 
   it.each([
-    {
-      label: 'early deadline equal to due date',
-      config: {
-        dateControl: {
-          dueDate: '2024-03-20T00:00:00',
-          earlyDeadlines: [{ date: '2024-03-20T00:00:00', credit: 120 }],
-        },
-      },
-    },
-    {
-      label: 'late deadline equal to due date',
-      config: {
-        dateControl: {
-          dueDate: '2024-03-20T00:00:00',
-          lateDeadlines: [{ date: '2024-03-20T00:00:00', credit: 80 }],
-        },
-      },
-    },
     {
       label: 'visibleFromDate after last deadline for questions',
       config: {
@@ -917,7 +919,7 @@ describe('Global temporal validation', () => {
     assert.isTrue(
       issues.some(
         (issue) =>
-          issue.message === 'Early deadline must be on or before the latest possible due date.',
+          issue.message === 'Early deadline must be before the latest possible due date.',
       ),
     );
   });

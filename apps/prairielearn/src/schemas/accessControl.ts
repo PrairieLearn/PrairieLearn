@@ -20,6 +20,12 @@ const DateControlJsonSchema = z
   .object({
     releaseDate: DatetimeLocalStringSchema.optional().describe('Release date as ISO String'),
     dueDate: DatetimeLocalStringSchema.nullable().optional().describe('Due date as ISO String'),
+    dueDateCredit: z
+      .number()
+      .min(0)
+      .max(200)
+      .optional()
+      .describe('Credit percentage at the due date. Omitted when 100% (the default).'),
     earlyDeadlines: z
       .array(DeadlineEntryJsonSchema)
       .nullable()
