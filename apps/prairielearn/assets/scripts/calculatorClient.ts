@@ -101,7 +101,9 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   );
   const copyButton = ensureElement(drawer.querySelector<HTMLElement>('#calculator-output-copy'));
   const historyPanel = ensureElement(drawer.querySelector<HTMLElement>('#history-panel'));
-  const clearHistoryBtn = ensureElement(drawer.querySelector<HTMLElement>('#calculatorClearHistory'));
+  const clearHistoryBtn = ensureElement(
+    drawer.querySelector<HTMLElement>('#calculatorClearHistory'),
+  );
   const historyTemplate = ensureElement(
     drawer.querySelector<HTMLTemplateElement>('#history-item-template'),
   );
