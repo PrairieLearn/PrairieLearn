@@ -87,16 +87,16 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
-      name: 'prairietest-exam',
+      name: 'prairietest with viewing rule',
       rules: [
         { examUuid: 'exam-uuid-1', credit: 100 },
         { startDate: '2024-01-01', active: false },
       ],
       expected: {
-        archetype: { base: 'prairietest-exam', modifiers: [] },
+        archetype: { base: 'view-only', modifiers: ['prairietest'] },
         result: {
-          integrations: { prairieTest: { exams: [{ examUuid: 'exam-uuid-1' }] } },
           dateControl: { releaseDate: '2024-01-01', dueDate: null },
+          integrations: { prairieTest: { exams: [{ examUuid: 'exam-uuid-1' }] } },
         },
         errors: [],
         notes: [],
@@ -177,9 +177,7 @@ describe('migrateAllowAccess', () => {
       expected: {
         archetype: { base: 'practice-only', modifiers: [] },
         result: {},
-        errors: [
-          'Modern access control does not support using 0 credit to indicate overall weight within the course.',
-        ],
+        errors: ['Using 0 credit to indicate overall weight within the course is not supported.'],
         notes: [],
         hasUidRules: false,
       },
@@ -190,9 +188,38 @@ describe('migrateAllowAccess', () => {
       expected: {
         archetype: { base: 'practice-only', modifiers: [] },
         result: {},
-        errors: [
-          'Modern access control does not support using 0 credit to indicate overall weight within the course.',
-        ],
+        errors: ['Using 0 credit to indicate overall weight within the course is not supported.'],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'single-deadline with practice window',
+      rules: [
+        {
+          mode: 'Public',
+          credit: 100,
+          startDate: '2021-03-20T00:00:01',
+          endDate: '2021-03-23T23:59:59',
+        },
+        // Legacy system uses rule with highest credit, so this is effectively
+        // the same as saying the startDate is 2021-03-23T23:59:59.
+        {
+          mode: 'Public',
+          startDate: '2021-03-20T00:00:01',
+          endDate: '2021-04-30T23:59:59',
+        },
+      ],
+      expected: {
+        archetype: { base: 'single-deadline', modifiers: [] },
+        result: {
+          dateControl: {
+            releaseDate: '2021-03-20T00:00:01',
+            dueDate: '2021-03-23T23:59:59',
+            afterLastDeadline: { allowSubmissions: true, credit: 0 },
+          },
+        },
+        errors: [],
         notes: [],
         hasUidRules: false,
       },
@@ -523,7 +550,7 @@ describe('migrateAllowAccess', () => {
         { examUuid: 'exam-2', credit: 100 },
       ],
       expected: {
-        archetype: { base: 'prairietest-exam', modifiers: [] },
+        archetype: { base: 'no-op', modifiers: ['prairietest'] },
         result: {
           integrations: {
             prairieTest: { exams: [{ examUuid: 'exam-1' }, { examUuid: 'exam-2' }] },
@@ -550,6 +577,37 @@ describe('migrateAllowAccess', () => {
         result: {
           dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
           afterComplete: { questions: { hidden: true } },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'password-gated with practice window',
+      rules: [
+        {
+          startDate: '2021-10-21T14:00:00',
+          endDate: '2021-10-21T15:15:00',
+          timeLimitMin: 55,
+          password: 'password',
+        },
+        {
+          startDate: '2021-10-20T14:00:00',
+          endDate: '2021-12-19T15:15:00',
+          credit: 0,
+          active: false,
+        },
+      ],
+      expected: {
+        archetype: { base: 'password-gated', modifiers: [] },
+        result: {
+          dateControl: {
+            password: 'password',
+            releaseDate: '2021-10-21T14:00:00',
+            dueDate: '2021-10-21T15:15:00',
+            afterLastDeadline: { allowSubmissions: true, credit: 0 },
+          },
         },
         errors: [],
         notes: [],
@@ -726,6 +784,7 @@ describe('migrateAllowAccess', () => {
             releaseDate: '2023-02-14T11:00:01',
             dueDate: '2023-02-18T23:59:59',
             lateDeadlines: [{ date: '2023-02-20T23:59:59', credit: 95 }],
+            afterLastDeadline: { allowSubmissions: true, credit: 0 },
           },
         },
         errors: [],

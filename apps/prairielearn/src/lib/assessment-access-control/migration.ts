@@ -21,14 +21,13 @@ type BaseArchetype =
   | 'multi-deadline'
   | 'no-op'
   | 'password-gated'
-  | 'prairietest-exam'
   | 'single-deadline'
   | 'single-deadline-with-viewing'
   | 'single-reduced-credit'
   | 'timed-assessment'
   | 'unclassified'
   | 'view-only';
-export type ArchetypeModifier = 'mode-gated' | 'hides-closed' | 'hides-score';
+export type ArchetypeModifier = 'mode-gated' | 'hides-closed' | 'hides-score' | 'prairietest';
 export interface Archetype {
   base: BaseArchetype;
   modifiers: ArchetypeModifier[];
@@ -160,6 +159,33 @@ function shouldListBeforeRelease(rules: AssessmentAccessRuleJson[]): boolean {
   });
 }
 
+/**
+ * Detects non-credit rules (credit: 0) that extend beyond the last credit
+ * deadline. When found, sets `afterLastDeadline` to allow submissions with
+ * 0 credit. Skips if `afterLastDeadline` is already set (e.g. from
+ * open-ended credit rules in declining-credit).
+ *
+ * Uses `dateControl.dueDate` as the effective deadline when
+ * `findLastCreditEndDate` returns nothing (e.g. password-gated rules where
+ * credit is implicit).
+ */
+function applyPracticeWindow(
+  result: AccessControlJsonInput,
+  rules: AssessmentAccessRuleJson[],
+): void {
+  if (!result.dateControl || result.dateControl.afterLastDeadline) return;
+
+  const lastDeadline = findLastCreditEndDate(rules) ?? result.dateControl.dueDate ?? undefined;
+  if (!lastDeadline) return;
+
+  const hasPracticeWindow = rules.some(
+    (r) => (r.credit ?? 0) === 0 && r.endDate && r.endDate > lastDeadline,
+  );
+  if (hasPracticeWindow) {
+    result.dateControl.afterLastDeadline = { allowSubmissions: true, credit: 0 };
+  }
+}
+
 function applyVisibilityMigration(
   result: AccessControlJsonInput,
   rules: AssessmentAccessRuleJson[],
@@ -194,7 +220,6 @@ function normalizeRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRule
 }
 
 interface RuleAnalysis {
-  isPrairieTest: boolean;
   hasPassword: boolean;
   creditType: 'bonus' | 'full' | 'reduced' | 'none';
   hasDates: boolean;
@@ -218,7 +243,6 @@ function analyzeRule(rule: AssessmentAccessRuleJson): RuleAnalysis {
   else if (credit > 0) creditType = 'reduced';
 
   return {
-    isPrairieTest: !!rule.examUuid,
     hasPassword: !!rule.password,
     creditType,
     hasDates: hasStart || hasEnd,
@@ -277,11 +301,17 @@ function hasAccessGaps(rules: AssessmentAccessRuleJson[]): boolean {
 
 function classifyArchetype(rules: AssessmentAccessRuleJson[]): Archetype {
   rules = normalizeRules(rules);
-  const analyzed = rules.map(analyzeRule);
+
+  // First pass: detect and strip PrairieTest rules. The exam integration is
+  // orthogonal to the date/credit classification, so we add it as a modifier
+  // and classify the remaining rules normally.
+  const hasPrairieTest = rules.some((r) => r.examUuid);
+  const nonExamRules = rules.filter((r) => !r.examUuid);
+
+  const analyzed = nonExamRules.map(analyzeRule);
   const creditRules = analyzed.filter((r) => r.creditType !== 'none');
   const nonCreditRules = analyzed.filter((r) => r.creditType === 'none');
 
-  const hasPrairieTest = analyzed.some((r) => r.isPrairieTest);
   const hasPassword = analyzed.some((r) => r.hasPassword);
   const hasTimed = analyzed.some((r) => r.isTimed && r.creditType !== 'none');
   const hasBonusCredit = creditRules.some((r) => r.creditType === 'bonus');
@@ -289,8 +319,7 @@ function classifyArchetype(rules: AssessmentAccessRuleJson[]): Archetype {
   const hasReducedCredit = creditRules.some((r) => r.creditType === 'reduced');
   const hasOpenCredit = creditRules.some((r) => r.isOpenCredit);
   const hasViewing = nonCreditRules.some(
-    (r) =>
-      !r.isActive && r.hasDates && !r.isPrairieTest && !r.hasPassword && !r.hidesClosedAssessment,
+    (r) => !r.isActive && r.hasDates && !r.hasPassword && !r.hidesClosedAssessment,
   );
   const hasHiding = nonCreditRules.some(
     (r) => !r.isActive || r.hidesClosedAssessment || r.hidesClosedScore,
@@ -298,6 +327,7 @@ function classifyArchetype(rules: AssessmentAccessRuleJson[]): Archetype {
   const hasModeGate = analyzed.some((r) => r.hasMode);
 
   const modifiers: ArchetypeModifier[] = [];
+  if (hasPrairieTest) modifiers.push('prairietest');
   if (creditRules.some((r) => r.hasMode)) modifiers.push('mode-gated');
   else if (hasModeGate && !hasViewing && !hasHiding) modifiers.push('mode-gated');
   if (creditRules.some((r) => r.hidesClosedAssessment)) modifiers.push('hides-closed');
@@ -305,7 +335,7 @@ function classifyArchetype(rules: AssessmentAccessRuleJson[]): Archetype {
 
   // Detect gaps between access windows (ACCESS <-> NO ACCESS <-> ACCESS).
   // The modern format cannot represent non-contiguous access periods.
-  if (hasAccessGaps(rules)) {
+  if (hasAccessGaps(nonExamRules)) {
     return { base: 'unclassified', modifiers: [] };
   }
 
@@ -316,16 +346,13 @@ function classifyArchetype(rules: AssessmentAccessRuleJson[]): Archetype {
       !r.hasDates &&
       !r.isTimed &&
       !r.hasMode &&
-      !r.isPrairieTest &&
       !r.hasPassword &&
       !r.hidesClosedAssessment &&
       !r.hidesClosedScore,
   );
 
   if (allNoOp) {
-    return { base: 'no-op', modifiers: [] };
-  } else if (hasPrairieTest) {
-    return { base: 'prairietest-exam', modifiers: [] };
+    return { base: 'no-op', modifiers };
   } else if (hasPassword) {
     return { base: 'password-gated', modifiers: [] };
   } else if (hasTimed) {
@@ -400,6 +427,7 @@ function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
     }
   }
 
+  applyPracticeWindow(result, rules);
   applyVisibilityMigration(result, rules);
 
   return { result, errors: [], notes: [] };
@@ -505,38 +533,10 @@ function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
     result.dateControl!.afterLastDeadline = { allowSubmissions: true, credit: maxOpenCredit };
   }
 
+  applyPracticeWindow(result, rules);
   applyVisibilityMigration(result, rules);
 
   return { result, errors: [], notes };
-}
-
-function migratePrairieTestExam(rules: AssessmentAccessRuleJson[]): {
-  result: AccessControlJsonInput;
-  errors: string[];
-  notes: string[];
-} {
-  const examRules = rules.filter((r) => r.examUuid);
-  const exams = examRules.map((r) => ({ examUuid: r.examUuid! }));
-
-  const result: AccessControlJsonInput = {
-    integrations: {
-      prairieTest: {
-        exams,
-      },
-    },
-  };
-
-  const releaseDate = findReleaseDate(rules);
-  if (releaseDate) {
-    result.dateControl = {
-      releaseDate,
-      dueDate: null,
-    };
-  }
-
-  applyVisibilityMigration(result, rules);
-
-  return { result, errors: [], notes: [] };
 }
 
 function migrateViewOnly(rules: AssessmentAccessRuleJson[]): {
@@ -588,6 +588,7 @@ function migrateMultiDeadline(rules: AssessmentAccessRuleJson[]): {
   if (releaseDate) result.dateControl!.releaseDate = releaseDate;
   if (dueDate) result.dateControl!.dueDate = dueDate;
 
+  applyPracticeWindow(result, rules);
   applyVisibilityMigration(result, rules);
 
   return { result, errors: [], notes };
@@ -608,6 +609,7 @@ function migratePasswordGated(rules: AssessmentAccessRuleJson[]): {
   if (passwordRule.startDate) result.dateControl!.releaseDate = passwordRule.startDate;
   if (passwordRule.endDate) result.dateControl!.dueDate = passwordRule.endDate;
 
+  applyPracticeWindow(result, rules);
   applyVisibilityMigration(result, rules);
 
   return { result, errors: [], notes: [] };
@@ -625,16 +627,19 @@ function migrateHidden(_rules: AssessmentAccessRuleJson[]): {
   };
 }
 
-function migrateNoOp(_rules: AssessmentAccessRuleJson[]): {
+function migrateNoOp(
+  _rules: AssessmentAccessRuleJson[],
+  modifiers: ArchetypeModifier[],
+): {
   result: AccessControlJsonInput;
   errors: string[];
   notes: string[];
 } {
-  return {
-    result: {},
-    errors: [],
-    notes: ['An empty accessControl list signifies that no access is granted.'],
-  };
+  const notes: string[] = [];
+  if (modifiers.length === 0) {
+    notes.push('An empty accessControl list signifies that no access is granted.');
+  }
+  return { result: {}, errors: [], notes };
 }
 
 function migrateAlwaysOpen(rules: AssessmentAccessRuleJson[]): {
@@ -668,6 +673,7 @@ function migrateAlwaysOpen(rules: AssessmentAccessRuleJson[]): {
 function migrateKnownAllowAccess(
   baseArchetype: BaseArchetype,
   rules: AssessmentAccessRuleJson[],
+  modifiers: ArchetypeModifier[],
 ): { result: AccessControlJsonInput; errors: string[]; notes: string[] } {
   switch (baseArchetype) {
     case 'single-deadline':
@@ -678,9 +684,6 @@ function migrateKnownAllowAccess(
 
     case 'declining-credit':
       return migrateDecliningCredit(rules);
-
-    case 'prairietest-exam':
-      return migratePrairieTestExam(rules);
 
     case 'view-only':
       return migrateViewOnly(rules);
@@ -695,7 +698,7 @@ function migrateKnownAllowAccess(
       return migrateHidden(rules);
 
     case 'no-op':
-      return migrateNoOp(rules);
+      return migrateNoOp(rules, modifiers);
     // TODO: revisit always-open migration. The modern format requires a
     // releaseDate to grant access, so we can't express "100% credit forever"
     // without one. For now, treat this as an error rather than silently
@@ -733,7 +736,11 @@ export function migrateAllowAccess(rules: AssessmentAccessRuleJson[]): Migration
   rules = normalizeRules(rules);
   const archetype: Archetype = classifyArchetype(rules);
 
-  if (archetype.base === 'unclassified' && hasAccessGaps(rules)) {
+  // Strip PrairieTest rules before date/credit migration so the classifier
+  // and migrators only see the scheduling rules.
+  const nonExamRules = rules.filter((r) => !r.examUuid);
+
+  if (archetype.base === 'unclassified' && hasAccessGaps(nonExamRules)) {
     return {
       archetype,
       result: {},
@@ -743,7 +750,17 @@ export function migrateAllowAccess(rules: AssessmentAccessRuleJson[]): Migration
     };
   }
 
-  const migration = migrateKnownAllowAccess(archetype.base, rules);
+  const migration = migrateKnownAllowAccess(archetype.base, nonExamRules, archetype.modifiers);
+
+  // Second pass: merge PrairieTest integration info into the result.
+  if (archetype.modifiers.includes('prairietest')) {
+    const examRules = rules.filter((r) => r.examUuid);
+    const exams = examRules.map((r) => ({ examUuid: r.examUuid! }));
+    migration.result.integrations = {
+      prairieTest: { exams },
+    };
+  }
+
   if (hasUidRules) {
     migration.notes.push(
       'UID-based rules are excluded from the migrated JSON and must be recreated as enrollment overrides if needed.',
