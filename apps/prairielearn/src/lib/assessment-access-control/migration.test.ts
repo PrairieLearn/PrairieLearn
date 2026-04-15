@@ -140,6 +140,7 @@ describe('migrateAllowAccess', () => {
         hasUidRules: false,
       },
     },
+    // TODO: handle this case better.
     {
       name: 'always-open',
       rules: [{ credit: 100 }],
@@ -419,6 +420,7 @@ describe('migrateAllowAccess', () => {
         hasUidRules: false,
       },
     },
+    // TODO: make the migration result pass validation.
     {
       name: 'declining-credit with bonus and reduced (no full) uses dueDateCredit',
       rules: [
@@ -475,6 +477,7 @@ describe('migrateAllowAccess', () => {
         hasUidRules: false,
       },
     },
+    // TODO: make the migration result pass validation.
     {
       name: 'single-reduced-credit uses dueDateCredit',
       rules: [{ credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' }],
@@ -576,6 +579,7 @@ describe('migrateAllowAccess', () => {
         hasUidRules: false,
       },
     },
+    // TODO: make the migration result pass validation.
     {
       name: 'password-gated without dates',
       rules: [{ password: 'secret', credit: 100 }],
@@ -622,6 +626,7 @@ describe('migrateAllowAccess', () => {
         hasUidRules: false,
       },
     },
+    // TODO: make the migration result pass validation.
     {
       name: 'half-open contiguous (endDate meets startDate)',
       rules: [
