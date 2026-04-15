@@ -129,8 +129,9 @@ function MatchingSummary({ bestResult }: { bestResult: StrategyResult }) {
       <Alert variant="danger" className="d-flex align-items-start gap-2">
         <i className="bi bi-x-circle-fill" />
         <div>
-          No matching strategy was able to match any students. Identity columns in the exported CSV
-          will be empty. Verify that the uploaded file is a gradebook CSV exported from Canvas.
+          We were unable to match any provided Canvas student records to PrairieLearn students.
+          Identity columns in the exported CSV will be empty. Verify that the uploaded file is a
+          gradebook CSV exported from Canvas.
         </div>
       </Alert>
     );
@@ -178,7 +179,8 @@ function MatchingSummary({ bestResult }: { bestResult: StrategyResult }) {
           </div>
           {unmatchedPl.length > 0 && (
             <div className="mt-1 small">
-              Unmatched PrairieLearn students will have empty identity columns in the exported CSV.
+              Unmatched PrairieLearn students will have populated names but empty identity columns
+              in the exported CSV.
             </div>
           )}
         </div>
