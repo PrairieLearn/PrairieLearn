@@ -216,7 +216,7 @@ async function courseInstanceConsistencyCheck({
       ...ci,
       diskUuid: courseInstances[ci.short_name!].courseInstance.uuid,
     }))
-    .filter((ci) => ci.diskUuid !== ci.uuid);
+    .filter((ci) => ci.diskUuid && ci.diskUuid !== ci.uuid);
   if (mismatchedInstanceUuids.length > 0) {
     throw new AugmentedError(
       'Assertion: Course instances exist where the UUID in the database does not match the UUID in disk data',
