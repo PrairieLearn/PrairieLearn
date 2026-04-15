@@ -5,6 +5,7 @@ import z from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { withBrand } from '@prairielearn/utils';
+import { IdSchema } from '@prairielearn/zod';
 
 import { selectLatestPublishingExtensionByEnrollment } from '../models/course-instance-publishing-extensions.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
@@ -67,6 +68,24 @@ export const CourseOrInstanceOverridesSchema = z.object({
   allow_example_course_override: z.boolean().optional(),
 });
 type CourseOrInstanceOverrides = z.infer<typeof CourseOrInstanceOverridesSchema>;
+
+export async function checkCourseInstanceLegacyAccess({
+  courseInstanceIds,
+  userId,
+  reqDate,
+}: {
+  courseInstanceIds: string[];
+  userId: string;
+  reqDate: Date;
+}) {
+  // Quick return to avoid hitting the database if there are no course instance ids to check.
+  if (courseInstanceIds.length === 0) return [];
+  return await sqldb.queryScalars(
+    sql.check_course_instance_legacy_access,
+    { course_instance_ids: courseInstanceIds, user_id: userId, req_date: reqDate },
+    IdSchema,
+  );
+}
 
 /**
  * Checks if the user has access to the course instance. If the user is a student,
@@ -252,10 +271,13 @@ export async function constructCourseOrInstanceContext({
                 req_date,
               );
             }
-            const has_student_access = await sqldb.callScalar(
-              'check_course_instance_access',
-              [course_instance_id, user.uid, user.institution_id, req_date],
-              z.boolean(),
+            const courseInstanceIdsWithAccess = await checkCourseInstanceLegacyAccess({
+              courseInstanceIds: [rawAuthzData.course_instance.id],
+              userId: user.id,
+              reqDate: req_date,
+            });
+            const has_student_access = courseInstanceIdsWithAccess.includes(
+              rawAuthzData.course_instance.id,
             );
             return {
               has_student_access,
