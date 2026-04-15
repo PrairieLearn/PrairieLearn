@@ -23,6 +23,7 @@ import { aiInstanceQuestionGrouping } from '../../ee/lib/ai-instance-question-gr
 import { features } from '../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../lib/id.js';
+import { selectCreditPool } from '../../models/ai-grading-credit-pool.js';
 import { selectCourseInstanceGraderStaff } from '../../models/course-instances.js';
 import { InstanceQuestionRowWithAIGradingStatsSchema } from '../../pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
 import {
@@ -225,13 +226,18 @@ const aiGradingConcurrencyStatus = t.procedure
     z.object({
       running_job_count: z.number(),
       max_concurrent_jobs: z.number(),
+      credit_balance_milli_dollars: z.number(),
     }),
   )
   .query(async (opts) => {
-    const running_job_count = await getRunningAiGradingJobCount(opts.ctx.authn_user.id);
+    const [running_job_count, creditPool] = await Promise.all([
+      getRunningAiGradingJobCount(opts.ctx.authn_user.id),
+      selectCreditPool(opts.ctx.course_instance.id),
+    ]);
     return {
       running_job_count,
       max_concurrent_jobs: MAX_CONCURRENT_AI_GRADING_JOBS_PER_USER,
+      credit_balance_milli_dollars: creditPool.total_milli_dollars,
     };
   });
 

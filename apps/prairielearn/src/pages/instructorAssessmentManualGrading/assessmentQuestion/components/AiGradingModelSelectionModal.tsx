@@ -255,7 +255,6 @@ export function AiGradingModelSelectionModal({
   aiGradingLastSelectedModel,
   relativeCosts,
   useCustomApiKeys,
-  creditBalanceMilliDollars,
   aiGradingSettingsUrl,
   onSuccess,
   onHide,
@@ -265,7 +264,6 @@ export function AiGradingModelSelectionModal({
   aiGradingLastSelectedModel: string | null;
   relativeCosts: Record<string, string>;
   useCustomApiKeys: boolean;
-  creditBalanceMilliDollars: number;
   aiGradingSettingsUrl: string;
   onSuccess: (
     data: { job_sequence_id: string; job_sequence_token: string },
@@ -320,6 +318,7 @@ export function AiGradingModelSelectionModal({
   const isSelectedModelAvailable = selectedModelProvider
     ? availableProviders.includes(selectedModelProvider)
     : false;
+  const creditBalanceMilliDollars = concurrencyStatus?.credit_balance_milli_dollars ?? 0;
   const hasCredits = creditBalanceMilliDollars > 0;
   const hasKeys = availableProviders.length > 0;
   const isAtConcurrencyLimit =
