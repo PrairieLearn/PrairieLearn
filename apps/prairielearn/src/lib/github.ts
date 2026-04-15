@@ -305,6 +305,7 @@ export async function createCourseRepoJob(
         coursePath: inserted_course.path,
         courseId: inserted_course.id,
         courseData: syncResult.courseData,
+        mode: 'full',
       });
       logChunkChangesToJob(chunkChanges, job);
     }

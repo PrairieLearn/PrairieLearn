@@ -64,6 +64,7 @@ async function update(locals: UntypedResLocals) {
           coursePath: courseDir,
           courseId: syncResult.courseId,
           courseData: syncResult.courseData,
+          mode: 'git-diff',
           oldHash: 'HEAD~1',
           newHash: 'HEAD',
         });

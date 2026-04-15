@@ -49,14 +49,23 @@ import { type ServerJob, type ServerJobExecutor, createServerJob } from './serve
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
 
+type ChunkUpdateMode =
+  | {
+      mode: 'changed-files';
+      changedFiles: string[];
+    }
+  | {
+      mode: 'git-diff';
+      oldHash: string;
+      newHash: string;
+    };
+
 async function syncCourseFromDisk(
   course: Course,
-  startGitHash: string,
+  chunkUpdateMode: ChunkUpdateMode,
   job: ServerJob,
   courseData?: courseDB.CourseData,
 ) {
-  const endGitHash = await getCourseCommitHash(course.path);
-
   const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course, job, courseData);
 
   if (syncResult.status === 'sharing_error') {
@@ -68,13 +77,14 @@ async function syncCourseFromDisk(
       coursePath: course.path,
       courseId: course.id,
       courseData: syncResult.courseData,
-      oldHash: startGitHash,
-      newHash: endGitHash,
+      ...chunkUpdateMode,
     });
     logChunkChangesToJob(chunkChanges, job);
   }
 
-  await updateCourseCommitHash(course);
+  if (config.fileEditorUseGit) {
+    course.commit_hash = await updateCourseCommitHash(course);
+  }
 
   if (syncResult.hadJsonErrors) {
     throw new Error('One or more JSON files contained errors and were unable to be synced');
@@ -184,8 +194,6 @@ export abstract class Editor {
 
       const lockName = getLockNameForCoursePath(this.course.path);
       await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
-        const startGitHash = await getOrUpdateCourseCommitHash(this.course);
-
         if (!config.fileEditorUseGit) {
           // If we are not using git (e.g., if we are running locally), then we:
           //
@@ -196,16 +204,27 @@ export abstract class Editor {
 
           job.info('Write changes to disk');
           job.data.saveAttempted = true;
-          await this.write();
+          const writeResult = await this.write();
           job.data.saveSucceeded = true;
 
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
-          await syncCourseFromDisk(this.course, startGitHash, job);
+          await syncCourseFromDisk(
+            this.course,
+            {
+              mode: 'changed-files',
+              changedFiles: (writeResult?.pathsToAdd ?? []).map((p) =>
+                path.relative(this.course.path, p),
+              ),
+            },
+            job,
+          );
           job.data.syncSucceeded = true;
 
           return;
         }
+
+        const startGitHash = await getOrUpdateCourseCommitHash(this.course);
 
         // Safety check: refuse to perform git operations if the course is a
         // subdirectory of the PrairieLearn repository. Otherwise the `git clean`
@@ -382,7 +401,16 @@ export abstract class Editor {
           // syncing the changes we pulled from the remote git repository.
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
-          await syncCourseFromDisk(this.course, startGitHash, job, courseData);
+          await syncCourseFromDisk(
+            this.course,
+            {
+              mode: 'git-diff',
+              oldHash: startGitHash,
+              newHash: await getCourseCommitHash(this.course.path),
+            },
+            job,
+            courseData,
+          );
           job.data.syncSucceeded = true;
         }
       });

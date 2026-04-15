@@ -366,20 +366,22 @@ export function identifyChunksFromChangedFiles(
     questions: new Set(),
   };
 
+  const isInDir = (filePath: string, dir: string) => contains(`/${dir}`, `/${filePath}`);
+
   changedFiles.forEach((changedFile) => {
-    if (changedFile.startsWith('elements/')) {
+    if (isInDir(changedFile, 'elements')) {
       courseChunks.elements = true;
     }
-    if (changedFile.startsWith('elementExtensions/')) {
+    if (isInDir(changedFile, 'elementExtensions')) {
       courseChunks.elementExtensions = true;
     }
-    if (changedFile.startsWith('serverFilesCourse/')) {
+    if (isInDir(changedFile, 'serverFilesCourse')) {
       courseChunks.serverFilesCourse = true;
     }
-    if (changedFile.startsWith('clientFilesCourse/')) {
+    if (isInDir(changedFile, 'clientFilesCourse')) {
       courseChunks.clientFilesCourse = true;
     }
-    if (changedFile.startsWith('questions/')) {
+    if (isInDir(changedFile, 'questions')) {
       // Here's where things get interesting. Questions can be nested in
       // directories, so we need to figure out which of the potentially
       // deeply-nested directories is the root of a particular question.
@@ -387,11 +389,16 @@ export function identifyChunksFromChangedFiles(
       // Progressively join more and more path components until we get
       // something that corresponds to an actual question
       let questionId: string | null = null;
-      for (let i = 1; i < pathComponents.length; i++) {
-        const candidateQuestionId = path.join(...pathComponents.slice(0, i));
-        if (candidateQuestionId in courseData.questions) {
-          questionId = candidateQuestionId;
-          break;
+      const exactQuestionId = path.join(...pathComponents);
+      if (exactQuestionId in courseData.questions) {
+        questionId = exactQuestionId;
+      } else {
+        for (let i = 1; i < pathComponents.length; i++) {
+          const candidateQuestionId = path.join(...pathComponents.slice(0, i));
+          if (candidateQuestionId in courseData.questions) {
+            questionId = candidateQuestionId;
+            break;
+          }
         }
       }
       if (questionId) {
@@ -399,7 +406,7 @@ export function identifyChunksFromChangedFiles(
         courseChunks.questions.add(questionId);
       }
     }
-    if (changedFile.startsWith('courseInstances/')) {
+    if (isInDir(changedFile, 'courseInstances')) {
       // This could be one of two things: `clientFilesCourseInstance` or
       // `clientFileAssessment`.
 
@@ -467,6 +474,7 @@ interface DiffChunksOptions {
   coursePath: string;
   courseId: string;
   courseData: CourseData;
+  forceUpdateAll: boolean;
   changedFiles: string[];
 }
 
@@ -483,6 +491,7 @@ async function diffChunks({
   coursePath,
   courseId,
   courseData,
+  forceUpdateAll,
   changedFiles,
 }: DiffChunksOptions): Promise<ChunksDiff> {
   const rawCourseChunks = await getAllChunksForCourse(courseId);
@@ -560,7 +569,9 @@ async function diffChunks({
     }
   });
 
-  const changedCourseChunks = identifyChunksFromChangedFiles(changedFiles, courseData);
+  const changedCourseChunks = forceUpdateAll
+    ? null
+    : identifyChunksFromChangedFiles(changedFiles, courseData);
 
   // Now, let's compute the set of chunks that we need to update or delete.
   const updatedChunks: ChunkMetadata[] = [];
@@ -574,7 +585,10 @@ async function diffChunks({
     'serverFilesCourse',
   ] as const) {
     const hasChunkDirectory = await fs.pathExists(path.join(coursePath, chunkType));
-    if (hasChunkDirectory && (!existingCourseChunks[chunkType] || changedCourseChunks[chunkType])) {
+    if (
+      hasChunkDirectory &&
+      (forceUpdateAll || !existingCourseChunks[chunkType] || changedCourseChunks?.[chunkType])
+    ) {
       updatedChunks.push({ type: chunkType });
     } else if (!hasChunkDirectory && existingCourseChunks[chunkType]) {
       deletedChunks.push({ type: chunkType });
@@ -583,7 +597,11 @@ async function diffChunks({
 
   // Next: questions
   Object.keys(courseData.questions).forEach((qid) => {
-    if (!existingCourseChunks.questions.has(qid) || changedCourseChunks.questions.has(qid)) {
+    if (
+      forceUpdateAll ||
+      !existingCourseChunks.questions.has(qid) ||
+      changedCourseChunks?.questions.has(qid)
+    ) {
       updatedChunks.push({
         type: 'question',
         questionName: qid,
@@ -647,10 +665,13 @@ async function diffChunks({
         existingCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance;
 
       const changedCourseInstanceChunk =
-        changedCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance;
+        changedCourseChunks?.courseInstances.get(ciid)?.clientFilesCourseInstance;
       if (
         hasClientFilesCourseInstanceDirectory &&
-        (!existingCourseInstanceChunk || changedCourseInstanceChunk || courseInstanceIdMismatch)
+        (forceUpdateAll ||
+          !existingCourseInstanceChunk ||
+          changedCourseInstanceChunk ||
+          courseInstanceIdMismatch)
       ) {
         updatedChunks.push({
           type: 'clientFilesCourseInstance',
@@ -677,10 +698,10 @@ async function diffChunks({
         const hasExistingAssessment =
           existingCourseChunks.courseInstances.get(ciid)?.assessments.has(tid) ?? false;
         const hasChangedAssessment =
-          changedCourseChunks.courseInstances.get(ciid)?.assessments.has(tid) ?? false;
+          changedCourseChunks?.courseInstances.get(ciid)?.assessments.has(tid) ?? false;
         if (
           hasClientFilesAssessmentDirectory &&
-          (!hasExistingAssessment || hasChangedAssessment || assessmentIdMismatch)
+          (forceUpdateAll || !hasExistingAssessment || hasChangedAssessment || assessmentIdMismatch)
         ) {
           updatedChunks.push({
             type: 'clientFilesAssessment',
@@ -862,40 +883,62 @@ export function getRuntimeDirectoryForCourse(course: CourseWithRuntimeDirectory)
   }
 }
 
-interface UpdateChunksForCourseOptions {
+interface BaseUpdateChunksForCourseOptions {
   coursePath: string;
   courseId: string;
   courseData: CourseData;
-  oldHash?: string | null;
-  newHash?: string | null;
-  changedFiles?: string[];
 }
 
-export async function updateChunksForCourse({
-  coursePath,
-  courseId,
-  courseData,
-  oldHash,
-  newHash,
-  changedFiles,
-}: UpdateChunksForCourseOptions): Promise<ChunksDiff> {
-  const resolvedChangedFiles = await run(async () => {
-    if (changedFiles && (oldHash || newHash)) {
-      throw new Error('cannot specify changedFiles with oldHash or newHash');
+interface UpdateChunksForCourseGitDiffOptions extends BaseUpdateChunksForCourseOptions {
+  mode: 'git-diff';
+  oldHash: string;
+  newHash: string;
+}
+
+interface UpdateChunksForCourseChangedFilesOptions extends BaseUpdateChunksForCourseOptions {
+  mode: 'changed-files';
+  changedFiles: string[];
+}
+
+interface UpdateChunksForCourseFullOptions extends BaseUpdateChunksForCourseOptions {
+  mode: 'full';
+}
+
+type UpdateChunksForCourseOptions =
+  | UpdateChunksForCourseGitDiffOptions
+  | UpdateChunksForCourseChangedFilesOptions
+  | UpdateChunksForCourseFullOptions;
+
+export async function updateChunksForCourse(
+  options: UpdateChunksForCourseOptions,
+): Promise<ChunksDiff> {
+  const { coursePath, courseId, courseData } = options;
+  const { changedFiles, forceUpdateAll } = await run(async () => {
+    switch (options.mode) {
+      case 'changed-files':
+        return {
+          changedFiles: options.changedFiles,
+          forceUpdateAll: false,
+        };
+      case 'full':
+        return {
+          changedFiles: [],
+          forceUpdateAll: true,
+        };
+      case 'git-diff':
+        return {
+          changedFiles: await identifyChangedFiles(coursePath, options.oldHash, options.newHash),
+          forceUpdateAll: false,
+        };
     }
-
-    if (changedFiles) return changedFiles;
-
-    if (oldHash && newHash) return await identifyChangedFiles(coursePath, oldHash, newHash);
-
-    return [];
   });
 
   const { updatedChunks, deletedChunks } = await diffChunks({
     coursePath,
     courseId,
     courseData,
-    changedFiles: resolvedChangedFiles,
+    forceUpdateAll,
+    changedFiles,
   });
 
   await createAndUploadChunks(coursePath, courseId, updatedChunks);
@@ -954,6 +997,7 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
       coursePath: courseDir,
       courseId: String(course_id),
       courseData,
+      mode: 'full' as const,
     };
     const chunkChanges = await updateChunksForCourse(chunkOptions);
     logChunkChangesToJob(chunkChanges, job);
