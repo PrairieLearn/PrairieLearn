@@ -189,12 +189,12 @@ async function courseInstanceConsistencyCheck({
     const shortNamesInDb = courseInstancesForConsistencyCheck.map((ci) => ci.short_name);
     const shortNamesInDisk = Object.keys(courseInstances);
 
-    const duplicateShortNames = Object.entries(countBy(shortNamesInDisk, (name) => name))
+    const duplicateShortNames = Object.entries(countBy(shortNamesInDb, (name) => name ?? ''))
       .filter(([, count]) => count > 1)
       .map(([shortName]) => shortName);
     if (duplicateShortNames.length > 0) {
       throw new AugmentedError(
-        'Assertion: Duplicate course instance short names found in disk data',
+        'Assertion: Duplicate course instance short names found in database',
         { data: { courseId, duplicateShortNames } },
       );
     }
