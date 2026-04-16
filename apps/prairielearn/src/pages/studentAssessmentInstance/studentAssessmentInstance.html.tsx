@@ -357,7 +357,7 @@ export function StudentAssessmentInstance({
             </thead>
             <tbody>
               ${QuestionTableBody({
-                instance_question_rows,
+                rows: instance_question_rows,
                 courseInstanceId: resLocals.course_instance.id,
                 displayTimezone: resLocals.course_instance.display_timezone,
                 assessmentType: resLocals.assessment.type,
@@ -458,8 +458,12 @@ function RealTimeGradingInformationAlert({
   instance_question_rows: InstanceQuestionRow[];
   assessment_instance: AssessmentInstance;
 }) {
-  const allQuestionsDisabled = instance_question_rows.every((q) => !q.allow_real_time_grading);
-  const someQuestionsDisabled = instance_question_rows.some((q) => !q.allow_real_time_grading);
+  const allQuestionsDisabled = instance_question_rows.every(
+    (q) => !q.assessment_question.allow_real_time_grading,
+  );
+  const someQuestionsDisabled = instance_question_rows.some(
+    (q) => !q.assessment_question.allow_real_time_grading,
+  );
 
   if (allQuestionsDisabled && assessment_instance.open) {
     return html`
