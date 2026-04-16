@@ -169,7 +169,7 @@ function AvailableCredit({
   row: StudentAssessmentsRow;
   displayTimezone: string;
 }) {
-  if (row.modern_access_control && row.assessment_instance_id == null && !row.active) {
+  if (row.modern_access_control && row.assessment_instance_id == null && !row.authorized) {
     if (row.opens_at) {
       return html`
         <span class="text-muted">

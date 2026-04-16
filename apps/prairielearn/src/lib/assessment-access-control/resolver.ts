@@ -268,7 +268,10 @@ export function buildAccessTimeline(
 
   deadlines.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  if (deadlines.length === 0) return [];
+  // No deadlines = available forever with full credit; single open-ended segment.
+  if (deadlines.length === 0) {
+    return [{ credit: 100, startDate: releaseDate, endDate: null, active: date >= releaseDate }];
+  }
 
   const segments: AccessTimelineEntry[] = [];
 
@@ -396,15 +399,15 @@ function computeCredit(
 
   timeline.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  // No due date and no deadlines = no credit granted.
+  // No deadlines = available forever with full credit.
   if (timeline.length === 0) {
     return {
-      credit: 0,
-      active: false,
+      credit: 100,
+      active: true,
       beforeRelease: false,
       nextDeadlineDate: null,
-      password: null,
-      timeLimitMin: null,
+      password: dateControl.password ?? null,
+      timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
     };
   }
 

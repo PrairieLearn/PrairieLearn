@@ -1201,20 +1201,21 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T00:00:00Z'),
       });
-      expect(result.credit).toBe(0);
-      expect(result.active).toBe(false);
+      // afterLastDeadline is ignored; no deadlines means available forever at 100%.
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(true);
     });
   });
 
   describe('no date control defaults', () => {
-    it('returns 0 credit when dateControl has releaseDate but no deadlines/due date', () => {
+    it('returns 100% credit when dateControl has releaseDate but no deadlines/due date', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [makeMainRule({ dateControl: { releaseDate: '2025-03-01T00:00:00Z' } })],
         date: new Date('2025-03-15T00:00:00Z'),
       });
-      expect(result.credit).toBe(0);
-      expect(result.active).toBe(false);
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(true);
     });
   });
 
