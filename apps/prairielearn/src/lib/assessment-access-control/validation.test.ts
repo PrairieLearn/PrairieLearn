@@ -205,7 +205,9 @@ describe('Main rule requirement', () => {
 
     assert.isTrue(result.errors.length > 0, 'Expected error when no main rule exists');
     assert.isTrue(
-      result.errors.some((err) => err.includes('No defaults found')),
+      result.errors.includes(
+        'No defaults found. The first element of accessControl must apply to everyone.',
+      ),
       `Expected "No defaults found" error, but got: ${result.errors.join(', ')}`,
     );
   });
@@ -233,7 +235,9 @@ describe('Main rule requirement', () => {
 
     assert.isTrue(result.errors.length > 0, 'Expected error when multiple main rules exist');
     assert.isTrue(
-      result.errors.some((err) => err.includes('Found 2 defaults entries')),
+      result.errors.includes(
+        'Found 2 defaults entries. Only one element of accessControl should apply to everyone.',
+      ),
       `Expected "Found 2 defaults entries" error, but got: ${result.errors.join(', ')}`,
     );
   });
@@ -280,7 +284,7 @@ describe('Main rule requirement', () => {
     });
 
     assert.isTrue(
-      result.errors.some((err) => err.includes('listBeforeRelease can only be specified')),
+      result.errors.includes('listBeforeRelease can only be specified on the defaults.'),
       `Expected listBeforeRelease validation error, but got: ${result.errors.join(', ')}`,
     );
   });
@@ -338,19 +342,14 @@ describe('Date fields without seconds', () => {
 });
 
 describe('Date fields must be dates', () => {
-  const dateInvalidExamples: {
-    config: AccessControlJsonInput;
-    expectedPath: (string | number)[];
-  }[] = [
+  it.each([
     {
-      config: {
-        dateControl: {
-          releaseDate: 'NOTADATE',
-        },
-      },
+      label: 'releaseDate',
+      config: { dateControl: { releaseDate: 'NOTADATE' } },
       expectedPath: ['dateControl', 'releaseDate'],
     },
     {
+      label: 'showQuestionsAgainDate',
       config: {
         dateControl: {
           releaseDate: '2024-03-14T00:01:00',
@@ -365,14 +364,12 @@ describe('Date fields must be dates', () => {
       expectedPath: ['afterComplete', 'questions', 'visibleFromDate'],
     },
     {
-      config: {
-        dateControl: {
-          earlyDeadlines: [{ date: 'NOTADATE', credit: 100 }],
-        },
-      },
+      label: 'early deadline date',
+      config: { dateControl: { earlyDeadlines: [{ date: 'NOTADATE', credit: 100 }] } },
       expectedPath: ['dateControl', 'earlyDeadlines', 0, 'date'],
     },
     {
+      label: 'late deadline date',
       config: {
         dateControl: {
           earlyDeadlines: [
@@ -384,21 +381,14 @@ describe('Date fields must be dates', () => {
       },
       expectedPath: ['dateControl', 'lateDeadlines', 0, 'date'],
     },
-  ];
-
-  it('should fail Zod parsing with correct error paths for invalid dates', () => {
-    dateInvalidExamples.forEach((example, exampleIndex) => {
-      const result = AccessControlJsonSchema.safeParse(example.config);
-
-      assert.isFalse(result.success, `Expected parsing to fail at example ${exampleIndex}`);
-      const hasExpectedPath = result.error.issues.some(
-        (issue) => JSON.stringify(issue.path) === JSON.stringify(example.expectedPath),
-      );
-      assert.isTrue(
-        hasExpectedPath,
-        `Expected error at path ${JSON.stringify(example.expectedPath)} at example ${exampleIndex}, but got: ${JSON.stringify(result.error.issues.map((i) => i.path))}`,
-      );
-    });
+  ])('rejects invalid $label', ({ config, expectedPath }) => {
+    const result = AccessControlJsonSchema.safeParse(config);
+    assert.isFalse(result.success);
+    assert.isTrue(
+      result.error.issues.some(
+        (issue) => JSON.stringify(issue.path) === JSON.stringify(expectedPath),
+      ),
+    );
   });
 });
 
@@ -436,377 +426,322 @@ describe('Exam UUID validation', () => {
 });
 
 describe('Date ordering validation', () => {
-  it('should reject release date after due date', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        releaseDate: '2024-03-25T00:00:00',
-        dueDate: '2024-03-20T00:00:00',
+  it.each([
+    {
+      label: 'release date after due date',
+      config: {
+        dateControl: { releaseDate: '2024-03-25T00:00:00', dueDate: '2024-03-20T00:00:00' },
       },
-    });
-    const errors = validateRuleDateOrdering(rule);
-    assert.isTrue(errors.some((e) => e.includes('Release date must be before due date')));
-  });
-
-  it('should reject early deadline after due date', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        dueDate: '2024-03-20T00:00:00',
-        earlyDeadlines: [{ date: '2024-03-25T00:00:00', credit: 120 }],
-      },
-    });
-    const errors = validateRuleDateOrdering(rule);
-    assert.isTrue(errors.some((e) => e.includes('must be before the due date')));
-  });
-
-  it('should reject early deadline before release date', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        releaseDate: '2024-03-20T00:00:00',
-        earlyDeadlines: [{ date: '2024-03-19T00:00:00', credit: 120 }],
-      },
-    });
-    const errors = validateRuleDateOrdering(rule);
-    assert.isTrue(errors.some((e) => e.includes('must be after the release date')));
-  });
-
-  it('should reject late deadline before due date', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        dueDate: '2024-03-20T00:00:00',
-        lateDeadlines: [{ date: '2024-03-18T00:00:00', credit: 80 }],
-      },
-    });
-    const errors = validateRuleDateOrdering(rule);
-    assert.isTrue(errors.some((e) => e.includes('must be after the due date')));
-  });
-
-  it('should reject late deadline before release date', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        releaseDate: '2024-03-20T00:00:00',
-        lateDeadlines: [{ date: '2024-03-19T00:00:00', credit: 80 }],
-      },
-    });
-    const errors = validateRuleDateOrdering(rule);
-    assert.isTrue(errors.some((e) => e.includes('must be after the release date')));
-  });
-
-  it('should reject out-of-order early deadlines', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        earlyDeadlines: [
-          { date: '2024-03-18T00:00:00', credit: 130 },
-          { date: '2024-03-15T00:00:00', credit: 120 },
-        ],
-      },
-    });
-    const errors = validateRuleDateOrdering(rule);
-    assert.isTrue(errors.some((e) => e.includes('chronological order')));
-  });
-
-  it('should reject out-of-order late deadlines', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        lateDeadlines: [
-          { date: '2024-03-28T00:00:00', credit: 80 },
-          { date: '2024-03-25T00:00:00', credit: 50 },
-        ],
-      },
-    });
-    const errors = validateRuleDateOrdering(rule);
-    assert.isTrue(errors.some((e) => e.includes('chronological order')));
-  });
-
-  it('should reject visibleFromDate after visibleUntilDate for questions', () => {
-    const rule = AccessControlJsonSchema.parse({
-      afterComplete: {
-        questions: {
-          hidden: true,
-          visibleFromDate: '2024-03-30T00:00:00',
-          visibleUntilDate: '2024-03-25T00:00:00',
+      errorMatch: 'Release date must be before due date.',
+    },
+    {
+      label: 'early deadline after due date',
+      config: {
+        dateControl: {
+          dueDate: '2024-03-20T00:00:00',
+          earlyDeadlines: [{ date: '2024-03-25T00:00:00', credit: 120 }],
         },
       },
-    });
+      errorMatch: 'Early deadline date 2024-03-25T00:00:00 must be on or before the due date.',
+    },
+    {
+      label: 'early deadline before release date',
+      config: {
+        dateControl: {
+          releaseDate: '2024-03-20T00:00:00',
+          earlyDeadlines: [{ date: '2024-03-19T00:00:00', credit: 120 }],
+        },
+      },
+      errorMatch: 'Early deadline date 2024-03-19T00:00:00 must be after the release date.',
+    },
+    {
+      label: 'late deadline before due date',
+      config: {
+        dateControl: {
+          dueDate: '2024-03-20T00:00:00',
+          lateDeadlines: [{ date: '2024-03-18T00:00:00', credit: 80 }],
+        },
+      },
+      errorMatch: 'Late deadline date 2024-03-18T00:00:00 must be on or after the due date.',
+    },
+    {
+      label: 'late deadline before release date',
+      config: {
+        dateControl: {
+          releaseDate: '2024-03-20T00:00:00',
+          lateDeadlines: [{ date: '2024-03-19T00:00:00', credit: 80 }],
+        },
+      },
+      errorMatch: 'Late deadline date 2024-03-19T00:00:00 must be after the release date.',
+    },
+    {
+      label: 'out-of-order early deadlines',
+      config: {
+        dateControl: {
+          earlyDeadlines: [
+            { date: '2024-03-18T00:00:00', credit: 130 },
+            { date: '2024-03-15T00:00:00', credit: 120 },
+          ],
+        },
+      },
+      errorMatch: 'Early deadlines must be in chronological order.',
+    },
+    {
+      label: 'out-of-order late deadlines',
+      config: {
+        dateControl: {
+          lateDeadlines: [
+            { date: '2024-03-28T00:00:00', credit: 80 },
+            { date: '2024-03-25T00:00:00', credit: 50 },
+          ],
+        },
+      },
+      errorMatch: 'Late deadlines must be in chronological order.',
+    },
+    {
+      label: 'visibleFromDate after visibleUntilDate for questions',
+      config: {
+        afterComplete: {
+          questions: {
+            hidden: true,
+            visibleFromDate: '2024-03-30T00:00:00',
+            visibleUntilDate: '2024-03-25T00:00:00',
+          },
+        },
+      },
+      errorMatch: 'visibleFromDate must be before visibleUntilDate.',
+    },
+    {
+      label: 'visibleFromDate before last late deadline for questions',
+      config: {
+        dateControl: {
+          dueDate: '2024-03-20T00:00:00',
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
+        },
+        afterComplete: { questions: { hidden: true, visibleFromDate: '2024-03-23T00:00:00' } },
+      },
+      errorMatch: 'Show questions again date must be after the last deadline.',
+    },
+    {
+      label: 'visibleFromDate before due date (no late deadlines) for questions',
+      config: {
+        dateControl: { dueDate: '2024-03-20T00:00:00' },
+        afterComplete: { questions: { hidden: true, visibleFromDate: '2024-03-19T00:00:00' } },
+      },
+      errorMatch: 'Show questions again date must be after the last deadline.',
+    },
+    {
+      label: 'visibleFromDate before last deadline for score',
+      config: {
+        dateControl: {
+          dueDate: '2024-03-20T00:00:00',
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
+        },
+        afterComplete: { score: { hidden: true, visibleFromDate: '2024-03-22T00:00:00' } },
+      },
+      errorMatch: 'Show score again date must be after the last deadline.',
+    },
+  ])('rejects $label', ({ config, errorMatch }) => {
+    const rule = AccessControlJsonSchema.parse(config);
     const errors = validateRuleDateOrdering(rule);
-    assert.isTrue(errors.some((e) => e.includes('visibleFromDate must be before')));
+    assert.isTrue(errors.includes(errorMatch));
   });
 
-  it('should reject visibleFromDate before last late deadline for questions', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        dueDate: '2024-03-20T00:00:00',
-        lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
-      },
-      afterComplete: {
-        questions: {
-          hidden: true,
-          visibleFromDate: '2024-03-23T00:00:00',
+  it.each([
+    {
+      label: 'early deadline equal to due date',
+      config: {
+        dateControl: {
+          dueDate: '2024-03-20T00:00:00',
+          earlyDeadlines: [{ date: '2024-03-20T00:00:00', credit: 120 }],
         },
       },
-    });
-    const errors = validateRuleDateOrdering(rule);
-    assert.isTrue(
-      errors.some((e) => e.includes('Show questions again date must be after the last deadline')),
-    );
-  });
-
-  it('should reject visibleFromDate before due date when no late deadlines for questions', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        dueDate: '2024-03-20T00:00:00',
-      },
-      afterComplete: {
-        questions: {
-          hidden: true,
-          visibleFromDate: '2024-03-19T00:00:00',
+    },
+    {
+      label: 'late deadline equal to due date',
+      config: {
+        dateControl: {
+          dueDate: '2024-03-20T00:00:00',
+          lateDeadlines: [{ date: '2024-03-20T00:00:00', credit: 80 }],
         },
       },
-    });
-    const errors = validateRuleDateOrdering(rule);
-    assert.isTrue(
-      errors.some((e) => e.includes('Show questions again date must be after the last deadline')),
-    );
-  });
-
-  it('should reject visibleFromDate before last deadline for score', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        dueDate: '2024-03-20T00:00:00',
-        lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
+    },
+    {
+      label: 'visibleFromDate after last deadline for questions',
+      config: {
+        dateControl: {
+          dueDate: '2024-03-20T00:00:00',
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
+        },
+        afterComplete: { questions: { hidden: true, visibleFromDate: '2024-03-26T00:00:00' } },
       },
-      afterComplete: {
-        score: {
-          hidden: true,
-          visibleFromDate: '2024-03-22T00:00:00',
+    },
+    {
+      label: 'visibleFromDate after last deadline for score',
+      config: {
+        dateControl: { dueDate: '2024-03-20T00:00:00' },
+        afterComplete: { score: { hidden: true, visibleFromDate: '2024-03-21T00:00:00' } },
+      },
+    },
+    {
+      label: 'show-again dates skipped when no due date',
+      config: {
+        dateControl: { releaseDate: '2024-03-10T00:00:00' },
+        afterComplete: {
+          questions: {
+            hidden: true,
+            visibleFromDate: '2024-03-05T00:00:00',
+          },
+          score: {
+            hidden: true,
+            visibleFromDate: '2024-03-05T00:00:00',
+          },
         },
       },
-    });
-    const errors = validateRuleDateOrdering(rule);
-    assert.isTrue(
-      errors.some((e) => e.includes('Show score again date must be after the last deadline')),
-    );
-  });
-
-  it('should accept visibleFromDate after last deadline for questions', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        dueDate: '2024-03-20T00:00:00',
-        lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
-      },
-      afterComplete: {
-        questions: {
-          hidden: true,
-          visibleFromDate: '2024-03-26T00:00:00',
+    },
+    {
+      label: 'valid date ordering',
+      config: {
+        dateControl: {
+          releaseDate: '2024-03-10T00:00:00',
+          dueDate: '2024-03-20T00:00:00',
+          earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 120 }],
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
         },
       },
-    });
-    const errors = validateRuleDateOrdering(rule);
-    assert.deepEqual(errors, []);
-  });
-
-  it('should accept visibleFromDate after last deadline for score', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        dueDate: '2024-03-20T00:00:00',
-      },
-      afterComplete: {
-        score: {
-          hidden: true,
-          visibleFromDate: '2024-03-21T00:00:00',
-        },
-      },
-    });
-    const errors = validateRuleDateOrdering(rule);
-    assert.deepEqual(errors, []);
-  });
-
-  it('should not check show-again dates when release date but no due date', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        releaseDate: '2024-03-10T00:00:00',
-      },
-      afterComplete: {
-        questions: {
-          hidden: true,
-          visibleFromDate: '2024-03-05T00:00:00',
-        },
-        score: {
-          hidden: true,
-          visibleFromDate: '2024-03-05T00:00:00',
-        },
-      },
-    });
-    const errors = validateRuleDateOrdering(rule);
-    assert.deepEqual(errors, []);
-  });
-
-  it('should not check show-again dates when no date control', () => {
-    const rule = AccessControlJsonSchema.parse({
-      afterComplete: {
-        questions: {
-          hidden: true,
-          visibleFromDate: '2024-03-23T00:00:00',
-        },
-        score: {
-          hidden: true,
-          visibleFromDate: '2024-03-23T00:00:00',
-        },
-      },
-    });
-    const errors = validateRuleDateOrdering(rule);
-    assert.deepEqual(errors, []);
-  });
-
-  it('should accept valid date ordering', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        releaseDate: '2024-03-10T00:00:00',
-        dueDate: '2024-03-20T00:00:00',
-        earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 120 }],
-        lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
-      },
-    });
-    const errors = validateRuleDateOrdering(rule);
-    assert.deepEqual(errors, []);
+    },
+  ])('accepts $label', ({ config }) => {
+    const rule = AccessControlJsonSchema.parse(config);
+    assert.deepEqual(validateRuleDateOrdering(rule), []);
   });
 });
 
 describe('Credit monotonicity validation', () => {
-  it('should reject early deadline credit at or below 100%', () => {
-    for (const credit of [80, 100]) {
-      const rule = AccessControlJsonSchema.parse({
+  it.each([
+    {
+      label: 'early deadline credit at 80% (below 101%)',
+      config: { dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 80 }] } },
+      errorMatch: 'Early deadline credit must be between 101% and 200%, got 80%.',
+    },
+    {
+      label: 'early deadline credit at 100% (below 101%)',
+      config: { dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 100 }] } },
+      errorMatch: 'Early deadline credit must be between 101% and 200%, got 100%.',
+    },
+    {
+      label: 'increasing early deadline credits',
+      config: {
         dateControl: {
-          earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit }],
+          earlyDeadlines: [
+            { date: '2024-03-12T00:00:00', credit: 110 },
+            { date: '2024-03-15T00:00:00', credit: 130 },
+          ],
         },
-      });
-      const errors = validateRuleCreditMonotonicity(rule);
-      assert.isTrue(errors.some((e) => e.includes('between 101% and 200%')));
-    }
+      },
+      errorMatch: 'Early deadline credits must be monotonically decreasing.',
+    },
+    {
+      label: 'late deadline credit at 100% (above 99%)',
+      config: { dateControl: { lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 100 }] } },
+      errorMatch: 'Late deadline credit must be between 0% and 99%, got 100%.',
+    },
+    {
+      label: 'increasing late deadline credits',
+      config: {
+        dateControl: {
+          lateDeadlines: [
+            { date: '2024-03-25T00:00:00', credit: 50 },
+            { date: '2024-03-28T00:00:00', credit: 80 },
+          ],
+        },
+      },
+      errorMatch: 'Late deadline credits must be monotonically decreasing.',
+    },
+    {
+      label: 'afterLastDeadline credit exceeding last late deadline',
+      config: {
+        dateControl: {
+          dueDate: '2024-03-21T00:00:00',
+          lateDeadlines: [
+            { date: '2024-03-25T00:00:00', credit: 80 },
+            { date: '2024-03-28T00:00:00', credit: 50 },
+          ],
+          afterLastDeadline: { allowSubmissions: true, credit: 60 },
+        },
+      },
+      errorMatch:
+        "After-last-deadline credit (60%) must not exceed the preceding deadline's credit (50%).",
+    },
+    {
+      label: 'afterLastDeadline credit exceeding 100 when no late deadlines',
+      config: {
+        dateControl: {
+          dueDate: '2024-03-21T00:00:00',
+          afterLastDeadline: { allowSubmissions: true, credit: 110 },
+        },
+      },
+      errorMatch:
+        "After-last-deadline credit (110%) must not exceed the preceding deadline's credit (100%).",
+    },
+  ])('rejects $label', ({ config, errorMatch }) => {
+    const rule = AccessControlJsonSchema.parse(config);
+    const errors = validateRuleCreditMonotonicity(rule);
+    assert.isTrue(errors.includes(errorMatch));
   });
 
-  it('should reject increasing early deadline credits', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        earlyDeadlines: [
-          { date: '2024-03-12T00:00:00', credit: 110 },
-          { date: '2024-03-15T00:00:00', credit: 130 },
-        ],
+  it.each([
+    {
+      label: 'valid decreasing early + late credits',
+      config: {
+        dateControl: {
+          earlyDeadlines: [
+            { date: '2024-03-12T00:00:00', credit: 130 },
+            { date: '2024-03-15T00:00:00', credit: 110 },
+          ],
+          lateDeadlines: [
+            { date: '2024-03-25T00:00:00', credit: 80 },
+            { date: '2024-03-28T00:00:00', credit: 50 },
+          ],
+        },
       },
-    });
-    const errors = validateRuleCreditMonotonicity(rule);
-    assert.isTrue(errors.some((e) => e.includes('monotonically decreasing')));
-  });
-
-  it('should reject late deadline credit at or above 100%', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 100 }],
+    },
+    {
+      label: 'afterLastDeadline credit equal to last late deadline',
+      config: {
+        dateControl: {
+          dueDate: '2024-03-21T00:00:00',
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
+          afterLastDeadline: { allowSubmissions: true, credit: 50 },
+        },
       },
-    });
-    const errors = validateRuleCreditMonotonicity(rule);
-    assert.isTrue(errors.some((e) => e.includes('between 0% and 99%')));
-  });
-
-  it('should reject increasing late deadline credits', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        lateDeadlines: [
-          { date: '2024-03-25T00:00:00', credit: 50 },
-          { date: '2024-03-28T00:00:00', credit: 80 },
-        ],
+    },
+    {
+      label: 'afterLastDeadline credit less than last late deadline',
+      config: {
+        dateControl: {
+          dueDate: '2024-03-21T00:00:00',
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
+          afterLastDeadline: { allowSubmissions: true, credit: 30 },
+        },
       },
-    });
-    const errors = validateRuleCreditMonotonicity(rule);
-    assert.isTrue(errors.some((e) => e.includes('monotonically decreasing')));
-  });
-
-  it('should accept valid credit values', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        earlyDeadlines: [
-          { date: '2024-03-12T00:00:00', credit: 130 },
-          { date: '2024-03-15T00:00:00', credit: 110 },
-        ],
-        lateDeadlines: [
-          { date: '2024-03-25T00:00:00', credit: 80 },
-          { date: '2024-03-28T00:00:00', credit: 50 },
-        ],
+    },
+    {
+      label: 'afterLastDeadline without credit (practice mode)',
+      config: {
+        dateControl: {
+          dueDate: '2024-03-21T00:00:00',
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
+          afterLastDeadline: { allowSubmissions: true },
+        },
       },
-    });
-    const errors = validateRuleCreditMonotonicity(rule);
-    assert.deepEqual(errors, []);
-  });
-
-  it('should reject afterLastDeadline credit exceeding last late deadline credit', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        dueDate: '2024-03-21T00:00:00',
-        lateDeadlines: [
-          { date: '2024-03-25T00:00:00', credit: 80 },
-          { date: '2024-03-28T00:00:00', credit: 50 },
-        ],
-        afterLastDeadline: { allowSubmissions: true, credit: 60 },
-      },
-    });
-    const errors = validateRuleCreditMonotonicity(rule);
-    assert.isTrue(errors.some((e) => e.includes('must not exceed')));
-  });
-
-  it('should reject afterLastDeadline credit exceeding 100 when no late deadlines', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        dueDate: '2024-03-21T00:00:00',
-        afterLastDeadline: { allowSubmissions: true, credit: 110 },
-      },
-    });
-    const errors = validateRuleCreditMonotonicity(rule);
-    assert.isTrue(errors.some((e) => e.includes('must not exceed')));
-  });
-
-  it('should accept afterLastDeadline credit equal to last late deadline credit', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        dueDate: '2024-03-21T00:00:00',
-        lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
-        afterLastDeadline: { allowSubmissions: true, credit: 50 },
-      },
-    });
-    const errors = validateRuleCreditMonotonicity(rule);
-    assert.deepEqual(errors, []);
-  });
-
-  it('should accept afterLastDeadline credit less than last late deadline credit', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        dueDate: '2024-03-21T00:00:00',
-        lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
-        afterLastDeadline: { allowSubmissions: true, credit: 30 },
-      },
-    });
-    const errors = validateRuleCreditMonotonicity(rule);
-    assert.deepEqual(errors, []);
-  });
-
-  it('should accept afterLastDeadline without credit (practice mode)', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        dueDate: '2024-03-21T00:00:00',
-        lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
-        afterLastDeadline: { allowSubmissions: true },
-      },
-    });
-    const errors = validateRuleCreditMonotonicity(rule);
-    assert.deepEqual(errors, []);
-  });
-
-  it('should skip afterLastDeadline check when no due date or late deadlines', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        afterLastDeadline: { allowSubmissions: true, credit: 50 },
-      },
-    });
-    const errors = validateRuleCreditMonotonicity(rule);
-    assert.deepEqual(errors, []);
+    },
+    {
+      label: 'afterLastDeadline skipped when no due date or late deadlines',
+      config: { dateControl: { afterLastDeadline: { allowSubmissions: true, credit: 50 } } },
+    },
+  ])('accepts $label', ({ config }) => {
+    const rule = AccessControlJsonSchema.parse(config);
+    assert.deepEqual(validateRuleCreditMonotonicity(rule), []);
   });
 });
 
@@ -831,7 +766,11 @@ describe('Empty accessControl array', () => {
       ],
     });
 
-    assert.isTrue(result.errors.some((error) => error.includes('No defaults found')));
+    assert.isTrue(
+      result.errors.includes(
+        'No defaults found. The first element of accessControl must apply to everyone.',
+      ),
+    );
   });
 });
 
@@ -876,7 +815,12 @@ describe('Global temporal validation', () => {
           JSON.stringify(['dateControl', 'earlyDeadlines', 0, 'date']),
       ),
     );
-    assert.isTrue(issues.some((issue) => issue.message.includes('earliest possible release date')));
+    assert.isTrue(
+      issues.some(
+        (issue) =>
+          issue.message === 'Early deadline must be after the earliest possible release date.',
+      ),
+    );
   });
 
   it('skips due-based global checks when a due date can be unset', () => {
@@ -916,6 +860,33 @@ describe('Global temporal validation', () => {
     assert.deepEqual(issues, []);
   });
 
+  it('allows global late deadline equal to inherited due date', () => {
+    const issues = validateGlobalDateConsistencyIssues([
+      {
+        rule: AccessControlJsonSchema.parse({
+          dateControl: {
+            releaseDate: '2024-04-07T00:00:00',
+            dueDate: '2024-04-10T00:00:00',
+          },
+        }),
+        targetType: 'none',
+        ruleIndex: 0,
+      },
+      {
+        rule: AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: {
+            lateDeadlines: [{ date: '2024-04-10T00:00:00', credit: 80 }],
+          },
+        }),
+        targetType: 'student_label',
+        ruleIndex: 1,
+      },
+    ]);
+
+    assert.deepEqual(issues, []);
+  });
+
   it('does not skip due-based global checks when an override inherits the due date', () => {
     const issues = validateGlobalDateConsistencyIssues([
       {
@@ -944,7 +915,10 @@ describe('Global temporal validation', () => {
     ]);
 
     assert.isTrue(
-      issues.some((issue) => issue.message.includes('before the latest possible due date')),
+      issues.some(
+        (issue) =>
+          issue.message === 'Early deadline must be on or before the latest possible due date.',
+      ),
     );
   });
 });
@@ -965,7 +939,9 @@ describe('Duplicate detection', () => {
       },
     });
     const errors = validateRule(rule, 'none');
-    assert.isTrue(errors.some((e) => e.includes('Duplicate PrairieTest exam UUID')));
+    assert.isTrue(
+      errors.includes('Duplicate PrairieTest exam UUID: 11111111-1111-1111-1111-111111111111.'),
+    );
   });
 
   it('should accept unique PrairieTest exam UUIDs', () => {
@@ -986,53 +962,38 @@ describe('Duplicate detection', () => {
     assert.deepEqual(errors, []);
   });
 
-  it('should reject duplicate early deadline dates', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        releaseDate: '2024-03-14T00:01:00',
-        dueDate: '2024-03-21T23:59:00',
-        earlyDeadlines: [
-          { date: '2024-03-17T23:59:00', credit: 120 },
-          { date: '2024-03-17T23:59:00', credit: 110 },
-        ],
+  it.each([
+    {
+      label: 'early deadline dates',
+      config: {
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+          earlyDeadlines: [
+            { date: '2024-03-17T23:59:00', credit: 120 },
+            { date: '2024-03-17T23:59:00', credit: 110 },
+          ],
+        },
       },
-    });
-    const errors = validateRule(rule, 'none');
-    assert.isTrue(errors.some((e) => e.includes('Duplicate early deadline date')));
-  });
-
-  it('should reject duplicate late deadline dates', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        releaseDate: '2024-03-14T00:01:00',
-        dueDate: '2024-03-21T23:59:00',
-        lateDeadlines: [
-          { date: '2024-03-25T23:59:00', credit: 80 },
-          { date: '2024-03-25T23:59:00', credit: 50 },
-        ],
+      errorMatch: 'Duplicate early deadline date: 2024-03-17T23:59:00.',
+    },
+    {
+      label: 'late deadline dates',
+      config: {
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+          lateDeadlines: [
+            { date: '2024-03-25T23:59:00', credit: 80 },
+            { date: '2024-03-25T23:59:00', credit: 50 },
+          ],
+        },
       },
-    });
-    const errors = validateRule(rule, 'none');
-    assert.isTrue(errors.some((e) => e.includes('Duplicate late deadline date')));
-  });
-
-  it('should accept unique deadline dates', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        releaseDate: '2024-03-14T00:01:00',
-        dueDate: '2024-03-21T23:59:00',
-        earlyDeadlines: [
-          { date: '2024-03-17T23:59:00', credit: 120 },
-          { date: '2024-03-19T23:59:00', credit: 110 },
-        ],
-        lateDeadlines: [
-          { date: '2024-03-25T23:59:00', credit: 80 },
-          { date: '2024-03-28T23:59:00', credit: 50 },
-        ],
-      },
-    });
-    const errors = validateRule(rule, 'none');
-    assert.deepEqual(errors, []);
+      errorMatch: 'Duplicate late deadline date: 2024-03-25T23:59:00.',
+    },
+  ])('rejects duplicate $label', ({ config, errorMatch }) => {
+    const rule = AccessControlJsonSchema.parse(config);
+    assert.isTrue(validateRule(rule, 'none').includes(errorMatch));
   });
 
   it('should surface duplicate errors through validateAccessControlRules', () => {
@@ -1049,7 +1010,7 @@ describe('Duplicate detection', () => {
       }),
     ];
     const result = validateAccessControlRules({ rules });
-    assert.isTrue(result.errors.some((e) => e.includes('Duplicate early deadline date')));
+    assert.isTrue(result.errors.includes('Duplicate early deadline date: 2024-03-17T23:59:00.'));
   });
 });
 
@@ -1156,7 +1117,7 @@ describe('Structural field dependency validation', () => {
       targetType: 'none',
       ruleIndex: 0,
     });
-    assert.isTrue(issues.some((i) => i.message.includes('Late deadlines require a due date')));
+    assert.isTrue(issues.some((i) => i.message === 'Late deadlines require a due date.'));
   });
 
   it('should reject after-complete dates without any deadline', () => {
@@ -1180,7 +1141,8 @@ describe('Structural field dependency validation', () => {
     assert.isTrue(
       issues.some(
         (i) =>
-          i.message.includes('require at least one deadline') &&
+          i.message ===
+            'After-complete dates require at least one deadline (due date or late deadline).' &&
           JSON.stringify(i.path) ===
             JSON.stringify(['afterComplete', 'questions', 'visibleFromDate']),
       ),
@@ -1188,61 +1150,53 @@ describe('Structural field dependency validation', () => {
     assert.isTrue(
       issues.some(
         (i) =>
-          i.message.includes('require at least one deadline') &&
+          i.message ===
+            'After-complete dates require at least one deadline (due date or late deadline).' &&
           JSON.stringify(i.path) === JSON.stringify(['afterComplete', 'score', 'visibleFromDate']),
       ),
     );
   });
 
-  it('should accept after-complete boolean fields without deadlines', () => {
-    const rule = AccessControlJsonSchema.parse({
-      afterComplete: {
-        questions: { hidden: true },
-        score: { hidden: true },
-      },
-    });
-    const issues = validateRuleStructuralDependencyIssues({
-      rule,
-      targetType: 'none',
-      ruleIndex: 0,
-    });
-    assert.deepEqual(issues, []);
-  });
-
-  it('should accept after-complete dates when durationMinutes is set', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        durationMinutes: 60,
-      },
-      afterComplete: {
-        questions: {
-          hidden: true,
-          visibleFromDate: '2024-03-23T23:59:00',
+  it.each([
+    {
+      label: 'after-complete boolean fields without deadlines',
+      config: {
+        afterComplete: {
+          questions: { hidden: true },
+          score: { hidden: true },
         },
       },
-    });
-    const issues = validateRuleStructuralDependencyIssues({
-      rule,
-      targetType: 'none',
-      ruleIndex: 0,
-    });
-    assert.deepEqual(issues, []);
-  });
-
-  it('should accept after-complete dates when PrairieTest is configured', () => {
-    const rule = AccessControlJsonSchema.parse({
-      integrations: {
-        prairieTest: {
-          exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+    },
+    {
+      label: 'after-complete dates when durationMinutes is set',
+      config: {
+        dateControl: { durationMinutes: 60 },
+        afterComplete: {
+          questions: {
+            hidden: true,
+            visibleFromDate: '2024-03-23T23:59:00',
+          },
         },
       },
-      afterComplete: {
-        questions: {
-          hidden: true,
-          visibleFromDate: '2024-03-23T23:59:00',
+    },
+    {
+      label: 'after-complete dates when PrairieTest is configured',
+      config: {
+        integrations: {
+          prairieTest: {
+            exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+          },
+        },
+        afterComplete: {
+          questions: {
+            hidden: true,
+            visibleFromDate: '2024-03-23T23:59:00',
+          },
         },
       },
-    });
+    },
+  ])('accepts $label', ({ config }) => {
+    const rule = AccessControlJsonSchema.parse(config);
     const issues = validateRuleStructuralDependencyIssues({
       rule,
       targetType: 'none',
@@ -1261,7 +1215,7 @@ describe('Structural field dependency validation', () => {
       }),
     ];
     const result = validateAccessControlRules({ rules });
-    assert.isTrue(result.errors.some((e) => e.includes('Late deadlines require a due date')));
+    assert.isTrue(result.errors.includes('Late deadlines require a due date.'));
   });
 
   it('should allow overrides to inherit due date from main rule', () => {
@@ -1292,7 +1246,7 @@ describe('Structural field dependency validation', () => {
       targetType: 'student_label',
       ruleIndex: 1,
     });
-    assert.isTrue(issues.some((i) => i.message.includes('Late deadlines require a due date')));
+    assert.isTrue(issues.some((i) => i.message === 'Late deadlines require a due date.'));
   });
 });
 
