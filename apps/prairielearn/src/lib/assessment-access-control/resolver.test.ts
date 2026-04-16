@@ -1853,4 +1853,3 @@ describe('formatDateShort', () => {
     expect(result).toMatch(/15/);
   });
 });
-
