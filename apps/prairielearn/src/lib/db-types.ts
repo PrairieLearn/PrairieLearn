@@ -223,6 +223,7 @@ export const AssessmentAccessControlRuleSchema = z.object({
   assessment_id: IdSchema,
 
   // Date control fields
+  before_release_listed: z.boolean().nullable(),
   date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
   date_control_after_last_deadline_credit: z.number().nullable(),
   date_control_due_date: DateFromISOString.nullable(),
@@ -233,10 +234,9 @@ export const AssessmentAccessControlRuleSchema = z.object({
   date_control_late_deadlines_overridden: z.boolean(),
   date_control_password: z.string().nullable(),
   date_control_password_overridden: z.boolean(),
-  date_control_release_date: DateFromISOString.nullable(),
 
+  date_control_release_date: DateFromISOString.nullable(),
   id: IdSchema,
-  list_before_release: z.boolean().nullable(),
   number: z.number(),
 
   // Target type: 'none' for main rule (applies to all), 'student_label' for labels, 'enrollment' for individual students
