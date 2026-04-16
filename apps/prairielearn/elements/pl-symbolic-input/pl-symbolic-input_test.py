@@ -112,7 +112,7 @@ def test_parse_without_variables_attribute_with_assumptions() -> None:
     """Test that parse works when no variables attribute is specified but correct answer has assumptions.
 
     This is a regression test for https://github.com/PrairieLearn/PrairieLearn/issues/12053
-    where using pl-symbolic-interval without a variables attribute would fail with
+    where using pl-symbolic-input without a variables attribute would fail with
     HasInvalidAssumptionError when the correct answer had variable assumptions.
     """
     # Create a sympy expression with assumptions (like an instructor would in server.py)
@@ -124,7 +124,7 @@ def test_parse_without_variables_attribute_with_assumptions() -> None:
     correct_json = psu.sympy_to_json(correct_expr)
 
     # Simulate element HTML without variables attribute
-    element_html = '<pl-symbolic-interval answers-name="test"></pl-symbolic-interval>'
+    element_html = '<pl-symbolic-input answers-name="test"></pl-symbolic-input>'
 
     # Create mock data structure (simulating what the system passes to parse)
     data: dict[str, Any] = {
@@ -154,11 +154,11 @@ def test_implicit_complex_rejected_with_no_simplify(a_sub: str) -> None:
     correct_answer = psu.sympy_to_json(sympy.Integer(42))
 
     element_html = """
-    <pl-symbolic-interval
+    <pl-symbolic-input
         answers-name="test"
         variables="x"
         display-simplified-expression="false"
-    ></pl-symbolic-interval>
+    ></pl-symbolic-input>
     """
 
     data: dict[str, Any] = {
@@ -187,10 +187,10 @@ def test_complex_from_real_assumptions_produces_format_error(a_sub: str) -> None
     correct_answer = psu.sympy_to_json(x ** (-1) - 1)
 
     element_html = """
-    <pl-symbolic-interval
+    <pl-symbolic-input
         answers-name="test"
         variables="x"
-    ></pl-symbolic-interval>
+    ></pl-symbolic-input>
     """
 
     data: dict[str, Any] = {
@@ -223,11 +223,11 @@ def test_trig_no_crash_with_no_simplify(a_sub: str) -> None:
     correct_answer = psu.sympy_to_json(sympy.Integer(2))
 
     element_html = """
-    <pl-symbolic-interval
+    <pl-symbolic-input
         answers-name="test"
         variables="x"
         display-simplified-expression="false"
-    ></pl-symbolic-interval>
+    ></pl-symbolic-input>
     """
 
     data: dict[str, Any] = {
@@ -251,13 +251,13 @@ def test_formula_editor_initial_value_respects_display_log_as_ln(
 ) -> None:
     monkeypatch.chdir(Path(__file__).parent)
     element_html = """
-    <pl-symbolic-interval
+    <pl-symbolic-input
         answers-name="test"
         variables="x"
         formula-editor="true"
         display-log-as-ln="true"
         initial-value="log(x)"
-    ></pl-symbolic-interval>
+    ></pl-symbolic-input>
     """
     data: dict[str, Any] = {
         "submitted_answers": {},
@@ -279,11 +279,11 @@ def test_formula_editor_initial_value_respects_display_log_as_ln(
 
 def test_open_interval_submission_parses_and_grades() -> None:
     element_html = """
-    <pl-symbolic-interval
+    <pl-symbolic-input
         answers-name="test"
         allow-set-notation="true"
         correct-answer="(1, 2] U (3, 4)"
-    ></pl-symbolic-interval>
+    ></pl-symbolic-input>
     """
     data: dict[str, Any] = {
         "submitted_answers": {"test": "(1, 2] U (3, 4)"},
@@ -314,11 +314,11 @@ def test_open_interval_submission_parses_and_grades() -> None:
 
 def test_closed_interval_submission_parses_and_grades() -> None:
     element_html = """
-    <pl-symbolic-interval
+    <pl-symbolic-input
         answers-name="test"
         allow-set-notation="true"
         correct-answer="[1, 2] U [3, 4]"
-    ></pl-symbolic-interval>
+    ></pl-symbolic-input>
     """
     data: dict[str, Any] = {
         "submitted_answers": {"test": "[1, 2] U [3, 4]"},
@@ -367,12 +367,12 @@ def test_interval_endpoints_support_trig_and_arithmetic_expressions(
     answer: str, expected_expr: sympy.Basic
 ) -> None:
     element_html = f"""
-    <pl-symbolic-interval
+    <pl-symbolic-input
         answers-name="test"
         allow-set-notation="true"
         variables="x,y"
         correct-answer="{answer}"
-    ></pl-symbolic-interval>
+    ></pl-symbolic-input>
     """
     data: dict[str, Any] = {
         "submitted_answers": {"test": answer},
@@ -403,11 +403,11 @@ def test_interval_correct_answer_renders(
 ) -> None:
     monkeypatch.chdir(Path(__file__).parent)
     element_html = """
-    <pl-symbolic-interval
+    <pl-symbolic-input
         answers-name="test"
         allow-set-notation="true"
         correct-answer="[1, 2] U [3, 4]"
-    ></pl-symbolic-interval>
+    ></pl-symbolic-input>
     """
     data: dict[str, Any] = {
         "submitted_answers": {},
@@ -619,10 +619,10 @@ def test_interval_endpoints_accept_infinity(text: str, expected: sympy.Basic) ->
 )
 def test_infinite_interval_submissions_are_accepted(submitted: str) -> None:
     element_html = """
-    <pl-symbolic-interval
+    <pl-symbolic-input
         answers-name="test"
         allow-set-notation="true"
-    ></pl-symbolic-interval>
+    ></pl-symbolic-input>
     """
     data: dict[str, Any] = {
         "submitted_answers": {"test": submitted},
