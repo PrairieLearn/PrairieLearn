@@ -299,8 +299,9 @@ function AiGradingAvailabilityAlert({
           variant: 'danger',
           content: (
             <>
-              No credits remaining. Request for more credits to continue grading.{' '}
-              <SettingsLink url={aiGradingSettingsUrl}>More info</SettingsLink>
+              No credits remaining. Purchase credits on the{' '}
+              <SettingsLink url={aiGradingSettingsUrl}>AI grading settings</SettingsLink>{' '}
+              page.
             </>
           ),
         };

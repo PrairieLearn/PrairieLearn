@@ -1,10 +1,6 @@
-import { z } from 'zod';
-
 import { EncodedData } from '@prairielearn/browser-utils';
-import { formatDate } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
-import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import {
   RegenerateInstanceAlert,
@@ -23,57 +19,15 @@ import { ScorebarHtml } from '../../components/Scorebar.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import {
-  type AssessmentInstance,
-  AssessmentQuestionSchema,
-  EnumQuestionAccessModeSchema,
-  type GroupConfig,
-  InstanceQuestionSchema,
-  QuestionSchema,
-} from '../../lib/db-types.js';
+import { type AssessmentInstance, type GroupConfig } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
-import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.js';
+import { getRoleNamesForUser } from '../../lib/groups.js';
+import type { GroupInfo } from '../../lib/groups.shared.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 
-export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
-  start_new_zone: z.boolean(),
-  zone_id: IdSchema,
-  zone_number: z.number(),
-  zone_title: z.string().nullable(),
-  lockpoint: z.boolean(),
-  lockpoint_crossed: z.boolean(),
-  lockpoint_crossed_at: DateFromISOString.nullable(),
-  lockpoint_crossed_authn_user_uid: z.string().nullable(),
-  question_title: QuestionSchema.shape.title,
-  max_points: z.number().nullable(),
-  max_manual_points: z.number().nullable(),
-  max_auto_points: z.number().nullable(),
-  init_points: z.number().nullable(),
-  grade_rate_minutes: AssessmentQuestionSchema.shape.grade_rate_minutes,
-  allow_real_time_grading: AssessmentQuestionSchema.shape.allow_real_time_grading,
-  row_order: z.number(),
-  question_number: z.string(),
-  zone_max_points: z.number().nullable(),
-  zone_has_max_points: z.boolean(),
-  zone_best_questions: z.number().nullable(),
-  zone_has_best_questions: z.boolean(),
-  zone_question_count: z.number(),
-  file_count: z.number(),
-  question_access_mode: EnumQuestionAccessModeSchema,
-  prev_advance_score_perc: z.number().nullable(),
-  prev_title: z.string().nullable(),
-  prev_question_access_mode: EnumQuestionAccessModeSchema.nullable(),
-  allowGradeLeftMs: z.number().default(0), // Computed after the query if needed, defaults to zero if grade_rate_minutes is null
-  previous_variants: z.array(SimpleVariantWithScoreSchema).optional(),
-  group_role_permissions: z
-    .object({
-      can_view: z.boolean(),
-      can_submit: z.boolean(),
-    })
-    .optional(),
-});
-type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
+import { LockpointRow } from './components/LockpointRow.js';
+import { RowLabel } from './components/RowLabel.js';
+import type { InstanceQuestionRow } from './studentAssessmentInstance.types.js';
 
 export function StudentAssessmentInstance({
   instance_question_rows,
@@ -952,176 +906,6 @@ function ZoneInfoPopover({ label, content }: { label: string; content: string })
     >
       ${label}&nbsp;<i class="far fa-question-circle" aria-hidden="true"></i>
     </button>
-  `;
-}
-
-function LockpointRow({
-  row,
-  colspan,
-  crossable,
-  blockedByAdvanceScorePerc,
-  isGroupAssessment,
-  displayTimezone,
-}: {
-  row: InstanceQuestionRow;
-  colspan: number;
-  crossable: boolean;
-  blockedByAdvanceScorePerc: boolean;
-  isGroupAssessment: boolean;
-  displayTimezone: string;
-}) {
-  if (row.lockpoint_crossed) {
-    return html`
-      <tr class="table-light">
-        <td colspan="${colspan}" class="py-2">
-          <div class="d-flex">
-            <i class="fas fa-check-circle text-success me-2 mt-1" aria-hidden="true"></i>
-            <div>
-              <span class="fw-bold">Lockpoint</span>
-              <small class="text-muted d-block">
-                Previous questions
-                locked${isGroupAssessment && row.lockpoint_crossed_authn_user_uid
-                  ? html` by ${row.lockpoint_crossed_authn_user_uid}`
-                  : ''}${row.lockpoint_crossed_at
-                  ? html` at ${formatDate(row.lockpoint_crossed_at, displayTimezone)}`
-                  : ''}
-              </small>
-            </div>
-          </div>
-        </td>
-      </tr>
-    `;
-  }
-
-  if (crossable) {
-    return html`
-      <tr class="table-warning">
-        <td colspan="${colspan}" class="py-2">
-          <div
-            class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2"
-          >
-            <div class="d-flex">
-              <i class="fas fa-lock text-warning me-2 mt-1" aria-hidden="true"></i>
-              <div>
-                <span class="fw-bold">Lockpoint</span>
-                <small class="text-muted d-block">
-                  After proceeding, you will not be able to submit answers to previous questions.
-                </small>
-              </div>
-            </div>
-            <button
-              type="button"
-              class="btn btn-warning btn-sm text-nowrap"
-              data-bs-toggle="modal"
-              data-bs-target="#crossLockpointModal-${row.zone_id}"
-            >
-              Proceed to next questions
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }
-
-  return html`
-    <tr class="table-light">
-      <td colspan="${colspan}" class="py-2">
-        <div class="d-flex">
-          <i class="fas fa-lock text-secondary me-2 mt-1" aria-hidden="true"></i>
-          <div>
-            <span class="fw-bold text-muted">Lockpoint</span>
-            <small class="text-muted d-block">
-              ${blockedByAdvanceScorePerc
-                ? 'A previous question requires a higher score before you can proceed past this lockpoint.'
-                : 'Complete previous questions to unlock.'}
-            </small>
-          </div>
-        </div>
-      </td>
-    </tr>
-  `;
-}
-
-function RowLabel({
-  instance_question_row,
-  userGroupRoles,
-  rowLabelText,
-  urlPrefix,
-  hasStatusColumn,
-}: {
-  instance_question_row: InstanceQuestionRow;
-  userGroupRoles: string | null;
-  rowLabelText: string;
-  urlPrefix: string;
-  hasStatusColumn: boolean;
-}) {
-  let lockMessage: string | null = null;
-  let showLink = true;
-
-  if (instance_question_row.question_access_mode === 'blocked_sequence') {
-    showLink = false;
-    lockMessage =
-      instance_question_row.prev_question_access_mode === 'blocked_sequence'
-        ? 'A previous question must be completed before you can access this one.'
-        : `You must score at least ${instance_question_row.prev_advance_score_perc}% on ${instance_question_row.prev_title} to unlock this question.`;
-  } else if (instance_question_row.question_access_mode === 'blocked_lockpoint') {
-    showLink = false;
-  } else if (!(instance_question_row.group_role_permissions?.can_view ?? true)) {
-    showLink = false;
-    lockMessage = `Your current group role (${userGroupRoles}) restricts access to this question.`;
-  } else if (instance_question_row.question_access_mode === 'read_only_lockpoint') {
-    lockMessage =
-      'You can no longer submit answers to this question because you have advanced past a lockpoint.';
-  }
-
-  return html`
-    ${showLink
-      ? html`
-          <a href="${urlPrefix}/instance_question/${instance_question_row.id}/">${rowLabelText}</a>
-        `
-      : html`<span class="text-muted">${rowLabelText}</span>`}
-    ${
-      // On exams, blocked_lockpoint questions show "Locked" in the Status column,
-      // so we skip the inline badge to avoid duplication. On homeworks (no Status
-      // column), we render the badge here instead.
-      instance_question_row.question_access_mode === 'blocked_lockpoint' && !hasStatusColumn
-        ? html`
-            <span class="badge bg-secondary ms-1" data-test-id="locked-instance-question-row">
-              Locked
-            </span>
-          `
-        : lockMessage != null
-          ? html`
-              <button
-                type="button"
-                class="btn btn-xs border text-secondary ms-1"
-                data-bs-toggle="popover"
-                data-bs-container="body"
-                data-bs-html="true"
-                data-bs-content="${lockMessage}"
-                data-test-id="locked-instance-question-row"
-                aria-label="Locked"
-              >
-                <i class="fas fa-lock" aria-hidden="true"></i>
-              </button>
-            `
-          : ''
-    }
-    ${instance_question_row.file_count > 0
-      ? html`
-          <button
-            type="button"
-            class="btn btn-xs border text-secondary ms-1"
-            data-bs-toggle="popover"
-            data-bs-container="body"
-            data-bs-html="true"
-            data-bs-content="Personal notes: ${instance_question_row.file_count}"
-            aria-label="Has personal note attachments"
-          >
-            <i class="fas fa-paperclip"></i>
-          </button>
-        `
-      : ''}
   `;
 }
 
