@@ -15,13 +15,13 @@ import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
 import { AssessmentInstanceSchema, type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import {
-  canUserAssignGroupRoles,
   getGroupConfig,
   getGroupInfo,
   getQuestionGroupPermissions,
   leaveGroup,
   updateGroupRoles,
 } from '../../lib/groups.js';
+import { canUserAssignGroupRoles } from '../../lib/groups.shared.js';
 import { idsEqual } from '../../lib/id.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
