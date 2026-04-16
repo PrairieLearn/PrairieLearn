@@ -761,6 +761,12 @@
                 }
               ]
             },
+            "dueDateCredit": {
+              "description": "Credit percentage at the due date. Omitted when 100% (the default).",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 200
+            },
             "earlyDeadlines": {
               "description": "Array of early deadlines with credit as percentages",
               "anyOf": [
