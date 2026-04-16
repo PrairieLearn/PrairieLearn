@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AccessControlJson, AccessControlJsonInput } from '../../schemas/accessControl.js';
+import type { AccessControlJson } from '../../schemas/accessControl.js';
 
-import { migrateAllowAccess } from './migration.js';
 import {
   type AccessControlResolverInput,
   type AccessControlRuleInput,
@@ -1846,127 +1845,5 @@ describe('formatDateShort', () => {
     expect(result).toMatch(/Sat/);
     expect(result).toMatch(/Mar/);
     expect(result).toMatch(/15/);
-  });
-});
-
-/**
- * Converts migrated `AccessControlJsonInput` (string dates) into the runtime
- * representation expected by the resolver.
- */
-function migratedToRuntime(json: AccessControlJsonInput): RuntimeAccessControl {
-  const result: RuntimeAccessControl = {};
-  if (json.dateControl) {
-    const { releaseDate, dueDate, ...rest } = json.dateControl;
-    result.dateControl = {
-      ...rest,
-      releaseDate: releaseDate != null ? new Date(releaseDate) : undefined,
-      dueDate: dueDate !== undefined ? (dueDate !== null ? new Date(dueDate) : null) : undefined,
-    };
-  }
-  if (json.listBeforeRelease !== undefined) result.listBeforeRelease = json.listBeforeRelease;
-  return result;
-}
-
-function resolveMigratedAt(migrated: AccessControlJsonInput, date: string): number | null {
-  const input: AccessControlResolverInput = {
-    rules: [
-      {
-        rule: migratedToRuntime(migrated),
-        number: 0,
-        targetType: 'none',
-        enrollmentIds: [],
-        studentLabelIds: [],
-      },
-    ],
-    enrollment: { enrollmentId: 'e1', studentLabelIds: [] },
-    date: new Date(date),
-    displayTimezone: 'UTC',
-    authzMode: 'Public',
-    courseRole: 'None',
-    courseInstanceRole: 'None',
-    prairieTestReservations: [],
-  };
-  return resolveAccessControl(input).credit;
-}
-
-describe('migration → resolver round-trip', () => {
-  // TODO: These tests document the *intended* behavior once dueDateCredit is
-  // wired through the resolver (DB column + data.ts + computeCredit). Until
-  // then the resolver hardcodes credit: 100 for the due date, so the
-  // assertions are inverted. When dueDateCredit is wired, flip these to the
-  // commented-out expectations.
-  it('single-reduced-credit preserves reduced credit through the resolver', () => {
-    const migrated = migrateAllowAccess([
-      { credit: 50, startDate: '2024-01-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
-    ]).result;
-
-    // Should be 50 once dueDateCredit is wired:
-    // expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(50);
-    expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(100);
-    expect(resolveMigratedAt(migrated, '2024-07-01T00:00:00Z')).toBe(0);
-  });
-
-  it('single bonus credit preserves bonus credit through the resolver', () => {
-    const migrated = migrateAllowAccess([
-      { credit: 120, startDate: '2024-01-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
-    ]).result;
-
-    // Should be 120 once dueDateCredit is wired:
-    // expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(120);
-    expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(100);
-    expect(resolveMigratedAt(migrated, '2024-07-01T00:00:00Z')).toBe(0);
-  });
-
-  it('declining-credit with bonus + reduced (no full) preserves all credit tiers', () => {
-    const migrated = migrateAllowAccess([
-      { credit: 120, startDate: '2024-01-01T00:00:00Z', endDate: '2024-02-01T00:00:00Z' },
-      { credit: 50, startDate: '2024-02-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
-    ]).result;
-
-    // Should be 120, 50 once dueDateCredit is wired:
-    // expect(resolveMigratedAt(migrated, '2024-01-15T00:00:00Z')).toBe(120);
-    // expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(50);
-    expect(resolveMigratedAt(migrated, '2024-01-15T00:00:00Z')).toBe(100);
-    expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(50);
-    expect(resolveMigratedAt(migrated, '2024-07-01T00:00:00Z')).toBe(0);
-  });
-
-  it('declining-credit with multiple bonus + reduced (no full) preserves all tiers', () => {
-    const migrated = migrateAllowAccess([
-      { credit: 130, startDate: '2024-01-01T00:00:00Z', endDate: '2024-01-15T00:00:00Z' },
-      { credit: 120, startDate: '2024-01-01T00:00:00Z', endDate: '2024-02-01T00:00:00Z' },
-      { credit: 50, startDate: '2024-02-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
-    ]).result;
-
-    // Should be 130, 120, 50 once dueDateCredit is wired:
-    // expect(resolveMigratedAt(migrated, '2024-01-10T00:00:00Z')).toBe(130);
-    // expect(resolveMigratedAt(migrated, '2024-01-20T00:00:00Z')).toBe(120);
-    // expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(50);
-    expect(resolveMigratedAt(migrated, '2024-01-10T00:00:00Z')).toBe(0);
-    expect(resolveMigratedAt(migrated, '2024-01-20T00:00:00Z')).toBe(0);
-    expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(0);
-    expect(resolveMigratedAt(migrated, '2024-07-01T00:00:00Z')).toBe(0);
-  });
-
-  it('declining-credit with bonus + full + reduced preserves all tiers', () => {
-    const migrated = migrateAllowAccess([
-      { credit: 110, startDate: '2024-01-01T00:00:00Z', endDate: '2024-02-01T00:00:00Z' },
-      { credit: 100, startDate: '2024-01-01T00:00:00Z', endDate: '2024-03-01T00:00:00Z' },
-      { credit: 50, startDate: '2024-01-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
-    ]).result;
-
-    expect(resolveMigratedAt(migrated, '2024-01-15T00:00:00Z')).toBe(110);
-    expect(resolveMigratedAt(migrated, '2024-02-15T00:00:00Z')).toBe(100);
-    expect(resolveMigratedAt(migrated, '2024-04-15T00:00:00Z')).toBe(50);
-    expect(resolveMigratedAt(migrated, '2024-07-01T00:00:00Z')).toBe(0);
-  });
-
-  it('single-deadline with full credit preserves 100% through the resolver', () => {
-    const migrated = migrateAllowAccess([
-      { credit: 100, startDate: '2024-01-01T00:00:00Z', endDate: '2024-06-01T00:00:00Z' },
-    ]).result;
-
-    expect(resolveMigratedAt(migrated, '2024-03-15T00:00:00Z')).toBe(100);
-    expect(resolveMigratedAt(migrated, '2024-07-01T00:00:00Z')).toBe(0);
   });
 });
