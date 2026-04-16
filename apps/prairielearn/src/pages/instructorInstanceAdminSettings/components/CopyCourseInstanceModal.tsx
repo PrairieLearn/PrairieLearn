@@ -38,8 +38,8 @@ interface CopyFormValues
   extends PublishingFormValues, SelfEnrollmentFormValues, PermissionsFormValues {
   short_name: string;
   long_name: string;
-  access_control_strategy: 'migrate' | 'keep' | 'wipe';
-  preserve_incompatible: boolean;
+  access_control_strategy: 'migrate' | 'keep' | 'clear';
+  clear_incompatible: boolean;
 }
 
 export function CopyCourseInstanceModal({
@@ -72,7 +72,7 @@ export function CopyCourseInstanceModal({
       self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
       course_instance_permission: isAdministrator ? 'None' : 'Student Data Editor',
       access_control_strategy: 'migrate',
-      preserve_incompatible: true,
+      clear_incompatible: true,
     },
     mode: 'onSubmit',
   });
@@ -101,7 +101,7 @@ export function CopyCourseInstanceModal({
         self_enrollment_use_enrollment_code: data.self_enrollment_use_enrollment_code,
         course_instance_permission: data.course_instance_permission,
         access_control_strategy: data.access_control_strategy,
-        preserve_incompatible: data.preserve_incompatible,
+        clear_incompatible: data.clear_incompatible,
       };
 
       const resp = await fetch(window.location.pathname, {
@@ -143,7 +143,7 @@ export function CopyCourseInstanceModal({
     const valid = await trigger(['short_name', 'long_name']);
     if (!valid) return;
 
-    if (analysisQuery.data?.hasLegacyRules) {
+    if (analysisQuery.isError || analysisQuery.data?.hasLegacyRules) {
       setStep('access-control');
     } else {
       void handleSubmit((data) => copyMutation.mutate(data))();
@@ -216,7 +216,8 @@ export function CopyCourseInstanceModal({
             >
               {isPending
                 ? 'Copying...'
-                : step === 'settings' && analysisQuery.data?.hasLegacyRules
+                : step === 'settings' &&
+                    (analysisQuery.isError || analysisQuery.data?.hasLegacyRules)
                   ? 'Next'
                   : 'Copy course instance'}
             </button>
@@ -360,77 +361,110 @@ function AccessControlStep({
     );
   }
 
-  if (analysisQuery.isError) {
-    const appError = getAppError<InstanceAdminSettingsError>(analysisQuery.error);
-
-    return (
-      <Modal.Body>
-        <Alert variant="danger">
-          {appError?.message ?? 'Failed to analyze access control rules.'} You can still copy the
-          course instance. Assessment access rules will be migrated to the modern format where
-          possible; any rules that cannot be migrated will be preserved in their current format.
-        </Alert>
-      </Modal.Body>
-    );
-  }
-
   const assessments = analysis?.assessments ?? [];
-  const allCanMigrate = analysis?.allCanMigrate ?? false;
+  const allCanMigrate = analysis?.assessments.every((a) => a.errors.length === 0) ?? false;
+  const appError = analysisQuery.isError
+    ? getAppError<InstanceAdminSettingsError>(analysisQuery.error)
+    : null;
+  const assessmentsWithNotes = assessments.filter(
+    (a) => a.errors.length === 0 && a.notes.length > 0,
+  );
+  const blockedAssessments = assessments.filter((a) => a.errors.length > 0);
+  const showPreserveOption =
+    accessControlStrategy === 'migrate' && (analysisQuery.isError || !allCanMigrate);
 
   return (
     <Modal.Body>
-      <p>
-        This course instance has{' '}
-        <strong>
-          {assessments.length} assessment{assessments.length !== 1 ? 's' : ''}
-        </strong>{' '}
-        with legacy access control rules. Choose how to handle them in the copy.
-      </p>
+      {analysisQuery.isError && (
+        <Alert variant="danger">
+          {appError?.message ?? 'Failed to analyze access control rules.'} You can still choose how
+          copied assessments should handle any legacy access control rules that are encountered.
+        </Alert>
+      )}
 
-      <div
-        className="border rounded mb-3"
-        style={{ maxHeight: '200px', overflowY: 'auto' }}
-        role="list"
-        aria-label="Assessments with legacy access control"
-      >
-        <table className="table table-sm table-hover mb-0">
-          <thead className="table-light sticky-top">
-            <tr>
-              <th>Assessment</th>
-              <th className="text-center">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {assessments.map((a) => (
-              <tr key={a.tid}>
-                <td>
-                  <code>{a.tid}</code>
-                  <small className="text-muted d-block">{a.title}</small>
-                </td>
-                <td className="text-center">
-                  {a.canMigrate ? (
-                    <i
-                      className="bi bi-check-circle-fill text-success"
-                      aria-label="Can be migrated"
-                    />
-                  ) : (
-                    <i
-                      className="bi bi-exclamation-triangle-fill text-warning"
-                      aria-label="Cannot be migrated"
-                    />
-                  )}
-                  {a.hasUidRules && (
-                    <i
-                      className="bi bi-person-fill text-info ms-1"
-                      aria-label="Has UID-based rules"
-                    />
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {assessments.length > 0 && (
+        <>
+          <p>
+            This course instance has{' '}
+            <strong>
+              {assessments.length} assessment{assessments.length !== 1 ? 's' : ''}
+            </strong>{' '}
+            with legacy access control rules. Choose how to handle them in the copy. Learn more
+            about{' '}
+            <a
+              href="https://docs.prairielearn.com/assessment/accessControl/"
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              access control
+            </a>
+            .
+          </p>
+
+          {(assessmentsWithNotes.length > 0 || blockedAssessments.length > 0) && (
+            <Alert variant="warning">
+              {assessmentsWithNotes.length > 0 && (
+                <div>
+                  <strong>{assessmentsWithNotes.length}</strong> assessment
+                  {assessmentsWithNotes.length !== 1 ? 's' : ''} can migrate with caveats.
+                </div>
+              )}
+              {blockedAssessments.length > 0 && (
+                <div>
+                  <strong>{blockedAssessments.length}</strong> assessment
+                  {blockedAssessments.length !== 1 ? 's' : ''} require
+                  {blockedAssessments.length === 1 ? 's' : ''} manual review.
+                </div>
+              )}
+            </Alert>
+          )}
+
+          <div className="border rounded mb-3" style={{ maxHeight: '240px', overflowY: 'auto' }}>
+            <table
+              className="table table-sm table-hover mb-0"
+              aria-label="Assessments with legacy access control"
+            >
+              <thead className="table-light sticky-top">
+                <tr>
+                  <th>Assessment</th>
+                  <th>Status</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assessments.map((a) => (
+                  <tr key={a.tid}>
+                    <td>
+                      <code>{a.tid}</code>
+                      <small className="text-muted d-block">{a.title}</small>
+                    </td>
+                    <td>
+                      {a.errors.length === 0 ? (
+                        a.notes.length > 0 ? (
+                          <span className="badge text-bg-info">Migrates with notes</span>
+                        ) : (
+                          <span className="badge text-bg-success">Can migrate</span>
+                        )
+                      ) : (
+                        <span className="badge text-bg-warning">Manual review</span>
+                      )}
+                    </td>
+                    <td>
+                      {a.errors.length > 0 ? (
+                        <small className="text-danger">{a.errors.join(' ')}</small>
+                      ) : a.notes.length > 0 ? (
+                        <small className="text-muted">{a.notes.join(' ')}</small>
+                      ) : (
+                        <small className="text-muted">-</small>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       <fieldset>
         <legend className="h6">Migration strategy</legend>
@@ -438,22 +472,31 @@ function AccessControlStep({
         <Form.Check
           type="radio"
           id="strategy-migrate"
-          label="Attempt to migrate to modern format"
+          label="Migrate to modern format (Recommended)"
           value="migrate"
           {...register('access_control_strategy')}
         />
-        {!allCanMigrate && accessControlStrategy === 'migrate' && (
+        {accessControlStrategy === 'migrate' && assessmentsWithNotes.some((a) => a.hasUidRules) && (
+          <div className="ms-4 mt-1 mb-2">
+            <small className="text-muted d-block">
+              UID-based rules are copied only in legacy format. If you migrate the copy, those
+              individual-student rules are omitted and should be recreated later as enrollment
+              overrides if needed.
+            </small>
+          </div>
+        )}
+        {showPreserveOption && (
           <div className="ms-4 mt-1 mb-2">
             <Form.Check
               type="checkbox"
-              id="preserve-incompatible"
+              id="clear-incompatible"
               label={
                 <small className="text-muted">
-                  Preserve incompatible rules (keep legacy format for assessments that cannot be
-                  migrated)
+                  Clear access control for incompatible assessments
                 </small>
               }
-              {...register('preserve_incompatible')}
+              defaultChecked
+              {...register('clear_incompatible')}
             />
           </div>
         )}
@@ -461,16 +504,16 @@ function AccessControlStep({
         <Form.Check
           type="radio"
           id="strategy-keep"
-          label="Keep legacy access control as-is"
+          label="Don't migrate to modern access control"
           value="keep"
           {...register('access_control_strategy')}
         />
 
         <Form.Check
           type="radio"
-          id="strategy-wipe"
-          label="Remove all access control rules"
-          value="wipe"
+          id="strategy-clear"
+          label="Migrate to modern format and clear all rules"
+          value="clear"
           {...register('access_control_strategy')}
         />
       </fieldset>

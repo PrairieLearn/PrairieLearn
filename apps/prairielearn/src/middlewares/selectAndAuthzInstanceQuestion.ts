@@ -24,12 +24,12 @@ import {
   UserSchema,
 } from '../lib/db-types.js';
 import {
-  type GroupInfo,
   type QuestionGroupPermissions,
   getGroupConfig,
   getGroupInfo,
   getQuestionGroupPermissions,
 } from '../lib/groups.js';
+import type { GroupInfo } from '../lib/groups.shared.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
