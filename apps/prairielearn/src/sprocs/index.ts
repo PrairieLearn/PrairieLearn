@@ -39,7 +39,6 @@ export async function init() {
       'grader_loads_current.sql',
       'server_loads_current.sql',
       'server_usage_current.sql',
-      'sync_course_instances.sql',
       'sync_questions.sql',
       'sync_assessments.sql',
       'sync_access_control.sql',

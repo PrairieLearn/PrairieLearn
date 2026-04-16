@@ -1,5 +1,6 @@
 import * as path from 'path';
 
+import { Temporal } from '@js-temporal/polyfill';
 import { Router } from 'express';
 import fs from 'fs-extra';
 
@@ -32,6 +33,11 @@ import {
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
+
+function todayAsDatetimeLocal(timezone: string): string {
+  const today = Temporal.Now.plainDateISO(timezone);
+  return `${today.toString()}T00:00:00`;
+}
 
 function getAssessmentPath(
   resLocals: Pick<ResLocalsForPage<'assessment'>, 'course' | 'course_instance' | 'assessment'>,
@@ -94,29 +100,50 @@ router.get(
     let migrationPreview: {
       beforeJson: string;
       afterJson: string;
-      warnings: string[];
+      errors: string[];
+      notes: string[];
       hasUidRules: boolean;
+      isIncompatible: boolean;
+      fallbackReleaseDate: string;
     } | null = null;
 
     if (enhancedAccessControlEnabled) {
       migrationAnalysis = await analyzeAssessmentFile(assessmentPath, res.locals.assessment.tid!);
 
-      if (migrationAnalysis?.canMigrate) {
+      const fallbackReleaseDate = todayAsDatetimeLocal(res.locals.course_instance.display_timezone);
+
+      if (migrationAnalysis?.errors.length === 0) {
         const content = await fs.readFile(assessmentPath, 'utf-8');
         const parsed = JSON.parse(content);
         const beforeJson = JSON.stringify(parsed.allowAccess, null, 2);
 
-        const migrationResult = migrateAssessmentJson(content);
+        const migrationResult = migrateAssessmentJson(content, fallbackReleaseDate);
         if (migrationResult) {
           const migratedParsed = JSON.parse(migrationResult.json);
           const afterJson = JSON.stringify(migratedParsed.accessControl, null, 2);
           migrationPreview = {
             beforeJson,
             afterJson,
-            warnings: migrationResult.warnings,
+            errors: migrationResult.errors,
+            notes: migrationResult.notes,
             hasUidRules: migrationAnalysis.hasUidRules,
+            isIncompatible: false,
+            fallbackReleaseDate,
           };
         }
+      } else if (migrationAnalysis && migrationAnalysis.errors.length > 0) {
+        const content = await fs.readFile(assessmentPath, 'utf-8');
+        const parsed = JSON.parse(content);
+        const beforeJson = JSON.stringify(parsed.allowAccess, null, 2);
+        migrationPreview = {
+          beforeJson,
+          afterJson: '[]',
+          errors: migrationAnalysis.errors,
+          notes: migrationAnalysis.notes,
+          hasUidRules: migrationAnalysis.hasUidRules,
+          isIncompatible: true,
+          fallbackReleaseDate,
+        };
       }
     }
 
@@ -157,13 +184,23 @@ router.post(
       const assessmentPath = getAssessmentPath(res.locals);
       const content = await fs.readFile(assessmentPath, 'utf-8');
 
-      const migrationResult = migrateAssessmentJson(content);
-      if (!migrationResult) {
+      const fallbackReleaseDate =
+        req.body.fallback_release_date ??
+        todayAsDatetimeLocal(res.locals.course_instance.display_timezone);
+      const migrationResult = migrateAssessmentJson(content, fallbackReleaseDate);
+
+      let formattedJson: string;
+      if (migrationResult) {
+        formattedJson = await formatJsonWithPrettier(migrationResult.json);
+      } else if (req.body.migrate_strategy === 'clear') {
+        const data = JSON.parse(content);
+        delete data.allowAccess;
+        data.accessControl = [];
+        formattedJson = await formatJsonWithPrettier(JSON.stringify(data));
+      } else {
         flash('error', 'This assessment cannot be automatically migrated.');
         return res.redirect(req.originalUrl);
       }
-
-      const formattedJson = await formatJsonWithPrettier(migrationResult.json);
 
       const paths = getPaths(undefined, res.locals);
       const editor = new FileModifyEditor({
@@ -184,7 +221,12 @@ router.post(
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
 
-      flash('success', 'Access rules migrated to modern format.');
+      flash(
+        'success',
+        migrationResult
+          ? 'Access rules migrated to modern format.'
+          : 'Legacy access rules removed. You can now configure access rules in the modern format.',
+      );
       return res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `Unknown action: ${req.body.__action}`);
