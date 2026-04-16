@@ -1,18 +1,19 @@
 import { html } from '@prairielearn/html';
 
+import { getInstanceQuestionUrl } from '../lib/client/url.js';
 import { idsEqual } from '../lib/id.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
 
 export function QuestionVariantHistory({
+  courseInstanceId,
   instanceQuestionId,
   previousVariants,
   currentVariantId,
-  urlPrefix,
 }: {
+  courseInstanceId: string;
   instanceQuestionId: string;
   previousVariants?: SimpleVariantWithScore[] | null;
   currentVariantId?: string;
-  urlPrefix: string;
 }) {
   if (!previousVariants) return '';
   const MAX_DISPLAYED_VARIANTS = 10;
@@ -44,7 +45,11 @@ export function QuestionVariantHistory({
             ? 'text-bg-info'
             : 'text-bg-secondary'} ${collapseClass}"
           ${index < previousVariants.length - MAX_DISPLAYED_VARIANTS ? 'style="display: none"' : ''}
-          href="${urlPrefix}/instance_question/${instanceQuestionId}/?variant_id=${variant.id}"
+          href="${getInstanceQuestionUrl({
+            courseInstanceId,
+            instanceQuestionId,
+            variantId: variant.id,
+          })}"
         >
           ${variant.open ? 'Open' : `${Math.floor(variant.max_submission_score * 100)}%`}
           ${currentVariantId != null && idsEqual(variant.id, currentVariantId)

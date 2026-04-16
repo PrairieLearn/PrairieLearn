@@ -557,8 +557,8 @@ export function StudentAssessmentInstance({
                                   </td>
                                   <td class="text-center">
                                     ${QuestionVariantHistory({
-                                      urlPrefix: resLocals.urlPrefix,
                                       instanceQuestionId: instance_question_row.id,
+                                      courseInstanceId: resLocals.assessment.course_instance_id,
                                       previousVariants: instance_question_row.previous_variants,
                                     })}
                                   </td>
