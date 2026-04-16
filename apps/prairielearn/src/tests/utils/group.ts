@@ -13,7 +13,6 @@ export async function switchUserAndLoadAssessment(
   studentUser: User,
   assessmentUrl: string,
   formName: string | null,
-  formContainer = 'body',
 ): Promise<{ $: cheerio.CheerioAPI; csrfToken: string }> {
   // Load config
   config.authUid = studentUser.uid;
@@ -28,10 +27,7 @@ export async function switchUserAndLoadAssessment(
 
   // When a specific form is requested, only look up that form and fail if it's
   // missing. Otherwise fall back to the nearest form or the page-level token.
-  const form =
-    formName != null
-      ? $(`form[name="${formName}"]`).get(0)
-      : ($(formContainer).find('form').get(0) ?? $(formContainer).closest('form').get(0));
+  const form = formName != null ? $(`form[name="${formName}"]`).get(0) : undefined;
 
   if (formName != null) {
     assert.ok(form, `Expected form "${formName}" to be present`);

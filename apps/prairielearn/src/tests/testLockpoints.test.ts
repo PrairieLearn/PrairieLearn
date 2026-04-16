@@ -242,6 +242,11 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
       // (blocked_lockpoint shows status in the Status column on exams, so
       // only the one read_only_lockpoint row produces this button.)
       assert.equal(response.$('[data-testid="locked-instance-question-row"]').length, 1);
+
+      assert.include(
+        response.$.html(),
+        'You can no longer submit answers to this question because you have advanced past a lockpoint',
+      );
     },
   );
 

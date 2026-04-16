@@ -289,10 +289,15 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       assert.equal(badge.eq(1).text().trim(), 'pending');
       assert.equal(badge.eq(2).text().trim(), 'pending');
 
-      // We should now be able to finish the entire assessment. The confirm-finish
-      // modal is a React Bootstrap modal that only renders client-side when shown,
-      // so we can't assert on its DOM presence in server-rendered HTML. Instead we
-      // verify the finish POST action succeeds.
+      // We should now be able to finish the entire assessment.
+      //
+      // First, make sure that "Finish assessment" button is present and enabled.
+      // This will open a modal that will allow the student to finish the assessment.
+      const finishButton = otherEnabledGradeResponse.$('button:contains("Finish assessment")');
+      assert.lengthOf(finishButton, 1);
+      assert.notEqual(finishButton.attr('disabled'), 'disabled');
+
+      // Next, make a request to actually finish.
       const finishResponse = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
         method: 'POST',
         body: new URLSearchParams({
