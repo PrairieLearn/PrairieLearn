@@ -34,6 +34,8 @@ async function uniqueEnrollmentCodes(count: number) {
     // Check if any of the enrollment codes we generated are already in use.
     const existingEnrollmentCodes = await sqldb.queryScalars(
       sql.select_existing_enrollment_codes,
+      // We should almost never need to iterate more than once due to the probability of a collision.
+      // Thus, we keep the code simple and avoid tracking enrollment codes that we already checked.
       { enrollment_codes: Array.from(enrollmentCodes) },
       z.string(),
     );
@@ -243,7 +245,8 @@ async function courseInstanceConsistencyCheck({
         ...ci,
         diskUuid: courseInstances[ci.short_name!].courseInstance.uuid,
       }))
-      // PostgreSQL's `uuid` type normalizes stored values to lowercase
+      // PostgreSQL's `uuid` type normalizes stored values to lowercase,
+      // but diskUuid is preserved as-is, so we need to compare case-insensitively.
       .filter((ci) => ci.diskUuid && ci.diskUuid.toLowerCase() !== ci.uuid);
     if (mismatchedInstanceUuids.length > 0) {
       throw new AugmentedError(
