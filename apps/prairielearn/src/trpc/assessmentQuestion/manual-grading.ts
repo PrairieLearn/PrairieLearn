@@ -219,7 +219,7 @@ const setRequiresManualGradingMutation = t.procedure
     });
   });
 
-const aiGradingAvailability = t.procedure
+const aiGradingAvailabilityInfo = t.procedure
   .use(requireCourseInstancePermissionView)
   .use(requireAiGradingFeature)
   .output(
@@ -243,7 +243,7 @@ const aiGradingAvailability = t.procedure
 
 export const manualGradingRouter = t.router({
   instances,
-  aiGradingAvailability,
+  aiGradingAvailabilityInfo,
   setAiGradingMode: setAiGradingModeMutation,
   deleteAiGradingJobs: deleteAiGradingJobsMutation,
   deleteAiInstanceQuestionGroupings: deleteAiInstanceQuestionGroupingsMutation,

@@ -243,6 +243,7 @@ function AiGradingAvailabilityAlert({
                 type="button"
                 variant="link"
                 className="p-0 align-baseline"
+                style={{ fontSize: 'inherit' }}
                 onClick={onRetryAvailability}
               >
                 Try again.
@@ -343,12 +344,12 @@ export function AiGradingModelSelectionModal({
   );
   const isModalOpen = modalState != null;
   const {
-    data: aiGradingAvailability,
+    data: aiGradingAvailabilityInfo,
     isFetching: isAvailabilityFetching,
     isError: isAvailabilityError,
-    refetch: refetchAvailability,
+    refetch: refetchAvailabilityInfo,
   } = useQuery({
-    ...trpc.manualGrading.aiGradingAvailability.queryOptions(),
+    ...trpc.manualGrading.aiGradingAvailabilityInfo.queryOptions(),
     enabled: isModalOpen,
     refetchOnMount: 'always',
   });
@@ -392,10 +393,10 @@ export function AiGradingModelSelectionModal({
 
   const aiGradingAvailabilityState = run<AiGradingAvailabilityState>(() => {
     if (isAvailabilityError) return { kind: 'error' };
-    if (isAvailabilityFetching || aiGradingAvailability == null) return { kind: 'loading' };
+    if (isAvailabilityFetching || aiGradingAvailabilityInfo == null) return { kind: 'loading' };
 
     const { running_job_count, max_concurrent_jobs, credit_balance_milli_dollars } =
-      aiGradingAvailability;
+      aiGradingAvailabilityInfo;
 
     if (running_job_count >= max_concurrent_jobs) {
       return { kind: 'concurrency_limit', maxConcurrentJobs: max_concurrent_jobs };
@@ -427,7 +428,7 @@ export function AiGradingModelSelectionModal({
             state={aiGradingAvailabilityState}
             aiGradingSettingsUrl={aiGradingSettingsUrl}
             onRetryAvailability={() => {
-              void refetchAvailability();
+              void refetchAvailabilityInfo();
             }}
           />
           <ModelList
