@@ -16,14 +16,14 @@ import { formatMilliDollars } from '../../../../lib/ai-grading-credits.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
 import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
 
-type ModelSelectorState =
-  | { status: 'loading' }
-  | { status: 'error' }
-  | { status: 'concurrency_limit'; maxConcurrentJobs: number }
-  | { status: 'no_keys' }
-  | { status: 'ready_with_keys' }
-  | { status: 'no_credits' }
-  | { status: 'ready_with_credits'; creditBalanceMilliDollars: number };
+type AiGradingAvailabilityState =
+  | { kind: 'loading' }
+  | { kind: 'error' }
+  | { kind: 'concurrency_limit'; maxConcurrentJobs: number }
+  | { kind: 'no_keys' }
+  | { kind: 'ready_with_keys' }
+  | { kind: 'no_credits' }
+  | { kind: 'ready_with_credits'; creditBalanceMilliDollars: number };
 
 export type AiGradingModelSelectionModalState =
   | { type: 'all'; numToGrade: number }
@@ -209,20 +209,20 @@ function SettingsLink({ url, children }: { url: string; children: React.ReactNod
   );
 }
 
-function StatusAlert({
+function AiGradingAvailabilityAlert({
   state,
   aiGradingSettingsUrl,
-  onRetryStatus,
+  onRetryAvailability,
 }: {
-  state: ModelSelectorState;
+  state: AiGradingAvailabilityState;
   aiGradingSettingsUrl: string;
-  onRetryStatus: () => void;
+  onRetryAvailability: () => void;
 }) {
   const { variant, content } = run<{
     variant: 'info' | 'warning' | 'danger';
     content: React.ReactNode;
   }>(() => {
-    switch (state.status) {
+    switch (state.kind) {
       case 'loading':
         return {
           variant: 'info',
@@ -243,7 +243,7 @@ function StatusAlert({
                 type="button"
                 variant="link"
                 className="p-0 align-baseline"
-                onClick={onRetryStatus}
+                onClick={onRetryAvailability}
               >
                 Try again.
               </Button>
@@ -343,12 +343,12 @@ export function AiGradingModelSelectionModal({
   );
   const isModalOpen = modalState != null;
   const {
-    data: aiGradingStatus,
-    isFetching: isStatusFetching,
-    isError: isStatusError,
-    refetch: refetchStatus,
+    data: aiGradingAvailability,
+    isFetching: isAvailabilityFetching,
+    isError: isAvailabilityError,
+    refetch: refetchAvailability,
   } = useQuery({
-    ...trpc.manualGrading.aiGradingStatus.queryOptions(),
+    ...trpc.manualGrading.aiGradingAvailability.queryOptions(),
     enabled: isModalOpen,
     refetchOnMount: 'always',
   });
@@ -390,30 +390,30 @@ export function AiGradingModelSelectionModal({
     ? availableProviders.includes(selectedModelProvider)
     : false;
 
-  const modelSelectorState = run<ModelSelectorState>(() => {
-    if (isStatusFetching || aiGradingStatus == null) return { status: 'loading' };
-    if (isStatusError) return { status: 'error' };
+  const aiGradingAvailabilityState = run<AiGradingAvailabilityState>(() => {
+    if (isAvailabilityError) return { kind: 'error' };
+    if (isAvailabilityFetching || aiGradingAvailability == null) return { kind: 'loading' };
 
     const { running_job_count, max_concurrent_jobs, credit_balance_milli_dollars } =
-      aiGradingStatus;
+      aiGradingAvailability;
 
     if (running_job_count >= max_concurrent_jobs) {
-      return { status: 'concurrency_limit', maxConcurrentJobs: max_concurrent_jobs };
+      return { kind: 'concurrency_limit', maxConcurrentJobs: max_concurrent_jobs };
     }
     if (useCustomApiKeys) {
-      if (availableProviders.length === 0) return { status: 'no_keys' };
-      return { status: 'ready_with_keys' };
+      if (availableProviders.length === 0) return { kind: 'no_keys' };
+      return { kind: 'ready_with_keys' };
     }
-    if (credit_balance_milli_dollars <= 0) return { status: 'no_credits' };
+    if (credit_balance_milli_dollars <= 0) return { kind: 'no_credits' };
     return {
-      status: 'ready_with_credits',
+      kind: 'ready_with_credits',
       creditBalanceMilliDollars: credit_balance_milli_dollars,
     };
   });
 
   const isGradingEnabled =
-    modelSelectorState.status === 'ready_with_keys' ||
-    modelSelectorState.status === 'ready_with_credits';
+    aiGradingAvailabilityState.kind === 'ready_with_keys' ||
+    aiGradingAvailabilityState.kind === 'ready_with_credits';
 
   return (
     <Modal show={isModalOpen} size="lg" backdrop="static" keyboard={false} onHide={handleClose}>
@@ -423,11 +423,11 @@ export function AiGradingModelSelectionModal({
         </Modal.Header>
 
         <Modal.Body>
-          <StatusAlert
-            state={modelSelectorState}
+          <AiGradingAvailabilityAlert
+            state={aiGradingAvailabilityState}
             aiGradingSettingsUrl={aiGradingSettingsUrl}
-            onRetryStatus={() => {
-              void refetchStatus();
+            onRetryAvailability={() => {
+              void refetchAvailability();
             }}
           />
           <ModelList
