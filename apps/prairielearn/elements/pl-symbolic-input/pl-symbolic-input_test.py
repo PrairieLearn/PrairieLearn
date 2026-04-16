@@ -277,7 +277,42 @@ def test_formula_editor_initial_value_respects_display_log_as_ln(
     assert "\\log{\\left(x \\right)}" not in rendered
 
 
-def test_interval_submission_parses_and_grades() -> None:
+def test_open_interval_submission_parses_and_grades() -> None:
+    element_html = """
+    <pl-symbolic-interval
+        answers-name="test"
+        allow-set-notation="true"
+        correct-answer="(1, 2] U (3, 4)"
+    ></pl-symbolic-interval>
+    """
+    data: dict[str, Any] = {
+        "submitted_answers": {"test": "(1, 2] U (3, 4)"},
+        "raw_submitted_answers": {"test": "(1, 2] U (3, 4)"},
+        "correct_answers": {},
+        "answers_names": {},
+        "format_errors": {},
+        "partial_scores": {},
+        "panel": "question",
+        "editable": True,
+    }
+
+    symbolic_input.prepare(element_html, data)
+    assert data["correct_answers"]["test"] == "(1, 2] U (3, 4)"
+
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+    assert isinstance(data["submitted_answers"]["test"], dict)
+    assert data["submitted_answers"]["test"]["_type"] == "sympy"
+    assert (
+        data["submitted_answers"]["test"]["_value"]
+        == "Union(Interval(1, 2, True, False), Interval(3, 4, True, True))"
+    )
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_closed_interval_submission_parses_and_grades() -> None:
     element_html = """
     <pl-symbolic-interval
         answers-name="test"
@@ -398,7 +433,7 @@ def test_closed_interval_literal_parses() -> None:
     assert interval == sympy.Interval(1, 2)
 
 
-def test_open_right_interval_literal_parses() -> None:
+def test_open_left_interval_literal_parses() -> None:
     x, y = sympy.symbols("x y")
     out = psu.try_parse_string_as_sympy(
         "(sin(x), y]", ["x", "y"], allow_set_notation=True
@@ -406,6 +441,36 @@ def test_open_right_interval_literal_parses() -> None:
     assert isinstance(out, psu.SympyParseSuccess)
     interval = out.expr
     assert interval == sympy.Interval.Lopen(sympy.sin(x), y)
+
+
+def test_open_right_interval_literal_parses() -> None:
+    x, y = sympy.symbols("x y")
+    out = psu.try_parse_string_as_sympy(
+        "[sin(x), y)", ["x", "y"], allow_set_notation=True
+    )
+    assert isinstance(out, psu.SympyParseSuccess)
+    interval = out.expr
+    assert interval == sympy.Interval.Ropen(sympy.sin(x), y)
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        (
+            "(0, 1)",
+            sympy.Interval.open(0, 1),
+        ),
+        (
+            "(-oo, 5)",
+            sympy.Interval.open(-sympy.oo, 5),
+        ),
+    ],
+)
+def test_open_interval_literal_parses(text: str, expected: sympy.Basic) -> None:
+    out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
+    assert isinstance(out, psu.SympyParseSuccess), out
+    parsed = out.expr
+    assert parsed == expected
 
 
 def test_nested_interval_literal_is_rejected() -> None:
@@ -422,6 +487,7 @@ def test_disallowed_set_literal_is_rejected() -> None:
     err, interval = out.error, None
     assert err is not None
     assert interval is None
+    assert "set notation" in err
 
 
 def test_disallowed_interval_literal_is_rejected() -> None:
@@ -430,6 +496,7 @@ def test_disallowed_interval_literal_is_rejected() -> None:
     err, interval = out.error, None
     assert err is not None
     assert interval is None
+    assert "set notation" in err
 
 
 @pytest.mark.parametrize(
@@ -475,6 +542,14 @@ def test_union_parser_uses_interval_transformation() -> None:
     ("text", "expected"),
     [
         (
+            "(1, 2) u (3, 4]",
+            sympy.Union(sympy.Interval.open(1, 2), sympy.Interval.Lopen(3, 4)),
+        ),
+        (
+            "(1, 2) u {2, 4}",
+            sympy.Union(sympy.Interval.Lopen(1, 2), sympy.FiniteSet(4)),
+        ),
+        (
             "[1, 2] u (3, 4]",
             sympy.Union(sympy.Interval(1, 2), sympy.Interval.Lopen(3, 4)),
         ),
@@ -489,9 +564,7 @@ def test_union_parser_uses_interval_transformation() -> None:
         ),
     ],
 )
-def test_set_expression_supports_interval_operations(
-    text: str, expected: sympy.Basic
-) -> None:
+def test_intervals_support_operations(text: str, expected: sympy.Basic) -> None:
     out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
     assert isinstance(out, psu.SympyParseSuccess)
     parsed = out.expr

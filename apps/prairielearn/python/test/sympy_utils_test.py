@@ -284,6 +284,19 @@ class TestSympy:
         assert ref_expr == psu.json_to_sympy(psu.sympy_to_json(ref_expr))
 
     @pytest.mark.parametrize(
+        "sympy_expr",
+        [
+            sympy.Interval.open(3, 4),
+            sympy.Interval.Lopen(sympy.Symbol("x"), sympy.Symbol("y")),
+            sympy.Union(sympy.Interval(1, 2), sympy.Interval.open(3, 4)),
+        ],
+    )
+    def test_json_conversion_handles_open_intervals(
+        self, sympy_expr: sympy.Expr
+    ) -> None:
+        assert sympy_expr == psu.json_to_sympy(psu.sympy_to_json(sympy_expr))
+
+    @pytest.mark.parametrize(
         ("a_pair", "custom_functions"),
         chain(
             zip(EXPR_PAIRS, repeat(None)),

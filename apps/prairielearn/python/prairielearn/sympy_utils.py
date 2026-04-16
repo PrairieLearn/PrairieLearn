@@ -38,6 +38,7 @@ from sympy.parsing.sympy_parser import (
     standard_transformations,
     stringify_expr,
 )
+from sympy.printing.str import StrPrinter
 from typing_extensions import NotRequired
 
 from prairielearn.misc_utils import full_unidecode
@@ -182,6 +183,17 @@ class _Constants:
             "Union": sympy.Union,
             "Intersection": sympy.Intersection,
         }
+
+
+class _SympyJsonStrPrinter(StrPrinter):
+    """String printer that keeps set notation parseable by avoiding banned ast nodes."""
+
+    def _print_Interval(self, expr: sympy.Interval) -> str:  # noqa: N802
+        # by default, it prefers `Interval.open` or `Interval.Lopen` which the ast blocker bans
+        start, end = self.doprint(expr.start), self.doprint(expr.end)
+        if not expr.left_open and not expr.right_open:
+            return f"Interval({start}, {end})"
+        return f"Interval({start}, {end}, {expr.left_open}, {expr.right_open})"
 
 
 # Safe evaluation of user input to convert from string to sympy expression.
@@ -537,6 +549,7 @@ def evaluate_with_source(
     Raises:
         HasEscapeError: If the expression contains an escape character.
         HasCommentError: If the expression contains a comment character.
+        HasSetNotationError: If the expression contains interval or set characters.
         HasParseError: If the expression cannot be parsed.
         BaseSympyError: If the expression cannot be evaluated.
     """
@@ -551,6 +564,12 @@ def evaluate_with_source(
     ind = normalized_expr.find("#")
     if ind != -1:
         raise HasCommentError(normalized_offsets[ind])
+
+    if not allow_set_notation and any(
+        token in normalized_expr
+        for token in ("[", "]", "{", "}", "∪", "∩")  # noqa: RUF001
+    ):
+        raise HasSetNotationError
 
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
@@ -876,7 +895,7 @@ def sympy_to_json(
 
     return {
         "_type": "sympy",
-        "_value": str(a_sub),
+        "_value": _SympyJsonStrPrinter().doprint(a_sub),
         "_variables": variables,
         "_assumptions": assumptions_dict,
         "_custom_functions": custom_functions,
@@ -977,6 +996,10 @@ def try_parse_string_as_sympy(
             )
 
         return SympyParseFailure("".join(err_string))
+    except HasSetNotationError:
+        return SympyParseFailure(
+            "Your answer contains set notation, but set notation is not allowed for this question."
+        )
     except HasInvalidExpressionError as exc:
         return SympyParseFailure(
             f"Your answer has an invalid expression. "
