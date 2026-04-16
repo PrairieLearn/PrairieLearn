@@ -120,7 +120,11 @@ describe('migrateAllowAccess', () => {
       expected: {
         archetype: { base: 'password-gated', modifiers: [] },
         result: {
-          dateControl: { password: 'secret', releaseDate: '2024-01-01', due: { date: '2024-06-01' } },
+          dateControl: {
+            password: 'secret',
+            releaseDate: '2024-01-01',
+            due: { date: '2024-06-01' },
+          },
         },
         errors: [],
         notes: [],

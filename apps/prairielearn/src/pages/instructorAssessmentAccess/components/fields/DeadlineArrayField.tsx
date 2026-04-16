@@ -190,7 +190,9 @@ function DeadlineArrayInput({
       // tighter bound is 100; when dueCredit < 100 it's dueCredit itself.
       const cap = Math.min(100, dueCreditRef.current);
       if (value < 0 || value >= cap) {
-        return cap === 100 ? 'Credit must be 0-99%' : `Credit must be less than ${cap}% (due credit)`;
+        return cap === 100
+          ? 'Credit must be 0-99%'
+          : `Credit must be less than ${cap}% (due credit)`;
       }
     }
     const currentDeadlines = deadlinesRef.current;
@@ -384,15 +386,13 @@ export function MainDeadlineArrayField({
     name: fieldName,
   });
 
-  const hasCustomCredit = due?.credit !== null;
-  const dueDate = due?.date ?? null;
-  const dueCredit = due?.credit ?? 100;
+  const hasCustomCredit = due.credit !== null && due.credit !== 100;
+  const dueDate = due.date;
+  const dueCredit = due.credit ?? 100;
 
   // Hide early deadlines entirely when custom due credit is set (they would be
   // clamped to the due credit anyway, and the validator would reject them).
-  const shouldShow = isEarly
-    ? !hasCustomCredit
-    : (dueDate !== null && !!dueDate);
+  const shouldShow = isEarly ? !hasCustomCredit : dueDate !== null && !!dueDate;
 
   if (!shouldShow) return null;
 
@@ -454,11 +454,11 @@ export function OverrideDeadlineArrayField({
 
   const effectiveReleaseDate = releaseDateOverridden ? overrideReleaseDate : mainReleaseDate;
   const effectiveDue = dueOverridden ? overrideDue : mainDue;
-  const effectiveDueDate = effectiveDue?.date ?? null;
-  const effectiveDueCredit = effectiveDue?.credit ?? 100;
-  const hasCustomCredit = effectiveDue?.credit !== null && effectiveDue?.credit !== undefined;
+  const effectiveDueDate = effectiveDue.date;
+  const effectiveDueCredit = effectiveDue.credit ?? 100;
+  const hasCustomCredit = effectiveDue.credit !== null && effectiveDue.credit !== 100;
   const validationReleaseDate = releaseDateOverridden ? overrideReleaseDate : undefined;
-  const validationDueDate = dueOverridden ? (overrideDue?.date ?? null) : undefined;
+  const validationDueDate = dueOverridden ? overrideDue.date : undefined;
 
   // Hide early deadlines entirely when effective due credit is customized.
   if (isEarly && hasCustomCredit) return null;

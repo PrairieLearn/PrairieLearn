@@ -1,6 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { useState } from 'react';
-import { Button, Form, InputGroup } from 'react-bootstrap';
+import { Alert, Button, Form, InputGroup } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
 import { formatDateFriendly } from '@prairielearn/formatter';
@@ -43,9 +42,6 @@ function DueDateInput({
   creditError?: string;
   displayTimezone: string;
 }) {
-  // Start expanded whenever a custom credit is already set, so the UI keeps
-  // showing it after reload.
-  const [creditExpanded, setCreditExpanded] = useState<boolean>(value.credit !== null);
   const effectiveCredit = value.credit ?? 100;
 
   const getCreditPeriodText = () => {
@@ -115,7 +111,7 @@ function DueDateInput({
           label="No due date"
           checked={value.date === null}
           onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange({ date: null, credit: null });
+            if (currentTarget.checked) onChange({ date: null, credit: value.credit });
           }}
         />
         <Form.Check
@@ -135,7 +131,10 @@ function DueDateInput({
               } else {
                 baseDate = Temporal.Now.plainDateISO(displayTimezone);
               }
-              onChange({ date: endOfDayDatetime(baseDate.add({ weeks: 1 })), credit: null });
+              onChange({
+                date: endOfDayDatetime(baseDate.add({ weeks: 1 })),
+                credit: value.credit,
+              });
             }
           }}
         />
@@ -161,83 +160,76 @@ function DueDateInput({
           {!dateError && value.date && (
             <Form.Text className="text-muted">{getCreditPeriodText()}</Form.Text>
           )}
-          <div className="mt-2 d-flex align-items-center gap-2 flex-wrap">
-            {!creditExpanded && value.credit === null ? (
-              <span className="text-muted small">
-                100% credit (default){' '}
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="p-0 align-baseline"
-                  onClick={() => setCreditExpanded(true)}
-                >
-                  Change
-                </Button>
-              </span>
-            ) : (
-              <>
-                <label
-                  htmlFor={`${idPrefix}-due-credit`}
-                  className="form-label mb-0 small text-body-secondary"
-                >
-                  Credit at due date
-                </label>
-                <InputGroup style={{ width: 'auto', flex: '0 0 auto' }}>
-                  <Form.Control
-                    id={`${idPrefix}-due-credit`}
-                    type="number"
-                    min={0}
-                    max={200}
-                    step={1}
-                    style={{ width: '5rem' }}
-                    aria-label="Due date credit percentage"
-                    aria-invalid={!!creditError}
-                    aria-errormessage={creditError ? `${idPrefix}-due-credit-error` : undefined}
-                    value={value.credit ?? ''}
-                    placeholder="100"
-                    onChange={({ currentTarget }) => {
-                      const raw = currentTarget.value;
-                      const parsed = raw === '' ? null : Number(raw);
-                      onChange({ date: value.date, credit: parsed });
-                    }}
-                  />
-                  <InputGroup.Text>%</InputGroup.Text>
-                </InputGroup>
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="p-0"
-                  onClick={() => {
-                    onChange({ date: value.date, credit: null });
-                    setCreditExpanded(false);
-                  }}
-                >
-                  Reset to default
-                </Button>
-              </>
-            )}
-          </div>
-          {creditError && (
-            <Form.Text
-              id={`${idPrefix}-due-credit-error`}
-              className="text-danger d-block"
-              role="alert"
-            >
-              {creditError}
-            </Form.Text>
-          )}
-          {value.credit !== null && (
-            <Form.Text className="text-warning d-block">
-              Early deadlines are disabled when using custom credit for a due date.
-            </Form.Text>
-          )}
-          {value.credit !== null && value.credit > 100 && hasLateDeadlines && (
-            <Form.Text className="text-warning d-block">
-              We recommend using bonus points on an assessment for extra credit, rather than giving
-              extra credit on the due date.
-            </Form.Text>
-          )}
         </>
+      )}
+      <div className="mt-2 d-flex align-items-center gap-2 flex-wrap">
+        {value.credit === null ? (
+          <span className="text-muted small">
+            100% credit (default){' '}
+            <Button
+              variant="link"
+              size="sm"
+              className="p-0 align-baseline"
+              onClick={() => onChange({ date: value.date, credit: 100 })}
+            >
+              Change
+            </Button>
+          </span>
+        ) : (
+          <>
+            <label
+              htmlFor={`${idPrefix}-due-credit`}
+              className="form-label mb-0 small text-body-secondary"
+            >
+              Credit
+            </label>
+            <InputGroup style={{ width: 'auto', flex: '0 0 auto' }}>
+              <Form.Control
+                id={`${idPrefix}-due-credit`}
+                type="number"
+                min={0}
+                max={200}
+                step={1}
+                style={{ width: '5rem' }}
+                aria-label="Due date credit percentage"
+                aria-invalid={!!creditError}
+                aria-errormessage={creditError ? `${idPrefix}-due-credit-error` : undefined}
+                value={value.credit ?? ''}
+                placeholder="100"
+                onChange={({ currentTarget }) => {
+                  const raw = currentTarget.value;
+                  const parsed = raw === '' ? null : Number(raw);
+                  onChange({ date: value.date, credit: parsed });
+                }}
+              />
+              <InputGroup.Text>%</InputGroup.Text>
+            </InputGroup>
+            <Button
+              variant="link"
+              size="sm"
+              className="p-0"
+              onClick={() => onChange({ date: value.date, credit: null })}
+            >
+              Reset to default
+            </Button>
+          </>
+        )}
+      </div>
+      {creditError && (
+        <Form.Text id={`${idPrefix}-due-credit-error`} className="text-danger d-block" role="alert">
+          {creditError}
+        </Form.Text>
+      )}
+      {value.credit !== null && value.credit !== 100 && (
+        <Alert variant="warning" className="py-2 mt-2 mb-0">
+          Early deadlines are disabled when using custom credit for a due date.
+        </Alert>
+      )}
+      {value.credit !== null && value.credit > 100 && hasLateDeadlines && (
+        <Alert variant="secondary" className="py-2 mt-2 mb-0">
+          We recommend using bonus points on an assessment for extra credit, rather than giving
+          extra credit on the due date.
+        </Alert>
       )}
     </Form.Group>
   );
@@ -285,9 +277,7 @@ export function MainDueDateField({ displayTimezone }: { displayTimezone: string 
     rules: {
       validate: (value) => {
         return (
-          validateDueDate(value, releaseDate, displayTimezone) ??
-          validateDueCredit(value) ??
-          true
+          validateDueDate(value, releaseDate, displayTimezone) ?? validateDueCredit(value) ?? true
         );
       },
     },
@@ -304,7 +294,7 @@ export function MainDueDateField({ displayTimezone }: { displayTimezone: string 
         idPrefix="mainRule"
         releaseDate={releaseDate}
         earlyDeadlines={earlyDeadlines}
-        hasLateDeadlines={(lateDeadlines?.length ?? 0) > 0}
+        hasLateDeadlines={lateDeadlines.length > 0}
         dateError={dateError}
         creditError={creditError}
         displayTimezone={displayTimezone}
@@ -390,7 +380,7 @@ export function OverrideDueDateField({
         idPrefix={`overrides-${index}`}
         releaseDate={effectiveReleaseDate}
         earlyDeadlines={earlyDeadlinesOverridden ? earlyDeadlines : mainEarlyDeadlines}
-        hasLateDeadlines={(effectiveLateDeadlines?.length ?? 0) > 0}
+        hasLateDeadlines={effectiveLateDeadlines.length > 0}
         dateError={dateError}
         creditError={creditError}
         displayTimezone={displayTimezone}

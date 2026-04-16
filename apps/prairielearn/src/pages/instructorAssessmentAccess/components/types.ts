@@ -327,10 +327,15 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   if (rule.dateControlEnabled) {
     output.dateControl = {};
     if (rule.releaseDate) output.dateControl.releaseDate = rule.releaseDate;
-    if (rule.due.date) {
+    // Emit `due` when EITHER a date is set or a non-default credit is set.
+    // `credit === 100` is treated as the default and dropped from JSON, matching
+    // the UI's "Change" default that pre-fills 100 before the user customizes.
+    const credit = rule.due.credit;
+    const isCustomCredit = credit != null && credit !== 100;
+    if (rule.due.date || isCustomCredit) {
       output.dateControl.due = {
         date: rule.due.date,
-        ...(rule.due.credit != null ? { credit: rule.due.credit } : {}),
+        ...(isCustomCredit ? { credit } : {}),
       };
     }
     if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
@@ -402,9 +407,10 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
       output.dateControl.releaseDate = rule.releaseDate;
     }
     if (of.has('due')) {
+      const credit = rule.due.credit;
       output.dateControl.due = {
         date: rule.due.date,
-        ...(rule.due.credit != null ? { credit: rule.due.credit } : {}),
+        ...(credit != null && credit !== 100 ? { credit } : {}),
       };
     }
     if (of.has('earlyDeadlines')) output.dateControl.earlyDeadlines = rule.earlyDeadlines;

@@ -125,7 +125,7 @@ test.describe.serial('Student access control', () => {
         listBeforeRelease: true,
         dateControl: {
           releaseDate: '2099-06-01T00:00:00',
-          dueDate: '2099-12-01T00:00:00',
+          due: { date: '2099-12-01T00:00:00' },
         },
       },
     ]);
@@ -156,7 +156,7 @@ test.describe.serial('Student access control', () => {
       {
         dateControl: {
           releaseDate: '2020-01-01T00:00:00',
-          dueDate: '2099-01-01T00:00:00',
+          due: { date: '2099-01-01T00:00:00' },
         },
       },
     ]);
@@ -184,7 +184,7 @@ test.describe.serial('Student access control', () => {
         listBeforeRelease: false,
         dateControl: {
           releaseDate: '2099-06-01T00:00:00',
-          dueDate: '2099-12-01T00:00:00',
+          due: { date: '2099-12-01T00:00:00' },
         },
       },
     ]);

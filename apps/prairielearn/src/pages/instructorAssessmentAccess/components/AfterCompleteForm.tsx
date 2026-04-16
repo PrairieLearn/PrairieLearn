@@ -435,7 +435,7 @@ export function MainAfterCompleteForm({
   const due = useWatch<AccessControlFormData, 'mainRule.due'>({
     name: 'mainRule.due',
   });
-  const dueDate = due?.date ?? null;
+  const dueDate = due.date;
   const lateDeadlines = useWatch<AccessControlFormData, 'mainRule.lateDeadlines'>({
     name: 'mainRule.lateDeadlines',
   });

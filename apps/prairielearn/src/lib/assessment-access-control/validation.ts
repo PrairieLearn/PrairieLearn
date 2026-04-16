@@ -481,7 +481,6 @@ export function validateGlobalCreditConsistencyIssues(
   return issues;
 }
 
-
 /**
  * Validates date ordering within a single access control rule.
  * Returns an array of error messages (empty if valid).
@@ -773,8 +772,6 @@ export function validateAccessControlRules({
 
   errors.push(
     ...validateGlobalDateConsistencyIssues(validationRules).map((issue) => issue.message),
-  );
-  errors.push(
     ...validateGlobalCreditConsistencyIssues(validationRules).map((issue) => issue.message),
   );
 
