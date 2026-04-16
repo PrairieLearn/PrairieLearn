@@ -41,15 +41,15 @@ export function computeAiGradingRelativeCosts(
 export const AI_GRADING_MODELS = [
   {
     provider: 'openai',
-    modelId: 'gpt-5-mini-2025-08-07',
-    name: 'GPT 5-mini',
+    modelId: 'gpt-5.4-mini',
+    name: 'GPT 5.4-mini',
     sublabel: 'Good for most grading tasks',
     recommended: true,
   },
   {
     provider: 'openai',
-    modelId: 'gpt-5.1-2025-11-13',
-    name: 'GPT 5.1',
+    modelId: 'gpt-5.4',
+    name: 'GPT 5.4',
     sublabel: 'Best for text-based submissions',
     recommended: true,
   },
@@ -59,13 +59,6 @@ export const AI_GRADING_MODELS = [
     name: 'Gemini 3.1 Pro',
     sublabel: 'Best for handwriting and images',
     recommended: true,
-  },
-  {
-    provider: 'google',
-    modelId: 'gemini-2.5-flash',
-    name: 'Gemini 2.5 Flash',
-    sublabel: 'Lower-cost image grading',
-    recommended: false,
   },
   {
     provider: 'google',
@@ -83,15 +76,15 @@ export const AI_GRADING_MODELS = [
   },
   {
     provider: 'anthropic',
-    modelId: 'claude-sonnet-4-5',
-    name: 'Claude Sonnet 4.5',
+    modelId: 'claude-sonnet-4-6',
+    name: 'Claude Sonnet 4.6',
     sublabel: 'Balanced code grading',
     recommended: false,
   },
   {
     provider: 'anthropic',
-    modelId: 'claude-opus-4-5',
-    name: 'Claude Opus 4.5',
+    modelId: 'claude-opus-4-7',
+    name: 'Claude Opus 4.7',
     sublabel: 'Best for code submissions',
     recommended: false,
   },
@@ -104,14 +97,13 @@ export const AI_GRADING_MODEL_IDS: AiGradingModelId[] = AI_GRADING_MODELS.map(
 );
 
 export const AI_GRADING_MODEL_PROVIDERS = {
-  'gpt-5-mini-2025-08-07': 'openai',
-  'gpt-5.1-2025-11-13': 'openai',
-  'gemini-2.5-flash': 'google',
+  'gpt-5.4-mini': 'openai',
+  'gpt-5.4': 'openai',
   'gemini-3-flash-preview': 'google',
   'gemini-3.1-pro-preview': 'google',
   'claude-haiku-4-5': 'anthropic',
-  'claude-sonnet-4-5': 'anthropic',
-  'claude-opus-4-5': 'anthropic',
+  'claude-sonnet-4-6': 'anthropic',
+  'claude-opus-4-7': 'anthropic',
 } as const;
 
 /**
@@ -133,4 +125,4 @@ export const AI_GRADING_PROVIDER_OPTIONS = AI_GRADING_PROVIDERS.map((provider) =
 /**
  * Fallback model used when no prior model has been selected.
  */
-export const DEFAULT_AI_GRADING_MODEL = 'gpt-5-mini-2025-08-07' as const;
+export const DEFAULT_AI_GRADING_MODEL = 'gpt-5.4-mini' as const;
