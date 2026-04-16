@@ -1991,4 +1991,42 @@ describe('custom due credit', () => {
     });
     expect(result.credit).toBe(100);
   });
+
+  it('applies custom due credit indefinitely when due date is null', () => {
+    const result = resolveAccessControl({
+      ...baseInput,
+      rules: [
+        makeMainRule({
+          dateControl: {
+            releaseDate: '2025-03-01T00:00:00Z',
+            due: { date: null, credit: 50 },
+          },
+        }),
+      ],
+      date: new Date('2030-01-01T00:00:00Z'),
+    });
+    expect(result.authorized).toBe(true);
+    expect(result.credit).toBe(50);
+    expect(result.active).toBe(true);
+    expect(result.creditDateString).toBe('50%');
+  });
+
+  it('treats 0 credit with null due date as inactive indefinitely', () => {
+    const result = resolveAccessControl({
+      ...baseInput,
+      rules: [
+        makeMainRule({
+          dateControl: {
+            releaseDate: '2025-03-01T00:00:00Z',
+            due: { date: null, credit: 0 },
+          },
+        }),
+      ],
+      date: new Date('2030-01-01T00:00:00Z'),
+    });
+    expect(result.authorized).toBe(true);
+    expect(result.credit).toBe(0);
+    expect(result.active).toBe(false);
+    expect(result.creditDateString).toBe('None');
+  });
 });

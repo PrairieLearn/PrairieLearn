@@ -266,6 +266,20 @@ function computeCredit(
     };
   }
 
+  // Custom due credit without a due date: the credit applies indefinitely
+  // after the release date. Validation forbids early/late deadlines in this
+  // configuration, so there are no other timeline entries to consider.
+  if (dueDate === null && dateControl.due?.credit !== undefined) {
+    return {
+      credit: dueCredit,
+      active: dueCredit > 0,
+      beforeRelease: false,
+      nextDeadlineDate: null,
+      password: dateControl.password ?? null,
+      timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
+    };
+  }
+
   // Build timeline segments: each entry is [deadline, creditBefore]
   // The credit value represents what you get if you submit BEFORE this deadline.
   const timeline: { date: Date; credit: number }[] = [];

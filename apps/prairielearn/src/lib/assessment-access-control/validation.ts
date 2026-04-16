@@ -26,6 +26,7 @@ export type AccessControlIssuePath =
   | ['dateControl', 'due', 'credit']
   | ['dateControl', 'earlyDeadlines', number, 'date']
   | ['dateControl', 'lateDeadlines', number, 'date']
+  | ['dateControl', 'afterLastDeadline', 'credit']
   | ['afterComplete', 'questions', 'visibleFromDate']
   | ['afterComplete', 'questions', 'visibleUntilDate']
   | ['afterComplete', 'score', 'visibleFromDate'];
@@ -421,13 +422,21 @@ export function validateGlobalDateConsistencyIssues(
  * Two cross-rule rules that can't be checked in isolation:
  *
  * 1. Early deadlines are only valid if *some* possible timeline has the
- *    default 100% credit at the due date. If every rule that configures `due`
- *    uses a custom credit, then early deadlines can never reach above 100%
- *    relative to the due-date credit and are always clamped into no-ops.
+ *    default 100% credit at the due date. If every `due` field in the config
+ *    uses a custom credit AND no rule omits `due`, then early deadlines can
+ *    never reach above 100% relative to the due-date credit and are always
+ *    clamped into no-ops. A rule without `due` contributes a standalone
+ *    timeline and is treated as reaching default credit for this check.
  *
  * 2. Late deadlines must undercut the *maximum* possible due credit. If a late
  *    deadline's credit >= max(possibleDueCredits), it's always clamped to the
  *    effective due credit in every timeline — a no-op.
+ *
+ * 3. afterLastDeadline.credit must not exceed the max possible due credit. If
+ *    afterLastDeadline.credit > max(possibleDueCredits), no timeline can have
+ *    a preceding credit high enough to satisfy monotonicity (since every late
+ *    credit is already below its rule's own due credit, the pool of possible
+ *    preceding credits collapses to max(possibleDueCredits)).
  */
 export function validateGlobalCreditConsistencyIssues(
   validationRules: AccessControlValidationRule[],
@@ -437,25 +446,33 @@ export function validateGlobalCreditConsistencyIssues(
 
   // Collect possible effective due credits across all configurations. Any rule
   // that sets `due` contributes its credit (default 100 when credit is absent).
+  // A rule without `due` does not customize due credit, so we track it as a
+  // separate signal that a default-credit timeline is still reachable.
   const possibleDueCredits = new Set<number>();
+  let hasRuleWithoutDue = false;
   for (const { rule } of validationRules) {
     const due = rule.dateControl?.due;
     if (due !== undefined) {
       possibleDueCredits.add(due.credit ?? 100);
+    } else {
+      hasRuleWithoutDue = true;
     }
   }
 
   // If no rule configures `due`, there are no dueCredit-driven global checks.
   if (possibleDueCredits.size === 0) return issues;
 
-  const canAchieveDefaultCredit = possibleDueCredits.has(100);
+  const canAchieveDefaultCredit = possibleDueCredits.has(100) || hasRuleWithoutDue;
   const maxDueCredit = Math.max(...possibleDueCredits);
 
   for (const validationRule of validationRules) {
     const dc = validationRule.rule.dateControl;
     if (!dc) continue;
 
-    // Rule 1: If no timeline has 100% due credit, forbid early deadlines anywhere.
+    // Rule 1: Only forbid early deadlines when every `due` field in the config
+    // customizes its credit — i.e., no rule has default 100% credit and no rule
+    // omits `due` entirely. A rule without `due` has a standalone timeline and
+    // its early deadlines don't interact with other rules' custom due credits.
     if (!canAchieveDefaultCredit && dc.earlyDeadlines && dc.earlyDeadlines.length > 0) {
       pushIssue(
         issues,
@@ -475,6 +492,21 @@ export function validateGlobalCreditConsistencyIssues(
           `Late deadline credit (${deadline.credit}%) must be strictly less than the maximum possible due-date credit (${maxDueCredit}%).`,
         );
       }
+    }
+
+    // Rule 3: afterLastDeadline.credit must not exceed max possible due credit.
+    const afterLastDeadline = dc.afterLastDeadline;
+    if (
+      afterLastDeadline?.allowSubmissions === true &&
+      afterLastDeadline.credit !== undefined &&
+      afterLastDeadline.credit > maxDueCredit
+    ) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['dateControl', 'afterLastDeadline', 'credit'],
+        `After-last-deadline credit (${afterLastDeadline.credit}%) must not exceed the maximum possible due-date credit (${maxDueCredit}%).`,
+      );
     }
   }
 
