@@ -103,6 +103,13 @@
   <pl-symbolic-input formula-editor="true" aria-label="Function expression" answers-name="custom_function_2" variables="y" show-score="false" custom-functions="beef,the" suffix="$= \text{where?}$"></pl-symbolic-input>
 </pl-card>
 
+<pl-card header="An example in which set notation is allowed (&lt;code&gt;allow-sets=&quot;true&quot;&lt;/code&gt;)">
+  <pl-question-panel>
+      <p>Enter the union of two inclusive intervals from 0 to 1 and 2 to 3 using set notation.</p>
+  </pl-question-panel>
+  <pl-symbolic-input formula-editor="true" allow-set-notation="true" aria-label="Set notation expression" answers-name="set_notation" correct-answer="[0, 1] U [2, 3]"></pl-symbolic-input>
+</pl-card>
+
 <pl-card header="Absolute value problem">
   <pl-question-panel>
     <p>This template also demonstrates handling of nested absolute value expressions.</p>
