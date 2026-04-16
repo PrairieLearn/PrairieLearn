@@ -10,7 +10,7 @@ import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-typ
  */
 export interface RuntimeDateControl {
   releaseDate?: Date | null;
-  due?: { date: Date | null; credit?: number | null };
+  due?: { date: Date | null; credit?: number };
   earlyDeadlines?: { date: string; credit: number }[] | null;
   lateDeadlines?: { date: string; credit: number }[] | null;
   afterLastDeadline?: { allowSubmissions?: boolean; credit?: number | null };
@@ -266,10 +266,10 @@ function computeCredit(
     };
   }
 
-  // Custom due credit without a due date: the credit applies indefinitely
-  // after the release date. Validation forbids early/late deadlines in this
-  // configuration, so there are no other timeline entries to consider.
-  if (dueDate === null && dateControl.due?.credit !== undefined) {
+  // Due configured with no date: credit applies indefinitely after release
+  // (dueCredit defaults to 100 when not customized). Validation rejects late
+  // deadlines with a null due date, and early deadlines with custom due credit.
+  if (dateControl.due && dueDate === null) {
     return {
       credit: dueCredit,
       active: dueCredit > 0,

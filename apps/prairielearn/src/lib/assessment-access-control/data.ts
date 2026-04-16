@@ -58,7 +58,7 @@ function buildDateControl(
   if (rule.date_control_due_overridden) {
     dateControl.due = {
       date: rule.date_control_due_date,
-      credit: rule.date_control_due_credit,
+      ...(rule.date_control_due_credit != null ? { credit: rule.date_control_due_credit } : {}),
     };
   }
 

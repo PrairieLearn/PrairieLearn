@@ -315,6 +315,20 @@ export function jsonToOverrideFormData(
   };
 }
 
+/**
+ * Build the JSON `due` object from form state. `credit === null` means "use
+ * default" and is dropped from JSON; any explicit number (including 100) is
+ * preserved — an explicit 100 is semantically distinct from default because
+ * cross-rule validation (e.g. forbidding early deadlines) treats any set
+ * credit as customized.
+ */
+function buildDueJson(due: DueValue): { date: string | null; credit?: number } {
+  return {
+    date: due.date,
+    ...(due.credit !== null ? { credit: due.credit } : {}),
+  };
+}
+
 function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   const output: AccessControlJsonWithId = {
     id: rule.id,
@@ -327,19 +341,20 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   if (rule.dateControlEnabled) {
     output.dateControl = {};
     if (rule.releaseDate) output.dateControl.releaseDate = rule.releaseDate;
-    // Emit `due` when EITHER a date is set or a non-default credit is set.
-    // `credit === 100` is treated as the default and dropped from JSON, matching
-    // the UI's "Change" default that pre-fills 100 before the user customizes.
-    const credit = rule.due.credit;
-    const isCustomCredit = credit != null && credit !== 100;
-    if (rule.due.date || isCustomCredit) {
-      output.dateControl.due = {
-        date: rule.due.date,
-        ...(isCustomCredit ? { credit } : {}),
-      };
+    // Emit `due` when either a date is set or credit is explicitly set.
+    if (rule.due.date || rule.due.credit !== null) {
+      output.dateControl.due = buildDueJson(rule.due);
     }
-    if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
-    if (rule.lateDeadlines.length > 0) output.dateControl.lateDeadlines = rule.lateDeadlines;
+    // Drop deadlines whose editors are hidden in the UI (see shouldShow in
+    // DeadlineArrayField). This prevents stale data that the user can't reach
+    // — e.g. late deadlines kept after switching to "No due date" — from
+    // silently producing invalid JSON.
+    if (rule.earlyDeadlines.length > 0 && rule.due.credit === null) {
+      output.dateControl.earlyDeadlines = rule.earlyDeadlines;
+    }
+    if (rule.lateDeadlines.length > 0 && !!rule.due.date) {
+      output.dateControl.lateDeadlines = rule.lateDeadlines;
+    }
     if (rule.afterLastDeadline) {
       output.dateControl.afterLastDeadline = rule.afterLastDeadline;
     }
@@ -386,7 +401,7 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   return output;
 }
 
-function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
+function overrideToJson(rule: OverrideData, mainRule: MainRuleData): AccessControlJsonWithId {
   const labels =
     rule.appliesTo.targetType === 'student_label' && rule.appliesTo.studentLabels.length > 0
       ? rule.appliesTo.studentLabels.map((sl) => sl.name)
@@ -407,14 +422,19 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
       output.dateControl.releaseDate = rule.releaseDate;
     }
     if (of.has('due')) {
-      const credit = rule.due.credit;
-      output.dateControl.due = {
-        date: rule.due.date,
-        ...(credit != null && credit !== 100 ? { credit } : {}),
-      };
+      output.dateControl.due = buildDueJson(rule.due);
     }
-    if (of.has('earlyDeadlines')) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
-    if (of.has('lateDeadlines')) output.dateControl.lateDeadlines = rule.lateDeadlines;
+    // Compute effective `due` for visibility — overrides inherit main's when
+    // not set. Mirrors OverrideDeadlineArrayField's shouldShow, so hidden
+    // data (e.g. early deadlines under an inherited custom credit) is not
+    // silently emitted to JSON.
+    const effectiveDue = of.has('due') ? rule.due : mainRule.due;
+    if (of.has('earlyDeadlines') && effectiveDue.credit === null) {
+      output.dateControl.earlyDeadlines = rule.earlyDeadlines;
+    }
+    if (of.has('lateDeadlines') && !!effectiveDue.date) {
+      output.dateControl.lateDeadlines = rule.lateDeadlines;
+    }
     if (of.has('afterLastDeadline')) {
       output.dateControl.afterLastDeadline = rule.afterLastDeadline;
     }
@@ -454,7 +474,10 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
 }
 
 export function formDataToJson(formData: AccessControlFormData): AccessControlJsonWithId[] {
-  return [mainRuleToJson(formData.mainRule), ...formData.overrides.map(overrideToJson)];
+  return [
+    mainRuleToJson(formData.mainRule),
+    ...formData.overrides.map((o) => overrideToJson(o, formData.mainRule)),
+  ];
 }
 
 export function createDefaultOverrideFormData(mainRule?: MainRuleData): OverrideData {

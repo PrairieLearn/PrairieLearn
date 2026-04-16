@@ -8,7 +8,6 @@ import {
   useWatch,
 } from 'react-hook-form';
 
-import { run } from '@prairielearn/run';
 import { RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
@@ -93,18 +92,15 @@ function AfterLastDeadlineInput({
 
   // Field paths that affect credit validation — used for both display
   // reactivity (useWatch) and validation re-triggering (deps).
-  const creditDeps = run<FieldPath<AccessControlFormData>[]>(() => {
-    if (isOverride) {
-      return [
+  const creditDeps: FieldPath<AccessControlFormData>[] = isOverride
+    ? [
         'mainRule.due',
         'mainRule.lateDeadlines',
         `overrides.${overrideIndex}.overriddenFields`,
         `overrides.${overrideIndex}.due`,
         `overrides.${overrideIndex}.lateDeadlines`,
-      ];
-    }
-    return ['mainRule.due', 'mainRule.lateDeadlines'];
-  });
+      ]
+    : ['mainRule.due', 'mainRule.lateDeadlines'];
 
   const { register, getValues } = useFormContext<AccessControlFormData>();
   const { errors } = useFormState();

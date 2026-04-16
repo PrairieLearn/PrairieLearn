@@ -386,12 +386,13 @@ export function MainDeadlineArrayField({
     name: fieldName,
   });
 
-  const hasCustomCredit = due.credit !== null && due.credit !== 100;
+  const hasCustomCredit = due.credit !== null;
   const dueDate = due.date;
   const dueCredit = due.credit ?? 100;
 
-  // Hide early deadlines entirely when custom due credit is set (they would be
-  // clamped to the due credit anyway, and the validator would reject them).
+  // Hide early deadlines whenever due credit is explicitly set — even to 100,
+  // because backend validation treats any explicit `due.credit` as customized
+  // and forbids early deadlines alongside it.
   const shouldShow = isEarly ? !hasCustomCredit : dueDate !== null && !!dueDate;
 
   if (!shouldShow) return null;
@@ -456,11 +457,11 @@ export function OverrideDeadlineArrayField({
   const effectiveDue = dueOverridden ? overrideDue : mainDue;
   const effectiveDueDate = effectiveDue.date;
   const effectiveDueCredit = effectiveDue.credit ?? 100;
-  const hasCustomCredit = effectiveDue.credit !== null && effectiveDue.credit !== 100;
+  const hasCustomCredit = effectiveDue.credit !== null;
   const validationReleaseDate = releaseDateOverridden ? overrideReleaseDate : undefined;
   const validationDueDate = dueOverridden ? overrideDue.date : undefined;
 
-  // Hide early deadlines entirely when effective due credit is customized.
+  // Hide early deadlines when effective due credit is explicitly set; see main-rule variant.
   if (isEarly && hasCustomCredit) return null;
 
   return (

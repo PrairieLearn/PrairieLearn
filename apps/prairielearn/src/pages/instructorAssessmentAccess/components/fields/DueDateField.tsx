@@ -220,7 +220,7 @@ function DueDateInput({
           {creditError}
         </Form.Text>
       )}
-      {value.credit !== null && value.credit !== 100 && (
+      {value.credit !== null && (
         <Alert variant="warning" className="py-2 mt-2 mb-0">
           Early deadlines are disabled when using custom credit for a due date.
         </Alert>
@@ -236,23 +236,23 @@ function DueDateInput({
 }
 
 function validateDueDate(
-  value: DueValue,
+  date: string | null,
   releaseDate: string | null | undefined,
   displayTimezone: string,
 ): string | undefined {
-  if (value.date === null) return undefined;
-  if (!value.date) return 'Date is required';
-  if (releaseDate && new Date(value.date) <= new Date(releaseDate)) {
+  if (date === null) return undefined;
+  if (!date) return 'Date is required';
+  if (releaseDate && new Date(date) <= new Date(releaseDate)) {
     return `Must be after release date (${formatCourseLocalDate(releaseDate, displayTimezone)})`;
   }
   return undefined;
 }
 
-function validateDueCredit(value: DueValue): string | undefined {
-  if (value.credit === null) return undefined;
-  if (!Number.isFinite(value.credit)) return 'Credit must be a number';
-  if (!Number.isInteger(value.credit)) return 'Credit must be an integer';
-  if (value.credit < 0 || value.credit > 200) return 'Credit must be between 0% and 200%';
+function validateDueCredit(credit: number | null): string | undefined {
+  if (credit === null) return undefined;
+  if (!Number.isFinite(credit)) return 'Credit must be a number';
+  if (!Number.isInteger(credit)) return 'Credit must be an integer';
+  if (credit < 0 || credit > 200) return 'Credit must be between 0% and 200%';
   return undefined;
 }
 
@@ -269,36 +269,38 @@ export function MainDueDateField({ displayTimezone }: { displayTimezone: string 
     name: 'mainRule.lateDeadlines',
   });
 
-  const {
-    field,
-    fieldState: { error },
-  } = useController<AccessControlFormData, 'mainRule.due'>({
-    name: 'mainRule.due',
+  const dateCtrl = useController<AccessControlFormData, 'mainRule.due.date'>({
+    name: 'mainRule.due.date',
     rules: {
-      validate: (value) => {
-        return (
-          validateDueDate(value, releaseDate, displayTimezone) ?? validateDueCredit(value) ?? true
-        );
-      },
+      validate: (value) => validateDueDate(value, releaseDate, displayTimezone) ?? true,
+    },
+  });
+  const creditCtrl = useController<AccessControlFormData, 'mainRule.due.credit'>({
+    name: 'mainRule.due.credit',
+    rules: {
+      validate: (value) => validateDueCredit(value) ?? true,
     },
   });
 
-  const dateError = error?.message?.includes('Credit') ? undefined : error?.message;
-  const creditError = error?.message?.includes('Credit') ? error.message : undefined;
+  const value: DueValue = { date: dateCtrl.field.value, credit: creditCtrl.field.value };
+  const handleChange = (next: DueValue) => {
+    if (next.date !== value.date) dateCtrl.field.onChange(next.date);
+    if (next.credit !== value.credit) creditCtrl.field.onChange(next.credit);
+  };
 
   return (
     <div>
       <Form.Label className="fw-bold">Due date</Form.Label>
       <DueDateInput
-        value={field.value}
+        value={value}
         idPrefix="mainRule"
         releaseDate={releaseDate}
         earlyDeadlines={earlyDeadlines}
         hasLateDeadlines={lateDeadlines.length > 0}
-        dateError={dateError}
-        creditError={creditError}
+        dateError={dateCtrl.fieldState.error?.message}
+        creditError={creditCtrl.fieldState.error?.message}
         displayTimezone={displayTimezone}
-        onChange={field.onChange}
+        onChange={handleChange}
       />
     </div>
   );
@@ -345,24 +347,24 @@ export function OverrideDueDateField({
   const validationReleaseDate = releaseDateOverridden ? releaseDate : undefined;
   const effectiveLateDeadlines = lateDeadlinesOverridden ? lateDeadlines : mainLateDeadlines;
 
-  const {
-    field,
-    fieldState: { error },
-  } = useController<AccessControlFormData, `overrides.${number}.due`>({
-    name: `overrides.${index}.due`,
+  const dateCtrl = useController<AccessControlFormData, `overrides.${number}.due.date`>({
+    name: `overrides.${index}.due.date`,
     rules: {
-      validate: (value) => {
-        return (
-          validateDueDate(value, validationReleaseDate, displayTimezone) ??
-          validateDueCredit(value) ??
-          true
-        );
-      },
+      validate: (value) => validateDueDate(value, validationReleaseDate, displayTimezone) ?? true,
+    },
+  });
+  const creditCtrl = useController<AccessControlFormData, `overrides.${number}.due.credit`>({
+    name: `overrides.${index}.due.credit`,
+    rules: {
+      validate: (value) => validateDueCredit(value) ?? true,
     },
   });
 
-  const dateError = error?.message?.includes('Credit') ? undefined : error?.message;
-  const creditError = error?.message?.includes('Credit') ? error.message : undefined;
+  const value: DueValue = { date: dateCtrl.field.value, credit: creditCtrl.field.value };
+  const handleChange = (next: DueValue) => {
+    if (next.date !== value.date) dateCtrl.field.onChange(next.date);
+    if (next.credit !== value.credit) creditCtrl.field.onChange(next.credit);
+  };
 
   return (
     <FieldWrapper
@@ -370,21 +372,22 @@ export function OverrideDueDateField({
       label="Due date"
       headerContent={<strong>Due date</strong>}
       onOverride={() => {
-        field.onChange({ ...mainValue });
+        dateCtrl.field.onChange(mainValue.date);
+        creditCtrl.field.onChange(mainValue.credit);
         addOverride();
       }}
       onRemoveOverride={removeOverride}
     >
       <DueDateInput
-        value={field.value}
+        value={value}
         idPrefix={`overrides-${index}`}
         releaseDate={effectiveReleaseDate}
         earlyDeadlines={earlyDeadlinesOverridden ? earlyDeadlines : mainEarlyDeadlines}
         hasLateDeadlines={effectiveLateDeadlines.length > 0}
-        dateError={dateError}
-        creditError={creditError}
+        dateError={dateCtrl.fieldState.error?.message}
+        creditError={creditCtrl.fieldState.error?.message}
         displayTimezone={displayTimezone}
-        onChange={field.onChange}
+        onChange={handleChange}
       />
     </FieldWrapper>
   );

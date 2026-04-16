@@ -417,26 +417,23 @@ export function validateGlobalDateConsistencyIssues(
 }
 
 /**
- * Global credit consistency checks across main + overrides.
+ * Cross-rule credit consistency checks.
  *
- * Two cross-rule rules that can't be checked in isolation:
+ * 1. Early deadlines on overrides are forbidden when the base rule has a
+ *    custom due credit AND no override "clears" it. An override "clears" by
+ *    supplying its own `due` with no `credit` field (default 100%). If some
+ *    override clears, we allow early deadlines on overrides: the cascaded
+ *    timeline may still reach default credit for some student configuration.
+ *    Per-rule Constraint 3 handles the main rule and overrides that set
+ *    their own custom credit.
  *
- * 1. Early deadlines are only valid if *some* possible timeline has the
- *    default 100% credit at the due date. If every `due` field in the config
- *    uses a custom credit AND no rule omits `due`, then early deadlines can
- *    never reach above 100% relative to the due-date credit and are always
- *    clamped into no-ops. A rule without `due` contributes a standalone
- *    timeline and is treated as reaching default credit for this check.
+ * 2. Late deadline credit must be strictly less than the maximum possible
+ *    due-date credit across the config. If it's >=, it's clamped to its
+ *    rule's effective due credit in every timeline — a likely-unintended
+ *    no-op.
  *
- * 2. Late deadlines must undercut the *maximum* possible due credit. If a late
- *    deadline's credit >= max(possibleDueCredits), it's always clamped to the
- *    effective due credit in every timeline — a no-op.
- *
- * 3. afterLastDeadline.credit must not exceed the max possible due credit. If
- *    afterLastDeadline.credit > max(possibleDueCredits), no timeline can have
- *    a preceding credit high enough to satisfy monotonicity (since every late
- *    credit is already below its rule's own due credit, the pool of possible
- *    preceding credits collapses to max(possibleDueCredits)).
+ * 3. afterLastDeadline.credit must not exceed the maximum possible due
+ *    credit, by the same monotonicity argument.
  */
 export function validateGlobalCreditConsistencyIssues(
   validationRules: AccessControlValidationRule[],
@@ -444,45 +441,47 @@ export function validateGlobalCreditConsistencyIssues(
   const issues: AccessControlValidationIssue[] = [];
   if (validationRules.length === 0) return issues;
 
-  // Collect possible effective due credits across all configurations. Any rule
-  // that sets `due` contributes its credit (default 100 when credit is absent).
-  // A rule without `due` does not customize due credit, so we track it as a
-  // separate signal that a default-credit timeline is still reachable.
+  const mainRule = validationRules.find((vr) => vr.targetType === 'none');
+  const baseHasCustomCredit = mainRule?.rule.dateControl?.due?.credit !== undefined;
+
+  // "Clears custom credit" = an override supplies its own `due` with no credit
+  // field (explicit default 100%). A non-overridden `due` inherits instead.
+  const anyOverrideClearsCustomCredit = validationRules.some(
+    (vr) =>
+      vr.targetType !== 'none' &&
+      vr.rule.dateControl?.due !== undefined &&
+      vr.rule.dateControl.due.credit === undefined,
+  );
+
+  if (baseHasCustomCredit && !anyOverrideClearsCustomCredit) {
+    for (const validationRule of validationRules) {
+      if (validationRule.targetType === 'none') continue;
+      const dc = validationRule.rule.dateControl;
+      if (dc?.earlyDeadlines && dc.earlyDeadlines.length > 0) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'earlyDeadlines', 0, 'date'],
+          'Early deadlines are not allowed on overrides when the base rule uses custom due credit and no override clears it.',
+        );
+      }
+    }
+  }
+
   const possibleDueCredits = new Set<number>();
-  let hasRuleWithoutDue = false;
   for (const { rule } of validationRules) {
     const due = rule.dateControl?.due;
     if (due !== undefined) {
       possibleDueCredits.add(due.credit ?? 100);
-    } else {
-      hasRuleWithoutDue = true;
     }
   }
-
-  // If no rule configures `due`, there are no dueCredit-driven global checks.
   if (possibleDueCredits.size === 0) return issues;
-
-  const canAchieveDefaultCredit = possibleDueCredits.has(100) || hasRuleWithoutDue;
   const maxDueCredit = Math.max(...possibleDueCredits);
 
   for (const validationRule of validationRules) {
     const dc = validationRule.rule.dateControl;
     if (!dc) continue;
 
-    // Rule 1: Only forbid early deadlines when every `due` field in the config
-    // customizes its credit — i.e., no rule has default 100% credit and no rule
-    // omits `due` entirely. A rule without `due` has a standalone timeline and
-    // its early deadlines don't interact with other rules' custom due credits.
-    if (!canAchieveDefaultCredit && dc.earlyDeadlines && dc.earlyDeadlines.length > 0) {
-      pushIssue(
-        issues,
-        validationRule,
-        ['dateControl', 'earlyDeadlines', 0, 'date'],
-        'Early deadlines are not allowed when every possible due-date credit is customized.',
-      );
-    }
-
-    // Rule 2: Late deadlines must be strictly less than max possible due credit.
     for (const [index, deadline] of (dc.lateDeadlines ?? []).entries()) {
       if (deadline.credit >= maxDueCredit) {
         pushIssue(
@@ -494,7 +493,6 @@ export function validateGlobalCreditConsistencyIssues(
       }
     }
 
-    // Rule 3: afterLastDeadline.credit must not exceed max possible due credit.
     const afterLastDeadline = dc.afterLastDeadline;
     if (
       afterLastDeadline?.allowSubmissions === true &&
@@ -560,9 +558,8 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
   if (dc.lateDeadlines) {
     for (const d of dc.lateDeadlines) {
       if (d.credit < 0 || d.credit >= lateCreditCap) {
-        const cap = lateCreditCap;
         errors.push(
-          `Late deadline credit must be between 0% and ${cap - 1}% (strictly less than ${cap}%${
+          `Late deadline credit must be between 0% and ${lateCreditCap - 1}% (strictly less than ${lateCreditCap}%${
             dueCredit < 100 ? ' due credit' : ''
           }), got ${d.credit}%.`,
         );
