@@ -1,4 +1,4 @@
-import type { GradingConfig } from './types.js';
+import type { GradingConfig } from '../studentAssessmentInstance.types.js';
 
 export function ExamFooterContent({
   gradingConfig: { someQuestionsAllowRealTimeGrading, someQuestionsForbidRealTimeGrading },

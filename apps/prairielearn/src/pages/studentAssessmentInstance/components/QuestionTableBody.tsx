@@ -8,10 +8,10 @@ import { ExamQuestionAvailablePoints } from '../../../components/ExamQuestionAva
 import { ExamQuestionStatus } from '../../../components/ExamQuestionStatus.js';
 import { QuestionVariantHistory } from '../../../components/QuestionVariantHistory.js';
 import { formatPoints } from '../../../lib/format.js';
+import type { GradingConfig, StudentQuestionRow } from '../studentAssessmentInstance.types.js';
 
 import { LockpointRow } from './LockpointRow.js';
 import { RowLabel } from './RowLabel.js';
-import type { GradingConfig, StudentQuestionRow } from './types.js';
 
 export function QuestionTableBody({
   questionRows,

@@ -8,15 +8,15 @@ import { Scorebar } from '../../../components/Scorebar.js';
 import type { StudentAccessRule } from '../../../lib/client/safe-db-types.js';
 import { formatPoints } from '../../../lib/format.js';
 import { canUserAssignGroupRoles, getRoleNamesForUser } from '../../../lib/groups.shared.js';
-
-import { ExamFooterContent } from './ExamFooterContent.js';
-import { QuestionTableBody } from './QuestionTableBody.js';
-import { ConfirmFinishModal, CrossLockpointModal, TimeLimitExpiredModal } from './modals.js';
 import type {
   GradingConfig,
   StudentAssessmentInstanceBodyProps,
   StudentQuestionRow,
-} from './types.js';
+} from '../studentAssessmentInstance.types.js';
+
+import { ExamFooterContent } from './ExamFooterContent.js';
+import { QuestionTableBody } from './QuestionTableBody.js';
+import { ConfirmFinishModal, CrossLockpointModal, TimeLimitExpiredModal } from './modals.js';
 
 StudentAssessmentInstanceBody.displayName = 'StudentAssessmentInstanceBody';
 

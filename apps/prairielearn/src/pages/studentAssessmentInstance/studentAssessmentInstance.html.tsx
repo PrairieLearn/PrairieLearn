@@ -32,7 +32,7 @@ import {
   StudentGroupInfoSchema,
   type StudentQuestionRow,
   StudentQuestionRowSchema,
-} from './components/types.js';
+} from './studentAssessmentInstance.types.js';
 
 export function StudentAssessmentInstance({
   instance_question_rows,

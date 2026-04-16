@@ -21,7 +21,6 @@ import {
   leaveGroup,
   updateGroupRoles,
 } from '../../lib/groups.js';
-import { canUserAssignGroupRoles } from '../../lib/groups.shared.js';
 import { idsEqual } from '../../lib/id.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
@@ -31,8 +30,8 @@ import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.j
 import { computeNextAllowedGradingTimeMs } from '../../models/instance-question.js';
 import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
-import { InstanceQuestionRowSchema } from './components/types.js';
 import { StudentAssessmentInstance } from './studentAssessmentInstance.html.js';
+import { InstanceQuestionRowSchema } from './studentAssessmentInstance.types.js';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);

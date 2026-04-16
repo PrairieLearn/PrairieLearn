@@ -3,8 +3,7 @@ import { Badge } from 'react-bootstrap';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { getInstanceQuestionUrl } from '../../../lib/client/url.js';
-
-import type { StudentQuestionRow } from './types.js';
+import type { StudentQuestionRow } from '../studentAssessmentInstance.types.js';
 
 export function RowLabel({
   row,

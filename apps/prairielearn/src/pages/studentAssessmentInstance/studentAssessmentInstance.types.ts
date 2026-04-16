@@ -16,10 +16,10 @@ import {
   type StudentUser,
   StudentUserSchema,
   StudentZoneSchema,
-} from '../../../lib/client/safe-db-types.js';
-import { EnumQuestionAccessModeSchema } from '../../../lib/db-types.js';
-import { RoleAssignmentSchema } from '../../../lib/groups.shared.js';
-import { SimpleVariantWithScoreSchema } from '../../../models/variant.js';
+} from '../../lib/client/safe-db-types.js';
+import { EnumQuestionAccessModeSchema } from '../../lib/db-types.js';
+import { RoleAssignmentSchema } from '../../lib/groups.shared.js';
+import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 
 export const SafeStudentAssessmentInstanceSchema = z
   .object({

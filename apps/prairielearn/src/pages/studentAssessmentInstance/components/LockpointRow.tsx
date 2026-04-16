@@ -1,6 +1,6 @@
 import { formatDate } from '@prairielearn/formatter';
 
-import type { StudentQuestionRow } from './types.js';
+import type { StudentQuestionRow } from '../studentAssessmentInstance.types.js';
 
 export function LockpointRow({
   row,
