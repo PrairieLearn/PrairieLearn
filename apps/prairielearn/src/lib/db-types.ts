@@ -301,9 +301,24 @@ export const AdministratorSchema = z.object({
 });
 export type Administrator = z.infer<typeof AdministratorSchema>;
 
+export const AiGradingCreditCheckoutSessionSchema = z.object({
+  agent_user_id: IdSchema,
+  amount_milli_dollars: z.coerce.number(),
+  completed_at: DateFromISOString.nullable(),
+  course_instance_id: IdSchema,
+  created_at: DateFromISOString,
+  credits_added: z.boolean(),
+  data: z.record(z.unknown()),
+  id: IdSchema,
+  refunded_at: DateFromISOString.nullable(),
+  stripe_object_id: z.string(),
+});
+export type AiGradingCreditCheckoutSession = z.infer<typeof AiGradingCreditCheckoutSessionSchema>;
+
 export const AiGradingCreditPoolChangeSchema = z.object({
   ai_grading_job_id: IdSchema.nullable(),
   assessment_question_id: IdSchema.nullable(),
+  checkout_session_id: IdSchema.nullable(),
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
   credit_after_milli_dollars: z.coerce.number(),
@@ -1720,6 +1735,7 @@ export type Zone = z.infer<typeof ZoneSchema>;
 export const TableNames = [
   'access_tokens',
   'administrators',
+  'ai_grading_credit_checkout_sessions',
   'ai_grading_credit_pool_changes',
   'ai_grading_jobs',
   'ai_question_generation_messages',

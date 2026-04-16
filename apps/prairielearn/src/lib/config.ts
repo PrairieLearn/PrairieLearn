@@ -580,6 +580,16 @@ export const ConfigSchema = z.object({
    * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
   stripeProductIds: z.record(z.string(), z.string()).default({}),
+  /**
+   * Stripe product ID for AI grading credits. Used to create checkout sessions
+   * for instructor credit purchases.
+   */
+  stripeAiGradingCreditsProductId: z.string().nullable().default(null),
+  /**
+   * Whether Stripe AI grading credit refunds are enabled. When disabled,
+   * refund buttons are hidden and the server rejects all refund requests.
+   */
+  stripeAiGradingCreditsRefundsEnabled: z.boolean().default(false),
   aiGradingOpenAiApiKey: z.string().nullable().default(null),
   aiGradingOpenAiOrganization: z.string().nullable().default(null),
   aiQuestionGenerationOpenAiApiKey: z.string().nullable().default(null),
