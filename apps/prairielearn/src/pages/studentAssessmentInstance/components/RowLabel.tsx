@@ -1,18 +1,19 @@
 import { html } from '@prairielearn/html';
 
+import { getInstanceQuestionUrl } from '../../../lib/client/url.js';
 import type { InstanceQuestionRow } from '../studentAssessmentInstance.types.js';
 
 export function RowLabel({
+  courseInstanceId,
   instance_question_row,
   userGroupRoles,
   rowLabelText,
-  urlPrefix,
   hasStatusColumn,
 }: {
+  courseInstanceId: string;
   instance_question_row: InstanceQuestionRow;
   userGroupRoles: string | null;
   rowLabelText: string;
-  urlPrefix: string;
   hasStatusColumn: boolean;
 }) {
   let lockMessage: string | null = null;
@@ -37,7 +38,13 @@ export function RowLabel({
   return html`
     ${showLink
       ? html`
-          <a href="${urlPrefix}/instance_question/${instance_question_row.id}/">${rowLabelText}</a>
+          <a
+            href="${getInstanceQuestionUrl({
+              courseInstanceId,
+              instanceQuestionId: instance_question_row.id,
+            })}"
+            >${rowLabelText}</a
+          >
         `
       : html`<span class="text-muted">${rowLabelText}</span>`}
     ${
