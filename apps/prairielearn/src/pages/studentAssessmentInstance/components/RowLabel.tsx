@@ -41,7 +41,7 @@ export function RowLabel({
           <a
             href="${getInstanceQuestionUrl({
               courseInstanceId,
-              instanceQuestionId: instance_question_row.id,
+              instanceQuestionId: instance_question_row.instance_question.id,
             })}"
             >${rowLabelText}</a
           >

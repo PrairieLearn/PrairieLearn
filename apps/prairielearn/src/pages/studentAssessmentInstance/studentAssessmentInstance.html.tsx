@@ -63,22 +63,22 @@ export function StudentAssessmentInstance({
 
   // Check for mixed real-time grading scenarios
   const someQuestionsAllowRealTimeGrading = instance_question_rows.some(
-    (q) => q.allow_real_time_grading,
+    (row) => row.assessment_question.allow_real_time_grading,
   );
   const someQuestionsForbidRealTimeGrading = instance_question_rows.some(
     // Note that this currently picks up `null`. In the future,
     // `assessment_questions.allow_real_time_grading` will have a `NOT NULL`
     // constraint. Once that happens, this will be totally safe.
-    (q) => !q.allow_real_time_grading,
+    (row) => !row.assessment_question.allow_real_time_grading,
   );
 
-  instance_question_rows.forEach((question) => {
-    if (question.status === 'saved') {
-      if (question.allowGradeLeftMs > 0) {
+  instance_question_rows.forEach((row) => {
+    if (row.instance_question.status === 'saved') {
+      if (row.allowGradeLeftMs > 0) {
         suspendedSavedAnswers++;
       } else if (
-        (question.max_auto_points || !question.max_manual_points) &&
-        question.allow_real_time_grading
+        (row.assessment_question.max_auto_points || !row.assessment_question.max_manual_points) &&
+        row.assessment_question.allow_real_time_grading
       ) {
         // Note that we exclude questions that are not auto-graded from the count.
         // This count is used to determine whether the "Grade N saved answers"
@@ -123,8 +123,8 @@ export function StudentAssessmentInstance({
   const showCardFooter = showExamFooterContent || showUnauthorizedEditWarning;
 
   const firstUncrossedLockpointZoneNumber = instance_question_rows
-    .filter((row) => row.start_new_zone && row.lockpoint && !row.lockpoint_crossed)
-    .map((row) => row.zone_number)
+    .filter((row) => row.start_new_zone && row.zone.lockpoint && !row.lockpoint_crossed)
+    .map((row) => row.zone.number)
     .sort((a, b) => a - b)[0];
 
   // Check whether an unmet advanceScorePerc in a prior zone should block
@@ -137,7 +137,7 @@ export function StudentAssessmentInstance({
     instance_question_rows.some(
       (row) =>
         row.question_access_mode === 'blocked_sequence' &&
-        (row.zone_number < zoneNumber || (row.zone_number === zoneNumber && row.start_new_zone)),
+        (row.zone.number < zoneNumber || (row.zone.number === zoneNumber && row.start_new_zone)),
     );
 
   function isLockpointCrossable(row: InstanceQuestionRow) {
@@ -145,16 +145,19 @@ export function StudentAssessmentInstance({
       resLocals.assessment_instance.open &&
       resLocals.authz_result.active &&
       resLocals.authz_result.authorized_edit &&
-      row.lockpoint &&
+      row.zone.lockpoint &&
       !row.lockpoint_crossed &&
-      row.zone_number === firstUncrossedLockpointZoneNumber &&
-      !hasUnmetAdvanceScorePercBeforeLockpoint(row.zone_number)
+      row.zone.number === firstUncrossedLockpointZoneNumber &&
+      !hasUnmetAdvanceScorePercBeforeLockpoint(row.zone.number)
     );
   }
 
   const crossableLockpointRows = instance_question_rows.filter(
     (row) =>
-      row.start_new_zone && row.lockpoint && !row.lockpoint_crossed && isLockpointCrossable(row),
+      row.start_new_zone &&
+      row.zone.lockpoint &&
+      !row.lockpoint_crossed &&
+      isLockpointCrossable(row),
   );
 
   return PageLayout({
@@ -190,7 +193,7 @@ export function StudentAssessmentInstance({
         : ''}
       ${crossableLockpointRows.map((row) =>
         Modal({
-          id: `crossLockpointModal-${row.zone_id}`,
+          id: `crossLockpointModal-${row.zone.id}`,
           title: 'Proceed to next questions?',
           body: html`
             <p>
@@ -209,20 +212,21 @@ export function StudentAssessmentInstance({
               <input
                 class="form-check-input"
                 type="checkbox"
-                id="lockpoint-confirm-${row.zone_id}"
-                onchange="document.getElementById('lockpoint-submit-${row.zone_id}').disabled = !this.checked"
+                id="lockpoint-confirm-${row.zone.id}"
+                onchange="document.getElementById('lockpoint-submit-${row.zone
+                  .id}').disabled = !this.checked"
               />
-              <label class="form-check-label" for="lockpoint-confirm-${row.zone_id}">
+              <label class="form-check-label" for="lockpoint-confirm-${row.zone.id}">
                 I understand that I will not be able to submit answers to previous questions
               </label>
             </div>
           `,
           footer: html`
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <input type="hidden" name="zone_id" value="${row.zone_id}" />
+            <input type="hidden" name="zone_id" value="${row.zone.id}" />
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             <button
-              id="lockpoint-submit-${row.zone_id}"
+              id="lockpoint-submit-${row.zone.id}"
               type="submit"
               name="__action"
               value="cross_lockpoint"
@@ -258,7 +262,7 @@ export function StudentAssessmentInstance({
           <div class="row align-items-center">
             ${run(() => {
               const allQuestionsDisabled = instance_question_rows.every(
-                (q) => !q.allow_real_time_grading,
+                (row) => !row.assessment_question.allow_real_time_grading,
               );
               return allQuestionsDisabled && resLocals.assessment_instance.open;
             })
@@ -361,9 +365,9 @@ export function StudentAssessmentInstance({
 
                 return instance_question_rows.map((instance_question_row) => {
                   const zoneHasInfo =
-                    instance_question_row.zone_title != null ||
-                    instance_question_row.zone_has_max_points ||
-                    instance_question_row.zone_has_best_questions;
+                    instance_question_row.zone.title != null ||
+                    instance_question_row.zone.max_points != null ||
+                    instance_question_row.zone.best_questions != null;
 
                   // Show zone info if this zone has info, or if the previous zone
                   // had info (blank zone info to visually separate).
@@ -375,13 +379,13 @@ export function StudentAssessmentInstance({
                   }
 
                   return html`
-                    ${instance_question_row.start_new_zone && instance_question_row.lockpoint
+                    ${instance_question_row.start_new_zone && instance_question_row.zone.lockpoint
                       ? LockpointRow({
                           row: instance_question_row,
                           colspan: zoneTitleColspan,
                           crossable: !!isLockpointCrossable(instance_question_row),
                           blockedByAdvanceScorePerc: hasUnmetAdvanceScorePercBeforeLockpoint(
-                            instance_question_row.zone_number,
+                            instance_question_row.zone.number,
                           ),
                           isGroupAssessment: groupConfig != null,
                           displayTimezone: resLocals.course_instance.display_timezone,
@@ -394,25 +398,25 @@ export function StudentAssessmentInstance({
                               ${zoneHasInfo
                                 ? html`
                                     <div class="d-flex align-items-center gap-2">
-                                      ${instance_question_row.zone_title
-                                        ? html`<span>${instance_question_row.zone_title}</span>`
+                                      ${instance_question_row.zone.title
+                                        ? html`<span>${instance_question_row.zone.title}</span>`
                                         : ''}
-                                      ${instance_question_row.zone_has_max_points
+                                      ${instance_question_row.zone.max_points != null
                                         ? ZoneInfoPopover({
-                                            label: instance_question_row.zone_title
-                                              ? `maximum ${instance_question_row.zone_max_points} points`
-                                              : `Maximum ${instance_question_row.zone_max_points} points`,
-                                            content: `Of the points that you are awarded for answering these ${instance_question_row.zone_question_count} questions, at most ${instance_question_row.zone_max_points} will count toward your total points.`,
+                                            label: instance_question_row.zone.title
+                                              ? `maximum ${instance_question_row.zone.max_points} points`
+                                              : `Maximum ${instance_question_row.zone.max_points} points`,
+                                            content: `Of the points that you are awarded for answering these ${instance_question_row.zone_question_count} questions, at most ${instance_question_row.zone.max_points} will count toward your total points.`,
                                           })
                                         : ''}
-                                      ${instance_question_row.zone_has_best_questions
+                                      ${instance_question_row.zone.best_questions != null
                                         ? ZoneInfoPopover({
                                             label:
-                                              instance_question_row.zone_title ||
-                                              instance_question_row.zone_has_max_points
-                                                ? `best ${instance_question_row.zone_best_questions} of ${instance_question_row.zone_question_count} questions`
-                                                : `Best ${instance_question_row.zone_best_questions} of ${instance_question_row.zone_question_count} questions`,
-                                            content: `Of these ${instance_question_row.zone_question_count} questions, only the ${instance_question_row.zone_best_questions} with the highest number of awarded points will count toward your total points.`,
+                                              instance_question_row.zone.title ||
+                                              instance_question_row.zone.max_points != null
+                                                ? `best ${instance_question_row.zone.best_questions} of ${instance_question_row.zone_question_count} questions`
+                                                : `Best ${instance_question_row.zone.best_questions} of ${instance_question_row.zone_question_count} questions`,
+                                            content: `Of these ${instance_question_row.zone_question_count} questions, only the ${instance_question_row.zone.best_questions} with the highest number of awarded points will count toward your total points.`,
                                           })
                                         : ''}
                                     </div>
@@ -438,8 +442,8 @@ export function StudentAssessmentInstance({
                             rowLabelText:
                               resLocals.assessment.type === 'Exam'
                                 ? `Question ${instance_question_row.question_number}`
-                                : instance_question_row.question_title?.trim()
-                                  ? `${instance_question_row.question_number}. ${instance_question_row.question_title}`
+                                : instance_question_row.question.title?.trim()
+                                  ? `${instance_question_row.question_number}. ${instance_question_row.question.title}`
                                   : instance_question_row.question_number,
                           })}
                         </div>
@@ -453,8 +457,9 @@ export function StudentAssessmentInstance({
                                 instance_question_row.question_access_mode === 'blocked_lockpoint'
                                   ? html`<span class="badge text-bg-secondary">Locked</span>`
                                   : ExamQuestionStatus({
-                                      instance_question: instance_question_row,
-                                      assessment_question: instance_question_row, // Required fields are in instance_question
+                                      instance_question: instance_question_row.instance_question,
+                                      assessment_question:
+                                        instance_question_row.assessment_question,
                                       realTimeGradingPartiallyDisabled:
                                         someQuestionsAllowRealTimeGrading &&
                                         someQuestionsForbidRealTimeGrading,
@@ -466,23 +471,30 @@ export function StudentAssessmentInstance({
                             someQuestionsAllowRealTimeGrading
                               ? html`
                                   <td class="text-center">
-                                    ${instance_question_row.max_auto_points
+                                    ${instance_question_row.assessment_question.max_auto_points
                                       ? ExamQuestionAvailablePoints({
                                           open:
                                             (resLocals.assessment_instance.open &&
-                                              instance_question_row.open) ??
+                                              instance_question_row.instance_question.open) ??
                                             false,
                                           currentWeight:
-                                            (instance_question_row.points_list_original?.[
-                                              instance_question_row.number_attempts
+                                            (instance_question_row.instance_question
+                                              .points_list_original?.[
+                                              instance_question_row.instance_question
+                                                .number_attempts
                                             ] ?? 0) -
-                                            (instance_question_row.max_manual_points ?? 0),
-                                          pointsList: instance_question_row.points_list?.map(
-                                            (p) =>
-                                              p - (instance_question_row.max_manual_points ?? 0),
-                                          ),
+                                            (instance_question_row.assessment_question
+                                              .max_manual_points ?? 0),
+                                          pointsList:
+                                            instance_question_row.instance_question.points_list?.map(
+                                              (p) =>
+                                                p -
+                                                (instance_question_row.assessment_question
+                                                  .max_manual_points ?? 0),
+                                            ),
                                           highestSubmissionScore:
-                                            instance_question_row.highest_submission_score,
+                                            instance_question_row.instance_question
+                                              .highest_submission_score,
                                         })
                                       : html`&mdash;`}
                                   </td>
@@ -496,15 +508,19 @@ export function StudentAssessmentInstance({
                                     ? html`
                                         <td class="text-center">
                                           ${InstanceQuestionPoints({
-                                            instance_question: instance_question_row,
-                                            assessment_question: instance_question_row, // Required fields are present in instance_question
+                                            instance_question:
+                                              instance_question_row.instance_question,
+                                            assessment_question:
+                                              instance_question_row.assessment_question,
                                             component: 'auto',
                                           })}
                                         </td>
                                         <td class="text-center">
                                           ${InstanceQuestionPoints({
-                                            instance_question: instance_question_row,
-                                            assessment_question: instance_question_row, // Required fields are present in instance_question
+                                            instance_question:
+                                              instance_question_row.instance_question,
+                                            assessment_question:
+                                              instance_question_row.assessment_question,
                                             component: 'manual',
                                           })}
                                         </td>
@@ -512,8 +528,9 @@ export function StudentAssessmentInstance({
                                     : ''}
                                   <td class="text-center">
                                     ${InstanceQuestionPoints({
-                                      instance_question: instance_question_row,
-                                      assessment_question: instance_question_row, // Required fields are present in instance_question
+                                      instance_question: instance_question_row.instance_question,
+                                      assessment_question:
+                                        instance_question_row.assessment_question,
                                       component: 'total',
                                     })}
                                   </td>
@@ -523,15 +540,23 @@ export function StudentAssessmentInstance({
                                   resLocals.has_manual_grading_question
                                     ? html`
                                         <td class="text-center">
-                                          ${formatPoints(instance_question_row.max_auto_points)}
+                                          ${formatPoints(
+                                            instance_question_row.assessment_question
+                                              .max_auto_points,
+                                          )}
                                         </td>
                                         <td class="text-center">
-                                          ${formatPoints(instance_question_row.max_manual_points)}
+                                          ${formatPoints(
+                                            instance_question_row.assessment_question
+                                              .max_manual_points,
+                                          )}
                                         </td>
                                       `
                                     : ''}
                                   <td class="text-center">
-                                    ${formatPoints(instance_question_row.max_points)}
+                                    ${formatPoints(
+                                      instance_question_row.assessment_question.max_points,
+                                    )}
                                   </td>
                                 `}
                           `
@@ -950,7 +975,9 @@ function ConfirmFinishModal({
   instance_question_rows: InstanceQuestionRow[];
   csrfToken: string;
 }) {
-  const all_questions_answered = instance_question_rows.every((iq) => iq.status !== 'unanswered');
+  const all_questions_answered = instance_question_rows.every(
+    ({ instance_question: iq }) => iq.status !== 'unanswered',
+  );
 
   return Modal({
     id: 'confirmFinishModal',

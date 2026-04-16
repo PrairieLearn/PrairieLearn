@@ -61,7 +61,7 @@ export function LockpointRow({
               type="button"
               class="btn btn-warning btn-sm text-nowrap"
               data-bs-toggle="modal"
-              data-bs-target="#crossLockpointModal-${row.zone_id}"
+              data-bs-target="#crossLockpointModal-${row.zone.id}"
             >
               Proceed to next questions
             </button>
