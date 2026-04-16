@@ -217,7 +217,7 @@ function BillingAlert({
     return (
       <Alert variant="info" className="mb-3 py-2 small d-flex align-items-center gap-2">
         <Spinner animation="border" size="sm" />
-        Checking grading availability...
+        Loading AI grading status...
       </Alert>
     );
   }
@@ -225,7 +225,7 @@ function BillingAlert({
   if (isStatusError) {
     return (
       <Alert variant="danger" className="mb-3 py-2 small">
-        Unable to check AI grading availability right now.{' '}
+        Unable to load AI grading status.{' '}
         <Button type="button" variant="link" className="p-0 align-baseline" onClick={onRetryStatus}>
           Try again.
         </Button>
