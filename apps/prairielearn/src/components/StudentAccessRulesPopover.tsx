@@ -88,12 +88,20 @@ export function StudentAccessTimelinePopover({
                       <td>${entry.credit}%</td>
                       <td>
                         ${entry.startDate
-                          ? FriendlyDateHtml({ date: entry.startDate, timezone: displayTimezone })
+                          ? FriendlyDateHtml({
+                              date: entry.startDate,
+                              timezone: displayTimezone,
+                              tooltip: true,
+                            })
                           : '—'}
                       </td>
                       <td>
                         ${entry.endDate
-                          ? FriendlyDateHtml({ date: entry.endDate, timezone: displayTimezone })
+                          ? FriendlyDateHtml({
+                              date: entry.endDate,
+                              timezone: displayTimezone,
+                              tooltip: true,
+                            })
                           : '—'}
                       </td>
                     </tr>
