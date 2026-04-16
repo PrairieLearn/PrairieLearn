@@ -6,13 +6,13 @@ FROM
 WHERE
   short_name = ANY ($short_names::text[]);
 
--- BLOCK select_existing_enrollment_code
+-- BLOCK select_existing_enrollment_codes
 SELECT
   enrollment_code
 FROM
   course_instances
 WHERE
-  enrollment_code = $enrollment_code;
+  enrollment_code = ANY ($enrollment_codes::text[]);
 
 -- BLOCK sync_course_instances_insert_delete
 WITH

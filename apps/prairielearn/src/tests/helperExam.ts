@@ -237,7 +237,7 @@ export function startExam(locals: Record<string, any>, examTid: keyof typeof exa
     exam.questions.forEach(function (question) {
       it(`should link to ${question.qid} question`, function () {
         assert(locals.$);
-        const urlTail = '/pl/course_instance/1/instance_question/' + question.id + '/';
+        const urlTail = '/pl/course_instance/1/instance_question/' + question.id;
         question.url = locals.siteUrl + urlTail;
         const elemList = locals.$(`td a[href="${urlTail}"]`);
         assert.lengthOf(elemList, 1);
