@@ -31,7 +31,7 @@ function makeRule(overrides: Partial<AccessControlJsonInput> = {}): AccessContro
     {
       dateControl: {
         releaseDate: '2024-03-14T00:01:00',
-        dueDate: '2024-03-21T23:59:00',
+        due: { date: '2024-03-21T23:59:00' },
       },
     },
     overrides,
@@ -105,7 +105,7 @@ describe('Access control save via tRPC', () => {
       makeRule({ listBeforeRelease: true }),
       makeRule({
         labels: ['Section A'],
-        dateControl: { dueDate: '2024-04-01T23:59:00' },
+        dateControl: { due: { date: '2024-04-01T23:59:00' } },
       }),
     ];
 
@@ -121,7 +121,7 @@ describe('Access control save via tRPC', () => {
     assert.equal(parsed.accessControl.length, 2);
     assert.equal(parsed.accessControl[0].listBeforeRelease, true);
     assert.deepEqual(parsed.accessControl[1].labels, ['Section A']);
-    assert.equal(parsed.accessControl[1].dateControl.dueDate, '2024-04-01T23:59:00');
+    assert.equal(parsed.accessControl[1].dateControl.due?.date, '2024-04-01T23:59:00');
 
     // Verify other keys are preserved
     assert.equal(parsed.uuid, 'f5b2c8d1-9a3e-4f7b-8c1d-2e5a6b9c0d1f');
@@ -158,7 +158,7 @@ describe('Access control save via tRPC', () => {
     // Second save with the same (now stale) hash must fail.
     await expect(
       client.accessControl.saveAllRules.mutate({
-        rules: [makeRule({ dateControl: { dueDate: '2024-05-01T23:59:00' } })],
+        rules: [makeRule({ dateControl: { due: { date: '2024-05-01T23:59:00' } } })],
         origHash: staleHash,
       }),
     ).rejects.toThrow(/modified since you loaded/);

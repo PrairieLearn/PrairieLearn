@@ -10,14 +10,16 @@ import { type AccessControlFormData, formDataToJson } from './types.js';
 
 export type AccessControlFormFieldPath =
   | 'mainRule.releaseDate'
-  | 'mainRule.dueDate'
+  | 'mainRule.due.date'
+  | 'mainRule.due.credit'
   | `mainRule.earlyDeadlines.${number}.date`
   | `mainRule.lateDeadlines.${number}.date`
   | 'mainRule.questionVisibility.visibleFromDate'
   | 'mainRule.questionVisibility.visibleUntilDate'
   | 'mainRule.scoreVisibility.visibleFromDate'
   | `overrides.${number}.releaseDate`
-  | `overrides.${number}.dueDate`
+  | `overrides.${number}.due.date`
+  | `overrides.${number}.due.credit`
   | `overrides.${number}.earlyDeadlines.${number}.date`
   | `overrides.${number}.lateDeadlines.${number}.date`
   | `overrides.${number}.questionVisibility.visibleFromDate`
@@ -43,8 +45,8 @@ function mapIssueToFormFieldPath(
       switch (issue.path[1]) {
         case 'releaseDate':
           return `${prefix}.releaseDate`;
-        case 'dueDate':
-          return `${prefix}.dueDate`;
+        case 'due':
+          return issue.path[2] === 'credit' ? `${prefix}.due.credit` : `${prefix}.due.date`;
         case 'earlyDeadlines':
           return `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
         case 'lateDeadlines':

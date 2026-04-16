@@ -750,16 +750,30 @@
               "description": "Release date as ISO String",
               "$ref": "#/definitions/DatetimeLocalStringSchema"
             },
-            "dueDate": {
-              "description": "Due date as ISO String",
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/DatetimeLocalStringSchema"
+            "due": {
+              "description": "Due date configuration. Overrides replace the entire due object atomically.",
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["date"],
+              "properties": {
+                "date": {
+                  "description": "Due date as ISO String, or null for no due date",
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/DatetimeLocalStringSchema"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
-                {
-                  "type": "null"
+                "credit": {
+                  "description": "Custom credit percentage at the due date (0-200). Omitted means default 100% credit.",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 200
                 }
-              ]
+              }
             },
             "earlyDeadlines": {
               "description": "Array of early deadlines with credit as percentages",

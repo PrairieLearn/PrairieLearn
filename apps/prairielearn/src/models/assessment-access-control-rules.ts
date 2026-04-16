@@ -37,8 +37,9 @@ export interface EnrollmentAccessControlRuleData {
   id?: string;
   listBeforeRelease: boolean | null;
   releaseDate: string | null;
-  dueDateOverridden: boolean;
+  dueOverridden: boolean;
   dueDate: string | null;
+  dueCredit: number | null;
   earlyDeadlinesOverridden: boolean;
   lateDeadlinesOverridden: boolean;
   afterLastDeadlineAllowSubmissions: boolean | null;
@@ -99,8 +100,11 @@ function dbBaseRowToAccessControlJson(
   if (rule.date_control_release_date) {
     dateControl.releaseDate = rule.date_control_release_date.toISOString();
   }
-  if (rule.date_control_due_date_overridden) {
-    dateControl.dueDate = rule.date_control_due_date?.toISOString() ?? null;
+  if (rule.date_control_due_overridden) {
+    dateControl.due = {
+      date: rule.date_control_due_date?.toISOString() ?? null,
+      ...(rule.date_control_due_credit != null ? { credit: rule.date_control_due_credit } : {}),
+    };
   }
   if (rule.date_control_early_deadlines_overridden) {
     dateControl.earlyDeadlines = row.early_deadlines ?? [];
@@ -243,8 +247,9 @@ export async function syncEnrollmentAccessControl(
     id: ruleData.id ?? null,
     list_before_release: ruleData.listBeforeRelease,
     date_control_release_date: ruleData.releaseDate,
-    date_control_due_date_overridden: ruleData.dueDateOverridden,
+    date_control_due_overridden: ruleData.dueOverridden,
     date_control_due_date: ruleData.dueDate,
+    date_control_due_credit: ruleData.dueCredit,
     date_control_early_deadlines_overridden: ruleData.earlyDeadlinesOverridden,
     date_control_late_deadlines_overridden: ruleData.lateDeadlinesOverridden,
     date_control_after_last_deadline_allow_submissions: ruleData.afterLastDeadlineAllowSubmissions,

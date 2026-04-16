@@ -15,7 +15,7 @@ const defaultMainRule: MainRuleData = {
   listBeforeRelease: true,
   dateControlEnabled: true,
   releaseDate: '2025-03-01T00:00:00Z',
-  dueDate: '2025-04-01T00:00:00Z',
+  due: { date: '2025-04-01T00:00:00Z', credit: null },
   earlyDeadlines: [{ date: '2025-03-15T00:00:00Z', credit: 110 }],
   lateDeadlines: [{ date: '2025-04-15T00:00:00Z', credit: 50 }],
   afterLastDeadline: { allowSubmissions: false },
@@ -35,7 +35,7 @@ const baseOverride: OverrideData = {
   },
   overriddenFields: [],
   releaseDate: null,
-  dueDate: null,
+  due: { date: null, credit: null },
   earlyDeadlines: [],
   lateDeadlines: [],
   afterLastDeadline: { allowSubmissions: false },
@@ -118,14 +118,14 @@ describe('formDataToJson', () => {
     const override: OverrideData = {
       ...baseOverride,
       trackingId: 'o-2',
-      overriddenFields: ['dueDate', 'password'],
-      dueDate: '2025-05-01T00:00:00Z',
+      overriddenFields: ['due', 'password'],
+      due: { date: '2025-05-01T00:00:00Z', credit: null },
       password: 'pw',
     };
 
     const result = formDataToJson(buildFormData(override));
     const dc = result[1].dateControl!;
-    expect(dc.dueDate).toBe('2025-05-01T00:00:00Z');
+    expect(dc.due?.date).toBe('2025-05-01T00:00:00Z');
     expect(dc.password).toBe('pw');
     expect('releaseDate' in dc).toBe(false);
     expect('earlyDeadlines' in dc).toBe(false);
@@ -213,7 +213,7 @@ describe('formDataToJson', () => {
             studentLabels: [],
           },
           overriddenFields: [
-            'dueDate',
+            'due',
             'earlyDeadlines',
             'lateDeadlines',
             'afterLastDeadline',
@@ -221,7 +221,7 @@ describe('formDataToJson', () => {
             'password',
           ],
           // Release date as null is not allowed, so this is false.
-          dueDate: null,
+          due: { date: null, credit: null },
           earlyDeadlines: [],
           lateDeadlines: [],
           afterLastDeadline: { allowSubmissions: false },
@@ -236,8 +236,8 @@ describe('formDataToJson', () => {
 
     expect(overrideJson.dateControl).toBeDefined();
     const dc = overrideJson.dateControl!;
-    expect('dueDate' in dc).toBe(true);
-    expect(dc.dueDate).toBeNull();
+    expect('due' in dc).toBe(true);
+    expect(dc.due?.date).toBeNull();
     expect('earlyDeadlines' in dc).toBe(true);
     expect(dc.earlyDeadlines).toEqual([]);
     expect('lateDeadlines' in dc).toBe(true);

@@ -13,7 +13,7 @@
       },
       "afterComplete": { "questions": { "hidden": false } }
     },
-    { "labels": ["Section A"], "dateControl": { "dueDate": "2026-05-28T20:15:00" } }
+    { "labels": ["Section A"], "dateControl": { "due": { "date": "2026-05-28T20:15:00" } } }
   ],
   "zones": [
     { "title": "Access Control Test Zone", "questions": [{ "id": "addNumbers", "points": 1 }] }

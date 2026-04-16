@@ -10,7 +10,7 @@ import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-typ
  */
 export interface RuntimeDateControl {
   releaseDate?: Date | null;
-  dueDate?: Date | null;
+  due?: { date: Date | null; credit?: number | null };
   earlyDeadlines?: { date: string; credit: number }[] | null;
   lateDeadlines?: { date: string; credit: number }[] | null;
   afterLastDeadline?: { allowSubmissions?: boolean; credit?: number | null };
@@ -145,7 +145,10 @@ function mergeDateControl(
   const merged: RuntimeDateControl = { ...base };
   const ov = override;
   if (ov.releaseDate !== undefined) merged.releaseDate = ov.releaseDate;
-  if (ov.dueDate !== undefined) merged.dueDate = ov.dueDate;
+  // `due` replaces atomically: an override either inherits the entire object or
+  // supplies its own. We never merge `date` and `credit` independently because
+  // a custom-credit override with an unset date (or vice versa) is incoherent.
+  if (ov.due !== undefined) merged.due = ov.due;
   if (ov.earlyDeadlines !== undefined) merged.earlyDeadlines = ov.earlyDeadlines;
   if (ov.lateDeadlines !== undefined) merged.lateDeadlines = ov.lateDeadlines;
   if (ov.afterLastDeadline !== undefined) {
@@ -237,7 +240,8 @@ function computeCredit(
   }
 
   const releaseDate = dateControl.releaseDate;
-  const dueDate = dateControl.dueDate ?? null;
+  const dueDate = dateControl.due?.date ?? null;
+  const dueCredit = dateControl.due?.credit ?? 100;
 
   if (date < releaseDate) {
     return {
@@ -272,12 +276,14 @@ function computeCredit(
       // Filter out early deadlines before release date or after due date.
       if (entryDate <= releaseDate) continue;
       if (dueDate && entryDate > dueDate) continue;
-      timeline.push({ date: entryDate, credit: entry.credit });
+      // Early credit is floored at the due-date credit so the timeline never
+      // drops below the base credit before the due date itself.
+      timeline.push({ date: entryDate, credit: Math.max(entry.credit, dueCredit) });
     }
   }
 
   if (dueDate) {
-    timeline.push({ date: dueDate, credit: 100 });
+    timeline.push({ date: dueDate, credit: dueCredit });
   }
 
   if (dateControl.lateDeadlines) {
@@ -286,7 +292,9 @@ function computeCredit(
       // Filter out late deadlines before release date or before due date.
       if (entryDate <= releaseDate) continue;
       if (dueDate && entryDate < dueDate) continue;
-      timeline.push({ date: entryDate, credit: entry.credit });
+      // Late credit is capped at the due-date credit so the timeline never
+      // rises above the base credit after the due date.
+      timeline.push({ date: entryDate, credit: Math.min(entry.credit, dueCredit) });
     }
   }
 

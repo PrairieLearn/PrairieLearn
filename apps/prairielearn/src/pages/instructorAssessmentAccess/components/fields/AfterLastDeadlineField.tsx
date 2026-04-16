@@ -45,23 +45,27 @@ function getMode(value: AfterLastDeadlineValue | null): AfterLastDeadlineMode {
 }
 
 /**
- * Derive the effective dueDate and lateDeadlines from form values, handling
- * override fallback via `overriddenFields`.
+ * Derive the effective dueDate, dueCredit, and lateDeadlines from form values,
+ * handling override fallback via `overriddenFields`.
  */
 function resolveConstraints(
   formValues: AccessControlFormData,
   overrideIndex?: number,
-): { dueDate: string | null; lateDeadlines: DeadlineEntry[] } {
+): { dueDate: string | null; dueCredit: number; lateDeadlines: DeadlineEntry[] } {
   if (overrideIndex == null) {
+    const due = formValues.mainRule.due;
     return {
-      dueDate: formValues.mainRule.dueDate,
+      dueDate: due.date,
+      dueCredit: due.credit ?? 100,
       lateDeadlines: formValues.mainRule.lateDeadlines,
     };
   }
   const override = formValues.overrides[overrideIndex];
   const overriddenFields = override.overriddenFields;
+  const effectiveDue = overriddenFields.includes('due') ? override.due : formValues.mainRule.due;
   return {
-    dueDate: overriddenFields.includes('dueDate') ? override.dueDate : formValues.mainRule.dueDate,
+    dueDate: effectiveDue.date,
+    dueCredit: effectiveDue.credit ?? 100,
     lateDeadlines: overriddenFields.includes('lateDeadlines')
       ? override.lateDeadlines
       : formValues.mainRule.lateDeadlines,
@@ -92,14 +96,14 @@ function AfterLastDeadlineInput({
   const creditDeps = run<FieldPath<AccessControlFormData>[]>(() => {
     if (isOverride) {
       return [
-        'mainRule.dueDate',
+        'mainRule.due',
         'mainRule.lateDeadlines',
         `overrides.${overrideIndex}.overriddenFields`,
-        `overrides.${overrideIndex}.dueDate`,
+        `overrides.${overrideIndex}.due`,
         `overrides.${overrideIndex}.lateDeadlines`,
       ];
     }
-    return ['mainRule.dueDate', 'mainRule.lateDeadlines'];
+    return ['mainRule.due', 'mainRule.lateDeadlines'];
   });
 
   const { register, getValues } = useFormContext<AccessControlFormData>();
@@ -186,9 +190,12 @@ function AfterLastDeadlineInput({
                 validate: (v, formValues) => {
                   if (v == null || Number.isNaN(v)) return 'Credit is required';
                   if (v < 0 || v > 200) return 'Must be 0\u2013200%';
-                  const { dueDate, lateDeadlines } = resolveConstraints(formValues, overrideIndex);
+                  const { dueDate, dueCredit, lateDeadlines } = resolveConstraints(
+                    formValues,
+                    overrideIndex,
+                  );
                   const precedingCredit =
-                    lateDeadlines.at(-1)?.credit ?? (dueDate != null ? 100 : undefined);
+                    lateDeadlines.at(-1)?.credit ?? (dueDate != null ? dueCredit : undefined);
                   if (precedingCredit != null && v > precedingCredit) {
                     return `Must not exceed ${precedingCredit}% (the preceding deadline's credit)`;
                   }

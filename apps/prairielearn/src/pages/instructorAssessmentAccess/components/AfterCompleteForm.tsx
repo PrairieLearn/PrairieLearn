@@ -432,9 +432,10 @@ export function MainAfterCompleteForm({
   });
   const hasPrairieTest = prairieTestExams.length > 0;
 
-  const dueDate = useWatch<AccessControlFormData, 'mainRule.dueDate'>({
-    name: 'mainRule.dueDate',
+  const due = useWatch<AccessControlFormData, 'mainRule.due'>({
+    name: 'mainRule.due',
   });
+  const dueDate = due?.date ?? null;
   const lateDeadlines = useWatch<AccessControlFormData, 'mainRule.lateDeadlines'>({
     name: 'mainRule.lateDeadlines',
   });

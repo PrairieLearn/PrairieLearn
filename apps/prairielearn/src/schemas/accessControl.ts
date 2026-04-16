@@ -16,10 +16,29 @@ const AfterLastDeadlineJsonSchema = z
   })
   .strict();
 
+const DueJsonSchema = z
+  .object({
+    date: DatetimeLocalStringSchema.nullable().describe(
+      'Due date as ISO String, or null for no due date',
+    ),
+    credit: z
+      .number()
+      .int()
+      .min(0)
+      .max(200)
+      .optional()
+      .describe(
+        'Custom credit percentage at the due date (0-200). Omitted means default 100% credit.',
+      ),
+  })
+  .strict();
+
 const DateControlJsonSchema = z
   .object({
     releaseDate: DatetimeLocalStringSchema.optional().describe('Release date as ISO String'),
-    dueDate: DatetimeLocalStringSchema.nullable().optional().describe('Due date as ISO String'),
+    due: DueJsonSchema.optional().describe(
+      'Due date configuration. Overrides replace the entire due object atomically.',
+    ),
     earlyDeadlines: z
       .array(DeadlineEntryJsonSchema)
       .nullable()

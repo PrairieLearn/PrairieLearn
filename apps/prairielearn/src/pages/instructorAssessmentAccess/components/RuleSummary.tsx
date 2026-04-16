@@ -47,7 +47,8 @@ export function generateMainRuleDateTableRows(
   const rows: DateTableRow[] = [];
 
   const releaseDate = rule.releaseDate;
-  const dueDate = rule.dueDate;
+  const dueDate = rule.due.date;
+  const dueCredit = rule.due.credit ?? 100;
   const earlyDeadlines = rule.earlyDeadlines;
   const lateDeadlines = rule.lateDeadlines;
 
@@ -100,22 +101,22 @@ export function generateMainRuleDateTableRows(
         />
       ),
       label: 'Due',
-      credit: '100%',
-      error: formErrors?.dueDate?.message,
+      credit: `${dueCredit}%`,
+      error: formErrors?.due?.message,
     });
   } else if (dueDate === null) {
     rows.push({
       date: 'No due date',
       label: 'Due',
-      credit: '100%',
+      credit: `${dueCredit}%`,
     });
   } else {
     // dueDate is an empty string — "Due on date" selected but no date entered
     rows.push({
       date: 'No date set',
       label: 'Due',
-      credit: '100%',
-      error: formErrors?.dueDate?.message,
+      credit: `${dueCredit}%`,
+      error: formErrors?.due?.message,
     });
   }
 
@@ -140,7 +141,7 @@ export function generateMainRuleDateTableRows(
   });
 
   // Show "After last deadline" only when there is a deadline it can apply to.
-  const hasAnyDeadline = rule.dueDate || rule.lateDeadlines.some((d) => d.date);
+  const hasAnyDeadline = rule.due.date || rule.lateDeadlines.some((d) => d.date);
 
   if (hasAnyDeadline) {
     rows.push({
@@ -429,20 +430,24 @@ function generateOverrideFieldItems(
     );
   }
 
-  if (overriddenFields.has('dueDate')) {
+  if (overriddenFields.has('due')) {
+    const creditLabel = rule.due.credit != null ? ` (${rule.due.credit}%)` : '';
     items.push({
       label: 'Due date',
-      value: rule.dueDate ? (
-        <FriendlyDate
-          date={Temporal.PlainDateTime.from(rule.dueDate)}
-          timezone={displayTimezone}
-          options={{ includeTz: false }}
-          tooltip
-        />
+      value: rule.due.date ? (
+        <>
+          <FriendlyDate
+            date={Temporal.PlainDateTime.from(rule.due.date)}
+            timezone={displayTimezone}
+            options={{ includeTz: false }}
+            tooltip
+          />
+          {creditLabel}
+        </>
       ) : (
         'No due date'
       ),
-      error: formErrors?.dueDate?.message,
+      error: formErrors?.due?.message,
     });
   }
 
