@@ -419,16 +419,17 @@ WHERE
 LIMIT
   1;
 
--- BLOCK select_assessment_users
--- A user can have multiple assessment instances (e.g. multi-instance exams),
--- so dedupe to one row per user.
-SELECT DISTINCT
-  ON (u.id) u.*,
+-- BLOCK select_course_instance_users
+-- All enrolled users in the course instance. Used for Canvas matching, which
+-- is a course-level identity mapping and should not be restricted to users
+-- who happen to have instances for a particular assessment.
+SELECT
+  u.*,
   users_get_displayed_role (u.id, $course_instance_id) AS role
 FROM
-  assessment_instances AS ai
-  JOIN users AS u ON (u.id = ai.user_id)
+  enrollments AS e
+  JOIN users AS u ON (u.id = e.user_id)
 WHERE
-  ai.assessment_id = $assessment_id
+  e.course_instance_id = $course_instance_id
 ORDER BY
   u.id;

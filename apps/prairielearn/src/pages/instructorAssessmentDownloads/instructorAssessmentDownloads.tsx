@@ -382,9 +382,8 @@ router.get(
 
     const students = (
       await sqldb.queryRows(
-        sql.select_assessment_users,
+        sql.select_course_instance_users,
         {
-          assessment_id: assessment.id,
           course_instance_id: course_instance.id,
         },
         UserSchema.extend({ role: SprocUsersGetDisplayedRoleSchema }),
