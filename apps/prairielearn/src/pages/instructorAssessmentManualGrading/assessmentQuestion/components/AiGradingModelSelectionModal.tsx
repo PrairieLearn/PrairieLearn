@@ -191,18 +191,57 @@ function ModelList({
 }
 
 function BillingAlert({
+  status,
+  isFetching,
+  isStatusError,
+  onRetryStatus,
   useCustomApiKeys,
   hasKeys,
-  hasCredits,
-  creditBalanceMilliDollars,
   aiGradingSettingsUrl,
 }: {
+  status:
+    | {
+        running_job_count: number;
+        max_concurrent_jobs: number;
+        credit_balance_milli_dollars: number;
+      }
+    | undefined;
+  isFetching: boolean;
+  isStatusError: boolean;
+  onRetryStatus: () => void;
   useCustomApiKeys: boolean;
   hasKeys: boolean;
-  hasCredits: boolean;
-  creditBalanceMilliDollars: number;
   aiGradingSettingsUrl: string;
 }) {
+  if (isFetching || status == null) {
+    return (
+      <Alert variant="info" className="mb-3 py-2 small d-flex align-items-center gap-2">
+        <Spinner animation="border" size="sm" />
+        Checking grading availability...
+      </Alert>
+    );
+  }
+
+  if (isStatusError) {
+    return (
+      <Alert variant="danger" className="mb-3 py-2 small">
+        Unable to check AI grading availability right now.{' '}
+        <Button type="button" variant="link" className="p-0 align-baseline" onClick={onRetryStatus}>
+          Try again.
+        </Button>
+      </Alert>
+    );
+  }
+
+  if (status.running_job_count >= status.max_concurrent_jobs) {
+    return (
+      <Alert variant="warning" className="mb-3 py-2 small">
+        You've reached the limit of {status.max_concurrent_jobs} concurrent AI grading jobs. Please
+        try again later.
+      </Alert>
+    );
+  }
+
   if (useCustomApiKeys) {
     return (
       <Alert variant={hasKeys ? 'info' : 'danger'} className="mb-3 py-2 small">
@@ -225,12 +264,13 @@ function BillingAlert({
     );
   }
 
+  const hasCredits = status.credit_balance_milli_dollars > 0;
   return (
     <Alert variant={hasCredits ? 'info' : 'danger'} className="mb-3 py-2 small">
       {hasCredits ? (
         <>
-          Billing to credit pool &middot; {formatMilliDollars(creditBalanceMilliDollars)} available
-          &middot;{' '}
+          Billing to credit pool &middot; {formatMilliDollars(status.credit_balance_milli_dollars)}{' '}
+          available &middot;{' '}
           <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
             Manage credits
           </a>
@@ -276,7 +316,12 @@ export function AiGradingModelSelectionModal({
     trpc.manualGrading.aiGradeInstanceQuestions.mutationOptions(),
   );
   const isModalOpen = modalState != null;
-  const { data: aiGradingStatus, isLoading: isAiGradingStatusLoading } = useQuery({
+  const {
+    data: aiGradingStatus,
+    isFetching: isAiGradingStatusFetching,
+    isError: isAiGradingStatusError,
+    refetch: refetchAiGradingStatus,
+  } = useQuery({
     ...trpc.manualGrading.aiGradingStatus.queryOptions(),
     enabled: isModalOpen,
     refetchOnMount: 'always',
@@ -318,47 +363,35 @@ export function AiGradingModelSelectionModal({
   const isSelectedModelAvailable = selectedModelProvider
     ? availableProviders.includes(selectedModelProvider)
     : false;
-  const creditBalanceMilliDollars = aiGradingStatus?.credit_balance_milli_dollars ?? 0;
-  const hasCredits = creditBalanceMilliDollars > 0;
   const hasKeys = availableProviders.length > 0;
+  const isStatusReady =
+    aiGradingStatus != null && !isAiGradingStatusFetching && !isAiGradingStatusError;
   const isAtConcurrencyLimit =
     aiGradingStatus != null &&
     aiGradingStatus.running_job_count >= aiGradingStatus.max_concurrent_jobs;
-  const isGradingEnabled = (useCustomApiKeys ? hasKeys : hasCredits) && !isAtConcurrencyLimit;
+  const hasCredits = aiGradingStatus != null && aiGradingStatus.credit_balance_milli_dollars > 0;
+  const isGradingEnabled =
+    isStatusReady && (useCustomApiKeys ? hasKeys : hasCredits) && !isAtConcurrencyLimit;
 
   return (
-    <Modal
-      show={modalState != null}
-      size="lg"
-      backdrop="static"
-      keyboard={false}
-      onHide={handleClose}
-    >
+    <Modal show={isModalOpen} size="lg" backdrop="static" keyboard={false} onHide={handleClose}>
       <form onSubmit={handleSubmit}>
         <Modal.Header closeButton>
           <Modal.Title>Select grading model</Modal.Title>
         </Modal.Header>
 
         <Modal.Body>
-          {isAiGradingStatusLoading ? (
-            <Alert variant="info" className="mb-3 py-2 small d-flex align-items-center gap-2">
-              <Spinner animation="border" size="sm" />
-              Checking grading availability...
-            </Alert>
-          ) : isAtConcurrencyLimit ? (
-            <Alert variant="warning" className="mb-3 py-2 small">
-              You've reached the limit of {aiGradingStatus.max_concurrent_jobs} concurrent AI
-              grading jobs. Please try again later.
-            </Alert>
-          ) : (
-            <BillingAlert
-              useCustomApiKeys={useCustomApiKeys}
-              hasKeys={hasKeys}
-              hasCredits={hasCredits}
-              creditBalanceMilliDollars={creditBalanceMilliDollars}
-              aiGradingSettingsUrl={aiGradingSettingsUrl}
-            />
-          )}
+          <BillingAlert
+            status={aiGradingStatus}
+            isFetching={isAiGradingStatusFetching}
+            isStatusError={isAiGradingStatusError}
+            useCustomApiKeys={useCustomApiKeys}
+            hasKeys={hasKeys}
+            aiGradingSettingsUrl={aiGradingSettingsUrl}
+            onRetryStatus={() => {
+              void refetchAiGradingStatus();
+            }}
+          />
           <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}
@@ -380,12 +413,7 @@ export function AiGradingModelSelectionModal({
               </Button>
               <Button
                 variant="primary"
-                disabled={
-                  isPending ||
-                  isAiGradingStatusLoading ||
-                  !isSelectedModelAvailable ||
-                  !isGradingEnabled
-                }
+                disabled={isPending || !isSelectedModelAvailable || !isGradingEnabled}
                 type="submit"
               >
                 {isPending
