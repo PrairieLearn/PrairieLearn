@@ -194,7 +194,7 @@ function DueDateInput({
                 aria-label="Due date credit percentage"
                 aria-invalid={!!creditError}
                 aria-errormessage={creditError ? `${idPrefix}-due-credit-error` : undefined}
-                value={value.credit ?? ''}
+                value={value.credit}
                 placeholder="100"
                 onChange={({ currentTarget }) => {
                   const raw = currentTarget.value;
