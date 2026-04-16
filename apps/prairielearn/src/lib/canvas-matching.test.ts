@@ -2,6 +2,7 @@ import { assert, describe, it } from 'vitest';
 
 import {
   type CanvasStudent,
+  type StrategyResult,
   type Student,
   buildCanvasLookup,
   parseCanvasCsv,
@@ -15,7 +16,7 @@ const SAMPLE_CANVAS_CSV = `Student,ID,SIS User ID,SIS Login ID,Section,Quiz 1 (2
 "Gislason, Hope",7,,gislason_hope5249,XC 101,7.00
 `;
 
-function findStrategy(results: ReturnType<typeof runAllStrategies>, name: string) {
+function findStrategy(results: StrategyResult[], name: string) {
   return results.find((r) => r.strategy.name === name)!;
 }
 
@@ -133,6 +134,8 @@ describe('runAllStrategies', () => {
       'uin-sisuser',
       'uin-sislogin',
       'name',
+      'email-sislogin',
+      'email-sisuser',
     ]);
   });
 
@@ -246,12 +249,54 @@ describe('runAllStrategies', () => {
 
   it('handles empty inputs', () => {
     const results = runAllStrategies([], []);
-    assert.lengthOf(results, 5);
+    assert.lengthOf(results, 7);
     for (const r of results) {
       assert.equal(r.result.matched.length, 0);
       assert.equal(r.result.ambiguousPl.length, 0);
       assert.equal(r.result.ambiguousCanvas.length, 0);
     }
+  });
+
+  it('matches by email prefix against SIS Login ID', () => {
+    const plStudents: Student[] = [
+      { uid: 'jblock3430@school.edu', userName: 'Jasen Block', uin: null },
+      { uid: 'billy7670@school.edu', userName: 'Billy Buckridge', uin: null },
+    ];
+
+    const results = runAllStrategies(plStudents, canvasStudents);
+    const result = findStrategy(results, 'email-sislogin');
+    assert.equal(result.result.matched.length, 2);
+    assert.equal(result.result.unmatchedPl.length, 0);
+  });
+
+  it('matches by email prefix against SIS User ID', () => {
+    const canvasWithSisUser: CanvasStudent[] = [
+      {
+        name: 'Block, Jasen',
+        id: '11',
+        sisUserId: 'jblock3430',
+        sisLoginId: '',
+        section: 'XC 101',
+      },
+    ];
+
+    const plStudents: Student[] = [
+      { uid: 'jblock3430@school.edu', userName: 'Jasen Block', uin: null },
+    ];
+
+    const results = runAllStrategies(plStudents, canvasWithSisUser);
+    const result = findStrategy(results, 'email-sisuser');
+    assert.equal(result.result.matched.length, 1);
+    assert.equal(result.result.unmatchedPl.length, 0);
+  });
+
+  it('skips email-prefix strategies for UIDs without @', () => {
+    const plStudents: Student[] = [{ uid: 'jblock3430', userName: 'Jasen Block', uin: null }];
+
+    const results = runAllStrategies(plStudents, canvasStudents);
+    const result = findStrategy(results, 'email-sislogin');
+    assert.equal(result.result.matched.length, 0);
+    assert.equal(result.result.unmatchedPl.length, 1);
   });
 
   it('treats students with empty keys as unmatched', () => {

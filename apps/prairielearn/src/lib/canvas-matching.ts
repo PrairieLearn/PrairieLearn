@@ -22,7 +22,6 @@ export interface Student {
 export interface MatchStrategy {
   name: string;
   label: string;
-  description: string;
   prairielearnKey: (student: Student) => string;
   canvasKey: (student: CanvasStudent) => string;
 }
@@ -74,11 +73,25 @@ export function parseCsvRows(csvText: string): string[][] {
   });
 }
 
+function safeParseCsvRows(csvText: string): { rows: string[][]; error: string | null } {
+  try {
+    return { rows: parseCsvRows(csvText), error: null };
+  } catch (err) {
+    return {
+      rows: [],
+      error: err instanceof Error ? err.message : 'Failed to parse CSV file.',
+    };
+  }
+}
+
 export function parseCanvasCsv(csvText: string): {
   students: CanvasStudent[];
   error: string | null;
 } {
-  const lines = parseCsvRows(csvText);
+  const { rows: lines, error: parseError } = safeParseCsvRows(csvText);
+  if (parseError) {
+    return { students: [], error: parseError };
+  }
   if (lines.length < 2) {
     return { students: [], error: 'CSV file is empty or has no data rows.' };
   }
@@ -157,42 +170,50 @@ const MATCH_STRATEGIES: MatchStrategy[] = [
   {
     name: 'uid-sislogin',
     label: 'UID \u2194 SIS Login ID',
-    description:
-      'Matches each student\u2019s PrairieLearn UID against the SIS Login ID column in the Canvas export.',
     prairielearnKey: (s) => s.uid.toLowerCase(),
     canvasKey: (c) => c.sisLoginId.toLowerCase(),
   },
   {
     name: 'uid-sisuser',
     label: 'UID \u2194 SIS User ID',
-    description:
-      'Matches each student\u2019s PrairieLearn UID against the SIS User ID column in the Canvas export.',
     prairielearnKey: (s) => s.uid.toLowerCase(),
     canvasKey: (c) => c.sisUserId.toLowerCase(),
   },
   {
     name: 'uin-sisuser',
     label: 'UIN \u2194 SIS User ID',
-    description:
-      'Matches each student\u2019s campus student ID (UIN) against the SIS User ID column in the Canvas export. Leading zeros are ignored for numeric identifiers.',
     prairielearnKey: (s) => (s.uin ? normalizeSisIdentifier(s.uin) : ''),
     canvasKey: (c) => normalizeSisIdentifier(c.sisUserId),
   },
   {
     name: 'uin-sislogin',
     label: 'UIN \u2194 SIS Login ID',
-    description:
-      'Matches each student\u2019s campus student ID (UIN) against the SIS Login ID column in the Canvas export. Leading zeros are ignored for numeric identifiers.',
     prairielearnKey: (s) => (s.uin ? normalizeSisIdentifier(s.uin) : ''),
     canvasKey: (c) => normalizeSisIdentifier(c.sisLoginId),
   },
   {
     name: 'name',
     label: 'student name',
-    description:
-      'Compares student names across different formats (e.g. "Last, First" vs. "First Last"), ignoring case and punctuation.',
     prairielearnKey: (s) => (s.userName ? canonicalName(s.userName) : ''),
     canvasKey: (c) => canonicalName(c.name),
+  },
+  {
+    name: 'email-sislogin',
+    label: 'email prefix \u2194 SIS Login ID',
+    prairielearnKey: (s) => {
+      const atIdx = s.uid.indexOf('@');
+      return atIdx !== -1 ? s.uid.slice(0, Math.max(0, atIdx)).toLowerCase() : '';
+    },
+    canvasKey: (c) => c.sisLoginId.toLowerCase(),
+  },
+  {
+    name: 'email-sisuser',
+    label: 'email prefix \u2194 SIS User ID',
+    prairielearnKey: (s) => {
+      const atIdx = s.uid.indexOf('@');
+      return atIdx !== -1 ? s.uid.slice(0, Math.max(0, atIdx)).toLowerCase() : '';
+    },
+    canvasKey: (c) => c.sisUserId.toLowerCase(),
   },
 ];
 
@@ -290,7 +311,7 @@ function scoreResult(result: MatchResult): number {
     result.matched.length * 3 -
     result.ambiguousPl.length -
     result.ambiguousCanvas.length -
-    result.unmatchedPl.length * 2
+    result.unmatchedPl.length
   );
 }
 
