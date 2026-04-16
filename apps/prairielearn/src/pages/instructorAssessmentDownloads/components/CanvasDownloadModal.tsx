@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 
@@ -32,9 +33,11 @@ export function CanvasDownloadModal({
 }: CanvasDownloadModalProps) {
   const [matchingState, setMatchingState] = useState<CanvasMatchingState | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const handleDownload = async () => {
     setDownloading(true);
+    setDownloadError(null);
     try {
       const response = await fetch(downloadUrl);
       if (!response.ok) {
@@ -80,9 +83,12 @@ export function CanvasDownloadModal({
 
       downloadAsCSV(headers, transformedData, filename);
       onHide();
-    } catch {
-      window.location.href = downloadUrl;
-      onHide();
+    } catch (err) {
+      setDownloadError(
+        err instanceof Error
+          ? err.message
+          : 'An unexpected error occurred while preparing the CSV.',
+      );
     } finally {
       setDownloading(false);
     }
@@ -99,6 +105,11 @@ export function CanvasDownloadModal({
           matchingState={matchingState}
           onMatchingStateChange={setMatchingState}
         />
+        {downloadError && (
+          <Alert variant="danger" className="mt-3">
+            {downloadError}
+          </Alert>
+        )}
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onHide}>
