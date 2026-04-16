@@ -223,14 +223,9 @@ function DueDateInput({
           {creditError}
         </Form.Text>
       )}
-      {value.credit !== null && (
-        <Alert variant="warning" className="py-2 mt-2 mb-0">
-          Early deadlines are disabled when using custom credit for a due date.
-        </Alert>
-      )}
       {value.credit !== null && value.credit > 100 && (
         <Alert variant="secondary" className="py-2 mt-2 mb-0">
-          Date control is meant to reward earlier submissions. Consider{' '}
+          Date control is meant to reward earlier submissions. Consider using{' '}
           <Alert.Link href={getAssessmentSettingsUrl({ assessmentId, courseInstanceId })}>
             bonus points
           </Alert.Link>{' '}
