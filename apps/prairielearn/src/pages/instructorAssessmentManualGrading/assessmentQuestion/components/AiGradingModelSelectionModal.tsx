@@ -16,14 +16,14 @@ import { formatMilliDollars } from '../../../../lib/ai-grading-credits.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
 import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
 
-type ModelSelectorStatus =
-  | { kind: 'loading' }
-  | { kind: 'error' }
-  | { kind: 'concurrency_limit'; maxConcurrentJobs: number }
-  | { kind: 'no_keys' }
-  | { kind: 'ready_with_keys' }
-  | { kind: 'no_credits' }
-  | { kind: 'ready_with_credits'; creditBalanceMilliDollars: number };
+type ModelSelectorState =
+  | { status: 'loading' }
+  | { status: 'error' }
+  | { status: 'concurrency_limit'; maxConcurrentJobs: number }
+  | { status: 'no_keys' }
+  | { status: 'ready_with_keys' }
+  | { status: 'no_credits' }
+  | { status: 'ready_with_credits'; creditBalanceMilliDollars: number };
 
 export type AiGradingModelSelectionModalState =
   | { type: 'all'; numToGrade: number }
@@ -201,86 +201,118 @@ function ModelList({
   );
 }
 
-function BillingAlert({
-  status,
+function SettingsLink({ url, children }: { url: string; children: React.ReactNode }) {
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  );
+}
+
+function StatusAlert({
+  state,
   aiGradingSettingsUrl,
   onRetryStatus,
 }: {
-  status: ModelSelectorStatus;
+  state: ModelSelectorState;
   aiGradingSettingsUrl: string;
   onRetryStatus: () => void;
 }) {
-  switch (status.kind) {
-    case 'loading':
-      return (
-        <Alert variant="info" className="mb-3 py-2 small d-flex align-items-center gap-2">
-          <Spinner animation="border" size="sm" />
-          Loading AI grading status...
-        </Alert>
-      );
-    case 'error':
-      return (
-        <Alert variant="danger" className="mb-3 py-2 small">
-          Unable to load AI grading status.{' '}
-          <Button
-            type="button"
-            variant="link"
-            className="p-0 align-baseline"
-            onClick={onRetryStatus}
-          >
-            Try again.
-          </Button>
-        </Alert>
-      );
-    case 'concurrency_limit':
-      return (
-        <Alert variant="warning" className="mb-3 py-2 small">
-          You've reached the limit of {status.maxConcurrentJobs} concurrent AI grading jobs. Please
-          try again later.
-        </Alert>
-      );
-    case 'ready_with_keys':
-      return (
-        <Alert variant="info" className="mb-3 py-2 small">
-          Billing to custom API key &middot;{' '}
-          <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
-            Manage keys
-          </a>
-        </Alert>
-      );
-    case 'no_keys':
-      return (
-        <Alert variant="danger" className="mb-3 py-2 small">
-          No custom API keys configured &middot;{' '}
-          <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
-            Manage keys
-          </a>
-        </Alert>
-      );
-    case 'ready_with_credits':
-      return (
-        <Alert variant="info" className="mb-3 py-2 small">
-          Billing to credit pool &middot; {formatMilliDollars(status.creditBalanceMilliDollars)}{' '}
-          available &middot;{' '}
-          <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
-            Manage credits
-          </a>
-        </Alert>
-      );
-    case 'no_credits':
-      // TODO: Update to "No credits remaining. Purchase credits in the
-      // AI grading settings page." when the Stripe integration PR is merged.
-      return (
-        <Alert variant="danger" className="mb-3 py-2 small">
-          No credits remaining. Request for more credits to continue grading.{' '}
-          <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
-            More info
-          </a>
-        </Alert>
-      );
-    default:
-      assertNever(status);
-  }
+  const { variant, content } = run<{
+    variant: 'info' | 'warning' | 'danger';
+    content: React.ReactNode;
+  }>(() => {
+    switch (state.status) {
+      case 'loading':
+        return {
+          variant: 'info',
+          content: (
+            <span className="d-flex align-items-center gap-2">
+              <Spinner animation="border" size="sm" />
+              Loading AI grading status...
+            </span>
+          ),
+        };
+      case 'error':
+        return {
+          variant: 'danger',
+          content: (
+            <>
+              Unable to load AI grading status.{' '}
+              <Button
+                type="button"
+                variant="link"
+                className="p-0 align-baseline"
+                onClick={onRetryStatus}
+              >
+                Try again.
+              </Button>
+            </>
+          ),
+        };
+      case 'concurrency_limit':
+        return {
+          variant: 'warning',
+          content: (
+            <>
+              You've reached the limit of {state.maxConcurrentJobs} concurrent AI grading jobs.
+              Please try again later.
+            </>
+          ),
+        };
+      case 'ready_with_keys':
+        return {
+          variant: 'info',
+          content: (
+            <>
+              Billing to custom API key &middot;{' '}
+              <SettingsLink url={aiGradingSettingsUrl}>Manage keys</SettingsLink>
+            </>
+          ),
+        };
+      case 'no_keys':
+        return {
+          variant: 'danger',
+          content: (
+            <>
+              No custom API keys configured &middot;{' '}
+              <SettingsLink url={aiGradingSettingsUrl}>Manage keys</SettingsLink>
+            </>
+          ),
+        };
+      case 'ready_with_credits':
+        return {
+          variant: 'info',
+          content: (
+            <>
+              Billing to credit pool &middot; {formatMilliDollars(state.creditBalanceMilliDollars)}{' '}
+              available &middot;{' '}
+              <SettingsLink url={aiGradingSettingsUrl}>Manage credits</SettingsLink>
+            </>
+          ),
+        };
+      case 'no_credits':
+        // TODO: Update to "No credits remaining. Purchase credits in the
+        // AI grading settings page." when the Stripe integration PR is merged.
+        return {
+          variant: 'danger',
+          content: (
+            <>
+              No credits remaining. Request for more credits to continue grading.{' '}
+              <SettingsLink url={aiGradingSettingsUrl}>More info</SettingsLink>
+            </>
+          ),
+        };
+      default:
+        return assertNever(state);
+    }
+  });
+
+  return (
+    <Alert variant={variant} className="mb-3 py-2 small">
+      {content}
+    </Alert>
+  );
 }
 
 export function AiGradingModelSelectionModal({
@@ -312,9 +344,9 @@ export function AiGradingModelSelectionModal({
   const isModalOpen = modalState != null;
   const {
     data: aiGradingStatus,
-    isFetching: isAiGradingStatusFetching,
-    isError: isAiGradingStatusError,
-    refetch: refetchAiGradingStatus,
+    isFetching: isStatusFetching,
+    isError: isStatusError,
+    refetch: refetchStatus,
   } = useQuery({
     ...trpc.manualGrading.aiGradingStatus.queryOptions(),
     enabled: isModalOpen,
@@ -358,25 +390,30 @@ export function AiGradingModelSelectionModal({
     ? availableProviders.includes(selectedModelProvider)
     : false;
 
-  const status = run<ModelSelectorStatus>(() => {
-    if (isAiGradingStatusFetching || aiGradingStatus == null) return { kind: 'loading' };
-    if (isAiGradingStatusError) return { kind: 'error' };
-    if (aiGradingStatus.running_job_count >= aiGradingStatus.max_concurrent_jobs) {
-      return { kind: 'concurrency_limit', maxConcurrentJobs: aiGradingStatus.max_concurrent_jobs };
+  const modelSelectorState = run<ModelSelectorState>(() => {
+    if (isStatusFetching || aiGradingStatus == null) return { status: 'loading' };
+    if (isStatusError) return { status: 'error' };
+
+    const { running_job_count, max_concurrent_jobs, credit_balance_milli_dollars } =
+      aiGradingStatus;
+
+    if (running_job_count >= max_concurrent_jobs) {
+      return { status: 'concurrency_limit', maxConcurrentJobs: max_concurrent_jobs };
     }
     if (useCustomApiKeys) {
-      return availableProviders.length === 0 ? { kind: 'no_keys' } : { kind: 'ready_with_keys' };
+      if (availableProviders.length === 0) return { status: 'no_keys' };
+      return { status: 'ready_with_keys' };
     }
-    return aiGradingStatus.credit_balance_milli_dollars > 0
-      ? {
-          kind: 'ready_with_credits',
-          creditBalanceMilliDollars: aiGradingStatus.credit_balance_milli_dollars,
-        }
-      : { kind: 'no_credits' };
+    if (credit_balance_milli_dollars <= 0) return { status: 'no_credits' };
+    return {
+      status: 'ready_with_credits',
+      creditBalanceMilliDollars: credit_balance_milli_dollars,
+    };
   });
 
   const isGradingEnabled =
-    status.kind === 'ready_with_keys' || status.kind === 'ready_with_credits';
+    modelSelectorState.status === 'ready_with_keys' ||
+    modelSelectorState.status === 'ready_with_credits';
 
   return (
     <Modal show={isModalOpen} size="lg" backdrop="static" keyboard={false} onHide={handleClose}>
@@ -386,11 +423,11 @@ export function AiGradingModelSelectionModal({
         </Modal.Header>
 
         <Modal.Body>
-          <BillingAlert
-            status={status}
+          <StatusAlert
+            state={modelSelectorState}
             aiGradingSettingsUrl={aiGradingSettingsUrl}
             onRetryStatus={() => {
-              void refetchAiGradingStatus();
+              void refetchStatus();
             }}
           />
           <ModelList
