@@ -276,8 +276,8 @@ export function AiGradingModelSelectionModal({
     trpc.manualGrading.aiGradeInstanceQuestions.mutationOptions(),
   );
   const isModalOpen = modalState != null;
-  const { data: concurrencyStatus, isLoading: isConcurrencyLoading } = useQuery({
-    ...trpc.manualGrading.aiGradingConcurrencyStatus.queryOptions(),
+  const { data: aiGradingStatus, isLoading: isAiGradingStatusLoading } = useQuery({
+    ...trpc.manualGrading.aiGradingStatus.queryOptions(),
     enabled: isModalOpen,
     refetchOnMount: 'always',
   });
@@ -318,12 +318,12 @@ export function AiGradingModelSelectionModal({
   const isSelectedModelAvailable = selectedModelProvider
     ? availableProviders.includes(selectedModelProvider)
     : false;
-  const creditBalanceMilliDollars = concurrencyStatus?.credit_balance_milli_dollars ?? 0;
+  const creditBalanceMilliDollars = aiGradingStatus?.credit_balance_milli_dollars ?? 0;
   const hasCredits = creditBalanceMilliDollars > 0;
   const hasKeys = availableProviders.length > 0;
   const isAtConcurrencyLimit =
-    concurrencyStatus != null &&
-    concurrencyStatus.running_job_count >= concurrencyStatus.max_concurrent_jobs;
+    aiGradingStatus != null &&
+    aiGradingStatus.running_job_count >= aiGradingStatus.max_concurrent_jobs;
   const isGradingEnabled = (useCustomApiKeys ? hasKeys : hasCredits) && !isAtConcurrencyLimit;
 
   return (
@@ -340,14 +340,14 @@ export function AiGradingModelSelectionModal({
         </Modal.Header>
 
         <Modal.Body>
-          {isConcurrencyLoading ? (
+          {isAiGradingStatusLoading ? (
             <Alert variant="info" className="mb-3 py-2 small d-flex align-items-center gap-2">
               <Spinner animation="border" size="sm" />
               Checking grading availability...
             </Alert>
           ) : isAtConcurrencyLimit ? (
             <Alert variant="warning" className="mb-3 py-2 small">
-              You've reached the limit of {concurrencyStatus.max_concurrent_jobs} concurrent AI
+              You've reached the limit of {aiGradingStatus.max_concurrent_jobs} concurrent AI
               grading jobs. Please try again later.
             </Alert>
           ) : (
@@ -382,7 +382,7 @@ export function AiGradingModelSelectionModal({
                 variant="primary"
                 disabled={
                   isPending ||
-                  isConcurrencyLoading ||
+                  isAiGradingStatusLoading ||
                   !isSelectedModelAvailable ||
                   !isGradingEnabled
                 }
