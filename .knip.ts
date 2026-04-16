@@ -89,7 +89,7 @@ const config: KnipConfig = {
       entry: ['scripts/*.{mts,mjs}'],
       project: ['scripts/*.{mts,mjs}'],
       // https://knip.dev/guides/configuring-project-files#ignore-issues-in-specific-files
-      ignore: ['vitest.config.ts', 'eslint.config.mjs'],
+      ignore: ['vitest.config.ts'],
     },
     'apps/prairielearn': {
       // https://knip.dev/guides/handling-issues#dynamic-import-specifiers
@@ -106,6 +106,8 @@ const config: KnipConfig = {
         'src/lib/client/safe-db-types.ts',
         // We have team -> group aliases in this file
         'src/lib/db-types.ts',
+        // Ambient module declaration for echarts types
+        'src/typings/echarts.d.ts',
       ],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
@@ -142,7 +144,7 @@ const config: KnipConfig = {
     // ...FALSE_NEGATIVE_CLI_DEPS,
   ],
   // TODO: enable these features
-  exclude: ['binaries', 'dependencies', 'unlisted'],
+  exclude: ['binaries'],
 };
 
 export default config;

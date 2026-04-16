@@ -102,6 +102,8 @@ const createStudentAuthzData = (overrides: Record<string, any> = {}) => ({
 const STUDENT_COURSE_INSTANCE = {
   assessments_group_by: 'Set' as const,
   course_id: '1',
+  credit_non_transferable_milli_dollars: 0,
+  credit_transferable_milli_dollars: 0,
   deleted_at: null,
   display_timezone: 'America/Chicago',
   id: '1',
@@ -246,6 +248,7 @@ const mockAssessmentData = {
 
 const STAFF_ASSESSMENT_QUESTION = {
   advance_score_perc: null,
+  ai_grading_last_selected_model: null,
   ai_grading_mode: false,
   allow_real_time_grading: true,
   alternative_group_id: null,
@@ -295,6 +298,7 @@ const STAFF_ASSESSMENT_QUESTION = {
   number_submissions_hist: [1, 2, 3, 4],
   number_submissions_variance: 2,
   points_list: [0, 50, 100],
+  preferences: null,
   question_id: '1',
   question_score_variance: 20,
   quintile_question_scores: [60, 70, 80, 90, 100],
@@ -335,6 +339,8 @@ const STAFF_QUESTION = {
   json_workspace_comment: null,
   number: 1,
   options: null,
+  preferences: null,
+  preferences_schema: null,
   partial_credit: true,
   qid: 'question1',
   share_publicly: false,

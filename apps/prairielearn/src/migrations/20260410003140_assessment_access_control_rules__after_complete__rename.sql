@@ -1,0 +1,24 @@
+ALTER TABLE assessment_access_control_rules
+RENAME COLUMN after_complete_hide_questions TO after_complete_questions_hidden;
+
+ALTER TABLE assessment_access_control_rules
+RENAME COLUMN after_complete_show_questions_again_date TO after_complete_questions_visible_from_date;
+
+ALTER TABLE assessment_access_control_rules
+RENAME COLUMN after_complete_hide_questions_again_date TO after_complete_questions_visible_until_date;
+
+ALTER TABLE assessment_access_control_rules
+RENAME COLUMN after_complete_hide_score TO after_complete_score_hidden;
+
+ALTER TABLE assessment_access_control_rules
+RENAME COLUMN after_complete_show_score_again_date TO after_complete_score_visible_from_date;
+
+-- Drop per-field _overridden columns; afterLastDeadline, afterComplete.questions,
+-- and afterComplete.score are now overridden as indivisible units.
+-- Presence is signaled by the primary field being non-null
+-- (allow_submissions for afterLastDeadline, hidden for questions/score).
+ALTER TABLE assessment_access_control_rules
+DROP COLUMN after_complete_show_questions_again_date_overridden,
+DROP COLUMN after_complete_hide_questions_again_date_overridden,
+DROP COLUMN after_complete_show_score_again_date_overridden,
+DROP COLUMN date_control_after_last_deadline_credit_overridden;

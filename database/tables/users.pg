@@ -25,6 +25,7 @@ foreign-key constraints
 referenced by
     access_tokens: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     administrators: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    ai_grading_credit_pool_changes: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
     ai_question_generation_messages: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     ai_question_generation_prompts: FOREIGN KEY (prompting_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
     assessment_instance_crossed_lockpoints: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE

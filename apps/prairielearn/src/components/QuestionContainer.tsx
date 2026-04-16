@@ -1,5 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
-import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
+import { type HtmlValue, escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import type {
@@ -62,7 +62,7 @@ export function QuestionContainer({
     course_instance,
     authz_data,
     is_administrator,
-    showTrueAnswer,
+    showCorrectAnswer,
     submissions,
     submissionHtmls,
     answerHtml,
@@ -102,12 +102,12 @@ export function QuestionContainer({
         // it here to avoid confusion.
         questionRenderContext !== 'ai_grading'
           ? html`
-              <div class="card mb-3 grading-block${showTrueAnswer ? '' : ' d-none'}">
+              <div class="card mb-3 grading-block${showCorrectAnswer ? '' : ' d-none'}">
                 <div class="card-header bg-secondary text-white">
                   <h2>Correct answer</h2>
                 </div>
                 <div class="card-body overflow-x-auto answer-body">
-                  ${showTrueAnswer ? unsafeHtml(answerHtml) : ''}
+                  ${showCorrectAnswer ? unsafeHtml(answerHtml) : ''}
                 </div>
               </div>
             `
@@ -440,13 +440,17 @@ export function QuestionTitle({
   questionContext: QuestionContext;
   question: Question;
   questionNumber: string;
-}) {
+}): HtmlValue {
+  const hasTitle = !!question.title?.trim();
+
   if (questionContext === 'student_homework') {
-    return `${questionNumber}. ${question.title}`;
+    return hasTitle ? `${questionNumber}. ${question.title}` : questionNumber;
   } else if (questionContext === 'student_exam') {
-    return `Question ${questionNumber}: ${question.title}`;
+    return hasTitle
+      ? `Question ${questionNumber}: ${question.title}`
+      : `Question ${questionNumber}`;
   } else {
-    return question.title;
+    return hasTitle ? question.title : html`<span class="font-monospace">${question.qid}</span>`;
   }
 }
 

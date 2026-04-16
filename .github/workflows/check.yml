@@ -103,6 +103,8 @@ jobs:
       - name: Run the TypeScript typechecker for scripts
         run: make typecheck-scripts
       - uses: vegardit/fast-apt-mirror.sh@v1
+        with:
+          exclude-current: true # Don't include the current APT mirror since it is unreliable.
       - name: Start Postgres
         run: |
           sudo apt-get purge -y man-db
@@ -155,6 +157,8 @@ jobs:
           show-progress: false
 
       - uses: vegardit/fast-apt-mirror.sh@v1
+        with:
+          exclude-current: true # Don't include the current APT mirror since it is unreliable.
       - name: Install OS packages
         run: |-
           sudo apt-get update
@@ -205,7 +209,7 @@ jobs:
         run: make lint-html
       - name: Upload Python coverage report to Codecov
         if: ${{ env.CODECOV_TOKEN != '' }}
-        uses: codecov/codecov-action@v5.5.2
+        uses: codecov/codecov-action@v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: apps/prairielearn/python
@@ -226,6 +230,9 @@ jobs:
           sudo chmod +x /bin/hadolint
 
       - uses: vegardit/fast-apt-mirror.sh@v1
+        with:
+          exclude-current: true # Don't include the current APT mirror since it is unreliable.
+
       - name: Install OS packages
         run: |-
           sudo apt-get update

@@ -548,9 +548,16 @@ export const ConfigSchema = z.object({
     ),
   features: z.record(z.string(), z.boolean()).default({}),
   /**
-   * Determines if QIDs of shared questions being imported should be validated.
-   * Turn off in dev mode to enable successful syncs when you don't have access
-   * to imported questions. Must be true in production for data integrity.
+   * Determines if sharing validation should be performed. In essence checks
+   * that:
+   * - courses that use sharing configuration have the sharing feature enabled.
+   * - imported questions actually exist in the system.
+   * - shared questions are not renamed, deleted or have their sharing
+   *   configuration changed in a way that would break sharing.
+   *
+   * Turned off in dev mode by default to enable successful syncs where imported
+   * questions or sharing names may not exist in the local database. Must be
+   * true in production for data integrity.
    */
   checkSharingOnSync: z.boolean().default(false),
   /**
@@ -587,10 +594,28 @@ export const ConfigSchema = z.object({
    */
   aiGradingRateLimitDollars: z.number().default(10),
   /**
+   * Infrastructure fee applied to AI grading API costs, expressed as a decimal.
+   * For example, 0.2 means a 20% markup on raw API costs.
+   */
+  aiGradingInfrastructureFeePercent: z.number().min(0).max(1).default(0.2),
+  /**
+   * Maximum dollar amount an admin can add to a credit pool in a single adjustment.
+   */
+  aiGradingCreditPoolMaxAddDollars: z.number().default(10_000),
+  /**
+   * Maximum dollar amount an admin can deduct from a credit pool in a single adjustment.
+   */
+  aiGradingCreditPoolMaxDeductDollars: z.number().default(10_000),
+  /**
    * The hourly spending rate limit for AI question generation, in US dollars.
    * Accounts for both input and output tokens.
    */
   aiQuestionGenerationRateLimitDollars: z.number().default(1),
+  /**
+   * OpenAI credentials for administrator tasks like AI-assisted course request review.
+   */
+  administratorOpenAiApiKey: z.string().nullable().default(null),
+  administratorOpenAiOrganization: z.string().nullable().default(null),
   requireTermsAcceptance: z.boolean().default(false),
   pyroscopeEnabled: z.boolean().default(false),
   pyroscopeServerAddress: z.string().nullable().default(null),

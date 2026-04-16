@@ -1,5 +1,3 @@
-import { renderHtml } from '@prairielearn/react';
-
 export function GitHubButton({ gitHubLink }: { gitHubLink: string | null }) {
   if (!gitHubLink) return null;
   return (
@@ -14,12 +12,4 @@ export function GitHubButton({ gitHubLink }: { gitHubLink: string | null }) {
       <span className="d-none d-sm-inline">View on GitHub</span>
     </a>
   );
-}
-
-export function GitHubButtonHtml(gitHubLink: string | null) {
-  if (gitHubLink == null) {
-    return '';
-  }
-
-  return renderHtml(<GitHubButton gitHubLink={gitHubLink} />);
 }

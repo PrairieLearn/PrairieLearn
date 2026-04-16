@@ -8,6 +8,7 @@ import { useModalState } from '@prairielearn/ui';
 
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
+import { CreditPoolDashboard } from '../../components/ai-grading-credits/CreditPoolDashboard.js';
 import {
   AI_GRADING_PROVIDER_DISPLAY_NAMES,
   AI_GRADING_PROVIDER_OPTIONS,
@@ -207,17 +208,17 @@ export function InstructorInstanceAdminAiGrading({
   initialApiKeyCredentials,
   canEdit,
   isDevMode,
-  aiGradingModelSelectionEnabled,
 }: {
   trpcCsrfToken: string;
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
   canEdit: boolean;
   isDevMode: boolean;
-  aiGradingModelSelectionEnabled: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => createAiGradingSettingsTrpcClient(trpcCsrfToken));
+  const [trpcClient] = useState(() =>
+    createAiGradingSettingsTrpcClient({ csrfToken: trpcCsrfToken }),
+  );
 
   return (
     <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
@@ -226,7 +227,6 @@ export function InstructorInstanceAdminAiGrading({
           initialUseCustomApiKeys={initialUseCustomApiKeys}
           initialApiKeyCredentials={initialApiKeyCredentials}
           canEdit={canEdit}
-          aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -239,21 +239,15 @@ function AiGradingSettingsContent({
   initialUseCustomApiKeys,
   initialApiKeyCredentials,
   canEdit,
-  aiGradingModelSelectionEnabled,
 }: {
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
   canEdit: boolean;
-  aiGradingModelSelectionEnabled: boolean;
 }) {
   const trpc = useTRPC();
 
   const [useCustomApiKeys, setUseCustomApiKeys] = useState(initialUseCustomApiKeys);
   const [credentials, setCredentials] = useState(initialApiKeyCredentials);
-
-  const providerOptions = aiGradingModelSelectionEnabled
-    ? AI_GRADING_PROVIDER_OPTIONS
-    : AI_GRADING_PROVIDER_OPTIONS.filter((p) => p.value === 'openai');
 
   const addModalState = useModalState();
   const deleteModalState = useModalState<AiGradingApiKeyCredential>();
@@ -365,11 +359,13 @@ function AiGradingSettingsContent({
             )}
           </div>
         )}
+
+        <CreditPoolSection useCustomApiKeys={useCustomApiKeys} />
       </div>
 
       <AddApiKeyModal
         {...addModalState}
-        providerOptions={providerOptions}
+        providerOptions={AI_GRADING_PROVIDER_OPTIONS}
         credentials={credentials}
         onSuccess={(credential) => {
           // The server upserts by provider, so replace any existing credential
@@ -392,6 +388,38 @@ function AiGradingSettingsContent({
           }
           deleteModalState.hide();
         }}
+      />
+    </div>
+  );
+}
+
+function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) {
+  const trpc = useTRPC();
+
+  return (
+    <div className="border-top pt-3 mt-3">
+      <CreditPoolDashboard
+        trpc={trpc}
+        balanceContext="instructor"
+        dimmed={useCustomApiKeys}
+        header={
+          <>
+            <div
+              className={clsx(
+                'd-flex align-items-center gap-2',
+                useCustomApiKeys ? 'mb-1' : 'mb-3',
+              )}
+            >
+              <h2 className="h5 mb-0">AI grading credits</h2>
+              {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
+            </div>
+            {useCustomApiKeys && (
+              <p className="text-muted small mb-3">
+                While custom API keys are active, PrairieLearn AI grading credits are not deducted.
+              </p>
+            )}
+          </>
+        }
       />
     </div>
   );
