@@ -1,0 +1,19 @@
+{
+  "uuid": "c113ec72-acb7-41fb-8e76-62f2e79cd7f0",
+  "type": "Homework",
+  "set": "Homework",
+  "number": "17",
+  "title": "Question Preferences",
+  "allowAccess": [{ "credit": 100 }],
+  "zones": [
+    {
+      "questions": [
+        {
+          "id": "questionPreferences",
+          "autoPoints": 1,
+          "preferences": { "fired_object": "bowling ball", "gravitational_constant": 13 }
+        }
+      ]
+    }
+  ]
+}

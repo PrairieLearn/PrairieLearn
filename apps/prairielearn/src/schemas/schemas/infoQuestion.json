@@ -347,6 +347,32 @@
       "description": "Whether this question's source code is publicly shared.",
       "type": "boolean",
       "default": false
+    },
+    "preferences": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "default"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["string", "number", "boolean"]
+          },
+          "default": {
+            "type": ["string", "number", "boolean"]
+          },
+          "enum": {
+            "type": "array",
+            "items": {
+              "type": ["string", "number"]
+            }
+          }
+        }
+      },
+      "propertyNames": {
+        "minLength": 1
+      }
     }
   },
   "definitions": {

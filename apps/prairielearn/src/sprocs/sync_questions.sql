@@ -16,6 +16,7 @@ BEGIN
 
     -- Move all our data into a temporary table so it's easier to work with
 
+    DROP TABLE IF EXISTS disk_questions;
     CREATE TEMPORARY TABLE disk_questions (
         qid TEXT NOT NULL,
         uuid uuid,
@@ -167,6 +168,7 @@ BEGIN
         workspace_enable_networking = (src.data->>'workspace_enable_networking')::boolean,
         workspace_environment = (src.data->>'workspace_environment')::jsonb,
         json_workspace_comment = (src.data->'workspace_comment'),
+        preferences_schema = (src.data->'preferences_schema'),
         sync_errors = NULL,
         sync_warnings = src.warnings
     FROM

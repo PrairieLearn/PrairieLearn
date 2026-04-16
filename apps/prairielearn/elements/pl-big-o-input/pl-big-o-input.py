@@ -268,15 +268,15 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
-    s = psu.validate_string_as_sympy(
+    result = psu.try_parse_string_as_sympy(
         a_sub, variables, allow_complex=False, allow_trig_functions=False
     )
 
-    if s is None:
-        data["submitted_answers"][name] = a_sub
-    else:
-        data["format_errors"][name] = s
+    if isinstance(result, psu.SympyParseFailure):
+        data["format_errors"][name] = result.error
         data["submitted_answers"][name] = None
+    else:
+        data["submitted_answers"][name] = a_sub
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:

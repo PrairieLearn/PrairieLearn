@@ -47,7 +47,7 @@ export interface QuestionUrls {
 export interface ResLocalsQuestionRenderAdded extends QuestionUrls {
   question_is_shared: boolean;
   variant: Variant;
-  showTrueAnswer: boolean;
+  showCorrectAnswer: boolean;
   submission: SubmissionForRender | null;
   submissions: SubmissionForRender[];
   effectiveQuestionType: EffectiveQuestionType;
@@ -71,7 +71,7 @@ export interface ResLocalsBuildLocals {
   disableSaveButton: boolean;
   showNewVariantButton: boolean;
   showTryAgainButton: boolean;
-  showTrueAnswer: boolean;
+  showCorrectAnswer: boolean;
   showGradingRequested: boolean;
   allowAnswerEditing: boolean;
   hasAttemptsOtherVariants: boolean;

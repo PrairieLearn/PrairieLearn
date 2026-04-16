@@ -1244,6 +1244,14 @@
       },
       "default": {}
     },
+    "stripeAiGradingCreditsProductId": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "stripeAiGradingCreditsRefundsEnabled": {
+      "type": "boolean",
+      "default": false
+    },
     "aiGradingOpenAiApiKey": {
       "type": ["string", "null"],
       "default": null
@@ -1272,9 +1280,31 @@
       "type": "number",
       "default": 10
     },
+    "aiGradingInfrastructureFeePercent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.2
+    },
+    "aiGradingCreditPoolMaxAddDollars": {
+      "type": "number",
+      "default": 10000
+    },
+    "aiGradingCreditPoolMaxDeductDollars": {
+      "type": "number",
+      "default": 10000
+    },
     "aiQuestionGenerationRateLimitDollars": {
       "type": "number",
       "default": 1
+    },
+    "administratorOpenAiApiKey": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "administratorOpenAiOrganization": {
+      "type": ["string", "null"],
+      "default": null
     },
     "requireTermsAcceptance": {
       "type": "boolean",

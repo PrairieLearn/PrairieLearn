@@ -54,6 +54,10 @@ const BOOTSTRAP_BREAKPOINTS = ['sm', 'md', 'lg', 'xl', 'xxl'];
 makeMigrator({
   selector: BOOTSTRAP_LEGACY_ATTRIBUTES.map((attr) => `[${attr}]`).join(','),
   migrate(el, { migrateAttribute }) {
+    // `react-aria-components` marks its elements with `data-rac` and uses
+    // its own `data-*` attributes that are unrelated to Bootstrap.
+    if (el.hasAttribute('data-rac')) return;
+
     BOOTSTRAP_LEGACY_ATTRIBUTES.forEach((attr) => {
       // `tom-select` uses a `data-content` attribute on `option` elements.
       // This is unrelated to Bootstrap, so we don't want to do anything with this.

@@ -298,13 +298,109 @@ describe('date formatting', () => {
     it('should handle midnight', () => {
       const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 2));
       const date = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
-      assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'today, 12am (UTC)');
+      assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'start of today (UTC)');
     });
 
     it('should handle noon', () => {
       const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 2));
       const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
       assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'today, 12pm (UTC)');
+    });
+
+    describe('day boundary labels', () => {
+      it('should show "start of today" for midnight (00:00:00)', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
+        assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'start of today (UTC)');
+      });
+
+      it('should show "start of today" for 00:00:01', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 0, 1, 0, 0, 1));
+        assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'start of today (UTC)');
+      });
+
+      it('should show "end of today" for 23:59:59', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 0, 1, 23, 59, 59));
+        assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'end of today (UTC)');
+      });
+
+      it('should show "start of tomorrow"', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 0, 2, 0, 0, 1));
+        assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'start of tomorrow (UTC)');
+      });
+
+      it('should show "end of tomorrow"', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 0, 2, 23, 59, 59));
+        assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'end of tomorrow (UTC)');
+      });
+
+      it('should show "start of day" for an absolute date', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 3, 15, 0, 0, 0));
+        assert.equal(
+          formatDateFriendly(date, 'UTC', { baseDate }),
+          'Sun, Apr\u00a015, start of day (UTC)',
+        );
+      });
+
+      it('should show "end of day" for an absolute date', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 3, 15, 23, 59, 59));
+        assert.equal(
+          formatDateFriendly(date, 'UTC', { baseDate }),
+          'Sun, Apr\u00a015, end of day (UTC)',
+        );
+      });
+
+      it('should show "start of day" for a far date with year', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 9, 15, 0, 0, 0));
+        assert.equal(
+          formatDateFriendly(date, 'UTC', { baseDate }),
+          'Mon, Oct\u00a015, 2018, start of day (UTC)',
+        );
+      });
+
+      it('should show boundary labels without timezone', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 0, 1, 0, 0, 1));
+        assert.equal(
+          formatDateFriendly(date, 'UTC', { baseDate, includeTz: false }),
+          'start of today',
+        );
+      });
+
+      it('should show normal date-only output for day boundaries with dateOnly', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
+        assert.equal(formatDateFriendly(date, 'UTC', { baseDate, dateOnly: true }), 'today (UTC)');
+      });
+
+      it('should show "start of day" / "end of day" with timeOnly', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const startDate = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
+        assert.equal(
+          formatDateFriendly(startDate, 'UTC', { baseDate, timeOnly: true }),
+          'start of day (UTC)',
+        );
+        const endDate = new Date(Date.UTC(2018, 0, 1, 23, 59, 59));
+        assert.equal(
+          formatDateFriendly(endDate, 'UTC', { baseDate, timeOnly: true }),
+          'end of day (UTC)',
+        );
+      });
+
+      it('should not apply boundary labels for non-boundary times', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+        const date1 = new Date(Date.UTC(2018, 0, 1, 0, 0, 2));
+        assert.equal(formatDateFriendly(date1, 'UTC', { baseDate }), 'today, 12:00:02am (UTC)');
+        const date2 = new Date(Date.UTC(2018, 0, 1, 23, 59, 58));
+        assert.equal(formatDateFriendly(date2, 'UTC', { baseDate }), 'today, 11:59:58pm (UTC)');
+      });
     });
 
     describe('maxPrecision option', () => {
