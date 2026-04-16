@@ -103,7 +103,7 @@ router.get(
       errors: string[];
       notes: string[];
       hasUidRules: boolean;
-      isWipe: boolean;
+      isIncompatible: boolean;
       fallbackReleaseDate: string;
     } | null = null;
 
@@ -127,7 +127,7 @@ router.get(
             errors: migrationResult.errors,
             notes: migrationResult.notes,
             hasUidRules: migrationAnalysis.hasUidRules,
-            isWipe: false,
+            isIncompatible: false,
             fallbackReleaseDate,
           };
         }
@@ -141,7 +141,7 @@ router.get(
           errors: migrationAnalysis.errors,
           notes: migrationAnalysis.notes,
           hasUidRules: migrationAnalysis.hasUidRules,
-          isWipe: true,
+          isIncompatible: true,
           fallbackReleaseDate,
         };
       }
@@ -192,7 +192,7 @@ router.post(
       let formattedJson: string;
       if (migrationResult) {
         formattedJson = await formatJsonWithPrettier(migrationResult.json);
-      } else if (req.body.migrate_strategy === 'wipe') {
+      } else if (req.body.migrate_strategy === 'clear') {
         const data = JSON.parse(content);
         delete data.allowAccess;
         data.accessControl = [];

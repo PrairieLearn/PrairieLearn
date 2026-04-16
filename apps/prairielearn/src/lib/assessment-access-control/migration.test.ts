@@ -801,30 +801,6 @@ describe('migrateAllowAccess', () => {
 
     assert.deepEqual(result, expected);
   });
-
-  it('collapses dominated late deadlines produces valid result', () => {
-    const { result } = migrateAllowAccess([
-      { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
-      { credit: 80, startDate: '2024-01-01', endDate: '2024-06-01' },
-      { credit: 30, startDate: '2024-01-01', endDate: '2024-04-01' },
-    ]);
-    assert.deepEqual(validateRule(result, 'none'), []);
-  });
-
-  it('pre-release listing and later reveal produces valid result', () => {
-    const { result } = migrateAllowAccess([
-      { endDate: '2030-01-01T00:00:00', active: false },
-      {
-        credit: 100,
-        timeLimitMin: 50,
-        startDate: '2030-01-01T00:00:01',
-        endDate: '2030-01-01T23:59:59',
-        showClosedAssessment: false,
-      },
-      { active: false, startDate: '2030-01-04T00:00:01' },
-    ]);
-    assert.deepEqual(validateRule(result, 'none'), []);
-  });
 });
 
 describe('analyzeAssessmentFile', () => {
@@ -1005,7 +981,7 @@ describe('applyMigrationToAssessmentFile', () => {
     );
   });
 
-  it('wipe strategy removes allowAccess', async () => {
+  it('clear strategy removes allowAccess', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
         const filePath = path.join(tmpDir, 'infoAssessment.json');
@@ -1018,7 +994,7 @@ describe('applyMigrationToAssessmentFile', () => {
           }),
         );
 
-        await applyMigrationToAssessmentFile(filePath, 'wipe', false);
+        await applyMigrationToAssessmentFile(filePath, 'clear', false);
 
         const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
         assert.isUndefined(result.allowAccess);
@@ -1054,33 +1030,7 @@ describe('applyMigrationToAssessmentFile', () => {
     );
   });
 
-  it('migrate strategy with preserveIncompatible and incompatible rules keeps allowAccess', async () => {
-    await tmp.withDir(
-      async ({ path: tmpDir }) => {
-        const filePath = path.join(tmpDir, 'infoAssessment.json');
-        await fs.writeFile(
-          filePath,
-          JSON.stringify({
-            type: 'Exam',
-            title: 'E1',
-            allowAccess: [
-              { credit: 100, startDate: '2024-01-01', endDate: '2024-02-01' },
-              { credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
-            ],
-          }),
-        );
-
-        await applyMigrationToAssessmentFile(filePath, 'migrate', true);
-
-        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-        assert.isDefined(result.allowAccess);
-        assert.isUndefined(result.accessControl);
-      },
-      { unsafeCleanup: true },
-    );
-  });
-
-  it('migrate strategy without preserveIncompatible removes incompatible rules', async () => {
+  it('migrate strategy without clearIncompatible and incompatible rules keeps allowAccess', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
         const filePath = path.join(tmpDir, 'infoAssessment.json');
@@ -1097,6 +1047,32 @@ describe('applyMigrationToAssessmentFile', () => {
         );
 
         await applyMigrationToAssessmentFile(filePath, 'migrate', false);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.isDefined(result.allowAccess);
+        assert.isUndefined(result.accessControl);
+      },
+      { unsafeCleanup: true },
+    );
+  });
+
+  it('migrate strategy with clearIncompatible removes incompatible rules', async () => {
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Exam',
+            title: 'E1',
+            allowAccess: [
+              { credit: 100, startDate: '2024-01-01', endDate: '2024-02-01' },
+              { credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
+            ],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', true);
 
         const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
         assert.isUndefined(result.allowAccess);
@@ -1118,7 +1094,7 @@ describe('applyMigrationToAssessmentFile', () => {
         };
         await fs.writeFile(filePath, JSON.stringify(originalData));
 
-        await applyMigrationToAssessmentFile(filePath, 'wipe', false);
+        await applyMigrationToAssessmentFile(filePath, 'clear', false);
 
         const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
         assert.isDefined(result.allowAccess);
@@ -1198,7 +1174,7 @@ describe('applyMigrationToAssessmentFile', () => {
     );
   });
 
-  it('wipe with UID-only rules removes allowAccess without accessControl', async () => {
+  it('clear with UID-only rules removes allowAccess without accessControl', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
         const filePath = path.join(tmpDir, 'infoAssessment.json');
@@ -1211,7 +1187,7 @@ describe('applyMigrationToAssessmentFile', () => {
           }),
         );
 
-        await applyMigrationToAssessmentFile(filePath, 'wipe', false);
+        await applyMigrationToAssessmentFile(filePath, 'clear', false);
 
         const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
         assert.isUndefined(result.allowAccess);

@@ -41,7 +41,7 @@ interface MigrationPreview {
   errors: string[];
   notes: string[];
   hasUidRules: boolean;
-  isWipe: boolean;
+  isIncompatible: boolean;
   fallbackReleaseDate: string;
 }
 
@@ -86,7 +86,9 @@ export function InstructorAssessmentAccess({
                   data-bs-toggle="modal"
                   data-bs-target="#migrationConfirmModal"
                 >
-                  ${migrationPreview.isWipe ? 'Migrate and wipe' : 'Migrate to modern format'}
+                  ${migrationPreview.isIncompatible
+                    ? 'Migrate and clear'
+                    : 'Migrate to modern format'}
                 </button>
               `
             : ''}
@@ -225,13 +227,14 @@ function MigrationConfirmModal({
     size: 'modal-xl',
     content: html`
       <div class="modal-body">
-        ${migrationPreview.isWipe
+        ${migrationPreview.isIncompatible
           ? html`
               <div class="alert alert-danger">
                 <i class="bi bi-exclamation-triangle-fill"></i>
                 This assessment's access rules cannot be automatically migrated. Proceeding will
                 <strong>remove all existing access rules</strong> and switch to the modern format
-                with no rules configured. You will need to recreate your access rules from scratch.
+                with no access control configured. You will need to set up access control from
+                scratch.
               </div>
             `
           : ''}
@@ -335,15 +338,18 @@ function MigrationConfirmModal({
         name="fallback_release_date"
         value="${migrationPreview.fallbackReleaseDate}"
       />
-      ${migrationPreview.isWipe
-        ? html`<input type="hidden" name="migrate_strategy" value="wipe" />`
+      ${migrationPreview.isIncompatible
+        ? html`<input type="hidden" name="migrate_strategy" value="clear" />`
         : ''}
       <small class="text-muted me-auto">
         This can be reverted through the file editor or git history.
       </small>
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn ${migrationPreview.isWipe ? 'btn-danger' : 'btn-primary'}">
-        ${migrationPreview.isWipe ? 'Migrate and wipe' : 'Confirm migration'}
+      <button
+        type="submit"
+        class="btn ${migrationPreview.isIncompatible ? 'btn-danger' : 'btn-primary'}"
+      >
+        ${migrationPreview.isIncompatible ? 'Migrate and clear' : 'Confirm migration'}
       </button>
     `,
   });

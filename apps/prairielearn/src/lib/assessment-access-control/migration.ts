@@ -668,8 +668,8 @@ export async function analyzeCourseInstanceAssessments(
 
 export async function applyMigrationToAssessmentFile(
   filePath: string,
-  strategy: 'migrate' | 'keep' | 'wipe',
-  preserveIncompatible: boolean,
+  strategy: 'migrate' | 'keep' | 'clear',
+  clearIncompatible: boolean,
   fallbackReleaseDate?: string,
 ): Promise<void> {
   const content = await fs.readFile(filePath, 'utf-8');
@@ -684,7 +684,7 @@ export async function applyMigrationToAssessmentFile(
     return;
   }
 
-  if (strategy === 'wipe') {
+  if (strategy === 'clear') {
     delete data.allowAccess;
     const formatted = await formatJsonWithPrettier(JSON.stringify(data));
     await fs.writeFile(filePath, formatted);
@@ -701,7 +701,7 @@ export async function applyMigrationToAssessmentFile(
   if (errors.length === 0) {
     data.accessControl = [result];
     delete data.allowAccess;
-  } else if (!preserveIncompatible) {
+  } else if (clearIncompatible) {
     delete data.allowAccess;
   } else {
     return;

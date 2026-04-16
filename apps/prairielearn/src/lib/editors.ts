@@ -785,8 +785,8 @@ export class CourseInstanceCopyEditor extends Editor {
   private is_transfer: boolean;
   private metadataOverrides?: Record<string, any>;
   private accessControlMigration?: {
-    strategy: 'migrate' | 'keep' | 'wipe';
-    preserveIncompatible: boolean;
+    strategy: 'migrate' | 'keep' | 'clear';
+    clearIncompatible: boolean;
   };
 
   public readonly uuid: string;
@@ -798,8 +798,8 @@ export class CourseInstanceCopyEditor extends Editor {
       course_instance: CourseInstance;
       metadataOverrides?: Record<string, any>;
       accessControlMigration?: {
-        strategy: 'migrate' | 'keep' | 'wipe';
-        preserveIncompatible: boolean;
+        strategy: 'migrate' | 'keep' | 'clear';
+        clearIncompatible: boolean;
       };
     },
   ) {
@@ -978,13 +978,11 @@ export class CourseInstanceCopyEditor extends Editor {
         await applyMigrationToAssessmentFile(
           infoPath,
           this.accessControlMigration.strategy,
-          this.accessControlMigration.preserveIncompatible,
+          this.accessControlMigration.clearIncompatible,
           this.metadataOverrides?.publishing?.startDate ??
             todayAsDatetimeLocal(this.course_instance.display_timezone),
         );
       }
-
-      await stripPrairieTestExamUuids(infoPath);
     }
 
     pathsToAdd.push(courseInstancePath);
@@ -1045,44 +1043,6 @@ async function updateInfoAssessmentFilesForTargetCourse(
       }
     }
     await fs.writeJson(infoPath, infoJson, { spaces: 4 });
-  }
-}
-
-/**
- * Strips PrairieTest exam UUIDs from an assessment file. Exam UUIDs are
- * specific to a course instance's PT reservations and should not be carried
- * over when copying a course instance.
- */
-async function stripPrairieTestExamUuids(filePath: string): Promise<void> {
-  const data = await fs.readJson(filePath);
-  let changed = false;
-
-  // Legacy format: remove examUuid from allowAccess rules
-  if (Array.isArray(data.allowAccess)) {
-    for (const rule of data.allowAccess) {
-      if ('examUuid' in rule) {
-        delete rule.examUuid;
-        changed = true;
-      }
-    }
-  }
-
-  // Modern format: remove integrations.prairieTest from accessControl entries
-  if (Array.isArray(data.accessControl)) {
-    for (const entry of data.accessControl) {
-      if (entry.integrations?.prairieTest) {
-        delete entry.integrations.prairieTest;
-        if (Object.keys(entry.integrations).length === 0) {
-          delete entry.integrations;
-        }
-        changed = true;
-      }
-    }
-  }
-
-  if (changed) {
-    const formatted = await formatJsonWithPrettier(JSON.stringify(data));
-    await fs.writeFile(filePath, formatted);
   }
 }
 

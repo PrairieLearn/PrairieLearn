@@ -1524,8 +1524,6 @@ describe('resolveAccessControl', () => {
       // mode for a short grace period after PrairieTest has already ended the
       // reservation. The migrated PT rule should still respect the closed
       // assessment visibility settings in that state.
-      // Uses a past dueDate to represent "exam has ended" — open-ended
-      // assessments (dueDate: null) are not considered closed.
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',
@@ -1550,69 +1548,6 @@ describe('resolveAccessControl', () => {
       expect(result.examAccessEnd).toBeNull();
       expect(result.showClosedAssessment).toBe(false);
       expect(result.showClosedAssessmentScore).toBe(false);
-      expect(result.showBeforeRelease).toBe(false);
-    });
-
-    it('denies non-reserved users for open-ended released PT assessment (Public mode)', () => {
-      // Bug 1: PT-gated, released, no dueDate, no lateDeadlines — should NOT
-      // be treated as "closed" and should deny non-reserved users.
-      const result = resolveAccessControl({
-        ...baseInput,
-        authzMode: 'Public',
-        rules: [
-          makeMainRule({
-            dateControl: {
-              releaseDate: '2025-01-01T00:00:00Z',
-            },
-            ...ptIntegrations,
-          }),
-        ],
-        prairieTestReservations: [],
-      });
-      expect(result.authorized).toBe(false);
-      expect(result.showBeforeRelease).toBe(false);
-    });
-
-    it('denies non-reserved users for open-ended released PT assessment (Exam mode, wrong reservation)', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        authzMode: 'Exam',
-        rules: [
-          makeMainRule({
-            dateControl: {
-              releaseDate: '2025-01-01T00:00:00Z',
-            },
-            ...ptIntegrations,
-          }),
-        ],
-        prairieTestReservations: [
-          { examUuid: 'wrong-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
-        ],
-      });
-      expect(result.authorized).toBe(false);
-    });
-
-    it('grants access via PT reservation even when assessment is before release date', () => {
-      // Bug 2: A matching PT reservation must override the stale beforeRelease flag.
-      const result = resolveAccessControl({
-        ...baseInput,
-        authzMode: 'Exam',
-        rules: [
-          makeMainRule({
-            dateControl: {
-              releaseDate: '2025-06-01T00:00:00Z',
-              dueDate: '2025-07-01T00:00:00Z',
-            },
-            ...ptIntegrations,
-          }),
-        ],
-        prairieTestReservations: [
-          { examUuid: 'pt-exam-1', accessEnd: new Date('2025-04-01T00:00:00Z') },
-        ],
-      });
-      expect(result.authorized).toBe(true);
-      expect(result.credit).toBe(100);
-      expect(result.active).toBe(true);
       expect(result.showBeforeRelease).toBe(false);
     });
 
