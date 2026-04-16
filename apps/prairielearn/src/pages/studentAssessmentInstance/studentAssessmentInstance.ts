@@ -21,6 +21,7 @@ import {
   leaveGroup,
   updateGroupRoles,
 } from '../../lib/groups.js';
+import { canUserAssignGroupRoles } from '../../lib/groups.shared.js';
 import { idsEqual } from '../../lib/id.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';

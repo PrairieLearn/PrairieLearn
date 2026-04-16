@@ -5,7 +5,7 @@ import { renderHtml } from '@prairielearn/react';
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { type Assessment, type GroupConfig, type User } from '../../lib/db-types.js';
-import { type GroupInfo } from '../../lib/groups.shared.js';
+import type { GroupInfo } from '../../lib/groups.shared.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function StudentAssessment({
