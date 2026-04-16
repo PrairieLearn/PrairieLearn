@@ -426,14 +426,21 @@ function overrideToJson(rule: OverrideData, mainRule: MainRuleData): AccessContr
     }
     // Compute effective `due` for visibility — overrides inherit main's when
     // not set. Mirrors OverrideDeadlineArrayField's shouldShow, so hidden
-    // data (e.g. early deadlines under an inherited custom credit) is not
-    // silently emitted to JSON.
+    // non-empty data (e.g. early deadlines under an inherited custom credit)
+    // is not silently emitted. Empty-list overrides are preserved because
+    // they express an intentional "cancel inherited deadlines" action.
     const effectiveDue = of.has('due') ? rule.due : mainRule.due;
-    if (of.has('earlyDeadlines') && effectiveDue.credit === null) {
-      output.dateControl.earlyDeadlines = rule.earlyDeadlines;
+    if (of.has('earlyDeadlines')) {
+      const visible = effectiveDue.credit === null;
+      if (visible || rule.earlyDeadlines.length === 0) {
+        output.dateControl.earlyDeadlines = rule.earlyDeadlines;
+      }
     }
-    if (of.has('lateDeadlines') && !!effectiveDue.date) {
-      output.dateControl.lateDeadlines = rule.lateDeadlines;
+    if (of.has('lateDeadlines')) {
+      const visible = !!effectiveDue.date;
+      if (visible || rule.lateDeadlines.length === 0) {
+        output.dateControl.lateDeadlines = rule.lateDeadlines;
+      }
     }
     if (of.has('afterLastDeadline')) {
       output.dateControl.afterLastDeadline = rule.afterLastDeadline;

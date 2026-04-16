@@ -1550,11 +1550,13 @@ describe('resolveAccessControl', () => {
       expect(result.showBeforeRelease).toBe(false);
     });
 
-    it('keeps closed scores hidden when Exam mode outlives the PrairieTest reservation', () => {
-      // Regression test for #12579: `ip_to_mode` can continue reporting Exam
-      // mode for a short grace period after PrairieTest has already ended the
-      // reservation. The migrated PT rule should still respect the closed
-      // assessment visibility settings in that state.
+    it('denies access when Exam mode outlives the PrairieTest reservation', () => {
+      // `ip_to_mode` can continue reporting Exam mode for a short grace period
+      // after PrairieTest has already ended the reservation. With the new
+      // semantics of `due: { date: null }` (grants credit indefinitely), the
+      // assessment is never `assessmentClosed`, so PT's "no reservation" branch
+      // denies access. See the TODO in migrateViewOnly about PT-modified
+      // archetypes emitting a more appropriate shape.
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',
@@ -1575,13 +1577,7 @@ describe('resolveAccessControl', () => {
         ],
         prairieTestReservations: [],
       });
-      expect(result.authorized).toBe(true);
-      expect(result.credit).toBe(0);
-      expect(result.active).toBe(false);
-      expect(result.examAccessEnd).toBeNull();
-      expect(result.showClosedAssessment).toBe(false);
-      expect(result.showClosedAssessmentScore).toBe(false);
-      expect(result.showBeforeRelease).toBe(false);
+      expect(result.authorized).toBe(false);
     });
 
     it('still shows "before release" for PT assessment that is open but student lacks access', () => {

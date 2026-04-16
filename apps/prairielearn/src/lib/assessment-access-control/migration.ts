@@ -547,6 +547,14 @@ function migrateViewOnly(rules: AssessmentAccessRuleJson[]): {
   const allDates = rules.map((r) => r.startDate).filter(Boolean) as string[];
   const releaseDate = allDates.sort()[0];
 
+  // TODO: when the `prairietest` modifier is set, this shape grants 100% credit
+  // indefinitely at the date-control layer, which conflicts with PT gating:
+  // `active=true` makes `assessmentClosed=false`, so PT's "no reservation"
+  // branch denies access instead of continuing through to the closed-assessment
+  // view (regression from the grace-period behavior in issue #12579). For
+  // PT-modified archetypes we should either omit `due` entirely or emit a shape
+  // that keeps the date control inactive.
+  // Follow-up: https://github.com/PrairieLearn/PrairieLearn/pull/14725
   const result: AccessControlJsonInput = {
     dateControl: {
       due: { date: null },
