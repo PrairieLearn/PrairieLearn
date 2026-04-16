@@ -73,10 +73,13 @@ interface InstructorAssessmentGroupsProps {
 }
 
 export function InstructorAssessmentGroups({
+  groupsCsvFilename,
+  groupConfigInfo,
+  groups,
+  notAssigned,
+  resLocals,
   trpcCsrfToken,
   isDevMode,
-  resLocals,
-  ...rest
 }: InstructorAssessmentGroupsProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -90,7 +93,13 @@ export function InstructorAssessmentGroups({
   return (
     <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <InstructorAssessmentGroupsInner resLocals={resLocals} {...rest} />
+        <InstructorAssessmentGroupsInner
+          groupsCsvFilename={groupsCsvFilename}
+          groupConfigInfo={groupConfigInfo}
+          groups={groups}
+          notAssigned={notAssigned}
+          resLocals={resLocals}
+        />
       </TRPCProvider>
     </QueryClientProviderDebug>
   );
