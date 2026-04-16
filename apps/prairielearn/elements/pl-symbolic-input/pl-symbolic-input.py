@@ -118,7 +118,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    allow_set_notation = pl.get_boolean_attrib(
+    allow_sets = pl.get_boolean_attrib(
         element, "allow-set-notation", ALLOW_SET_NOTATION_DEFAULT
     )
     simplify_expression = pl.get_boolean_attrib(
@@ -151,7 +151,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     a_true,
                     variables,
                     allow_complex=allow_complex,
-                    allow_set_notation=allow_set_notation,
+                    allow_set_notation=allow_sets,
                     allow_trig_functions=allow_trig,
                     custom_functions=custom_functions,
                     simplify_expression=simplify_expression,
@@ -185,7 +185,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 initial_value,
                 variables,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_set_notation,
+                allow_set_notation=allow_sets,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
                 simplify_expression=simplify_expression,
@@ -238,7 +238,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    allow_set_notation = pl.get_boolean_attrib(
+    allow_sets = pl.get_boolean_attrib(
         element, "allow-set-notation", ALLOW_SET_NOTATION_DEFAULT
     )
     simplify_expression = pl.get_boolean_attrib(
@@ -254,10 +254,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     constants_class = psu._Constants()
 
     operators: list[str] = list(psu.STANDARD_OPERATORS)
+    if allow_sets:
+        operators.extend(psu.SET_NOTATION_OPERATORS)
     operators.extend(custom_functions)
     operators.extend(constants_class.functions.keys())
     if allow_trig:
         operators.extend(constants_class.trig_functions.keys())
+    if allow_sets:
+        operators.extend(constants_class.set_functions.keys())
 
     constants = list(constants_class.variables.keys())
 
@@ -267,7 +271,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "operators": operators,
         "constants": constants,
         "allow_complex": allow_complex,
-        "allow_sets": allow_set_notation,
+        "allow_sets": allow_sets,
     }
 
     with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
@@ -291,7 +295,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     a_sub,
                     variables,
                     allow_complex=allow_complex,
-                    allow_set_notation=allow_set_notation,
+                    allow_set_notation=allow_sets,
                     custom_functions=custom_functions,
                     allow_trig_functions=allow_trig,
                     simplify_expression=simplify_expression,
@@ -303,7 +307,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 psu.json_to_sympy(
                     a_sub,
                     allow_complex=allow_complex,
-                    allow_set_notation=allow_set_notation,
+                    allow_set_notation=allow_sets,
                     allow_trig_functions=allow_trig,
                     simplify_expression=simplify_expression,
                 ),
@@ -346,7 +350,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 initial_value,
                 _get_variables_with_fallback(element, data, name),
                 allow_complex=allow_complex,
-                allow_set_notation=allow_set_notation,
+                allow_set_notation=allow_sets,
                 custom_functions=custom_functions,
                 allow_trig_functions=allow_trig,
                 simplify_expression=simplify_expression,
@@ -376,6 +380,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
             "allow_complex": allow_complex,
             "allow_trig": allow_trig,
+            "allow_sets": allow_sets,
             "imaginary_unit": imaginary_unit,
             "log_as_ln": display_log_as_ln,
             "raw_submitted_answer": raw_submitted_answer,
@@ -405,6 +410,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "formula_editor": formula_editor,
             "custom_functions": ",".join(custom_functions),
             "allow_trig": allow_trig,
+            "allow_sets": allow_sets,
             "imaginary_unit": imaginary_unit,
             "log_as_ln": display_log_as_ln,
             display.value: True,
@@ -431,7 +437,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                         a_tru,
                         variables,
                         allow_complex=allow_complex,
-                        allow_set_notation=allow_set_notation,
+                        allow_set_notation=allow_sets,
                         allow_trig_functions=allow_trig,
                         custom_functions=custom_functions,
                         simplify_expression=simplify_expression,
@@ -443,7 +449,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 psu.json_to_sympy(
                     a_tru,
                     allow_complex=allow_complex,
-                    allow_set_notation=allow_set_notation,
+                    allow_set_notation=allow_sets,
                     allow_trig_functions=allow_trig,
                     simplify_expression=simplify_expression,
                 ),
@@ -485,7 +491,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    allow_set_notation = pl.get_boolean_attrib(
+    allow_sets = pl.get_boolean_attrib(
         element, "allow-set-notation", ALLOW_SET_NOTATION_DEFAULT
     )
     simplify_expression = pl.get_boolean_attrib(
@@ -539,7 +545,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         variables,
         allow_hidden=True,
         allow_complex=allow_complex,
-        allow_set_notation=allow_set_notation,
+        allow_set_notation=allow_sets,
         allow_trig_functions=allow_trig,
         imaginary_unit=imaginary_unit,
         custom_functions=custom_functions,
@@ -562,7 +568,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         psu.json_to_sympy(
             a_sub_json,
             allow_complex=allow_complex,
-            allow_set_notation=allow_set_notation,
+            allow_set_notation=allow_sets,
             simplify_expression=simplify_expression,
         )
 
@@ -809,7 +815,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
-    allow_set_notation = pl.get_boolean_attrib(
+    allow_sets = pl.get_boolean_attrib(
         element, "allow-set-notation", ALLOW_SET_NOTATION_DEFAULT
     )
     allow_trig = pl.get_boolean_attrib(
@@ -848,7 +854,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 a_tru,
                 variables,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_set_notation,
+                allow_set_notation=allow_sets,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
                 simplify_expression=simplify_expression,
@@ -857,7 +863,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             a_tru_sympy = psu.json_to_sympy(
                 a_tru,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_set_notation,
+                allow_set_notation=allow_sets,
                 simplify_expression=simplify_expression,
             )
 
@@ -868,7 +874,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 a_sub,
                 variables,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_set_notation,
+                allow_set_notation=allow_sets,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
                 assumptions=a_tru_sympy.assumptions0,
@@ -878,7 +884,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             a_sub_sympy = psu.json_to_sympy(
                 a_sub,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_set_notation,
+                allow_set_notation=allow_sets,
                 allow_trig_functions=allow_trig,
                 simplify_expression=simplify_expression,
             )
@@ -938,7 +944,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
-    allow_set_notation = pl.get_boolean_attrib(
+    allow_sets = pl.get_boolean_attrib(
         element, "allow-set-notation", ALLOW_SET_NOTATION_DEFAULT
     )
     allow_trig = pl.get_boolean_attrib(
@@ -965,7 +971,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                     a_tru,
                     variables,
                     allow_complex=allow_complex,
-                    allow_set_notation=allow_set_notation,
+                    allow_set_notation=allow_sets,
                     allow_trig_functions=allow_trig,
                     custom_functions=custom_functions,
                     simplify_expression=simplify_expression,
@@ -974,7 +980,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             a_tru = psu.json_to_sympy(
                 a_tru,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_set_notation,
+                allow_set_notation=allow_sets,
                 allow_trig_functions=allow_trig,
             )
 
