@@ -55,6 +55,7 @@ function mapIssueToFormFieldPath(
         case 'lateDeadlines':
           return `${prefix}.lateDeadlines.${issue.path[2]}.date`;
         case 'afterLastDeadline':
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           return issue.path[2] === 'credit' ? `${prefix}.afterLastDeadline.credit` : null;
         default:
           return null;
