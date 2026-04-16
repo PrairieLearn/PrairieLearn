@@ -269,9 +269,9 @@ function computeCredit(
   if (dateControl.earlyDeadlines) {
     for (const entry of dateControl.earlyDeadlines) {
       const entryDate = new Date(entry.date);
-      // Filter out early deadlines before release date or after/at due date.
+      // Filter out early deadlines before release date or after due date.
       if (entryDate <= releaseDate) continue;
-      if (dueDate && entryDate >= dueDate) continue;
+      if (dueDate && entryDate > dueDate) continue;
       timeline.push({ date: entryDate, credit: entry.credit });
     }
   }
@@ -283,9 +283,9 @@ function computeCredit(
   if (dateControl.lateDeadlines) {
     for (const entry of dateControl.lateDeadlines) {
       const entryDate = new Date(entry.date);
-      // Filter out late deadlines before release date or before/at due date.
+      // Filter out late deadlines before release date or before due date.
       if (entryDate <= releaseDate) continue;
-      if (dueDate && entryDate <= dueDate) continue;
+      if (dueDate && entryDate < dueDate) continue;
       timeline.push({ date: entryDate, credit: entry.credit });
     }
   }

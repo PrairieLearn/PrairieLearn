@@ -140,7 +140,7 @@ function DeadlineArrayInput({
     }
 
     if (isEarly) {
-      if (currentDueDate && deadlineDate >= currentDueDate) {
+      if (currentDueDate && deadlineDate > currentDueDate) {
         return 'Early deadline is out of range';
       }
       if (index > 0 && currentDeadlines[index - 1]?.date) {
@@ -155,7 +155,7 @@ function DeadlineArrayInput({
       if (currentReleaseDate && deadlineDate <= currentReleaseDate) {
         return 'Deadline is out of range';
       }
-      if (currentDueDate && deadlineDate <= currentDueDate) {
+      if (currentDueDate && deadlineDate < currentDueDate) {
         return 'Late deadline is out of range';
       }
       if (index > 0 && currentDeadlines[index - 1]?.date) {
@@ -196,11 +196,11 @@ function DeadlineArrayInput({
     }
 
     if (isEarly && dueDate) {
-      // Early deadlines must be before the due date. To leave room for
+      // Early deadlines must be on or before the due date. To leave room for
       // additional deadlines, place the new one at min(anchor + 1 week,
       // midpoint to maxDate) — this uses natural spacing when there's
       // plenty of room and compresses when the window is tight.
-      const maxDate = Temporal.PlainDateTime.from(dueDate).toPlainDate().subtract({ days: 1 });
+      const maxDate = Temporal.PlainDateTime.from(dueDate).toPlainDate();
       const anchor = lastFilledDate
         ? Temporal.PlainDateTime.from(lastFilledDate).toPlainDate()
         : releaseDate
