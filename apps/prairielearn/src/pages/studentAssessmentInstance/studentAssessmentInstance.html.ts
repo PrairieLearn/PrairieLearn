@@ -32,7 +32,8 @@ import {
   QuestionSchema,
 } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
-import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.js';
+import { getRoleNamesForUser } from '../../lib/groups.js';
+import type { GroupInfo } from '../../lib/groups.shared.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 
