@@ -35,10 +35,26 @@ function ScoringSummary({
   const totalPoints = useCustomMaxPoints ? customMaxPoints + bonusPoints : zonePointsRange.max;
 
   if (useCustomMaxPoints) {
+    if (customMaxPoints <= 0) {
+      return (
+        <Alert variant="light" className="mb-0 small">
+          <i className="bi bi-info-circle-fill me-2" aria-hidden="true" />
+          {bonusPoints > 0 ? (
+            <>
+              Students get up to {totalPoints} points: all points are treated as bonus &mdash; 100%
+              is achieved with 0 points.
+            </>
+          ) : (
+            <>Students need 0 points for 100%.</>
+          )}
+        </Alert>
+      );
+    }
     const maxPerc =
       bonusPoints > 0 ? Math.round(((customMaxPoints + bonusPoints) / customMaxPoints) * 100) : 100;
     return (
       <Alert variant="light" className="mb-0 small">
+        <i className="bi bi-info-circle-fill me-2" aria-hidden="true" />
         {bonusPoints > 0 ? (
           <>
             Students get up to {totalPoints} points: 100% at {customMaxPoints} points, and up to{' '}
@@ -54,6 +70,7 @@ function ScoringSummary({
   if (bonusPoints >= zonePointsRange.max && bonusPoints > 0) {
     return (
       <Alert variant="light" className="mb-0 small">
+        <i className="bi bi-info-circle-fill me-2" aria-hidden="true" />
         Students get up to {totalPoints} points: all zone points are treated as bonus &mdash; 100%
         is achieved with 0 points.
       </Alert>
@@ -69,6 +86,7 @@ function ScoringSummary({
 
   return (
     <Alert variant="light" className="mb-0 small">
+      <i className="bi bi-info-circle-fill me-2" aria-hidden="true" />
       {bonusPoints > 0 ? (
         <>
           Students get up to {totalPoints} points: 100% at {neededText} points, and up to {maxPerc}%
@@ -576,7 +594,15 @@ function InstructorAssessmentSettingsInner({
                   disabled={!canEdit}
                   onChange={(e) => {
                     setUseCustomMaxPoints(e.target.checked);
-                    if (!e.target.checked) {
+                    if (e.target.checked) {
+                      if (getValues('max_points') === '') {
+                        setValue(
+                          'max_points',
+                          String(Math.max(zonePointsRange.max - currentBonusPoints, 0)),
+                          { shouldDirty: true },
+                        );
+                      }
+                    } else {
                       setValue('max_points', '', { shouldDirty: true });
                     }
                   }}
@@ -632,10 +658,11 @@ function InstructorAssessmentSettingsInner({
                       : ''}
                   </small>
                   {zonePointsRange.min !== zonePointsRange.max && (
-                    <small className="form-text text-warning-emphasis d-block">
-                      Point total varies because zones or question pools randomly select questions
-                      with different point values.
-                    </small>
+                    <Alert variant="warning" className="mt-2 mb-0 py-2 small">
+                      Students may receive different total points because this assessment contains
+                      zones or alternative pools that randomly select questions with different point
+                      values.
+                    </Alert>
                   )}
                 </div>
                 <div className="col-md-6 mb-3">

@@ -176,11 +176,7 @@ WITH
           ag.id
         ORDER BY
           aq.max_points ASC
-      ) AS rank_asc,
-      count(*) OVER (
-        PARTITION BY
-          ag.id
-      ) AS total_in_group
+      ) AS rank_asc
     FROM
       alternative_groups AS ag
       JOIN assessment_questions AS aq ON (aq.alternative_group_id = ag.id)
@@ -200,17 +196,15 @@ WITH
     SELECT
       ag_id,
       zone_id,
-      sum(
-        CASE
-          WHEN rank_desc <= coalesce(number_choose, total_in_group) THEN max_points
-          ELSE 0
-        END
+      sum(max_points) FILTER (
+        WHERE
+          number_choose IS NULL
+          OR rank_desc <= number_choose
       ) AS max_points,
-      sum(
-        CASE
-          WHEN rank_asc <= coalesce(number_choose, total_in_group) THEN max_points
-          ELSE 0
-        END
+      sum(max_points) FILTER (
+        WHERE
+          number_choose IS NULL
+          OR rank_asc <= number_choose
       ) AS min_points
     FROM
       alt_group_questions
@@ -238,11 +232,7 @@ WITH
           agt.zone_id
         ORDER BY
           agt.min_points ASC
-      ) AS rank_worst,
-      count(*) OVER (
-        PARTITION BY
-          agt.zone_id
-      ) AS total_blocks
+      ) AS rank_worst
     FROM
       alt_group_totals AS agt
       JOIN zones AS z ON (z.id = agt.zone_id)
@@ -252,32 +242,21 @@ WITH
     SELECT
       zone_id,
       zone_max_points,
-      sum(
-        CASE
-          WHEN rank_best <= coalesce(
-            best_questions,
-            coalesce(zone_number_choose, total_blocks)
-          ) THEN max_points
-          ELSE 0
-        END
+      sum(max_points) FILTER (
+        WHERE
+          coalesce(best_questions, zone_number_choose) IS NULL
+          OR rank_best <= coalesce(best_questions, zone_number_choose)
       ) AS zone_max,
-      sum(
-        CASE
-          WHEN rank_worst <= coalesce(
-            best_questions,
-            coalesce(zone_number_choose, total_blocks)
-          ) THEN min_points
-          ELSE 0
-        END
+      sum(min_points) FILTER (
+        WHERE
+          coalesce(best_questions, zone_number_choose) IS NULL
+          OR rank_worst <= coalesce(best_questions, zone_number_choose)
       ) AS zone_min
     FROM
       zone_blocks
     GROUP BY
       zone_id,
-      zone_max_points,
-      best_questions,
-      zone_number_choose,
-      total_blocks
+      zone_max_points
   )
 SELECT
   coalesce(
