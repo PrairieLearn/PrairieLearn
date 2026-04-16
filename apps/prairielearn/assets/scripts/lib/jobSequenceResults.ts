@@ -48,7 +48,7 @@ onDocumentReady(() => {
   socket.on('change:output', function (msg) {
     const jobOutputElement = document.getElementById(`output-${msg.job_id}`);
     if (jobOutputElement) {
-      jobOutputElement.innerHTML = msg.output;
+      jobOutputElement.textContent = msg.output;
     }
   });
 
@@ -77,7 +77,7 @@ onDocumentReady(() => {
         }
         const jobOutputElement = document.getElementById(`output-${job.id}`);
         if (jobOutputElement) {
-          jobOutputElement.innerHTML = msg.output;
+          jobOutputElement.textContent = msg.output;
         }
       },
     );
