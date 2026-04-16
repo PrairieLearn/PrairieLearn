@@ -41,21 +41,17 @@ BEGIN
         date_control_early_deadlines_overridden,
         date_control_late_deadlines_overridden,
         date_control_after_last_deadline_allow_submissions,
-        date_control_after_last_deadline_credit_overridden,
         date_control_after_last_deadline_credit,
         date_control_duration_minutes_overridden,
         date_control_duration_minutes,
         date_control_password_overridden,
         date_control_password,
 
-        after_complete_hide_questions,
-        after_complete_show_questions_again_date_overridden,
-        after_complete_show_questions_again_date,
-        after_complete_hide_questions_again_date_overridden,
-        after_complete_hide_questions_again_date,
-        after_complete_hide_score,
-        after_complete_show_score_again_date_overridden,
-        after_complete_show_score_again_date
+        after_complete_questions_hidden,
+        after_complete_questions_visible_from_date,
+        after_complete_questions_visible_until_date,
+        after_complete_score_hidden,
+        after_complete_score_visible_from_date
     )
     SELECT
         (rule ->> 'assessment_id')::bigint,
@@ -68,21 +64,17 @@ BEGIN
         (rule ->> 'date_control_early_deadlines_overridden')::boolean,
         (rule ->> 'date_control_late_deadlines_overridden')::boolean,
         (rule ->> 'date_control_after_last_deadline_allow_submissions')::boolean,
-        (rule ->> 'date_control_after_last_deadline_credit_overridden')::boolean,
         (rule ->> 'date_control_after_last_deadline_credit')::integer,
         (rule ->> 'date_control_duration_minutes_overridden')::boolean,
         (rule ->> 'date_control_duration_minutes')::integer,
         (rule ->> 'date_control_password_overridden')::boolean,
         (rule ->> 'date_control_password')::text,
 
-        (rule ->> 'after_complete_hide_questions')::boolean,
-        (rule ->> 'after_complete_show_questions_again_date_overridden')::boolean,
-        input_date(rule ->> 'after_complete_show_questions_again_date', ci_timezone),
-        (rule ->> 'after_complete_hide_questions_again_date_overridden')::boolean,
-        input_date(rule ->> 'after_complete_hide_questions_again_date', ci_timezone),
-        (rule ->> 'after_complete_hide_score')::boolean,
-        (rule ->> 'after_complete_show_score_again_date_overridden')::boolean,
-        input_date(rule ->> 'after_complete_show_score_again_date', ci_timezone)
+        (rule ->> 'after_complete_questions_hidden')::boolean,
+        input_date(rule ->> 'after_complete_questions_visible_from_date', ci_timezone),
+        input_date(rule ->> 'after_complete_questions_visible_until_date', ci_timezone),
+        (rule ->> 'after_complete_score_hidden')::boolean,
+        input_date(rule ->> 'after_complete_score_visible_from_date', ci_timezone)
     FROM UNNEST(rules_data) AS rule
     ON CONFLICT (assessment_id, number, target_type) DO UPDATE SET
         list_before_release = EXCLUDED.list_before_release,
@@ -92,21 +84,17 @@ BEGIN
         date_control_early_deadlines_overridden = EXCLUDED.date_control_early_deadlines_overridden,
         date_control_late_deadlines_overridden = EXCLUDED.date_control_late_deadlines_overridden,
         date_control_after_last_deadline_allow_submissions = EXCLUDED.date_control_after_last_deadline_allow_submissions,
-        date_control_after_last_deadline_credit_overridden = EXCLUDED.date_control_after_last_deadline_credit_overridden,
         date_control_after_last_deadline_credit = EXCLUDED.date_control_after_last_deadline_credit,
         date_control_duration_minutes_overridden = EXCLUDED.date_control_duration_minutes_overridden,
         date_control_duration_minutes = EXCLUDED.date_control_duration_minutes,
         date_control_password_overridden = EXCLUDED.date_control_password_overridden,
         date_control_password = EXCLUDED.date_control_password,
 
-        after_complete_hide_questions = EXCLUDED.after_complete_hide_questions,
-        after_complete_show_questions_again_date_overridden = EXCLUDED.after_complete_show_questions_again_date_overridden,
-        after_complete_show_questions_again_date = EXCLUDED.after_complete_show_questions_again_date,
-        after_complete_hide_questions_again_date_overridden = EXCLUDED.after_complete_hide_questions_again_date_overridden,
-        after_complete_hide_questions_again_date = EXCLUDED.after_complete_hide_questions_again_date,
-        after_complete_hide_score = EXCLUDED.after_complete_hide_score,
-        after_complete_show_score_again_date_overridden = EXCLUDED.after_complete_show_score_again_date_overridden,
-        after_complete_show_score_again_date = EXCLUDED.after_complete_show_score_again_date;
+        after_complete_questions_hidden = EXCLUDED.after_complete_questions_hidden,
+        after_complete_questions_visible_from_date = EXCLUDED.after_complete_questions_visible_from_date,
+        after_complete_questions_visible_until_date = EXCLUDED.after_complete_questions_visible_until_date,
+        after_complete_score_hidden = EXCLUDED.after_complete_score_hidden,
+        after_complete_score_visible_from_date = EXCLUDED.after_complete_score_visible_from_date;
 
     -- Upsert student labels by joining on (assessment_id, number) to resolve the
     -- access control ID. Student labels always have target_type='student_label'.

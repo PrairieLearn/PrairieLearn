@@ -5,6 +5,7 @@
 
 ## Custom scripts
 /start-custom.sh
+scripts/migration-report.html
 
 ## s3rver S3 emulation data directory
 /s3rver

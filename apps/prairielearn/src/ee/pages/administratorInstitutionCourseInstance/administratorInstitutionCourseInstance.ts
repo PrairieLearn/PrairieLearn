@@ -76,6 +76,7 @@ router.get(
         trpcCsrfToken,
         maxAddDollars: config.aiGradingCreditPoolMaxAddDollars,
         maxDeductDollars: config.aiGradingCreditPoolMaxDeductDollars,
+        refundsEnabled: config.stripeAiGradingCreditsRefundsEnabled,
         resLocals: res.locals,
       }),
     );
