@@ -44,6 +44,7 @@ from typing_extensions import NotRequired
 from prairielearn.misc_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
+SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
 
 SympyMapT = dict[str, sympy.Basic | complex]
 SympyFunctionMapT = dict[str, Callable[..., Any]]
@@ -178,7 +179,6 @@ class _Constants:
 
         self.set_functions = {
             "Interval": sympy.Interval,
-            "Set": sympy.Set,
             "FiniteSet": sympy.FiniteSet,
             "Union": sympy.Union,
             "Intersection": sympy.Intersection,
@@ -518,7 +518,9 @@ def evaluate(
 
 
 def _normalize_expr(expr: str) -> str:
-    """Normalize a symbolic expression by converting Greek unicode and transliterating to ASCII."""
+    """Normalize a symbolic expression while preserving set operators for later parsing."""
+    if expr in _SET_OPS:
+        return expr
     return full_unidecode(greek_unicode_transform(expr))
 
 
@@ -1142,11 +1144,21 @@ _INTERVAL_OPEN = {"(", "["}
 _INTERVAL_CLOSE = {")", "]"}
 _SET_LITERAL_NESTED_OPEN = {"(", "[", "{"}
 _SET_LITERAL_NESTED_CLOSE = {")", "]", "}"}
-_INTERVAL_OPS = {"u": "|", "U": "|", "cup": "|", "∪": "|", "cap": "&", "∩": "&"}  # noqa: RUF001
+_SET_OPS = {
+    "U": "|",
+    "cup": "|",
+    "\\cup": "|",
+    "∪": "|",  # noqa: RUF001
+    "cap": "&",
+    "\\cap": "&",
+    "∩": "&",
+}
 
 
 def _is_interval_trivial(token: TOKEN) -> bool:
-    return token[0] in _INTERVAL_TRIVIAL
+    return token[0] in _INTERVAL_TRIVIAL or (
+        token[0] == ERRORTOKEN and token[1].isspace()
+    )
 
 
 def _literal_or_set_end(token: TOKEN | None) -> bool:
@@ -1323,7 +1335,7 @@ def set_operation_transformation(
         # transform current
         trans_curr = (curr_type, curr_value) = curr_nt
         if curr_type in {NAME, ERRORTOKEN}:
-            op = _INTERVAL_OPS.get(curr_value)
+            op = _SET_OPS.get(curr_value)
             if (
                 op is not None
                 and _literal_or_set_end(prev_nt)

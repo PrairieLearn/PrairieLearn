@@ -542,29 +542,29 @@ def test_union_parser_uses_interval_transformation() -> None:
     ("text", "expected"),
     [
         (
-            "(1, 2) u (3, 4]",
+            "(1, 2) U (3, 4]",
             sympy.Union(sympy.Interval.open(1, 2), sympy.Interval.Lopen(3, 4)),
         ),
         (
-            "(1, 2) u {2, 4}",
+            "(1, 2) U {2, 4}",
             sympy.Union(sympy.Interval.Lopen(1, 2), sympy.FiniteSet(4)),
         ),
         (
-            "[1, 2] u (3, 4]",
+            "[1, 2] U (3, 4]",
             sympy.Union(sympy.Interval(1, 2), sympy.Interval.Lopen(3, 4)),
         ),
         (
             "[1, 2] cup (3, 4]",
             sympy.Union(sympy.Interval(1, 2), sympy.Interval.Lopen(3, 4)),
         ),
-        ("[1, 3] cap [2, 4]", sympy.Interval(2, 3)),
+        ("[1, 3] ∪ [2, 4]", sympy.Interval(1, 4)),  # noqa: RUF001
         (
-            "[1, 2] u {3, 4, 5}",
+            "[1, 2] U {3, 4, 5}",
             sympy.Union(sympy.Interval(1, 2), sympy.FiniteSet(3, 4, 5)),
         ),
     ],
 )
-def test_intervals_support_operations(text: str, expected: sympy.Basic) -> None:
+def test_intervals_support_union(text: str, expected: sympy.Basic) -> None:
     out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
     assert isinstance(out, psu.SympyParseSuccess)
     parsed = out.expr

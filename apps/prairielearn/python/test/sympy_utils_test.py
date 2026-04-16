@@ -181,6 +181,37 @@ class TestSympy:
             allow_complex=True,
         )
 
+    def test_set_notation_union_unicode(self) -> None:
+        assert psu.convert_string_to_sympy(
+            "{1} ∪ {2}",  # noqa: RUF001
+            allow_set_notation=True,
+        ) == sympy.FiniteSet(1, 2)
+
+    def test_set_notation_union_unicode_rejected_when_disabled(self) -> None:
+        with pytest.raises(psu.HasSetNotationError):
+            psu.convert_string_to_sympy(
+                "{1} ∪ {2}",  # noqa: RUF001
+                allow_set_notation=False,
+            )
+
+    def test_set_notation_intersection_unicode(self) -> None:
+        assert (
+            psu.convert_string_to_sympy(
+                "{1} ∩ {2}",
+                allow_set_notation=True,
+            )
+            == sympy.EmptySet
+        )
+
+    def test_set_notation_intersection_unicode_rejected_when_disabled(
+        self,
+    ) -> None:
+        with pytest.raises(psu.HasSetNotationError):
+            psu.convert_string_to_sympy(
+                "{1} ∩ {2}",
+                allow_set_notation=False,
+            )
+
     @pytest.mark.parametrize("a_pair", EXPR_PAIRS)
     def test_valid_format(self, a_pair: tuple[str, sympy.Expr]) -> None:
         a_sub, _ = a_pair
