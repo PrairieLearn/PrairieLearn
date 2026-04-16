@@ -459,10 +459,10 @@ function RealTimeGradingInformationAlert({
   assessment_instance: AssessmentInstance;
 }) {
   const allQuestionsDisabled = instance_question_rows.every(
-    (q) => !q.assessment_question.allow_real_time_grading,
+    (row) => !row.assessment_question.allow_real_time_grading,
   );
   const someQuestionsDisabled = instance_question_rows.some(
-    (q) => !q.assessment_question.allow_real_time_grading,
+    (row) => !row.assessment_question.allow_real_time_grading,
   );
 
   if (allQuestionsDisabled && assessment_instance.open) {
@@ -615,7 +615,7 @@ function ConfirmFinishModal({
   csrfToken: string;
 }) {
   const all_questions_answered = instance_question_rows.every(
-    ({ instance_question: iq }) => iq.status !== 'unanswered',
+    (row) => row.instance_question.status !== 'unanswered',
   );
 
   return Modal({
