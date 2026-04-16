@@ -29,7 +29,6 @@ interface QuestionScorePanelContentProps {
     previous_variants: SimpleVariantWithScore[] | null;
   };
   allowGradeLeftMs: number;
-  courseInstanceId: string;
 }
 
 export function QuestionScorePanel(
@@ -72,7 +71,6 @@ export function QuestionScorePanelContent({
   assessment_instance,
   instance_question_info,
   variant,
-  courseInstanceId,
   allowGradeLeftMs,
 }: QuestionScorePanelContentProps) {
   const hasAutoAndManualPoints =
@@ -133,10 +131,10 @@ export function QuestionScorePanelContent({
                           All variants:
                           ${renderHtml(
                             <QuestionVariantHistory
+                              courseInstanceId={assessment.course_instance_id}
                               instanceQuestionId={instance_question.id}
                               previousVariants={instance_question_info.previous_variants}
                               currentVariantId={variant?.id}
-                              courseInstanceId={courseInstanceId}
                             />,
                           )}
                         </td>

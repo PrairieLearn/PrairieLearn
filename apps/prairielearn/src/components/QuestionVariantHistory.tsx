@@ -1,14 +1,14 @@
 import { getInstanceQuestionUrl } from '../lib/client/url.js';
 
 export function QuestionVariantHistory({
+  courseInstanceId,
   instanceQuestionId,
   previousVariants,
-  courseInstanceId,
   currentVariantId,
 }: {
+  courseInstanceId: string;
   instanceQuestionId: string;
   previousVariants: { id: string; open: boolean | null; max_submission_score: number }[] | null;
-  courseInstanceId: string;
   currentVariantId?: string;
 }) {
   if (!previousVariants) return null;

@@ -259,9 +259,9 @@ function HomeworkQuestionCells({
           </td>
           <td className="text-center">
             <QuestionVariantHistory
+              courseInstanceId={courseInstanceId}
               instanceQuestionId={row.instance_question.id}
               previousVariants={row.previous_variants}
-              courseInstanceId={courseInstanceId}
             />
           </td>
         </>
