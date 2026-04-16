@@ -1,4 +1,3 @@
-import { formatInterval } from '@prairielearn/formatter';
 import { type HtmlValue, escapeHtml, html, joinHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
@@ -10,9 +9,12 @@ import type {
   Question,
   Variant,
 } from '../lib/db-types.js';
-import { formatPoints, formatPointsOrList } from '../lib/format.js';
-import { idsEqual } from '../lib/id.js';
+import { formatPoints } from '../lib/format.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
+
+import { ExamQuestionAvailablePoints } from './ExamQuestionAvailablePoints.js';
+import { ExamQuestionStatus } from './ExamQuestionStatus.js';
+import { QuestionVariantHistory } from './QuestionVariantHistory.js';
 
 interface QuestionScorePanelContentProps {
   instance_question: InstanceQuestion;
@@ -249,142 +251,6 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
   `;
 }
 
-export function ExamQuestionStatus({
-  instance_question,
-  assessment_question,
-  realTimeGradingPartiallyDisabled,
-  allowGradeLeftMs,
-}: {
-  instance_question: Pick<InstanceQuestion, 'status'>;
-  assessment_question: Pick<
-    AssessmentQuestion,
-    'max_auto_points' | 'max_manual_points' | 'allow_real_time_grading'
-  >;
-  /**
-   * On exam with mixed real-time grading settings, this flag allows us to
-   * differentiate between questions that are saved and which can be graded by
-   * clicking the "Grade N saved answers" button and those that cannot
-   * (because real-time grading is disabled).
-   */
-  realTimeGradingPartiallyDisabled?: boolean;
-  allowGradeLeftMs: number;
-}) {
-  // Special case: if this is a manually graded question in the "saved" state,
-  // we want to differentiate it from saved auto-graded questions which can
-  // be graded immediately. We'll use a green badge so that student can drive
-  // towards all status badges being green.
-  //
-  // TODO: can we safely look at the assessment question for exams? What about
-  // the guarantee that an Exam-type assessment won't change after it's created?
-  if (
-    instance_question.status === 'saved' &&
-    !assessment_question.max_auto_points &&
-    assessment_question.max_manual_points
-  ) {
-    return html`<span class="badge text-bg-success">saved for manual grading</span>`;
-  }
-
-  const badge_color: Record<NonNullable<InstanceQuestion['status']>, string> = {
-    unanswered: 'warning',
-    invalid: 'danger',
-    grading: 'secondary',
-    saved: 'info',
-    complete: 'success',
-    correct: 'success',
-    incorrect: 'danger',
-  };
-
-  const { badgeText, badgeColor } = run(() => {
-    if (
-      realTimeGradingPartiallyDisabled &&
-      instance_question.status === 'saved' &&
-      !assessment_question.allow_real_time_grading
-    ) {
-      return { badgeText: 'saved for grading after finish', badgeColor: 'success' };
-    }
-
-    return {
-      badgeText: instance_question.status,
-      badgeColor: badge_color[instance_question.status ?? 'unanswered'],
-    };
-  });
-
-  return html`
-    <span class="badge text-bg-${badgeColor}">${badgeText}</span>
-    ${allowGradeLeftMs > 0
-      ? html`
-          <button
-            type="button"
-            class="grade-rate-limit-popover btn btn-xs"
-            data-bs-toggle="popover"
-            data-bs-container="body"
-            data-bs-html="true"
-            data-bs-content="This question limits the rate of submissions. Further grade allowed in ${formatInterval(
-              allowGradeLeftMs,
-              { fullPartNames: true, firstOnly: true },
-            )} (as of the loading of this page)."
-            data-bs-placement="auto"
-          >
-            <i class="fa fa-hourglass-half" aria-hidden="true"></i>
-          </button>
-        `
-      : ''}
-  `;
-}
-
-export function QuestionVariantHistory({
-  instanceQuestionId,
-  previousVariants,
-  currentVariantId,
-  urlPrefix,
-}: {
-  instanceQuestionId: string;
-  previousVariants?: SimpleVariantWithScore[] | null;
-  currentVariantId?: string;
-  urlPrefix: string;
-}) {
-  if (!previousVariants) return '';
-  const MAX_DISPLAYED_VARIANTS = 10;
-  const collapseClass = `variants-points-collapse-${instanceQuestionId}`;
-  const collapseButtonId = `variants-points-collapse-button-${instanceQuestionId}`;
-
-  return html`
-    ${previousVariants.length > MAX_DISPLAYED_VARIANTS
-      ? html`
-          <button
-            id="${collapseButtonId}"
-            class="bg-white text-body p-0 m-0 border-0 rounded-0"
-            aria-label="Show older variants"
-            onclick="
-                // show all the hidden variant score buttons
-                document.querySelectorAll('.${collapseClass}').forEach(e => e.style.display = '');
-                // hide the ... button that triggered the expansion
-                document.querySelectorAll('#${collapseButtonId}').forEach(e => e.style.display = 'none');
-            "
-          >
-            &ctdot;
-          </button>
-        `
-      : ''}
-    ${previousVariants.map(
-      (variant, index) => html`
-        <a
-          class="badge ${currentVariantId != null && idsEqual(variant.id, currentVariantId)
-            ? 'text-bg-info'
-            : 'text-bg-secondary'} ${collapseClass}"
-          ${index < previousVariants.length - MAX_DISPLAYED_VARIANTS ? 'style="display: none"' : ''}
-          href="${urlPrefix}/instance_question/${instanceQuestionId}/?variant_id=${variant.id}"
-        >
-          ${variant.open ? 'Open' : `${Math.floor(variant.max_submission_score * 100)}%`}
-          ${currentVariantId != null && idsEqual(variant.id, currentVariantId)
-            ? html`<span class="visually-hidden">(current)</span>`
-            : ''}
-        </a>
-      `,
-    )}
-  `;
-}
-
 export function InstanceQuestionPoints({
   instance_question,
   assessment_question,
@@ -450,72 +316,6 @@ export function InstanceQuestionPoints({
       }
       ${maxPoints ? html`<small>/<span class="text-muted">${maxPoints}</span></small>` : ''}
     </span>
-  `;
-}
-
-export function ExamQuestionAvailablePoints({
-  open,
-  pointsList,
-  highestSubmissionScore,
-  currentWeight,
-}: {
-  open: boolean;
-  pointsList?: number[];
-  highestSubmissionScore?: number | null;
-  currentWeight: number;
-}) {
-  if (!open || pointsList == null || pointsList.length === 0) return html`&mdash;`;
-
-  const bestScore = Math.floor((highestSubmissionScore ?? 0) * 100);
-  const popoverContent = html`
-    <p>
-      You have ${pointsList.length} remaining attempt${pointsList.length !== 1 ? 's' : ''} for this
-      question.
-    </p>
-    <p>
-      If you score 100% on your next submission, then you will be awarded an additional
-      ${formatPoints(pointsList[0])} points.
-    </p>
-    ${bestScore > 0
-      ? html`
-          <p>
-            If you score less than ${bestScore}% on your next submission, then you will be awarded
-            no additional points, but you will keep any awarded points that you already have.
-          </p>
-          <p class="mb-0">
-            If you score between ${bestScore}% and 100% on your next submission, then you will be
-            awarded an additional
-            <code>(${formatPoints(currentWeight)} * (score - ${bestScore})/100)</code>
-            points.
-          </p>
-        `
-      : html`
-          <p class="mb-0">
-            If you score less than 100% on your next submission, then you will be awarded an
-            additional
-            <code>(${formatPoints(currentWeight)} * score / 100)</code>
-            points.
-          </p>
-        `}
-  `;
-
-  return html`
-    ${pointsList.length === 1
-      ? formatPoints(pointsList[0])
-      : html`${formatPoints(pointsList[0])},
-          <span class="text-muted">${formatPointsOrList(pointsList.slice(1))}</span>`}
-    <button
-      type="button"
-      class="btn btn-xs btn-ghost js-available-points-popover"
-      data-bs-toggle="popover"
-      data-bs-container="body"
-      data-bs-html="true"
-      data-bs-title="Explanation of available points"
-      data-bs-content="${escapeHtml(popoverContent)}"
-      data-bs-placement="auto"
-    >
-      <i class="fa fa-question-circle" aria-hidden="true"></i>
-    </button>
   `;
 }
 
