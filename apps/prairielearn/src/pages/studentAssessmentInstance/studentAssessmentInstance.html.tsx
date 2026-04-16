@@ -17,8 +17,7 @@ import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentInstance, type GroupConfig } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
-import { getRoleNamesForUser } from '../../lib/groups.js';
-import type { GroupInfo } from '../../lib/groups.shared.js';
+import { getRoleNamesForUser, type GroupInfo } from '../../lib/groups.shared.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 import { ExamFooterContent } from './components/ExamFooterContent.js';
