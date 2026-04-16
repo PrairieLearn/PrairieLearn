@@ -20,12 +20,24 @@ const beforeReleasePopoverConfig = {
   props: { id: 'before-release-info-popover' },
 };
 
-export function MainRuleForm({ displayTimezone }: { displayTimezone: string }) {
+export function MainRuleForm({
+  displayTimezone,
+  assessmentId,
+  courseInstanceId,
+}: {
+  displayTimezone: string;
+  assessmentId: string;
+  courseInstanceId: string;
+}) {
   const { register } = useFormContext<AccessControlFormData>();
 
   return (
     <div className="d-flex flex-column gap-3">
-      <MainDateControlForm displayTimezone={displayTimezone} />
+      <MainDateControlForm
+        displayTimezone={displayTimezone}
+        assessmentId={assessmentId}
+        courseInstanceId={courseInstanceId}
+      />
       <IntegrationsSection />
       <div>
         <div className="d-flex align-items-center section-header mb-3">

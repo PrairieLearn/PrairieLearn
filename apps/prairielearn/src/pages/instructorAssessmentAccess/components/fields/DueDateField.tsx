@@ -5,6 +5,7 @@ import { useController, useWatch } from 'react-hook-form';
 import { formatDateFriendly } from '@prairielearn/formatter';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
+import { getAssessmentSettingsUrl } from '../../../../lib/client/url.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry, DueValue } from '../types.js';
@@ -27,20 +28,22 @@ function DueDateInput({
   idPrefix,
   releaseDate,
   earlyDeadlines,
-  hasLateDeadlines,
   dateError,
   creditError,
   displayTimezone,
+  assessmentId,
+  courseInstanceId,
 }: {
   value: DueValue;
   onChange: (value: DueValue) => void;
   idPrefix: string;
   releaseDate: string | null | undefined;
   earlyDeadlines: DeadlineEntry[] | undefined;
-  hasLateDeadlines: boolean;
   dateError?: string;
   creditError?: string;
   displayTimezone: string;
+  assessmentId: string;
+  courseInstanceId: string;
 }) {
   const effectiveCredit = value.credit ?? 100;
 
@@ -225,10 +228,13 @@ function DueDateInput({
           Early deadlines are disabled when using custom credit for a due date.
         </Alert>
       )}
-      {value.credit !== null && value.credit > 100 && hasLateDeadlines && (
+      {value.credit !== null && value.credit > 100 && (
         <Alert variant="secondary" className="py-2 mt-2 mb-0">
-          We recommend using bonus points on an assessment for extra credit, rather than giving
-          extra credit on the due date.
+          Date control is meant to reward earlier submissions. Consider{' '}
+          <Alert.Link href={getAssessmentSettingsUrl({ assessmentId, courseInstanceId })}>
+            bonus points
+          </Alert.Link>{' '}
+          to make the assessment worth more.
         </Alert>
       )}
     </Form.Group>
@@ -256,17 +262,21 @@ function validateDueCredit(credit: number | null): string | undefined {
   return undefined;
 }
 
-export function MainDueDateField({ displayTimezone }: { displayTimezone: string }) {
+export function MainDueDateField({
+  displayTimezone,
+  assessmentId,
+  courseInstanceId,
+}: {
+  displayTimezone: string;
+  assessmentId: string;
+  courseInstanceId: string;
+}) {
   const releaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
   });
 
   const earlyDeadlines = useWatch<AccessControlFormData, 'mainRule.earlyDeadlines'>({
     name: 'mainRule.earlyDeadlines',
-  });
-
-  const lateDeadlines = useWatch<AccessControlFormData, 'mainRule.lateDeadlines'>({
-    name: 'mainRule.lateDeadlines',
   });
 
   const dateCtrl = useController<AccessControlFormData, 'mainRule.due.date'>({
@@ -296,10 +306,11 @@ export function MainDueDateField({ displayTimezone }: { displayTimezone: string 
         idPrefix="mainRule"
         releaseDate={releaseDate}
         earlyDeadlines={earlyDeadlines}
-        hasLateDeadlines={lateDeadlines.length > 0}
         dateError={dateCtrl.fieldState.error?.message}
         creditError={creditCtrl.fieldState.error?.message}
         displayTimezone={displayTimezone}
+        assessmentId={assessmentId}
+        courseInstanceId={courseInstanceId}
         onChange={handleChange}
       />
     </div>
@@ -309,9 +320,13 @@ export function MainDueDateField({ displayTimezone }: { displayTimezone: string 
 export function OverrideDueDateField({
   index,
   displayTimezone,
+  assessmentId,
+  courseInstanceId,
 }: {
   index: number;
   displayTimezone: string;
+  assessmentId: string;
+  courseInstanceId: string;
 }) {
   const mainValue = useWatch<AccessControlFormData, 'mainRule.due'>({
     name: 'mainRule.due',
@@ -335,17 +350,8 @@ export function OverrideDueDateField({
     name: 'mainRule.earlyDeadlines',
   });
 
-  const { isOverridden: lateDeadlinesOverridden } = useOverrideField(index, 'lateDeadlines');
-  const lateDeadlines = useWatch<AccessControlFormData, `overrides.${number}.lateDeadlines`>({
-    name: `overrides.${index}.lateDeadlines`,
-  });
-  const mainLateDeadlines = useWatch<AccessControlFormData, 'mainRule.lateDeadlines'>({
-    name: 'mainRule.lateDeadlines',
-  });
-
   const effectiveReleaseDate = releaseDateOverridden ? releaseDate : mainReleaseDate;
   const validationReleaseDate = releaseDateOverridden ? releaseDate : undefined;
-  const effectiveLateDeadlines = lateDeadlinesOverridden ? lateDeadlines : mainLateDeadlines;
 
   const dateCtrl = useController<AccessControlFormData, `overrides.${number}.due.date`>({
     name: `overrides.${index}.due.date`,
@@ -383,10 +389,11 @@ export function OverrideDueDateField({
         idPrefix={`overrides-${index}`}
         releaseDate={effectiveReleaseDate}
         earlyDeadlines={earlyDeadlinesOverridden ? earlyDeadlines : mainEarlyDeadlines}
-        hasLateDeadlines={effectiveLateDeadlines.length > 0}
         dateError={dateCtrl.fieldState.error?.message}
         creditError={creditCtrl.fieldState.error?.message}
         displayTimezone={displayTimezone}
+        assessmentId={assessmentId}
+        courseInstanceId={courseInstanceId}
         onChange={handleChange}
       />
     </FieldWrapper>

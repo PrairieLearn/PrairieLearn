@@ -23,6 +23,7 @@ interface AssessmentAccessControlProps {
 
 function AssessmentAccessControlInner({
   courseInstance,
+  assessmentId,
   origHash: initialOrigHash,
   initialData,
 }: AssessmentAccessControlProps) {
@@ -74,6 +75,7 @@ function AssessmentAccessControlInner({
     <div style={{ height: '100%' }} data-split-pane-page>
       <AccessControlForm
         courseInstance={courseInstance}
+        assessmentId={assessmentId}
         initialData={initialData}
         isSaving={saveMutation.isPending}
         alert={alert}

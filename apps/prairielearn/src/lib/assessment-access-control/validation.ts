@@ -535,6 +535,15 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
   const dueCredit = dc.due?.credit ?? 100;
   // Late credit must satisfy both `< 100` (legacy ceiling) and `< dueCredit`.
   // When dueCredit < 100, the custom credit is the tighter bound.
+  //
+  // Note: this per-rule validator is intentionally stricter than the resolver
+  // for the dueCredit > 100 case. The resolver computes late credit as
+  // min(late, due), so a 105% late under a 120% due would resolve to 105%.
+  // We still cap at 100 here because late deadlines conceptually represent a
+  // penalty relative to on-time submission, and overrides may still lower the
+  // effective due credit to 100 in some timelines. Validating against the
+  // 100-cap keeps authored configs unambiguous regardless of which override
+  // chain applies.
   const lateCreditCap = Math.min(100, dueCredit);
 
   if (dc.earlyDeadlines) {

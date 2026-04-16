@@ -35,12 +35,14 @@ export function AccessControlForm({
   initialData = defaultInitialData,
   onSubmit,
   courseInstance,
+  assessmentId,
   isSaving = false,
   alert,
 }: {
   initialData?: AccessControlJsonWithId[];
   onSubmit: (data: AccessControlJsonWithId[]) => void;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
+  assessmentId: string;
   isSaving?: boolean;
   alert?: ReactNode;
 }) {
@@ -224,7 +226,11 @@ export function AccessControlForm({
   const rightPanel =
     selectedRule?.type === 'main' ? (
       <div className="px-3 pb-3">
-        <MainRuleForm displayTimezone={displayTimezone} />
+        <MainRuleForm
+          displayTimezone={displayTimezone}
+          assessmentId={assessmentId}
+          courseInstanceId={courseInstance.id}
+        />
       </div>
     ) : selectedRule?.type === 'override' ? (
       (() => {
@@ -237,7 +243,12 @@ export function AccessControlForm({
               namePrefix={`overrides.${selectedRule.index}`}
               courseInstanceId={courseInstance.id}
             />
-            <OverrideRuleContent index={selectedRule.index} displayTimezone={displayTimezone} />
+            <OverrideRuleContent
+              index={selectedRule.index}
+              displayTimezone={displayTimezone}
+              assessmentId={assessmentId}
+              courseInstanceId={courseInstance.id}
+            />
           </div>
         );
       })()
