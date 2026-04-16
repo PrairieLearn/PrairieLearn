@@ -6,15 +6,11 @@ import {
   RegenerateInstanceAlert,
   RegenerateInstanceModal,
 } from '../../components/AssessmentRegenerate.js';
-import { ExamQuestionAvailablePoints } from '../../components/ExamQuestionAvailablePoints.js';
-import { ExamQuestionStatus } from '../../components/ExamQuestionStatus.js';
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
-import { InstanceQuestionPoints } from '../../components/QuestionScore.js';
-import { QuestionVariantHistory } from '../../components/QuestionVariantHistory.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
@@ -25,8 +21,8 @@ import { getRoleNamesForUser } from '../../lib/groups.js';
 import type { GroupInfo } from '../../lib/groups.shared.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-import { LockpointRow } from './components/LockpointRow.js';
-import { RowLabel } from './components/RowLabel.js';
+import { ExamFooterContent } from './components/ExamFooterContent.js';
+import { QuestionTableBody } from './components/QuestionTableBody.js';
 import type { InstanceQuestionRow } from './studentAssessmentInstance.types.js';
 
 export function StudentAssessmentInstance({
@@ -140,9 +136,9 @@ export function StudentAssessmentInstance({
         (row.zone_number < zoneNumber || (row.zone_number === zoneNumber && row.start_new_zone)),
     );
 
-  function isLockpointCrossable(row: InstanceQuestionRow) {
+  function isLockpointCrossable(row: InstanceQuestionRow): boolean {
     return (
-      resLocals.assessment_instance.open &&
+      !!resLocals.assessment_instance.open &&
       resLocals.authz_result.active &&
       resLocals.authz_result.authorized_edit &&
       row.lockpoint &&
@@ -356,244 +352,21 @@ export function StudentAssessmentInstance({
               })}
             </thead>
             <tbody>
-              ${run(() => {
-                let previousZoneHadInfo = false;
-
-                return instance_question_rows.map((instance_question_row) => {
-                  const zoneHasInfo =
-                    instance_question_row.zone_title != null ||
-                    instance_question_row.zone_has_max_points ||
-                    instance_question_row.zone_has_best_questions;
-
-                  // Show zone info if this zone has info, or if the previous zone
-                  // had info (blank zone info to visually separate).
-                  const showZoneInfo =
-                    instance_question_row.start_new_zone && (zoneHasInfo || previousZoneHadInfo);
-
-                  if (instance_question_row.start_new_zone) {
-                    previousZoneHadInfo = zoneHasInfo;
-                  }
-
-                  return html`
-                    ${instance_question_row.start_new_zone && instance_question_row.lockpoint
-                      ? LockpointRow({
-                          row: instance_question_row,
-                          colspan: zoneTitleColspan,
-                          crossable: !!isLockpointCrossable(instance_question_row),
-                          blockedByAdvanceScorePerc: hasUnmetAdvanceScorePercBeforeLockpoint(
-                            instance_question_row.zone_number,
-                          ),
-                          isGroupAssessment: groupConfig != null,
-                          displayTimezone: resLocals.course_instance.display_timezone,
-                        })
-                      : ''}
-                    ${showZoneInfo
-                      ? html`
-                          <tr>
-                            <th colspan="${zoneTitleColspan}">
-                              ${zoneHasInfo
-                                ? html`
-                                    <div class="d-flex align-items-center gap-2">
-                                      ${instance_question_row.zone_title
-                                        ? html`<span>${instance_question_row.zone_title}</span>`
-                                        : ''}
-                                      ${instance_question_row.zone_has_max_points
-                                        ? ZoneInfoPopover({
-                                            label: instance_question_row.zone_title
-                                              ? `maximum ${instance_question_row.zone_max_points} points`
-                                              : `Maximum ${instance_question_row.zone_max_points} points`,
-                                            content: `Of the points that you are awarded for answering these ${instance_question_row.zone_question_count} questions, at most ${instance_question_row.zone_max_points} will count toward your total points.`,
-                                          })
-                                        : ''}
-                                      ${instance_question_row.zone_has_best_questions
-                                        ? ZoneInfoPopover({
-                                            label:
-                                              instance_question_row.zone_title ||
-                                              instance_question_row.zone_has_max_points
-                                                ? `best ${instance_question_row.zone_best_questions} of ${instance_question_row.zone_question_count} questions`
-                                                : `Best ${instance_question_row.zone_best_questions} of ${instance_question_row.zone_question_count} questions`,
-                                            content: `Of these ${instance_question_row.zone_question_count} questions, only the ${instance_question_row.zone_best_questions} with the highest number of awarded points will count toward your total points.`,
-                                          })
-                                        : ''}
-                                    </div>
-                                  `
-                                : html`&nbsp;`}
-                            </th>
-                          </tr>
-                        `
-                      : ''}
-                    <tr
-                      class="${instance_question_row.question_access_mode === 'blocked_sequence' ||
-                      instance_question_row.question_access_mode === 'blocked_lockpoint'
-                        ? 'bg-light pl-sequence-locked'
-                        : ''}"
-                    >
-                      <td>
-                        <div class="d-flex align-items-center">
-                          ${RowLabel({
-                            courseInstanceId: resLocals.course_instance.id,
-                            instance_question_row,
-                            userGroupRoles,
-                            hasStatusColumn: resLocals.assessment.type === 'Exam',
-                            rowLabelText:
-                              resLocals.assessment.type === 'Exam'
-                                ? `Question ${instance_question_row.question_number}`
-                                : instance_question_row.question_title?.trim()
-                                  ? `${instance_question_row.question_number}. ${instance_question_row.question_title}`
-                                  : instance_question_row.question_number,
-                          })}
-                        </div>
-                      </td>
-                      ${resLocals.assessment.type === 'Exam'
-                        ? html`
-                            <td class="align-middle lh-1">
-                              ${
-                                // Override the status badge for questions blocked by a lockpoint:
-                                // show "Locked" instead of the misleading "unanswered".
-                                instance_question_row.question_access_mode === 'blocked_lockpoint'
-                                  ? html`<span class="badge text-bg-secondary">Locked</span>`
-                                  : ExamQuestionStatus({
-                                      instance_question: instance_question_row,
-                                      assessment_question: instance_question_row, // Required fields are in instance_question
-                                      realTimeGradingPartiallyDisabled:
-                                        someQuestionsAllowRealTimeGrading &&
-                                        someQuestionsForbidRealTimeGrading,
-                                      allowGradeLeftMs: instance_question_row.allowGradeLeftMs,
-                                    })
-                              }
-                            </td>
-                            ${resLocals.has_auto_grading_question &&
-                            someQuestionsAllowRealTimeGrading
-                              ? html`
-                                  <td class="text-center">
-                                    ${instance_question_row.max_auto_points
-                                      ? ExamQuestionAvailablePoints({
-                                          open:
-                                            (resLocals.assessment_instance.open &&
-                                              instance_question_row.open) ??
-                                            false,
-                                          currentWeight:
-                                            (instance_question_row.points_list_original?.[
-                                              instance_question_row.number_attempts
-                                            ] ?? 0) -
-                                            (instance_question_row.max_manual_points ?? 0),
-                                          pointsList: instance_question_row.points_list?.map(
-                                            (p) =>
-                                              p - (instance_question_row.max_manual_points ?? 0),
-                                          ),
-                                          highestSubmissionScore:
-                                            instance_question_row.highest_submission_score,
-                                        })
-                                      : html`&mdash;`}
-                                  </td>
-                                `
-                              : ''}
-                            ${someQuestionsAllowRealTimeGrading ||
-                            !resLocals.assessment_instance.open
-                              ? html`
-                                  ${resLocals.has_auto_grading_question &&
-                                  resLocals.has_manual_grading_question
-                                    ? html`
-                                        <td class="text-center">
-                                          ${InstanceQuestionPoints({
-                                            instance_question: instance_question_row,
-                                            assessment_question: instance_question_row, // Required fields are present in instance_question
-                                            component: 'auto',
-                                          })}
-                                        </td>
-                                        <td class="text-center">
-                                          ${InstanceQuestionPoints({
-                                            instance_question: instance_question_row,
-                                            assessment_question: instance_question_row, // Required fields are present in instance_question
-                                            component: 'manual',
-                                          })}
-                                        </td>
-                                      `
-                                    : ''}
-                                  <td class="text-center">
-                                    ${InstanceQuestionPoints({
-                                      instance_question: instance_question_row,
-                                      assessment_question: instance_question_row, // Required fields are present in instance_question
-                                      component: 'total',
-                                    })}
-                                  </td>
-                                `
-                              : html`
-                                  ${resLocals.has_auto_grading_question &&
-                                  resLocals.has_manual_grading_question
-                                    ? html`
-                                        <td class="text-center">
-                                          ${formatPoints(instance_question_row.max_auto_points)}
-                                        </td>
-                                        <td class="text-center">
-                                          ${formatPoints(instance_question_row.max_manual_points)}
-                                        </td>
-                                      `
-                                    : ''}
-                                  <td class="text-center">
-                                    ${formatPoints(instance_question_row.max_points)}
-                                  </td>
-                                `}
-                          `
-                        : html`
-                            ${resLocals.has_auto_grading_question
-                              ? html`
-                                  <td class="text-center">
-                                    ${run(() => {
-                                      if (!instance_question_row.max_auto_points) {
-                                        return html`&mdash;`;
-                                      }
-
-                                      // Compute the current "auto" value by subtracting the manual points.
-                                      // We use this because `current_value` doesn't account for manual points.
-                                      // We don't want to mislead the student into thinking that they can earn
-                                      // more points than they actually can.
-                                      const currentAutoValue =
-                                        (instance_question_row.current_value ?? 0) -
-                                        (instance_question_row.max_manual_points ?? 0);
-
-                                      return formatPoints(currentAutoValue);
-                                    })}
-                                  </td>
-                                  <td class="text-center">
-                                    ${QuestionVariantHistory({
-                                      instanceQuestionId: instance_question_row.id,
-                                      courseInstanceId: resLocals.course_instance.id,
-                                      previousVariants: instance_question_row.previous_variants,
-                                    })}
-                                  </td>
-                                `
-                              : ''}
-                            ${resLocals.has_auto_grading_question &&
-                            resLocals.has_manual_grading_question
-                              ? html`
-                                  <td class="text-center">
-                                    ${InstanceQuestionPoints({
-                                      instance_question: instance_question_row,
-                                      assessment_question: instance_question_row, // Required fields are present in instance_question
-                                      component: 'auto',
-                                    })}
-                                  </td>
-                                  <td class="text-center">
-                                    ${InstanceQuestionPoints({
-                                      instance_question: instance_question_row,
-                                      assessment_question: instance_question_row, // Required fields are present in instance_question
-                                      component: 'manual',
-                                    })}
-                                  </td>
-                                `
-                              : ''}
-                            <td class="text-center">
-                              ${InstanceQuestionPoints({
-                                instance_question: instance_question_row,
-                                assessment_question: instance_question_row, // Required fields are present in instance_question
-                                component: 'total',
-                              })}
-                            </td>
-                          `}
-                    </tr>
-                  `;
-                });
+              ${QuestionTableBody({
+                instance_question_rows,
+                courseInstanceId: resLocals.course_instance.id,
+                displayTimezone: resLocals.course_instance.display_timezone,
+                assessmentType: resLocals.assessment.type,
+                someQuestionsAllowRealTimeGrading,
+                someQuestionsForbidRealTimeGrading,
+                hasAutoGradingQuestion: resLocals.has_auto_grading_question,
+                hasManualGradingQuestion: resLocals.has_manual_grading_question,
+                assessmentInstanceOpen: !!resLocals.assessment_instance.open,
+                isGroupAssessment: !!groupConfig,
+                zoneTitleColspan,
+                userGroupRoles,
+                isLockpointCrossable,
+                hasUnmetAdvanceScorePercBeforeLockpoint,
               })}
             </tbody>
           </table>
@@ -603,118 +376,16 @@ export function StudentAssessmentInstance({
           ? html`
               <div class="card-footer d-flex flex-column gap-3">
                 ${showExamFooterContent
-                  ? html`
-                      ${someQuestionsAllowRealTimeGrading
-                        ? html`
-                            <form name="grade-form" method="POST">
-                              <input type="hidden" name="__action" value="grade" />
-                              <input
-                                type="hidden"
-                                name="__csrf_token"
-                                value="${resLocals.__csrf_token}"
-                              />
-                              ${savedAnswers > 0
-                                ? html`
-                                    <button
-                                      type="submit"
-                                      class="btn btn-info"
-                                      ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
-                                    >
-                                      Grade ${savedAnswers} saved
-                                      ${savedAnswers !== 1 ? 'answers' : 'answer'}
-                                    </button>
-                                  `
-                                : html`
-                                    <button type="submit" class="btn btn-info" disabled>
-                                      No saved answers to grade
-                                    </button>
-                                  `}
-                            </form>
-                            <ul class="mb-0">
-                              ${suspendedSavedAnswers > 1
-                                ? html`
-                                    <li>
-                                      There are ${suspendedSavedAnswers} saved answers that cannot
-                                      be graded yet because their grade rate has not been reached.
-                                      They are marked with the
-                                      <i class="fa fa-hourglass-half"></i> icon above. Reload this
-                                      page to update this information.
-                                    </li>
-                                  `
-                                : suspendedSavedAnswers === 1
-                                  ? html`
-                                      <li>
-                                        There is one saved answer that cannot be graded yet because
-                                        its grade rate has not been reached. It is marked with the
-                                        <i class="fa fa-hourglass-half"></i> icon above. Reload this
-                                        page to update this information.
-                                      </li>
-                                    `
-                                  : ''}
-                              <li>
-                                Submit your answer to each question with the
-                                <strong>Save & Grade</strong> or <strong>Save only</strong> buttons
-                                on the question page.
-                              </li>
-                              <li>
-                                Look at <strong>Status</strong> to confirm that each question has
-                                been
-                                ${someQuestionsForbidRealTimeGrading
-                                  ? 'either saved or graded'
-                                  : 'graded'}.
-                                Questions with <strong>Available points</strong> can be attempted
-                                again for more points. Attempting questions again will never reduce
-                                the points you already have.
-                              </li>
-                              ${resLocals.authz_result.password != null ||
-                              !resLocals.authz_result.show_closed_assessment ||
-                              // If this is true, this assessment has a mix of real-time-graded and
-                              // non-real-time-graded questions. We need to show the "Finish assessment"
-                              // button.
-                              someQuestionsForbidRealTimeGrading
-                                ? html`
-                                    <li>
-                                      After you have answered all the questions completely, click
-                                      here:
-                                      <button
-                                        class="btn btn-danger"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#confirmFinishModal"
-                                        ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
-                                      >
-                                        Finish assessment
-                                      </button>
-                                    </li>
-                                  `
-                                : html`
-                                    <li>
-                                      When you are done, please logout and close your browser. If
-                                      you have any saved answers when you leave, they will be
-                                      automatically graded before your final score is computed.
-                                    </li>
-                                  `}
-                            </ul>
-                          `
-                        : html`
-                            <ul class="mb-0">
-                              <li>
-                                Submit your answer to each question with the
-                                <strong>Save</strong> button on the question page.
-                              </li>
-                              <li>
-                                After you have answered all the questions completely, click here:
-                                <button
-                                  class="btn btn-danger"
-                                  data-bs-toggle="modal"
-                                  data-bs-target="#confirmFinishModal"
-                                  ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
-                                >
-                                  Finish assessment
-                                </button>
-                              </li>
-                            </ul>
-                          `}
-                    `
+                  ? ExamFooterContent({
+                      someQuestionsAllowRealTimeGrading,
+                      someQuestionsForbidRealTimeGrading,
+                      savedAnswers,
+                      suspendedSavedAnswers,
+                      authorizedEdit: resLocals.authz_result.authorized_edit,
+                      hasPassword: resLocals.authz_result.password != null,
+                      showClosedAssessment: resLocals.authz_result.show_closed_assessment,
+                      csrfToken: resLocals.__csrf_token,
+                    })
                   : ''}
                 ${showUnauthorizedEditWarning
                   ? html`
@@ -891,21 +562,6 @@ function InstanceQuestionTableHeader({
                 </tr>
               `}
         `}
-  `;
-}
-
-function ZoneInfoPopover({ label, content }: { label: string; content: string }) {
-  return html`
-    <button
-      type="button"
-      class="btn btn-xs btn-secondary"
-      data-bs-toggle="popover"
-      data-bs-container="body"
-      data-bs-html="true"
-      data-bs-content="${content}"
-    >
-      ${label}&nbsp;<i class="far fa-question-circle" aria-hidden="true"></i>
-    </button>
   `;
 }
 

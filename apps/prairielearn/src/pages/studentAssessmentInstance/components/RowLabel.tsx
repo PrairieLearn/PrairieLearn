@@ -53,7 +53,7 @@ export function RowLabel({
       // column), we render the badge here instead.
       instance_question_row.question_access_mode === 'blocked_lockpoint' && !hasStatusColumn
         ? html`
-            <span class="badge bg-secondary ms-1" data-test-id="locked-instance-question-row">
+            <span class="badge bg-secondary ms-1" data-testid="locked-instance-question-row">
               Locked
             </span>
           `
@@ -66,7 +66,7 @@ export function RowLabel({
                 data-bs-container="body"
                 data-bs-html="true"
                 data-bs-content="${lockMessage}"
-                data-test-id="locked-instance-question-row"
+                data-testid="locked-instance-question-row"
                 aria-label="Locked"
               >
                 <i class="fas fa-lock" aria-hidden="true"></i>
