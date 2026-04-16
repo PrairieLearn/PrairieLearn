@@ -4,6 +4,7 @@ import Modal from 'react-bootstrap/Modal';
 
 import { downloadAsCSV } from '@prairielearn/browser-utils';
 import { ExpandableCheckboxGroup, Radio, RadioGroup } from '@prairielearn/ui';
+import { assertNever } from '@prairielearn/utils';
 
 import {
   CanvasMatchingPanel,
@@ -223,6 +224,8 @@ function CanvasCsvModalContent({
                 return scoreData.score_perc ?? null;
               case 'points_original':
                 return scoreData.points ?? null;
+              default:
+                assertNever(scoreFormat);
             }
           }),
         ];
