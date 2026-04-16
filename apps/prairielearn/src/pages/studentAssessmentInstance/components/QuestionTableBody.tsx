@@ -1,14 +1,16 @@
 import { html } from '@prairielearn/html';
-import type { InstanceQuestionRow } from '../studentAssessmentInstance.types.js';
-import { LockpointRow } from './LockpointRow.js';
-import { InstanceQuestionPoints } from '../../../components/QuestionScore.js';
-import { QuestionVariantHistory } from '../../../components/QuestionVariantHistory.js';
-import { formatPoints } from '../../../lib/format.js';
 import { run } from '@prairielearn/run';
+
 import { ExamQuestionAvailablePoints } from '../../../components/ExamQuestionAvailablePoints.js';
 import { ExamQuestionStatus } from '../../../components/ExamQuestionStatus.js';
-import { RowLabel } from './RowLabel.js';
+import { InstanceQuestionPoints } from '../../../components/QuestionScore.js';
+import { QuestionVariantHistory } from '../../../components/QuestionVariantHistory.js';
 import type { EnumAssessmentType } from '../../../lib/db-types.js';
+import { formatPoints } from '../../../lib/format.js';
+import type { InstanceQuestionRow } from '../studentAssessmentInstance.types.js';
+
+import { LockpointRow } from './LockpointRow.js';
+import { RowLabel } from './RowLabel.js';
 
 export function QuestionTableBody({
   instance_question_rows,
@@ -67,8 +69,8 @@ export function QuestionTableBody({
             blockedByAdvanceScorePerc: hasUnmetAdvanceScorePercBeforeLockpoint(
               instance_question_row.zone_number,
             ),
-            isGroupAssessment: isGroupAssessment,
-            displayTimezone: displayTimezone,
+            isGroupAssessment,
+            displayTimezone,
           })
         : ''}
       ${showZoneInfo
@@ -184,7 +186,7 @@ function ExamQuestionCells({
           <td class="text-center">
             ${instance_question_row.max_auto_points
               ? ExamQuestionAvailablePoints({
-                  open: (assessmentInstanceOpen && instance_question_row.open) ?? false,
+                  open: assessmentInstanceOpen && instance_question_row.open,
                   currentWeight:
                     (instance_question_row.points_list_original?.[
                       instance_question_row.number_attempts

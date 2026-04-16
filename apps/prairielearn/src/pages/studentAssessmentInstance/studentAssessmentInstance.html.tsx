@@ -21,9 +21,9 @@ import { getRoleNamesForUser } from '../../lib/groups.js';
 import type { GroupInfo } from '../../lib/groups.shared.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-import type { InstanceQuestionRow } from './studentAssessmentInstance.types.js';
 import { ExamFooterContent } from './components/ExamFooterContent.js';
 import { QuestionTableBody } from './components/QuestionTableBody.js';
+import type { InstanceQuestionRow } from './studentAssessmentInstance.types.js';
 
 export function StudentAssessmentInstance({
   instance_question_rows,
