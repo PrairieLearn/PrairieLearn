@@ -281,12 +281,14 @@ async function finalizeAiGradingPersistence({
 }
 
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
-export const MAX_CONCURRENT_AI_GRADING_JOBS_PER_USER = 5;
+export const MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE = 5;
 
-export async function getRunningAiGradingJobCount(authn_user_id: string): Promise<number> {
+export async function getRunningAiGradingJobCountForCourseInstance(
+  course_instance_id: string,
+): Promise<number> {
   return await queryScalar(
-    sql.count_running_ai_grading_jobs_for_user,
-    { authn_user_id },
+    sql.count_running_ai_grading_jobs_for_course_instance,
+    { course_instance_id },
     z.number(),
   );
 }
@@ -372,11 +374,11 @@ export async function aiGrade({
 
   const question_course = await getQuestionCourse(question, course);
 
-  const runningJobCount = await getRunningAiGradingJobCount(authn_user_id);
-  if (runningJobCount >= MAX_CONCURRENT_AI_GRADING_JOBS_PER_USER) {
+  const runningJobCount = await getRunningAiGradingJobCountForCourseInstance(course_instance.id);
+  if (runningJobCount >= MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE) {
     throw new error.HttpStatusError(
       429,
-      `You've reached the limit of ${MAX_CONCURRENT_AI_GRADING_JOBS_PER_USER} concurrent AI grading jobs. Please try again later.`,
+      `You've reached the limit of ${MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE} concurrent AI grading jobs. Please try again later.`,
     );
   }
 

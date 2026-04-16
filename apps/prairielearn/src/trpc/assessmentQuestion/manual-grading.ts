@@ -14,9 +14,9 @@ import {
   setAiGradingMode,
 } from '../../ee/lib/ai-grading/ai-grading-util.js';
 import {
-  MAX_CONCURRENT_AI_GRADING_JOBS_PER_USER,
+  MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE,
   aiGrade,
-  getRunningAiGradingJobCount,
+  getRunningAiGradingJobCountForCourseInstance,
 } from '../../ee/lib/ai-grading/ai-grading.js';
 import { deleteAiInstanceQuestionGroups } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
@@ -231,12 +231,12 @@ const aiGradingAvailabilityInfo = t.procedure
   )
   .query(async (opts) => {
     const [running_job_count, creditPool] = await Promise.all([
-      getRunningAiGradingJobCount(opts.ctx.authn_user.id),
+      getRunningAiGradingJobCountForCourseInstance(opts.ctx.course_instance.id),
       selectCreditPool(opts.ctx.course_instance.id),
     ]);
     return {
       running_job_count,
-      max_concurrent_jobs: MAX_CONCURRENT_AI_GRADING_JOBS_PER_USER,
+      max_concurrent_jobs: MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE,
       credit_balance_milli_dollars: creditPool.total_milli_dollars,
     };
   });
