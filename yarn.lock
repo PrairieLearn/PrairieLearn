@@ -4989,7 +4989,7 @@ __metadata:
     "@types/node": "npm:^24.12.2"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260305.1"
     "@vitest/coverage-v8": "npm:^4.1.2"
-    dompurify: "npm:^3.3.3"
+    dompurify: "npm:^3.4.0"
     jsdom: "npm:^29.0.1"
     marked: "npm:^17.0.5"
     mathjax: "npm:^4.1.1"
@@ -5363,7 +5363,7 @@ __metadata:
     dockerode: "npm:^4.0.10"
     domelementtype: "npm:^3.0.0"
     domhandler: "npm:^6.0.1"
-    dompurify: "npm:^3.3.3"
+    dompurify: "npm:^3.4.0"
     dropzone: "npm:^5.9.3"
     echarts: "npm:^6.0.0"
     es-main: "npm:^1.4.0"
@@ -13089,15 +13089,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dompurify@npm:^3.0.8, dompurify@npm:^3.3.3":
-  version: 3.3.3
-  resolution: "dompurify@npm:3.3.3"
+"dompurify@npm:^3.0.8, dompurify@npm:^3.4.0":
+  version: 3.4.0
+  resolution: "dompurify@npm:3.4.0"
   dependencies:
     "@types/trusted-types": "npm:^2.0.7"
   dependenciesMeta:
     "@types/trusted-types":
       optional: true
-  checksum: 10c0/097c14a21a3f6cb95beded9ecd255f7c3512c42767b048390c747b0fe35736f6a71e02320fc50a9ac2be645834b463e4760915d595d502a56452daf339d0ea9c
+  checksum: 10c0/5593ac44ee20b9aa521c2120884effc98927fb9128c548183c75e79e0a04357c62ee913a049a267c8f396cb8c9d520ecf72562826c5524c46d4fe03c12063638
   languageName: node
   linkType: hard
 
@@ -14599,12 +14599,12 @@ __metadata:
   linkType: hard
 
 "follow-redirects@npm:^1.0.0":
-  version: 1.15.9
-  resolution: "follow-redirects@npm:1.15.9"
+  version: 1.16.0
+  resolution: "follow-redirects@npm:1.16.0"
   peerDependenciesMeta:
     debug:
       optional: true
-  checksum: 10c0/5829165bd112c3c0e82be6c15b1a58fa9dcfaede3b3c54697a82fe4a62dd5ae5e8222956b448d2f98e331525f05d00404aba7d696de9e761ef6e42fdc780244f
+  checksum: 10c0/a1e2900163e6f1b4d1ed5c221b607f41decbab65534c63fe7e287e40a5d552a6496e7d9d7d976fa4ba77b4c51c11e5e9f683f10b43011ea11e442ff128d0e181
   languageName: node
   linkType: hard
 
