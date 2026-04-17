@@ -34,7 +34,7 @@ def _get_pr_number(repo: str, run_id: str) -> str | None:
         return None
     if raw.isdigit():
         return raw
-    # pull_requests is empty for fork PRs; fall back to finding the PR by worflow ref or commit SHA.
+    # pull_requests is empty for fork PRs; fall back to finding the PR by workflow ref or commit SHA.
     if re.match(r"refs/pull/\d+/merge", raw):
         return raw.split("/")[2]
     # ensure we're dealing with a commit SHA before using it to find the PR
