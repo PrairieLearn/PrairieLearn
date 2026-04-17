@@ -740,7 +740,7 @@
       inlineShortcuts.cap = { value: '{#@} \\cap {#?}' };
       inlineShortcuts['\\cap'] = inlineShortcuts.cap;
       inlineShortcuts['&'] = inlineShortcuts.cap;
-      inlineShortcuts['|'] = inlineShortcuts.cap;
+      // inlineShortcuts['|'] = inlineShortcuts.cap;
     }
 
     const shortcutProxy = makeShortcutProxy(inlineShortcuts, mf);
