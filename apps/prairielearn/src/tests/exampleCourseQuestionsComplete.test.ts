@@ -315,8 +315,9 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
       // Render
       const locals = {
         urlPrefix: '/prefix1',
-        plainUrlPrefix: '/pl',
         questionRenderContext: undefined,
+        showCorrectAnswer: false,
+        allowAnswerEditing: true,
         ...buildQuestionUrls(
           '/prefix2',
           { id: 'vid', workspace_id: 'wid' } as unknown as Variant,
