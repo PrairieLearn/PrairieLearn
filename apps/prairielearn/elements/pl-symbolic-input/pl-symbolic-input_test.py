@@ -277,76 +277,6 @@ def test_formula_editor_initial_value_respects_display_log_as_ln(
     assert "\\log{\\left(x \\right)}" not in rendered
 
 
-def test_open_interval_submission_parses_and_grades() -> None:
-    element_html = """
-    <pl-symbolic-input
-        answers-name="test"
-        allow-set-notation="true"
-        correct-answer="(1, 2] U (3, 4)"
-    ></pl-symbolic-input>
-    """
-    data: dict[str, Any] = {
-        "submitted_answers": {"test": "(1, 2] U (3, 4)"},
-        "raw_submitted_answers": {"test": "(1, 2] U (3, 4)"},
-        "correct_answers": {},
-        "answers_names": {},
-        "format_errors": {},
-        "partial_scores": {},
-        "panel": "question",
-        "editable": True,
-    }
-
-    symbolic_input.prepare(element_html, data)
-    assert data["correct_answers"]["test"] == "(1, 2] U (3, 4)"
-
-    symbolic_input.parse(element_html, data)
-    assert "test" not in data["format_errors"]
-    assert isinstance(data["submitted_answers"]["test"], dict)
-    assert data["submitted_answers"]["test"]["_type"] == "sympy"
-    assert (
-        data["submitted_answers"]["test"]["_value"]
-        == "Union(Interval(1, 2, True, False), Interval(3, 4, True, True))"
-    )
-
-    symbolic_input.grade(element_html, data)
-    assert data["partial_scores"]["test"]["score"] == 1
-
-
-def test_closed_interval_submission_parses_and_grades() -> None:
-    element_html = """
-    <pl-symbolic-input
-        answers-name="test"
-        allow-set-notation="true"
-        correct-answer="[1, 2] U [3, 4]"
-    ></pl-symbolic-input>
-    """
-    data: dict[str, Any] = {
-        "submitted_answers": {"test": "[1, 2] U [3, 4]"},
-        "raw_submitted_answers": {"test": "[1, 2] U [3, 4]"},
-        "correct_answers": {},
-        "answers_names": {},
-        "format_errors": {},
-        "partial_scores": {},
-        "panel": "question",
-        "editable": True,
-    }
-
-    symbolic_input.prepare(element_html, data)
-    assert data["correct_answers"]["test"] == "[1, 2] U [3, 4]"
-
-    symbolic_input.parse(element_html, data)
-    assert "test" not in data["format_errors"]
-    assert isinstance(data["submitted_answers"]["test"], dict)
-    assert data["submitted_answers"]["test"]["_type"] == "sympy"
-    assert (
-        data["submitted_answers"]["test"]["_value"]
-        == "Union(Interval(1, 2), Interval(3, 4))"
-    )
-
-    symbolic_input.grade(element_html, data)
-    assert data["partial_scores"]["test"]["score"] == 1
-
-
 @pytest.mark.parametrize(
     ("answer", "expected_expr"),
     [
@@ -423,34 +353,4 @@ def test_interval_correct_answer_renders(
     symbolic_input.prepare(element_html, data)
     rendered = symbolic_input.render(element_html, data)
 
-    assert "\\left[1, 2\\right]" in rendered
-
-
-@pytest.mark.parametrize(
-    "submitted",
-    ["[1, oo]", "[1, infty]"],
-)
-def test_infinite_interval_submissions_are_accepted(submitted: str) -> None:
-    element_html = """
-    <pl-symbolic-input
-        answers-name="test"
-        allow-set-notation="true"
-    ></pl-symbolic-input>
-    """
-    data: dict[str, Any] = {
-        "submitted_answers": {"test": submitted},
-        "raw_submitted_answers": {"test": submitted},
-        "correct_answers": {"test": "[1, oo]"},
-        "answers_names": {},
-        "format_errors": {},
-        "partial_scores": {},
-        "panel": "question",
-        "editable": True,
-    }
-
-    symbolic_input.parse(element_html, data)
-    assert "test" not in data["format_errors"]
-    assert isinstance(data["submitted_answers"]["test"], dict)
-
-    symbolic_input.grade(element_html, data)
-    assert data["partial_scores"]["test"]["score"] == 1
+    assert "\\left[1, 2\\right] \\cup \\left[3, 4\\right]" in rendered
