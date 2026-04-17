@@ -1140,6 +1140,24 @@ describe('resolveAccessControl', () => {
         expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
       },
     );
+
+    // The gradebook displays rows even when access is denied and relies on
+    // `showClosedAssessmentScore` to decide whether to reveal prior scores, so
+    // the deny path must still honor the configured visibility flags.
+    it.each(visibilityConfigs)(
+      'Exam mode with no PT reservation: $name',
+      ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExam] }],
+          prairieTestReservations: [],
+        });
+        expect(result.authorized).toBe(false);
+        expect(result.showClosedAssessment).toBe(showClosedAssessment);
+        expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
+      },
+    );
   });
 
   describe('credit date string formatting', () => {
