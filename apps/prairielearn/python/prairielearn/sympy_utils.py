@@ -643,6 +643,10 @@ def evaluate_with_source(
     try:
         res = eval_expr(code, local_dict, global_dict)
     except TypeError as exc:
+        # SymPy raises TypeError for semantically invalid set operations that are
+        # nonetheless syntactically valid (e.g. `{1, 2} / {3, 4}`, `sin((1, 3])`).
+        # Because the AST check above already ran, TypeErrors here are expected to
+        # come from SymPy's own type system, not from Python infrastructure bugs.
         raise HasParseError(-1) from exc
     except Exception as exc:
         raise BaseSympyError from exc
