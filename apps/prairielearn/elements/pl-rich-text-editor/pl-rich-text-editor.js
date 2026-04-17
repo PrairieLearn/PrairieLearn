@@ -185,9 +185,9 @@
       const wc = countWords(getCountableText());
       const tooFew = Number.isFinite(minWordCount) && wc < minWordCount;
       const tooMany = Number.isFinite(maxWordCount) && wc > maxWordCount;
-      const isInvalid = tooFew || tooMany;
 
-      if (!isInvalid) {
+      // If the text is empty, no error is shown.
+      if (wc === 0 || !(tooFew || tooMany)) {
         invalidElement.classList.add('d-none');
         invalidElement.textContent = '';
         return;
