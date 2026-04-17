@@ -890,6 +890,28 @@ class TestExceptions:
         assert match is not None
         assert match.group(1) == expected_caret
 
+    def test_type_error_caret_accounts_for_exponentiation_normalization(self) -> None:
+        error_msg = psu.validate_string_as_sympy(
+            "x^2 / {1,2}", ["x"], allow_set_notation=True
+        )
+        assert error_msg is not None
+        match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
+        assert match is not None
+        assert match.group(1) == _caret(
+            "x^2 / {1,",  # the caret should land on the original `/`
+            "    ^     ",
+        )
+
+    def test_find_type_error_offset_maps_back_to_original_input(self) -> None:
+        assert (
+            psu.find_type_error_offset(
+                "x**2 / {1,2}",
+                [0, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                TypeError("unsupported operand type(s) for /: 'Pow' and 'FiniteSet'"),
+            )
+            == 4
+        )
+
     def test_invalid_function_with_simplify_false(self) -> None:
         """Test that invalid function calls are caught with simplify_expression=False.
 
