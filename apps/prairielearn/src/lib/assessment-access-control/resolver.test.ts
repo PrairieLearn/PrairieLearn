@@ -2025,4 +2025,81 @@ describe('custom due credit', () => {
     expect(result.active).toBe(false);
     expect(result.creditDateString).toBe('None');
   });
+
+  it('applies afterLastDeadline after early deadlines when no due date is set', () => {
+    const rules = [
+      makeMainRule({
+        dateControl: {
+          releaseDate: '2025-01-01T00:00:00Z',
+          earlyDeadlines: [{ date: '2025-02-01T00:00:00Z', credit: 120 }],
+          afterLastDeadline: { credit: 50, allowSubmissions: true },
+        },
+      }),
+    ];
+
+    const before = resolveAccessControl({
+      ...baseInput,
+      rules,
+      date: new Date('2025-01-15T00:00:00Z'),
+    });
+    expect(before.credit).toBe(120);
+    expect(before.active).toBe(true);
+
+    const after = resolveAccessControl({
+      ...baseInput,
+      rules,
+      date: new Date('2030-01-01T00:00:00Z'),
+    });
+    expect(after.credit).toBe(50);
+    expect(after.active).toBe(true);
+  });
+
+  it('shadows afterLastDeadline with indefinite due credit when due date is explicitly null', () => {
+    const result = resolveAccessControl({
+      ...baseInput,
+      rules: [
+        makeMainRule({
+          dateControl: {
+            releaseDate: '2025-01-01T00:00:00Z',
+            due: { date: null },
+            earlyDeadlines: [{ date: '2025-02-01T00:00:00Z', credit: 120 }],
+            afterLastDeadline: { credit: 50, allowSubmissions: true },
+          },
+        }),
+      ],
+      date: new Date('2030-01-01T00:00:00Z'),
+    });
+    expect(result.credit).toBe(100);
+    expect(result.active).toBe(true);
+  });
+
+  it('honors early deadlines with null due date, then applies default credit indefinitely', () => {
+    const rules = [
+      makeMainRule({
+        dateControl: {
+          releaseDate: '2025-01-01T00:00:00Z',
+          due: { date: null },
+          earlyDeadlines: [{ date: '2025-02-01T00:00:00Z', credit: 120 }],
+        },
+      }),
+    ];
+
+    const before = resolveAccessControl({
+      ...baseInput,
+      rules,
+      date: new Date('2025-01-15T00:00:00Z'),
+    });
+    expect(before.credit).toBe(120);
+    expect(before.active).toBe(true);
+    expect(before.creditDateString).toMatch(/^120% until /);
+
+    const after = resolveAccessControl({
+      ...baseInput,
+      rules,
+      date: new Date('2030-01-01T00:00:00Z'),
+    });
+    expect(after.credit).toBe(100);
+    expect(after.active).toBe(true);
+    expect(after.creditDateString).toBe('100%');
+  });
 });

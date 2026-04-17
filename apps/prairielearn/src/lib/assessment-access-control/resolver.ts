@@ -266,20 +266,6 @@ function computeCredit(
     };
   }
 
-  // Due configured with no date: credit applies indefinitely after release
-  // (dueCredit defaults to 100 when not customized). Validation rejects late
-  // deadlines with a null due date, and early deadlines with custom due credit.
-  if (dateControl.due && dueDate === null) {
-    return {
-      credit: dueCredit,
-      active: dueCredit > 0,
-      beforeRelease: false,
-      nextDeadlineDate: null,
-      password: dateControl.password ?? null,
-      timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
-    };
-  }
-
   // Build timeline segments: each entry is [deadline, creditBefore]
   // The credit value represents what you get if you submit BEFORE this deadline.
   const timeline: { date: Date; credit: number }[] = [];
@@ -314,18 +300,6 @@ function computeCredit(
 
   timeline.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  // No due date and no deadlines = no credit granted.
-  if (timeline.length === 0) {
-    return {
-      credit: 0,
-      active: false,
-      beforeRelease: false,
-      nextDeadlineDate: null,
-      password: null,
-      timeLimitMin: null,
-    };
-  }
-
   // Before the first deadline, the credit is the first entry's credit value.
   // After each deadline, the credit becomes the next entry's credit value.
   // After the last deadline, use afterLastDeadline settings.
@@ -349,9 +323,33 @@ function computeCredit(
     }
   }
 
-  // We are past the last deadline.
-  // If there are no deadlines after filtering (only due date was present and we're past it),
-  // or if afterLastDeadline is not configured, use defaults.
+  // We are past the last deadline (or the timeline was empty).
+  // When `due` is configured with no date, the due-date credit applies indefinitely
+  // after release (and, when early deadlines exist, after the last early deadline).
+  if (dateControl.due && dueDate === null) {
+    return {
+      credit: dueCredit,
+      active: dueCredit > 0,
+      beforeRelease: false,
+      nextDeadlineDate: null,
+      password: dateControl.password ?? null,
+      timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
+    };
+  }
+
+  // No due date and no deadlines: no credit granted. afterLastDeadline is
+  // ignored here because it's meaningless without at least one deadline.
+  if (timeline.length === 0) {
+    return {
+      credit: 0,
+      active: false,
+      beforeRelease: false,
+      nextDeadlineDate: null,
+      password: null,
+      timeLimitMin: null,
+    };
+  }
+
   const afterLast = dateControl.afterLastDeadline;
   const credit = afterLast?.credit ?? 0;
   assert(!afterLast || afterLast.allowSubmissions !== undefined);
