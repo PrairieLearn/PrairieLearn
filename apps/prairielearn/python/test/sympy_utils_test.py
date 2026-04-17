@@ -38,7 +38,7 @@ def test_evaluate() -> None:
         psu.evaluate("eval('dict')", locals_for_eval=locals_for_eval)
 
 
-class TestSympy:  # noqa: PLR0904
+class TestSympy:
     SYMBOL_NAMES = ("n", "m", "alpha", "\u03bc0")
     M, N, ALPHA, MU0 = sympy.symbols("m n alpha mu0")
 
