@@ -28,14 +28,12 @@ def _get_pr_number(repo: str, run_id: str) -> str | None:
         "api",
         f"repos/{repo}/actions/runs/{run_id}",
         "--jq",
-        ".pull_requests[0].number // .referenced_workflows[0].ref // .head_sha",
+        ".pull_requests[0].number // .head_sha",
     )
     if not raw:
         return None
     if raw.isdigit():
         return raw
-    if re.match(r"refs/pull/\d+/merge", raw):
-        return raw.split("/")[2]
     # pull_requests is empty for fork PRs; fall back to finding the PR by commit SHA.
     raw = _gh(
         "api",
