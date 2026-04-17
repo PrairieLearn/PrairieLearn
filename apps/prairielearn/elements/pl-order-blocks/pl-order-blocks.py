@@ -43,7 +43,6 @@ class OrderBlocksAnswerData(TypedDict):
     ranking: int
     index: int
     tag: str
-    initially_placed: bool
     distractor_for: str | None
     depends: Edges | ColoredEdges  # only used with DAG grader
     group_info: GroupInfo  # only used with DAG grader
@@ -221,7 +220,6 @@ def prepare(html: str, data: pl.QuestionData) -> None:
             "ranking": answer_options.ranking,
             "index": i,
             "tag": answer_options.tag,
-            "initially_placed": answer_options.initially_placed,
             "distractor_for": answer_options.distractor_for,
             "depends": answer_options.depends,  # only used with DAG grader
             "group_info": answer_options.group_info,  # only used with DAG grader
@@ -344,20 +342,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "question":
         editable = data["editable"]
 
-        all_blocks = data["params"][answer_name]
-        initially_placed_blocks = sorted(
-            [block for block in all_blocks if block["initially_placed"]],
-            key=lambda x: x["index"],
-        )
-
         # We aren't allowed to mutate the `data` object during render, so we'll
         # make a deep copy of the submitted answer so we can update indentation
         # fields to values suitable for rendering.
         student_previous_submission = deepcopy(
-            data["submitted_answers"].get(answer_name, initially_placed_blocks)
+            data["submitted_answers"].get(answer_name, [])
         )
         submitted_block_ids = {block["uuid"] for block in student_previous_submission}
 
+        all_blocks = data["params"][answer_name]
         source_blocks = [
             {**block, "indent_depth": 0}
             for block in all_blocks
@@ -560,8 +553,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if (not order_block_options.allow_blank) and (
         student_answer is None or student_answer == []
     ):
-        data["submitted_answers"][answer_name] = []
-        data["submitted_answers"].pop(answer_raw_name, None)
         data["format_errors"][answer_name] = (
             "Your submitted answer was blank; you did not drag any answer blocks into the answer area."
         )
