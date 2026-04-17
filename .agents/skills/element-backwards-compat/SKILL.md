@@ -18,12 +18,10 @@ Any new key added to one of the dicts above (or to a nested dict stored inside o
 
 When changing an element controller in `apps/prairielearn/elements/`, treat reads of persisted data as untrusted:
 
-1. **Adding a new key to a persisted dict?** Every reader must use `dict.get(key, default)` with a sensible default, never `dict[key]`. This applies to:
+1. **Adding a new key to a persisted dict?** Every reader in every element function must use `dict.get(key, default)` with a sensible default, never `dict[key]`. This applies to:
    - Top-level keys in any persisted field listed above.
    - Keys inside any nested per-block / per-answer dict written by `prepare` (e.g. each entry of `data["params"][answer_name]`) or by `parse`/`grade` into submission fields.
    - The corresponding `TypedDict` field should be marked `NotRequired[...]` from `typing_extensions` so pyright catches unguarded reads.
-
-   Defensive reads must be in place in **every** function that touches the field, including `render`. Migrating the data inside `parse` or `grade` is not sufficient on its own: `render` runs on every page view, and many old variants will never be re-submitted, so they will still hit `render` with the pre-change shape. (`render` also can't mutate `data`, so a normalization pass at the top isn't available there anyway.)
 
 2. **Renaming or removing a persisted key?** Don't. Keep the old key alongside the new one and have readers fall back to the old key when the new one is missing.
 
