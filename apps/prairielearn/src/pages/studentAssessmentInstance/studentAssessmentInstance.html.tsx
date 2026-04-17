@@ -17,8 +17,7 @@ import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentInstance, type GroupConfig } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
-import { getRoleNamesForUser } from '../../lib/groups.js';
-import type { GroupInfo } from '../../lib/groups.shared.js';
+import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.shared.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 import { ExamFooterContent } from './components/ExamFooterContent.js';
@@ -59,22 +58,22 @@ export function StudentAssessmentInstance({
 
   // Check for mixed real-time grading scenarios
   const someQuestionsAllowRealTimeGrading = instance_question_rows.some(
-    (q) => q.allow_real_time_grading,
+    (row) => row.assessment_question.allow_real_time_grading,
   );
   const someQuestionsForbidRealTimeGrading = instance_question_rows.some(
     // Note that this currently picks up `null`. In the future,
     // `assessment_questions.allow_real_time_grading` will have a `NOT NULL`
     // constraint. Once that happens, this will be totally safe.
-    (q) => !q.allow_real_time_grading,
+    (row) => !row.assessment_question.allow_real_time_grading,
   );
 
-  instance_question_rows.forEach((question) => {
-    if (question.status === 'saved') {
-      if (question.allowGradeLeftMs > 0) {
+  instance_question_rows.forEach((row) => {
+    if (row.instance_question.status === 'saved') {
+      if (row.allowGradeLeftMs > 0) {
         suspendedSavedAnswers++;
       } else if (
-        (question.max_auto_points || !question.max_manual_points) &&
-        question.allow_real_time_grading
+        (row.assessment_question.max_auto_points || !row.assessment_question.max_manual_points) &&
+        row.assessment_question.allow_real_time_grading
       ) {
         // Note that we exclude questions that are not auto-graded from the count.
         // This count is used to determine whether the "Grade N saved answers"
@@ -119,8 +118,8 @@ export function StudentAssessmentInstance({
   const showCardFooter = showExamFooterContent || showUnauthorizedEditWarning;
 
   const firstUncrossedLockpointZoneNumber = instance_question_rows
-    .filter((row) => row.start_new_zone && row.lockpoint && !row.lockpoint_crossed)
-    .map((row) => row.zone_number)
+    .filter((row) => row.start_new_zone && row.zone.lockpoint && !row.lockpoint_crossed)
+    .map((row) => row.zone.number)
     .sort((a, b) => a - b)[0];
 
   // Check whether an unmet advanceScorePerc in a prior zone should block
@@ -133,7 +132,7 @@ export function StudentAssessmentInstance({
     instance_question_rows.some(
       (row) =>
         row.question_access_mode === 'blocked_sequence' &&
-        (row.zone_number < zoneNumber || (row.zone_number === zoneNumber && row.start_new_zone)),
+        (row.zone.number < zoneNumber || (row.zone.number === zoneNumber && row.start_new_zone)),
     );
 
   function isLockpointCrossable(row: InstanceQuestionRow): boolean {
@@ -141,16 +140,19 @@ export function StudentAssessmentInstance({
       !!resLocals.assessment_instance.open &&
       resLocals.authz_result.active &&
       resLocals.authz_result.authorized_edit &&
-      row.lockpoint &&
+      row.zone.lockpoint &&
       !row.lockpoint_crossed &&
-      row.zone_number === firstUncrossedLockpointZoneNumber &&
-      !hasUnmetAdvanceScorePercBeforeLockpoint(row.zone_number)
+      row.zone.number === firstUncrossedLockpointZoneNumber &&
+      !hasUnmetAdvanceScorePercBeforeLockpoint(row.zone.number)
     );
   }
 
   const crossableLockpointRows = instance_question_rows.filter(
     (row) =>
-      row.start_new_zone && row.lockpoint && !row.lockpoint_crossed && isLockpointCrossable(row),
+      row.start_new_zone &&
+      row.zone.lockpoint &&
+      !row.lockpoint_crossed &&
+      isLockpointCrossable(row),
   );
 
   return PageLayout({
@@ -186,7 +188,7 @@ export function StudentAssessmentInstance({
         : ''}
       ${crossableLockpointRows.map((row) =>
         Modal({
-          id: `crossLockpointModal-${row.zone_id}`,
+          id: `crossLockpointModal-${row.zone.id}`,
           title: 'Proceed to next questions?',
           body: html`
             <p>
@@ -205,20 +207,21 @@ export function StudentAssessmentInstance({
               <input
                 class="form-check-input"
                 type="checkbox"
-                id="lockpoint-confirm-${row.zone_id}"
-                onchange="document.getElementById('lockpoint-submit-${row.zone_id}').disabled = !this.checked"
+                id="lockpoint-confirm-${row.zone.id}"
+                onchange="document.getElementById('lockpoint-submit-${row.zone
+                  .id}').disabled = !this.checked"
               />
-              <label class="form-check-label" for="lockpoint-confirm-${row.zone_id}">
+              <label class="form-check-label" for="lockpoint-confirm-${row.zone.id}">
                 I understand that I will not be able to submit answers to previous questions
               </label>
             </div>
           `,
           footer: html`
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <input type="hidden" name="zone_id" value="${row.zone_id}" />
+            <input type="hidden" name="zone_id" value="${row.zone.id}" />
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             <button
-              id="lockpoint-submit-${row.zone_id}"
+              id="lockpoint-submit-${row.zone.id}"
               type="submit"
               name="__action"
               value="cross_lockpoint"
@@ -254,7 +257,7 @@ export function StudentAssessmentInstance({
           <div class="row align-items-center">
             ${run(() => {
               const allQuestionsDisabled = instance_question_rows.every(
-                (q) => !q.allow_real_time_grading,
+                (row) => !row.assessment_question.allow_real_time_grading,
               );
               return allQuestionsDisabled && resLocals.assessment_instance.open;
             })
@@ -353,7 +356,7 @@ export function StudentAssessmentInstance({
             </thead>
             <tbody>
               ${QuestionTableBody({
-                instance_question_rows,
+                rows: instance_question_rows,
                 courseInstanceId: resLocals.course_instance.id,
                 displayTimezone: resLocals.course_instance.display_timezone,
                 assessmentType: resLocals.assessment.type,
@@ -454,8 +457,12 @@ function RealTimeGradingInformationAlert({
   instance_question_rows: InstanceQuestionRow[];
   assessment_instance: AssessmentInstance;
 }) {
-  const allQuestionsDisabled = instance_question_rows.every((q) => !q.allow_real_time_grading);
-  const someQuestionsDisabled = instance_question_rows.some((q) => !q.allow_real_time_grading);
+  const allQuestionsDisabled = instance_question_rows.every(
+    (row) => !row.assessment_question.allow_real_time_grading,
+  );
+  const someQuestionsDisabled = instance_question_rows.some(
+    (row) => !row.assessment_question.allow_real_time_grading,
+  );
 
   if (allQuestionsDisabled && assessment_instance.open) {
     return html`
@@ -606,7 +613,9 @@ function ConfirmFinishModal({
   instance_question_rows: InstanceQuestionRow[];
   csrfToken: string;
 }) {
-  const all_questions_answered = instance_question_rows.every((iq) => iq.status !== 'unanswered');
+  const all_questions_answered = instance_question_rows.every(
+    (row) => row.instance_question.status !== 'unanswered',
+  );
 
   return Modal({
     id: 'confirmFinishModal',

@@ -13,7 +13,7 @@ import { LockpointRow } from './LockpointRow.js';
 import { RowLabel } from './RowLabel.js';
 
 export function QuestionTableBody({
-  instance_question_rows,
+  rows,
   courseInstanceId,
   displayTimezone,
   assessmentType,
@@ -28,7 +28,7 @@ export function QuestionTableBody({
   isLockpointCrossable,
   hasUnmetAdvanceScorePercBeforeLockpoint,
 }: {
-  instance_question_rows: InstanceQuestionRow[];
+  rows: InstanceQuestionRow[];
   courseInstanceId: string;
   displayTimezone: string;
   assessmentType: EnumAssessmentType;
@@ -40,35 +40,30 @@ export function QuestionTableBody({
   isGroupAssessment: boolean;
   zoneTitleColspan: number;
   userGroupRoles: string | null;
-  isLockpointCrossable: (instance_question_row: InstanceQuestionRow) => boolean;
+  isLockpointCrossable: (row: InstanceQuestionRow) => boolean;
   hasUnmetAdvanceScorePercBeforeLockpoint: (zone_number: number) => boolean;
 }) {
   let previousZoneHadInfo = false;
 
-  return instance_question_rows.map((instance_question_row) => {
+  return rows.map((row) => {
     const zoneHasInfo =
-      instance_question_row.zone_title != null ||
-      instance_question_row.zone_has_max_points ||
-      instance_question_row.zone_has_best_questions;
+      row.zone.title != null || row.zone.max_points != null || row.zone.best_questions != null;
 
     // Show zone info if this zone has info, or if the previous zone
     // had info (blank zone info to visually separate).
-    const showZoneInfo =
-      instance_question_row.start_new_zone && (zoneHasInfo || previousZoneHadInfo);
+    const showZoneInfo = row.start_new_zone && (zoneHasInfo || previousZoneHadInfo);
 
-    if (instance_question_row.start_new_zone) {
+    if (row.start_new_zone) {
       previousZoneHadInfo = zoneHasInfo;
     }
 
     return html`
-      ${instance_question_row.start_new_zone && instance_question_row.lockpoint
+      ${row.start_new_zone && row.zone.lockpoint
         ? LockpointRow({
-            row: instance_question_row,
+            row,
             colspan: zoneTitleColspan,
-            crossable: !!isLockpointCrossable(instance_question_row),
-            blockedByAdvanceScorePerc: hasUnmetAdvanceScorePercBeforeLockpoint(
-              instance_question_row.zone_number,
-            ),
+            crossable: !!isLockpointCrossable(row),
+            blockedByAdvanceScorePerc: hasUnmetAdvanceScorePercBeforeLockpoint(row.zone.number),
             isGroupAssessment,
             displayTimezone,
           })
@@ -80,25 +75,22 @@ export function QuestionTableBody({
                 ${zoneHasInfo
                   ? html`
                       <div class="d-flex align-items-center gap-2">
-                        ${instance_question_row.zone_title
-                          ? html`<span>${instance_question_row.zone_title}</span>`
-                          : ''}
-                        ${instance_question_row.zone_has_max_points
+                        ${row.zone.title ? html`<span>${row.zone.title}</span>` : ''}
+                        ${row.zone.max_points != null
                           ? ZoneInfoPopover({
-                              label: instance_question_row.zone_title
-                                ? `maximum ${instance_question_row.zone_max_points} points`
-                                : `Maximum ${instance_question_row.zone_max_points} points`,
-                              content: `Of the points that you are awarded for answering these ${instance_question_row.zone_question_count} questions, at most ${instance_question_row.zone_max_points} will count toward your total points.`,
+                              label: row.zone.title
+                                ? `maximum ${row.zone.max_points} points`
+                                : `Maximum ${row.zone.max_points} points`,
+                              content: `Of the points that you are awarded for answering these ${row.zone_question_count} questions, at most ${row.zone.max_points} will count toward your total points.`,
                             })
                           : ''}
-                        ${instance_question_row.zone_has_best_questions
+                        ${row.zone.best_questions != null
                           ? ZoneInfoPopover({
                               label:
-                                instance_question_row.zone_title ||
-                                instance_question_row.zone_has_max_points
-                                  ? `best ${instance_question_row.zone_best_questions} of ${instance_question_row.zone_question_count} questions`
-                                  : `Best ${instance_question_row.zone_best_questions} of ${instance_question_row.zone_question_count} questions`,
-                              content: `Of these ${instance_question_row.zone_question_count} questions, only the ${instance_question_row.zone_best_questions} with the highest number of awarded points will count toward your total points.`,
+                                row.zone.title || row.zone.max_points != null
+                                  ? `best ${row.zone.best_questions} of ${row.zone_question_count} questions`
+                                  : `Best ${row.zone.best_questions} of ${row.zone_question_count} questions`,
+                              content: `Of these ${row.zone_question_count} questions, only the ${row.zone.best_questions} with the highest number of awarded points will count toward your total points.`,
                             })
                           : ''}
                       </div>
@@ -109,8 +101,8 @@ export function QuestionTableBody({
           `
         : ''}
       <tr
-        class="${instance_question_row.question_access_mode === 'blocked_sequence' ||
-        instance_question_row.question_access_mode === 'blocked_lockpoint'
+        class="${row.question_access_mode === 'blocked_sequence' ||
+        row.question_access_mode === 'blocked_lockpoint'
           ? 'bg-light pl-sequence-locked'
           : ''}"
       >
@@ -118,21 +110,21 @@ export function QuestionTableBody({
           <div class="d-flex align-items-center">
             ${RowLabel({
               courseInstanceId,
-              instance_question_row,
+              row,
               userGroupRoles,
               hasStatusColumn: assessmentType === 'Exam',
               rowLabelText:
                 assessmentType === 'Exam'
-                  ? `Question ${instance_question_row.question_number}`
-                  : instance_question_row.question_title?.trim()
-                    ? `${instance_question_row.question_number}. ${instance_question_row.question_title}`
-                    : instance_question_row.question_number,
+                  ? `Question ${row.question_number}`
+                  : row.question.title?.trim()
+                    ? `${row.question_number}. ${row.question.title}`
+                    : row.question_number,
             })}
           </div>
         </td>
         ${assessmentType === 'Exam'
           ? ExamQuestionCells({
-              instance_question_row,
+              row,
               someQuestionsAllowRealTimeGrading,
               someQuestionsForbidRealTimeGrading,
               hasAutoGradingQuestion,
@@ -140,7 +132,7 @@ export function QuestionTableBody({
               assessmentInstanceOpen,
             })
           : HomeworkQuestionCells({
-              instance_question_row,
+              row,
               courseInstanceId,
               hasAutoGradingQuestion,
               hasManualGradingQuestion,
@@ -151,14 +143,14 @@ export function QuestionTableBody({
 }
 
 function ExamQuestionCells({
-  instance_question_row,
+  row,
   someQuestionsAllowRealTimeGrading,
   someQuestionsForbidRealTimeGrading,
   hasAutoGradingQuestion,
   hasManualGradingQuestion,
   assessmentInstanceOpen,
 }: {
-  instance_question_row: InstanceQuestionRow;
+  row: InstanceQuestionRow;
   someQuestionsAllowRealTimeGrading: boolean;
   someQuestionsForbidRealTimeGrading: boolean;
   hasAutoGradingQuestion: boolean;
@@ -170,31 +162,31 @@ function ExamQuestionCells({
       ${
         // Override the status badge for questions blocked by a lockpoint:
         // show "Locked" instead of the misleading "unanswered".
-        instance_question_row.question_access_mode === 'blocked_lockpoint'
+        row.question_access_mode === 'blocked_lockpoint'
           ? html`<span class="badge text-bg-secondary">Locked</span>`
           : ExamQuestionStatus({
-              instance_question: instance_question_row,
-              assessment_question: instance_question_row, // Required fields are in instance_question
+              instance_question: row.instance_question,
+              assessment_question: row.assessment_question,
               realTimeGradingPartiallyDisabled:
                 someQuestionsAllowRealTimeGrading && someQuestionsForbidRealTimeGrading,
-              allowGradeLeftMs: instance_question_row.allowGradeLeftMs,
+              allowGradeLeftMs: row.allowGradeLeftMs,
             })
       }
     </td>
     ${hasAutoGradingQuestion && someQuestionsAllowRealTimeGrading
       ? html`
           <td class="text-center">
-            ${instance_question_row.max_auto_points
+            ${row.assessment_question.max_auto_points
               ? ExamQuestionAvailablePoints({
-                  open: assessmentInstanceOpen && instance_question_row.open,
+                  open: assessmentInstanceOpen && row.instance_question.open,
                   currentWeight:
-                    (instance_question_row.points_list_original?.[
-                      instance_question_row.number_attempts
-                    ] ?? 0) - (instance_question_row.max_manual_points ?? 0),
-                  pointsList: instance_question_row.points_list?.map(
-                    (p) => p - (instance_question_row.max_manual_points ?? 0),
+                    (row.instance_question.points_list_original?.[
+                      row.instance_question.number_attempts
+                    ] ?? 0) - (row.assessment_question.max_manual_points ?? 0),
+                  pointsList: row.instance_question.points_list?.map(
+                    (p) => p - (row.assessment_question.max_manual_points ?? 0),
                   ),
-                  highestSubmissionScore: instance_question_row.highest_submission_score,
+                  highestSubmissionScore: row.instance_question.highest_submission_score,
                 })
               : html`&mdash;`}
           </td>
@@ -206,15 +198,15 @@ function ExamQuestionCells({
             ? html`
                 <td class="text-center">
                   ${InstanceQuestionPoints({
-                    instance_question: instance_question_row,
-                    assessment_question: instance_question_row, // Required fields are present in instance_question
+                    instance_question: row.instance_question,
+                    assessment_question: row.assessment_question,
                     component: 'auto',
                   })}
                 </td>
                 <td class="text-center">
                   ${InstanceQuestionPoints({
-                    instance_question: instance_question_row,
-                    assessment_question: instance_question_row, // Required fields are present in instance_question
+                    instance_question: row.instance_question,
+                    assessment_question: row.assessment_question,
                     component: 'manual',
                   })}
                 </td>
@@ -222,8 +214,8 @@ function ExamQuestionCells({
             : ''}
           <td class="text-center">
             ${InstanceQuestionPoints({
-              instance_question: instance_question_row,
-              assessment_question: instance_question_row, // Required fields are present in instance_question
+              instance_question: row.instance_question,
+              assessment_question: row.assessment_question,
               component: 'total',
             })}
           </td>
@@ -231,24 +223,26 @@ function ExamQuestionCells({
       : html`
           ${hasAutoGradingQuestion && hasManualGradingQuestion
             ? html`
-                <td class="text-center">${formatPoints(instance_question_row.max_auto_points)}</td>
                 <td class="text-center">
-                  ${formatPoints(instance_question_row.max_manual_points)}
+                  ${formatPoints(row.assessment_question.max_auto_points)}
+                </td>
+                <td class="text-center">
+                  ${formatPoints(row.assessment_question.max_manual_points)}
                 </td>
               `
             : ''}
-          <td class="text-center">${formatPoints(instance_question_row.max_points)}</td>
+          <td class="text-center">${formatPoints(row.assessment_question.max_points)}</td>
         `}
   `;
 }
 
 function HomeworkQuestionCells({
-  instance_question_row,
+  row,
   courseInstanceId,
   hasAutoGradingQuestion,
   hasManualGradingQuestion,
 }: {
-  instance_question_row: InstanceQuestionRow;
+  row: InstanceQuestionRow;
   courseInstanceId: string;
   hasAutoGradingQuestion: boolean;
   hasManualGradingQuestion: boolean;
@@ -258,7 +252,7 @@ function HomeworkQuestionCells({
       ? html`
           <td class="text-center">
             ${run(() => {
-              if (!instance_question_row.max_auto_points) {
+              if (!row.assessment_question.max_auto_points) {
                 return html`&mdash;`;
               }
 
@@ -267,17 +261,17 @@ function HomeworkQuestionCells({
               // We don't want to mislead the student into thinking that they can earn
               // more points than they actually can.
               const currentAutoValue =
-                (instance_question_row.current_value ?? 0) -
-                (instance_question_row.max_manual_points ?? 0);
+                (row.instance_question.current_value ?? 0) -
+                (row.assessment_question.max_manual_points ?? 0);
 
               return formatPoints(currentAutoValue);
             })}
           </td>
           <td class="text-center">
             ${QuestionVariantHistory({
-              instanceQuestionId: instance_question_row.id,
+              instanceQuestionId: row.instance_question.id,
               courseInstanceId,
-              previousVariants: instance_question_row.previous_variants,
+              previousVariants: row.previous_variants,
             })}
           </td>
         `
@@ -286,15 +280,15 @@ function HomeworkQuestionCells({
       ? html`
           <td class="text-center">
             ${InstanceQuestionPoints({
-              instance_question: instance_question_row,
-              assessment_question: instance_question_row, // Required fields are present in instance_question
+              instance_question: row.instance_question,
+              assessment_question: row.assessment_question,
               component: 'auto',
             })}
           </td>
           <td class="text-center">
             ${InstanceQuestionPoints({
-              instance_question: instance_question_row,
-              assessment_question: instance_question_row, // Required fields are present in instance_question
+              instance_question: row.instance_question,
+              assessment_question: row.assessment_question,
               component: 'manual',
             })}
           </td>
@@ -302,8 +296,8 @@ function HomeworkQuestionCells({
       : ''}
     <td class="text-center">
       ${InstanceQuestionPoints({
-        instance_question: instance_question_row,
-        assessment_question: instance_question_row, // Required fields are present in instance_question
+        instance_question: row.instance_question,
+        assessment_question: row.assessment_question,
         component: 'total',
       })}
     </td>
