@@ -571,20 +571,6 @@ export function resolveAccessControl(
 
   let creditResult = computeCredit(effectiveRule.dateControl, date, authzMode);
 
-  const showClosedAssessment = resolveVisibility(
-    effectiveRule.afterComplete?.questions?.hidden ?? true,
-    effectiveRule.afterComplete?.questions?.visibleFromDate,
-    effectiveRule.afterComplete?.questions?.visibleUntilDate,
-    date,
-  );
-
-  const showClosedAssessmentScore = resolveVisibility(
-    effectiveRule.afterComplete?.score?.hidden,
-    effectiveRule.afterComplete?.score?.visibleFromDate,
-    undefined,
-    date,
-  );
-
   // Resolve PrairieTest access. This is separated from the main flow to keep
   // the resolver linear: it either denies early, grants PT credit overrides,
   // or continues with the normal date-control-based result.
@@ -598,9 +584,7 @@ export function resolveAccessControl(
       !creditResult.beforeRelease &&
       !creditResult.active,
   });
-  if (ptOutcome.action === 'deny') {
-    return { ...ptOutcome.result, showClosedAssessment, showClosedAssessmentScore };
-  }
+  if (ptOutcome.action === 'deny') return ptOutcome.result;
 
   let examAccessEnd: Date | null = null;
   if (ptOutcome.action === 'grant') {
@@ -609,6 +593,20 @@ export function resolveAccessControl(
   }
 
   const timeLimitMin = creditResult.timeLimitMin;
+
+  const showClosedAssessment = resolveVisibility(
+    effectiveRule.afterComplete?.questions?.hidden ?? true,
+    effectiveRule.afterComplete?.questions?.visibleFromDate,
+    effectiveRule.afterComplete?.questions?.visibleUntilDate,
+    date,
+  );
+
+  const showClosedAssessmentScore = resolveVisibility(
+    effectiveRule.afterComplete?.score?.hidden,
+    effectiveRule.afterComplete?.score?.visibleFromDate,
+    undefined,
+    date,
+  );
 
   // Resolve the raw `listBeforeRelease` config flag into a concrete
   // `showBeforeRelease` boolean: true when the flag is set AND either we're
