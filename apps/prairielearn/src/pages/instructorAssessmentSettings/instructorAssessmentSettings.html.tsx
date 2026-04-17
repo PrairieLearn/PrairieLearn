@@ -1020,7 +1020,7 @@ function InstructorAssessmentSettingsInner({
             )}
             <div
               className={clsx(
-                'align-items-center justify-content-between gap-2 px-4 py-3',
+                'container align-items-center justify-content-between gap-2 py-3',
                 isDirty ? 'd-flex' : 'd-none',
               )}
             >
@@ -1045,7 +1045,6 @@ function InstructorAssessmentSettingsInner({
                   className="btn btn-sm btn-primary"
                   disabled={isSubmitting || saveMutation.isPending}
                 >
-                  <i className="bi bi-save me-1" aria-hidden="true" />
                   {saveMutation.isPending ? 'Saving...' : 'Save and sync'}
                 </button>
               </div>
