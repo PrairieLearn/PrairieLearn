@@ -34,9 +34,9 @@ def _get_pr_number(repo: str, run_id: str) -> str | None:
         return None
     if raw.isdigit():
         return raw
+    # pull_requests is empty for fork PRs; fall back to finding the PR by worflow ref or commit SHA.
     if re.match(r"refs/pull/\d+/merge", raw):
         return raw.split("/")[2]
-    # pull_requests is empty for fork PRs; fall back to finding the PR by commit SHA.
     raw = _gh(
         "api",
         f"repos/{repo}/commits/{raw}/pulls",
