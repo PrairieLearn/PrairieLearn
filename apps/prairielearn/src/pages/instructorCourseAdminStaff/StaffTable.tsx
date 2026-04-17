@@ -15,7 +15,7 @@ import {
 } from '@tanstack/react-table';
 import clsx from 'clsx';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button, ButtonGroup, Modal } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
@@ -67,6 +67,25 @@ const LEARN_MORE_LINK = (
     </a>
   </div>
 );
+
+const SEMESTER_FILTER_VALUES = ['all', 'current'] as const;
+
+const INSTANCE_ROLE_VALUES = ['None', 'Student Data Viewer', 'Student Data Editor'] as const;
+type InstanceRole = (typeof INSTANCE_ROLE_VALUES)[number];
+
+const INSTANCE_ROLE_LABELS: Record<InstanceRole, string> = {
+  None: 'None',
+  'Student Data Viewer': 'Viewer',
+  'Student Data Editor': 'Editor',
+};
+
+const INSTANCE_ROLE_DESCRIPTIONS: Record<InstanceRole, string> = {
+  None: 'Cannot see any student data for this course instance.',
+  'Student Data Viewer':
+    'Can see all assessments, questions, and issues. Can view student data but cannot make changes.',
+  'Student Data Editor':
+    'Can see all assessments, questions, and issues. Can view and edit student data, including grading.',
+};
 
 function SelectAllCheckbox({ table }: { table: Table<CourseUsersRow> }) {
   return (
@@ -229,25 +248,6 @@ function CoursePermissionCell({
   );
 }
 
-const SEMESTER_FILTER_VALUES = ['all', 'current'] as const;
-
-const INSTANCE_ROLE_VALUES = ['None', 'Student Data Viewer', 'Student Data Editor'] as const;
-type InstanceRole = (typeof INSTANCE_ROLE_VALUES)[number];
-
-const INSTANCE_ROLE_LABELS: Record<InstanceRole, string> = {
-  None: 'None',
-  'Student Data Viewer': 'Viewer',
-  'Student Data Editor': 'Editor',
-};
-
-const INSTANCE_ROLE_DESCRIPTIONS: Record<InstanceRole, string> = {
-  None: 'Cannot see any student data for this course instance.',
-  'Student Data Viewer':
-    'Can see all assessments, questions, and issues. Can view student data but cannot make changes.',
-  'Student Data Editor':
-    'Can see all assessments, questions, and issues. Can view and edit student data, including grading.',
-};
-
 function CourseInstanceAccessCell({
   courseUser,
   courseInstance,
@@ -258,7 +258,7 @@ function CourseInstanceAccessCell({
   canChangeInstanceRole: boolean;
 }) {
   const existingRole = courseUser.course_instance_roles?.find(
-    (cir) => String(cir.id) === String(courseInstance.id),
+    (cir) => cir.id === courseInstance.id,
   );
   const currentRole: InstanceRole = existingRole?.course_instance_role ?? 'None';
   const [show, setShow] = useState(false);
@@ -277,7 +277,11 @@ function CourseInstanceAccessCell({
   if (!canChangeInstanceRole) {
     return (
       <span
-        className={`btn btn-sm bg-${instanceRoleColor(currentRole)}-subtle text-${instanceRoleColor(currentRole)}-emphasis disabled`}
+        className={clsx(
+          'btn btn-sm disabled',
+          `bg-${instanceRoleColor(currentRole)}-subtle`,
+          `text-${instanceRoleColor(currentRole)}-emphasis`,
+        )}
         style={{ width: 90 }}
       >
         {INSTANCE_ROLE_LABELS[currentRole]}
@@ -375,27 +379,29 @@ function AddUsersModal({
   uidsLimit: number;
   courseInstances: CourseInstance[];
 }) {
+  const [uidText, setUidText] = useState('');
+  const [courseRole, setCourseRole] = useState<CourseRole>('None');
   const [instanceRoles, setInstanceRoles] = useState<Record<string, string>>({});
-  const prevShowRef = useRef(show);
-  if (prevShowRef.current && !show) {
+  const [warnings, setWarnings] = useState<string[]>([]);
+
+  const resetState = () => {
+    setUidText('');
+    setCourseRole('None');
     setInstanceRoles({});
-  }
-  prevShowRef.current = show;
+    setWarnings([]);
+    mutation.reset();
+  };
 
   const trpc = useTRPC();
   const invalidateStaffList = useInvalidateStaffList();
   const mutation = useMutation({
     ...trpc.courseStaff.insertByUserUids.mutationOptions(),
     onSuccess: (data) => {
-      const warnings: string[] = [];
       if (data.errors.length > 0) {
-        warnings.push(`Errors: ${data.errors.join('; ')}`);
+        setWarnings(data.errors);
+      } else {
+        onHide();
       }
-      if (warnings.length > 0) {
-        // eslint-disable-next-line no-alert
-        alert(warnings.join('\n'));
-      }
-      onHide();
       return invalidateStaffList();
     },
   });
@@ -403,11 +409,8 @@ function AddUsersModal({
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const uidValue = formData.get('uid') as string;
-    const uids = uidValue.split(/[,;\s]+/).filter(Boolean);
-    const courseRole = formData.get('course_role') as CourseRole;
+    setWarnings([]);
+    const uids = uidText.split(/[,;\s]+/).filter(Boolean);
 
     const courseInstanceChanges = Object.entries(instanceRoles)
       .filter((entry): entry is [string, 'Student Data Viewer' | 'Student Data Editor'] =>
@@ -423,7 +426,7 @@ function AddUsersModal({
   };
 
   return (
-    <Modal show={show} onHide={onHide}>
+    <Modal show={show} onHide={onHide} onExited={resetState}>
       <Modal.Header closeButton>
         <Modal.Title>Add users</Modal.Title>
       </Modal.Header>
@@ -442,10 +445,11 @@ function AddUsersModal({
             <textarea
               className="form-control"
               id="addUsersInputUid"
-              name="uid"
               placeholder="staff1@example.com, staff2@example.com"
               aria-describedby="addUsersInputUidHelp"
+              value={uidText}
               required
+              onChange={(e) => setUidText(e.target.value)}
             />
             <small id="addUsersInputUidHelp" className="form-text text-muted">
               Enter up to {uidsLimit} UIDs separated by commas, semicolons, or whitespace.
@@ -458,9 +462,9 @@ function AddUsersModal({
             <select
               className="form-select form-select-sm"
               id="addUsersInputCourseRole"
-              name="course_role"
-              defaultValue="None"
+              value={courseRole}
               required
+              onChange={(e) => setCourseRole(e.target.value as CourseRole)}
             >
               <option value="None">None</option>
               <option value="Previewer">Previewer</option>
@@ -498,6 +502,16 @@ function AddUsersModal({
                 </table>
               </div>
             </>
+          )}
+          {warnings.length > 0 && (
+            <div className="alert alert-warning mt-3 mb-0">
+              <strong>Some users could not be added:</strong>
+              <ul className="mb-0 mt-1">
+                {warnings.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            </div>
           )}
           {appError && <div className="alert alert-danger mt-3 mb-0">{appError.message}</div>}
           {LEARN_MORE_LINK}
@@ -567,7 +581,7 @@ function BulkDeleteModal({
   const appError = getAppError<CourseStaffError>(mutation.error);
 
   return (
-    <Modal show={show} onHide={onHide}>
+    <Modal show={show} onHide={onHide} onExited={() => mutation.reset()}>
       <Modal.Header closeButton>
         <Modal.Title>Remove selected staff</Modal.Title>
       </Modal.Header>
@@ -615,12 +629,12 @@ function BulkEditAccessModal({
 }) {
   const [courseRole, setCourseRole] = useState<CourseRole | ''>('');
   const [instanceRoles, setInstanceRoles] = useState<Record<string, InstanceRole | ''>>({});
-  const prevShowRef = useRef(show);
-  if (prevShowRef.current && !show) {
+
+  const resetState = () => {
     setCourseRole('');
     setInstanceRoles({});
-  }
-  prevShowRef.current = show;
+    mutation.reset();
+  };
 
   const handleInstanceRoleChange = (ciId: string, role: InstanceRole | '') => {
     setInstanceRoles((prev) => ({ ...prev, [ciId]: role }));
@@ -657,7 +671,7 @@ function BulkEditAccessModal({
   };
 
   return (
-    <Modal show={show} size="md" onHide={onHide}>
+    <Modal show={show} size="md" onHide={onHide} onExited={resetState}>
       <Modal.Header closeButton>
         <Modal.Title>
           Edit access for {selectedUsers.length} {selectedUsers.length === 1 ? 'user' : 'users'}
@@ -813,22 +827,6 @@ function StaffTableInner({
     'semester',
     parseAsStringLiteral(SEMESTER_FILTER_VALUES).withDefault('all'),
   );
-
-  const filteredUsers = useMemo(() => {
-    if (semesterFilter !== 'current' || courseInstances.length === 0) return liveUsers;
-
-    const currentCiId = String(courseInstances[0].id);
-    return liveUsers.filter((user) => {
-      const courseRole = user.course_permission.course_role;
-      if (courseRole && courseRole !== 'None') return true;
-
-      const instanceRole = user.course_instance_roles?.find(
-        (cir) => String(cir.id) === currentCiId,
-      );
-      return instanceRole != null && instanceRole.course_instance_role !== 'None';
-    });
-  }, [liveUsers, semesterFilter, courseInstances]);
-
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -842,10 +840,19 @@ function StaffTableInner({
     'frozen',
     parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
-  const [selectedIds, setSelectedIds] = useQueryState(
-    'selected',
-    parseAsArrayOf(parseAsString).withDefault([]),
-  );
+
+  const filteredUsers = useMemo(() => {
+    if (semesterFilter !== 'current' || courseInstances.length === 0) return liveUsers;
+
+    const currentCiId = courseInstances[0].id;
+    return liveUsers.filter((user) => {
+      const courseRole = user.course_permission.course_role;
+      if (courseRole && courseRole !== 'None') return true;
+
+      const instanceRole = user.course_instance_roles?.find((cir) => cir.id === currentCiId);
+      return instanceRole != null && instanceRole.course_instance_role !== 'None';
+    });
+  }, [liveUsers, semesterFilter, courseInstances]);
 
   const allColumnIds = useMemo(
     () => [
@@ -860,57 +867,48 @@ function StaffTableInner({
   const { columnVisibility, setColumnVisibility, defaultColumnVisibility } =
     useColumnVisibilityQueryState(allColumnIds);
 
-  const rowSelection = useMemo<RowSelectionState>(
-    () => Object.fromEntries(selectedIds.map((id) => [id, true])),
-    [selectedIds],
-  );
-  const setRowSelection = useMemo(
-    () =>
-      (updaterOrValue: RowSelectionState | ((prev: RowSelectionState) => RowSelectionState)) => {
-        const newSelection =
-          typeof updaterOrValue === 'function' ? updaterOrValue(rowSelection) : updaterOrValue;
-        void setSelectedIds(
-          Object.entries(newSelection)
-            .filter(([, selected]) => selected)
-            .map(([id]) => id),
-        );
-      },
-    [rowSelection, setSelectedIds],
-  );
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const { createCheckboxProps } = useShiftClickCheckbox<CourseUsersRow>();
 
   const [instanceFilters, setInstanceFilters] = useState<Record<string, InstanceRole[]>>({});
 
-  const columnFilters = useMemo<ColumnFiltersState>(() => {
-    const filters: ColumnFiltersState = [];
-    if (courseRoleFilter.length > 0) {
-      filters.push({ id: 'course_role', value: courseRoleFilter });
-    }
-    for (const [columnId, roles] of Object.entries(instanceFilters)) {
-      if (roles.length > 0) {
-        filters.push({ id: columnId, value: roles });
-      }
-    }
-    return filters;
-  }, [courseRoleFilter, instanceFilters]);
+  const columnFilters = useMemo<ColumnFiltersState>(
+    () => [
+      { id: 'course_role', value: courseRoleFilter },
+      ...courseInstances.map((ci) => ({
+        id: `ci_${ci.id}`,
+        value: instanceFilters[`ci_${ci.id}`] ?? [],
+      })),
+    ],
+    [courseRoleFilter, instanceFilters, courseInstances],
+  );
+
+  const columnFilterSetters = useMemo<Record<string, Updater<any>>>(
+    () => ({
+      select: undefined,
+      uid: undefined,
+      user_name: undefined,
+      course_role: setCourseRoleFilter,
+      ...Object.fromEntries(
+        courseInstances.map((ci) => [
+          `ci_${ci.id}`,
+          (value: InstanceRole[]) =>
+            setInstanceFilters((prev) => ({ ...prev, [`ci_${ci.id}`]: value })),
+        ]),
+      ),
+    }),
+    [setCourseRoleFilter, courseInstances],
+  );
 
   const handleColumnFiltersChange = useMemo(
     () => (updaterOrValue: Updater<ColumnFiltersState>) => {
       const newFilters =
         typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
-
-      const roleFilterEntry = newFilters.find((f) => f.id === 'course_role');
-      void setCourseRoleFilter(roleFilterEntry ? (roleFilterEntry.value as CourseRole[]) : []);
-
-      const newInstanceFilters: Record<string, InstanceRole[]> = {};
-      for (const f of newFilters) {
-        if (f.id.startsWith('ci_')) {
-          newInstanceFilters[f.id] = f.value as InstanceRole[];
-        }
+      for (const filter of newFilters) {
+        columnFilterSetters[filter.id]?.(filter.value);
       }
-      setInstanceFilters(newInstanceFilters);
     },
-    [columnFilters, setCourseRoleFilter],
+    [columnFilters, columnFilterSetters],
   );
 
   const columns = useMemo(
@@ -940,22 +938,6 @@ function StaffTableInner({
         size: 220,
         enableHiding: true,
         enableGlobalFilter: true,
-        cell: (info) => (
-          <span
-            role="button"
-            tabIndex={0}
-            style={{ cursor: 'pointer' }}
-            onClick={() => info.row.toggleSelected()}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                info.row.toggleSelected();
-              }
-            }}
-          >
-            {info.getValue()}
-          </span>
-        ),
       }),
       columnHelper.accessor((row) => row.user.name ?? '', {
         id: 'user_name',
@@ -965,31 +947,18 @@ function StaffTableInner({
         enableGlobalFilter: true,
         cell: (info) => {
           const name = info.row.original.user.name;
-          return (
-            <span
-              role="button"
-              tabIndex={0}
-              style={{ cursor: 'pointer' }}
-              onClick={() => info.row.toggleSelected()}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  info.row.toggleSelected();
-                }
+          return name ? (
+            <span>{name}</span>
+          ) : (
+            <OverlayTrigger
+              placement="top"
+              tooltip={{
+                body: 'Users with name "Unknown user" either have never logged in or have an incorrect UID.',
+                props: { id: `staff-unknown-user-tooltip-${info.row.original.user.id}` },
               }}
             >
-              {name ?? (
-                <OverlayTrigger
-                  placement="top"
-                  tooltip={{
-                    body: 'Users with name "Unknown user" either have never logged in or have an incorrect UID.',
-                    props: { id: `staff-unknown-user-tooltip-${info.row.original.user.id}` },
-                  }}
-                >
-                  <span className="text-danger">Unknown user</span>
-                </OverlayTrigger>
-              )}
-            </span>
+              <span className="text-danger">Unknown user</span>
+            </OverlayTrigger>
           );
         },
       }),
@@ -1020,7 +989,7 @@ function StaffTableInner({
       ...courseInstances.map((ci) =>
         columnHelper.accessor(
           (row): InstanceRole =>
-            row.course_instance_roles?.find((cir) => String(cir.id) === String(ci.id))
+            row.course_instance_roles?.find((cir) => cir.id === ci.id)
               ?.course_instance_role ?? 'None',
           {
             id: `ci_${ci.id}`,
