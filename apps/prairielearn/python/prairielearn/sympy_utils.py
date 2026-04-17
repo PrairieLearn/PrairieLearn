@@ -1178,33 +1178,7 @@ def _literal_or_set_start(token: TOKEN | None) -> bool:
     )
 
 
-def _rewrite_set_literal_from_tokens(
-    tokens: list[TOKEN], start_index: int
-) -> tuple[tuple[TOKEN, ...] | None, int]:
-    start = tokens[start_index]
-    if start[1] != "{":
-        return None, start_index
-
-    content: list[TOKEN] = []
-    depth = 0
-    start_index += 1
-    for i, token in enumerate(tokens[start_index:], start=start_index):
-        _, text = token
-        if text in _SET_LITERAL_NESTED_OPEN:
-            depth += 1
-        elif text in _SET_LITERAL_NESTED_CLOSE:
-            if depth == 0:
-                if text != "}":
-                    raise TokenError("mismatched brackets in set literal")
-                rewritten_content = set_literal_transformation(content, {}, {})
-                return (
-                    ((NAME, "FiniteSet"), (OP, "("), *rewritten_content, (OP, ")")),
-                    i,
-                )
-            depth -= 1
-        content.append(token)
-
-    raise TokenError("set notation is incomplete")
+_S_EXP_TOKEN: TypeAlias = TOKEN | list["_S_EXP_TOKEN"]
 
 
 def set_literal_transformation(
@@ -1214,19 +1188,30 @@ def set_literal_transformation(
     if not tokens:
         return tokens
 
-    result = []
-    i = 0
-    while i < len(tokens):
-        token = tokens[i]
-        if not _is_interval_trivial(token):
-            rewritten_tokens, end_index = _rewrite_set_literal_from_tokens(tokens, i)
-            if rewritten_tokens is not None:
-                result.extend(rewritten_tokens)
-                i = end_index + 1
-                continue
-        result.append(token)
-        i += 1
-    return result
+    openers: list[int] = []
+    closers: list[int] = []
+
+    for i, token in enumerate(tokens):
+        _, text = token
+        if text == "{":
+            openers.append(i)
+        elif text == "}":
+            if len(openers) <= len(closers):
+                raise TokenError("too many closing braces")
+            closers.append(i)
+
+    if len(openers) != len(closers):
+        raise TokenError("set notation is incomplete")
+
+    # if there's
+    out = tokens
+    for i in closers:
+        out[i] = (OP, ")")
+    for i in reversed(openers):
+        out[i] = (OP, "(")
+        out.insert(i, (NAME, "FiniteSet"))
+
+    return out
 
 
 def _rewrite_interval_literal_from_tokens(
