@@ -36,7 +36,7 @@ export async function selectCreditPool(course_instance_id: string): Promise<Cred
  * row). We call this immediately before ai_grading_jobs insert so FOR UPDATE is
  * taken first and no lock upgrade cycle is created.
  */
-async function selectCreditPoolForUpdate(course_instance_id: string): Promise<CreditPool> {
+export async function selectCreditPoolForUpdate(course_instance_id: string): Promise<CreditPool> {
   return await queryRow(
     sql.select_credit_pool_for_update,
     { course_instance_id },
@@ -65,6 +65,17 @@ interface DeductCreditsForAiGradingParams {
   reason: string;
 }
 
+/**
+ * Returns the amount actually deducted (which may be less than
+ * `cost_milli_dollars` if the pool didn't have enough credits).
+ *
+ * Callers must ensure $0 balances are caught *before* making API calls
+ * (see the batch-level and per-submission checks in ai-grading.ts).
+ * This function intentionally does not throw on insufficient balance:
+ * by the time it runs the API cost has already been incurred, so
+ * rejecting the grading result would waste the spend. Instead, we
+ * deduct whatever remains and let the grading succeed.
+ */
 async function deductCreditsForAiGradingWithLockedPool(
   before: CreditPool,
   {
@@ -75,13 +86,16 @@ async function deductCreditsForAiGradingWithLockedPool(
     assessment_question_id,
     reason,
   }: DeductCreditsForAiGradingParams,
-): Promise<void> {
-  if (before.total_milli_dollars < cost_milli_dollars) {
-    throw new Error('Insufficient AI grading credits');
+): Promise<number> {
+  if (before.total_milli_dollars <= 0) {
+    return 0;
   }
 
+  // Clamp to available balance.
+  const effectiveCost = Math.min(cost_milli_dollars, before.total_milli_dollars);
+
   const { nonTransferableDeduction, transferableDeduction } = splitDeduction(
-    cost_milli_dollars,
+    effectiveCost,
     before.credit_non_transferable_milli_dollars,
   );
 
@@ -107,6 +121,7 @@ async function deductCreditsForAiGradingWithLockedPool(
       user_id,
       ai_grading_job_id,
       assessment_question_id,
+      checkout_session_id: null,
     });
   }
 
@@ -121,8 +136,11 @@ async function deductCreditsForAiGradingWithLockedPool(
       user_id,
       ai_grading_job_id,
       assessment_question_id,
+      checkout_session_id: null,
     });
   }
+
+  return effectiveCost;
 }
 
 /**
@@ -135,6 +153,16 @@ async function deductCreditsForAiGradingWithLockedPool(
  * existing `runInTransactionAsync` — the nested call reuses the outer
  * transaction. In that case, the FOR UPDATE lock is held for the lifetime of
  * the *outer* transaction, not just this function.
+ *
+ * This function does NOT throw on insufficient credits. By the time it runs,
+ * the LLM API call has already been made and the cost incurred, so rejecting
+ * the result would waste that spend. Callers must guard against $0 balances
+ * before making API calls (see the batch-level and per-submission credit
+ * checks in ai-grading.ts).
+ *
+ * @returns `{ ai_grading_job_id, deducted_milli_dollars }` — the amount
+ * actually deducted, which may be less than `cost_milli_dollars` if the pool
+ * was partially depleted.
  */
 export async function insertAiGradingJobAndDeductCreditsIfNeeded({
   trackRateLimitAndCost,
@@ -147,7 +175,7 @@ export async function insertAiGradingJobAndDeductCreditsIfNeeded({
 }: Omit<DeductCreditsForAiGradingParams, 'ai_grading_job_id'> & {
   trackRateLimitAndCost: boolean;
   createAiGradingJob: () => Promise<string>;
-}): Promise<string> {
+}): Promise<{ ai_grading_job_id: string; deducted_milli_dollars: number }> {
   return await runInTransactionAsync(async () => {
     const creditPool = trackRateLimitAndCost
       ? await selectCreditPoolForUpdate(course_instance_id)
@@ -155,8 +183,9 @@ export async function insertAiGradingJobAndDeductCreditsIfNeeded({
 
     const ai_grading_job_id = await createAiGradingJob();
 
+    let deducted_milli_dollars = 0;
     if (creditPool) {
-      await deductCreditsForAiGradingWithLockedPool(creditPool, {
+      deducted_milli_dollars = await deductCreditsForAiGradingWithLockedPool(creditPool, {
         course_instance_id,
         cost_milli_dollars,
         user_id,
@@ -166,25 +195,29 @@ export async function insertAiGradingJobAndDeductCreditsIfNeeded({
       });
     }
 
-    return ai_grading_job_id;
+    return { ai_grading_job_id, deducted_milli_dollars };
   });
 }
 
 /**
  * Atomically deduct credits from the pool for AI grading.
  * Deducts from non-transferable credits first, then transferable.
- * Throws if the pool has insufficient credits.
+ *
+ * If the pool has insufficient credits, clamps the deduction to
+ * the remaining balance rather than throwing.
  *
  * Exported for testing. Production callers should use
  * {@link insertAiGradingJobAndDeductCreditsIfNeeded} instead to ensure
  * correct lock ordering and avoid deadlocks.
+ *
+ * @returns The amount actually deducted (may be less than `cost_milli_dollars`).
  */
 export async function deductCreditsForAiGrading(
   params: DeductCreditsForAiGradingParams,
-): Promise<void> {
-  await runInTransactionAsync(async () => {
+): Promise<number> {
+  return await runInTransactionAsync(async () => {
     const before = await selectCreditPoolForUpdate(params.course_instance_id);
-    await deductCreditsForAiGradingWithLockedPool(before, params);
+    return await deductCreditsForAiGradingWithLockedPool(before, params);
   });
 }
 
@@ -200,12 +233,14 @@ export async function adjustCreditPool({
   credit_type,
   user_id,
   reason,
+  checkout_session_id,
 }: {
   course_instance_id: string;
   delta_milli_dollars: number;
   credit_type: 'transferable' | 'non_transferable';
   user_id: string;
   reason: string;
+  checkout_session_id?: string | null;
 }): Promise<void> {
   if (delta_milli_dollars === 0) return;
 
@@ -246,6 +281,7 @@ export async function adjustCreditPool({
       user_id,
       ai_grading_job_id: null,
       assessment_question_id: null,
+      checkout_session_id: checkout_session_id ?? null,
     });
   });
 }
@@ -260,6 +296,9 @@ const BatchedCreditPoolChangeRowSchema = z.object({
   reason: z.string(),
   user_name: z.string().nullable(),
   user_uid: z.string().nullable(),
+  checkout_session_id: z.coerce.string().nullable(),
+  checkout_session_refunded_at: z.coerce.date().nullable(),
+  checkout_session_amount_milli_dollars: z.coerce.number().nullable(),
   total_count: z.coerce.number(),
 });
 
