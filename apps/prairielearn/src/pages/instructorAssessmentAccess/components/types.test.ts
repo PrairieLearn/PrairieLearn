@@ -15,7 +15,7 @@ const defaultMainRule: MainRuleData = {
   listBeforeRelease: true,
   dateControlEnabled: true,
   releaseDate: '2025-03-01T00:00:00Z',
-  due: { date: '2025-04-01T00:00:00Z', credit: null },
+  due: { date: '2025-04-01T00:00:00Z', credit: null, customCredit: false },
   earlyDeadlines: [{ date: '2025-03-15T00:00:00Z', credit: 110 }],
   lateDeadlines: [{ date: '2025-04-15T00:00:00Z', credit: 50 }],
   afterLastDeadline: { allowSubmissions: false },
@@ -35,7 +35,7 @@ const baseOverride: OverrideData = {
   },
   overriddenFields: [],
   releaseDate: null,
-  due: { date: null, credit: null },
+  due: { date: null, credit: null, customCredit: false },
   earlyDeadlines: [],
   lateDeadlines: [],
   afterLastDeadline: { allowSubmissions: false },
@@ -119,7 +119,7 @@ describe('formDataToJson', () => {
       ...baseOverride,
       trackingId: 'o-2',
       overriddenFields: ['due', 'password'],
-      due: { date: '2025-05-01T00:00:00Z', credit: null },
+      due: { date: '2025-05-01T00:00:00Z', credit: null, customCredit: false },
       password: 'pw',
     };
 
@@ -221,7 +221,7 @@ describe('formDataToJson', () => {
             'password',
           ],
           // Release date as null is not allowed, so this is false.
-          due: { date: null, credit: null },
+          due: { date: null, credit: null, customCredit: false },
           earlyDeadlines: [],
           lateDeadlines: [],
           afterLastDeadline: { allowSubmissions: false },

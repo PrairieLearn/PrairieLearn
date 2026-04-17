@@ -1,7 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { useState } from 'react';
 import { Alert, Button, Form, InputGroup } from 'react-bootstrap';
-import { useController, useFormContext, useWatch } from 'react-hook-form';
+import { useController, useWatch } from 'react-hook-form';
 
 import { formatDateFriendly } from '@prairielearn/formatter';
 
@@ -26,8 +25,6 @@ function formatCourseLocalDate(value: string, displayTimezone: string): string {
 function DueDateInput({
   value,
   onChange,
-  isCreditCustom,
-  onCreditCustomChange,
   idPrefix,
   releaseDate,
   earlyDeadlines,
@@ -39,8 +36,6 @@ function DueDateInput({
 }: {
   value: DueValue;
   onChange: (value: DueValue) => void;
-  isCreditCustom: boolean;
-  onCreditCustomChange: (v: boolean) => void;
   idPrefix: string;
   releaseDate: string | null | undefined;
   earlyDeadlines: DeadlineEntry[] | undefined;
@@ -119,7 +114,7 @@ function DueDateInput({
           label="No due date"
           checked={value.date === null}
           onChange={({ currentTarget }) => {
-            if (currentTarget.checked) onChange({ date: null, credit: value.credit });
+            if (currentTarget.checked) onChange({ ...value, date: null });
           }}
         />
         <Form.Check
@@ -140,8 +135,8 @@ function DueDateInput({
                 baseDate = Temporal.Now.plainDateISO(displayTimezone);
               }
               onChange({
+                ...value,
                 date: endOfDayDatetime(baseDate.add({ weeks: 1 })),
-                credit: value.credit,
               });
             }
           }}
@@ -156,9 +151,7 @@ function DueDateInput({
             aria-invalid={!!dateError}
             aria-errormessage={dateError ? `${idPrefix}-due-date-error` : undefined}
             value={value.date}
-            onChange={({ currentTarget }) =>
-              onChange({ date: currentTarget.value, credit: value.credit })
-            }
+            onChange={({ currentTarget }) => onChange({ ...value, date: currentTarget.value })}
           />
           {dateError && (
             <Form.Text id={`${idPrefix}-due-date-error`} className="text-danger" role="alert">
@@ -171,17 +164,14 @@ function DueDateInput({
         </>
       )}
       <div className="mt-2 d-flex align-items-center gap-2 flex-wrap">
-        {!isCreditCustom ? (
+        {!value.customCredit ? (
           <span className="text-muted small">
             100% credit (default){' '}
             <Button
               variant="link"
               size="sm"
               className="p-0 align-baseline"
-              onClick={() => {
-                onCreditCustomChange(true);
-                onChange({ date: value.date, credit: 100 });
-              }}
+              onClick={() => onChange({ ...value, customCredit: true, credit: 100 })}
             >
               Change
             </Button>
@@ -210,7 +200,7 @@ function DueDateInput({
                 onChange={({ currentTarget }) => {
                   const raw = currentTarget.value;
                   const parsed = raw === '' ? null : Number(raw);
-                  onChange({ date: value.date, credit: parsed });
+                  onChange({ ...value, credit: parsed });
                 }}
               />
               <InputGroup.Text>%</InputGroup.Text>
@@ -219,10 +209,7 @@ function DueDateInput({
               variant="link"
               size="sm"
               className="p-0"
-              onClick={() => {
-                onCreditCustomChange(false);
-                onChange({ date: value.date, credit: null });
-              }}
+              onClick={() => onChange({ ...value, customCredit: false, credit: null })}
             >
               Reset to default
             </Button>
@@ -260,9 +247,9 @@ function validateDueDate(
   return undefined;
 }
 
-function validateDueCredit(credit: number | null, isCustom: boolean): string | undefined {
+function validateDueCredit(credit: number | null, customCredit: boolean): string | undefined {
   if (credit === null) {
-    if (isCustom) return 'Credit is required';
+    if (customCredit) return 'Credit is required';
     return undefined;
   }
   if (!Number.isFinite(credit)) return 'Credit must be a number';
@@ -280,8 +267,6 @@ export function MainDueDateField({
   assessmentId: string;
   courseInstanceId: string;
 }) {
-  const { getValues } = useFormContext<AccessControlFormData>();
-
   const releaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
   });
@@ -290,9 +275,9 @@ export function MainDueDateField({
     name: 'mainRule.earlyDeadlines',
   });
 
-  const [isCreditCustom, setIsCreditCustom] = useState(
-    () => getValues('mainRule.due.credit') !== null,
-  );
+  const customCreditCtrl = useController<AccessControlFormData, 'mainRule.due.customCredit'>({
+    name: 'mainRule.due.customCredit',
+  });
 
   const dateCtrl = useController<AccessControlFormData, 'mainRule.due.date'>({
     name: 'mainRule.due.date',
@@ -303,14 +288,22 @@ export function MainDueDateField({
   const creditCtrl = useController<AccessControlFormData, 'mainRule.due.credit'>({
     name: 'mainRule.due.credit',
     rules: {
-      validate: (value) => validateDueCredit(value, isCreditCustom) ?? true,
+      validate: (value, formValues) =>
+        validateDueCredit(value, formValues.mainRule.due.customCredit) ?? true,
     },
   });
 
-  const value: DueValue = { date: dateCtrl.field.value, credit: creditCtrl.field.value };
+  const value: DueValue = {
+    date: dateCtrl.field.value,
+    credit: creditCtrl.field.value,
+    customCredit: customCreditCtrl.field.value,
+  };
   const handleChange = (next: DueValue) => {
     if (next.date !== value.date) dateCtrl.field.onChange(next.date);
     if (next.credit !== value.credit) creditCtrl.field.onChange(next.credit);
+    if (next.customCredit !== value.customCredit) {
+      customCreditCtrl.field.onChange(next.customCredit);
+    }
   };
 
   return (
@@ -318,7 +311,6 @@ export function MainDueDateField({
       <Form.Label className="fw-bold">Due date</Form.Label>
       <DueDateInput
         value={value}
-        isCreditCustom={isCreditCustom}
         idPrefix="mainRule"
         releaseDate={releaseDate}
         earlyDeadlines={earlyDeadlines}
@@ -327,7 +319,6 @@ export function MainDueDateField({
         displayTimezone={displayTimezone}
         assessmentId={assessmentId}
         courseInstanceId={courseInstanceId}
-        onCreditCustomChange={setIsCreditCustom}
         onChange={handleChange}
       />
     </div>
@@ -345,8 +336,6 @@ export function OverrideDueDateField({
   assessmentId: string;
   courseInstanceId: string;
 }) {
-  const { getValues } = useFormContext<AccessControlFormData>();
-
   const mainValue = useWatch<AccessControlFormData, 'mainRule.due'>({
     name: 'mainRule.due',
   });
@@ -372,9 +361,12 @@ export function OverrideDueDateField({
   const effectiveReleaseDate = releaseDateOverridden ? releaseDate : mainReleaseDate;
   const validationReleaseDate = releaseDateOverridden ? releaseDate : undefined;
 
-  const [isCreditCustom, setIsCreditCustom] = useState(
-    () => getValues(`overrides.${index}.due.credit`) !== null,
-  );
+  const customCreditCtrl = useController<
+    AccessControlFormData,
+    `overrides.${number}.due.customCredit`
+  >({
+    name: `overrides.${index}.due.customCredit`,
+  });
 
   const dateCtrl = useController<AccessControlFormData, `overrides.${number}.due.date`>({
     name: `overrides.${index}.due.date`,
@@ -385,14 +377,22 @@ export function OverrideDueDateField({
   const creditCtrl = useController<AccessControlFormData, `overrides.${number}.due.credit`>({
     name: `overrides.${index}.due.credit`,
     rules: {
-      validate: (value) => validateDueCredit(value, isCreditCustom) ?? true,
+      validate: (value, formValues) =>
+        validateDueCredit(value, formValues.overrides[index].due.customCredit) ?? true,
     },
   });
 
-  const value: DueValue = { date: dateCtrl.field.value, credit: creditCtrl.field.value };
+  const value: DueValue = {
+    date: dateCtrl.field.value,
+    credit: creditCtrl.field.value,
+    customCredit: customCreditCtrl.field.value,
+  };
   const handleChange = (next: DueValue) => {
     if (next.date !== value.date) dateCtrl.field.onChange(next.date);
     if (next.credit !== value.credit) creditCtrl.field.onChange(next.credit);
+    if (next.customCredit !== value.customCredit) {
+      customCreditCtrl.field.onChange(next.customCredit);
+    }
   };
 
   return (
@@ -403,14 +403,13 @@ export function OverrideDueDateField({
       onOverride={() => {
         dateCtrl.field.onChange(mainValue.date);
         creditCtrl.field.onChange(mainValue.credit);
-        setIsCreditCustom(mainValue.credit !== null);
+        customCreditCtrl.field.onChange(mainValue.customCredit);
         addOverride();
       }}
       onRemoveOverride={removeOverride}
     >
       <DueDateInput
         value={value}
-        isCreditCustom={isCreditCustom}
         idPrefix={`overrides-${index}`}
         releaseDate={effectiveReleaseDate}
         earlyDeadlines={earlyDeadlinesOverridden ? earlyDeadlines : mainEarlyDeadlines}
@@ -419,7 +418,6 @@ export function OverrideDueDateField({
         displayTimezone={displayTimezone}
         assessmentId={assessmentId}
         courseInstanceId={courseInstanceId}
-        onCreditCustomChange={setIsCreditCustom}
         onChange={handleChange}
       />
     </FieldWrapper>

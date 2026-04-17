@@ -25,13 +25,18 @@ export interface DeadlineEntry {
 
 /**
  * Form-state representation of the due-date configuration. `date = null`
- * means "no due date"; `credit = null` means "use default 100% credit".
+ * means "no due date". `customCredit = false` means "use default 100% credit"
+ * (and `credit` is ignored); `customCredit = true` means "use the value in
+ * `credit`" — `credit` may be `null` transiently while the user is editing,
+ * which is a validation error.
+ *
  * We use `null` (not `undefined`) because react-hook-form silently reverts
  * undefined values to their previous state.
  */
 export interface DueValue {
   date: string | null;
   credit: number | null;
+  customCredit: boolean;
 }
 
 export interface AfterLastDeadlineValue {
@@ -169,6 +174,7 @@ export function jsonToMainRuleFormData(
     due: {
       date: toLocalDatetimeValue(dc?.due?.date ?? null, displayTimezone),
       credit: dc?.due?.credit ?? null,
+      customCredit: dc?.due?.credit != null,
     },
     earlyDeadlines: (dc?.earlyDeadlines ?? []).map((d) => ({
       ...d,
@@ -233,11 +239,12 @@ export function jsonToOverrideFormData(
     overriddenFields.push('releaseDate');
   }
 
-  let due: DueValue = { date: null, credit: null };
+  let due: DueValue = { date: null, credit: null, customCredit: false };
   if (dc?.due !== undefined) {
     due = {
       date: toLocalDatetimeValue(dc.due.date, displayTimezone),
       credit: dc.due.credit ?? null,
+      customCredit: dc.due.credit != null,
     };
     overriddenFields.push('due');
   }
@@ -316,16 +323,16 @@ export function jsonToOverrideFormData(
 }
 
 /**
- * Build the JSON `due` object from form state. `credit === null` means "use
- * default" and is dropped from JSON; any explicit number (including 100) is
- * preserved — an explicit 100 is semantically distinct from default because
- * cross-rule validation (e.g. forbidding early deadlines) treats any set
- * credit as customized.
+ * Build the JSON `due` object from form state. `customCredit = false` means
+ * "use default" and credit is dropped from JSON; otherwise the explicit
+ * number (including 100) is preserved — an explicit 100 is semantically
+ * distinct from default because cross-rule validation (e.g. forbidding early
+ * deadlines) treats any set credit as customized.
  */
 function buildDueJson(due: DueValue): { date: string | null; credit?: number } {
   return {
     date: due.date,
-    ...(due.credit !== null ? { credit: due.credit } : {}),
+    ...(due.customCredit && due.credit !== null ? { credit: due.credit } : {}),
   };
 }
 
@@ -342,7 +349,7 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
     output.dateControl = {};
     if (rule.releaseDate) output.dateControl.releaseDate = rule.releaseDate;
     // Emit `due` when either a date is set or credit is explicitly set.
-    if (rule.due.date || rule.due.credit !== null) {
+    if (rule.due.date || rule.due.customCredit) {
       output.dateControl.due = buildDueJson(rule.due);
     }
     if (rule.earlyDeadlines.length > 0) {
@@ -478,7 +485,7 @@ export function createDefaultOverrideFormData(mainRule?: MainRuleData): Override
     },
     overriddenFields: [],
     releaseDate: mainRule?.releaseDate ?? null,
-    due: mainRule?.due ? { ...mainRule.due } : { date: null, credit: null },
+    due: mainRule?.due ? { ...mainRule.due } : { date: null, credit: null, customCredit: false },
     earlyDeadlines: (mainRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
     lateDeadlines: (mainRule?.lateDeadlines ?? []).map((d) => ({ ...d })),
     afterLastDeadline: mainRule?.afterLastDeadline
