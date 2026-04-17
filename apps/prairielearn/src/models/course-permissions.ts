@@ -294,14 +294,6 @@ export const CourseUsersRowSchema = z.object({
   user: UserSchema,
   course_permission: CoursePermissionSchema,
   course_instance_roles: CourseInstanceRoleRowSchema.array().nullable(),
-  other_course_instances: z
-    .array(
-      z.object({
-        id: CourseInstanceSchema.shape.id,
-        short_name: CourseInstanceSchema.shape.short_name,
-      }),
-    )
-    .nullable(),
 });
 export type CourseUsersRow = z.infer<typeof CourseUsersRowSchema>;
 

@@ -391,18 +391,7 @@ SELECT
   ) FILTER (
     WHERE
       cip.course_instance_role IS NOT NULL
-  ) AS course_instance_roles,
-  jsonb_agg(
-    jsonb_build_object('id', ci.id, 'short_name', ci.short_name)
-    ORDER BY
-      d.start_date DESC NULLS LAST,
-      d.end_date DESC NULLS LAST,
-      ci.id DESC
-  ) FILTER (
-    WHERE
-      cip.course_instance_role IS NULL
-      AND ci.id IS NOT NULL
-  ) AS other_course_instances
+  ) AS course_instance_roles
 FROM
   course_permissions AS cp
   JOIN users AS u ON (u.id = cp.user_id)
