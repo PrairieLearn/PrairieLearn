@@ -1178,9 +1178,6 @@ def _literal_or_set_start(token: TOKEN | None) -> bool:
     )
 
 
-_S_EXP_TOKEN: TypeAlias = TOKEN | list["_S_EXP_TOKEN"]
-
-
 def set_literal_transformation(
     tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
 ) -> list[TOKEN]:
@@ -1203,7 +1200,6 @@ def set_literal_transformation(
     if len(openers) != len(closers):
         raise TokenError("set notation is incomplete")
 
-    # if there's
     out = tokens
     for i in closers:
         out[i] = (OP, ")")
