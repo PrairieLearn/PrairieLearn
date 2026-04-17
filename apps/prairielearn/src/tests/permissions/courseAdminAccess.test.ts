@@ -1,10 +1,10 @@
-import { TRPCClientError } from '@trpc/client';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { getAppError } from '../../lib/client/errors.js';
 import { getCourseTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import {
@@ -17,6 +17,7 @@ import {
 } from '../../lib/db-types.js';
 import { insertCoursePermissionsByUserUid } from '../../models/course-permissions.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
+import type { CourseStaffError } from '../../trpc/course/course-staff.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
 
@@ -213,7 +214,9 @@ function runTest(context: TestContext) {
       await trpc.courseStaff.deleteUser.mutate({ userId: context.userId });
       assert.fail('Expected FORBIDDEN error');
     } catch (err) {
-      assert.instanceOf(err, TRPCClientError);
+      const appError = getAppError<CourseStaffError>(err);
+      assert.isNotNull(appError);
+      assert.include(appError.message, 'Only administrators can');
     }
     await checkPermissions(users);
   });
@@ -237,7 +240,9 @@ function runTest(context: TestContext) {
       });
       assert.fail('Expected FORBIDDEN error');
     } catch (err) {
-      assert.instanceOf(err, TRPCClientError);
+      const appError = getAppError<CourseStaffError>(err);
+      assert.isNotNull(appError);
+      assert.include(appError.message, 'Only administrators can');
     }
     await checkPermissions(users);
   });
@@ -250,7 +255,9 @@ function runTest(context: TestContext) {
       await trpc.courseStaff.deleteUser.mutate({ userId: context.userId });
       assert.fail('Expected FORBIDDEN error');
     } catch (err) {
-      assert.instanceOf(err, TRPCClientError);
+      const appError = getAppError<CourseStaffError>(err);
+      assert.isNotNull(appError);
+      assert.include(appError.message, 'while emulating');
     }
     await checkPermissions(users);
   });
@@ -268,7 +275,9 @@ function runTest(context: TestContext) {
         });
         assert.fail('Expected FORBIDDEN error');
       } catch (err) {
-        assert.instanceOf(err, TRPCClientError);
+        const appError = getAppError<CourseStaffError>(err);
+        assert.isNotNull(appError);
+        assert.include(appError.message, 'while emulating');
       }
       await checkPermissions(users);
     },
@@ -284,7 +293,9 @@ function runTest(context: TestContext) {
       });
       assert.fail('Expected FORBIDDEN error');
     } catch (err) {
-      assert.instanceOf(err, TRPCClientError);
+      const appError = getAppError<CourseStaffError>(err);
+      assert.isNotNull(appError);
+      assert.include(appError.message, 'Only administrators can');
     }
     await checkPermissions(users);
   });
@@ -303,7 +314,9 @@ function runTest(context: TestContext) {
         });
         assert.fail('Expected FORBIDDEN error');
       } catch (err) {
-        assert.instanceOf(err, TRPCClientError);
+        const appError = getAppError<CourseStaffError>(err);
+        assert.isNotNull(appError);
+        assert.include(appError.message, 'while emulating');
       }
       await checkPermissions(users);
     },
