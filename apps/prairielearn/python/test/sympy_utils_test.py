@@ -38,7 +38,7 @@ def test_evaluate() -> None:
         psu.evaluate("eval('dict')", locals_for_eval=locals_for_eval)
 
 
-class TestSympy:
+class TestSympy:  # noqa: PLR0904
     SYMBOL_NAMES = ("n", "m", "alpha", "\u03bc0")
     M, N, ALPHA, MU0 = sympy.symbols("m n alpha mu0")
 
@@ -264,81 +264,14 @@ class TestSympy:
             allow_complex=True,
         )
 
-    @pytest.mark.parametrize(
-        "text",
-        [
-            "∪",  # noqa: RUF001
-            "∩",
-            "{}",
-            "{1,2,3}",
-            "(0, 1]",
-            "[0, 1)",
-            "[0, 1]",
-        ],
-    )
-    def test_set_notation_specific_syntax_rejected_when_disabled(
-        self, text: str
-    ) -> None:
-        with pytest.raises(psu.HasSetNotationError):
-            psu.convert_string_to_sympy(text, allow_set_notation=False)
-
-    @pytest.mark.parametrize(
-        ("text", "expected"),
-        SET_EXPR_PAIRS,
-    )
-    def test_interval_notation_parses(
-        self,
-        text: str,
-        expected: sympy.Basic,
-    ) -> None:
-        out = psu.try_parse_string_as_sympy(
-            text,
+    @pytest.mark.parametrize(("a_sub", "sympy_ref"), SET_EXPR_PAIRS)
+    def test_string_conversion_on_sets(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
+        assert sympy_ref == psu.convert_string_to_sympy(
+            a_sub,
             self.SYMBOL_NAMES,
             allow_set_notation=True,
-            custom_functions=list(self.FUNCTION_NAMES),
+            custom_functions=self.FUNCTION_NAMES,
         )
-        assert isinstance(out, psu.SympyParseSuccess)
-        assert out.expr == expected
-
-    @pytest.mark.parametrize(
-        "text",
-        [
-            # invalid syntax
-            "[1, 2",
-            "1, 2]",
-            "(1, 2",
-            "1, 2)",
-            "[1, 2, 3]",
-            "(1, 2, 3]",
-            "[1, 2, 3)",
-            "(1, 2, 3)",
-            "[1, 2}",
-            "{1, 2]",
-            # valid syntax, invalid nesting
-            "(1, [2, 3])",
-            "(1, [2, 3))",
-            "(1, (2, 3])",
-            "(1, (2, 3))",
-            "(1, [2, 3]]",
-            "(1, [2, 3)]",
-            "(1, (2, 3]]",
-            "(1, (2, 3)]",
-            "[1, [2, 3])",
-            "[1, [2, 3))",
-            "[1, (2, 3])",
-            "[1, (2, 3))",
-            "[1, [2, 3]]",
-            "[1, [2, 3)]",
-            "[1, (2, 3]]",
-            "[1, (2, 3)]",
-            "[1, {2, 3}]",
-            "[{2, 3}, 1]",
-        ],
-    )
-    def test_interval_syntax_errors_are_rejected(self, text: str) -> None:
-        out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
-        assert isinstance(out, psu.SympyParseFailure)
-        assert "invalid expression" in out.error or "syntax error" in out.error
 
     @pytest.mark.parametrize("a_pair", EXPR_PAIRS)
     def test_valid_format(self, a_pair: tuple[str, sympy.Expr]) -> None:
@@ -348,12 +281,36 @@ class TestSympy:
             is None
         )
 
+    @pytest.mark.parametrize("a_pair", SET_EXPR_PAIRS)
+    def test_valid_format_on_sets(self, a_pair: tuple[str, sympy.Expr]) -> None:
+        a_sub, _ = a_pair
+        assert (
+            psu.validate_string_as_sympy(
+                a_sub,
+                self.SYMBOL_NAMES,
+                allow_set_notation=True,
+                custom_functions=list(self.FUNCTION_NAMES),
+            )
+            is None
+        )
+
     @pytest.mark.parametrize(("a_sub", "sympy_ref"), EXPR_PAIRS)
     def test_try_parse_string_as_sympy(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
         assert psu.SympyParseSuccess(sympy_ref) == psu.try_parse_string_as_sympy(
             a_sub,
             self.SYMBOL_NAMES,
             allow_complex=True,
+        )
+
+    @pytest.mark.parametrize(("text", "expected"), SET_EXPR_PAIRS)
+    def test_try_parse_string_as_sympy_on_sets(
+        self, text: str, expected: sympy.Expr
+    ) -> None:
+        assert psu.SympyParseSuccess(expected) == psu.try_parse_string_as_sympy(
+            text,
+            self.SYMBOL_NAMES,
+            allow_set_notation=True,
+            custom_functions=list(self.FUNCTION_NAMES),
         )
 
     def test_try_parse_string_as_sympy_returns_failure(self) -> None:
@@ -410,6 +367,64 @@ class TestSympy:
                 a_sub, variables, allow_complex=allow_complex
             )
             assert result == expected
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "∪",  # noqa: RUF001
+            "∩",
+            "{}",
+            "{1,2,3}",
+            "(0, 1]",
+            "[0, 1)",
+            "[0, 1]",
+        ],
+    )
+    def test_set_notation_specific_syntax_rejected_when_disabled(
+        self, text: str
+    ) -> None:
+        with pytest.raises(psu.HasSetNotationError):
+            psu.convert_string_to_sympy(text, allow_set_notation=False)
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            # invalid syntax
+            "[1, 2",
+            "1, 2]",
+            "(1, 2",
+            "1, 2)",
+            "[1, 2, 3]",
+            "(1, 2, 3]",
+            "[1, 2, 3)",
+            "(1, 2, 3)",
+            "[1, 2}",
+            "{1, 2]",
+            # valid syntax, invalid nesting
+            "(1, [2, 3])",
+            "(1, [2, 3))",
+            "(1, (2, 3])",
+            "(1, (2, 3))",
+            "(1, [2, 3]]",
+            "(1, [2, 3)]",
+            "(1, (2, 3]]",
+            "(1, (2, 3)]",
+            "[1, [2, 3])",
+            "[1, [2, 3))",
+            "[1, (2, 3])",
+            "[1, (2, 3))",
+            "[1, [2, 3]]",
+            "[1, [2, 3)]",
+            "[1, (2, 3]]",
+            "[1, (2, 3)]",
+            "[1, {2, 3}]",
+            "[{2, 3}, 1]",
+        ],
+    )
+    def test_interval_syntax_errors_are_rejected(self, text: str) -> None:
+        out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
+        assert isinstance(out, psu.SympyParseFailure)
+        assert "syntax error" in out.error
 
     @pytest.mark.parametrize(
         ("a_sub", "variables", "expected"),
