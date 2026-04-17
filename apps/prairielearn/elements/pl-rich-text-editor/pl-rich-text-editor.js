@@ -16,17 +16,17 @@
   // count_words_from_html_base64 so the live counter and validation agree.
   const countWords = (text) => {
     const trimmed = text.trim();
-    const tokens = trimmed ? trimmed.split(/[ \t\n\r\f\v]+/).filter((t) => t) : [];
+    const tokens = trimmed ? trimmed.split(/[ \t\n\r\f\v]+/).filter(Boolean) : [];
     return tokens.length;
   };
 
   // Convert sanitized HTML to text for word counting. Replaces tags and &nbsp;
   // with spaces, then countWords splits on whitespace. No DOM/HTML parsing.
+  // This is done to simplify the consistency between Python and JS word
+  // counting.
   const htmlToCountableText = (html) => {
     if (!html) return '';
-    return html
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&nbsp;|&#160;|&#xA0;|[\u00A0]/g, ' ');
+    return html.replaceAll(/<[^>]+>/g, ' ').replaceAll(/&nbsp;|&#160;|&#xA0;|[\u00A0]/g, ' ');
   };
 
   class Counter {
@@ -145,7 +145,6 @@
     // Use the same text extraction as the hidden input so the live counter and
     // min/max validation match server-side validation (formulas, lists, formatting).
 
-
     // An alternative solution would be to use the `getText` method, but this
     // would cause a false positive for elements that are part of the answer
     // but don't have a text (e.g., images).
@@ -157,15 +156,11 @@
     // fail but not crash, so the element can continue working.
 
     const getStoredContent = () =>
-      quill.editor?.isBlank?.()
-        ? ''
-        : rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
+      quill.editor?.isBlank?.() ? '' : rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
     const getCountableText = () => htmlToCountableText(getStoredContent());
 
     const getCounterText =
-      options.counter === 'character'
-        ? () => quill.getText()
-        : () => getCountableText();
+      options.counter === 'character' ? () => quill.getText() : () => getCountableText();
     const counter =
       options.counter === 'none' ? null : new Counter(options.counter, uuid, getCounterText);
 
