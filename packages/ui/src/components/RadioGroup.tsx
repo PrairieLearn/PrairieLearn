@@ -1,4 +1,4 @@
-import { createContext, useContext, useId, type ReactNode } from 'react';
+import { type ReactNode, createContext, use, useId } from 'react';
 import Form from 'react-bootstrap/Form';
 
 interface RadioGroupContextValue {
@@ -24,11 +24,11 @@ export function RadioGroup<T extends string = string>({
 }: RadioGroupProps<T>) {
   const autoId = useId();
   return (
-    <RadioGroupContext.Provider
+    <RadioGroupContext
       value={{ name: name ?? autoId, value, onChange: onChange as (v: string) => void }}
     >
       {children}
-    </RadioGroupContext.Provider>
+    </RadioGroupContext>
   );
 }
 
@@ -38,7 +38,7 @@ export interface RadioProps {
 }
 
 export function Radio({ value, children }: RadioProps) {
-  const context = useContext(RadioGroupContext);
+  const context = use(RadioGroupContext);
   if (!context) {
     throw new Error('Radio must be used within a RadioGroup');
   }
