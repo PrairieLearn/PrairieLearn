@@ -52,6 +52,9 @@ def count_words_from_html_base64(file_contents_b64: str) -> int:
 
     Uses sanitized HTML as input: replaces tags and &nbsp; with spaces, then
     splits on ASCII whitespace. No HTML parsing; matches the JS logic.
+
+    Returns:
+        the number of words in the contents.
     """
     if not file_contents_b64:
         return 0
@@ -61,6 +64,7 @@ def count_words_from_html_base64(file_contents_b64: str) -> int:
     text = re.sub(r"&nbsp;|&#160;|&#xA0;|\u00A0", " ", text)
     tokens = [t for t in re.split(r"\s+", text.strip(), flags=re.ASCII) if t]
     return len(tokens)
+
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
@@ -116,8 +120,15 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         raise ValueError('Attribute "max-word-count" must be >= 0.')
     if min_wc is not None and max_wc is not None and min_wc > max_wc:
         raise ValueError(
-            f'Invalid bounds: min-word-count ({min_wc}) cannot exceed max-word-count ({max_wc}).'
+            f"Invalid bounds: min-word-count ({min_wc}) cannot exceed max-word-count ({max_wc})."
         )
+    if (min_wc is not None or max_wc is not None) and (
+        pl.get_enum_attrib(element, "counter", Counter, Counter.WORD) != Counter.WORD
+    ):
+        raise ValueError(
+            'When "min-word-count" or "max-word-count" is set, "counter" must be set to "word".'
+        )
+
 
 def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "answer":
@@ -264,16 +275,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         return
 
     # Validate format before persisting; reject malformed base64/UTF-8
-    word_count = 0
-    if file_contents:
-        try:
-            word_count = count_words_from_html_base64(file_contents)
-        except (binascii.Error, UnicodeDecodeError):
-            pl.add_files_format_error(
-                data,
-                f"Failed to decode submission for {file_name}. The file may be corrupted or invalid.",
-            )
-            return
+    try:
+        word_count = count_words_from_html_base64(file_contents)
+    except (binascii.Error, UnicodeDecodeError):
+        pl.add_files_format_error(
+            data,
+            f"Failed to decode submission for {file_name}. The file may be corrupted or invalid.",
+        )
+        return
 
     # We will store the files in the submitted_answer["_files"] key,
     # so delete the original submitted answer format to avoid
@@ -284,7 +293,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # pl-rich-text-editor (potentially stored in Markdown)
     pl.add_submitted_file(data, file_name, file_contents, mimetype="text/html")
 
-    # Word count validation after adding the file so that the file is stored in the submitted_answers["_files"] key
+    # Word count validation after adding the file so that the file is stored in the submitted_answers["_files"] key even if validation fails.
     min_wc = pl.get_integer_attrib(element, "min-word-count", MIN_WORD_COUNT_DEFAULT)
     max_wc = pl.get_integer_attrib(element, "max-word-count", MAX_WORD_COUNT_DEFAULT)
 
@@ -292,14 +301,12 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if file_contents and (min_wc is not None or max_wc is not None):
         if min_wc is not None and word_count < min_wc:
             pl.add_files_format_error(
-                data,
-                f"{file_name} is invalid: {word_count} words (minimum {min_wc})."
+                data, f"{file_name} is invalid: {word_count} words (minimum {min_wc})."
             )
             return
 
         if max_wc is not None and word_count > max_wc:
             pl.add_files_format_error(
-                data,
-                f"{file_name} is invalid: {word_count} words (maximum {max_wc})."
+                data, f"{file_name} is invalid: {word_count} words (maximum {max_wc})."
             )
             return
