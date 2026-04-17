@@ -34,7 +34,7 @@ export function LockpointRow({
             <i class="fas fa-check-circle text-success me-2 mt-1" aria-hidden="true"></i>
             <div>
               <span class="fw-bold">Lockpoint</span>
-              <small class="text-muted d-block">${parts.join(', ')}</small>
+              <small class="text-muted d-block">${parts.join(' ')}</small>
             </div>
           </div>
         </td>
