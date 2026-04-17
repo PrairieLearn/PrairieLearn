@@ -832,6 +832,41 @@ class TestExceptions:
         assert match is not None
         assert match.group(1) == expected_caret
 
+    @pytest.mark.parametrize(
+        ("expr", "expected_caret"),
+        [
+            (
+                "{1, 2} / {2, 3}",
+                _caret(
+                    ", 2} / {2,",
+                    "     ^     ",
+                ),
+            ),
+            (
+                "{1, 2} U 3",
+                _caret(
+                    ", 2} U 3",
+                    "     ^   ",
+                ),
+            ),
+            (
+                "{1, 2} ** {3}",
+                _caret(
+                    ", 2} ** {3",
+                    "     ^     ",
+                ),
+            ),
+        ],
+    )
+    def test_set_operation_type_error_caret_output(
+        self, expr: str, expected_caret: str
+    ) -> None:
+        error_msg = psu.validate_string_as_sympy(expr, None, allow_set_notation=True)
+        assert error_msg is not None
+        match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
+        assert match is not None
+        assert match.group(1) == expected_caret
+
     def test_invalid_function_with_simplify_false(self) -> None:
         """Test that invalid function calls are caught with simplify_expression=False.
 

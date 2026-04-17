@@ -647,7 +647,11 @@ def evaluate_with_source(
         # nonetheless syntactically valid (e.g. `{1, 2} / {3, 4}`, `sin((1, 3])`).
         # Because the AST check above already ran, TypeErrors here are expected to
         # come from SymPy's own type system, not from Python infrastructure bugs.
-        raise HasParseError(-1) from exc
+        index = find_type_error_offset(expr, exc)
+        if index != -1:
+            raise HasParseError(index) from exc
+        # if we can't localize the type error, report to staff.
+        raise BaseSympyError from exc
     except Exception as exc:
         raise BaseSympyError from exc
 
@@ -845,6 +849,36 @@ def find_symbol_offset(expr: str, symbol: str) -> int:
     if ind != -1:
         return ind
     return expr.rfind(symbol)
+
+
+_TYPE_ERROR_OPERATOR_PATTERN = re.compile(
+    r"unsupported operand type\(s\) for (?P<operator>[^:]+):"
+)
+
+
+def find_type_error_offset(expr: str, exc: TypeError) -> int:
+    """Return an approximate offset for a SymPy TypeError in expr."""
+    match = _TYPE_ERROR_OPERATOR_PATTERN.search(str(exc))
+    if match is None:
+        return -1
+
+    # for some TypeErrors, both the op and magic-method are provided, e.g `...for ** or pow():...`
+    # see https://chromium.googlesource.com/external/github.com/python/cpython/+/refs/tags/v3.7.17/Objects/abstract.c
+    # line 925 for an example.
+    candidate_operators = match.group("operator").replace("()", "").split(" or ")
+    # account for de-sugaring
+    candidate_operators.extend(
+        alias
+        for alias, transformed_operator in _SET_OPS.items()
+        if transformed_operator in candidate_operators
+    )
+
+    for candidate in candidate_operators:
+        ind = find_symbol_offset(expr, candidate)
+        if ind != -1:
+            return ind
+
+    return -1
 
 
 def sympy_to_json(
