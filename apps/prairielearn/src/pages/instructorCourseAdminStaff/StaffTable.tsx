@@ -989,8 +989,8 @@ function StaffTableInner({
       ...courseInstances.map((ci) =>
         columnHelper.accessor(
           (row): InstanceRole =>
-            row.course_instance_roles?.find((cir) => cir.id === ci.id)
-              ?.course_instance_role ?? 'None',
+            row.course_instance_roles?.find((cir) => cir.id === ci.id)?.course_instance_role ??
+            'None',
           {
             id: `ci_${ci.id}`,
             header: () => <code>{ci.short_name ?? `Instance ${ci.id}`}</code>,
