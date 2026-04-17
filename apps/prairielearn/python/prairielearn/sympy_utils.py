@@ -621,7 +621,10 @@ def evaluate_with_source(
 
     try:
         code = stringify_expr(expr, local_dict, global_dict, transformations)
-    except TokenError as exc:
+    except (TokenError, IndexError) as exc:
+        # SymPy can raise IndexError on malformed token streams for some invalid
+        # inputs instead of a cleaner TokenError. Treat those the same way so the
+        # caller receives a normal syntax error rather than an unexpected error.
         raise HasParseError(-1) from exc
 
     # First do AST check, mainly for security
@@ -1144,6 +1147,8 @@ _INTERVAL_OPEN = {"(", "["}
 _INTERVAL_CLOSE = {")", "]"}
 _SET_LITERAL_NESTED_OPEN = {"(", "[", "{"}
 _SET_LITERAL_NESTED_CLOSE = {")", "]", "}"}
+_SET_FUNCTION_NAMES = _Constants().set_functions.keys()
+_SET_NOTATION_ONLY_TOKENS = {"[", "]", "{", "}", "|", "&"}
 _SET_OPS = {
     "U": "|",
     "cup": "|",
@@ -1191,7 +1196,11 @@ def _rewrite_set_literal_from_tokens(
             if depth == 0:
                 if text != "}":
                     raise TokenError("mismatched brackets in set literal")
-                return (((NAME, "FiniteSet"), (OP, "("), *content, (OP, ")")), i)
+                rewritten_content = set_literal_transformation(content, {}, {})
+                return (
+                    ((NAME, "FiniteSet"), (OP, "("), *rewritten_content, (OP, ")")),
+                    i,
+                )
             depth -= 1
         content.append(token)
 
@@ -1242,6 +1251,13 @@ def _rewrite_interval_literal_from_tokens(
             operand.append(token)
         raise TokenError("interval notation is incomplete")
 
+    def _contains_set_notation(tokens: list[TOKEN]) -> bool:
+        return any(
+            (typ == NAME and text in _SET_FUNCTION_NAMES)
+            or text in _SET_NOTATION_ONLY_TOKENS
+            for typ, text in tokens
+        )
+
     # consume until the first top-level comma or closing bracket.
     closed, left_side, mid_index, _comma = _seek_comma_or_closer(start_index + 1)
     if closed:
@@ -1251,6 +1267,9 @@ def _rewrite_interval_literal_from_tokens(
     closed, right_side, end_index, (_, end_text) = _seek_comma_or_closer(mid_index + 1)
     if not closed:
         raise TokenError("interval contains more than one separator")
+
+    if _contains_set_notation(left_side) or _contains_set_notation(right_side):
+        raise TokenError("interval endpoints cannot contain set notation")
 
     return (
         (NAME, "Interval"),
