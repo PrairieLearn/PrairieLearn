@@ -42,6 +42,10 @@ export const GroupForUpdateSchema = GroupSchema.extend({
   has_roles: z.boolean(),
 });
 
+export function getRoleNamesForUser(groupInfo: GroupInfo, user: User): string[] {
+  return groupInfo.rolesInfo?.roleAssignments[user.uid]?.map((r) => r.role_name) ?? ['None'];
+}
+
 export function canUserAssignGroupRoles(groupInfo: GroupInfo, user_id: string): boolean {
   const assignerRoles =
     groupInfo.rolesInfo?.groupRoles

@@ -20,7 +20,7 @@ import { QuestionScorePanel } from '../../components/QuestionScore.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
 import type { AssessmentTool, User } from '../../lib/db-types.js';
-import { getRoleNamesForUser } from '../../lib/groups.js';
+import { getRoleNamesForUser } from '../../lib/groups.shared.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function StudentInstanceQuestion({
@@ -196,7 +196,6 @@ export function StudentInstanceQuestion({
             variant: resLocals.variant,
             authz_result: resLocals.authz_result,
             csrfToken: resLocals.__csrf_token,
-            urlPrefix: resLocals.urlPrefix,
             allowGradeLeftMs: resLocals.allowGradeLeftMs,
           })}
           ${QuestionNavSideGroup({
