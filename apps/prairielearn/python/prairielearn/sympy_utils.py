@@ -1155,28 +1155,26 @@ def set_literal_transformation(
     if not tokens:
         return tokens
 
-    openers: list[int] = []
-    closers: set[int] = set()
+    set_start = (NAME, "FiniteSet"), (OP, "(")
+    set_end = (OP, ")")
+    out: list[TOKEN] = []
+    depth = 0
 
-    for i, token in enumerate(tokens):
+    for token in tokens:
         _, text = token
         if text == "{":
-            openers.append(i)
+            out.extend(set_start)
+            depth += 1
         elif text == "}":
-            if len(openers) <= len(closers):
+            if depth <= 0:
                 raise TokenError("too many closing braces")
-            closers.add(i)
+            out.append(set_end)
+            depth -= 1
+        else:
+            out.append(token)
 
-    if len(openers) != len(closers):
+    if depth != 0:
         raise TokenError("set notation is incomplete")
-
-    f_set = (NAME, "FiniteSet")
-    open_p = (OP, "(")
-    close_p = (OP, ")")
-    out = [(close_p if i in closers else t) for i, t in enumerate(tokens)]
-    for i in reversed(openers):
-        out[i] = open_p
-        out.insert(i, f_set)
 
     return out
 
