@@ -81,7 +81,7 @@ class TestSympy:
         ("n log^2 2n", N * (sympy.log(2 * N) ** 2)),
         ("e^(pi * i)", -1),
         ("infty", sympy.oo),
-        ("infty", sympy.oo + 99),
+        ("infty + 99", sympy.oo + 99),
         ("-infty", -sympy.oo),
         ("-infty + 99", -sympy.oo),
         ("n \u2212 m", N - M),
@@ -130,6 +130,89 @@ class TestSympy:
         ("tanh(m)", sympy.tanh(M)),
         ("sinh(m)", sympy.sinh(M)),
         ("cosh(m)", sympy.cosh(M)),
+    )
+
+    SET_EXPR_PAIRS = (
+        # basic sets
+        ("{}", sympy.EmptySet),
+        ("{1}", sympy.FiniteSet(1)),
+        ("{1, 2, 3}", sympy.FiniteSet(1, 2, 3)),
+        ("({1, 2, 3})", sympy.FiniteSet(1, 2, 3)),
+        # finite intervals
+        ("(1, 2)", sympy.Interval.open(1, 2)),
+        ("(1, 2]", sympy.Interval.Lopen(1, 2)),
+        ("[1, 2)", sympy.Interval.Ropen(1, 2)),
+        ("[1, 2]", sympy.Interval(1, 2)),
+        # non-finite intervals
+        ("[-oo, 1]", sympy.Interval(-sympy.oo, 1)),
+        ("(-oo, 1]", sympy.Interval.Lopen(-sympy.oo, 1)),
+        ("[-oo, 1)", sympy.Interval.Ropen(-sympy.oo, 1)),
+        ("(-oo, 1)", sympy.Interval.open(-sympy.oo, 1)),
+        ("[-infty, infty]", sympy.Interval(-sympy.oo, sympy.oo)),
+        ("[1, oo]", sympy.Interval(1, sympy.oo)),
+        ("(1, oo]", sympy.Interval.Lopen(1, sympy.oo)),
+        ("[1, oo)", sympy.Interval.Ropen(1, sympy.oo)),
+        ("(1, oo)", sympy.Interval.open(1, sympy.oo)),
+        # function interval endpoints
+        ("[sin(m), 2]", sympy.Interval(sympy.sin(M), 2)),
+        ("(sin(m), 2]", sympy.Interval.Lopen(sympy.sin(M), 2)),
+        ("[sin(m), 2)", sympy.Interval.Ropen(sympy.sin(M), 2)),
+        ("(sin(m), 2)", sympy.Interval.open(sympy.sin(M), 2)),
+        ("(2, sin(m))", sympy.Interval.open(2, sympy.sin(M))),
+        ("(2, sin(m)]", sympy.Interval.Lopen(2, sympy.sin(M))),
+        ("[2, sin(m))", sympy.Interval.Ropen(2, sympy.sin(M))),
+        ("[2, sin(m)]", sympy.Interval(2, sympy.sin(M))),
+        # set parenthesis, oop, and set operations
+        ("([1, 2])", sympy.Interval(1, 2)),
+        (
+            "(({1, 2, 3}) U ([1, 2]))",
+            sympy.Union(sympy.FiniteSet(1, 2, 3), sympy.Interval(1, 2)),
+        ),
+        (
+            "[m, 2] U (m + 2, 4]",
+            sympy.Union(sympy.Interval(M, 2), sympy.Interval.Lopen(M + 2, 4)),
+        ),
+        ("{1} ∪ {2}", sympy.FiniteSet(1, 2)),  # noqa: RUF001
+        ("{1, 2} ∩ {2, 3}", sympy.FiniteSet(2)),
+        (
+            "({m, 3} U (m + 1, 4])",
+            sympy.Union(sympy.FiniteSet(3, M), sympy.Interval.Lopen(M + 1, 4)),
+        ),
+        (
+            "({m, 3} U (m + 1, 4]) & {m, 4}",
+            sympy.Intersection(
+                sympy.FiniteSet(4, M),
+                sympy.Union(sympy.FiniteSet(3, M), sympy.Interval.Lopen(M + 1, 4)),
+            ),
+        ),
+        (
+            "(({m, 3} U (m + 1, 4]) & {m, 4})",
+            sympy.Intersection(
+                sympy.FiniteSet(4, M),
+                sympy.Union(sympy.FiniteSet(3, M), sympy.Interval.Lopen(M + 1, 4)),
+            ),
+        ),
+        (
+            "(sin((m/2) + 1), cos(m - 1)]",
+            sympy.Interval.Lopen(sympy.sin(M / 2 + 1), sympy.cos(M - 1)),
+        ),
+        (
+            "[f(m + 1), g(f(m) + 1)]",
+            sympy.Interval(F(M + 1), G(F(M) + 1)),
+        ),
+        # nested sets
+        ("{1, 1}", sympy.FiniteSet(1)),
+        ("{1, {2, 3}}", sympy.FiniteSet(1, sympy.FiniteSet(2, 3))),
+        ("{1, (2, 3)}", sympy.FiniteSet(1, sympy.Interval.open(2, 3))),
+        ("{1, (2, 3]}", sympy.FiniteSet(1, sympy.Interval.Lopen(2, 3))),
+        ("{1, [2, 3)}", sympy.FiniteSet(1, sympy.Interval.Ropen(2, 3))),
+        ("{1, [2, 3]}", sympy.FiniteSet(1, sympy.Interval(2, 3))),
+        (
+            "{ {}, {{}, {}} }",
+            sympy.FiniteSet(
+                sympy.EmptySet, sympy.FiniteSet(sympy.EmptySet, sympy.EmptySet)
+            ),
+        ),
     )
 
     # Using string-based comparisons here to bypass sympy's default simplification behavior
@@ -181,36 +264,81 @@ class TestSympy:
             allow_complex=True,
         )
 
-    def test_set_notation_union_unicode(self) -> None:
-        assert psu.convert_string_to_sympy(
-            "{1} ∪ {2}",  # noqa: RUF001
-            allow_set_notation=True,
-        ) == sympy.FiniteSet(1, 2)
-
-    def test_set_notation_union_unicode_rejected_when_disabled(self) -> None:
-        with pytest.raises(psu.HasSetNotationError):
-            psu.convert_string_to_sympy(
-                "{1} ∪ {2}",  # noqa: RUF001
-                allow_set_notation=False,
-            )
-
-    def test_set_notation_intersection_unicode(self) -> None:
-        assert (
-            psu.convert_string_to_sympy(
-                "{1} ∩ {2}",
-                allow_set_notation=True,
-            )
-            == sympy.EmptySet
-        )
-
-    def test_set_notation_intersection_unicode_rejected_when_disabled(
-        self,
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "∪",  # noqa: RUF001
+            "∩",
+            "{}",
+            "{1,2,3}",
+            "(0, 1]",
+            "[0, 1)",
+            "[0, 1]",
+        ],
+    )
+    def test_set_notation_specific_syntax_rejected_when_disabled(
+        self, text: str
     ) -> None:
         with pytest.raises(psu.HasSetNotationError):
-            psu.convert_string_to_sympy(
-                "{1} ∩ {2}",
-                allow_set_notation=False,
-            )
+            psu.convert_string_to_sympy(text, allow_set_notation=False)
+
+    @pytest.mark.parametrize(
+        ("text", "expected"),
+        SET_EXPR_PAIRS,
+    )
+    def test_interval_notation_parses(
+        self,
+        text: str,
+        expected: sympy.Basic,
+    ) -> None:
+        out = psu.try_parse_string_as_sympy(
+            text,
+            self.SYMBOL_NAMES,
+            allow_set_notation=True,
+            custom_functions=list(self.FUNCTION_NAMES),
+        )
+        assert isinstance(out, psu.SympyParseSuccess)
+        assert out.expr == expected
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            # invalid syntax
+            "[1, 2",
+            "1, 2]",
+            "(1, 2",
+            "1, 2)",
+            "[1, 2, 3]",
+            "(1, 2, 3]",
+            "[1, 2, 3)",
+            "(1, 2, 3)",
+            "[1, 2}",
+            "{1, 2]",
+            # valid syntax, invalid nesting
+            "(1, [2, 3])",
+            "(1, [2, 3))",
+            "(1, (2, 3])",
+            "(1, (2, 3))",
+            "(1, [2, 3]]",
+            "(1, [2, 3)]",
+            "(1, (2, 3]]",
+            "(1, (2, 3)]",
+            "[1, [2, 3])",
+            "[1, [2, 3))",
+            "[1, (2, 3])",
+            "[1, (2, 3))",
+            "[1, [2, 3]]",
+            "[1, [2, 3)]",
+            "[1, (2, 3]]",
+            "[1, (2, 3)]",
+            "[1, {2, 3}]",
+            "[{2, 3}, 1]",
+        ],
+    )
+    def test_interval_syntax_errors_are_rejected(self, text: str) -> None:
+        out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
+        assert isinstance(out, psu.SympyParseFailure)
+        assert "invalid expression" in out.error or "syntax error" in out.error
 
     @pytest.mark.parametrize("a_pair", EXPR_PAIRS)
     def test_valid_format(self, a_pair: tuple[str, sympy.Expr]) -> None:
