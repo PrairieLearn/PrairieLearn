@@ -14,5 +14,5 @@
 #
 # The query returns a single extension, so it is not expensive, and the timeout
 # is short, so it should not cause a significant delay in startup.
-curl -fsSL https://open-vsx.org/vscode/gallery/extensionquery --json '{"filters":[{"pageSize":1}]}' --connect-timeout 1 -o /dev/null || export EXTENSIONS_GALLERY="{}"
+curl -fsL https://open-vsx.org/vscode/gallery/extensionquery --json '{"filters":[{"pageSize":1}]}' --connect-timeout 1 -o /dev/null || export EXTENSIONS_GALLERY="{}"
 exec /usr/bin/entrypoint.sh --auth none --disable-update-check --disable-telemetry --bind-addr 0.0.0.0:8080 .
