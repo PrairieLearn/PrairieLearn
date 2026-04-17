@@ -341,6 +341,20 @@ describe('resolveAccessControl', () => {
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
     });
+
+    it('returns 100% credit when after release date and no deadlines', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: { releaseDate: '2025-03-01T00:00:00Z' },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(true);
+    });
   });
 
   describe('early deadline bonus credit', () => {
@@ -1223,8 +1237,9 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T00:00:00Z'),
       });
-      expect(result.credit).toBe(0);
-      expect(result.active).toBe(false);
+      expect(result.authorized).toBe(true);
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(true);
     });
   });
 
@@ -1329,28 +1344,6 @@ describe('resolveAccessControl', () => {
         date: new Date('2025-04-15T00:00:00Z'),
       });
       expect(afterAll.credit).toBe(0);
-    });
-  });
-
-  describe('no date control defaults', () => {
-    it.each([
-      { label: 'dateControl absent', rule: {} },
-      {
-        label: 'dateControl has no releaseDate',
-        rule: { dateControl: { dueDate: '2025-05-01T00:00:00Z' } },
-      },
-      {
-        label: 'dateControl has releaseDate but no deadlines/due date',
-        rule: { dateControl: { releaseDate: '2025-03-01T00:00:00Z' } },
-      },
-    ])('returns 0 credit when $label', ({ rule }) => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [makeMainRule(rule)],
-        date: new Date('2025-03-15T00:00:00Z'),
-      });
-      expect(result.credit).toBe(0);
-      expect(result.active).toBe(false);
     });
   });
 
@@ -1531,10 +1524,6 @@ describe('resolveAccessControl', () => {
         rules: [
           {
             ...makeMainRule({
-              dateControl: {
-                releaseDate: '2025-01-01T00:00:00Z',
-                dueDate: null,
-              },
               afterComplete: {
                 questions: { hidden: true },
                 score: { hidden: true },
@@ -1545,7 +1534,7 @@ describe('resolveAccessControl', () => {
         ],
         prairieTestReservations: [],
       });
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
       expect(result.examAccessEnd).toBeNull();
