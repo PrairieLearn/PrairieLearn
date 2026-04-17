@@ -55,7 +55,7 @@ COPY --chmod=0644 --chown=coder:coder settings.json /home/coder/.local/share/cod
 
 # Prepare the entrypoint helper that steps down to a limited user in local dev mode
 COPY --chmod=0755 --chown=root:root pl-gosu-helper.sh /usr/bin/
-# Prepare the entrypoint helper that checks for network connectivity and disabled the marketplace as needed
+# Prepare the entrypoint helper that checks for network connectivity and disables the marketplace as needed
 COPY --chmod=0755 --chown=root:root entrypoint.sh /entrypoint.sh
 
 # Make sure that code-server's entrypoint doesn't run fixuid unnecessarily
