@@ -12,17 +12,7 @@ import re
 from collections import deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from tokenize import (
-    DEDENT,
-    ENDMARKER,
-    ERRORTOKEN,
-    INDENT,
-    NAME,
-    NEWLINE,
-    NL,
-    OP,
-    TokenError,
-)
+from tokenize import NAME, OP, TokenError
 from types import CodeType
 from typing import Any, Literal, TypeAlias, TypedDict, TypeGuard, cast
 
@@ -652,6 +642,8 @@ def evaluate_with_source(
     # Now that it's safe, get sympy expression
     try:
         res = eval_expr(code, local_dict, global_dict)
+    except TypeError as exc:
+        raise HasParseError(-1) from exc
     except Exception as exc:
         raise BaseSympyError from exc
 
@@ -1140,7 +1132,6 @@ def get_items_list(items_string: str | None) -> list[str]:
     return list(map(str.strip, items_string.split(",")))
 
 
-_INTERVAL_TRIVIAL = {NL, NEWLINE, INDENT, DEDENT, ENDMARKER}
 _INTERVAL_OPEN = {"(", "["}
 _SET_LITERAL_NESTED_OPEN = {"(", "[", "{"}
 _SET_LITERAL_NESTED_CLOSE = {")", "]", "}"}
@@ -1155,12 +1146,6 @@ _SET_OPS = {
     "\\cap": "&",
     "∩": "&",
 }
-
-
-def _is_interval_trivial(token: TOKEN) -> bool:
-    return token[0] in _INTERVAL_TRIVIAL or (
-        token[0] == ERRORTOKEN and token[1].isspace()
-    )
 
 
 def set_literal_transformation(
@@ -1196,7 +1181,7 @@ def set_literal_transformation(
     return out
 
 
-def _rewrite_interval_literal(
+def _try_rewrite_interval_literal(
     tokens: list[TOKEN], start_index: int
 ) -> tuple[tuple[TOKEN, ...] | None, int]:
     _, start_text = tokens[start_index]
@@ -1267,8 +1252,8 @@ def interval_transformation(
     i = 0
     while i < len(tokens):
         token = tokens[i]
-        if (not prev or prev[0] != NAME) and not _is_interval_trivial(token):
-            rewritten_tokens, end_index = _rewrite_interval_literal(tokens, i)
+        if (not prev or prev[0] != NAME) and token[1] in _INTERVAL_OPEN:
+            rewritten_tokens, end_index = _try_rewrite_interval_literal(tokens, i)
             if rewritten_tokens is not None:
                 result.extend(rewritten_tokens)
                 prev = tokens[end_index]
