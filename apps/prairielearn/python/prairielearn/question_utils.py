@@ -48,7 +48,18 @@ class QuestionData(TypedDict):
         partial_scores: Partial scores for individual variables in the question.
         score: The total final score for the question.
         feedback: Any feedback to the student on their submitted answer.
-
+        variant_seed: The random seed for this question variant.
+        options: Any options associated with the question.
+        raw_submitted_answers: The answer submitted by the student before parsing.
+        editable: Whether the question is currently in an editable state.
+        panel: The panel that is being rendered.
+        correct_answer_shown: Whether the correct answer is currently shown to the student.
+        extensions: A list of extensions that are available to be loaded by this element.
+        num_valid_submissions: The number of valid submissions by the student for the current variant.
+        manual_grading: Whether manual-grading content should be shown.
+        ai_grading: Whether the question is being rendered for AI grading.
+        gradable: Whether the submission can be graded.
+        answers_names: A dictionary whose keys list the names of the answers in the question.
     """
 
     params: dict[str, Any]
@@ -86,6 +97,9 @@ class QuestionData(TypedDict):
 
     panel: Literal["question", "submission", "answer"]
     """The panel that is being rendered."""
+
+    correct_answer_shown: bool
+    """Whether the correct answer (in the answer panel) is currently shown to the student."""
 
     extensions: dict[str, Any]
     """A list of extensions that are available to be loaded by this element."""

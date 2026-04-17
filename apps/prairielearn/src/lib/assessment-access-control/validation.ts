@@ -214,12 +214,12 @@ export function validateRuleDateOrderingIssues(
 
     if (dueMs != null && dc.earlyDeadlines) {
       for (const [index, deadline] of dc.earlyDeadlines.entries()) {
-        if (new Date(deadline.date).getTime() >= dueMs) {
+        if (new Date(deadline.date).getTime() > dueMs) {
           pushIssue(
             issues,
             validationRule,
             ['dateControl', 'earlyDeadlines', index, 'date'],
-            `Early deadline date ${deadline.date} must be before the due date.`,
+            `Early deadline date ${deadline.date} must be on or before the due date.`,
           );
         }
       }
@@ -227,12 +227,12 @@ export function validateRuleDateOrderingIssues(
 
     if (dueMs != null && dc.lateDeadlines) {
       for (const [index, deadline] of dc.lateDeadlines.entries()) {
-        if (new Date(deadline.date).getTime() <= dueMs) {
+        if (new Date(deadline.date).getTime() < dueMs) {
           pushIssue(
             issues,
             validationRule,
             ['dateControl', 'lateDeadlines', index, 'date'],
-            `Late deadline date ${deadline.date} must be after the due date.`,
+            `Late deadline date ${deadline.date} must be on or after the due date.`,
           );
         }
       }
@@ -367,12 +367,12 @@ export function validateGlobalDateConsistencyIssues(
         );
       }
 
-      if (!dueCanBeUnset && maxDueMs != null && deadlineMs >= maxDueMs) {
+      if (!dueCanBeUnset && maxDueMs != null && deadlineMs > maxDueMs) {
         pushIssue(
           issues,
           validationRule,
           ['dateControl', 'earlyDeadlines', index, 'date'],
-          'Early deadline must be before the latest possible due date.',
+          'Early deadline must be on or before the latest possible due date.',
         );
       }
     }
@@ -382,12 +382,12 @@ export function validateGlobalDateConsistencyIssues(
     ).entries()) {
       const deadlineMs = new Date(deadline.date).getTime();
 
-      if (!dueCanBeUnset && minDueMs != null && deadlineMs <= minDueMs) {
+      if (!dueCanBeUnset && minDueMs != null && deadlineMs < minDueMs) {
         pushIssue(
           issues,
           validationRule,
           ['dateControl', 'lateDeadlines', index, 'date'],
-          'Late deadline must be after the earliest possible due date.',
+          'Late deadline must be on or after the earliest possible due date.',
         );
       }
     }

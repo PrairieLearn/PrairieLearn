@@ -3,12 +3,15 @@ import type { CreateExpressContextOptions } from '@trpc/server/adapters/express'
 import superjson from 'superjson';
 import { z } from 'zod';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import { config } from '../../../lib/config.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { adjustCreditPool, selectCreditPool } from '../../../models/ai-grading-credit-pool.js';
 import { selectCourseInstanceById } from '../../../models/course-instances.js';
 import { selectCourseById } from '../../../models/course.js';
 import { creditPoolProcedures, requireAiGradingFeature } from '../../lib/credit-pool-trpc.js';
+import { refundCreditPurchase } from '../../models/ai-grading-credit-checkout-sessions.js';
 
 export async function createAdminContext({ req, res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'plain'>;
@@ -73,9 +76,27 @@ const adjustCreditPoolMutation = t.procedure
     return await selectCreditPool(opts.ctx.course_instance.id);
   });
 
+const refundCreditPurchaseMutation = t.procedure
+  .use(requireAiGradingFeature)
+  .input(z.object({ checkout_session_id: IdSchema }))
+  .mutation(async (opts) => {
+    if (!config.stripeAiGradingCreditsRefundsEnabled) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+      });
+    }
+    await refundCreditPurchase({
+      checkout_session_id: opts.input.checkout_session_id,
+      course_instance_id: opts.ctx.course_instance.id,
+      admin_user_id: opts.ctx.authn_user.id,
+    });
+    return await selectCreditPool(opts.ctx.course_instance.id);
+  });
+
 export const adminCreditPoolRouter = t.router({
   ...creditPoolProcedures,
   adjustCreditPool: adjustCreditPoolMutation,
+  refundCreditPurchase: refundCreditPurchaseMutation,
 });
 
 export type AdminCreditPoolRouter = typeof adminCreditPoolRouter;

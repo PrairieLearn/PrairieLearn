@@ -88,15 +88,15 @@ Below is a complete skeleton showing all available fields. All fields are option
 
 Controls when the assessment is available and how credit is computed over time.
 
-| Field               | Type    | Description                                                                                            |
-| ------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| `releaseDate`       | string  | ISO datetime. The assessment is not visible to students before this date.                              |
-| `dueDate`           | string  | ISO datetime. The primary deadline. Students receive 100% credit before this date.                     |
-| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines _before_ the due date offering bonus credit (e.g., 110%). |
-| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines _after_ the due date offering reduced credit (e.g., 80%). |
-| `afterLastDeadline` | object  | Controls behavior after all deadlines have passed. See below.                                          |
-| `durationMinutes`   | integer | Time limit in minutes for timed assessments.                                                           |
-| `password`          | string  | Proctor password required to start the assessment.                                                     |
+| Field               | Type    | Description                                                                                                  |
+| ------------------- | ------- | ------------------------------------------------------------------------------------------------------------ |
+| `releaseDate`       | string  | ISO datetime. The assessment is not visible to students before this date.                                    |
+| `dueDate`           | string  | ISO datetime. The primary deadline. Students receive 100% credit before this date.                           |
+| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines _on or before_ the due date offering bonus credit (e.g., 110%). |
+| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines _on or after_ the due date offering reduced credit (e.g., 80%). |
+| `afterLastDeadline` | object  | Controls behavior after all deadlines have passed. See below.                                                |
+| `durationMinutes`   | integer | Time limit in minutes for timed assessments.                                                                 |
+| `password`          | string  | Proctor password required to start the assessment.                                                           |
 
 #### `afterLastDeadline`
 
@@ -416,8 +416,12 @@ Students with the "Extended time" label get a later due date (Feb 22 instead of 
 
 Migration from the legacy `allowAccess` format to the modern `accessControl` format can be done in two ways:
 
-- On the **Assessment Access** tab, click **Migrate to modern format**.
-- When **copying a course instance**, migration happens automatically.
+- On an assessment's **Access** tab, click **Migrate to modern format**. You can see the migrated changes and review any warnings or caveats before confirming the migration.
+- When **copying a course instance**, PrairieLearn migrates compatible assessment-level rules and reports any caveats before you confirm the copy.
+
+!!! note
+
+    UID-based rules from the legacy system (the `uids` array) don't have a direct JSON equivalent in the modern format. After migrating, visit an assessment's Access tab to configure overrides for [students with specific labels](#student-labels-and-overrides) or individual enrolled students.
 
 Below are common legacy patterns and their modern equivalents.
 
@@ -746,9 +750,30 @@ Below are common legacy patterns and their modern equivalents.
     }
     ```
 
-!!! note
+## Limitations
 
-    UID-based rules from the legacy system (the `uids` field) don't have a direct JSON equivalent in the modern format. Use [student labels](#student-labels-and-overrides) or individual enrollment overrides (configured via the UI on the Assessment Access tab) instead.
+The modern access control system models credit as a single contiguous timeline from the release date through deadlines to the final close. This means it **cannot represent non-contiguous credit ranges** — configurations where credit is available, then unavailable, then available again.
+
+For example, the following legacy configuration has a gap between Feb 15 and Mar 1 where no credit is available, followed by a second credit window:
+
+```json
+{
+  "allowAccess": [
+    {
+      "startDate": "2025-01-15T00:00:01",
+      "endDate": "2025-02-15T23:59:59",
+      "credit": 100
+    },
+    {
+      "startDate": "2025-03-01T00:00:01",
+      "endDate": "2025-03-15T23:59:59",
+      "credit": 100
+    }
+  ]
+}
+```
+
+This pattern cannot be automatically migrated. Assessments with non-contiguous credit ranges will be flagged as incompatible during migration. You can choose to clear these rules and reconfigure access manually, or keep the legacy format.
 
 ## Staff access
 
