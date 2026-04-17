@@ -174,6 +174,9 @@ class TestSympy:  # noqa: PLR0904
         ),
         ("{1} ∪ {2}", sympy.FiniteSet(1, 2)),  # noqa: RUF001
         ("{1, 2} ∩ {2, 3}", sympy.FiniteSet(2)),
+        ("{1, 2} - {2, 3}", sympy.FiniteSet(1)),
+        ("{1, 2} + {2, 3}", sympy.FiniteSet(1, 2, 3)),
+        ("{1, 2} * {}", sympy.EmptySet),
         (
             "({m, 3} U (m + 1, 4])",
             sympy.Union(sympy.FiniteSet(3, M), sympy.Interval.Lopen(M + 1, 4)),
@@ -419,9 +422,11 @@ class TestSympy:  # noqa: PLR0904
             "[1, (2, 3)]",
             "[1, {2, 3}]",
             "[{2, 3}, 1]",
+            # invalid operations
+            "{1, 2} / {2, 3}",
         ],
     )
-    def test_interval_syntax_errors_are_rejected(self, text: str) -> None:
+    def test_set_syntax_errors_are_rejected(self, text: str) -> None:
         out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
         assert isinstance(out, psu.SympyParseFailure)
         assert "syntax error" in out.error
