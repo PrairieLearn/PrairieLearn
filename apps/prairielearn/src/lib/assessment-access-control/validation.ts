@@ -26,6 +26,7 @@ export type AccessControlIssuePath =
   | ['dateControl', 'due', 'credit']
   | ['dateControl', 'earlyDeadlines', number, 'date']
   | ['dateControl', 'lateDeadlines', number, 'date']
+  | ['dateControl', 'lateDeadlines', number, 'credit']
   | ['dateControl', 'afterLastDeadline', 'credit']
   | ['afterComplete', 'questions', 'visibleFromDate']
   | ['afterComplete', 'questions', 'visibleUntilDate']
@@ -497,14 +498,21 @@ export function validateGlobalCreditConsistencyIssues(
     const dc = validationRule.rule.dateControl;
     if (!dc) continue;
 
-    for (const [index, deadline] of (dc.lateDeadlines ?? []).entries()) {
-      if (deadline.credit >= maxDueCredit) {
-        pushIssue(
-          issues,
-          validationRule,
-          ['dateControl', 'lateDeadlines', index, 'date'],
-          `Late deadline credit (${deadline.credit}%) must be strictly less than the maximum possible due-date credit (${maxDueCredit}%).`,
-        );
+    // Skip the late-deadline-credit check on the defaults — the per-rule
+    // monotonicity check (and the form's per-field validator) already flag
+    // the same issue against the rule's own due credit. Targeting the
+    // `credit` field on overrides lets the form's per-field error take
+    // priority when both apply to the same deadline.
+    if (validationRule.targetType !== 'none') {
+      for (const [index, deadline] of (dc.lateDeadlines ?? []).entries()) {
+        if (deadline.credit >= maxDueCredit) {
+          pushIssue(
+            issues,
+            validationRule,
+            ['dateControl', 'lateDeadlines', index, 'credit'],
+            `Late deadline credit (${deadline.credit}%) must be strictly less than the maximum possible due-date credit (${maxDueCredit}%).`,
+          );
+        }
       }
     }
 

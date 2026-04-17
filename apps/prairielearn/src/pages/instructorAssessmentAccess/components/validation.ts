@@ -15,6 +15,7 @@ export type AccessControlFormFieldPath =
   | 'mainRule.due.credit'
   | `mainRule.earlyDeadlines.${number}.date`
   | `mainRule.lateDeadlines.${number}.date`
+  | `mainRule.lateDeadlines.${number}.credit`
   | 'mainRule.afterLastDeadline.credit'
   | 'mainRule.questionVisibility.visibleFromDate'
   | 'mainRule.questionVisibility.visibleUntilDate'
@@ -24,6 +25,7 @@ export type AccessControlFormFieldPath =
   | `overrides.${number}.due.credit`
   | `overrides.${number}.earlyDeadlines.${number}.date`
   | `overrides.${number}.lateDeadlines.${number}.date`
+  | `overrides.${number}.lateDeadlines.${number}.credit`
   | `overrides.${number}.afterLastDeadline.credit`
   | `overrides.${number}.questionVisibility.visibleFromDate`
   | `overrides.${number}.questionVisibility.visibleUntilDate`
@@ -53,7 +55,9 @@ function mapIssueToFormFieldPath(
         case 'earlyDeadlines':
           return `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
         case 'lateDeadlines':
-          return `${prefix}.lateDeadlines.${issue.path[2]}.date`;
+          return issue.path[3] === 'credit'
+            ? `${prefix}.lateDeadlines.${issue.path[2]}.credit`
+            : `${prefix}.lateDeadlines.${issue.path[2]}.date`;
         case 'afterLastDeadline':
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           return issue.path[2] === 'credit' ? `${prefix}.afterLastDeadline.credit` : null;
