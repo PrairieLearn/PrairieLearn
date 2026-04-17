@@ -202,7 +202,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "modules": {"clipboard": {} if clipboard_enabled else {"enabled": False}},
             "theme": quill_theme or None,
         }
-        has_word_count_bounds = min_wc is not None or max_wc is not None
         if min_wc is None and max_wc is None:
             word_count_requirements_text = None
         elif min_wc is not None and max_wc is not None:
@@ -221,9 +220,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "clipboard_enabled": clipboard_enabled,
             "min_word_count": min_wc or 0,
             "max_word_count": max_wc or 0,
-            "has_word_count_bounds": has_word_count_bounds,
             "word_count_requirements_text": word_count_requirements_text,
-            "footer_enabled": (counter != Counter.NONE) or has_word_count_bounds,
+            "footer_enabled": counter != Counter.NONE
+            or min_wc is not None
+            or max_wc is not None,
         }
 
         if submitted_file:
