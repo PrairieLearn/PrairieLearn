@@ -424,7 +424,6 @@ type GetAndRenderVariantInputLocals = {
   authz_data?: Record<string, any>;
   authz_result?: Record<string, any>;
   client_fingerprint_id?: string | null;
-  questionRenderContext?: QuestionRenderContext;
 } & Partial<ResLocalsInstanceQuestionRenderAdded> &
   Partial<ResLocalsQuestionRenderAdded>;
 
@@ -446,6 +445,7 @@ export async function getAndRenderVariant(
     urlOverrides = {},
     publicQuestionPreview = false,
     issuesLoadExtraData = config.devMode || locals.authz_data?.has_course_permission_view,
+    questionRenderContext,
   }: {
     urlOverrides?: Partial<QuestionUrls>;
     publicQuestionPreview?: boolean;
@@ -460,6 +460,11 @@ export async function getAndRenderVariant(
      * The default conditions should match those in `components/QuestionContainer.html.ts`.
      */
     issuesLoadExtraData?: boolean;
+    /**
+     * The rendering context for special views (manual grading, AI grading).
+     * Leave undefined for normal student/instructor rendering.
+     */
+    questionRenderContext?: QuestionRenderContext;
   } = {},
 ): Promise<ResLocalsInstanceQuestionRender> {
   const question_course = await getQuestionCourse(locals.question, locals.course);
@@ -546,8 +551,7 @@ export async function getAndRenderVariant(
     question_access_mode: locals.instance_question_info?.question_access_mode,
   });
   if (
-    (locals.questionRenderContext === 'manual_grading' ||
-      locals.questionRenderContext === 'ai_grading') &&
+    (questionRenderContext === 'manual_grading' || questionRenderContext === 'ai_grading') &&
     question.show_correct_answer
   ) {
     newLocals.showCorrectAnswer = true;
@@ -632,7 +636,7 @@ export async function getAndRenderVariant(
       urlPrefix,
       showCorrectAnswer,
       allowAnswerEditing: newLocals.allowAnswerEditing,
-      questionRenderContext: locals.questionRenderContext,
+      questionRenderContext,
     },
     user_id: locals.user.id,
     authn_user_id: locals.authn_user.id,

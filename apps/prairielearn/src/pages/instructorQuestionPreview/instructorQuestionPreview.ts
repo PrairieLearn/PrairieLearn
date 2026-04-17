@@ -53,17 +53,16 @@ router.get(
     const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
     const aiGradingPreviewEnabled = aiGradingEnabled && req.query.ai_grading_preview === 'true';
 
-    // The `questionRenderContext` flag will be respected by the rendering process.
-    if (aiGradingPreviewEnabled) {
-      res.locals.questionRenderContext = 'ai_grading';
-    } else if (manualGradingPreviewEnabled) {
-      res.locals.questionRenderContext = 'manual_grading';
-    }
+    const questionRenderContext = run(() => {
+      if (aiGradingPreviewEnabled) return 'ai_grading' as const;
+      if (manualGradingPreviewEnabled) return 'manual_grading' as const;
+      return undefined;
+    });
 
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
     // req.query.variant_id might be undefined, which will generate a new variant
-    await getAndRenderVariant(variant_id, variant_seed, res.locals);
+    await getAndRenderVariant(variant_id, variant_seed, res.locals, { questionRenderContext });
     await logPageView('instructorQuestionPreview', req, res);
     const questionCopyTargets = await getQuestionCopyTargets({
       course: res.locals.course,
