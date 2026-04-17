@@ -389,7 +389,7 @@ class CheckAST(ast.NodeVisitor):
 
 
 def ast_check_str(
-    expr: str, locals_for_eval: LocalsForEval, *, allow_set_notation: bool
+    expr: str, locals_for_eval: LocalsForEval, *, allow_set_notation: bool = False
 ) -> None:
     """Check the AST of the expression for security, whitelisting only certain nodes.
 
