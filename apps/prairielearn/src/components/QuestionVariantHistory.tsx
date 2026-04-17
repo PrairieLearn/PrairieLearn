@@ -1,5 +1,7 @@
 import { getInstanceQuestionUrl } from '../lib/client/url.js';
 
+const MAX_DISPLAYED_VARIANTS = 10;
+
 export function QuestionVariantHistory({
   courseInstanceId,
   instanceQuestionId,
@@ -13,7 +15,6 @@ export function QuestionVariantHistory({
 }) {
   if (!previousVariants) return null;
 
-  const MAX_DISPLAYED_VARIANTS = 10;
   const hasOverflow = previousVariants.length > MAX_DISPLAYED_VARIANTS;
   const collapseClass = `variants-points-collapse-${instanceQuestionId}`;
   const collapseButtonId = `variants-points-collapse-button-${instanceQuestionId}`;

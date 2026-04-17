@@ -18,8 +18,7 @@ import type {
   User,
   Variant,
 } from '../lib/db-types.js';
-import { getRoleNamesForUser } from '../lib/groups.js';
-import type { GroupInfo } from '../lib/groups.shared.js';
+import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.shared.js';
 import { idsEqual } from '../lib/id.js';
 import type { IssueRenderData } from '../lib/question-render.types.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
@@ -613,9 +612,10 @@ export function QuestionFooterContent({
                     type="button"
                     class="btn btn-xs btn-ghost me-1"
                     data-bs-toggle="popover"
-                    data-bs-content="Your group role (${getRoleNamesForUser(group_info, user).join(
-                      ', ',
-                    )}) is not allowed to submit this question."
+                    data-bs-content="Your group role (${getRoleNamesForUser(
+                      group_info.rolesInfo?.roleAssignments,
+                      user.uid,
+                    ).join(', ')}) is not allowed to submit this question."
                     aria-label="Submission blocked"
                   >
                     <i class="fa fa-lock" aria-hidden="true"></i>

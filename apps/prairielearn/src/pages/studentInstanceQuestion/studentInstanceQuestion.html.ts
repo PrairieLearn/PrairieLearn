@@ -20,7 +20,7 @@ import { QuestionScorePanel } from '../../components/QuestionScore.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
 import type { AssessmentTool, User } from '../../lib/db-types.js';
-import { getRoleNamesForUser } from '../../lib/groups.js';
+import { getRoleNamesForUser } from '../../lib/groups.shared.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function StudentInstanceQuestion({
@@ -207,8 +207,9 @@ export function StudentInstanceQuestion({
             prevGroupRolePermissions: resLocals.prev_instance_question_role_permissions,
             nextGroupRolePermissions: resLocals.next_instance_question_role_permissions,
             advanceScorePerc: resLocals.instance_question_info.advance_score_perc,
+            // TODO: THIS MUST BE FIXED. ALL OF THIS IS UNTYPED. THE FIRST ARGUMENT TO `getRoleNamesForUser` IS WRONG.
             userGroupRoles: resLocals.group_info
-              ? getRoleNamesForUser(resLocals.group_info, resLocals.user).join(', ')
+              ? getRoleNamesForUser(resLocals.group_info, resLocals.user.uid).join(', ')
               : null,
           })}
           ${resLocals.assessment.allow_personal_notes
