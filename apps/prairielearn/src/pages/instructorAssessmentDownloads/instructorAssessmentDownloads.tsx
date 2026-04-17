@@ -380,6 +380,18 @@ router.get(
       course,
     });
 
+    const students = (
+      await sqldb.queryRows(
+        sql.select_course_instance_users,
+        {
+          course_instance_id: course_instance.id,
+        },
+        UserSchema.extend({ role: SprocUsersGetDisplayedRoleSchema }),
+      )
+    )
+      .filter((u) => u.role === 'Student')
+      .map((u) => ({ uid: u.uid, userName: u.name, uin: u.uin }));
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -402,6 +414,7 @@ router.get(
               isMultipleInstance={assessment.multiple_instance}
               isTeamWork={assessment.team_work}
               filenames={filenames}
+              students={students}
             />
           </Hydrate>
         ),
