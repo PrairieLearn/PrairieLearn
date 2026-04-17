@@ -338,7 +338,7 @@ describe('Access control', { timeout: 20000 }, function () {
       instance_question = rows[0];
     });
     it('should link to addVectors question', function () {
-      const urlTail = '/pl/course_instance/1/instance_question/' + instance_question.id + '/';
+      const urlTail = '/pl/course_instance/1/instance_question/' + instance_question.id;
       q1Url = siteUrl + urlTail;
       elemList = $(`td a[href="${urlTail}"]`);
       assert.lengthOf(elemList, 1);
