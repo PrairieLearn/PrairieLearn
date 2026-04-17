@@ -623,6 +623,29 @@ class TestExceptions:
         with pytest.raises(psu.HasConflictingFunctionError):
             psu.convert_string_to_sympy("sin 1", custom_functions=["sin", "f"])
 
+    @pytest.mark.parametrize("conflicting_name", ["U", "cup", "cap", "∪", "∩"])  # noqa: RUF001
+    def test_set_notation_alias_conflicts_with_variables(
+        self, conflicting_name: str
+    ) -> None:
+        with pytest.raises(psu.HasConflictingVariableError):
+            psu.convert_string_to_sympy(
+                f"x {conflicting_name} y",
+                ["x", conflicting_name, "y"],
+                allow_set_notation=True,
+            )
+
+    @pytest.mark.parametrize("conflicting_name", ["U", "cup", "cap", "∪", "∩"])  # noqa: RUF001
+    def test_set_notation_alias_conflicts_with_custom_functions(
+        self, conflicting_name: str
+    ) -> None:
+        with pytest.raises(psu.HasConflictingFunctionError):
+            psu.convert_string_to_sympy(
+                f"x {conflicting_name} y",
+                ["x", "y"],
+                allow_set_notation=True,
+                custom_functions=[conflicting_name],
+            )
+
     @pytest.mark.parametrize("a_sub", NO_FLOATS_CASES)
     def test_no_floats(self, a_sub: str) -> None:
         with pytest.raises(psu.HasFloatError):

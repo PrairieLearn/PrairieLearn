@@ -767,6 +767,10 @@ def convert_string_to_sympy_with_source(
     used_names = set().union(
         *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
     )
+    used_names |= get_builtin_functions(
+        allow_trig_functions=allow_trig_functions,
+        allow_set_notation=allow_set_notation,
+    )
 
     # Check assumptions are all made about valid variables only
     if assumptions is not None:
