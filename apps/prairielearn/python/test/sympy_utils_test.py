@@ -907,6 +907,26 @@ class TestValidateNamesForConflicts:
                 "test", [], [conflicting_name], allow_complex=True
             )
 
+    @pytest.mark.parametrize("conflicting_name", ["U", "cap", "cup"])
+    def test_set_notation_only_conflict_when_enabled(
+        self, conflicting_name: str
+    ) -> None:
+        psu.validate_names_for_conflicts(
+            "test", [conflicting_name], [], allow_set_notation=False
+        )
+        psu.validate_names_for_conflicts(
+            "test", [], [conflicting_name], allow_set_notation=False
+        )
+
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "test", [conflicting_name], [], allow_set_notation=True
+            )
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "test", [], [conflicting_name], allow_set_notation=True
+            )
+
     @pytest.mark.parametrize("conflicting_name", ["sin", "cos", "tan"])
     def test_trig_functions_only_conflict_when_enabled(
         self, conflicting_name: str

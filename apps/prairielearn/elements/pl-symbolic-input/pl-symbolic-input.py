@@ -132,6 +132,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         custom_functions,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig,
+        allow_set_notation=allow_sets,
     )
 
     pl.check_answers_names(data, name)

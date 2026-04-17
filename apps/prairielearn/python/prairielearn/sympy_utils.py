@@ -1294,7 +1294,9 @@ def get_builtin_constants(*, allow_complex: bool = False) -> set[str]:
     return names
 
 
-def get_builtin_functions(*, allow_trig_functions: bool = True) -> set[str]:
+def get_builtin_functions(
+    *, allow_trig_functions: bool = True, allow_set_notation: bool = False
+) -> set[str]:
     """Return the set of built-in function names.
 
     Parameters:
@@ -1307,6 +1309,9 @@ def get_builtin_functions(*, allow_trig_functions: bool = True) -> set[str]:
     names = set(const.functions.keys())
     if allow_trig_functions:
         names |= const.trig_functions.keys()
+    if allow_set_notation:
+        names |= const.set_functions.keys()
+        names |= _SET_OPS.keys()
     return names
 
 
@@ -1317,6 +1322,7 @@ def validate_names_for_conflicts(
     *,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
+    allow_set_notation: bool = False,
 ) -> None:
     """Validate that user-specified names don't conflict with built-in constants or functions.
 
@@ -1332,7 +1338,9 @@ def validate_names_for_conflicts(
     """
     builtins = get_builtin_constants(
         allow_complex=allow_complex
-    ) | get_builtin_functions(allow_trig_functions=allow_trig_functions)
+    ) | get_builtin_functions(
+        allow_trig_functions=allow_trig_functions, allow_set_notation=allow_set_notation
+    )
 
     conflicts = [name for name in variables + custom_functions if name in builtins]
     if conflicts:
