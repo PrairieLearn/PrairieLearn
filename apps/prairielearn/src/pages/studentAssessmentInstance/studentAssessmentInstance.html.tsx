@@ -1,5 +1,6 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
+import { hydrateHtml } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 
 import {
@@ -458,10 +459,12 @@ function AssessmentStatus({
       <br />
       Available credit: ${authz_result.credit_date_string}
       ${accessTimeline
-        ? StudentAccessTimelinePopover({
-            accessTimeline,
-            displayTimezone,
-          })
+        ? hydrateHtml(
+            <StudentAccessTimelinePopover
+              accessTimeline={accessTimeline}
+              displayTimezone={displayTimezone}
+            />,
+          )
         : StudentAccessRulesPopover({
             accessRules: authz_result.access_rules,
           })}

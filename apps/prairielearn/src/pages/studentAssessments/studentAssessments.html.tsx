@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
+import { hydrateHtml } from '@prairielearn/react/server';
 
-import { FriendlyDateHtml } from '../../components/FriendlyDate.js';
+import { FriendlyDate } from '../../components/FriendlyDate.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import {
@@ -173,13 +174,15 @@ function AvailableCredit({
     if (row.opens_at) {
       return html`
         <span class="text-muted">
-          Available{' '}
-          ${FriendlyDateHtml({
-            date: new Date(row.opens_at),
-            timezone: displayTimezone,
-            options: { dateOnly: true },
-            tooltip: true,
-          })}
+          Available
+          ${hydrateHtml(
+            <FriendlyDate
+              date={new Date(row.opens_at)}
+              timezone={displayTimezone}
+              options={{ dateOnly: true }}
+              tooltip
+            />,
+          )}
         </span>
       `;
     }
@@ -190,7 +193,12 @@ function AvailableCredit({
     return html`
       ${row.credit_date_string}
       ${row.modern_access_control
-        ? StudentAccessTimelinePopover({ accessTimeline: row.access_timeline, displayTimezone })
+        ? hydrateHtml(
+            <StudentAccessTimelinePopover
+              accessTimeline={row.access_timeline}
+              displayTimezone={displayTimezone}
+            />,
+          )
         : StudentAccessRulesPopover({ accessRules: row.access_rules })}
     `;
   }

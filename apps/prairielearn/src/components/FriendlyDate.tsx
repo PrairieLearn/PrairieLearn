@@ -4,7 +4,6 @@ import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 
 import { formatDate, formatDateFriendly } from '@prairielearn/formatter';
-import { type HtmlSafeString, html } from '@prairielearn/html';
 
 interface FriendlyDateProps {
   date: Date | Temporal.PlainDateTime;
@@ -14,7 +13,7 @@ interface FriendlyDateProps {
   fullOptions?: Parameters<typeof formatDate>[2];
 }
 
-export const FriendlyDate: FC<FriendlyDateProps> = ({
+export const FriendlyDate: FC<FriendlyDateProps> & { displayName?: string } = ({
   date,
   timezone = null,
   tooltip = false,
@@ -38,26 +37,6 @@ export const FriendlyDate: FC<FriendlyDateProps> = ({
   );
 };
 
+FriendlyDate.displayName = 'FriendlyDate';
+
 export const TimezoneContext = createContext<string>('UTC');
-
-export function FriendlyDateHtml(
-  props: Omit<FriendlyDateProps, 'timezone'> & { timezone: string },
-): HtmlSafeString {
-  const friendlyString = formatDateFriendly(props.date, props.timezone, props.options);
-  const fullString = formatDate(props.date, props.timezone, props.fullOptions);
-
-  if (!props.tooltip) {
-    return html`<span style="font-variant-numeric: tabular-nums;">${friendlyString}</span>`;
-  }
-
-  return html`
-    <span
-      style="font-variant-numeric: tabular-nums;"
-      data-bs-toggle="tooltip"
-      data-bs-placement="top"
-      title="${fullString}"
-    >
-      ${friendlyString}
-    </span>
-  `;
-}
