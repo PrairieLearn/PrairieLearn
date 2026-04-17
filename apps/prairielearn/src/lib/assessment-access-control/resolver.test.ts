@@ -341,42 +341,57 @@ describe('resolveAccessControl', () => {
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
     });
+
+    it('returns 100% credit when after release date and no deadlines', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: { releaseDate: '2025-03-01T00:00:00Z' },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(true);
+    });
   });
 
   describe('early deadline bonus credit', () => {
-    it('gives bonus credit before early deadline', () => {
+    it.each([
+      {
+        label: 'before early deadline',
+        date: '2025-03-05T00:00:00Z',
+        expectedCredit: 110,
+        earlyDate: '2025-03-10T00:00:00Z',
+      },
+      {
+        label: 'after early deadline but before due date',
+        date: '2025-03-12T00:00:00Z',
+        expectedCredit: 100,
+        earlyDate: '2025-03-10T00:00:00Z',
+      },
+      {
+        label: 'before early deadline equal to due date',
+        date: '2025-03-12T00:00:00Z',
+        expectedCredit: 110,
+        earlyDate: '2025-03-20T00:00:00Z',
+      },
+    ])('gives $expectedCredit% credit $label', ({ date, expectedCredit, earlyDate }) => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
           makeMainRule({
             dateControl: {
               releaseDate: '2025-03-01T00:00:00Z',
-              earlyDeadlines: [{ date: '2025-03-10T00:00:00Z', credit: 110 }],
+              earlyDeadlines: [{ date: earlyDate, credit: 110 }],
               dueDate: '2025-03-20T00:00:00Z',
             },
           }),
         ],
-        date: new Date('2025-03-05T00:00:00Z'),
+        date: new Date(date),
       });
-      expect(result.credit).toBe(110);
-      expect(result.active).toBe(true);
-    });
-
-    it('gives 100% credit after early deadline but before due date', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [
-          makeMainRule({
-            dateControl: {
-              releaseDate: '2025-03-01T00:00:00Z',
-              earlyDeadlines: [{ date: '2025-03-10T00:00:00Z', credit: 110 }],
-              dueDate: '2025-03-20T00:00:00Z',
-            },
-          }),
-        ],
-        date: new Date('2025-03-12T00:00:00Z'),
-      });
-      expect(result.credit).toBe(100);
+      expect(result.credit).toBe(expectedCredit);
     });
   });
 
@@ -1059,6 +1074,92 @@ describe('resolveAccessControl', () => {
     });
   });
 
+  describe('after-complete visibility with PrairieTest', () => {
+    const ptExam = { uuid: 'pt-exam-1', readOnly: false };
+    const ptExamReadOnly = { uuid: 'pt-exam-1', readOnly: true };
+    const validReservation: PrairieTestReservation = {
+      examUuid: 'pt-exam-1',
+      accessEnd: new Date('2025-03-15T14:00:00Z'),
+    };
+
+    const visibilityConfigs = [
+      {
+        name: 'hide both questions and score',
+        afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+        showClosedAssessment: false,
+        showClosedAssessmentScore: false,
+      },
+      {
+        name: 'show both questions and score',
+        afterComplete: { questions: { hidden: false }, score: { hidden: false } },
+        showClosedAssessment: true,
+        showClosedAssessmentScore: true,
+      },
+      {
+        name: 'hide questions, show score',
+        afterComplete: { questions: { hidden: true }, score: { hidden: false } },
+        showClosedAssessment: false,
+        showClosedAssessmentScore: true,
+      },
+      {
+        name: 'show questions, hide score',
+        afterComplete: { questions: { hidden: false }, score: { hidden: true } },
+        showClosedAssessment: true,
+        showClosedAssessmentScore: false,
+      },
+    ];
+
+    it.each(visibilityConfigs)(
+      'active PT reservation: $name',
+      ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExam] }],
+          prairieTestReservations: [validReservation],
+        });
+        expect(result.authorized).toBe(true);
+        expect(result.active).toBe(true);
+        expect(result.showClosedAssessment).toBe(showClosedAssessment);
+        expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
+      },
+    );
+
+    it.each(visibilityConfigs)(
+      'readOnly PT reservation: $name',
+      ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExamReadOnly] }],
+          prairieTestReservations: [validReservation],
+        });
+        expect(result.authorized).toBe(true);
+        expect(result.active).toBe(false);
+        expect(result.showClosedAssessment).toBe(showClosedAssessment);
+        expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
+      },
+    );
+
+    // The gradebook displays rows even when access is denied and relies on
+    // `showClosedAssessmentScore` to decide whether to reveal prior scores, so
+    // the deny path must still honor the configured visibility flags.
+    it.each(visibilityConfigs)(
+      'Exam mode with no PT reservation: $name',
+      ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExam] }],
+          prairieTestReservations: [],
+        });
+        expect(result.authorized).toBe(false);
+        expect(result.showClosedAssessment).toBe(showClosedAssessment);
+        expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
+      },
+    );
+  });
+
   describe('credit date string formatting', () => {
     it('shows credit percentage and deadline', () => {
       const result = resolveAccessControl({
@@ -1222,47 +1323,113 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T00:00:00Z'),
       });
-      expect(result.credit).toBe(0);
-      expect(result.active).toBe(false);
+      expect(result.authorized).toBe(true);
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(true);
     });
   });
 
-  describe('no date control defaults', () => {
-    it.each([
-      { label: 'dateControl absent', rule: {} },
-      {
-        label: 'dateControl has no releaseDate',
-        rule: { dateControl: { dueDate: '2025-05-01T00:00:00Z' } },
-      },
-      {
-        label: 'dateControl has releaseDate but no deadlines/due date',
-        rule: { dateControl: { releaseDate: '2025-03-01T00:00:00Z' } },
-      },
-    ])('returns 0 credit when $label', ({ rule }) => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [makeMainRule(rule)],
-        date: new Date('2025-03-15T00:00:00Z'),
-      });
-      expect(result.credit).toBe(0);
-      expect(result.active).toBe(false);
-    });
-  });
-
-  describe('afterComplete visibility', () => {
-    // Sync-time validation prevents invalid combinations like hidden:false
-    // with date fields, so we only test valid cases here.
-    it('hides questions when hidden:true with no dates', () => {
+  describe('migrated non-100% credit rules', () => {
+    it('gives reduced credit before late deadline when no dueDate', () => {
+      // Migrated from: { credit: 50, startDate: ..., endDate: '2025-04-01' }
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { dueDate: '2025-03-10T00:00:00Z' },
-            afterComplete: { questions: { hidden: true } },
+            dateControl: {
+              releaseDate: '2025-03-01T00:00:00Z',
+              lateDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 50 }],
+            },
           }),
         ],
+        date: new Date('2025-03-15T00:00:00Z'),
       });
-      expect(result.showClosedAssessment).toBe(false);
+      expect(result.credit).toBe(50);
+      expect(result.active).toBe(true);
+    });
+
+    it('gives 0 credit after late deadline when no dueDate', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-01T00:00:00Z',
+              lateDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 50 }],
+            },
+          }),
+        ],
+        date: new Date('2025-04-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
+    });
+
+    it('gives bonus credit before early deadline when no dueDate', () => {
+      // Migrated from: { credit: 120, startDate: ..., endDate: '2025-04-01' }
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-01T00:00:00Z',
+              earlyDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 120 }],
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(120);
+      expect(result.active).toBe(true);
+    });
+
+    it('gives 0 credit after early deadline when no dueDate', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-01T00:00:00Z',
+              earlyDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 120 }],
+            },
+          }),
+        ],
+        date: new Date('2025-04-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
+    });
+
+    it('resolves bonus+reduced declining credit without dueDate', () => {
+      // Migrated from: [{ credit: 120, endDate: '2025-03-10' }, { credit: 50, endDate: '2025-04-01' }]
+      const rule = makeMainRule({
+        dateControl: {
+          releaseDate: '2025-03-01T00:00:00Z',
+          earlyDeadlines: [{ date: '2025-03-10T00:00:00Z', credit: 120 }],
+          lateDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 50 }],
+        },
+      });
+
+      const beforeBonus = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        date: new Date('2025-03-05T00:00:00Z'),
+      });
+      expect(beforeBonus.credit).toBe(120);
+
+      const afterBonus = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(afterBonus.credit).toBe(50);
+
+      const afterAll = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        date: new Date('2025-04-15T00:00:00Z'),
+      });
+      expect(afterAll.credit).toBe(0);
     });
   });
 
@@ -1432,37 +1599,20 @@ describe('resolveAccessControl', () => {
       expect(result.showBeforeRelease).toBe(false);
     });
 
-    it('keeps closed scores hidden when Exam mode outlives the PrairieTest reservation', () => {
+    it('denies access when Exam mode outlives the PrairieTest reservation', () => {
       // Regression test for #12579: `ip_to_mode` can continue reporting Exam
       // mode for a short grace period after PrairieTest has already ended the
-      // reservation. The migrated PT rule should still respect the closed
-      // assessment visibility settings in that state.
+      // reservation.
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',
-        rules: [
-          {
-            ...makeMainRule({
-              dateControl: {
-                releaseDate: '2025-01-01T00:00:00Z',
-                dueDate: null,
-              },
-              afterComplete: {
-                questions: { hidden: true },
-                score: { hidden: true },
-              },
-            }),
-            prairietestExams: [ptExam],
-          },
-        ],
+        rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
         prairieTestReservations: [],
       });
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
       expect(result.examAccessEnd).toBeNull();
-      expect(result.showClosedAssessment).toBe(false);
-      expect(result.showClosedAssessmentScore).toBe(false);
       expect(result.showBeforeRelease).toBe(false);
     });
 
@@ -1683,50 +1833,67 @@ describe('cascadeOverrides', () => {
 describe('resolveVisibility', () => {
   const now = new Date('2025-03-15T12:00:00Z');
 
-  it('returns true when hide is false', () => {
-    expect(resolveVisibility(false, undefined, undefined, now)).toBe(true);
-  });
-
-  it('returns true when hide is undefined', () => {
-    expect(resolveVisibility(undefined, undefined, undefined, now)).toBe(true);
-  });
-
-  it('returns false when hide is true and no show-again date', () => {
-    expect(resolveVisibility(true, undefined, undefined, now)).toBe(false);
-  });
-
-  it('returns false when hide is true and show-again date is null', () => {
-    expect(resolveVisibility(true, null, undefined, now)).toBe(false);
-  });
-
-  it('returns true when past show-again date', () => {
-    expect(resolveVisibility(true, new Date('2025-03-10T00:00:00Z'), undefined, now)).toBe(true);
-  });
-
-  it('returns false when before show-again date', () => {
-    expect(resolveVisibility(true, new Date('2025-03-20T00:00:00Z'), undefined, now)).toBe(false);
-  });
-
-  it('returns false when past hide-again date', () => {
-    expect(
-      resolveVisibility(
-        true,
-        new Date('2025-03-10T00:00:00Z'),
-        new Date('2025-03-14T00:00:00Z'),
-        now,
-      ),
-    ).toBe(false);
-  });
-
-  it('returns true when past show-again but before hide-again', () => {
-    expect(
-      resolveVisibility(
-        true,
-        new Date('2025-03-10T00:00:00Z'),
-        new Date('2025-03-20T00:00:00Z'),
-        now,
-      ),
-    ).toBe(true);
+  it.each([
+    {
+      label: 'hide=false',
+      hide: false,
+      showAgain: undefined,
+      hideAgain: undefined,
+      expected: true,
+    },
+    {
+      label: 'hide=undefined',
+      hide: undefined,
+      showAgain: undefined,
+      hideAgain: undefined,
+      expected: true,
+    },
+    {
+      label: 'hide=true, no show-again',
+      hide: true,
+      showAgain: undefined,
+      hideAgain: undefined,
+      expected: false,
+    },
+    {
+      label: 'hide=true, show-again=null',
+      hide: true,
+      showAgain: null,
+      hideAgain: undefined,
+      expected: false,
+    },
+    {
+      label: 'past show-again date',
+      hide: true,
+      showAgain: '2025-03-10T00:00:00Z',
+      hideAgain: undefined,
+      expected: true,
+    },
+    {
+      label: 'before show-again date',
+      hide: true,
+      showAgain: '2025-03-20T00:00:00Z',
+      hideAgain: undefined,
+      expected: false,
+    },
+    {
+      label: 'past hide-again date',
+      hide: true,
+      showAgain: '2025-03-10T00:00:00Z',
+      hideAgain: '2025-03-14T00:00:00Z',
+      expected: false,
+    },
+    {
+      label: 'past show-again, before hide-again',
+      hide: true,
+      showAgain: '2025-03-10T00:00:00Z',
+      hideAgain: '2025-03-20T00:00:00Z',
+      expected: true,
+    },
+  ] as const)('returns $expected when $label', ({ hide, showAgain, hideAgain, expected }) => {
+    const showDate = showAgain != null ? new Date(showAgain) : showAgain;
+    const hideDate = hideAgain != null ? new Date(hideAgain) : undefined;
+    expect(resolveVisibility(hide, showDate, hideDate, now)).toBe(expected);
   });
 });
 

@@ -223,7 +223,7 @@ describe('Zone grading exam assessment', { timeout: 60_000 }, function () {
       });
       questionsArray.forEach(function (question) {
         it(`should link to ${question.qid} question`, function () {
-          const urlTail = '/pl/course_instance/1/instance_question/' + question.id + '/';
+          const urlTail = '/pl/course_instance/1/instance_question/' + question.id;
           question.url = locals.siteUrl + urlTail;
           const elemList = locals.$(`td a[href="${urlTail}"]`);
           assert.lengthOf(elemList, 1);
