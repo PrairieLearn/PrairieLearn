@@ -5,7 +5,8 @@ $(function() {
 });
 </script>
 <input type="hidden" id="rte-input-{{editor_uuid}}"
-       name="{{name}}" value="{{current_file_contents}}"/>
+       name="{{name}}" value="{{current_file_contents}}"
+       data-deferred-initial-value="true"/>
 <div class="pl-rich-text-editor-container position-relative"
      data-min-word-count="{{min_word_count}}"
      data-max-word-count="{{max_word_count}}">
