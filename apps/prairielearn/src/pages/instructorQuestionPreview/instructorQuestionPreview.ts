@@ -184,6 +184,7 @@ router.get(
       instance_question: null,
       variant,
       user: res.locals.user,
+      authn_user: res.locals.authn_user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'instructor',
       questionRenderContext: run(() => {

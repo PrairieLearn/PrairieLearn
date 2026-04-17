@@ -60,7 +60,10 @@ async function aiEvaluateStudentResponse({
   const { submission, variant } = await selectLastVariantAndSubmission(instance_question.id);
   const locals = {
     ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
-    questionRenderContext: 'ai_grading',
+    urlPrefix,
+    showCorrectAnswer: false,
+    allowAnswerEditing: false,
+    questionRenderContext: 'ai_grading' as const,
   };
   const questionModule = questionServers.getModule(question.type);
   const render_submission_results = await questionModule.render({
