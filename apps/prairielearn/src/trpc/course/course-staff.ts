@@ -5,6 +5,11 @@ import { logger } from '@prairielearn/logger';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import {
+  type EnumCourseInstanceRole,
+  EnumCourseInstanceRoleSchema,
+  EnumCourseRoleSchema,
+} from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import {
   type CourseInstanceAuthz,
@@ -21,37 +26,32 @@ import {
   upsertCourseInstancePermissionsRole,
 } from '../../models/course-permissions.js';
 
-import { requireCoursePermissionOwn, t } from './init.js';
+import { type createContext, requireCoursePermissionOwn, t } from './init.js';
 
 export interface CourseStaffError {}
 
 const MAX_UIDS = 100;
 
-const CourseRoleSchema = z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']);
-const InstanceRoleSchema = z.enum(['None', 'Student Data Viewer', 'Student Data Editor']);
+type StaffAuthzData = Awaited<ReturnType<typeof createContext>>['authz_data'];
+
 const InsertableInstanceRoleSchema = z.enum(['Student Data Viewer', 'Student Data Editor']);
 
-function assertCanModifyUser(
-  authzData: { user: { id: string }; authn_user: { id: string }; is_administrator: boolean },
-  userId: string,
-  action: string,
-) {
+function assertCanModifyUser(authzData: StaffAuthzData, userId: string, action: string) {
   if (idsEqual(userId, authzData.user.id) && !authzData.is_administrator) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: `Owners cannot ${action}` });
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: `Only administrators can ${action}`,
+    });
   }
   if (idsEqual(userId, authzData.authn_user.id) && !authzData.is_administrator) {
     throw new TRPCError({
       code: 'FORBIDDEN',
-      message: `Owners cannot ${action} even if they are emulating another user`,
+      message: `Only administrators can ${action} while emulating another user`,
     });
   }
 }
 
-async function assertCanDeleteUser(
-  authzData: { user: { id: string }; authn_user: { id: string }; is_administrator: boolean },
-  userId: string,
-  courseId: string,
-) {
+async function assertCanDeleteUser(authzData: StaffAuthzData, userId: string, courseId: string) {
   assertCanModifyUser(authzData, userId, 'remove themselves from the course staff');
   if (!authzData.is_administrator) {
     const role = await selectCoursePermissionForUser({ course_id: courseId, user_id: userId });
@@ -64,10 +64,7 @@ async function assertCanDeleteUser(
   }
 }
 
-async function getAccessibleInstances(ctx: {
-  course: Parameters<typeof selectCourseInstancesWithStaffAccess>[0]['course'];
-  authz_data: Parameters<typeof selectCourseInstancesWithStaffAccess>[0]['authzData'];
-}) {
+async function getAccessibleInstances(ctx: Awaited<ReturnType<typeof createContext>>) {
   return selectCourseInstancesWithStaffAccess({
     course: ctx.course,
     authzData: ctx.authz_data,
@@ -94,7 +91,7 @@ async function upsertOrDeleteInstancePermission({
   courseId: string;
   userId: string;
   courseInstanceId: string;
-  courseInstanceRole: 'None' | 'Student Data Viewer' | 'Student Data Editor';
+  courseInstanceRole: EnumCourseInstanceRole;
   authnUserId: string;
 }) {
   if (courseInstanceRole === 'None') {
@@ -126,7 +123,7 @@ const updateCourseRole = t.procedure
   .input(
     z.object({
       userId: IdSchema,
-      courseRole: CourseRoleSchema,
+      courseRole: EnumCourseRoleSchema,
     }),
   )
   .mutation(async ({ input, ctx }) => {
@@ -157,7 +154,7 @@ const updateInstanceRole = t.procedure
     z.object({
       userId: IdSchema,
       courseInstanceId: IdSchema,
-      courseInstanceRole: InstanceRoleSchema,
+      courseInstanceRole: EnumCourseInstanceRoleSchema,
     }),
   )
   .mutation(async ({ input, ctx }) => {
@@ -179,7 +176,7 @@ const insertByUserUids = t.procedure
   .input(
     z.object({
       uids: z.array(z.string()).min(1).max(MAX_UIDS),
-      courseRole: CourseRoleSchema,
+      courseRole: EnumCourseRoleSchema,
       courseInstanceChanges: z
         .array(
           z.object({
@@ -199,12 +196,15 @@ const insertByUserUids = t.procedure
       }
     }
 
-    const result = {
-      givenCp: [] as string[],
-      notGivenCp: [] as string[],
-      notGivenCip: [] as string[],
-      unknownUsers: [] as string[],
-      errors: [] as string[],
+    const result: Record<
+      'givenCp' | 'notGivenCp' | 'notGivenCip' | 'unknownUsers' | 'errors',
+      string[]
+    > = {
+      givenCp: [],
+      notGivenCp: [],
+      notGivenCip: [],
+      unknownUsers: [],
+      errors: [],
     };
 
     for (const uid of input.uids) {
@@ -274,12 +274,12 @@ const bulkEditAccess = t.procedure
   .input(
     z.object({
       userIds: z.array(IdSchema).min(1),
-      courseRole: CourseRoleSchema.optional(),
+      courseRole: EnumCourseRoleSchema.optional(),
       courseInstanceChanges: z
         .array(
           z.object({
             courseInstanceId: IdSchema,
-            courseInstanceRole: InstanceRoleSchema,
+            courseInstanceRole: EnumCourseInstanceRoleSchema,
           }),
         )
         .optional(),
