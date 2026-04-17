@@ -462,12 +462,11 @@ class TestSympy:  # noqa: PLR0904
         [
             sympy.Interval.open(3, 4),
             sympy.Interval.Lopen(sympy.Symbol("x"), sympy.Symbol("y")),
-            sympy.Union(sympy.Interval(1, 2), sympy.Interval.open(3, 4)),
+            sympy.Union(sympy.Interval(1, 2), sympy.Interval.Ropen(3, 4)),
+            sympy.Intersection(sympy.FiniteSet(1, 2), sympy.Interval(3 / 2, 4)),
         ],
     )
-    def test_json_conversion_handles_open_intervals(
-        self, sympy_expr: sympy.Expr
-    ) -> None:
+    def test_json_conversion_handles_sets(self, sympy_expr: sympy.Expr) -> None:
         assert sympy_expr == psu.json_to_sympy(psu.sympy_to_json(sympy_expr))
 
     @pytest.mark.parametrize(
