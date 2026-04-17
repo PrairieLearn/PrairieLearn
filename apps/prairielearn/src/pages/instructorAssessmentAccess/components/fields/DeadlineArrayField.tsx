@@ -251,8 +251,15 @@ function DeadlineArrayInput({
     }
 
     const defaultDate = candidateDate ? endOfDayDatetime(candidateDate) : '';
-    const previousCredit = deadlines.at(-1)?.credit ?? (isEarly ? 110 : 90);
-    const defaultCredit = previousCredit - 1;
+    const previousCredit = deadlines.at(-1)?.credit;
+    // Early deadlines are disallowed when a custom due credit is set, so the
+    // early branch can assume dueCredit is the default 100 and start at 110.
+    const defaultCredit =
+      previousCredit !== undefined
+        ? previousCredit - 1
+        : isEarly
+          ? 110
+          : dueCredit - 10;
     appendDeadline({ date: defaultDate, credit: defaultCredit });
   };
 
