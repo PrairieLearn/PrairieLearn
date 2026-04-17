@@ -14,9 +14,15 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import clsx from 'clsx';
-import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
+import {
+  parseAsArrayOf,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryState,
+  useQueryStates,
+} from 'nuqs';
 import { useMemo, useState } from 'react';
-import { Button, ButtonGroup, Modal } from 'react-bootstrap';
+import { Button, ButtonGroup, Dropdown, Modal } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import {
@@ -33,7 +39,7 @@ import {
 
 import { getAppError } from '../../lib/client/errors.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import type { CourseInstance } from '../../lib/db-types.js';
+import type { CourseInstanceAuthz } from '../../models/course-instances.js';
 import type { CourseUsersRow } from '../../models/course-permissions.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
@@ -67,8 +73,6 @@ const LEARN_MORE_LINK = (
     </a>
   </div>
 );
-
-const SEMESTER_FILTER_VALUES = ['all', 'current'] as const;
 
 const INSTANCE_ROLE_VALUES = ['None', 'Student Data Viewer', 'Student Data Editor'] as const;
 type InstanceRole = (typeof INSTANCE_ROLE_VALUES)[number];
@@ -104,7 +108,7 @@ const DEFAULT_SORT: SortingState = [{ id: 'uid', desc: false }];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['select', 'uid'], right: [] };
 
 interface StaffTableInnerProps {
-  courseInstances: CourseInstance[];
+  courseInstances: CourseInstanceAuthz[];
   courseUsers: CourseUsersRow[];
   authnUserId: string;
   userId: string;
@@ -157,6 +161,7 @@ function CoursePermissionCell({
       return invalidateStaffList();
     },
   });
+  const appError = getAppError<CourseStaffError>(mutation.error);
 
   if (!canChangeCourseRole) {
     return (
@@ -207,6 +212,7 @@ function CoursePermissionCell({
               </div>
             ))}
             <p className="small text-muted mt-2 mb-0">{ROLE_DESCRIPTIONS[selectedRole]}</p>
+            {appError && <div className="alert alert-danger mt-2 mb-0">{appError.message}</div>}
             {LEARN_MORE_LINK}
             <div className="mt-3 text-end">
               <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
@@ -228,7 +234,10 @@ function CoursePermissionCell({
       }}
       rootClose
       onToggle={(nextShow) => {
-        if (nextShow) setSelectedRole(currentRole);
+        if (nextShow) {
+          setSelectedRole(currentRole);
+          mutation.reset();
+        }
         setShow(nextShow);
       }}
     >
@@ -254,7 +263,7 @@ function CourseInstanceAccessCell({
   canChangeInstanceRole,
 }: {
   courseUser: CourseUsersRow;
-  courseInstance: CourseInstance;
+  courseInstance: CourseInstanceAuthz;
   canChangeInstanceRole: boolean;
 }) {
   const existingRole = courseUser.course_instance_roles?.find(
@@ -273,6 +282,7 @@ function CourseInstanceAccessCell({
       return invalidateStaffList();
     },
   });
+  const appError = getAppError<CourseStaffError>(mutation.error);
 
   if (!canChangeInstanceRole) {
     return (
@@ -323,6 +333,7 @@ function CourseInstanceAccessCell({
               </div>
             ))}
             <p className="small text-muted mt-2 mb-0">{INSTANCE_ROLE_DESCRIPTIONS[selectedRole]}</p>
+            {appError && <div className="alert alert-danger mt-2 mb-0">{appError.message}</div>}
             {LEARN_MORE_LINK}
             <div className="mt-3 text-end">
               <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
@@ -348,7 +359,10 @@ function CourseInstanceAccessCell({
       }}
       rootClose
       onToggle={(nextShow) => {
-        if (nextShow) setSelectedRole(currentRole);
+        if (nextShow) {
+          setSelectedRole(currentRole);
+          mutation.reset();
+        }
         setShow(nextShow);
       }}
     >
@@ -377,7 +391,7 @@ function AddUsersModal({
   show: boolean;
   onHide: () => void;
   uidsLimit: number;
-  courseInstances: CourseInstance[];
+  courseInstances: CourseInstanceAuthz[];
 }) {
   const [uidText, setUidText] = useState('');
   const [courseRole, setCourseRole] = useState<CourseRole>('None');
@@ -534,7 +548,7 @@ function AddUsersButton({
   courseInstances,
 }: {
   uidsLimit: number;
-  courseInstances: CourseInstance[];
+  courseInstances: CourseInstanceAuthz[];
 }) {
   const [show, setShow] = useState(false);
   return (
@@ -625,7 +639,7 @@ function BulkEditAccessModal({
   show: boolean;
   onHide: () => void;
   selectedUsers: CourseUsersRow[];
-  courseInstances: CourseInstance[];
+  courseInstances: CourseInstanceAuthz[];
 }) {
   const [courseRole, setCourseRole] = useState<CourseRole | ''>('');
   const [instanceRoles, setInstanceRoles] = useState<Record<string, InstanceRole | ''>>({});
@@ -753,7 +767,7 @@ function SelectionToolbar({
   userId,
 }: {
   selectedUsers: CourseUsersRow[];
-  courseInstances: CourseInstance[];
+  courseInstances: CourseInstanceAuthz[];
   isAdministrator: boolean;
   authnUserId: string;
   userId: string;
@@ -823,10 +837,6 @@ function StaffTableInner({
     staleTime: Infinity,
   });
 
-  const [semesterFilter, setSemesterFilter] = useQueryState(
-    'semester',
-    parseAsStringLiteral(SEMESTER_FILTER_VALUES).withDefault('all'),
-  );
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -841,18 +851,18 @@ function StaffTableInner({
     parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
 
-  const filteredUsers = useMemo(() => {
-    if (semesterFilter !== 'current' || courseInstances.length === 0) return liveUsers;
-
-    const currentCiId = courseInstances[0].id;
-    return liveUsers.filter((user) => {
-      const courseRole = user.course_permission.course_role;
-      if (courseRole && courseRole !== 'None') return true;
-
-      const instanceRole = user.course_instance_roles?.find((cir) => cir.id === currentCiId);
-      return instanceRole != null && instanceRole.course_instance_role !== 'None';
-    });
-  }, [liveUsers, semesterFilter, courseInstances]);
+  const activeCourseInstanceIds = useMemo(() => {
+    const now = new Date();
+    return new Set(
+      courseInstances
+        .filter((ci) => {
+          const hasStarted = !ci.start_date || ci.start_date <= now;
+          const hasNotEnded = !ci.end_date || ci.end_date >= now;
+          return hasStarted && hasNotEnded;
+        })
+        .map((ci) => ci.id),
+    );
+  }, [courseInstances]);
 
   const allColumnIds = useMemo(
     () => [
@@ -870,17 +880,29 @@ function StaffTableInner({
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const { createCheckboxProps } = useShiftClickCheckbox<CourseUsersRow>();
 
-  const [instanceFilters, setInstanceFilters] = useState<Record<string, InstanceRole[]>>({});
+  const defaultInstanceFilterValues = useMemo(
+    () =>
+      Object.fromEntries(
+        courseInstances.map((ci) => [
+          `ci_${ci.id}`,
+          parseAsArrayOf(parseAsStringLiteral(INSTANCE_ROLE_VALUES)).withDefault([]),
+        ]),
+      ),
+    [courseInstances],
+  );
+  const [instanceFilterValues, setInstanceFilterValues] = useQueryStates(
+    defaultInstanceFilterValues,
+  );
 
   const columnFilters = useMemo<ColumnFiltersState>(
     () => [
       { id: 'course_role', value: courseRoleFilter },
       ...courseInstances.map((ci) => ({
         id: `ci_${ci.id}`,
-        value: instanceFilters[`ci_${ci.id}`] ?? [],
+        value: instanceFilterValues[`ci_${ci.id}`] ?? [],
       })),
     ],
-    [courseRoleFilter, instanceFilters, courseInstances],
+    [courseRoleFilter, instanceFilterValues, courseInstances],
   );
 
   const columnFilterSetters = useMemo<Record<string, Updater<any>>>(
@@ -893,11 +915,11 @@ function StaffTableInner({
         courseInstances.map((ci) => [
           `ci_${ci.id}`,
           (value: InstanceRole[]) =>
-            setInstanceFilters((prev) => ({ ...prev, [`ci_${ci.id}`]: value })),
+            setInstanceFilterValues((prev) => ({ ...prev, [`ci_${ci.id}`]: value })),
         ]),
       ),
     }),
-    [setCourseRoleFilter, courseInstances],
+    [setCourseRoleFilter, setInstanceFilterValues, courseInstances],
   );
 
   const handleColumnFiltersChange = useMemo(
@@ -1025,7 +1047,7 @@ function StaffTableInner({
   );
 
   const table = useReactTable({
-    data: filteredUsers,
+    data: liveUsers,
     columns,
     columnResizeMode: 'onChange',
     enableRowSelection: true,
@@ -1122,26 +1144,65 @@ function StaffTableInner({
     </>
   );
 
-  const semesterFilterButtons =
+  const instanceVisibilityPresets = useMemo(
+    () => ({
+      'Active instances': Object.fromEntries(
+        courseInstances.map((ci) => [`ci_${ci.id}`, activeCourseInstanceIds.has(ci.id)]),
+      ),
+      'All instances': Object.fromEntries(courseInstances.map((ci) => [`ci_${ci.id}`, true])),
+    }),
+    [courseInstances, activeCourseInstanceIds],
+  );
+
+  const selectedViewPreset = useMemo(() => {
+    for (const [name, preset] of Object.entries(instanceVisibilityPresets)) {
+      const matches = Object.entries(preset).every(
+        ([colId, visible]) => (columnVisibility[colId] ?? true) === visible,
+      );
+      if (matches) return name;
+    }
+    return null;
+  }, [instanceVisibilityPresets, columnVisibility]);
+
+  const handleViewPresetSelect = (presetName: string) => {
+    const preset = instanceVisibilityPresets[presetName as keyof typeof instanceVisibilityPresets];
+    void setColumnVisibility((prev) => ({ ...prev, ...preset }));
+  };
+
+  const viewPresetDropdown =
     courseInstances.length > 0 ? (
-      <ButtonGroup size="sm">
-        <Button
-          variant={semesterFilter === 'current' ? 'primary' : 'outline-secondary'}
-          title={`Show staff members with access to course content or student data for ${courseInstances[0].short_name}`}
-          aria-label={`Show staff members with access to course content or student data for ${courseInstances[0].short_name}`}
-          onClick={() => void setSemesterFilter('current')}
-        >
-          Current semester
-        </Button>
-        <Button
-          variant={semesterFilter === 'all' ? 'primary' : 'outline-secondary'}
-          title="Show staff members with access to course content or student data for all instances"
-          aria-label="Show staff members with access to course content or student data for all instances"
-          onClick={() => void setSemesterFilter('all')}
-        >
-          All semesters
-        </Button>
-      </ButtonGroup>
+      <Dropdown as={ButtonGroup}>
+        <Dropdown.Toggle variant="tanstack-table" size="sm">
+          <i className="bi bi-funnel me-2" aria-hidden="true" />
+          View: {selectedViewPreset ?? 'Custom'}
+        </Dropdown.Toggle>
+        <Dropdown.Menu>
+          {Object.keys(instanceVisibilityPresets).map((name) => {
+            const isSelected = selectedViewPreset === name;
+            return (
+              <Dropdown.Item
+                key={name}
+                as="button"
+                type="button"
+                active={isSelected}
+                onClick={() => handleViewPresetSelect(name)}
+              >
+                <i
+                  className={`bi ${isSelected ? 'bi-check-circle-fill' : 'bi-circle'} me-2`}
+                  aria-hidden="true"
+                />
+                {name}
+              </Dropdown.Item>
+            );
+          })}
+          {selectedViewPreset === null && (
+            <Dropdown.Item as="button" type="button" active disabled>
+              <i className="bi bi-check-circle-fill me-2" aria-hidden="true" />
+              Custom
+            </Dropdown.Item>
+          )}
+        </Dropdown.Menu>
+      </Dropdown>
     ) : null;
 
   return (
@@ -1156,7 +1217,7 @@ function StaffTableInner({
           globalFilter={{ placeholder: 'Search by UID or name...' }}
           tableOptions={{ filters, rowHeight: 72 }}
           headerButtons={headerButtons}
-          columnManager={{ buttons: semesterFilterButtons }}
+          columnManager={{ buttons: viewPresetDropdown }}
           statusContent={statusContent}
         />
       </div>
