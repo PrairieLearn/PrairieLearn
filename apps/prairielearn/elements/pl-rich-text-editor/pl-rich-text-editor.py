@@ -115,9 +115,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     min_wc = pl.get_integer_attrib(element, "min-word-count", MIN_WORD_COUNT_DEFAULT)
     max_wc = pl.get_integer_attrib(element, "max-word-count", MAX_WORD_COUNT_DEFAULT)
     if min_wc is not None and min_wc < 0:
-        raise ValueError('Attribute "min-word-count" must be >= 0.')
-    if max_wc is not None and max_wc < 0:
-        raise ValueError('Attribute "max-word-count" must be >= 0.')
+        raise ValueError(
+            'Attribute "min-word-count" must be larger than or equal to 0.'
+        )
+    if max_wc is not None and max_wc <= 0:
+        raise ValueError('Attribute "max-word-count" must be larger than 0.')
     if min_wc is not None and max_wc is not None and min_wc > max_wc:
         raise ValueError(
             f"Invalid bounds: min-word-count ({min_wc}) cannot exceed max-word-count ({max_wc})."
@@ -217,10 +219,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "quill_options_json": json.dumps(quill_options),
             "counter_enabled": counter != Counter.NONE,
             "clipboard_enabled": clipboard_enabled,
-            "min_word_count": min_wc,
-            "max_word_count": max_wc,
-            "min_word_count_is_set": min_wc is not None,
-            "max_word_count_is_set": max_wc is not None,
+            "min_word_count": min_wc or 0,
+            "max_word_count": max_wc or 0,
             "has_word_count_bounds": has_word_count_bounds,
             "word_count_requirements_text": word_count_requirements_text,
             "footer_enabled": (counter != Counter.NONE) or has_word_count_bounds,
@@ -301,12 +301,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if file_contents and (min_wc is not None or max_wc is not None):
         if min_wc is not None and word_count < min_wc:
             pl.add_files_format_error(
-                data, f"{file_name} is invalid: {word_count} words (minimum {min_wc})."
+                data,
+                f"{file_name} is too short: {word_count} words (minimum {min_wc}).",
             )
             return
 
         if max_wc is not None and word_count > max_wc:
             pl.add_files_format_error(
-                data, f"{file_name} is invalid: {word_count} words (maximum {max_wc})."
+                data, f"{file_name} is too long: {word_count} words (maximum {max_wc})."
             )
             return

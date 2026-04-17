@@ -166,38 +166,24 @@
 
     // --- Live min/max word-count invalid message wiring ---
     const editorContainer = baseElement.closest('.pl-rich-text-editor-container');
-    const invalidElement = document.getElementById(`rte-invalid-${uuid}`);
+    const wordCountFeedbackElement = document.getElementById(`rte-invalid-${uuid}`);
 
     // Read bounds from HTML data attributes on the container
-    const minWordCount = editorContainer?.dataset?.minWordCount
-      ? Number(editorContainer.dataset.minWordCount)
-      : null;
-    const maxWordCount = editorContainer?.dataset?.maxWordCount
-      ? Number(editorContainer.dataset.maxWordCount)
-      : null;
+    const minWordCount = Number(editorContainer.dataset.minWordCount);
+    const maxWordCount = Number(editorContainer.dataset.maxWordCount);
 
-    const hasBounds =
-      invalidElement && (Number.isFinite(minWordCount) || Number.isFinite(maxWordCount));
+    const hasBounds = wordCountFeedbackElement && (minWordCount || maxWordCount);
 
-    const updateInvalidUI = () => {
+    const updateWordCountFeedbackMessage = () => {
       if (!hasBounds) return;
 
-      const wc = countWords(getCountableText());
-      const tooFew = Number.isFinite(minWordCount) && wc < minWordCount;
-      const tooMany = Number.isFinite(maxWordCount) && wc > maxWordCount;
+      const wordCount = countWords(getCountableText());
+      const tooFew = minWordCount && wordCount < minWordCount;
+      const tooMany = maxWordCount && wordCount > maxWordCount;
 
       // If the text is empty, no error is shown.
-      if (wc === 0 || !(tooFew || tooMany)) {
-        invalidElement.classList.add('d-none');
-        invalidElement.textContent = '';
-        return;
-      }
-
-      invalidElement.classList.remove('d-none');
-      const msg = tooFew
-        ? `Too few words (${wc} of ${minWordCount})`
-        : `Too many words (${wc} of ${maxWordCount})`;
-      invalidElement.textContent = msg;
+      wordCountFeedbackElement.classList.toggle('d-none', wordCount === 0 || !(tooFew || tooMany));
+      wordCountFeedbackElement.textContent = tooFew ? 'Too few words' : 'Too many words';
     };
 
     const updateHiddenInput = function () {
@@ -226,7 +212,7 @@
       }
 
       // Update word count requirements UI
-      updateInvalidUI();
+      updateWordCountFeedbackMessage();
     };
 
     quill.on('text-change', updateHiddenInput);
