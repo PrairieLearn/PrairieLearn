@@ -103,11 +103,25 @@
   <pl-symbolic-input formula-editor="true" aria-label="Function expression" answers-name="custom_function_2" variables="y" show-score="false" custom-functions="beef,the" suffix="$= \text{where?}$"></pl-symbolic-input>
 </pl-card>
 
+<pl-card header="An example in which interval notation is allowed (&lt;code&gt;allow-set-notation=&quot;true&quot;&lt;/code&gt;)">
+  <pl-question-panel>
+      <p>Consider $f(x) = x^{-2} - 4$. Using intervals and set unions, find $\{ x | f(x) \leq 0 \}$.</p>
+  </pl-question-panel>
+  <pl-symbolic-input formula-editor="true" allow-set-notation="true" aria-label="Set notation expression" answers-name="interval_notation" correct-answer="(-infty, -1/2] U [1/2, infty)"></pl-symbolic-input>
+</pl-card>
+
 <pl-card header="An example in which set notation is allowed (&lt;code&gt;allow-set-notation=&quot;true&quot;&lt;/code&gt;)">
   <pl-question-panel>
-      <p>Enter the union of two inclusive intervals from 0 to 1 and 2 to 3 using set notation.</p>
+      <p>For which values of $\theta \in [0, 2\pi)$ does $\sin(\theta) = \cos(\theta)$? Express your answer as a set.</p>
   </pl-question-panel>
-  <pl-symbolic-input formula-editor="true" allow-set-notation="true" aria-label="Set notation expression" answers-name="set_notation" correct-answer="[0, 1] U [2, 3]"></pl-symbolic-input>
+  <pl-symbolic-input formula-editor="true" allow-set-notation="true" aria-label="Set notation expression" answers-name="set_notation" label="$\theta \in$" correct-answer="{pi/4, 5pi/4}"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="Another example of set notation">
+  <pl-question-panel>
+      <p>Set theory defines numerals inductively: $0 = \{ \}$, and $n + 1 = \{ 0, 1, ..., n \}$ where each number is written in set-numeral form. What is the set numeral for 2? (Don't use any numbers!)</p>
+  </pl-question-panel>
+  <pl-symbolic-input formula-editor="true" allow-set-notation="true" aria-label="Set notation expression" answers-name="set_numerals" label="$2 =$" correct-answer="{ {}, { {} } }"></pl-symbolic-input>
 </pl-card>
 
 <pl-card header="Absolute value problem">
