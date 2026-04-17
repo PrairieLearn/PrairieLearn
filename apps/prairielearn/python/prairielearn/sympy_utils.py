@@ -10,7 +10,7 @@ import copy
 import html
 import re
 from collections import deque
-from collections.abc import Callable, Generator, Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from tokenize import (
     DEDENT,
@@ -20,9 +20,7 @@ from tokenize import (
     NAME,
     NEWLINE,
     NL,
-    NUMBER,
     OP,
-    STRING,
     TokenError,
 )
 from types import CodeType
@@ -1144,7 +1142,6 @@ def get_items_list(items_string: str | None) -> list[str]:
 
 _INTERVAL_TRIVIAL = {NL, NEWLINE, INDENT, DEDENT, ENDMARKER}
 _INTERVAL_OPEN = {"(", "["}
-_INTERVAL_CLOSE = {")", "]"}
 _SET_LITERAL_NESTED_OPEN = {"(", "[", "{"}
 _SET_LITERAL_NESTED_CLOSE = {")", "]", "}"}
 _SET_FUNCTION_NAMES = _Constants().set_functions.keys()
@@ -1166,18 +1163,6 @@ def _is_interval_trivial(token: TOKEN) -> bool:
     )
 
 
-def _literal_or_set_end(token: TOKEN | None) -> bool:
-    return token is not None and (
-        token[0] in {NAME, NUMBER, STRING} or token[1] in {")", "]", "}"}
-    )
-
-
-def _literal_or_set_start(token: TOKEN | None) -> bool:
-    return token is not None and (
-        token[0] in {NAME, NUMBER, STRING} or token[1] in {"(", "[", "{"}
-    )
-
-
 def set_literal_transformation(
     tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
 ) -> list[TOKEN]:
@@ -1186,7 +1171,7 @@ def set_literal_transformation(
         return tokens
 
     openers: list[int] = []
-    closers: list[int] = []
+    closers: set[int] = set()
 
     for i, token in enumerate(tokens):
         _, text = token
@@ -1195,22 +1180,23 @@ def set_literal_transformation(
         elif text == "}":
             if len(openers) <= len(closers):
                 raise TokenError("too many closing braces")
-            closers.append(i)
+            closers.add(i)
 
     if len(openers) != len(closers):
         raise TokenError("set notation is incomplete")
 
-    out = tokens
-    for i in closers:
-        out[i] = (OP, ")")
+    f_set = (NAME, "FiniteSet")
+    open_p = (OP, "(")
+    close_p = (OP, ")")
+    out = [(close_p if i in closers else t) for i, t in enumerate(tokens)]
     for i in reversed(openers):
-        out[i] = (OP, "(")
-        out.insert(i, (NAME, "FiniteSet"))
+        out[i] = open_p
+        out.insert(i, f_set)
 
     return out
 
 
-def _rewrite_interval_literal_from_tokens(
+def _rewrite_interval_literal(
     tokens: list[TOKEN], start_index: int
 ) -> tuple[tuple[TOKEN, ...] | None, int]:
     _, start_text = tokens[start_index]
@@ -1221,9 +1207,9 @@ def _rewrite_interval_literal_from_tokens(
         operand, depth = [], 0
         for i, token in enumerate(tokens[start_index:], start=start_index):
             _, text = token
-            if text in _INTERVAL_OPEN:
+            if text in _SET_LITERAL_NESTED_OPEN:
                 depth += 1
-            elif text in _INTERVAL_CLOSE:
+            elif text in _SET_LITERAL_NESTED_CLOSE:
                 if depth == 0:
                     return True, operand, i, token
                 depth -= 1
@@ -1242,7 +1228,7 @@ def _rewrite_interval_literal_from_tokens(
     # consume until the first top-level comma or closing bracket.
     closed, left_side, mid_index, _comma = _seek_comma_or_closer(start_index + 1)
     if closed:
-        return None, mid_index
+        return None, start_index
 
     # consume until the matching top-level closing bracket.
     closed, right_side, end_index, (_, end_text) = _seek_comma_or_closer(mid_index + 1)
@@ -1277,24 +1263,18 @@ def interval_transformation(
     if not tokens:
         return tokens
     result = []
-    prev: TOKEN | None = None
+    prev = None
     i = 0
     while i < len(tokens):
         token = tokens[i]
-        if not _is_interval_trivial(token):
-            if token[1] in _INTERVAL_OPEN and prev is not None and prev[0] == NAME:
-                result.append(token)
-                prev = token
-                i += 1
-                continue
-            rewritten_tokens, end_index = _rewrite_interval_literal_from_tokens(
-                tokens, i
-            )
+        if (not prev or prev[0] != NAME) and not _is_interval_trivial(token):
+            rewritten_tokens, end_index = _rewrite_interval_literal(tokens, i)
             if rewritten_tokens is not None:
                 result.extend(rewritten_tokens)
                 prev = tokens[end_index]
                 i = end_index + 1
                 continue
+
         result.append(token)
         prev = token
         i += 1
@@ -1309,48 +1289,10 @@ def set_operation_transformation(
     Returns:
         A transformed sequence of SymPy tokens.
     """
-    if not tokens:
-        return tokens
-
-    def _seek_nontrivial() -> Generator[tuple[list[TOKEN], TOKEN | None], Any, None]:
-        delayed = []
-        for t in tokens:
-            if not _is_interval_trivial(t):
-                yield delayed, t
-                delayed.clear()
-            else:
-                delayed.append(t)
-        yield delayed, None
-
-    result = []
-    nontrivial_iter = _seek_nontrivial()
-    # previous, current, next pointers into tokens
-    prev_nt, (delayed, curr_nt) = None, next(nontrivial_iter)
-
-    while curr_nt is not None:
-        # consume skipped
-        result.extend(delayed)
-        delayed, next_nt = next(nontrivial_iter)
-
-        # transform current
-        trans_curr = (curr_type, curr_value) = curr_nt
-        if curr_type in {NAME, ERRORTOKEN}:
-            op = _SET_OPS.get(curr_value)
-            if (
-                op is not None
-                and _literal_or_set_end(prev_nt)
-                and _literal_or_set_start(next_nt)
-            ):
-                trans_curr = (OP, op)
-        result.append(trans_curr)
-
-        # update pointers
-        prev_nt, curr_nt = curr_nt, next_nt
-
-    # consume final skipped
-    result.extend(delayed)
-
-    return result
+    return [
+        (OP, _SET_OPS[text]) if text in _SET_OPS else (typ, text)
+        for typ, text in tokens
+    ]
 
 
 def get_builtin_constants(*, allow_complex: bool = False) -> set[str]:
