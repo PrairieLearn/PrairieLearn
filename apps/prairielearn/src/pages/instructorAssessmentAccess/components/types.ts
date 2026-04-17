@@ -345,14 +345,10 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
     if (rule.due.date || rule.due.credit !== null) {
       output.dateControl.due = buildDueJson(rule.due);
     }
-    // Drop deadlines whose editors are hidden in the UI (see shouldShow in
-    // DeadlineArrayField). This prevents stale data that the user can't reach
-    // — e.g. late deadlines kept after switching to "No due date" — from
-    // silently producing invalid JSON.
-    if (rule.earlyDeadlines.length > 0 && rule.due.credit === null) {
+    if (rule.earlyDeadlines.length > 0) {
       output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     }
-    if (rule.lateDeadlines.length > 0 && !!rule.due.date) {
+    if (rule.lateDeadlines.length > 0) {
       output.dateControl.lateDeadlines = rule.lateDeadlines;
     }
     if (rule.afterLastDeadline) {
@@ -401,7 +397,7 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   return output;
 }
 
-function overrideToJson(rule: OverrideData, mainRule: MainRuleData): AccessControlJsonWithId {
+function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
   const labels =
     rule.appliesTo.targetType === 'student_label' && rule.appliesTo.studentLabels.length > 0
       ? rule.appliesTo.studentLabels.map((sl) => sl.name)
@@ -424,23 +420,11 @@ function overrideToJson(rule: OverrideData, mainRule: MainRuleData): AccessContr
     if (of.has('due')) {
       output.dateControl.due = buildDueJson(rule.due);
     }
-    // Compute effective `due` for visibility — overrides inherit main's when
-    // not set. Mirrors OverrideDeadlineArrayField's shouldShow, so hidden
-    // non-empty data (e.g. early deadlines under an inherited custom credit)
-    // is not silently emitted. Empty-list overrides are preserved because
-    // they express an intentional "cancel inherited deadlines" action.
-    const effectiveDue = of.has('due') ? rule.due : mainRule.due;
     if (of.has('earlyDeadlines')) {
-      const visible = effectiveDue.credit === null;
-      if (visible || rule.earlyDeadlines.length === 0) {
-        output.dateControl.earlyDeadlines = rule.earlyDeadlines;
-      }
+      output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     }
     if (of.has('lateDeadlines')) {
-      const visible = !!effectiveDue.date;
-      if (visible || rule.lateDeadlines.length === 0) {
-        output.dateControl.lateDeadlines = rule.lateDeadlines;
-      }
+      output.dateControl.lateDeadlines = rule.lateDeadlines;
     }
     if (of.has('afterLastDeadline')) {
       output.dateControl.afterLastDeadline = rule.afterLastDeadline;
@@ -481,10 +465,7 @@ function overrideToJson(rule: OverrideData, mainRule: MainRuleData): AccessContr
 }
 
 export function formDataToJson(formData: AccessControlFormData): AccessControlJsonWithId[] {
-  return [
-    mainRuleToJson(formData.mainRule),
-    ...formData.overrides.map((o) => overrideToJson(o, formData.mainRule)),
-  ];
+  return [mainRuleToJson(formData.mainRule), ...formData.overrides.map((o) => overrideToJson(o))];
 }
 
 export function createDefaultOverrideFormData(mainRule?: MainRuleData): OverrideData {

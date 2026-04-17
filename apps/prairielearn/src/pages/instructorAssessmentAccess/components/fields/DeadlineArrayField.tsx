@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import stableStringify from 'fast-json-stable-stringify';
 import { useEffect, useRef } from 'react';
-import { Alert, Button, Form, InputGroup } from 'react-bootstrap';
+import { Button, Form, InputGroup } from 'react-bootstrap';
 import { get, useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
@@ -21,7 +21,6 @@ function DeadlineArrayInput({
   validationDueDate,
   deadlines,
   displayTimezone,
-  disabledReason,
 }: {
   type: 'early' | 'late';
   fieldArrayName:
@@ -38,7 +37,6 @@ function DeadlineArrayInput({
   validationDueDate?: string | null | undefined;
   deadlines: DeadlineEntry[];
   displayTimezone: string;
-  disabledReason?: string;
 }) {
   const { register, trigger } = useFormContext<AccessControlFormData>();
   const isEarly = type === 'early';
@@ -257,7 +255,6 @@ function DeadlineArrayInput({
   };
 
   const label = isEarly ? 'Early deadlines' : 'Late deadlines';
-  const isDisabled = !!disabledReason;
 
   return (
     <div>
@@ -266,113 +263,102 @@ function DeadlineArrayInput({
           type="checkbox"
           id={`${idPrefix}-${type}-deadlines-enabled`}
           label={<strong>{label}</strong>}
-          checked={!isDisabled && deadlineFields.length > 0}
-          disabled={isDisabled}
+          checked={deadlineFields.length > 0}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
               addDeadline();
             } else {
-              // Remove all deadlines
               removeDeadline();
             }
           }}
         />
-        {!isDisabled && (
-          <Button size="sm" variant="outline-primary" onClick={addDeadline}>
-            Add {isEarly ? 'early' : 'late'}
-          </Button>
-        )}
+        <Button size="sm" variant="outline-primary" onClick={addDeadline}>
+          Add {isEarly ? 'early' : 'late'}
+        </Button>
       </div>
 
-      {isDisabled && (
-        <Alert variant="warning" className="py-2 mb-0">
-          {disabledReason}
-        </Alert>
-      )}
-
-      {!isDisabled &&
-        deadlineFields.map((deadlineField, index) => (
-          <div key={deadlineField.id} className="mb-3">
-            <div className="d-flex gap-2 mb-1 flex-wrap align-items-start">
-              <div className="flex-grow-1">
+      {deadlineFields.map((deadlineField, index) => (
+        <div key={deadlineField.id} className="mb-3">
+          <div className="d-flex gap-2 mb-1 flex-wrap align-items-start">
+            <div className="flex-grow-1">
+              <Form.Control
+                type="datetime-local"
+                step={1}
+                defaultValue={deadlineField.date}
+                aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} date`}
+                aria-invalid={!!getDateError(index)}
+                aria-errormessage={
+                  getDateError(index)
+                    ? `${idPrefix}-${type}-deadline-${index}-date-error`
+                    : undefined
+                }
+                placeholder="Deadline Date"
+                {...register(`${fieldArrayName}.${index}.date`, {
+                  validate: (value) => validateDate(value, index),
+                })}
+              />
+            </div>
+            <div className="d-flex gap-2 align-items-center">
+              <label
+                className="form-label text-body-secondary mt-2 ms-auto"
+                htmlFor={`${idPrefix}-${type}-deadline-${index}-credit`}
+              >
+                Credit
+              </label>
+              <InputGroup style={{ width: 'auto', flex: '0 0 auto' }}>
                 <Form.Control
-                  type="datetime-local"
-                  step={1}
-                  defaultValue={deadlineField.date}
-                  aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} date`}
-                  aria-invalid={!!getDateError(index)}
+                  id={`${idPrefix}-${type}-deadline-${index}-credit`}
+                  type="number"
+                  defaultValue={deadlineField.credit}
+                  style={{ width: '5rem' }}
+                  aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} credit percentage`}
+                  aria-invalid={!!getCreditError(index)}
                   aria-errormessage={
-                    getDateError(index)
-                      ? `${idPrefix}-${type}-deadline-${index}-date-error`
+                    getCreditError(index)
+                      ? `${idPrefix}-${type}-deadline-${index}-credit-error`
                       : undefined
                   }
-                  placeholder="Deadline Date"
-                  {...register(`${fieldArrayName}.${index}.date`, {
-                    validate: (value) => validateDate(value, index),
+                  placeholder="100"
+                  min={isEarly ? '101' : '0'}
+                  max={isEarly ? '200' : Math.min(99, dueCredit - 1)}
+                  {...register(`${fieldArrayName}.${index}.credit`, {
+                    valueAsNumber: true,
+                    validate: (value) => validateCredit(value, index),
                   })}
                 />
-                {getDateError(index) && (
-                  <Form.Text
-                    id={`${idPrefix}-${type}-deadline-${index}-date-error`}
-                    className="text-danger"
-                    role="alert"
-                  >
-                    {getDateError(index)}
-                  </Form.Text>
-                )}
-              </div>
-              <div className="d-flex gap-2 align-items-center">
-                <label
-                  className="form-label text-body-secondary mt-2 ms-auto"
-                  htmlFor={`${idPrefix}-${type}-deadline-${index}-credit`}
-                >
-                  Credit
-                </label>
-                <InputGroup style={{ width: 'auto', flex: '0 0 auto' }}>
-                  <Form.Control
-                    id={`${idPrefix}-${type}-deadline-${index}-credit`}
-                    type="number"
-                    defaultValue={deadlineField.credit}
-                    style={{ width: '5rem' }}
-                    aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} credit percentage`}
-                    aria-invalid={!!getCreditError(index)}
-                    aria-errormessage={
-                      getCreditError(index)
-                        ? `${idPrefix}-${type}-deadline-${index}-credit-error`
-                        : undefined
-                    }
-                    placeholder="100"
-                    min={isEarly ? '101' : '0'}
-                    max={isEarly ? '200' : Math.min(99, dueCredit - 1)}
-                    {...register(`${fieldArrayName}.${index}.credit`, {
-                      valueAsNumber: true,
-                      validate: (value) => validateCredit(value, index),
-                    })}
-                  />
-                  <InputGroup.Text>%</InputGroup.Text>
-                </InputGroup>
-                <Button
-                  size="sm"
-                  variant="outline-danger"
-                  aria-label={`Remove ${isEarly ? 'early' : 'late'} deadline ${index + 1}`}
-                  onClick={() => removeDeadline(index)}
-                >
-                  <i className="bi bi-trash" aria-hidden="true" />
-                </Button>
-              </div>
-            </div>
-            {getCreditError(index) && (
-              <Form.Text
-                id={`${idPrefix}-${type}-deadline-${index}-credit-error`}
-                className="text-danger d-block"
-                role="alert"
+                <InputGroup.Text>%</InputGroup.Text>
+              </InputGroup>
+              <Button
+                size="sm"
+                variant="outline-danger"
+                aria-label={`Remove ${isEarly ? 'early' : 'late'} deadline ${index + 1}`}
+                onClick={() => removeDeadline(index)}
               >
-                {getCreditError(index)}
-              </Form.Text>
-            )}
-            <Form.Text className="text-muted">{getTimeRangeText(index)}</Form.Text>
+                <i className="bi bi-trash" aria-hidden="true" />
+              </Button>
+            </div>
           </div>
-        ))}
+          {getDateError(index) && (
+            <Form.Text
+              id={`${idPrefix}-${type}-deadline-${index}-date-error`}
+              className="text-danger d-block"
+              role="alert"
+            >
+              {getDateError(index)}
+            </Form.Text>
+          )}
+          {getCreditError(index) && (
+            <Form.Text
+              id={`${idPrefix}-${type}-deadline-${index}-credit-error`}
+              className="text-danger d-block"
+              role="alert"
+            >
+              {getCreditError(index)}
+            </Form.Text>
+          )}
+          <Form.Text className="text-muted">{getTimeRangeText(index)}</Form.Text>
+        </div>
+      ))}
     </div>
   );
 }
@@ -399,20 +385,13 @@ export function MainDeadlineArrayField({
     name: fieldName,
   });
 
-  const hasCustomCredit = due.credit !== null;
   const dueDate = due.date;
   const dueCredit = due.credit ?? 100;
 
-  // Late deadlines require a due date; hide entirely without one.
-  if (!isEarly && !dueDate) return null;
-
-  // Early deadlines are incompatible with custom due credit (backend forbids
-  // both together — any explicit `due.credit`, even 100, counts as custom).
-  // Render the disabled header with an inline explanation.
-  const disabledReason =
-    isEarly && hasCustomCredit
-      ? 'Early deadlines are disabled when using custom credit for a due date.'
-      : undefined;
+  // Late deadlines are meaningless without a due date to anchor against — hide
+  // the empty section in that case. When data exists (either type), always
+  // render so validation errors guide the user to fix invalid state.
+  if (!isEarly && deadlines.length === 0 && !dueDate) return null;
 
   return (
     <DeadlineArrayInput
@@ -426,7 +405,6 @@ export function MainDeadlineArrayField({
       validationDueDate={dueDate}
       deadlines={deadlines}
       displayTimezone={displayTimezone}
-      disabledReason={disabledReason}
     />
   );
 }
@@ -475,15 +453,11 @@ export function OverrideDeadlineArrayField({
   const effectiveDue = dueOverridden ? overrideDue : mainDue;
   const effectiveDueDate = effectiveDue.date;
   const effectiveDueCredit = effectiveDue.credit ?? 100;
-  const hasCustomCredit = effectiveDue.credit !== null;
   const validationReleaseDate = releaseDateOverridden ? overrideReleaseDate : undefined;
   const validationDueDate = dueOverridden ? overrideDue.date : undefined;
 
-  // Early deadlines are incompatible with custom due credit; see main-rule variant.
-  const disabledReason =
-    isEarly && hasCustomCredit
-      ? 'Early deadlines are disabled when using custom credit for a due date.'
-      : undefined;
+  // See MainDeadlineArrayField: late deadlines need a due date to anchor.
+  if (!isEarly && !isOverridden && deadlines.length === 0 && !effectiveDueDate) return null;
 
   return (
     <FieldWrapper
@@ -507,7 +481,6 @@ export function OverrideDeadlineArrayField({
         validationDueDate={validationDueDate}
         deadlines={deadlines}
         displayTimezone={displayTimezone}
-        disabledReason={disabledReason}
       />
     </FieldWrapper>
   );

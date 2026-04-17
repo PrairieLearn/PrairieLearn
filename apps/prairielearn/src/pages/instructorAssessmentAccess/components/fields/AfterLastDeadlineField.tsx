@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Alert, Form, InputGroup } from 'react-bootstrap';
 import {
   type FieldPath,
@@ -102,16 +103,31 @@ function AfterLastDeadlineInput({
       ]
     : ['mainRule.due', 'mainRule.lateDeadlines'];
 
-  const { register, getValues } = useFormContext<AccessControlFormData>();
+  const { register, getValues, trigger } = useFormContext<AccessControlFormData>();
   const { errors } = useFormState();
   const creditError: string | undefined = get(errors, creditFieldPath)?.message;
 
   // Watch dep fields so this component re-renders when they change,
   // keeping display values (last-deadline text, warnings) up to date.
   useWatch<AccessControlFormData>({ name: creditDeps });
-  const { dueDate, lateDeadlines } = resolveConstraints(getValues(), overrideIndex);
+  const {
+    dueDate,
+    dueCredit: effectiveDueCredit,
+    lateDeadlines,
+  } = resolveConstraints(getValues(), overrideIndex);
 
   const mode = getMode(value);
+
+  // Re-validate the credit field when its preceding-credit inputs change.
+  // RHF's `deps` on register triggers the other direction, so we drive this
+  // explicitly. Use primitives (not object refs) so the effect is stable.
+  const precedingCredit =
+    lateDeadlines.at(-1)?.credit ?? (dueDate != null ? effectiveDueCredit : undefined);
+  useEffect(() => {
+    if (mode === 'partial_credit') {
+      void trigger(creditFieldPath);
+    }
+  }, [trigger, creditFieldPath, mode, precedingCredit]);
 
   const getLastDeadlineText = () => {
     const lastDate = getLastDeadlineDate(lateDeadlines, dueDate);

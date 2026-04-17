@@ -140,6 +140,18 @@ export function validateRuleStructuralDependencyIssues(
     );
   }
 
+  // Constraint 4: Late deadlines are not allowed when due credit is 0%.
+  // Late deadline credit must be strictly less than the due credit, so a
+  // 0% due credit leaves no valid range.
+  if (dc?.due?.credit === 0 && dc.lateDeadlines && dc.lateDeadlines.length > 0) {
+    pushIssue(
+      issues,
+      validationRule,
+      ['dateControl', 'lateDeadlines', 0, 'date'],
+      'Late deadlines are not allowed when due credit is 0%.',
+    );
+  }
+
   // Constraint 2: After-complete date fields require at least one deadline.
   // The date fields (visibleFromDate, visibleUntilDate) are meant to fire relative
   // to the last deadline. Boolean fields (hidden) are fine without deadlines.
@@ -419,12 +431,12 @@ export function validateGlobalDateConsistencyIssues(
 /**
  * Cross-rule credit consistency checks.
  *
- * 1. Early deadlines on overrides are forbidden when the base rule has a
+ * 1. Early deadlines on overrides are forbidden when the defaults have a
  *    custom due credit AND no override "clears" it. An override "clears" by
  *    supplying its own `due` with no `credit` field (default 100%). If some
  *    override clears, we allow early deadlines on overrides: the cascaded
  *    timeline may still reach default credit for some student configuration.
- *    Per-rule Constraint 3 handles the main rule and overrides that set
+ *    Per-rule Constraint 3 handles the defaults and overrides that set
  *    their own custom credit.
  *
  * 2. Late deadline credit must be strictly less than the maximum possible
@@ -457,12 +469,15 @@ export function validateGlobalCreditConsistencyIssues(
     for (const validationRule of validationRules) {
       if (validationRule.targetType === 'none') continue;
       const dc = validationRule.rule.dateControl;
+      // Skip overrides that set their own `due.credit` — per-rule Constraint 3
+      // reports those with a more accurate message ("custom due credit is set").
+      if (dc?.due?.credit !== undefined) continue;
       if (dc?.earlyDeadlines && dc.earlyDeadlines.length > 0) {
         pushIssue(
           issues,
           validationRule,
           ['dateControl', 'earlyDeadlines', 0, 'date'],
-          'Early deadlines are not allowed on overrides when the base rule uses custom due credit and no override clears it.',
+          'Early deadlines are not allowed when custom due credit is inherited.',
         );
       }
     }
