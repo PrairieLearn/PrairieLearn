@@ -67,8 +67,9 @@ async function prepareLocalsForRender(
   if (variant_with_submission_id == null) {
     throw new error.HttpStatusError(404, 'Instance question does not have a gradable submission.');
   }
-  resLocals.questionRenderContext = 'manual_grading';
-  await getAndRenderVariant(variant_with_submission_id, null, resLocals);
+  await getAndRenderVariant(variant_with_submission_id, null, resLocals, {
+    questionRenderContext: 'manual_grading',
+  });
 
   let conflict_grading_job: GradingJobData | null = null;
   if (query.conflict_grading_job_id) {

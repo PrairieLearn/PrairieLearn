@@ -13,10 +13,7 @@ import type { ResLocalsAssessment } from '../middlewares/selectAndAuthzAssessmen
 import type { ResLocalsAssessmentInstance } from '../middlewares/selectAndAuthzAssessmentInstance.js';
 import type { ResLocalsAssessmentQuestion } from '../middlewares/selectAndAuthzAssessmentQuestion.js';
 import type { ResLocalsInstanceQuestion } from '../middlewares/selectAndAuthzInstanceQuestion.js';
-import type {
-  ResLocalsInstructorQuestion,
-  ResLocalsInstructorQuestionSchema,
-} from '../middlewares/selectAndAuthzInstructorQuestion.js';
+import type { ResLocalsInstructorQuestion } from '../middlewares/selectAndAuthzInstructorQuestion.js';
 import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCount.js';
 
 import type { ResLocalsAuthnUser } from './authn.types.js';
@@ -39,9 +36,8 @@ interface ResLocalsForPageLookup {
   'instructor-instance-question': ResLocals &
     ResLocalsCourseIssueCount &
     ResLocalsCourseInstance &
-    ResLocalsInstructorQuestionSchema &
+    ResLocalsInstructorQuestion &
     ResLocalsInstanceQuestion & {
-      questionRenderContext: 'manual_grading' | 'ai_grading';
       navbarType: 'instructor';
     };
   'instructor-question': ResLocals &

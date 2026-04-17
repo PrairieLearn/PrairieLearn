@@ -379,6 +379,7 @@ describe('extractPageContext', () => {
         authn_user: { ...TEST_USER, foo: 'bar' },
         user: { ...TEST_USER, foo: 'bar' },
       }),
+      ...createBaseContext(),
       authn_user: { ...TEST_USER, foo: 'bar' },
       extraField: 'this should be stripped',
       anotherExtraField: 123,
@@ -389,6 +390,7 @@ describe('extractPageContext', () => {
         authn_user: TEST_USER as StaffUser,
         user: TEST_USER as StaffUser,
       }) as PageAuthzData,
+      ...createBaseContext(),
       authn_user: TEST_USER as StaffUser,
       authn_institution: TEST_INSTITUTION as StaffInstitution,
     };
