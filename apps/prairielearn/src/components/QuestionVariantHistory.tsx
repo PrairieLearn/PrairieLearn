@@ -1,3 +1,5 @@
+import { html } from '@prairielearn/html';
+
 import { getInstanceQuestionUrl } from '../lib/client/url.js';
 
 const MAX_DISPLAYED_VARIANTS = 10;
@@ -25,7 +27,21 @@ export function QuestionVariantHistory({
         <span
           // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml -- inline onclick needed for renderHtml() compatibility
           dangerouslySetInnerHTML={{
-            __html: `<button id="${collapseButtonId}" class="bg-white text-body p-0 m-0 border-0 rounded-0" aria-label="Show older variants" onclick="document.querySelectorAll('.${collapseClass}').forEach(e => e.style.display = ''); this.style.display = 'none';">&ctdot;</button>`,
+            __html: html`
+              <button
+                id="${collapseButtonId}"
+                class="bg-white text-body p-0 m-0 border-0 rounded-0"
+                aria-label="Show older variants"
+                onclick="
+                  // show all the hidden variant score buttons
+                  document.querySelectorAll('.${collapseClass}').forEach(e => e.style.display = '');
+                  // hide the ... button that triggered the expansion
+                  document.querySelectorAll('#${collapseButtonId}').forEach(e => e.style.display = 'none');
+                "
+              >
+                &ctdot;
+              </button>
+            `.toString(),
           }}
         />
       )}
