@@ -458,6 +458,7 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
           break;
         case 'allow-complex':
         case 'allow-trig-functions':
+        case 'allow-set-notation':
         case 'show-help-text':
         case 'show-score':
         case 'formula-editor':
