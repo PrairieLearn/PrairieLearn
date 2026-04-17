@@ -10,6 +10,41 @@ import sympy
 symbolic_input = importlib.import_module("pl-symbolic-input")
 
 
+def build_element_html(*attributes: str, answers_name: str = "test") -> str:
+    return "\n".join(
+        [
+            "<pl-symbolic-input",
+            f'    answers-name="{answers_name}"',
+            *[f"    {attribute}" for attribute in attributes],
+            "></pl-symbolic-input>",
+        ]
+    )
+
+
+def make_question_data(
+    *,
+    submitted_answers: dict[str, Any] | None = None,
+    raw_submitted_answers: dict[str, Any] | None = None,
+    correct_answers: dict[str, Any] | None = None,
+    answers_names: dict[str, Any] | None = None,
+    panel: str = "question",
+    editable: bool = True,
+) -> dict[str, Any]:
+    submitted_answers = submitted_answers or {}
+    return {
+        "submitted_answers": submitted_answers,
+        "raw_submitted_answers": (
+            raw_submitted_answers if raw_submitted_answers is not None else submitted_answers
+        ),
+        "correct_answers": correct_answers or {},
+        "answers_names": answers_names or {},
+        "format_errors": {},
+        "partial_scores": {},
+        "panel": panel,
+        "editable": editable,
+    }
+
+
 @pytest.mark.parametrize(
     ("sub", "expected"),
     [
@@ -124,16 +159,13 @@ def test_parse_without_variables_attribute_with_assumptions() -> None:
     correct_json = psu.sympy_to_json(correct_expr)
 
     # Simulate element HTML without variables attribute
-    element_html = '<pl-symbolic-input answers-name="test"></pl-symbolic-input>'
+    element_html = build_element_html()
 
     # Create mock data structure (simulating what the system passes to parse)
-    data: dict[str, Any] = {
-        "submitted_answers": {"test": "x + y"},
-        "raw_submitted_answers": {"test": "x + y"},
-        "correct_answers": {"test": correct_json},
-        "format_errors": {},
-        "partial_scores": {},
-    }
+    data = make_question_data(
+        submitted_answers={"test": "x + y"},
+        correct_answers={"test": correct_json},
+    )
 
     # This should NOT raise HasInvalidAssumptionError
     symbolic_input.parse(element_html, data)
@@ -153,21 +185,14 @@ def test_implicit_complex_rejected_with_no_simplify(a_sub: str) -> None:
     """
     correct_answer = psu.sympy_to_json(sympy.Integer(42))
 
-    element_html = """
-    <pl-symbolic-input
-        answers-name="test"
-        variables="x"
-        display-simplified-expression="false"
-    ></pl-symbolic-input>
-    """
+    element_html = build_element_html(
+        'variables="x"', 'display-simplified-expression="false"'
+    )
 
-    data: dict[str, Any] = {
-        "submitted_answers": {"test": a_sub},
-        "raw_submitted_answers": {"test": a_sub},
-        "correct_answers": {"test": correct_answer},
-        "format_errors": {},
-        "partial_scores": {},
-    }
+    data = make_question_data(
+        submitted_answers={"test": a_sub},
+        correct_answers={"test": correct_answer},
+    )
 
     symbolic_input.parse(element_html, data)
 
@@ -186,20 +211,12 @@ def test_complex_from_real_assumptions_produces_format_error(a_sub: str) -> None
     x = sympy.Symbol("x", real=True)
     correct_answer = psu.sympy_to_json(x ** (-1) - 1)
 
-    element_html = """
-    <pl-symbolic-input
-        answers-name="test"
-        variables="x"
-    ></pl-symbolic-input>
-    """
+    element_html = build_element_html('variables="x"')
 
-    data: dict[str, Any] = {
-        "submitted_answers": {"test": a_sub},
-        "raw_submitted_answers": {"test": a_sub},
-        "correct_answers": {"test": correct_answer},
-        "format_errors": {},
-        "partial_scores": {},
-    }
+    data = make_question_data(
+        submitted_answers={"test": a_sub},
+        correct_answers={"test": correct_answer},
+    )
 
     symbolic_input.parse(element_html, data)
 
@@ -222,21 +239,14 @@ def test_trig_no_crash_with_no_simplify(a_sub: str) -> None:
     """
     correct_answer = psu.sympy_to_json(sympy.Integer(2))
 
-    element_html = """
-    <pl-symbolic-input
-        answers-name="test"
-        variables="x"
-        display-simplified-expression="false"
-    ></pl-symbolic-input>
-    """
+    element_html = build_element_html(
+        'variables="x"', 'display-simplified-expression="false"'
+    )
 
-    data: dict[str, Any] = {
-        "submitted_answers": {"test": a_sub},
-        "raw_submitted_answers": {"test": a_sub},
-        "correct_answers": {"test": correct_answer},
-        "format_errors": {},
-        "partial_scores": {},
-    }
+    data = make_question_data(
+        submitted_answers={"test": a_sub},
+        correct_answers={"test": correct_answer},
+    )
 
     symbolic_input.parse(element_html, data)
 
@@ -250,25 +260,13 @@ def test_formula_editor_initial_value_respects_display_log_as_ln(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.chdir(Path(__file__).parent)
-    element_html = """
-    <pl-symbolic-input
-        answers-name="test"
-        variables="x"
-        formula-editor="true"
-        display-log-as-ln="true"
-        initial-value="log(x)"
-    ></pl-symbolic-input>
-    """
-    data: dict[str, Any] = {
-        "submitted_answers": {},
-        "raw_submitted_answers": {},
-        "correct_answers": {},
-        "answers_names": {},
-        "format_errors": {},
-        "partial_scores": {},
-        "panel": "question",
-        "editable": True,
-    }
+    element_html = build_element_html(
+        'variables="x"',
+        'formula-editor="true"',
+        'display-log-as-ln="true"',
+        'initial-value="log(x)"',
+    )
+    data = make_question_data()
 
     symbolic_input.prepare(element_html, data)
     rendered = symbolic_input.render(element_html, data)
@@ -296,24 +294,12 @@ def test_formula_editor_initial_value_respects_display_log_as_ln(
 def test_interval_endpoints_support_trig_and_arithmetic_expressions(
     answer: str, expected_expr: sympy.Basic
 ) -> None:
-    element_html = f"""
-    <pl-symbolic-input
-        answers-name="test"
-        allow-set-notation="true"
-        variables="x,y"
-        correct-answer="{answer}"
-    ></pl-symbolic-input>
-    """
-    data: dict[str, Any] = {
-        "submitted_answers": {"test": answer},
-        "raw_submitted_answers": {"test": answer},
-        "correct_answers": {},
-        "answers_names": {},
-        "format_errors": {},
-        "partial_scores": {},
-        "panel": "question",
-        "editable": True,
-    }
+    element_html = build_element_html(
+        'allow-set-notation="true"',
+        'variables="x,y"',
+        f'correct-answer="{answer}"',
+    )
+    data = make_question_data(submitted_answers={"test": answer})
 
     symbolic_input.prepare(element_html, data)
     assert data["correct_answers"]["test"] == answer
@@ -332,23 +318,11 @@ def test_interval_correct_answer_renders(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.chdir(Path(__file__).parent)
-    element_html = """
-    <pl-symbolic-input
-        answers-name="test"
-        allow-set-notation="true"
-        correct-answer="[1, 2] U [3, 4]"
-    ></pl-symbolic-input>
-    """
-    data: dict[str, Any] = {
-        "submitted_answers": {},
-        "raw_submitted_answers": {},
-        "correct_answers": {},
-        "answers_names": {},
-        "format_errors": {},
-        "partial_scores": {},
-        "panel": "answer",
-        "editable": False,
-    }
+    element_html = build_element_html(
+        'allow-set-notation="true"',
+        'correct-answer="[1, 2] U [3, 4]"',
+    )
+    data = make_question_data(panel="answer", editable=False)
 
     symbolic_input.prepare(element_html, data)
     rendered = symbolic_input.render(element_html, data)
