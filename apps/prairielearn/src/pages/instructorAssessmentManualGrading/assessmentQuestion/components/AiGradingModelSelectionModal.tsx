@@ -63,18 +63,18 @@ function ModelOption({
   model,
   isSelected,
   isAvailable,
-  isGradingEnabled,
+  aiGradingEnabled,
   relativeCost,
   onSelect,
 }: {
   model: (typeof AI_GRADING_MODELS)[number];
   isSelected: boolean;
   isAvailable: boolean;
-  isGradingEnabled: boolean;
+  aiGradingEnabled: boolean;
   relativeCost: string;
   onSelect: () => void;
 }) {
-  const isInteractive = isAvailable && isGradingEnabled;
+  const isInteractive = isAvailable && aiGradingEnabled;
   const option = (
     <label
       key={model.modelId}
@@ -129,13 +129,13 @@ function ModelOption({
 function ModelList({
   selectedModel,
   availableProviders,
-  isGradingEnabled,
+  aiGradingEnabled,
   relativeCosts,
   onSelect,
 }: {
   selectedModel: AiGradingModelId;
   availableProviders: EnumAiGradingProvider[];
-  isGradingEnabled: boolean;
+  aiGradingEnabled: boolean;
   relativeCosts: Record<string, string>;
   onSelect: (modelId: AiGradingModelId) => void;
 }) {
@@ -169,7 +169,7 @@ function ModelList({
               model={model}
               isSelected={selectedModel === model.modelId}
               isAvailable={availableProviders.includes(model.provider)}
-              isGradingEnabled={isGradingEnabled}
+              aiGradingEnabled={aiGradingEnabled}
               relativeCost={relativeCosts[model.modelId]}
               onSelect={() => onSelect(model.modelId)}
             />
@@ -196,7 +196,7 @@ function ModelList({
                 model={model}
                 isSelected={selectedModel === model.modelId}
                 isAvailable={availableProviders.includes(model.provider)}
-                isGradingEnabled={isGradingEnabled}
+                aiGradingEnabled={aiGradingEnabled}
                 relativeCost={relativeCosts[model.modelId]}
                 onSelect={() => onSelect(model.modelId)}
               />
@@ -418,7 +418,7 @@ export function AiGradingModelSelectionModal({
     };
   });
 
-  const isGradingEnabled =
+  const aiGradingEnabled =
     aiGradingAvailabilityState.kind === 'ready_with_keys' ||
     aiGradingAvailabilityState.kind === 'ready_with_credits';
 
@@ -440,7 +440,7 @@ export function AiGradingModelSelectionModal({
           <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}
-            isGradingEnabled={isGradingEnabled}
+            aiGradingEnabled={aiGradingEnabled}
             relativeCosts={relativeCosts}
             onSelect={setSelectedModel}
           />
@@ -459,7 +459,7 @@ export function AiGradingModelSelectionModal({
               </Button>
               <Button
                 variant="primary"
-                disabled={isPending || !isSelectedModelAvailable || !isGradingEnabled}
+                disabled={isPending || !isSelectedModelAvailable || !aiGradingEnabled}
                 type="submit"
               >
                 {isPending
