@@ -63,18 +63,18 @@ function ModelOption({
   model,
   isSelected,
   isAvailable,
-  isBlocked,
+  isGradingEnabled,
   relativeCost,
   onSelect,
 }: {
   model: (typeof AI_GRADING_MODELS)[number];
   isSelected: boolean;
   isAvailable: boolean;
-  isBlocked: boolean;
+  isGradingEnabled: boolean;
   relativeCost: string;
   onSelect: () => void;
 }) {
-  const isInteractive = isAvailable && !isBlocked;
+  const isInteractive = isAvailable && isGradingEnabled;
   const option = (
     <label
       key={model.modelId}
@@ -129,13 +129,13 @@ function ModelOption({
 function ModelList({
   selectedModel,
   availableProviders,
-  isBlocked,
+  isGradingEnabled,
   relativeCosts,
   onSelect,
 }: {
   selectedModel: AiGradingModelId;
   availableProviders: EnumAiGradingProvider[];
-  isBlocked: boolean;
+  isGradingEnabled: boolean;
   relativeCosts: Record<string, string>;
   onSelect: (modelId: AiGradingModelId) => void;
 }) {
@@ -169,7 +169,7 @@ function ModelList({
               model={model}
               isSelected={selectedModel === model.modelId}
               isAvailable={availableProviders.includes(model.provider)}
-              isBlocked={isBlocked}
+              isGradingEnabled={isGradingEnabled}
               relativeCost={relativeCosts[model.modelId]}
               onSelect={() => onSelect(model.modelId)}
             />
@@ -196,7 +196,7 @@ function ModelList({
                 model={model}
                 isSelected={selectedModel === model.modelId}
                 isAvailable={availableProviders.includes(model.provider)}
-                isBlocked={isBlocked}
+                isGradingEnabled={isGradingEnabled}
                 relativeCost={relativeCosts[model.modelId]}
                 onSelect={() => onSelect(model.modelId)}
               />
@@ -208,10 +208,10 @@ function ModelList({
   );
 }
 
-function SettingsLink({ url, children }: { url: string; children: React.ReactNode }) {
+function SettingsLink({ url, text }: { url: string; text: string }) {
   return (
     <a href={url} target="_blank" rel="noopener noreferrer">
-      {children}
+      {text}
     </a>
   );
 }
@@ -274,7 +274,7 @@ function AiGradingAvailabilityAlert({
           content: (
             <>
               Billing to custom API key &middot;{' '}
-              <SettingsLink url={aiGradingSettingsUrl}>Manage keys</SettingsLink>
+              <SettingsLink url={aiGradingSettingsUrl} text="Manage keys" />
             </>
           ),
         };
@@ -284,7 +284,7 @@ function AiGradingAvailabilityAlert({
           content: (
             <>
               No custom API keys configured &middot;{' '}
-              <SettingsLink url={aiGradingSettingsUrl}>Manage keys</SettingsLink>
+              <SettingsLink url={aiGradingSettingsUrl} text="Manage keys" />
             </>
           ),
         };
@@ -294,8 +294,7 @@ function AiGradingAvailabilityAlert({
           content: (
             <>
               Billing to credit pool &middot; {formatMilliDollars(state.creditBalanceMilliDollars)}{' '}
-              available &middot;{' '}
-              <SettingsLink url={aiGradingSettingsUrl}>Manage credits</SettingsLink>
+              available &middot; <SettingsLink url={aiGradingSettingsUrl} text="Manage credits" />
             </>
           ),
         };
@@ -305,7 +304,7 @@ function AiGradingAvailabilityAlert({
           content: (
             <>
               No credits remaining. Purchase credits on the{' '}
-              <SettingsLink url={aiGradingSettingsUrl}>AI grading settings</SettingsLink> page.
+              <SettingsLink url={aiGradingSettingsUrl} text="AI grading settings" /> page.
             </>
           ),
         };
@@ -441,7 +440,7 @@ export function AiGradingModelSelectionModal({
           <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}
-            isBlocked={!isGradingEnabled}
+            isGradingEnabled={isGradingEnabled}
             relativeCosts={relativeCosts}
             onSelect={setSelectedModel}
           />
