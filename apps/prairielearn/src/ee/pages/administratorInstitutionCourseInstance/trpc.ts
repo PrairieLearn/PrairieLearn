@@ -7,11 +7,17 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../../lib/config.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
-import { adjustCreditPool, selectCreditPool } from '../../../models/ai-grading-credit-pool.js';
+import {
+  adjustCreditPool,
+  selectCreditPool,
+  setCreditPoolBalance,
+} from '../../../models/ai-grading-credit-pool.js';
 import { selectCourseInstanceById } from '../../../models/course-instances.js';
 import { selectCourseById } from '../../../models/course.js';
 import { creditPoolProcedures, requireAiGradingFeature } from '../../lib/credit-pool-trpc.js';
 import { refundCreditPurchase } from '../../models/ai-grading-credit-checkout-sessions.js';
+
+const SET_BALANCE_MAX_ABS_DOLLARS = 1_000_000;
 
 export async function createAdminContext({ req, res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'plain'>;
@@ -41,11 +47,23 @@ const t = initTRPC.context<AdminTRPCContext>().create({
 const adjustCreditPoolMutation = t.procedure
   .use(requireAiGradingFeature)
   .input(
-    z.object({
-      action: z.enum(['add', 'deduct']),
-      amount_dollars: z.number().positive(),
-      credit_type: z.enum(['transferable', 'non_transferable']),
-    }),
+    z.discriminatedUnion('action', [
+      z.object({
+        action: z.literal('add'),
+        amount_dollars: z.number().positive(),
+        credit_type: z.enum(['transferable', 'non_transferable']),
+      }),
+      z.object({
+        action: z.literal('deduct'),
+        amount_dollars: z.number().positive(),
+        credit_type: z.enum(['transferable', 'non_transferable']),
+      }),
+      z.object({
+        action: z.literal('set'),
+        balance_dollars: z.number(),
+        credit_type: z.enum(['transferable', 'non_transferable']),
+      }),
+    ]),
   )
   .mutation(async (opts) => {
     if (opts.ctx.course_instance.deleted_at != null) {
@@ -54,6 +72,30 @@ const adjustCreditPoolMutation = t.procedure
         message: 'Cannot adjust credits for a deleted course instance',
       });
     }
+
+    if (opts.input.action === 'set') {
+      if (Math.abs(opts.input.balance_dollars) > SET_BALANCE_MAX_ABS_DOLLARS) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Balance must be between -$${SET_BALANCE_MAX_ABS_DOLLARS.toLocaleString()} and $${SET_BALANCE_MAX_ABS_DOLLARS.toLocaleString()}`,
+        });
+      }
+      if (opts.input.credit_type === 'non_transferable' && opts.input.balance_dollars < 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Non-transferable balance cannot be set below $0',
+        });
+      }
+      await setCreditPoolBalance({
+        course_instance_id: opts.ctx.course_instance.id,
+        target_milli_dollars: Math.round(opts.input.balance_dollars * 1000),
+        credit_type: opts.input.credit_type,
+        user_id: opts.ctx.authn_user.id,
+        reason: 'Admin set balance',
+      });
+      return await selectCreditPool(opts.ctx.course_instance.id);
+    }
+
     const maxDollars =
       opts.input.action === 'add'
         ? config.aiGradingCreditPoolMaxAddDollars
@@ -64,6 +106,21 @@ const adjustCreditPoolMutation = t.procedure
         message: `Amount exceeds the maximum of $${maxDollars} for ${opts.input.action} adjustments`,
       });
     }
+
+    if (opts.input.action === 'deduct') {
+      const current = await selectCreditPool(opts.ctx.course_instance.id);
+      const currentBalance =
+        opts.input.credit_type === 'transferable'
+          ? current.credit_transferable_milli_dollars
+          : current.credit_non_transferable_milli_dollars;
+      if (currentBalance <= 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Cannot deduct from a non-positive balance',
+        });
+      }
+    }
+
     const delta =
       Math.round(opts.input.amount_dollars * 1000) * (opts.input.action === 'deduct' ? -1 : 1);
     await adjustCreditPool({
