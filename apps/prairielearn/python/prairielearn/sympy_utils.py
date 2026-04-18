@@ -12,6 +12,7 @@ import re
 from collections import deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from functools import wraps
 from tokenize import NAME, OP, TokenError
 from types import CodeType
 from typing import Any, Literal, TypeAlias, TypedDict, TypeGuard, cast
@@ -20,6 +21,7 @@ import sympy
 from sympy.parsing.sympy_parser import (
     DICT,
     TOKEN,
+    TRANS,
     eval_expr,
     evaluateFalse,
     implicit_multiplication_application,
@@ -578,6 +580,7 @@ def evaluate_with_source(
     if ind != -1:
         raise HasCommentError(normalized_offsets[ind])
 
+    # the only thing this can't catch is open intervals `(-, -)`, checked later
     if not allow_set_notation and any(
         token in normalized_expr
         for token in ("[", "]", "{", "}", "∪", "∩")  # noqa: RUF001
@@ -639,6 +642,12 @@ def evaluate_with_source(
             set_literal_transformation,
             set_operation_transformation,
             interval_transformation,
+            *transformations,
+        )
+    else:
+        # check for open intervals
+        transformations = (
+            _err_on_transform(interval_transformation, HasSetNotationError),
             *transformations,
         )
 
@@ -1308,6 +1317,19 @@ def _try_rewrite_interval_literal(
         (NAME, "True" if end_text == ")" else "False"),
         (OP, ")"),
     ), end_index
+
+
+def _err_on_transform(trans: TRANS, exc: type[BaseSympyError]) -> TRANS:
+    @wraps(trans)
+    def _raise_on_transform(
+        in_tokens: list[TOKEN], local_dict: DICT, global_dict: DICT
+    ) -> list[TOKEN]:
+        out_tokens = trans(in_tokens, local_dict, global_dict)
+        if out_tokens != in_tokens:
+            raise exc()
+        return out_tokens
+
+    return _raise_on_transform
 
 
 def interval_transformation(

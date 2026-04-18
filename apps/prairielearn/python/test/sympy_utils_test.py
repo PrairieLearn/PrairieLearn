@@ -378,6 +378,7 @@ class TestSympy:
             "∩",
             "{}",
             "{1,2,3}",
+            "(0, 1)",
             "(0, 1]",
             "[0, 1)",
             "[0, 1]",
@@ -430,6 +431,14 @@ class TestSympy:
         out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
         assert isinstance(out, psu.SympyParseFailure)
         assert "syntax error" in out.error
+
+    @pytest.mark.parametrize("test", ["min(-n, -m, m)", "arctan2(m, n)", "cos(m)"])
+    def test_disabled_set_notation_does_not_break_function_calls(
+        self, test: str
+    ) -> None:
+        # technically this is redundant with some
+        out = psu.try_parse_string_as_sympy(test, ["n", "m"], allow_set_notation=False)
+        assert isinstance(out, psu.SympyParseSuccess)
 
     @pytest.mark.parametrize(
         ("a_sub", "variables", "expected"),
