@@ -127,6 +127,9 @@ function ModelList({
   const other = AI_GRADING_MODELS.filter((m) => !m.recommended);
   const hasOtherSelected = other.some((m) => m.modelId === selectedModel);
   const [otherExpanded, setOtherExpanded] = useState(hasOtherSelected);
+  const baselineModelName = AI_GRADING_MODELS.find(
+    (m) => m.modelId === DEFAULT_AI_GRADING_MODEL,
+  )?.name;
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -139,7 +142,7 @@ function ModelList({
               placement="top"
               tooltip={{
                 props: { id: 'cost-tooltip' },
-                body: 'Relative cost compared to the least expensive model, based on standard token usage.',
+                body: `Relative cost compared to the default model (${baselineModelName}), based on standard token usage.`,
               }}
             >
               <i className="bi bi-question-circle" aria-hidden="true" />

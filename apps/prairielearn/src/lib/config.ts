@@ -654,24 +654,21 @@ export const ConfigSchema = z.object({
       'claude-opus-4-7': TokenPricingSchema,
     })
     .default({
-      // Prices current as of 2026-04-16. Values obtained from
-      // https://developers.openai.com/api/docs/pricing
-      // OpenAI does not charge for cache writes.
+      // Prices current as of 2026-04-16. OpenAI does not charge for cache
+      // writes. Source: https://developers.openai.com/api/docs/pricing
       'gpt-4o-2024-11-20': { input: 2.5, cachedInput: 1.25, cacheWrite: 0, output: 10 },
       'gpt-5-2025-08-07': { input: 1.25, cachedInput: 0.125, cacheWrite: 0, output: 10 },
       'gpt-5.2-2025-12-11': { input: 1.75, cachedInput: 0.175, cacheWrite: 0, output: 14 },
       'gpt-5.4-mini': { input: 0.75, cachedInput: 0.075, cacheWrite: 0, output: 4.5 },
       'gpt-5.4': { input: 2.5, cachedInput: 0.25, cacheWrite: 0, output: 15 },
 
-      // Prices current as of 2026-04-16. Values obtained from
-      // https://ai.google.dev/gemini-api/docs/pricing
-      // Google does not charge for cache writes.
-      'gemini-3-flash-preview': { input: 0.5, cachedInput: 0.05, cacheWrite: 0, output: 3 },
-      'gemini-3.1-pro-preview': { input: 2, cachedInput: 0.2, cacheWrite: 0, output: 12 },
+      // Prices current as of 2026-04-16. Google does not charge for cache
+      // writes. Source: https://ai.google.dev/gemini-api/docs/pricing
+      'gemini-3-flash-preview': { input: 0.5, cachedInput: 0.05, cacheWrite: 0, output: 3 }, // https://ai.google.dev/gemini-api/docs/pricing#gemini-3-flash-preview
+      'gemini-3.1-pro-preview': { input: 2, cachedInput: 0.2, cacheWrite: 0, output: 12 }, // https://ai.google.dev/gemini-api/docs/pricing#gemini-3.1-pro-preview
 
-      // Prices current as of 2026-04-16. Values obtained from
-      // https://www.anthropic.com/pricing#api
-      // Anthropic charges 1.25x the input price for cache writes.
+      // Prices current as of 2026-04-16. Anthropic charges 1.25x the input
+      // price for cache writes. Source: https://claude.com/pricing
       'claude-haiku-4-5': { input: 1, cachedInput: 0.1, cacheWrite: 1.25, output: 5 },
       'claude-sonnet-4-6': { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 },
       'claude-opus-4-7': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
