@@ -341,6 +341,20 @@ describe('resolveAccessControl', () => {
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
     });
+
+    it('returns 100% credit when after release date and no deadlines', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: { releaseDate: '2025-03-01T00:00:00Z' },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(true);
+    });
   });
 
   describe('early deadline bonus credit', () => {
@@ -1060,6 +1074,92 @@ describe('resolveAccessControl', () => {
     });
   });
 
+  describe('after-complete visibility with PrairieTest', () => {
+    const ptExam = { uuid: 'pt-exam-1', readOnly: false };
+    const ptExamReadOnly = { uuid: 'pt-exam-1', readOnly: true };
+    const validReservation: PrairieTestReservation = {
+      examUuid: 'pt-exam-1',
+      accessEnd: new Date('2025-03-15T14:00:00Z'),
+    };
+
+    const visibilityConfigs = [
+      {
+        name: 'hide both questions and score',
+        afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+        showClosedAssessment: false,
+        showClosedAssessmentScore: false,
+      },
+      {
+        name: 'show both questions and score',
+        afterComplete: { questions: { hidden: false }, score: { hidden: false } },
+        showClosedAssessment: true,
+        showClosedAssessmentScore: true,
+      },
+      {
+        name: 'hide questions, show score',
+        afterComplete: { questions: { hidden: true }, score: { hidden: false } },
+        showClosedAssessment: false,
+        showClosedAssessmentScore: true,
+      },
+      {
+        name: 'show questions, hide score',
+        afterComplete: { questions: { hidden: false }, score: { hidden: true } },
+        showClosedAssessment: true,
+        showClosedAssessmentScore: false,
+      },
+    ];
+
+    it.each(visibilityConfigs)(
+      'active PT reservation: $name',
+      ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExam] }],
+          prairieTestReservations: [validReservation],
+        });
+        expect(result.authorized).toBe(true);
+        expect(result.active).toBe(true);
+        expect(result.showClosedAssessment).toBe(showClosedAssessment);
+        expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
+      },
+    );
+
+    it.each(visibilityConfigs)(
+      'readOnly PT reservation: $name',
+      ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExamReadOnly] }],
+          prairieTestReservations: [validReservation],
+        });
+        expect(result.authorized).toBe(true);
+        expect(result.active).toBe(false);
+        expect(result.showClosedAssessment).toBe(showClosedAssessment);
+        expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
+      },
+    );
+
+    // The gradebook displays rows even when access is denied and relies on
+    // `showClosedAssessmentScore` to decide whether to reveal prior scores, so
+    // the deny path must still honor the configured visibility flags.
+    it.each(visibilityConfigs)(
+      'Exam mode with no PT reservation: $name',
+      ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExam] }],
+          prairieTestReservations: [],
+        });
+        expect(result.authorized).toBe(false);
+        expect(result.showClosedAssessment).toBe(showClosedAssessment);
+        expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
+      },
+    );
+  });
+
   describe('credit date string formatting', () => {
     it('shows credit percentage and deadline', () => {
       const result = resolveAccessControl({
@@ -1223,8 +1323,9 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T00:00:00Z'),
       });
-      expect(result.credit).toBe(0);
-      expect(result.active).toBe(false);
+      expect(result.authorized).toBe(true);
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(true);
     });
   });
 
@@ -1329,28 +1430,6 @@ describe('resolveAccessControl', () => {
         date: new Date('2025-04-15T00:00:00Z'),
       });
       expect(afterAll.credit).toBe(0);
-    });
-  });
-
-  describe('no date control defaults', () => {
-    it.each([
-      { label: 'dateControl absent', rule: {} },
-      {
-        label: 'dateControl has no releaseDate',
-        rule: { dateControl: { dueDate: '2025-05-01T00:00:00Z' } },
-      },
-      {
-        label: 'dateControl has releaseDate but no deadlines/due date',
-        rule: { dateControl: { releaseDate: '2025-03-01T00:00:00Z' } },
-      },
-    ])('returns 0 credit when $label', ({ rule }) => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [makeMainRule(rule)],
-        date: new Date('2025-03-15T00:00:00Z'),
-      });
-      expect(result.credit).toBe(0);
-      expect(result.active).toBe(false);
     });
   });
 
@@ -1520,37 +1599,20 @@ describe('resolveAccessControl', () => {
       expect(result.showBeforeRelease).toBe(false);
     });
 
-    it('keeps closed scores hidden when Exam mode outlives the PrairieTest reservation', () => {
+    it('denies access when Exam mode outlives the PrairieTest reservation', () => {
       // Regression test for #12579: `ip_to_mode` can continue reporting Exam
       // mode for a short grace period after PrairieTest has already ended the
-      // reservation. The migrated PT rule should still respect the closed
-      // assessment visibility settings in that state.
+      // reservation.
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',
-        rules: [
-          {
-            ...makeMainRule({
-              dateControl: {
-                releaseDate: '2025-01-01T00:00:00Z',
-                dueDate: null,
-              },
-              afterComplete: {
-                questions: { hidden: true },
-                score: { hidden: true },
-              },
-            }),
-            prairietestExams: [ptExam],
-          },
-        ],
+        rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
         prairieTestReservations: [],
       });
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
       expect(result.examAccessEnd).toBeNull();
-      expect(result.showClosedAssessment).toBe(false);
-      expect(result.showClosedAssessmentScore).toBe(false);
       expect(result.showBeforeRelease).toBe(false);
     });
 
