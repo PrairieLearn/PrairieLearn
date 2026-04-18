@@ -15,7 +15,7 @@ import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryScalar, runInTransactionAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryScalar, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
@@ -374,25 +374,34 @@ export async function aiGrade({
 
   const question_course = await getQuestionCourse(question, course);
 
-  const runningJobCount = await getRunningAiGradingJobCountForCourseInstance(course_instance.id);
-  if (runningJobCount >= MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE) {
-    throw new error.HttpStatusError(
-      429,
-      `You've reached the limit of ${MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE} concurrent AI grading jobs. Please try again later.`,
-    );
-  }
+  // Hold an advisory lock for the course instance while we check the running
+  // job count and create the new server job, so concurrent requests can't both
+  // pass the limit check before either inserts its job_sequences row.
+  const serverJob = await runInTransactionAsync(async () => {
+    await execute(sql.ai_grading_concurrency_advisory_lock, {
+      course_instance_id: course_instance.id,
+    });
 
-  const serverJob = await createServerJob({
-    type: 'ai_grading',
-    description: 'Perform AI grading',
-    // Preserve effective-user context for job ownership while also recording the
-    // authenticated actor who initiated the AI grading operation.
-    userId: user_id,
-    authnUserId: authn_user_id,
-    courseId: course.id,
-    courseInstanceId: course_instance.id,
-    assessmentId: assessment.id,
-    assessmentQuestionId: assessment_question.id,
+    const runningJobCount = await getRunningAiGradingJobCountForCourseInstance(course_instance.id);
+    if (runningJobCount >= MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE) {
+      throw new error.HttpStatusError(
+        429,
+        `You've reached the limit of ${MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE} concurrent AI grading jobs. Please try again later.`,
+      );
+    }
+
+    return await createServerJob({
+      type: 'ai_grading',
+      description: 'Perform AI grading',
+      // Preserve effective-user context for job ownership while also recording the
+      // authenticated actor who initiated the AI grading operation.
+      userId: user_id,
+      authnUserId: authn_user_id,
+      courseId: course.id,
+      courseInstanceId: course_instance.id,
+      assessmentId: assessment.id,
+      assessmentQuestionId: assessment_question.id,
+    });
   });
 
   const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion({

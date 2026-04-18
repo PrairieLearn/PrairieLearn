@@ -63,25 +63,28 @@ function ModelOption({
   model,
   isSelected,
   isAvailable,
+  isBlocked,
   relativeCost,
   onSelect,
 }: {
   model: (typeof AI_GRADING_MODELS)[number];
   isSelected: boolean;
   isAvailable: boolean;
+  isBlocked: boolean;
   relativeCost: string;
   onSelect: () => void;
 }) {
+  const isInteractive = isAvailable && !isBlocked;
   const option = (
     <label
       key={model.modelId}
       htmlFor={`model-${model.modelId}`}
       className={clsx('rounded-2 px-3 py-2 mb-0 border', {
         'border-primary bg-primary bg-opacity-10': isSelected,
-        'border-transparent': !isSelected && isAvailable,
-        'opacity-75 border-transparent': !isAvailable,
+        'border-transparent': !isSelected && isInteractive,
+        'opacity-75 border-transparent': !isInteractive,
       })}
-      style={{ cursor: isAvailable ? 'pointer' : 'default' }}
+      style={{ cursor: isInteractive ? 'pointer' : 'default' }}
     >
       <div className="d-flex align-items-center justify-content-between">
         <Form.Check
@@ -89,7 +92,7 @@ function ModelOption({
           id={`model-${model.modelId}`}
           name="ai-grading-model"
           className="mb-0"
-          disabled={!isAvailable}
+          disabled={!isInteractive}
           checked={isSelected}
           label={
             <div>
@@ -126,11 +129,13 @@ function ModelOption({
 function ModelList({
   selectedModel,
   availableProviders,
+  isBlocked,
   relativeCosts,
   onSelect,
 }: {
   selectedModel: AiGradingModelId;
   availableProviders: EnumAiGradingProvider[];
+  isBlocked: boolean;
   relativeCosts: Record<string, string>;
   onSelect: (modelId: AiGradingModelId) => void;
 }) {
@@ -164,6 +169,7 @@ function ModelList({
               model={model}
               isSelected={selectedModel === model.modelId}
               isAvailable={availableProviders.includes(model.provider)}
+              isBlocked={isBlocked}
               relativeCost={relativeCosts[model.modelId]}
               onSelect={() => onSelect(model.modelId)}
             />
@@ -190,6 +196,7 @@ function ModelList({
                 model={model}
                 isSelected={selectedModel === model.modelId}
                 isAvailable={availableProviders.includes(model.provider)}
+                isBlocked={isBlocked}
                 relativeCost={relativeCosts[model.modelId]}
                 onSelect={() => onSelect(model.modelId)}
               />
@@ -293,15 +300,12 @@ function AiGradingAvailabilityAlert({
           ),
         };
       case 'no_credits':
-        // TODO: Update to "No credits remaining. Purchase credits in the
-        // AI grading settings page." when the Stripe integration PR is merged.
         return {
           variant: 'danger',
           content: (
             <>
               No credits remaining. Purchase credits on the{' '}
-              <SettingsLink url={aiGradingSettingsUrl}>AI grading settings</SettingsLink>{' '}
-              page.
+              <SettingsLink url={aiGradingSettingsUrl}>AI grading settings</SettingsLink> page.
             </>
           ),
         };
@@ -393,8 +397,10 @@ export function AiGradingModelSelectionModal({
     : false;
 
   const aiGradingAvailabilityState = run<AiGradingAvailabilityState>(() => {
-    if (isAvailabilityError) return { kind: 'error' };
+    // Show the spinner while a refetch is in flight so the error UI doesn't
+    // persist after the user clicks "Try again".
     if (isAvailabilityFetching || aiGradingAvailabilityInfo == null) return { kind: 'loading' };
+    if (isAvailabilityError) return { kind: 'error' };
 
     const { running_job_count, max_concurrent_jobs, credit_balance_milli_dollars } =
       aiGradingAvailabilityInfo;
@@ -435,6 +441,7 @@ export function AiGradingModelSelectionModal({
           <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}
+            isBlocked={!isGradingEnabled}
             relativeCosts={relativeCosts}
             onSelect={setSelectedModel}
           />
