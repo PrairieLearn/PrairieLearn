@@ -198,7 +198,7 @@ function RefundConfirmationModal({
 }) {
   const creditAmount = row.checkout_session_amount_milli_dollars ?? 0;
   const creditsSpent = Math.max(0, creditAmount - transferableMilliDollars);
-  const creditsToDeduct = Math.min(creditAmount, transferableMilliDollars);
+  const creditsToDeduct = Math.max(0, Math.min(creditAmount, transferableMilliDollars));
 
   return (
     <Modal show centered onHide={isRefunding ? undefined : onCancel}>

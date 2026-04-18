@@ -149,11 +149,11 @@ async function deductCreditsForAiGradingWithLockedPool(
  * the *outer* transaction, not just this function.
  *
  * This function always deducts the full cost. Transferable credits are
- * allowed to go negative so the ledger reflects the true cost of work
- * already done; non-transferable is clamped at 0. Callers must still gate
- * new work on `total_milli_dollars <= 0` before making API calls (see the
- * batch-level and per-submission credit checks in ai-grading.ts), so users
- * are prompted to buy credits before the balance drifts further.
+ * allowed to go negative so the credit pool reflects the true cost of
+ * work already done; non-transferable is clamped at 0. Callers must still
+ * gate new work on `total_milli_dollars <= 0` before making API calls
+ * (see the batch-level and per-submission credit checks in ai-grading.ts),
+ * so users are prompted to buy credits before the balance drifts further.
  *
  * @returns `{ ai_grading_job_id, deducted_milli_dollars }` where
  * `deducted_milli_dollars` always equals `cost_milli_dollars`.
@@ -214,6 +214,65 @@ export async function deductCreditsForAiGrading(
 }
 
 /**
+ * Lock the credit pool, compute a delta from the current balance, and write
+ * the balance update + credit pool change row in a single transaction. A `0`
+ * delta is a no-op.
+ */
+async function applyCreditPoolMutation({
+  course_instance_id,
+  credit_type,
+  user_id,
+  reason,
+  checkout_session_id,
+  computeDelta,
+}: {
+  course_instance_id: string;
+  credit_type: 'transferable' | 'non_transferable';
+  user_id: string;
+  reason: string;
+  checkout_session_id?: string | null;
+  computeDelta: (currentBalance: number) => number;
+}): Promise<void> {
+  await runInTransactionAsync(async () => {
+    const before = await queryRow(
+      sql.select_credit_pool_for_update,
+      { course_instance_id },
+      CreditPoolSchema,
+    );
+
+    const currentBalance =
+      credit_type === 'transferable'
+        ? before.credit_transferable_milli_dollars
+        : before.credit_non_transferable_milli_dollars;
+
+    const delta = computeDelta(currentBalance);
+    if (delta === 0) return;
+
+    await execute(sql.update_credit_balances, {
+      course_instance_id,
+      credit_transferable_milli_dollars:
+        before.credit_transferable_milli_dollars + (credit_type === 'transferable' ? delta : 0),
+      credit_non_transferable_milli_dollars:
+        before.credit_non_transferable_milli_dollars +
+        (credit_type === 'non_transferable' ? delta : 0),
+    });
+
+    await execute(sql.insert_credit_pool_change, {
+      course_instance_id,
+      credit_before_milli_dollars: before.total_milli_dollars,
+      credit_after_milli_dollars: before.total_milli_dollars + delta,
+      delta_milli_dollars: delta,
+      credit_type,
+      reason,
+      user_id,
+      ai_grading_job_id: null,
+      assessment_question_id: null,
+      checkout_session_id: checkout_session_id ?? null,
+    });
+  });
+}
+
+/**
  * Adjust the credit pool for a course instance by a delta amount (admin operation).
  * Positive delta adds credits, negative delta removes credits. A deduction is
  * capped at the selected pool's current balance (deductions never take a
@@ -237,56 +296,26 @@ export async function adjustCreditPool({
 }): Promise<void> {
   if (delta_milli_dollars === 0) return;
 
-  await runInTransactionAsync(async () => {
-    const before = await queryRow(
-      sql.select_credit_pool_for_update,
-      { course_instance_id },
-      CreditPoolSchema,
-    );
-
-    const currentBalance =
-      credit_type === 'transferable'
-        ? before.credit_transferable_milli_dollars
-        : before.credit_non_transferable_milli_dollars;
-
-    // Refuse to deduct from a non-positive balance so a transferable pool
-    // that is already at or below 0 cannot be driven further negative.
-    if (delta_milli_dollars < 0 && currentBalance <= 0) return;
-
-    // Cap deductions so the balance doesn't go negative.
-    const cappedDelta = Math.max(delta_milli_dollars, -currentBalance);
-
-    if (cappedDelta === 0) return;
-
-    await execute(sql.update_credit_balances, {
-      course_instance_id,
-      credit_transferable_milli_dollars:
-        before.credit_transferable_milli_dollars +
-        (credit_type === 'transferable' ? cappedDelta : 0),
-      credit_non_transferable_milli_dollars:
-        before.credit_non_transferable_milli_dollars +
-        (credit_type === 'non_transferable' ? cappedDelta : 0),
-    });
-
-    await execute(sql.insert_credit_pool_change, {
-      course_instance_id,
-      credit_before_milli_dollars: before.total_milli_dollars,
-      credit_after_milli_dollars: before.total_milli_dollars + cappedDelta,
-      delta_milli_dollars: cappedDelta,
-      credit_type,
-      reason,
-      user_id,
-      ai_grading_job_id: null,
-      assessment_question_id: null,
-      checkout_session_id: checkout_session_id ?? null,
-    });
+  await applyCreditPoolMutation({
+    course_instance_id,
+    credit_type,
+    user_id,
+    reason,
+    checkout_session_id,
+    computeDelta: (currentBalance) => {
+      // Once transferable can go negative, a fresh deduct here would silently
+      // drive it further; block it and require an explicit `setCreditPoolBalance`.
+      if (delta_milli_dollars < 0 && currentBalance <= 0) return 0;
+      return Math.max(delta_milli_dollars, -currentBalance);
+    },
   });
 }
 
 /**
  * Set the credit pool balance for a specific credit type to an exact value
- * (admin operation). The change is recorded in the ledger as a delta so the
- * transaction history remains consistent with add/deduct operations.
+ * (admin operation). The change is recorded as a delta in the credit pool
+ * changes table so the transaction history remains consistent with
+ * add/deduct operations.
  *
  * Non-transferable balances cannot be set below 0; the caller must validate
  * this before calling.
@@ -308,45 +337,12 @@ export async function setCreditPoolBalance({
     throw new Error('Non-transferable credit balance cannot be set below 0');
   }
 
-  await runInTransactionAsync(async () => {
-    const before = await queryRow(
-      sql.select_credit_pool_for_update,
-      { course_instance_id },
-      CreditPoolSchema,
-    );
-
-    const currentBalance =
-      credit_type === 'transferable'
-        ? before.credit_transferable_milli_dollars
-        : before.credit_non_transferable_milli_dollars;
-
-    const delta = target_milli_dollars - currentBalance;
-    if (delta === 0) return;
-
-    await execute(sql.update_credit_balances, {
-      course_instance_id,
-      credit_transferable_milli_dollars:
-        credit_type === 'transferable'
-          ? target_milli_dollars
-          : before.credit_transferable_milli_dollars,
-      credit_non_transferable_milli_dollars:
-        credit_type === 'non_transferable'
-          ? target_milli_dollars
-          : before.credit_non_transferable_milli_dollars,
-    });
-
-    await execute(sql.insert_credit_pool_change, {
-      course_instance_id,
-      credit_before_milli_dollars: before.total_milli_dollars,
-      credit_after_milli_dollars: before.total_milli_dollars + delta,
-      delta_milli_dollars: delta,
-      credit_type,
-      reason,
-      user_id,
-      ai_grading_job_id: null,
-      assessment_question_id: null,
-      checkout_session_id: null,
-    });
+  await applyCreditPoolMutation({
+    course_instance_id,
+    credit_type,
+    user_id,
+    reason,
+    computeDelta: (currentBalance) => target_milli_dollars - currentBalance,
   });
 }
 

@@ -449,9 +449,9 @@ export async function aiGrade({
     // check without FOR UPDATE — concurrent batches may both pass this check.
     // Credits are deducted per-submission *after* the API call, and the full
     // cost is always recorded. Transferable credits are allowed to go
-    // negative so the ledger reflects the true cost of work already done;
-    // the next batch is held by this `<= 0` pre-check until the instructor
-    // purchases credits.
+    // negative so the credit pool reflects the true cost of work already
+    // done; the next batch is held by this `<= 0` pre-check until the
+    // instructor purchases credits.
     if (trackRateLimitAndCost) {
       const creditPool = await selectCreditPool(course_instance.id);
       if (creditPool.total_milli_dollars <= 0) {
@@ -526,7 +526,7 @@ export async function aiGrade({
         if (pool.total_milli_dollars <= 0) {
           hasAiGradingCredits = false;
           logger.error(
-            'AI grading credit balance depleted. Purchase credits on the AI grading settings page to resume. AI grading jobs that are still in progress will continue to completion.',
+            'No credits remaining. Purchase credits on the AI grading settings page. AI grading jobs that are still in progress will continue to completion.',
           );
         }
       }

@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
+import { SET_BALANCE_MAX_ABS_DOLLARS } from '../../../lib/ai-grading-credits.js';
 import { config } from '../../../lib/config.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import {
@@ -16,8 +17,6 @@ import { selectCourseInstanceById } from '../../../models/course-instances.js';
 import { selectCourseById } from '../../../models/course.js';
 import { creditPoolProcedures, requireAiGradingFeature } from '../../lib/credit-pool-trpc.js';
 import { refundCreditPurchase } from '../../models/ai-grading-credit-checkout-sessions.js';
-
-const SET_BALANCE_MAX_ABS_DOLLARS = 1_000_000;
 
 export async function createAdminContext({ req, res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'plain'>;

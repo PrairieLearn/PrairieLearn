@@ -1,4 +1,3 @@
-import clsx from 'clsx';
 import { useId } from 'react';
 
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -37,69 +36,75 @@ export function BalanceCards({
 
   const dimStyle = dimmed ? { opacity: 0.4 } : undefined;
 
-  const totalNegative = pool.total_milli_dollars < 0;
-  const transferableNegative = pool.credit_transferable_milli_dollars < 0;
+  const showNegativeBalanceExplainer =
+    context === 'instructor' && pool.credit_transferable_milli_dollars < 0;
 
   return (
-    <div className="row mb-3 g-3">
-      <div className="col-md-4">
-        <div className="border rounded p-3 text-center" style={dimStyle}>
-          <div className="text-muted small">Total available</div>
-          <div className={clsx('h4 mb-0', totalNegative && 'text-danger')}>
-            {formatMilliDollars(pool.total_milli_dollars)}
+    <>
+      <div className="row mb-3 g-3">
+        <div className="col-md-4">
+          <div className="border rounded p-3 text-center" style={dimStyle}>
+            <div className="text-muted small">Total available</div>
+            <div className="h4 mb-0">{formatMilliDollars(pool.total_milli_dollars)}</div>
           </div>
         </div>
-      </div>
-      <div className="col-md-4">
-        <div className="border rounded p-3 text-center" style={dimStyle}>
-          <div className="text-muted small">
-            Transferable{' '}
-            <OverlayTrigger
-              placement="top"
-              tooltip={{
-                body: tooltips.transferable,
-                props: { id: transferableTooltipId },
-              }}
-            >
-              <button
-                type="button"
-                className="btn btn-link p-0 border-0 align-baseline"
-                aria-label="More information about transferable credits"
+        <div className="col-md-4">
+          <div className="border rounded p-3 text-center" style={dimStyle}>
+            <div className="text-muted small">
+              Transferable{' '}
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  body: tooltips.transferable,
+                  props: { id: transferableTooltipId },
+                }}
               >
-                <i className="bi bi-info-circle" aria-hidden="true" />
-              </button>
-            </OverlayTrigger>
-          </div>
-          <div className={clsx('h5 mb-0', transferableNegative && 'text-danger')}>
-            {formatMilliDollars(pool.credit_transferable_milli_dollars)}
+                <button
+                  type="button"
+                  className="btn btn-link p-0 border-0 align-baseline"
+                  aria-label="More information about transferable credits"
+                >
+                  <i className="bi bi-info-circle" aria-hidden="true" />
+                </button>
+              </OverlayTrigger>
+            </div>
+            <div className="h5 mb-0">
+              {formatMilliDollars(pool.credit_transferable_milli_dollars)}
+            </div>
           </div>
         </div>
-      </div>
-      <div className="col-md-4">
-        <div className="border rounded p-3 text-center" style={dimStyle}>
-          <div className="text-muted small">
-            Non-transferable{' '}
-            <OverlayTrigger
-              placement="top"
-              tooltip={{
-                body: tooltips.nonTransferable,
-                props: { id: nonTransferableTooltipId },
-              }}
-            >
-              <button
-                type="button"
-                className="btn btn-link p-0 border-0 align-baseline"
-                aria-label="More information about non-transferable credits"
+        <div className="col-md-4">
+          <div className="border rounded p-3 text-center" style={dimStyle}>
+            <div className="text-muted small">
+              Non-transferable{' '}
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  body: tooltips.nonTransferable,
+                  props: { id: nonTransferableTooltipId },
+                }}
               >
-                <i className="bi bi-info-circle" aria-hidden="true" />
-              </button>
-            </OverlayTrigger>
-          </div>
-          <div className="h5 mb-0">
-            {formatMilliDollars(pool.credit_non_transferable_milli_dollars)}
+                <button
+                  type="button"
+                  className="btn btn-link p-0 border-0 align-baseline"
+                  aria-label="More information about non-transferable credits"
+                >
+                  <i className="bi bi-info-circle" aria-hidden="true" />
+                </button>
+              </OverlayTrigger>
+            </div>
+            <div className="h5 mb-0">
+              {formatMilliDollars(pool.credit_non_transferable_milli_dollars)}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      {showNegativeBalanceExplainer && (
+        <p className="text-muted small mb-3">
+          A negative transferable balance happens when in-flight AI grading requests complete after
+          your credits run out. The outstanding amount is deducted from your next credit purchase.
+        </p>
+      )}
+    </>
   );
 }

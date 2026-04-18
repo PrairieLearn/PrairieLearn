@@ -1,4 +1,10 @@
 /**
+ * Upper/lower bound on the magnitude of an admin "set balance" target, in dollars.
+ * Enforced on both the client (input validation) and server (trpc handler).
+ */
+export const SET_BALANCE_MAX_ABS_DOLLARS = 1_000_000;
+
+/**
  * Format milli-dollars as a display string.
  * Examples: 4509 → "$4.51", 0 → "$0.00", 5 → "<$0.01", -4509 → "-$4.51"
  */
