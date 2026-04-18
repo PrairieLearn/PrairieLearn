@@ -23,10 +23,13 @@ export function computeAiGradingRelativeCosts(
       cost: p.input * BASELINE_INPUT_TOKENS + p.output * totalOutputTokens,
     };
   });
-  const minCost = Math.min(...models.map((m) => m.cost));
+  const baselineCost = models.find((m) => m.modelId === DEFAULT_AI_GRADING_MODEL)?.cost;
+  if (baselineCost === undefined) {
+    throw new Error(`Missing pricing for default AI grading model: ${DEFAULT_AI_GRADING_MODEL}`);
+  }
   return Object.fromEntries(
     models.map(({ modelId, cost }) => {
-      const multiplier = cost / minCost;
+      const multiplier = cost / baselineCost;
       // Truncate to one decimal place (not rounded).
       const truncated = Math.floor(multiplier * 10) / 10;
       const label =
