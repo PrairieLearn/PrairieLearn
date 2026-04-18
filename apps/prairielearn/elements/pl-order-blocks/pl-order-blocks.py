@@ -346,7 +346,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         all_blocks = data["params"][answer_name]
         initially_placed_blocks = sorted(
-            [block for block in all_blocks if block["initially_placed"]],
+            [block for block in all_blocks if block.get("initially_placed")],
             key=lambda x: x["index"],
         )
 
