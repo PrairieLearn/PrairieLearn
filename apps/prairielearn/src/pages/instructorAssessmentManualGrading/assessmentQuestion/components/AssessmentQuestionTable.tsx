@@ -79,6 +79,7 @@ interface AssessmentQuestionTableProps {
   assessmentQuestion: StaffAssessmentQuestion;
   questionQid: string;
   aiGradingMode: boolean;
+  aiSubmissionGroupingEnabled: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
@@ -119,6 +120,7 @@ export function AssessmentQuestionTable({
   assessmentQuestion,
   questionQid,
   aiGradingMode,
+  aiSubmissionGroupingEnabled,
   rubricData,
   instanceQuestionGroups,
   courseStaff,
@@ -743,7 +745,9 @@ export function AssessmentQuestionTable({
                     </Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
-                {!availableAiGradingProviders.includes('openai') ? (
+                {!aiSubmissionGroupingEnabled ? null : !availableAiGradingProviders.includes(
+                    'openai',
+                  ) ? (
                   <OverlayTrigger
                     tooltip={{
                       body: 'No OpenAI API key is configured. Add a key in AI grading settings to use submission grouping.',
