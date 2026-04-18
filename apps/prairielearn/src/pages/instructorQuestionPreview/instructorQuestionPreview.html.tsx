@@ -13,7 +13,6 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
-import type { ResLocalsQuestionRender } from '../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function InstructorQuestionPreview({
@@ -35,7 +34,7 @@ export function InstructorQuestionPreview({
   renderSubmissionSearchParams: URLSearchParams;
   readmeHtml: string;
   questionCopyTargets: CopyTarget[] | null;
-  resLocals: ResLocalsForPage<'instructor-question'> & ResLocalsQuestionRender;
+  resLocals: ResLocalsForPage<'instructor-question'>;
 }) {
   assert(resLocals.question.qid !== null);
 

@@ -23,7 +23,6 @@ import {
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { getAndRenderVariant } from '../../../lib/question-render.js';
-import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
@@ -169,7 +168,7 @@ router.use(
 
 router.get(
   '/',
-  typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     const messages = await selectAiQuestionGenerationMessages(res.locals.question);
 
     const initialMessages = messages.map((message): QuestionGenerationUIMessage => {
@@ -434,7 +433,7 @@ router.post(
 
 router.get(
   '/variant',
-  typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     // This endpoint is JSON-only; the client patches the preview without a full page reload.
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
 
@@ -462,7 +461,7 @@ router.get(
 
 router.post(
   '/variant',
-  typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
       // This endpoint is JSON-only; the client patches the preview without a full page reload.
       const variantId = await processSubmission(req, res);
