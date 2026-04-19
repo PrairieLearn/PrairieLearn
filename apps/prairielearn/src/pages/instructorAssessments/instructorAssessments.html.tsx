@@ -311,7 +311,10 @@ function CreateAssessmentModal({
           <option value="Exam">Exam</option>
         </select>
         <small id="type_help" class="form-text text-muted">
-          The type of the assessment. This can be either Homework or Exam.
+          The type of the assessment. This can be either
+          <a href="https://docs.prairielearn.com/assessment/configuration/#assessment-types">
+            Homework or Exam</a
+          >.
         </small>
       </div>
       <div class="mb-3">

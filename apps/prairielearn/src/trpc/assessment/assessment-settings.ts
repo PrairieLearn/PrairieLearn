@@ -52,6 +52,25 @@ const updateAssessment = t.procedure
       auto_close: z.boolean(),
       require_honor_code: z.boolean(),
       honor_code: z.string().optional(),
+      max_points: z.preprocess(
+        (v) => (typeof v === 'number' && Number.isNaN(v) ? null : v),
+        z.number().nullable(),
+      ),
+      max_bonus_points: z.preprocess(
+        (v) => (typeof v === 'number' && Number.isNaN(v) ? null : v),
+        z.number().nullable(),
+      ),
+      constant_question_value: z.boolean(),
+      shuffle_questions: z.boolean(),
+      advance_score_perc: z.preprocess(
+        (v) => (typeof v === 'number' && Number.isNaN(v) ? null : v),
+        z.number().nullable(),
+      ),
+      allow_real_time_grading: z.boolean(),
+      grade_rate_minutes: z.preprocess(
+        (v) => (typeof v === 'number' && Number.isNaN(v) ? null : v),
+        z.number().nullable(),
+      ),
       origHash: z.string(),
       tools: z.record(z.string(), z.boolean()).optional(),
     }),
@@ -152,6 +171,53 @@ const updateAssessment = t.procedure
         '',
       );
     }
+
+    // Scoring
+    assessmentInfo.maxPoints = propertyValueWithDefault(
+      assessmentInfo.maxPoints,
+      input.max_points ?? undefined,
+      undefined,
+    );
+    assessmentInfo.maxBonusPoints = propertyValueWithDefault(
+      assessmentInfo.maxBonusPoints,
+      input.max_bonus_points ?? undefined,
+      (v: number | null | undefined) => v == null || v === 0,
+    );
+    if (assessment.type === 'Homework') {
+      assessmentInfo.constantQuestionValue = propertyValueWithDefault(
+        assessmentInfo.constantQuestionValue,
+        input.constant_question_value,
+        false,
+      );
+    }
+
+    // Question behaviour
+    assessmentInfo.shuffleQuestions = propertyValueWithDefault(
+      assessmentInfo.shuffleQuestions,
+      input.shuffle_questions,
+      assessment.type === 'Exam',
+    );
+    if (assessment.type === 'Exam') {
+      assessmentInfo.advanceScorePerc = propertyValueWithDefault(
+        assessmentInfo.advanceScorePerc,
+        input.advance_score_perc ?? undefined,
+        undefined,
+      );
+    }
+
+    // Grading
+    if (assessment.type === 'Exam') {
+      assessmentInfo.allowRealTimeGrading = propertyValueWithDefault(
+        assessmentInfo.allowRealTimeGrading,
+        input.allow_real_time_grading,
+        true,
+      );
+    }
+    assessmentInfo.gradeRateMinutes = propertyValueWithDefault(
+      assessmentInfo.gradeRateMinutes,
+      input.grade_rate_minutes ?? undefined,
+      (v: number | null | undefined) => v == null || v === 0,
+    );
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
 

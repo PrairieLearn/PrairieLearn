@@ -660,7 +660,7 @@ export async function getAndRenderVariant(
       },
       submittedAnswer: submission?.submitted_answer ?? null,
       feedback: submission?.feedback ?? null,
-      showCorrectAnswer: locals.showCorrectAnswer ? variant.true_answer : null,
+      trueAnswer: locals.showCorrectAnswer ? variant.true_answer : null,
       submissions: submissions.length > 0 ? submissions : null,
     });
 
@@ -841,7 +841,6 @@ export async function renderPanelsForSubmission({
         assessment,
         question,
         variant,
-        urlPrefix,
         instance_question_info: { question_number, previous_variants },
         allowGradeLeftMs,
       }).toString();

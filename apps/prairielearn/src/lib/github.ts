@@ -38,20 +38,24 @@ function getGithubClient() {
 }
 
 /**
- * Checks whether a repository already exists on GitHub. This catches cases
- * that can't be detected from the database alone, such as GitHub redirects
- * from renamed repositories.
+ * Checks whether a repository already exists on GitHub.
  */
 export async function checkGithubRepositoryExists(repoName: string): Promise<boolean> {
   const client = getGithubClient();
   if (client === null) return false;
 
   try {
-    await client.repos.get({
+    const response = await client.repos.get({
       owner: config.githubCourseOwner,
       repo: repoName,
     });
-    return true;
+    // If the repository was renamed, GitHub returns a 301 redirect which
+    // Octokit follows automatically, yielding the renamed repository's data.
+    // GitHub allows the old name to be reused in that case, so we treat a
+    // mismatch between the requested name and the returned name as the
+    // repository not existing at the requested name. Repository names are
+    // case-insensitive, so we compare case-insensitively.
+    return response.data.name.toLowerCase() === repoName.toLowerCase();
   } catch (err: any) {
     if (err.status === 404) return false;
     throw err;
