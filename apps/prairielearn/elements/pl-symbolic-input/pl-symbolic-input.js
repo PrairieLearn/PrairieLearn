@@ -734,13 +734,13 @@
 
     if (allowSets) {
       inlineShortcuts.cup = { value: '{#@} \\cup {#?}' };
-      inlineShortcuts.U = inlineShortcuts.cup;
       inlineShortcuts['\\cup'] = inlineShortcuts.cup;
+      inlineShortcuts.U = inlineShortcuts.cup;
+      inlineShortcuts['|'] = inlineShortcuts.cup;
 
       inlineShortcuts.cap = { value: '{#@} \\cap {#?}' };
       inlineShortcuts['\\cap'] = inlineShortcuts.cap;
       inlineShortcuts['&'] = inlineShortcuts.cap;
-      // inlineShortcuts['|'] = inlineShortcuts.cap;
     }
 
     const shortcutProxy = makeShortcutProxy(inlineShortcuts, mf);
