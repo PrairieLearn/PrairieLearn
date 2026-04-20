@@ -29,7 +29,13 @@ export function PublicLinkSharing({
       <div className="mb-3">
         <label htmlFor="publicLink">Public link</label>
         <InputGroup>
-          <Form.Control type="text" id="publicLink" value={publicLink} disabled />
+          <Form.Control
+            type="text"
+            id="publicLink"
+            className="bg-body-secondary"
+            value={publicLink}
+            readOnly
+          />
           <OverlayTrigger
             tooltip={{
               body: copied ? 'Copied!' : 'Copy',
@@ -86,7 +92,13 @@ export function StudentLinkSharing({
         Student link
       </label>
       <InputGroup>
-        <Form.Control type="text" id="student_link" value={studentLink} disabled />
+        <Form.Control
+          type="text"
+          id="student_link"
+          className="bg-body-secondary"
+          value={studentLink}
+          readOnly
+        />
         <OverlayTrigger
           tooltip={{
             body: copied ? 'Copied!' : 'Copy',
