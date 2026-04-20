@@ -55,8 +55,6 @@ router.get(
       if (aiGradingEnabled && req.query.ai_grading_preview === 'true') return 'ai_grading';
       return undefined;
     });
-    const manualGradingPreviewEnabled = questionRenderContext === 'manual_grading';
-    const aiGradingPreviewEnabled = questionRenderContext === 'ai_grading';
 
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
@@ -141,9 +139,8 @@ router.get(
     res.send(
       InstructorQuestionPreview({
         normalPreviewUrl,
-        manualGradingPreviewEnabled,
+        questionRenderContext,
         manualGradingPreviewUrl,
-        aiGradingPreviewEnabled,
         aiGradingPreviewUrl,
         renderSubmissionSearchParams,
         readmeHtml,
