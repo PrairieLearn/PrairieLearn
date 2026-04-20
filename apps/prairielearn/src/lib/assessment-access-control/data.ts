@@ -119,7 +119,7 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
   const rule = row.access_control_rule;
 
   if (!isOverride(rule)) {
-    runtimeRule.listBeforeRelease = rule.list_before_release ?? false;
+    runtimeRule.beforeRelease = { listed: rule.before_release_listed ?? false };
   }
 
   const dateControl = buildDateControl(rule, row.early_deadlines, row.late_deadlines);
