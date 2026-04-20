@@ -105,18 +105,26 @@ const AfterCompleteJsonSchema = z
   .strict()
   .optional();
 
+const BeforeReleaseJsonSchema = z
+  .object({
+    listed: z
+      .boolean()
+      .describe(
+        'Whether to list the assessment title before the release date. Students can see the title but cannot open the assessment.',
+      ),
+  })
+  .strict()
+  .optional();
+
 export const AccessControlJsonSchema = z
   .object({
     labels: z
       .array(z.string())
       .optional()
       .describe('Array of student label names this set targets'),
-    listBeforeRelease: z
-      .boolean()
-      .optional()
-      .describe(
-        'Only valid on the first entry (defaults). Whether to list the assessment title before the release date. Students can see the title but cannot open the assessment. Defaults to false.',
-      ),
+    beforeRelease: BeforeReleaseJsonSchema.describe(
+      'Only valid on the first entry (defaults). Controls assessment visibility before the release date.',
+    ),
 
     dateControl: DateControlJsonSchema,
     integrations: IntegrationsJsonSchema,
