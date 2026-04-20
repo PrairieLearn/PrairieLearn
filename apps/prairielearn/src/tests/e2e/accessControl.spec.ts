@@ -208,7 +208,7 @@ test.describe('Access control UI', () => {
     await panel.getByRole('button', { name: 'Override Time limit' }).click();
 
     // Enable the time limit checkbox (now rendered as a labeled form check)
-    await panel.getByLabel('Time limit').check();
+    await panel.getByRole('checkbox', { name: 'Time limit' }).check();
 
     // Verify duration input shows default of 60
     await expect(panel.getByRole('spinbutton')).toHaveValue('60');
