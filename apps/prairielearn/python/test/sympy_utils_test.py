@@ -481,7 +481,9 @@ class TestSympy:
         ],
     )
     def test_json_conversion_handles_sets(self, sympy_expr: sympy.Expr) -> None:
-        assert sympy_expr == psu.json_to_sympy(psu.sympy_to_json(sympy_expr))
+        assert sympy_expr == psu.json_to_sympy(
+            psu.sympy_to_json(sympy_expr), allow_set_notation=True
+        )
 
     @pytest.mark.parametrize(
         ("a_pair", "custom_functions"),

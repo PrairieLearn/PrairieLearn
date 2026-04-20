@@ -989,7 +989,7 @@ def sympy_to_json(
 def json_to_sympy(
     sympy_expr_dict: SympyJson,
     *,
-    allow_set_notation: bool = True,
+    allow_set_notation: bool = False,
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
