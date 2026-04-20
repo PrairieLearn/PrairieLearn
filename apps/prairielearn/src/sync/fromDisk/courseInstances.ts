@@ -18,15 +18,41 @@ import * as infofile from '../infofile.js';
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
 export async function uniqueEnrollmentCode() {
+  const [enrollmentCode] = await uniqueEnrollmentCodes(1);
+  return enrollmentCode;
+}
+
+async function uniqueEnrollmentCodes(count: number) {
+  if (count === 0) return [];
+
+  const enrollmentCodes = new Set<string>();
+  while (enrollmentCodes.size < count) {
+    enrollmentCodes.add(generateEnrollmentCode());
+  }
+
   while (true) {
-    const enrollmentCode = generateEnrollmentCode();
-    const existingEnrollmentCode = await sqldb.queryOptionalScalar(
-      sql.select_existing_enrollment_code,
-      { enrollment_code: enrollmentCode },
+    // Check if any of the enrollment codes we generated are already in use.
+    const existingEnrollmentCodes = await sqldb.queryScalars(
+      sql.select_existing_enrollment_codes,
+      // We should almost never need to iterate more than once due to the probability of a collision.
+      // Thus, we keep the code simple and avoid tracking enrollment codes that we already checked.
+      { enrollment_codes: Array.from(enrollmentCodes) },
       z.string(),
     );
-    if (existingEnrollmentCode === null) {
-      return enrollmentCode;
+
+    // If we have no duplicate codes, we can return the full set of enrollment codes.
+    if (existingEnrollmentCodes.length === 0) {
+      return Array.from(enrollmentCodes);
+    }
+
+    // Remove duplicate codes from the set of enrollment codes to generate.
+    for (const code of existingEnrollmentCodes) {
+      enrollmentCodes.delete(code);
+    }
+
+    // Replace the removed codes with new ones.
+    while (enrollmentCodes.size < count) {
+      enrollmentCodes.add(generateEnrollmentCode());
     }
   }
 }
@@ -121,15 +147,16 @@ export async function sync(
   }
 
   return await sqldb.runInTransactionAsync(async () => {
-    const courseInstanceIdentityParams = await Promise.all(
-      Object.entries(courseData.courseInstances).map(async ([shortName, courseInstanceData]) =>
+    const courseInstanceEntries = Object.entries(courseData.courseInstances);
+    const enrollmentCodes = await uniqueEnrollmentCodes(courseInstanceEntries.length);
+    const courseInstanceIdentityParams = courseInstanceEntries.map(
+      ([shortName, courseInstanceData], index) =>
         JSON.stringify([
           shortName,
           courseInstanceData.courseInstance.uuid,
           // This enrollment code is only used for inserts, and not used on updates
-          await uniqueEnrollmentCode(),
+          enrollmentCodes[index],
         ]),
-      ),
     );
 
     const shortNameToIdMapping = await sqldb.queryScalar(
@@ -218,7 +245,9 @@ async function courseInstanceConsistencyCheck({
         ...ci,
         diskUuid: courseInstances[ci.short_name!].courseInstance.uuid,
       }))
-      .filter((ci) => ci.diskUuid && ci.diskUuid !== ci.uuid);
+      // PostgreSQL's `uuid` type normalizes stored values to lowercase,
+      // but diskUuid is preserved as-is, so we need to compare case-insensitively.
+      .filter((ci) => ci.diskUuid && ci.diskUuid.toLowerCase() !== ci.uuid);
     if (mismatchedInstanceUuids.length > 0) {
       throw new AugmentedError(
         'Assertion: Course instances exist where the UUID in the database does not match the UUID in disk data',

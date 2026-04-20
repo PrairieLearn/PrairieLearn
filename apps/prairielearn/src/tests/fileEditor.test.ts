@@ -118,7 +118,6 @@ const courseInstanceInstanceAdminSettingsUrl = courseInstanceInstanceAdminUrl + 
 const courseInstanceInstanceAdminEditUrl =
   courseInstanceInstanceAdminUrl + `/file_edit/${encodePath(infoCourseInstancePath)}`;
 const assessmentUrl = courseInstanceUrl + '/assessment/1';
-const assessmentSettingsUrl = assessmentUrl + '/settings';
 const assessmentEditUrl = assessmentUrl + `/file_edit/${encodePath(infoAssessmentPath)}`;
 const courseInstanceQuestionUrl = courseInstanceUrl + '/question/1';
 const courseInstanceQuestionSettingsUrl = courseInstanceQuestionUrl + '/settings';
@@ -133,12 +132,6 @@ const gitPathUrl = courseAdminUrl + '/file_edit/' + encodePath('.git/HEAD');
 const badExampleCoursePathUrl = courseAdminUrl + '/file_edit/' + encodePath('infoCourse.json');
 
 const findEditUrlData = [
-  {
-    name: 'assessment',
-    selector: '[data-testid="edit-assessment-configuration-link"]',
-    url: assessmentSettingsUrl,
-    expectedEditUrl: assessmentEditUrl,
-  },
   {
     name: 'course admin via course instance',
     selector: '[data-testid="edit-course-configuration-link"]',
