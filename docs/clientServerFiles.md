@@ -48,7 +48,7 @@ To allow students to see the contents of a file from a question, you can make a 
    <pl-figure file-name="power-station.jpg" alt="Power Station"></pl-figure>
    ```
 
-   See the [`pl-figure` documentation](pl-figure.md) for details.
+   See the [`pl-figure` documentation](./elements/pl-figure.md) for details.
 
 2. The `pl-file-download` element can be used to provide a link for students to download a file from `clientFilesQuestion` or `clientFilesCourse`. For example, to give students access to a starting code file, you may save it in `clientFilesQuestion` and then include, in your `question.html` file:
 
@@ -56,7 +56,7 @@ To allow students to see the contents of a file from a question, you can make a 
    <pl-file-download file-name="starting-code.py"></pl-file-download>
    ```
 
-   This element can also be used to provide a link for static PDF files or web pages. See the [`pl-file-download` documentation](pl-file-download.md) for details.
+   This element can also be used to provide a link for static PDF files or web pages. See the [`pl-file-download` documentation](./elements/pl-file-download.md) for details.
 
 3. To include stylesheets and scripts from `clientFilesCourse` or `clientFilesQuestion`, in your question, you can add them as dependencies in the question configuration file. For example, to include a stylesheet named `styles.css` from `clientFilesCourse`, you can add the following to your `info.json` file:
 
@@ -82,7 +82,7 @@ Files in `clientFilesCourseInstance` and `clientFilesAssessment` (as well as `cl
 
 From within `server.py` question code, you can access files from these special directories using the following special values:
 
-| Directory                 | Access pattern                                  |
+| Directory                 | Variable                                        |
 | ------------------------- | ----------------------------------------------- |
 | question directory itself | `data["options"]["question_path"]`              |
 | `clientFilesQuestion`     | `data["options"]["client_files_question_path"]` |
