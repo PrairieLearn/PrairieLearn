@@ -661,7 +661,7 @@ export async function getAndRenderVariant(
         submission,
       });
     }
-    return null;
+    return undefined;
   });
 
   if (locals.instance_question) {
@@ -685,13 +685,12 @@ export async function getAndRenderVariant(
       },
       submittedAnswer: submission?.submitted_answer ?? null,
       feedback: submission?.feedback ?? null,
-      showCorrectAnswer: showCorrectAnswer ? variant.true_answer : null,
+      trueAnswer: showCorrectAnswer ? variant.true_answer : null,
       submissions: submissions.length > 0 ? submissions : null,
     });
 
     const encodedJson = encodeURIComponent(questionJson);
-    const questionJsonBase64 = Buffer.from(encodedJson).toString('base64');
-    return questionJsonBase64;
+    return Buffer.from(encodedJson).toString('base64');
   });
 
   Object.assign(locals, htmls, { issues, rubric_data, questionJsonBase64 });
