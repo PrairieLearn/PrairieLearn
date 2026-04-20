@@ -608,13 +608,23 @@ export const ConfigSchema = z.object({
    */
   aiGradingInfrastructureFeePercent: z.number().min(0).max(1).default(0.2),
   /**
-   * Maximum dollar amount an admin can add to a credit pool in a single adjustment.
+   * Minimum and maximum milli-dollar amounts enforced for admin credit pool
+   * adjustments. Applied on both the client (input validation) and server
+   * (trpc handler). Stored in milli-dollars to match the DB and display helpers.
    */
-  aiGradingCreditPoolMaxAddDollars: z.number().default(10_000),
-  /**
-   * Maximum dollar amount an admin can deduct from a credit pool in a single adjustment.
-   */
-  aiGradingCreditPoolMaxDeductDollars: z.number().default(10_000),
+  aiGradingCreditPoolLimits: z
+    .object({
+      add: z.object({ minMilliDollars: z.number(), maxMilliDollars: z.number() }),
+      deduct: z.object({ minMilliDollars: z.number(), maxMilliDollars: z.number() }),
+      setTransferable: z.object({ minMilliDollars: z.number(), maxMilliDollars: z.number() }),
+      setNonTransferable: z.object({ minMilliDollars: z.number(), maxMilliDollars: z.number() }),
+    })
+    .default({
+      add: { minMilliDollars: 10, maxMilliDollars: 10_000_000 },
+      deduct: { minMilliDollars: 10, maxMilliDollars: 10_000_000 },
+      setTransferable: { minMilliDollars: -1_000_000_000, maxMilliDollars: 1_000_000_000 },
+      setNonTransferable: { minMilliDollars: 0, maxMilliDollars: 1_000_000_000 },
+    }),
   /**
    * The hourly spending rate limit for AI question generation, in US dollars.
    * Accounts for both input and output tokens.

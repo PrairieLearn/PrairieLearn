@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
-import { SET_BALANCE_MAX_ABS_DOLLARS } from '../../../lib/ai-grading-credits.js';
+import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 import { config } from '../../../lib/config.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import {
@@ -73,21 +73,20 @@ const adjustCreditPoolMutation = t.procedure
     }
 
     if (opts.input.action === 'set') {
-      if (Math.abs(opts.input.balance_dollars) > SET_BALANCE_MAX_ABS_DOLLARS) {
+      const { minMilliDollars, maxMilliDollars } =
+        opts.input.credit_type === 'transferable'
+          ? config.aiGradingCreditPoolLimits.setTransferable
+          : config.aiGradingCreditPoolLimits.setNonTransferable;
+      const targetMilliDollars = Math.round(opts.input.balance_dollars * 1000);
+      if (targetMilliDollars < minMilliDollars || targetMilliDollars > maxMilliDollars) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: `Balance must be between -$${SET_BALANCE_MAX_ABS_DOLLARS.toLocaleString()} and $${SET_BALANCE_MAX_ABS_DOLLARS.toLocaleString()}`,
-        });
-      }
-      if (opts.input.credit_type === 'non_transferable' && opts.input.balance_dollars < 0) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Non-transferable balance cannot be set below $0',
+          message: `Balance must be between ${formatMilliDollars(minMilliDollars)} and ${formatMilliDollars(maxMilliDollars)}`,
         });
       }
       await setCreditPoolBalance({
         course_instance_id: opts.ctx.course_instance.id,
-        target_milli_dollars: Math.round(opts.input.balance_dollars * 1000),
+        target_milli_dollars: targetMilliDollars,
         credit_type: opts.input.credit_type,
         user_id: opts.ctx.authn_user.id,
         reason: 'Admin set balance',
@@ -95,14 +94,15 @@ const adjustCreditPoolMutation = t.procedure
       return await selectCreditPool(opts.ctx.course_instance.id);
     }
 
-    const maxDollars =
+    const maxMilliDollars =
       opts.input.action === 'add'
-        ? config.aiGradingCreditPoolMaxAddDollars
-        : config.aiGradingCreditPoolMaxDeductDollars;
-    if (opts.input.amount_dollars > maxDollars) {
+        ? config.aiGradingCreditPoolLimits.add.maxMilliDollars
+        : config.aiGradingCreditPoolLimits.deduct.maxMilliDollars;
+    const amountMilliDollars = Math.round(opts.input.amount_dollars * 1000);
+    if (amountMilliDollars > maxMilliDollars) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
-        message: `Amount exceeds the maximum of $${maxDollars} for ${opts.input.action} adjustments`,
+        message: `Amount exceeds the maximum of ${formatMilliDollars(maxMilliDollars)} for ${opts.input.action} adjustments`,
       });
     }
 
@@ -120,8 +120,7 @@ const adjustCreditPoolMutation = t.procedure
       }
     }
 
-    const delta =
-      Math.round(opts.input.amount_dollars * 1000) * (opts.input.action === 'deduct' ? -1 : 1);
+    const delta = amountMilliDollars * (opts.input.action === 'deduct' ? -1 : 1);
     await adjustCreditPool({
       course_instance_id: opts.ctx.course_instance.id,
       delta_milli_dollars: delta,

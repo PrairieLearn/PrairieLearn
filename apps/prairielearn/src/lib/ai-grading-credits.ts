@@ -1,8 +1,14 @@
 /**
- * Upper/lower bound on the magnitude of an admin "set balance" target, in dollars.
- * Enforced on both the client (input validation) and server (trpc handler).
+ * Minimum and maximum milli-dollar amounts enforced for admin credit pool
+ * adjustments. Applied on both the client (input validation) and server
+ * (trpc handler). Stored in milli-dollars to match the DB and display helpers.
  */
-export const SET_BALANCE_MAX_ABS_DOLLARS = 1_000_000;
+export interface CreditPoolLimits {
+  add: { minMilliDollars: number; maxMilliDollars: number };
+  deduct: { minMilliDollars: number; maxMilliDollars: number };
+  setTransferable: { minMilliDollars: number; maxMilliDollars: number };
+  setNonTransferable: { minMilliDollars: number; maxMilliDollars: number };
+}
 
 /**
  * Format milli-dollars as a display string.
