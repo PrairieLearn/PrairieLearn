@@ -679,6 +679,13 @@ export async function setAiGradingMode(assessment_question_id: string, ai_gradin
   await execute(sql.set_ai_grading_mode, { assessment_question_id, ai_grading_mode });
 }
 
+export async function setAiGradingLastSelectedModel(
+  assessment_question_id: string,
+  model_id: AiGradingModelId,
+) {
+  await execute(sql.set_ai_grading_last_selected_model, { assessment_question_id, model_id });
+}
+
 const rateLimiter = new RedisRateLimiter({
   redis: () => {
     if (!config.nonVolatileRedisUrl) {

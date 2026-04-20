@@ -187,3 +187,16 @@ export function selectAssessmentsCursor({
     AssessmentRowSchema,
   );
 }
+
+export async function selectAssessmentZonePointsRange({
+  assessment_id,
+}: {
+  assessment_id: string;
+}): Promise<{ min: number; max: number }> {
+  const row = await queryRow(
+    sql.select_assessment_zone_points_range,
+    { assessment_id },
+    z.object({ min_total: z.coerce.number(), max_total: z.coerce.number() }),
+  );
+  return { min: row.min_total, max: row.max_total };
+}

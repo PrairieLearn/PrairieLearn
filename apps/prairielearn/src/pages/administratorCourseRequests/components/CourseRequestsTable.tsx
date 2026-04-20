@@ -599,8 +599,7 @@ function MutationError({
           )}
           {appError.githubRepoUrl && (
             <li>
-              A GitHub repository with this name already exists. This can happen if a repository was
-              previously renamed.{' '}
+              A GitHub repository with this name already exists.{' '}
               <a href={appError.githubRepoUrl} target="_blank" rel="noreferrer">
                 Open repo
               </a>

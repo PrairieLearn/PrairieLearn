@@ -1,4 +1,4 @@
-import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { queryRows } from '@prairielearn/postgres';
 
@@ -181,23 +181,49 @@ describe('deductCreditsForAiGrading', () => {
     assert.equal(changes[0].delta_milli_dollars, -3000);
   });
 
-  it('throws when total balance is insufficient', async () => {
-    await seed(1000, 2000);
+  it('clamps deduction to available balance when cost exceeds total', async () => {
+    await seed(1000, 2000); // total = 3000
 
-    await expect(
-      deductCreditsForAiGrading({
-        course_instance_id: ciId,
-        cost_milli_dollars: 5000,
-        user_id: null,
-        ai_grading_job_id: null,
-        assessment_question_id: null,
-        reason: 'AI grading',
-      }),
-    ).rejects.toThrow('Insufficient AI grading credits');
+    const deducted = await deductCreditsForAiGrading({
+      course_instance_id: ciId,
+      cost_milli_dollars: 5000,
+      user_id: null,
+      ai_grading_job_id: null,
+      assessment_question_id: null,
+      reason: 'AI grading',
+    });
+
+    assert.equal(deducted, 3000);
 
     const pool = await selectCreditPool(ciId);
-    assert.equal(pool.credit_transferable_milli_dollars, 1000);
-    assert.equal(pool.credit_non_transferable_milli_dollars, 2000);
+    assert.equal(pool.credit_transferable_milli_dollars, 0);
+    assert.equal(pool.credit_non_transferable_milli_dollars, 0);
+    assert.equal(pool.total_milli_dollars, 0);
+
+    const changes = deductionChanges(await selectAllChanges(ciId));
+    // Non-transferable (2000) deducted first, then transferable (1000)
+    assert.equal(changes.length, 2);
+    assert.equal(changes[0].credit_type, 'non_transferable');
+    assert.equal(changes[0].delta_milli_dollars, -2000);
+    assert.equal(changes[1].credit_type, 'transferable');
+    assert.equal(changes[1].delta_milli_dollars, -1000);
+  });
+
+  it('skips deduction when pool is already at $0', async () => {
+    // No seed — pool starts at $0
+    const deducted = await deductCreditsForAiGrading({
+      course_instance_id: ciId,
+      cost_milli_dollars: 1000,
+      user_id: null,
+      ai_grading_job_id: null,
+      assessment_question_id: null,
+      reason: 'AI grading',
+    });
+
+    assert.equal(deducted, 0);
+
+    const pool = await selectCreditPool(ciId);
+    assert.equal(pool.total_milli_dollars, 0);
 
     const changes = deductionChanges(await selectAllChanges(ciId));
     assert.equal(changes.length, 0);
@@ -262,40 +288,38 @@ describe('adjustCreditPool', () => {
     assert.equal(changes[0].credit_after_milli_dollars, 3000);
   });
 
-  it('throws when deducting more than the transferable balance', async () => {
+  it('caps deduction to the transferable balance when deducting more', async () => {
     const userId = await createTestUser();
     await seedCreditBalances(ciId, userId, 2000, 5000);
 
-    await expect(
-      adjustCreditPool({
-        course_instance_id: ciId,
-        delta_milli_dollars: -3000,
-        credit_type: 'transferable',
-        user_id: userId,
-        reason: 'Admin deduction',
-      }),
-    ).rejects.toThrow(/Cannot deduct more than the current transferable balance/);
+    await adjustCreditPool({
+      course_instance_id: ciId,
+      delta_milli_dollars: -3000,
+      credit_type: 'transferable',
+      user_id: userId,
+      reason: 'Admin deduction',
+    });
 
     const pool = await selectCreditPool(ciId);
-    assert.equal(pool.credit_transferable_milli_dollars, 2000);
+    assert.equal(pool.credit_transferable_milli_dollars, 0);
+    assert.equal(pool.credit_non_transferable_milli_dollars, 5000);
   });
 
-  it('throws when deducting more than the non-transferable balance', async () => {
+  it('caps deduction to the non-transferable balance when deducting more', async () => {
     const userId = await createTestUser();
     await seedCreditBalances(ciId, userId, 5000, 2000);
 
-    await expect(
-      adjustCreditPool({
-        course_instance_id: ciId,
-        delta_milli_dollars: -3000,
-        credit_type: 'non_transferable',
-        user_id: userId,
-        reason: 'Admin deduction',
-      }),
-    ).rejects.toThrow(/Cannot deduct more than the current non-transferable balance/);
+    await adjustCreditPool({
+      course_instance_id: ciId,
+      delta_milli_dollars: -3000,
+      credit_type: 'non_transferable',
+      user_id: userId,
+      reason: 'Admin deduction',
+    });
 
     const pool = await selectCreditPool(ciId);
-    assert.equal(pool.credit_non_transferable_milli_dollars, 2000);
+    assert.equal(pool.credit_non_transferable_milli_dollars, 0);
+    assert.equal(pool.credit_transferable_milli_dollars, 5000);
   });
 
   it('does nothing when delta is zero', async () => {

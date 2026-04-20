@@ -38,8 +38,11 @@ type AssessmentAccessRules = z.infer<typeof AssessmentAccessRulesSchema>;
 interface MigrationPreview {
   beforeJson: string;
   afterJson: string;
-  warnings: string[];
+  errors: string[];
+  notes: string[];
   hasUidRules: boolean;
+  isIncompatible: boolean;
+  fallbackReleaseDate: string;
 }
 
 export function InstructorAssessmentAccess({
@@ -83,7 +86,9 @@ export function InstructorAssessmentAccess({
                   data-bs-toggle="modal"
                   data-bs-target="#migrationConfirmModal"
                 >
-                  Migrate to modern format
+                  ${migrationPreview.isIncompatible
+                    ? 'Migrate and clear'
+                    : 'Migrate to modern format'}
                 </button>
               `
             : ''}
@@ -94,7 +99,7 @@ export function InstructorAssessmentAccess({
               <div
                 class="alert alert-warning mb-0 rounded-0 border-start-0 border-end-0 border-top-0"
               >
-                ${migrationAnalysis && !migrationAnalysis.canMigrate
+                ${migrationAnalysis && migrationAnalysis.errors.length > 0
                   ? html`This assessment uses the legacy access control system. Automatic migration
                     is not available for this assessment's access rules.`
                   : html`This assessment uses the legacy access control system. Consider migrating
@@ -222,6 +227,17 @@ function MigrationConfirmModal({
     size: 'modal-xl',
     content: html`
       <div class="modal-body">
+        ${migrationPreview.isIncompatible
+          ? html`
+              <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                This assessment's access rules cannot be automatically migrated. Proceeding will
+                <strong>remove all existing access rules</strong> and switch to the modern format
+                with no access control configured. You will need to set up access control from
+                scratch.
+              </div>
+            `
+          : ''}
         ${migrationPreview.hasUidRules
           ? html`
               <div class="alert alert-warning">
@@ -231,17 +247,44 @@ function MigrationConfirmModal({
               </div>
             `
           : ''}
-        ${migrationPreview.warnings.length > 0
+        ${migrationPreview.errors.length > 0
+          ? html`
+              <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <ul class="mb-0 mt-1">
+                  ${migrationPreview.errors.map((e) => html`<li>${e}</li>`)}
+                </ul>
+              </div>
+            `
+          : ''}
+        ${migrationPreview.notes.length > 0
           ? html`
               <div class="alert alert-info">
                 <i class="bi bi-info-circle-fill"></i>
                 <strong>Migration notes:</strong>
                 <ul class="mb-0 mt-1">
-                  ${migrationPreview.warnings.map((w) => html`<li>${w}</li>`)}
+                  ${migrationPreview.notes.map((w) => html`<li>${w}</li>`)}
                 </ul>
               </div>
             `
           : ''}
+        <p>
+          See the
+          <a
+            href="https://docs.prairielearn.com/assessment/accessControl/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            access control documentation
+          </a>
+          for details on the modern format.
+        </p>
+        <p class="text-muted small mb-2">
+          Compare the current <code>infoAssessment.json</code> with the migrated version below.
+          <strong>Previous state</strong> shows the legacy <code>allowAccess</code> rules.
+          <strong>New state</strong> shows the modern <code>accessControl</code> format that will
+          replace them.
+        </p>
         <ul class="nav nav-tabs" role="tablist">
           <li class="nav-item" role="presentation">
             <button
@@ -290,8 +333,24 @@ function MigrationConfirmModal({
       <input type="hidden" name="__action" value="migrate_access_control" />
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
       <input type="hidden" name="orig_hash" value="${origHash}" />
+      <input
+        type="hidden"
+        name="fallback_release_date"
+        value="${migrationPreview.fallbackReleaseDate}"
+      />
+      ${migrationPreview.isIncompatible
+        ? html`<input type="hidden" name="migrate_strategy" value="clear" />`
+        : ''}
+      <small class="text-muted me-auto">
+        This can be reverted through the file editor or git history.
+      </small>
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn btn-primary">Confirm migration</button>
+      <button
+        type="submit"
+        class="btn ${migrationPreview.isIncompatible ? 'btn-danger' : 'btn-primary'}"
+      >
+        ${migrationPreview.isIncompatible ? 'Migrate and clear' : 'Confirm migration'}
+      </button>
     `,
   });
 }

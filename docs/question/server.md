@@ -332,11 +332,12 @@ As shown in the table, all functions (except for `render`) accept a single argum
 | `feedback`              | `dict`  | Dictionary of [feedback](#providing-feedback) for each answer. Each item maps from a named answer to a feedback message.                                            |
 | `variant_seed`          | `int`   | The [random seed](#randomization) for this question variant.                                                                                                        |
 | `preferences`           | `dict`  | Read-only [question preferences](preferences.md) for the current assessment context. Values come from the question's defaults merged with any assessment overrides. |
-| `options`               | `dict`  | Any options associated with the question, e.g. for [accessing files](#accessing-files-on-disk)                                                                      |
+| `options`               | `dict`  | Any options associated with the question, e.g. for [accessing files](../clientServerFiles.md#accessing-files-from-serverpy-question-code)                           |
 | `filename`              | `str`   | The name of the [dynamic file requested](#generating-dynamic-files-with-file) in the `file()` function.                                                             |
 | `test_type`             | `str`   | The type of test being run in the [`test()` function](#testing-questions-with-test).                                                                                |
 | `answers_names`         | `dict`  | A dictionary whose keys list the names of the answers in the question.                                                                                              |
 | `panel`                 | `str`   | Which panel is being rendered (`question`, `submission`, or `answer`).                                                                                              |
+| `correct_answer_shown`  | `bool`  | Whether the answer panel is being rendered (for use when rendering other panels).                                                                                   |
 | `editable`              | `bool`  | Whether the question is currently in an editable state.                                                                                                             |
 | `num_valid_submissions` | `int`   | The number of valid (not containing format errors) submissions by the student for the current variant.                                                              |
 | `manual_grading`        | `bool`  | Whether manual-grading content should be shown. This is `true` in the manual grading view, and also for question and answer panels when rendered for AI grading.    |
@@ -366,6 +367,7 @@ Each field in the `data` dictionary is either stored **per-variant** (shared acr
 | `test_type`             | None (not saved) | Only in `test()`.                               |
 | `answers_names`         | None (not saved) | Only in `prepare()`.                            |
 | `panel`                 | None (not saved) | Only in `render()`.                             |
+| `correct_answer_shown`  | None (not saved) | Only in `render()`.                             |
 | `editable`              | None (not saved) | Only in `render()`.                             |
 | `num_valid_submissions` | None (not saved) | Only in `render()`.                             |
 | `manual_grading`        | None (not saved) | Only in `render()`.                             |
@@ -401,32 +403,7 @@ The [`pl.to_json`][prairielearn.conversion_utils.to_json] function supports keyw
 
 ## Accessing files on disk
 
-From within `server.py` functions, directories can be accessed as:
-
-```python
-# on-disk location of the current question directory
-data["options"]["question_path"]
-
-# on-disk location of clientFilesQuestion/
-data["options"]["client_files_question_path"]
-
-# URL location of clientFilesQuestion/ (only in render() function)
-data["options"]["client_files_question_url"]
-
-# URL location of dynamically-generated question files (only in render() function)
-data["options"]["client_files_question_dynamic_url"]
-
-# on-disk location of clientFilesCourse/
-data["options"]["client_files_course_path"]
-
-# URL location of clientFilesCourse/ (only in render() function)
-data["options"]["client_files_course_url"]
-
-# on-disk location of serverFilesCourse/
-data["options"]["server_files_course_path"]
-```
-
-The `serverFilesCourse/` directory is also automatically added to the Python path, so you can directly import modules from it in `server.py`. For example, if you have a file `serverFilesCourse/my_utils.py`, you can use `import my_utils` in any question's `server.py`.
+The functions in `server.py` can also retrieve the content from various directories related to the question, such as `serverFilesCourse/` and `clientFilesQuestion/`, through the `data["options"]` dictionary. For more details, see the [documentation on client and server files](../clientServerFiles.md#accessing-files-from-serverpy-question-code).
 
 ## Generating dynamic files with `file()`
 

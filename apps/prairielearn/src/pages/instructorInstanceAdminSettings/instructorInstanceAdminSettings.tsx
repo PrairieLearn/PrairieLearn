@@ -179,7 +179,7 @@ router.post(
         self_enrollment_use_enrollment_code,
         course_instance_permission,
         access_control_strategy,
-        preserve_incompatible,
+        clear_incompatible,
       } = z
         .object({
           short_name: z.string().trim(),
@@ -189,8 +189,8 @@ router.post(
           self_enrollment_enabled: z.boolean(),
           self_enrollment_use_enrollment_code: z.boolean(),
           course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
-          access_control_strategy: z.enum(['migrate', 'keep', 'wipe']).optional().default('wipe'),
-          preserve_incompatible: z.boolean().optional().default(false),
+          access_control_strategy: z.enum(['migrate', 'keep', 'clear']).optional().default('clear'),
+          clear_incompatible: z.boolean().optional().default(false),
         })
         .parse(req.body);
 
@@ -279,7 +279,7 @@ router.post(
         },
         accessControlMigration: {
           strategy: access_control_strategy,
-          preserveIncompatible: preserve_incompatible,
+          clearIncompatible: clear_incompatible,
         },
       });
 

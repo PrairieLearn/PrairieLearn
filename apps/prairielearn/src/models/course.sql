@@ -40,6 +40,42 @@ WHERE
 LIMIT
   1;
 
+-- BLOCK check_course_title_in_institution
+SELECT
+  COUNT(*) > 0 AS exists,
+  COUNT(*) FILTER (
+    WHERE
+      cp.course_role = 'Owner'
+  ) > 0 AS owned
+FROM
+  courses AS c
+  LEFT JOIN course_permissions AS cp ON (
+    cp.course_id = c.id
+    AND cp.user_id = $user_id
+  )
+WHERE
+  LOWER(c.title) = LOWER($title)
+  AND c.institution_id = $institution_id
+  AND c.deleted_at IS NULL;
+
+-- BLOCK check_course_short_name_in_institution
+SELECT
+  COUNT(*) > 0 AS exists,
+  COUNT(*) FILTER (
+    WHERE
+      cp.course_role = 'Owner'
+  ) > 0 AS owned
+FROM
+  courses AS c
+  LEFT JOIN course_permissions AS cp ON (
+    cp.course_id = c.id
+    AND cp.user_id = $user_id
+  )
+WHERE
+  LOWER(c.short_name) = LOWER($short_name)
+  AND c.institution_id = $institution_id
+  AND c.deleted_at IS NULL;
+
 -- BLOCK update_course_commit_hash
 UPDATE courses
 SET
