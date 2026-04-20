@@ -45,6 +45,10 @@ const t = initTRPC.context<AdminTRPCContext>().create({
 
 function dollarsToCentPrecisionMilliDollars(dollars: number, label: string): number {
   const cents = Math.round(dollars * 100);
+  // Reject values with sub-cent precision (e.g. 0.011). `dollars * 100` is
+  // compared against its rounded form with a small epsilon to absorb the
+  // binary float error from representing cent-precise decimals (e.g. 0.1 * 100
+  // is 10.000000000000002, not exactly 10).
   if (Math.abs(dollars * 100 - cents) > 1e-9) {
     throw new TRPCError({
       code: 'BAD_REQUEST',

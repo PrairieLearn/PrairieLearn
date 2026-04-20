@@ -1297,51 +1297,21 @@
           "required": ["minMilliDollars", "maxMilliDollars"],
           "properties": {
             "minMilliDollars": {
-              "type": "number"
+              "type": "integer"
             },
             "maxMilliDollars": {
-              "type": "number"
+              "type": "integer"
             }
           }
         },
         "deduct": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["minMilliDollars", "maxMilliDollars"],
-          "properties": {
-            "minMilliDollars": {
-              "type": "number"
-            },
-            "maxMilliDollars": {
-              "type": "number"
-            }
-          }
+          "$ref": "#/properties/aiGradingCreditPoolLimits/properties/add"
         },
         "setTransferable": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["minMilliDollars", "maxMilliDollars"],
-          "properties": {
-            "minMilliDollars": {
-              "type": "number"
-            },
-            "maxMilliDollars": {
-              "type": "number"
-            }
-          }
+          "$ref": "#/properties/aiGradingCreditPoolLimits/properties/add"
         },
         "setNonTransferable": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["minMilliDollars", "maxMilliDollars"],
-          "properties": {
-            "minMilliDollars": {
-              "type": "number"
-            },
-            "maxMilliDollars": {
-              "type": "number"
-            }
-          }
+          "$ref": "#/properties/aiGradingCreditPoolLimits/properties/add"
         }
       },
       "default": {
