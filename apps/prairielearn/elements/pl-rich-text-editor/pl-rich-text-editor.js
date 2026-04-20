@@ -183,7 +183,9 @@
 
       // If the text is empty, no error is shown.
       wordCountFeedbackElement.classList.toggle('d-none', wordCount === 0 || !(tooFew || tooMany));
-      wordCountFeedbackElement.textContent = tooFew ? 'Too few words' : 'Too many words';
+      wordCountFeedbackElement.textContent = tooFew
+        ? `Too few words (${minWordCount - wordCount} more expected)`
+        : `Too many words (${wordCount - maxWordCount} above limit)`;
     };
 
     const updateHiddenInput = function () {

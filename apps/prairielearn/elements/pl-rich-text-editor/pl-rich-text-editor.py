@@ -207,11 +207,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if min_wc is None and max_wc is None:
             word_count_requirements_text = None
         elif min_wc is not None and max_wc is not None:
-            word_count_requirements_text = f"Required: {min_wc}\u2013{max_wc} words"
+            word_count_requirements_text = f"Required {min_wc}\u2013{max_wc} words"
         elif min_wc is not None:
-            word_count_requirements_text = f"Minimum: {min_wc} words"
+            word_count_requirements_text = f"Minimum {min_wc} words"
         else:
-            word_count_requirements_text = f"Maximum: {max_wc} words"
+            word_count_requirements_text = f"Maximum {max_wc} words"
 
         html_params = {
             "name": answer_name,
