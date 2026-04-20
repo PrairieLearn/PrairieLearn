@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -96,7 +97,7 @@ const editGroup = t.procedure
         try {
           await leaveGroup(assessment.id, user.id, authn_user.id, input.group_id);
         } catch (err) {
-          if (err instanceof GroupOperationError) {
+          if (err instanceof GroupOperationError || err instanceof HttpStatusError) {
             failures.push({ uid: user.uid, message: err.message });
           } else {
             throw err;

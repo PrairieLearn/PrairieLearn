@@ -214,10 +214,7 @@ function InstructorAssessmentGroupsInner({
               row={editingGroup}
               show
               onHide={() => setEditingGroup(null)}
-              onGroupEdited={(group, newNotAssigned) => {
-                handleGroupUpdated(group, newNotAssigned);
-                setEditingGroup(null);
-              }}
+              onGroupEdited={handleGroupUpdated}
             />
           )}
           {deletingGroup && (
