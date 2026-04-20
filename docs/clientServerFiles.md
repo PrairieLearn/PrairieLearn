@@ -89,7 +89,7 @@ From within `server.py` question code, you can access files from these special d
 | `clientFilesCourse`       | `data["options"]["client_files_course_path"]`   |
 | `serverFilesCourse`       | `data["options"]["server_files_course_path"]`   |
 
-The same options are also provided if you are developing custom elements.
+The options for `clientFilesCourse` and `serverFilesCourse` are also available if you are developing custom elements.
 
 So, for example, if your question generation code requires a data file named `data.csv` that is stored in the `serverFilesCourse` directory, you can access it using the following code:
 
@@ -103,7 +103,7 @@ def generate(data):
 
 !!! note
 
-    Note that, although `data["options"]["question_path"]` provides an absolute path to the question directory, the code is executed with the question directory as the current working directory, so you can also access files in the question directory using relative paths. Similarly, you can access files in `clientFilesQuestion` using relative paths, as the directory is guaranteed to be a subdirectory of the question directory. However, `clientFilesCourse` and `serverFilesCourse` are not guaranteed to be subdirectories of the question directory, so you must use the absolute paths provided in `data["options"]` to access files in those directories.
+    Note that, although `data["options"]["question_path"]` provides an absolute path to the question directory, the code is executed with the question directory as the current working directory, so you can also access files in the question directory using relative paths. Similarly, you can access files in `clientFilesQuestion` using relative paths, as the directory is guaranteed to be a subdirectory of the question directory. However, `clientFilesCourse` and `serverFilesCourse` are not subdirectories of the question directory and are not guaranteed to be found in any specific location relative to the question directory, so you must use the absolute paths provided in `data["options"]` to access files in those directories.
 
 If your `serverFilesCourse` file contains Python code, your `server.py` code can import that code as a module without the need to update the Python path. The `serverFilesCourse` directory is automatically added to the Python path when executing `server.py` code, so you can simply import the module as if it were in the same directory. For example, if you have a file named `course_utils.py` in `serverFilesCourse`, you can import it in `server.py` using:
 
