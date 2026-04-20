@@ -78,9 +78,9 @@ To allow students to see the contents of a file from a question, you can make a 
    </div>
    ```
 
-   !!! warning
+!!! warning
 
-   A common pattern used in the past was to use a relative link like `clientFilesQuestion/filename.ext` to access files in `clientFilesQuestion`. This pattern is not officially supported and may not work in all contexts, so you are highly encouraged to replace it with the `{{ options.client_files_question_url }}/filename.ext` pattern instead.
+A common pattern used in the past was to use a relative link like `clientFilesQuestion/filename.ext` to access files in `clientFilesQuestion`. This pattern is not officially supported and may not work in all contexts, so you are highly encouraged to replace it with the `{{ options.client_files_question_url }}/filename.ext` pattern instead.
 
 Files in `clientFilesCourseInstance` and `clientFilesAssessment` (as well as `clientFilesCourse`) can be provided to students using the assessment text, which is rendered in the student's assessment overview page. These can be rendered using the `{{ client_files_course_instance }}`, `{{ client_files_assessment }}`, and `{{ client_files_course }}` patterns, which will render the addresses of the corresponding `clientFiles*` directory. More details can be found in the [assessment text documentation](assessment/configuration.md#adding-text-and-links-to-assessments).
 
@@ -107,7 +107,7 @@ def generate(data):
     # Now you can read from data_file_path to access the contents of data.csv
 ```
 
-??? note title="Using relative paths"
+??? note "Using relative paths"
 
     Although `data["options"]["question_path"]` provides an absolute path to the question directory, the code is executed with the question directory as the current working directory, so you can also access files in the question directory using relative paths. Similarly, you can access files in `clientFilesQuestion` using relative paths, as the directory is guaranteed to be a subdirectory of the question directory. However, `clientFilesCourse` and `serverFilesCourse` are not subdirectories of the question directory and are not guaranteed to be found in any specific location relative to the question directory, so you must use the absolute paths provided in `data["options"]` to access files in those directories.
 
