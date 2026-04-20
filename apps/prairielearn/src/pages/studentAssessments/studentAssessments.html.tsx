@@ -11,7 +11,7 @@ import {
   StudentAccessRulesPopover,
   StudentAccessTimelinePopover,
 } from '../../components/StudentAccessRulesPopover.js';
-import type { AccessTimelineEntry } from '../../lib/assessment-access-control/resolver.js';
+import type { AccessTimelineEntry } from '../../lib/assessment-access-control/timeline.js';
 import {
   AssessmentAccessRuleSchema,
   AssessmentInstanceSchema,

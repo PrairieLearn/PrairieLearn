@@ -5,7 +5,7 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import type { AccessTimelineEntry } from '../lib/assessment-access-control/resolver.js';
+import type { AccessTimelineEntry } from '../lib/assessment-access-control/timeline.js';
 import { EnumModeSchema } from '../lib/db-types.js';
 
 import { FriendlyDate } from './FriendlyDate.js';

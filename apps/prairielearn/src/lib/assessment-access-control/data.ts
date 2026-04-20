@@ -15,8 +15,8 @@ import type {
   PrairieTestReservation,
   RuntimeAccessControl,
   RuntimeAfterComplete,
-  RuntimeDateControl,
 } from './resolver.js';
+import type { RuntimeDateControl } from './timeline.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

@@ -18,7 +18,7 @@ import {
   StudentAccessTimelinePopover,
 } from '../../components/StudentAccessRulesPopover.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
-import type { AccessTimelineEntry } from '../../lib/assessment-access-control/resolver.js';
+import type { AccessTimelineEntry } from '../../lib/assessment-access-control/timeline.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentInstance, type GroupConfig } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';

@@ -3,20 +3,12 @@ import assert from 'node:assert';
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-types.js';
 
-/**
- * Runtime version of date control fields. Top-level date columns use `Date`
- * objects (they come from the database as Date). Deadline entry dates remain
- * as strings since they are stored as JSON strings in JSONB columns.
- */
-export interface RuntimeDateControl {
-  releaseDate?: Date | null;
-  dueDate?: Date | null;
-  earlyDeadlines?: { date: string; credit: number }[] | null;
-  lateDeadlines?: { date: string; credit: number }[] | null;
-  afterLastDeadline?: { allowSubmissions?: boolean; credit?: number | null };
-  durationMinutes?: number | null;
-  password?: string | null;
-}
+import {
+  type AccessTimelineEntry,
+  type RuntimeDateControl,
+  buildAccessTimeline,
+  buildDeadlines,
+} from './timeline.js';
 
 export interface RuntimeAfterComplete {
   questions?: {
@@ -68,13 +60,6 @@ export interface AccessControlResolverInput {
   courseRole: EnumCourseRole;
   courseInstanceRole: EnumCourseInstanceRole;
   prairieTestReservations: PrairieTestReservation[];
-}
-
-export interface AccessTimelineEntry {
-  credit: number;
-  startDate: Date | null;
-  endDate: Date | null;
-  active: boolean;
 }
 
 export interface AccessControlResolverResult {
@@ -222,93 +207,6 @@ export function cascadeOverrides(
   };
 }
 
-/**
- * Builds an access timeline from dateControl for display purposes.
- * Each entry is a contiguous period [startDate, endDate) with a credit value.
- *
- * - A before-release entry (startDate: null) is included when the current
- *   date is before the release date.
- * - An after-last-deadline entry (endDate: null) is always appended.
- */
-export function buildAccessTimeline(
-  dateControl: RuntimeDateControl | undefined,
-  date: Date,
-): AccessTimelineEntry[] {
-  if (!dateControl?.releaseDate) return [];
-
-  const releaseDate = dateControl.releaseDate;
-  const dueDate = dateControl.dueDate ?? null;
-
-  if (dueDate && dueDate <= releaseDate) return [];
-
-  // Build the same sorted deadline list as computeCredit.
-  const deadlines: { date: Date; credit: number }[] = [];
-
-  if (dateControl.earlyDeadlines) {
-    for (const entry of dateControl.earlyDeadlines) {
-      const entryDate = new Date(entry.date);
-      if (entryDate <= releaseDate) continue;
-      if (dueDate && entryDate >= dueDate) continue;
-      deadlines.push({ date: entryDate, credit: entry.credit });
-    }
-  }
-
-  if (dueDate) {
-    deadlines.push({ date: dueDate, credit: 100 });
-  }
-
-  if (dateControl.lateDeadlines) {
-    for (const entry of dateControl.lateDeadlines) {
-      const entryDate = new Date(entry.date);
-      if (entryDate <= releaseDate) continue;
-      if (dueDate && entryDate <= dueDate) continue;
-      deadlines.push({ date: entryDate, credit: entry.credit });
-    }
-  }
-
-  deadlines.sort((a, b) => a.date.getTime() - b.date.getTime());
-
-  // No deadlines = available forever with full credit; single open-ended segment.
-  if (deadlines.length === 0) {
-    return [{ credit: 100, startDate: releaseDate, endDate: null, active: date >= releaseDate }];
-  }
-
-  const segments: AccessTimelineEntry[] = [];
-
-  // Before-release entry when the current date precedes the release date.
-  if (date < releaseDate) {
-    segments.push({
-      credit: 0,
-      startDate: null,
-      endDate: releaseDate,
-      active: true,
-    });
-  }
-
-  // Credit segments derived from deadlines.
-  let segmentStart = releaseDate;
-  for (const deadline of deadlines) {
-    segments.push({
-      credit: deadline.credit,
-      startDate: segmentStart,
-      endDate: deadline.date,
-      active: date >= segmentStart && date < deadline.date,
-    });
-    segmentStart = deadline.date;
-  }
-
-  // After-last-deadline entry is always shown.
-  const afterCredit = dateControl.afterLastDeadline?.credit ?? 0;
-  segments.push({
-    credit: afterCredit,
-    startDate: segmentStart,
-    endDate: null,
-    active: date >= segmentStart,
-  });
-
-  return segments;
-}
-
 interface CreditResult {
   credit: number;
   active: boolean;
@@ -369,38 +267,10 @@ function computeCredit(
     };
   }
 
-  // Build timeline segments: each entry is [deadline, creditBefore]
-  // The credit value represents what you get if you submit BEFORE this deadline.
-  const timeline: { date: Date; credit: number }[] = [];
-
-  if (dateControl.earlyDeadlines) {
-    for (const entry of dateControl.earlyDeadlines) {
-      const entryDate = new Date(entry.date);
-      // Filter out early deadlines before release date or after due date.
-      if (entryDate <= releaseDate) continue;
-      if (dueDate && entryDate > dueDate) continue;
-      timeline.push({ date: entryDate, credit: entry.credit });
-    }
-  }
-
-  if (dueDate) {
-    timeline.push({ date: dueDate, credit: 100 });
-  }
-
-  if (dateControl.lateDeadlines) {
-    for (const entry of dateControl.lateDeadlines) {
-      const entryDate = new Date(entry.date);
-      // Filter out late deadlines before release date or before due date.
-      if (entryDate <= releaseDate) continue;
-      if (dueDate && entryDate < dueDate) continue;
-      timeline.push({ date: entryDate, credit: entry.credit });
-    }
-  }
-
-  timeline.sort((a, b) => a.date.getTime() - b.date.getTime());
+  const deadlines = buildDeadlines(dateControl, releaseDate, dueDate);
 
   // No due date or deadlines means 100% credit anytime after the release date.
-  if (timeline.length === 0) {
+  if (deadlines.length === 0) {
     return {
       credit: 100,
       active: true,
@@ -414,7 +284,7 @@ function computeCredit(
   // Before the first deadline, the credit is the first entry's credit value.
   // After each deadline, the credit becomes the next entry's credit value.
   // After the last deadline, use afterLastDeadline settings.
-  for (const entry of timeline) {
+  for (const entry of deadlines) {
     if (date < entry.date) {
       const credit = entry.credit;
       const nextDeadline = entry.date;

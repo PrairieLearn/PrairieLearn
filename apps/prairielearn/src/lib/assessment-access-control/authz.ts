@@ -17,10 +17,10 @@ import {
 } from './data.js';
 import {
   type AccessControlResolverResult,
-  type AccessTimelineEntry,
   formatDateShort,
   resolveAccessControl,
 } from './resolver.js';
+import { type AccessTimelineEntry } from './timeline.js';
 
 export type AuthzAssessmentAugmented = SprocAuthzAssessment & {
   access_timeline: AccessTimelineEntry[];

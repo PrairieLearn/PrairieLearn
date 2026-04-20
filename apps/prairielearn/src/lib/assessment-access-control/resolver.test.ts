@@ -8,8 +8,6 @@ import {
   type EnrollmentContext,
   type PrairieTestReservation,
   type RuntimeAccessControl,
-  type RuntimeDateControl,
-  buildAccessTimeline,
   cascadeOverrides,
   formatDateShort,
   mergeRules,
@@ -1895,103 +1893,7 @@ describe('formatDateShort', () => {
   });
 });
 
-describe('buildAccessTimeline', () => {
-  it('returns empty for no dateControl', () => {
-    expect(buildAccessTimeline(undefined, new Date())).toEqual([]);
-  });
-
-  it('returns empty for no releaseDate', () => {
-    expect(buildAccessTimeline({}, new Date())).toEqual([]);
-  });
-
-  it('returns empty when dueDate <= releaseDate', () => {
-    const dc: RuntimeDateControl = {
-      releaseDate: new Date('2025-03-15T00:00:00Z'),
-      dueDate: new Date('2025-03-14T00:00:00Z'),
-    };
-    expect(buildAccessTimeline(dc, new Date('2025-03-15T12:00:00Z'))).toEqual([]);
-  });
-
-  it('builds credit segment plus after-last-deadline for releaseDate + dueDate', () => {
-    const dc: RuntimeDateControl = {
-      releaseDate: new Date('2025-03-01T00:00:00Z'),
-      dueDate: new Date('2025-03-15T00:00:00Z'),
-    };
-    const now = new Date('2025-03-10T00:00:00Z');
-    const timeline = buildAccessTimeline(dc, now);
-
-    expect(timeline).toEqual([
-      {
-        credit: 100,
-        startDate: new Date('2025-03-01T00:00:00Z'),
-        endDate: new Date('2025-03-15T00:00:00Z'),
-        active: true,
-      },
-      {
-        credit: 0,
-        startDate: new Date('2025-03-15T00:00:00Z'),
-        endDate: null,
-        active: false,
-      },
-    ]);
-  });
-
-  it('builds full timeline with early, due, late, and afterLastDeadline', () => {
-    const dc: RuntimeDateControl = {
-      releaseDate: new Date('2025-03-01T00:00:00Z'),
-      dueDate: new Date('2025-03-15T00:00:00Z'),
-      earlyDeadlines: [{ date: '2025-03-08T00:00:00Z', credit: 120 }],
-      lateDeadlines: [{ date: '2025-03-22T00:00:00Z', credit: 50 }],
-      afterLastDeadline: { credit: 0 },
-    };
-    const now = new Date('2025-03-10T00:00:00Z');
-    const timeline = buildAccessTimeline(dc, now);
-
-    expect(timeline).toHaveLength(4);
-    expect(timeline[0]).toEqual({
-      credit: 120,
-      startDate: new Date('2025-03-01T00:00:00Z'),
-      endDate: new Date('2025-03-08T00:00:00Z'),
-      active: false,
-    });
-    expect(timeline[1]).toEqual({
-      credit: 100,
-      startDate: new Date('2025-03-08T00:00:00Z'),
-      endDate: new Date('2025-03-15T00:00:00Z'),
-      active: true,
-    });
-    expect(timeline[2]).toEqual({
-      credit: 50,
-      startDate: new Date('2025-03-15T00:00:00Z'),
-      endDate: new Date('2025-03-22T00:00:00Z'),
-      active: false,
-    });
-    expect(timeline[3]).toEqual({
-      credit: 0,
-      startDate: new Date('2025-03-22T00:00:00Z'),
-      endDate: null,
-      active: false,
-    });
-  });
-
-  it('includes afterLastDeadline segment with non-zero credit', () => {
-    const dc: RuntimeDateControl = {
-      releaseDate: new Date('2025-03-01T00:00:00Z'),
-      dueDate: new Date('2025-03-15T00:00:00Z'),
-      afterLastDeadline: { credit: 25 },
-    };
-    const now = new Date('2025-03-20T00:00:00Z');
-    const timeline = buildAccessTimeline(dc, now);
-
-    expect(timeline).toHaveLength(2);
-    expect(timeline[1]).toEqual({
-      credit: 25,
-      startDate: new Date('2025-03-15T00:00:00Z'),
-      endDate: null,
-      active: true,
-    });
-  });
-
+describe('resolveAccessControl accessTimeline', () => {
   it('returns accessTimeline from resolveAccessControl', () => {
     const result = resolveAccessControl({
       ...baseInput,
@@ -2010,86 +1912,5 @@ describe('buildAccessTimeline', () => {
     expect(result.accessTimeline[0].active).toBe(true);
     expect(result.accessTimeline[1].credit).toBe(0);
     expect(result.accessTimeline[1].endDate).toBeNull();
-  });
-
-  it('prepends before-release entry when date is before releaseDate', () => {
-    const dc: RuntimeDateControl = {
-      releaseDate: new Date('2025-03-15T00:00:00Z'),
-      dueDate: new Date('2025-04-01T00:00:00Z'),
-    };
-    const now = new Date('2025-03-10T00:00:00Z');
-    const timeline = buildAccessTimeline(dc, now);
-
-    expect(timeline).toHaveLength(3);
-    expect(timeline[0]).toEqual({
-      credit: 0,
-      startDate: null,
-      endDate: new Date('2025-03-15T00:00:00Z'),
-      active: true,
-    });
-    expect(timeline[1].credit).toBe(100);
-    expect(timeline[1].active).toBe(false);
-    expect(timeline[2].credit).toBe(0);
-    expect(timeline[2].endDate).toBeNull();
-  });
-
-  it('does not include before-release entry when date is after releaseDate', () => {
-    const dc: RuntimeDateControl = {
-      releaseDate: new Date('2025-03-01T00:00:00Z'),
-      dueDate: new Date('2025-04-01T00:00:00Z'),
-    };
-    const now = new Date('2025-03-10T00:00:00Z');
-    const timeline = buildAccessTimeline(dc, now);
-
-    expect(timeline[0].startDate).toEqual(new Date('2025-03-01T00:00:00Z'));
-    expect(timeline[0].credit).toBe(100);
-  });
-
-  it('always includes after-last-deadline entry even without afterLastDeadline config', () => {
-    const dc: RuntimeDateControl = {
-      releaseDate: new Date('2025-03-01T00:00:00Z'),
-      dueDate: new Date('2025-03-15T00:00:00Z'),
-    };
-    const now = new Date('2025-03-20T00:00:00Z');
-    const timeline = buildAccessTimeline(dc, now);
-
-    const lastEntry = timeline[timeline.length - 1];
-    expect(lastEntry).toEqual({
-      credit: 0,
-      startDate: new Date('2025-03-15T00:00:00Z'),
-      endDate: null,
-      active: true,
-    });
-  });
-
-  it('includes both before-release and after-last-deadline in full timeline', () => {
-    const dc: RuntimeDateControl = {
-      releaseDate: new Date('2025-03-15T00:00:00Z'),
-      dueDate: new Date('2025-04-01T00:00:00Z'),
-      lateDeadlines: [{ date: '2025-04-08T00:00:00Z', credit: 50 }],
-      afterLastDeadline: { credit: 10 },
-    };
-    const now = new Date('2025-03-10T00:00:00Z');
-    const timeline = buildAccessTimeline(dc, now);
-
-    expect(timeline).toHaveLength(4);
-    // Before release
-    expect(timeline[0]).toEqual({
-      credit: 0,
-      startDate: null,
-      endDate: new Date('2025-03-15T00:00:00Z'),
-      active: true,
-    });
-    // Full credit
-    expect(timeline[1].credit).toBe(100);
-    // Late deadline
-    expect(timeline[2].credit).toBe(50);
-    // After last deadline
-    expect(timeline[3]).toEqual({
-      credit: 10,
-      startDate: new Date('2025-04-08T00:00:00Z'),
-      endDate: null,
-      active: false,
-    });
   });
 });
