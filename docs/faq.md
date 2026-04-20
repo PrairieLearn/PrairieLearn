@@ -161,6 +161,14 @@ To learn more about where files are stored, please see [clientFiles and serverFi
 
 ## How can I reference material in `clientFilesQuestion` from the `server.py`?
 
+Functions in `server.py` are called with the question path as the current working directory, so you can access files in `clientFilesQuestion` using relative paths. For example, if you have a file named `data.csv` in `clientFilesQuestion`, you can access it from `server.py` using:
+
+```python
+def generate(data):
+    with open("clientFilesQuestion/data.csv") as f:
+        # do something with the file
+```
+
 See the [documentation about accessing files from `server.py` question code](./clientServerFiles.md#accessing-files-from-serverpy-question-code) for details.
 
 ## Why is my QID invalid?
