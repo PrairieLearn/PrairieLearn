@@ -150,11 +150,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     markdown_shortcuts = pl.get_boolean_attrib(
         element, "markdown-shortcuts", MARKDOWN_SHORTCUTS_DEFAULT
     )
-    counter = pl.get_enum_attrib(element, "counter", Counter, Counter.NONE)
     min_wc = pl.get_integer_attrib(element, "min-word-count", MIN_WORD_COUNT_DEFAULT)
     max_wc = pl.get_integer_attrib(element, "max-word-count", MAX_WORD_COUNT_DEFAULT)
-    if min_wc is not None or max_wc is not None:
-        counter = Counter.WORD
+    counter = (
+        Counter.WORD
+        if min_wc is not None or max_wc is not None
+        else pl.get_enum_attrib(element, "counter", Counter, Counter.NONE)
+    )
     clipboard_enabled = pl.get_boolean_attrib(
         element, "clipboard-enabled", CLIPBOARD_ENABLED_DEFAULT
     )
