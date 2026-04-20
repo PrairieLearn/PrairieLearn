@@ -79,6 +79,7 @@ interface AssessmentQuestionTableProps {
   assessmentQuestion: StaffAssessmentQuestion;
   questionQid: string;
   aiGradingMode: boolean;
+  aiSubmissionGroupingEnabled: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
@@ -119,6 +120,7 @@ export function AssessmentQuestionTable({
   assessmentQuestion,
   questionQid,
   aiGradingMode,
+  aiSubmissionGroupingEnabled,
   rubricData,
   instanceQuestionGroups,
   courseStaff,
@@ -743,63 +745,69 @@ export function AssessmentQuestionTable({
                     </Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
-                {!availableAiGradingProviders.includes('openai') ? (
-                  <OverlayTrigger
-                    tooltip={{
-                      body: 'No OpenAI API key is configured. Add a key in AI grading settings to use submission grouping.',
-                      props: { id: 'ai-grouping-no-openai-tooltip' },
-                    }}
-                  >
-                    <span style={{ display: 'inline-block' }}>
-                      <Button variant="light" size="sm" style={{ pointerEvents: 'none' }} disabled>
+                {aiSubmissionGroupingEnabled &&
+                  (!availableAiGradingProviders.includes('openai') ? (
+                    <OverlayTrigger
+                      tooltip={{
+                        body: 'No OpenAI API key is configured. Add a key in AI grading settings to use submission grouping.',
+                        props: { id: 'ai-grouping-no-openai-tooltip' },
+                      }}
+                    >
+                      <span style={{ display: 'inline-block' }}>
+                        <Button
+                          variant="light"
+                          size="sm"
+                          style={{ pointerEvents: 'none' }}
+                          disabled
+                        >
+                          <i className="bi bi-stars" aria-hidden="true" />
+                          <span className="d-none d-sm-inline">AI submission grouping</span>
+                        </Button>
+                      </span>
+                    </OverlayTrigger>
+                  ) : (
+                    <Dropdown>
+                      <Dropdown.Toggle variant="light" size="sm">
                         <i className="bi bi-stars" aria-hidden="true" />
                         <span className="d-none d-sm-inline">AI submission grouping</span>
-                      </Button>
-                    </span>
-                  </OverlayTrigger>
-                ) : (
-                  <Dropdown>
-                    <Dropdown.Toggle variant="light" size="sm">
-                      <i className="bi bi-stars" aria-hidden="true" />
-                      <span className="d-none d-sm-inline">AI submission grouping</span>
-                    </Dropdown.Toggle>
-                    <Dropdown.Menu align="end">
-                      <Dropdown.Item
-                        disabled={selectedIds.length === 0}
-                        onClick={() =>
-                          onSetGroupInfoModalState({ type: 'selected', ids: selectedIds })
-                        }
-                      >
-                        <div className="d-flex justify-content-between align-items-center w-100">
-                          <span>Group selected submissions</span>
-                          <span className="badge bg-secondary ms-2">
-                            {aiGroupingCounts.selected}
-                          </span>
-                        </div>
-                      </Dropdown.Item>
-                      <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'all' })}>
-                        <div className="d-flex justify-content-between align-items-center w-100">
-                          <span>Group all submissions</span>
-                          <span className="badge bg-secondary ms-2">{aiGroupingCounts.all}</span>
-                        </div>
-                      </Dropdown.Item>
-                      <Dropdown.Item
-                        onClick={() => onSetGroupInfoModalState({ type: 'ungrouped' })}
-                      >
-                        <div className="d-flex justify-content-between align-items-center w-100">
-                          <span>Group ungrouped submissions</span>
-                          <span className="badge bg-secondary ms-2">
-                            {aiGroupingCounts.ungrouped}
-                          </span>
-                        </div>
-                      </Dropdown.Item>
-                      <Dropdown.Divider />
-                      <Dropdown.Item onClick={() => setShowDeleteAiGroupingsModal(true)}>
-                        Delete all AI groupings
-                      </Dropdown.Item>
-                    </Dropdown.Menu>
-                  </Dropdown>
-                )}
+                      </Dropdown.Toggle>
+                      <Dropdown.Menu align="end">
+                        <Dropdown.Item
+                          disabled={selectedIds.length === 0}
+                          onClick={() =>
+                            onSetGroupInfoModalState({ type: 'selected', ids: selectedIds })
+                          }
+                        >
+                          <div className="d-flex justify-content-between align-items-center w-100">
+                            <span>Group selected submissions</span>
+                            <span className="badge bg-secondary ms-2">
+                              {aiGroupingCounts.selected}
+                            </span>
+                          </div>
+                        </Dropdown.Item>
+                        <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'all' })}>
+                          <div className="d-flex justify-content-between align-items-center w-100">
+                            <span>Group all submissions</span>
+                            <span className="badge bg-secondary ms-2">{aiGroupingCounts.all}</span>
+                          </div>
+                        </Dropdown.Item>
+                        <Dropdown.Item
+                          onClick={() => onSetGroupInfoModalState({ type: 'ungrouped' })}
+                        >
+                          <div className="d-flex justify-content-between align-items-center w-100">
+                            <span>Group ungrouped submissions</span>
+                            <span className="badge bg-secondary ms-2">
+                              {aiGroupingCounts.ungrouped}
+                            </span>
+                          </div>
+                        </Dropdown.Item>
+                        <Dropdown.Divider />
+                        <Dropdown.Item onClick={() => setShowDeleteAiGroupingsModal(true)}>
+                          Delete all AI groupings
+                        </Dropdown.Item>
+                      </Dropdown.Menu>
+                    </Dropdown>
+                  ))}
               </>
             ) : (
               <Dropdown>
