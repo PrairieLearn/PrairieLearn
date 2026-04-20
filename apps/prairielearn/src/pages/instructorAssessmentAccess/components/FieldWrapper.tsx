@@ -7,6 +7,7 @@ export function FieldWrapper({
   onOverride,
   onRemoveOverride,
   headerToggle,
+  headerAction,
   children,
 }: {
   isOverridden: boolean;
@@ -14,6 +15,7 @@ export function FieldWrapper({
   onOverride?: () => void;
   onRemoveOverride?: () => void;
   headerToggle?: ReactNode;
+  headerAction?: ReactNode;
   children: ReactNode;
 }) {
   const cardStyle = isOverridden ? {} : { border: '2px dashed var(--bs-border-color)' };
@@ -43,16 +45,20 @@ export function FieldWrapper({
                 {headerToggle}
                 <strong>{label}</strong>
               </div>
-              {onRemoveOverride && (
-                <Button
-                  size="sm"
-                  variant="outline-danger"
-                  aria-label={`Remove override for ${label}`}
-                  onClick={onRemoveOverride}
-                >
-                  Remove override
-                </Button>
-              )}
+              <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                {headerAction}
+                {onRemoveOverride && (
+                  <Button
+                    size="sm"
+                    variant="outline-danger"
+                    className="text-nowrap"
+                    aria-label={`Remove override for ${label}`}
+                    onClick={onRemoveOverride}
+                  >
+                    Remove override
+                  </Button>
+                )}
+              </div>
             </div>
             {children}
           </>

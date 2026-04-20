@@ -76,81 +76,7 @@ function computeNextDeadline({
   return { date: defaultDate, credit: defaultCredit };
 }
 
-function DeadlineArrayToggle({
-  type,
-  fieldArrayName,
-  idPrefix,
-  deadlines,
-  releaseDate,
-  dueDate,
-  displayTimezone,
-  showLabel,
-}: {
-  type: 'early' | 'late';
-  fieldArrayName: DeadlineArrayFieldName;
-  idPrefix: string;
-  deadlines: DeadlineEntry[];
-  releaseDate: string | null | undefined;
-  dueDate: string | null | undefined;
-  displayTimezone: string;
-  showLabel?: boolean;
-}) {
-  const { fields, append, remove } = useFieldArray<AccessControlFormData, typeof fieldArrayName>({
-    name: fieldArrayName,
-  });
-
-  const label = type === 'early' ? 'Early deadlines' : 'Late deadlines';
-
-  return (
-    <ToggleTitle
-      id={`${idPrefix}-${type}-deadlines-enabled`}
-      label={label}
-      checked={fields.length > 0}
-      showLabel={showLabel}
-      onChange={(checked) => {
-        if (checked) {
-          append(computeNextDeadline({ type, deadlines, releaseDate, dueDate, displayTimezone }));
-        } else {
-          remove();
-        }
-      }}
-    />
-  );
-}
-
-function DeadlineArrayAddButton({
-  type,
-  fieldArrayName,
-  deadlines,
-  releaseDate,
-  dueDate,
-  displayTimezone,
-}: {
-  type: 'early' | 'late';
-  fieldArrayName: DeadlineArrayFieldName;
-  deadlines: DeadlineEntry[];
-  releaseDate: string | null | undefined;
-  dueDate: string | null | undefined;
-  displayTimezone: string;
-}) {
-  const { append } = useFieldArray<AccessControlFormData, typeof fieldArrayName>({
-    name: fieldArrayName,
-  });
-
-  return (
-    <Button
-      size="sm"
-      variant="outline-primary"
-      onClick={() => {
-        append(computeNextDeadline({ type, deadlines, releaseDate, dueDate, displayTimezone }));
-      }}
-    >
-      Add {type === 'early' ? 'early' : 'late'}
-    </Button>
-  );
-}
-
-function DeadlineArrayBody({
+function DeadlineArrayInput({
   type,
   fieldArrayName,
   idPrefix,
@@ -160,6 +86,7 @@ function DeadlineArrayBody({
   validationDueDate,
   deadlines,
   displayTimezone,
+  renderInlineHeader = true,
 }: {
   type: 'early' | 'late';
   fieldArrayName: DeadlineArrayFieldName;
@@ -170,14 +97,16 @@ function DeadlineArrayBody({
   validationDueDate?: string | null | undefined;
   deadlines: DeadlineEntry[];
   displayTimezone: string;
+  renderInlineHeader?: boolean;
 }) {
   const { register, trigger } = useFormContext<AccessControlFormData>();
   const isEarly = type === 'early';
 
-  const { fields: deadlineFields, remove: removeDeadline } = useFieldArray<
-    AccessControlFormData,
-    typeof fieldArrayName
-  >({
+  const {
+    fields: deadlineFields,
+    append: appendDeadline,
+    remove: removeDeadline,
+  } = useFieldArray<AccessControlFormData, typeof fieldArrayName>({
     name: fieldArrayName,
   });
 
@@ -316,8 +245,32 @@ function DeadlineArrayBody({
     return true;
   };
 
+  const addDeadline = () => {
+    appendDeadline(computeNextDeadline({ type, deadlines, releaseDate, dueDate, displayTimezone }));
+  };
+
   return (
-    <>
+    <div>
+      {renderInlineHeader && (
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <ToggleTitle
+            id={`${idPrefix}-${type}-deadlines-enabled`}
+            label={isEarly ? 'Early deadlines' : 'Late deadlines'}
+            checked={deadlineFields.length > 0}
+            onChange={(checked) => {
+              if (checked) {
+                addDeadline();
+              } else {
+                removeDeadline();
+              }
+            }}
+          />
+          <Button size="sm" variant="outline-primary" onClick={addDeadline}>
+            Add {isEarly ? 'early' : 'late'}
+          </Button>
+        </div>
+      )}
+
       {deadlineFields.map((deadlineField, index) => (
         <div key={deadlineField.id} className="mb-3">
           <div className="d-flex gap-2 mb-1 flex-wrap align-items-start">
@@ -400,7 +353,7 @@ function DeadlineArrayBody({
           <Form.Text className="text-muted">{getTimeRangeText(index)}</Form.Text>
         </div>
       ))}
-    </>
+    </div>
   );
 }
 
@@ -431,38 +384,17 @@ export function MainDeadlineArrayField({
   if (!shouldShow) return null;
 
   return (
-    <div>
-      <div className="d-flex justify-content-between align-items-center mb-2">
-        <DeadlineArrayToggle
-          type={type}
-          fieldArrayName={fieldName}
-          idPrefix="mainRule"
-          deadlines={deadlines}
-          releaseDate={releaseDate}
-          dueDate={dueDate}
-          displayTimezone={displayTimezone}
-        />
-        <DeadlineArrayAddButton
-          type={type}
-          fieldArrayName={fieldName}
-          deadlines={deadlines}
-          releaseDate={releaseDate}
-          dueDate={dueDate}
-          displayTimezone={displayTimezone}
-        />
-      </div>
-      <DeadlineArrayBody
-        type={type}
-        fieldArrayName={fieldName}
-        idPrefix="mainRule"
-        releaseDate={releaseDate}
-        dueDate={dueDate}
-        validationReleaseDate={releaseDate}
-        validationDueDate={dueDate}
-        deadlines={deadlines}
-        displayTimezone={displayTimezone}
-      />
-    </div>
+    <DeadlineArrayInput
+      type={type}
+      fieldArrayName={fieldName}
+      idPrefix="mainRule"
+      releaseDate={releaseDate}
+      dueDate={dueDate}
+      validationReleaseDate={releaseDate}
+      validationDueDate={dueDate}
+      deadlines={deadlines}
+      displayTimezone={displayTimezone}
+    />
   );
 }
 
@@ -479,6 +411,7 @@ export function OverrideDeadlineArrayField({
   const fieldPath = isEarly ? 'earlyDeadlines' : 'lateDeadlines';
   const label = isEarly ? 'Early deadlines' : 'Late deadlines';
   const fieldArrayName = `overrides.${index}.${fieldPath}` as const;
+  const idPrefix = `overrides-${index}`;
 
   const { setValue } = useFormContext<AccessControlFormData>();
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, fieldPath);
@@ -512,6 +445,19 @@ export function OverrideDeadlineArrayField({
   const validationReleaseDate = releaseDateOverridden ? overrideReleaseDate : undefined;
   const validationDueDate = dueDateOverridden ? overrideDueDate : undefined;
 
+  const { fields, append, remove } = useFieldArray<AccessControlFormData, typeof fieldArrayName>({
+    name: fieldArrayName,
+  });
+
+  const nextDeadline = () =>
+    computeNextDeadline({
+      type,
+      deadlines,
+      releaseDate: effectiveReleaseDate,
+      dueDate: effectiveDueDate,
+      displayTimezone,
+    });
+
   return (
     <FieldWrapper
       isOverridden={isOverridden}
@@ -523,38 +469,31 @@ export function OverrideDeadlineArrayField({
       }}
       onRemoveOverride={removeOverride}
       headerToggle={
-        <DeadlineArrayToggle
-          type={type}
-          fieldArrayName={fieldArrayName}
-          idPrefix={`overrides-${index}`}
-          deadlines={deadlines}
-          releaseDate={effectiveReleaseDate}
-          dueDate={effectiveDueDate}
-          displayTimezone={displayTimezone}
+        <ToggleTitle
+          id={`${idPrefix}-${type}-deadlines-enabled`}
+          label={label}
+          checked={fields.length > 0}
           showLabel={false}
+          onChange={(checked) => (checked ? append(nextDeadline()) : remove())}
         />
       }
+      headerAction={
+        <Button size="sm" variant="outline-primary" onClick={() => append(nextDeadline())}>
+          Add {isEarly ? 'early' : 'late'}
+        </Button>
+      }
     >
-      <div className="d-flex justify-content-end mb-2">
-        <DeadlineArrayAddButton
-          type={type}
-          fieldArrayName={fieldArrayName}
-          deadlines={deadlines}
-          releaseDate={effectiveReleaseDate}
-          dueDate={effectiveDueDate}
-          displayTimezone={displayTimezone}
-        />
-      </div>
-      <DeadlineArrayBody
+      <DeadlineArrayInput
         type={type}
         fieldArrayName={fieldArrayName}
-        idPrefix={`overrides-${index}`}
+        idPrefix={idPrefix}
         releaseDate={effectiveReleaseDate}
         dueDate={effectiveDueDate}
         validationReleaseDate={validationReleaseDate}
         validationDueDate={validationDueDate}
         deadlines={deadlines}
         displayTimezone={displayTimezone}
+        renderInlineHeader={false}
       />
     </FieldWrapper>
   );
