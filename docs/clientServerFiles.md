@@ -68,7 +68,7 @@ To allow students to see the contents of a file from a question, you can make a 
 
    See [the question dependencies documentation](./question/overview.md#question-dependencies) for more details on how to include client files as dependencies.
 
-4. Some elements have special support for files in these directories. For example, the `pl-file-editor` element allows a custom mode to be stored in `clientFilesCourse` or `clientFilesQuestion`, and specified using the `mode` attribute. See the [`pl-file-editor` documentation](./elements/pl-file-editor.md#editor-modes) for details.
+4. Some elements have special support for files in these directories. For example, the `pl-file-editor` element allows a custom mode to be stored in `clientFilesCourse` or `clientFilesQuestion`, and specified using the `ace-mode` attribute. See the [`pl-file-editor` documentation](./elements/pl-file-editor.md#editor-modes) for details.
 
 5. To provide these files in more advanced contexts, such as CSS references, audio/video tracks, or embedded objects, you can use the patterns `{{ options.client_files_course_url }}/filename.ext` and `{{ options.client_files_question_url }}/filename.ext` to get the URL for a file in `clientFilesCourse` or `clientFilesQuestion`, respectively. For example, to include an image from `clientFilesQuestion` as the background for a block, you can add the following to your question's `question.html` file:
 
@@ -82,7 +82,7 @@ To allow students to see the contents of a file from a question, you can make a 
 
     A common pattern used in the past was to use a relative link like `clientFilesQuestion/filename.ext` to access files in `clientFilesQuestion`. This pattern is not officially supported and may not work in all contexts, so you are highly encouraged to replace it with the `{{ options.client_files_question_url }}/filename.ext` pattern instead.
 
-Files in `clientFilesCourseInstance` and `clientFilesAssessment` (as well as `clientFilesCourse`) can be provided to students using the assessment text, which is rendered in the student's assessment overview page. These can be rendered using the `{{ client_files_course_instance }}`, `{{ client_files_assessment }}`, and `{{ client_files_course }}` patterns, which will render the addresses of the corresponding `clientFiles*` directory. More details can be found in the [assessment text documentation](assessment/configuration.md#adding-text-and-links-to-assessments).
+Files in `clientFilesCourseInstance` and `clientFilesAssessment` (as well as `clientFilesCourse`) can be provided to students using the assessment text, which is rendered in the student's assessment overview page. These can be rendered using the `{{ client_files_course_instance }}/filename.ext`, `{{ client_files_assessment }}/filename.ext`, and `{{ client_files_course }}/filename.ext` patterns, which will render the URLs for files in the corresponding `clientFiles*` directory. More details can be found in the [assessment text documentation](assessment/configuration.md#adding-text-and-links-to-assessments).
 
 ## Accessing files from `server.py` question code
 
@@ -146,8 +146,8 @@ Questions that use workspaces can also be configured to include files from quest
 ```python
 def generate(data):
     data["params"]["_workspace_files"] = [
-        {"name": "provided.txt", "questionFile": "clientFilesQuestion/config.json"},
-        {"name": "course.txt", "serverFilesCourseFile": "data.csv"},
+        {"name": "config.json", "questionFile": "clientFilesQuestion/config.json"},
+        {"name": "data.csv", "serverFilesCourseFile": "data.csv"},
     ]
 ```
 
