@@ -656,7 +656,7 @@ export async function getAndRenderVariant(
         submission,
       });
     }
-    return null;
+    return undefined;
   });
 
   if (locals.instance_question) {
@@ -685,8 +685,7 @@ export async function getAndRenderVariant(
     });
 
     const encodedJson = encodeURIComponent(questionJson);
-    const questionJsonBase64 = Buffer.from(encodedJson).toString('base64');
-    return questionJsonBase64;
+    return Buffer.from(encodedJson).toString('base64');
   });
 
   Object.assign(locals, htmls, { issues, rubric_data, questionJsonBase64 });
