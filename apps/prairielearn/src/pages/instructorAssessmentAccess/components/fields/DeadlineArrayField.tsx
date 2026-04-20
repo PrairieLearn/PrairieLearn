@@ -20,6 +20,7 @@ function DeadlineArrayInput({
   validationDueDate,
   deadlines,
   displayTimezone,
+  showLabel = true,
 }: {
   type: 'early' | 'late';
   fieldArrayName:
@@ -34,6 +35,7 @@ function DeadlineArrayInput({
   validationDueDate?: string | null | undefined;
   deadlines: DeadlineEntry[];
   displayTimezone: string;
+  showLabel?: boolean;
 }) {
   const { register, trigger } = useFormContext<AccessControlFormData>();
   const isEarly = type === 'early';
@@ -242,7 +244,9 @@ function DeadlineArrayInput({
         <Form.Check
           type="checkbox"
           id={`${idPrefix}-${type}-deadlines-enabled`}
-          label={<strong>{label}</strong>}
+          label={
+            showLabel ? <strong>{label}</strong> : <span className="visually-hidden">{label}</span>
+          }
           checked={deadlineFields.length > 0}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
@@ -451,6 +455,7 @@ export function OverrideDeadlineArrayField({
         validationDueDate={validationDueDate}
         deadlines={deadlines}
         displayTimezone={displayTimezone}
+        showLabel={false}
       />
     </FieldWrapper>
   );

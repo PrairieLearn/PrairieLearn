@@ -35,21 +35,22 @@ export function FieldWrapper({
             )}
           </div>
         ) : (
-          <div className="d-flex justify-content-between align-items-start gap-3">
-            <div className="flex-grow-1" style={{ minWidth: 0 }}>
-              {children}
+          <>
+            <div className="d-flex justify-content-between align-items-center gap-3 mb-2">
+              <strong>{label}</strong>
+              {onRemoveOverride && (
+                <Button
+                  size="sm"
+                  variant="outline-danger"
+                  aria-label={`Remove override for ${label}`}
+                  onClick={onRemoveOverride}
+                >
+                  Remove override
+                </Button>
+              )}
             </div>
-            {onRemoveOverride && (
-              <Button
-                size="sm"
-                variant="outline-danger"
-                aria-label={`Remove override for ${label}`}
-                onClick={onRemoveOverride}
-              >
-                Remove override
-              </Button>
-            )}
-          </div>
+            {children}
+          </>
         )}
       </Card.Body>
     </Card>

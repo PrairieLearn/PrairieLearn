@@ -10,10 +10,12 @@ function PasswordInput({
   value,
   onChange,
   idPrefix,
+  showLabel = true,
 }: {
   value: string | null;
   onChange: (value: string | null) => void;
   idPrefix: string;
+  showLabel?: boolean;
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const isInvalid = value !== null && value === '';
@@ -24,7 +26,9 @@ function PasswordInput({
       <Form.Check
         type="checkbox"
         id={`${idPrefix}-password-enabled`}
-        label={<strong>Password</strong>}
+        label={
+          showLabel ? <strong>Password</strong> : <span className="visually-hidden">Password</span>
+        }
         checked={value !== null}
         onChange={({ currentTarget }) => onChange(currentTarget.checked ? '' : null)}
       />
@@ -103,6 +107,7 @@ export function OverridePasswordField({ index }: { index: number }) {
       <PasswordInput
         value={field.value}
         idPrefix={`overrides-${index}`}
+        showLabel={false}
         onChange={field.onChange}
       />
     </FieldWrapper>

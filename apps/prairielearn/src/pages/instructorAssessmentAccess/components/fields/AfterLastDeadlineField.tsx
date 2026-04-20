@@ -74,12 +74,14 @@ function AfterLastDeadlineInput({
   overrideIndex,
   displayTimezone,
   showNoDueDateWarning = true,
+  showLabel = true,
 }: {
   value: AfterLastDeadlineValue | null;
   onChange: (value: AfterLastDeadlineValue | null) => void;
   overrideIndex?: number;
   displayTimezone: string;
   showNoDueDateWarning?: boolean;
+  showLabel?: boolean;
 }) {
   const isOverride = overrideIndex != null;
   const creditFieldPath = isOverride
@@ -145,8 +147,12 @@ function AfterLastDeadlineInput({
   return (
     <Form.Group>
       <div>
-        <strong>After last deadline</strong>
-        <br />
+        {showLabel && (
+          <>
+            <strong>After last deadline</strong>
+            <br />
+          </>
+        )}
         <small className="text-muted">{getLastDeadlineText()}</small>
       </div>
       <div className="mb-2 mt-2">
@@ -265,6 +271,7 @@ export function OverrideAfterLastDeadlineField({
         overrideIndex={index}
         displayTimezone={displayTimezone}
         showNoDueDateWarning={false}
+        showLabel={false}
         onChange={field.onChange}
       />
     </FieldWrapper>

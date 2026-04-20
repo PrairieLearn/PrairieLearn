@@ -147,7 +147,6 @@ export function OverrideReleaseDateField({
       }}
       onRemoveOverride={removeOverride}
     >
-      <strong className="d-block mb-2">Release</strong>
       <ReleaseDateInput
         value={field.value}
         idPrefix={`overrides-${index}`}

@@ -10,18 +10,26 @@ function DurationInput({
   onChange,
   idPrefix,
   error,
+  showLabel = true,
 }: {
   value: number | null;
   onChange: (value: number | null) => void;
   idPrefix: string;
   error?: string;
+  showLabel?: boolean;
 }) {
   return (
     <Form.Group>
       <Form.Check
         type="checkbox"
         id={`${idPrefix}-time-limit-enabled`}
-        label={<strong>Time limit</strong>}
+        label={
+          showLabel ? (
+            <strong>Time limit</strong>
+          ) : (
+            <span className="visually-hidden">Time limit</span>
+          )
+        }
         checked={value !== null}
         onChange={({ currentTarget }) => onChange(currentTarget.checked ? 60 : null)}
       />
@@ -122,6 +130,7 @@ export function OverrideDurationField({ index }: { index: number }) {
         value={field.value}
         idPrefix={`overrides-${index}`}
         error={error?.message}
+        showLabel={false}
         onChange={field.onChange}
       />
     </FieldWrapper>

@@ -561,7 +561,6 @@ export function OverrideAfterCompleteForm({
           }}
           onRemoveOverride={removeQvOverride}
         >
-          <strong className="d-block mb-2">Question visibility</strong>
           <QuestionVisibilityInput
             value={qvField.value}
             idPrefix={`overrides-${index}`}
@@ -583,7 +582,6 @@ export function OverrideAfterCompleteForm({
           }}
           onRemoveOverride={removeSvOverride}
         >
-          <strong className="d-block mb-2">Score visibility</strong>
           <ScoreVisibilityInput
             value={svField.value}
             idPrefix={`overrides-${index}`}

@@ -255,7 +255,6 @@ export function OverrideDueDateField({
       }}
       onRemoveOverride={removeOverride}
     >
-      <strong className="d-block mb-2">Due date</strong>
       <DueDateInput
         value={value}
         idPrefix={`overrides-${index}`}
