@@ -63,15 +63,24 @@ export function InstructorAssessments({
           <h1>Assessments</h1>
           ${authz_data.has_course_permission_edit && !course.example_course && rows.length > 0
             ? html`
-                <button
-                  type="button"
-                  class="btn btn-sm btn-light ms-auto"
-                  data-bs-toggle="modal"
-                  data-bs-target="#createAssessmentModal"
-                >
-                  <i class="fa fa-plus" aria-hidden="true"></i>
-                  <span class="d-none d-sm-inline">Add assessment</span>
-                </button>
+                <div class="d-flex gap-2 ms-auto">
+                  <a
+                    href="${urlPrefix}/instance_admin/canvas_import"
+                    class="btn btn-sm btn-outline-light"
+                  >
+                    <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline">Import from Canvas</span>
+                  </a>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-light"
+                    data-bs-toggle="modal"
+                    data-bs-target="#createAssessmentModal"
+                  >
+                    <i class="fa fa-plus" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline">Add assessment</span>
+                  </button>
+                </div>
               `
             : ''}
         </div>
