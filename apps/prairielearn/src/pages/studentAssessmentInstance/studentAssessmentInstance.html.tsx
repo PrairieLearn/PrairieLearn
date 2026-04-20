@@ -19,7 +19,11 @@ import {
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
 import type { AccessTimelineEntry } from '../../lib/assessment-access-control/timeline.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { type AssessmentInstance, type GroupConfig } from '../../lib/db-types.js';
+import {
+  type AssessmentInstance,
+  type GroupConfig,
+  type SprocAuthzAssessmentInstance,
+} from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
 import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.shared.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
@@ -450,7 +454,7 @@ function AssessmentStatus({
   assessment_instance: AssessmentInstance;
   accessTimeline: AccessTimelineEntry[] | null;
   displayTimezone: string;
-  authz_result: any;
+  authz_result: SprocAuthzAssessmentInstance;
 }) {
   if (assessment_instance.open && authz_result.active) {
     return html`
