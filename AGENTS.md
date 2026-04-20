@@ -202,6 +202,8 @@ Elements (similar to React components, used to build interactive questions) are 
 
 When changing element properties or options, you MUST update the corresponding documentation in `docs/elements/<element-name>.md` to match.
 
+When modifying or reviewing element controllers — especially adding fields to `data["params"]` or `data["correct_answers"]` — see the [`element-backwards-compat` skill](./.agents/skills/element-backwards-compat/SKILL.md) for the rules that protect existing variants from breaking.
+
 ### Testing
 
 - For Python tests, use `uv run pytest path/to/testfile.py` from the root directory.
