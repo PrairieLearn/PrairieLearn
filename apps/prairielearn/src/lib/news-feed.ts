@@ -38,19 +38,10 @@ export async function fetchAndCacheNewsItems(): Promise<void> {
 
     const feed = await parser.parseURL(feedUrl);
 
-    // Filter to only include items with matching categories
     const allowedCategories = config.newsFeedCategories;
     const items = feed.items.filter((item) =>
       hasMatchingCategory(item.categories ?? [], allowedCategories),
     );
-
-    if (items.length === 0) {
-      logger.verbose('news-feed: RSS feed has no matching items', {
-        totalItems: feed.items.length,
-        categories: allowedCategories,
-      });
-      return;
-    }
 
     const newsItems: NewsItemInput[] = [];
     for (const item of items) {
@@ -76,11 +67,20 @@ export async function fetchAndCacheNewsItems(): Promise<void> {
       });
     }
 
-    if (newsItems.length > 0) {
-      await upsertNewsItems(newsItems);
-      await hideNewsItemsNotInGuids(newsItems.map((item) => item.guid));
-      logger.verbose('news-feed: Synced news items', { count: newsItems.length });
+    if (items.length > 0 && newsItems.length === 0) {
+      logger.warn('news-feed: All feed items failed validation; skipping sync to avoid data loss', {
+        totalItems: feed.items.length,
+        matchedItems: items.length,
+      });
+      return;
     }
+
+    await upsertNewsItems(newsItems);
+    await hideNewsItemsNotInGuids(newsItems.map((item) => item.guid));
+    logger.verbose('news-feed: Synced news items', {
+      count: newsItems.length,
+      totalItems: feed.items.length,
+    });
   } catch (err) {
     Sentry.captureException(err);
     logger.error('news-feed: Error fetching or parsing RSS feed', { err });

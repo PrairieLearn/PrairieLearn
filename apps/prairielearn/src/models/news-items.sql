@@ -5,7 +5,7 @@ FROM
   news_items AS ni
   LEFT JOIN news_item_read_states AS nirs ON nirs.user_id = $user_id
 WHERE
-  ni.pub_date > COALESCE(nirs.last_read_at, '-infinity'::timestamptz)
+  ni.id > COALESCE(nirs.last_read_news_item_id, 0)
   AND ni.hidden_at IS NULL
 ORDER BY
   ni.pub_date DESC
@@ -14,20 +14,43 @@ LIMIT
 
 -- BLOCK upsert_news_item_read_state
 INSERT INTO
-  news_item_read_states (user_id, last_read_at)
+  news_item_read_states (user_id, last_read_news_item_id)
 VALUES
-  ($user_id, now())
+  (
+    $user_id,
+    COALESCE(
+      (
+        SELECT
+          MAX(id)
+        FROM
+          news_items
+      ),
+      0
+    )
+  )
 ON CONFLICT (user_id) DO UPDATE
 SET
-  last_read_at = now()
+  last_read_news_item_id = GREATEST(
+    news_item_read_states.last_read_news_item_id,
+    EXCLUDED.last_read_news_item_id
+  )
 RETURNING
   *;
 
--- BLOCK upsert_news_item
+-- BLOCK upsert_news_items
 INSERT INTO
   news_items (title, link, pub_date, guid, categories)
-VALUES
-  ($title, $link, $pub_date, $guid, $categories)
+SELECT
+  (item ->> 'title')::text,
+  (item ->> 'link')::text,
+  (item ->> 'pub_date')::timestamptz,
+  (item ->> 'guid')::text,
+  ARRAY(
+    SELECT
+      jsonb_array_elements_text(item -> 'categories')
+  )::text[]
+FROM
+  UNNEST($items::jsonb[]) AS item
 ON CONFLICT (guid) DO UPDATE
 SET
   title = EXCLUDED.title,
@@ -61,7 +84,10 @@ SET
     WHEN $hidden THEN now()
     ELSE NULL
   END,
-  managed_by = 'admin'
+  managed_by = CASE
+    WHEN $hidden THEN 'admin'::enum_news_item_managed_by
+    ELSE NULL
+  END
 WHERE
   id = $id
 RETURNING

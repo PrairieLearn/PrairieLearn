@@ -163,6 +163,7 @@ router.get(
             search={search}
             unreadNewsItems={unreadNewsItems}
             blogUrl={config.newsFeedBlogUrl}
+            now={res.locals.req_date}
           />
         ),
       }),

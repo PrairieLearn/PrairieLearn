@@ -138,11 +138,9 @@ export function AdministratorSettings({
                           <td class="align-middle">
                             ${item.managed_by === 'admin' && item.hidden_at != null
                               ? html`<span class="badge bg-secondary">Hidden by admin</span>`
-                              : item.managed_by === 'admin'
-                                ? html`<span class="badge bg-info">Managed by admin</span>`
-                                : item.managed_by === 'sync'
-                                  ? html`<span class="badge bg-secondary">Hidden by sync</span>`
-                                  : html`<span class="badge bg-success">Visible</span>`}
+                              : item.managed_by === 'sync' && item.hidden_at != null
+                                ? html`<span class="badge bg-secondary">Hidden by sync</span>`
+                                : html`<span class="badge bg-success">Visible</span>`}
                           </td>
                           <td class="align-middle">
                             ${item.hidden_at == null

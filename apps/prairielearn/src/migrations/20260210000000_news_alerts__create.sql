@@ -15,9 +15,9 @@ CREATE TABLE IF NOT EXISTS news_items (
 
 CREATE INDEX IF NOT EXISTS news_items_pub_date_idx ON news_items (pub_date DESC);
 
--- Create news_item_read_states table to track when users dismissed news alerts
+-- Create news_item_read_states table to track which news items users have dismissed
 CREATE TABLE IF NOT EXISTS news_item_read_states (
   id BIGSERIAL PRIMARY KEY,
   user_id BIGINT NOT NULL UNIQUE REFERENCES users (id) ON UPDATE CASCADE ON DELETE CASCADE,
-  last_read_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  last_read_news_item_id BIGINT NOT NULL DEFAULT 0
 );

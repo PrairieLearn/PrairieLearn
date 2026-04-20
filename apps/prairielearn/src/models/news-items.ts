@@ -34,18 +34,18 @@ export interface NewsItemInput {
   categories: string[];
 }
 
-export async function upsertNewsItem(item: NewsItemInput): Promise<NewsItem> {
-  return await queryRow(
-    sql.upsert_news_item,
-    {
-      title: item.title,
-      link: item.link,
-      pub_date: item.pub_date,
-      guid: item.guid,
-      categories: item.categories,
-    },
+export async function upsertNewsItems(items: NewsItemInput[]): Promise<NewsItem[]> {
+  if (items.length === 0) return [];
+  return await queryRows(
+    sql.upsert_news_items,
+    { items: items.map((item) => JSON.stringify(item)) },
     NewsItemSchema,
   );
+}
+
+export async function upsertNewsItem(item: NewsItemInput): Promise<NewsItem> {
+  const [result] = await upsertNewsItems([item]);
+  return result;
 }
 
 export async function selectAllNewsItems(): Promise<NewsItem[]> {
@@ -54,15 +54,6 @@ export async function selectAllNewsItems(): Promise<NewsItem[]> {
 
 export async function setNewsItemHidden(id: string, hidden: boolean): Promise<NewsItem> {
   return await queryRow(sql.set_news_item_hidden, { id, hidden }, NewsItemSchema);
-}
-
-export async function upsertNewsItems(items: NewsItemInput[]): Promise<NewsItem[]> {
-  const results: NewsItem[] = [];
-  for (const item of items) {
-    const result = await upsertNewsItem(item);
-    results.push(result);
-  }
-  return results;
 }
 
 export async function hideNewsItemsNotInGuids(guids: string[]): Promise<void> {

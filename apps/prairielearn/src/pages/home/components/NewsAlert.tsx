@@ -18,12 +18,11 @@ interface NewsAlertProps {
   newsItems: NewsItem[];
   csrfToken: string;
   blogUrl: string | null;
+  now: Date;
 }
 
-export function NewsAlert({ newsItems, csrfToken, blogUrl }: NewsAlertProps) {
+export function NewsAlert({ newsItems, csrfToken, blogUrl, now }: NewsAlertProps) {
   if (newsItems.length === 0) return null;
-
-  const now = new Date();
 
   return (
     <div className="card mb-4 news-alert bg-body" data-testid="news-alert">
@@ -50,13 +49,13 @@ export function NewsAlert({ newsItems, csrfToken, blogUrl }: NewsAlertProps) {
       `}</style>
       <div className="card-body">
         <div className="d-flex align-items-center mb-3">
-          <span
-            className="fw-semibold d-flex align-items-center lh-1"
+          <h2
+            className="fw-semibold d-flex align-items-center lh-1 mb-0"
             style={{ fontSize: '1.125rem' }}
           >
             <i className="bi bi-newspaper me-2" aria-hidden="true" />
             News
-          </span>
+          </h2>
           <form method="POST" className="ms-auto m-0 d-flex">
             <input type="hidden" name="__csrf_token" value={csrfToken} />
             <input type="hidden" name="__action" value="dismiss_news_alert" />

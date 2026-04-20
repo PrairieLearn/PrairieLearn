@@ -1329,7 +1329,7 @@ export const NamedLockSchema = null;
 
 export const NewsItemReadStateSchema = z.object({
   id: IdSchema,
-  last_read_at: DateFromISOString,
+  last_read_news_item_id: IdSchema,
   user_id: IdSchema,
 });
 export type NewsItemReadState = z.infer<typeof NewsItemReadStateSchema>;

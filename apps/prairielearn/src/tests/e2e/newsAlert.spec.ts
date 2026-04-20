@@ -1,29 +1,24 @@
-import type { Page } from '@playwright/test';
-
 import { upsertNewsItem } from '../../models/news-items.js';
 
 import { createTest, expect } from './fixtures.js';
+import { waitForJobAndCheckOutput } from './jobSequenceUtils.js';
 
 const test = createTest({
   newsFeedUrl: 'https://example.com/feed.xml',
 });
 
-async function syncAllCourses(page: Page) {
-  await page.goto('/pl/loadFromDisk');
-  await expect(page).toHaveURL(/\/jobSequence\//);
-  await expect(page.locator('.badge', { hasText: 'Success' })).toBeVisible();
-}
-
 test.describe.serial('News alert', () => {
   test.beforeAll(async ({ browser, workerPort }) => {
     const page = await browser.newPage({ baseURL: `http://localhost:${workerPort}` });
-    await syncAllCourses(page);
+    await page.goto('/pl/loadFromDisk');
+    await waitForJobAndCheckOutput(page, []);
     await page.close();
     await upsertNewsItem({
       title: 'Test News Item for E2E',
       link: 'https://example.com/news/test-e2e-item',
       pub_date: new Date(),
       guid: `test-news-item-${Date.now()}`,
+      categories: [],
     });
   });
 
