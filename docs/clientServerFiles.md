@@ -70,9 +70,15 @@ To allow students to see the contents of a file from a question, you can make a 
 
 4. Some elements have special support for files in these directories. For example, the `pl-file-editor` element allows a custom mode to be stored in `clientFilesCourse` or `clientFilesQuestion`, and specified using the `mode` attribute. See the [`pl-file-editor` documentation](./elements/pl-file-editor.md#editor-modes) for details.
 
-5. To provide these files in more advanced contexts, such as CSS references, audio/video tracks, or embedded objects, you can use the patterns `{{ options.client_files_course_url }}/filename.ext` and `{{ options.client_files_question_url }}/filename.ext` to get the URL for a file in `clientFilesCourse` or `clientFilesQuestion`, respectively.
+5. To provide these files in more advanced contexts, such as CSS references, audio/video tracks, or embedded objects, you can use the patterns `{{ options.client_files_course_url }}/filename.ext` and `{{ options.client_files_question_url }}/filename.ext` to get the URL for a file in `clientFilesCourse` or `clientFilesQuestion`, respectively. For example, to include an image from `clientFilesQuestion` as the background for a block, you can add the following to your question's `question.html` file:
 
-   !!! warning
+   ```html
+   <div style="background-image: url('{{ options.client_files_question_url }}/power-station.jpg')">
+     <!-- content here -->
+   </div>
+   ```
+
+   ??? warning title="Avoid using relative URLs"
 
    A common pattern used in the past was to use a relative link like `clientFilesQuestion/filename.ext` to access files in `clientFilesQuestion`. This pattern is not officially supported and may not work in all contexts, so you are highly encouraged to replace it with the `{{ options.client_files_question_url }}/filename.ext` pattern instead.
 
@@ -103,7 +109,7 @@ def generate(data):
 
 !!! note
 
-    Note that, although `data["options"]["question_path"]` provides an absolute path to the question directory, the code is executed with the question directory as the current working directory, so you can also access files in the question directory using relative paths. Similarly, you can access files in `clientFilesQuestion` using relative paths, as the directory is guaranteed to be a subdirectory of the question directory. However, `clientFilesCourse` and `serverFilesCourse` are not subdirectories of the question directory and are not guaranteed to be found in any specific location relative to the question directory, so you must use the absolute paths provided in `data["options"]` to access files in those directories.
+    Although `data["options"]["question_path"]` provides an absolute path to the question directory, the code is executed with the question directory as the current working directory, so you can also access files in the question directory using relative paths. Similarly, you can access files in `clientFilesQuestion` using relative paths, as the directory is guaranteed to be a subdirectory of the question directory. However, `clientFilesCourse` and `serverFilesCourse` are not subdirectories of the question directory and are not guaranteed to be found in any specific location relative to the question directory, so you must use the absolute paths provided in `data["options"]` to access files in those directories.
 
 If your `serverFilesCourse` file contains Python code, your `server.py` code can import that code as a module without the need to update the Python path. The `serverFilesCourse` directory is automatically added to the Python path when executing `server.py` code, so you can simply import the module as if it were in the same directory. For example, if you have a file named `course_utils.py` in `serverFilesCourse`, you can import it in `server.py` using:
 
