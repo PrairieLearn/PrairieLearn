@@ -346,3 +346,27 @@ def test_empty_set_submission_round_trips_when_set_notation_is_enabled() -> None
 
     symbolic_input.grade(element_html, data)
     assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_additional_simplifications_cannot_be_used_with_set_notation() -> None:
+    element_html = build_element_html(
+        'allow-set-notation="true"',
+        'additional-simplifications="expand"',
+        'correct-answer="1"',
+    )
+    data = make_question_data(submitted_answers={"test": "1"})
+
+    with pytest.raises(
+        ValueError, match=(r"'additional-simplifications'.*'allow-set-notation'")
+    ):
+        symbolic_input.prepare(element_html, data)
+
+    data = make_question_data(
+        submitted_answers={"test": "1"},
+        correct_answers={"test": "1"},
+    )
+
+    with pytest.raises(
+        ValueError, match=(r"'additional-simplifications'.*'allow-set-notation'")
+    ):
+        symbolic_input.grade(element_html, data)
