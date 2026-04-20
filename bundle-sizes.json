@@ -282,7 +282,7 @@
   "scripts/esm-bundles/hydrated-components/RubricSettings.ts": {
     "raw": 442408,
     "gzip": 138113,
-    "brotli": 120606
+    "brotli": 120586
   },
   "scripts/esm-bundles/hydrated-components/HomeCards.ts": {
     "raw": 980532,
@@ -402,6 +402,6 @@
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionManualGrading.ts": {
     "raw": 1327670,
     "gzip": 391075,
-    "brotli": 321420
+    "brotli": 321352
   }
 }
