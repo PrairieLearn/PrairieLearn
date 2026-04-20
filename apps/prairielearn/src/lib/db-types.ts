@@ -222,8 +222,10 @@ export const AssessmentAccessControlRuleSchema = z.object({
 
   assessment_id: IdSchema,
 
-  // Date control fields
+  // Before release fields
   before_release_listed: z.boolean().nullable(),
+
+  // Date control fields
   date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
   date_control_after_last_deadline_credit: z.number().nullable(),
   date_control_due_date: DateFromISOString.nullable(),
