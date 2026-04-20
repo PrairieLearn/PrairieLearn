@@ -797,6 +797,7 @@ function DeleteAllGroupsModal({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.deleteAll.mutationOptions());
+  const appError = getAppError<Record<string, never>>(mutation.error);
 
   const handleHide = () => {
     mutation.reset();
@@ -820,9 +821,9 @@ function DeleteAllGroupsModal({
           <Modal.Title>Delete all existing groups</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {mutation.error && (
+          {appError && (
             <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {mutation.error.message}
+              {appError.message}
             </Alert>
           )}
           <p>
