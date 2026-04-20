@@ -609,7 +609,3 @@ export async function deleteAllGroups(assessmentId: string, authnUserId: string)
     authn_user_id: authnUserId,
   });
 }
-
-export function getRoleNamesForUser(groupInfo: GroupInfo, user: User): string[] {
-  return groupInfo.rolesInfo?.roleAssignments[user.uid]?.map((r) => r.role_name) ?? ['None'];
-}

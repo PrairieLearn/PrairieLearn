@@ -19,6 +19,14 @@ export function LockpointRow({
   displayTimezone: string;
 }) {
   if (row.lockpoint_crossed) {
+    const parts: string[] = ['Previous questions locked'];
+    if (isGroupAssessment && row.lockpoint_crossed_authn_user_uid) {
+      parts.push(`by ${row.lockpoint_crossed_authn_user_uid}`);
+    }
+    if (row.lockpoint_crossed_at) {
+      parts.push(`at ${formatDate(row.lockpoint_crossed_at, displayTimezone)}`);
+    }
+
     return html`
       <tr class="table-light">
         <td colspan="${colspan}" class="py-2">
@@ -26,14 +34,7 @@ export function LockpointRow({
             <i class="fas fa-check-circle text-success me-2 mt-1" aria-hidden="true"></i>
             <div>
               <span class="fw-bold">Lockpoint</span>
-              <small class="text-muted d-block">
-                Previous questions
-                locked${isGroupAssessment && row.lockpoint_crossed_authn_user_uid
-                  ? html` by ${row.lockpoint_crossed_authn_user_uid}`
-                  : ''}${row.lockpoint_crossed_at
-                  ? html` at ${formatDate(row.lockpoint_crossed_at, displayTimezone)}`
-                  : ''}
-              </small>
+              <small class="text-muted d-block">${parts.join(' ')}</small>
             </div>
           </div>
         </td>
@@ -61,7 +62,7 @@ export function LockpointRow({
               type="button"
               class="btn btn-warning btn-sm text-nowrap"
               data-bs-toggle="modal"
-              data-bs-target="#crossLockpointModal-${row.zone_id}"
+              data-bs-target="#crossLockpointModal-${row.zone.id}"
             >
               Proceed to next questions
             </button>
