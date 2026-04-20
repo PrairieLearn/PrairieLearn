@@ -387,7 +387,7 @@ function EditGroupModal({
           )}
           {failures.length > 0 && (
             <Alert variant="warning" dismissible onClose={() => mutation.reset()}>
-              <strong>Some users could not be added:</strong>
+              <strong>Some changes could not be applied:</strong>
               <ul className="mb-0">
                 {failures.map((f) => (
                   <li key={f.uid}>
@@ -406,7 +406,7 @@ function EditGroupModal({
               className="form-control"
               id={`editGroupName-${row.group_id}`}
               value={row.name}
-              readOnly
+              disabled
             />
           </div>
           <div className="mb-3">
