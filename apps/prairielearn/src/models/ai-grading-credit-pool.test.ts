@@ -427,6 +427,33 @@ describe('adjustCreditPool', () => {
     assert.equal(pool.credit_non_transferable_milli_dollars, 7000);
   });
 
+  it('adds the full amount when transferable balance is negative', async () => {
+    const userId = await createTestUser();
+    await seedCreditBalances(ciId, userId, -500, 0);
+
+    await adjustCreditPool({
+      course_instance_id: ciId,
+      delta_milli_dollars: 200,
+      credit_type: 'transferable',
+      user_id: userId,
+      reason: 'Admin grant',
+    });
+
+    const pool = await selectCreditPool(ciId);
+    assert.equal(pool.credit_transferable_milli_dollars, -300);
+
+    const changes = await queryRows(
+      `SELECT * FROM ai_grading_credit_pool_changes
+       WHERE course_instance_id = $course_instance_id AND reason = 'Admin grant'`,
+      { course_instance_id: ciId },
+      AiGradingCreditPoolChangeSchema,
+    );
+    assert.equal(changes.length, 1);
+    assert.equal(changes[0].delta_milli_dollars, 200);
+    assert.equal(changes[0].credit_before_milli_dollars, -500);
+    assert.equal(changes[0].credit_after_milli_dollars, -300);
+  });
+
   it('refuses to deduct when transferable balance is already negative', async () => {
     const userId = await createTestUser();
     await seedCreditBalances(ciId, userId, -500, 0);

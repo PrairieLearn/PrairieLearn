@@ -303,9 +303,13 @@ export async function adjustCreditPool({
     reason,
     checkout_session_id,
     computeDelta: (currentBalance) => {
+      // Adds pass through unchanged so they can bring a negative balance
+      // back up by the full amount entered.
+      if (delta_milli_dollars > 0) return delta_milli_dollars;
       // Once transferable can go negative, a fresh deduct here would silently
       // drive it further; block it and require an explicit `setCreditPoolBalance`.
-      if (delta_milli_dollars < 0 && currentBalance <= 0) return 0;
+      if (currentBalance <= 0) return 0;
+      // Cap deducts at the current balance so they stop at 0.
       return Math.max(delta_milli_dollars, -currentBalance);
     },
   });

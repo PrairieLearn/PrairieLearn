@@ -371,7 +371,7 @@ function AdjustCreditsFormFeedback({
 
   if (!amountValid) {
     return (
-      <div id="amount-error" className="text-danger small mt-1">
+      <div id="amount-error" className="text-danger small mt-3">
         Enter an amount between {formatMilliDollars(amountMinMilliDollars)} and{' '}
         {formatMilliDollars(amountMaxMilliDollars)}, with at most 2 decimal places.
       </div>
