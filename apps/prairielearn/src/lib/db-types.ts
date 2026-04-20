@@ -234,8 +234,8 @@ export const AssessmentAccessControlRuleSchema = z.object({
   date_control_late_deadlines_overridden: z.boolean(),
   date_control_password: z.string().nullable(),
   date_control_password_overridden: z.boolean(),
-
   date_control_release_date: DateFromISOString.nullable(),
+
   id: IdSchema,
   number: z.number(),
 
