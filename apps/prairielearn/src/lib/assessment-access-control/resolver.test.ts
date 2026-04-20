@@ -1245,9 +1245,13 @@ describe('resolveAccessControl', () => {
       },
     );
 
-    // The gradebook displays rows even when access is denied and relies on
-    // `showClosedAssessmentScore` to decide whether to reveal prior scores, so
-    // the deny path must still honor the configured visibility flags.
+    // Regression test for #12579: a PT rule (no dateControl) with
+    // `afterComplete.score.hidden` must keep scores hidden during the
+    // grace window where `ip_to_mode` still reports Exam mode after the
+    // reservation has ended. The gradebook displays rows even when access
+    // is denied and relies on `showClosedAssessmentScore` to decide
+    // whether to reveal prior scores, so the deny path must still honor
+    // the configured visibility flags.
     it.each(visibilityConfigs)(
       'Exam mode with no PT reservation: $name',
       ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
@@ -1264,12 +1268,11 @@ describe('resolveAccessControl', () => {
     );
 
     it('keeps closed scores hidden when Exam mode outlives the PrairieTest reservation', () => {
-      // Regression test for #12579: `ip_to_mode` can continue reporting Exam
-      // mode for a short grace period after PrairieTest has already ended the
-      // reservation. The migrated PT rule should still respect the closed
-      // assessment visibility settings in that state.
-      // Uses a past dueDate to represent "exam has ended" — open-ended
-      // assessments (dueDate: null) are not considered closed.
+      // Covers the dateControl-with-past-dueDate variant of the #12579 grace
+      // period: the closed-assessment fallback grants access (`authorized:
+      // true`), but the configured visibility flags must still be honored.
+      // Open-ended rules (dueDate: null) don't hit this path — see the
+      // dateControl-less `it.each` cases above for that scenario.
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',
