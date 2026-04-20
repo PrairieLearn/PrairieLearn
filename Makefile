@@ -120,9 +120,17 @@ lint: lint-js lint-python lint-html lint-links lint-changeset
 lint-js:
 	@yarn eslint "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" --check
-# This is a separate target since the caches don't respect updates to plugins.
+# Separate target since the caches don't respect updates to plugins.
+# Split into two ESLint passes: the first is cacheable because its files never
+# match the type-aware config block (see `typeAwareFiles` in eslint.config.mjs);
+# the second runs the type-aware rules uncached, because ESLint's per-file
+# cache can't see cross-file type dependencies. Keep the ignore pattern in
+# sync with `typeAwareFiles`.
 lint-js-cached:
-	@yarn eslint --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
+	@yarn eslint --cache --cache-strategy content \
+		--ignore-pattern "apps/prairielearn/**/*.{ts,tsx}" \
+		"**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
+	@yarn eslint "apps/prairielearn/**/*.{ts,tsx}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" --check --cache --cache-strategy content
 lint-python:
 	@uv run ruff check ./
