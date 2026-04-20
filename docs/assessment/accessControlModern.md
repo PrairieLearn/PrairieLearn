@@ -41,7 +41,7 @@ Below is a complete skeleton showing all available fields. All fields are option
 {
   "accessControl": [
     {
-      "beforeRelease": { "listed": false },
+      "beforeRelease": { "listed": true },
       "dateControl": {
         "releaseDate": "2025-01-15T00:00:01",
         "dueDate": "2025-02-15T23:59:59",
