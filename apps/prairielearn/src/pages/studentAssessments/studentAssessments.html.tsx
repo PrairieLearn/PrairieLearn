@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
+import { DateFromISOString } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
@@ -44,9 +45,9 @@ export const StudentAssessmentsRowSchema = z.object({
   start_new_assessment_group: z.boolean(),
   assessment_group_heading: z.string(),
   show_before_release: z.boolean().optional(),
-  opens_at: z.string().nullable().optional(),
+  will_release_at: DateFromISOString.nullable().optional(),
 });
-type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowSchema>;
+export type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowSchema>;
 
 export function StudentAssessments({
   resLocals,
@@ -170,10 +171,10 @@ function AvailableCredit({
   displayTimezone: string;
 }) {
   if (row.modern_access_control && row.assessment_instance_id == null && !row.authorized) {
-    if (row.opens_at) {
+    if (row.will_release_at) {
       return html`
         <span class="text-muted">
-          Available ${formatDateShort(new Date(row.opens_at), displayTimezone)}
+          Available ${formatDateShort(row.will_release_at, displayTimezone)}
         </span>
       `;
     }
