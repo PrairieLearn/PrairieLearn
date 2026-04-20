@@ -1988,7 +1988,7 @@ describe('custom due credit', () => {
       },
     });
 
-  it('applies custom due credit at the due date', () => {
+  it('applies custom due credit before the due date', () => {
     const result = resolveAccessControl({
       ...baseInput,
       rules: [baseRule()],
@@ -2059,7 +2059,7 @@ describe('custom due credit', () => {
     expect(result.credit).toBe(120);
   });
 
-  it('gives custom due credit after the due date with no late deadlines', () => {
+  it('gives 0 credit after the due date with no late deadlines', () => {
     const result = resolveAccessControl({
       ...baseInput,
       rules: [baseRule()],

@@ -90,6 +90,10 @@ export function generateMainRuleDateTableRows(
     });
   });
 
+  const dueDateErr = formErrors?.due?.date?.message;
+  const dueCreditErr = formErrors?.due?.credit?.message;
+  const dueError = [dueDateErr, dueCreditErr].filter(Boolean).join('; ') || undefined;
+
   if (dueDate) {
     rows.push({
       date: (
@@ -102,13 +106,14 @@ export function generateMainRuleDateTableRows(
       ),
       label: 'Due',
       credit: `${dueCredit}%`,
-      error: formErrors?.due?.message,
+      error: dueError,
     });
   } else if (dueDate === null) {
     rows.push({
       date: 'No due date',
       label: 'Due',
       credit: `${dueCredit}%`,
+      error: dueError,
     });
   } else {
     // dueDate is an empty string — "Due on date" selected but no date entered
@@ -116,7 +121,7 @@ export function generateMainRuleDateTableRows(
       date: 'No date set',
       label: 'Due',
       credit: `${dueCredit}%`,
-      error: formErrors?.due?.message,
+      error: dueError,
     });
   }
 
@@ -432,6 +437,8 @@ function generateOverrideFieldItems(
 
   if (overriddenFields.has('due')) {
     const creditLabel = rule.due.credit != null ? ` (${rule.due.credit}%)` : '';
+    const dueDateErr = formErrors?.due?.date?.message;
+    const dueCreditErr = formErrors?.due?.credit?.message;
     items.push({
       label: 'Due date',
       value: rule.due.date ? (
@@ -447,7 +454,7 @@ function generateOverrideFieldItems(
       ) : (
         'No due date'
       ),
-      error: formErrors?.due?.message,
+      error: [dueDateErr, dueCreditErr].filter(Boolean).join('; ') || undefined,
     });
   }
 
