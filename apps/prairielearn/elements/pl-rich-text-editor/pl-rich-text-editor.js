@@ -174,7 +174,7 @@
 
     const hasBounds = wordCountFeedbackElement && (minWordCount || maxWordCount);
 
-    const updateWordCountFeedbackMessage = () => {
+    const updateWordCountFeedbackMessage = (wordCountErrorIfBlank) => {
       if (!hasBounds) return;
 
       const wordCount = countWords(getCountableText());
@@ -182,13 +182,16 @@
       const tooMany = maxWordCount && wordCount > maxWordCount;
 
       // If the text is empty, no error is shown.
-      wordCountFeedbackElement.classList.toggle('d-none', wordCount === 0 || !(tooFew || tooMany));
+      wordCountFeedbackElement.classList.toggle(
+        'd-none',
+        (wordCount === 0 && !wordCountErrorIfBlank) || !(tooFew || tooMany),
+      );
       wordCountFeedbackElement.textContent = tooFew
         ? `Too few words (${minWordCount - wordCount} more expected)`
         : `Too many words (${wordCount - maxWordCount} above limit)`;
     };
 
-    const updateHiddenInput = function () {
+    const updateHiddenInput = function (wordCountErrorIfBlank) {
       // If a user types something and erases it, the editor will be blank, but
       // the content will be something like `<p></p>`. In order to make sure
       // this is treated as blank by the element's parse code and tagged as
@@ -214,11 +217,11 @@
       }
 
       // Update word count requirements UI
-      updateWordCountFeedbackMessage();
+      updateWordCountFeedbackMessage(wordCountErrorIfBlank);
     };
 
-    quill.on('text-change', updateHiddenInput);
-    updateHiddenInput();
+    quill.on('text-change', () => updateHiddenInput(true));
+    updateHiddenInput(false);
   };
 
   // Override default implementation of 'formula'

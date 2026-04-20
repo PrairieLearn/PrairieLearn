@@ -130,6 +130,14 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         raise ValueError(
             'When "min-word-count" or "max-word-count" is set, "counter" must be set to "word".'
         )
+    if (
+        min_wc is not None
+        and min_wc > 0
+        and pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    ):
+        raise ValueError(
+            'Attribute "allow-blank" cannot be true when "min-word-count" is greater than 0.'
+        )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
