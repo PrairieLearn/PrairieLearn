@@ -127,11 +127,15 @@ lint-js:
 # cache can't see cross-file type dependencies. Keep the ignore pattern in
 # sync with `typeAwareFiles`.
 lint-js-cached:
+	@yarn eslint "apps/prairielearn/**/*.{ts,tsx}"
+	@yarn prettier "apps/prairielearn/**/*.{ts,tsx}" --check --cache --cache-strategy content
 	@yarn eslint --cache --cache-strategy content \
 		--ignore-pattern "apps/prairielearn/**/*.{ts,tsx}" \
 		"**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
-	@yarn eslint "apps/prairielearn/**/*.{ts,tsx}"
-	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" --check --cache --cache-strategy content
+	@yarn prettier \
+		"**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" \
+		"!apps/prairielearn/**/*.{ts,tsx}" \
+		--check --cache --cache-strategy content
 lint-python:
 	@uv run ruff check ./
 	@uv run ruff format --check ./
