@@ -161,17 +161,7 @@ To learn more about where files are stored, please see [clientFiles and serverFi
 
 ## How can I reference material in `clientFilesQuestion` from the `server.py`?
 
-To reference a question in the `clientFilesQuestion` folder from `server.py`,
-use the relative path from the base of the question.
-
-```text
-./clientFilesQuestion/<your_file_here>
-```
-
-The same pattern holds for referencing material in any subdirectory of the question directory.
-
-To learn more about where files are stored, please see
-[clientFiles and serverFiles](clientServerFiles.md).
+See the [documentation about accessing files from `server.py` question code](./clientServerFiles.md#accessing-files-from-serverpy-question-code) for details.
 
 ## Why is my QID invalid?
 
