@@ -486,6 +486,47 @@ class TestSympy:
         )
 
     @pytest.mark.parametrize(
+        ("fn_name", "fn_args"),
+        [
+            ("FiniteSet", (M,)),
+            ("Interval", (0, 1)),
+            ("Union", (sympy.EmptySet, sympy.EmptySet)),
+            ("Intersection", (sympy.EmptySet, sympy.EmptySet)),
+        ],
+    )
+    def test_json_conversion_respects_set_notation_reservations(
+        self,
+        fn_name: str,
+        fn_args: tuple[Any, ...],
+    ) -> None:
+        expr = sympy.Function(fn_name)(*fn_args)
+        assert isinstance(expr, sympy.Basic)
+
+        without_sets = psu.sympy_to_json(expr, allow_set_notation=False)
+        with_sets = psu.sympy_to_json(expr, allow_set_notation=True)
+
+        assert without_sets["_custom_functions"] == [fn_name]  # type: ignore
+        assert with_sets["_custom_functions"] == []  # type: ignore
+
+    @pytest.mark.parametrize(
+        "sympy_expr",
+        [
+            sympy.symbols("U"),
+            sympy.symbols("FiniteSet"),
+            sympy.symbols("Interval"),
+            sympy.symbols("Union"),
+            sympy.symbols("Intersection"),
+        ],
+    )
+    def test_json_conversion_no_sets_has_no_collisions(
+        self, sympy_expr: sympy.Expr
+    ) -> None:
+        assert sympy_expr == psu.json_to_sympy(
+            psu.sympy_to_json(sympy_expr, allow_set_notation=False),
+            allow_set_notation=False,
+        )
+
+    @pytest.mark.parametrize(
         ("a_pair", "custom_functions"),
         chain(
             zip(EXPR_PAIRS, repeat(None)),

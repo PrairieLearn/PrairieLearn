@@ -178,7 +178,7 @@ class _Constants:
 class _SympyJsonStrPrinter(StrPrinter):
     """String printer that keeps set notation parseable by avoiding banned ast nodes."""
 
-    def _print_EmptySet(self, _expr: sympy.EmptySet) -> str:  # noqa: N802
+    def _print_EmptySet(self, _expr: sympy.Set) -> str:  # noqa: N802
         return "FiniteSet()"
 
     def _print_Interval(self, expr: sympy.Interval) -> str:  # noqa: N802
@@ -933,7 +933,11 @@ def find_type_error_offset(expr: str, offsets: list[int], exc: TypeError) -> int
 
 
 def sympy_to_json(
-    a: sympy.Expr, *, allow_complex: bool = True, allow_trig_functions: bool = True
+    a: sympy.Basic,
+    *,
+    allow_complex: bool = True,
+    allow_trig_functions: bool = True,
+    allow_set_notation: bool = False,
 ) -> SympyJson:
     """Convert a SymPy expression to a JSON-seralizable dictionary.
 
@@ -958,6 +962,8 @@ def sympy_to_json(
         )
     if allow_trig_functions:
         reserved |= const.trig_functions.keys()
+    if allow_set_notation:
+        reserved |= const.set_functions.keys()
 
     # Apply substitutions for hidden variables
     a_sub = a.subs([

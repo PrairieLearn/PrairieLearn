@@ -567,7 +567,11 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     # Make sure we can parse the json again
     try:
-        a_sub_json = psu.sympy_to_json(a_sub_parsed, allow_complex=allow_complex)
+        a_sub_json = psu.sympy_to_json(
+            a_sub_parsed,
+            allow_complex=allow_complex,
+            allow_set_notation=allow_sets,
+        )
 
         # Convert safely to sympy
         psu.json_to_sympy(
