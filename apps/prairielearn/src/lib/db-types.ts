@@ -76,6 +76,9 @@ export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 export const EnumModeSchema = z.enum(['Public', 'Exam', 'SEB']);
 export type EnumMode = z.infer<typeof EnumModeSchema>;
 
+export const EnumNewsItemManagedBySchema = z.enum(['admin', 'sync']);
+export type EnumNewsItemManagedBy = z.infer<typeof EnumNewsItemManagedBySchema>;
+
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
@@ -1324,7 +1327,12 @@ export const LtiOutcomeSchema = z.object({
 export const MigrationSchema = null;
 export const NamedLockSchema = null;
 
-export const EnumNewsItemManagedBySchema = z.enum(['admin', 'sync']);
+export const NewsItemReadStateSchema = z.object({
+  id: IdSchema,
+  last_read_at: DateFromISOString,
+  user_id: IdSchema,
+});
+export type NewsItemReadState = z.infer<typeof NewsItemReadStateSchema>;
 
 export const NewsItemSchema = z.object({
   fetched_at: DateFromISOString,
@@ -1614,13 +1622,6 @@ export const UserSchema = z.object({
   uin: z.string().nullable(),
 });
 export type User = z.infer<typeof UserSchema>;
-
-export const NewsItemReadStateSchema = z.object({
-  id: IdSchema,
-  last_read_at: DateFromISOString,
-  user_id: IdSchema,
-});
-export type NewsItemReadState = z.infer<typeof NewsItemReadStateSchema>;
 
 export const UserSessionSchema = z.object({
   created_at: DateFromISOString,
