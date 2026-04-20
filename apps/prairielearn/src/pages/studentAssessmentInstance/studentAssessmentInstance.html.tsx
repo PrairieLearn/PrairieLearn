@@ -1,6 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
-import { hydrateHtml } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 
 import {
