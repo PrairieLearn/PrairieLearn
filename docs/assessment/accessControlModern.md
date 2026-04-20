@@ -31,7 +31,7 @@ The `accessControl` field is an array of entries in `infoAssessment.json`:
 ```
 
 - The **first element** (index 0) is the **defaults**. It applies to all students and sets the default behavior for the assessment.
-- **Subsequent elements** are **overrides**. Each override targets specific students using [student labels](#student-labels-and-overrides) or individual enrollments (configured via the UI), and can change any subset of the defaults' fields except `beforeRelease`.
+- **Subsequent elements** are **overrides**. Each override targets specific students using [student labels](#student-labels-and-overrides) or individual enrollments (configured via the UI), and can change some (but not all) of the defaults' fields.
 
 ### Full JSON skeleton
 
