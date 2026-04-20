@@ -870,6 +870,110 @@ describe('resolveAccessControl', () => {
       expect(result.credit).toBe(100);
       expect(result.active).toBe(true);
     });
+
+    it('grants access via PT reservation even when assessment is past due date', () => {
+      const ruleWithPastDueDate: AccessControlRuleInput = {
+        ...prairieTestMainRule,
+        rule: toRuntime({
+          dateControl: {
+            releaseDate: '2025-01-01T00:00:00Z',
+            dueDate: '2025-02-01T00:00:00Z',
+          },
+        }),
+      };
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Exam',
+        rules: [ruleWithPastDueDate],
+        prairieTestReservations: [validReservation],
+      });
+      expect(result.authorized).toBe(true);
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(true);
+      expect(result.showBeforeRelease).toBe(false);
+    });
+
+    it('grants access via PT reservation even when assessment is before release date', () => {
+      // A matching PT reservation must override the stale beforeRelease flag.
+      const preReleaseRule: AccessControlRuleInput = {
+        ...prairieTestMainRule,
+        rule: toRuntime({
+          dateControl: {
+            releaseDate: '2025-06-01T00:00:00Z',
+            dueDate: '2025-07-01T00:00:00Z',
+          },
+        }),
+      };
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Exam',
+        rules: [preReleaseRule],
+        prairieTestReservations: [validReservation],
+      });
+      expect(result.authorized).toBe(true);
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(true);
+      expect(result.showBeforeRelease).toBe(false);
+    });
+
+    it('denies access when Exam mode outlives the PrairieTest reservation', () => {
+      // Regression test for #12579: `ip_to_mode` can continue reporting Exam
+      // mode for a short grace period after PrairieTest has already ended the
+      // reservation. Without a `dateControl`, there is no closed-assessment
+      // fallback — the student must be denied outright.
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Exam',
+        rules: [prairieTestMainRule],
+        prairieTestReservations: [],
+      });
+      expect(result.authorized).toBe(false);
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
+      expect(result.examAccessEnd).toBeNull();
+      expect(result.showBeforeRelease).toBe(false);
+    });
+
+    it('denies non-reserved users for open-ended released PT assessment (Public mode)', () => {
+      // PT-gated, released, no dueDate, no lateDeadlines — should NOT be
+      // treated as "closed" and should deny non-reserved users.
+      const openEndedRule: AccessControlRuleInput = {
+        ...prairieTestMainRule,
+        rule: toRuntime({
+          dateControl: {
+            releaseDate: '2025-01-01T00:00:00Z',
+          },
+        }),
+      };
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Public',
+        rules: [openEndedRule],
+        prairieTestReservations: [],
+      });
+      expect(result.authorized).toBe(false);
+      expect(result.showBeforeRelease).toBe(false);
+    });
+
+    it('denies non-reserved users for open-ended released PT assessment (Exam mode, wrong reservation)', () => {
+      const openEndedRule: AccessControlRuleInput = {
+        ...prairieTestMainRule,
+        rule: toRuntime({
+          dateControl: {
+            releaseDate: '2025-01-01T00:00:00Z',
+          },
+        }),
+      };
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Exam',
+        rules: [openEndedRule],
+        prairieTestReservations: [
+          { examUuid: 'wrong-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
+        ],
+      });
+      expect(result.authorized).toBe(false);
+    });
   });
 
   describe('time limit computation', () => {
@@ -1158,6 +1262,42 @@ describe('resolveAccessControl', () => {
         expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
       },
     );
+
+    it('keeps closed scores hidden when Exam mode outlives the PrairieTest reservation', () => {
+      // Regression test for #12579: `ip_to_mode` can continue reporting Exam
+      // mode for a short grace period after PrairieTest has already ended the
+      // reservation. The migrated PT rule should still respect the closed
+      // assessment visibility settings in that state.
+      // Uses a past dueDate to represent "exam has ended" — open-ended
+      // assessments (dueDate: null) are not considered closed.
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Exam',
+        rules: [
+          {
+            ...makeMainRule({
+              dateControl: {
+                releaseDate: '2025-01-01T00:00:00Z',
+                dueDate: '2025-02-01T00:00:00Z',
+              },
+              afterComplete: {
+                questions: { hidden: true },
+                score: { hidden: true },
+              },
+            }),
+            prairietestExams: [ptExam],
+          },
+        ],
+        prairieTestReservations: [],
+      });
+      expect(result.authorized).toBe(true);
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
+      expect(result.examAccessEnd).toBeNull();
+      expect(result.showClosedAssessment).toBe(false);
+      expect(result.showClosedAssessmentScore).toBe(false);
+      expect(result.showBeforeRelease).toBe(false);
+    });
   });
 
   describe('credit date string formatting', () => {
@@ -1572,153 +1712,6 @@ describe('resolveAccessControl', () => {
         expect(result.authorized).toBe(true);
         expect(result.active).toBe(false);
       }
-    });
-
-    it('grants access via PT reservation even when assessment is past due date', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        authzMode: 'Exam',
-        rules: [
-          {
-            ...makeMainRule({
-              dateControl: {
-                releaseDate: '2025-01-01T00:00:00Z',
-                dueDate: '2025-02-01T00:00:00Z',
-              },
-            }),
-            prairietestExams: [ptExam],
-          },
-        ],
-        prairieTestReservations: [
-          { examUuid: ptExam.uuid, accessEnd: new Date('2025-04-01T00:00:00Z') },
-        ],
-      });
-      expect(result.authorized).toBe(true);
-      expect(result.credit).toBe(100);
-      expect(result.active).toBe(true);
-      expect(result.showBeforeRelease).toBe(false);
-    });
-
-    it('keeps closed scores hidden when Exam mode outlives the PrairieTest reservation', () => {
-      // Regression test for #12579: `ip_to_mode` can continue reporting Exam
-      // mode for a short grace period after PrairieTest has already ended the
-      // reservation. The migrated PT rule should still respect the closed
-      // assessment visibility settings in that state.
-      // Uses a past dueDate to represent "exam has ended" — open-ended
-      // assessments (dueDate: null) are not considered closed.
-      const result = resolveAccessControl({
-        ...baseInput,
-        authzMode: 'Exam',
-        rules: [
-          {
-            ...makeMainRule({
-              dateControl: {
-                releaseDate: '2025-01-01T00:00:00Z',
-                dueDate: '2025-02-01T00:00:00Z',
-              },
-              afterComplete: {
-                questions: { hidden: true },
-                score: { hidden: true },
-              },
-            }),
-            prairietestExams: [ptExam],
-          },
-        ],
-        prairieTestReservations: [],
-      });
-      expect(result.authorized).toBe(true);
-      expect(result.credit).toBe(0);
-      expect(result.active).toBe(false);
-      expect(result.examAccessEnd).toBeNull();
-      expect(result.showClosedAssessment).toBe(false);
-      expect(result.showClosedAssessmentScore).toBe(false);
-      expect(result.showBeforeRelease).toBe(false);
-    });
-
-    it('denies access when Exam mode outlives the PrairieTest reservation', () => {
-      // Regression test for #12579: same grace-period scenario, but for a
-      // rule without a `dateControl` — there is no closed-assessment fallback
-      // here, so the student must be denied outright.
-      const result = resolveAccessControl({
-        ...baseInput,
-        authzMode: 'Exam',
-        rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
-        prairieTestReservations: [],
-      });
-      expect(result.authorized).toBe(false);
-      expect(result.credit).toBe(0);
-      expect(result.active).toBe(false);
-      expect(result.examAccessEnd).toBeNull();
-      expect(result.showBeforeRelease).toBe(false);
-    });
-
-    it('denies non-reserved users for open-ended released PT assessment (Public mode)', () => {
-      // Bug 1: PT-gated, released, no dueDate, no lateDeadlines — should NOT
-      // be treated as "closed" and should deny non-reserved users.
-      const result = resolveAccessControl({
-        ...baseInput,
-        authzMode: 'Public',
-        rules: [
-          {
-            ...makeMainRule({
-              dateControl: {
-                releaseDate: '2025-01-01T00:00:00Z',
-              },
-            }),
-            prairietestExams: [ptExam],
-          },
-        ],
-        prairieTestReservations: [],
-      });
-      expect(result.authorized).toBe(false);
-      expect(result.showBeforeRelease).toBe(false);
-    });
-
-    it('denies non-reserved users for open-ended released PT assessment (Exam mode, wrong reservation)', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        authzMode: 'Exam',
-        rules: [
-          {
-            ...makeMainRule({
-              dateControl: {
-                releaseDate: '2025-01-01T00:00:00Z',
-              },
-            }),
-            prairietestExams: [ptExam],
-          },
-        ],
-        prairieTestReservations: [
-          { examUuid: 'wrong-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
-        ],
-      });
-      expect(result.authorized).toBe(false);
-    });
-
-    it('grants access via PT reservation even when assessment is before release date', () => {
-      // Bug 2: A matching PT reservation must override the stale beforeRelease flag.
-      const result = resolveAccessControl({
-        ...baseInput,
-        authzMode: 'Exam',
-        rules: [
-          {
-            ...makeMainRule({
-              dateControl: {
-                releaseDate: '2025-06-01T00:00:00Z',
-                dueDate: '2025-07-01T00:00:00Z',
-              },
-            }),
-            prairietestExams: [ptExam],
-          },
-        ],
-        prairieTestReservations: [
-          { examUuid: ptExam.uuid, accessEnd: new Date('2025-04-01T00:00:00Z') },
-        ],
-      });
-      expect(result.authorized).toBe(true);
-      expect(result.credit).toBe(100);
-      expect(result.active).toBe(true);
-      expect(result.showBeforeRelease).toBe(false);
     });
 
     it('still shows "before release" for PT assessment that is open but student lacks access', () => {
