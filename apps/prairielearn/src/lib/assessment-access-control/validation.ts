@@ -608,9 +608,7 @@ export function validateAccessControlRules({
     );
   }
 
-  // A main rule is identified by the absence of a `labels` key. An empty
-  // `labels: []` is a student-label rule that targets zero students (e.g.
-  // after the rule's last label was deleted), not a second default.
+  // A main rule is identified by the absence of a `labels` key.
   const mainRules = rules.filter((rule) => rule.labels == null);
 
   if (mainRules.length === 0) {
