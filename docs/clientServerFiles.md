@@ -80,7 +80,7 @@ To allow students to see the contents of a file from a question, you can make a 
 
 !!! warning
 
-A common pattern used in the past was to use a relative link like `clientFilesQuestion/filename.ext` to access files in `clientFilesQuestion`. This pattern is not officially supported and may not work in all contexts, so you are highly encouraged to replace it with the `{{ options.client_files_question_url }}/filename.ext` pattern instead.
+    A common pattern used in the past was to use a relative link like `clientFilesQuestion/filename.ext` to access files in `clientFilesQuestion`. This pattern is not officially supported and may not work in all contexts, so you are highly encouraged to replace it with the `{{ options.client_files_question_url }}/filename.ext` pattern instead.
 
 Files in `clientFilesCourseInstance` and `clientFilesAssessment` (as well as `clientFilesCourse`) can be provided to students using the assessment text, which is rendered in the student's assessment overview page. These can be rendered using the `{{ client_files_course_instance }}`, `{{ client_files_assessment }}`, and `{{ client_files_course }}` patterns, which will render the addresses of the corresponding `clientFiles*` directory. More details can be found in the [assessment text documentation](assessment/configuration.md#adding-text-and-links-to-assessments).
 
