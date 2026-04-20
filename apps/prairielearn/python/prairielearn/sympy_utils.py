@@ -178,6 +178,9 @@ class _Constants:
 class _SympyJsonStrPrinter(StrPrinter):
     """String printer that keeps set notation parseable by avoiding banned ast nodes."""
 
+    def _print_EmptySet(self, _expr: sympy.EmptySet) -> str:  # noqa: N802
+        return "FiniteSet()"
+
     def _print_Interval(self, expr: sympy.Interval) -> str:  # noqa: N802
         # by default, it prefers `Interval.open` or `Interval.Lopen` which the ast blocker bans
         start, end = self.doprint(expr.start), self.doprint(expr.end)

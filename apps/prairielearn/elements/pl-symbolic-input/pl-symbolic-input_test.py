@@ -11,14 +11,12 @@ symbolic_input = importlib.import_module("pl-symbolic-input")
 
 
 def build_element_html(*attributes: str, answers_name: str = "test") -> str:
-    return "\n".join(
-        [
-            "<pl-symbolic-input",
-            f'    answers-name="{answers_name}"',
-            *[f"    {attribute}" for attribute in attributes],
-            "></pl-symbolic-input>",
-        ]
-    )
+    return "\n".join([
+        "<pl-symbolic-input",
+        f'    answers-name="{answers_name}"',
+        *[f"    {attribute}" for attribute in attributes],
+        "></pl-symbolic-input>",
+    ])
 
 
 def make_question_data(
@@ -34,7 +32,9 @@ def make_question_data(
     return {
         "submitted_answers": submitted_answers,
         "raw_submitted_answers": (
-            raw_submitted_answers if raw_submitted_answers is not None else submitted_answers
+            raw_submitted_answers
+            if raw_submitted_answers is not None
+            else submitted_answers
         ),
         "correct_answers": correct_answers or {},
         "answers_names": answers_names or {},
@@ -328,3 +328,21 @@ def test_interval_correct_answer_renders(
     rendered = symbolic_input.render(element_html, data)
 
     assert "\\left[1, 2\\right] \\cup \\left[3, 4\\right]" in rendered
+
+
+def test_empty_set_submission_round_trips_when_set_notation_is_enabled() -> None:
+    element_html = build_element_html(
+        'allow-set-notation="true"',
+        'correct-answer="{}"',
+    )
+    data = make_question_data(submitted_answers={"test": "{}"})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert isinstance(data["submitted_answers"]["test"], dict)
+    assert data["submitted_answers"]["test"]["_value"] == "FiniteSet()"
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
