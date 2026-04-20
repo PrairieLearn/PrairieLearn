@@ -17,7 +17,11 @@ const SLOW_TESTS_SHARDS: Record<number, string[]> = {
   2: ['src/tests/exampleCourseQuestions.test.ts'],
   3: ['src/tests/homework.test.ts', 'src/tests/fileEditor.test.ts'],
   4: ['src/tests/accessibility/index.test.ts', 'src/tests/cron.test.ts', 'src/tests/exam.test.ts'],
+  5: [],
+  6: [],
 };
+
+const SHARD_COUNT = Object.keys(SLOW_TESTS_SHARDS).length;
 
 const SLOW_TESTS = Object.values(SLOW_TESTS_SHARDS).flat();
 
@@ -35,13 +39,15 @@ if (existsSync(gitignorePath)) {
 
 // Each shard will get a certain slice of the tests outside of SLOW_TESTS.
 // This is a rough heuristic to try to balance the runtime of each shard.
-// For example, shard 3 will get 2/7 of these other tests.
-const NUM_SLICES = 7;
+// For example, shard 3 will get 2/13 of these other tests.
+const NUM_SLICES = 13;
 const SHARD_SLICES: Record<number, { start: number; end: number }> = {
   1: { start: 0, end: 0 },
   2: { start: 0, end: 1 },
   3: { start: 1, end: 3 },
-  4: { start: 3, end: NUM_SLICES },
+  4: { start: 3, end: 4 },
+  5: { start: 4, end: 8 },
+  6: { start: 8, end: NUM_SLICES },
 };
 
 class CustomSequencer extends BaseSequencer {
@@ -69,8 +75,8 @@ class CustomSequencer extends BaseSequencer {
     const { config } = this.ctx;
 
     const { index, count } = config.shard!;
-    if (count !== 4) {
-      throw new Error('Expected 4 shards');
+    if (count !== SHARD_COUNT) {
+      throw new Error(`Expected ${SHARD_COUNT} shards`);
     }
 
     // Some shards run slower tests, so other shards should take more 'slices'
