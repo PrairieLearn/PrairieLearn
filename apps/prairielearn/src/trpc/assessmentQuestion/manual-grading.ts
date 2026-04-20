@@ -51,23 +51,6 @@ const requireAiGradingFeature = t.middleware(async (opts) => {
   return opts.next();
 });
 
-const requireAiSubmissionGroupingFeature = t.middleware(async (opts) => {
-  const enabled = await features.enabled('ai-submission-grouping', {
-    institution_id: opts.ctx.course.institution_id,
-    course_id: opts.ctx.course.id,
-    course_instance_id: opts.ctx.course_instance.id,
-    user_id: opts.ctx.authn_user.id,
-  });
-
-  if (!enabled) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Access denied (feature not available)',
-    });
-  }
-  return opts.next();
-});
-
 const instances = t.procedure
   .use(requireCourseInstancePermissionView)
   .output(z.array(InstanceQuestionRowWithAIGradingStatsSchema))
@@ -106,7 +89,7 @@ const deleteAiGradingJobsMutation = t.procedure
 
 const deleteAiInstanceQuestionGroupingsMutation = t.procedure
   .use(requireCourseInstancePermissionEdit)
-  .use(requireAiSubmissionGroupingFeature)
+  .use(requireAiGradingFeature)
   .output(z.object({ num_deleted: z.number() }))
   .mutation(async (opts) => {
     const num_deleted = await deleteAiInstanceQuestionGroups({
@@ -118,7 +101,7 @@ const deleteAiInstanceQuestionGroupingsMutation = t.procedure
 
 const aiGroupInstanceQuestionsMutation = t.procedure
   .use(requireCourseInstancePermissionEdit)
-  .use(requireAiSubmissionGroupingFeature)
+  .use(requireAiGradingFeature)
   .input(
     z.object({
       selection: z.union([z.literal('all'), z.literal('ungrouped'), z.string().array()]),
