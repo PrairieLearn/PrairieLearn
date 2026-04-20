@@ -476,12 +476,6 @@ export function OverrideDeadlineArrayField({
     <FieldWrapper
       isOverridden={isOverridden}
       label={label}
-      onOverride={() => {
-        const copied = mainDeadlines.map((d) => ({ ...d }));
-        setValue(fieldArrayName, copied, { shouldDirty: true });
-        addOverride();
-      }}
-      onRemoveOverride={removeOverride}
       headerToggle={
         <ToggleTitle
           id={`${idPrefix}-${type}-deadlines-enabled`}
@@ -496,6 +490,12 @@ export function OverrideDeadlineArrayField({
           Add {isEarly ? 'early' : 'late'}
         </Button>
       }
+      onOverride={() => {
+        const copied = mainDeadlines.map((d) => ({ ...d }));
+        setValue(fieldArrayName, copied, { shouldDirty: true });
+        addOverride();
+      }}
+      onRemoveOverride={removeOverride}
     >
       <DeadlineArrayInput
         type={type}

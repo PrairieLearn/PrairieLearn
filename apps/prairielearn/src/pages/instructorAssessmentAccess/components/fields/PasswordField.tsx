@@ -115,11 +115,6 @@ export function OverridePasswordField({ index }: { index: number }) {
     <FieldWrapper
       isOverridden={isOverridden}
       label="Password"
-      onOverride={() => {
-        field.onChange(mainValue);
-        addOverride();
-      }}
-      onRemoveOverride={removeOverride}
       headerToggle={
         <PasswordToggle
           value={field.value}
@@ -128,6 +123,11 @@ export function OverridePasswordField({ index }: { index: number }) {
           onChange={field.onChange}
         />
       }
+      onOverride={() => {
+        field.onChange(mainValue);
+        addOverride();
+      }}
+      onRemoveOverride={removeOverride}
     >
       <PasswordDetails
         value={field.value}

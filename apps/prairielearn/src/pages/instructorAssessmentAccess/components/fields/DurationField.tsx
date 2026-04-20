@@ -131,11 +131,6 @@ export function OverrideDurationField({ index }: { index: number }) {
     <FieldWrapper
       isOverridden={isOverridden}
       label="Time limit"
-      onOverride={() => {
-        field.onChange(mainValue);
-        addOverride();
-      }}
-      onRemoveOverride={removeOverride}
       headerToggle={
         <DurationToggle
           value={field.value}
@@ -144,6 +139,11 @@ export function OverrideDurationField({ index }: { index: number }) {
           onChange={field.onChange}
         />
       }
+      onOverride={() => {
+        field.onChange(mainValue);
+        addOverride();
+      }}
+      onRemoveOverride={removeOverride}
     >
       <DurationDetails
         value={field.value}
