@@ -23,6 +23,7 @@ import {
   updateCourseCommitHash,
 } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
+import { type AssessmentJsonInput } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
@@ -2580,4 +2581,77 @@ export async function saveJsonFile<T extends Record<string, unknown>>(
   }
 
   return { success: true, newHash: prepared.newHash };
+}
+
+/**
+ * Prepares `FileModifyEditor`s for every `infoAssessment.json` whose synced
+ * access control references `labelName`. The caller supplies `transform` to
+ * either rename the label (rewrite array entries) or delete it (filter it
+ * out). Intended to be bundled with the `infoCourseInstance.json` edit in a
+ * `MultiEditor` so the changes commit and sync atomically.
+ *
+ * Affected assessments are located by joining through the synced
+ * `assessment_access_control_student_labels` table, matching the pattern
+ * used by `AssessmentSetRenameEditor`.
+ */
+export async function prepareAccessControlLabelRewriteEditors({
+  course,
+  courseInstanceId,
+  labelName,
+  transform,
+  locals,
+}: {
+  course: Course;
+  courseInstanceId: string;
+  labelName: string;
+  transform: (labels: string[]) => string[];
+  locals: { authz_data: AuthzData; course: Course; user: User };
+}): Promise<FileModifyEditor[]> {
+  const assessments = await sqldb.queryRows(
+    sql.select_assessments_with_student_label,
+    { course_instance_id: courseInstanceId, label_name: labelName },
+    z.object({
+      course_instance_directory: CourseInstanceSchema.shape.short_name,
+      assessment_directory: AssessmentSchema.shape.tid,
+    }),
+  );
+
+  const editors: FileModifyEditor[] = [];
+
+  for (const assessment of assessments) {
+    if (assessment.course_instance_directory == null) continue;
+    if (assessment.assessment_directory == null) continue;
+
+    const assessmentDir = path.join(
+      course.path,
+      'courseInstances',
+      assessment.course_instance_directory,
+      'assessments',
+      assessment.assessment_directory,
+    );
+    const infoPath = path.join(assessmentDir, 'infoAssessment.json');
+
+    const prepared = await prepareJsonFileEditor<AssessmentJsonInput>({
+      applyChanges: (contents) => {
+        for (const rule of contents.accessControl ?? []) {
+          if (rule.labels == null) continue;
+          if (!rule.labels.includes(labelName)) continue;
+          rule.labels = transform(rule.labels);
+        }
+        return contents;
+      },
+      jsonPath: infoPath,
+      // No scoped hash: this edit is not driven by a user-held origHash.
+      // FileModifyEditor's full-file hash still guards against TOCTOU at
+      // write time, and shouldEdit() makes unchanged files a no-op.
+      conflictCheck: { origHash: null, scope: (json) => json.accessControl ?? [] },
+      locals,
+      container: { rootPath: assessmentDir, invalidRootPaths: [] },
+    });
+    // `prepared` can only fail with reason 'conflict', which can't happen
+    // when origHash is null.
+    if (prepared.success) editors.push(prepared.editor);
+  }
+
+  return editors;
 }

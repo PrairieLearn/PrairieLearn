@@ -4,20 +4,16 @@ import * as path from 'node:path';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import * as sqldb from '@prairielearn/postgres';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { type AuthzData } from '../../lib/authz-data-lib.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
-import {
-  AssessmentSchema,
-  type Course,
-  CourseInstanceSchema,
-  type User,
-} from '../../lib/db-types.js';
 import { computeScopedJsonHash } from '../../lib/editorUtil.js';
-import { type FileModifyEditor, MultiEditor, prepareJsonFileEditor } from '../../lib/editors.js';
+import {
+  MultiEditor,
+  prepareAccessControlLabelRewriteEditors,
+  prepareJsonFileEditor,
+} from '../../lib/editors.js';
 import {
   selectEnrollmentsByIdsInCourseInstance,
   selectEnrollmentsByUidsOrPendingUidsInCourseInstance,
@@ -34,7 +30,6 @@ import {
   StudentLabelWithUserDataSchema,
 } from '../../pages/instructorStudentsLabels/instructorStudentsLabels.types.js';
 import { getStudentLabelsWithUserData } from '../../pages/instructorStudentsLabels/queries.js';
-import { type AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { ColorJsonSchema } from '../../schemas/infoCourse.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 import { throwAppError } from '../app-errors.js';
@@ -47,8 +42,6 @@ import {
   t,
 } from './init.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
-
 export interface StudentLabelError {
   Upsert: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   Destroy: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
@@ -60,81 +53,6 @@ function getCourseInstanceContainer(coursePath: string, shortName: string) {
     rootPath,
     invalidRootPaths: [path.join(rootPath, 'assessments')],
   };
-}
-
-const AssessmentWithStudentLabelSchema = z.object({
-  course_instance_directory: CourseInstanceSchema.shape.short_name,
-  assessment_directory: AssessmentSchema.shape.tid,
-});
-
-/**
- * Prepares `FileModifyEditor`s for every `infoAssessment.json` whose synced
- * access control references `labelName`. The caller supplies `transform` to
- * either rename the label (rewrite array entries) or delete it (filter it
- * out). Intended to be bundled with the `infoCourseInstance.json` edit in a
- * `MultiEditor` so the changes commit and sync atomically.
- *
- * Affected assessments are located by joining through the synced
- * `assessment_access_control_student_labels` table. Edits driven by the
- * UI flow through sync-validated state, so the DB reflects what's on disk.
- */
-async function prepareAccessControlLabelRewriteEditors({
-  course,
-  courseInstanceId,
-  labelName,
-  transform,
-  locals,
-}: {
-  course: Course;
-  courseInstanceId: string;
-  labelName: string;
-  transform: (labels: string[]) => string[];
-  locals: { authz_data: AuthzData; course: Course; user: User };
-}): Promise<FileModifyEditor[]> {
-  const assessments = await sqldb.queryRows(
-    sql.select_assessments_with_student_label,
-    { course_instance_id: courseInstanceId, label_name: labelName },
-    AssessmentWithStudentLabelSchema,
-  );
-
-  const editors: FileModifyEditor[] = [];
-
-  for (const assessment of assessments) {
-    if (assessment.course_instance_directory == null) continue;
-    if (assessment.assessment_directory == null) continue;
-
-    const assessmentDir = path.join(
-      course.path,
-      'courseInstances',
-      assessment.course_instance_directory,
-      'assessments',
-      assessment.assessment_directory,
-    );
-    const infoPath = path.join(assessmentDir, 'infoAssessment.json');
-
-    const prepared = await prepareJsonFileEditor<AssessmentJsonInput>({
-      applyChanges: (contents) => {
-        for (const rule of contents.accessControl ?? []) {
-          if (rule.labels == null) continue;
-          if (!rule.labels.includes(labelName)) continue;
-          rule.labels = transform(rule.labels);
-        }
-        return contents;
-      },
-      jsonPath: infoPath,
-      // No scoped hash: this edit is not driven by a user-held origHash.
-      // FileModifyEditor's full-file hash still guards against TOCTOU at
-      // write time, and shouldEdit() makes unchanged files a no-op.
-      conflictCheck: { origHash: null, scope: (json) => json.accessControl ?? [] },
-      locals,
-      container: { rootPath: assessmentDir, invalidRootPaths: [] },
-    });
-    // `prepared` can only fail with reason 'conflict', which can't happen
-    // when origHash is null.
-    if (prepared.success) editors.push(prepared.editor);
-  }
-
-  return editors;
 }
 
 const list = t.procedure
