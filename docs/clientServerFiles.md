@@ -58,7 +58,7 @@ To allow students to see the contents of a file from a question, you can make a 
 
    This element can also be used to provide a link for static PDF files or web pages. See the [`pl-file-download` documentation](./elements/pl-file-download.md) for details.
 
-3. To include stylesheets and scripts from `clientFilesCourse` or `clientFilesQuestion`, in your question, you can add them as dependencies in the question configuration file. For example, to include a stylesheet named `styles.css` from `clientFilesCourse`, you can add the following to your `info.json` file:
+3. To include stylesheets and scripts from `clientFilesCourse` or `clientFilesQuestion` in your question, you can add them as dependencies in the question configuration file. For example, to include a stylesheet named `styles.css` from `clientFilesCourse`, you can add the following to your `info.json` file:
 
    ```json
    {
