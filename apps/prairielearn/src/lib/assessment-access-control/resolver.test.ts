@@ -917,10 +917,10 @@ describe('resolveAccessControl', () => {
     });
 
     it('denies access when Exam mode outlives the PrairieTest reservation', () => {
-      // Regression test for #12579: `ip_to_mode` can continue reporting Exam
-      // mode for a short grace period after PrairieTest has already ended the
-      // reservation. Without a `dateControl`, there is no closed-assessment
-      // fallback — the student must be denied outright.
+      // `ip_to_mode` can continue reporting Exam mode for a short grace
+      // period after PrairieTest has already ended the reservation. Without
+      // a `dateControl`, there is no closed-assessment fallback — the
+      // student must be denied outright.
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',
