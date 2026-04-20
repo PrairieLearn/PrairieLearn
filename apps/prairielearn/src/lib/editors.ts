@@ -2505,3 +2505,134 @@ export class MultiEditor extends Editor {
 }
 
 export type AssessmentToolsConfig = { name: string; label: string; enabled: boolean }[];
+
+/** A single question to import, with all file contents as serialized data. */
+export interface CanvasImportQuestionData {
+  directoryName: string;
+  infoJson: Record<string, unknown>;
+  questionHtml: string;
+  serverPy?: string;
+  /** Map of filename -> base64-encoded content. */
+  clientFiles: Record<string, string>;
+}
+
+/** A single assessment to import, including its questions. */
+export interface CanvasImportAssessmentData {
+  directoryName: string;
+  infoJson: Record<string, unknown>;
+  rubricJson?: Record<string, unknown>;
+  questions: CanvasImportQuestionData[];
+}
+
+export class CanvasImportEditor extends Editor {
+  private course_instance: CourseInstance;
+  private assessments: CanvasImportAssessmentData[];
+
+  constructor(
+    params: BaseEditorOptions<{ course_instance: CourseInstance }> & {
+      assessments: CanvasImportAssessmentData[];
+    },
+  ) {
+    const { course_instance } = params.locals;
+    super({
+      ...params,
+      description: `${course_instance.short_name}: Import ${params.assessments.length} assessment(s) from Canvas`,
+    });
+    this.course_instance = course_instance;
+    this.assessments = params.assessments;
+  }
+
+  async write() {
+    assert(this.course_instance.short_name, 'course_instance.short_name is required');
+
+    const pathsToAdd: string[] = [];
+
+    for (const assessment of this.assessments) {
+      const questionsBaseDir = path.join(this.course.path, 'questions');
+      const assessmentsBaseDir = path.join(
+        this.course.path,
+        'courseInstances',
+        this.course_instance.short_name,
+        'assessments',
+      );
+
+      // Write each question
+      for (const question of assessment.questions) {
+        const qDir = path.join(questionsBaseDir, question.directoryName);
+
+        if (!contains(questionsBaseDir, qDir)) {
+          throw new AugmentedError('Invalid question folder path', {
+            info: html`
+              <p>The question folder path</p>
+              <div class="container">
+                <pre class="bg-dark text-white rounded p-2">${qDir}</pre>
+              </div>
+              <p>must be inside the questions directory</p>
+              <div class="container">
+                <pre class="bg-dark text-white rounded p-2">${questionsBaseDir}</pre>
+              </div>
+            `,
+          });
+        }
+
+        const formattedInfoJson = await formatJsonWithPrettier(JSON.stringify(question.infoJson));
+        await fs.outputFile(path.join(qDir, 'info.json'), formattedInfoJson);
+        await fs.outputFile(path.join(qDir, 'question.html'), question.questionHtml);
+
+        if (question.serverPy) {
+          await fs.outputFile(path.join(qDir, 'server.py'), question.serverPy);
+        }
+
+        if (Object.keys(question.clientFiles).length > 0) {
+          const cfDir = path.join(qDir, 'clientFilesQuestion');
+          for (const [name, base64Content] of Object.entries(question.clientFiles)) {
+            const filePath = path.join(cfDir, name);
+            if (!contains(cfDir, filePath)) continue;
+            await fs.outputFile(filePath, Buffer.from(base64Content, 'base64'));
+          }
+        }
+
+        pathsToAdd.push(qDir);
+      }
+
+      // Write the assessment
+      const assessmentDir = path.join(assessmentsBaseDir, assessment.directoryName);
+
+      if (!contains(assessmentsBaseDir, assessmentDir)) {
+        throw new AugmentedError('Invalid assessment folder path', {
+          info: html`
+            <p>The assessment folder path</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${assessmentDir}</pre>
+            </div>
+            <p>must be inside the assessments directory</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${assessmentsBaseDir}</pre>
+            </div>
+          `,
+        });
+      }
+
+      const formattedAssessmentJson = await formatJsonWithPrettier(
+        JSON.stringify(assessment.infoJson),
+      );
+      await fs.outputFile(path.join(assessmentDir, 'infoAssessment.json'), formattedAssessmentJson);
+
+      if (assessment.rubricJson) {
+        const formattedRubricJson = await formatJsonWithPrettier(
+          JSON.stringify(assessment.rubricJson),
+        );
+        await fs.outputFile(path.join(assessmentDir, 'rubric.json'), formattedRubricJson);
+      }
+
+      pathsToAdd.push(assessmentDir);
+    }
+
+    if (pathsToAdd.length === 0) return null;
+
+    return {
+      pathsToAdd,
+      commitMessage: `${this.course_instance.short_name}: import ${this.assessments.length} assessment(s) from Canvas`,
+    };
+  }
+}
