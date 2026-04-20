@@ -81,13 +81,6 @@ jobs:
           path: ${{ runner.temp }}/bundle-sizes-section.md
           retention-days: 1
 
-      # Restore the ESLint / Prettier caches. Exact-match only (no
-      # restore-keys fallback) so that a miss forces a full, correct re-lint.
-      #
-      # The key hashes every input that can affect lint output
-      #
-      # If you add a new in-repo eslint plugin or shared config package, add
-      # its source directory to this list.
       - name: Restore lint caches
         uses: actions/cache@v5
         with:
@@ -100,7 +93,6 @@ jobs:
               'eslint.config.mjs',
               'packages/eslint-config/**',
               'packages/eslint-plugin-prairielearn/**',
-              '**/tsconfig.json',
               '.prettierrc.json',
               '.prettierignore'
             ) }}
