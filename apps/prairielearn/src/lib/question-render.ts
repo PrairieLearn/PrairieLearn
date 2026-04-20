@@ -113,6 +113,8 @@ const MAX_RECENT_SUBMISSIONS = 3;
  * @param params.submissions The full list of submissions to the variant.
  * @param params.question_course The course for the question.
  * @param params.locals The current locals for the page response.
+ * @param params.user_id The effective user id to attribute errors to.
+ * @param params.authn_user_id The authenticated user id to attribute errors to.
  */
 async function render({
   variant_course,
