@@ -1869,7 +1869,7 @@ describe('Access control syncing', () => {
 });
 
 describe('cleanAccessControlRulesForDisk', () => {
-  it('omits beforeRelease: { listed: false } and empty objects from output', () => {
+  it('omits beforeRelease.listed: false and empty objects from output', () => {
     const rules: AccessControlJsonInput[] = [
       { beforeRelease: { listed: false }, dateControl: {}, afterComplete: {} },
     ];
@@ -1882,7 +1882,7 @@ describe('cleanAccessControlRulesForDisk', () => {
     assert.notProperty(cleaned[0], 'afterComplete');
   });
 
-  it('preserves beforeRelease: { listed: true } on the main rule only', () => {
+  it('preserves beforeRelease.listed: true on the main rule only', () => {
     const rules: AccessControlJsonInput[] = [
       makeAccessControlRule({ beforeRelease: { listed: true } }),
       makeAccessControlRule({ beforeRelease: { listed: true } }),

@@ -112,7 +112,7 @@ test.describe.serial('Student access control', () => {
     await expect(assessmentLink).not.toBeVisible();
   });
 
-  test('beforeRelease: { listed: true } with future release shows grayed-out assessment', async ({
+  test('beforeRelease.listed: true with future release shows grayed-out assessment', async ({
     page,
     baseURL,
     courseInstance,
@@ -171,7 +171,7 @@ test.describe.serial('Student access control', () => {
     await expect(assessmentLink).toHaveAttribute('href', /\/assessment\/\d+/);
   });
 
-  test('beforeRelease: { listed: false } with future release hides assessment entirely', async ({
+  test('beforeRelease.listed: false with future release hides assessment entirely', async ({
     page,
     baseURL,
     courseInstance,
