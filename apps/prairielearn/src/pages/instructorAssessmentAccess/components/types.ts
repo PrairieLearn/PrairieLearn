@@ -360,8 +360,12 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
 }
 
 function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
+  // Override rules always emit a `labels` array (possibly empty); only main
+  // rules omit the key. An empty array means the rule targets zero students
+  // (e.g. every label it used to reference was deleted) and is still a
+  // student-label rule, not a second default.
   const labels =
-    rule.appliesTo.targetType === 'student_label' && rule.appliesTo.studentLabels.length > 0
+    rule.appliesTo.targetType === 'student_label'
       ? rule.appliesTo.studentLabels.map((sl) => sl.name)
       : undefined;
 

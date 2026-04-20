@@ -608,8 +608,10 @@ export function validateAccessControlRules({
     );
   }
 
-  // A main rule has no `labels` property (applies to everyone)
-  const mainRules = rules.filter((rule) => rule.labels == null || rule.labels.length === 0);
+  // A main rule is identified by the absence of a `labels` key. An empty
+  // `labels: []` is a student-label rule that targets zero students (e.g.
+  // after the rule's last label was deleted), not a second default.
+  const mainRules = rules.filter((rule) => rule.labels == null);
 
   if (mainRules.length === 0) {
     errors.push('No defaults found. The first element of accessControl must apply to everyone.');
@@ -620,8 +622,7 @@ export function validateAccessControlRules({
   } else {
     // The DB constraint `check_first_rule_is_none` requires the main rule at index 0
     const firstRule = rules[0];
-    const isFirstRuleMain = firstRule.labels == null || firstRule.labels.length === 0;
-    if (!isFirstRuleMain) {
+    if (firstRule.labels != null) {
       errors.push('The defaults must be the first element in the array.');
     }
   }

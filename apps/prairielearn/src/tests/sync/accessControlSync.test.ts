@@ -1039,6 +1039,30 @@ describe('Access control syncing', () => {
         assert.equal(syncedRules.length, 0);
       }));
 
+    it('syncs an override rule with an empty labels array as an inert label rule', () =>
+      runInTransactionAndRollback(async () => {
+        const { syncedRules, errors } = await syncRulesAndRead([
+          makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
+          makeAccessControlRule({
+            labels: [],
+            dateControl: { durationMinutes: 90 },
+          }),
+        ]);
+        assert.deepEqual(errors, []);
+        assert.equal(syncedRules.length, 2);
+        assert.equal(syncedRules[1].target_type, 'student_label');
+        assert.equal(syncedRules[1].date_control_duration_minutes, 90);
+
+        const allStudentLabels = await util.dumpTableWithSchema(
+          'assessment_access_control_student_labels',
+          AssessmentAccessControlStudentLabelSchema,
+        );
+        const labelTargets = allStudentLabels.filter((t) =>
+          idsEqual(t.assessment_access_control_rule_id, syncedRules[1].id),
+        );
+        assert.equal(labelTargets.length, 0);
+      }));
+
     it('rejects adding a label to a rule that already has individual students', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();

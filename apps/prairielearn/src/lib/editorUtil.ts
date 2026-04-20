@@ -104,6 +104,15 @@ export async function getFileMetadataForPath(
   };
 }
 
+type PrepareJsonFileEditorResult =
+  | {
+      success: true;
+      editor: FileModifyEditor;
+      /** Hash of the scoped section after the (pending) write. */
+      newHash: string;
+    }
+  | { success: false; reason: 'conflict' };
+
 type SaveJsonFileResult =
   | {
       success: true;
@@ -133,7 +142,14 @@ export async function computeScopedJsonHash<T extends Record<string, unknown>>(
   }
 }
 
-export async function saveJsonFile<T extends Record<string, unknown>>({
+/**
+ * Prepares a `FileModifyEditor` for a JSON file edit: reads the file, runs
+ * scoped conflict detection, applies the caller's mutation, formats the
+ * result, and constructs the editor without executing it. Useful when the
+ * edit needs to be bundled into a `MultiEditor` so it commits and syncs as
+ * part of a larger atomic operation.
+ */
+export async function prepareJsonFileEditor<T extends Record<string, unknown>>({
   applyChanges,
   jsonPath,
   conflictCheck,
@@ -148,7 +164,7 @@ export async function saveJsonFile<T extends Record<string, unknown>>({
   };
   locals: { authz_data: AuthzData; course: Course; user: User };
   container: { rootPath: string; invalidRootPaths: string[] };
-}): Promise<SaveJsonFileResult> {
+}): Promise<PrepareJsonFileEditorResult> {
   // Read file once for conflict check, content modification, and TOCTOU hash.
   const rawContents = await fs.readFile(jsonPath, 'utf8');
   const fullFileHash = computeFileContentHash(rawContents);
@@ -174,13 +190,22 @@ export async function saveJsonFile<T extends Record<string, unknown>>({
     origHash: fullFileHash,
   });
 
-  const serverJob = await editor.prepareServerJob();
+  const newHash = computeStableHash(conflictCheck.scope(modifiedJsonContents));
+  return { success: true, editor, newHash };
+}
+
+export async function saveJsonFile<T extends Record<string, unknown>>(
+  args: Parameters<typeof prepareJsonFileEditor<T>>[0],
+): Promise<SaveJsonFileResult> {
+  const prepared = await prepareJsonFileEditor(args);
+  if (!prepared.success) return prepared;
+
+  const serverJob = await prepared.editor.prepareServerJob();
   try {
-    await editor.executeWithServerJob(serverJob);
+    await prepared.editor.executeWithServerJob(serverJob);
   } catch {
     return { success: false, reason: 'sync_failed', jobSequenceId: serverJob.jobSequenceId };
   }
 
-  const newHash = computeStableHash(conflictCheck.scope(modifiedJsonContents));
-  return { success: true, newHash };
+  return { success: true, newHash: prepared.newHash };
 }
