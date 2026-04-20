@@ -555,13 +555,13 @@ export function OverrideAfterCompleteForm({
         <FieldWrapper
           isOverridden={qvOverridden}
           label="Question visibility"
-          headerContent={<strong>Question visibility</strong>}
           onOverride={() => {
             qvField.onChange({ ...mainQV });
             addQvOverride();
           }}
           onRemoveOverride={removeQvOverride}
         >
+          <strong className="d-block mb-2">Question visibility</strong>
           <QuestionVisibilityInput
             value={qvField.value}
             idPrefix={`overrides-${index}`}
@@ -577,13 +577,13 @@ export function OverrideAfterCompleteForm({
         <FieldWrapper
           isOverridden={svOverridden}
           label="Score visibility"
-          headerContent={<strong>Score visibility</strong>}
           onOverride={() => {
             svField.onChange({ ...mainSV });
             addSvOverride();
           }}
           onRemoveOverride={removeSvOverride}
         >
+          <strong className="d-block mb-2">Score visibility</strong>
           <ScoreVisibilityInput
             value={svField.value}
             idPrefix={`overrides-${index}`}

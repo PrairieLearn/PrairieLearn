@@ -249,13 +249,13 @@ export function OverrideDueDateField({
     <FieldWrapper
       isOverridden={isOverridden}
       label="Due date"
-      headerContent={<strong>Due date</strong>}
       onOverride={() => {
         field.onChange(mainValue);
         addOverride();
       }}
       onRemoveOverride={removeOverride}
     >
+      <strong className="d-block mb-2">Due date</strong>
       <DueDateInput
         value={value}
         idPrefix={`overrides-${index}`}
