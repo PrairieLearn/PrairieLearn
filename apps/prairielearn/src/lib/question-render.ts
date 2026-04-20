@@ -660,7 +660,7 @@ export async function getAndRenderVariant(
       },
       submittedAnswer: submission?.submitted_answer ?? null,
       feedback: submission?.feedback ?? null,
-      showCorrectAnswer: locals.showCorrectAnswer ? variant.true_answer : null,
+      trueAnswer: locals.showCorrectAnswer ? variant.true_answer : null,
       submissions: submissions.length > 0 ? submissions : null,
     });
 
