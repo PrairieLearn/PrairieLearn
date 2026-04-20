@@ -18,6 +18,7 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { getCourseInstanceTrpcUrl, getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   CourseInstanceCopyEditor,
@@ -25,7 +26,6 @@ import {
   CourseInstanceRenameEditor,
   FileModifyEditor,
   MultiEditor,
-  getOriginalHash,
 } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';

@@ -16,8 +16,8 @@ import {
   CourseInstanceSchema,
   type User,
 } from '../../lib/db-types.js';
-import { computeScopedJsonHash, prepareJsonFileEditor } from '../../lib/editorUtil.js';
-import { type FileModifyEditor, MultiEditor } from '../../lib/editors.js';
+import { computeScopedJsonHash } from '../../lib/editorUtil.js';
+import { type FileModifyEditor, MultiEditor, prepareJsonFileEditor } from '../../lib/editors.js';
 import {
   selectEnrollmentsByIdsInCourseInstance,
   selectEnrollmentsByUidsOrPendingUidsInCourseInstance,

@@ -11,7 +11,7 @@ import {
   validateAccessControlRules,
 } from '../../lib/assessment-access-control/validation.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
-import { saveJsonFile } from '../../lib/editorUtil.js';
+import { saveJsonFile } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import {
   type EnrollmentAccessControlRuleData,
