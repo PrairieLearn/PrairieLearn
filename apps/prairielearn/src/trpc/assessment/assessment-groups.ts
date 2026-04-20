@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
@@ -90,37 +91,39 @@ const editGroup = t.procedure
 
     const failures: { uid: string; message: string }[] = [];
 
-    for (const user of toRemove) {
-      try {
-        await leaveGroup(assessment.id, user.id, authn_user.id, input.group_id);
-      } catch (err) {
-        if (err instanceof GroupOperationError) {
-          failures.push({ uid: user.uid, message: err.message });
-        } else {
-          throw err;
+    await runInTransactionAsync(async () => {
+      for (const user of toRemove) {
+        try {
+          await leaveGroup(assessment.id, user.id, authn_user.id, input.group_id);
+        } catch (err) {
+          if (err instanceof GroupOperationError) {
+            failures.push({ uid: user.uid, message: err.message });
+          } else {
+            throw err;
+          }
         }
       }
-    }
 
-    for (const uid of toAdd) {
-      try {
-        await addUserToGroup({
-          course_instance,
-          assessment,
-          group_id: input.group_id,
-          uid,
-          authn_user_id: authn_user.id,
-          enforceGroupSize: false,
-          authzData: authz_data,
-        });
-      } catch (err) {
-        if (err instanceof GroupOperationError) {
-          failures.push({ uid, message: err.message });
-        } else {
-          throw err;
+      for (const uid of toAdd) {
+        try {
+          await addUserToGroup({
+            course_instance,
+            assessment,
+            group_id: input.group_id,
+            uid,
+            authn_user_id: authn_user.id,
+            enforceGroupSize: false,
+            authzData: authz_data,
+          });
+        } catch (err) {
+          if (err instanceof GroupOperationError) {
+            failures.push({ uid, message: err.message });
+          } else {
+            throw err;
+          }
         }
       }
-    }
+    });
 
     const [group, notAssigned] = await Promise.all([
       selectGroupById({ group_id: input.group_id, assessment_id: assessment.id }),
