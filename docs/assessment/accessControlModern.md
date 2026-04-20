@@ -138,6 +138,14 @@ earlyDeadline (110%)    dueDate (100%)    lateDeadline (80%)
 
 When PrairieTest exams are configured, students must be checked in via PrairieTest to access the assessment. Students not checked in are blocked. The `durationMinutes` field has no effect when PrairieTest is active — time limits are enforced by PrairieTest.
 
+### `beforeRelease`
+
+Specifies behavior before an assessment is released to students.
+
+| Field    | Type    | Default | Description                                                                                                                                                                                    |
+| -------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `listed` | boolean | `false` | If `false`, the assessment is completely hidden until the release date. If `true`, the assessment title is shown on the Assessments page before the release date, but students cannot open it. |
+
 ### `afterComplete`
 
 Controls what students can see after completing an assessment. Use this to "hand back" assessments — for example, revealing questions and answers after an exam, or hiding scores until grading is finalized.
@@ -182,12 +190,6 @@ The visibility logic follows a toggle pattern:
 The same logic applies to `score.hidden` / `score.visibleFromDate` (there is no "visible until" for scores).
 
 When overriding `afterComplete.questions`, you may include just `hidden` without any date fields. To include visibility dates, set `hidden: true` along with `visibleFromDate` (and optionally `visibleUntilDate`). To clear inherited visibility dates, omit the date fields entirely. The same applies to `afterComplete.score`: you may include just `hidden`, or set `hidden: true` with `visibleFromDate`.
-
-### Other fields
-
-| Field           | Type   | Default | Description                                                                                                                                                                                                                                        |
-| --------------- | ------ | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `beforeRelease` | object | —       | Only valid on the first entry (defaults). Controls assessment visibility before the release date. If `beforeRelease.listed` is `true`, the assessment title is shown on the Assessments page before the release date, but students cannot open it. |
 
 ## Student labels and overrides
 
