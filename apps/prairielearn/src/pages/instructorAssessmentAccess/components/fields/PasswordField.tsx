@@ -3,35 +3,47 @@ import { Button, Form, InputGroup } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
+import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData } from '../types.js';
 
-function PasswordInput({
+function PasswordToggle({
   value,
   onChange,
   idPrefix,
-  showLabel = true,
+  showLabel,
 }: {
   value: string | null;
   onChange: (value: string | null) => void;
   idPrefix: string;
   showLabel?: boolean;
 }) {
+  return (
+    <ToggleTitle
+      id={`${idPrefix}-password-enabled`}
+      label="Password"
+      checked={value !== null}
+      showLabel={showLabel}
+      onChange={(checked) => onChange(checked ? '' : null)}
+    />
+  );
+}
+
+function PasswordDetails({
+  value,
+  onChange,
+  idPrefix,
+}: {
+  value: string | null;
+  onChange: (value: string | null) => void;
+  idPrefix: string;
+}) {
   const [showPassword, setShowPassword] = useState(false);
   const isInvalid = value !== null && value === '';
   const errorId = `${idPrefix}-password-error`;
 
   return (
-    <Form.Group>
-      <Form.Check
-        type="checkbox"
-        id={`${idPrefix}-password-enabled`}
-        label={
-          showLabel ? <strong>Password</strong> : <span className="visually-hidden">Password</span>
-        }
-        checked={value !== null}
-        onChange={({ currentTarget }) => onChange(currentTarget.checked ? '' : null)}
-      />
+    <>
       {value !== null && (
         <>
           <InputGroup className="mt-2">
@@ -69,7 +81,7 @@ function PasswordInput({
           ? 'This password will be required to start the assessment.'
           : 'Require a password in order to start the assessment.'}
       </Form.Text>
-    </Form.Group>
+    </>
   );
 }
 
@@ -79,7 +91,12 @@ export function MainPasswordField() {
     rules: { validate: (v) => v !== '' || 'Password is required' },
   });
 
-  return <PasswordInput value={field.value} idPrefix="mainRule" onChange={field.onChange} />;
+  return (
+    <Form.Group>
+      <PasswordToggle value={field.value} idPrefix="mainRule" onChange={field.onChange} />
+      <PasswordDetails value={field.value} idPrefix="mainRule" onChange={field.onChange} />
+    </Form.Group>
+  );
 }
 
 export function OverridePasswordField({ index }: { index: number }) {
@@ -103,11 +120,18 @@ export function OverridePasswordField({ index }: { index: number }) {
         addOverride();
       }}
       onRemoveOverride={removeOverride}
+      headerToggle={
+        <PasswordToggle
+          value={field.value}
+          idPrefix={`overrides-${index}`}
+          showLabel={false}
+          onChange={field.onChange}
+        />
+      }
     >
-      <PasswordInput
+      <PasswordDetails
         value={field.value}
         idPrefix={`overrides-${index}`}
-        showLabel={false}
         onChange={field.onChange}
       />
     </FieldWrapper>

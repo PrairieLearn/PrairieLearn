@@ -6,12 +6,14 @@ export function FieldWrapper({
   label,
   onOverride,
   onRemoveOverride,
+  headerToggle,
   children,
 }: {
   isOverridden: boolean;
   label: string;
   onOverride?: () => void;
   onRemoveOverride?: () => void;
+  headerToggle?: ReactNode;
   children: ReactNode;
 }) {
   const cardStyle = isOverridden ? {} : { border: '2px dashed var(--bs-border-color)' };
@@ -37,7 +39,10 @@ export function FieldWrapper({
         ) : (
           <>
             <div className="d-flex justify-content-between align-items-center gap-3 mb-2">
-              <strong>{label}</strong>
+              <div className="d-flex align-items-center gap-2">
+                {headerToggle}
+                <strong>{label}</strong>
+              </div>
               {onRemoveOverride && (
                 <Button
                   size="sm"

@@ -6,11 +6,151 @@ import { get, useFieldArray, useFormContext, useFormState, useWatch } from 'reac
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
+import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
 import { endOfDayDatetime } from '../utils/dateUtils.js';
 
-function DeadlineArrayInput({
+type DeadlineArrayFieldName =
+  | 'mainRule.earlyDeadlines'
+  | 'mainRule.lateDeadlines'
+  | `overrides.${number}.earlyDeadlines`
+  | `overrides.${number}.lateDeadlines`;
+
+function computeNextDeadline({
+  type,
+  deadlines,
+  releaseDate,
+  dueDate,
+  displayTimezone,
+}: {
+  type: 'early' | 'late';
+  deadlines: DeadlineEntry[];
+  releaseDate: string | null | undefined;
+  dueDate: string | null | undefined;
+  displayTimezone: string;
+}): DeadlineEntry {
+  const isEarly = type === 'early';
+  let candidateDate: Temporal.PlainDate | null = null;
+
+  let lastFilledDate = '';
+  for (let i = deadlines.length - 1; i >= 0; i--) {
+    if (deadlines[i].date) {
+      lastFilledDate = deadlines[i].date;
+      break;
+    }
+  }
+
+  if (isEarly && dueDate) {
+    // Early deadlines must be on or before the due date. Place the new one at
+    // min(anchor + 1 week, midpoint to maxDate) so we get natural spacing when
+    // there's room and compress when the window is tight.
+    const maxDate = Temporal.PlainDateTime.from(dueDate).toPlainDate();
+    const anchor = lastFilledDate
+      ? Temporal.PlainDateTime.from(lastFilledDate).toPlainDate()
+      : releaseDate
+        ? Temporal.PlainDateTime.from(releaseDate).toPlainDate()
+        : Temporal.Now.plainDateISO(displayTimezone);
+
+    const daysToMax = anchor.until(maxDate).days;
+    if (daysToMax > 0) {
+      const weekOut = anchor.add({ weeks: 1 });
+      const midpoint = anchor.add({ days: Math.ceil(daysToMax / 2) });
+      candidateDate = Temporal.PlainDate.compare(weekOut, midpoint) <= 0 ? weekOut : midpoint;
+    }
+  } else if (isEarly && releaseDate) {
+    const anchor = lastFilledDate
+      ? Temporal.PlainDateTime.from(lastFilledDate).toPlainDate()
+      : Temporal.PlainDateTime.from(releaseDate).toPlainDate();
+    candidateDate = anchor.add({ weeks: 1 });
+  } else if (!isEarly && dueDate) {
+    const anchor = lastFilledDate
+      ? Temporal.PlainDateTime.from(lastFilledDate).toPlainDate()
+      : Temporal.PlainDateTime.from(dueDate).toPlainDate();
+    candidateDate = anchor.add({ weeks: 1 });
+  }
+
+  const defaultDate = candidateDate ? endOfDayDatetime(candidateDate) : '';
+  const previousCredit = deadlines.at(-1)?.credit ?? (isEarly ? 110 : 90);
+  const defaultCredit = previousCredit - 1;
+  return { date: defaultDate, credit: defaultCredit };
+}
+
+function DeadlineArrayToggle({
+  type,
+  fieldArrayName,
+  idPrefix,
+  deadlines,
+  releaseDate,
+  dueDate,
+  displayTimezone,
+  showLabel,
+}: {
+  type: 'early' | 'late';
+  fieldArrayName: DeadlineArrayFieldName;
+  idPrefix: string;
+  deadlines: DeadlineEntry[];
+  releaseDate: string | null | undefined;
+  dueDate: string | null | undefined;
+  displayTimezone: string;
+  showLabel?: boolean;
+}) {
+  const { fields, append, remove } = useFieldArray<AccessControlFormData, typeof fieldArrayName>({
+    name: fieldArrayName,
+  });
+
+  const label = type === 'early' ? 'Early deadlines' : 'Late deadlines';
+
+  return (
+    <ToggleTitle
+      id={`${idPrefix}-${type}-deadlines-enabled`}
+      label={label}
+      checked={fields.length > 0}
+      showLabel={showLabel}
+      onChange={(checked) => {
+        if (checked) {
+          append(computeNextDeadline({ type, deadlines, releaseDate, dueDate, displayTimezone }));
+        } else {
+          remove();
+        }
+      }}
+    />
+  );
+}
+
+function DeadlineArrayAddButton({
+  type,
+  fieldArrayName,
+  deadlines,
+  releaseDate,
+  dueDate,
+  displayTimezone,
+}: {
+  type: 'early' | 'late';
+  fieldArrayName: DeadlineArrayFieldName;
+  deadlines: DeadlineEntry[];
+  releaseDate: string | null | undefined;
+  dueDate: string | null | undefined;
+  displayTimezone: string;
+}) {
+  const { append } = useFieldArray<AccessControlFormData, typeof fieldArrayName>({
+    name: fieldArrayName,
+  });
+
+  return (
+    <Button
+      size="sm"
+      variant="outline-primary"
+      onClick={() => {
+        append(computeNextDeadline({ type, deadlines, releaseDate, dueDate, displayTimezone }));
+      }}
+    >
+      Add {type === 'early' ? 'early' : 'late'}
+    </Button>
+  );
+}
+
+function DeadlineArrayBody({
   type,
   fieldArrayName,
   idPrefix,
@@ -20,14 +160,9 @@ function DeadlineArrayInput({
   validationDueDate,
   deadlines,
   displayTimezone,
-  showLabel = true,
 }: {
   type: 'early' | 'late';
-  fieldArrayName:
-    | 'mainRule.earlyDeadlines'
-    | 'mainRule.lateDeadlines'
-    | `overrides.${number}.earlyDeadlines`
-    | `overrides.${number}.lateDeadlines`;
+  fieldArrayName: DeadlineArrayFieldName;
   idPrefix: string;
   releaseDate: string | null | undefined;
   dueDate: string | null | undefined;
@@ -35,16 +170,14 @@ function DeadlineArrayInput({
   validationDueDate?: string | null | undefined;
   deadlines: DeadlineEntry[];
   displayTimezone: string;
-  showLabel?: boolean;
 }) {
   const { register, trigger } = useFormContext<AccessControlFormData>();
   const isEarly = type === 'early';
 
-  const {
-    fields: deadlineFields,
-    append: appendDeadline,
-    remove: removeDeadline,
-  } = useFieldArray<AccessControlFormData, typeof fieldArrayName>({
+  const { fields: deadlineFields, remove: removeDeadline } = useFieldArray<
+    AccessControlFormData,
+    typeof fieldArrayName
+  >({
     name: fieldArrayName,
   });
 
@@ -134,7 +267,6 @@ function DeadlineArrayInput({
     const currentReleaseDate = releaseDateRef.current ? new Date(releaseDateRef.current) : null;
     const currentDeadlines = deadlinesRef.current;
 
-    // Check for duplicate dates within this deadline array.
     for (let i = 0; i < currentDeadlines.length; i++) {
       if (i !== index && currentDeadlines[i]?.date === value) {
         return 'Duplicate deadline date';
@@ -184,84 +316,8 @@ function DeadlineArrayInput({
     return true;
   };
 
-  const addDeadline = () => {
-    let candidateDate: Temporal.PlainDate | null = null;
-
-    // Find the last deadline that has an actual date value — earlier entries
-    // may be empty if the user hasn't filled them in yet.
-    let lastFilledDate = '';
-    for (let i = deadlines.length - 1; i >= 0; i--) {
-      if (deadlines[i].date) {
-        lastFilledDate = deadlines[i].date;
-        break;
-      }
-    }
-
-    if (isEarly && dueDate) {
-      // Early deadlines must be on or before the due date. To leave room for
-      // additional deadlines, place the new one at min(anchor + 1 week,
-      // midpoint to maxDate) — this uses natural spacing when there's
-      // plenty of room and compresses when the window is tight.
-      const maxDate = Temporal.PlainDateTime.from(dueDate).toPlainDate();
-      const anchor = lastFilledDate
-        ? Temporal.PlainDateTime.from(lastFilledDate).toPlainDate()
-        : releaseDate
-          ? Temporal.PlainDateTime.from(releaseDate).toPlainDate()
-          : Temporal.Now.plainDateISO(displayTimezone);
-
-      const daysToMax = anchor.until(maxDate).days;
-      if (daysToMax > 0) {
-        const weekOut = anchor.add({ weeks: 1 });
-        const midpoint = anchor.add({ days: Math.ceil(daysToMax / 2) });
-        candidateDate = Temporal.PlainDate.compare(weekOut, midpoint) <= 0 ? weekOut : midpoint;
-      }
-      // If daysToMax <= 0, no room — candidateDate stays null → empty field
-    } else if (isEarly && releaseDate) {
-      // No due date constraint — just space 1 week after anchor.
-      const anchor = lastFilledDate
-        ? Temporal.PlainDateTime.from(lastFilledDate).toPlainDate()
-        : Temporal.PlainDateTime.from(releaseDate).toPlainDate();
-      candidateDate = anchor.add({ weeks: 1 });
-    } else if (!isEarly && dueDate) {
-      // Late deadlines have no upper bound — 1 week spacing works.
-      const anchor = lastFilledDate
-        ? Temporal.PlainDateTime.from(lastFilledDate).toPlainDate()
-        : Temporal.PlainDateTime.from(dueDate).toPlainDate();
-      candidateDate = anchor.add({ weeks: 1 });
-    }
-
-    const defaultDate = candidateDate ? endOfDayDatetime(candidateDate) : '';
-    const previousCredit = deadlines.at(-1)?.credit ?? (isEarly ? 110 : 90);
-    const defaultCredit = previousCredit - 1;
-    appendDeadline({ date: defaultDate, credit: defaultCredit });
-  };
-
-  const label = isEarly ? 'Early deadlines' : 'Late deadlines';
-
   return (
-    <div>
-      <div className="d-flex justify-content-between align-items-center mb-2">
-        <Form.Check
-          type="checkbox"
-          id={`${idPrefix}-${type}-deadlines-enabled`}
-          label={
-            showLabel ? <strong>{label}</strong> : <span className="visually-hidden">{label}</span>
-          }
-          checked={deadlineFields.length > 0}
-          onChange={({ currentTarget }) => {
-            if (currentTarget.checked) {
-              addDeadline();
-            } else {
-              // Remove all deadlines
-              removeDeadline();
-            }
-          }}
-        />
-        <Button size="sm" variant="outline-primary" onClick={addDeadline}>
-          Add {isEarly ? 'early' : 'late'}
-        </Button>
-      </div>
-
+    <>
       {deadlineFields.map((deadlineField, index) => (
         <div key={deadlineField.id} className="mb-3">
           <div className="d-flex gap-2 mb-1 flex-wrap align-items-start">
@@ -344,7 +400,7 @@ function DeadlineArrayInput({
           <Form.Text className="text-muted">{getTimeRangeText(index)}</Form.Text>
         </div>
       ))}
-    </div>
+    </>
   );
 }
 
@@ -375,17 +431,38 @@ export function MainDeadlineArrayField({
   if (!shouldShow) return null;
 
   return (
-    <DeadlineArrayInput
-      type={type}
-      fieldArrayName={fieldName}
-      idPrefix="mainRule"
-      releaseDate={releaseDate}
-      dueDate={dueDate}
-      validationReleaseDate={releaseDate}
-      validationDueDate={dueDate}
-      deadlines={deadlines}
-      displayTimezone={displayTimezone}
-    />
+    <div>
+      <div className="d-flex justify-content-between align-items-center mb-2">
+        <DeadlineArrayToggle
+          type={type}
+          fieldArrayName={fieldName}
+          idPrefix="mainRule"
+          deadlines={deadlines}
+          releaseDate={releaseDate}
+          dueDate={dueDate}
+          displayTimezone={displayTimezone}
+        />
+        <DeadlineArrayAddButton
+          type={type}
+          fieldArrayName={fieldName}
+          deadlines={deadlines}
+          releaseDate={releaseDate}
+          dueDate={dueDate}
+          displayTimezone={displayTimezone}
+        />
+      </div>
+      <DeadlineArrayBody
+        type={type}
+        fieldArrayName={fieldName}
+        idPrefix="mainRule"
+        releaseDate={releaseDate}
+        dueDate={dueDate}
+        validationReleaseDate={releaseDate}
+        validationDueDate={dueDate}
+        deadlines={deadlines}
+        displayTimezone={displayTimezone}
+      />
+    </div>
   );
 }
 
@@ -401,6 +478,7 @@ export function OverrideDeadlineArrayField({
   const isEarly = type === 'early';
   const fieldPath = isEarly ? 'earlyDeadlines' : 'lateDeadlines';
   const label = isEarly ? 'Early deadlines' : 'Late deadlines';
+  const fieldArrayName = `overrides.${index}.${fieldPath}` as const;
 
   const { setValue } = useFormContext<AccessControlFormData>();
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, fieldPath);
@@ -409,8 +487,8 @@ export function OverrideDeadlineArrayField({
     name: `mainRule.${fieldPath}`,
   });
 
-  const deadlines = useWatch<AccessControlFormData, `overrides.${number}.${typeof fieldPath}`>({
-    name: `overrides.${index}.${fieldPath}`,
+  const deadlines = useWatch<AccessControlFormData, typeof fieldArrayName>({
+    name: fieldArrayName,
   });
 
   const mainReleaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
@@ -440,14 +518,36 @@ export function OverrideDeadlineArrayField({
       label={label}
       onOverride={() => {
         const copied = mainDeadlines.map((d) => ({ ...d }));
-        setValue(`overrides.${index}.${fieldPath}`, copied, { shouldDirty: true });
+        setValue(fieldArrayName, copied, { shouldDirty: true });
         addOverride();
       }}
       onRemoveOverride={removeOverride}
+      headerToggle={
+        <DeadlineArrayToggle
+          type={type}
+          fieldArrayName={fieldArrayName}
+          idPrefix={`overrides-${index}`}
+          deadlines={deadlines}
+          releaseDate={effectiveReleaseDate}
+          dueDate={effectiveDueDate}
+          displayTimezone={displayTimezone}
+          showLabel={false}
+        />
+      }
     >
-      <DeadlineArrayInput
+      <div className="d-flex justify-content-end mb-2">
+        <DeadlineArrayAddButton
+          type={type}
+          fieldArrayName={fieldArrayName}
+          deadlines={deadlines}
+          releaseDate={effectiveReleaseDate}
+          dueDate={effectiveDueDate}
+          displayTimezone={displayTimezone}
+        />
+      </div>
+      <DeadlineArrayBody
         type={type}
-        fieldArrayName={`overrides.${index}.${fieldPath}`}
+        fieldArrayName={fieldArrayName}
         idPrefix={`overrides-${index}`}
         releaseDate={effectiveReleaseDate}
         dueDate={effectiveDueDate}
@@ -455,7 +555,6 @@ export function OverrideDeadlineArrayField({
         validationDueDate={validationDueDate}
         deadlines={deadlines}
         displayTimezone={displayTimezone}
-        showLabel={false}
       />
     </FieldWrapper>
   );
