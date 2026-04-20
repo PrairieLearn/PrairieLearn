@@ -121,11 +121,8 @@ lint-js:
 	@yarn eslint "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" --check
 # Separate target since the caches don't respect updates to plugins.
-# Split into two ESLint passes: the first is cacheable because its files never
-# match the type-aware config block (see `typeAwareFiles` in eslint.config.mjs);
-# the second runs the type-aware rules uncached, because ESLint's per-file
-# cache can't see cross-file type dependencies. Keep the ignore pattern in
-# sync with `typeAwareFiles`.
+# Split into two passes: the first pass lints the type-aware files without a cache (see `typeAwareFiles` in eslint.config.mjs), and the second
+# pass lints the non-type-aware files with a cache. We check apps/prairielearn first since it is more likely to have lint errors.
 lint-js-cached:
 	@yarn eslint "apps/prairielearn/**/*.{ts,tsx}"
 	@yarn prettier "apps/prairielearn/**/*.{ts,tsx}" --check --cache --cache-strategy content
