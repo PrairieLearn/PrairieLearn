@@ -59,6 +59,8 @@ const adjustCreditPoolMutation = t.procedure
       }),
       z.object({
         action: z.literal('set'),
+        // Admins can set a negative balance for the transferable credit type.
+        // The configured min/max per credit type is enforced below.
         balance_dollars: z.number(),
         credit_type: z.enum(['transferable', 'non_transferable']),
       }),
@@ -94,15 +96,15 @@ const adjustCreditPoolMutation = t.procedure
       return await selectCreditPool(opts.ctx.course_instance.id);
     }
 
-    const maxMilliDollars =
+    const { minMilliDollars, maxMilliDollars } =
       opts.input.action === 'add'
-        ? config.aiGradingCreditPoolLimits.add.maxMilliDollars
-        : config.aiGradingCreditPoolLimits.deduct.maxMilliDollars;
+        ? config.aiGradingCreditPoolLimits.add
+        : config.aiGradingCreditPoolLimits.deduct;
     const amountMilliDollars = Math.round(opts.input.amount_dollars * 1000);
-    if (amountMilliDollars > maxMilliDollars) {
+    if (amountMilliDollars < minMilliDollars || amountMilliDollars > maxMilliDollars) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
-        message: `Amount exceeds the maximum of ${formatMilliDollars(maxMilliDollars)} for ${opts.input.action} adjustments`,
+        message: `Amount must be between ${formatMilliDollars(minMilliDollars)} and ${formatMilliDollars(maxMilliDollars)} for ${opts.input.action} adjustments`,
       });
     }
 

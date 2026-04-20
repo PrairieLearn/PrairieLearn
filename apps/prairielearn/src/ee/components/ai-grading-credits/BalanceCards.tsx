@@ -36,9 +36,6 @@ export function BalanceCards({
 
   const dimStyle = dimmed ? { opacity: 0.4 } : undefined;
 
-  const showNegativeBalanceExplainer =
-    context === 'instructor' && pool.credit_transferable_milli_dollars < 0;
-
   return (
     <>
       <div className="row mb-3 g-3">
@@ -99,7 +96,7 @@ export function BalanceCards({
           </div>
         </div>
       </div>
-      {showNegativeBalanceExplainer && (
+      {context === 'instructor' && pool.credit_transferable_milli_dollars < 0 && (
         <p className="text-muted small mb-3">
           A negative transferable balance happens when in-flight AI grading requests complete after
           your credits run out. The outstanding amount will be deducted from your next credit

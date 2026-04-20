@@ -186,7 +186,7 @@ function AdjustCreditsForm({
     'non_transferable',
   );
 
-  const hasAmount = amountStr !== '';
+  const amountEntered = amountStr !== '';
   const parsedAmount = Number(amountStr);
   const parsedAmountMilliDollars = Math.round(parsedAmount * 1000);
 
@@ -196,24 +196,23 @@ function AdjustCreditsForm({
     return poolData.credit_non_transferable_milli_dollars;
   });
 
-  const { min: amountMinMilliDollars, max: amountMaxMilliDollars } = run(() => {
-    if (action === 'set') {
-      const limits =
-        creditType === 'transferable'
+  const { minMilliDollars: amountMinMilliDollars, maxMilliDollars: amountMaxMilliDollars } = run(
+    () => {
+      if (action === 'set') {
+        return creditType === 'transferable'
           ? creditPoolLimits.setTransferable
           : creditPoolLimits.setNonTransferable;
-      return { min: limits.minMilliDollars, max: limits.maxMilliDollars };
-    }
-    const limits = action === 'add' ? creditPoolLimits.add : creditPoolLimits.deduct;
-    return { min: limits.minMilliDollars, max: limits.maxMilliDollars };
-  });
+      }
+      return action === 'add' ? creditPoolLimits.add : creditPoolLimits.deduct;
+    },
+  );
 
   // An amount is valid when it is within the [amountMinMilliDollars, amountMaxMilliDollars]
   // range for the current action and has at most cent-level precision (no sub-cent fractions).
   const amountValid = run(() => {
     // Treat an empty input as valid so the user doesn't see an error before they've typed anything.
-    // Submission is separately gated by `hasAmount` in `isSubmitEnabled`.
-    if (!hasAmount) return true;
+    // Submission is separately gated by `amountEntered` in `isSubmitEnabled`.
+    if (!amountEntered) return true;
     if (!Number.isFinite(parsedAmount)) return false;
     if (parsedAmountMilliDollars % 10 !== 0) return false;
     return (
@@ -223,7 +222,7 @@ function AdjustCreditsForm({
   });
 
   const setBalanceDelta =
-    action === 'set' && hasAmount && amountValid && currentBalanceMilliDollars != null
+    action === 'set' && amountEntered && amountValid && currentBalanceMilliDollars != null
       ? parsedAmountMilliDollars - currentBalanceMilliDollars
       : null;
 
@@ -231,7 +230,7 @@ function AdjustCreditsForm({
     action === 'deduct' && currentBalanceMilliDollars !== null && currentBalanceMilliDollars <= 0;
 
   const isSubmitEnabled = run(() => {
-    if (isPending || !hasAmount || !amountValid) return false;
+    if (isPending || !amountEntered || !amountValid) return false;
     if (isDeductBlocked) return false;
     if (action === 'set' && setBalanceDelta === 0) return false;
     return true;
@@ -325,7 +324,7 @@ function AdjustCreditsForm({
           creditType={creditType}
           action={action}
           amountValid={amountValid}
-          hasAmount={hasAmount}
+          amountEntered={amountEntered}
           amountMinMilliDollars={amountMinMilliDollars}
           amountMaxMilliDollars={amountMaxMilliDollars}
           currentBalanceMilliDollars={currentBalanceMilliDollars}
@@ -351,7 +350,7 @@ function AdjustCreditsFormFeedback({
   creditType,
   action,
   amountValid,
-  hasAmount,
+  amountEntered,
   amountMinMilliDollars,
   amountMaxMilliDollars,
   currentBalanceMilliDollars,
@@ -361,7 +360,7 @@ function AdjustCreditsFormFeedback({
   creditType: 'transferable' | 'non_transferable';
   action: AdjustAction;
   amountValid: boolean;
-  hasAmount: boolean;
+  amountEntered: boolean;
   amountMinMilliDollars: number;
   amountMaxMilliDollars: number;
   currentBalanceMilliDollars: number | null;
@@ -388,7 +387,7 @@ function AdjustCreditsFormFeedback({
         </div>
       );
     }
-    if (hasAmount && parsedAmountMilliDollars > currentBalanceMilliDollars) {
+    if (amountEntered && parsedAmountMilliDollars > currentBalanceMilliDollars) {
       return (
         <div className="text-warning-emphasis small mt-3">
           Amount exceeds the {creditTypeLabel} balance.{' '}
