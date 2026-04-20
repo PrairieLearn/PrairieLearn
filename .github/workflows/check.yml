@@ -81,11 +81,19 @@ jobs:
           path: ${{ runner.temp }}/bundle-sizes-section.md
           retention-days: 1
 
-      # Restore the ESLint / Prettier caches. ESLint's own cache does not
-      # invalidate when an in-repo plugin's source changes (only when its
-      # version does), so we include the plugin and shared config sources in
-      # the cache key. Exact-match only — no restore-keys fallback — so a miss
-      # gives us a full, correct re-lint.
+      # Restore the ESLint / Prettier caches. Exact-match only (no
+      # restore-keys fallback) so that a miss forces a full, correct re-lint.
+      #
+      # The key must hash every input that can affect lint output:
+      # - yarn.lock captures external versions (typescript, typescript-eslint,
+      #   eslint, prettier, all plugins).
+      # - eslint.config.mjs + @prairielearn/eslint-config source + custom
+      #   plugin source. ESLint's own --cache only invalidates on plugin
+      #   *versions*; in-repo plugins share a pinned workspace version so we
+      #   must hash their source here.
+      # - Every tsconfig in the monorepo, because projectService type-aware
+      #   rules read them.
+      # - Prettier config + ignore file.
       - name: Restore lint caches
         uses: actions/cache@v5
         with:
@@ -96,8 +104,14 @@ jobs:
             lint-${{ runner.os }}-${{ hashFiles(
               'yarn.lock',
               'eslint.config.mjs',
-              'packages/eslint-plugin-prairielearn/src/**',
               'packages/eslint-config/src/**',
+              'packages/eslint-plugin-prairielearn/src/index.ts',
+              'packages/eslint-plugin-prairielearn/src/utils.ts',
+              'packages/eslint-plugin-prairielearn/src/rules/**',
+              'apps/*/tsconfig*.json',
+              'packages/*/tsconfig*.json',
+              'contrib/tsconfig.json',
+              'scripts/tsconfig.json',
               '.prettierrc.json',
               '.prettierignore'
             ) }}
