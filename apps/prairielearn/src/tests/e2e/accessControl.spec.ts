@@ -217,7 +217,7 @@ test.describe('Access control UI', () => {
     await panel.getByRole('button', { name: 'Override Question visibility' }).click();
 
     // Select "Hide questions permanently" from the RichSelect dropdown
-    await panel.getByRole('button', { name: /Question visibility/i }).click();
+    await panel.getByRole('button', { name: 'Question visibility', exact: true }).click();
     await page.getByRole('option', { name: /Hide questions permanently/i }).click();
 
     // Close the detail panel

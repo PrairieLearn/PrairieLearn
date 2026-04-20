@@ -2,7 +2,16 @@ import { Temporal } from '@js-temporal/polyfill';
 import stableStringify from 'fast-json-stable-stringify';
 import { useEffect, useRef } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
-import { get, useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
+import {
+  type FieldArrayWithId,
+  type UseFieldArrayAppend,
+  type UseFieldArrayRemove,
+  get,
+  useFieldArray,
+  useFormContext,
+  useFormState,
+  useWatch,
+} from 'react-hook-form';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
@@ -87,6 +96,9 @@ function DeadlineArrayInput({
   deadlines,
   displayTimezone,
   renderInlineHeader = true,
+  deadlineFields,
+  appendDeadline,
+  removeDeadline,
 }: {
   type: 'early' | 'late';
   fieldArrayName: DeadlineArrayFieldName;
@@ -98,17 +110,12 @@ function DeadlineArrayInput({
   deadlines: DeadlineEntry[];
   displayTimezone: string;
   renderInlineHeader?: boolean;
+  deadlineFields: FieldArrayWithId<AccessControlFormData, DeadlineArrayFieldName>[];
+  appendDeadline: UseFieldArrayAppend<AccessControlFormData, DeadlineArrayFieldName>;
+  removeDeadline: UseFieldArrayRemove;
 }) {
   const { register, trigger } = useFormContext<AccessControlFormData>();
   const isEarly = type === 'early';
-
-  const {
-    fields: deadlineFields,
-    append: appendDeadline,
-    remove: removeDeadline,
-  } = useFieldArray<AccessControlFormData, typeof fieldArrayName>({
-    name: fieldArrayName,
-  });
 
   const { errors } = useFormState();
 
@@ -379,6 +386,10 @@ export function MainDeadlineArrayField({
     name: fieldName,
   });
 
+  const { fields, append, remove } = useFieldArray<AccessControlFormData, typeof fieldName>({
+    name: fieldName,
+  });
+
   const shouldShow = isEarly || (dueDate !== null && !!dueDate);
 
   if (!shouldShow) return null;
@@ -394,6 +405,9 @@ export function MainDeadlineArrayField({
       validationDueDate={dueDate}
       deadlines={deadlines}
       displayTimezone={displayTimezone}
+      deadlineFields={fields}
+      appendDeadline={append}
+      removeDeadline={remove}
     />
   );
 }
@@ -494,6 +508,9 @@ export function OverrideDeadlineArrayField({
         deadlines={deadlines}
         displayTimezone={displayTimezone}
         renderInlineHeader={false}
+        deadlineFields={fields}
+        appendDeadline={append}
+        removeDeadline={remove}
       />
     </FieldWrapper>
   );
