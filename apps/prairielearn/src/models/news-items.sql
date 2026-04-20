@@ -25,14 +25,15 @@ RETURNING
 
 -- BLOCK upsert_news_item
 INSERT INTO
-  news_items (title, link, pub_date, guid)
+  news_items (title, link, pub_date, guid, categories)
 VALUES
-  ($title, $link, $pub_date, $guid)
+  ($title, $link, $pub_date, $guid, $categories)
 ON CONFLICT (guid) DO UPDATE
 SET
   title = EXCLUDED.title,
   link = EXCLUDED.link,
   pub_date = EXCLUDED.pub_date,
+  categories = EXCLUDED.categories,
   fetched_at = now(),
   hidden_at = CASE
     WHEN news_items.managed_by = 'admin' THEN news_items.hidden_at

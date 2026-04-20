@@ -8,6 +8,12 @@ const absoluteDateFormatter = new Intl.DateTimeFormat('en-US', {
   year: 'numeric',
 });
 
+const CATEGORY_CLASSES: Record<string, string> = {
+  Release: 'bg-success-subtle text-success-emphasis border-success-subtle',
+  Technical: 'bg-info-subtle text-info-emphasis border-info-subtle',
+  Development: 'bg-warning-subtle text-warning-emphasis border-warning-subtle',
+};
+
 interface NewsAlertProps {
   newsItems: NewsItem[];
   csrfToken: string;
@@ -79,11 +85,21 @@ export function NewsAlert({ newsItems, csrfToken, blogUrl }: NewsAlertProps) {
                     aria-hidden="true"
                   />
                 </div>
-                <div
-                  className="text-muted small"
-                  title={absoluteDateFormatter.format(item.pub_date)}
-                >
-                  {formatDistanceStrict(item.pub_date, now, { addSuffix: true })}
+                <div className="d-flex align-items-center gap-2 flex-wrap">
+                  <span
+                    className="text-muted small"
+                    title={absoluteDateFormatter.format(item.pub_date)}
+                  >
+                    {formatDistanceStrict(item.pub_date, now, { addSuffix: true })}
+                  </span>
+                  {item.categories.map((category) => (
+                    <span
+                      key={category}
+                      className={`badge rounded-pill fw-normal border ${CATEGORY_CLASSES[category] ?? 'text-bg-light'}`}
+                    >
+                      {category}
+                    </span>
+                  ))}
                 </div>
               </div>
             </a>

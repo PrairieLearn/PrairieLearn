@@ -1335,6 +1335,7 @@ export const NewsItemReadStateSchema = z.object({
 export type NewsItemReadState = z.infer<typeof NewsItemReadStateSchema>;
 
 export const NewsItemSchema = z.object({
+  categories: z.array(z.string()),
   fetched_at: DateFromISOString,
   guid: z.string(),
   hidden_at: DateFromISOString.nullable(),

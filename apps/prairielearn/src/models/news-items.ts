@@ -31,6 +31,7 @@ export interface NewsItemInput {
   link: string;
   pub_date: Date;
   guid: string;
+  categories: string[];
 }
 
 export async function upsertNewsItem(item: NewsItemInput): Promise<NewsItem> {
@@ -41,6 +42,7 @@ export async function upsertNewsItem(item: NewsItemInput): Promise<NewsItem> {
       link: item.link,
       pub_date: item.pub_date,
       guid: item.guid,
+      categories: item.categories,
     },
     NewsItemSchema,
   );

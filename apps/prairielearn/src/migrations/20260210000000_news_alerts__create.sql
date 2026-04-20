@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS news_items (
   guid TEXT NOT NULL UNIQUE,
   fetched_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   hidden_at TIMESTAMPTZ,
-  managed_by enum_news_item_managed_by
+  managed_by enum_news_item_managed_by,
+  categories TEXT[] NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX IF NOT EXISTS news_items_pub_date_idx ON news_items (pub_date DESC);

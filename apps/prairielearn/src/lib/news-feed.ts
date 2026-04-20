@@ -67,7 +67,13 @@ export async function fetchAndCacheNewsItems(): Promise<void> {
         continue;
       }
 
-      newsItems.push({ title, link, pub_date: pubDate, guid });
+      newsItems.push({
+        title,
+        link,
+        pub_date: pubDate,
+        guid,
+        categories: item.categories ?? [],
+      });
     }
 
     if (newsItems.length > 0) {

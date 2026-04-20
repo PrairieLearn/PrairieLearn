@@ -1,4 +1,5 @@
 columns
+    categories: text[] not null default '{}'::text[]
     fetched_at: timestamp with time zone not null default now()
     guid: text not null
     hidden_at: timestamp with time zone
