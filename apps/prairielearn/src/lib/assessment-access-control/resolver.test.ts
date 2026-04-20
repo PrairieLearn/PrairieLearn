@@ -231,6 +231,35 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(false);
     });
 
+    it('handles late deadline with 0% credit', () => {
+      const rule = makeMainRule({
+        dateControl: {
+          releaseDate: '2025-03-01T00:00:00Z',
+          dueDate: '2025-03-10T00:00:00Z',
+          lateDeadlines: [{ date: '2025-03-15T00:00:00Z', credit: 0 }],
+        },
+      });
+
+      // Check during the late deadline period: should be active for no credit.
+      // This is a regression test; we used to treat 0% credit as active:false.
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        date: new Date('2025-03-12T00:00:00Z'),
+      });
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(true);
+
+      // Check again after the late deadline.
+      const resultAfter = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        date: new Date('2025-03-16T00:00:00Z'),
+      });
+      expect(resultAfter.credit).toBe(0);
+      expect(resultAfter.active).toBe(false);
+    });
+
     it('uses afterLastDeadline credit when specified', () => {
       const result = resolveAccessControl({
         ...baseInput,

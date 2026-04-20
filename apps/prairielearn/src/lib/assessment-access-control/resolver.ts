@@ -313,7 +313,7 @@ function computeCredit(
       const nextDeadline = entry.date;
       return {
         credit,
-        active: credit > 0,
+        active: true,
         beforeRelease: false,
         nextDeadlineDate: nextDeadline,
         password: dateControl.password ?? null,
