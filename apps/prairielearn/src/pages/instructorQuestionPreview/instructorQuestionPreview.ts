@@ -50,14 +50,13 @@ router.get(
   '/',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
-    const aiGradingPreviewEnabled = aiGradingEnabled && req.query.ai_grading_preview === 'true';
-
-    const questionRenderContext = run(() => {
-      if (aiGradingPreviewEnabled) return 'ai_grading' as const;
-      if (manualGradingPreviewEnabled) return 'manual_grading' as const;
+    const questionRenderContext: 'manual_grading' | 'ai_grading' | undefined = run(() => {
+      if (req.query.manual_grading_preview === 'true') return 'manual_grading';
+      if (aiGradingEnabled && req.query.ai_grading_preview === 'true') return 'ai_grading';
       return undefined;
     });
+    const manualGradingPreviewEnabled = questionRenderContext === 'manual_grading';
+    const aiGradingPreviewEnabled = questionRenderContext === 'ai_grading';
 
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
@@ -111,11 +110,10 @@ router.get(
     });
 
     // These will be passed back when submissions are rendered asynchronously.
-    // We treat these as mutually exclusive.
     const renderSubmissionSearchParams = new URLSearchParams();
-    if (manualGradingPreviewEnabled) {
+    if (questionRenderContext === 'manual_grading') {
       renderSubmissionSearchParams.set('manual_grading_preview', 'true');
-    } else if (aiGradingPreviewEnabled) {
+    } else if (questionRenderContext === 'ai_grading') {
       renderSubmissionSearchParams.set('ai_grading_preview', 'true');
     }
 
@@ -163,8 +161,11 @@ router.get(
 
     // As with the normal route, we need to respect the `manual_grading_preview`
     // and the `ai_grading_preview` flags.
-    const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
-    const aiGradingPreviewEnabled = aiGradingEnabled && req.query.ai_grading_preview === 'true';
+    const questionRenderContext: 'manual_grading' | 'ai_grading' | undefined = run(() => {
+      if (req.query.manual_grading_preview === 'true') return 'manual_grading';
+      if (aiGradingEnabled && req.query.ai_grading_preview === 'true') return 'ai_grading';
+      return undefined;
+    });
 
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: req.params.unsafe_variant_id,
@@ -186,11 +187,7 @@ router.get(
       authn_user: res.locals.authn_user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'instructor',
-      questionRenderContext: run(() => {
-        if (manualGradingPreviewEnabled) return 'manual_grading';
-        if (aiGradingPreviewEnabled) return 'ai_grading';
-        return undefined;
-      }),
+      questionRenderContext,
       // This is only used by score panels, which are not rendered in this context.
       authorizedEdit: false,
       // Score panels are never rendered on the instructor question preview page.
