@@ -210,9 +210,9 @@ function AdjustCreditsForm({
 
   // An amount is valid when it is within the [amountMinMilliDollars, amountMaxMilliDollars]
   // range for the current action and has at most cent-level precision (no sub-cent fractions).
-  // An empty amount is treated as valid so the user doesn't see an error before typing;
-  // submission is separately gated by hasAmount.
   const amountValid = run(() => {
+    // Treat an empty input as valid so the user doesn't see an error before they've typed anything.
+    // Submission is separately gated by `hasAmount` in `isSubmitEnabled`.
     if (!hasAmount) return true;
     if (!Number.isFinite(parsedAmount)) return false;
     if (parsedAmountMilliDollars % 10 !== 0) return false;
@@ -227,15 +227,12 @@ function AdjustCreditsForm({
       ? parsedAmountMilliDollars - currentBalanceMilliDollars
       : null;
 
+  const isDeductBlocked =
+    action === 'deduct' && currentBalanceMilliDollars !== null && currentBalanceMilliDollars <= 0;
+
   const isSubmitEnabled = run(() => {
     if (isPending || !hasAmount || !amountValid) return false;
-    if (
-      action === 'deduct' &&
-      currentBalanceMilliDollars !== null &&
-      currentBalanceMilliDollars <= 0
-    ) {
-      return false;
-    }
+    if (isDeductBlocked) return false;
     if (action === 'set' && setBalanceDelta === 0) return false;
     return true;
   });
@@ -244,8 +241,6 @@ function AdjustCreditsForm({
     onSubmit({ action, amount: parsedAmount, credit_type: creditType });
     setAmountStr('');
   }
-
-  const amountLabel = action === 'set' ? 'New balance (USD)' : 'Amount (USD)';
 
   return (
     <div className="border rounded p-3 mb-3">
@@ -283,7 +278,7 @@ function AdjustCreditsForm({
           </div>
           <div className="col-auto">
             <label className="form-label" htmlFor="amount_dollars">
-              {amountLabel}
+              {action === 'set' ? 'New balance (USD)' : 'Amount (USD)'}
             </label>
             <div className="input-group">
               <span className="input-group-text">$</span>
@@ -294,7 +289,7 @@ function AdjustCreditsForm({
                 step="0.01"
                 placeholder="0.00"
                 value={amountStr}
-                disabled={isDeleted}
+                disabled={isDeleted || isDeductBlocked}
                 min={action === 'set' ? amountMinMilliDollars / 1000 : undefined}
                 max={action === 'set' ? amountMaxMilliDollars / 1000 : undefined}
                 aria-invalid={!amountValid || undefined}

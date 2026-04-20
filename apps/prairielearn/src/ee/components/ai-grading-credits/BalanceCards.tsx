@@ -102,7 +102,8 @@ export function BalanceCards({
       {showNegativeBalanceExplainer && (
         <p className="text-muted small mb-3">
           A negative transferable balance happens when in-flight AI grading requests complete after
-          your credits run out. The outstanding amount is deducted from your next credit purchase.
+          your credits run out. The outstanding amount will be deducted from your next credit
+          purchase.
         </p>
       )}
     </>

@@ -73,9 +73,9 @@ interface DeductCreditsForAiGradingParams {
  *
  * Callers must still gate *new* work on `total_milli_dollars <= 0` before
  * making API calls (see the batch-level and per-submission checks in
- * ai-grading.ts) so users are prompted to buy credits before the balance
- * drifts further. By the time this runs, the API cost has already been
- * incurred, so the full cost is always recorded.
+ * ai-grading.ts) so users can't AI grade with a zero or negative balance. By
+ * the time this runs, the API cost has already been incurred, so the full
+ * cost is always recorded.
  */
 async function deductCreditsForAiGradingWithLockedPool(
   before: CreditPool,

@@ -198,6 +198,8 @@ function RefundConfirmationModal({
 }) {
   const creditAmount = row.checkout_session_amount_milli_dollars ?? 0;
   const creditsSpent = Math.max(0, creditAmount - transferableMilliDollars);
+  // Floor at 0: if the transferable balance is already negative, the refund
+  // doesn't deduct further from it (the user can't owe more than they bought).
   const creditsToDeduct = Math.max(0, Math.min(creditAmount, transferableMilliDollars));
 
   return (
