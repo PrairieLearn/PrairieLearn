@@ -4,12 +4,18 @@ import Modal from 'react-bootstrap/Modal';
 
 import { downloadAsCSV } from '@prairielearn/browser-utils';
 import { ExpandableCheckboxGroup, Radio, RadioGroup } from '@prairielearn/ui';
+import { assertNever } from '@prairielearn/utils';
 
+import {
+  CanvasMatchingPanel,
+  type CanvasMatchingState,
+} from '../../../components/CanvasMatchingPanel.js';
 import {
   CANVAS_CSV_FIXED_HEADERS,
   CANVAS_CSV_POINTS_POSSIBLE_NAME,
   canvasPointsPossibleValue,
 } from '../../../lib/canvas-csv.js';
+import { buildCanvasLookup } from '../../../lib/canvas-matching.js';
 import type { CourseAssessmentRow, GradebookRow } from '../instructorGradebook.types.js';
 
 type ScoreFormat = 'percentage' | 'points_original';
@@ -68,7 +74,7 @@ interface CanvasCsvModalProps {
   show: boolean;
   onHide: () => void;
   courseAssessments: CourseAssessmentRow[];
-  rows: GradebookRow[];
+  studentRows: GradebookRow[];
   filename: string;
 }
 
@@ -83,7 +89,7 @@ export function CanvasCsvModal({ show, ...rest }: CanvasCsvModalProps) {
 function CanvasCsvModalContent({
   onHide,
   courseAssessments,
-  rows,
+  studentRows,
   filename,
 }: Omit<CanvasCsvModalProps, 'show'>) {
   const allAssessmentIds = useMemo(
@@ -95,6 +101,7 @@ function CanvasCsvModalContent({
     () => new Set(allAssessmentIds),
   );
   const [scoreFormat, setScoreFormat] = useState<ScoreFormat>('percentage');
+  const [matchingState, setMatchingState] = useState<CanvasMatchingState | null>(null);
 
   const assessmentGroups = useMemo(() => {
     const groups = new Map<string, AssessmentGroup>();
@@ -156,8 +163,12 @@ function CanvasCsvModalContent({
     [courseAssessments, selectedAssessmentIds],
   );
 
+  const students = useMemo(
+    () => studentRows.map((row) => ({ uid: row.uid, userName: row.user_name, uin: row.uin })),
+    [studentRows],
+  );
+
   const handleDownload = () => {
-    const validRows = rows.filter((row) => row.role === 'Student' && row.user_name != null);
     const header = [
       ...CANVAS_CSV_FIXED_HEADERS,
       ...selectedAssessments.map((a) => `${a.assessment_set_name} ${a.assessment_number}`),
@@ -179,7 +190,7 @@ function CanvasCsvModalContent({
         // zones). Fall back to the instance-level max_points from the
         // first student who has a score for this assessment.
 
-        const scoreWithMax = validRows.find(
+        const scoreWithMax = studentRows.find(
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           (r) => r.scores[a.assessment_id]?.max_points != null,
         );
@@ -191,27 +202,34 @@ function CanvasCsvModalContent({
       }),
     ];
 
+    const canvasLookup = matchingState ? buildCanvasLookup(matchingState.bestResult.result) : null;
+
     const data = [
       pointsPossibleRow,
-      ...validRows.map((row) => [
-        row.user_name,
-        null,
-        null,
-        row.uid,
-        null,
-        ...selectedAssessments.map((a) => {
-          const scoreData = row.scores[a.assessment_id];
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          if (!scoreData) return null;
+      ...studentRows.map((row) => {
+        const canvas = canvasLookup?.get(row.uid);
+        return [
+          canvas?.name ?? row.user_name,
+          canvas?.id ?? null,
+          canvas?.sisUserId ?? null,
+          canvas?.sisLoginId ?? null,
+          canvas?.section ?? null,
+          ...selectedAssessments.map((a) => {
+            const scoreData = row.scores[a.assessment_id];
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            if (!scoreData) return null;
 
-          switch (scoreFormat) {
-            case 'percentage':
-              return scoreData.score_perc ?? null;
-            case 'points_original':
-              return scoreData.points ?? null;
-          }
-        }),
-      ]),
+            switch (scoreFormat) {
+              case 'percentage':
+                return scoreData.score_perc ?? null;
+              case 'points_original':
+                return scoreData.points ?? null;
+              default:
+                assertNever(scoreFormat);
+            }
+          }),
+        ];
+      }),
     ];
 
     downloadAsCSV(header, data, filename);
@@ -224,7 +242,6 @@ function CanvasCsvModalContent({
         <Modal.Title>Export Canvas CSV</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <p className="text-muted small">Only users with the Student role are included.</p>
         <h6>Assessments to include</h6>
         <div className="mb-2 d-flex gap-2">
           <Button variant="link" size="sm" className="p-0" onClick={handleSelectAll}>
@@ -251,6 +268,14 @@ function CanvasCsvModalContent({
           <Radio value="percentage">Percentage score (0–100)</Radio>
           <Radio value="points_original">Original point values</Radio>
         </RadioGroup>
+
+        <hr />
+
+        <CanvasMatchingPanel
+          students={students}
+          matchingState={matchingState}
+          onMatchingStateChange={setMatchingState}
+        />
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onHide}>

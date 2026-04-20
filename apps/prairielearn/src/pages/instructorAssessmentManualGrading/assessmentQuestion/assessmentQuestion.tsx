@@ -54,16 +54,22 @@ router.get(
       }),
     );
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    const aiSubmissionGroupingEnabled = await features.enabledFromLocals(
+      'ai-submission-grouping',
+      res.locals,
+    );
 
     const rubric_data = await manualGrading.selectRubricData({
       assessment_question: res.locals.assessment_question,
     });
 
-    const instanceQuestionGroups = z.array(StaffInstanceQuestionGroupSchema).parse(
-      await selectInstanceQuestionGroups({
-        assessmentQuestionId: res.locals.assessment_question.id,
-      }),
-    );
+    const instanceQuestionGroups = aiSubmissionGroupingEnabled
+      ? z.array(StaffInstanceQuestionGroupSchema).parse(
+          await selectInstanceQuestionGroups({
+            assessmentQuestionId: res.locals.assessment_question.id,
+          }),
+        )
+      : [];
 
     const unfilledInstanceQuestionInfo = await selectInstanceQuestionsForManualGrading({
       assessment: res.locals.assessment,
@@ -170,6 +176,7 @@ router.get(
                 assessmentQuestion={assessment_question}
                 questionQid={question.qid!}
                 aiGradingEnabled={aiGradingEnabled}
+                aiSubmissionGroupingEnabled={aiSubmissionGroupingEnabled}
                 initialAiGradingMode={
                   aiGradingEnabled &&
                   assessment_question.ai_grading_mode &&
@@ -217,10 +224,10 @@ router.get(
       req.session.show_submissions_assigned_to_me_only ?? true;
 
     const use_instance_question_groups = await run(async () => {
-      const aiGradingMode =
-        (await features.enabledFromLocals('ai-grading', res.locals)) &&
+      const groupingAvailable =
+        (await features.enabledFromLocals('ai-submission-grouping', res.locals)) &&
         res.locals.assessment_question.ai_grading_mode;
-      if (!aiGradingMode) {
+      if (!groupingAvailable) {
         return false;
       }
       return await selectAssessmentQuestionHasInstanceQuestionGroups({

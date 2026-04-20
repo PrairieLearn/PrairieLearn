@@ -97,31 +97,39 @@ router.get(
 router.post(
   '/',
   typedAsyncHandler<'assessment'>(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
+    const { assessment, course_instance, authn_user, authz_data, urlPrefix } = extractPageContext(
+      res.locals,
+      {
+        pageType: 'assessment',
+        accessType: 'instructor',
+      },
+    );
+
+    if (!authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
     if (req.body.__action === 'upload_assessment_groups') {
       const job_sequence_id = await uploadInstanceGroups({
-        course_instance: res.locals.course_instance,
-        assessment: res.locals.assessment,
+        course_instance,
+        assessment,
         csvFile: req.file,
         user_id: res.locals.user.id,
-        authn_user_id: res.locals.authn_user.id,
-        authzData: res.locals.authz_data,
+        authn_user_id: authn_user.id,
+        authzData: authz_data,
       });
-      res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+      res.redirect(urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'random_assessment_groups') {
       const job_sequence_id = await randomGroups({
-        course_instance: res.locals.course_instance,
-        assessment: res.locals.assessment,
+        course_instance,
+        assessment,
         user_id: res.locals.user.id,
-        authn_user_id: res.locals.authn_user.id,
+        authn_user_id: authn_user.id,
         max_group_size: Number(req.body.max_group_size),
         min_group_size: Number(req.body.min_group_size),
-        authzData: res.locals.authz_data,
+        authzData: authz_data,
       });
-      res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+      res.redirect(urlPrefix + '/jobSequence/' + job_sequence_id);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

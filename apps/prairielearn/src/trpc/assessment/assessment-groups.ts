@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
@@ -57,7 +59,7 @@ const addGroup = t.procedure
     }
 
     const [group, notAssigned] = await Promise.all([
-      selectGroupById(createdGroupId),
+      selectGroupById({ group_id: createdGroupId, assessment_id: assessment.id }),
       selectNotAssignedForAssessment({
         assessment_id: assessment.id,
         course_instance_id: course_instance.id,
@@ -78,14 +80,11 @@ const editGroup = t.procedure
     const { course_instance, assessment, authn_user, authz_data } = ctx;
 
     const desiredUids = parseUniqueValuesFromString(input.uids, MAX_UIDS);
-    if (desiredUids.length === 0) {
-      throwAppError<AssessmentGroupsError['EditGroup']>({
-        code: 'GROUP_OPERATION_FAILED',
-        message: 'There must be at least one user in the group.',
-      });
-    }
 
-    const currentGroup = await selectGroupById(input.group_id);
+    const currentGroup = await selectGroupById({
+      group_id: input.group_id,
+      assessment_id: assessment.id,
+    });
     const desiredSet = new Set(desiredUids);
     const currentSet = new Set(currentGroup.users.map((u) => u.uid));
     const toAdd = desiredUids.filter((uid) => !currentSet.has(uid));
@@ -93,40 +92,42 @@ const editGroup = t.procedure
 
     const failures: { uid: string; message: string }[] = [];
 
-    for (const user of toRemove) {
-      try {
-        await leaveGroup(assessment.id, user.id, authn_user.id, input.group_id);
-      } catch (err) {
-        if (err instanceof GroupOperationError) {
-          failures.push({ uid: user.uid, message: err.message });
-        } else {
-          throw err;
+    await runInTransactionAsync(async () => {
+      for (const user of toRemove) {
+        try {
+          await leaveGroup(assessment.id, user.id, authn_user.id, input.group_id);
+        } catch (err) {
+          if (err instanceof GroupOperationError || err instanceof HttpStatusError) {
+            failures.push({ uid: user.uid, message: err.message });
+          } else {
+            throw err;
+          }
         }
       }
-    }
 
-    for (const uid of toAdd) {
-      try {
-        await addUserToGroup({
-          course_instance,
-          assessment,
-          group_id: input.group_id,
-          uid,
-          authn_user_id: authn_user.id,
-          enforceGroupSize: false,
-          authzData: authz_data,
-        });
-      } catch (err) {
-        if (err instanceof GroupOperationError) {
-          failures.push({ uid, message: err.message });
-        } else {
-          throw err;
+      for (const uid of toAdd) {
+        try {
+          await addUserToGroup({
+            course_instance,
+            assessment,
+            group_id: input.group_id,
+            uid,
+            authn_user_id: authn_user.id,
+            enforceGroupSize: false,
+            authzData: authz_data,
+          });
+        } catch (err) {
+          if (err instanceof GroupOperationError) {
+            failures.push({ uid, message: err.message });
+          } else {
+            throw err;
+          }
         }
       }
-    }
+    });
 
     const [group, notAssigned] = await Promise.all([
-      selectGroupById(input.group_id),
+      selectGroupById({ group_id: input.group_id, assessment_id: assessment.id }),
       selectNotAssignedForAssessment({
         assessment_id: assessment.id,
         course_instance_id: course_instance.id,

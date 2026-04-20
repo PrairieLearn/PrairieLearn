@@ -35,8 +35,14 @@ export async function selectGroupsForConfig(group_config_id: string): Promise<Gr
   return await queryRows(sql.select_groups_for_config, { group_config_id }, GroupUsersRowSchema);
 }
 
-export async function selectGroupById(group_id: string): Promise<GroupUsersRow> {
-  return await queryRow(sql.select_group_by_id, { group_id }, GroupUsersRowSchema);
+export async function selectGroupById({
+  group_id,
+  assessment_id,
+}: {
+  group_id: string;
+  assessment_id: string;
+}): Promise<GroupUsersRow> {
+  return await queryRow(sql.select_group_by_id, { group_id, assessment_id }, GroupUsersRowSchema);
 }
 
 export async function selectUidsNotInGroup({

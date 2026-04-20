@@ -230,6 +230,11 @@ async function insertAiOnlyGradingJob({
   );
 }
 
+/**
+ * @returns The amount actually deducted from the credit pool (may be less
+ * than the full API cost if the pool was partially depleted). This is the
+ * instructor-incurred cost, used for the live cost display.
+ */
 async function finalizeAiGradingPersistence({
   createGradingJob,
   trackRateLimitAndCost,
@@ -240,14 +245,14 @@ async function finalizeAiGradingPersistence({
   trackRateLimitAndCost: boolean;
   persistenceContext: AiGradingPersistenceContext;
   responses: AiGradingResponsesForPersistence;
-}): Promise<void> {
-  await runInTransactionAsync(async () => {
+}): Promise<number> {
+  return await runInTransactionAsync(async () => {
     const grading_job_id = await createGradingJob();
     const costMilliDollars = trackRateLimitAndCost
       ? calculateTotalGradingCostMilliDollars(responses)
       : 0;
 
-    await insertAiGradingJobAndDeductCreditsIfNeeded({
+    const { deducted_milli_dollars } = await insertAiGradingJobAndDeductCreditsIfNeeded({
       trackRateLimitAndCost,
       course_instance_id: persistenceContext.course_instance.id,
       cost_milli_dollars: costMilliDollars,
@@ -270,6 +275,8 @@ async function finalizeAiGradingPersistence({
       rotationCorrections: responses.rotationCorrections,
       finalGradingResponse: responses.finalGradingResponse,
     });
+
+    return deducted_milli_dollars;
   });
 }
 
@@ -413,6 +420,7 @@ export async function aiGrade({
     let rateLimitExceeded =
       trackRateLimitAndCost &&
       (await getIntervalUsage(course_instance)) > config.aiGradingRateLimitDollars;
+    let hasAiGradingCredits = true;
 
     // If the rate limit has already been exceeded, log it and exit early.
     if (rateLimitExceeded) {
@@ -439,10 +447,9 @@ export async function aiGrade({
 
     // Check credit pool before starting the batch. This is a best-effort
     // check without FOR UPDATE — concurrent batches may both pass this check.
-    // Credits are deducted per-submission *after* the API call, so if the pool
-    // is exhausted mid-batch the API cost is already incurred but the deduction
-    // will fail for remaining items. A future improvement could pre-reserve
-    // estimated credits for the batch.
+    // Credits are deducted per-submission *after* the API call. If the credit
+    // pool becomes empty mid-batch, the deduction clamps to the remaining
+    // balance and the grading still succeeds.
     if (trackRateLimitAndCost) {
       const creditPool = await selectCreditPool(course_instance.id);
       if (creditPool.total_milli_dollars <= 0) {
@@ -506,6 +513,25 @@ export async function aiGrade({
           `Skipping instance question ${instance_question.id} since the rate limit has been exceeded.`,
         );
         rateLimitExceeded = true;
+        return false;
+      }
+
+      // Best-effort per-submission credit check. No FOR UPDATE lock — this is
+      // a read-only guard to avoid making an API call when the pool is already
+      // $0. The authoritative deduction happens later under a lock.
+      if (trackRateLimitAndCost && hasAiGradingCredits) {
+        const pool = await selectCreditPool(course_instance.id);
+        if (pool.total_milli_dollars <= 0) {
+          hasAiGradingCredits = false;
+          logger.error(
+            'No credits remaining. Purchase credits on the AI grading settings page. AI grading jobs that are still in progress will continue to completion.',
+          );
+        }
+      }
+      if (!hasAiGradingCredits) {
+        logger.error(
+          `Skipping instance question ${instance_question.id} since there are no credits remaining.`,
+        );
         return false;
       }
 
@@ -808,61 +834,62 @@ export async function aiGrade({
           job_sequence_id: serverJob.jobSequenceId,
         } satisfies AiGradingPersistenceContext;
 
-        if (trackRateLimitAndCost) {
-          const cost = calculateTotalGradingCostMilliDollars(responsesForPersistence);
-          total_cost_milli_dollars += cost;
-          num_items_incurred_cost += 1;
-        }
+        const deductedCost = await run(async () => {
+          if (shouldUpdateScore) {
+            // Requires grading: update instance question score
+            const manual_rubric_data = {
+              rubric_id: rubric_items[0].rubric_id,
+              applied_rubric_items: appliedRubricItems,
+            };
+            return await finalizeAiGradingPersistence({
+              createGradingJob: async () =>
+                await updateInstanceQuestionScoreForAiGrading({
+                  assessment,
+                  instance_question_id: instance_question.id,
+                  submission_id: submission.id,
+                  score: {
+                    // TODO: consider asking for and recording freeform feedback.
+                    manual_rubric_data,
+                    feedback: { manual: '' },
+                  },
+                  authn_user_id,
+                }),
+              trackRateLimitAndCost,
+              persistenceContext,
+              responses: responsesForPersistence,
+            });
+          } else {
+            // Does not require grading: only create grading job and rubric grading
+            return await finalizeAiGradingPersistence({
+              createGradingJob: async () => {
+                assert(assessment_question.max_manual_points);
+                const manual_rubric_grading = await manualGrading.insertRubricGrading(
+                  rubric_items[0].rubric_id,
+                  assessment_question.max_points ?? 0,
+                  assessment_question.max_manual_points,
+                  appliedRubricItems,
+                  0,
+                );
+                const score =
+                  manual_rubric_grading.computed_points / assessment_question.max_manual_points;
+                return await insertAiOnlyGradingJob({
+                  submission_id: submission.id,
+                  authn_user_id,
+                  score,
+                  manual_points: manual_rubric_grading.computed_points,
+                  manual_rubric_grading_id: manual_rubric_grading.id,
+                });
+              },
+              trackRateLimitAndCost,
+              persistenceContext,
+              responses: responsesForPersistence,
+            });
+          }
+        });
 
-        if (shouldUpdateScore) {
-          // Requires grading: update instance question score
-          const manual_rubric_data = {
-            rubric_id: rubric_items[0].rubric_id,
-            applied_rubric_items: appliedRubricItems,
-          };
-          await finalizeAiGradingPersistence({
-            createGradingJob: async () =>
-              await updateInstanceQuestionScoreForAiGrading({
-                assessment,
-                instance_question_id: instance_question.id,
-                submission_id: submission.id,
-                score: {
-                  // TODO: consider asking for and recording freeform feedback.
-                  manual_rubric_data,
-                  feedback: { manual: '' },
-                },
-                authn_user_id,
-              }),
-            trackRateLimitAndCost,
-            persistenceContext,
-            responses: responsesForPersistence,
-          });
-        } else {
-          // Does not require grading: only create grading job and rubric grading
-          await finalizeAiGradingPersistence({
-            createGradingJob: async () => {
-              assert(assessment_question.max_manual_points);
-              const manual_rubric_grading = await manualGrading.insertRubricGrading(
-                rubric_items[0].rubric_id,
-                assessment_question.max_points ?? 0,
-                assessment_question.max_manual_points,
-                appliedRubricItems,
-                0,
-              );
-              const score =
-                manual_rubric_grading.computed_points / assessment_question.max_manual_points;
-              return await insertAiOnlyGradingJob({
-                submission_id: submission.id,
-                authn_user_id,
-                score,
-                manual_points: manual_rubric_grading.computed_points,
-                manual_rubric_grading_id: manual_rubric_grading.id,
-              });
-            },
-            trackRateLimitAndCost,
-            persistenceContext,
-            responses: responsesForPersistence,
-          });
+        if (trackRateLimitAndCost) {
+          total_cost_milli_dollars += deductedCost;
+          num_items_incurred_cost += 1;
         }
 
         logger.info('AI rubric items:');
@@ -1027,48 +1054,49 @@ export async function aiGrade({
           job_sequence_id: serverJob.jobSequenceId,
         } satisfies AiGradingPersistenceContext;
 
-        if (trackRateLimitAndCost) {
-          const cost = calculateTotalGradingCostMilliDollars(responsesForPersistence);
-          total_cost_milli_dollars += cost;
-          num_items_incurred_cost += 1;
-        }
+        const deductedCost = await run(async () => {
+          if (shouldUpdateScore) {
+            // Requires grading: update instance question score
+            const feedback = finalGradingResponse.object.feedback;
+            return await finalizeAiGradingPersistence({
+              createGradingJob: async () =>
+                await updateInstanceQuestionScoreForAiGrading({
+                  assessment,
+                  instance_question_id: instance_question.id,
+                  submission_id: submission.id,
+                  score: {
+                    manual_score_perc: score,
+                    feedback: { manual: feedback },
+                  },
+                  authn_user_id,
+                }),
+              trackRateLimitAndCost,
+              persistenceContext,
+              responses: responsesForPersistence,
+            });
+          } else {
+            // Does not require grading: only create grading job
+            return await finalizeAiGradingPersistence({
+              createGradingJob: async () => {
+                assert(assessment_question.max_manual_points);
+                return await insertAiOnlyGradingJob({
+                  submission_id: submission.id,
+                  authn_user_id,
+                  score: score / 100,
+                  manual_points: (score * assessment_question.max_manual_points) / 100,
+                  manual_rubric_grading_id: null,
+                });
+              },
+              trackRateLimitAndCost,
+              persistenceContext,
+              responses: responsesForPersistence,
+            });
+          }
+        });
 
-        if (shouldUpdateScore) {
-          // Requires grading: update instance question score
-          const feedback = finalGradingResponse.object.feedback;
-          await finalizeAiGradingPersistence({
-            createGradingJob: async () =>
-              await updateInstanceQuestionScoreForAiGrading({
-                assessment,
-                instance_question_id: instance_question.id,
-                submission_id: submission.id,
-                score: {
-                  manual_score_perc: score,
-                  feedback: { manual: feedback },
-                },
-                authn_user_id,
-              }),
-            trackRateLimitAndCost,
-            persistenceContext,
-            responses: responsesForPersistence,
-          });
-        } else {
-          // Does not require grading: only create grading job
-          await finalizeAiGradingPersistence({
-            createGradingJob: async () => {
-              assert(assessment_question.max_manual_points);
-              return await insertAiOnlyGradingJob({
-                submission_id: submission.id,
-                authn_user_id,
-                score: score / 100,
-                manual_points: (score * assessment_question.max_manual_points) / 100,
-                manual_rubric_grading_id: null,
-              });
-            },
-            trackRateLimitAndCost,
-            persistenceContext,
-            responses: responsesForPersistence,
-          });
+        if (trackRateLimitAndCost) {
+          total_cost_milli_dollars += deductedCost;
+          num_items_incurred_cost += 1;
         }
 
         logger.info(`AI score: ${finalGradingResponse.object.score}`);
@@ -1077,6 +1105,8 @@ export async function aiGrade({
       return true;
     };
 
+    // No mutex is needed here: mapLimit schedules async work concurrently, but
+    // these counters are updated on Node's single-threaded event loop.
     let num_complete = 0;
     let num_failed = 0;
     let total_cost_milli_dollars = 0;
@@ -1108,6 +1138,12 @@ export async function aiGrade({
           ? { total_cost_milli_dollars, num_items_incurred_cost }
           : {};
 
+        const getJobFailureMessage = () => {
+          if (!hasAiGradingCredits) return INSUFFICIENT_CREDITS_MESSAGE;
+          if (rateLimitExceeded) return HOURLY_USAGE_CAP_REACHED_MESSAGE;
+          return undefined;
+        };
+
         try {
           item_statuses[instance_question.id] = JobItemStatus.in_progress;
           await emitServerJobProgressUpdate({
@@ -1116,7 +1152,7 @@ export async function aiGrade({
             num_failed,
             num_total: instance_questions.length,
             item_statuses,
-            job_failure_message: rateLimitExceeded ? HOURLY_USAGE_CAP_REACHED_MESSAGE : undefined,
+            job_failure_message: getJobFailureMessage(),
             ...costFields,
           });
 
@@ -1144,7 +1180,7 @@ export async function aiGrade({
             num_failed,
             num_total: instance_questions.length,
             item_statuses,
-            job_failure_message: rateLimitExceeded ? HOURLY_USAGE_CAP_REACHED_MESSAGE : undefined,
+            job_failure_message: getJobFailureMessage(),
             ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
           });
           for (const log of logs) {

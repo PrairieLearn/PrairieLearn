@@ -61,10 +61,13 @@ SELECT
   COALESCE(gu.users, '[]'::jsonb) AS users
 FROM
   teams AS g
+  JOIN team_configs AS tc ON (tc.id = g.team_config_id)
   LEFT JOIN group_users AS gu ON TRUE
 WHERE
   g.id = $group_id
-  AND g.deleted_at IS NULL;
+  AND g.deleted_at IS NULL
+  AND tc.assessment_id = $assessment_id
+  AND tc.deleted_at IS NULL;
 
 -- BLOCK select_uids_not_in_group
 SELECT
@@ -79,6 +82,7 @@ FROM
 WHERE
   g.id IS NULL
   AND e.course_instance_id = $course_instance_id
+  AND e.status = 'joined'
   AND NOT users_is_instructor_in_course_instance (e.user_id, e.course_instance_id)
 ORDER BY
   u.uid;

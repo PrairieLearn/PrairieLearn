@@ -15,12 +15,14 @@ export function AdminCreditPoolSection({
   isDeleted,
   maxAddDollars,
   maxDeductDollars,
+  refundsEnabled,
 }: {
   trpcCsrfToken: string;
   useCustomApiKeys: boolean;
   isDeleted: boolean;
   maxAddDollars: number;
   maxDeductDollars: number;
+  refundsEnabled: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => createAdminCreditPoolTrpcClient(trpcCsrfToken));
@@ -33,6 +35,7 @@ export function AdminCreditPoolSection({
           isDeleted={isDeleted}
           maxAddDollars={maxAddDollars}
           maxDeductDollars={maxDeductDollars}
+          refundsEnabled={refundsEnabled}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -46,11 +49,13 @@ function AdminCreditPoolContent({
   isDeleted,
   maxAddDollars,
   maxDeductDollars,
+  refundsEnabled,
 }: {
   useCustomApiKeys: boolean;
   isDeleted: boolean;
   maxAddDollars: number;
   maxDeductDollars: number;
+  refundsEnabled: boolean;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -64,12 +69,27 @@ function AdminCreditPoolContent({
     },
   });
 
+  const refundMutation = useMutation({
+    ...trpc.refundCreditPurchase.mutationOptions(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: trpc.creditPool.queryKey() });
+      void queryClient.invalidateQueries({ queryKey: trpc.creditPoolChanges.queryKey() });
+    },
+  });
+
   const { isSuccess: adjustIsSuccess, reset: adjustReset } = adjustMutation;
   useEffect(() => {
     if (!adjustIsSuccess) return;
     const timer = setTimeout(() => adjustReset(), 5000);
     return () => clearTimeout(timer);
   }, [adjustIsSuccess, adjustReset]);
+
+  const { isSuccess: refundIsSuccess, reset: refundReset } = refundMutation;
+  useEffect(() => {
+    if (!refundIsSuccess) return;
+    const timer = setTimeout(() => refundReset(), 5000);
+    return () => clearTimeout(timer);
+  }, [refundIsSuccess, refundReset]);
 
   return (
     <div className="mb-5">
@@ -87,6 +107,11 @@ function AdminCreditPoolContent({
             )}
           </>
         }
+        isRefunding={refundMutation.isPending}
+        showRefundActions={refundsEnabled}
+        onRefund={(checkoutSessionId) =>
+          refundMutation.mutate({ checkout_session_id: checkoutSessionId })
+        }
       >
         <AdjustCreditsForm
           isDeleted={isDeleted}
@@ -100,6 +125,16 @@ function AdminCreditPoolContent({
           onDismissError={() => adjustMutation.reset()}
           onDismissSuccess={() => adjustMutation.reset()}
         />
+        {refundMutation.isError && (
+          <Alert variant="danger" dismissible onClose={() => refundMutation.reset()}>
+            Refund failed: {refundMutation.error.message}
+          </Alert>
+        )}
+        {refundMutation.isSuccess && (
+          <Alert variant="success" dismissible onClose={() => refundMutation.reset()}>
+            Refund processed successfully.
+          </Alert>
+        )}
       </CreditPoolDashboard>
     </div>
   );

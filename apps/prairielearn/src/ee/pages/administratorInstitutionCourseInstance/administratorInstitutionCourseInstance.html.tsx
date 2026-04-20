@@ -23,6 +23,7 @@ export function AdministratorInstitutionCourseInstance({
   trpcCsrfToken,
   maxAddDollars,
   maxDeductDollars,
+  refundsEnabled,
   resLocals,
 }: {
   institution: Institution;
@@ -33,6 +34,7 @@ export function AdministratorInstitutionCourseInstance({
   trpcCsrfToken: string | null;
   maxAddDollars: number;
   maxDeductDollars: number;
+  refundsEnabled: boolean;
   resLocals: ResLocalsForPage<'plain'>;
 }) {
   const isDeleted = course_instance.deleted_at !== null;
@@ -151,6 +153,7 @@ export function AdministratorInstitutionCourseInstance({
               isDeleted={isDeleted}
               maxAddDollars={maxAddDollars}
               maxDeductDollars={maxDeductDollars}
+              refundsEnabled={refundsEnabled}
             />,
           )
         : ''}

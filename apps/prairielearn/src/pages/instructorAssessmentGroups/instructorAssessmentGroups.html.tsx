@@ -118,6 +118,8 @@ function InstructorAssessmentGroupsInner({
   const [showRandomAssessmentGroupsModal, setShowRandomAssessmentGroupsModal] = useState(false);
   const [showAddGroupModal, setShowAddGroupModal] = useState(false);
   const [showDeleteAllGroupsModal, setShowDeleteAllGroupsModal] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<GroupUsersRow | null>(null);
+  const [deletingGroup, setDeletingGroup] = useState<GroupUsersRow | null>(null);
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir } | null>(null);
   const [groups, setGroups] = useState(initialGroups);
   const [notAssigned, setNotAssigned] = useState(initialNotAssigned);
@@ -209,6 +211,27 @@ function InstructorAssessmentGroupsInner({
               setShowDeleteAllGroupsModal(false);
             }}
           />
+          {editingGroup && (
+            <EditGroupModal
+              key={editingGroup.group_id}
+              row={editingGroup}
+              show
+              onHide={() => setEditingGroup(null)}
+              onGroupEdited={handleGroupUpdated}
+            />
+          )}
+          {deletingGroup && (
+            <DeleteGroupModal
+              key={deletingGroup.group_id}
+              row={deletingGroup}
+              show
+              onHide={() => setDeletingGroup(null)}
+              onGroupDeleted={(groupId, newNotAssigned) => {
+                handleGroupDeleted(groupId, newNotAssigned);
+                setDeletingGroup(null);
+              }}
+            />
+          )}
         </>
       )}
       <div className="card mb-4">
@@ -223,14 +246,14 @@ function InstructorAssessmentGroupsInner({
                 className="btn btn-sm btn-light"
                 onClick={() => setShowAddGroupModal(true)}
               >
-                <i className="fa fa-plus" aria-hidden="true" /> Add a group
+                <i className="bi bi-plus-lg" aria-hidden="true" /> Add a group
               </button>
               <button
                 type="button"
                 className="btn btn-sm btn-danger"
                 onClick={() => setShowDeleteAllGroupsModal(true)}
               >
-                <i className="fa fa-times" aria-hidden="true" /> Delete all groups
+                <i className="bi bi-x-lg" aria-hidden="true" /> Delete all groups
               </button>
             </div>
           )}
@@ -244,7 +267,7 @@ function InstructorAssessmentGroupsInner({
                   className="btn btn-primary text-nowrap"
                   onClick={() => setShowUploadAssessmentGroupsModal(true)}
                 >
-                  <i className="fas fa-upload" aria-hidden="true" /> Upload
+                  <i className="bi bi-upload" aria-hidden="true" /> Upload
                 </button>
                 <div className="mt-2">Upload a CSV file with group assignments.</div>
               </div>
@@ -254,7 +277,7 @@ function InstructorAssessmentGroupsInner({
                   className="btn btn-primary text-nowrap"
                   onClick={() => setShowRandomAssessmentGroupsModal(true)}
                 >
-                  <i className="fas fa-shuffle" aria-hidden="true" /> Random
+                  <i className="bi bi-shuffle" aria-hidden="true" /> Random
                 </button>
                 <div className="mt-2">Randomly assign students to groups.</div>
               </div>
@@ -283,8 +306,8 @@ function InstructorAssessmentGroupsInner({
                   key={row.group_id}
                   row={row}
                   canEdit={resLocals.authz_data.has_course_instance_permission_edit}
-                  onGroupUpdated={handleGroupUpdated}
-                  onGroupDeleted={handleGroupDeleted}
+                  onEdit={setEditingGroup}
+                  onDelete={setDeletingGroup}
                 />
               ))}
             </tbody>
@@ -390,7 +413,7 @@ function EditGroupModal({
           )}
           {failures.length > 0 && (
             <Alert variant="warning" dismissible onClose={() => mutation.reset()}>
-              <strong>Some users could not be added:</strong>
+              <strong>Some changes could not be applied:</strong>
               <ul className="mb-0">
                 {failures.map((f) => (
                   <li key={f.uid}>
@@ -409,7 +432,7 @@ function EditGroupModal({
               className="form-control"
               id={`editGroupName-${row.group_id}`}
               value={row.name}
-              readOnly
+              disabled
             />
           </div>
           <div className="mb-3">
@@ -424,7 +447,7 @@ function EditGroupModal({
               aria-invalid={errors.uids ? 'true' : undefined}
               {...(errors.uids ? { 'aria-errormessage': uidsErrorId } : {})}
               defaultValue={currentUids}
-              {...register('uids', { required: 'At least one UID is required.' })}
+              {...register('uids')}
             />
             {errors.uids && (
               <div id={uidsErrorId} className="invalid-feedback">
@@ -777,6 +800,7 @@ function DeleteAllGroupsModal({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.deleteAll.mutationOptions());
+  const appError = getAppError<Record<string, never>>(mutation.error);
 
   const handleHide = () => {
     mutation.reset();
@@ -800,9 +824,9 @@ function DeleteAllGroupsModal({
           <Modal.Title>Delete all existing groups</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {mutation.error && (
+          {appError && (
             <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {mutation.error.message}
+              {appError.message}
             </Alert>
           )}
           <p>
@@ -829,17 +853,14 @@ function DeleteAllGroupsModal({
 function GroupRow({
   row,
   canEdit,
-  onGroupUpdated,
-  onGroupDeleted,
+  onEdit,
+  onDelete,
 }: {
   row: GroupUsersRow;
   canEdit: boolean;
-  onGroupUpdated: (group: GroupUsersRow, notAssigned: string[]) => void;
-  onGroupDeleted: (groupId: string, notAssigned: string[]) => void;
+  onEdit: (row: GroupUsersRow) => void;
+  onDelete: (row: GroupUsersRow) => void;
 }) {
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-
   return (
     <tr>
       <td>{row.name}</td>
@@ -853,36 +874,13 @@ function GroupRow({
       {canEdit && (
         <td className="text-center">
           <div className="d-flex justify-content-center gap-2">
-            <button
-              type="button"
-              className="btn btn-sm btn-primary"
-              onClick={() => setShowEditModal(true)}
-            >
+            <button type="button" className="btn btn-sm btn-primary" onClick={() => onEdit(row)}>
               <i className="bi bi-pencil" aria-hidden="true" /> Edit
             </button>
-            <button
-              type="button"
-              className="btn btn-sm btn-danger"
-              onClick={() => setShowDeleteModal(true)}
-            >
+            <button type="button" className="btn btn-sm btn-danger" onClick={() => onDelete(row)}>
               <i className="bi bi-trash" aria-hidden="true" /> Delete
             </button>
           </div>
-          <EditGroupModal
-            row={row}
-            show={showEditModal}
-            onHide={() => setShowEditModal(false)}
-            onGroupEdited={onGroupUpdated}
-          />
-          <DeleteGroupModal
-            row={row}
-            show={showDeleteModal}
-            onHide={() => setShowDeleteModal(false)}
-            onGroupDeleted={(groupId, notAssigned) => {
-              onGroupDeleted(groupId, notAssigned);
-              setShowDeleteModal(false);
-            }}
-          />
         </td>
       )}
     </tr>

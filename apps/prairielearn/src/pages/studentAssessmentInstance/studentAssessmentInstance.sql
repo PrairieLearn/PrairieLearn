@@ -8,28 +8,16 @@ WHERE
 
 -- BLOCK select_instance_questions
 SELECT
-  iq.*,
+  to_jsonb(iq.*) AS instance_question,
+  to_jsonb(z.*) AS zone,
+  to_jsonb(aq.*) AS assessment_question,
+  to_jsonb(q.*) AS question,
   ((lag(z.id) OVER w) IS DISTINCT FROM z.id) AS start_new_zone,
-  z.id AS zone_id,
-  z.number AS zone_number,
-  z.title AS zone_title,
-  z.lockpoint,
   (aicl.id IS NOT NULL) AS lockpoint_crossed,
   aicl.crossed_at AS lockpoint_crossed_at,
   lockpoint_user.uid AS lockpoint_crossed_authn_user_uid,
-  q.title AS question_title,
-  aq.max_points,
-  aq.max_manual_points,
-  aq.max_auto_points,
-  aq.init_points,
-  aq.grade_rate_minutes,
-  aq.allow_real_time_grading,
   qo.row_order,
   qo.question_number,
-  z.max_points AS zone_max_points,
-  (z.max_points IS NOT NULL) AS zone_has_max_points,
-  z.best_questions AS zone_best_questions,
-  (z.best_questions IS NOT NULL) AS zone_has_best_questions,
   (
     count(*) OVER (
       PARTITION BY

@@ -63,7 +63,7 @@ export function RubricSettings({
 }: {
   hasCourseInstancePermissionEdit: boolean;
   assessmentQuestion: StaffAssessmentQuestion;
-  rubricData: RubricData | null;
+  rubricData: RubricData | null | undefined;
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
   context: Record<string, any>;
