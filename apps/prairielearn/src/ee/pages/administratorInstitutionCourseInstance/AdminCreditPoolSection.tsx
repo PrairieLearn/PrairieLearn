@@ -237,6 +237,7 @@ function AdjustCreditsForm({
   });
 
   function handleSubmit() {
+    if (!isSubmitEnabled) return;
     onSubmit({ action, amount: parsedAmount, credit_type: creditType });
     setAmountStr('');
   }

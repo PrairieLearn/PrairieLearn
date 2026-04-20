@@ -442,11 +442,8 @@ describe('adjustCreditPool', () => {
     const pool = await selectCreditPool(ciId);
     assert.equal(pool.credit_transferable_milli_dollars, -300);
 
-    const changes = await queryRows(
-      `SELECT * FROM ai_grading_credit_pool_changes
-       WHERE course_instance_id = $course_instance_id AND reason = 'Admin grant'`,
-      { course_instance_id: ciId },
-      AiGradingCreditPoolChangeSchema,
+    const changes = (await selectAllChanges(ciId)).filter(
+      (change) => change.reason === 'Admin grant',
     );
     assert.equal(changes.length, 1);
     assert.equal(changes[0].delta_milli_dollars, 200);
@@ -469,12 +466,8 @@ describe('adjustCreditPool', () => {
     const pool = await selectCreditPool(ciId);
     assert.equal(pool.credit_transferable_milli_dollars, -500);
 
-    // Seed change only — no deduct recorded
-    const changes = await queryRows(
-      `SELECT * FROM ai_grading_credit_pool_changes
-       WHERE course_instance_id = $course_instance_id AND reason = 'Admin deduct'`,
-      { course_instance_id: ciId },
-      AiGradingCreditPoolChangeSchema,
+    const changes = (await selectAllChanges(ciId)).filter(
+      (change) => change.reason === 'Admin deduct',
     );
     assert.equal(changes.length, 0);
   });

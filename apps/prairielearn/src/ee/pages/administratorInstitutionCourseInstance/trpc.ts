@@ -43,6 +43,17 @@ const t = initTRPC.context<AdminTRPCContext>().create({
   transformer: superjson,
 });
 
+function dollarsToCentPrecisionMilliDollars(dollars: number, label: string): number {
+  const cents = Math.round(dollars * 100);
+  if (Math.abs(dollars * 100 - cents) > 1e-9) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `${label} must have at most 2 decimal places`,
+    });
+  }
+  return cents * 10;
+}
+
 const adjustCreditPoolMutation = t.procedure
   .use(requireAiGradingFeature)
   .input(
@@ -79,7 +90,10 @@ const adjustCreditPoolMutation = t.procedure
         opts.input.credit_type === 'transferable'
           ? config.aiGradingCreditPoolLimits.setTransferable
           : config.aiGradingCreditPoolLimits.setNonTransferable;
-      const targetMilliDollars = Math.round(opts.input.balance_dollars * 1000);
+      const targetMilliDollars = dollarsToCentPrecisionMilliDollars(
+        opts.input.balance_dollars,
+        'Balance',
+      );
       if (targetMilliDollars < minMilliDollars || targetMilliDollars > maxMilliDollars) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
@@ -100,7 +114,10 @@ const adjustCreditPoolMutation = t.procedure
       opts.input.action === 'add'
         ? config.aiGradingCreditPoolLimits.add
         : config.aiGradingCreditPoolLimits.deduct;
-    const amountMilliDollars = Math.round(opts.input.amount_dollars * 1000);
+    const amountMilliDollars = dollarsToCentPrecisionMilliDollars(
+      opts.input.amount_dollars,
+      'Amount',
+    );
     if (amountMilliDollars < minMilliDollars || amountMilliDollars > maxMilliDollars) {
       throw new TRPCError({
         code: 'BAD_REQUEST',

@@ -27,6 +27,15 @@ const TokenPricingSchema = z.object({
   output: z.number().nonnegative(),
 });
 
+const CreditPoolLimitRangeSchema = z
+  .object({
+    minMilliDollars: z.number().int(),
+    maxMilliDollars: z.number().int(),
+  })
+  .refine(({ minMilliDollars, maxMilliDollars }) => minMilliDollars <= maxMilliDollars, {
+    message: 'minMilliDollars must be less than or equal to maxMilliDollars',
+  });
+
 export const STANDARD_COURSE_DIRS = [
   '/course',
   '/course2',
@@ -614,10 +623,13 @@ export const ConfigSchema = z.object({
    */
   aiGradingCreditPoolLimits: z
     .object({
-      add: z.object({ minMilliDollars: z.number(), maxMilliDollars: z.number() }),
-      deduct: z.object({ minMilliDollars: z.number(), maxMilliDollars: z.number() }),
-      setTransferable: z.object({ minMilliDollars: z.number(), maxMilliDollars: z.number() }),
-      setNonTransferable: z.object({ minMilliDollars: z.number(), maxMilliDollars: z.number() }),
+      add: CreditPoolLimitRangeSchema,
+      deduct: CreditPoolLimitRangeSchema,
+      setTransferable: CreditPoolLimitRangeSchema,
+      setNonTransferable: CreditPoolLimitRangeSchema.refine(
+        ({ minMilliDollars }) => minMilliDollars >= 0,
+        { message: 'setNonTransferable.minMilliDollars must be non-negative' },
+      ),
     })
     .default({
       add: { minMilliDollars: 10, maxMilliDollars: 10_000_000 },
