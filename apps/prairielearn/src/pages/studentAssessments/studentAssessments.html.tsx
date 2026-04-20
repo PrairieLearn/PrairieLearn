@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -10,6 +9,7 @@ import {
   StudentAccessRulesPopover,
   StudentAccessTimelinePopover,
 } from '../../components/StudentAccessRulesPopover.js';
+import { formatDateShort } from '../../lib/assessment-access-control/resolver.js';
 import type { AccessTimelineEntry } from '../../lib/assessment-access-control/timeline.js';
 import {
   AssessmentAccessRuleSchema,
@@ -173,7 +173,7 @@ function AvailableCredit({
     if (row.opens_at) {
       return html`
         <span class="text-muted">
-          Available ${formatDate(new Date(row.opens_at), displayTimezone)}
+          Available ${formatDateShort(new Date(row.opens_at), displayTimezone)}
         </span>
       `;
     }

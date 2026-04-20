@@ -140,8 +140,8 @@ test.describe.serial('Student access control', () => {
     const assessmentLink = page.getByRole('link', { name: ASSESSMENT_TITLE, exact: true });
     await expect(assessmentLink).not.toBeVisible();
 
-    // "Not yet open" text should be visible
-    await expect(page.getByText('Not yet open')).toBeVisible();
+    // Availability message should reference the future release date (2099-06-01).
+    await expect(page.getByText('Available 00:00, Mon, Jun 1', { exact: true })).toBeVisible();
   });
 
   test('normal access shows clickable assessment link', async ({
