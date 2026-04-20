@@ -1,13 +1,10 @@
-import { useId } from 'react';
 import { z } from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
-import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { AccessTimelineEntry } from '../lib/assessment-access-control/timeline.js';
 import { EnumModeSchema } from '../lib/db-types.js';
-
-import { FriendlyDate } from './FriendlyDate.js';
 
 export const AuthzAccessRuleSchema = z.object({
   credit: z.string(),
@@ -63,56 +60,46 @@ export function StudentAccessTimelinePopover({
   accessTimeline: AccessTimelineEntry[];
   displayTimezone: string;
 }) {
-  const popoverId = useId();
-  return (
-    <OverlayTrigger
-      trigger="click"
-      placement="auto"
-      popover={{
-        props: { id: popoverId },
-        header: 'Access details',
-        body: (
-          <table className="table mb-0" aria-label="Access details">
-            <thead>
-              <tr>
-                <th>Credit</th>
-                <th>Start</th>
-                <th>End</th>
-              </tr>
-            </thead>
-            <tbody>
-              {accessTimeline.map((entry) => (
-                <tr
-                  key={`${entry.credit}-${entry.startDate?.toISOString() ?? ''}-${entry.endDate?.toISOString() ?? ''}`}
-                >
-                  <td>{entry.credit}%</td>
-                  <td>
-                    {entry.startDate ? (
-                      <FriendlyDate date={entry.startDate} timezone={displayTimezone} tooltip />
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                  <td>
-                    {entry.endDate ? (
-                      <FriendlyDate date={entry.endDate} timezone={displayTimezone} tooltip />
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ),
-      }}
-      rootClose
+  return html`
+    <button
+      type="button"
+      class="btn btn-xs btn-ghost"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-title="Access details"
+      data-bs-content="${escapeHtml(
+        StudentAccessTimelinePopoverContent({ accessTimeline, displayTimezone }),
+      )}"
     >
-      <button type="button" className="btn btn-xs btn-ghost" aria-label="Access details">
-        <i className="fa fa-question-circle" />
-      </button>
-    </OverlayTrigger>
-  );
+      <i class="fa fa-question-circle"></i>
+    </button>
+  `;
 }
 
-StudentAccessTimelinePopover.displayName = 'StudentAccessTimelinePopover';
+function StudentAccessTimelinePopoverContent({
+  accessTimeline,
+  displayTimezone,
+}: {
+  accessTimeline: AccessTimelineEntry[];
+  displayTimezone: string;
+}) {
+  return html`
+    <table class="table" aria-label="Access details">
+      <tr>
+        <th>Credit</th>
+        <th>Start</th>
+        <th>End</th>
+      </tr>
+      ${accessTimeline.map(
+        (entry) => html`
+          <tr>
+            <td>${entry.credit}</td>
+            <td>${entry.startDate ? formatDate(entry.startDate, displayTimezone) : '—'}</td>
+            <td>${entry.endDate ? formatDate(entry.endDate, displayTimezone) : '—'}</td>
+          </tr>
+        `,
+      )}
+    </table>
+  `;
+}

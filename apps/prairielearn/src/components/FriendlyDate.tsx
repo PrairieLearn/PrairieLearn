@@ -13,7 +13,7 @@ interface FriendlyDateProps {
   fullOptions?: Parameters<typeof formatDate>[2];
 }
 
-export const FriendlyDate: FC<FriendlyDateProps> & { displayName?: string } = ({
+export const FriendlyDate: FC<FriendlyDateProps> = ({
   date,
   timezone = null,
   tooltip = false,
@@ -36,7 +36,5 @@ export const FriendlyDate: FC<FriendlyDateProps> & { displayName?: string } = ({
     </OverlayTrigger>
   );
 };
-
-FriendlyDate.displayName = 'FriendlyDate';
 
 export const TimezoneContext = createContext<string>('UTC');

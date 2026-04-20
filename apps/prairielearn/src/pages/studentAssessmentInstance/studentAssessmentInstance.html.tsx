@@ -459,12 +459,10 @@ function AssessmentStatus({
       <br />
       Available credit: ${authz_result.credit_date_string}
       ${accessTimeline
-        ? hydrateHtml(
-            <StudentAccessTimelinePopover
-              accessTimeline={accessTimeline}
-              displayTimezone={displayTimezone}
-            />,
-          )
+        ? StudentAccessTimelinePopover({
+            accessTimeline,
+            displayTimezone,
+          })
         : StudentAccessRulesPopover({
             accessRules: authz_result.access_rules,
           })}
