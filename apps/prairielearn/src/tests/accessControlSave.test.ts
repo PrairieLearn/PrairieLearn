@@ -129,24 +129,21 @@ describe('Access control save via tRPC', () => {
     assert.isArray(parsed.zones);
   });
 
-  test.sequential(
-    'omits beforeRelease: { listed: false } and empty objects from disk',
-    async () => {
-      const client = await createClient();
-      const origHash = await getOrigHash();
+  test.sequential('omits beforeRelease.listed: false and empty objects from disk', async () => {
+    const client = await createClient();
+    const origHash = await getOrigHash();
 
-      const rules: AccessControlJsonInput[] = [{ beforeRelease: { listed: false } }];
+    const rules: AccessControlJsonInput[] = [{ beforeRelease: { listed: false } }];
 
-      const result = await client.accessControl.saveAllRules.mutate({ rules, origHash });
-      assert.isString(result.newHash);
+    const result = await client.accessControl.saveAllRules.mutate({ rules, origHash });
+    assert.isString(result.newHash);
 
-      const fileContent = await fs.readFile(assessmentPath(), 'utf8');
-      const parsed = JSON.parse(fileContent);
+    const fileContent = await fs.readFile(assessmentPath(), 'utf8');
+    const parsed = JSON.parse(fileContent);
 
-      assert.equal(parsed.accessControl.length, 1);
-      assert.notProperty(parsed.accessControl[0], 'beforeRelease');
-    },
-  );
+    assert.equal(parsed.accessControl.length, 1);
+    assert.notProperty(parsed.accessControl[0], 'beforeRelease');
+  });
 
   test.sequential('rejects save with stale origHash', async () => {
     const client = await createClient();
