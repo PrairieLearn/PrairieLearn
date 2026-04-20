@@ -57,7 +57,7 @@ const addGroup = t.procedure
     }
 
     const [group, notAssigned] = await Promise.all([
-      selectGroupById(createdGroupId),
+      selectGroupById({ group_id: createdGroupId, assessment_id: assessment.id }),
       selectNotAssignedForAssessment({
         assessment_id: assessment.id,
         course_instance_id: course_instance.id,
@@ -78,14 +78,11 @@ const editGroup = t.procedure
     const { course_instance, assessment, authn_user, authz_data } = ctx;
 
     const desiredUids = parseUniqueValuesFromString(input.uids, MAX_UIDS);
-    if (desiredUids.length === 0) {
-      throwAppError<AssessmentGroupsError['EditGroup']>({
-        code: 'GROUP_OPERATION_FAILED',
-        message: 'There must be at least one user in the group.',
-      });
-    }
 
-    const currentGroup = await selectGroupById(input.group_id);
+    const currentGroup = await selectGroupById({
+      group_id: input.group_id,
+      assessment_id: assessment.id,
+    });
     const desiredSet = new Set(desiredUids);
     const currentSet = new Set(currentGroup.users.map((u) => u.uid));
     const toAdd = desiredUids.filter((uid) => !currentSet.has(uid));
@@ -126,7 +123,7 @@ const editGroup = t.procedure
     }
 
     const [group, notAssigned] = await Promise.all([
-      selectGroupById(input.group_id),
+      selectGroupById({ group_id: input.group_id, assessment_id: assessment.id }),
       selectNotAssignedForAssessment({
         assessment_id: assessment.id,
         course_instance_id: course_instance.id,

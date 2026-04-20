@@ -97,7 +97,7 @@ router.get(
 router.post(
   '/',
   typedAsyncHandler<'assessment'>(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 

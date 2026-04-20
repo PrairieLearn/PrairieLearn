@@ -421,7 +421,7 @@ function EditGroupModal({
               aria-invalid={errors.uids ? 'true' : undefined}
               {...(errors.uids ? { 'aria-errormessage': uidsErrorId } : {})}
               defaultValue={currentUids}
-              {...register('uids', { required: 'At least one UID is required.' })}
+              {...register('uids')}
             />
             {errors.uids && (
               <div id={uidsErrorId} className="invalid-feedback">
