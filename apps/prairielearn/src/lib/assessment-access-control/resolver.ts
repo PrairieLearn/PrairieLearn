@@ -455,6 +455,27 @@ function isAssessmentClosedForPrairieTest(
 }
 
 /**
+ * Determines whether a PT-gated assessment is currently inside a bounded
+ * active submission window — the scenario that permits Public-mode access
+ * to a rule that also configures `prairietestExams`.
+ *
+ * This is the "cheat sheet hack" use case (discussion #11308): students
+ * prepare a cheat sheet from anywhere during the submission window, then
+ * view it read-only via PrairieTest in the testing center. Access outside
+ * the window (before release, after the deadline, or open-ended rules with
+ * no terminal structure) remains PT-only.
+ */
+function isInActiveBoundedWindowForPrairieTest(
+  dateControl: RuntimeDateControl | undefined,
+  creditResult: CreditResult,
+): boolean {
+  if (!creditResult.active) return false;
+  const hasTerminalStructure =
+    dateControl?.dueDate != null || (dateControl?.lateDeadlines?.length ?? 0) > 0;
+  return hasTerminalStructure;
+}
+
+/**
  * PrairieTest exam-mode access control.
  *
  * Core invariants (matching legacy `check_assessment_access_rule` sproc):
@@ -473,12 +494,14 @@ function resolvePrairieTestAccess({
   authzMode,
   listBeforeRelease,
   assessmentClosed,
+  inActiveBoundedWindow,
 }: {
   prairieTestExams: { uuid: string; readOnly: boolean }[];
   prairieTestReservations: PrairieTestReservation[];
   authzMode: EnumMode | null;
   listBeforeRelease: boolean;
   assessmentClosed: boolean;
+  inActiveBoundedWindow: boolean;
 }): PrairieTestOutcome {
   const hasPrairieTestExams = prairieTestExams.length > 0;
 
@@ -490,16 +513,24 @@ function resolvePrairieTestAccess({
     return { action: 'continue' };
   }
 
-  // Not in exam mode — student cannot access a PT-gated assessment.
+  // Not in exam mode — student cannot access a PT-gated assessment except
+  // during an active bounded submission window with `listBeforeRelease`
+  // unset. This enables the "cheat sheet hack" (discussion #11308) where
+  // students build a submission from anywhere during the window, then view
+  // it read-only via PrairieTest in the testing center.
   if (authzMode !== 'Exam') {
-    if (assessmentClosed) return { action: 'continue' };
+    // Past the terminal deadline structure — show as a closed assessment
+    // rather than "Not yet open" indefinitely, and do not grant access.
+    if (assessmentClosed) return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
 
-    // If `listBeforeRelease` is set, list it, but it should not be accessible.
-    // We ONLY do this outside of Exam mode; when in Exam mode, we only show assessments
-    // that the user can actually access.
+    // `listBeforeRelease` means "list it, but deny access". For PT rules,
+    // this applies even when inside the active window — the student needs
+    // to see that the assessment exists but cannot access it outside PT.
     if (listBeforeRelease) {
       return { action: 'deny', result: { ...UNAUTHORIZED_RESULT, showBeforeRelease: true } };
     }
+
+    if (inActiveBoundedWindow) return { action: 'continue' };
 
     return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
   }
@@ -629,6 +660,10 @@ export function resolveAccessControl(
     authzMode,
     listBeforeRelease: effectiveRule.listBeforeRelease ?? false,
     assessmentClosed: isAssessmentClosedForPrairieTest(effectiveRule.dateControl, creditResult),
+    inActiveBoundedWindow: isInActiveBoundedWindowForPrairieTest(
+      effectiveRule.dateControl,
+      creditResult,
+    ),
   });
   if (ptOutcome.action === 'deny') {
     return { ...ptOutcome.result, showClosedAssessment, showClosedAssessmentScore };

@@ -974,6 +974,71 @@ describe('resolveAccessControl', () => {
       });
       expect(result.authorized).toBe(false);
     });
+
+    it('supports the cheat sheet hack', () => {
+      // See https://github.com/PrairieLearn/PrairieLearn/discussions/11308.
+      const rule: AccessControlRuleInput = {
+        ...prairieTestMainRule,
+        rule: toRuntime({
+          dateControl: {
+            releaseDate: '2025-02-01T00:00:00Z',
+            dueDate: '2025-03-01T00:00:00Z',
+          },
+        }),
+        // The cheat sheet use case specifically calls for a read-only exam so that
+        // students cannot submit information to the assessment while they're in the
+        // testing center.
+        prairietestExams: [{ uuid: 'exam-uuid-1', readOnly: true }],
+      };
+
+      // A student outside of the testing center before the release date should not
+      // be able to access the assessment.
+      const beforeReleaseResult = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        authzMode: 'Public',
+        date: new Date('2025-01-15T00:00:00Z'),
+      });
+      expect(beforeReleaseResult.authorized).toBe(false);
+      expect(beforeReleaseResult.showBeforeRelease).toBe(false);
+
+      // A student outside of the testing center during the release window should be
+      // able to access the assessment.
+      const duringReleaseResult = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        authzMode: 'Public',
+        date: new Date('2025-02-15T00:00:00Z'),
+      });
+      expect(duringReleaseResult.authorized).toBe(true);
+      expect(duringReleaseResult.active).toBe(true);
+
+      // A student outside of the testing center after the due date should not be able
+      // to access the assessment.
+      const afterDueDateResult = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        authzMode: 'Public',
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(afterDueDateResult.authorized).toBe(false);
+      expect(afterDueDateResult.active).toBe(false);
+
+      // A student in the testing center with a valid reservation should be able to access
+      // the assessment at any point (we use a date after the due date to match the cheat
+      // sheet scenario).
+      const validReservationResult = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        authzMode: 'Exam',
+        date: new Date('2025-03-15T00:00:00Z'),
+        prairieTestReservations: [
+          { examUuid: 'exam-uuid-1', accessEnd: new Date('2025-04-01T00:00:00Z') },
+        ],
+      });
+      expect(validReservationResult.authorized).toBe(true);
+      expect(validReservationResult.active).toBe(false); // read-only assessment
+    });
   });
 
   describe('time limit computation', () => {
@@ -1686,35 +1751,35 @@ describe('resolveAccessControl', () => {
       }
     });
 
-    it('shows closed PT assessment as closed instead of "before release" when past due date', () => {
-      // When a PT-gated assessment has date controls and is past its due
-      // date, it should show as a normal closed assessment rather than "Not
-      // yet open" indefinitely.
-      for (const authzMode of ['Public', 'Exam'] as const) {
-        const result = resolveAccessControl({
-          ...baseInput,
-          authzMode,
-          rules: [
-            {
-              ...makeMainRule({
-                listBeforeRelease: true,
-                dateControl: {
-                  releaseDate: '2025-01-01T00:00:00Z',
-                  dueDate: '2025-02-01T00:00:00Z',
-                },
-              }),
-              prairietestExams: [ptExam],
-            },
-          ],
-          prairieTestReservations:
-            authzMode === 'Exam'
-              ? [{ examUuid: 'wrong-exam', accessEnd: new Date('2025-04-01T00:00:00Z') }]
-              : [],
-        });
-        expect(result.showBeforeRelease).toBe(false);
-        expect(result.authorized).toBe(true);
-        expect(result.active).toBe(false);
-      }
+    it('does not mislabel past-due PT assessment as "before release" in Exam mode with no matching reservation', () => {
+      // Exam mode without a matching reservation falls through to the main
+      // flow so the student's row stays visible in the listing for review.
+      // Whether they can actually see questions or scores on the assessment
+      // page is governed by `afterComplete` visibility, not by `authorized`.
+      // The resolver's only job here is to avoid labeling the row as "Not
+      // yet open" indefinitely after the due date has passed.
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Exam',
+        rules: [
+          {
+            ...makeMainRule({
+              listBeforeRelease: true,
+              dateControl: {
+                releaseDate: '2025-01-01T00:00:00Z',
+                dueDate: '2025-02-01T00:00:00Z',
+              },
+            }),
+            prairietestExams: [ptExam],
+          },
+        ],
+        prairieTestReservations: [
+          { examUuid: 'wrong-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
+        ],
+      });
+      expect(result.showBeforeRelease).toBe(false);
+      expect(result.authorized).toBe(true);
+      expect(result.active).toBe(false);
     });
 
     it('still shows "before release" for PT assessment that is open but student lacks access', () => {
