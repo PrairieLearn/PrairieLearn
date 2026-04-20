@@ -1248,6 +1248,14 @@
       },
       "default": {}
     },
+    "stripeAiGradingCreditsProductId": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "stripeAiGradingCreditsRefundsEnabled": {
+      "type": "boolean",
+      "default": false
+    },
     "aiGradingOpenAiApiKey": {
       "type": ["string", "null"],
       "default": null
