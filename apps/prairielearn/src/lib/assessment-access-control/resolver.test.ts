@@ -153,7 +153,7 @@ describe('resolveAccessControl', () => {
   });
 
   describe('main rule with date control', () => {
-    it('denies access before release date when listBeforeRelease is false', () => {
+    it('denies access before release date when beforeRelease.listed is false', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -231,6 +231,35 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(false);
     });
 
+    it('handles late deadline with 0% credit', () => {
+      const rule = makeMainRule({
+        dateControl: {
+          releaseDate: '2025-03-01T00:00:00Z',
+          dueDate: '2025-03-10T00:00:00Z',
+          lateDeadlines: [{ date: '2025-03-15T00:00:00Z', credit: 0 }],
+        },
+      });
+
+      // Check during the late deadline period: should be active for no credit.
+      // This is a regression test; we used to treat 0% credit as active:false.
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        date: new Date('2025-03-12T00:00:00Z'),
+      });
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(true);
+
+      // Check again after the late deadline.
+      const resultAfter = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        date: new Date('2025-03-16T00:00:00Z'),
+      });
+      expect(resultAfter.credit).toBe(0);
+      expect(resultAfter.active).toBe(false);
+    });
+
     it('uses afterLastDeadline credit when specified', () => {
       const result = resolveAccessControl({
         ...baseInput,
@@ -295,7 +324,7 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            listBeforeRelease: true,
+            beforeRelease: { listed: true },
             dateControl: {
               releaseDate: '2025-04-01T00:00:00Z',
               dueDate: '2025-05-01T00:00:00Z',
@@ -314,7 +343,7 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            listBeforeRelease: true,
+            beforeRelease: { listed: true },
             dateControl: {
               releaseDate: '2025-03-01T00:00:00Z',
               dueDate: '2025-05-01T00:00:00Z',
@@ -975,8 +1004,12 @@ describe('resolveAccessControl', () => {
       expect(result.authorized).toBe(false);
     });
 
-    it('supports the cheat sheet hack', () => {
+    it('supports the review-window and PT-exam phases of the cheat sheet hack', () => {
       // See https://github.com/PrairieLearn/PrairieLearn/discussions/11308.
+      // This test covers the review-window (post-due, Public) and PT-exam
+      // (read-only via reservation) phases of the workflow. The submission
+      // window (Public access between release and due date) is not supported
+      // in this slice and is left for a follow-up.
       const rule: AccessControlRuleInput = {
         ...prairieTestMainRule,
         rule: toRuntime({
@@ -984,6 +1017,7 @@ describe('resolveAccessControl', () => {
             releaseDate: '2025-02-01T00:00:00Z',
             dueDate: '2025-03-01T00:00:00Z',
           },
+          afterComplete: { questions: { hidden: false } },
         }),
         // The cheat sheet use case specifically calls for a read-only exam so that
         // students cannot submit information to the assessment while they're in the
@@ -1002,27 +1036,17 @@ describe('resolveAccessControl', () => {
       expect(beforeReleaseResult.authorized).toBe(false);
       expect(beforeReleaseResult.showBeforeRelease).toBe(false);
 
-      // A student outside of the testing center during the release window should be
-      // able to access the assessment.
-      const duringReleaseResult = resolveAccessControl({
-        ...baseInput,
-        rules: [rule],
-        authzMode: 'Public',
-        date: new Date('2025-02-15T00:00:00Z'),
-      });
-      expect(duringReleaseResult.authorized).toBe(true);
-      expect(duringReleaseResult.active).toBe(true);
-
-      // A student outside of the testing center after the due date should not be able
-      // to access the assessment.
+      // A student outside of the testing center after the due date can view the
+      // closed assessment (their uploaded cheat sheet) but cannot submit.
       const afterDueDateResult = resolveAccessControl({
         ...baseInput,
         rules: [rule],
         authzMode: 'Public',
         date: new Date('2025-03-15T00:00:00Z'),
       });
-      expect(afterDueDateResult.authorized).toBe(false);
+      expect(afterDueDateResult.authorized).toBe(true);
       expect(afterDueDateResult.active).toBe(false);
+      expect(afterDueDateResult.showClosedAssessment).toBe(true);
 
       // A student in the testing center with a valid reservation should be able to access
       // the assessment at any point (we use a date after the due date to match the cheat
@@ -1642,10 +1666,10 @@ describe('resolveAccessControl', () => {
   });
 
   describe('showBeforeRelease edge cases', () => {
-    it('shows before release when listBeforeRelease set without dateControl', () => {
+    it('shows before release when beforeRelease.listed set without dateControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [makeMainRule({ listBeforeRelease: true })],
+        rules: [makeMainRule({ beforeRelease: { listed: true } })],
       });
       // No dateControl → no release mechanism → perpetually "before release"
       expect(result.authorized).toBe(true);
@@ -1658,7 +1682,7 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            listBeforeRelease: true,
+            beforeRelease: { listed: true },
             dateControl: {
               dueDate: '2025-04-01T00:00:00Z',
             },
@@ -1671,7 +1695,7 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(false);
     });
 
-    it('does not show before release without listBeforeRelease and no dateControl', () => {
+    it('does not show before release without beforeRelease.listed and no dateControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [makeMainRule({})],
@@ -1684,18 +1708,20 @@ describe('resolveAccessControl', () => {
   describe('showBeforeRelease with PrairieTest', () => {
     const ptExam = { uuid: 'pt-exam-1', readOnly: false };
 
-    it('lists but does not authorize PT assessment when listBeforeRelease set and not in exam mode', () => {
+    it('lists but does not authorize PT assessment when beforeRelease.listed set and not in exam mode', () => {
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [{ ...makeMainRule({ listBeforeRelease: true }), prairietestExams: [ptExam] }],
+        rules: [
+          { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam] },
+        ],
       });
-      // Not in exam mode but listBeforeRelease → listed but not authorized
+      // Not in exam mode but beforeRelease.listed → listed but not authorized
       expect(result.authorized).toBe(false);
       expect(result.showBeforeRelease).toBe(true);
       expect(result.active).toBe(false);
     });
 
-    it('hides PT assessment when listBeforeRelease false and not in exam mode', () => {
+    it('hides PT assessment when beforeRelease.listed false and not in exam mode', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
@@ -1707,7 +1733,9 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',
-        rules: [{ ...makeMainRule({ listBeforeRelease: true }), prairietestExams: [ptExam] }],
+        rules: [
+          { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam] },
+        ],
         prairieTestReservations: [
           { examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
         ],
@@ -1717,7 +1745,7 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(false);
     });
 
-    it('hides PT assessment when listBeforeRelease false and no matching reservation', () => {
+    it('hides PT assessment when beforeRelease.listed false and no matching reservation', () => {
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',
@@ -1731,15 +1759,17 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(false);
     });
 
-    it('does not grant access to PT assessment via listBeforeRelease bypass', () => {
-      // Regression test: listBeforeRelease must not set authorized=true for
+    it('does not grant access to PT assessment via beforeRelease.listed bypass', () => {
+      // Regression test: beforeRelease.listed must not set authorized=true for
       // PrairieTest-gated assessments, otherwise students can start instances
       // by posting directly to the assessment URL.
       for (const authzMode of ['Public', 'Exam'] as const) {
         const result = resolveAccessControl({
           ...baseInput,
           authzMode,
-          rules: [{ ...makeMainRule({ listBeforeRelease: true }), prairietestExams: [ptExam] }],
+          rules: [
+            { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam] },
+          ],
           prairieTestReservations:
             authzMode === 'Exam'
               ? [{ examUuid: 'wrong-exam', accessEnd: new Date('2025-04-01T00:00:00Z') }]
@@ -1751,20 +1781,44 @@ describe('resolveAccessControl', () => {
       }
     });
 
-    it('does not mislabel past-due PT assessment as "before release" in Exam mode with no matching reservation', () => {
-      // Exam mode without a matching reservation falls through to the main
-      // flow so the student's row stays visible in the listing for review.
-      // Whether they can actually see questions or scores on the assessment
-      // page is governed by `afterComplete` visibility, not by `authorized`.
-      // The resolver's only job here is to avoid labeling the row as "Not
-      // yet open" indefinitely after the due date has passed.
+    it('shows closed PT assessment as closed instead of "before release" when past due date', () => {
+      // When a PT-gated assessment has date controls and is past its due
+      // date, it should show as a normal closed assessment rather than "Not
+      // yet open" indefinitely.
+      for (const authzMode of ['Public', 'Exam'] as const) {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode,
+          rules: [
+            {
+              ...makeMainRule({
+                beforeRelease: { listed: true },
+                dateControl: {
+                  releaseDate: '2025-01-01T00:00:00Z',
+                  dueDate: '2025-02-01T00:00:00Z',
+                },
+              }),
+              prairietestExams: [ptExam],
+            },
+          ],
+          prairieTestReservations:
+            authzMode === 'Exam'
+              ? [{ examUuid: 'wrong-exam', accessEnd: new Date('2025-04-01T00:00:00Z') }]
+              : [],
+        });
+        expect(result.showBeforeRelease).toBe(false);
+        expect(result.authorized).toBe(true);
+        expect(result.active).toBe(false);
+      }
+    });
+
+    it('grants access via PT reservation even when assessment is past due date', () => {
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',
         rules: [
           {
             ...makeMainRule({
-              listBeforeRelease: true,
               dateControl: {
                 releaseDate: '2025-01-01T00:00:00Z',
                 dueDate: '2025-02-01T00:00:00Z',
@@ -1774,12 +1828,13 @@ describe('resolveAccessControl', () => {
           },
         ],
         prairieTestReservations: [
-          { examUuid: 'wrong-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
+          { examUuid: ptExam.uuid, accessEnd: new Date('2025-04-01T00:00:00Z') },
         ],
       });
-      expect(result.showBeforeRelease).toBe(false);
       expect(result.authorized).toBe(true);
-      expect(result.active).toBe(false);
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(true);
+      expect(result.showBeforeRelease).toBe(false);
     });
 
     it('still shows "before release" for PT assessment that is open but student lacks access', () => {
@@ -1790,7 +1845,7 @@ describe('resolveAccessControl', () => {
         rules: [
           {
             ...makeMainRule({
-              listBeforeRelease: true,
+              beforeRelease: { listed: true },
               dateControl: {
                 releaseDate: '2025-01-01T00:00:00Z',
                 dueDate: '2025-06-01T00:00:00Z',
@@ -1808,7 +1863,7 @@ describe('resolveAccessControl', () => {
 
 describe('mergeRules', () => {
   it('returns main rule when override is null', () => {
-    const main = toRuntime({ listBeforeRelease: true });
+    const main = toRuntime({ beforeRelease: { listed: true } });
     expect(mergeRules(main, null)).toEqual(main);
   });
 
@@ -1943,12 +1998,12 @@ describe('mergeRules', () => {
     });
   });
 
-  it('ignores listBeforeRelease on overrides', () => {
+  it('ignores beforeRelease on overrides', () => {
     const result = mergeRules(
-      toRuntime({ listBeforeRelease: false }),
-      toRuntime({ listBeforeRelease: true }),
+      toRuntime({ beforeRelease: { listed: false } }),
+      toRuntime({ beforeRelease: { listed: true } }),
     );
-    expect(result.listBeforeRelease).toBe(false);
+    expect(result.beforeRelease?.listed).toBe(false);
   });
 });
 
@@ -1990,9 +2045,9 @@ describe('cascadeOverrides', () => {
     expect(result.afterComplete?.score?.hidden).toBe(true);
   });
 
-  it('does not carry listBeforeRelease through cascaded overrides', () => {
-    const result = cascadeOverrides(toRuntime({ listBeforeRelease: true }), toRuntime({}));
-    expect(result.listBeforeRelease).toBeUndefined();
+  it('does not carry beforeRelease through cascaded overrides', () => {
+    const result = cascadeOverrides(toRuntime({ beforeRelease: { listed: true } }), toRuntime({}));
+    expect(result.beforeRelease).toBeUndefined();
   });
 });
 

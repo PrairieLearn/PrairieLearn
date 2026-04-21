@@ -87,12 +87,12 @@ export interface AccessControlResolverResult {
   examAccessEnd: Date | null;
   /**
    * Resolved visibility flag: true when the assessment should be listed but
-   * not accessible. This happens when `listBeforeRelease` is set on the rule
-   * AND either the current date is before the release date, there is no
+   * not accessible. This happens when `beforeRelease.listed` is set on the
+   * rule AND either the current date is before the release date, there is no
    * release date configured, or the assessment is PT-gated and the student
    * lacks access (but only while the assessment is still open — closed
    * assessments are not shown as "before release"). Distinct from the raw
-   * `listBeforeRelease` config input.
+   * `beforeRelease.listed` config input.
    */
   showBeforeRelease: boolean;
 }
@@ -180,8 +180,8 @@ export function mergeRules(
 
   const merged: RuntimeAccessControl = {};
 
-  // listBeforeRelease is only configurable on the main rule.
-  if (main.listBeforeRelease !== undefined) merged.listBeforeRelease = main.listBeforeRelease;
+  // beforeRelease is only configurable on the main rule.
+  if (main.beforeRelease !== undefined) merged.beforeRelease = main.beforeRelease;
 
   merged.dateControl = mergeDateControl(main.dateControl, override.dateControl);
   merged.afterComplete = mergeAfterComplete(main.afterComplete, override.afterComplete);
@@ -313,7 +313,7 @@ function computeCredit(
       const nextDeadline = entry.date;
       return {
         credit,
-        active: credit > 0,
+        active: true,
         beforeRelease: false,
         nextDeadlineDate: nextDeadline,
         password: dateControl.password ?? null,
@@ -424,58 +424,6 @@ function formatCreditDateString(
 }
 
 /**
- * Determines whether a PT-gated assessment is actually closed (past its
- * deadline structure) as opposed to merely inactive because it has no
- * deadlines configured (open-ended).
- *
- * An open-ended assessment (released, no dueDate, no lateDeadlines, no
- * afterLastDeadline) is NOT considered closed — PT gating must still deny
- * non-reserved users. Only assessments that have been released AND have a
- * terminal deadline structure AND are past that terminal point are closed.
- */
-function isAssessmentClosedForPrairieTest(
-  dateControl: RuntimeDateControl | undefined,
-  creditResult: CreditResult,
-): boolean {
-  if (!dateControl?.releaseDate) return false;
-  if (creditResult.beforeRelease) return false;
-  if (creditResult.active) return false;
-
-  // If there is no configured terminal deadline structure, the assessment
-  // is open-ended — not closed.
-  const hasTerminalStructure =
-    dateControl.dueDate != null || (dateControl.lateDeadlines?.length ?? 0) > 0;
-  if (!hasTerminalStructure) return false;
-
-  // Practice submissions keep the assessment open even when the student is
-  // not earning credit.
-  if (dateControl.afterLastDeadline?.allowSubmissions === true) return false;
-
-  return true;
-}
-
-/**
- * Determines whether a PT-gated assessment is currently inside a bounded
- * active submission window — the scenario that permits Public-mode access
- * to a rule that also configures `prairietestExams`.
- *
- * This is the "cheat sheet hack" use case (discussion #11308): students
- * prepare a cheat sheet from anywhere during the submission window, then
- * view it read-only via PrairieTest in the testing center. Access outside
- * the window (before release, after the deadline, or open-ended rules with
- * no terminal structure) remains PT-only.
- */
-function isInActiveBoundedWindowForPrairieTest(
-  dateControl: RuntimeDateControl | undefined,
-  creditResult: CreditResult,
-): boolean {
-  if (!creditResult.active) return false;
-  const hasTerminalStructure =
-    dateControl?.dueDate != null || (dateControl?.lateDeadlines?.length ?? 0) > 0;
-  return hasTerminalStructure;
-}
-
-/**
  * PrairieTest exam-mode access control.
  *
  * Core invariants (matching legacy `check_assessment_access_rule` sproc):
@@ -492,16 +440,14 @@ function resolvePrairieTestAccess({
   prairieTestExams,
   prairieTestReservations,
   authzMode,
-  listBeforeRelease,
+  beforeReleaseListed,
   assessmentClosed,
-  inActiveBoundedWindow,
 }: {
   prairieTestExams: { uuid: string; readOnly: boolean }[];
   prairieTestReservations: PrairieTestReservation[];
   authzMode: EnumMode | null;
-  listBeforeRelease: boolean;
+  beforeReleaseListed: boolean;
   assessmentClosed: boolean;
-  inActiveBoundedWindow: boolean;
 }): PrairieTestOutcome {
   const hasPrairieTestExams = prairieTestExams.length > 0;
 
@@ -513,24 +459,16 @@ function resolvePrairieTestAccess({
     return { action: 'continue' };
   }
 
-  // Not in exam mode — student cannot access a PT-gated assessment except
-  // during an active bounded submission window with `listBeforeRelease`
-  // unset. This enables the "cheat sheet hack" (discussion #11308) where
-  // students build a submission from anywhere during the window, then view
-  // it read-only via PrairieTest in the testing center.
+  // Not in exam mode — student cannot access a PT-gated assessment.
   if (authzMode !== 'Exam') {
-    // Past the terminal deadline structure — show as a closed assessment
-    // rather than "Not yet open" indefinitely, and do not grant access.
-    if (assessmentClosed) return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
+    if (assessmentClosed) return { action: 'continue' };
 
-    // `listBeforeRelease` means "list it, but deny access". For PT rules,
-    // this applies even when inside the active window — the student needs
-    // to see that the assessment exists but cannot access it outside PT.
-    if (listBeforeRelease) {
+    // If `beforeRelease.listed` is set, list it, but it should not be accessible.
+    // We ONLY do this outside of Exam mode; when in Exam mode, we only show assessments
+    // that the user can actually access.
+    if (beforeReleaseListed) {
       return { action: 'deny', result: { ...UNAUTHORIZED_RESULT, showBeforeRelease: true } };
     }
-
-    if (inActiveBoundedWindow) return { action: 'continue' };
 
     return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
   }
@@ -658,12 +596,11 @@ export function resolveAccessControl(
     prairieTestExams: mainRuleInput.prairietestExams,
     prairieTestReservations,
     authzMode,
-    listBeforeRelease: effectiveRule.listBeforeRelease ?? false,
-    assessmentClosed: isAssessmentClosedForPrairieTest(effectiveRule.dateControl, creditResult),
-    inActiveBoundedWindow: isInActiveBoundedWindowForPrairieTest(
-      effectiveRule.dateControl,
-      creditResult,
-    ),
+    beforeReleaseListed: effectiveRule.beforeRelease?.listed ?? false,
+    assessmentClosed:
+      !!effectiveRule.dateControl?.releaseDate &&
+      !creditResult.beforeRelease &&
+      !creditResult.active,
   });
   if (ptOutcome.action === 'deny') {
     return { ...ptOutcome.result, showClosedAssessment, showClosedAssessmentScore };
@@ -682,11 +619,11 @@ export function resolveAccessControl(
 
   const timeLimitMin = creditResult.timeLimitMin;
 
-  // Resolve the raw `listBeforeRelease` config flag into a concrete
+  // Resolve the raw `beforeRelease.listed` config flag into a concrete
   // `showBeforeRelease` boolean: true when the flag is set AND either we're
   // before the release date or there is no release date configured.
   const showBeforeRelease =
-    (effectiveRule.listBeforeRelease ?? false) &&
+    (effectiveRule.beforeRelease?.listed ?? false) &&
     (creditResult.beforeRelease || !effectiveRule.dateControl?.releaseDate);
 
   // If the assessment is before its release date and showBeforeRelease is false,
