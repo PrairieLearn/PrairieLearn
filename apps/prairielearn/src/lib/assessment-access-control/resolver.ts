@@ -46,7 +46,12 @@ export interface AccessControlRuleInput {
   targetType: 'none' | 'enrollment' | 'student_label';
   enrollmentIds: string[];
   studentLabelIds: string[];
-  prairietestExams: { uuid: string; readOnly: boolean }[];
+  prairietestExams: {
+    uuid: string;
+    readOnly: boolean;
+    questionsHidden: boolean | null;
+    scoreHidden: boolean | null;
+  }[];
 }
 
 export interface EnrollmentContext {
@@ -217,7 +222,14 @@ interface CreditResult {
  */
 type PrairieTestOutcome =
   | { action: 'deny'; result: AccessControlResolverResult }
-  | { action: 'grant'; examAccessEnd: Date; credit: number; active: boolean }
+  | {
+      action: 'grant';
+      examAccessEnd: Date;
+      credit: number;
+      active: boolean;
+      showClosedAssessment: boolean;
+      showClosedAssessmentScore: boolean;
+    }
   | { action: 'continue' };
 
 function computeCredit(
@@ -443,7 +455,7 @@ function resolvePrairieTestAccess({
   beforeReleaseListed,
   assessmentClosed,
 }: {
-  prairieTestExams: { uuid: string; readOnly: boolean }[];
+  prairieTestExams: AccessControlRuleInput['prairietestExams'];
   prairieTestReservations: PrairieTestReservation[];
   authzMode: EnumMode | null;
   beforeReleaseListed: boolean;
@@ -483,11 +495,23 @@ function resolvePrairieTestAccess({
     const matchingReservation = prairieTestReservations.find(
       (r) => r.examUuid === matchedExam.uuid,
     )!;
+
+    // PT-level visibility. `readOnly` reservations represent review sessions,
+    // so everything is visible. Otherwise, the per-exam `afterComplete` config
+    // (stored as nullable `questionsHidden` / `scoreHidden`) decides visibility
+    // inside the testing center after the student finishes; `null` means
+    // "not configured" and defaults to visible. The schema enforces that
+    // `scoreHidden: true` + `questionsHidden !== true` cannot occur.
+    const showClosedAssessment = matchedExam.readOnly || !(matchedExam.questionsHidden ?? false);
+    const showClosedAssessmentScore = matchedExam.readOnly || !(matchedExam.scoreHidden ?? false);
+
     return {
       action: 'grant',
       examAccessEnd: matchingReservation.accessEnd,
       credit: 100,
       active: !matchedExam.readOnly,
+      showClosedAssessment,
+      showClosedAssessmentScore,
     };
   }
 
@@ -575,14 +599,19 @@ export function resolveAccessControl(
   // author's `afterComplete` configuration. The student gradebook displays
   // rows even when access is denied, and relies on `showClosedAssessmentScore`
   // to decide whether to show prior scores.
-  const showClosedAssessment = resolveVisibility(
+  //
+  // `questions.hidden` defaults to `true` (hidden) outside the testing center.
+  // This is intentional for exam security: an async exam run over several days
+  // would be compromised if first-session students saw questions and answers
+  // immediately on leaving the CBTF.
+  let showClosedAssessment = resolveVisibility(
     effectiveRule.afterComplete?.questions?.hidden ?? true,
     effectiveRule.afterComplete?.questions?.visibleFromDate,
     effectiveRule.afterComplete?.questions?.visibleUntilDate,
     date,
   );
 
-  const showClosedAssessmentScore = resolveVisibility(
+  let showClosedAssessmentScore = resolveVisibility(
     effectiveRule.afterComplete?.score?.hidden,
     effectiveRule.afterComplete?.score?.visibleFromDate,
     undefined,
@@ -610,6 +639,13 @@ export function resolveAccessControl(
   if (ptOutcome.action === 'grant') {
     creditResult = { ...creditResult, credit: ptOutcome.credit, active: ptOutcome.active };
     examAccessEnd = ptOutcome.examAccessEnd;
+
+    // Isolation rule: while a PT reservation is active, only the matched
+    // exam's PT-level config governs visibility. The top-level
+    // `afterComplete` covers behavior OUTSIDE the CBTF, which is a separate
+    // concern from "after-finish visibility inside the CBTF".
+    showClosedAssessment = ptOutcome.showClosedAssessment;
+    showClosedAssessmentScore = ptOutcome.showClosedAssessmentScore;
   }
 
   const timeLimitMin = creditResult.timeLimitMin;

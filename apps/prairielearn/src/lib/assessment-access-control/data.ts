@@ -23,7 +23,14 @@ const sql = loadSqlEquiv(import.meta.url);
 const DeadlineJsonSchema = z.array(z.object({ date: z.string(), credit: z.number() })).nullable();
 
 const PrairieTestExamJsonSchema = z
-  .array(z.object({ uuid: z.string(), read_only: z.boolean() }))
+  .array(
+    z.object({
+      uuid: z.string(),
+      read_only: z.boolean(),
+      after_complete_questions_hidden: z.boolean().nullable(),
+      after_complete_score_hidden: z.boolean().nullable(),
+    }),
+  )
   .nullable();
 
 const AccessControlRuleRowSchema = z.object({
@@ -93,6 +100,17 @@ function buildDateControl(
   return Object.keys(dateControl).length > 0 ? dateControl : undefined;
 }
 
+function buildExamAfterComplete(
+  questionsHidden: boolean | null,
+  scoreHidden: boolean | null,
+): { questions?: { hidden: boolean }; score?: { hidden: boolean } } | undefined {
+  if (questionsHidden == null && scoreHidden == null) return undefined;
+  const result: { questions?: { hidden: boolean }; score?: { hidden: boolean } } = {};
+  if (questionsHidden != null) result.questions = { hidden: questionsHidden };
+  if (scoreHidden != null) result.score = { hidden: scoreHidden };
+  return result;
+}
+
 function buildAfterComplete(rule: AssessmentAccessControlRule): RuntimeAfterComplete | undefined {
   const afterComplete: RuntimeAfterComplete = {};
 
@@ -133,11 +151,20 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
   const prairietestExams = prairietestExamsRaw.map((e) => ({
     uuid: e.uuid,
     readOnly: e.read_only,
+    questionsHidden: e.after_complete_questions_hidden,
+    scoreHidden: e.after_complete_score_hidden,
   }));
   if (prairietestExams.length > 0) {
     runtimeRule.integrations = {
       prairieTest: {
-        exams: prairietestExams.map((e) => ({ examUuid: e.uuid, readOnly: e.readOnly })),
+        exams: prairietestExams.map((e) => {
+          const afterComplete = buildExamAfterComplete(e.questionsHidden, e.scoreHidden);
+          return {
+            examUuid: e.uuid,
+            readOnly: e.readOnly,
+            ...(afterComplete !== undefined ? { afterComplete } : {}),
+          };
+        }),
       },
     };
   }

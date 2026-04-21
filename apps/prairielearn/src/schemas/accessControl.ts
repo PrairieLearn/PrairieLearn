@@ -50,6 +50,28 @@ const DateControlJsonSchema = z
   .strict()
   .optional();
 
+const ExamAfterCompleteQuestionsJsonSchema = z
+  .object({
+    hidden: z.boolean(),
+  })
+  .strict()
+  .optional();
+
+const ExamAfterCompleteScoreJsonSchema = z
+  .object({
+    hidden: z.boolean(),
+  })
+  .strict()
+  .optional();
+
+const ExamAfterCompleteJsonSchema = z
+  .object({
+    questions: ExamAfterCompleteQuestionsJsonSchema,
+    score: ExamAfterCompleteScoreJsonSchema,
+  })
+  .strict()
+  .optional();
+
 const ExamJsonSchema = z
   .object({
     examUuid: z
@@ -60,6 +82,9 @@ const ExamJsonSchema = z
       )
       .describe('UUID of associated PrairieTest exam'),
     readOnly: z.boolean().optional().describe('Whether the exam is read-only for students'),
+    afterComplete: ExamAfterCompleteJsonSchema.describe(
+      'Controls visibility inside the testing center after the student finishes the assessment. Only applies while a matching PrairieTest reservation is active; ignored outside the testing center.',
+    ),
   })
   .strict();
 

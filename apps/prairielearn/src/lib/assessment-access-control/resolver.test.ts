@@ -54,6 +54,22 @@ function toRuntime(json: AccessControlJson): RuntimeAccessControl {
   return result;
 }
 
+function ptExam(
+  uuid: string,
+  opts: {
+    readOnly?: boolean;
+    questionsHidden?: boolean | null;
+    scoreHidden?: boolean | null;
+  } = {},
+): AccessControlRuleInput['prairietestExams'][number] {
+  return {
+    uuid,
+    readOnly: opts.readOnly ?? false,
+    questionsHidden: opts.questionsHidden ?? null,
+    scoreHidden: opts.scoreHidden ?? null,
+  };
+}
+
 function makeMainRule(rule: AccessControlJson = {}): AccessControlRuleInput {
   return {
     rule: toRuntime(rule),
@@ -734,7 +750,7 @@ describe('resolveAccessControl', () => {
       targetType: 'none',
       enrollmentIds: [],
       studentLabelIds: [],
-      prairietestExams: [{ uuid: 'exam-uuid-1', readOnly: false }],
+      prairietestExams: [ptExam('exam-uuid-1')],
     };
 
     const validReservation: PrairieTestReservation = {
@@ -808,7 +824,7 @@ describe('resolveAccessControl', () => {
     it('sets active to false for readOnly exam', () => {
       const readOnlyRule: AccessControlRuleInput = {
         ...prairieTestMainRule,
-        prairietestExams: [{ uuid: 'exam-uuid-1', readOnly: true }],
+        prairietestExams: [ptExam('exam-uuid-1', { readOnly: true })],
       };
       const result = resolveAccessControl({
         ...baseInput,
@@ -834,9 +850,9 @@ describe('resolveAccessControl', () => {
       const multiExamRule: AccessControlRuleInput = {
         ...prairieTestMainRule,
         prairietestExams: [
-          { uuid: 'exam-uuid-1', readOnly: false },
-          { uuid: 'exam-uuid-2', readOnly: false },
-          { uuid: 'exam-uuid-3', readOnly: true },
+          ptExam('exam-uuid-1'),
+          ptExam('exam-uuid-2'),
+          ptExam('exam-uuid-3', { readOnly: true }),
         ],
       };
       const reservation: PrairieTestReservation = {
@@ -858,10 +874,7 @@ describe('resolveAccessControl', () => {
     it('uses readOnly flag from matched exam when multiple exams are configured', () => {
       const multiExamRule: AccessControlRuleInput = {
         ...prairieTestMainRule,
-        prairietestExams: [
-          { uuid: 'exam-uuid-1', readOnly: false },
-          { uuid: 'exam-uuid-3', readOnly: true },
-        ],
+        prairietestExams: [ptExam('exam-uuid-1'), ptExam('exam-uuid-3', { readOnly: true })],
       };
       const reservation: PrairieTestReservation = {
         examUuid: 'exam-uuid-3',
@@ -949,7 +962,7 @@ describe('resolveAccessControl', () => {
             targetType: 'none',
             enrollmentIds: [],
             studentLabelIds: [],
-            prairietestExams: [{ uuid: 'exam-uuid-1', readOnly: false }],
+            prairietestExams: [ptExam('exam-uuid-1')],
           },
         ],
         authzMode: 'Exam',
@@ -1104,89 +1117,210 @@ describe('resolveAccessControl', () => {
   });
 
   describe('after-complete visibility with PrairieTest', () => {
-    const ptExam = { uuid: 'pt-exam-1', readOnly: false };
-    const ptExamReadOnly = { uuid: 'pt-exam-1', readOnly: true };
     const validReservation: PrairieTestReservation = {
       examUuid: 'pt-exam-1',
       accessEnd: new Date('2025-03-15T14:00:00Z'),
     };
 
-    const visibilityConfigs = [
-      {
-        name: 'hide both questions and score',
-        afterComplete: { questions: { hidden: true }, score: { hidden: true } },
-        showClosedAssessment: false,
-        showClosedAssessmentScore: false,
-      },
-      {
-        name: 'show both questions and score',
-        afterComplete: { questions: { hidden: false }, score: { hidden: false } },
-        showClosedAssessment: true,
-        showClosedAssessmentScore: true,
-      },
-      {
-        name: 'hide questions, show score',
-        afterComplete: { questions: { hidden: true }, score: { hidden: false } },
-        showClosedAssessment: false,
-        showClosedAssessmentScore: true,
-      },
-      {
-        name: 'show questions, hide score',
-        afterComplete: { questions: { hidden: false }, score: { hidden: true } },
-        showClosedAssessment: true,
-        showClosedAssessmentScore: false,
-      },
-    ];
-
-    it.each(visibilityConfigs)(
-      'active PT reservation: $name',
-      ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+    describe('active PT reservation (PT-level afterComplete)', () => {
+      it('defaults to everything visible when no PT-level afterComplete is configured', () => {
         const result = resolveAccessControl({
           ...baseInput,
           authzMode: 'Exam',
-          rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExam] }],
+          rules: [{ ...makeMainRule(), prairietestExams: [ptExam('pt-exam-1')] }],
           prairieTestReservations: [validReservation],
         });
         expect(result.authorized).toBe(true);
         expect(result.active).toBe(true);
-        expect(result.showClosedAssessment).toBe(showClosedAssessment);
-        expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
-      },
-    );
+        expect(result.showClosedAssessment).toBe(true);
+        expect(result.showClosedAssessmentScore).toBe(true);
+      });
 
-    it.each(visibilityConfigs)(
-      'readOnly PT reservation: $name',
-      ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+      it('hides questions when PT-level questions.hidden is true', () => {
         const result = resolveAccessControl({
           ...baseInput,
           authzMode: 'Exam',
-          rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExamReadOnly] }],
+          rules: [
+            {
+              ...makeMainRule(),
+              prairietestExams: [ptExam('pt-exam-1', { questionsHidden: true })],
+            },
+          ],
+          prairieTestReservations: [validReservation],
+        });
+        expect(result.showClosedAssessment).toBe(false);
+        expect(result.showClosedAssessmentScore).toBe(true);
+      });
+
+      it('hides both when PT-level questions.hidden and score.hidden are true', () => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [
+            {
+              ...makeMainRule(),
+              prairietestExams: [ptExam('pt-exam-1', { questionsHidden: true, scoreHidden: true })],
+            },
+          ],
+          prairieTestReservations: [validReservation],
+        });
+        expect(result.showClosedAssessment).toBe(false);
+        expect(result.showClosedAssessmentScore).toBe(false);
+      });
+    });
+
+    describe('readOnly PT reservation', () => {
+      it('grants a non-active grant with everything visible', () => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [
+            { ...makeMainRule(), prairietestExams: [ptExam('pt-exam-1', { readOnly: true })] },
+          ],
           prairieTestReservations: [validReservation],
         });
         expect(result.authorized).toBe(true);
         expect(result.active).toBe(false);
-        expect(result.showClosedAssessment).toBe(showClosedAssessment);
-        expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
-      },
-    );
+        expect(result.showClosedAssessment).toBe(true);
+        expect(result.showClosedAssessmentScore).toBe(true);
+      });
+    });
 
-    // The gradebook displays rows even when access is denied and relies on
-    // `showClosedAssessmentScore` to decide whether to reveal prior scores, so
-    // the deny path must still honor the configured visibility flags.
-    it.each(visibilityConfigs)(
-      'Exam mode with no PT reservation: $name',
-      ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+    describe('isolation rule', () => {
+      // During an active PT reservation, top-level `afterComplete` is ignored
+      // in favor of the matched PT exam's config. This lets course authors
+      // configure in-CBTF visibility and outside-CBTF visibility independently.
+      it('ignores top-level afterComplete during an active grant', () => {
         const result = resolveAccessControl({
           ...baseInput,
           authzMode: 'Exam',
-          rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExam] }],
+          rules: [
+            {
+              ...makeMainRule({
+                afterComplete: {
+                  questions: { hidden: true },
+                  score: { hidden: true },
+                },
+              }),
+              prairietestExams: [ptExam('pt-exam-1')],
+            },
+          ],
+          prairieTestReservations: [validReservation],
+        });
+        expect(result.showClosedAssessment).toBe(true);
+        expect(result.showClosedAssessmentScore).toBe(true);
+      });
+
+      it('ignores top-level afterComplete during a readOnly grant', () => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [
+            {
+              ...makeMainRule({
+                afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+              }),
+              prairietestExams: [ptExam('pt-exam-1', { readOnly: true })],
+            },
+          ],
+          prairieTestReservations: [validReservation],
+        });
+        expect(result.showClosedAssessment).toBe(true);
+        expect(result.showClosedAssessmentScore).toBe(true);
+      });
+    });
+
+    // Regression test for #12579: `ip_to_mode` can keep reporting Exam for a
+    // brief grace period after PrairieTest has ended a reservation, so a
+    // PT-gated rule can hit the deny path while still in Exam mode. The
+    // gradebook continues to render rows even when access is denied and
+    // relies on `showClosedAssessmentScore` to decide whether to reveal prior
+    // scores, so the deny path must propagate the configured top-level
+    // visibility flags rather than falling back to the hardcoded UNAUTHORIZED
+    // defaults. On the deny path, top-level `afterComplete` still applies
+    // (isolation only kicks in when a reservation is actively granting access).
+    describe('Exam mode after PT reservation ends (#12579 grace period)', () => {
+      const denyConfigs = [
+        {
+          name: 'hide both questions and score',
+          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+          showClosedAssessment: false,
+          showClosedAssessmentScore: false,
+        },
+        {
+          name: 'show both questions and score',
+          afterComplete: { questions: { hidden: false }, score: { hidden: false } },
+          showClosedAssessment: true,
+          showClosedAssessmentScore: true,
+        },
+        {
+          name: 'hide score only',
+          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+          showClosedAssessment: false,
+          showClosedAssessmentScore: false,
+        },
+      ];
+
+      it.each(denyConfigs)(
+        'propagates top-level afterComplete on deny: $name',
+        ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+          const result = resolveAccessControl({
+            ...baseInput,
+            authzMode: 'Exam',
+            rules: [
+              { ...makeMainRule({ afterComplete }), prairietestExams: [ptExam('pt-exam-1')] },
+            ],
+            prairieTestReservations: [],
+          });
+          expect(result.authorized).toBe(false);
+          expect(result.showClosedAssessment).toBe(showClosedAssessment);
+          expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
+        },
+      );
+    });
+
+    // Use case: instructor uses PT to host a secure review session in a
+    // proctored testing center. Inside the CBTF with a readOnly reservation,
+    // everything is visible for review. Outside the CBTF, the assessment is
+    // either denied entirely (no top-level access) or has its score hidden
+    // from the gradebook via top-level `afterComplete`.
+    describe('PT-gated secure review session', () => {
+      it('allows reviewing closed assessment with a readOnly reservation', () => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [
+            {
+              ...makeMainRule(),
+              prairietestExams: [ptExam('pt-exam-1', { readOnly: true })],
+            },
+          ],
+          prairieTestReservations: [validReservation],
+        });
+        expect(result.authorized).toBe(true);
+        expect(result.active).toBe(false);
+        expect(result.showClosedAssessment).toBe(true);
+        expect(result.showClosedAssessmentScore).toBe(true);
+      });
+
+      it('denies access and hides gradebook score outside the session', () => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Public',
+          rules: [
+            {
+              ...makeMainRule({
+                afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+              }),
+              prairietestExams: [ptExam('pt-exam-1', { readOnly: true })],
+            },
+          ],
           prairieTestReservations: [],
         });
         expect(result.authorized).toBe(false);
-        expect(result.showClosedAssessment).toBe(showClosedAssessment);
-        expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
-      },
-    );
+        expect(result.showClosedAssessmentScore).toBe(false);
+      });
+    });
   });
 
   describe('credit date string formatting', () => {
@@ -1503,13 +1637,13 @@ describe('resolveAccessControl', () => {
   });
 
   describe('showBeforeRelease with PrairieTest', () => {
-    const ptExam = { uuid: 'pt-exam-1', readOnly: false };
+    const ptExam1 = ptExam('pt-exam-1');
 
     it('lists but does not authorize PT assessment when beforeRelease.listed set and not in exam mode', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam] },
+          { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam1] },
         ],
       });
       // Not in exam mode but beforeRelease.listed → listed but not authorized
@@ -1521,7 +1655,7 @@ describe('resolveAccessControl', () => {
     it('hides PT assessment when beforeRelease.listed false and not in exam mode', () => {
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
+        rules: [{ ...makeMainRule(), prairietestExams: [ptExam1] }],
       });
       expect(result.authorized).toBe(false);
     });
@@ -1531,7 +1665,7 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         authzMode: 'Exam',
         rules: [
-          { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam] },
+          { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam1] },
         ],
         prairieTestReservations: [
           { examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
@@ -1546,7 +1680,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',
-        rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
+        rules: [{ ...makeMainRule(), prairietestExams: [ptExam1] }],
         prairieTestReservations: [
           { examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
         ],
@@ -1565,7 +1699,7 @@ describe('resolveAccessControl', () => {
           ...baseInput,
           authzMode,
           rules: [
-            { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam] },
+            { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam1] },
           ],
           prairieTestReservations:
             authzMode === 'Exam'
@@ -1595,7 +1729,7 @@ describe('resolveAccessControl', () => {
                   dueDate: '2025-02-01T00:00:00Z',
                 },
               }),
-              prairietestExams: [ptExam],
+              prairietestExams: [ptExam1],
             },
           ],
           prairieTestReservations:
@@ -1621,11 +1755,11 @@ describe('resolveAccessControl', () => {
                 dueDate: '2025-02-01T00:00:00Z',
               },
             }),
-            prairietestExams: [ptExam],
+            prairietestExams: [ptExam1],
           },
         ],
         prairieTestReservations: [
-          { examUuid: ptExam.uuid, accessEnd: new Date('2025-04-01T00:00:00Z') },
+          { examUuid: ptExam1.uuid, accessEnd: new Date('2025-04-01T00:00:00Z') },
         ],
       });
       expect(result.authorized).toBe(true);
@@ -1641,7 +1775,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',
-        rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
+        rules: [{ ...makeMainRule(), prairietestExams: [ptExam1] }],
         prairieTestReservations: [],
       });
       expect(result.authorized).toBe(false);
@@ -1665,7 +1799,7 @@ describe('resolveAccessControl', () => {
                 dueDate: '2025-06-01T00:00:00Z',
               },
             }),
-            prairietestExams: [ptExam],
+            prairietestExams: [ptExam1],
           },
         ],
       });

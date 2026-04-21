@@ -504,6 +504,17 @@ export function validateRule(
       errors.push(`Duplicate PrairieTest exam UUID: ${e.examUuid}.`);
     }
     seenUuids.add(e.examUuid);
+
+    if (e.readOnly === true && e.afterComplete !== undefined) {
+      errors.push(
+        `PrairieTest exam ${e.examUuid}: readOnly: true and afterComplete are mutually exclusive (a readOnly reservation is a review environment, so hiding makes no sense).`,
+      );
+    }
+    if (e.afterComplete?.score?.hidden === true && e.afterComplete.questions?.hidden !== true) {
+      errors.push(
+        `PrairieTest exam ${e.examUuid}: afterComplete.score.hidden: true requires afterComplete.questions.hidden: true (hiding the score while showing questions is nonsensical).`,
+      );
+    }
   }
 
   const earlyDates = new Set<string>();

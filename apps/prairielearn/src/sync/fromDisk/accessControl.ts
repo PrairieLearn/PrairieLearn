@@ -143,7 +143,14 @@ function prepareRuleRow(
 
   const exams = rule.integrations?.prairieTest?.exams ?? [];
   const prairietestExams = exams.map((e) =>
-    JSON.stringify([assessmentId, ruleNumber, e.examUuid, e.readOnly ?? false]),
+    JSON.stringify([
+      assessmentId,
+      ruleNumber,
+      e.examUuid,
+      e.readOnly ?? false,
+      e.afterComplete?.questions?.hidden ?? null,
+      e.afterComplete?.score?.hidden ?? null,
+    ]),
   );
 
   return { ruleRow, studentLabels, earlyDeadlines, lateDeadlines, prairietestExams };
