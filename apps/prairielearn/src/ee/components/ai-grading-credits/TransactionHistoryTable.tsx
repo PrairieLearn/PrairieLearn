@@ -209,7 +209,7 @@ function RefundConfirmationModal({
         <p>Are you sure you want to refund this credit purchase?</p>
         <div className={clsx('alert', goesNegative ? 'alert-warning' : 'alert-info')}>
           <div>New transferable balance: {formatMilliDollars(newTransferableMilliDollars)}</div>
-          <div>Stripe refund: {formatMilliDollars(creditAmount)}</div>
+          <div>Stripe refund amount: {formatMilliDollars(creditAmount)}</div>
         </div>
       </Modal.Body>
       <Modal.Footer>
