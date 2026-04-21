@@ -107,7 +107,7 @@ function prepareRuleRow(
     // beforeRelease.listed is only configurable on the main rule.
     before_release_listed: isMainRule ? (beforeReleaseListed.value ?? false) : null,
     target_type: targetType,
-    date_control_release_date: dateControl.releaseDate ?? null,
+    date_control_release_date: dateControl.release?.date ?? null,
     date_control_due_date_overridden: dueDateField.overridden,
     date_control_due_date: dueDateField.value,
     date_control_early_deadlines_overridden: earlyDeadlinesField.overridden,

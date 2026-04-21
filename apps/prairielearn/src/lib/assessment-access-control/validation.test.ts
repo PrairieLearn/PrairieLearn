@@ -20,7 +20,7 @@ describe('Valid configs', () => {
     [
       {
         dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
+          release: { date: '2024-03-14T00:01:00' },
           dueDate: '2024-03-21T23:59:00',
           earlyDeadlines: [
             { date: '2024-03-17T23:59:00', credit: 120 },
@@ -42,7 +42,7 @@ describe('Valid configs', () => {
     [
       {
         dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
+          release: { date: '2024-03-14T00:01:00' },
           dueDate: '2024-03-21T23:59:00',
           durationMinutes: 60,
         },
@@ -95,7 +95,7 @@ describe('Valid configs', () => {
       {
         // Main rule (no targets)
         dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
+          release: { date: '2024-03-14T00:01:00' },
           dueDate: '2024-03-21T23:59:00',
           durationMinutes: 60,
         },
@@ -113,7 +113,7 @@ describe('Valid configs', () => {
     [
       {
         dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
+          release: { date: '2024-03-14T00:01:00' },
           dueDate: '2024-03-21T23:59:00',
         },
         integrations: {
@@ -128,7 +128,7 @@ describe('Valid configs', () => {
     [
       {
         dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
+          release: { date: '2024-03-14T00:01:00' },
           dueDate: '2024-03-21T23:59:00',
         },
         afterComplete: {
@@ -145,7 +145,7 @@ describe('Valid configs', () => {
     [
       {
         dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
+          release: { date: '2024-03-14T00:01:00' },
           dueDate: '2024-03-21T23:59:00',
         },
         afterComplete: {
@@ -216,13 +216,13 @@ describe('Main rule requirement', () => {
     const rulesWithMultipleMain: AccessControlJsonInput[] = [
       {
         dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
+          release: { date: '2024-03-14T00:01:00' },
           dueDate: '2024-03-21T23:59:00',
         },
       },
       {
         dateControl: {
-          releaseDate: '2024-03-15T00:01:00',
+          release: { date: '2024-03-15T00:01:00' },
           dueDate: '2024-03-22T23:59:00',
         },
       },
@@ -246,7 +246,7 @@ describe('Main rule requirement', () => {
     const rulesWithOneMain: AccessControlJsonInput[] = [
       {
         dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
+          release: { date: '2024-03-14T00:01:00' },
           dueDate: '2024-03-21T23:59:00',
         },
       },
@@ -265,7 +265,7 @@ describe('Main rule requirement', () => {
       {
         beforeRelease: { listed: false },
         dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
+          release: { date: '2024-03-14T00:01:00' },
           dueDate: '2024-03-21T23:59:00',
         },
       },
@@ -294,7 +294,7 @@ describe('Date fields without seconds', () => {
   it('should accept and transform dates without seconds', () => {
     const ruleWithDateWithoutSeconds: AccessControlJsonInput = {
       dateControl: {
-        releaseDate: '2024-03-14T00:01', // No seconds
+        release: { date: '2024-03-14T00:01' }, // No seconds
         dueDate: '2024-03-21T23:59', // No seconds
         earlyDeadlines: [{ date: '2024-03-17T23:59', credit: 120 }],
         lateDeadlines: [{ date: '2024-03-23T23:59', credit: 80 }],
@@ -309,7 +309,7 @@ describe('Date fields without seconds', () => {
 
     const parsed = AccessControlJsonSchema.parse(ruleWithDateWithoutSeconds);
 
-    assert.equal(parsed.dateControl?.releaseDate, '2024-03-14T00:01:00');
+    assert.equal(parsed.dateControl?.release?.date, '2024-03-14T00:01:00');
     assert.equal(parsed.dateControl?.dueDate, '2024-03-21T23:59:00');
     assert.equal(parsed.dateControl?.earlyDeadlines?.[0].date, '2024-03-17T23:59:00');
     assert.equal(parsed.dateControl?.lateDeadlines?.[0].date, '2024-03-23T23:59:00');
@@ -324,14 +324,14 @@ describe('Date fields without seconds', () => {
   it('should still accept dates with seconds', () => {
     const ruleWithDateWithSeconds: AccessControlJsonInput = {
       dateControl: {
-        releaseDate: '2024-03-14T00:01:00', // With seconds
+        release: { date: '2024-03-14T00:01:00' }, // With seconds
         dueDate: '2024-03-21T23:59:00', // With seconds
       },
     };
 
     const parsed = AccessControlJsonSchema.parse(ruleWithDateWithSeconds);
 
-    assert.equal(parsed.dateControl?.releaseDate, '2024-03-14T00:01:00');
+    assert.equal(parsed.dateControl?.release?.date, '2024-03-14T00:01:00');
     assert.equal(parsed.dateControl?.dueDate, '2024-03-21T23:59:00');
 
     const result = validateAccessControlRules({
@@ -344,15 +344,15 @@ describe('Date fields without seconds', () => {
 describe('Date fields must be dates', () => {
   it.each([
     {
-      label: 'releaseDate',
-      config: { dateControl: { releaseDate: 'NOTADATE' } },
-      expectedPath: ['dateControl', 'releaseDate'],
+      label: 'release.date',
+      config: { dateControl: { release: { date: 'NOTADATE' } } },
+      expectedPath: ['dateControl', 'release', 'date'],
     },
     {
       label: 'showQuestionsAgainDate',
       config: {
         dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
+          release: { date: '2024-03-14T00:01:00' },
         },
         afterComplete: {
           questions: {
@@ -430,7 +430,7 @@ describe('Date ordering validation', () => {
     {
       label: 'release date after due date',
       config: {
-        dateControl: { releaseDate: '2024-03-25T00:00:00', dueDate: '2024-03-20T00:00:00' },
+        dateControl: { release: { date: '2024-03-25T00:00:00' }, dueDate: '2024-03-20T00:00:00' },
       },
       errorMatch: 'Release date must be before due date.',
     },
@@ -448,7 +448,7 @@ describe('Date ordering validation', () => {
       label: 'early deadline before release date',
       config: {
         dateControl: {
-          releaseDate: '2024-03-20T00:00:00',
+          release: { date: '2024-03-20T00:00:00' },
           earlyDeadlines: [{ date: '2024-03-19T00:00:00', credit: 120 }],
         },
       },
@@ -468,7 +468,7 @@ describe('Date ordering validation', () => {
       label: 'late deadline before release date',
       config: {
         dateControl: {
-          releaseDate: '2024-03-20T00:00:00',
+          release: { date: '2024-03-20T00:00:00' },
           lateDeadlines: [{ date: '2024-03-19T00:00:00', credit: 80 }],
         },
       },
@@ -586,7 +586,7 @@ describe('Date ordering validation', () => {
     {
       label: 'show-again dates skipped when no due date',
       config: {
-        dateControl: { releaseDate: '2024-03-10T00:00:00' },
+        dateControl: { release: { date: '2024-03-10T00:00:00' } },
         afterComplete: {
           questions: {
             hidden: true,
@@ -603,7 +603,7 @@ describe('Date ordering validation', () => {
       label: 'valid date ordering',
       config: {
         dateControl: {
-          releaseDate: '2024-03-10T00:00:00',
+          release: { date: '2024-03-10T00:00:00' },
           dueDate: '2024-03-20T00:00:00',
           earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 120 }],
           lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
@@ -780,7 +780,7 @@ describe('Global temporal validation', () => {
       {
         rule: AccessControlJsonSchema.parse({
           dateControl: {
-            releaseDate: '2024-04-07T00:00:00',
+            release: { date: '2024-04-07T00:00:00' },
           },
         }),
         targetType: 'none',
@@ -790,7 +790,7 @@ describe('Global temporal validation', () => {
         rule: AccessControlJsonSchema.parse({
           labels: ['Section A'],
           dateControl: {
-            releaseDate: '2024-04-06T00:00:00',
+            release: { date: '2024-04-06T00:00:00' },
           },
         }),
         targetType: 'student_label',
@@ -828,7 +828,7 @@ describe('Global temporal validation', () => {
       {
         rule: AccessControlJsonSchema.parse({
           dateControl: {
-            releaseDate: '2024-04-07T00:00:00',
+            release: { date: '2024-04-07T00:00:00' },
             dueDate: '2024-04-08T00:00:00',
           },
         }),
@@ -865,7 +865,7 @@ describe('Global temporal validation', () => {
       {
         rule: AccessControlJsonSchema.parse({
           dateControl: {
-            releaseDate: '2024-04-07T00:00:00',
+            release: { date: '2024-04-07T00:00:00' },
             dueDate: '2024-04-10T00:00:00',
           },
         }),
@@ -892,7 +892,7 @@ describe('Global temporal validation', () => {
       {
         rule: AccessControlJsonSchema.parse({
           dateControl: {
-            releaseDate: '2024-04-07T00:00:00',
+            release: { date: '2024-04-07T00:00:00' },
             dueDate: '2024-04-10T00:00:00',
           },
         }),
@@ -927,7 +927,7 @@ describe('Duplicate detection', () => {
   it('should reject duplicate PrairieTest exam UUIDs', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
-        releaseDate: '2024-03-14T00:01:00',
+        release: { date: '2024-03-14T00:01:00' },
       },
       integrations: {
         prairieTest: {
@@ -947,7 +947,7 @@ describe('Duplicate detection', () => {
   it('should accept unique PrairieTest exam UUIDs', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
-        releaseDate: '2024-03-14T00:01:00',
+        release: { date: '2024-03-14T00:01:00' },
       },
       integrations: {
         prairieTest: {
@@ -967,7 +967,7 @@ describe('Duplicate detection', () => {
       label: 'early deadline dates',
       config: {
         dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
+          release: { date: '2024-03-14T00:01:00' },
           dueDate: '2024-03-21T23:59:00',
           earlyDeadlines: [
             { date: '2024-03-17T23:59:00', credit: 120 },
@@ -981,7 +981,7 @@ describe('Duplicate detection', () => {
       label: 'late deadline dates',
       config: {
         dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
+          release: { date: '2024-03-14T00:01:00' },
           dueDate: '2024-03-21T23:59:00',
           lateDeadlines: [
             { date: '2024-03-25T23:59:00', credit: 80 },
@@ -1000,7 +1000,7 @@ describe('Duplicate detection', () => {
     const rules = [
       AccessControlJsonSchema.parse({
         dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
+          release: { date: '2024-03-14T00:01:00' },
           dueDate: '2024-03-21T23:59:00',
           earlyDeadlines: [
             { date: '2024-03-17T23:59:00', credit: 120 },
@@ -1018,7 +1018,7 @@ describe('afterLastDeadline validation', () => {
   it('should accept allowSubmissions false without credit', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
-        releaseDate: '2024-03-14T00:01:00',
+        release: { date: '2024-03-14T00:01:00' },
         dueDate: '2024-03-21T23:59:00',
         afterLastDeadline: {
           allowSubmissions: false,
@@ -1032,7 +1032,7 @@ describe('afterLastDeadline validation', () => {
   it('should accept allowSubmissions true without credit', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
-        releaseDate: '2024-03-14T00:01:00',
+        release: { date: '2024-03-14T00:01:00' },
         dueDate: '2024-03-21T23:59:00',
         afterLastDeadline: {
           allowSubmissions: true,
@@ -1046,7 +1046,7 @@ describe('afterLastDeadline validation', () => {
   it('should accept credit when allowSubmissions is true', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
-        releaseDate: '2024-03-14T00:01:00',
+        release: { date: '2024-03-14T00:01:00' },
         dueDate: '2024-03-21T23:59:00',
         afterLastDeadline: {
           allowSubmissions: true,
@@ -1061,7 +1061,7 @@ describe('afterLastDeadline validation', () => {
   it('should reject numeric credit when allowSubmissions is false', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
-        releaseDate: '2024-03-14T00:01:00',
+        release: { date: '2024-03-14T00:01:00' },
         dueDate: '2024-03-21T23:59:00',
         afterLastDeadline: {
           allowSubmissions: false,
@@ -1209,7 +1209,7 @@ describe('Structural field dependency validation', () => {
     const rules = [
       AccessControlJsonSchema.parse({
         dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
+          release: { date: '2024-03-14T00:01:00' },
           lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
         },
       }),
@@ -1254,7 +1254,7 @@ describe('AccessControlJsonSchema nullable override fields', () => {
   it('accepts explicit nulls used to clear inherited override fields', () => {
     const result = AccessControlJsonSchema.parse({
       dateControl: {
-        releaseDate: '2024-03-14T00:01:00',
+        release: { date: '2024-03-14T00:01:00' },
         dueDate: null,
         earlyDeadlines: null,
         lateDeadlines: null,
@@ -1264,7 +1264,7 @@ describe('AccessControlJsonSchema nullable override fields', () => {
       },
     });
 
-    assert.equal(result.dateControl?.releaseDate, '2024-03-14T00:01:00');
+    assert.equal(result.dateControl?.release?.date, '2024-03-14T00:01:00');
     assert.deepEqual(result.dateControl?.afterLastDeadline, { allowSubmissions: true });
     assert.isNull(result.dateControl?.durationMinutes);
   });
@@ -1306,7 +1306,7 @@ describe('afterComplete hidden/visibility validation', () => {
   it('accepts questions visibleUntilDate without visibleFromDate', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
-        releaseDate: '2024-03-14T00:01:00',
+        release: { date: '2024-03-14T00:01:00' },
         dueDate: '2024-03-21T23:59:00',
       },
       afterComplete: {
