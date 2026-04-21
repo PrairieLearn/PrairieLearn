@@ -217,7 +217,7 @@ interface CreditResult {
  */
 type PrairieTestOutcome =
   | { action: 'deny'; result: AccessControlResolverResult }
-  | { action: 'grant'; examAccessEnd: Date; credit: number; active: boolean }
+  | { action: 'grant'; examAccessEnd: Date; credit: number; readOnly: boolean }
   | { action: 'continue' };
 
 function computeCredit(
@@ -487,7 +487,7 @@ function resolvePrairieTestAccess({
       action: 'grant',
       examAccessEnd: matchingReservation.accessEnd,
       credit: 100,
-      active: !matchedExam.readOnly,
+      readOnly: matchedExam.readOnly,
     };
   }
 
@@ -575,14 +575,14 @@ export function resolveAccessControl(
   // author's `afterComplete` configuration. The student gradebook displays
   // rows even when access is denied, and relies on `showClosedAssessmentScore`
   // to decide whether to show prior scores.
-  const showClosedAssessment = resolveVisibility(
+  let showClosedAssessment = resolveVisibility(
     effectiveRule.afterComplete?.questions?.hidden ?? true,
     effectiveRule.afterComplete?.questions?.visibleFromDate,
     effectiveRule.afterComplete?.questions?.visibleUntilDate,
     date,
   );
 
-  const showClosedAssessmentScore = resolveVisibility(
+  let showClosedAssessmentScore = resolveVisibility(
     effectiveRule.afterComplete?.score?.hidden,
     effectiveRule.afterComplete?.score?.visibleFromDate,
     undefined,
@@ -611,10 +611,19 @@ export function resolveAccessControl(
     creditResult = {
       ...creditResult,
       credit: ptOutcome.credit,
-      active: ptOutcome.active,
+      active: !ptOutcome.readOnly,
       beforeRelease: false,
     };
     examAccessEnd = ptOutcome.examAccessEnd;
+    // A read-only reservation implies visibility of the assessment content and
+    // score — otherwise the student would be granted access that the
+    // middleware then blocks on `showClosedAssessment`. Active (non-read-only)
+    // reservations still honor `afterComplete` so course authors can hide
+    // questions/scores after completion.
+    if (ptOutcome.readOnly) {
+      showClosedAssessment = true;
+      showClosedAssessmentScore = true;
+    }
   }
 
   const timeLimitMin = creditResult.timeLimitMin;

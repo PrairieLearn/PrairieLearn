@@ -995,7 +995,6 @@ describe('resolveAccessControl', () => {
             releaseDate: '2025-02-01T00:00:00Z',
             dueDate: '2025-03-01T00:00:00Z',
           },
-          afterComplete: { questions: { hidden: false } },
         }),
         // The cheat sheet use case specifically calls for a read-only exam so that
         // students cannot submit information to the assessment while they're in the
@@ -1024,11 +1023,10 @@ describe('resolveAccessControl', () => {
       });
       expect(afterDueDateResult.authorized).toBe(true);
       expect(afterDueDateResult.active).toBe(false);
-      expect(afterDueDateResult.showClosedAssessment).toBe(true);
 
-      // A student in the testing center with a valid reservation should be able to access
-      // the assessment at any point (we use a date after the due date to match the cheat
-      // sheet scenario).
+      // A student in the testing center with a valid reservation should be able to
+      // view the assessment. The readOnly reservation disallows submission and
+      // implies `showClosedAssessment: true` so the middleware allows viewing.
       const validReservationResult = resolveAccessControl({
         ...baseInput,
         rules: [rule],
@@ -1039,7 +1037,8 @@ describe('resolveAccessControl', () => {
         ],
       });
       expect(validReservationResult.authorized).toBe(true);
-      expect(validReservationResult.active).toBe(false); // read-only assessment
+      expect(validReservationResult.active).toBe(false);
+      expect(validReservationResult.showClosedAssessment).toBe(true);
     });
   });
 
@@ -1281,7 +1280,7 @@ describe('resolveAccessControl', () => {
     ];
 
     it.each(visibilityConfigs)(
-      'active PT reservation: $name',
+      'active PT reservation honors afterComplete visibility: $name',
       ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
         const result = resolveAccessControl({
           ...baseInput,
@@ -1297,8 +1296,12 @@ describe('resolveAccessControl', () => {
     );
 
     it.each(visibilityConfigs)(
-      'readOnly PT reservation: $name',
-      ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+      'readOnly PT reservation forces visibility regardless of afterComplete: $name',
+      ({ afterComplete }) => {
+        // A readOnly reservation is intended to grant view-only access to
+        // questions and scores. Since the grant produces `active: false`, the
+        // middleware would otherwise block on `showClosedAssessment` — so
+        // readOnly overrides `afterComplete` to keep content visible.
         const result = resolveAccessControl({
           ...baseInput,
           authzMode: 'Exam',
@@ -1307,8 +1310,8 @@ describe('resolveAccessControl', () => {
         });
         expect(result.authorized).toBe(true);
         expect(result.active).toBe(false);
-        expect(result.showClosedAssessment).toBe(showClosedAssessment);
-        expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
+        expect(result.showClosedAssessment).toBe(true);
+        expect(result.showClosedAssessmentScore).toBe(true);
       },
     );
 
