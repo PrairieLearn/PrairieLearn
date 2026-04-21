@@ -290,17 +290,14 @@ export async function adjustCreditPool({
 }: {
   course_instance_id: string;
   delta_milli_dollars: number;
-  credit_type: 'transferable' | 'non_transferable';
   user_id: string;
   reason: string;
   checkout_session_id?: string | null;
-  allow_negative_balance?: boolean;
-}): Promise<void> {
+} & (
+  | { credit_type: 'transferable'; allow_negative_balance?: boolean }
+  | { credit_type: 'non_transferable'; allow_negative_balance?: never }
+)): Promise<void> {
   if (delta_milli_dollars === 0) return;
-
-  if (allow_negative_balance && credit_type !== 'transferable') {
-    throw new Error('allow_negative_balance is only supported for transferable credits');
-  }
 
   await applyCreditPoolMutation({
     course_instance_id,
