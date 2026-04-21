@@ -113,9 +113,9 @@ describe('ai-grading-credit-checkout-sessions', () => {
     assert.equal(changes[0].reason, 'Credit purchase');
   });
 
-  it('refundCreditPurchase caps deduction by currently available transferable balance', async () => {
+  it('refundCreditPurchase deducts the full purchase amount even when it drives the transferable balance negative', async () => {
     const userId = await createTestUser();
-    const stripeObjectId = 'cs_refund_capped';
+    const stripeObjectId = 'cs_refund_negative';
     const purchaseAmountMilliDollars = 3000;
 
     await insertCreditCheckoutSession({
@@ -165,7 +165,10 @@ describe('ai-grading-credit-checkout-sessions', () => {
     assert.equal(refundsCreate.mock.calls.length, 1);
 
     const poolAfterRefund = await selectCreditPool(COURSE_INSTANCE_ID);
-    assert.equal(poolAfterRefund.credit_transferable_milli_dollars, 0);
+    assert.equal(
+      poolAfterRefund.credit_transferable_milli_dollars,
+      remainingTransferableBeforeRefund - purchaseAmountMilliDollars,
+    );
 
     const refundedSession = await getCreditCheckoutSessionByStripeId(stripeObjectId);
     assert.isNotNull(refundedSession);
@@ -175,7 +178,7 @@ describe('ai-grading-credit-checkout-sessions', () => {
     assert.equal(changes.length, 2);
     assert.equal(changes[0].delta_milli_dollars, purchaseAmountMilliDollars);
     assert.equal(changes[0].reason, 'Credit purchase');
-    assert.equal(changes[1].delta_milli_dollars, -remainingTransferableBeforeRefund);
+    assert.equal(changes[1].delta_milli_dollars, -purchaseAmountMilliDollars);
     assert.equal(changes[1].reason, 'Credit purchase refund');
   });
 });

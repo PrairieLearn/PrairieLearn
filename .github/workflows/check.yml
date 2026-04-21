@@ -81,8 +81,24 @@ jobs:
           path: ${{ runner.temp }}/bundle-sizes-section.md
           retention-days: 1
 
+      - name: Restore lint caches
+        uses: actions/cache@v5
+        with:
+          path: |
+            .eslintcache
+            node_modules/.cache/prettier
+          key: >-
+            lint-${{ runner.os }}-${{ hashFiles(
+              'yarn.lock',
+              'eslint.config.mjs',
+              'packages/eslint-config/**',
+              'packages/eslint-plugin-prairielearn/**',
+              '.prettierrc.json',
+              '.prettierignore'
+            ) }}
+
       - name: Run the JavaScript linter
-        run: make lint-js
+        run: make lint-js-cached
       - name: Run the Mustache linter
         run: make lint-mustache
       - name: Run the links linter
