@@ -241,7 +241,7 @@ describe('resolveAccessControl', () => {
       const rule = makeMainRule({
         dateControl: {
           releaseDate: '2025-03-01T00:00:00Z',
-          dueDate: '2025-03-10T00:00:00Z',
+          due: { date: '2025-03-10T00:00:00Z' },
           lateDeadlines: [{ date: '2025-03-15T00:00:00Z', credit: 0 }],
         },
       });
