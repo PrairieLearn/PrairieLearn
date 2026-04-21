@@ -87,12 +87,12 @@ export interface AccessControlResolverResult {
   examAccessEnd: Date | null;
   /**
    * Resolved visibility flag: true when the assessment should be listed but
-   * not accessible. This happens when `listBeforeRelease` is set on the rule
-   * AND either the current date is before the release date, there is no
+   * not accessible. This happens when `beforeRelease.listed` is set on the
+   * rule AND either the current date is before the release date, there is no
    * release date configured, or the assessment is PT-gated and the student
    * lacks access (but only while the assessment is still open — closed
    * assessments are not shown as "before release"). Distinct from the raw
-   * `listBeforeRelease` config input.
+   * `beforeRelease.listed` config input.
    */
   showBeforeRelease: boolean;
 }
@@ -180,8 +180,8 @@ export function mergeRules(
 
   const merged: RuntimeAccessControl = {};
 
-  // listBeforeRelease is only configurable on the main rule.
-  if (main.listBeforeRelease !== undefined) merged.listBeforeRelease = main.listBeforeRelease;
+  // beforeRelease is only configurable on the main rule.
+  if (main.beforeRelease !== undefined) merged.beforeRelease = main.beforeRelease;
 
   merged.dateControl = mergeDateControl(main.dateControl, override.dateControl);
   merged.afterComplete = mergeAfterComplete(main.afterComplete, override.afterComplete);
@@ -313,7 +313,7 @@ function computeCredit(
       const nextDeadline = entry.date;
       return {
         credit,
-        active: credit > 0,
+        active: true,
         beforeRelease: false,
         nextDeadlineDate: nextDeadline,
         password: dateControl.password ?? null,
@@ -440,13 +440,13 @@ function resolvePrairieTestAccess({
   prairieTestExams,
   prairieTestReservations,
   authzMode,
-  listBeforeRelease,
+  beforeReleaseListed,
   assessmentClosed,
 }: {
   prairieTestExams: { uuid: string; readOnly: boolean }[];
   prairieTestReservations: PrairieTestReservation[];
   authzMode: EnumMode | null;
-  listBeforeRelease: boolean;
+  beforeReleaseListed: boolean;
   assessmentClosed: boolean;
 }): PrairieTestOutcome {
   const hasPrairieTestExams = prairieTestExams.length > 0;
@@ -463,10 +463,10 @@ function resolvePrairieTestAccess({
   if (authzMode !== 'Exam') {
     if (assessmentClosed) return { action: 'continue' };
 
-    // If `listBeforeRelease` is set, list it, but it should not be accessible.
+    // If `beforeRelease.listed` is set, list it, but it should not be accessible.
     // We ONLY do this outside of Exam mode; when in Exam mode, we only show assessments
     // that the user can actually access.
-    if (listBeforeRelease) {
+    if (beforeReleaseListed) {
       return { action: 'deny', result: { ...UNAUTHORIZED_RESULT, showBeforeRelease: true } };
     }
 
@@ -596,7 +596,7 @@ export function resolveAccessControl(
     prairieTestExams: mainRuleInput.prairietestExams,
     prairieTestReservations,
     authzMode,
-    listBeforeRelease: effectiveRule.listBeforeRelease ?? false,
+    beforeReleaseListed: effectiveRule.beforeRelease?.listed ?? false,
     assessmentClosed:
       !!effectiveRule.dateControl?.releaseDate &&
       !creditResult.beforeRelease &&
@@ -614,11 +614,11 @@ export function resolveAccessControl(
 
   const timeLimitMin = creditResult.timeLimitMin;
 
-  // Resolve the raw `listBeforeRelease` config flag into a concrete
+  // Resolve the raw `beforeRelease.listed` config flag into a concrete
   // `showBeforeRelease` boolean: true when the flag is set AND either we're
   // before the release date or there is no release date configured.
   const showBeforeRelease =
-    (effectiveRule.listBeforeRelease ?? false) &&
+    (effectiveRule.beforeRelease?.listed ?? false) &&
     (creditResult.beforeRelease || !effectiveRule.dateControl?.releaseDate);
 
   // If the assessment is before its release date and showBeforeRelease is false,

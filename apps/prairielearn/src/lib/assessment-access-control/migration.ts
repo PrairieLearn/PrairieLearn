@@ -192,7 +192,7 @@ function applyVisibilityMigration(
 ): void {
   const afterComplete = buildAfterComplete(rules);
   if (afterComplete) result.afterComplete = afterComplete;
-  if (shouldListBeforeRelease(rules)) result.listBeforeRelease = true;
+  if (shouldListBeforeRelease(rules)) result.beforeRelease = { listed: true };
 }
 
 /**

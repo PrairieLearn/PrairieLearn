@@ -33,7 +33,7 @@ BEGIN
     INSERT INTO assessment_access_control_rules (
         assessment_id,
         number,
-        list_before_release,
+        before_release_listed,
         target_type,
         date_control_release_date,
         date_control_due_date_overridden,
@@ -56,7 +56,7 @@ BEGIN
     SELECT
         (rule ->> 'assessment_id')::bigint,
         (rule ->> 'number')::integer,
-        (rule ->> 'list_before_release')::boolean,
+        (rule ->> 'before_release_listed')::boolean,
         (rule ->> 'target_type')::enum_assessment_access_control_target_type,
         input_date(rule ->> 'date_control_release_date', ci_timezone),
         (rule ->> 'date_control_due_date_overridden')::boolean,
@@ -77,7 +77,7 @@ BEGIN
         input_date(rule ->> 'after_complete_score_visible_from_date', ci_timezone)
     FROM UNNEST(rules_data) AS rule
     ON CONFLICT (assessment_id, number, target_type) DO UPDATE SET
-        list_before_release = EXCLUDED.list_before_release,
+        before_release_listed = EXCLUDED.before_release_listed,
         date_control_release_date = EXCLUDED.date_control_release_date,
         date_control_due_date_overridden = EXCLUDED.date_control_due_date_overridden,
         date_control_due_date = EXCLUDED.date_control_due_date,

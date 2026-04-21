@@ -6,7 +6,7 @@
   "number": "19",
   "accessControl": [
     {
-      "listBeforeRelease": true,
+      "beforeRelease": { "listed": true },
       "dateControl": {
         "releaseDate": "2026-04-10T00:00:01",
         "afterLastDeadline": { "allowSubmissions": true }
