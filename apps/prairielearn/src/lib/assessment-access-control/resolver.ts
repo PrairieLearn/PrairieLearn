@@ -441,12 +441,16 @@ function formatCreditDateString(
  * Core invariants (matching legacy `check_assessment_access_rule` sproc):
  * - Student in Exam mode + assessment has PT exams → must have valid reservation
  * - Student in Exam mode + assessment has NO PT exams → deny access
- * - Student NOT in Exam mode + assessment has PT exams → deny access
+ * - Student NOT in Exam mode + assessment has PT exams → deny access,
+ *   except when the assessment is past its due date (`assessmentClosed`) or
+ *   the top-level `afterComplete.questions` visibility has flipped to visible
+ *   (`showClosedAssessment`) — in those cases the main flow produces a
+ *   read-only review grant so students can open their existing instance.
  * - Valid reservation = user has pt_reservation whose exam UUID matches a configured exam
  *
- * When the assessment is past its due date (`assessmentClosed`), PT gating is
- * skipped so the normal closed-assessment behavior applies instead of showing
- * "Not yet open" indefinitely.
+ * Exam mode is strict: a student physically at the CBTF only gets access
+ * through a PT reservation. Release-date-driven review is intentionally
+ * restricted to non-Exam mode (at-home review).
  */
 function resolvePrairieTestAccess({
   prairieTestExams,
@@ -454,12 +458,14 @@ function resolvePrairieTestAccess({
   authzMode,
   beforeReleaseListed,
   assessmentClosed,
+  showClosedAssessment,
 }: {
   prairieTestExams: AccessControlRuleInput['prairietestExams'];
   prairieTestReservations: PrairieTestReservation[];
   authzMode: EnumMode | null;
   beforeReleaseListed: boolean;
   assessmentClosed: boolean;
+  showClosedAssessment: boolean;
 }): PrairieTestOutcome {
   const hasPrairieTestExams = prairieTestExams.length > 0;
 
@@ -474,6 +480,14 @@ function resolvePrairieTestAccess({
   // Not in exam mode — student cannot access a PT-gated assessment.
   if (authzMode !== 'Exam') {
     if (assessmentClosed) return { action: 'continue' };
+
+    // PT-gated assessments often have no top-level `dateControl` — PT is the
+    // whole access model. When the top-level `afterComplete.questions`
+    // visibility has flipped to visible (via `visibleFromDate`), authorize
+    // read-only review at home so students can open their existing instance.
+    // `continue` falls through to the main flow, which yields
+    // `authorized: true, active: false` when no `dateControl` is configured.
+    if (showClosedAssessment) return { action: 'continue' };
 
     // If `beforeRelease.listed` is set, list it, but it should not be accessible.
     // We ONLY do this outside of Exam mode; when in Exam mode, we only show assessments
@@ -630,6 +644,7 @@ export function resolveAccessControl(
       !!effectiveRule.dateControl?.releaseDate &&
       !creditResult.beforeRelease &&
       !creditResult.active,
+    showClosedAssessment,
   });
   if (ptOutcome.action === 'deny') {
     return { ...ptOutcome.result, showClosedAssessment, showClosedAssessmentScore };

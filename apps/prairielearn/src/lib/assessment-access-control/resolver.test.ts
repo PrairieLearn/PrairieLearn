@@ -1280,12 +1280,18 @@ describe('resolveAccessControl', () => {
     });
 
     // Use case: real-time grading disabled during the exam. Inside the CBTF
-    // after "finish", students see nothing. Later, at home, the gradebook
-    // reveals questions and scores (top-level afterComplete shows both).
+    // after "finish", students see nothing. After all reservations have
+    // ended, work stays hidden at home until a scheduled release date; on
+    // that date the gradebook reveals questions and scores so students can
+    // review at home.
     describe('deferred at-home release (grading disabled during exam)', () => {
-      const ruleWithBothHiddenInCbtf = {
+      const releaseDate = '2025-04-01T00:00:00Z';
+      const ruleWithDeferredRelease = {
         ...makeMainRule({
-          afterComplete: { questions: { hidden: false }, score: { hidden: false } },
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: releaseDate },
+            score: { hidden: true, visibleFromDate: releaseDate },
+          },
         }),
         prairietestExams: [ptExam('pt-exam-1', { questionsHidden: true, scoreHidden: true })],
       };
@@ -1294,7 +1300,7 @@ describe('resolveAccessControl', () => {
         const result = resolveAccessControl({
           ...baseInput,
           authzMode: 'Exam',
-          rules: [ruleWithBothHiddenInCbtf],
+          rules: [ruleWithDeferredRelease],
           prairieTestReservations: [validReservation],
         });
         expect(result.authorized).toBe(true);
@@ -1303,16 +1309,43 @@ describe('resolveAccessControl', () => {
         expect(result.showClosedAssessmentScore).toBe(false);
       });
 
-      it('shows both questions and score at home after the reservation ends', () => {
+      it('still hides both at home after the reservation ends but before the release date', () => {
         const result = resolveAccessControl({
           ...baseInput,
           authzMode: 'Public',
-          rules: [ruleWithBothHiddenInCbtf],
+          date: new Date('2025-03-20T00:00:00Z'),
+          rules: [ruleWithDeferredRelease],
           prairieTestReservations: [],
         });
         expect(result.authorized).toBe(false);
+        expect(result.showClosedAssessment).toBe(false);
+        expect(result.showClosedAssessmentScore).toBe(false);
+      });
+
+      it('reveals both at home after the release date', () => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Public',
+          date: new Date('2025-04-02T00:00:00Z'),
+          rules: [ruleWithDeferredRelease],
+          prairieTestReservations: [],
+        });
+        expect(result.authorized).toBe(true);
+        expect(result.active).toBe(false);
+        expect(result.credit).toBe(0);
         expect(result.showClosedAssessment).toBe(true);
         expect(result.showClosedAssessmentScore).toBe(true);
+      });
+
+      it('still denies in Exam mode after the release date without a matching reservation', () => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          date: new Date('2025-04-02T00:00:00Z'),
+          rules: [ruleWithDeferredRelease],
+          prairieTestReservations: [],
+        });
+        expect(result.authorized).toBe(false);
       });
     });
 
