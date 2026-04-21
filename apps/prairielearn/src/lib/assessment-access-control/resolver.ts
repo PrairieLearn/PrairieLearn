@@ -465,12 +465,14 @@ function resolvePrairieTestAccess({
   if (authzMode !== 'Exam') {
     if (assessmentClosed) return { action: 'continue' };
 
-    // Authors opt a PT-gated rule into Public-mode submissions during its
-    // active window by setting `afterLastDeadline.allowSubmissions: false`
-    // explicitly. This supports workflows (e.g. the "cheat sheet hack",
-    // discussion #11308) where students submit material in advance and then
-    // view it read-only during a PT exam. Without this opt-in, PT rules
-    // remain strictly Exam-only during their active window.
+    // A PT-gated rule with a bounded active window (has a dueDate and
+    // submissions cease after the last deadline) allows Public-mode
+    // submissions during that window. The rule's `allowSubmissions` behavior
+    // enforces the close; PT gating governs post-close access via
+    // reservations. This supports workflows like the "cheat sheet hack"
+    // (discussion #11308) without additional author opt-in. Rules with
+    // `afterLastDeadline.allowSubmissions: true` (submissions never stop)
+    // or no dueDate remain Exam-only.
     if (inSubmissionWindow) return { action: 'continue' };
 
     // If `beforeRelease.listed` is set, list it, but it should not be accessible.
@@ -613,7 +615,8 @@ export function resolveAccessControl(
       !creditResult.active,
     inSubmissionWindow:
       creditResult.active &&
-      effectiveRule.dateControl?.afterLastDeadline?.allowSubmissions === false,
+      !!effectiveRule.dateControl?.dueDate &&
+      effectiveRule.dateControl?.afterLastDeadline?.allowSubmissions !== true,
   });
   if (ptOutcome.action === 'deny') {
     return { ...ptOutcome.result, showClosedAssessment, showClosedAssessmentScore };

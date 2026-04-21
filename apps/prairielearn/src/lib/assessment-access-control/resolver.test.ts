@@ -986,14 +986,15 @@ describe('resolveAccessControl', () => {
       expect(result.authorized).toBe(false);
     });
 
-    it('grants Public access during active window when afterLastDeadline.allowSubmissions is false', () => {
+    it('grants Public access during active window when rule has a bounded submission close', () => {
+      // Default `afterLastDeadline` (undefined) means submissions cease after
+      // the last deadline, so pre-deadline Public submissions are intended.
       const rule: AccessControlRuleInput = {
         ...prairieTestMainRule,
         rule: toRuntime({
           dateControl: {
             releaseDate: '2025-01-01T00:00:00Z',
             dueDate: '2025-06-01T00:00:00Z',
-            afterLastDeadline: { allowSubmissions: false },
           },
         }),
       };
@@ -1008,28 +1009,9 @@ describe('resolveAccessControl', () => {
       expect(result.credit).toBe(100);
     });
 
-    it('denies Public access during active window when allowSubmissions is not explicitly false', () => {
-      // Without the explicit opt-in, a PT-gated rule remains Exam-only during
-      // its active window even if it has a dueDate.
-      const rule: AccessControlRuleInput = {
-        ...prairieTestMainRule,
-        rule: toRuntime({
-          dateControl: {
-            releaseDate: '2025-01-01T00:00:00Z',
-            dueDate: '2025-06-01T00:00:00Z',
-          },
-        }),
-      };
-      const result = resolveAccessControl({
-        ...baseInput,
-        authzMode: 'Public',
-        rules: [rule],
-        prairieTestReservations: [],
-      });
-      expect(result.authorized).toBe(false);
-    });
-
     it('denies Public access during active window when allowSubmissions is true', () => {
+      // Submissions never stop, so there is no bounded submission window —
+      // the PT rule keeps Public access locked out.
       const rule: AccessControlRuleInput = {
         ...prairieTestMainRule,
         rule: toRuntime({
@@ -1060,10 +1042,6 @@ describe('resolveAccessControl', () => {
           dateControl: {
             releaseDate: '2025-02-01T00:00:00Z',
             dueDate: '2025-03-01T00:00:00Z',
-            // Opts this PT-gated rule into Public submissions during the
-            // active window. Without this explicit signal, PT rules are
-            // strictly Exam-only during their active window.
-            afterLastDeadline: { allowSubmissions: false },
           },
         }),
         // The cheat sheet use case specifically calls for a read-only exam so that
@@ -1873,28 +1851,6 @@ describe('resolveAccessControl', () => {
         expect(result.authorized).toBe(true);
         expect(result.active).toBe(false);
       }
-    });
-
-    it('still shows "before release" for PT assessment that is open but student lacks access', () => {
-      // When a PT-gated assessment has date controls and is within its open
-      // period, students without PT access should still see "Not yet open".
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [
-          {
-            ...makeMainRule({
-              beforeRelease: { listed: true },
-              dateControl: {
-                releaseDate: '2025-01-01T00:00:00Z',
-                dueDate: '2025-06-01T00:00:00Z',
-              },
-            }),
-            prairietestExams: [ptExam],
-          },
-        ],
-      });
-      expect(result.showBeforeRelease).toBe(true);
-      expect(result.active).toBe(false);
     });
   });
 });
