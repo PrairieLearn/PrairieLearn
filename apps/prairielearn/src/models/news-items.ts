@@ -34,18 +34,27 @@ export interface NewsItemInput {
   categories: string[];
 }
 
-export async function upsertNewsItems(items: NewsItemInput[]): Promise<NewsItem[]> {
-  if (items.length === 0) return [];
-  return await queryRows(
-    sql.upsert_news_items,
-    { items: items.map((item) => JSON.stringify(item)) },
+export async function upsertNewsItem(item: NewsItemInput): Promise<NewsItem> {
+  return await queryRow(
+    sql.upsert_news_item,
+    {
+      title: item.title,
+      link: item.link,
+      pub_date: item.pub_date,
+      guid: item.guid,
+      categories: item.categories,
+    },
     NewsItemSchema,
   );
 }
 
-export async function upsertNewsItem(item: NewsItemInput): Promise<NewsItem> {
-  const [result] = await upsertNewsItems([item]);
-  return result;
+export async function upsertNewsItems(items: NewsItemInput[]): Promise<NewsItem[]> {
+  const results: NewsItem[] = [];
+  for (const item of items) {
+    const result = await upsertNewsItem(item);
+    results.push(result);
+  }
+  return results;
 }
 
 export async function selectAllNewsItems(): Promise<NewsItem[]> {

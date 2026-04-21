@@ -4,10 +4,34 @@ import { formatDate } from '@prairielearn/formatter';
 
 import type { NewsItem } from '../../../lib/db-types.js';
 
-const CATEGORY_CLASSES: Record<string, string> = {
-  Release: 'bg-success-subtle text-success-emphasis border-success-subtle',
-  Technical: 'bg-info-subtle text-info-emphasis border-info-subtle',
-  Development: 'bg-warning-subtle text-warning-emphasis border-warning-subtle',
+interface CategoryStyle {
+  bg: string;
+  text: string;
+  border: string;
+}
+
+const CATEGORY_STYLES: Record<string, CategoryStyle> = {
+  Release: {
+    bg: 'bg-success-subtle',
+    text: 'text-success-emphasis',
+    border: 'border-success-subtle',
+  },
+  Technical: {
+    bg: 'bg-info-subtle',
+    text: 'text-info-emphasis',
+    border: 'border-info-subtle',
+  },
+  Development: {
+    bg: 'bg-warning-subtle',
+    text: 'text-warning-emphasis',
+    border: 'border-warning-subtle',
+  },
+};
+
+const FALLBACK_CATEGORY_STYLE: CategoryStyle = {
+  bg: 'bg-secondary-subtle',
+  text: 'text-secondary-emphasis',
+  border: 'border-secondary-subtle',
 };
 
 function NewsAlertItem({ item, now }: { item: NewsItem; now: Date }) {
@@ -21,14 +45,17 @@ function NewsAlertItem({ item, now }: { item: NewsItem; now: Date }) {
           </div>
           <div className="news-alert-meta">
             <div className="d-flex gap-1 flex-wrap">
-              {item.categories.map((category) => (
-                <span
-                  key={category}
-                  className={`badge rounded-pill fw-normal border ${CATEGORY_CLASSES[category] ?? 'text-bg-light'}`}
-                >
-                  {category}
-                </span>
-              ))}
+              {item.categories.map((category) => {
+                const style = CATEGORY_STYLES[category] ?? FALLBACK_CATEGORY_STYLE;
+                return (
+                  <span
+                    key={category}
+                    className={`badge rounded-pill fw-normal border ${style.bg} ${style.text} ${style.border}`}
+                  >
+                    {category}
+                  </span>
+                );
+              })}
             </div>
             <span className="text-muted small lh-1" title={formatDate(item.pub_date, 'UTC')}>
               {formatDistanceStrict(item.pub_date, now, { addSuffix: true })}

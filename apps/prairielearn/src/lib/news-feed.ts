@@ -43,6 +43,14 @@ export async function fetchAndCacheNewsItems(): Promise<void> {
       hasMatchingCategory(item.categories ?? [], allowedCategories),
     );
 
+    if (items.length === 0) {
+      logger.verbose('news-feed: RSS feed has no matching items', {
+        totalItems: feed.items.length,
+        categories: allowedCategories,
+      });
+      return;
+    }
+
     const newsItems: NewsItemInput[] = [];
     for (const item of items) {
       const { title, link, pubDate: pubDateStr, guid } = item;

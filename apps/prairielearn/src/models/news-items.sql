@@ -37,20 +37,11 @@ SET
 RETURNING
   *;
 
--- BLOCK upsert_news_items
+-- BLOCK upsert_news_item
 INSERT INTO
   news_items (title, link, pub_date, guid, categories)
-SELECT
-  (item ->> 'title')::text,
-  (item ->> 'link')::text,
-  (item ->> 'pub_date')::timestamptz,
-  (item ->> 'guid')::text,
-  ARRAY(
-    SELECT
-      jsonb_array_elements_text(item -> 'categories')
-  )::text[]
-FROM
-  UNNEST($items::jsonb[]) AS item
+VALUES
+  ($title, $link, $pub_date, $guid, $categories)
 ON CONFLICT (guid) DO UPDATE
 SET
   title = EXCLUDED.title,
