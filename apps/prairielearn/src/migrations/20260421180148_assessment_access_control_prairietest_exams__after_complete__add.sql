@@ -7,7 +7,11 @@ ADD COLUMN after_complete_score_hidden boolean;
 -- so configuring hiding makes no sense. Additionally, hiding the score while
 -- showing the questions is nonsensical (the student would see their
 -- submission but not the corresponding grade).
+--
+-- Modern access control is not yet in general use, so this table is
+-- effectively empty; skipping NOT VALID is safe here.
 ALTER TABLE assessment_access_control_prairietest_exams
+-- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT aac_prairietest_exams_after_complete_check CHECK (
   (
     read_only = TRUE
