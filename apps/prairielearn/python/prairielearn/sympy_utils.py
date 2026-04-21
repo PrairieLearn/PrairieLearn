@@ -723,7 +723,21 @@ def _normalize_expr_and_map_offsets(expr: str) -> tuple[str, list[int]]:
 def _regex_sub_expr_and_map_offsets(
     expr: str, offsets: list[int], pattern: re.Pattern[str], replacement: str
 ) -> tuple[str, list[int]]:
-    """Apply a regex substitution while keeping the offset map aligned."""
+    r"""Apply a regex substitution while keeping the offset map aligned.
+
+    Returns:
+        a tuple of the transformed expr and the new offset list
+
+    Example:
+        >>> import re
+        >>> _regex_sub_expr_and_map_offsets(
+        ...     "x^2",
+        ...     [0, 1, 2],
+        ...     re.compile(r"\\^"),
+        ...     r"**",
+        ... )
+        ('x**2', [0, 1, 1, 2])
+    """
     parts: list[str] = []
     new_offsets: list[int] = []
     last_end = 0
