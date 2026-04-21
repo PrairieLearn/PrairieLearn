@@ -180,8 +180,8 @@ export function generateRuleSummary(
     if (Temporal.PlainDateTime.compare(releasePlainDateTime, nowInTimezone) > 0) {
       items.push({
         key: 'before-release',
-        icon: rule.listBeforeRelease ? 'bi-eye' : 'bi-eye-slash',
-        text: rule.listBeforeRelease ? 'Listed before release' : 'Hidden before release',
+        icon: rule.beforeReleaseListed ? 'bi-eye' : 'bi-eye-slash',
+        text: rule.beforeReleaseListed ? 'Listed before release' : 'Hidden before release',
       });
     }
   }

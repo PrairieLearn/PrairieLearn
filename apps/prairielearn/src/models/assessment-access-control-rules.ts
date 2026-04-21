@@ -35,7 +35,7 @@ type AccessControlJsonWithRequiredId = Required<Pick<AccessControlJsonWithId, 'i
 
 export interface EnrollmentAccessControlRuleData {
   id?: string;
-  listBeforeRelease: boolean | null;
+  beforeReleaseListed: boolean | null;
   releaseDate: string | null;
   dueDateOverridden: boolean;
   dueDate: string | null;
@@ -169,13 +169,13 @@ function dbBaseRowToAccessControlJson(
   }
 
   const isMainRule = rule.number === 0 && rule.target_type === 'none';
-  const listBeforeRelease = isMainRule
-    ? (rule.list_before_release ?? false)
-    : rule.list_before_release;
+  const beforeReleaseListed = isMainRule
+    ? (rule.before_release_listed ?? false)
+    : rule.before_release_listed;
 
   return {
     id: rule.id,
-    ...(listBeforeRelease != null ? { listBeforeRelease } : {}),
+    ...(beforeReleaseListed != null ? { beforeRelease: { listed: beforeReleaseListed } } : {}),
     dateControl: Object.keys(dateControl).length > 0 ? dateControl : undefined,
     afterComplete: Object.keys(afterComplete).length > 0 ? afterComplete : undefined,
   };
@@ -241,7 +241,7 @@ export async function syncEnrollmentAccessControl(
 ): Promise<string> {
   const ruleJson = JSON.stringify({
     id: ruleData.id ?? null,
-    list_before_release: ruleData.listBeforeRelease,
+    before_release_listed: ruleData.beforeReleaseListed,
     date_control_release_date: ruleData.releaseDate,
     date_control_due_date_overridden: ruleData.dueDateOverridden,
     date_control_due_date: ruleData.dueDate,
