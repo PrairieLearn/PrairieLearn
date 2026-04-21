@@ -44,20 +44,20 @@ function NewsAlertItem({ item, now }: { item: NewsItem; now: Date }) {
         className="d-flex align-items-center gap-3 px-3 py-2 text-decoration-none text-body"
       >
         <div
-          className="d-flex flex-column flex-md-row align-items-md-center gap-2 gap-md-3 flex-grow-1"
+          className="d-flex flex-column flex-md-row align-items-md-center gap-1 gap-md-3 flex-grow-1"
           style={{ minWidth: 0 }}
         >
-          <div className="d-flex align-items-center gap-2 flex-md-grow-1" style={{ minWidth: 0 }}>
-            <span
+          <div className="d-flex align-items-center gap-2" style={{ minWidth: 0 }}>
+            {/* <span
               className="bg-primary rounded-circle flex-shrink-0"
               style={{ width: 8, height: 8 }}
               aria-label="New"
-            />
+            /> */}
             <span className="fw-semibold" style={{ minWidth: 0 }}>
               {item.title}
             </span>
           </div>
-          <div className="d-flex align-items-center gap-2 flex-wrap flex-md-nowrap flex-md-shrink-0">
+          <div className="d-flex align-items-center gap-2 flex-wrap flex-md-nowrap flex-md-grow-1">
             <div className="d-flex gap-1 flex-wrap">
               {item.categories.map((category) => {
                 const style = CATEGORY_STYLES[category] ?? FALLBACK_CATEGORY_STYLE;
@@ -71,12 +71,18 @@ function NewsAlertItem({ item, now }: { item: NewsItem; now: Date }) {
                 );
               })}
             </div>
-            <span className="text-muted small lh-1" title={formatDate(item.pub_date, 'UTC')}>
+            <span
+              className="text-muted small lh-1 ms-md-auto"
+              title={formatDate(item.pub_date, 'UTC')}
+            >
               {formatDistanceStrict(item.pub_date, now, { addSuffix: true })}
             </span>
           </div>
         </div>
-        <i className="bi bi-arrow-up-right text-muted flex-shrink-0" aria-hidden="true" />
+        <i
+          className="bi bi-arrow-up-right text-muted flex-shrink-0 d-none d-sm-inline"
+          aria-hidden="true"
+        />
       </a>
     </div>
   );
@@ -96,22 +102,36 @@ export function NewsAlert({
   if (newsItems.length === 0) return null;
 
   return (
-    <div className="card mb-4" data-testid="news-alert">
+    <div
+      className="card mb-4"
+      style={{ borderLeft: '4px solid var(--bs-primary)' }}
+      data-testid="news-alert"
+    >
       <style>{`
         .news-alert-item:hover {
           background-color: var(--bs-tertiary-bg);
         }
       `}</style>
       <div className="card-body">
-        <div className="d-flex align-items-center mb-3">
+        <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-1 gap-sm-0 mb-3">
           <h2
             className="fw-semibold d-flex align-items-center lh-1 mb-0"
             style={{ fontSize: '1.125rem' }}
           >
-            <i className="bi bi-newspaper me-2" aria-hidden="true" />
+            <i className="bi bi-newspaper text-primary me-2" aria-hidden="true" />
             News
           </h2>
-          <form method="POST" className="ms-auto m-0">
+          {blogUrl && (
+            <a
+              href={blogUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="small text-decoration-none ms-sm-3"
+            >
+              View all posts <i className="bi bi-arrow-up-right" aria-hidden="true" />
+            </a>
+          )}
+          <form method="POST" className="m-0 ms-sm-auto">
             <input type="hidden" name="__csrf_token" value={csrfToken} />
             <input type="hidden" name="__action" value="dismiss_news_alert" />
             <button
@@ -127,16 +147,6 @@ export function NewsAlert({
             <NewsAlertItem key={item.guid} item={item} now={now} />
           ))}
         </div>
-        {blogUrl && (
-          <a
-            href={blogUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-decoration-none small mt-3 d-inline-block"
-          >
-            View all posts <i className="bi bi-arrow-right" aria-hidden="true" />
-          </a>
-        )}
       </div>
     </div>
   );
