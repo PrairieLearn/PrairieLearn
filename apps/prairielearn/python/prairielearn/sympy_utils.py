@@ -12,6 +12,7 @@ import re
 from collections import deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from enum import Enum
 from functools import wraps
 from tokenize import NAME, OP, TokenError
 from types import CodeType
@@ -40,12 +41,36 @@ SympyMapT = dict[str, sympy.Basic | complex]
 SympyFunctionMapT = dict[str, Callable[..., Any]]
 ASTWhiteListT = tuple[type[ast.AST], ...]
 AssumptionsDictT = dict[str, dict[str, Any]]
-"""
-A dictionary of assumptions for variables in the expression.
 
-Examples:
-    >>> {"x": {"positive": True}, "y": {"real": True}}
-"""
+
+class ASTSympyType(Enum):
+    SCALAR = "scalar"
+    SET = "set"
+    BOOL = "boolean"
+
+    def __str__(self) -> str:
+        """Returns `self.value`"""
+        return self.value
+
+
+_OP_SYMBOLS: dict[type[ast.AST], str] = {
+    ast.Add: "+",
+    ast.BitAnd: "&",
+    ast.BitOr: "|",
+    ast.Div: "/",
+    ast.Mod: "%",
+    ast.Mult: "*",
+    ast.Pow: "**",
+    ast.Sub: "-",
+    ast.USub: "-",
+    ast.UAdd: "-",
+}
+
+
+# A dictionary of assumptions for variables in the expression.
+#
+# Examples:
+#     >>> {"x": {"positive": True}, "y": {"real": True}}
 
 
 class SympyJson(TypedDict):
@@ -307,48 +332,65 @@ class HasInvalidSymbolError(BaseSympyError):
     symbol: str
 
 
+@dataclass
+class HasSetOperationTypeError(BaseSympyError):
+    operator: str
+    left_type: ASTSympyType | None
+    right_type: ASTSympyType
+    for_argument: int = -1
+    offset: int = -1
+
+    def format_err_msg(self) -> str:
+        err_msg = f"unsupported operand type(s) for {self.operator}: "
+        if self.for_argument >= 0:
+            err_msg += f"argument #{self.for_argument + 1} requires {self.right_type}"
+        else:
+            err_msg += " and ".join(
+                _format_ast_sympy_type(v)
+                for v in (self.left_type, self.right_type)
+                if v
+            )
+        return err_msg
+
+
+@dataclass
+class HasSetFunctionArityError(BaseSympyError):
+    operator: str
+    provided: int
+    expected: str
+    offset: int = -1
+
+    def format_err_msg(self) -> str:
+        return f"wrong number of arguments for {self.operator}: got {self.provided} but expected {self.expected}"
+
+
 class CheckAST(ast.NodeVisitor):
     whitelist: ASTWhiteListT
     variables: SympyMapT
     functions: SympyFunctionMapT
     __parents: dict[int, ast.AST]
+    __type_cache: dict[int, ASTSympyType | None]
 
     def __init__(
         self,
         whitelist: ASTWhiteListT,
         variables: SympyMapT,
         functions: SympyFunctionMapT,
+        *,
+        allow_set_notation: bool = False,
     ) -> None:
         self.whitelist = whitelist
         self.variables = variables
         self.functions = functions
         self.__parents = {}
+        self.__type_cache = {}
+        self.allow_set_notation = allow_set_notation
 
-    def visit(self, node: ast.AST) -> None:
+    def visit(self, node: ast.AST) -> ASTSympyType | None:
         if not isinstance(node, self.whitelist):
             err_node = self.get_parent_with_location(node)
             raise HasInvalidExpressionError(err_node.col_offset)
         return super().visit(node)
-
-    def visit_Call(self, node: ast.Call) -> None:
-        if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
-            err_node = self.get_parent_with_location(node)
-            raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
-        self.generic_visit(node)
-
-    def visit_Name(self, node: ast.Name) -> None:
-        if (
-            isinstance(node.ctx, ast.Load)
-            and not self.is_name_of_function(node)
-            and node.id not in self.variables
-        ):
-            err_node = self.get_parent_with_location(node)
-            if node.id in self.functions:
-                raise FunctionNameWithoutArgumentsError(
-                    err_node.col_offset, err_node.id
-                )
-            raise HasInvalidVariableError(err_node.col_offset, err_node.id)
-        self.generic_visit(node)
 
     def is_name_of_function(self, node: ast.AST) -> bool:
         # The node is the name of a function if all of the following are true:
@@ -385,12 +427,159 @@ class CheckAST(ast.NodeVisitor):
             for node in ast.walk(root)
             for child in ast.iter_child_nodes(node)
         }
+        try:
+            self.visit(root)
+        finally:
+            self.__parents = {}
 
-        self.visit(root)
+    def _set_type(
+        self, node: ast.AST, inferred_type: ASTSympyType | None
+    ) -> ASTSympyType | None:
+        self.__type_cache[id(node)] = inferred_type
+        return inferred_type
 
-        # Empty parents dict after execution
-        # dict is only populated during execution
-        self.__parents = {}
+    def _get_type(self, node: ast.AST) -> ASTSympyType | None:
+        if id(node) in self.__type_cache:
+            return self.__type_cache[id(node)]
+        return self.visit(node)
+
+    def visit_Expression(self, node: ast.Expression) -> ASTSympyType | None:
+        return self._set_type(node, self._get_type(node.body))
+
+    def visit_Constant(self, node: ast.Constant) -> ASTSympyType | None:
+        if node.value is True or node.value is False:
+            return self._set_type(node, ASTSympyType.BOOL)
+        return self._set_type(node, ASTSympyType.SCALAR)
+
+    def visit_Name(self, node: ast.Name) -> ASTSympyType | None:
+        if (
+            isinstance(node.ctx, ast.Load)
+            and not self.is_name_of_function(node)
+            and node.id not in self.variables
+        ):
+            err_node = self.get_parent_with_location(node)
+            if node.id in self.functions:
+                raise FunctionNameWithoutArgumentsError(
+                    err_node.col_offset, err_node.id
+                )
+            return self._set_type(node, None)
+
+        if node.id in self.variables:
+            var_type = None if self.allow_set_notation else ASTSympyType.SCALAR
+            return self._set_type(node, var_type)
+
+        return self._set_type(node, None)
+
+    def visit_Call(self, node: ast.Call) -> ASTSympyType | None:
+        if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
+            err_node = self.get_parent_with_location(node)
+            raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
+
+        self.generic_visit(node)
+
+        if isinstance(node.func, ast.Name):
+            match node.func.id:
+                case "Symbol":
+                    return self._set_type(node, None)
+                case "Integer" | "Float":
+                    return self._set_type(node, ASTSympyType.SCALAR)
+                case "Union" | "Intersection" | "Interval" | "FiniteSet" if (
+                    self.allow_set_notation
+                ):
+                    inferred = self._infer_sympy_set_function_type(
+                        node.func.id, node.args
+                    )
+                    return self._set_type(node, inferred)
+                case _:
+                    pass
+
+        return self._set_type(node, None)
+
+    def visit_UnaryOp(self, node: ast.UnaryOp) -> ASTSympyType | None:
+        operand_type = self._get_type(node.operand)
+        if operand_type == ASTSympyType.SET:
+            operator = _OP_SYMBOLS.get(type(node.op))
+            if operator is None:
+                err_node = self.get_parent_with_location(node)
+                raise HasInvalidExpressionError(err_node.col_offset)
+            raise HasSetOperationTypeError(operator, None, operand_type)
+        return self._set_type(node, operand_type)
+
+    def visit_BinOp(self, node: ast.BinOp) -> ASTSympyType | None:
+        # NOTE: unfortunately, ast.unparse(node.op) doesn't yield a str 🙄
+        op_str = _OP_SYMBOLS.get(type(node.op))
+        if op_str is None:
+            return self._set_type(node, None)
+        inferred_type = self._infer_bin_op_type(op_str, node.left, node.right)
+        return self._set_type(node, inferred_type)
+
+    def _infer_sympy_set_function_type(
+        self,
+        name: Literal["Union", "Intersection", "Interval", "FiniteSet"],
+        args: list[ast.expr],
+    ) -> ASTSympyType | None:
+        match name:
+            case "FiniteSet":
+                return ASTSympyType.SET
+            case "Interval" if len(args) not in (2, 4):
+                raise HasSetFunctionArityError(name, len(args), "2 or 4")
+            case "Interval":
+                for i, a in enumerate(args):
+                    inferred = self._get_type(a)
+                    expected = ASTSympyType.SCALAR if i < 2 else ASTSympyType.BOOL
+                    if inferred and inferred != expected:
+                        raise HasSetOperationTypeError(
+                            name, None, inferred, for_argument=i
+                        )
+                return None
+            case "Union" if not args:
+                # NOTE: allows sympy to return sympy.EmptySet
+                return ASTSympyType.SET
+            case "Intersection" if not args:
+                # NOTE: does not allow sympy to return sympy.UniversalSet
+                raise HasSetFunctionArityError(name, len(args), "1+")
+            case "Union" | "Intersection":
+                prev = None
+                for i, arg in enumerate(args):
+                    inferred = self._infer_bin_op_type(name, prev, arg)
+                    if inferred and inferred != ASTSympyType.SET:
+                        raise HasSetOperationTypeError(
+                            name, None, inferred, for_argument=i
+                        )
+
+                return ASTSympyType.SET
+
+    def _infer_bin_op_type(
+        self, op_str: str, left: ast.expr | None, right: ast.expr
+    ) -> ASTSympyType | None:
+        left_type = left and self._get_type(left)
+        right_type = self._get_type(right)
+
+        if op_str in ("|", "&", "Union", "Intersection"):
+            match (left_type, right_type):
+                case (ASTSympyType.SET, ASTSympyType.SET):
+                    return ASTSympyType.SET
+                case (None, other) | (other, None) if other in {None, ASTSympyType.SET}:
+                    return ASTSympyType.SET
+                case (l, r):
+                    raise HasSetOperationTypeError(op_str, l, r or ASTSympyType.SET)
+
+        if op_str == "**":
+            match (left_type, right_type):
+                case (l, ASTSympyType.SCALAR) | (l, None) if l != ASTSympyType.BOOL:
+                    return l
+                case (l, r):
+                    raise HasSetOperationTypeError(op_str, l, r or ASTSympyType.SET)
+
+        if left_type == right_type:
+            return left_type
+
+        return None
+
+
+def _format_ast_sympy_type(type_: ASTSympyType | None) -> str:
+    """Return a readable type name for user-facing error messages."""
+    return "any" if type_ is None else type_.value
 
 
 def ast_check_str(
@@ -438,7 +627,10 @@ def ast_check_str(
     )
 
     CheckAST(
-        whitelist, locals_for_eval["variables"], locals_for_eval["functions"]
+        whitelist,
+        locals_for_eval["variables"],
+        locals_for_eval["functions"],
+        allow_set_notation=allow_set_notation,
     ).check_expression(expr)
 
 
@@ -566,6 +758,9 @@ def evaluate_with_source(
         HasEscapeError: If the expression contains an escape character.
         HasCommentError: If the expression contains a comment character.
         HasSetNotationError: If the expression contains interval or set characters.
+        HasSetOperationTypeError: If the expression uses an operator improperly.
+        HasSetFunctionArityError: If the expression uses a set function improperly.
+        HasSetNotationError: If the expression contains interval or set characters.
         HasParseError: If the expression cannot be parsed.
         BaseSympyError: If the expression cannot be evaluated.
     """
@@ -586,7 +781,7 @@ def evaluate_with_source(
     # the only thing this can't catch is open intervals `(-, -)`, checked later
     if not allow_set_notation and any(
         token in normalized_expr
-        for token in ("[", "]", "{", "}", "∪", "∩")  # noqa: RUF001
+        for token in ("[", "]", "{", "}", "∪", "∩", "&", "|")  # noqa: RUF001
     ):
         raise HasSetNotationError
 
@@ -681,7 +876,21 @@ def evaluate_with_source(
         oo=sympy.oo,
     )
 
-    ast_check_str(code, parsed_locals_to_eval, allow_set_notation=allow_set_notation)
+    try:
+        ast_check_str(
+            code, parsed_locals_to_eval, allow_set_notation=allow_set_notation
+        )
+    except (HasSetOperationTypeError, HasSetFunctionArityError) as exc:
+        if not allow_set_notation:
+            raise HasSetNotationError from exc
+
+        index = find_type_error_offset(
+            normalized_expr, normalized_offsets, TypeError(exc.format_err_msg())
+        )
+        if index != -1:
+            exc.offset = index
+
+        raise
 
     if not simplify_expression:
         code = compile(evaluateFalse(code), "<string>", "eval")
@@ -903,7 +1112,7 @@ def find_symbol_offset(expr: str, symbol: str) -> int:
 
 
 _TYPE_ERROR_OPERATOR_PATTERN = re.compile(
-    r"unsupported operand type\(s\) for (?P<operator>[^:]+):"
+    r"(unsupported operand type\(s\)|wrong number of arguments) for (?P<operator>[^:]+):"
 )
 
 
@@ -1121,6 +1330,33 @@ def try_parse_string_as_sympy(
             f"<br><br><pre>{point_to_error(expr, find_symbol_offset(expr, exc.symbol))}</pre>"
             "Note that the location of the syntax error is approximate."
         )
+    except HasSetOperationTypeError as exc:
+        if exc.operator == "**":
+            error_text = "A set can only be raised to a natural number exponent."
+        elif exc.operator in {"|", "&", "Union", "Intersection"}:
+            error_text = (
+                "Your answer uses a set operation with a non-set value. "
+                "Set union and intersection only work on sets."
+            )
+        else:
+            error_text = (
+                "Your answer uses an arithmetic operation with a set value. "
+                "Arithmetic operators only work on numbers."
+            )
+        if exc.offset != -1:
+            return SympyParseFailure(
+                f"{error_text} <br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
+                "Note that the location of the syntax error is approximate."
+            )
+        return SympyParseFailure(error_text)
+    except HasSetFunctionArityError as exc:
+        error_text = f"Your answer provides the wrong number of arguments to '{exc.operator}', expected {exc.expected}."
+        if exc.offset != -1:
+            return SympyParseFailure(
+                f"{error_text} <br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
+                "Note that the location of the syntax error is approximate."
+            )
+        return SympyParseFailure(error_text)
     except HasParseError as exc:
         # Special case where there is no error offset to point at. In practice, this is almost always a missing closing
         # parenthesis that SymPy only catches at the end of parsing, so try to give a slightly more helpful error message.
