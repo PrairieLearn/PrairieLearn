@@ -203,6 +203,14 @@ class TestSympy:
             "[f(m + 1), g(f(m) + 1)]",
             sympy.Interval(F(M + 1), G(F(M) + 1)),
         ),
+        (
+            "{1, 2} ** 3",
+            sympy.ProductSet(
+                sympy.FiniteSet(1, 2),
+                sympy.FiniteSet(1, 2),
+                sympy.FiniteSet(1, 2),
+            ),
+        ),
         # nested sets
         ("{1, 1}", sympy.FiniteSet(1)),
         ("{1, {2, 3}}", sympy.FiniteSet(1, sympy.FiniteSet(2, 3))),
@@ -376,7 +384,13 @@ class TestSympy:
         [
             "∪",  # noqa: RUF001
             "∩",
+            "&",
+            "|",
             "{}",
+            "1 ∪ 2",  # noqa: RUF001
+            "1 ∩ 2",
+            "1 & 2",
+            "1 | 2",
             "{1,2,3}",
             "(0, 1)",
             "(0, 1]",
@@ -424,6 +438,7 @@ class TestSympy:
             "[1, {2, 3}]",
             "[{2, 3}, 1]",
             # invalid operations
+            "{1, 2} ** {2, 3}",
             "{1, 2} / {2, 3}",
         ],
     )
@@ -432,13 +447,30 @@ class TestSympy:
         assert isinstance(out, psu.SympyParseFailure)
         assert "syntax error" in out.error
 
-    @pytest.mark.parametrize("test", ["min(-n, -m, m)", "arctan2(m, n)", "cos(m)"])
+    @pytest.mark.parametrize(
+        "test",
+        [
+            "min(-n, -m, m)",
+            "arctan2(m, n)",
+            "cos(m)",
+            "U(m)",
+            "FiniteSet(m)",
+            "Union()",
+            "Intersection(m)",
+            "Interval(m, m)",
+        ],
+    )
     def test_disabled_set_notation_does_not_break_function_calls(
         self, test: str
     ) -> None:
         # technically this is redundant with some
-        out = psu.try_parse_string_as_sympy(test, ["n", "m"], allow_set_notation=False)
-        assert isinstance(out, psu.SympyParseSuccess)
+        out = psu.try_parse_string_as_sympy(
+            test,
+            ["n", "m"],
+            custom_functions=["U", "FiniteSet", "Union", "Interval", "Intersection"],
+            allow_set_notation=False,
+        )
+        assert isinstance(out, psu.SympyParseSuccess), f'broke on "{test}": {out}'
 
     @pytest.mark.parametrize(
         ("a_sub", "variables", "expected"),
@@ -925,10 +957,80 @@ class TestExceptions:
                 ),
             ),
             (
+                "Interval({}, 2)",
+                _caret(
+                    "Inter",
+                    "^     ",
+                ),
+            ),
+            (
+                "Interval(1, {})",
+                _caret(
+                    "Inter",
+                    "^     ",
+                ),
+            ),
+            (
+                "Interval(1)",
+                _caret(
+                    "Inter",
+                    "^     ",
+                ),
+            ),
+            (
+                "Interval(1, 2, 3)",
+                _caret(
+                    "Inter",
+                    "^     ",
+                ),
+            ),
+            (
+                "Union(1, 2)",
+                _caret(
+                    "Union",
+                    "^     ",
+                ),
+            ),
+            (
+                "Intersection(1, 2)",
+                _caret(
+                    "Inter",
+                    "^     ",
+                ),
+            ),
+            (
+                "Intersection({}, 2)",
+                _caret(
+                    "Inter",
+                    "^     ",
+                ),
+            ),
+            (
+                "Intersection()",
+                _caret(
+                    "Inter",
+                    "^     ",
+                ),
+            ),
+            (
+                "1 U 2",
+                _caret(
+                    "1 U 2",
+                    "  ^   ",
+                ),
+            ),
+            (
                 "{1, 2} ** {3}",
                 _caret(
                     ", 2} ** {3",
                     "     ^     ",
+                ),
+            ),
+            (
+                "1 ** {3}",
+                _caret(
+                    "1 ** {3",
+                    "  ^     ",
                 ),
             ),
         ],
@@ -939,7 +1041,7 @@ class TestExceptions:
         error_msg = psu.validate_string_as_sympy(expr, None, allow_set_notation=True)
         assert error_msg is not None
         match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
-        assert match is not None
+        assert match is not None, f"error message has no caret: {error_msg}"
         assert match.group(1) == expected_caret
 
     def test_type_error_caret_accounts_for_exponentiation_normalization(self) -> None:
@@ -948,7 +1050,7 @@ class TestExceptions:
         )
         assert error_msg is not None
         match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
-        assert match is not None
+        assert match is not None, f"error message has no caret: {error_msg}"
         assert match.group(1) == _caret(
             "x^2 / {1,",  # the caret should land on the original `/`
             "    ^     ",
