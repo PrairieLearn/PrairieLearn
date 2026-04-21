@@ -19,6 +19,10 @@ import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCo
 import type { ResLocalsAuthnUser } from './authn.types.js';
 import type { ResLocalsConfig } from './config.js';
 import type { Course, CourseInstance } from './db-types.js';
+import type {
+  ResLocalsInstanceQuestionRender,
+  ResLocalsQuestionRender,
+} from './question-render.types.js';
 
 interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
   __csrf_token: string;
@@ -37,22 +41,32 @@ interface ResLocalsForPageLookup {
     ResLocalsCourseIssueCount &
     ResLocalsCourseInstance &
     ResLocalsInstructorQuestion &
-    ResLocalsInstanceQuestion & {
+    ResLocalsInstanceQuestion &
+    ResLocalsInstanceQuestionRender &
+    ResLocalsQuestionRender & {
       navbarType: 'instructor';
     };
   'instructor-question': ResLocals &
     ResLocalsCourse &
     ResLocalsCourseIssueCount &
     Partial<ResLocalsCourseInstance> &
-    ResLocalsInstructorQuestion;
+    ResLocalsInstructorQuestion &
+    ResLocalsQuestionRender;
   'instructor-assessment-question': ResLocals &
     ResLocalsCourseIssueCount &
     ResLocalsCourseInstance &
     ResLocalsInstructorQuestion &
+    ResLocalsQuestionRender &
     ResLocalsAssessment &
     ResLocalsAssessmentQuestion;
-  'instance-question': ResLocals & ResLocalsCourseInstance & ResLocalsInstanceQuestion;
-  'assessment-question': ResLocals & ResLocalsAssessment & ResLocalsAssessmentQuestion;
+  'instance-question': ResLocals &
+    ResLocalsCourseInstance &
+    ResLocalsInstanceQuestion &
+    ResLocalsInstanceQuestionRender;
+  'assessment-question': ResLocals &
+    ResLocalsAssessment &
+    ResLocalsAssessmentQuestion &
+    ResLocalsInstanceQuestionRender;
   'assessment-instance': ResLocals &
     ResLocalsCourseInstance &
     ResLocalsAssessment &

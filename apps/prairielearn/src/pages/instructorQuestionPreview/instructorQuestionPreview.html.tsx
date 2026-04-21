@@ -1,7 +1,6 @@
 import assert from 'node:assert';
 
 import { html, unsafeHtml } from '@prairielearn/html';
-import { run } from '@prairielearn/run';
 
 import {
   CalculatorDrawer,
@@ -13,14 +12,12 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
-import type { ResLocalsQuestionRender } from '../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function InstructorQuestionPreview({
   normalPreviewUrl,
-  manualGradingPreviewEnabled,
+  questionRenderContext,
   manualGradingPreviewUrl,
-  aiGradingPreviewEnabled,
   aiGradingPreviewUrl,
   renderSubmissionSearchParams,
   readmeHtml,
@@ -28,14 +25,13 @@ export function InstructorQuestionPreview({
   resLocals,
 }: {
   normalPreviewUrl: string;
-  manualGradingPreviewEnabled: boolean;
+  questionRenderContext: 'manual_grading' | 'ai_grading' | undefined;
   manualGradingPreviewUrl: string;
-  aiGradingPreviewEnabled: boolean;
   aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams: URLSearchParams;
   readmeHtml: string;
   questionCopyTargets: CopyTarget[] | null;
-  resLocals: ResLocalsForPage<'instructor-question'> & ResLocalsQuestionRender;
+  resLocals: ResLocalsForPage<'instructor-question'>;
 }) {
   assert(resLocals.question.qid !== null);
 
@@ -93,7 +89,7 @@ export function InstructorQuestionPreview({
       storageKey: `calculator-preview-${resLocals.question.id}`,
     }),
     content: html`
-      ${manualGradingPreviewEnabled
+      ${questionRenderContext === 'manual_grading'
         ? html`
             <div class="alert alert-primary">
               You are viewing this question as it will appear in the manual grading interface.
@@ -102,7 +98,7 @@ export function InstructorQuestionPreview({
             </div>
           `
         : ''}
-      ${aiGradingPreviewEnabled
+      ${questionRenderContext === 'ai_grading'
         ? html`
             <div class="alert alert-primary">
               You are viewing this question as it will appear to the AI grader.
@@ -149,17 +145,13 @@ export function InstructorQuestionPreview({
             : ''}
           ${QuestionContainer({
             resLocals,
-            showFooter: manualGradingPreviewEnabled || aiGradingPreviewEnabled ? false : undefined,
+            showFooter: questionRenderContext != null ? false : undefined,
             questionContext: 'instructor',
-            questionRenderContext: run(() => {
-              if (manualGradingPreviewEnabled) return 'manual_grading';
-              if (aiGradingPreviewEnabled) return 'ai_grading';
-              return undefined;
-            }),
-            manualGradingPreviewUrl: manualGradingPreviewEnabled
-              ? undefined
-              : manualGradingPreviewUrl,
-            aiGradingPreviewUrl: aiGradingPreviewEnabled ? undefined : aiGradingPreviewUrl,
+            questionRenderContext,
+            manualGradingPreviewUrl:
+              questionRenderContext === 'manual_grading' ? undefined : manualGradingPreviewUrl,
+            aiGradingPreviewUrl:
+              questionRenderContext === 'ai_grading' ? undefined : aiGradingPreviewUrl,
             renderSubmissionSearchParams,
             questionCopyTargets,
           })}

@@ -103,6 +103,18 @@ const MAX_RECENT_SUBMISSIONS = 3;
 
 /**
  * Renders the HTML for a variant.
+ *
+ * @param params
+ * @param params.variant_course The course for the variant.
+ * @param params.renderSelection Specify which panels should be rendered.
+ * @param params.variant The variant to submit to.
+ * @param params.question The question for the variant.
+ * @param params.submission The current submission to the variant.
+ * @param params.submissions The full list of submissions to the variant.
+ * @param params.question_course The course for the question.
+ * @param params.locals The current locals for the page response.
+ * @param params.user_id The effective user id to attribute errors to.
+ * @param params.authn_user_id The authenticated user id to attribute errors to.
  */
 async function render({
   variant_course,
@@ -551,8 +563,7 @@ export async function getAndRenderVariant(
     question_access_mode: locals.instance_question_info?.question_access_mode,
   });
   if (
-    (questionRenderContext === 'manual_grading' ||
-      questionRenderContext === 'ai_grading') &&
+    (questionRenderContext === 'manual_grading' || questionRenderContext === 'ai_grading') &&
     question.show_correct_answer
   ) {
     newLocals.showCorrectAnswer = true;
