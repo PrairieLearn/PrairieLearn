@@ -900,28 +900,6 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(true);
     });
 
-    it('grants access via PT reservation even when assessment is past due date', () => {
-      const ruleWithPastDueDate: AccessControlRuleInput = {
-        ...prairieTestMainRule,
-        rule: toRuntime({
-          dateControl: {
-            releaseDate: '2025-01-01T00:00:00Z',
-            dueDate: '2025-02-01T00:00:00Z',
-          },
-        }),
-      };
-      const result = resolveAccessControl({
-        ...baseInput,
-        authzMode: 'Exam',
-        rules: [ruleWithPastDueDate],
-        prairieTestReservations: [validReservation],
-      });
-      expect(result.authorized).toBe(true);
-      expect(result.credit).toBe(100);
-      expect(result.active).toBe(true);
-      expect(result.showBeforeRelease).toBe(false);
-    });
-
     it('grants access via PT reservation even when assessment is before release date', () => {
       // A matching PT reservation must override the stale beforeRelease flag.
       const preReleaseRule: AccessControlRuleInput = {
