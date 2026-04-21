@@ -36,14 +36,28 @@ const FALLBACK_CATEGORY_STYLE: CategoryStyle = {
 
 function NewsAlertItem({ item, now }: { item: NewsItem; now: Date }) {
   return (
-    <div className="card news-alert-item bg-white">
-      <a href={item.link} target="_blank" rel="noopener noreferrer" className="news-alert-link">
-        <div className="news-alert-content">
-          <div className="news-alert-header">
-            <span className="news-alert-dot bg-primary rounded-circle" aria-label="New" />
-            <span className="news-alert-title">{item.title}</span>
+    <div className="card news-alert-item">
+      <a
+        href={item.link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="d-flex align-items-center gap-3 px-3 py-2 text-decoration-none text-body"
+      >
+        <div
+          className="d-flex flex-column flex-md-row align-items-md-center gap-2 gap-md-3 flex-grow-1"
+          style={{ minWidth: 0 }}
+        >
+          <div className="d-flex align-items-center gap-2 flex-md-grow-1" style={{ minWidth: 0 }}>
+            <span
+              className="bg-primary rounded-circle flex-shrink-0"
+              style={{ width: 8, height: 8 }}
+              aria-label="New"
+            />
+            <span className="fw-semibold" style={{ minWidth: 0 }}>
+              {item.title}
+            </span>
           </div>
-          <div className="news-alert-meta">
+          <div className="d-flex align-items-center gap-2 flex-wrap flex-md-nowrap flex-md-shrink-0">
             <div className="d-flex gap-1 flex-wrap">
               {item.categories.map((category) => {
                 const style = CATEGORY_STYLES[category] ?? FALLBACK_CATEGORY_STYLE;
@@ -62,7 +76,7 @@ function NewsAlertItem({ item, now }: { item: NewsItem; now: Date }) {
             </span>
           </div>
         </div>
-        <i className="bi bi-arrow-up-right text-muted news-alert-arrow" aria-hidden="true" />
+        <i className="bi bi-arrow-up-right text-muted flex-shrink-0" aria-hidden="true" />
       </a>
     </div>
   );
@@ -85,61 +99,7 @@ export function NewsAlert({
     <div className="card mb-4" data-testid="news-alert">
       <style>{`
         .news-alert-item:hover {
-          background-color: var(--bs-tertiary-bg) !important;
-        }
-        .news-alert-link {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.75rem;
-          text-decoration: none;
-          color: inherit;
-        }
-        .news-alert-content {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-          flex: 1 1 auto;
-          min-width: 0;
-        }
-        .news-alert-header {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          min-width: 0;
-        }
-        .news-alert-dot {
-          width: 8px;
-          height: 8px;
-          flex-shrink: 0;
-        }
-        .news-alert-title {
-          font-weight: 600;
-          overflow-wrap: anywhere;
-          min-width: 0;
-        }
-        .news-alert-meta {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          flex-wrap: wrap;
-        }
-        .news-alert-arrow {
-          flex-shrink: 0;
-        }
-        @media (min-width: 768px) {
-          .news-alert-content {
-            flex-direction: row;
-            align-items: center;
-            gap: 0.75rem;
-          }
-          .news-alert-header {
-            flex: 1 1 auto;
-          }
-          .news-alert-meta {
-            flex-shrink: 0;
-            flex-wrap: nowrap;
-          }
+          background-color: var(--bs-tertiary-bg);
         }
       `}</style>
       <div className="card-body">
