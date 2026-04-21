@@ -15,5 +15,5 @@
 # This check is based on workspace settings. If networking is restricted through
 # other means (e.g., the gallery URL is blocked or unavailable), we don't handle
 # that case explicitly for simplicity.
-[ "${WORKSPACE_ENABLE_NETWORKING}" = "0" ] && export EXTENSIONS_GALLERY="{}"
+[[ -n "${WORKSPACE_NETWORKING_DISABLED}" ]] && export EXTENSIONS_GALLERY="{}"
 exec /usr/bin/entrypoint.sh --auth none --disable-update-check --disable-telemetry --bind-addr 0.0.0.0:8080 .
