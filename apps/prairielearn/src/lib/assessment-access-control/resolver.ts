@@ -442,12 +442,14 @@ function resolvePrairieTestAccess({
   authzMode,
   beforeReleaseListed,
   assessmentClosed,
+  inSubmissionWindow,
 }: {
   prairieTestExams: { uuid: string; readOnly: boolean }[];
   prairieTestReservations: PrairieTestReservation[];
   authzMode: EnumMode | null;
   beforeReleaseListed: boolean;
   assessmentClosed: boolean;
+  inSubmissionWindow: boolean;
 }): PrairieTestOutcome {
   const hasPrairieTestExams = prairieTestExams.length > 0;
 
@@ -462,6 +464,14 @@ function resolvePrairieTestAccess({
   // Not in exam mode — student cannot access a PT-gated assessment.
   if (authzMode !== 'Exam') {
     if (assessmentClosed) return { action: 'continue' };
+
+    // Authors opt a PT-gated rule into Public-mode submissions during its
+    // active window by setting `afterLastDeadline.allowSubmissions: false`
+    // explicitly. This supports workflows (e.g. the "cheat sheet hack",
+    // discussion #11308) where students submit material in advance and then
+    // view it read-only during a PT exam. Without this opt-in, PT rules
+    // remain strictly Exam-only during their active window.
+    if (inSubmissionWindow) return { action: 'continue' };
 
     // If `beforeRelease.listed` is set, list it, but it should not be accessible.
     // We ONLY do this outside of Exam mode; when in Exam mode, we only show assessments
@@ -601,6 +611,9 @@ export function resolveAccessControl(
       !!effectiveRule.dateControl?.releaseDate &&
       !creditResult.beforeRelease &&
       !creditResult.active,
+    inSubmissionWindow:
+      creditResult.active &&
+      effectiveRule.dateControl?.afterLastDeadline?.allowSubmissions === false,
   });
   if (ptOutcome.action === 'deny') {
     return { ...ptOutcome.result, showClosedAssessment, showClosedAssessmentScore };

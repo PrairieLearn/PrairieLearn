@@ -986,18 +986,84 @@ describe('resolveAccessControl', () => {
       expect(result.authorized).toBe(false);
     });
 
-    it('supports the review-window and PT-exam phases of the cheat sheet hack', () => {
+    it('grants Public access during active window when afterLastDeadline.allowSubmissions is false', () => {
+      const rule: AccessControlRuleInput = {
+        ...prairieTestMainRule,
+        rule: toRuntime({
+          dateControl: {
+            releaseDate: '2025-01-01T00:00:00Z',
+            dueDate: '2025-06-01T00:00:00Z',
+            afterLastDeadline: { allowSubmissions: false },
+          },
+        }),
+      };
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Public',
+        rules: [rule],
+        prairieTestReservations: [],
+      });
+      expect(result.authorized).toBe(true);
+      expect(result.active).toBe(true);
+      expect(result.credit).toBe(100);
+    });
+
+    it('denies Public access during active window when allowSubmissions is not explicitly false', () => {
+      // Without the explicit opt-in, a PT-gated rule remains Exam-only during
+      // its active window even if it has a dueDate.
+      const rule: AccessControlRuleInput = {
+        ...prairieTestMainRule,
+        rule: toRuntime({
+          dateControl: {
+            releaseDate: '2025-01-01T00:00:00Z',
+            dueDate: '2025-06-01T00:00:00Z',
+          },
+        }),
+      };
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Public',
+        rules: [rule],
+        prairieTestReservations: [],
+      });
+      expect(result.authorized).toBe(false);
+    });
+
+    it('denies Public access during active window when allowSubmissions is true', () => {
+      const rule: AccessControlRuleInput = {
+        ...prairieTestMainRule,
+        rule: toRuntime({
+          dateControl: {
+            releaseDate: '2025-01-01T00:00:00Z',
+            dueDate: '2025-06-01T00:00:00Z',
+            afterLastDeadline: { allowSubmissions: true, credit: 0 },
+          },
+        }),
+      };
+      const result = resolveAccessControl({
+        ...baseInput,
+        authzMode: 'Public',
+        rules: [rule],
+        prairieTestReservations: [],
+      });
+      expect(result.authorized).toBe(false);
+    });
+
+    it('supports all phases of the cheat sheet hack', () => {
       // See https://github.com/PrairieLearn/PrairieLearn/discussions/11308.
-      // This test covers the review-window (post-due, Public) and PT-exam
-      // (read-only via reservation) phases of the workflow. The submission
-      // window (Public access between release and due date) is not supported
-      // in this slice and is left for a follow-up.
+      // The workflow has three phases: submission window (Public, pre-due),
+      // review window (Public, post-due, read-only), and PT-exam (read-only
+      // via reservation).
       const rule: AccessControlRuleInput = {
         ...prairieTestMainRule,
         rule: toRuntime({
           dateControl: {
             releaseDate: '2025-02-01T00:00:00Z',
             dueDate: '2025-03-01T00:00:00Z',
+            // Opts this PT-gated rule into Public submissions during the
+            // active window. Without this explicit signal, PT rules are
+            // strictly Exam-only during their active window.
+            afterLastDeadline: { allowSubmissions: false },
           },
         }),
         // The cheat sheet use case specifically calls for a read-only exam so that
@@ -1016,6 +1082,18 @@ describe('resolveAccessControl', () => {
       });
       expect(beforeReleaseResult.authorized).toBe(false);
       expect(beforeReleaseResult.showBeforeRelease).toBe(false);
+
+      // A student outside of the testing center between release and due date can
+      // submit their cheat sheet for the upcoming exam.
+      const submissionWindowResult = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        authzMode: 'Public',
+        date: new Date('2025-02-15T00:00:00Z'),
+      });
+      expect(submissionWindowResult.authorized).toBe(true);
+      expect(submissionWindowResult.active).toBe(true);
+      expect(submissionWindowResult.credit).toBe(100);
 
       // A student outside of the testing center after the due date can view the
       // closed assessment (their uploaded cheat sheet) but cannot submit.
