@@ -386,7 +386,7 @@ export async function aiGrade({
     if (runningJobCount >= MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE) {
       throw new error.HttpStatusError(
         429,
-        `You've reached the limit of ${MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE} concurrent AI grading jobs. Please try again later.`,
+        `You've reached the limit of ${MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE} concurrent AI grading jobs. Please wait for running jobs to finish.`,
       );
     }
 

@@ -264,7 +264,7 @@ function AiGradingAvailabilityAlert({
           content: (
             <>
               You've reached the limit of {state.maxConcurrentJobs} concurrent AI grading jobs.
-              Please try again later.
+              Please wait for running jobs to finish.
             </>
           ),
         };
