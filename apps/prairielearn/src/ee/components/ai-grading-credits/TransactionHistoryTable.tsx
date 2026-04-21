@@ -208,10 +208,7 @@ function RefundConfirmationModal({
       <Modal.Body>
         <p>Are you sure you want to refund this credit purchase?</p>
         <div className={clsx('alert', goesNegative ? 'alert-warning' : 'alert-info')}>
-          <div>
-            The transferable balance will change to{' '}
-            {formatMilliDollars(newTransferableMilliDollars)}.
-          </div>
+          <div>New transferable balance: {formatMilliDollars(newTransferableMilliDollars)}</div>
           <div>{formatMilliDollars(creditAmount)} will be refunded via Stripe.</div>
         </div>
       </Modal.Body>
