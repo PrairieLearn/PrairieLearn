@@ -197,10 +197,8 @@ function RefundConfirmationModal({
   onCancel: () => void;
 }) {
   const creditAmount = row.checkout_session_amount_milli_dollars ?? 0;
-  const creditsSpent = Math.max(0, creditAmount - transferableMilliDollars);
-  // Floor at 0: if the transferable balance is already negative, the refund
-  // doesn't deduct further from it (the user can't owe more than they bought).
-  const creditsToDeduct = Math.max(0, Math.min(creditAmount, transferableMilliDollars));
+  const newTransferableMilliDollars = transferableMilliDollars - creditAmount;
+  const goesNegative = newTransferableMilliDollars < 0;
 
   return (
     <Modal show centered onHide={isRefunding ? undefined : onCancel}>
@@ -209,18 +207,14 @@ function RefundConfirmationModal({
       </Modal.Header>
       <Modal.Body>
         <p>Are you sure you want to refund this credit purchase?</p>
-        {creditsSpent > 0 && (
-          <div className="alert alert-warning">
-            <p className="mb-2">
-              The current transferable balance is {formatMilliDollars(transferableMilliDollars)},
-              which is less than the original purchase of {formatMilliDollars(creditAmount)}.
-            </p>
-            <div>
-              {formatMilliDollars(creditsToDeduct)} will be deducted from the transferable balance.
-            </div>
-            <div>{formatMilliDollars(creditAmount)} will be refunded via Stripe.</div>
+        <div className={clsx('alert', goesNegative ? 'alert-warning' : 'alert-info')}>
+          <div>
+            The transferable balance will change from {formatMilliDollars(transferableMilliDollars)}{' '}
+            to {formatMilliDollars(newTransferableMilliDollars)}
+            {goesNegative ? ' (negative)' : ''}.
           </div>
-        )}
+          <div>{formatMilliDollars(creditAmount)} will be refunded via Stripe.</div>
+        </div>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" disabled={isRefunding} onClick={onCancel}>

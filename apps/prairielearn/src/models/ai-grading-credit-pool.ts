@@ -270,10 +270,14 @@ async function applyCreditPoolMutation({
 
 /**
  * Adjust the credit pool for a course instance by a delta amount (admin operation).
- * Positive delta adds credits, negative delta removes credits. A deduction is
- * capped at the selected pool's current balance (deductions never take a
- * balance below 0) and is refused entirely when the balance is already
- * non-positive.
+ * Positive delta adds credits, negative delta removes credits.
+ *
+ * By default a deduction is capped at the selected pool's current balance
+ * (deductions never take a balance below 0) and is refused entirely when the
+ * balance is already non-positive. Pass `allow_negative_balance: true` to
+ * apply the full deduction unconditionally; this is intended for refunds that
+ * reverse a specific prior purchase and must match that purchase amount
+ * regardless of the current balance.
  */
 export async function adjustCreditPool({
   course_instance_id,
@@ -282,6 +286,7 @@ export async function adjustCreditPool({
   user_id,
   reason,
   checkout_session_id,
+  allow_negative_balance,
 }: {
   course_instance_id: string;
   delta_milli_dollars: number;
@@ -289,8 +294,13 @@ export async function adjustCreditPool({
   user_id: string;
   reason: string;
   checkout_session_id?: string | null;
+  allow_negative_balance?: boolean;
 }): Promise<void> {
   if (delta_milli_dollars === 0) return;
+
+  if (allow_negative_balance && credit_type !== 'transferable') {
+    throw new Error('allow_negative_balance is only supported for transferable credits');
+  }
 
   await applyCreditPoolMutation({
     course_instance_id,
@@ -302,6 +312,9 @@ export async function adjustCreditPool({
       // Adds pass through unchanged so they can bring a negative balance
       // back up by the full amount entered.
       if (delta_milli_dollars > 0) return delta_milli_dollars;
+      // Refund-style deductions apply the full delta even if it drives the
+      // balance negative, so the pool correctly reverses the prior purchase.
+      if (allow_negative_balance) return delta_milli_dollars;
       // Once transferable can go negative, a fresh deduct here would silently
       // drive it further; block it and require an explicit `setCreditPoolBalance`.
       if (currentBalance <= 0) return 0;
