@@ -838,10 +838,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             element, "additional-simplifications", ADDITIONAL_SIMPLIFICATIONS_DEFAULT
         )
     )
-    if allow_sets and additional_simplifications:
-        raise ValueError(
-            "The 'additional-simplifications' attribute cannot be used when 'allow-set-notation' is true."
-        )
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     # Get true answer (if it does not exist, create no grade - leave it
