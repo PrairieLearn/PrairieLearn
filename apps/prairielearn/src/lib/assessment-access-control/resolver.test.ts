@@ -31,17 +31,25 @@ function toRuntime(json: AccessControlJson): RuntimeAccessControl {
     };
   }
   if (afterComplete) {
-    const { showQuestionsAgainDate, hideQuestionsAgainDate, showScoreAgainDate, ...acRest } =
-      afterComplete;
-    result.afterComplete = {
-      ...acRest,
-      showQuestionsAgainDate:
-        showQuestionsAgainDate != null ? new Date(showQuestionsAgainDate) : showQuestionsAgainDate,
-      hideQuestionsAgainDate:
-        hideQuestionsAgainDate != null ? new Date(hideQuestionsAgainDate) : hideQuestionsAgainDate,
-      showScoreAgainDate:
-        showScoreAgainDate != null ? new Date(showScoreAgainDate) : showScoreAgainDate,
-    };
+    result.afterComplete = {};
+    if (afterComplete.questions) {
+      const q = afterComplete.questions;
+      result.afterComplete.questions = {
+        hidden: q.hidden,
+        visibleFromDate:
+          q.visibleFromDate != null ? new Date(q.visibleFromDate) : q.visibleFromDate,
+        visibleUntilDate:
+          q.visibleUntilDate != null ? new Date(q.visibleUntilDate) : q.visibleUntilDate,
+      };
+    }
+    if (afterComplete.score) {
+      const s = afterComplete.score;
+      result.afterComplete.score = {
+        hidden: s.hidden,
+        visibleFromDate:
+          s.visibleFromDate != null ? new Date(s.visibleFromDate) : s.visibleFromDate,
+      };
+    }
   }
   return result;
 }
@@ -145,7 +153,7 @@ describe('resolveAccessControl', () => {
   });
 
   describe('main rule with date control', () => {
-    it('denies access before release date when listBeforeRelease is false', () => {
+    it('denies access before release date when beforeRelease.listed is false', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -223,6 +231,35 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(false);
     });
 
+    it('handles late deadline with 0% credit', () => {
+      const rule = makeMainRule({
+        dateControl: {
+          releaseDate: '2025-03-01T00:00:00Z',
+          dueDate: '2025-03-10T00:00:00Z',
+          lateDeadlines: [{ date: '2025-03-15T00:00:00Z', credit: 0 }],
+        },
+      });
+
+      // Check during the late deadline period: should be active for no credit.
+      // This is a regression test; we used to treat 0% credit as active:false.
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        date: new Date('2025-03-12T00:00:00Z'),
+      });
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(true);
+
+      // Check again after the late deadline.
+      const resultAfter = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        date: new Date('2025-03-16T00:00:00Z'),
+      });
+      expect(resultAfter.credit).toBe(0);
+      expect(resultAfter.active).toBe(false);
+    });
+
     it('uses afterLastDeadline credit when specified', () => {
       const result = resolveAccessControl({
         ...baseInput,
@@ -231,7 +268,7 @@ describe('resolveAccessControl', () => {
             dateControl: {
               releaseDate: '2025-03-01T00:00:00Z',
               dueDate: '2025-03-10T00:00:00Z',
-              afterLastDeadline: { credit: 25 },
+              afterLastDeadline: { credit: 25, allowSubmissions: true },
             },
           }),
         ],
@@ -249,13 +286,36 @@ describe('resolveAccessControl', () => {
             dateControl: {
               releaseDate: '2025-01-01T00:00:00Z',
               dueDate: '2025-03-10T00:00:00Z',
-              afterLastDeadline: { credit: 25, allowSubmissions: false },
+              afterLastDeadline: { allowSubmissions: false },
             },
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
       });
-      expect(result.credit).toBe(25);
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
+    });
+
+    it('clears inherited afterLastDeadline credit when an override disables submissions', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-01-01T00:00:00Z',
+              dueDate: '2025-03-10T00:00:00Z',
+              afterLastDeadline: { credit: 25, allowSubmissions: true },
+            },
+          }),
+          makeOverrideRule(
+            1,
+            { dateControl: { afterLastDeadline: { allowSubmissions: false } } },
+            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
+          ),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
     });
 
@@ -264,7 +324,7 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            listBeforeRelease: true,
+            beforeRelease: { listed: true },
             dateControl: {
               releaseDate: '2025-04-01T00:00:00Z',
               dueDate: '2025-05-01T00:00:00Z',
@@ -283,7 +343,7 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            listBeforeRelease: true,
+            beforeRelease: { listed: true },
             dateControl: {
               releaseDate: '2025-03-01T00:00:00Z',
               dueDate: '2025-05-01T00:00:00Z',
@@ -310,42 +370,57 @@ describe('resolveAccessControl', () => {
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
     });
+
+    it('returns 100% credit when after release date and no deadlines', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: { releaseDate: '2025-03-01T00:00:00Z' },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(true);
+    });
   });
 
   describe('early deadline bonus credit', () => {
-    it('gives bonus credit before early deadline', () => {
+    it.each([
+      {
+        label: 'before early deadline',
+        date: '2025-03-05T00:00:00Z',
+        expectedCredit: 110,
+        earlyDate: '2025-03-10T00:00:00Z',
+      },
+      {
+        label: 'after early deadline but before due date',
+        date: '2025-03-12T00:00:00Z',
+        expectedCredit: 100,
+        earlyDate: '2025-03-10T00:00:00Z',
+      },
+      {
+        label: 'before early deadline equal to due date',
+        date: '2025-03-12T00:00:00Z',
+        expectedCredit: 110,
+        earlyDate: '2025-03-20T00:00:00Z',
+      },
+    ])('gives $expectedCredit% credit $label', ({ date, expectedCredit, earlyDate }) => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
           makeMainRule({
             dateControl: {
               releaseDate: '2025-03-01T00:00:00Z',
-              earlyDeadlines: [{ date: '2025-03-10T00:00:00Z', credit: 110 }],
+              earlyDeadlines: [{ date: earlyDate, credit: 110 }],
               dueDate: '2025-03-20T00:00:00Z',
             },
           }),
         ],
-        date: new Date('2025-03-05T00:00:00Z'),
+        date: new Date(date),
       });
-      expect(result.credit).toBe(110);
-      expect(result.active).toBe(true);
-    });
-
-    it('gives 100% credit after early deadline but before due date', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [
-          makeMainRule({
-            dateControl: {
-              releaseDate: '2025-03-01T00:00:00Z',
-              earlyDeadlines: [{ date: '2025-03-10T00:00:00Z', credit: 110 }],
-              dueDate: '2025-03-20T00:00:00Z',
-            },
-          }),
-        ],
-        date: new Date('2025-03-12T00:00:00Z'),
-      });
-      expect(result.credit).toBe(100);
+      expect(result.credit).toBe(expectedCredit);
     });
   });
 
@@ -474,30 +549,6 @@ describe('resolveAccessControl', () => {
       });
       // Both overrides apply, second (due July 1 UTC = Jun 30 CDT) wins
       expect(result.credit).toBe(100);
-      expect(result.creditDateString).toContain('Jun 30');
-    });
-
-    it('applies all matching overrides', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [
-          makeMainRule({
-            dateControl: { releaseDate: '2025-01-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' },
-          }),
-          makeOverrideRule(
-            1,
-            { dateControl: { dueDate: '2025-06-01T00:00:00Z' } },
-            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
-          ),
-          makeOverrideRule(
-            2,
-            { dateControl: { dueDate: '2025-07-01T00:00:00Z' } },
-            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
-          ),
-        ],
-        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
-      });
-      // Second override (due July 1 UTC = Jun 30 CDT) wins via cascade
       expect(result.creditDateString).toContain('Jun 30');
     });
   });
@@ -834,7 +885,7 @@ describe('resolveAccessControl', () => {
           dateControl: {
             releaseDate: '2025-01-01T00:00:00Z',
             dueDate: '2025-02-01T00:00:00Z',
-            afterLastDeadline: { credit: 50 },
+            afterLastDeadline: { credit: 50, allowSubmissions: true },
           },
         }),
       };
@@ -944,7 +995,7 @@ describe('resolveAccessControl', () => {
   });
 
   describe('after-complete visibility', () => {
-    it('hides questions by default when hideQuestions is not set', () => {
+    it('hides questions by default when questions.hidden is not set', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [makeMainRule({})],
@@ -952,12 +1003,12 @@ describe('resolveAccessControl', () => {
       expect(result.showClosedAssessment).toBe(false);
     });
 
-    it('shows questions when hideQuestions is explicitly false', () => {
+    it('shows questions when questions.hidden is explicitly false', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
           makeMainRule({
-            afterComplete: { hideQuestions: false },
+            afterComplete: { questions: { hidden: false } },
           }),
         ],
       });
@@ -972,26 +1023,28 @@ describe('resolveAccessControl', () => {
       expect(result.showClosedAssessmentScore).toBe(true);
     });
 
-    it('hides assessment when hideQuestions is true', () => {
+    it('hides assessment when questions.hidden is true', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
           makeMainRule({
-            afterComplete: { hideQuestions: true },
+            afterComplete: { questions: { hidden: true } },
           }),
         ],
       });
       expect(result.showClosedAssessment).toBe(false);
     });
 
-    it('shows assessment again after showQuestionsAgainDate', () => {
+    it('shows assessment again after questions.visibleFromDate', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
           makeMainRule({
             afterComplete: {
-              hideQuestions: true,
-              showQuestionsAgainDate: '2025-03-10T00:00:00Z',
+              questions: {
+                hidden: true,
+                visibleFromDate: '2025-03-10T00:00:00Z',
+              },
             },
           }),
         ],
@@ -1000,15 +1053,17 @@ describe('resolveAccessControl', () => {
       expect(result.showClosedAssessment).toBe(true);
     });
 
-    it('hides assessment again after hideQuestionsAgainDate', () => {
+    it('hides assessment again after questions.visibleUntilDate', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
           makeMainRule({
             afterComplete: {
-              hideQuestions: true,
-              showQuestionsAgainDate: '2025-03-10T00:00:00Z',
-              hideQuestionsAgainDate: '2025-03-14T00:00:00Z',
+              questions: {
+                hidden: true,
+                visibleFromDate: '2025-03-10T00:00:00Z',
+                visibleUntilDate: '2025-03-14T00:00:00Z',
+              },
             },
           }),
         ],
@@ -1017,26 +1072,28 @@ describe('resolveAccessControl', () => {
       expect(result.showClosedAssessment).toBe(false);
     });
 
-    it('hides score when hideScore is true', () => {
+    it('hides score when score.hidden is true', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
           makeMainRule({
-            afterComplete: { hideScore: true },
+            afterComplete: { score: { hidden: true } },
           }),
         ],
       });
       expect(result.showClosedAssessmentScore).toBe(false);
     });
 
-    it('shows score again after showScoreAgainDate', () => {
+    it('shows score again after score.visibleFromDate', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
           makeMainRule({
             afterComplete: {
-              hideScore: true,
-              showScoreAgainDate: '2025-03-10T00:00:00Z',
+              score: {
+                hidden: true,
+                visibleFromDate: '2025-03-10T00:00:00Z',
+              },
             },
           }),
         ],
@@ -1044,6 +1101,92 @@ describe('resolveAccessControl', () => {
       });
       expect(result.showClosedAssessmentScore).toBe(true);
     });
+  });
+
+  describe('after-complete visibility with PrairieTest', () => {
+    const ptExam = { uuid: 'pt-exam-1', readOnly: false };
+    const ptExamReadOnly = { uuid: 'pt-exam-1', readOnly: true };
+    const validReservation: PrairieTestReservation = {
+      examUuid: 'pt-exam-1',
+      accessEnd: new Date('2025-03-15T14:00:00Z'),
+    };
+
+    const visibilityConfigs = [
+      {
+        name: 'hide both questions and score',
+        afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+        showClosedAssessment: false,
+        showClosedAssessmentScore: false,
+      },
+      {
+        name: 'show both questions and score',
+        afterComplete: { questions: { hidden: false }, score: { hidden: false } },
+        showClosedAssessment: true,
+        showClosedAssessmentScore: true,
+      },
+      {
+        name: 'hide questions, show score',
+        afterComplete: { questions: { hidden: true }, score: { hidden: false } },
+        showClosedAssessment: false,
+        showClosedAssessmentScore: true,
+      },
+      {
+        name: 'show questions, hide score',
+        afterComplete: { questions: { hidden: false }, score: { hidden: true } },
+        showClosedAssessment: true,
+        showClosedAssessmentScore: false,
+      },
+    ];
+
+    it.each(visibilityConfigs)(
+      'active PT reservation: $name',
+      ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExam] }],
+          prairieTestReservations: [validReservation],
+        });
+        expect(result.authorized).toBe(true);
+        expect(result.active).toBe(true);
+        expect(result.showClosedAssessment).toBe(showClosedAssessment);
+        expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
+      },
+    );
+
+    it.each(visibilityConfigs)(
+      'readOnly PT reservation: $name',
+      ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExamReadOnly] }],
+          prairieTestReservations: [validReservation],
+        });
+        expect(result.authorized).toBe(true);
+        expect(result.active).toBe(false);
+        expect(result.showClosedAssessment).toBe(showClosedAssessment);
+        expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
+      },
+    );
+
+    // The gradebook displays rows even when access is denied and relies on
+    // `showClosedAssessmentScore` to decide whether to reveal prior scores, so
+    // the deny path must still honor the configured visibility flags.
+    it.each(visibilityConfigs)(
+      'Exam mode with no PT reservation: $name',
+      ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExam] }],
+          prairieTestReservations: [],
+        });
+        expect(result.authorized).toBe(false);
+        expect(result.showClosedAssessment).toBe(showClosedAssessment);
+        expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
+      },
+    );
   });
 
   describe('credit date string formatting', () => {
@@ -1209,89 +1352,121 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T00:00:00Z'),
       });
-      expect(result.credit).toBe(0);
-      expect(result.active).toBe(false);
+      expect(result.authorized).toBe(true);
+      expect(result.credit).toBe(100);
+      expect(result.active).toBe(true);
     });
   });
 
-  describe('no date control defaults', () => {
-    it.each([
-      { label: 'dateControl absent', rule: {} },
-      {
-        label: 'dateControl has no releaseDate',
-        rule: { dateControl: { dueDate: '2025-05-01T00:00:00Z' } },
-      },
-      {
-        label: 'dateControl has releaseDate but no deadlines/due date',
-        rule: { dateControl: { releaseDate: '2025-03-01T00:00:00Z' } },
-      },
-    ])('returns 0 credit when $label', ({ rule }) => {
+  describe('migrated non-100% credit rules', () => {
+    it('gives reduced credit before late deadline when no dueDate', () => {
+      // Migrated from: { credit: 50, startDate: ..., endDate: '2025-04-01' }
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [makeMainRule(rule)],
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-01T00:00:00Z',
+              lateDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 50 }],
+            },
+          }),
+        ],
         date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(50);
+      expect(result.active).toBe(true);
+    });
+
+    it('gives 0 credit after late deadline when no dueDate', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-01T00:00:00Z',
+              lateDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 50 }],
+            },
+          }),
+        ],
+        date: new Date('2025-04-15T00:00:00Z'),
       });
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
     });
-  });
 
-  describe('afterComplete visibility edge cases', () => {
-    const cases: {
-      label: string;
-      afterComplete: AccessControlJson['afterComplete'];
-      date?: string;
-      expectedAssessment?: boolean;
-      expectedScore?: boolean;
-    }[] = [
-      {
-        label: 'ignores showQuestionsAgainDate when hideQuestions is false',
-        afterComplete: { hideQuestions: false, showQuestionsAgainDate: '2025-06-01T00:00:00Z' },
-        expectedAssessment: true,
-      },
-      {
-        label: 'ignores hideQuestionsAgainDate when hideQuestions is false',
-        afterComplete: { hideQuestions: false, hideQuestionsAgainDate: '2025-01-01T00:00:00Z' },
-        expectedAssessment: true,
-      },
-      {
-        label: 'ignores showScoreAgainDate when hideScore is false',
-        afterComplete: { hideScore: false, showScoreAgainDate: '2025-06-01T00:00:00Z' },
-        expectedAssessment: false,
-        expectedScore: true,
-      },
-      {
-        label: 'ignores hideQuestionsAgainDate when showQuestionsAgainDate is not set',
-        afterComplete: { hideQuestions: true, hideQuestionsAgainDate: '2025-04-01T00:00:00Z' },
-        date: '2025-05-01T00:00:00Z',
-        expectedAssessment: false,
-      },
-    ];
+    it('gives bonus credit before early deadline when no dueDate', () => {
+      // Migrated from: { credit: 120, startDate: ..., endDate: '2025-04-01' }
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-01T00:00:00Z',
+              earlyDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 120 }],
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(120);
+      expect(result.active).toBe(true);
+    });
 
-    it.each(cases)(
-      '$label',
-      ({ afterComplete, date, expectedAssessment = true, expectedScore = true }) => {
-        const result = resolveAccessControl({
-          ...baseInput,
-          rules: [
-            makeMainRule({
-              dateControl: { dueDate: '2025-03-10T00:00:00Z' },
-              afterComplete,
-            }),
-          ],
-          ...(date ? { date: new Date(date) } : {}),
-        });
-        expect(result.showClosedAssessment).toBe(expectedAssessment);
-        expect(result.showClosedAssessmentScore).toBe(expectedScore);
-      },
-    );
+    it('gives 0 credit after early deadline when no dueDate', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-01T00:00:00Z',
+              earlyDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 120 }],
+            },
+          }),
+        ],
+        date: new Date('2025-04-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
+    });
+
+    it('resolves bonus+reduced declining credit without dueDate', () => {
+      // Migrated from: [{ credit: 120, endDate: '2025-03-10' }, { credit: 50, endDate: '2025-04-01' }]
+      const rule = makeMainRule({
+        dateControl: {
+          releaseDate: '2025-03-01T00:00:00Z',
+          earlyDeadlines: [{ date: '2025-03-10T00:00:00Z', credit: 120 }],
+          lateDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 50 }],
+        },
+      });
+
+      const beforeBonus = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        date: new Date('2025-03-05T00:00:00Z'),
+      });
+      expect(beforeBonus.credit).toBe(120);
+
+      const afterBonus = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(afterBonus.credit).toBe(50);
+
+      const afterAll = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        date: new Date('2025-04-15T00:00:00Z'),
+      });
+      expect(afterAll.credit).toBe(0);
+    });
   });
 
   describe('showBeforeRelease edge cases', () => {
-    it('shows before release when listBeforeRelease set without dateControl', () => {
+    it('shows before release when beforeRelease.listed set without dateControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [makeMainRule({ listBeforeRelease: true })],
+        rules: [makeMainRule({ beforeRelease: { listed: true } })],
       });
       // No dateControl → no release mechanism → perpetually "before release"
       expect(result.authorized).toBe(true);
@@ -1304,7 +1479,7 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            listBeforeRelease: true,
+            beforeRelease: { listed: true },
             dateControl: {
               dueDate: '2025-04-01T00:00:00Z',
             },
@@ -1317,7 +1492,7 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(false);
     });
 
-    it('does not show before release without listBeforeRelease and no dateControl', () => {
+    it('does not show before release without beforeRelease.listed and no dateControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [makeMainRule({})],
@@ -1330,18 +1505,20 @@ describe('resolveAccessControl', () => {
   describe('showBeforeRelease with PrairieTest', () => {
     const ptExam = { uuid: 'pt-exam-1', readOnly: false };
 
-    it('lists but does not authorize PT assessment when listBeforeRelease set and not in exam mode', () => {
+    it('lists but does not authorize PT assessment when beforeRelease.listed set and not in exam mode', () => {
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [{ ...makeMainRule({ listBeforeRelease: true }), prairietestExams: [ptExam] }],
+        rules: [
+          { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam] },
+        ],
       });
-      // Not in exam mode but listBeforeRelease → listed but not authorized
+      // Not in exam mode but beforeRelease.listed → listed but not authorized
       expect(result.authorized).toBe(false);
       expect(result.showBeforeRelease).toBe(true);
       expect(result.active).toBe(false);
     });
 
-    it('hides PT assessment when listBeforeRelease false and not in exam mode', () => {
+    it('hides PT assessment when beforeRelease.listed false and not in exam mode', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
@@ -1353,7 +1530,9 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',
-        rules: [{ ...makeMainRule({ listBeforeRelease: true }), prairietestExams: [ptExam] }],
+        rules: [
+          { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam] },
+        ],
         prairieTestReservations: [
           { examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
         ],
@@ -1363,7 +1542,7 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(false);
     });
 
-    it('hides PT assessment when listBeforeRelease false and no matching reservation', () => {
+    it('hides PT assessment when beforeRelease.listed false and no matching reservation', () => {
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',
@@ -1377,15 +1556,17 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(false);
     });
 
-    it('does not grant access to PT assessment via listBeforeRelease bypass', () => {
-      // Regression test: listBeforeRelease must not set authorized=true for
+    it('does not grant access to PT assessment via beforeRelease.listed bypass', () => {
+      // Regression test: beforeRelease.listed must not set authorized=true for
       // PrairieTest-gated assessments, otherwise students can start instances
       // by posting directly to the assessment URL.
       for (const authzMode of ['Public', 'Exam'] as const) {
         const result = resolveAccessControl({
           ...baseInput,
           authzMode,
-          rules: [{ ...makeMainRule({ listBeforeRelease: true }), prairietestExams: [ptExam] }],
+          rules: [
+            { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam] },
+          ],
           prairieTestReservations:
             authzMode === 'Exam'
               ? [{ examUuid: 'wrong-exam', accessEnd: new Date('2025-04-01T00:00:00Z') }]
@@ -1408,7 +1589,7 @@ describe('resolveAccessControl', () => {
           rules: [
             {
               ...makeMainRule({
-                listBeforeRelease: true,
+                beforeRelease: { listed: true },
                 dateControl: {
                   releaseDate: '2025-01-01T00:00:00Z',
                   dueDate: '2025-02-01T00:00:00Z',
@@ -1453,37 +1634,20 @@ describe('resolveAccessControl', () => {
       expect(result.showBeforeRelease).toBe(false);
     });
 
-    it('keeps closed scores hidden when Exam mode outlives the PrairieTest reservation', () => {
+    it('denies access when Exam mode outlives the PrairieTest reservation', () => {
       // Regression test for #12579: `ip_to_mode` can continue reporting Exam
       // mode for a short grace period after PrairieTest has already ended the
-      // reservation. The migrated PT rule should still respect the closed
-      // assessment visibility settings in that state.
+      // reservation.
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',
-        rules: [
-          {
-            ...makeMainRule({
-              dateControl: {
-                releaseDate: '2025-01-01T00:00:00Z',
-                dueDate: null,
-              },
-              afterComplete: {
-                hideQuestions: true,
-                hideScore: true,
-              },
-            }),
-            prairietestExams: [ptExam],
-          },
-        ],
+        rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
         prairieTestReservations: [],
       });
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
       expect(result.examAccessEnd).toBeNull();
-      expect(result.showClosedAssessment).toBe(false);
-      expect(result.showClosedAssessmentScore).toBe(false);
       expect(result.showBeforeRelease).toBe(false);
     });
 
@@ -1495,7 +1659,7 @@ describe('resolveAccessControl', () => {
         rules: [
           {
             ...makeMainRule({
-              listBeforeRelease: true,
+              beforeRelease: { listed: true },
               dateControl: {
                 releaseDate: '2025-01-01T00:00:00Z',
                 dueDate: '2025-06-01T00:00:00Z',
@@ -1513,7 +1677,7 @@ describe('resolveAccessControl', () => {
 
 describe('mergeRules', () => {
   it('returns main rule when override is null', () => {
-    const main = toRuntime({ listBeforeRelease: true });
+    const main = toRuntime({ beforeRelease: { listed: true } });
     expect(mergeRules(main, null)).toEqual(main);
   });
 
@@ -1543,43 +1707,55 @@ describe('mergeRules', () => {
   });
 
   it('sets afterComplete from override when main has none', () => {
-    const result = mergeRules(toRuntime({}), toRuntime({ afterComplete: { hideQuestions: true } }));
-    expect(result.afterComplete?.hideQuestions).toBe(true);
+    const result = mergeRules(
+      toRuntime({}),
+      toRuntime({ afterComplete: { questions: { hidden: true } } }),
+    );
+    expect(result.afterComplete?.questions?.hidden).toBe(true);
   });
 
   it('merges afterComplete fields', () => {
     const result = mergeRules(
-      toRuntime({ afterComplete: { hideQuestions: true, hideScore: true } }),
-      toRuntime({ afterComplete: { hideQuestions: false } }),
+      toRuntime({
+        afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+      }),
+      toRuntime({ afterComplete: { questions: { hidden: false } } }),
     );
-    expect(result.afterComplete?.hideQuestions).toBe(false);
-    expect(result.afterComplete?.hideScore).toBe(true);
+    expect(result.afterComplete?.questions?.hidden).toBe(false);
+    expect(result.afterComplete?.score?.hidden).toBe(true);
   });
 
-  it('allows override to clear main rule after-complete dates via null', () => {
+  it('allows override to clear main rule after-complete dates', () => {
     const result = mergeRules(
       toRuntime({
         afterComplete: {
-          hideQuestions: true,
-          showQuestionsAgainDate: '2025-06-01T00:00:00Z',
-          hideQuestionsAgainDate: '2025-09-01T00:00:00Z',
-          hideScore: true,
-          showScoreAgainDate: '2025-07-01T00:00:00Z',
+          questions: {
+            hidden: true,
+            visibleFromDate: '2025-06-01T00:00:00Z',
+            visibleUntilDate: '2025-09-01T00:00:00Z',
+          },
+          score: {
+            hidden: true,
+            visibleFromDate: '2025-07-01T00:00:00Z',
+          },
         },
       }),
       toRuntime({
         afterComplete: {
-          showQuestionsAgainDate: null,
-          hideQuestionsAgainDate: null,
-          showScoreAgainDate: null,
+          questions: {
+            hidden: true,
+          },
+          score: {
+            hidden: true,
+          },
         },
       }),
     );
-    expect(result.afterComplete?.hideQuestions).toBe(true);
-    expect(result.afterComplete?.showQuestionsAgainDate).toBeNull();
-    expect(result.afterComplete?.hideQuestionsAgainDate).toBeNull();
-    expect(result.afterComplete?.hideScore).toBe(true);
-    expect(result.afterComplete?.showScoreAgainDate).toBeNull();
+    expect(result.afterComplete?.questions?.hidden).toBe(true);
+    expect(result.afterComplete?.questions?.visibleFromDate).toBeUndefined();
+    expect(result.afterComplete?.questions?.visibleUntilDate).toBeUndefined();
+    expect(result.afterComplete?.score?.hidden).toBe(true);
+    expect(result.afterComplete?.score?.visibleFromDate).toBeUndefined();
   });
 
   it.each<{ field: keyof RuntimeAccessControl; main: AccessControlJson }>([
@@ -1602,8 +1778,11 @@ describe('mergeRules', () => {
   });
 
   it('inherits afterComplete from main when override has none', () => {
-    const result = mergeRules(toRuntime({ afterComplete: { hideQuestions: true } }), toRuntime({}));
-    expect(result.afterComplete?.hideQuestions).toBe(true);
+    const result = mergeRules(
+      toRuntime({ afterComplete: { questions: { hidden: true } } }),
+      toRuntime({}),
+    );
+    expect(result.afterComplete?.questions?.hidden).toBe(true);
   });
 
   it('inherits dateControl sub-fields from main when override has none', () => {
@@ -1615,12 +1794,30 @@ describe('mergeRules', () => {
     expect(result.dateControl?.password).toBe('secret');
   });
 
-  it('ignores listBeforeRelease on overrides', () => {
+  it('clears main afterLastDeadline credit when override disables submissions', () => {
     const result = mergeRules(
-      toRuntime({ listBeforeRelease: false }),
-      toRuntime({ listBeforeRelease: true }),
+      toRuntime({
+        dateControl: {
+          afterLastDeadline: { allowSubmissions: true, credit: 25 },
+        },
+      }),
+      toRuntime({
+        dateControl: {
+          afterLastDeadline: { allowSubmissions: false },
+        },
+      }),
     );
-    expect(result.listBeforeRelease).toBe(false);
+    expect(result.dateControl?.afterLastDeadline).toEqual({
+      allowSubmissions: false,
+    });
+  });
+
+  it('ignores beforeRelease on overrides', () => {
+    const result = mergeRules(
+      toRuntime({ beforeRelease: { listed: false } }),
+      toRuntime({ beforeRelease: { listed: true } }),
+    );
+    expect(result.beforeRelease?.listed).toBe(false);
   });
 });
 
@@ -1653,66 +1850,85 @@ describe('cascadeOverrides', () => {
 
   it('merges afterComplete sub-fields', () => {
     const result = cascadeOverrides(
-      toRuntime({ afterComplete: { hideQuestions: true, hideScore: true } }),
-      toRuntime({ afterComplete: { hideQuestions: false } }),
+      toRuntime({
+        afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+      }),
+      toRuntime({ afterComplete: { questions: { hidden: false } } }),
     );
-    expect(result.afterComplete?.hideQuestions).toBe(false);
-    expect(result.afterComplete?.hideScore).toBe(true);
+    expect(result.afterComplete?.questions?.hidden).toBe(false);
+    expect(result.afterComplete?.score?.hidden).toBe(true);
   });
 
-  it('does not carry listBeforeRelease through cascaded overrides', () => {
-    const result = cascadeOverrides(toRuntime({ listBeforeRelease: true }), toRuntime({}));
-    expect(result.listBeforeRelease).toBeUndefined();
+  it('does not carry beforeRelease through cascaded overrides', () => {
+    const result = cascadeOverrides(toRuntime({ beforeRelease: { listed: true } }), toRuntime({}));
+    expect(result.beforeRelease).toBeUndefined();
   });
 });
 
 describe('resolveVisibility', () => {
   const now = new Date('2025-03-15T12:00:00Z');
 
-  it('returns true when hide is false', () => {
-    expect(resolveVisibility(false, undefined, undefined, now)).toBe(true);
-  });
-
-  it('returns true when hide is undefined', () => {
-    expect(resolveVisibility(undefined, undefined, undefined, now)).toBe(true);
-  });
-
-  it('returns false when hide is true and no show-again date', () => {
-    expect(resolveVisibility(true, undefined, undefined, now)).toBe(false);
-  });
-
-  it('returns false when hide is true and show-again date is null', () => {
-    expect(resolveVisibility(true, null, undefined, now)).toBe(false);
-  });
-
-  it('returns true when past show-again date', () => {
-    expect(resolveVisibility(true, new Date('2025-03-10T00:00:00Z'), undefined, now)).toBe(true);
-  });
-
-  it('returns false when before show-again date', () => {
-    expect(resolveVisibility(true, new Date('2025-03-20T00:00:00Z'), undefined, now)).toBe(false);
-  });
-
-  it('returns false when past hide-again date', () => {
-    expect(
-      resolveVisibility(
-        true,
-        new Date('2025-03-10T00:00:00Z'),
-        new Date('2025-03-14T00:00:00Z'),
-        now,
-      ),
-    ).toBe(false);
-  });
-
-  it('returns true when past show-again but before hide-again', () => {
-    expect(
-      resolveVisibility(
-        true,
-        new Date('2025-03-10T00:00:00Z'),
-        new Date('2025-03-20T00:00:00Z'),
-        now,
-      ),
-    ).toBe(true);
+  it.each([
+    {
+      label: 'hide=false',
+      hide: false,
+      showAgain: undefined,
+      hideAgain: undefined,
+      expected: true,
+    },
+    {
+      label: 'hide=undefined',
+      hide: undefined,
+      showAgain: undefined,
+      hideAgain: undefined,
+      expected: true,
+    },
+    {
+      label: 'hide=true, no show-again',
+      hide: true,
+      showAgain: undefined,
+      hideAgain: undefined,
+      expected: false,
+    },
+    {
+      label: 'hide=true, show-again=null',
+      hide: true,
+      showAgain: null,
+      hideAgain: undefined,
+      expected: false,
+    },
+    {
+      label: 'past show-again date',
+      hide: true,
+      showAgain: '2025-03-10T00:00:00Z',
+      hideAgain: undefined,
+      expected: true,
+    },
+    {
+      label: 'before show-again date',
+      hide: true,
+      showAgain: '2025-03-20T00:00:00Z',
+      hideAgain: undefined,
+      expected: false,
+    },
+    {
+      label: 'past hide-again date',
+      hide: true,
+      showAgain: '2025-03-10T00:00:00Z',
+      hideAgain: '2025-03-14T00:00:00Z',
+      expected: false,
+    },
+    {
+      label: 'past show-again, before hide-again',
+      hide: true,
+      showAgain: '2025-03-10T00:00:00Z',
+      hideAgain: '2025-03-20T00:00:00Z',
+      expected: true,
+    },
+  ] as const)('returns $expected when $label', ({ hide, showAgain, hideAgain, expected }) => {
+    const showDate = showAgain != null ? new Date(showAgain) : showAgain;
+    const hideDate = hideAgain != null ? new Date(hideAgain) : undefined;
+    expect(resolveVisibility(hide, showDate, hideDate, now)).toBe(expected);
   });
 });
 

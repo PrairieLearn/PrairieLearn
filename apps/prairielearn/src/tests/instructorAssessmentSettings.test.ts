@@ -71,6 +71,23 @@ async function createTrpcClient(assessmentId: string) {
   });
 }
 
+const defaultMutationFields = {
+  text: '',
+  allow_issue_reporting: true,
+  allow_personal_notes: true,
+  multiple_instance: false,
+  auto_close: true,
+  require_honor_code: true,
+  honor_code: '',
+  max_points: null,
+  max_bonus_points: null,
+  constant_question_value: false,
+  shuffle_questions: false,
+  advance_score_perc: null,
+  allow_real_time_grading: true,
+  grade_rate_minutes: null,
+};
+
 describe('Editing assessment settings', () => {
   beforeAll(async () => {
     courseRepo = await createCourseRepoFixture(courseTemplateDir);
@@ -95,13 +112,7 @@ describe('Editing assessment settings', () => {
       number: '1',
       module: 'Module2',
       aid: 'HW2',
-      text: '',
-      allow_issue_reporting: true,
-      allow_personal_notes: true,
-      multiple_instance: false,
-      auto_close: true,
-      require_honor_code: true,
-      honor_code: '',
+      ...defaultMutationFields,
       origHash: await getOrigHash(assessmentLiveInfoPath),
     });
     assert.ok(result.origHash);
@@ -125,13 +136,7 @@ describe('Editing assessment settings', () => {
       number: '1',
       module: 'Module2',
       aid: 'nestedPath/HW2',
-      text: '',
-      allow_issue_reporting: true,
-      allow_personal_notes: true,
-      multiple_instance: false,
-      auto_close: true,
-      require_honor_code: true,
-      honor_code: '',
+      ...defaultMutationFields,
       origHash: await getOrigHash(assessmentLiveInfoPath),
     });
     assert.ok(result.origHash);
@@ -156,13 +161,7 @@ describe('Editing assessment settings', () => {
       number: '1',
       module: 'Module2',
       aid: 'HW2',
-      text: '',
-      allow_issue_reporting: true,
-      allow_personal_notes: true,
-      multiple_instance: false,
-      auto_close: true,
-      require_honor_code: true,
-      honor_code: '',
+      ...defaultMutationFields,
       origHash: await getOrigHash(assessmentLiveInfoPath),
     });
     assert.ok(result.origHash);
@@ -237,13 +236,7 @@ describe('Editing assessment settings', () => {
           number: '1',
           module: 'Module1',
           aid: 'HW1',
-          text: '',
-          allow_issue_reporting: true,
-          allow_personal_notes: true,
-          multiple_instance: false,
-          auto_close: true,
-          require_honor_code: true,
-          honor_code: '',
+          ...defaultMutationFields,
           origHash: await getOrigHash(assessmentLiveInfoPath),
         });
         assert.fail('Expected mutation to throw');
@@ -269,13 +262,7 @@ describe('Editing assessment settings', () => {
           number: '1',
           module: 'Module1',
           aid: 'HW1',
-          text: '',
-          allow_issue_reporting: true,
-          allow_personal_notes: true,
-          multiple_instance: false,
-          auto_close: true,
-          require_honor_code: true,
-          honor_code: '',
+          ...defaultMutationFields,
           origHash,
         });
         assert.fail('Expected mutation to throw');
@@ -300,13 +287,7 @@ describe('Editing assessment settings', () => {
       number: assessmentInfo.number,
       module: assessmentInfo.module,
       aid: 'HW2',
-      text: '',
-      allow_issue_reporting: true,
-      allow_personal_notes: true,
-      multiple_instance: false,
-      auto_close: true,
-      require_honor_code: true,
-      honor_code: '',
+      ...defaultMutationFields,
       origHash: await getOrigHash(assessmentLiveInfoPath),
     });
     assert.ok(result.origHash);
@@ -338,13 +319,7 @@ describe('Editing assessment settings', () => {
           number: '1',
           module: 'Module1',
           aid: 'HW1',
-          text: '',
-          allow_issue_reporting: true,
-          allow_personal_notes: true,
-          multiple_instance: false,
-          auto_close: true,
-          require_honor_code: true,
-          honor_code: '',
+          ...defaultMutationFields,
           origHash: staleOrigHash,
         });
         assert.fail('Expected mutation to throw');
@@ -364,13 +339,7 @@ describe('Editing assessment settings', () => {
       number: '1',
       module: 'Module1',
       aid: 'A1',
-      text: '',
-      allow_issue_reporting: true,
-      allow_personal_notes: true,
-      multiple_instance: false,
-      auto_close: true,
-      require_honor_code: true,
-      honor_code: '',
+      ...defaultMutationFields,
       origHash: await getOrigHash(assessmentLiveInfoPath),
     });
     assert.ok(result.origHash);
@@ -393,13 +362,7 @@ describe('Editing assessment settings', () => {
           number: '1',
           module: 'Module1',
           aid: '../A2',
-          text: '',
-          allow_issue_reporting: true,
-          allow_personal_notes: true,
-          multiple_instance: false,
-          auto_close: true,
-          require_honor_code: true,
-          honor_code: '',
+          ...defaultMutationFields,
           origHash: await getOrigHash(assessmentLiveInfoPath),
         });
         assert.fail('Expected mutation to throw');
