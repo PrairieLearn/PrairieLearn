@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import * as path from 'path';
 
+import { Temporal } from '@js-temporal/polyfill';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
@@ -48,6 +49,14 @@ import { type ServerJob, type ServerJobExecutor, createServerJob } from './serve
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
+
+function todayAsDatetimeLocal(
+  timezone: string,
+  instant: Temporal.Instant = Temporal.Now.instant(),
+): string {
+  const today = instant.toZonedDateTimeISO(timezone).toPlainDate();
+  return `${today.toString()}T00:00:00`;
+}
 
 async function syncCourseFromDisk(
   course: Course,
@@ -776,8 +785,8 @@ export class CourseInstanceCopyEditor extends Editor {
   private is_transfer: boolean;
   private metadataOverrides?: Record<string, any>;
   private accessControlMigration?: {
-    strategy: 'migrate' | 'keep' | 'wipe';
-    preserveIncompatible: boolean;
+    strategy: 'migrate' | 'keep' | 'clear';
+    clearIncompatible: boolean;
   };
 
   public readonly uuid: string;
@@ -789,8 +798,8 @@ export class CourseInstanceCopyEditor extends Editor {
       course_instance: CourseInstance;
       metadataOverrides?: Record<string, any>;
       accessControlMigration?: {
-        strategy: 'migrate' | 'keep' | 'wipe';
-        preserveIncompatible: boolean;
+        strategy: 'migrate' | 'keep' | 'clear';
+        clearIncompatible: boolean;
       };
     },
   ) {
@@ -960,15 +969,18 @@ export class CourseInstanceCopyEditor extends Editor {
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
 
-    if (this.accessControlMigration && this.accessControlMigration.strategy !== 'keep') {
-      const assessmentsPath = path.join(courseInstancePath, 'assessments');
-      const assessmentDirs = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
-      for (const dir of assessmentDirs) {
-        const infoPath = path.join(assessmentsPath, dir, 'infoAssessment.json');
+    const assessmentsPath = path.join(courseInstancePath, 'assessments');
+    const assessmentDirs = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
+    for (const dir of assessmentDirs) {
+      const infoPath = path.join(assessmentsPath, dir, 'infoAssessment.json');
+
+      if (this.accessControlMigration && this.accessControlMigration.strategy !== 'keep') {
         await applyMigrationToAssessmentFile(
           infoPath,
           this.accessControlMigration.strategy,
-          this.accessControlMigration.preserveIncompatible,
+          this.accessControlMigration.clearIncompatible,
+          this.metadataOverrides?.publishing?.startDate ??
+            todayAsDatetimeLocal(this.course_instance.display_timezone),
         );
       }
     }

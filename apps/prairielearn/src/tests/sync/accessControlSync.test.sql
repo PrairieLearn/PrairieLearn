@@ -15,7 +15,7 @@ RETURNING
 INSERT INTO
   assessment_access_control_rules (
     assessment_id,
-    list_before_release,
+    before_release_listed,
     number,
     target_type,
     date_control_duration_minutes,

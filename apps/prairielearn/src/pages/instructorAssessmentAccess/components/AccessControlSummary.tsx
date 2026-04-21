@@ -17,7 +17,7 @@ import {
   DateTableView,
   OverrideRuleSummaryCard,
   type RuleFormErrors,
-  generateDateTableRows,
+  generateMainRuleDateTableRows,
   generateRuleSummary,
 } from './RuleSummary.js';
 import type { AccessControlFormData, MainRuleData, OverrideData } from './types.js';
@@ -115,7 +115,7 @@ function MainRuleSummaryContent({
   displayTimezone: string;
 }) {
   const summaryItems = generateRuleSummary(rule, displayTimezone, formErrors);
-  const dateTableRows = generateDateTableRows(rule, displayTimezone, formErrors);
+  const dateTableRows = generateMainRuleDateTableRows(rule, displayTimezone, formErrors);
 
   return (
     <div>

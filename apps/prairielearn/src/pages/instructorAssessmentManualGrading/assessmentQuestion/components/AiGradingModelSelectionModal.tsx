@@ -139,7 +139,7 @@ function ModelList({
               placement="top"
               tooltip={{
                 props: { id: 'cost-tooltip' },
-                body: 'Relative cost compared to the least expensive model, based on standard token usage.',
+                body: 'Relative cost compared to the default model, based on standard token usage.',
               }}
             >
               <i className="bi bi-question-circle" aria-hidden="true" />
@@ -236,13 +236,12 @@ function BillingAlert({
           </a>
         </>
       ) : (
-        // TODO: Update to "No credits remaining. Purchase credits in the
-        // AI grading settings page." when the Stripe integration PR is merged.
         <>
-          No credits remaining. Request for more credits to continue grading.{' '}
+          No credits remaining. Purchase credits on the{' '}
           <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
-            More info
-          </a>
+            AI grading settings
+          </a>{' '}
+          page.
         </>
       )}
     </Alert>

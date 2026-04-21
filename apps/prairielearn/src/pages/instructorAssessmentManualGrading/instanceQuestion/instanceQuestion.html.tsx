@@ -144,7 +144,7 @@ export function InstanceQuestion({
                 href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
                   .id}/manual_grading/assessment_question/${resLocals.assessment_question.id}"
               >
-                Question ${resLocals.assessment_question.number_in_alternative_group}.
+                Question ${resLocals.instance_question_info.instructor_question_number}.
                 ${resLocals.question.title}
               </a>
             </li>
