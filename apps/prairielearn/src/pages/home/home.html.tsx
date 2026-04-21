@@ -84,7 +84,7 @@ export function Home({
   });
 
   return (
-    <div className="pt-5">
+    <div className="pt-5 mx-auto" style={{ maxWidth: 960 }}>
       <h1 className="visually-hidden">PrairieLearn Homepage</h1>
       <DevModeCard isDevMode={isDevMode} />
       <AdminInstitutionsCard adminInstitutions={adminInstitutions} />

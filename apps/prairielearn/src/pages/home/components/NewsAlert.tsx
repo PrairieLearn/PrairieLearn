@@ -22,20 +22,11 @@ function NewsAlertItem({ item, now }: { item: NewsItem; now: Date }) {
       rel="noopener noreferrer"
       className="card h-100 text-decoration-none text-body bg-white news-alert-item"
     >
-      <div className="card-body p-3">
-        <div className="d-flex align-items-center gap-2 mb-2">
-          <span
-            className="bg-primary rounded-circle flex-shrink-0"
-            style={{ width: 8, height: 8 }}
-            aria-label="New"
-          />
-          <span className="fw-semibold flex-grow-1 text-truncate">{item.title}</span>
-          <i className="bi bi-arrow-up-right text-muted flex-shrink-0" aria-hidden="true" />
-        </div>
-        <div className="d-flex align-items-center gap-2 flex-wrap">
-          <span className="text-muted small" title={absoluteDateFormatter.format(item.pub_date)}>
-            {formatDistanceStrict(item.pub_date, now, { addSuffix: true })}
-          </span>
+      <div className="card-body d-flex align-items-center gap-3 py-2 px-3">
+        <span className="fw-semibold text-truncate" style={{ minWidth: 0 }}>
+          {item.title}
+        </span>
+        <div className="d-flex gap-1 flex-shrink-0">
           {item.categories.map((category) => (
             <span
               key={category}
@@ -45,6 +36,13 @@ function NewsAlertItem({ item, now }: { item: NewsItem; now: Date }) {
             </span>
           ))}
         </div>
+        <span
+          className="text-muted small ms-auto flex-shrink-0"
+          title={absoluteDateFormatter.format(item.pub_date)}
+        >
+          {formatDistanceStrict(item.pub_date, now, { addSuffix: true })}
+        </span>
+        <i className="bi bi-arrow-up-right text-muted flex-shrink-0" aria-hidden="true" />
       </div>
     </a>
   );
@@ -85,7 +83,7 @@ export function NewsAlert({
             <button type="submit" className="btn-close" aria-label="Dismiss news alert" />
           </form>
         </div>
-        <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+        <div className="row row-cols-1 g-2">
           {newsItems.map((item) => (
             <div key={item.guid} className="col">
               <NewsAlertItem item={item} now={now} />
