@@ -106,9 +106,7 @@ For an externally graded workspace, a full `info.json` file should look somethin
     },
     "gradingMethod": "External",
     "externalGradingOptions": {
-        "enabled": true,
         "image": "...",
-        "entrypoint": "...",
         "timeout": 20
     }
 }

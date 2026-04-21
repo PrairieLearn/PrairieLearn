@@ -113,7 +113,7 @@ function formJsonToEnrollmentRuleData(
   const ac = rule.afterComplete;
   return {
     id: rule.id,
-    listBeforeRelease: rule.listBeforeRelease ?? null,
+    beforeReleaseListed: rule.beforeRelease?.listed ?? null,
     releaseDate: dc?.releaseDate ?? null,
     dueDateOverridden: dc?.dueDate !== undefined,
     dueDate: dc?.dueDate ?? null,
@@ -159,7 +159,7 @@ function isNonEmptyObject(value: unknown): boolean {
 
 /**
  * Cleans access control rules for writing to infoAssessment.json on disk.
- * Removes empty objects/arrays and omits listBeforeRelease: false on the main rule.
+ * Removes empty objects/arrays and omits beforeRelease: { listed: false } on the main rule.
  */
 export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): AccessControlJson[] {
   return rules.map((rule, index) => {
@@ -169,8 +169,8 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
       clean.labels = rule.labels;
     }
 
-    if (index === 0 && rule.listBeforeRelease === true) {
-      clean.listBeforeRelease = true;
+    if (index === 0 && rule.beforeRelease?.listed === true) {
+      clean.beforeRelease = { listed: true };
     }
 
     if (isNonEmptyObject(rule.dateControl)) {

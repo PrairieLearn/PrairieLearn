@@ -8,7 +8,7 @@ function makeBaseRule(overrides: Record<string, unknown> = {}) {
     assessment_id: '100',
     number: 0,
     target_type: 'none' as const,
-    list_before_release: null,
+    before_release_listed: null,
     date_control_release_date: null,
     date_control_due_date: null,
     date_control_due_date_overridden: false,
