@@ -234,11 +234,7 @@ async function applyCreditPoolMutation({
   computeDelta: (currentBalance: number) => number;
 }): Promise<void> {
   await runInTransactionAsync(async () => {
-    const before = await queryRow(
-      sql.select_credit_pool_for_update,
-      { course_instance_id },
-      CreditPoolSchema,
-    );
+    const before = await selectCreditPoolForUpdate(course_instance_id);
 
     const currentBalance =
       credit_type === 'transferable'
