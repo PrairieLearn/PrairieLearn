@@ -1286,13 +1286,52 @@
       "maximum": 1,
       "default": 0.2
     },
-    "aiGradingCreditPoolMaxAddDollars": {
-      "type": "number",
-      "default": 10000
-    },
-    "aiGradingCreditPoolMaxDeductDollars": {
-      "type": "number",
-      "default": 10000
+    "aiGradingCreditPoolLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["add", "deduct", "setTransferable", "setNonTransferable"],
+      "properties": {
+        "add": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["minMilliDollars", "maxMilliDollars"],
+          "properties": {
+            "minMilliDollars": {
+              "type": "integer"
+            },
+            "maxMilliDollars": {
+              "type": "integer"
+            }
+          }
+        },
+        "deduct": {
+          "$ref": "#/properties/aiGradingCreditPoolLimits/properties/add"
+        },
+        "setTransferable": {
+          "$ref": "#/properties/aiGradingCreditPoolLimits/properties/add"
+        },
+        "setNonTransferable": {
+          "$ref": "#/properties/aiGradingCreditPoolLimits/properties/add"
+        }
+      },
+      "default": {
+        "add": {
+          "minMilliDollars": 10,
+          "maxMilliDollars": 10000000
+        },
+        "deduct": {
+          "minMilliDollars": 10,
+          "maxMilliDollars": 10000000
+        },
+        "setTransferable": {
+          "minMilliDollars": -1000000000,
+          "maxMilliDollars": 1000000000
+        },
+        "setNonTransferable": {
+          "minMilliDollars": 0,
+          "maxMilliDollars": 1000000000
+        }
+      }
     },
     "aiQuestionGenerationRateLimitDollars": {
       "type": "number",
