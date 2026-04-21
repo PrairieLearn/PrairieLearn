@@ -1342,12 +1342,13 @@ export const LtiOutcomeSchema = z.object({
 export const MigrationSchema = null;
 export const NamedLockSchema = null;
 
-export const NewsItemReadStateSchema = z.object({
+export const NewsItemDismissalSchema = z.object({
+  dismissed_at: DateFromISOString,
   id: IdSchema,
-  last_read_news_item_id: IdSchema,
+  news_item_id: IdSchema,
   user_id: IdSchema,
 });
-export type NewsItemReadState = z.infer<typeof NewsItemReadStateSchema>;
+export type NewsItemDismissal = z.infer<typeof NewsItemDismissalSchema>;
 
 export const NewsItemSchema = z.object({
   categories: z.array(z.string()),
@@ -1834,7 +1835,7 @@ export const TableNames = [
   'lti_outcomes',
   'migrations',
   'named_locks',
-  'news_item_read_states',
+  'news_item_dismissals',
   'news_items',
   'page_view_logs',
   'courses',

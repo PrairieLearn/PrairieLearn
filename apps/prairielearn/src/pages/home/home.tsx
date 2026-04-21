@@ -27,7 +27,7 @@ import {
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
 import {
-  markNewsItemsAsReadForUser,
+  dismissAllNewsItemsForUser,
   selectUnreadNewsItemsForUser,
 } from '../../models/news-items.js';
 
@@ -183,7 +183,7 @@ router.post(
     });
 
     const BodySchema = z.discriminatedUnion('__action', [
-      z.object({ __action: z.literal('dismiss_news_alert') }),
+      z.object({ __action: z.literal('dismiss_all_news_items') }),
       z.object({
         __action: z.enum(['accept_invitation', 'reject_invitation', 'unenroll']),
         course_instance_id: z.string().min(1),
@@ -191,8 +191,8 @@ router.post(
     ]);
     const body = BodySchema.parse(req.body);
 
-    if (body.__action === 'dismiss_news_alert') {
-      await markNewsItemsAsReadForUser(res.locals.authn_user);
+    if (body.__action === 'dismiss_all_news_items') {
+      await dismissAllNewsItemsForUser(res.locals.authn_user);
       res.redirect(req.originalUrl);
       return;
     }

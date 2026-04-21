@@ -28,25 +28,21 @@ test.describe.serial('News alert', () => {
     const newsCard = page.locator('[data-testid="news-alert"]');
     await expect(newsCard).toBeVisible();
 
-    await expect(page.getByRole('heading', { name: 'News' })).toBeVisible();
-
     const itemLink = page.getByRole('link', { name: 'Test News Item for E2E' });
     await expect(itemLink).toBeVisible();
     await expect(itemLink).toHaveAttribute('href', 'https://example.com/news/test-e2e-item');
     await expect(itemLink).toHaveAttribute('target', '_blank');
   });
 
-  test('can dismiss the news alert', async ({ page }) => {
+  test('can dismiss all news items', async ({ page }) => {
     await page.goto('/');
 
     const newsCard = page.locator('[data-testid="news-alert"]');
     await expect(newsCard).toBeVisible();
 
-    const dismissButton = page.getByRole('button', { name: 'Dismiss news alert' });
-    await dismissButton.click();
+    await page.getByRole('button', { name: 'Dismiss all' }).click();
 
     await expect(page).toHaveURL('/');
-
     await expect(page.locator('[data-testid="news-alert"]')).not.toBeVisible();
   });
 
