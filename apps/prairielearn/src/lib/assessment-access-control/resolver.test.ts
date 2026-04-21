@@ -1279,6 +1279,81 @@ describe('resolveAccessControl', () => {
       );
     });
 
+    // Use case: real-time grading disabled during the exam. Inside the CBTF
+    // after "finish", students see nothing. Later, at home, the gradebook
+    // reveals questions and scores (top-level afterComplete shows both).
+    describe('deferred at-home release (grading disabled during exam)', () => {
+      const ruleWithBothHiddenInCbtf = {
+        ...makeMainRule({
+          afterComplete: { questions: { hidden: false }, score: { hidden: false } },
+        }),
+        prairietestExams: [ptExam('pt-exam-1', { questionsHidden: true, scoreHidden: true })],
+      };
+
+      it('hides both questions and score inside the CBTF during the reservation', () => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [ruleWithBothHiddenInCbtf],
+          prairieTestReservations: [validReservation],
+        });
+        expect(result.authorized).toBe(true);
+        expect(result.active).toBe(true);
+        expect(result.showClosedAssessment).toBe(false);
+        expect(result.showClosedAssessmentScore).toBe(false);
+      });
+
+      it('shows both questions and score at home after the reservation ends', () => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Public',
+          rules: [ruleWithBothHiddenInCbtf],
+          prairieTestReservations: [],
+        });
+        expect(result.authorized).toBe(false);
+        expect(result.showClosedAssessment).toBe(true);
+        expect(result.showClosedAssessmentScore).toBe(true);
+      });
+    });
+
+    // Use case: real-time grading enabled during the exam. Students click
+    // "finish" inside the CBTF and review feedback/scores for the rest of
+    // the reservation. Once they leave the CBTF, the gradebook hides both
+    // and they can never see their work again.
+    describe('real-time grading during exam, hidden after', () => {
+      const ruleWithBothVisibleInCbtf = {
+        ...makeMainRule({
+          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+        }),
+        prairietestExams: [ptExam('pt-exam-1')],
+      };
+
+      it('shows both questions and score inside the CBTF after finish', () => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [ruleWithBothVisibleInCbtf],
+          prairieTestReservations: [validReservation],
+        });
+        expect(result.authorized).toBe(true);
+        expect(result.active).toBe(true);
+        expect(result.showClosedAssessment).toBe(true);
+        expect(result.showClosedAssessmentScore).toBe(true);
+      });
+
+      it('hides both questions and score at home after the reservation ends', () => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Public',
+          rules: [ruleWithBothVisibleInCbtf],
+          prairieTestReservations: [],
+        });
+        expect(result.authorized).toBe(false);
+        expect(result.showClosedAssessment).toBe(false);
+        expect(result.showClosedAssessmentScore).toBe(false);
+      });
+    });
+
     // Use case: instructor uses PT to host a secure review session in a
     // proctored testing center. Inside the CBTF with a readOnly reservation,
     // everything is visible for review. Outside the CBTF, the assessment is
