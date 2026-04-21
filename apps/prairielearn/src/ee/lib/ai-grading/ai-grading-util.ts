@@ -64,8 +64,8 @@ const SubmissionVariantSchema = z.object({
  * - Anthropic Claude Haiku 4.5, Claude Sonnet 4.6, and Claude Opus 4.7 do not support this.
  */
 const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>([
-  'gpt-5.4-mini',
-  'gpt-5.4',
+  'gpt-5.4-mini-2026-03-17',
+  'gpt-5.4-2026-03-05',
 ]);
 
 export async function generatePrompt({

@@ -44,14 +44,14 @@ export function computeAiGradingRelativeCosts(
 export const AI_GRADING_MODELS = [
   {
     provider: 'openai',
-    modelId: 'gpt-5.4-mini',
+    modelId: 'gpt-5.4-mini-2026-03-17',
     name: 'GPT 5.4-mini',
     sublabel: 'Good for most grading tasks',
     recommended: true,
   },
   {
     provider: 'openai',
-    modelId: 'gpt-5.4',
+    modelId: 'gpt-5.4-2026-03-05',
     name: 'GPT 5.4',
     sublabel: 'Best for text-based submissions',
     recommended: true,
@@ -100,8 +100,8 @@ export const AI_GRADING_MODEL_IDS: AiGradingModelId[] = AI_GRADING_MODELS.map(
 );
 
 export const AI_GRADING_MODEL_PROVIDERS = {
-  'gpt-5.4-mini': 'openai',
-  'gpt-5.4': 'openai',
+  'gpt-5.4-mini-2026-03-17': 'openai',
+  'gpt-5.4-2026-03-05': 'openai',
   'gemini-3-flash-preview': 'google',
   'gemini-3.1-pro-preview': 'google',
   'claude-haiku-4-5': 'anthropic',
@@ -128,4 +128,4 @@ export const AI_GRADING_PROVIDER_OPTIONS = AI_GRADING_PROVIDERS.map((provider) =
 /**
  * Fallback model used when no prior model has been selected.
  */
-export const DEFAULT_AI_GRADING_MODEL = 'gpt-5.4-mini' as const;
+export const DEFAULT_AI_GRADING_MODEL = 'gpt-5.4-mini-2026-03-17' as const;

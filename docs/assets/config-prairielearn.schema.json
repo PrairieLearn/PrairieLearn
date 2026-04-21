@@ -1175,8 +1175,8 @@
         "gpt-4o-2024-11-20",
         "gpt-5-2025-08-07",
         "gpt-5.2-2025-12-11",
-        "gpt-5.4-mini",
-        "gpt-5.4",
+        "gpt-5.4-mini-2026-03-17",
+        "gpt-5.4-2026-03-05",
         "gemini-3-flash-preview",
         "gemini-3.1-pro-preview",
         "claude-haiku-4-5",
@@ -1213,10 +1213,10 @@
         "gpt-5.2-2025-12-11": {
           "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
         },
-        "gpt-5.4-mini": {
+        "gpt-5.4-mini-2026-03-17": {
           "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
         },
-        "gpt-5.4": {
+        "gpt-5.4-2026-03-05": {
           "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
         },
         "gemini-3-flash-preview": {
@@ -1254,13 +1254,13 @@
           "cacheWrite": 0,
           "output": 14
         },
-        "gpt-5.4-mini": {
+        "gpt-5.4-mini-2026-03-17": {
           "input": 0.75,
           "cachedInput": 0.075,
           "cacheWrite": 0,
           "output": 4.5
         },
-        "gpt-5.4": {
+        "gpt-5.4-2026-03-05": {
           "input": 2.5,
           "cachedInput": 0.25,
           "cacheWrite": 0,
