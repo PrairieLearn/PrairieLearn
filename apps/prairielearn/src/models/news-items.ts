@@ -1,6 +1,12 @@
 import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { type NewsItem, NewsItemSchema, type User } from '../lib/db-types.js';
+import {
+  type NewsItem,
+  type NewsItemReadState,
+  NewsItemReadStateSchema,
+  NewsItemSchema,
+  type User,
+} from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -12,8 +18,12 @@ export async function selectUnreadNewsItemsForUser(user: User, limit: number): P
   );
 }
 
-export async function dismissAllNewsItemsForUser(user: User): Promise<void> {
-  await execute(sql.dismiss_all_news_items_for_user, { user_id: user.id });
+export async function markNewsItemsAsReadForUser(user: User): Promise<NewsItemReadState> {
+  return await queryRow(
+    sql.upsert_news_item_read_state,
+    { user_id: user.id },
+    NewsItemReadStateSchema,
+  );
 }
 
 export interface NewsItemInput {

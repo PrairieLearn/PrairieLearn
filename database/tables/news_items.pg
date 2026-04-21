@@ -13,6 +13,3 @@ indexes
     news_items_pkey: PRIMARY KEY (id) USING btree (id)
     news_items_guid_key: UNIQUE (guid) USING btree (guid)
     news_items_pub_date_idx: USING btree (pub_date DESC)
-
-referenced by
-    news_item_dismissals: FOREIGN KEY (news_item_id) REFERENCES news_items(id) ON UPDATE CASCADE ON DELETE CASCADE

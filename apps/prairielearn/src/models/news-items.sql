@@ -3,33 +3,39 @@ SELECT
   ni.*
 FROM
   news_items AS ni
+  LEFT JOIN news_item_read_states AS nirs ON nirs.user_id = $user_id
 WHERE
-  ni.hidden_at IS NULL
-  AND NOT EXISTS (
-    SELECT
-      1
-    FROM
-      news_item_dismissals AS nid
-    WHERE
-      nid.user_id = $user_id
-      AND nid.news_item_id = ni.id
-  )
+  ni.id > COALESCE(nirs.last_read_news_item_id, 0)
+  AND ni.hidden_at IS NULL
 ORDER BY
   ni.pub_date DESC
 LIMIT
   $limit;
 
--- BLOCK dismiss_all_news_items_for_user
+-- BLOCK upsert_news_item_read_state
 INSERT INTO
-  news_item_dismissals (user_id, news_item_id)
-SELECT
-  $user_id,
-  ni.id
-FROM
-  news_items AS ni
-WHERE
-  ni.hidden_at IS NULL
-ON CONFLICT (user_id, news_item_id) DO NOTHING;
+  news_item_read_states (user_id, last_read_news_item_id)
+VALUES
+  (
+    $user_id,
+    COALESCE(
+      (
+        SELECT
+          MAX(id)
+        FROM
+          news_items
+      ),
+      0
+    )
+  )
+ON CONFLICT (user_id) DO UPDATE
+SET
+  last_read_news_item_id = GREATEST(
+    news_item_read_states.last_read_news_item_id,
+    EXCLUDED.last_read_news_item_id
+  )
+RETURNING
+  *;
 
 -- BLOCK upsert_news_items
 INSERT INTO

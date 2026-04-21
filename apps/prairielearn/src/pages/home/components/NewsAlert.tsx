@@ -133,7 +133,7 @@ export function NewsAlert({
           </h2>
           <form method="POST" className="ms-auto m-0">
             <input type="hidden" name="__csrf_token" value={csrfToken} />
-            <input type="hidden" name="__action" value="dismiss_all_news_items" />
+            <input type="hidden" name="__action" value="dismiss_news_alert" />
             <button
               type="submit"
               className="btn btn-sm btn-link text-body-secondary text-decoration-none p-0"
