@@ -197,6 +197,7 @@ function RefundConfirmationModal({
   onCancel: () => void;
 }) {
   const creditAmount = row.checkout_session_amount_milli_dollars ?? 0;
+  const newTransferableMilliDollars = transferableMilliDollars - creditAmount;
 
   return (
     <Modal show centered onHide={isRefunding ? undefined : onCancel}>
@@ -208,13 +209,11 @@ function RefundConfirmationModal({
         <div
           className={clsx(
             'alert',
-            transferableMilliDollars - creditAmount < 0 ? 'alert-warning' : 'alert-info',
+            newTransferableMilliDollars < 0 ? 'alert-warning' : 'alert-info',
           )}
         >
           <div>Stripe refund amount: {formatMilliDollars(creditAmount)}</div>
-          <div>
-            New transferable balance: {formatMilliDollars(transferableMilliDollars - creditAmount)}
-          </div>
+          <div>New transferable balance: {formatMilliDollars(newTransferableMilliDollars)}</div>
         </div>
       </Modal.Body>
       <Modal.Footer>
