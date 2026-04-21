@@ -7,7 +7,7 @@ function makeFormData(overrides: AccessControlFormData['overrides']): AccessCont
   return {
     mainRule: {
       trackingId: 'main',
-      listBeforeRelease: false,
+      beforeReleaseListed: false,
       dateControlEnabled: true,
       releaseDate: '2024-04-07T00:00:00',
       due: { date: '2024-04-10T00:00:00', credit: null, customCredit: false },

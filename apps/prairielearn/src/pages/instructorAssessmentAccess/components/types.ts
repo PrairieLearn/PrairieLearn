@@ -92,7 +92,7 @@ export interface AppliesTo {
 export interface MainRuleData {
   id?: string;
   trackingId: string;
-  listBeforeRelease: boolean;
+  beforeReleaseListed: boolean;
   dateControlEnabled: boolean;
   releaseDate: string | null;
   due: DueValue;
@@ -161,7 +161,7 @@ export function jsonToMainRuleFormData(
   return {
     id: json.id,
     trackingId: json.id ?? crypto.randomUUID(),
-    listBeforeRelease: json.listBeforeRelease ?? false,
+    beforeReleaseListed: json.beforeRelease?.listed ?? false,
     dateControlEnabled:
       dc?.releaseDate != null ||
       dc?.due != null ||
@@ -341,8 +341,8 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
     id: rule.id,
   };
 
-  if (rule.listBeforeRelease) {
-    output.listBeforeRelease = true;
+  if (rule.beforeReleaseListed) {
+    output.beforeRelease = { listed: true };
   }
 
   if (rule.dateControlEnabled) {

@@ -139,7 +139,7 @@ function ModelList({
               placement="top"
               tooltip={{
                 props: { id: 'cost-tooltip' },
-                body: 'Relative cost compared to the least expensive model, based on standard token usage.',
+                body: 'Relative cost compared to the default model, based on standard token usage.',
               }}
             >
               <i className="bi bi-question-circle" aria-hidden="true" />

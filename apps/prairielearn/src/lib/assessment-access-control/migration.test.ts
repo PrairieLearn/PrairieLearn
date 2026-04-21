@@ -404,7 +404,7 @@ describe('migrateAllowAccess', () => {
       expected: {
         archetype: { base: 'timed-assessment', modifiers: ['hides-closed'] },
         result: {
-          listBeforeRelease: true,
+          beforeRelease: { listed: true },
           dateControl: {
             releaseDate: '2030-01-01T00:00:01',
             due: { date: '2030-01-01T23:59:59' },
@@ -1403,7 +1403,7 @@ describe('migrateAssessmentJson fallback release date', () => {
     const parsed = JSON.parse(result.json);
     assert.deepEqual(parsed.accessControl, [
       {
-        listBeforeRelease: true,
+        beforeRelease: { listed: true },
         dateControl: {
           releaseDate: '2030-01-01T00:00:01',
           due: { date: '2030-01-01T23:59:59' },

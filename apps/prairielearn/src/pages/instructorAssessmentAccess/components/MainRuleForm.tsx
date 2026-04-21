@@ -55,12 +55,12 @@ export function MainRuleForm({
         </div>
         <Form.Check
           type="checkbox"
-          id="mainRule-list-before-release"
+          id="mainRule-before-release-listed"
           label={<strong>List before release</strong>}
-          {...register('mainRule.listBeforeRelease')}
-          aria-describedby="mainRule-list-before-release-help"
+          {...register('mainRule.beforeReleaseListed')}
+          aria-describedby="mainRule-before-release-listed-help"
         />
-        <Form.Text id="mainRule-list-before-release-help" className="text-muted">
+        <Form.Text id="mainRule-before-release-listed-help" className="text-muted">
           Students can see the assessment title before release
         </Form.Text>
       </div>
