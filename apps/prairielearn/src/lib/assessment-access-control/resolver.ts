@@ -616,7 +616,7 @@ export function resolveAccessControl(
     inSubmissionWindow:
       creditResult.active &&
       !!effectiveRule.dateControl?.dueDate &&
-      effectiveRule.dateControl?.afterLastDeadline?.allowSubmissions !== true,
+      effectiveRule.dateControl.afterLastDeadline?.allowSubmissions !== true,
   });
   if (ptOutcome.action === 'deny') {
     return { ...ptOutcome.result, showClosedAssessment, showClosedAssessmentScore };
