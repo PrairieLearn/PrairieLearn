@@ -1,12 +1,8 @@
 import { formatDistanceStrict } from 'date-fns';
 
-import type { NewsItem } from '../../../lib/db-types.js';
+import { formatDate } from '@prairielearn/formatter';
 
-const absoluteDateFormatter = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-});
+import type { NewsItem } from '../../../lib/db-types.js';
 
 const CATEGORY_CLASSES: Record<string, string> = {
   Release: 'bg-success-subtle text-success-emphasis border-success-subtle',
@@ -34,10 +30,7 @@ function NewsAlertItem({ item, now }: { item: NewsItem; now: Date }) {
                 </span>
               ))}
             </div>
-            <span
-              className="text-muted small lh-1"
-              title={absoluteDateFormatter.format(item.pub_date)}
-            >
+            <span className="text-muted small lh-1" title={formatDate(item.pub_date, 'UTC')}>
               {formatDistanceStrict(item.pub_date, now, { addSuffix: true })}
             </span>
           </div>
