@@ -48,7 +48,7 @@ describe('PLEmitter', () => {
     const result = emitter.emit(makeAssessment([makeQuestion()]));
     assert.equal(
       result.questions[0].questionHtml,
-      '<pl-question-panel>\n<p>What is 2+2?</p>\n</pl-question-panel>\n\n<pl-multiple-choice answers-name="answer" fixed-order="true">\n  <pl-answer correct="false">Three</pl-answer>\n  <pl-answer correct="true">Four</pl-answer>\n</pl-multiple-choice>',
+      '<pl-question-panel>\n<p>What is 2+2?</p>\n</pl-question-panel>\n\n<pl-multiple-choice answers-name="answer">\n  <pl-answer correct="false">Three</pl-answer>\n  <pl-answer correct="true">Four</pl-answer>\n</pl-multiple-choice>',
     );
   });
 
@@ -65,7 +65,7 @@ describe('PLEmitter', () => {
     const result = emitter.emit(makeAssessment([q]));
     assert.equal(
       result.questions[0].questionHtml,
-      '<pl-question-panel>\n<p>What is 2+2?</p>\n</pl-question-panel>\n\n<pl-checkbox answers-name="answer" fixed-order="true">\n  <pl-answer correct="true">A</pl-answer>\n  <pl-answer correct="false">B</pl-answer>\n</pl-checkbox>',
+      '<pl-question-panel>\n<p>What is 2+2?</p>\n</pl-question-panel>\n\n<pl-checkbox answers-name="answer">\n  <pl-answer correct="true">A</pl-answer>\n  <pl-answer correct="false">B</pl-answer>\n</pl-checkbox>',
     );
   });
 
@@ -378,25 +378,25 @@ describe('PLEmitter', () => {
   });
 
   describe('shuffleAnswers on questions', () => {
-    it('emits fixed-order="false" on multiple-choice when shuffleAnswers is true', () => {
+    it('omits order attr on multiple-choice when shuffleAnswers is true', () => {
       const q = makeQuestion({ shuffleAnswers: true });
       const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
-      assert.include(html, 'fixed-order="false"');
+      assert.notInclude(html, 'order=');
     });
 
-    it('emits fixed-order="true" on multiple-choice when shuffleAnswers is false', () => {
+    it('emits order="fixed" on multiple-choice when shuffleAnswers is false', () => {
       const q = makeQuestion({ shuffleAnswers: false });
       const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
-      assert.include(html, 'fixed-order="true"');
+      assert.include(html, 'order="fixed"');
     });
 
-    it('emits fixed-order="true" on multiple-choice when shuffleAnswers is undefined', () => {
+    it('omits order attr on multiple-choice when shuffleAnswers is undefined', () => {
       const q = makeQuestion({ shuffleAnswers: undefined });
       const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
-      assert.include(html, 'fixed-order="true"');
+      assert.notInclude(html, 'order=');
     });
 
-    it('emits fixed-order="false" on checkbox when shuffleAnswers is true', () => {
+    it('omits order attr on checkbox when shuffleAnswers is true', () => {
       const q = makeQuestion({
         body: {
           type: 'checkbox',
@@ -408,10 +408,10 @@ describe('PLEmitter', () => {
         shuffleAnswers: true,
       });
       const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
-      assert.include(html, 'fixed-order="false"');
+      assert.notInclude(html, 'order=');
     });
 
-    it('emits fixed-order="true" on checkbox when shuffleAnswers is false', () => {
+    it('emits order="fixed" on checkbox when shuffleAnswers is false', () => {
       const q = makeQuestion({
         body: {
           type: 'checkbox',
@@ -423,7 +423,7 @@ describe('PLEmitter', () => {
         shuffleAnswers: false,
       });
       const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
-      assert.include(html, 'fixed-order="true"');
+      assert.include(html, 'order="fixed"');
     });
   });
 
@@ -908,7 +908,7 @@ describe('PLEmitter', () => {
   });
 
   describe('rubric emission', () => {
-    it('emits rubricJson when assessment has a rubric', () => {
+    it('emits an info warning when assessment has a rubric', () => {
       const assessment: IRAssessment = {
         ...makeAssessment([makeQuestion()]),
         rubric: {
@@ -930,43 +930,17 @@ describe('PLEmitter', () => {
         },
       };
       const result = emitter.emit(assessment);
-      assert.isDefined(result.assessment.rubricJson);
-      const r = result.assessment.rubricJson!;
-      assert.equal(r.title, 'Essay Rubric');
-      assert.equal(r.pointsPossible, 10);
-      assert.equal(r.criteria.length, 1);
-      assert.equal(r.criteria[0].id, 'crit1');
-      assert.equal(r.criteria[0].description, 'Quality of argument');
-      assert.equal(r.criteria[0].longDescription, 'Well-structured argument.');
-      assert.equal(r.criteria[0].ratings.length, 2);
-      assert.equal(r.criteria[0].ratings[0].id, 'r1');
-      assert.equal(r.criteria[0].ratings[0].points, 10);
+      const rubricWarning = result.warnings.find((w) => w.questionId === 'rub1');
+      assert.isDefined(rubricWarning);
+      assert.equal(rubricWarning!.level, 'info');
+      assert.include(rubricWarning!.message, 'Essay Rubric');
     });
 
-    it('leaves rubricJson undefined when assessment has no rubric', () => {
+    it('emits no rubric warning when assessment has no rubric', () => {
       const result = emitter.emit(makeAssessment([makeQuestion()]));
-      assert.isUndefined(result.assessment.rubricJson);
-    });
-
-    it('omits longDescription from rubricJson when absent on criterion', () => {
-      const assessment: IRAssessment = {
-        ...makeAssessment([makeQuestion()]),
-        rubric: {
-          id: 'rub1',
-          title: 'Simple Rubric',
-          pointsPossible: 5,
-          criteria: [
-            {
-              id: 'crit1',
-              description: 'Correctness',
-              points: 5,
-              ratings: [{ id: 'r1', description: 'Full Marks', points: 5 }],
-            },
-          ],
-        },
-      };
-      const result = emitter.emit(assessment);
-      assert.isUndefined(result.assessment.rubricJson!.criteria[0].longDescription);
+      assert.isTrue(
+        result.warnings.every((w) => w.level !== 'info' || !w.message.includes('ubric')),
+      );
     });
   });
 });

@@ -5,6 +5,7 @@ import type { PLAssessmentOutput, PLQuestionOutput } from '../types/pl-output.js
 export interface ConversionWarning {
   questionId: string;
   message: string;
+  level?: 'warn' | 'info';
 }
 
 /** Options for emitting PL output. */

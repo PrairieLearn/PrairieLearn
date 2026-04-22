@@ -5501,6 +5501,7 @@ __metadata:
     "@types/uuid": "npm:^11.0.0"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260305.1"
     "@vitest/coverage-v8": "npm:^4.1.2"
+    "@vscode/vscode-languagedetection": "npm:^1.0.23"
     commander: "npm:^14.0.3"
     fast-xml-parser: "npm:^5.2.0"
     mime: "npm:^4.1.0"
@@ -10798,6 +10799,15 @@ __metadata:
   version: 0.0.18
   resolution: "@vscode/l10n@npm:0.0.18"
   checksum: 10c0/d1fc797001f7d508ab3fa91175f7a50ea98516c4e47830ff2be79163cde9279279514a167a3bad15b7ab7fc243e7808d8f32d3eb41f4a7d6721d9dfdbb38d89e
+  languageName: node
+  linkType: hard
+
+"@vscode/vscode-languagedetection@npm:^1.0.23":
+  version: 1.0.23
+  resolution: "@vscode/vscode-languagedetection@npm:1.0.23"
+  bin:
+    vscode-languagedetection: cli/index.js
+  checksum: 10c0/f305ce99eddbe74f90f45f0fabe0122e6269cf277d80a5fd07c3cfaedb3903c3073c4f5ecb04d2017f40a33aed8a86b6327d0ee7d54d4e1150b295e15b1c077f
   languageName: node
   linkType: hard
 

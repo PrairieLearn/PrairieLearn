@@ -24,9 +24,10 @@ import type {
 import {
   cleanQuestionHtml,
   convertLatexItemizeToMarkdown,
-  ensureResponsiveImages,
   extractInlineImages,
   resolveImsFileRefs,
+  rewriteImagesAsPlFigure,
+  rewritePreAsPlCode,
   unescapeHtml,
 } from '../../utils/html.js';
 import type { InputParser, ParseOptions } from '../parser.js';
@@ -78,7 +79,7 @@ export class QTI12AssessmentParser implements InputParser {
     );
   }
 
-  parse(xmlContent: string, options?: ParseOptions): IRAssessment {
+  async parse(xmlContent: string, options?: ParseOptions): Promise<IRAssessment> {
     const parsed = parseXml(xmlContent);
     const root = parsed['questestinterop'] as Record<string, unknown> | undefined;
     if (!root) {
@@ -93,7 +94,7 @@ export class QTI12AssessmentParser implements InputParser {
     const parsedAssessment = this.buildParsedAssessment(assessment);
     const meta = this.parseAssessmentMeta(assessment, options);
     const allowedExtensions = this.parseAllowedExtensions(options?.assessmentMetaXml);
-    const { questions, zones, parseWarnings } = this.buildQuestionsAndZones(assessment, {
+    const { questions, zones, parseWarnings } = await this.buildQuestionsAndZones(assessment, {
       parseOptions: options,
       shuffleAnswers: meta.shuffleAnswers,
       allowedExtensions,
@@ -291,14 +292,14 @@ export class QTI12AssessmentParser implements InputParser {
    * Build flat question list and zone structure from sections.
    * Named sub-sections under root_section become zones.
    */
-  private buildQuestionsAndZones(
+  private async buildQuestionsAndZones(
     assessment: Record<string, unknown>,
     {
       parseOptions,
       shuffleAnswers,
       allowedExtensions,
     }: { parseOptions?: ParseOptions; shuffleAnswers?: boolean; allowedExtensions?: string[] },
-  ): { questions: IRQuestion[]; zones: IRZone[]; parseWarnings: IRParseWarning[] } {
+  ): Promise<{ questions: IRQuestion[]; zones: IRZone[]; parseWarnings: IRParseWarning[] }> {
     const allQuestions: IRQuestion[] = [];
     const zones: IRZone[] = [];
     const parseWarnings: IRParseWarning[] = [];
@@ -326,7 +327,7 @@ export class QTI12AssessmentParser implements InputParser {
           const selectionNumber = this.readSelectionNumber(subRec);
           const items = this.collectItems(subRec);
           this.warnSourcebankRefs(subRec, zoneTitle, parseWarnings);
-          const questions = this.transformItems(
+          const questions = await this.transformItems(
             items,
             { parseOptions, shuffleAnswers, allowedExtensions, sectionPoints },
             parseWarnings,
@@ -346,7 +347,7 @@ export class QTI12AssessmentParser implements InputParser {
           (i): i is Record<string, unknown> => i != null && typeof i === 'object',
         );
         if (directItems.length > 0) {
-          const questions = this.transformItems(
+          const questions = await this.transformItems(
             directItems,
             { parseOptions, shuffleAnswers, allowedExtensions },
             parseWarnings,
@@ -361,7 +362,7 @@ export class QTI12AssessmentParser implements InputParser {
         const sectionPoints = this.readPointsPerItem(rootRec);
         const items = this.collectItems(rootRec);
         this.warnSourcebankRefs(rootRec, undefined, parseWarnings);
-        const questions = this.transformItems(
+        const questions = await this.transformItems(
           items,
           { parseOptions, shuffleAnswers, allowedExtensions, sectionPoints },
           parseWarnings,
@@ -448,7 +449,7 @@ export class QTI12AssessmentParser implements InputParser {
    * Parse and transform a list of raw item elements into IR questions.
    * Items that fail to transform are skipped; a warning is appended to `warnings`.
    */
-  private transformItems(
+  private async transformItems(
     items: Record<string, unknown>[],
     opts: {
       parseOptions?: ParseOptions;
@@ -457,12 +458,12 @@ export class QTI12AssessmentParser implements InputParser {
       sectionPoints?: number;
     },
     warnings: IRParseWarning[],
-  ): IRQuestion[] {
+  ): Promise<IRQuestion[]> {
     const questions: IRQuestion[] = [];
     for (const itemEl of items) {
       const item = this.parseItem(itemEl);
       try {
-        const q = this.transformItem(item, opts);
+        const q = await this.transformItem(item, opts);
         if (q !== null) questions.push(q);
       } catch (err) {
         warnings.push({
@@ -751,7 +752,7 @@ export class QTI12AssessmentParser implements InputParser {
     return undefined;
   }
 
-  private transformItem(
+  private async transformItem(
     item: QTI12ParsedItem,
     {
       parseOptions,
@@ -764,7 +765,7 @@ export class QTI12AssessmentParser implements InputParser {
       allowedExtensions?: string[];
       sectionPoints?: number;
     },
-  ): IRQuestion | null {
+  ): Promise<IRQuestion | null> {
     const handler = this.registry.get(item.questionType);
     if (!handler) {
       // Caller catches this and records it as a parse warning.
@@ -784,7 +785,7 @@ export class QTI12AssessmentParser implements InputParser {
 
     // Handle inline base64 images
     const { html: cleanedPrompt, files } = extractInlineImages(imsResolved);
-    const responsivePrompt = ensureResponsiveImages(cleanedPrompt);
+    const responsivePrompt = await rewritePreAsPlCode(rewriteImagesAsPlFigure(cleanedPrompt));
 
     const assets = new Map<string, AssetReference>();
 

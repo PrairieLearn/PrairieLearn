@@ -37,5 +37,5 @@ export interface InputParser {
   /** Returns true if this parser can handle the given input. */
   canParse(xmlContent: string): boolean;
   /** Parse input into the format-agnostic IR. */
-  parse(xmlContent: string, options?: ParseOptions): IRAssessment;
+  parse(xmlContent: string, options?: ParseOptions): Promise<IRAssessment>;
 }

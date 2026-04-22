@@ -7,7 +7,6 @@ import type {
   IRDropdownBlank,
   IRQuestion,
   IRQuestionBody,
-  IRRubric,
   IRZone,
 } from '../types/ir.js';
 import type {
@@ -18,7 +17,6 @@ import type {
   PLAssessmentZone,
   PLQuestionInfoJson,
   PLQuestionOutput,
-  PLRubricJson,
 } from '../types/pl-output.js';
 import { slugify } from '../utils/slugify.js';
 import { stableUuid } from '../utils/uuid.js';
@@ -42,6 +40,14 @@ export class PLEmitter implements OutputEmitter {
           message: err instanceof Error ? err.message : String(err),
         });
       }
+    }
+
+    if (assessment.rubric) {
+      warnings.push({
+        questionId: assessment.rubric.id,
+        message: `Rubric "${assessment.rubric.title}" was found but PrairieLearn does not support file-based rubrics — configure it manually in the manual grading interface.`,
+        level: 'info',
+      });
     }
 
     const assessmentOutput = this.emitAssessment(assessment, questions, options);
@@ -122,27 +128,7 @@ export class PLEmitter implements OutputEmitter {
       infoJson.shuffleQuestions = true;
     }
 
-    const rubricJson = assessment.rubric ? this.emitRubric(assessment.rubric) : undefined;
-
-    return { directoryName, infoJson, rubricJson };
-  }
-
-  private emitRubric(rubric: IRRubric): PLRubricJson {
-    return {
-      title: rubric.title,
-      pointsPossible: rubric.pointsPossible,
-      criteria: rubric.criteria.map((c) => ({
-        id: c.id,
-        description: c.description,
-        ...(c.longDescription ? { longDescription: c.longDescription } : {}),
-        points: c.points,
-        ratings: c.ratings.map((r) => ({
-          id: r.id,
-          description: r.description,
-          points: r.points,
-        })),
-      })),
-    };
+    return { directoryName, infoJson };
   }
 
   private buildAllowAccess(
@@ -423,8 +409,8 @@ export class PLEmitter implements OutputEmitter {
       return lines.join('\n');
     }
 
-    const fixedOrder = shuffleAnswers ? 'false' : 'true';
-    const lines = [`<pl-multiple-choice answers-name="answer" fixed-order="${fixedOrder}">`];
+    const orderAttr = shuffleAnswers === false ? ' order="fixed"' : '';
+    const lines = [`<pl-multiple-choice answers-name="answer"${orderAttr}>`];
     for (const choice of choices) {
       const fb = perAnswer?.[choice.html];
       const fbAttr = fb ? ` feedback="${escapeAttr(fb)}"` : '';
@@ -441,8 +427,8 @@ export class PLEmitter implements OutputEmitter {
     shuffleAnswers?: boolean,
     perAnswer?: Record<string, string>,
   ): string {
-    const fixedOrder = shuffleAnswers ? 'false' : 'true';
-    const lines = [`<pl-checkbox answers-name="answer" fixed-order="${fixedOrder}">`];
+    const orderAttr = shuffleAnswers === false ? ' order="fixed"' : '';
+    const lines = [`<pl-checkbox answers-name="answer"${orderAttr}>`];
     for (const choice of choices) {
       const fb = perAnswer?.[choice.html];
       const fbAttr = fb ? ` feedback="${escapeAttr(fb)}"` : '';

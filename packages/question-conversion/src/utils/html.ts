@@ -1,4 +1,13 @@
 import crypto from 'node:crypto';
+import { createRequire } from 'node:module';
+
+import type { ModelOperations as ModelOperationsType } from '@vscode/vscode-languagedetection';
+
+// The package ships as a UMD CJS bundle; named ESM imports don't work.
+const _require = createRequire(import.meta.url);
+const { ModelOperations } = _require('@vscode/vscode-languagedetection') as {
+  ModelOperations: typeof ModelOperationsType;
+};
 
 /** Unescape HTML entities (Canvas exports HTML-escaped content). */
 export function unescapeHtml(text: string): string {
@@ -38,23 +47,40 @@ export function extractInlineImages(html: string): {
 }
 
 const IMG_TAG_RE = /<img\b[^>]*>/gi;
+const ATTR_RE = /(\w[\w-]*)=(["'])(.*?)\2/gi;
 
 /**
- * Add responsive CSS to all img tags that don't already have max-width set.
+ * Rewrite all <img> tags in HTML to <pl-figure> elements.
+ *
+ * For images already pointing into clientFilesQuestion/ the directory attribute
+ * is set explicitly and the prefix is stripped from file-name. External URLs are
+ * passed through as file-name without a directory attribute. The alt, width, and
+ * height attributes are preserved; all others (style, class, etc.) are dropped
+ * since pl-figure handles its own layout.
  */
-export function ensureResponsiveImages(html: string): string {
+export function rewriteImagesAsPlFigure(html: string): string {
   return html.replaceAll(IMG_TAG_RE, (tag) => {
-    if (/style=/i.test(tag) && /max-width/i.test(tag)) {
-      return tag;
+    const attrs: Record<string, string> = {};
+    for (const m of tag.matchAll(ATTR_RE)) {
+      attrs[m[1].toLowerCase()] = m[3];
     }
-    if (/style=/i.test(tag)) {
-      return tag.replace(
-        /style=(["'])(.*?)\1/i,
-        (_, q, style) =>
-          `style=${q}${style.replace(/;?\s*$/, '')}; max-width: 100%; height: auto;${q}`,
+
+    const src = attrs['src'] ?? '';
+    const parts: string[] = [];
+
+    if (src.startsWith('clientFilesQuestion/')) {
+      parts.push(
+        `file-name="${src.slice('clientFilesQuestion/'.length)}"`,
+        'directory="clientFilesQuestion"',
       );
+    } else {
+      parts.push(`file-name="${src}"`);
     }
-    return tag.replace('<img', '<img style="max-width: 100%; height: auto;"');
+
+    if (attrs['alt']) parts.push(`alt="${attrs['alt']}"`);
+    if (attrs['width']) parts.push(`width="${attrs['width']}"`);
+
+    return `<pl-figure ${parts.join(' ')}></pl-figure>`;
   });
 }
 
@@ -135,6 +161,118 @@ export function convertLatexItemizeToMarkdown(html: string): string {
     return `<markdown>\n${lines.join('\n')}\n</markdown>`;
   });
 }
+
+const PRE_TAG_RE = /<pre\b([^>]*)>([\s\S]*?)<\/pre>/gi;
+const CODE_WRAP_RE = /^<code\b([^>]*)>([\s\S]*)<\/code>$/i;
+const CLASS_ATTR_RE = /\bclass=(["'])(.*?)\1/i;
+const LANGUAGE_CLASS_RE = /(?:language|lang)-(\w+)|brush:\s*(\w+)/i;
+
+/** Minimum confidence score (0–1) required to accept a language prediction. */
+const LANGUAGE_DETECTION_CONFIDENCE_THRESHOLD = 0.2;
+
+let _modelOps: ModelOperationsType | undefined;
+
+function getModelOps(): ModelOperationsType {
+  if (!_modelOps) _modelOps = new ModelOperations();
+  return _modelOps;
+}
+
+/**
+ * Detect the programming language of a code snippet using a ML model.
+ * Falls back to simple heuristics when the model isn't confident enough.
+ * Returns `undefined` only if neither approach produces a result.
+ */
+export async function detectCodeLanguage(code: string): Promise<string | undefined> {
+  const results = await getModelOps().runModel(code);
+  const best = results[0];
+  if (best && best.confidence >= LANGUAGE_DETECTION_CONFIDENCE_THRESHOLD) {
+    return best.languageId;
+  }
+  return guessLanguageHeuristic(code);
+}
+
+/**
+ * Rule-based language guess for when the ML model isn't confident.
+ * Checks for unambiguous keywords/patterns before falling back to "c" for
+ * any generic C-style snippet (braces + semicolons + control flow).
+ */
+function guessLanguageHeuristic(code: string): string | undefined {
+  if (/^\s*(def |class \w+:|import \w|from \w+ import|print\()/m.test(code)) return 'python';
+  if (/\b(System\.out|public\s+class|@Override)\b/.test(code)) return 'java';
+  if (/\b(console\.|=>|const |let |var |require\(|module\.exports)\b/.test(code)) return 'javascript';
+  if (/\b(fn |let mut |impl |use std::|println!)\b/.test(code)) return 'rust';
+  if (/\b(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE)\b/i.test(code) && !/[{}]/.test(code)) return 'sql';
+  // Generic C-style: control flow + braces + semicolons
+  if (/[{};]/.test(code) && /\b(for|while|if|else|return)\b/.test(code)) return 'c';
+  return undefined;
+}
+
+function extractLanguageFromClass(classStr: string): string | undefined {
+  const m = LANGUAGE_CLASS_RE.exec(classStr);
+  if (m) return m[1] ?? m[2];
+  return undefined;
+}
+
+/**
+ * Rewrite all `<pre>` blocks in HTML to `<pl-code>` elements.
+ *
+ * Language detection order:
+ *   1. `class="language-X"` / `class="lang-X"` / `class="brush: X"` on the
+ *      `<pre>` tag itself.
+ *   2. The same patterns on an inner `<code>` tag (e.g. `<pre><code class="language-X">`).
+ *   3. `detectCodeLanguage` as the content-based fallback.
+ *
+ * If a language is found, it is emitted as `<pl-code language="X">`. When a
+ * `<code>` wrapper is present inside `<pre>`, it is stripped — `<pl-code>`
+ * handles its own semantics.
+ */
+export async function rewritePreAsPlCode(html: string): Promise<string> {
+  const regex = new RegExp(PRE_TAG_RE.source, PRE_TAG_RE.flags);
+  const replacements: { start: number; end: number; replacement: string }[] = [];
+
+  const pending: Promise<{ start: number; end: number; replacement: string }>[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(html)) !== null) {
+    const start = match.index;
+    const end = match.index + match[0].length;
+    const preAttrs = match[1];
+    const innerHtml = match[2];
+
+    pending.push(
+      (async () => {
+        const codeMatch = CODE_WRAP_RE.exec(innerHtml.trim());
+        const codeAttrs = codeMatch ? codeMatch[1] : '';
+        const codeContent = codeMatch ? codeMatch[2] : innerHtml;
+
+        let language: string | undefined;
+        for (const attrsStr of [preAttrs, codeAttrs]) {
+          const classMatch = CLASS_ATTR_RE.exec(attrsStr);
+          if (classMatch) {
+            language = extractLanguageFromClass(classMatch[2]);
+            if (language) break;
+          }
+        }
+
+        if (!language) {
+          language = await detectCodeLanguage(unescapeHtml(codeContent));
+        }
+        const langAttr = language ? ` language="${language}"` : '';
+        return { start, end, replacement: `<pl-code${langAttr}>\n${unescapeHtml(codeContent)}</pl-code>` };
+      })(),
+    );
+  }
+
+  replacements.push(...(await Promise.all(pending)));
+  replacements.sort((a, b) => b.start - a.start);
+
+  let result = html;
+  for (const { start, end, replacement } of replacements) {
+    result = result.slice(0, start) + replacement + result.slice(end);
+  }
+  return result.replaceAll(P_WRAPPING_PL_CODE_RE, '$1');
+}
+
+const P_WRAPPING_PL_CODE_RE = /<p>\s*(<pl-code\b[^>]*>[\s\S]*?<\/pl-code>)\s*<\/p>/gi;
 
 /**
  * Clean up question HTML for PrairieLearn output.

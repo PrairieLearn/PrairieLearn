@@ -7,6 +7,7 @@ import { Command } from 'commander';
 
 import { logger } from '@prairielearn/logger';
 
+import type { ConversionResult } from '../emitters/emitter.js';
 import { convert } from '../pipeline.js';
 import {
   type CourseExportInfo,
@@ -99,16 +100,18 @@ program
           logger.debug('Could not find rubrics.xml for course.');
         }
 
-        for (const entry of entries) {
-          await convertFile(entry, courseDir, timezone, options, rubricsXml);
+        // Parse all assessments in parallel (language detection benefits from concurrency).
+        // Write files sequentially to avoid races when two assessments share the same slug.
+        const converted = await Promise.all(
+          entries.map((entry) => parseFile(entry, timezone, options, rubricsXml)),
+        );
+        for (const c of converted) {
+          await writeFiles(c, courseDir, options);
         }
       } else {
-        await convertFile(
-          { qtiPath: resolvedInput, assessmentDir: path.dirname(resolvedInput) },
-          courseDir,
-          timezone,
-          options,
-        );
+        const entry = { qtiPath: resolvedInput, assessmentDir: path.dirname(resolvedInput) };
+        const parsed = await parseFile(entry, timezone, options);
+        await writeFiles(parsed, courseDir, options);
       }
     },
   );
@@ -183,17 +186,21 @@ async function findQtiXmlFiles(dir: string): Promise<string[]> {
   return xmlFiles;
 }
 
-async function convertFile(
+interface ParsedAssessment {
+  result: ConversionResult;
+  assessmentSlug: string;
+  webResourcesDir: string;
+}
+
+async function parseFile(
   entry: QtiFileEntry,
-  courseDir: string,
   timezone: string,
-  options: { courseInstance: string; topic?: string; tags: string[]; overwrite?: boolean },
+  options: { topic?: string; tags: string[] },
   rubricsXml?: string,
-): Promise<void> {
+): Promise<ParsedAssessment> {
   const xmlContent = await readFile(entry.qtiPath, 'utf-8');
   const webResourcesDir = path.join(entry.assessmentDir, '..', 'web_resources');
 
-  // Read assessment_meta.xml if present (Canvas-specific metadata)
   const metaXmlPath = path.join(entry.assessmentDir, 'assessment_meta.xml');
   let assessmentMetaXml: string | undefined;
   try {
@@ -205,18 +212,25 @@ async function convertFile(
   const baseOptions = { basePath: entry.assessmentDir, assessmentMetaXml, timezone, rubricsXml };
 
   // First pass to get the assessment title for building paths
-  const preview = convert(xmlContent, baseOptions);
+  const preview = await convert(xmlContent, baseOptions);
   const assessmentSlug = slugify(preview.assessmentTitle);
-  const questionPrefix = `imported/${assessmentSlug}`;
 
   // Second pass with the correct question ID prefix
-  const result = convert(xmlContent, {
+  const result = await convert(xmlContent, {
     ...baseOptions,
     topic: options.topic,
     tags: options.tags,
-    questionIdPrefix: questionPrefix,
+    questionIdPrefix: `imported/${assessmentSlug}`,
   });
 
+  return { result, assessmentSlug, webResourcesDir };
+}
+
+async function writeFiles(
+  { result, assessmentSlug, webResourcesDir }: ParsedAssessment,
+  courseDir: string,
+  options: { courseInstance: string; overwrite?: boolean },
+): Promise<void> {
   const questionsDir = path.join(courseDir, 'questions', 'imported', assessmentSlug);
   const assessmentsDir = path.join(
     courseDir,
@@ -231,34 +245,40 @@ async function convertFile(
     await rm(assessmentsDir, { recursive: true, force: true });
   }
 
-  for (const q of result.questions) {
-    const qDir = path.join(questionsDir, q.directoryName);
-    await mkdir(qDir, { recursive: true });
+  await Promise.all(
+    result.questions.map(async (q) => {
+      const qDir = path.join(questionsDir, q.directoryName);
+      await mkdir(qDir, { recursive: true });
 
-    await writeFile(path.join(qDir, 'info.json'), JSON.stringify(q.infoJson, null, 2) + '\n');
-    await writeFile(path.join(qDir, 'question.html'), q.questionHtml);
-
-    if (q.serverPy) {
-      await writeFile(path.join(qDir, 'server.py'), q.serverPy);
-    }
-
-    if (q.clientFiles.size > 0) {
-      const cfDir = path.join(qDir, 'clientFilesQuestion');
-      await mkdir(cfDir, { recursive: true });
-      for (const [name, content] of q.clientFiles) {
-        if (Buffer.isBuffer(content)) {
-          await writeFile(path.join(cfDir, name), content);
-        } else {
-          const srcFile = path.join(webResourcesDir, content);
-          try {
-            await copyFile(srcFile, path.join(cfDir, name));
-          } catch {
-            logger.warn(`Warning: could not find image file: ${srcFile}`);
-          }
-        }
+      const writes: Promise<void>[] = [
+        writeFile(path.join(qDir, 'info.json'), JSON.stringify(q.infoJson, null, 2) + '\n'),
+        writeFile(path.join(qDir, 'question.html'), q.questionHtml),
+      ];
+      if (q.serverPy) {
+        writes.push(writeFile(path.join(qDir, 'server.py'), q.serverPy));
       }
-    }
-  }
+      await Promise.all(writes);
+
+      if (q.clientFiles.size > 0) {
+        const cfDir = path.join(qDir, 'clientFilesQuestion');
+        await mkdir(cfDir, { recursive: true });
+        await Promise.all(
+          [...q.clientFiles].map(async ([name, content]) => {
+            if (Buffer.isBuffer(content)) {
+              await writeFile(path.join(cfDir, name), content);
+            } else {
+              const srcFile = path.join(webResourcesDir, content);
+              try {
+                await copyFile(srcFile, path.join(cfDir, name));
+              } catch {
+                logger.warn(`Warning: could not find image file: ${srcFile}`);
+              }
+            }
+          }),
+        );
+      }
+    }),
+  );
 
   await mkdir(assessmentsDir, { recursive: true });
   await writeFile(
@@ -266,15 +286,12 @@ async function convertFile(
     JSON.stringify(result.assessment.infoJson, null, 2) + '\n',
   );
 
-  if (result.assessment.rubricJson) {
-    await writeFile(
-      path.join(assessmentsDir, 'rubric.json'),
-      JSON.stringify(result.assessment.rubricJson, null, 2) + '\n',
-    );
-  }
-
   for (const w of result.warnings) {
-    logger.warn(`Warning [${w.questionId}]: ${w.message}`);
+    if (w.level === 'info') {
+      logger.info(`Info [${w.questionId}]: ${w.message}`);
+    } else {
+      logger.warn(`Warning [${w.questionId}]: ${w.message}`);
+    }
   }
 
   logger.info(`Converted "${result.assessmentTitle}": ${result.questions.length} question(s)`);

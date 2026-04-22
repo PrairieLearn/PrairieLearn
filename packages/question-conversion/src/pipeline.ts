@@ -14,19 +14,22 @@ const DEFAULT_PARSERS: InputParser[] = [new QTI12AssessmentParser()];
  * Tries each registered parser in order and uses the first one that
  * reports it can parse the input.
  */
-export function convert(xmlContent: string, options?: ConvertOptions): ConversionResult {
+export async function convert(
+  xmlContent: string,
+  options?: ConvertOptions,
+): Promise<ConversionResult> {
   return convertWith(xmlContent, DEFAULT_PARSERS, new PLEmitter(), options);
 }
 
 /**
  * Convert questions using an explicit parser and emitter.
  */
-export function convertWith(
+export async function convertWith(
   xmlContent: string,
   parsers: InputParser[],
   emitter: OutputEmitter,
   options?: ConvertOptions,
-): ConversionResult {
+): Promise<ConversionResult> {
   const parser = parsers.find((p) => p.canParse(xmlContent));
   if (!parser) {
     throw new Error(
@@ -34,6 +37,6 @@ export function convertWith(
     );
   }
 
-  const ir = parser.parse(xmlContent, options);
+  const ir = await parser.parse(xmlContent, options);
   return emitter.emit(ir, options);
 }

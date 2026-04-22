@@ -13,20 +13,20 @@ function readFixture(name: string): string {
 
 const parser = new QTI12AssessmentParser();
 
-describe('QTI12AssessmentParser', () => {
-  describe('HTML entity decoding in titles', () => {
-    it('decodes &amp; in assessment title', () => {
+describe('QTI12AssessmentParser', async () => {
+  describe('HTML entity decoding in titles', async () => {
+    it('decodes &amp; in assessment title', async () => {
       const xml = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Essay Question &amp; Textual">
     <section ident="root_section"/>
   </assessment>
 </questestinterop>`;
-      const result = parser.parse(xml);
+      const result = await parser.parse(xml);
       assert.equal(result.title, 'Essay Question & Textual');
     });
 
-    it('decodes &amp; in item title', () => {
+    it('decodes &amp; in item title', async () => {
       const xml = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Quiz">
@@ -54,23 +54,23 @@ describe('QTI12AssessmentParser', () => {
     </section>
   </assessment>
 </questestinterop>`;
-      const result = parser.parse(xml);
+      const result = await parser.parse(xml);
       assert.equal(result.questions[0].title, 'True & False');
     });
   });
 
-  describe('canParse', () => {
-    it('returns true for QTI 1.2 assessment XML', () => {
+  describe('canParse', async () => {
+    it('returns true for QTI 1.2 assessment XML', async () => {
       assert.isTrue(parser.canParse(readFixture('canvas-mc.xml')));
     });
 
-    it('returns false for non-QTI XML', () => {
+    it('returns false for non-QTI XML', async () => {
       assert.isFalse(parser.canParse('<html><body>hello</body></html>'));
     });
   });
 
-  describe('correct condition parsing', () => {
-    it('ignores feedback-only respconditions (no setvar) when determining correct answers', () => {
+  describe('correct condition parsing', async () => {
+    it('ignores feedback-only respconditions (no setvar) when determining correct answers', async () => {
       // Canvas QTI emits a displayfeedback respcondition (no setvar) for EVERY answer,
       // then a separate setvar=100 condition for the correct answer only.
       // Without the fix, every answer's feedback condition would be treated as correct.
@@ -114,7 +114,7 @@ describe('QTI12AssessmentParser', () => {
     </section>
   </assessment>
 </questestinterop>`;
-      const result = parser.parse(xml);
+      const result = await parser.parse(xml);
       const q = result.questions[0];
       assert.equal(q.body.type, 'multiple-choice');
       if (q.body.type === 'multiple-choice') {
@@ -124,7 +124,7 @@ describe('QTI12AssessmentParser', () => {
       }
     });
 
-    it('ignores feedback-only respconditions for true/false (prevents both choices being marked correct)', () => {
+    it('ignores feedback-only respconditions for true/false (prevents both choices being marked correct)', async () => {
       const xml = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Q">
@@ -160,7 +160,7 @@ describe('QTI12AssessmentParser', () => {
     </section>
   </assessment>
 </questestinterop>`;
-      const result = parser.parse(xml);
+      const result = await parser.parse(xml);
       const q = result.questions[0];
       assert.equal(q.body.type, 'multiple-choice');
       if (q.body.type === 'multiple-choice') {
@@ -170,8 +170,8 @@ describe('QTI12AssessmentParser', () => {
     });
   });
 
-  describe('feedback parsing', () => {
-    it('extracts correct_fb and general_incorrect_fb via flow_mat path', () => {
+  describe('feedback parsing', async () => {
+    it('extracts correct_fb and general_incorrect_fb via flow_mat path', async () => {
       const xml = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Q">
@@ -204,13 +204,13 @@ describe('QTI12AssessmentParser', () => {
     </section>
   </assessment>
 </questestinterop>`;
-      const result = parser.parse(xml);
+      const result = await parser.parse(xml);
       const q = result.questions[0];
       assert.equal(q.feedback?.correct, '<p>Well done!</p>');
       assert.equal(q.feedback?.incorrect, '<p>Try again.</p>');
     });
 
-    it('falls back to per-answer {ident}_fb feedback when global idents are absent', () => {
+    it('falls back to per-answer {ident}_fb feedback when global idents are absent', async () => {
       // This is the Canvas pattern for true/false and MC questions with per-answer feedback.
       // The correct answer's {ident}_fb becomes feedback.correct; an incorrect one becomes feedback.incorrect.
       const xml = `<?xml version="1.0"?>
@@ -254,7 +254,7 @@ describe('QTI12AssessmentParser', () => {
     </section>
   </assessment>
 </questestinterop>`;
-      const result = parser.parse(xml);
+      const result = await parser.parse(xml);
       const q = result.questions[0];
       assert.deepEqual(q.feedback?.perAnswer, {
         True: '<p>Indeed, coconuts are migratory.</p>',
@@ -262,7 +262,7 @@ describe('QTI12AssessmentParser', () => {
       });
     });
 
-    it('extracts feedback via material → mattext when flow_mat is absent', () => {
+    it('extracts feedback via material → mattext when flow_mat is absent', async () => {
       const xml = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Q">
@@ -292,15 +292,15 @@ describe('QTI12AssessmentParser', () => {
     </section>
   </assessment>
 </questestinterop>`;
-      const result = parser.parse(xml);
+      const result = await parser.parse(xml);
       const q = result.questions[0];
       assert.equal(q.feedback?.correct, '<p>Correct!</p>');
     });
   });
 
-  describe('multiple choice', () => {
-    it('parses a multiple choice question', () => {
-      const result = parser.parse(readFixture('canvas-mc.xml'));
+  describe('multiple choice', async () => {
+    it('parses a multiple choice question', async () => {
+      const result = await parser.parse(readFixture('canvas-mc.xml'));
       assert.equal(result.sourceId, 'assess1');
       assert.equal(result.title, 'Test Quiz');
       assert.equal(result.questions.length, 1);
@@ -319,8 +319,8 @@ describe('QTI12AssessmentParser', () => {
       }
     });
 
-    it('cleans up prompt HTML', () => {
-      const result = parser.parse(readFixture('canvas-mc.xml'));
+    it('cleans up prompt HTML', async () => {
+      const result = await parser.parse(readFixture('canvas-mc.xml'));
       const q = result.questions[0];
       assert.equal(
         q.promptHtml,
@@ -329,9 +329,9 @@ describe('QTI12AssessmentParser', () => {
     });
   });
 
-  describe('true/false', () => {
-    it('parses a true/false question', () => {
-      const result = parser.parse(readFixture('canvas-tf.xml'));
+  describe('true/false', async () => {
+    it('parses a true/false question', async () => {
+      const result = await parser.parse(readFixture('canvas-tf.xml'));
       assert.equal(result.questions.length, 1);
 
       const q = result.questions[0];
@@ -346,9 +346,9 @@ describe('QTI12AssessmentParser', () => {
     });
   });
 
-  describe('multiple answers (checkbox)', () => {
-    it('parses a multiple answers question', () => {
-      const result = parser.parse(readFixture('canvas-checkbox.xml'));
+  describe('multiple answers (checkbox)', async () => {
+    it('parses a multiple answers question', async () => {
+      const result = await parser.parse(readFixture('canvas-checkbox.xml'));
       assert.equal(result.questions.length, 1);
 
       const q = result.questions[0];
@@ -362,9 +362,9 @@ describe('QTI12AssessmentParser', () => {
     });
   });
 
-  describe('matching', () => {
-    it('parses a matching question', () => {
-      const result = parser.parse(readFixture('canvas-matching.xml'));
+  describe('matching', async () => {
+    it('parses a matching question', async () => {
+      const result = await parser.parse(readFixture('canvas-matching.xml'));
       assert.equal(result.questions.length, 1);
 
       const q = result.questions[0];
@@ -381,9 +381,9 @@ describe('QTI12AssessmentParser', () => {
     });
   });
 
-  describe('fill in blanks', () => {
-    it('parses a fill-in-the-blanks question', () => {
-      const result = parser.parse(readFixture('canvas-fitb.xml'));
+  describe('fill in blanks', async () => {
+    it('parses a fill-in-the-blanks question', async () => {
+      const result = await parser.parse(readFixture('canvas-fitb.xml'));
       assert.equal(result.questions.length, 1);
 
       const q = result.questions[0];
@@ -398,9 +398,9 @@ describe('QTI12AssessmentParser', () => {
     });
   });
 
-  describe('named zones (sub-sections)', () => {
-    it('parses questions into zones when named sub-sections exist', () => {
-      const result = parser.parse(readFixture('canvas-zones.xml'));
+  describe('named zones (sub-sections)', async () => {
+    it('parses questions into zones when named sub-sections exist', async () => {
+      const result = await parser.parse(readFixture('canvas-zones.xml'));
       assert.equal(result.questions.length, 2);
       assert.isDefined(result.zones);
       assert.equal(result.zones!.length, 2);
@@ -411,7 +411,7 @@ describe('QTI12AssessmentParser', () => {
     });
   });
 
-  describe('assessment_meta.xml enrichment', () => {
+  describe('assessment_meta.xml enrichment', async () => {
     const BASE_QTI = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Homework 0">
@@ -467,8 +467,8 @@ describe('QTI12AssessmentParser', () => {
   <ip_filter>129.123.86.0/24,129.123.175.192/27</ip_filter>
 </quiz>`;
 
-    it('parses homework meta: shuffle, dates, description, points, show answers', () => {
-      const result = parser.parse(BASE_QTI, { assessmentMetaXml: HOMEWORK_META });
+    it('parses homework meta: shuffle, dates, description, points, show answers', async () => {
+      const result = await parser.parse(BASE_QTI, { assessmentMetaXml: HOMEWORK_META });
       const m = result.meta!;
       assert.isTrue(m.shuffleAnswers);
       assert.equal(m.maxAttempts, -1);
@@ -483,8 +483,8 @@ describe('QTI12AssessmentParser', () => {
       assert.equal(m.assessmentType, 'Homework');
     });
 
-    it('parses exam meta: time limit, ip filter, hide results, allowed_attempts=1', () => {
-      const result = parser.parse(EXAM_QTI, { assessmentMetaXml: EXAM_META });
+    it('parses exam meta: time limit, ip filter, hide results, allowed_attempts=1', async () => {
+      const result = await parser.parse(EXAM_QTI, { assessmentMetaXml: EXAM_META });
       const m = result.meta!;
       assert.equal(m.timeLimitMinutes, 60);
       assert.equal(m.maxAttempts, 1);
@@ -496,36 +496,36 @@ describe('QTI12AssessmentParser', () => {
       assert.equal(m.assessmentType, 'Exam');
     });
 
-    it('parses access_code into meta.accessPassword', () => {
+    it('parses access_code into meta.accessPassword', async () => {
       const meta = `<?xml version="1.0" encoding="UTF-8"?>
 <quiz xmlns="http://canvas.instructure.com/xsd/cccv1p0">
   <allowed_attempts>-1</allowed_attempts>
   <access_code>secret123</access_code>
 </quiz>`;
-      const result = parser.parse(BASE_QTI, { assessmentMetaXml: meta });
+      const result = await parser.parse(BASE_QTI, { assessmentMetaXml: meta });
       assert.equal(result.meta!.accessPassword, 'secret123');
     });
 
-    it('leaves accessPassword undefined when access_code is absent', () => {
-      const result = parser.parse(BASE_QTI, { assessmentMetaXml: HOMEWORK_META });
+    it('leaves accessPassword undefined when access_code is absent', async () => {
+      const result = await parser.parse(BASE_QTI, { assessmentMetaXml: HOMEWORK_META });
       assert.isUndefined(result.meta!.accessPassword);
     });
 
-    it('lockDate takes precedence over dueDate', () => {
-      const result = parser.parse(BASE_QTI, { assessmentMetaXml: HOMEWORK_META });
+    it('lockDate takes precedence over dueDate', async () => {
+      const result = await parser.parse(BASE_QTI, { assessmentMetaXml: HOMEWORK_META });
       // lock_at is 2025-09-05, due_at is 2025-09-04 — lockDate should win for endDate
       assert.equal(result.meta!.lockDate, '2025-09-05T05:59:59');
       assert.equal(result.meta!.dueDate, '2025-09-04T23:59:59');
     });
 
-    it('works without assessment_meta.xml (no options)', () => {
-      const result = parser.parse(BASE_QTI);
+    it('works without assessment_meta.xml (no options)', async () => {
+      const result = await parser.parse(BASE_QTI);
       assert.isDefined(result.meta);
       assert.equal(result.meta!.assessmentType, 'Homework');
     });
   });
 
-  describe('date normalization and timezone handling', () => {
+  describe('date normalization and timezone handling', async () => {
     const BASE_QTI = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Test">
@@ -536,14 +536,14 @@ describe('QTI12AssessmentParser', () => {
   </assessment>
 </questestinterop>`;
 
-    it('passes through ISO 8601 dates unchanged (already local time)', () => {
+    it('passes through ISO 8601 dates unchanged (already local time)', async () => {
       const meta = `<?xml version="1.0"?><quiz xmlns="http://canvas.instructure.com/xsd/cccv1p0">
         <lock_at>2025-11-02T05:59:59</lock_at>
         <unlock_at>2025-10-29T06:00:00</unlock_at>
         <due_at>2025-11-02T05:59:59</due_at>
         <allowed_attempts>-1</allowed_attempts>
       </quiz>`;
-      const result = parser.parse(BASE_QTI, {
+      const result = await parser.parse(BASE_QTI, {
         assessmentMetaXml: meta,
         timezone: 'America/Denver',
       });
@@ -551,13 +551,13 @@ describe('QTI12AssessmentParser', () => {
       assert.equal(result.meta!.startDate, '2025-10-29T06:00:00');
     });
 
-    it('converts UTC format dates to Mountain Time (UTC-7 in summer)', () => {
+    it('converts UTC format dates to Mountain Time (UTC-7 in summer)', async () => {
       // "2025-09-04 06:00:00 UTC" = 2025-09-03 midnight Mountain (UTC-6 = MDT)
       const meta = `<?xml version="1.0"?><quiz xmlns="http://canvas.instructure.com/xsd/cccv1p0">
         <show_correct_answers_at>2025-09-04 06:00:00 UTC</show_correct_answers_at>
         <allowed_attempts>-1</allowed_attempts>
       </quiz>`;
-      const result = parser.parse(BASE_QTI, {
+      const result = await parser.parse(BASE_QTI, {
         assessmentMetaXml: meta,
         timezone: 'America/Denver',
       });
@@ -565,13 +565,13 @@ describe('QTI12AssessmentParser', () => {
       assert.equal(result.meta!.showCorrectAnswersAt, '2025-09-04T00:00:00');
     });
 
-    it('converts UTC format dates to Eastern Time', () => {
+    it('converts UTC format dates to Eastern Time', async () => {
       // "2025-09-04 06:00:00 UTC" = 2025-09-04 02:00 EDT (UTC-4 in September)
       const meta = `<?xml version="1.0"?><quiz xmlns="http://canvas.instructure.com/xsd/cccv1p0">
         <show_correct_answers_at>2025-09-04 06:00:00 UTC</show_correct_answers_at>
         <allowed_attempts>-1</allowed_attempts>
       </quiz>`;
-      const result = parser.parse(BASE_QTI, {
+      const result = await parser.parse(BASE_QTI, {
         assessmentMetaXml: meta,
         timezone: 'America/New_York',
       });
@@ -579,19 +579,19 @@ describe('QTI12AssessmentParser', () => {
       assert.equal(result.meta!.showCorrectAnswersAt, '2025-09-04T02:00:00');
     });
 
-    it('defaults to UTC when no timezone provided', () => {
+    it('defaults to UTC when no timezone provided', async () => {
       const meta = `<?xml version="1.0"?><quiz xmlns="http://canvas.instructure.com/xsd/cccv1p0">
         <show_correct_answers_at>2025-09-04 06:00:00 UTC</show_correct_answers_at>
         <allowed_attempts>-1</allowed_attempts>
       </quiz>`;
-      const result = parser.parse(BASE_QTI, { assessmentMetaXml: meta });
+      const result = await parser.parse(BASE_QTI, { assessmentMetaXml: meta });
       // No timezone → default UTC → time stays as 06:00
       assert.equal(result.meta!.showCorrectAnswersAt, '2025-09-04T06:00:00');
     });
   });
 
-  describe('points_per_item section-level override', () => {
-    it('uses section points_per_item instead of item points_possible', () => {
+  describe('points_per_item section-level override', async () => {
+    it('uses section points_per_item instead of item points_possible', async () => {
       const xml = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Quiz">
@@ -624,13 +624,13 @@ describe('QTI12AssessmentParser', () => {
     </section>
   </assessment>
 </questestinterop>`;
-      const result = parser.parse(xml);
+      const result = await parser.parse(xml);
       assert.equal(result.questions[0].points, 10);
     });
   });
 
-  describe('selection_number → zone numberChoose', () => {
-    it('sets numberChoose on zone when selection_number < items count', () => {
+  describe('selection_number → zone numberChoose', async () => {
+    it('sets numberChoose on zone when selection_number < items count', async () => {
       const xml = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Quiz">
@@ -677,12 +677,12 @@ describe('QTI12AssessmentParser', () => {
     </section>
   </assessment>
 </questestinterop>`;
-      const result = parser.parse(xml);
+      const result = await parser.parse(xml);
       assert.isDefined(result.zones);
       assert.equal(result.zones![0].numberChoose, 1);
     });
 
-    it('does not set numberChoose when selection_number equals items count', () => {
+    it('does not set numberChoose when selection_number equals items count', async () => {
       const xml = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Quiz">
@@ -729,12 +729,12 @@ describe('QTI12AssessmentParser', () => {
     </section>
   </assessment>
 </questestinterop>`;
-      const result = parser.parse(xml);
+      const result = await parser.parse(xml);
       assert.isUndefined(result.zones?.[0].numberChoose);
     });
   });
 
-  describe('allowed_extensions → file-upload allowedExtensions', () => {
+  describe('allowed_extensions → file-upload allowedExtensions', async () => {
     const FILE_UPLOAD_QTI = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Assignment">
@@ -751,7 +751,7 @@ describe('QTI12AssessmentParser', () => {
   </assessment>
 </questestinterop>`;
 
-    it('injects allowedExtensions into file-upload body from assessment_meta.xml', () => {
+    it('injects allowedExtensions into file-upload body from assessment_meta.xml', async () => {
       const meta = `<?xml version="1.0" encoding="UTF-8"?>
 <quiz xmlns="http://canvas.instructure.com/xsd/cccv1p0">
   <allowed_attempts>-1</allowed_attempts>
@@ -759,7 +759,7 @@ describe('QTI12AssessmentParser', () => {
     <allowed_extensions>pdf,docx</allowed_extensions>
   </assignment>
 </quiz>`;
-      const result = parser.parse(FILE_UPLOAD_QTI, { assessmentMetaXml: meta });
+      const result = await parser.parse(FILE_UPLOAD_QTI, { assessmentMetaXml: meta });
       const q = result.questions[0];
       assert.equal(q.body.type, 'file-upload');
       if (q.body.type === 'file-upload') {
@@ -767,8 +767,8 @@ describe('QTI12AssessmentParser', () => {
       }
     });
 
-    it('leaves allowedExtensions undefined when no allowed_extensions in meta', () => {
-      const result = parser.parse(FILE_UPLOAD_QTI);
+    it('leaves allowedExtensions undefined when no allowed_extensions in meta', async () => {
+      const result = await parser.parse(FILE_UPLOAD_QTI);
       const q = result.questions[0];
       assert.equal(q.body.type, 'file-upload');
       if (q.body.type === 'file-upload') {
@@ -777,8 +777,8 @@ describe('QTI12AssessmentParser', () => {
     });
   });
 
-  describe('parseWarnings for unsupported question types', () => {
-    it('records a warning for unknown question types instead of throwing', () => {
+  describe('parseWarnings for unsupported question types', async () => {
+    it('records a warning for unknown question types instead of throwing', async () => {
       const xml = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Quiz">
@@ -794,7 +794,7 @@ describe('QTI12AssessmentParser', () => {
     </section>
   </assessment>
 </questestinterop>`;
-      const result = parser.parse(xml);
+      const result = await parser.parse(xml);
       assert.equal(result.questions.length, 0);
       assert.isDefined(result.parseWarnings);
       assert.equal(result.parseWarnings!.length, 1);
@@ -802,7 +802,7 @@ describe('QTI12AssessmentParser', () => {
       assert.include(result.parseWarnings![0].message, 'magic_question');
     });
 
-    it('still parses valid questions when some are unsupported', () => {
+    it('still parses valid questions when some are unsupported', async () => {
       const xml = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Quiz">
@@ -832,14 +832,14 @@ describe('QTI12AssessmentParser', () => {
     </section>
   </assessment>
 </questestinterop>`;
-      const result = parser.parse(xml);
+      const result = await parser.parse(xml);
       assert.equal(result.questions.length, 1);
       assert.equal(result.questions[0].sourceId, 'q2');
       assert.equal(result.parseWarnings!.length, 1);
     });
   });
 
-  describe('rubric parsing', () => {
+  describe('rubric parsing', async () => {
     const BASE_QTI = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Quiz">
@@ -892,8 +892,8 @@ describe('QTI12AssessmentParser', () => {
   </rubric>
 </rubrics>`;
 
-    it('resolves rubric when rubricsXml is provided and identifier matches', () => {
-      const result = parser.parse(BASE_QTI, {
+    it('resolves rubric when rubricsXml is provided and identifier matches', async () => {
+      const result = await parser.parse(BASE_QTI, {
         assessmentMetaXml: META_WITH_RUBRIC,
         rubricsXml: RUBRICS_XML,
       });
@@ -917,8 +917,8 @@ describe('QTI12AssessmentParser', () => {
       assert.isUndefined(result.parseWarnings);
     });
 
-    it('emits a warning when rubric_identifierref is present but rubricsXml is not provided', () => {
-      const result = parser.parse(BASE_QTI, { assessmentMetaXml: META_WITH_RUBRIC });
+    it('emits a warning when rubric_identifierref is present but rubricsXml is not provided', async () => {
+      const result = await parser.parse(BASE_QTI, { assessmentMetaXml: META_WITH_RUBRIC });
       assert.isUndefined(result.rubric);
       assert.isDefined(result.parseWarnings);
       assert.equal(result.parseWarnings!.length, 1);
@@ -927,9 +927,9 @@ describe('QTI12AssessmentParser', () => {
       assert.include(result.parseWarnings![0].message, 'rubrics.xml');
     });
 
-    it('emits a warning when rubric_identifierref is present but the rubric id is not found in rubricsXml', () => {
+    it('emits a warning when rubric_identifierref is present but the rubric id is not found in rubricsXml', async () => {
       const rubricsXmlOther = RUBRICS_XML.replace('identifier="rub1"', 'identifier="rub-other"');
-      const result = parser.parse(BASE_QTI, {
+      const result = await parser.parse(BASE_QTI, {
         assessmentMetaXml: META_WITH_RUBRIC,
         rubricsXml: rubricsXmlOther,
       });
@@ -938,8 +938,8 @@ describe('QTI12AssessmentParser', () => {
       assert.equal(result.parseWarnings![0].questionId, 'rub1');
     });
 
-    it('produces no rubric and no warning when assessment_meta has no rubric_identifierref', () => {
-      const result = parser.parse(BASE_QTI, {
+    it('produces no rubric and no warning when assessment_meta has no rubric_identifierref', async () => {
+      const result = await parser.parse(BASE_QTI, {
         assessmentMetaXml: META_WITHOUT_RUBRIC,
         rubricsXml: RUBRICS_XML,
       });
@@ -947,13 +947,13 @@ describe('QTI12AssessmentParser', () => {
       assert.isUndefined(result.parseWarnings);
     });
 
-    it('produces no rubric and no warning when no assessmentMetaXml is provided', () => {
-      const result = parser.parse(BASE_QTI);
+    it('produces no rubric and no warning when no assessmentMetaXml is provided', async () => {
+      const result = await parser.parse(BASE_QTI);
       assert.isUndefined(result.rubric);
     });
   });
 
-  describe('shuffle propagation', () => {
+  describe('shuffle propagation', async () => {
     const BASE_QTI = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
   <assessment ident="a1" title="Quiz 1">
@@ -980,37 +980,37 @@ describe('QTI12AssessmentParser', () => {
   </assessment>
 </questestinterop>`;
 
-    it('sets shuffleAnswers=true on all questions when assessment meta has shuffle_answers=true', () => {
+    it('sets shuffleAnswers=true on all questions when assessment meta has shuffle_answers=true', async () => {
       const meta = `<?xml version="1.0"?><quiz xmlns="http://canvas.instructure.com/xsd/cccv1p0">
         <shuffle_answers>true</shuffle_answers>
         <allowed_attempts>-1</allowed_attempts>
       </quiz>`;
-      const result = parser.parse(BASE_QTI, { assessmentMetaXml: meta });
+      const result = await parser.parse(BASE_QTI, { assessmentMetaXml: meta });
       assert.isTrue(result.questions[0].shuffleAnswers);
     });
 
-    it('leaves shuffleAnswers undefined on questions when shuffle_answers is not set', () => {
+    it('leaves shuffleAnswers undefined on questions when shuffle_answers is not set', async () => {
       const meta = `<?xml version="1.0"?><quiz xmlns="http://canvas.instructure.com/xsd/cccv1p0">
         <allowed_attempts>-1</allowed_attempts>
       </quiz>`;
-      const result = parser.parse(BASE_QTI, { assessmentMetaXml: meta });
+      const result = await parser.parse(BASE_QTI, { assessmentMetaXml: meta });
       assert.isUndefined(result.questions[0].shuffleAnswers);
     });
 
-    it('parses shuffle_questions=true into meta.shuffleQuestions', () => {
+    it('parses shuffle_questions=true into meta.shuffleQuestions', async () => {
       const meta = `<?xml version="1.0"?><quiz xmlns="http://canvas.instructure.com/xsd/cccv1p0">
         <shuffle_questions>true</shuffle_questions>
         <allowed_attempts>-1</allowed_attempts>
       </quiz>`;
-      const result = parser.parse(BASE_QTI, { assessmentMetaXml: meta });
+      const result = await parser.parse(BASE_QTI, { assessmentMetaXml: meta });
       assert.isTrue(result.meta!.shuffleQuestions);
     });
 
-    it('leaves meta.shuffleQuestions undefined when shuffle_questions is not set', () => {
+    it('leaves meta.shuffleQuestions undefined when shuffle_questions is not set', async () => {
       const meta = `<?xml version="1.0"?><quiz xmlns="http://canvas.instructure.com/xsd/cccv1p0">
         <allowed_attempts>-1</allowed_attempts>
       </quiz>`;
-      const result = parser.parse(BASE_QTI, { assessmentMetaXml: meta });
+      const result = await parser.parse(BASE_QTI, { assessmentMetaXml: meta });
       assert.isUndefined(result.meta!.shuffleQuestions);
     });
   });

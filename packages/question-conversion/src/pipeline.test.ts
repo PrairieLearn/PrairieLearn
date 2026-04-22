@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { assert, describe, it } from 'vitest';
+import { assert, describe, expect, it } from 'vitest';
 
 import { convert } from './pipeline.js';
 
@@ -9,9 +9,9 @@ const QTI12_FIXTURES = path.join(import.meta.dirname, 'test-fixtures/qti12');
 
 describe('convert (integration)', () => {
   describe('QTI 1.2 assessment', () => {
-    it('converts a multiple choice quiz end-to-end', () => {
+    it('converts a multiple choice quiz end-to-end', async () => {
       const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-mc.xml'), 'utf-8');
-      const result = convert(xml, { topic: 'Data Structures' });
+      const result = await convert(xml, { topic: 'Data Structures' });
 
       assert.equal(result.questions.length, 1);
       const q = result.questions[0];
@@ -23,33 +23,33 @@ describe('convert (integration)', () => {
       assert.equal(q.directoryName, 'hashing');
       assert.equal(
         q.questionHtml,
-        '<pl-question-panel>\n<p>Which collision resolution method tries different sequences?</p>\n</pl-question-panel>\n\n<pl-multiple-choice answers-name="answer" fixed-order="true">\n  <pl-answer correct="true">Double hashing</pl-answer>\n  <pl-answer correct="false">Linear probing</pl-answer>\n  <pl-answer correct="false">Quadratic probing</pl-answer>\n</pl-multiple-choice>',
+        '<pl-question-panel>\n<p>Which collision resolution method tries different sequences?</p>\n</pl-question-panel>\n\n<pl-multiple-choice answers-name="answer">\n  <pl-answer correct="true">Double hashing</pl-answer>\n  <pl-answer correct="false">Linear probing</pl-answer>\n  <pl-answer correct="false">Quadratic probing</pl-answer>\n</pl-multiple-choice>',
       );
     });
 
-    it('converts a true/false quiz end-to-end', () => {
+    it('converts a true/false quiz end-to-end', async () => {
       const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-tf.xml'), 'utf-8');
-      const result = convert(xml);
+      const result = await convert(xml);
       assert.equal(result.questions.length, 1);
       assert.equal(
         result.questions[0].questionHtml,
-        '<pl-question-panel>\nThe sky is blue.\n</pl-question-panel>\n\n<pl-multiple-choice answers-name="answer" fixed-order="true">\n  <pl-answer correct="true">True</pl-answer>\n  <pl-answer correct="false">False</pl-answer>\n</pl-multiple-choice>',
+        '<pl-question-panel>\nThe sky is blue.\n</pl-question-panel>\n\n<pl-multiple-choice answers-name="answer">\n  <pl-answer correct="true">True</pl-answer>\n  <pl-answer correct="false">False</pl-answer>\n</pl-multiple-choice>',
       );
     });
 
-    it('converts a checkbox quiz end-to-end', () => {
+    it('converts a checkbox quiz end-to-end', async () => {
       const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-checkbox.xml'), 'utf-8');
-      const result = convert(xml);
+      const result = await convert(xml);
       assert.equal(result.questions.length, 1);
       assert.equal(
         result.questions[0].questionHtml,
-        '<pl-question-panel>\n<p>Select all correct answers</p>\n</pl-question-panel>\n\n<pl-checkbox answers-name="answer" fixed-order="true">\n  <pl-answer correct="true">Correct A</pl-answer>\n  <pl-answer correct="true">Correct B</pl-answer>\n  <pl-answer correct="false">Wrong C</pl-answer>\n</pl-checkbox>',
+        '<pl-question-panel>\n<p>Select all correct answers</p>\n</pl-question-panel>\n\n<pl-checkbox answers-name="answer">\n  <pl-answer correct="true">Correct A</pl-answer>\n  <pl-answer correct="true">Correct B</pl-answer>\n  <pl-answer correct="false">Wrong C</pl-answer>\n</pl-checkbox>',
       );
     });
 
-    it('converts a matching quiz end-to-end', () => {
+    it('converts a matching quiz end-to-end', async () => {
       const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-matching.xml'), 'utf-8');
-      const result = convert(xml);
+      const result = await convert(xml);
       assert.equal(result.questions.length, 1);
       assert.equal(
         result.questions[0].questionHtml,
@@ -57,9 +57,9 @@ describe('convert (integration)', () => {
       );
     });
 
-    it('converts a fill-in-blanks quiz end-to-end', () => {
+    it('converts a fill-in-blanks quiz end-to-end', async () => {
       const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-fitb.xml'), 'utf-8');
-      const result = convert(xml);
+      const result = await convert(xml);
       assert.equal(result.questions.length, 1);
       const q = result.questions[0];
       assert.equal(
@@ -69,14 +69,14 @@ describe('convert (integration)', () => {
       assert.isUndefined(q.serverPy);
     });
 
-    it('propagates access_code from assessment_meta.xml into allowAccess password', () => {
+    it('propagates access_code from assessment_meta.xml into allowAccess password', async () => {
       const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-mc.xml'), 'utf-8');
       const meta = `<?xml version="1.0" encoding="UTF-8"?>
 <quiz xmlns="http://canvas.instructure.com/xsd/cccv1p0">
   <allowed_attempts>1</allowed_attempts>
   <access_code>hunter2</access_code>
 </quiz>`;
-      const result = convert(xml, { assessmentMetaXml: meta });
+      const result = await convert(xml, { assessmentMetaXml: meta });
       const rules = result.assessment.infoJson.allowAccess;
       assert.isDefined(rules);
       assert.isTrue(rules!.some((r) => r.password === 'hunter2'));
@@ -84,16 +84,15 @@ describe('convert (integration)', () => {
   });
 
   describe('error handling', () => {
-    it('throws for unrecognized format', () => {
-      assert.throws(() => convert('<html>not qti</html>'), /No parser found/);
+    it('throws for unrecognized format', async () => {
+      await expect(convert('<html>not qti</html>')).rejects.toThrow(/No parser found/);
     });
   });
 
   describe('deterministic output', () => {
-    it('produces identical UUIDs across runs', () => {
+    it('produces identical UUIDs across runs', async () => {
       const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-mc.xml'), 'utf-8');
-      const r1 = convert(xml);
-      const r2 = convert(xml);
+      const [r1, r2] = await Promise.all([convert(xml), convert(xml)]);
       assert.equal(r1.questions[0].infoJson.uuid, r2.questions[0].infoJson.uuid);
     });
   });

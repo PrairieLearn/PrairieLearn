@@ -185,6 +185,7 @@ export interface IRAssessmentMeta {
 export interface IRParseWarning {
   questionId: string;
   message: string;
+  level?: 'warn' | 'info';
 }
 
 /** A collection of questions from one source (e.g., one assessment). */

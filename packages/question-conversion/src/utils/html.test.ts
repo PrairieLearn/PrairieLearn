@@ -3,9 +3,10 @@ import { assert, describe, it } from 'vitest';
 import {
   cleanQuestionHtml,
   convertLatexItemizeToMarkdown,
-  ensureResponsiveImages,
   extractInlineImages,
   resolveImsFileRefs,
+  rewriteImagesAsPlFigure,
+  rewritePreAsPlCode,
   unescapeHtml,
 } from './html.js';
 
@@ -53,25 +54,49 @@ describe('extractInlineImages', () => {
   });
 });
 
-describe('ensureResponsiveImages', () => {
-  it('adds responsive style to plain img tag', () => {
+describe('rewriteImagesAsPlFigure', () => {
+  it('converts a plain img to pl-figure', () => {
     assert.equal(
-      ensureResponsiveImages('<img src="test.png">'),
-      '<img style="max-width: 100%; height: auto;" src="test.png">',
+      rewriteImagesAsPlFigure('<img src="test.png">'),
+      '<pl-figure file-name="test.png"></pl-figure>',
     );
   });
 
-  it('appends to existing style', () => {
+  it('strips clientFilesQuestion/ prefix and sets directory attribute', () => {
     assert.equal(
-      ensureResponsiveImages('<img style="border: 1px solid red" src="test.png">'),
-      '<img style="border: 1px solid red; max-width: 100%; height: auto;" src="test.png">',
+      rewriteImagesAsPlFigure('<img src="clientFilesQuestion/image.png">'),
+      '<pl-figure file-name="image.png" directory="clientFilesQuestion"></pl-figure>',
     );
   });
 
-  it('does not modify if max-width already present', () => {
-    const html = '<img style="max-width: 50%" src="test.png">';
-    const result = ensureResponsiveImages(html);
-    assert.equal(result, html);
+  it('preserves alt and width attributes, drops height', () => {
+    assert.equal(
+      rewriteImagesAsPlFigure(
+        '<img src="clientFilesQuestion/img.png" alt="A diagram" width="300" height="200">',
+      ),
+      '<pl-figure file-name="img.png" directory="clientFilesQuestion" alt="A diagram" width="300"></pl-figure>',
+    );
+  });
+
+  it('drops style and class attributes', () => {
+    const result = rewriteImagesAsPlFigure(
+      '<img src="test.png" style="max-width:100%" class="foo">',
+    );
+    assert.notInclude(result, 'style=');
+    assert.notInclude(result, 'class=');
+    assert.include(result, '<pl-figure');
+  });
+
+  it('handles external URLs without directory attribute', () => {
+    assert.equal(
+      rewriteImagesAsPlFigure('<img src="https://example.com/img.png" alt="external">'),
+      '<pl-figure file-name="https://example.com/img.png" alt="external"></pl-figure>',
+    );
+  });
+
+  it('passes through HTML with no img tags unchanged', () => {
+    const html = '<p>No images here</p>';
+    assert.equal(rewriteImagesAsPlFigure(html), html);
   });
 });
 
@@ -114,6 +139,77 @@ describe('convertLatexItemizeToMarkdown', () => {
       convertLatexItemizeToMarkdown('\\begin{itemize}\\item  Foo   Bar  \\end{itemize}'),
       '<markdown>\n- Foo Bar\n</markdown>',
     );
+  });
+});
+
+describe('rewritePreAsPlCode', () => {
+  it('converts a plain pre block to pl-code', async () => {
+    assert.equal(
+      await rewritePreAsPlCode('<pre>hello world</pre>'),
+      '<pl-code>hello world</pl-code>',
+    );
+  });
+
+  it('extracts language from class="language-X" on pre', async () => {
+    assert.equal(
+      await rewritePreAsPlCode('<pre class="language-python">x = 1</pre>'),
+      '<pl-code language="python">x = 1</pl-code>',
+    );
+  });
+
+  it('extracts language from class="lang-X" on pre', async () => {
+    assert.equal(
+      await rewritePreAsPlCode('<pre class="lang-javascript">const x = 1;</pre>'),
+      '<pl-code language="javascript">const x = 1;</pl-code>',
+    );
+  });
+
+  it('extracts language from brush: X class on pre', async () => {
+    assert.equal(
+      await rewritePreAsPlCode('<pre class="brush: python;">x = 1</pre>'),
+      '<pl-code language="python">x = 1</pl-code>',
+    );
+  });
+
+  it('strips inner <code> wrapper and reads its class', async () => {
+    assert.equal(
+      await rewritePreAsPlCode('<pre><code class="language-java">int x = 0;</code></pre>'),
+      '<pl-code language="java">int x = 0;</pl-code>',
+    );
+  });
+
+  it('prefers pre class over inner code class', async () => {
+    assert.equal(
+      await rewritePreAsPlCode(
+        '<pre class="language-python"><code class="language-java">x = 1</code></pre>',
+      ),
+      '<pl-code language="python">x = 1</pl-code>',
+    );
+  });
+
+  it('strips inner <code> with no class', async () => {
+    assert.equal(
+      await rewritePreAsPlCode('<pre><code>print("hi")</code></pre>'),
+      '<pl-code language="python">print("hi")</pl-code>',
+    );
+  });
+
+  it('unwraps pl-code from a surrounding <p>', async () => {
+    assert.equal(
+      await rewritePreAsPlCode('<p><pre>x = 1</pre></p>'),
+      '<pl-code>x = 1</pl-code>',
+    );
+  });
+
+  it('leaves <p> intact when it contains more than just pl-code', async () => {
+    const result = await rewritePreAsPlCode('<p>See: <pre>x = 1</pre></p>');
+    assert.include(result, '<p>');
+    assert.include(result, '<pl-code>');
+  });
+
+  it('passes through HTML with no pre tags unchanged', async () => {
+    const html = '<p>No code here</p>';
+    assert.equal(await rewritePreAsPlCode(html), html);
   });
 });
 

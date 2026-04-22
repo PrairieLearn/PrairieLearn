@@ -60,33 +60,8 @@ export interface PLAllowAccessRule {
   showClosedAssessment?: boolean;
 }
 
-/** A single rating level within a rubric criterion (for rubric.json). */
-export interface PLRubricRating {
-  id: string;
-  description: string;
-  points: number;
-}
-
-/** A single criterion in a rubric (for rubric.json). */
-export interface PLRubricCriterion {
-  id: string;
-  description: string;
-  longDescription?: string;
-  points: number;
-  ratings: PLRubricRating[];
-}
-
-/** Contents of rubric.json written alongside infoAssessment.json. */
-export interface PLRubricJson {
-  title: string;
-  pointsPossible: number;
-  criteria: PLRubricCriterion[];
-}
-
 /** Output for a PL assessment directory. */
 export interface PLAssessmentOutput {
   directoryName: string;
   infoJson: PLAssessmentInfoJson;
-  /** If present, written as rubric.json alongside infoAssessment.json. */
-  rubricJson?: PLRubricJson;
 }
