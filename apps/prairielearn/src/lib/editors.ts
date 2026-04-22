@@ -2507,7 +2507,7 @@ export class MultiEditor extends Editor {
 export type AssessmentToolsConfig = { name: string; label: string; enabled: boolean }[];
 
 /** A single question to import, with all file contents as serialized data. */
-export interface CanvasImportQuestionData {
+export interface QtiImportQuestionData {
   directoryName: string;
   infoJson: Record<string, unknown>;
   questionHtml: string;
@@ -2517,26 +2517,25 @@ export interface CanvasImportQuestionData {
 }
 
 /** A single assessment to import, including its questions. */
-export interface CanvasImportAssessmentData {
+export interface QtiImportAssessmentData {
   directoryName: string;
   infoJson: Record<string, unknown>;
-  rubricJson?: Record<string, unknown>;
-  questions: CanvasImportQuestionData[];
+  questions: QtiImportQuestionData[];
 }
 
-export class CanvasImportEditor extends Editor {
+export class QtiImportEditor extends Editor {
   private course_instance: CourseInstance;
-  private assessments: CanvasImportAssessmentData[];
+  private assessments: QtiImportAssessmentData[];
 
   constructor(
     params: BaseEditorOptions<{ course_instance: CourseInstance }> & {
-      assessments: CanvasImportAssessmentData[];
+      assessments: QtiImportAssessmentData[];
     },
   ) {
     const { course_instance } = params.locals;
     super({
       ...params,
-      description: `${course_instance.short_name}: Import ${params.assessments.length} assessment(s) from Canvas`,
+      description: `${course_instance.short_name}: Import ${params.assessments.length} assessment(s) from QTI`,
     });
     this.course_instance = course_instance;
     this.assessments = params.assessments;
@@ -2618,13 +2617,6 @@ export class CanvasImportEditor extends Editor {
       );
       await fs.outputFile(path.join(assessmentDir, 'infoAssessment.json'), formattedAssessmentJson);
 
-      if (assessment.rubricJson) {
-        const formattedRubricJson = await formatJsonWithPrettier(
-          JSON.stringify(assessment.rubricJson),
-        );
-        await fs.outputFile(path.join(assessmentDir, 'rubric.json'), formattedRubricJson);
-      }
-
       pathsToAdd.push(assessmentDir);
     }
 
@@ -2632,7 +2624,7 @@ export class CanvasImportEditor extends Editor {
 
     return {
       pathsToAdd,
-      commitMessage: `${this.course_instance.short_name}: import ${this.assessments.length} assessment(s) from Canvas`,
+      commitMessage: `${this.course_instance.short_name}: import ${this.assessments.length} assessment(s) from QTI`,
     };
   }
 }

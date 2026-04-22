@@ -3,13 +3,13 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { type CanvasImportAssessmentData, CanvasImportEditor } from '../../lib/editors.js';
+import { type QtiImportAssessmentData, QtiImportEditor } from '../../lib/editors.js';
 
 import { requireCoursePermissionEdit, t } from './init.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export interface CanvasImportError {
+export interface QtiImportError {
   Create: { code: 'IMPORT_JOB_FAILED'; jobSequenceId: string };
 }
 
@@ -24,7 +24,6 @@ const QuestionDataSchema = z.object({
 const AssessmentDataSchema = z.object({
   directoryName: z.string().min(1),
   infoJson: z.record(z.unknown()),
-  rubricJson: z.record(z.unknown()).optional(),
   questions: z.array(QuestionDataSchema),
 });
 
@@ -36,9 +35,9 @@ const create = t.procedure
     }),
   )
   .mutation(async ({ input, ctx }) => {
-    const assessments: CanvasImportAssessmentData[] = input.assessments;
+    const assessments: QtiImportAssessmentData[] = input.assessments;
 
-    const editor = new CanvasImportEditor({
+    const editor = new QtiImportEditor({
       locals: ctx.locals,
       assessments,
     });
@@ -74,6 +73,6 @@ const create = t.procedure
     return { jobSequenceId: serverJob.jobSequenceId, assessmentIds };
   });
 
-export const canvasImportRouter = t.router({
+export const qtiImportRouter = t.router({
   create,
 });

@@ -312,7 +312,7 @@ export async function initExpress(): Promise<Express> {
     upload.single('file'),
   );
   app.post(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/canvas_import/upload',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/qti_import/upload',
     upload.single('file'),
   );
 
@@ -1298,8 +1298,8 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorAssessments/instructorAssessments.js')).default,
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/canvas_import',
-    (await import('./pages/instructorCanvasImport/instructorCanvasImport.js')).default,
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/qti_import',
+    (await import('./pages/instructorQtiImport/instructorQtiImport.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/gradebook',
