@@ -102,7 +102,7 @@ describe('Access control save via tRPC', () => {
     const origHash = await getOrigHash();
 
     const rules: AccessControlJsonInput[] = [
-      makeRule({ listBeforeRelease: true }),
+      makeRule({ beforeRelease: { listed: true } }),
       makeRule({
         labels: ['Section A'],
         dateControl: { dueDate: '2024-04-01T23:59:00' },
@@ -119,7 +119,7 @@ describe('Access control save via tRPC', () => {
 
     assert.isArray(parsed.accessControl);
     assert.equal(parsed.accessControl.length, 2);
-    assert.equal(parsed.accessControl[0].listBeforeRelease, true);
+    assert.deepEqual(parsed.accessControl[0].beforeRelease, { listed: true });
     assert.deepEqual(parsed.accessControl[1].labels, ['Section A']);
     assert.equal(parsed.accessControl[1].dateControl.dueDate, '2024-04-01T23:59:00');
 
@@ -129,11 +129,11 @@ describe('Access control save via tRPC', () => {
     assert.isArray(parsed.zones);
   });
 
-  test.sequential('omits listBeforeRelease: false and empty objects from disk', async () => {
+  test.sequential('omits beforeRelease.listed: false and empty objects from disk', async () => {
     const client = await createClient();
     const origHash = await getOrigHash();
 
-    const rules: AccessControlJsonInput[] = [{ listBeforeRelease: false }];
+    const rules: AccessControlJsonInput[] = [{ beforeRelease: { listed: false } }];
 
     const result = await client.accessControl.saveAllRules.mutate({ rules, origHash });
     assert.isString(result.newHash);
@@ -142,7 +142,7 @@ describe('Access control save via tRPC', () => {
     const parsed = JSON.parse(fileContent);
 
     assert.equal(parsed.accessControl.length, 1);
-    assert.notProperty(parsed.accessControl[0], 'listBeforeRelease');
+    assert.notProperty(parsed.accessControl[0], 'beforeRelease');
   });
 
   test.sequential('rejects save with stale origHash', async () => {
