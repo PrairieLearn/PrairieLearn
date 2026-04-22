@@ -35,7 +35,10 @@ describe('loadLibrary', () => {
           sourcePath: bundlePath,
           anchorUrl: import.meta.url,
         });
-        assert.equal(lib.generateLaunchLink({ keys: ['a', 'b'], restartUrl: 'http://x' }), 'ldb:test:a,b');
+        assert.equal(
+          lib.generateLaunchLink({ keys: ['a', 'b'], restartUrl: 'http://x' }),
+          'ldb:test:a,b',
+        );
       },
       { unsafeCleanup: true },
     );
@@ -82,9 +85,7 @@ describe('loadLibrary', () => {
   });
 
   it('rejects when neither sourcePath nor keys is provided', async () => {
-    await expect(loadLibrary({ anchorUrl: import.meta.url })).rejects.toThrow(
-      /sourcePath or keys/,
-    );
+    await expect(loadLibrary({ anchorUrl: import.meta.url })).rejects.toThrow(/sourcePath or keys/);
   });
 
   it('rejects when both sourcePath and keys are provided', async () => {
@@ -163,9 +164,7 @@ describe('Respondus LockDown Browser library', () => {
         config.respondusLockdownBrowserSourcePath = bundlePath;
         config.respondusLockdownBrowserKeys = null;
 
-        await expect(initLibrary()).rejects.toThrow(
-          /only allowed in devMode/,
-        );
+        await expect(initLibrary()).rejects.toThrow(/only allowed in devMode/);
       },
       { unsafeCleanup: true },
     );
