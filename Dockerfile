@@ -3,7 +3,7 @@
 # https://github.com/moby/buildkit/issues/6512
 
 FROM amazonlinux:2023
-ARG CACHEBUST=2026-03-15-14-27-00
+ARG CACHEBUST=2026-04-15-14-34-07
 
 WORKDIR /PrairieLearn
 

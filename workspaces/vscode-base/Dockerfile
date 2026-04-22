@@ -1,6 +1,6 @@
 # noble is the codename for Ubuntu 24.04 LTS
 FROM codercom/code-server:4.112.0-noble
-ARG CACHEBUST=2026-03-15-14-27-00
+ARG CACHEBUST=2026-04-15-14-34-07
 
 # On PL, we want to standardize on using 1001:1001 for the user. We change the
 # "coder" account's UID and GID here so that fixuid has no work to do later.
@@ -55,6 +55,8 @@ COPY --chmod=0644 --chown=coder:coder settings.json /home/coder/.local/share/cod
 
 # Prepare the entrypoint helper that steps down to a limited user in local dev mode
 COPY --chmod=0755 --chown=root:root pl-gosu-helper.sh /usr/bin/
+# Prepare the entrypoint helper that checks for network connectivity and disables the marketplace as needed
+COPY --chmod=0755 --chown=root:root entrypoint.sh /entrypoint.sh
 
 # Make sure that code-server's entrypoint doesn't run fixuid unnecessarily
 USER root
@@ -63,6 +65,4 @@ RUN mkdir -p /run /var/run && \
 
 USER coder
 EXPOSE 8080
-ENTRYPOINT ["/usr/bin/pl-gosu-helper.sh", "/usr/bin/entrypoint.sh", "--auth", "none", \
-  "--disable-update-check", "--disable-telemetry", \
-  "--bind-addr", "0.0.0.0:8080", "."]
+ENTRYPOINT ["/usr/bin/pl-gosu-helper.sh", "/entrypoint.sh"]
