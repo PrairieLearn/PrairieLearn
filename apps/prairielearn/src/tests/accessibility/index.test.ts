@@ -232,8 +232,9 @@ const SKIP_ROUTES = [
   // space here.
   '/ RegExp(/\\/pl\\/shibcallback/) ',
 
-  // This page is not user-visible.
+  // These pages are not user-visible.
   '/pl/webhooks/ping',
+  '/pl/administrator/respondusLockdownBrowserTest',
 
   // These routes just render JSON.
   /^\/pl\/api\/v1\//,
