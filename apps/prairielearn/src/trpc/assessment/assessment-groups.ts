@@ -186,7 +186,7 @@ const deleteAll = t.procedure.use(requireCourseInstancePermissionEdit).mutation(
 });
 
 const enableGroupWork = t.procedure
-  .use(requireCourseInstancePermissionEdit)
+  .use(requireCoursePermissionEdit)
   .input(z.object({ origHash: z.string().nullable() }))
   .mutation(async ({ input, ctx }) => {
     const { origHash } = input;
@@ -276,8 +276,13 @@ const updateGroupConfig = t.procedure
       });
     }
 
-    const roleNames = input.roles.map((r) => r.name);
-    if (roleNames.some((name) => name.trim() === '')) {
+    const roles = input.roles.map((r) => ({
+      ...r,
+      name: r.name.trim(),
+      origName: r.origName?.trim() ?? null,
+    }));
+    const roleNames = roles.map((r) => r.name);
+    if (roleNames.includes('')) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'All roles must have a name.',
@@ -289,7 +294,7 @@ const updateGroupConfig = t.procedure
         message: 'Role names must be unique.',
       });
     }
-    for (const role of input.roles) {
+    for (const role of roles) {
       if (
         role.minAssignees != null &&
         role.maxAssignees != null &&
@@ -313,11 +318,11 @@ const updateGroupConfig = t.procedure
 
     const saveResult = await saveJsonFile<AssessmentJsonInput>({
       applyChanges: (json) => {
-        const canAssignRoles = input.roles.filter((r) => r.canAssignRoles).map((r) => r.name);
-        const canView = input.roles.filter((r) => r.canView).map((r) => r.name);
-        const canSubmit = input.roles.filter((r) => r.canSubmit).map((r) => r.name);
+        const canAssignRoles = roles.filter((r) => r.canAssignRoles).map((r) => r.name);
+        const canView = roles.filter((r) => r.canView).map((r) => r.name);
+        const canSubmit = roles.filter((r) => r.canSubmit).map((r) => r.name);
 
-        cascadeRoleRenamesToZones(json, input.roles);
+        cascadeRoleRenamesToZones(json, roles);
 
         json.groups = {
           enabled: true,
@@ -329,15 +334,15 @@ const updateGroupConfig = t.procedure
             canLeaveGroup: input.canLeaveGroup,
             canNameGroup: input.canNameGroup,
           },
-          roles: input.roles.map(({ name, maxAssignees, minAssignees }) => ({
+          roles: roles.map(({ name, maxAssignees, minAssignees }) => ({
             name,
             minMembers: minAssignees ?? undefined,
             maxMembers: maxAssignees ?? undefined,
           })),
           rolePermissions: {
             ...(canAssignRoles.length > 0 ? { canAssignRoles } : {}),
-            ...(canView.length < input.roles.length ? { canView } : {}),
-            ...(canSubmit.length < input.roles.length ? { canSubmit } : {}),
+            ...(canView.length < roles.length ? { canView } : {}),
+            ...(canSubmit.length < roles.length ? { canSubmit } : {}),
           },
         };
 

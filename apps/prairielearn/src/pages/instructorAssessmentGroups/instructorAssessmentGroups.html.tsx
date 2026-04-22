@@ -22,7 +22,7 @@ function NoGroupConfigCard({
   onEnable,
 }: {
   origHash: string | null;
-  onEnable: (newOrigHash: string) => void;
+  onEnable: () => void;
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.enableGroupWork.mutationOptions());
@@ -46,12 +46,7 @@ function NoGroupConfigCard({
             type="button"
             className="btn btn-outline-primary mt-3"
             disabled={mutation.isPending}
-            onClick={() =>
-              mutation.mutate(
-                { origHash },
-                { onSuccess: ({ origHash: newHash }) => onEnable(newHash) },
-              )
-            }
+            onClick={() => mutation.mutate({ origHash }, { onSuccess: () => onEnable() })}
           >
             Enable group work
           </button>
@@ -158,15 +153,7 @@ function InstructorAssessmentGroupsInner({
   };
 
   if (!groupConfigInfo) {
-    return (
-      <NoGroupConfigCard
-        origHash={origHash}
-        onEnable={(newHash) => {
-          setOrigHash(newHash);
-          window.location.reload();
-        }}
-      />
-    );
+    return <NoGroupConfigCard origHash={origHash} onEnable={() => window.location.reload()} />;
   }
 
   return (
@@ -472,7 +459,7 @@ function GroupSettingsCard({
     if (watchedRoles.length === 0) return [];
     const errors: string[] = [];
     const hasAssigner = watchedRoles.some(
-      (role) => role.canAssignRoles && role.minAssignees && role.minAssignees >= 1,
+      (role) => role.canAssignRoles && (role.minAssignees ?? 0) >= 1,
     );
     if (!hasAssigner) {
       errors.push(
@@ -845,9 +832,9 @@ function GroupSettingsCard({
                 </div>
               ) : (
                 fields.map((field, index) => {
-                  const roleErrors = errors.roles?.[index];
-                  const minError = roleErrors?.minAssignees;
-                  const maxError = roleErrors?.maxAssignees;
+                  const rowErrors = errors.roles?.[index];
+                  const minError = rowErrors?.minAssignees;
+                  const maxError = rowErrors?.maxAssignees;
                   const sizeValidateError =
                     minError?.type === 'validate' || maxError?.type === 'validate';
                   return (
@@ -862,11 +849,11 @@ function GroupSettingsCard({
                           type="text"
                           className={clsx(
                             'form-control form-control-sm',
-                            roleErrors?.name && 'is-invalid',
+                            rowErrors?.name && 'is-invalid',
                           )}
                           placeholder="e.g. Manager"
                           defaultValue={field.name}
-                          aria-invalid={roleErrors?.name ? 'true' : undefined}
+                          aria-invalid={rowErrors?.name ? 'true' : undefined}
                           {...register(`roles.${index}.name`, {
                             required: 'Name is required.',
                             validate: (value) => {
@@ -990,9 +977,9 @@ function GroupSettingsCard({
                         </button>
                       </div>
 
-                      {roleErrors?.name && (
+                      {rowErrors?.name && (
                         <div className="text-danger small roles-grid-row__error-name">
-                          {roleErrors.name.message}
+                          {rowErrors.name.message}
                         </div>
                       )}
                       {sizeValidateError && (
