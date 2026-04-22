@@ -451,7 +451,7 @@ function formatCreditDateString(
  *   doesn't apply here. Access is governed by dateControl, `afterComplete`,
  *   and `beforeRelease`. This supports the cheat sheet workflow (discussion
  *   #11308) where students submit at home during the dateControl active
- *   window, then review in the CBTF with a readOnly PT reservation. Course
+ *   window, then review in Exam mode with a readOnly PT reservation. Course
  *   authors are responsible for configuring readOnly appropriately — a
  *   non-readOnly PT exam with an active dateControl window effectively
  *   permits at-home takes, which is usually not the intent. A PT-gated rule
@@ -482,8 +482,8 @@ function resolvePrairieTestAccess({
 
   // PT-level visibility. `readOnly` reservations represent review sessions,
   // so everything is visible. Otherwise, the per-exam `questionsHidden` /
-  // `scoreHidden` flags decide visibility inside the testing center after
-  // the student finishes. The schema enforces that `scoreHidden: true` +
+  // `scoreHidden` flags decide visibility after the student finishes during
+  // a PT reservation. The schema enforces that `scoreHidden: true` +
   // `questionsHidden: false` cannot occur.
   const showClosedAssessment = matchedExam.readOnly || !matchedExam.questionsHidden;
   const showClosedAssessmentScore = matchedExam.readOnly || !matchedExam.scoreHidden;
@@ -578,10 +578,10 @@ export function resolveAccessControl(
   // rows even when access is denied, and relies on `showClosedAssessmentScore`
   // to decide whether to show prior scores.
   //
-  // `questions.hidden` defaults to `true` (hidden) outside the testing center.
-  // This is intentional for exam security: an async exam run over several days
-  // would be compromised if first-session students saw questions and answers
-  // immediately on leaving the CBTF.
+  // `questions.hidden` defaults to `true` (hidden) in Public mode. This is
+  // intentional for exam security: an async exam run over several days would
+  // be compromised if first-session students saw questions and answers
+  // immediately on leaving Exam mode.
   let showClosedAssessment = resolveVisibility(
     effectiveRule.afterComplete?.questions?.hidden ?? true,
     effectiveRule.afterComplete?.questions?.visibleFromDate,

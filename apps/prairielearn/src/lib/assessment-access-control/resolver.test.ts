@@ -745,9 +745,9 @@ describe('resolveAccessControl', () => {
     });
 
     it('denies access in Public mode with no DC when PT-gated without matching reservation', () => {
-      // PT reservations don't apply outside the CBTF, and a PT-gated rule
-      // with no top-level dateControl has no at-home access path, so access
-      // is denied.
+      // PT reservations only apply in Exam mode, and a PT-gated rule with
+      // no top-level dateControl has no at-home access path, so access is
+      // denied.
       const result = resolveAccessControl({
         ...baseInput,
         rules: [prairieTestMainRule],
@@ -885,7 +885,7 @@ describe('resolveAccessControl', () => {
             score: { hidden: false },
           },
         }),
-        // readOnly so students can't submit while inside the CBTF.
+        // readOnly so students can't submit during the PT reservation.
         prairietestExams: [ptExam('exam-uuid-1', { readOnly: true })],
       };
 
@@ -924,7 +924,7 @@ describe('resolveAccessControl', () => {
         expect(result.showClosedAssessment).toBe(true);
       });
 
-      it('phase 4: grants review-only access in CBTF with readOnly reservation', () => {
+      it('phase 4: grants review-only access in Exam mode with readOnly reservation', () => {
         const result = resolveAccessControl({
           ...baseInput,
           rules: [cheatSheetRule],
@@ -1015,7 +1015,7 @@ describe('resolveAccessControl', () => {
       describe('isolation: top-level afterComplete ignored during active/readOnly reservation', () => {
         // During an active PT reservation, top-level `afterComplete` is ignored
         // in favor of the matched PT exam's config. This lets course authors
-        // configure in-CBTF visibility and outside-CBTF visibility independently.
+        // configure Exam-mode visibility and Public-mode visibility independently.
         it('ignores top-level afterComplete during an active grant', () => {
           const result = resolveAccessControl({
             ...baseInput,
@@ -1056,7 +1056,7 @@ describe('resolveAccessControl', () => {
         });
       });
 
-      // Use case: real-time grading disabled during the exam. Inside the CBTF
+      // Use case: real-time grading disabled during the exam. In Exam mode
       // after "finish", students see nothing. After all reservations have
       // ended, work stays hidden at home until a scheduled at-home visible
       // date; on that date the gradebook reveals questions and scores so
@@ -1073,7 +1073,7 @@ describe('resolveAccessControl', () => {
           prairietestExams: [ptExam('pt-exam-1', { questionsHidden: true, scoreHidden: true })],
         };
 
-        it('hides both questions and score inside the CBTF during the reservation', () => {
+        it('hides both questions and score in Exam mode during the reservation', () => {
           const result = resolveAccessControl({
             ...baseInput,
             authzMode: 'Exam',
@@ -1148,22 +1148,22 @@ describe('resolveAccessControl', () => {
       });
 
       // Use case: real-time grading enabled during the exam. Students click
-      // "finish" inside the CBTF and review feedback/scores for the rest of
-      // the reservation. Once they leave the CBTF, the gradebook hides both
+      // "finish" in Exam mode and review feedback/scores for the rest of
+      // the reservation. Once they leave Exam mode, the gradebook hides both
       // and they can never see their work again.
       describe('real-time grading during exam, hidden after', () => {
-        const ruleWithBothVisibleInCbtf = {
+        const ruleWithBothVisibleInExamMode = {
           ...makeMainRule({
             afterComplete: { questions: { hidden: true }, score: { hidden: true } },
           }),
           prairietestExams: [ptExam('pt-exam-1')],
         };
 
-        it('shows both questions and score inside the CBTF after finish', () => {
+        it('shows both questions and score in Exam mode after finish', () => {
           const result = resolveAccessControl({
             ...baseInput,
             authzMode: 'Exam',
-            rules: [ruleWithBothVisibleInCbtf],
+            rules: [ruleWithBothVisibleInExamMode],
             prairieTestReservations: [validReservation],
           });
           expect(result.authorized).toBe(true);
@@ -1176,7 +1176,7 @@ describe('resolveAccessControl', () => {
           const result = resolveAccessControl({
             ...baseInput,
             authzMode: 'Public',
-            rules: [ruleWithBothVisibleInCbtf],
+            rules: [ruleWithBothVisibleInExamMode],
             prairieTestReservations: [],
           });
           // PT-gated rule with no DC has no at-home access path, so access is
@@ -1188,11 +1188,11 @@ describe('resolveAccessControl', () => {
         });
       });
 
-      // Use case: instructor uses PT to host a secure review session in a
-      // proctored testing center. Inside the CBTF with a readOnly reservation,
-      // everything is visible for review. Outside the CBTF, the assessment is
-      // either denied entirely (no top-level access) or has its score hidden
-      // from the gradebook via top-level `afterComplete`.
+      // Use case: instructor uses PT to host a secure review session. In
+      // Exam mode with a readOnly reservation, everything is visible for
+      // review. In Public mode, the assessment is either denied entirely
+      // (no top-level access) or has its score hidden from the gradebook
+      // via top-level `afterComplete`.
       describe('PT-gated secure review session', () => {
         it('allows reviewing closed assessment with a readOnly reservation', () => {
           const result = resolveAccessControl({
@@ -1368,7 +1368,7 @@ describe('resolveAccessControl', () => {
       });
 
       it('denies PT-gated assessment in Exam mode during DC open window without matching reservation', () => {
-        // In Exam mode, PT is the only access path; a student at the CBTF
+        // In Exam mode, PT is the only access path; a student in Exam mode
         // without a matching reservation is denied even while DC is active.
         const result = resolveAccessControl({
           ...baseInput,

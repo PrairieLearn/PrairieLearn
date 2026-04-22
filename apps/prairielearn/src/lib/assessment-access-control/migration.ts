@@ -758,7 +758,7 @@ export function migrateAllowAccess(rules: AssessmentAccessRuleJson[]): Migration
     // TODO: map legacy per-PT-exam `showClosedAssessment` / `showClosedAssessmentScore`
     // flags to the new PT-level `afterComplete` config. Currently legacy rules with
     // those flags set are migrated to a bare `{ examUuid, readOnly? }` entry, losing
-    // the in-CBTF hiding behavior. Requires separate follow-up.
+    // the in-session hiding behavior. Requires separate follow-up.
     const exams = examRules.map((r) => ({ examUuid: r.examUuid! }));
     migration.result.integrations = {
       prairieTest: { exams },
