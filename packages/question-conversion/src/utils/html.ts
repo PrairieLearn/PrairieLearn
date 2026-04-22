@@ -193,17 +193,19 @@ export async function detectCodeLanguage(code: string): Promise<string | undefin
 
 /**
  * Rule-based language guess for when the ML model isn't confident.
- * Checks for unambiguous keywords/patterns before falling back to "c" for
- * any generic C-style snippet (braces + semicolons + control flow).
+ * Checks for unambiguous keywords/patterns before falling back to "java" for
+ * any generic code snippet (braces + semicolons + control flow).
  */
 function guessLanguageHeuristic(code: string): string | undefined {
   if (/^\s*(def |class \w+:|import \w|from \w+ import|print\()/m.test(code)) return 'python';
   if (/\b(System\.out|public\s+class|@Override)\b/.test(code)) return 'java';
-  if (/\b(console\.|=>|const |let |var |require\(|module\.exports)\b/.test(code))
+  if (/\b(console\.|=>|const |let |var |require\(|module\.exports)\b/.test(code)) {
     return 'javascript';
+  }
   if (/\b(fn |let mut |impl |use std::|println!)\b/.test(code)) return 'rust';
-  if (/\b(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE)\b/i.test(code) && !/[{}]/.test(code))
+  if (/\b(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE)\b/i.test(code) && !/[{}]/.test(code)) {
     return 'sql';
+  }
   // Generic style: control flow + braces + semicolons
   // We use Java because most of the syntax is a superset - remember this is a best-guess result.
   if (/[{};]/.test(code) && /\b(for|while|if|else|return)\b/.test(code)) return 'java';
