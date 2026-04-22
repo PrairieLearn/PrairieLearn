@@ -41,10 +41,10 @@ function NewsAlertItem({ item, now }: { item: NewsItem; now: Date }) {
         href={item.link}
         target="_blank"
         rel="noopener noreferrer"
-        className="d-flex align-items-center gap-3 px-3 py-2 text-decoration-none text-body"
+        className="d-flex align-items-center gap-3 px-2 py-2 text-decoration-none text-body"
       >
         <div
-          className="d-flex flex-column flex-md-row align-items-md-center gap-1 gap-md-3 flex-grow-1"
+          className="d-flex flex-column flex-md-row align-items-md-center gap-2 gap-md-3 flex-grow-1"
           style={{ minWidth: 0 }}
         >
           <div className="d-flex align-items-center gap-2" style={{ minWidth: 0 }}>
@@ -52,8 +52,8 @@ function NewsAlertItem({ item, now }: { item: NewsItem; now: Date }) {
               {item.title}
             </span>
           </div>
-          <div className="d-flex align-items-center gap-2 flex-wrap flex-md-nowrap flex-md-grow-1">
-            <div className="d-flex gap-1 flex-wrap">
+          <div className="d-flex flex-column flex-sm-row align-items-sm-center gap-2 flex-md-grow-1">
+            <div className="d-flex gap-2 flex-wrap">
               {item.categories.map((category) => {
                 const style = CATEGORY_STYLES[category] ?? FALLBACK_CATEGORY_STYLE;
                 return (
@@ -108,7 +108,7 @@ export function NewsAlert({
         }
       `}</style>
       <div className="card-body">
-        <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-1 gap-sm-0 mb-3">
+        <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
           <h2
             className="fw-semibold d-flex align-items-center lh-1 mb-0"
             style={{ fontSize: '1.125rem' }}
@@ -116,26 +116,29 @@ export function NewsAlert({
             <i className="bi bi-newspaper text-primary me-2" aria-hidden="true" />
             News
           </h2>
-          {blogUrl && (
-            <a
-              href={blogUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="small text-decoration-none ms-sm-3"
-            >
-              View all posts <i className="bi bi-arrow-up-right" aria-hidden="true" />
-            </a>
-          )}
-          <form method="POST" className="m-0 ms-sm-auto">
-            <input type="hidden" name="__csrf_token" value={csrfToken} />
-            <input type="hidden" name="__action" value="dismiss_news_alert" />
-            <button
-              type="submit"
-              className="btn btn-sm btn-link text-body-secondary text-decoration-none p-0"
-            >
-              Dismiss all
-            </button>
-          </form>
+          <div className="w-100 d-sm-none" />
+          <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 flex-grow-1 ms-sm-3">
+            {blogUrl && (
+              <a
+                href={blogUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="small text-decoration-none"
+              >
+                View all posts <i className="bi bi-arrow-up-right" aria-hidden="true" />
+              </a>
+            )}
+            <form method="POST" className="m-0">
+              <input type="hidden" name="__csrf_token" value={csrfToken} />
+              <input type="hidden" name="__action" value="dismiss_news_alert" />
+              <button
+                type="submit"
+                className="btn btn-sm btn-link text-body-secondary text-decoration-none p-0"
+              >
+                Dismiss all
+              </button>
+            </form>
+          </div>
         </div>
         <div className="d-flex flex-column gap-2">
           {newsItems.map((item) => (
