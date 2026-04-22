@@ -73,7 +73,7 @@ export function InstructorAssessments({
                           class="btn btn-sm btn-outline-light"
                         >
                           <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
-                          <span class="d-none d-sm-inline">Import QTI content</span>
+                          <span class="d-none d-sm-inline">Import content</span>
                         </a>
                       `
                     : ''}

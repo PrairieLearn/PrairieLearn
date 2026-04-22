@@ -50,7 +50,7 @@ function formatGradingMethod(method: string | undefined): string {
     case 'External':
       return 'Externally graded';
     default:
-      return 'Internally graded';
+      return 'Automatically graded';
   }
 }
 
