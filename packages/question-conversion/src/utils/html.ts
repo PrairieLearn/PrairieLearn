@@ -182,7 +182,7 @@ function getModelOps(): ModelOperationsType {
  * Falls back to simple heuristics when the model isn't confident enough.
  * Returns `undefined` only if neither approach produces a result.
  */
-export async function detectCodeLanguage(code: string): Promise<string | undefined> {
+async function detectCodeLanguage(code: string): Promise<string | undefined> {
   const results = await getModelOps().runModel(code);
   const best = results[0];
   if (best && best.confidence >= LANGUAGE_DETECTION_CONFIDENCE_THRESHOLD) {
