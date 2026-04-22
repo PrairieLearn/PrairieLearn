@@ -1,9 +1,14 @@
+import * as path from 'path';
+
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { saveJsonFile } from '../../lib/editorUtil.js';
+import { cascadeRoleRenamesToZones } from '../../lib/group-config.js';
 import {
   GroupOperationError,
   addUserToGroup,
@@ -14,9 +19,10 @@ import {
 } from '../../lib/groups.js';
 import { parseUniqueValuesFromString } from '../../lib/string-util.js';
 import { selectGroupById, selectNotAssignedForAssessment } from '../../models/group.js';
+import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { throwAppError } from '../app-errors.js';
 
-import { requireCourseInstancePermissionEdit, t } from './init.js';
+import { requireCourseInstancePermissionEdit, requireCoursePermissionEdit, t } from './init.js';
 
 const MAX_UIDS = 50;
 
@@ -24,6 +30,8 @@ export interface AssessmentGroupsError {
   AddGroup: { code: 'GROUP_OPERATION_FAILED' };
   EditGroup: { code: 'GROUP_OPERATION_FAILED' };
   DeleteGroup: { code: 'GROUP_OPERATION_FAILED' };
+  EnableGroupWork: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  UpdateGroupConfig: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
 
 const addGroup = t.procedure
@@ -177,9 +185,215 @@ const deleteAll = t.procedure.use(requireCourseInstancePermissionEdit).mutation(
   return { notAssigned };
 });
 
+const enableGroupWork = t.procedure
+  .use(requireCourseInstancePermissionEdit)
+  .input(z.object({ origHash: z.string().nullable() }))
+  .mutation(async ({ input, ctx }) => {
+    const { origHash } = input;
+    const assessmentDir = path.join(
+      ctx.course.path,
+      'courseInstances',
+      ctx.course_instance.short_name!,
+      'assessments',
+      ctx.assessment.tid!,
+    );
+    const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
+
+    const saveResult = await saveJsonFile<AssessmentJsonInput>({
+      applyChanges: (json) => {
+        json.groups = {};
+        return json;
+      },
+      jsonPath: assessmentPath,
+      conflictCheck: {
+        origHash,
+        scope: (json) => json.groups ?? null,
+      },
+      locals: {
+        authz_data: ctx.authz_data,
+        course: ctx.course,
+        user: ctx.authn_user,
+      },
+      container: {
+        rootPath: assessmentDir,
+        invalidRootPaths: [],
+      },
+    });
+
+    if (!saveResult.success) {
+      if (saveResult.reason === 'conflict') {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message:
+            'The group configuration has been modified since you loaded this page. Please refresh and try again.',
+        });
+      }
+      throwAppError<AssessmentGroupsError['EnableGroupWork']>({
+        code: 'SYNC_JOB_FAILED',
+        message: 'Failed to enable group work.',
+        jobSequenceId: saveResult.jobSequenceId,
+      });
+    }
+
+    return { origHash: saveResult.newHash };
+  });
+
+const updateGroupConfig = t.procedure
+  .use(requireCoursePermissionEdit)
+  .input(
+    z.object({
+      origHash: z.string().nullable(),
+      canCreateGroup: z.boolean(),
+      canJoinGroup: z.boolean(),
+      canLeaveGroup: z.boolean(),
+      canNameGroup: z.boolean(),
+      minMembers: z.number().nullable(),
+      maxMembers: z.number().nullable(),
+      roles: z.array(
+        z.object({
+          name: z.string(),
+          origName: z.string().nullable(),
+          minAssignees: z.number().nullable(),
+          maxAssignees: z.number().nullable(),
+          canAssignRoles: z.boolean(),
+          canView: z.boolean(),
+          canSubmit: z.boolean(),
+        }),
+      ),
+    }),
+  )
+  .mutation(async ({ input, ctx }) => {
+    const { origHash } = input;
+
+    if (
+      input.minMembers != null &&
+      input.maxMembers != null &&
+      input.minMembers > input.maxMembers
+    ) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Minimum members cannot be greater than maximum members.',
+      });
+    }
+
+    const roleNames = input.roles.map((r) => r.name);
+    if (roleNames.some((name) => name.trim() === '')) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'All roles must have a name.',
+      });
+    }
+    if (new Set(roleNames).size !== roleNames.length) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Role names must be unique.',
+      });
+    }
+    for (const role of input.roles) {
+      if (
+        role.minAssignees != null &&
+        role.maxAssignees != null &&
+        role.minAssignees > role.maxAssignees
+      ) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Role "${role.name}": minimum assignees cannot be greater than maximum assignees.`,
+        });
+      }
+    }
+
+    const assessmentDir = path.join(
+      ctx.course.path,
+      'courseInstances',
+      ctx.course_instance.short_name!,
+      'assessments',
+      ctx.assessment.tid!,
+    );
+    const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
+
+    const saveResult = await saveJsonFile<AssessmentJsonInput>({
+      applyChanges: (json) => {
+        const canAssignRoles = input.roles.filter((r) => r.canAssignRoles).map((r) => r.name);
+        const canView = input.roles.filter((r) => r.canView).map((r) => r.name);
+        const canSubmit = input.roles.filter((r) => r.canSubmit).map((r) => r.name);
+
+        cascadeRoleRenamesToZones(json, input.roles);
+
+        json.groups = {
+          enabled: true,
+          minMembers: input.minMembers ?? undefined,
+          maxMembers: input.maxMembers ?? undefined,
+          studentPermissions: {
+            canCreateGroup: input.canCreateGroup,
+            canJoinGroup: input.canJoinGroup,
+            canLeaveGroup: input.canLeaveGroup,
+            canNameGroup: input.canNameGroup,
+          },
+          roles: input.roles.map(({ name, maxAssignees, minAssignees }) => ({
+            name,
+            minMembers: minAssignees ?? undefined,
+            maxMembers: maxAssignees ?? undefined,
+          })),
+          rolePermissions: {
+            ...(canAssignRoles.length > 0 ? { canAssignRoles } : {}),
+            ...(canView.length < input.roles.length ? { canView } : {}),
+            ...(canSubmit.length < input.roles.length ? { canSubmit } : {}),
+          },
+        };
+
+        // Passive migration: delete all legacy keys
+        delete json.groupWork;
+        delete json.groupMaxSize;
+        delete json.groupMinSize;
+        delete json.groupRoles;
+        delete json.studentGroupCreate;
+        delete json.studentGroupJoin;
+        delete json.studentGroupLeave;
+        delete json.studentGroupChooseName;
+        delete json.canView;
+        delete json.canSubmit;
+
+        return json;
+      },
+      jsonPath: assessmentPath,
+      conflictCheck: {
+        origHash,
+        scope: (json) => json.groups ?? null,
+      },
+      locals: {
+        authz_data: ctx.authz_data,
+        course: ctx.course,
+        user: ctx.authn_user,
+      },
+      container: {
+        rootPath: assessmentDir,
+        invalidRootPaths: [],
+      },
+    });
+
+    if (!saveResult.success) {
+      if (saveResult.reason === 'conflict') {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message:
+            'The group configuration has been modified since you loaded this page. Please refresh and try again.',
+        });
+      }
+      throwAppError<AssessmentGroupsError['UpdateGroupConfig']>({
+        code: 'SYNC_JOB_FAILED',
+        message: 'Failed to update group configuration.',
+        jobSequenceId: saveResult.jobSequenceId,
+      });
+    }
+
+    return { origHash: saveResult.newHash };
+  });
+
 export const assessmentGroupsRouter = t.router({
   addGroup,
   editGroup,
   deleteGroup: deleteGroupProcedure,
   deleteAll,
+  enableGroupWork,
+  updateGroupConfig,
 });
