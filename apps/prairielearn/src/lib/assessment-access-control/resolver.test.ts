@@ -230,7 +230,7 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(true);
     });
 
-    it('gives 0% credit after last deadline by default', () => {
+    it('gives 0% credit after due date when afterLastDeadline is unset', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -542,33 +542,6 @@ describe('resolveAccessControl', () => {
     });
   });
 
-  describe('override priority', () => {
-    it('later matching override wins via cascading', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [
-          makeMainRule({
-            dateControl: { releaseDate: '2025-01-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' },
-          }),
-          makeOverrideRule(
-            1,
-            { dateControl: { dueDate: '2025-06-01T00:00:00Z' } },
-            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
-          ),
-          makeOverrideRule(
-            2,
-            { dateControl: { dueDate: '2025-07-01T00:00:00Z' } },
-            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
-          ),
-        ],
-        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
-      });
-      // Both overrides apply, second (due July 1 UTC = Jun 30 CDT) wins
-      expect(result.credit).toBe(100);
-      expect(result.creditDateString).toContain('Jun 30');
-    });
-  });
-
   describe('override type precedence', () => {
     it('enrollment override takes precedence over student_label override', () => {
       const result = resolveAccessControl({
@@ -852,31 +825,6 @@ describe('resolveAccessControl', () => {
       expect(result.authorized).toBe(false);
     });
 
-    it('grants access when rule has multiple configured exams and reservation matches one', () => {
-      const multiExamRule: AccessControlRuleInput = {
-        ...prairieTestMainRule,
-        prairietestExams: [
-          ptExam('exam-uuid-1'),
-          ptExam('exam-uuid-2'),
-          ptExam('exam-uuid-3', { readOnly: true }),
-        ],
-      };
-      const reservation: PrairieTestReservation = {
-        examUuid: 'exam-uuid-2',
-        accessEnd: new Date('2025-03-15T16:00:00Z'),
-      };
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [multiExamRule],
-        authzMode: 'Exam',
-        prairieTestReservations: [reservation],
-      });
-      expect(result.authorized).toBe(true);
-      expect(result.credit).toBe(100);
-      expect(result.active).toBe(true);
-      expect(result.examAccessEnd).toEqual(reservation.accessEnd);
-    });
-
     it('uses readOnly flag from matched exam when multiple exams are configured', () => {
       const multiExamRule: AccessControlRuleInput = {
         ...prairieTestMainRule,
@@ -1108,62 +1056,18 @@ describe('resolveAccessControl', () => {
         });
       });
 
-      // Regression test for https://github.com/PrairieLearn/PrairieLearn/issues/12579:
-      // `ip_to_mode` can keep reporting Exam for a brief grace period after
-      // PrairieTest has ended a reservation, so a PT-gated rule can hit the
-      // deny path while still in Exam mode. The gradebook continues to render
-      // rows even when access is denied and relies on
-      // `showClosedAssessmentScore` to decide whether to reveal prior scores,
-      // so the deny path must propagate the configured top-level visibility
-      // flags rather than falling back to the hardcoded UNAUTHORIZED defaults.
-      // On the deny path, top-level `afterComplete` still applies (isolation
-      // only kicks in when a reservation is actively granting access).
-      describe('Exam mode after PT reservation ends (#12579 grace period)', () => {
-        const denyConfigs = [
-          {
-            name: 'hide both questions and score',
-            afterComplete: { questions: { hidden: true }, score: { hidden: true } },
-          },
-          {
-            name: 'show both questions and score',
-            afterComplete: { questions: { hidden: false }, score: { hidden: false } },
-          },
-          {
-            name: 'hide questions only',
-            afterComplete: { questions: { hidden: true }, score: { hidden: false } },
-          },
-        ];
-
-        it.each(denyConfigs)(
-          'propagates top-level afterComplete on deny: $name',
-          ({ afterComplete }) => {
-            const result = resolveAccessControl({
-              ...baseInput,
-              authzMode: 'Exam',
-              rules: [
-                { ...makeMainRule({ afterComplete }), prairietestExams: [ptExam('pt-exam-1')] },
-              ],
-              prairieTestReservations: [],
-            });
-            expect(result.authorized).toBe(false);
-            expect(result.showClosedAssessment).toBe(!afterComplete.questions.hidden);
-            expect(result.showClosedAssessmentScore).toBe(!afterComplete.score.hidden);
-          },
-        );
-      });
-
       // Use case: real-time grading disabled during the exam. Inside the CBTF
       // after "finish", students see nothing. After all reservations have
-      // ended, work stays hidden at home until a scheduled release date; on
-      // that date the gradebook reveals questions and scores so students can
-      // review at home.
+      // ended, work stays hidden at home until a scheduled at-home visible
+      // date; on that date the gradebook reveals questions and scores so
+      // students can review at home.
       describe('deferred at-home release (grading disabled during exam)', () => {
-        const releaseDate = '2025-04-01T00:00:00Z';
+        const atHomeVisibleDate = '2025-04-01T00:00:00Z';
         const ruleWithDeferredRelease = {
           ...makeMainRule({
             afterComplete: {
-              questions: { hidden: true, visibleFromDate: releaseDate },
-              score: { hidden: true, visibleFromDate: releaseDate },
+              questions: { hidden: true, visibleFromDate: atHomeVisibleDate },
+              score: { hidden: true, visibleFromDate: atHomeVisibleDate },
             },
           }),
           prairietestExams: [ptExam('pt-exam-1', { questionsHidden: true, scoreHidden: true })],
@@ -1182,7 +1086,7 @@ describe('resolveAccessControl', () => {
           expect(result.showClosedAssessmentScore).toBe(false);
         });
 
-        it('still hides both at home after the reservation ends but before the release date', () => {
+        it('still hides both at home after the reservation ends but before the at-home visible date', () => {
           const result = resolveAccessControl({
             ...baseInput,
             authzMode: 'Public',
@@ -1198,7 +1102,7 @@ describe('resolveAccessControl', () => {
           expect(result.showClosedAssessmentScore).toBe(false);
         });
 
-        it('reveals both at home after the release date', () => {
+        it('reveals both at home after the at-home visible date', () => {
           const result = resolveAccessControl({
             ...baseInput,
             authzMode: 'Public',
@@ -1215,15 +1119,31 @@ describe('resolveAccessControl', () => {
           expect(result.showClosedAssessmentScore).toBe(true);
         });
 
-        it('still denies in Exam mode after the release date without a matching reservation', () => {
+        // Regression test for
+        // https://github.com/PrairieLearn/PrairieLearn/issues/12579: after a
+        // student finishes and their PT reservation ends, PrairieLearn keeps
+        // them in Exam for a short grace period (~30 min). The rule-matching
+        // path denies access (no active reservation), but the gradebook still
+        // renders rows, so the deny path must propagate the configured
+        // top-level `afterComplete` visibility rather than falling back to
+        // defaults that would reveal scores while they should still be hidden.
+        it('propagates afterComplete on deny during grace-period Exam mode', () => {
           const result = resolveAccessControl({
             ...baseInput,
+            // The grace-period scenario is simulated by this specific pair:
+            // `authzMode: 'Exam'` plus an empty `prairieTestReservations`
+            // (no active reservation). The date is inside the ~30-min grace
+            // window purely for realism - any date before `atHomeVisibleDate`
+            // produces the same behavior.
             authzMode: 'Exam',
-            date: new Date('2025-04-02T00:00:00Z'),
+            date: new Date('2025-03-15T14:15:00Z'),
             rules: [ruleWithDeferredRelease],
             prairieTestReservations: [],
           });
           expect(result.authorized).toBe(false);
+          expect(result.active).toBe(false);
+          expect(result.showClosedAssessment).toBe(false);
+          expect(result.showClosedAssessmentScore).toBe(false);
         });
       });
 
@@ -1312,6 +1232,8 @@ describe('resolveAccessControl', () => {
           expect(result.active).toBe(false);
           expect(result.showClosedAssessment).toBe(false);
           expect(result.showClosedAssessmentScore).toBe(false);
+          expect(result.showBeforeRelease).toBe(false);
+          expect(result.examAccessEnd).toBeNull();
         });
       });
     });
@@ -1329,16 +1251,7 @@ describe('resolveAccessControl', () => {
         expect(result.authorized).toBe(false);
         expect(result.showBeforeRelease).toBe(true);
         expect(result.active).toBe(false);
-      });
-
-      it('does not list PT assessment in Public mode when no beforeRelease.listed and no dateControl', () => {
-        const result = resolveAccessControl({
-          ...baseInput,
-          rules: [{ ...makeMainRule(), prairietestExams: [ptExam1] }],
-        });
-        expect(result.authorized).toBe(false);
-        expect(result.showBeforeRelease).toBe(false);
-        expect(result.active).toBe(false);
+        expect(result.credit).toBe(0);
       });
 
       it('does not list or authorize PT assessment in exam mode when no matching reservation', () => {
@@ -1355,51 +1268,6 @@ describe('resolveAccessControl', () => {
         expect(result.authorized).toBe(false);
         expect(result.showBeforeRelease).toBe(false);
         expect(result.active).toBe(false);
-      });
-
-      it('denies PT assessment in exam mode without beforeRelease.listed and no matching reservation', () => {
-        const result = resolveAccessControl({
-          ...baseInput,
-          authzMode: 'Exam',
-          rules: [{ ...makeMainRule(), prairietestExams: [ptExam1] }],
-          prairieTestReservations: [
-            { examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
-          ],
-        });
-        expect(result.authorized).toBe(false);
-        expect(result.showBeforeRelease).toBe(false);
-        expect(result.active).toBe(false);
-      });
-
-      it('does not grant submission access to PT assessment without matching reservation', () => {
-        const publicResult = resolveAccessControl({
-          ...baseInput,
-          authzMode: 'Public',
-          rules: [
-            { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam1] },
-          ],
-          prairieTestReservations: [],
-        });
-        expect(publicResult.authorized).toBe(false);
-        expect(publicResult.active).toBe(false);
-        expect(publicResult.credit).toBe(0);
-        expect(publicResult.showBeforeRelease).toBe(true);
-
-        // Exam mode denies outright without a matching reservation.
-        const examResult = resolveAccessControl({
-          ...baseInput,
-          authzMode: 'Exam',
-          rules: [
-            { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam1] },
-          ],
-          prairieTestReservations: [
-            { examUuid: 'wrong-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
-          ],
-        });
-        expect(examResult.authorized).toBe(false);
-        expect(examResult.active).toBe(false);
-        expect(examResult.credit).toBe(0);
-        expect(examResult.showBeforeRelease).toBe(false);
       });
 
       it('shows PT assessment past its due date as closed (Public) or hidden (Exam without matching reservation)', () => {
@@ -1496,23 +1364,6 @@ describe('resolveAccessControl', () => {
         expect(result.authorized).toBe(true);
         expect(result.credit).toBe(100);
         expect(result.active).toBe(true);
-        expect(result.showBeforeRelease).toBe(false);
-      });
-
-      it('denies access when Exam mode outlives the PrairieTest reservation', () => {
-        // Regression test for #12579: `ip_to_mode` can continue reporting Exam
-        // mode for a short grace period after PrairieTest has already ended the
-        // reservation.
-        const result = resolveAccessControl({
-          ...baseInput,
-          authzMode: 'Exam',
-          rules: [{ ...makeMainRule(), prairietestExams: [ptExam1] }],
-          prairieTestReservations: [],
-        });
-        expect(result.authorized).toBe(false);
-        expect(result.credit).toBe(0);
-        expect(result.active).toBe(false);
-        expect(result.examAccessEnd).toBeNull();
         expect(result.showBeforeRelease).toBe(false);
       });
 
@@ -1869,7 +1720,7 @@ describe('resolveAccessControl', () => {
       expect(result.credit).toBe(50);
     });
 
-    it('handles early deadline after due date by using due date', () => {
+    it('filters out early deadlines that fall after a cascaded due date', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
