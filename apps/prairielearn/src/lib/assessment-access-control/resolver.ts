@@ -281,9 +281,6 @@ function computeCredit(
     };
   }
 
-  // Before the first deadline, the credit is the first entry's credit value.
-  // After each deadline, the credit becomes the next entry's credit value.
-  // After the last deadline, use afterLastDeadline settings.
   for (const entry of deadlines) {
     if (date < entry.date) {
       const credit = entry.credit;
@@ -606,8 +603,6 @@ export function resolveAccessControl(
     return { ...UNAUTHORIZED_RESULT, showClosedAssessment, showClosedAssessmentScore };
   }
 
-  // If the assessment is before its release date but showBeforeRelease is true,
-  // the student can see it listed but cannot access it.
   if (creditResult.beforeRelease && showBeforeRelease) {
     return {
       ...UNAUTHORIZED_RESULT,

@@ -5,10 +5,8 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import {
-  type AuthzAssessmentInstanceAugmented,
-  resolveModernAssessmentInstanceAccess,
-} from '../lib/assessment-access-control/authz.js';
+import { resolveModernAssessmentInstanceAccess } from '../lib/assessment-access-control/authz.js';
+import type { AccessTimelineEntry } from '../lib/assessment-access-control/timeline.js';
 import { assessmentInstanceLabel, assessmentLabel } from '../lib/assessment.shared.js';
 import {
   AssessmentInstanceSchema,
@@ -54,8 +52,7 @@ const SelectAndAuthzAssessmentInstanceSchema = z.union([
 export type ResLocalsAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmentInstanceSchema> & {
   assessment_instance_label: string;
   assessment_label: string;
-  authz_result: SprocAuthzAssessmentInstance &
-    Partial<Pick<AuthzAssessmentInstanceAugmented, 'access_timeline'>>;
+  authz_result: SprocAuthzAssessmentInstance & { access_timeline?: AccessTimelineEntry[] };
 };
 
 async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {

@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 /**
  * Runtime version of date control fields. Top-level date columns use `Date`
  * objects (they come from the database as Date). Deadline entry dates remain
@@ -13,29 +15,24 @@ export interface RuntimeDateControl {
   password?: string | null;
 }
 
-export interface AccessTimelineEntry {
-  credit: number;
-  startDate: Date | null;
-  endDate: Date | null;
-  active: boolean;
-}
+export const AccessTimelineEntrySchema = z.object({
+  credit: z.number(),
+  startDate: z.date().nullable(),
+  endDate: z.date().nullable(),
+  active: z.boolean(),
+});
+export type AccessTimelineEntry = z.infer<typeof AccessTimelineEntrySchema>;
 
-interface Deadline {
+export interface Deadline {
   date: Date;
   credit: number;
 }
 
 /**
- * Collects and sorts a rule's deadlines into a single timeline.
- *
- * Each returned entry represents a point in time where the credit value
- * changes: the credit applies when the submission time is strictly less
- * than `date`. The due date itself is included as a 100%-credit deadline.
- *
- * Entries on/before the release date and early/late entries strictly past
- * their respective side of the due date are filtered out. Deadlines that
- * share a timestamp are collapsed to a single entry (insertion order
- * early → due → late decides which credit wins).
+ * Each returned entry is a point in time where credit changes: the credit
+ * applies when the submission time is strictly less than `date`. The due
+ * date is included as a 100%-credit deadline. Deadlines sharing a timestamp
+ * are collapsed to one entry (insertion order early → due → late wins).
  */
 export function buildDeadlines(
   dateControl: RuntimeDateControl,
@@ -83,12 +80,10 @@ export function buildDeadlines(
 }
 
 /**
- * Builds an access timeline from dateControl for display purposes.
- * Each entry is a contiguous period [startDate, endDate) with a credit value.
- *
- * - A before-release entry (startDate: null) is included when the current
- *   date is before the release date.
- * - An after-last-deadline entry (endDate: null) is always appended.
+ * Builds an access timeline for display. Each entry is a contiguous period
+ * [startDate, endDate) with a credit value. A before-release entry
+ * (startDate: null) is prepended when `date` precedes the release date, and
+ * an after-last-deadline entry (endDate: null) is always appended.
  */
 export function buildAccessTimeline(
   dateControl: RuntimeDateControl | undefined,
@@ -103,24 +98,16 @@ export function buildAccessTimeline(
 
   const deadlines = buildDeadlines(dateControl, releaseDate, dueDate);
 
-  // No deadlines = available forever with full credit; single open-ended segment.
   if (deadlines.length === 0) {
     return [{ credit: 100, startDate: releaseDate, endDate: null, active: date >= releaseDate }];
   }
 
   const segments: AccessTimelineEntry[] = [];
 
-  // Before-release entry when the current date precedes the release date.
   if (date < releaseDate) {
-    segments.push({
-      credit: 0,
-      startDate: null,
-      endDate: releaseDate,
-      active: true,
-    });
+    segments.push({ credit: 0, startDate: null, endDate: releaseDate, active: true });
   }
 
-  // Credit segments derived from deadlines.
   let segmentStart = releaseDate;
   for (const deadline of deadlines) {
     segments.push({
@@ -132,10 +119,8 @@ export function buildAccessTimeline(
     segmentStart = deadline.date;
   }
 
-  // After-last-deadline entry is always shown.
-  const afterCredit = dateControl.afterLastDeadline?.credit ?? 0;
   segments.push({
-    credit: afterCredit,
+    credit: dateControl.afterLastDeadline?.credit ?? 0,
     startDate: segmentStart,
     endDate: null,
     active: date >= segmentStart,

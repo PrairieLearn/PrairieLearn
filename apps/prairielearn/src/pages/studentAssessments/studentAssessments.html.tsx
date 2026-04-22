@@ -11,7 +11,7 @@ import {
   StudentAccessTimelinePopover,
 } from '../../components/StudentAccessRulesPopover.js';
 import { formatDateShort } from '../../lib/assessment-access-control/resolver.js';
-import type { AccessTimelineEntry } from '../../lib/assessment-access-control/timeline.js';
+import { AccessTimelineEntrySchema } from '../../lib/assessment-access-control/timeline.js';
 import {
   AssessmentAccessRuleSchema,
   AssessmentInstanceSchema,
@@ -19,8 +19,6 @@ import {
   AssessmentSetSchema,
 } from '../../lib/db-types.js';
 import { type ResLocalsForPage } from '../../lib/res-locals.js';
-
-const AccessTimelineEntrySchema = z.custom<AccessTimelineEntry>();
 
 export const StudentAssessmentsRowSchema = z.object({
   assessment_id: AssessmentSchema.shape.id,

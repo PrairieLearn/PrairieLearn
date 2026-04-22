@@ -163,6 +163,10 @@ export function StudentAssessmentInstance({
       isLockpointCrossable(row),
   );
 
+  const accessTimeline = resLocals.assessment.modern_access_control
+    ? (resLocals.authz_result.access_timeline ?? null)
+    : null;
+
   return PageLayout({
     resLocals,
     pageTitle: '', // Calculated automatically
@@ -285,9 +289,7 @@ export function StudentAssessmentInstance({
                     ${AssessmentStatus({
                       assessment_instance: resLocals.assessment_instance,
                       displayTimezone: resLocals.course_instance.display_timezone,
-                      accessTimeline: resLocals.assessment.modern_access_control
-                        ? (resLocals.authz_result.access_timeline ?? null)
-                        : null,
+                      accessTimeline,
                       authz_result: resLocals.authz_result,
                     })}
                   </div>
@@ -314,9 +316,7 @@ export function StudentAssessmentInstance({
                     ${AssessmentStatus({
                       assessment_instance: resLocals.assessment_instance,
                       displayTimezone: resLocals.course_instance.display_timezone,
-                      accessTimeline: resLocals.assessment.modern_access_control
-                        ? (resLocals.authz_result.access_timeline ?? null)
-                        : null,
+                      accessTimeline,
                       authz_result: resLocals.authz_result,
                     })}
                   </div>

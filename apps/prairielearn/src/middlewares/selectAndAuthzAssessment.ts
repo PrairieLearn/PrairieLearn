@@ -3,10 +3,8 @@ import z from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
-import {
-  type AuthzAssessmentAugmented,
-  resolveModernAssessmentAccess,
-} from '../lib/assessment-access-control/authz.js';
+import { resolveModernAssessmentAccess } from '../lib/assessment-access-control/authz.js';
+import type { AccessTimelineEntry } from '../lib/assessment-access-control/timeline.js';
 import {
   AssessmentModuleSchema,
   AssessmentSchema,
@@ -28,7 +26,7 @@ const SelectAndAuthzAssessmentSchema = z.object({
 });
 
 export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema> & {
-  authz_result: SprocAuthzAssessment & Partial<Pick<AuthzAssessmentAugmented, 'access_timeline'>>;
+  authz_result: SprocAuthzAssessment & { access_timeline?: AccessTimelineEntry[] };
 };
 
 export default asyncHandler(async (req, res, next) => {
