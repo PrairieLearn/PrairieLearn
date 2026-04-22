@@ -199,9 +199,11 @@ export async function detectCodeLanguage(code: string): Promise<string | undefin
 function guessLanguageHeuristic(code: string): string | undefined {
   if (/^\s*(def |class \w+:|import \w|from \w+ import|print\()/m.test(code)) return 'python';
   if (/\b(System\.out|public\s+class|@Override)\b/.test(code)) return 'java';
-  if (/\b(console\.|=>|const |let |var |require\(|module\.exports)\b/.test(code)) return 'javascript';
+  if (/\b(console\.|=>|const |let |var |require\(|module\.exports)\b/.test(code))
+    return 'javascript';
   if (/\b(fn |let mut |impl |use std::|println!)\b/.test(code)) return 'rust';
-  if (/\b(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE)\b/i.test(code) && !/[{}]/.test(code)) return 'sql';
+  if (/\b(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE)\b/i.test(code) && !/[{}]/.test(code))
+    return 'sql';
   // Generic style: control flow + braces + semicolons
   // We use Java because most of the syntax is a superset - remember this is a best-guess result.
   if (/[{};]/.test(code) && /\b(for|while|if|else|return)\b/.test(code)) return 'java';
@@ -258,7 +260,11 @@ export async function rewritePreAsPlCode(html: string): Promise<string> {
           language = await detectCodeLanguage(unescapeHtml(codeContent));
         }
         const langAttr = language ? ` language="${language}"` : '';
-        return { start, end, replacement: `<pl-code${langAttr}>\n${unescapeHtml(codeContent)}</pl-code>` };
+        return {
+          start,
+          end,
+          replacement: `<pl-code${langAttr}>\n${unescapeHtml(codeContent)}</pl-code>`,
+        };
       })(),
     );
   }
