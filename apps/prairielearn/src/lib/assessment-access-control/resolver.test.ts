@@ -868,9 +868,9 @@ describe('resolveAccessControl', () => {
     });
 
     // See https://github.com/PrairieLearn/PrairieLearn/discussions/11308.
-    // The workflow has three phases: submission window (Public, pre-due),
-    // review window (Public, post-due, read-only), and PT-exam (read-only
-    // via reservation).
+    // Students submit at home during the dateControl active window, retain
+    // read-only access at home after the due date, and get a read-only view
+    // during a PT reservation via a readOnly exam config.
     describe('cheat sheet hack workflow', () => {
       const cheatSheetRule: AccessControlRuleInput = {
         ...prairieTestMainRule,
@@ -889,7 +889,7 @@ describe('resolveAccessControl', () => {
         prairietestExams: [ptExam('exam-uuid-1', { readOnly: true })],
       };
 
-      it('phase 1: denies access before release at home', () => {
+      it('denies access before release at home', () => {
         const result = resolveAccessControl({
           ...baseInput,
           rules: [cheatSheetRule],
@@ -900,7 +900,7 @@ describe('resolveAccessControl', () => {
         expect(result.showBeforeRelease).toBe(false);
       });
 
-      it('phase 2: grants submission access during release→due window at home', () => {
+      it('grants submission access during release→due window at home', () => {
         const result = resolveAccessControl({
           ...baseInput,
           rules: [cheatSheetRule],
@@ -912,7 +912,7 @@ describe('resolveAccessControl', () => {
         expect(result.credit).toBe(100);
       });
 
-      it('phase 3: grants review-only access after due date at home', () => {
+      it('grants review-only access after due date at home', () => {
         const result = resolveAccessControl({
           ...baseInput,
           rules: [cheatSheetRule],
@@ -924,7 +924,7 @@ describe('resolveAccessControl', () => {
         expect(result.showClosedAssessment).toBe(true);
       });
 
-      it('phase 4: grants review-only access in Exam mode with readOnly reservation', () => {
+      it('grants review-only access in Exam mode with readOnly reservation', () => {
         const result = resolveAccessControl({
           ...baseInput,
           rules: [cheatSheetRule],
