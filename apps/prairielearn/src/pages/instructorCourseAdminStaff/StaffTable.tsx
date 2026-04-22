@@ -1169,8 +1169,10 @@ function StaffTableInner({
     void setColumnVisibility((prev) => ({ ...prev, ...preset }));
   };
 
+  const allInstancesAreActive = activeCourseInstanceIds.size === courseInstances.length;
+
   const viewPresetDropdown =
-    courseInstances.length > 0 ? (
+    courseInstances.length > 0 && !allInstancesAreActive ? (
       <Dropdown as={ButtonGroup}>
         <Dropdown.Toggle variant="tanstack-table" size="sm">
           <i className="bi bi-funnel me-2" aria-hidden="true" />
