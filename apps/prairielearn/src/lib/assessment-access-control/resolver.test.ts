@@ -131,15 +131,15 @@ describe('resolveAccessControl', () => {
 
     it('does not grant staff override for None/None roles', () => {
       const result = resolveAccessControl(baseInput);
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.creditDateString).not.toBe('100% (Staff override)');
     });
   });
 
   describe('main rule only, no date control', () => {
-    it('returns 0 credit when no dateControl configured', () => {
+    it('returns unauthorized when no dateControl configured', () => {
       const result = resolveAccessControl(baseInput);
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
     });
@@ -327,7 +327,7 @@ describe('resolveAccessControl', () => {
       expect(result.showBeforeRelease).toBe(false);
     });
 
-    it('handles dateControl without releaseDate as no date-based access (0 credit)', () => {
+    it('denies access when dateControl has no releaseDate', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -339,6 +339,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T12:00:00Z'),
       });
+      expect(result.authorized).toBe(false);
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
     });
@@ -1417,7 +1418,7 @@ describe('resolveAccessControl', () => {
         rules: [makeMainRule({ listBeforeRelease: true })],
       });
       // No dateControl → no release mechanism → perpetually "before release"
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.showBeforeRelease).toBe(true);
       expect(result.active).toBe(false);
     });
@@ -1435,7 +1436,7 @@ describe('resolveAccessControl', () => {
         ],
       });
       // dateControl exists but no releaseDate → perpetually "before release"
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.showBeforeRelease).toBe(true);
       expect(result.active).toBe(false);
     });
@@ -1445,7 +1446,7 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [makeMainRule({})],
       });
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.showBeforeRelease).toBe(false);
     });
   });

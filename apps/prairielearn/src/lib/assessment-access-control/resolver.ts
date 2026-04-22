@@ -80,11 +80,11 @@ export interface AccessControlResolverResult {
   /**
    * Resolved visibility flag: true when the assessment should be listed but
    * not accessible. This happens when `listBeforeRelease` is set on the rule
-   * AND either the current date is before the release date, there is no
-   * release date configured, or the assessment is PT-gated and the student
-   * lacks access (but only while the assessment is still open — closed
-   * assessments are not shown as "before release"). Distinct from the raw
-   * `listBeforeRelease` config input.
+   * AND either the current date is before the release date (which includes
+   * the case where no release date is configured), or the assessment is
+   * PT-gated and the student lacks access (but only while the assessment is
+   * still open — closed assessments are not shown as "before release").
+   * Distinct from the raw `listBeforeRelease` config input.
    */
   showBeforeRelease: boolean;
   /**
@@ -234,7 +234,7 @@ function computeCredit(
     return {
       credit: 0,
       active: false,
-      beforeRelease: false,
+      beforeRelease: true,
       nextDeadlineDate: null,
       password: null,
       timeLimitMin: null,
@@ -584,18 +584,25 @@ export function resolveAccessControl(
 
   let examAccessEnd: Date | null = null;
   if (ptOutcome.action === 'grant') {
-    creditResult = { ...creditResult, credit: ptOutcome.credit, active: ptOutcome.active };
+    // A matched PT reservation grants access regardless of standard date
+    // control, so clear `beforeRelease` to bypass the gates below.
+    creditResult = {
+      ...creditResult,
+      credit: ptOutcome.credit,
+      active: ptOutcome.active,
+      beforeRelease: false,
+    };
     examAccessEnd = ptOutcome.examAccessEnd;
   }
 
   const timeLimitMin = creditResult.timeLimitMin;
 
   // Resolve the raw `listBeforeRelease` config flag into a concrete
-  // `showBeforeRelease` boolean: true when the flag is set AND either we're
-  // before the release date or there is no release date configured.
+  // `showBeforeRelease` boolean: true when the flag is set AND we're before
+  // the release date (includes the no-releaseDate case, which `computeCredit`
+  // treats as perpetually before release).
   const showBeforeRelease =
-    (effectiveRule.listBeforeRelease ?? false) &&
-    (creditResult.beforeRelease || !effectiveRule.dateControl?.releaseDate);
+    (effectiveRule.listBeforeRelease ?? false) && creditResult.beforeRelease;
 
   // If the assessment is before its release date and showBeforeRelease is false,
   // the student should not see or access it at all.
