@@ -12,7 +12,7 @@ const TEST_TIMEZONE = 'America/Chicago';
 
 const defaultMainRule: MainRuleData = {
   trackingId: 'main-1',
-  listBeforeRelease: true,
+  beforeReleaseListed: true,
   dateControlEnabled: true,
   releaseDate: '2025-03-01T00:00:00Z',
   dueDate: '2025-04-01T00:00:00Z',
@@ -83,10 +83,10 @@ describe('jsonToMainRuleFormData', () => {
 });
 
 describe('formDataToJson', () => {
-  it('defaults listBeforeRelease to false when omitted from the main rule JSON', () => {
+  it('defaults beforeReleaseListed to false when omitted from the main rule JSON', () => {
     const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
 
-    expect(mainRule.listBeforeRelease).toBe(false);
+    expect(mainRule.beforeReleaseListed).toBe(false);
   });
 
   it('omits default score visibility when only main-rule question visibility is non-default', () => {

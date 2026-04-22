@@ -84,7 +84,7 @@ function prepareRuleRow(
   const afterLastDeadline = dateControl.afterLastDeadline;
   const isMainRule = ruleNumber === JSON_RULE_START;
 
-  const listBeforeRelease = mapField(rule.listBeforeRelease);
+  const beforeReleaseListed = mapField(rule.beforeRelease?.listed);
   const dueDateField = mapField(dateControl.dueDate);
   const earlyDeadlinesField = mapField(dateControl.earlyDeadlines);
   const lateDeadlinesField = mapField(dateControl.lateDeadlines);
@@ -104,8 +104,8 @@ function prepareRuleRow(
   const ruleRow = JSON.stringify({
     assessment_id: assessmentId,
     number: ruleNumber,
-    // listBeforeRelease is only configurable on the main rule.
-    list_before_release: isMainRule ? (listBeforeRelease.value ?? false) : null,
+    // beforeRelease.listed is only configurable on the main rule.
+    before_release_listed: isMainRule ? (beforeReleaseListed.value ?? false) : null,
     target_type: targetType,
     date_control_release_date: dateControl.releaseDate ?? null,
     date_control_due_date_overridden: dueDateField.overridden,

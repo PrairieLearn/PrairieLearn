@@ -151,7 +151,7 @@ The different types of dependency properties available are summarized in this ta
 | `clientFilesCourseStyles`    | The styles required by this question relative to `[course directory]/clientFilesCourse`.          |
 | `clientFilesCourseScripts`   | The scripts required by this question relative to `[course directory]/clientFilesCourse`.         |
 
-Additional details about how to access these fields from `server.py` can be found in the [`server.py` documentation](server.md#accessing-files-on-disk).
+Additional details about how to access these fields from `server.py` can be found in the [clientFiles and serverFiles documentation](../clientServerFiles.md#accessing-files-from-serverpy-question-code).
 
 !!! warning
 

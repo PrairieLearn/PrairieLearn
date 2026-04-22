@@ -31,7 +31,7 @@ The `accessControl` field is an array of entries in `infoAssessment.json`:
 ```
 
 - The **first element** (index 0) is the **defaults**. It applies to all students and sets the default behavior for the assessment.
-- **Subsequent elements** are **overrides**. Each override targets specific students using [student labels](#student-labels-and-overrides) or individual enrollments (configured via the UI), and can change any subset of the defaults' fields except `listBeforeRelease`.
+- **Subsequent elements** are **overrides**. Each override targets specific students using [student labels](#student-labels-and-overrides) or individual enrollments (configured via the UI), and can change some (but not all) of the defaults' fields.
 
 ### Full JSON skeleton
 
@@ -41,7 +41,7 @@ Below is a complete skeleton showing all available fields. All fields are option
 {
   "accessControl": [
     {
-      "listBeforeRelease": false,
+      "beforeRelease": { "listed": true },
       "dateControl": {
         "releaseDate": "2025-01-15T00:00:01",
         "dueDate": "2025-02-15T23:59:59",
@@ -120,7 +120,7 @@ earlyDeadline (110%)    dueDate (100%)    lateDeadline (80%)
 110% credit             100% credit          80% credit    → afterLastDeadline
 ```
 
-- **Before `releaseDate`**: The assessment is not visible (unless `listBeforeRelease` is `true`, in which case the title is shown but the assessment cannot be opened).
+- **Before `releaseDate`**: The assessment is not visible (unless `beforeRelease.listed` is `true`, in which case the title is shown but the assessment cannot be opened).
 - **Between `releaseDate` and the first deadline**: Credit is the first entry's value (the highest credit in the timeline).
 - **Between each pair of deadlines**: Credit is the later deadline's value.
 - **After the last deadline**: Credit is `afterLastDeadline.credit` (default 0%).
@@ -137,6 +137,14 @@ earlyDeadline (110%)    dueDate (100%)    lateDeadline (80%)
 | `prairieTest.exams[].readOnly` | boolean | Whether the exam is read-only for students. |
 
 When PrairieTest exams are configured, students must be checked in via PrairieTest to access the assessment. Students not checked in are blocked. The `durationMinutes` field has no effect when PrairieTest is active — time limits are enforced by PrairieTest.
+
+### `beforeRelease`
+
+Specifies behavior before an assessment is released to students.
+
+| Field    | Type    | Default | Description                                                                                                                                                                                    |
+| -------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `listed` | boolean | `false` | If `false`, the assessment is completely hidden until the release date. If `true`, the assessment title is shown on the Assessments page before the release date, but students cannot open it. |
 
 ### `afterComplete`
 
@@ -183,12 +191,6 @@ The same logic applies to `score.hidden` / `score.visibleFromDate` (there is no 
 
 When overriding `afterComplete.questions`, you may include just `hidden` without any date fields. To include visibility dates, set `hidden: true` along with `visibleFromDate` (and optionally `visibleUntilDate`). To clear inherited visibility dates, omit the date fields entirely. The same applies to `afterComplete.score`: you may include just `hidden`, or set `hidden: true` with `visibleFromDate`.
 
-### Other fields
-
-| Field               | Type    | Default | Description                                                                                                                                                      |
-| ------------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `listBeforeRelease` | boolean | `false` | Only valid on the first entry (defaults). If `true`, the assessment title is shown on the Assessments page before the release date, but students cannot open it. |
-
 ## Student labels and overrides
 
 ### What are student labels?
@@ -223,7 +225,7 @@ Not all fields behave the same way during cascading:
 | ---------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------- |
 | `dateControl.*` sub-fields   | Override replaces individual sub-fields; unset sub-fields inherit from main | Later override replaces; unset fields kept from earlier |
 | `afterComplete.*` sub-fields | Same as `dateControl`                                                       | Same as `dateControl`                                   |
-| `listBeforeRelease`          | Cannot be overridden                                                        | Not applicable                                          |
+| `beforeRelease`              | Cannot be overridden                                                        | Not applicable                                          |
 
 ### Override examples
 

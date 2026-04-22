@@ -66,15 +66,16 @@ interface DeductCreditsForAiGradingParams {
 }
 
 /**
- * Returns the amount actually deducted (which may be less than
- * `cost_milli_dollars` if the pool didn't have enough credits).
+ * Deducts `cost_milli_dollars` from the pool, charging non-transferable credits
+ * first and then transferable. Non-transferable is clamped at 0 (it cannot go
+ * negative); transferable absorbs any remaining cost and is allowed to go
+ * negative. Returns the full `cost_milli_dollars`.
  *
- * Callers must ensure $0 balances are caught *before* making API calls
- * (see the batch-level and per-submission checks in ai-grading.ts).
- * This function intentionally does not throw on insufficient balance:
- * by the time it runs the API cost has already been incurred, so
- * rejecting the grading result would waste the spend. Instead, we
- * deduct whatever remains and let the grading succeed.
+ * Callers must still gate *new* work on `total_milli_dollars <= 0` before
+ * making API calls (see the batch-level and per-submission checks in
+ * ai-grading.ts) so users can't AI grade with a zero or negative balance. By
+ * the time this runs, the API cost has already been incurred, so the full
+ * cost is always recorded.
  */
 async function deductCreditsForAiGradingWithLockedPool(
   before: CreditPool,
@@ -87,15 +88,8 @@ async function deductCreditsForAiGradingWithLockedPool(
     reason,
   }: DeductCreditsForAiGradingParams,
 ): Promise<number> {
-  if (before.total_milli_dollars <= 0) {
-    return 0;
-  }
-
-  // Clamp to available balance.
-  const effectiveCost = Math.min(cost_milli_dollars, before.total_milli_dollars);
-
   const { nonTransferableDeduction, transferableDeduction } = splitDeduction(
-    effectiveCost,
+    cost_milli_dollars,
     before.credit_non_transferable_milli_dollars,
   );
 
@@ -140,7 +134,7 @@ async function deductCreditsForAiGradingWithLockedPool(
     });
   }
 
-  return effectiveCost;
+  return cost_milli_dollars;
 }
 
 /**
@@ -154,15 +148,15 @@ async function deductCreditsForAiGradingWithLockedPool(
  * transaction. In that case, the FOR UPDATE lock is held for the lifetime of
  * the *outer* transaction, not just this function.
  *
- * This function does NOT throw on insufficient credits. By the time it runs,
- * the LLM API call has already been made and the cost incurred, so rejecting
- * the result would waste that spend. Callers must guard against $0 balances
- * before making API calls (see the batch-level and per-submission credit
- * checks in ai-grading.ts).
+ * This function always deducts the full cost. Transferable credits are
+ * allowed to go negative so the credit pool reflects the true cost of
+ * work already done; non-transferable is clamped at 0. Callers must still
+ * gate new work on `total_milli_dollars <= 0` before making API calls
+ * (see the batch-level and per-submission credit checks in ai-grading.ts),
+ * so users are prompted to buy credits before the balance drifts further.
  *
- * @returns `{ ai_grading_job_id, deducted_milli_dollars }` — the amount
- * actually deducted, which may be less than `cost_milli_dollars` if the pool
- * was partially depleted.
+ * @returns `{ ai_grading_job_id, deducted_milli_dollars }` where
+ * `deducted_milli_dollars` always equals `cost_milli_dollars`.
  */
 export async function insertAiGradingJobAndDeductCreditsIfNeeded({
   trackRateLimitAndCost,
@@ -200,17 +194,15 @@ export async function insertAiGradingJobAndDeductCreditsIfNeeded({
 }
 
 /**
- * Atomically deduct credits from the pool for AI grading.
- * Deducts from non-transferable credits first, then transferable.
- *
- * If the pool has insufficient credits, clamps the deduction to
- * the remaining balance rather than throwing.
+ * Atomically deduct credits from the pool for AI grading. Deducts from
+ * non-transferable credits first, then transferable. Transferable is allowed
+ * to go negative; non-transferable is clamped at 0.
  *
  * Exported for testing. Production callers should use
  * {@link insertAiGradingJobAndDeductCreditsIfNeeded} instead to ensure
  * correct lock ordering and avoid deadlocks.
  *
- * @returns The amount actually deducted (may be less than `cost_milli_dollars`).
+ * @returns The full `cost_milli_dollars` that was deducted.
  */
 export async function deductCreditsForAiGrading(
   params: DeductCreditsForAiGradingParams,
@@ -222,10 +214,70 @@ export async function deductCreditsForAiGrading(
 }
 
 /**
+ * Lock the credit pool, compute a delta from the current balance, and write
+ * the balance update + credit pool change row in a single transaction. A `0`
+ * delta is a no-op.
+ */
+async function applyCreditPoolMutation({
+  course_instance_id,
+  credit_type,
+  user_id,
+  reason,
+  checkout_session_id,
+  computeDelta,
+}: {
+  course_instance_id: string;
+  credit_type: 'transferable' | 'non_transferable';
+  user_id: string;
+  reason: string;
+  checkout_session_id?: string | null;
+  computeDelta: (currentBalance: number) => number;
+}): Promise<void> {
+  await runInTransactionAsync(async () => {
+    const before = await selectCreditPoolForUpdate(course_instance_id);
+
+    const currentBalance =
+      credit_type === 'transferable'
+        ? before.credit_transferable_milli_dollars
+        : before.credit_non_transferable_milli_dollars;
+
+    const delta = computeDelta(currentBalance);
+    if (delta === 0) return;
+
+    await execute(sql.update_credit_balances, {
+      course_instance_id,
+      credit_transferable_milli_dollars:
+        before.credit_transferable_milli_dollars + (credit_type === 'transferable' ? delta : 0),
+      credit_non_transferable_milli_dollars:
+        before.credit_non_transferable_milli_dollars +
+        (credit_type === 'non_transferable' ? delta : 0),
+    });
+
+    await execute(sql.insert_credit_pool_change, {
+      course_instance_id,
+      credit_before_milli_dollars: before.total_milli_dollars,
+      credit_after_milli_dollars: before.total_milli_dollars + delta,
+      delta_milli_dollars: delta,
+      credit_type,
+      reason,
+      user_id,
+      ai_grading_job_id: null,
+      assessment_question_id: null,
+      checkout_session_id: checkout_session_id ?? null,
+    });
+  });
+}
+
+/**
  * Adjust the credit pool for a course instance by a delta amount (admin operation).
  * Positive delta adds credits, negative delta removes credits.
- * If a deduction exceeds the selected pool balance, the deduction is capped
- * to the remaining balance so balances never go negative.
+ *
+ * By default a deduction is capped at the selected pool's current balance
+ * (deductions never take a balance below 0) and is refused entirely when the
+ * balance is already non-positive. Pass `allow_negative_balance: true` to
+ * apply the full deduction unconditionally; this is intended for refunds that
+ * reverse a specific prior purchase and must match that purchase amount
+ * regardless of the current balance.
  */
 export async function adjustCreditPool({
   course_instance_id,
@@ -234,55 +286,73 @@ export async function adjustCreditPool({
   user_id,
   reason,
   checkout_session_id,
+  allow_negative_balance,
 }: {
   course_instance_id: string;
   delta_milli_dollars: number;
-  credit_type: 'transferable' | 'non_transferable';
   user_id: string;
   reason: string;
   checkout_session_id?: string | null;
-}): Promise<void> {
+} & (
+  | { credit_type: 'transferable'; allow_negative_balance?: boolean }
+  | { credit_type: 'non_transferable'; allow_negative_balance?: never }
+)): Promise<void> {
   if (delta_milli_dollars === 0) return;
 
-  await runInTransactionAsync(async () => {
-    const before = await queryRow(
-      sql.select_credit_pool_for_update,
-      { course_instance_id },
-      CreditPoolSchema,
-    );
+  await applyCreditPoolMutation({
+    course_instance_id,
+    credit_type,
+    user_id,
+    reason,
+    checkout_session_id,
+    computeDelta: (currentBalance) => {
+      // Adds pass through unchanged so they can bring a negative balance
+      // back up by the full amount entered.
+      if (delta_milli_dollars > 0) return delta_milli_dollars;
+      // Refund-style deductions apply the full delta even if it drives the
+      // balance negative, so the pool correctly reverses the prior purchase.
+      if (allow_negative_balance) return delta_milli_dollars;
+      // Once transferable can go negative, a fresh deduct here would silently
+      // drive it further; block it and require an explicit `setCreditPoolBalance`.
+      if (currentBalance <= 0) return 0;
+      // Cap deducts at the current balance so they stop at 0.
+      return Math.max(delta_milli_dollars, -currentBalance);
+    },
+  });
+}
 
-    const currentBalance =
-      credit_type === 'transferable'
-        ? before.credit_transferable_milli_dollars
-        : before.credit_non_transferable_milli_dollars;
+/**
+ * Set the credit pool balance for a specific credit type to an exact value
+ * (admin operation). The change is recorded as a delta in the credit pool
+ * changes table so the transaction history remains consistent with
+ * add/deduct operations.
+ *
+ * Non-transferable balances cannot be set below 0; the caller must validate
+ * this before calling.
+ */
+export async function setCreditPoolBalance({
+  course_instance_id,
+  target_milli_dollars,
+  credit_type,
+  user_id,
+  reason,
+}: {
+  course_instance_id: string;
+  target_milli_dollars: number;
+  credit_type: 'transferable' | 'non_transferable';
+  user_id: string;
+  reason: string;
+}): Promise<void> {
+  if (credit_type === 'non_transferable' && target_milli_dollars < 0) {
+    throw new Error('Non-transferable credit balance cannot be set below 0');
+  }
 
-    // Cap deductions so the balance doesn't go negative.
-    const cappedDelta = Math.max(delta_milli_dollars, -currentBalance);
-
-    if (cappedDelta === 0) return;
-
-    await execute(sql.update_credit_balances, {
-      course_instance_id,
-      credit_transferable_milli_dollars:
-        before.credit_transferable_milli_dollars +
-        (credit_type === 'transferable' ? cappedDelta : 0),
-      credit_non_transferable_milli_dollars:
-        before.credit_non_transferable_milli_dollars +
-        (credit_type === 'non_transferable' ? cappedDelta : 0),
-    });
-
-    await execute(sql.insert_credit_pool_change, {
-      course_instance_id,
-      credit_before_milli_dollars: before.total_milli_dollars,
-      credit_after_milli_dollars: before.total_milli_dollars + cappedDelta,
-      delta_milli_dollars: cappedDelta,
-      credit_type,
-      reason,
-      user_id,
-      ai_grading_job_id: null,
-      assessment_question_id: null,
-      checkout_session_id: checkout_session_id ?? null,
-    });
+  await applyCreditPoolMutation({
+    course_instance_id,
+    credit_type,
+    user_id,
+    reason,
+    computeDelta: (currentBalance) => target_milli_dollars - currentBalance,
   });
 }
 

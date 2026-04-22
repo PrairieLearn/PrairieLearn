@@ -447,9 +447,11 @@ export async function aiGrade({
 
     // Check credit pool before starting the batch. This is a best-effort
     // check without FOR UPDATE — concurrent batches may both pass this check.
-    // Credits are deducted per-submission *after* the API call. If the credit
-    // pool becomes empty mid-batch, the deduction clamps to the remaining
-    // balance and the grading still succeeds.
+    // Credits are deducted per-submission *after* the API call, and the full
+    // cost is always recorded. Transferable credits are allowed to go
+    // negative so the credit pool reflects the true cost of work already
+    // done; the next batch is held by this `<= 0` pre-check until the
+    // instructor purchases credits.
     if (trackRateLimitAndCost) {
       const creditPool = await selectCreditPool(course_instance.id);
       if (creditPool.total_milli_dollars <= 0) {
@@ -518,7 +520,7 @@ export async function aiGrade({
 
       // Best-effort per-submission credit check. No FOR UPDATE lock — this is
       // a read-only guard to avoid making an API call when the pool is already
-      // $0. The authoritative deduction happens later under a lock.
+      // depleted. The authoritative deduction happens later under a lock.
       if (trackRateLimitAndCost && hasAiGradingCredits) {
         const pool = await selectCreditPool(course_instance.id);
         if (pool.total_milli_dollars <= 0) {

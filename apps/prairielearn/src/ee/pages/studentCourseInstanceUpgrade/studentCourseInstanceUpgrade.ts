@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import type Stripe from 'stripe';
 import { z } from 'zod';
 
@@ -20,6 +19,7 @@ import {
   checkEnrollmentEligibility,
   getEligibilityErrorMessage,
 } from '../../../lib/enrollment-eligibility.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { selectOptionalEnrollmentByUid } from '../../../models/enrollment.js';
 import { checkPlanGrantsForLocals } from '../../lib/billing/plan-grants.js';
@@ -51,7 +51,7 @@ const router = Router({ mergeParams: true });
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
     const course = CourseSchema.parse(res.locals.course);
     const user = UserSchema.parse(res.locals.authn_user);
@@ -129,7 +129,7 @@ const PlanNamesSchema = z.array(z.enum(['basic', 'compute']));
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     if (req.body.__action === 'upgrade') {
       const institution = InstitutionSchema.parse(res.locals.institution);
       const course = CourseSchema.parse(res.locals.course);
@@ -255,7 +255,7 @@ router.post(
 
 router.get(
   '/success',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     const institution = InstitutionSchema.parse(res.locals.institution);
     const course = CourseSchema.parse(res.locals.course);
     const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
