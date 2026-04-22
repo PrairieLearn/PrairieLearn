@@ -557,6 +557,15 @@ export function validateRule(
     errors.push('afterComplete.score cannot have visibleFromDate when hidden is false.');
   }
 
+  if (
+    rule.afterComplete?.score?.hidden === true &&
+    rule.afterComplete.questions?.hidden === false
+  ) {
+    errors.push(
+      'afterComplete.score.hidden: true requires afterComplete.questions.hidden: true (hiding the score while showing questions is nonsensical).',
+    );
+  }
+
   errors.push(
     ...validateRuleStructuralDependencyIssues({
       rule,

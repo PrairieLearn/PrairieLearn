@@ -50,7 +50,14 @@ const DateControlJsonSchema = z
   .strict()
   .optional();
 
-const ExamHiddenFlagJsonSchema = z
+const ExamAfterCompleteQuestionsJsonSchema = z
+  .object({
+    hidden: z.boolean(),
+  })
+  .strict()
+  .optional();
+
+const ExamAfterCompleteScoreJsonSchema = z
   .object({
     hidden: z.boolean(),
   })
@@ -59,8 +66,8 @@ const ExamHiddenFlagJsonSchema = z
 
 const ExamAfterCompleteJsonSchema = z
   .object({
-    questions: ExamHiddenFlagJsonSchema,
-    score: ExamHiddenFlagJsonSchema,
+    questions: ExamAfterCompleteQuestionsJsonSchema,
+    score: ExamAfterCompleteScoreJsonSchema,
   })
   .strict()
   .optional();

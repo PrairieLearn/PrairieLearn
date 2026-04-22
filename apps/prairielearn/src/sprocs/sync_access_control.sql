@@ -148,7 +148,11 @@ BEGIN
 
     -- Upsert PrairieTest exams (main rules only).
     INSERT INTO assessment_access_control_prairietest_exams (
-        assessment_access_control_rule_id, uuid, read_only, after_complete_questions_hidden, after_complete_score_hidden
+        assessment_access_control_rule_id,
+        uuid,
+        read_only,
+        after_complete_questions_hidden,
+        after_complete_score_hidden
     )
     SELECT
         aacr.id,

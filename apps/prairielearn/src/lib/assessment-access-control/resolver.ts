@@ -69,7 +69,7 @@ export interface AccessControlResolverInput {
   enrollment: EnrollmentContext | null;
   date: Date;
   displayTimezone: string;
-  authzMode: EnumMode | null;
+  authzMode: EnumMode;
   courseRole: EnumCourseRole;
   courseInstanceRole: EnumCourseInstanceRole;
   prairieTestReservations: PrairieTestReservation[];
@@ -236,7 +236,7 @@ type PrairieTestOutcome =
 function computeCredit(
   dateControl: RuntimeDateControl | undefined,
   date: Date,
-  authzMode: EnumMode | null,
+  authzMode: EnumMode,
 ): CreditResult {
   if (!dateControl?.releaseDate) {
     return {
@@ -361,7 +361,7 @@ function computeTimeLimitMin(
   durationMinutes: number | null | undefined,
   nextDeadline: Date | null,
   date: Date,
-  authzMode: EnumMode | null,
+  authzMode: EnumMode,
 ): number | null {
   if (!durationMinutes) return null;
   if (authzMode === 'Exam') return null;
@@ -441,19 +441,22 @@ function formatCreditDateString(
  *
  * The resolver treats PT and dateControl as mutually exclusive access paths:
  *
- * - **Exam mode** (student is physically at a PrairieTest-managed CBTF): PT
- *   is the only path. Access requires a matching reservation; otherwise deny.
- *   dateControl is ignored entirely — a student at the CBTF without a
- *   reservation shouldn't get any access regardless of date windows.
+ * - **Exam mode** (student has an active checked-in PrairieTest reservation,
+ *   whether at a CBTF or a course-run session): PT is the only path. Access
+ *   requires a matching reservation; otherwise deny. dateControl is ignored
+ *   entirely — being in Exam mode without a matching reservation shouldn't
+ *   grant access regardless of date windows.
  *
- * - **Public mode / null mode** (student is at home or otherwise outside
- *   the CBTF): PT gating doesn't apply. Access is governed by dateControl,
- *   `afterComplete`, and `beforeRelease`. This supports the cheat sheet
- *   workflow (discussion #11308) where students submit at home during the
- *   dateControl active window, then review in the CBTF with a readOnly PT
- *   reservation. Course authors are responsible for configuring readOnly
- *   appropriately — a non-readOnly PT exam with an active dateControl window
- *   effectively permits at-home takes, which is usually not the intent.
+ * - **Public mode** (student is not in an active PT session): PT gating
+ *   doesn't apply here. Access is governed by dateControl, `afterComplete`,
+ *   and `beforeRelease`. This supports the cheat sheet workflow (discussion
+ *   #11308) where students submit at home during the dateControl active
+ *   window, then review in the CBTF with a readOnly PT reservation. Course
+ *   authors are responsible for configuring readOnly appropriately — a
+ *   non-readOnly PT exam with an active dateControl window effectively
+ *   permits at-home takes, which is usually not the intent. A PT-gated rule
+ *   with no dateControl has no at-home access path; `resolveAccessControl`
+ *   handles that case by denying authorization after this returns `continue`.
  */
 function resolvePrairieTestAccess({
   prairieTestExams,
@@ -462,16 +465,11 @@ function resolvePrairieTestAccess({
 }: {
   prairieTestExams: AccessControlRuleInput['prairietestExams'];
   prairieTestReservations: PrairieTestReservation[];
-  authzMode: EnumMode | null;
+  authzMode: EnumMode;
 }): PrairieTestOutcome {
   // Outside of Exam mode, PT gating does not apply. Let the main flow
   // (dateControl, afterComplete, beforeRelease) govern access.
   if (authzMode !== 'Exam') return { action: 'continue' };
-
-  // Exam mode requires a PT-gated rule with a matching reservation.
-  if (prairieTestExams.length === 0) {
-    return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
-  }
 
   const matchedExam = prairieTestExams.find((exam) =>
     prairieTestReservations.some((r) => r.examUuid === exam.uuid),
@@ -640,6 +638,25 @@ export function resolveAccessControl(
   // the student should not see or access it at all.
   if (creditResult.beforeRelease && !showBeforeRelease) {
     return { ...UNAUTHORIZED_RESULT, showClosedAssessment, showClosedAssessmentScore };
+  }
+
+  // A PT-gated rule has no at-home access path unless dateControl provides
+  // one. When PT continue'd (Public mode) and there is no dateControl
+  // releaseDate, the student has no legitimate way to reach the assessment
+  // at home, so refuse authorization. `showBeforeRelease` still propagates
+  // so the student sees the assessment listed as "coming soon" if the
+  // instructor configured that.
+  if (
+    ptOutcome.action === 'continue' &&
+    mainRuleInput.prairietestExams.length > 0 &&
+    !effectiveRule.dateControl?.releaseDate
+  ) {
+    return {
+      ...UNAUTHORIZED_RESULT,
+      showClosedAssessment,
+      showClosedAssessmentScore,
+      showBeforeRelease,
+    };
   }
 
   const creditDateString = formatCreditDateString(

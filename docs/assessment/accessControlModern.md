@@ -187,6 +187,10 @@ Use this to control when students can see their score after completion — for e
 
     Top-level `afterComplete` only applies outside an active PrairieTest reservation. To control visibility inside the testing center after a student finishes, use `prairieTest.exams[].afterComplete` on the matching exam entry.
 
+!!! warning
+
+    Setting `questions.hidden` to `false` on an assessment with PrairieTest exams is not recommended. Students may be able to view exam content when their assessment is closed.
+
 The visibility logic follows a toggle pattern:
 
 1. If `questions.hidden` is `true`, questions are hidden after completion.
@@ -381,8 +385,7 @@ If a student starts close enough to the due date that less than 90 minutes remai
         "prairieTest": {
           "exams": [
             {
-              "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871",
-              "afterComplete": { "questions": { "hidden": true } }
+              "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"
             }
           ]
         }
@@ -392,7 +395,37 @@ If a student starts close enough to the due date that less than 90 minutes remai
 }
 ```
 
-Students must be checked in via PrairieTest. Time limits and scheduling are managed by PrairieTest. Once a student finishes the assessment in the testing center, questions are hidden for the remainder of the reservation.
+Students must be checked in via PrairieTest. Time limits and scheduling are managed by PrairieTest. Once a student finishes the assessment in the testing center, questions and scores remain visible for the remainder of the reservation.
+
+### Deferred release of feedback and scores after a PrairieTest exam
+
+```json
+{
+  "accessControl": [
+    {
+      "integrations": {
+        "prairieTest": {
+          "exams": [
+            {
+              "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871",
+              "afterComplete": {
+                "questions": { "hidden": true },
+                "score": { "hidden": true }
+              }
+            }
+          ]
+        }
+      },
+      "afterComplete": {
+        "questions": { "hidden": true, "visibleFromDate": "2025-03-15T00:00:00" },
+        "score": { "hidden": true, "visibleFromDate": "2025-03-15T00:00:00" }
+      }
+    }
+  ]
+}
+```
+
+This is useful when real-time grading is disabled for the exam: since students never see feedback or scores during the exam, questions and scores stay hidden both during the PrairieTest reservation and immediately after, and are released to students at home on March 15.
 
 ### Override extending deadline for a student label
 
