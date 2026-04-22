@@ -76,6 +76,9 @@ export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 export const EnumModeSchema = z.enum(['Public', 'Exam', 'SEB']);
 export type EnumMode = z.infer<typeof EnumModeSchema>;
 
+export const EnumNewsItemManagedBySchema = z.enum(['admin', 'sync']);
+export type EnumNewsItemManagedBy = z.infer<typeof EnumNewsItemManagedBySchema>;
+
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
@@ -1341,6 +1344,26 @@ export const LtiOutcomeSchema = z.object({
 export const MigrationSchema = null;
 export const NamedLockSchema = null;
 
+export const NewsItemReadStateSchema = z.object({
+  id: IdSchema,
+  last_read_news_item_id: IdSchema,
+  user_id: IdSchema,
+});
+export type NewsItemReadState = z.infer<typeof NewsItemReadStateSchema>;
+
+export const NewsItemSchema = z.object({
+  categories: z.array(z.string()),
+  fetched_at: DateFromISOString,
+  guid: z.string(),
+  hidden_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  link: z.string(),
+  managed_by: EnumNewsItemManagedBySchema.nullable(),
+  pub_date: DateFromISOString,
+  title: z.string(),
+});
+export type NewsItem = z.infer<typeof NewsItemSchema>;
+
 export const PageViewLogSchema = null;
 
 export const PlanGrantSchema = z.object({
@@ -1813,6 +1836,8 @@ export const TableNames = [
   'lti_outcomes',
   'migrations',
   'named_locks',
+  'news_item_read_states',
+  'news_items',
   'page_view_logs',
   'courses',
   'plan_grants',
