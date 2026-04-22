@@ -93,11 +93,9 @@ export interface AccessControlResolverResult {
   /**
    * Resolved visibility flag: true when the assessment should be listed but
    * not accessible. This happens when `beforeRelease.listed` is set on the
-   * rule AND either the current date is before the release date, there is no
-   * release date configured, or the assessment is PT-gated and the student
-   * lacks access (but only while the assessment is still open — closed
-   * assessments are not shown as "before release"). Distinct from the raw
-   * `beforeRelease.listed` config input.
+   * rule AND either the current date is before the release date or there is
+   * no release date configured. Distinct from the raw `beforeRelease.listed`
+   * config input.
    */
   showBeforeRelease: boolean;
 }
@@ -436,102 +434,68 @@ function formatCreditDateString(
 }
 
 /**
- * PrairieTest exam-mode access control.
+ * PrairieTest access control.
  *
- * Core invariants (matching legacy `check_assessment_access_rule` sproc):
- * - Student in Exam mode + assessment has PT exams → must have valid reservation
- * - Student in Exam mode + assessment has NO PT exams → deny access
- * - Student NOT in Exam mode + assessment has PT exams → deny access,
- *   except when the assessment is past its due date (`assessmentClosed`) or
- *   the top-level `afterComplete.questions` visibility has flipped to visible
- *   (`showClosedAssessment`) — in those cases the main flow produces a
- *   read-only review grant so students can open their existing instance.
- * - Valid reservation = user has pt_reservation whose exam UUID matches a configured exam
+ * The resolver treats PT and dateControl as mutually exclusive access paths:
  *
- * Exam mode is strict: a student physically at the CBTF only gets access
- * through a PT reservation. Release-date-driven review is intentionally
- * restricted to non-Exam mode (at-home review).
+ * - **Exam mode** (student is physically at a PrairieTest-managed CBTF): PT
+ *   is the only path. Access requires a matching reservation; otherwise deny.
+ *   dateControl is ignored entirely — a student at the CBTF without a
+ *   reservation shouldn't get any access regardless of date windows.
+ *
+ * - **Public mode / null mode** (student is at home or otherwise outside
+ *   the CBTF): PT gating doesn't apply. Access is governed by dateControl,
+ *   `afterComplete`, and `beforeRelease`. This supports the cheat sheet
+ *   workflow (discussion #11308) where students submit at home during the
+ *   dateControl active window, then review in the CBTF with a readOnly PT
+ *   reservation. Course authors are responsible for configuring readOnly
+ *   appropriately — a non-readOnly PT exam with an active dateControl window
+ *   effectively permits at-home takes, which is usually not the intent.
  */
 function resolvePrairieTestAccess({
   prairieTestExams,
   prairieTestReservations,
   authzMode,
-  beforeReleaseListed,
-  assessmentClosed,
-  showClosedAssessment,
 }: {
   prairieTestExams: AccessControlRuleInput['prairietestExams'];
   prairieTestReservations: PrairieTestReservation[];
   authzMode: EnumMode | null;
-  beforeReleaseListed: boolean;
-  assessmentClosed: boolean;
-  showClosedAssessment: boolean;
 }): PrairieTestOutcome {
-  const hasPrairieTestExams = prairieTestExams.length > 0;
+  // Outside of Exam mode, PT gating does not apply. Let the main flow
+  // (dateControl, afterComplete, beforeRelease) govern access.
+  if (authzMode !== 'Exam') return { action: 'continue' };
 
-  if (!hasPrairieTestExams) {
-    // No PT exams configured but student is in PrairieTest exam mode → deny.
-    if (authzMode === 'Exam') {
-      return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
-    }
-    return { action: 'continue' };
-  }
-
-  // Not in exam mode — student cannot access a PT-gated assessment.
-  if (authzMode !== 'Exam') {
-    if (assessmentClosed) return { action: 'continue' };
-
-    // PT-gated assessments often have no top-level `dateControl` — PT is the
-    // whole access model. When the top-level `afterComplete.questions`
-    // visibility has flipped to visible (via `visibleFromDate`), authorize
-    // read-only review at home so students can open their existing instance.
-    // `continue` falls through to the main flow, which yields
-    // `authorized: true, active: false` when no `dateControl` is configured.
-    if (showClosedAssessment) return { action: 'continue' };
-
-    // If `beforeRelease.listed` is set, list it, but it should not be accessible.
-    // We ONLY do this outside of Exam mode; when in Exam mode, we only show assessments
-    // that the user can actually access.
-    if (beforeReleaseListed) {
-      return { action: 'deny', result: { ...UNAUTHORIZED_RESULT, showBeforeRelease: true } };
-    }
-
+  // Exam mode requires a PT-gated rule with a matching reservation.
+  if (prairieTestExams.length === 0) {
     return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
   }
 
-  // In Exam mode — find a matching reservation.
   const matchedExam = prairieTestExams.find((exam) =>
     prairieTestReservations.some((r) => r.examUuid === exam.uuid),
   );
-
-  if (matchedExam) {
-    // Valid reservation found — grant PT access with full credit.
-    const matchingReservation = prairieTestReservations.find(
-      (r) => r.examUuid === matchedExam.uuid,
-    )!;
-
-    // PT-level visibility. `readOnly` reservations represent review sessions,
-    // so everything is visible. Otherwise, the per-exam `afterComplete` config
-    // (stored as nullable `questionsHidden` / `scoreHidden`) decides visibility
-    // inside the testing center after the student finishes; `null` means
-    // "not configured" and defaults to visible. The schema enforces that
-    // `scoreHidden: true` + `questionsHidden !== true` cannot occur.
-    const showClosedAssessment = matchedExam.readOnly || !(matchedExam.questionsHidden ?? false);
-    const showClosedAssessmentScore = matchedExam.readOnly || !(matchedExam.scoreHidden ?? false);
-
-    return {
-      action: 'grant',
-      examAccessEnd: matchingReservation.accessEnd,
-      credit: 100,
-      active: !matchedExam.readOnly,
-      showClosedAssessment,
-      showClosedAssessmentScore,
-    };
+  if (!matchedExam) {
+    return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
   }
 
-  // No matching reservation — deny unless the assessment is closed.
-  if (assessmentClosed) return { action: 'continue' };
-  return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
+  const matchingReservation = prairieTestReservations.find((r) => r.examUuid === matchedExam.uuid)!;
+
+  // PT-level visibility. `readOnly` reservations represent review sessions,
+  // so everything is visible. Otherwise, the per-exam `afterComplete` config
+  // (stored as nullable `questionsHidden` / `scoreHidden`) decides visibility
+  // inside the testing center after the student finishes; `null` means
+  // "not configured" and defaults to visible. The schema enforces that
+  // `scoreHidden: true` + `questionsHidden !== true` cannot occur.
+  const showClosedAssessment = matchedExam.readOnly || !(matchedExam.questionsHidden ?? false);
+  const showClosedAssessmentScore = matchedExam.readOnly || !(matchedExam.scoreHidden ?? false);
+
+  return {
+    action: 'grant',
+    examAccessEnd: matchingReservation.accessEnd,
+    credit: 100,
+    active: !matchedExam.readOnly,
+    showClosedAssessment,
+    showClosedAssessmentScore,
+  };
 }
 
 export function resolveAccessControl(
@@ -639,12 +603,6 @@ export function resolveAccessControl(
     prairieTestExams: mainRuleInput.prairietestExams,
     prairieTestReservations,
     authzMode,
-    beforeReleaseListed: effectiveRule.beforeRelease?.listed ?? false,
-    assessmentClosed:
-      !!effectiveRule.dateControl?.releaseDate &&
-      !creditResult.beforeRelease &&
-      !creditResult.active,
-    showClosedAssessment,
   });
   if (ptOutcome.action === 'deny') {
     return { ...ptOutcome.result, showClosedAssessment, showClosedAssessmentScore };
@@ -652,7 +610,18 @@ export function resolveAccessControl(
 
   let examAccessEnd: Date | null = null;
   if (ptOutcome.action === 'grant') {
-    creditResult = { ...creditResult, credit: ptOutcome.credit, active: ptOutcome.active };
+    // An active PT reservation replaces dateControl entirely — no credit
+    // windows, no release/due gating, no beforeRelease listing. The student
+    // is physically at the CBTF with a valid reservation; that is the only
+    // gate that matters.
+    creditResult = {
+      credit: ptOutcome.credit,
+      active: ptOutcome.active,
+      beforeRelease: false,
+      nextDeadlineDate: null,
+      password: null,
+      timeLimitMin: null,
+    };
     examAccessEnd = ptOutcome.examAccessEnd;
 
     // Isolation rule: while a PT reservation is active, only the matched
@@ -667,7 +636,9 @@ export function resolveAccessControl(
 
   // Resolve the raw `beforeRelease.listed` config flag into a concrete
   // `showBeforeRelease` boolean: true when the flag is set AND either we're
-  // before the release date or there is no release date configured.
+  // before the release date or there is no release date configured. An
+  // active PT grant cleared `creditResult.beforeRelease` above, so a
+  // reservation implicitly short-circuits this to false.
   const showBeforeRelease =
     (effectiveRule.beforeRelease?.listed ?? false) &&
     (creditResult.beforeRelease || !effectiveRule.dateControl?.releaseDate);
