@@ -130,17 +130,17 @@ earlyDeadline (110%)    dueDate (100%)    lateDeadline (80%)
 
 #### PrairieTest
 
-| Field                                                | Type    | Description                                                                       |
-| ---------------------------------------------------- | ------- | --------------------------------------------------------------------------------- |
-| `prairieTest.exams`                                  | array   | Array of exam objects.                                                            |
-| `prairieTest.exams[].examUuid`                       | string  | UUID of the associated PrairieTest exam.                                          |
-| `prairieTest.exams[].readOnly`                       | boolean | Whether the exam is read-only for students (review session).                      |
-| `prairieTest.exams[].afterComplete.questions.hidden` | boolean | If `true`, questions are hidden in the testing center after the student finishes. |
-| `prairieTest.exams[].afterComplete.score.hidden`     | boolean | If `true`, the score is hidden in the testing center after the student finishes.  |
+| Field                                                | Type    | Description                                                                                       |
+| ---------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------- |
+| `prairieTest.exams`                                  | array   | Array of exam objects.                                                                            |
+| `prairieTest.exams[].examUuid`                       | string  | UUID of the associated PrairieTest exam.                                                          |
+| `prairieTest.exams[].readOnly`                       | boolean | Whether the exam is read-only for students (review session).                                      |
+| `prairieTest.exams[].afterComplete.questions.hidden` | boolean | If `true`, questions are hidden after the student finishes while the reservation is still active. |
+| `prairieTest.exams[].afterComplete.score.hidden`     | boolean | If `true`, the score is hidden after the student finishes while the reservation is still active.  |
 
 When PrairieTest exams are configured, students must be checked in via PrairieTest to access the assessment. Students not checked in are blocked. The `durationMinutes` field has no effect when PrairieTest is active — time limits are enforced by PrairieTest.
 
-While a PrairieTest reservation is active, only the matched exam's configuration applies: top-level `dateControl`, `beforeRelease`, and `afterComplete` are ignored until the reservation ends. This lets `afterComplete` on the exam describe what the student sees inside the testing center, and the top-level `afterComplete` describe what the student sees at home.
+While a PrairieTest reservation is active, only the matched exam's configuration applies: top-level `dateControl`, `beforeRelease`, and `afterComplete` are ignored until the reservation ends. This lets `afterComplete` on the exam describe what the student sees during the reservation, and the top-level `afterComplete` describe what the student sees afterwards.
 
 `readOnly: true` and `afterComplete` are mutually exclusive on an exam entry: a read-only reservation is a review environment that shows everything. `afterComplete.score.hidden: true` additionally requires `afterComplete.questions.hidden: true` — showing the question and submission but hiding the resulting score is nonsensical.
 
@@ -185,7 +185,7 @@ Use this to control when students can see their score after completion — for e
 
 !!! note
 
-    Top-level `afterComplete` only applies outside an active PrairieTest reservation. To control visibility inside the testing center after a student finishes, use `prairieTest.exams[].afterComplete` on the matching exam entry.
+    Top-level `afterComplete` only applies outside an active PrairieTest reservation. To control visibility after a student finishes while the reservation is still active, use `prairieTest.exams[].afterComplete` on the matching exam entry.
 
 !!! warning
 
@@ -395,7 +395,7 @@ If a student starts close enough to the due date that less than 90 minutes remai
 }
 ```
 
-Students must be checked in via PrairieTest. Time limits and scheduling are managed by PrairieTest. Once a student finishes the assessment in the testing center, questions and scores remain visible for the remainder of the reservation.
+Students must be checked in via PrairieTest. Time limits and scheduling are managed by PrairieTest. Once a student finishes the assessment, questions and scores remain visible for the remainder of the reservation.
 
 ### Deferred release of feedback and scores after a PrairieTest exam
 

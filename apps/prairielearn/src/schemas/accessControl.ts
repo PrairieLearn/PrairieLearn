@@ -69,7 +69,7 @@ const ExamJsonSchema = z
       .describe('UUID of associated PrairieTest exam'),
     readOnly: z.boolean().optional().describe('Whether the exam is read-only for students'),
     afterComplete: ExamAfterCompleteJsonSchema.describe(
-      'Controls visibility inside the testing center after the student finishes the assessment. Only applies while a matching PrairieTest reservation is active; ignored outside the testing center.',
+      'Controls visibility after the student finishes the assessment during an active PrairieTest reservation. Only applies while a matching reservation is active; ignored otherwise.',
     ),
   })
   .strict();
