@@ -224,11 +224,7 @@ export const ConfigSchema = z.object({
   library: z
     .object({
       sourcePath: z.string().optional(),
-      path: z.string().optional(),
-      key: z
-        .string()
-        .regex(/^[0-9a-f]{64}$/i)
-        .optional(),
+      privateKey: z.string().optional(),
     })
     .nullable()
     .default(null),
