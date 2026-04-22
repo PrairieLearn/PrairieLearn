@@ -560,8 +560,7 @@ export class QTI12AssessmentParser implements InputParser {
       .map((l) => {
         const mattext = getNestedValue(l, 'material', 'mattext');
         const rawText = textContent(mattext);
-        const textType =
-          attr(mattext as Record<string, unknown>, 'texttype') || 'text/plain';
+        const textType = attr(mattext as Record<string, unknown>, 'texttype') || 'text/plain';
         // HTML-typed labels use XML-escaped HTML content (e.g. &lt;sup&gt;).
         // Decode entities so IRChoice.html holds real HTML for downstream rendering.
         const text = textType === 'text/html' ? unescapeHtml(rawText) : rawText;
