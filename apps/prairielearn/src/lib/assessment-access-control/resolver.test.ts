@@ -772,9 +772,10 @@ describe('resolveAccessControl', () => {
     });
 
     it('ignores PT gating in Public mode (DC path takes over)', () => {
-      // Without top-level dateControl, the DC path yields authorized but
-      // inactive — the student can review an existing instance but can't
-      // start a new one. PT reservations don't apply outside the CBTF.
+      // PT reservations don't apply outside the CBTF. With no top-level
+      // dateControl, the DC path yields authorized:true + active:false +
+      // credit:0; the default `afterComplete.questions.hidden: true` is what
+      // actually blocks the page (middleware 403s on !showClosedAssessment).
       const result = resolveAccessControl({
         ...baseInput,
         rules: [prairieTestMainRule],
@@ -784,6 +785,7 @@ describe('resolveAccessControl', () => {
       expect(result.authorized).toBe(true);
       expect(result.active).toBe(false);
       expect(result.credit).toBe(0);
+      expect(result.showClosedAssessment).toBe(false);
     });
 
     it('denies access when reservation UUID does not match', () => {
@@ -1327,8 +1329,8 @@ describe('resolveAccessControl', () => {
         },
         {
           name: 'hide score only',
-          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
-          showClosedAssessment: false,
+          afterComplete: { questions: { hidden: false }, score: { hidden: true } },
+          showClosedAssessment: true,
           showClosedAssessmentScore: false,
         },
       ];
@@ -1791,10 +1793,15 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [makeMainRule({ beforeRelease: { listed: true } })],
       });
-      // No dateControl → no release mechanism → perpetually "before release"
+      // Supported use case: instructor lists every assessment a student will
+      // take over the term, perpetually "coming soon" until dates are added.
+      // `authorized: true` lets the listing render; `active: false` blocks
+      // submissions, and the default `afterComplete.questions.hidden: true`
+      // makes the middleware 403 the page itself.
       expect(result.authorized).toBe(true);
       expect(result.showBeforeRelease).toBe(true);
       expect(result.active).toBe(false);
+      expect(result.showClosedAssessment).toBe(false);
     });
 
     it('shows before release when dateControl has no releaseDate', () => {
@@ -1866,7 +1873,7 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(false);
     });
 
-    it('hides PT assessment when beforeRelease.listed false and no matching reservation', () => {
+    it('denies PT assessment in exam mode without beforeRelease.listed and no matching reservation', () => {
       const result = resolveAccessControl({
         ...baseInput,
         authzMode: 'Exam',

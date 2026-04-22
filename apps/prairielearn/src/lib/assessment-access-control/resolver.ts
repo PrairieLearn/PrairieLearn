@@ -91,11 +91,14 @@ export interface AccessControlResolverResult {
    */
   examAccessEnd: Date | null;
   /**
-   * Resolved visibility flag: true when the assessment should be listed but
-   * not accessible. This happens when `beforeRelease.listed` is set on the
-   * rule AND either the current date is before the release date or there is
-   * no release date configured. Distinct from the raw `beforeRelease.listed`
-   * config input.
+   * Resolved visibility flag: true when the assessment should be listed as
+   * "coming soon" but not accessible. This happens when `beforeRelease.listed`
+   * is set on the rule AND either the current date is before the release date
+   * or there is no release date configured. The second case is intentional —
+   * an instructor can set `beforeRelease.listed: true` without any dateControl
+   * to list every assessment a student will take over the term, perpetually
+   * "coming soon" until the instructor later adds dates. Distinct from the
+   * raw `beforeRelease.listed` config input.
    */
   showBeforeRelease: boolean;
 }
