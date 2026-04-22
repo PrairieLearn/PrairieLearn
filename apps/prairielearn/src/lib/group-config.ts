@@ -1,5 +1,24 @@
-import type { GroupSettingsFormValues } from '../pages/instructorAssessmentGroups/instructorAssessmentGroups.html.js';
 import type { AssessmentJsonInput } from '../schemas/infoAssessment.js';
+
+export interface GroupSettingsFormValues {
+  studentPermissions: {
+    canCreateGroup: boolean;
+    canJoinGroup: boolean;
+    canLeaveGroup: boolean;
+    canNameGroup: boolean;
+  };
+  minMembers: number | null;
+  maxMembers: number | null;
+  roles: {
+    name: string;
+    origName: string | null;
+    minAssignees: number | null;
+    maxAssignees: number | null;
+    canAssignRoles: boolean;
+    canView: boolean;
+    canSubmit: boolean;
+  }[];
+}
 
 type GroupSettingsRole = GroupSettingsFormValues['roles'][number];
 

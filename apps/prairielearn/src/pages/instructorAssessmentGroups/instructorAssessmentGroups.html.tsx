@@ -10,7 +10,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import { getAppError } from '../../lib/client/errors.js';
 import { type StaffGroupConfig } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import { makeRole } from '../../lib/group-config.js';
+import { type GroupSettingsFormValues, makeRole } from '../../lib/group-config.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import type { GroupUsersRow } from '../../models/group.js';
 import type { AssessmentGroupsError } from '../../trpc/assessment/assessment-groups.js';
@@ -356,26 +356,6 @@ function InstructorAssessmentGroupsInner({
       </div>
     </>
   );
-}
-
-export interface GroupSettingsFormValues {
-  studentPermissions: {
-    canCreateGroup: boolean;
-    canJoinGroup: boolean;
-    canLeaveGroup: boolean;
-    canNameGroup: boolean;
-  };
-  minMembers: number | null;
-  maxMembers: number | null;
-  roles: {
-    name: string;
-    origName: string | null;
-    minAssignees: number | null;
-    maxAssignees: number | null;
-    canAssignRoles: boolean;
-    canView: boolean;
-    canSubmit: boolean;
-  }[];
 }
 
 const RECOMMENDED_ROLES: GroupSettingsFormValues['roles'] = [

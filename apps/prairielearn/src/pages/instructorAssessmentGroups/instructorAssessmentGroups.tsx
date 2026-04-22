@@ -13,7 +13,7 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffGroupConfigSchema } from '../../lib/client/safe-db-types.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { normalizeGroupSettings } from '../../lib/group-config.js';
+import { type GroupSettingsFormValues, normalizeGroupSettings } from '../../lib/group-config.js';
 import { randomGroups, uploadInstanceGroups } from '../../lib/group-update.js';
 import { computeStableHash } from '../../lib/json.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
@@ -26,10 +26,7 @@ import {
 } from '../../models/group.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 
-import {
-  type GroupSettingsFormValues,
-  InstructorAssessmentGroups,
-} from './instructorAssessmentGroups.html.js';
+import { InstructorAssessmentGroups } from './instructorAssessmentGroups.html.js';
 
 const router = Router();
 
