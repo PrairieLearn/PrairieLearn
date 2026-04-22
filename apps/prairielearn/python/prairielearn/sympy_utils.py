@@ -9,12 +9,13 @@ import ast
 import copy
 import html
 import re
+import string
 from collections import deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from enum import Enum
 from functools import wraps
-from tokenize import NAME, OP, TokenError
+from tokenize import NAME, NUMBER, OP, TokenError
 from types import CodeType
 from typing import Any, Literal, TypeAlias, TypedDict, TypeGuard, cast
 
@@ -134,6 +135,7 @@ class _Constants:
 
     def __init__(self) -> None:
         self.helpers = {
+            "Number": sympy.Number,
             "_Integer": sympy.Integer,
         }
 
@@ -629,7 +631,7 @@ def ast_check_str(
     CheckAST(
         whitelist,
         locals_for_eval["variables"],
-        locals_for_eval["functions"],
+        locals_for_eval["helpers"] | locals_for_eval["functions"],
         allow_set_notation=allow_set_notation,
     ).check_expression(expr)
 
@@ -851,6 +853,7 @@ def evaluate_with_source(
     )
     if allow_set_notation:
         transformations = (
+            unmangle_infix_binops_transformation(_SET_OPS.keys()),
             set_literal_transformation,
             set_operation_transformation,
             interval_transformation,
@@ -1011,10 +1014,39 @@ def convert_string_to_sympy_with_source(
         HasConflictingVariableError: If the variable names conflict with existing names.
         HasConflictingFunctionError: If the function names conflict with existing names.
     """
-    const = _Constants()
+    # Check assumptions are all made about valid variables only
+    if assumptions is not None:
+        unbound_variables = assumptions.keys() - set(
+            variables if variables is not None else []
+        )
+        if unbound_variables:
+            raise HasInvalidAssumptionError(
+                f"Assumptions for variables that are not present: {','.join(unbound_variables)}"
+            )
+
+    # Check user-defined names are valid
+    conflict_vars, conflict_fns, valid_names = _build_name_conflict_data(
+        variables if variables is not None else [],
+        custom_functions if custom_functions is not None else [],
+        allow_complex=allow_complex,
+        allow_hidden=allow_hidden,
+        allow_set_notation=allow_set_notation,
+        allow_trig_functions=allow_trig_functions,
+    )
+
+    if conflict_vars:
+        raise HasConflictingVariableError(
+            f"Conflicting variable name(s): {', '.join(conflict_vars)}"
+        )
+    if conflict_fns:
+        raise HasConflictingFunctionError(
+            f"Conflicting function name(s): {', '.join(conflict_fns)}"
+        )
 
     # Create a whitelist of valid functions and variables (and a special flag
     # for numbers that are converted to sympy integers).
+    const = _Constants()
+
     locals_for_eval: LocalsForEval = {
         "functions": const.functions,
         "variables": const.variables,
@@ -1034,58 +1066,12 @@ def convert_string_to_sympy_with_source(
     if allow_set_notation:
         locals_for_eval["functions"].update(const.set_functions)
 
-    used_names = set().union(
-        *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
-    )
-    used_names |= get_builtin_functions(
-        allow_trig_functions=allow_trig_functions,
-        allow_set_notation=allow_set_notation,
-    )
-
-    # Check assumptions are all made about valid variables only
-    if assumptions is not None:
-        unbound_variables = assumptions.keys() - set(
-            variables if variables is not None else []
-        )
-        if unbound_variables:
-            raise HasInvalidAssumptionError(
-                f"Assumptions for variables that are not present: {','.join(unbound_variables)}"
-            )
-
-    # If there is a list of variables, add each one to the whitelist with assumptions
-    if variables is not None:
-        variable_dict = locals_for_eval["variables"]
-
-        for raw_variable in variables:
-            variable = greek_unicode_transform(raw_variable)
-            # Check for naming conflicts
-            if variable in used_names:
-                raise HasConflictingVariableError(
-                    f"Conflicting variable name: {variable}"
-                )
-            used_names.add(variable)
-
-            # If no conflict, add to locals dict with assumptions
-            if assumptions is None:
-                variable_dict[variable] = sympy.Symbol(variable)
-            else:
-                variable_dict[variable] = sympy.Symbol(
-                    variable, **assumptions.get(variable, {})
-                )
-
-    # If there is a list of custom functions, add each one to the whitelist
-    if custom_functions is not None:
-        function_dict = locals_for_eval["functions"]
-        for raw_function in custom_functions:
-            function = greek_unicode_transform(raw_function)
-            if function in used_names:
-                raise HasConflictingFunctionError(
-                    f"Conflicting variable name: {function}"
-                )
-
-            used_names.add(function)
-
-            function_dict[function] = sympy.Function(function)
+    for name, (is_var, raw_name) in valid_names.items():
+        if is_var:
+            var_assumptions = (assumptions and assumptions.get(raw_name)) or {}
+            locals_for_eval["variables"][name] = sympy.Symbol(name, **var_assumptions)
+        else:
+            locals_for_eval["functions"][name] = sympy.Function(name)
 
     # Do the conversion
     return evaluate_with_source(
@@ -1173,20 +1159,12 @@ def sympy_to_json(
     variables = list(map(str, a.free_symbols))
 
     # Get reserved variables for custom function parsing
-    reserved = (
-        const.helpers.keys()
-        | const.variables.keys()
-        | const.hidden_variables.keys()
-        | const.functions.keys()
+    reserved = get_builtin_constants(
+        allow_complex=allow_complex, allow_hidden=True
+    ) | get_builtin_functions(
+        allow_set_notation=allow_set_notation,
+        allow_trig_functions=allow_trig_functions,
     )
-    if allow_complex:
-        reserved |= (
-            const.complex_variables.keys() | const.hidden_complex_variables.keys()
-        )
-    if allow_trig_functions:
-        reserved |= const.trig_functions.keys()
-    if allow_set_notation:
-        reserved |= const.set_functions.keys()
 
     # Apply substitutions for hidden variables
     a_sub = a.subs([
@@ -1620,6 +1598,33 @@ def interval_transformation(
     return result
 
 
+def unmangle_infix_binops_transformation(binop_literals: Iterable[str]) -> TRANS:
+    """Return a token transform that splits infix operator names from suffix digits.
+
+    SymPy's tokenizer treats strings like ``U2`` or ``cup3`` as a single ``NAME``
+    token. PrairieLearn uses this transform to recover the operator literal and
+    the trailing numeric suffix as separate tokens, so later parsing steps can
+    interpret set-union/set-intersection input from the formula editor without
+    exposing parser internals to students.
+    """
+    bin_lit_set = tuple(binop_literals)
+
+    def _infix_binop_unmangler(
+        tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
+    ) -> list[TOKEN]:
+        out = []
+        for typ, text in tokens:
+            if typ == NAME and text not in bin_lit_set:
+                stripped = text.rstrip(string.digits)
+                if stripped in bin_lit_set:
+                    out.extend(((OP, stripped), (NUMBER, text[len(stripped) :])))
+                    continue
+            out.append((typ, text))
+        return out
+
+    return _infix_binop_unmangler
+
+
 def set_operation_transformation(
     tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
 ) -> list[TOKEN]:
@@ -1634,11 +1639,14 @@ def set_operation_transformation(
     ]
 
 
-def get_builtin_constants(*, allow_complex: bool = False) -> set[str]:
+def get_builtin_constants(
+    *, allow_complex: bool = False, allow_hidden: bool = True
+) -> set[str]:
     """Return the set of built-in constant names.
 
     Parameters:
         allow_complex: Whether to include complex number constants (i, j).
+        allow_hidden: Whether to include sympy's longer name for constants.
 
     Returns:
         A set of built-in constant names.
@@ -1647,6 +1655,10 @@ def get_builtin_constants(*, allow_complex: bool = False) -> set[str]:
     names = set(const.variables.keys())
     if allow_complex:
         names |= const.complex_variables.keys()
+    if allow_hidden:
+        names.update(const.hidden_variables.keys())
+    if allow_complex and allow_hidden:
+        names.update(const.hidden_complex_variables.keys())
     return names
 
 
@@ -1657,12 +1669,13 @@ def get_builtin_functions(
 
     Parameters:
         allow_trig_functions: Whether to include trigonometric functions.
+        allow_set_notation: Whether to include set operators and constructors.
 
     Returns:
         A set of built-in function names.
     """
     const = _Constants()
-    names = set(const.functions.keys())
+    names = const.functions.keys() | const.helpers.keys()
     if allow_trig_functions:
         names |= const.trig_functions.keys()
     if allow_set_notation:
@@ -1671,12 +1684,64 @@ def get_builtin_functions(
     return names
 
 
+def _build_name_conflict_data(
+    variables: Iterable[str],
+    custom_functions: Iterable[str],
+    *,
+    allow_complex: bool,
+    allow_hidden: bool,
+    allow_trig_functions: bool,
+    allow_set_notation: bool,
+) -> tuple[list[str], list[str], dict[str, tuple[bool, str]]]:
+    """Validate that user-specified names don't conflict with built-in constants or functions.
+
+    Parameters:
+        element_name: Name of the element (for error messages).
+        variables: User-specified variable names.
+        custom_functions: User-specified custom function names.
+        allow_complex: Whether complex constants (i, j) are available.
+        allow_hidden: Whether sympy's long-form names for constants are available.
+        allow_set_notation: Whether set operations are available.
+        allow_trig_functions: Whether trig functions are available.
+
+    Returns:
+        A list of (var_names, fun_names, valid_sanitized_names) where var/fun_names conflict
+        with builtins or themselves and valid_sanitized_names maps `sanitized_unique_name ->
+        (was_variable, unsanitized)`.
+    """
+    builtins = get_builtin_functions(
+        allow_trig_functions=allow_trig_functions,
+        allow_set_notation=allow_set_notation,
+    ) | get_builtin_constants(
+        allow_complex=allow_complex,
+        allow_hidden=allow_hidden,
+    )
+
+    seen = {}
+
+    def _collision(name: str, *, is_variable: bool) -> bool:
+        sanitized = greek_unicode_transform(name)
+        if sanitized in seen:
+            return True
+        seen[sanitized] = (is_variable, name)
+        if allow_set_notation and sanitized.strip(string.digits) == "U":
+            return True
+        return sanitized in builtins
+
+    return (
+        [v for v in variables if _collision(v, is_variable=True)],
+        [f for f in custom_functions if _collision(f, is_variable=False)],
+        seen,
+    )
+
+
 def validate_names_for_conflicts(
     element_name: str,
     variables: list[str],
     custom_functions: list[str],
     *,
     allow_complex: bool = False,
+    allow_hidden_variables: bool = True,
     allow_trig_functions: bool = True,
     allow_set_notation: bool = False,
 ) -> None:
@@ -1687,18 +1752,22 @@ def validate_names_for_conflicts(
         variables: User-specified variable names.
         custom_functions: User-specified custom function names.
         allow_complex: Whether complex constants (i, j) are available.
+        allow_hidden_variables: Whether sympy's long-form names for constants are available.
+        allow_set_notation: Whether set operations are available.
         allow_trig_functions: Whether trig functions are available.
 
     Raises:
         ValueError: If any names conflict with built-ins.
     """
-    builtins = get_builtin_constants(
-        allow_complex=allow_complex
-    ) | get_builtin_functions(
-        allow_trig_functions=allow_trig_functions, allow_set_notation=allow_set_notation
+    v_conflicts, f_conflicts, _valid = _build_name_conflict_data(
+        variables,
+        custom_functions,
+        allow_complex=allow_complex,
+        allow_hidden=allow_hidden_variables,
+        allow_set_notation=allow_set_notation,
+        allow_trig_functions=allow_trig_functions,
     )
-
-    conflicts = [name for name in variables + custom_functions if name in builtins]
+    conflicts = v_conflicts + f_conflicts
     if conflicts:
         raise ValueError(
             f'Element "{element_name}" specifies names that conflict with built-ins: '

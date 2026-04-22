@@ -1,3 +1,4 @@
+import html
 import json
 import re
 from itertools import chain, repeat
@@ -11,7 +12,36 @@ import sympy
 
 def _caret(text: str, caret: str) -> str:
     """Join text and caret lines for readable caret-position test assertions."""
-    return f"{text}\n{caret}"
+    if not (len(text) + 1 == len(caret) and "^" in caret):
+        raise ValueError("Test Error: improperly formatted caret string")
+    return f"{html.escape(text)}\n{caret}"
+
+
+def _caret_template(template_expr: str) -> tuple[str, str]:
+    """Build a caret assertion from a single-string template.
+
+    The template should contain exactly one ``^`` placeholder marking the
+    caret position, such as ``"1 ^bad 2"`` or ``"1 ^** {2}"``. Use ``\\^`` to
+    include a literal caret in the base text without splitting on it. The
+    returned tuple is ``(expr, caret_output)`` where ``expr`` is the template
+    with the placeholder removed and ``caret_output`` is the two-line
+    ``_caret`` format with a shortened snippet around the caret location.
+
+    Raises:
+        ValueError: if the template does not contain exactly one caret symbol
+
+    Returns:
+        A tuple that consists of (sympy_expr_text, _caret(text, ))
+    """
+    parts = [p.replace(r"\^", "^") for p in re.split(r"(?<!\\)\^", template_expr)]
+    if len(parts) != 2:
+        raise ValueError("Test Error: caret template must have exactly one unescaped ^")
+    base = "".join(parts)
+    c_pos = len(parts[0])
+    left_pad, right_pad = min(5, c_pos), min(5, len(base) - c_pos)
+    c_str = f"{' ' * left_pad}^{' ' * right_pad}"
+    snippet = base[c_pos - left_pad :][: len(c_str) - 1]
+    return base, _caret(snippet, c_str)
 
 
 def test_evaluate() -> None:
@@ -324,6 +354,20 @@ class TestSympy:
             custom_functions=list(self.FUNCTION_NAMES),
         )
 
+    @pytest.mark.parametrize(
+        ("text", "expected"),
+        [(text.replace(" ", ""), expected) for text, expected in SET_EXPR_PAIRS],
+    )
+    def test_try_parse_string_as_sympy_on_sets_is_ws_insensitive(
+        self, text: str, expected: sympy.Expr
+    ) -> None:
+        assert psu.SympyParseSuccess(expected) == psu.try_parse_string_as_sympy(
+            text,
+            self.SYMBOL_NAMES,
+            allow_set_notation=True,
+            custom_functions=list(self.FUNCTION_NAMES),
+        )
+
     def test_try_parse_string_as_sympy_returns_failure(self) -> None:
         result = psu.try_parse_string_as_sympy("0.1", self.SYMBOL_NAMES)
         assert isinstance(result, psu.SympyParseFailure)
@@ -391,7 +435,7 @@ class TestSympy:
             "1 ∩ 2",
             "1 & 2",
             "1 | 2",
-            "{1,2,3}",
+            "{1, 2, 3}",
             "(0, 1)",
             "(0, 1]",
             "[0, 1)",
@@ -437,9 +481,6 @@ class TestSympy:
             "[1, (2, 3)]",
             "[1, {2, 3}]",
             "[{2, 3}, 1]",
-            # invalid operations
-            "{1, 2} ** {2, 3}",
-            "{1, 2} / {2, 3}",
         ],
     )
     def test_set_syntax_errors_are_rejected(self, text: str) -> None:
@@ -718,7 +759,10 @@ class TestExceptions:
                 allow_set_notation=True,
             )
 
-    @pytest.mark.parametrize("conflicting_name", ["U", "cup", "cap", "∪", "∩"])  # noqa: RUF001
+    @pytest.mark.parametrize(
+        "conflicting_name",
+        ["U", "U2", "U348347", "cup", "cap", "∪", "∩"],  # noqa: RUF001
+    )
     def test_set_notation_alias_conflicts_with_custom_functions(
         self, conflicting_name: str
     ) -> None:
@@ -837,224 +881,101 @@ class TestExceptions:
         )
 
     @pytest.mark.parametrize(
-        ("expr", "expected_caret", "with_vars"),
+        ("caret_spec", "with_vars"),
         [
             # #14141: '#' after large integer — stringify_expr wraps it as Integer(1234567890),
             # shifting the '#' offset. Caret must still point at '#' in the original input.
-            (
-                "1234567890 # abcdefghij",
-                _caret(
-                    "7890 # abc",
-                    "     ^     ",
-                ),
-                (),
-            ),
+            ("1234567890 ^# abcdefghij", ()),
             # '#' at the very start of the expression
-            (
-                "# x + 1",
-                _caret(
-                    "# x +",
-                    "^     ",
-                ),
-                (),
-            ),
+            ("^# x + 1", ()),
             # '#' after '^' which becomes '**' (offset shift from replacement)
-            (
-                "n^2 # comment",
-                _caret(
-                    "n^2 # com",
-                    "    ^     ",
-                ),
-                (),
-            ),
+            ("n\\^2 ^# comment", ()),
             # #14141: '\\' at the start — previously misreported as generic "syntax error"
             # because stringify_expr raised TokenError before ast_check_str ran
-            (
-                "\\n + 2",
-                _caret(
-                    "\\n + ",
-                    "^     ",
-                ),
-                (),
-            ),
+            ("^\\n + 2", ()),
             # '\\' after a large integer
-            (
-                "1234567890 \\",
-                _caret(
-                    "7890 \\",
-                    "     ^ ",
-                ),
-                (),
-            ),
+            ("1234567890 ^\\", ()),
             # #14142: invalid symbol — previously showed an empty caret pointing at nothing
             # because point_to_error received ind=-1
-            (
-                "nlogn",
-                _caret(
-                    "nlogn",
-                    "  ^   ",
-                ),
-                (),
-            ),
+            ("nl^ogn", ()),
             # Invalid symbol in the middle of a valid expression
-            (
-                "n + abc",
-                _caret(
-                    " + abc",
-                    "     ^ ",
-                ),
-                (),
-            ),
+            ("n + ab^c", ()),
+            # bad uses of ambiguous set infix ops resolve to unknown symbols
+            ("1^U2", ()),
             # Invalid symbol at the start
-            (
-                "xyz * n",
-                _caret(
-                    "xyz * n",
-                    "  ^     ",
-                ),
-                (),
-            ),
+            ("xy^z * n", ()),
             # Invalid symbol after a valid symbol containing the same character
-            (
-                "ab + a",
-                _caret(
-                    "ab + a",
-                    "     ^ ",
-                ),
-                ("ab",),
-            ),
+            ("ab + ^a", ("ab",)),
         ],
     )
     def test_error_caret_output(
-        self, expr: str, expected_caret: str, with_vars: tuple[str, ...]
+        self, caret_spec: str, with_vars: tuple[str, ...]
     ) -> None:
         """Regression tests for #14141 and #14142.
 
         Verifies that the caret visualization in error messages points at the
         correct character in the original input expression.
         """
+        expr, expected_caret = _caret_template(caret_spec)
         error_msg = psu.validate_string_as_sympy(expr, self.VARIABLES + with_vars)
         assert error_msg is not None
         match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
         assert match is not None
         assert match.group(1) == expected_caret
 
-    @pytest.mark.parametrize(
-        ("expr", "expected_caret"),
-        [
-            (
-                "{1, 2} / {2, 3}",
-                _caret(
-                    ", 2} / {2,",
-                    "     ^     ",
-                ),
-            ),
-            (
-                "{1, 2} U 3",
-                _caret(
-                    ", 2} U 3",
-                    "     ^   ",
-                ),
-            ),
-            (
-                "Interval({}, 2)",
-                _caret(
-                    "Inter",
-                    "^     ",
-                ),
-            ),
-            (
-                "Interval(1, {})",
-                _caret(
-                    "Inter",
-                    "^     ",
-                ),
-            ),
-            (
-                "Interval(1)",
-                _caret(
-                    "Inter",
-                    "^     ",
-                ),
-            ),
-            (
-                "Interval(1, 2, 3)",
-                _caret(
-                    "Inter",
-                    "^     ",
-                ),
-            ),
-            (
-                "Union(1, 2)",
-                _caret(
-                    "Union",
-                    "^     ",
-                ),
-            ),
-            (
-                "Intersection(1, 2)",
-                _caret(
-                    "Inter",
-                    "^     ",
-                ),
-            ),
-            (
-                "Intersection({}, 2)",
-                _caret(
-                    "Inter",
-                    "^     ",
-                ),
-            ),
-            (
-                "Intersection()",
-                _caret(
-                    "Inter",
-                    "^     ",
-                ),
-            ),
-            (
-                "1 U 2",
-                _caret(
-                    "1 U 2",
-                    "  ^   ",
-                ),
-            ),
-            (
-                "{1, 2} ** {3}",
-                _caret(
-                    ", 2} ** {3",
-                    "     ^     ",
-                ),
-            ),
-            (
-                "1 ** {3}",
-                _caret(
-                    "1 ** {3",
-                    "  ^     ",
-                ),
-            ),
-        ],
+    SET_TYPE_ERROR_CARET_TEMPLATES = (
+        "{1, 2} ^/ {2, 3}",
+        "{1, 2} ^U 3",
+        "^Interval({}, 2)",
+        "^Interval(1, {})",
+        "^Interval(1)",
+        "^Interval(1, 2, 3)",
+        "^Union(1, 2)",
+        "^Intersection(1, 2)",
+        "^Intersection({}, 2)",
+        "^Intersection()",
+        "1 ^U 2",
+        "1 ^| 2",
+        "1 ^cup 2",
+        "1 ^∪ 2",  # noqa: RUF001
+        "1 ^& 2",
+        "1 ^cap 2",
+        "1 ^∩ 2",
+        "10/2 ^U 2/10",
+        "10/2 ^| 2/10",
+        "{1, 2} ^** {3}",
+        "1 ^** {3}",
+        "x\\^2 ^/ {1,2}",
+        "x\\^2 ^U {1,2}",
     )
-    def test_set_operation_type_error_caret_output(
-        self, expr: str, expected_caret: str
-    ) -> None:
+
+    @pytest.mark.parametrize("caret_spec", SET_TYPE_ERROR_CARET_TEMPLATES)
+    def test_set_operation_type_error_caret_output(self, caret_spec: str) -> None:
+        expr, expected_caret = _caret_template(caret_spec)
         error_msg = psu.validate_string_as_sympy(expr, None, allow_set_notation=True)
         assert error_msg is not None
+        assert re.search(r"\b(set|arguments?|syntax)\b", error_msg) is not None, (
+            f"error message is not descriptive: {error_msg}"
+        )
         match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
         assert match is not None, f"error message has no caret: {error_msg}"
-        assert match.group(1) == expected_caret
+        assert expected_caret == match.group(1)
 
-    def test_type_error_caret_accounts_for_exponentiation_normalization(self) -> None:
-        error_msg = psu.validate_string_as_sympy(
-            "x^2 / {1,2}", ["x"], allow_set_notation=True
-        )
+    @pytest.mark.parametrize(
+        "caret_spec", [t.replace(" ", "") for t in SET_TYPE_ERROR_CARET_TEMPLATES]
+    )
+    def test_set_operation_type_error_caret_output_is_ws_insensitive(
+        self, caret_spec: str
+    ) -> None:
+        expr, expected_caret = _caret_template(caret_spec)
+        error_msg = psu.validate_string_as_sympy(expr, None, allow_set_notation=True)
         assert error_msg is not None
+        assert re.search(r"\b(set|arguments?|syntax)\b", error_msg) is not None, (
+            f"error message is not descriptive: {error_msg}"
+        )
         match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
         assert match is not None, f"error message has no caret: {error_msg}"
-        assert match.group(1) == _caret(
-            "x^2 / {1,",  # the caret should land on the original `/`
-            "    ^     ",
-        )
+        assert expected_caret == match.group(1)
 
     def test_find_type_error_offset_maps_back_to_original_input(self) -> None:
         assert (
