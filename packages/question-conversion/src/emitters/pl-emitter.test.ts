@@ -427,6 +427,41 @@ describe('PLEmitter', () => {
     });
   });
 
+  describe('duplicate choice deduplication', () => {
+    it('deduplicates multiple-choice choices with the same text, keeping the correct one', () => {
+      const q = makeQuestion({
+        body: {
+          type: 'multiple-choice',
+          choices: [
+            { id: 'a', html: '5', correct: false },
+            { id: 'b', html: '5', correct: true },
+            { id: 'c', html: '10', correct: false },
+          ],
+        },
+      });
+      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
+      const matches = [...html.matchAll(/>5</g)];
+      assert.equal(matches.length, 1, 'duplicate "5" should appear exactly once');
+      assert.include(html, 'correct="true">5<');
+    });
+
+    it('deduplicates checkbox choices with the same text, keeping the correct one', () => {
+      const q = makeQuestion({
+        body: {
+          type: 'checkbox',
+          choices: [
+            { id: 'a', html: '5', correct: false },
+            { id: 'b', html: '5', correct: true },
+          ],
+        },
+      });
+      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
+      const matches = [...html.matchAll(/>5</g)];
+      assert.equal(matches.length, 1);
+      assert.include(html, 'correct="true">5<');
+    });
+  });
+
   describe('renderMultipleChoice dropdown', () => {
     it('renders dropdown when display is dropdown', () => {
       const q = makeQuestion({

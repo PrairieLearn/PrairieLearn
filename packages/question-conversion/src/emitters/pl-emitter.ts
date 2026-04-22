@@ -398,9 +398,10 @@ export class PLEmitter implements OutputEmitter {
     shuffleAnswers?: boolean,
     perAnswer?: Record<string, string>,
   ): string {
+    const deduped = deduplicateChoices(choices);
     if (display === 'dropdown') {
       const lines = ['<pl-dropdown answers-name="answer">'];
-      for (const choice of choices) {
+      for (const choice of deduped) {
         lines.push(
           `  <pl-answer correct="${choice.correct}">${escapeHtml(choice.html)}</pl-answer>`,
         );
@@ -411,7 +412,7 @@ export class PLEmitter implements OutputEmitter {
 
     const orderAttr = shuffleAnswers === false ? ' order="fixed"' : '';
     const lines = [`<pl-multiple-choice answers-name="answer"${orderAttr}>`];
-    for (const choice of choices) {
+    for (const choice of deduped) {
       const fb = perAnswer?.[choice.html];
       const fbAttr = fb ? ` feedback="${escapeAttr(fb)}"` : '';
       lines.push(
@@ -427,9 +428,10 @@ export class PLEmitter implements OutputEmitter {
     shuffleAnswers?: boolean,
     perAnswer?: Record<string, string>,
   ): string {
+    const deduped = deduplicateChoices(choices);
     const orderAttr = shuffleAnswers === false ? ' order="fixed"' : '';
     const lines = [`<pl-checkbox answers-name="answer"${orderAttr}>`];
-    for (const choice of choices) {
+    for (const choice of deduped) {
       const fb = perAnswer?.[choice.html];
       const fbAttr = fb ? ` feedback="${escapeAttr(fb)}"` : '';
       lines.push(
@@ -658,6 +660,21 @@ function convertFormulaToPython(formula: string): string {
   }
   py = py.replaceAll('^', '**');
   return py;
+}
+
+/**
+ * Remove duplicate choices by HTML text. When duplicates exist, prefer the
+ * correct one so that the answer key is preserved.
+ */
+function deduplicateChoices(choices: IRChoice[]): IRChoice[] {
+  const seen = new Map<string, IRChoice>();
+  for (const choice of choices) {
+    const existing = seen.get(choice.html);
+    if (!existing || (!existing.correct && choice.correct)) {
+      seen.set(choice.html, choice);
+    }
+  }
+  return [...seen.values()];
 }
 
 function escapeHtml(text: string): string {
