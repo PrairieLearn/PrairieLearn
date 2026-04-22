@@ -221,6 +221,17 @@ export const ConfigSchema = z.object({
     .string()
     .regex(/^[0-9a-f]{64}$/i)
     .default('0'.repeat(64)),
+  library: z
+    .object({
+      sourcePath: z.string().optional(),
+      path: z.string().optional(),
+      key: z
+        .string()
+        .regex(/^[0-9a-f]{64}$/i)
+        .optional(),
+    })
+    .nullable()
+    .default(null),
   secretSlackOpsBotEndpoint: z.string().nullable().default(null),
   secretSlackToken: z.string().nullable().default(null),
   secretSlackCourseRequestChannel: z.string().nullable().default(null),

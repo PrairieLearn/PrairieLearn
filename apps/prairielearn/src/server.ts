@@ -72,6 +72,7 @@ import { features } from './lib/features/index.js';
 import { featuresMiddleware } from './lib/features/middleware.js';
 import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
+import { initLibrary } from './lib/library.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
 import { isServerInitialized, isServerPending, setServerState } from './lib/server-initialized.js';
@@ -2565,6 +2566,7 @@ if (shouldStartServer) {
       redisUrl: config.redisUrl,
     });
     await freeformServer.init();
+    await initLibrary();
 
     if (config.devMode) {
       await insertDevUser();
