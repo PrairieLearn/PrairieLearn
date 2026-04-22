@@ -428,7 +428,7 @@ describe('Exam UUID validation', () => {
 describe('PrairieTest exam afterComplete validation', () => {
   const validUuid = '11e89892-3eff-4d7f-90a2-221372f14e5c';
 
-  it('rejects readOnly: true combined with afterComplete', () => {
+  it('rejects readOnly: true combined with afterComplete.questions.hidden: true', () => {
     const errors = validateRule(
       {
         integrations: {
@@ -445,7 +445,47 @@ describe('PrairieTest exam afterComplete validation', () => {
       },
       'none',
     );
-    assert.isTrue(errors.some((e) => e.includes('mutually exclusive')));
+    assert.isTrue(errors.some((e) => e.includes('cannot be combined')));
+  });
+
+  it('rejects readOnly: true combined with afterComplete.score.hidden: true', () => {
+    const errors = validateRule(
+      {
+        integrations: {
+          prairieTest: {
+            exams: [
+              {
+                examUuid: validUuid,
+                readOnly: true,
+                afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+              },
+            ],
+          },
+        },
+      },
+      'none',
+    );
+    assert.isTrue(errors.some((e) => e.includes('cannot be combined')));
+  });
+
+  it('accepts readOnly: true with a non-hiding afterComplete (explicit hidden: false)', () => {
+    const errors = validateRule(
+      {
+        integrations: {
+          prairieTest: {
+            exams: [
+              {
+                examUuid: validUuid,
+                readOnly: true,
+                afterComplete: { questions: { hidden: false } },
+              },
+            ],
+          },
+        },
+      },
+      'none',
+    );
+    assert.deepEqual(errors, []);
   });
 
   it('rejects score.hidden: true without questions.hidden: true', () => {

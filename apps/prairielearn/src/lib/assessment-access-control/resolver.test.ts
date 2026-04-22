@@ -349,7 +349,9 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T12:00:00Z'),
       });
-      expect(result.authorized).toBe(true);
+      // `showBeforeRelease` is visibility-only; `authorized` stays false so the
+      // student can see the "coming soon" listing but cannot open the URL.
+      expect(result.authorized).toBe(false);
       expect(result.showBeforeRelease).toBe(true);
       expect(result.active).toBe(false);
     });
@@ -1367,6 +1369,56 @@ describe('resolveAccessControl', () => {
         expect(result.showBeforeRelease).toBe(false);
       });
 
+      it('lists PT-gated assessment as coming soon in Public mode before a future releaseDate', () => {
+        // Public mode with a future releaseDate and beforeRelease.listed: the
+        // DC path treats this like the non-PT pre-release listing. The
+        // student sees the assessment in the "coming soon" list but is not
+        // authorized to open it — PT gating is irrelevant here because PT
+        // only applies in Exam mode.
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Public',
+          rules: [
+            {
+              ...makeMainRule({
+                beforeRelease: { listed: true },
+                dateControl: { releaseDate: '2025-04-01T00:00:00Z' },
+              }),
+              prairietestExams: [ptExam1],
+            },
+          ],
+        });
+        expect(result.authorized).toBe(false);
+        expect(result.showBeforeRelease).toBe(true);
+        expect(result.active).toBe(false);
+        expect(result.credit).toBe(0);
+      });
+
+      it('suppresses showBeforeRelease during an active PT grant even when beforeRelease.listed is true', () => {
+        // A granted student has real access and shouldn't also be shown the
+        // "coming soon" listing. This matters specifically when no
+        // releaseDate is configured - otherwise the grant branch zeroing
+        // `creditResult.beforeRelease` would already make showBeforeRelease
+        // false via the release-date clause.
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [
+            {
+              ...makeMainRule({ beforeRelease: { listed: true } }),
+              prairietestExams: [ptExam1],
+            },
+          ],
+          prairieTestReservations: [
+            { examUuid: ptExam1.uuid, accessEnd: new Date('2025-04-01T00:00:00Z') },
+          ],
+        });
+        expect(result.authorized).toBe(true);
+        expect(result.active).toBe(true);
+        expect(result.credit).toBe(100);
+        expect(result.showBeforeRelease).toBe(false);
+      });
+
       it('denies PT-gated assessment in Exam mode during DC open window without matching reservation', () => {
         // In Exam mode, PT is the only access path; a student in Exam mode
         // without a matching reservation is denied even while DC is active.
@@ -1900,10 +1952,9 @@ describe('resolveAccessControl', () => {
       });
       // Supported use case: instructor lists every assessment a student will
       // take over the term, perpetually "coming soon" until dates are added.
-      // `authorized: true` lets the listing render; `active: false` blocks
-      // submissions, and the default `afterComplete.questions.hidden: true`
-      // makes the middleware 403 the page itself.
-      expect(result.authorized).toBe(true);
+      // `showBeforeRelease: true` renders the listing; `authorized: false`
+      // prevents the student from navigating to the assessment URL.
+      expect(result.authorized).toBe(false);
       expect(result.showBeforeRelease).toBe(true);
       expect(result.active).toBe(false);
       expect(result.showClosedAssessment).toBe(false);
@@ -1922,7 +1973,7 @@ describe('resolveAccessControl', () => {
         ],
       });
       // dateControl exists but no releaseDate → perpetually "before release"
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.showBeforeRelease).toBe(true);
       expect(result.active).toBe(false);
     });

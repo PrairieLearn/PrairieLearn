@@ -505,9 +505,12 @@ export function validateRule(
     }
     seenUuids.add(e.examUuid);
 
-    if (e.readOnly === true && e.afterComplete !== undefined) {
+    if (
+      e.readOnly === true &&
+      (e.afterComplete?.questions?.hidden === true || e.afterComplete?.score?.hidden === true)
+    ) {
       errors.push(
-        `PrairieTest exam ${e.examUuid}: readOnly: true and afterComplete are mutually exclusive (a readOnly reservation is a review environment, so hiding makes no sense).`,
+        `PrairieTest exam ${e.examUuid}: readOnly: true cannot be combined with afterComplete.questions.hidden: true or afterComplete.score.hidden: true (a readOnly reservation is a review environment).`,
       );
     }
     if (e.afterComplete?.score?.hidden === true && e.afterComplete.questions?.hidden !== true) {

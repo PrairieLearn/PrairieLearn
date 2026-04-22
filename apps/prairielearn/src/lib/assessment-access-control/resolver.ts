@@ -639,10 +639,11 @@ export function resolveAccessControl(
   // Resolve the raw `beforeRelease.listed` config flag into a concrete
   // `showBeforeRelease` boolean: true when the flag is set AND either we're
   // before the release date or there is no release date configured. An
-  // active PT grant cleared `creditResult.beforeRelease` above, so a
-  // reservation implicitly short-circuits this to false.
+  // active PT grant always zeroes this — a granted student has real access
+  // and shouldn't see the "coming soon" listing regardless of other config.
   const showBeforeRelease =
     (effectiveRule.beforeRelease?.listed ?? false) &&
+    ptOutcome.action !== 'grant' &&
     (creditResult.beforeRelease || !effectiveRule.dateControl?.releaseDate);
 
   // If the assessment is before its release date and showBeforeRelease is false,
@@ -651,12 +652,27 @@ export function resolveAccessControl(
     return { ...UNAUTHORIZED_RESULT, showClosedAssessment, showClosedAssessmentScore };
   }
 
+  // A "coming soon" listing is a visibility signal only — the student can see
+  // the assessment in the list but cannot open it. `authorized` gates real URL
+  // access, so anything that produces `showBeforeRelease: true` must also set
+  // `authorized: false`. This covers pre-release (`creditResult.beforeRelease`)
+  // as well as the perpetually-listed case (`beforeRelease.listed` with no
+  // releaseDate configured).
+  if (showBeforeRelease) {
+    return {
+      ...UNAUTHORIZED_RESULT,
+      showClosedAssessment,
+      showClosedAssessmentScore,
+      showBeforeRelease: true,
+    };
+  }
+
   // A PT-gated rule has no at-home access path unless dateControl provides
   // one. When PT continue'd (Public mode) and there is no dateControl
   // releaseDate, the student has no legitimate way to reach the assessment
-  // at home, so refuse authorization. `showBeforeRelease` still propagates
-  // so the student sees the assessment listed as "coming soon" if the
-  // instructor configured that.
+  // at home, so refuse authorization. `showBeforeRelease` has already been
+  // handled above, so if we reach here `beforeRelease.listed` is false and
+  // the assessment is fully hidden.
   if (
     ptOutcome.action === 'continue' &&
     mainRuleInput.prairietestExams.length > 0 &&
@@ -666,7 +682,6 @@ export function resolveAccessControl(
       ...UNAUTHORIZED_RESULT,
       showClosedAssessment,
       showClosedAssessmentScore,
-      showBeforeRelease,
     };
   }
 
