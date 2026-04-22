@@ -5223,7 +5223,7 @@ __metadata:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/postgres-tools": "workspace:^"
     "@prairielearn/react": "workspace:^"
-    "@prairielearn/respondus-lockdown-browser": "npm:^0.1.0"
+    "@prairielearn/respondus-lockdown-browser": "npm:^0.1.1"
     "@prairielearn/run": "workspace:^"
     "@prairielearn/sanitize": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
@@ -5514,7 +5514,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/respondus-lockdown-browser@npm:^0.1.0":
+"@prairielearn/respondus-lockdown-browser@npm:^0.1.1":
   version: 0.1.1
   resolution: "@prairielearn/respondus-lockdown-browser@npm:0.1.1"
   dependencies:
