@@ -1,6 +1,7 @@
 import Parser from 'rss-parser';
 
 import { logger } from '@prairielearn/logger';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
 import {
@@ -76,8 +77,10 @@ export async function fetchAndCacheNewsItems(): Promise<void> {
       return;
     }
 
-    await upsertNewsItems(newsItems);
-    await hideNewsItemsNotInGuids(newsItems.map((item) => item.guid));
+    await runInTransactionAsync(async () => {
+      await upsertNewsItems(newsItems);
+      await hideNewsItemsNotInGuids(newsItems.map((item) => item.guid));
+    });
     logger.verbose('news-feed: Synced news items', {
       count: newsItems.length,
       totalItems: feed.items.length,

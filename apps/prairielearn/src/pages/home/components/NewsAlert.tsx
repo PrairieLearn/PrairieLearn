@@ -106,6 +106,14 @@ export function NewsAlert({
         .news-alert-item:hover {
           background-color: var(--bs-tertiary-bg);
         }
+        .news-alert-dismiss {
+          color: var(--bs-secondary-color);
+          transition: color 0.15s ease, transform 0.15s ease;
+        }
+        .news-alert-dismiss:hover {
+          color: var(--bs-body-color);
+          transform: scale(1.05);
+        }
       `}</style>
       <div className="card-body">
         <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
@@ -133,7 +141,7 @@ export function NewsAlert({
               <input type="hidden" name="__action" value="dismiss_news_alert" />
               <button
                 type="submit"
-                className="btn btn-sm btn-link text-body-secondary text-decoration-none p-0"
+                className="btn btn-sm btn-link news-alert-dismiss text-decoration-none p-0"
               >
                 Dismiss all
               </button>
