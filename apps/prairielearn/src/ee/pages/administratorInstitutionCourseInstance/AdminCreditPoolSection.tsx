@@ -2,7 +2,9 @@ import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/re
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
-import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
+import { run } from '@prairielearn/run';
+
+import { type CreditPoolLimits, formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { CreditPoolDashboard } from '../../components/ai-grading-credits/CreditPoolDashboard.js';
 
@@ -13,16 +15,14 @@ export function AdminCreditPoolSection({
   trpcCsrfToken,
   useCustomApiKeys,
   isDeleted,
-  maxAddDollars,
-  maxDeductDollars,
   refundsEnabled,
+  creditPoolLimits,
 }: {
   trpcCsrfToken: string;
   useCustomApiKeys: boolean;
   isDeleted: boolean;
-  maxAddDollars: number;
-  maxDeductDollars: number;
   refundsEnabled: boolean;
+  creditPoolLimits: CreditPoolLimits;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => createAdminCreditPoolTrpcClient(trpcCsrfToken));
@@ -33,9 +33,8 @@ export function AdminCreditPoolSection({
         <AdminCreditPoolContent
           useCustomApiKeys={useCustomApiKeys}
           isDeleted={isDeleted}
-          maxAddDollars={maxAddDollars}
-          maxDeductDollars={maxDeductDollars}
           refundsEnabled={refundsEnabled}
+          creditPoolLimits={creditPoolLimits}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -47,15 +46,13 @@ AdminCreditPoolSection.displayName = 'AdminCreditPoolSection';
 function AdminCreditPoolContent({
   useCustomApiKeys,
   isDeleted,
-  maxAddDollars,
-  maxDeductDollars,
   refundsEnabled,
+  creditPoolLimits,
 }: {
   useCustomApiKeys: boolean;
   isDeleted: boolean;
-  maxAddDollars: number;
-  maxDeductDollars: number;
   refundsEnabled: boolean;
+  creditPoolLimits: CreditPoolLimits;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -118,10 +115,23 @@ function AdminCreditPoolContent({
           isPending={adjustMutation.isPending}
           error={adjustMutation.isError ? adjustMutation.error.message : null}
           isSuccess={adjustMutation.isSuccess}
-          maxAddDollars={maxAddDollars}
-          maxDeductDollars={maxDeductDollars}
           poolData={poolQuery.data ?? null}
-          onSubmit={(data) => adjustMutation.mutate(data)}
+          creditPoolLimits={creditPoolLimits}
+          onSubmit={(data) =>
+            adjustMutation.mutate(
+              data.action === 'set'
+                ? {
+                    action: 'set',
+                    balance_dollars: data.amount,
+                    credit_type: data.credit_type,
+                  }
+                : {
+                    action: data.action,
+                    amount_dollars: data.amount,
+                    credit_type: data.credit_type,
+                  },
+            )
+          }
           onDismissError={() => adjustMutation.reset()}
           onDismissSuccess={() => adjustMutation.reset()}
         />
@@ -140,14 +150,15 @@ function AdminCreditPoolContent({
   );
 }
 
+type AdjustAction = 'add' | 'deduct' | 'set';
+
 function AdjustCreditsForm({
   isDeleted,
   isPending,
   error,
   isSuccess,
-  maxAddDollars,
-  maxDeductDollars,
   poolData,
+  creditPoolLimits,
   onSubmit,
   onDismissError,
   onDismissSuccess,
@@ -156,49 +167,78 @@ function AdjustCreditsForm({
   isPending: boolean;
   error: string | null;
   isSuccess: boolean;
-  maxAddDollars: number;
-  maxDeductDollars: number;
   poolData: {
     credit_transferable_milli_dollars: number;
     credit_non_transferable_milli_dollars: number;
   } | null;
+  creditPoolLimits: CreditPoolLimits;
   onSubmit: (data: {
-    action: 'add' | 'deduct';
-    amount_dollars: number;
+    action: AdjustAction;
+    amount: number;
     credit_type: 'transferable' | 'non_transferable';
   }) => void;
   onDismissError: () => void;
   onDismissSuccess: () => void;
 }) {
-  const [action, setAction] = useState<'add' | 'deduct'>('add');
+  const [action, setAction] = useState<AdjustAction>('add');
   const [amountStr, setAmountStr] = useState('');
   const [creditType, setCreditType] = useState<'transferable' | 'non_transferable'>(
     'non_transferable',
   );
 
+  const amountEntered = amountStr !== '';
   const parsedAmount = Number(amountStr);
-  const maxForAction = action === 'add' ? maxAddDollars : maxDeductDollars;
-  const currentBalanceMilliDollars =
-    poolData == null
-      ? null
-      : creditType === 'transferable'
-        ? poolData.credit_transferable_milli_dollars
-        : poolData.credit_non_transferable_milli_dollars;
-  const isAmountInvalid =
-    amountStr !== '' &&
-    (!Number.isFinite(parsedAmount) || parsedAmount <= 0 || parsedAmount > maxForAction);
-  const isDeductionCapped =
-    action === 'deduct' &&
-    !isAmountInvalid &&
-    amountStr !== '' &&
-    currentBalanceMilliDollars != null &&
-    Math.round(parsedAmount * 1000) > currentBalanceMilliDollars;
-  const isSubmitDisabled =
-    isPending || isAmountInvalid || (action === 'deduct' && !currentBalanceMilliDollars);
+  const parsedAmountMilliDollars = Math.round(parsedAmount * 1000);
+
+  const currentBalanceMilliDollars = run(() => {
+    if (poolData == null) return null;
+    if (creditType === 'transferable') return poolData.credit_transferable_milli_dollars;
+    return poolData.credit_non_transferable_milli_dollars;
+  });
+
+  const { minMilliDollars: amountMinMilliDollars, maxMilliDollars: amountMaxMilliDollars } = run(
+    () => {
+      if (action === 'set') {
+        return creditType === 'transferable'
+          ? creditPoolLimits.setTransferable
+          : creditPoolLimits.setNonTransferable;
+      }
+      return action === 'add' ? creditPoolLimits.add : creditPoolLimits.deduct;
+    },
+  );
+
+  // An amount is valid when it is within the [amountMinMilliDollars, amountMaxMilliDollars]
+  // range for the current action and has at most cent-level precision (no sub-cent fractions).
+  const amountValid = run(() => {
+    // Treat an empty input as valid so the user doesn't see an error before they've typed anything.
+    // Submission is separately gated by `amountEntered` in `isSubmitEnabled`.
+    if (!amountEntered) return true;
+    if (!Number.isFinite(parsedAmount)) return false;
+    if (parsedAmountMilliDollars % 10 !== 0) return false;
+    return (
+      parsedAmountMilliDollars >= amountMinMilliDollars &&
+      parsedAmountMilliDollars <= amountMaxMilliDollars
+    );
+  });
+
+  const setBalanceDelta =
+    action === 'set' && amountEntered && amountValid && currentBalanceMilliDollars != null
+      ? parsedAmountMilliDollars - currentBalanceMilliDollars
+      : null;
+
+  const isDeductBlocked =
+    action === 'deduct' && currentBalanceMilliDollars !== null && currentBalanceMilliDollars <= 0;
+
+  const isSubmitEnabled = run(() => {
+    if (isPending || !amountEntered || !amountValid) return false;
+    if (isDeductBlocked) return false;
+    if (action === 'set' && setBalanceDelta === 0) return false;
+    return true;
+  });
 
   function handleSubmit() {
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return;
-    onSubmit({ action, amount_dollars: parsedAmount, credit_type: creditType });
+    if (!isSubmitEnabled) return;
+    onSubmit({ action, amount: parsedAmount, credit_type: creditType });
     setAmountStr('');
   }
 
@@ -226,15 +266,19 @@ function AdjustCreditsForm({
               id="adjustment_action"
               value={action}
               disabled={isDeleted}
-              onChange={(e) => setAction(e.target.value as 'add' | 'deduct')}
+              onChange={(e) => {
+                setAction(e.target.value as AdjustAction);
+                setAmountStr('');
+              }}
             >
               <option value="add">Add</option>
               <option value="deduct">Deduct</option>
+              <option value="set">Set balance</option>
             </select>
           </div>
           <div className="col-auto">
             <label className="form-label" htmlFor="amount_dollars">
-              Amount (USD)
+              {action === 'set' ? 'New balance (USD)' : 'Amount (USD)'}
             </label>
             <div className="input-group">
               <span className="input-group-text">$</span>
@@ -245,9 +289,11 @@ function AdjustCreditsForm({
                 step="0.01"
                 placeholder="0.00"
                 value={amountStr}
-                disabled={isDeleted}
-                aria-invalid={isAmountInvalid || undefined}
-                aria-errormessage={isAmountInvalid ? 'amount-error' : undefined}
+                disabled={isDeleted || isDeductBlocked}
+                min={action === 'set' ? amountMinMilliDollars / 1000 : undefined}
+                max={action === 'set' ? amountMaxMilliDollars / 1000 : undefined}
+                aria-invalid={!amountValid || undefined}
+                aria-errormessage={!amountValid ? 'amount-error' : undefined}
                 onChange={(e) => setAmountStr(e.target.value)}
               />
             </div>
@@ -269,24 +315,23 @@ function AdjustCreditsForm({
           </div>
           {!isDeleted && (
             <div className="col-auto">
-              <button type="submit" className="btn btn-primary" disabled={isSubmitDisabled}>
+              <button type="submit" className="btn btn-primary" disabled={!isSubmitEnabled}>
                 {isPending ? 'Applying...' : 'Apply'}
               </button>
             </div>
           )}
         </div>
-        {isAmountInvalid && (
-          <div id="amount-error" className="text-danger small mt-1">
-            Enter an amount between $0.01 and {formatMilliDollars(maxForAction * 1000)}.
-          </div>
-        )}
-        {isDeductionCapped && (
-          <div className="text-warning-emphasis small mt-3">
-            {currentBalanceMilliDollars === 0
-              ? `The ${creditType.replace('_', '-')} balance is $0.00. No credits are available to deduct.`
-              : `Amount exceeds the ${creditType.replace('_', '-')} balance. ${formatMilliDollars(currentBalanceMilliDollars)} will be deducted.`}
-          </div>
-        )}
+        <AdjustCreditsFormFeedback
+          creditType={creditType}
+          action={action}
+          amountValid={amountValid}
+          amountEntered={amountEntered}
+          amountMinMilliDollars={amountMinMilliDollars}
+          amountMaxMilliDollars={amountMaxMilliDollars}
+          currentBalanceMilliDollars={currentBalanceMilliDollars}
+          parsedAmountMilliDollars={parsedAmountMilliDollars}
+          setBalanceDelta={setBalanceDelta}
+        />
       </form>
       {isSuccess && (
         <Alert
@@ -300,4 +345,67 @@ function AdjustCreditsForm({
       )}
     </div>
   );
+}
+
+function AdjustCreditsFormFeedback({
+  creditType,
+  action,
+  amountValid,
+  amountEntered,
+  amountMinMilliDollars,
+  amountMaxMilliDollars,
+  currentBalanceMilliDollars,
+  parsedAmountMilliDollars,
+  setBalanceDelta,
+}: {
+  creditType: 'transferable' | 'non_transferable';
+  action: AdjustAction;
+  amountValid: boolean;
+  amountEntered: boolean;
+  amountMinMilliDollars: number;
+  amountMaxMilliDollars: number;
+  currentBalanceMilliDollars: number | null;
+  parsedAmountMilliDollars: number;
+  setBalanceDelta: number | null;
+}) {
+  const creditTypeLabel = creditType.replace('_', '-');
+
+  if (!amountValid) {
+    return (
+      <div id="amount-error" className="text-danger small mt-3">
+        Enter an amount between {formatMilliDollars(amountMinMilliDollars)} and{' '}
+        {formatMilliDollars(amountMaxMilliDollars)}, with at most 2 decimal places.
+      </div>
+    );
+  }
+
+  if (action === 'deduct' && currentBalanceMilliDollars !== null) {
+    if (currentBalanceMilliDollars <= 0) {
+      return (
+        <div className="text-warning-emphasis small mt-3">
+          The {creditTypeLabel} balance is {formatMilliDollars(currentBalanceMilliDollars)}.
+          Deductions are only allowed from a positive balance.
+        </div>
+      );
+    }
+    if (amountEntered && parsedAmountMilliDollars > currentBalanceMilliDollars) {
+      return (
+        <div className="text-warning-emphasis small mt-3">
+          Amount exceeds the {creditTypeLabel} balance.{' '}
+          {formatMilliDollars(currentBalanceMilliDollars)} will be deducted.
+        </div>
+      );
+    }
+  }
+
+  if (setBalanceDelta != null && setBalanceDelta !== 0) {
+    return (
+      <div className="text-muted small mt-3">
+        Will record {setBalanceDelta > 0 ? '+' : '−'}
+        {formatMilliDollars(Math.abs(setBalanceDelta))} in transaction history.
+      </div>
+    );
+  }
+
+  return null;
 }
