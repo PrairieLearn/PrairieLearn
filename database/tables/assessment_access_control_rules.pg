@@ -5,6 +5,7 @@ columns
     after_complete_score_hidden: boolean
     after_complete_score_visible_from_date: timestamp with time zone
     assessment_id: bigint not null
+    before_release_listed: boolean
     date_control_after_last_deadline_allow_submissions: boolean
     date_control_after_last_deadline_credit: integer
     date_control_due_date: timestamp with time zone
@@ -17,7 +18,6 @@ columns
     date_control_password_overridden: boolean not null default false
     date_control_release_date: timestamp with time zone
     id: bigint not null default nextval('assessment_access_control_rules_id_seq'::regclass)
-    list_before_release: boolean
     number: integer not null
     target_type: enum_assessment_access_control_target_type not null
 

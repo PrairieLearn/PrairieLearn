@@ -260,10 +260,10 @@ describe('Main rule requirement', () => {
     assert.equal(result.errors.length, 0, 'Should have no errors with one main rule');
   });
 
-  it('should fail validation when an override specifies listBeforeRelease', () => {
+  it('should fail validation when an override specifies beforeRelease', () => {
     const rules: AccessControlJsonInput[] = [
       {
-        listBeforeRelease: false,
+        beforeRelease: { listed: false },
         dateControl: {
           releaseDate: '2024-03-14T00:01:00',
           dueDate: '2024-03-21T23:59:00',
@@ -271,7 +271,7 @@ describe('Main rule requirement', () => {
       },
       {
         labels: ['student1'],
-        listBeforeRelease: true,
+        beforeRelease: { listed: true },
         dateControl: {
           dueDate: '2024-03-22T23:59:00',
         },
@@ -284,8 +284,8 @@ describe('Main rule requirement', () => {
     });
 
     assert.isTrue(
-      result.errors.includes('listBeforeRelease can only be specified on the defaults.'),
-      `Expected listBeforeRelease validation error, but got: ${result.errors.join(', ')}`,
+      result.errors.some((err) => err.includes('beforeRelease can only be specified')),
+      `Expected beforeRelease validation error, but got: ${result.errors.join(', ')}`,
     );
   });
 });

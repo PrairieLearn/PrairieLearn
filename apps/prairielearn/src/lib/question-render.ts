@@ -63,6 +63,7 @@ import { selectRubricData } from './manualGrading.js';
 import {
   IssueRenderDataSchema,
   type QuestionUrls,
+  type ResLocalsInstanceQuestionRender,
   type ResLocalsInstanceQuestionRenderAdded,
   type ResLocalsQuestionRenderAdded,
   type SubmissionPanels,
@@ -412,38 +413,43 @@ function buildLocals({
   return locals;
 }
 
+type GetAndRenderVariantInputLocals = {
+  urlPrefix: string;
+  authn_user: ResLocalsAuthnUser['authn_user'];
+  is_administrator: boolean;
+  course: Course;
+  question: Question;
+  user: User;
+  course_instance?: CourseInstance;
+  course_instance_id?: string;
+  assessment?: Assessment;
+  assessment_instance?: AssessmentInstance;
+  assessment_question?: AssessmentQuestion;
+  group_config?: GroupConfig;
+  group_role_permissions?: QuestionGroupPermissions;
+  instance_question?: InstanceQuestion;
+  instance_question_info?: { question_access_mode?: EnumQuestionAccessMode | null };
+  authz_data?: Record<string, any>;
+  authz_result?: Record<string, any>;
+  client_fingerprint_id?: string | null;
+  questionRenderContext?: QuestionRenderContext;
+} & Partial<ResLocalsInstanceQuestionRenderAdded> &
+  Partial<ResLocalsQuestionRenderAdded>;
+
 /**
  * Render all information needed for a question.
  *
  * @param variant_id The variant to render, or null if it should be generated.
  * @param variant_seed Random seed for variant, or null if it should be generated.
  * @param locals The current locals structure to read/write.
+ *
+ * The return value is the render-added fields (they are also written to `locals`).
+ * Callers that need typed access to the rendered state should prefer the return value over reading back from `res.locals`.
  */
 export async function getAndRenderVariant(
   variant_id: string | null,
   variant_seed: string | null,
-  locals: {
-    urlPrefix: string;
-    authn_user: ResLocalsAuthnUser['authn_user'];
-    is_administrator: boolean;
-    course: Course;
-    question: Question;
-    user: User;
-    course_instance?: CourseInstance;
-    course_instance_id?: string;
-    assessment?: Assessment;
-    assessment_instance?: AssessmentInstance;
-    assessment_question?: AssessmentQuestion;
-    group_config?: GroupConfig;
-    group_role_permissions?: QuestionGroupPermissions;
-    instance_question?: InstanceQuestion;
-    instance_question_info?: { question_access_mode?: EnumQuestionAccessMode | null };
-    authz_data?: Record<string, any>;
-    authz_result?: Record<string, any>;
-    client_fingerprint_id?: string | null;
-    questionRenderContext?: QuestionRenderContext;
-  } & Partial<ResLocalsInstanceQuestionRenderAdded> &
-    Partial<ResLocalsQuestionRenderAdded>,
+  locals: GetAndRenderVariantInputLocals,
   {
     urlOverrides = {},
     publicQuestionPreview = false,
@@ -463,13 +469,14 @@ export async function getAndRenderVariant(
      */
     issuesLoadExtraData?: boolean;
   } = {},
-) {
+): Promise<ResLocalsInstanceQuestionRender> {
   const question_course = await getQuestionCourse(locals.question, locals.course);
-  locals.question_is_shared = await sqldb.queryScalar(
+  const question_is_shared = await sqldb.queryScalar(
     sql.select_is_shared,
     { question_id: locals.question.id },
     z.boolean(),
   );
+  locals.question_is_shared = question_is_shared;
 
   const variant = await run(async () => {
     if (variant_id != null) {
@@ -598,20 +605,27 @@ export async function getAndRenderVariant(
   });
 
   const submission = submissions.at(0) ?? null;
-  locals.submissions = submissions;
-  locals.submission = submission;
 
-  if (!locals.assessment && locals.question.show_correct_answer && submissionCount > 0) {
-    // On instructor question pages, only show if true answer is allowed for this question and there is at least one submission.
-    locals.showCorrectAnswer = true;
-  }
-  // We don't want to unconditionally hide things in the "else" case here,
-  // there's other code elsewhere that could have set showCorrectAnswer to true, and we should respect that.
+  const showCorrectAnswer = run(() => {
+    if (!locals.assessment && locals.question.show_correct_answer && submissionCount > 0) {
+      // On instructor question pages, only show if true answer is allowed for this question and there is at least one submission.
+      return true;
+    }
+    // We don't want to unconditionally hide things in the "else" case here,
+    // there's other code elsewhere that could have set showCorrectAnswer to true, and we should respect that.
+    return newLocals.showCorrectAnswer;
+  });
+
+  Object.assign(locals, {
+    submissions,
+    submission,
+    showCorrectAnswer,
+  });
 
   const renderSelection: questionServers.RenderSelection = {
     question: true,
     submissions: submissions.length > 0,
-    answer: locals.showCorrectAnswer ?? false,
+    answer: showCorrectAnswer,
   };
   const htmls = await render({
     variant_course: course,
@@ -623,13 +637,9 @@ export async function getAndRenderVariant(
     question_course,
     locals,
   });
-  locals.extraHeadersHtml = htmls.extraHeadersHtml;
-  locals.questionHtml = htmls.questionHtml;
-  locals.submissionHtmls = htmls.submissionHtmls;
-  locals.answerHtml = htmls.answerHtml;
 
   // Load issues last in case rendering produced any new ones.
-  locals.issues = await sqldb.queryRows(
+  const issues = await sqldb.queryRows(
     sql.select_issues,
     {
       variant_id: variant.id,
@@ -639,15 +649,25 @@ export async function getAndRenderVariant(
     IssueRenderDataSchema,
   );
 
+  const rubric_data = await run(async () => {
+    if (locals.instance_question) {
+      return await selectRubricData({
+        assessment_question: locals.assessment_question,
+        submission,
+      });
+    }
+    return undefined;
+  });
+
   if (locals.instance_question) {
-    locals.rubric_data = await selectRubricData({
-      assessment_question: locals.assessment_question,
-      submission: locals.submission,
-    });
     await async.eachSeries(submissions, manualGrading.populateManualGradingData);
   }
 
-  if (locals.question.type !== 'Freeform') {
+  const questionJsonBase64 = run(() => {
+    if (locals.question.type === 'Freeform') {
+      return undefined;
+    }
+
     const questionJson = JSON.stringify({
       questionFilePath: urls.calculationQuestionFileUrl,
       questionGeneratedFilePath: urls.calculationQuestionGeneratedFileUrl,
@@ -660,13 +680,30 @@ export async function getAndRenderVariant(
       },
       submittedAnswer: submission?.submitted_answer ?? null,
       feedback: submission?.feedback ?? null,
-      showCorrectAnswer: locals.showCorrectAnswer ? variant.true_answer : null,
+      trueAnswer: showCorrectAnswer ? variant.true_answer : null,
       submissions: submissions.length > 0 ? submissions : null,
     });
 
     const encodedJson = encodeURIComponent(questionJson);
-    locals.questionJsonBase64 = Buffer.from(encodedJson).toString('base64');
-  }
+    return Buffer.from(encodedJson).toString('base64');
+  });
+
+  Object.assign(locals, htmls, { issues, rubric_data, questionJsonBase64 });
+
+  return {
+    ...newLocals,
+    ...urls,
+    ...htmls,
+    variant,
+    submission,
+    submissions,
+    showCorrectAnswer,
+    issues,
+    questionJsonBase64,
+    question_is_shared,
+    allowGradeLeftMs,
+    rubric_data,
+  };
 }
 
 /**

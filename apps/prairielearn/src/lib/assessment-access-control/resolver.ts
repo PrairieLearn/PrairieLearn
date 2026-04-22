@@ -87,12 +87,12 @@ export interface AccessControlResolverResult {
   examAccessEnd: Date | null;
   /**
    * Resolved visibility flag: true when the assessment should be listed but
-   * not accessible. This happens when `listBeforeRelease` is set on the rule
-   * AND either the current date is before the release date, there is no
+   * not accessible. This happens when `beforeRelease.listed` is set on the
+   * rule AND either the current date is before the release date, there is no
    * release date configured, or the assessment is PT-gated and the student
    * lacks access (but only while the assessment is still open — closed
    * assessments are not shown as "before release"). Distinct from the raw
-   * `listBeforeRelease` config input.
+   * `beforeRelease.listed` config input.
    */
   showBeforeRelease: boolean;
 }
@@ -180,8 +180,8 @@ export function mergeRules(
 
   const merged: RuntimeAccessControl = {};
 
-  // listBeforeRelease is only configurable on the main rule.
-  if (main.listBeforeRelease !== undefined) merged.listBeforeRelease = main.listBeforeRelease;
+  // beforeRelease is only configurable on the main rule.
+  if (main.beforeRelease !== undefined) merged.beforeRelease = main.beforeRelease;
 
   merged.dateControl = mergeDateControl(main.dateControl, override.dateControl);
   merged.afterComplete = mergeAfterComplete(main.afterComplete, override.afterComplete);
@@ -292,11 +292,11 @@ function computeCredit(
 
   timeline.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  // No due date and no deadlines = no credit granted.
+  // No due date or deadlines means 100% credit anytime after the release date.
   if (timeline.length === 0) {
     return {
-      credit: 0,
-      active: false,
+      credit: 100,
+      active: true,
       beforeRelease: false,
       nextDeadlineDate: null,
       password: null,
@@ -313,7 +313,7 @@ function computeCredit(
       const nextDeadline = entry.date;
       return {
         credit,
-        active: credit > 0,
+        active: true,
         beforeRelease: false,
         nextDeadlineDate: nextDeadline,
         password: dateControl.password ?? null,
@@ -440,13 +440,13 @@ function resolvePrairieTestAccess({
   prairieTestExams,
   prairieTestReservations,
   authzMode,
-  listBeforeRelease,
+  beforeReleaseListed,
   assessmentClosed,
 }: {
   prairieTestExams: { uuid: string; readOnly: boolean }[];
   prairieTestReservations: PrairieTestReservation[];
   authzMode: EnumMode | null;
-  listBeforeRelease: boolean;
+  beforeReleaseListed: boolean;
   assessmentClosed: boolean;
 }): PrairieTestOutcome {
   const hasPrairieTestExams = prairieTestExams.length > 0;
@@ -463,10 +463,10 @@ function resolvePrairieTestAccess({
   if (authzMode !== 'Exam') {
     if (assessmentClosed) return { action: 'continue' };
 
-    // If `listBeforeRelease` is set, list it, but it should not be accessible.
+    // If `beforeRelease.listed` is set, list it, but it should not be accessible.
     // We ONLY do this outside of Exam mode; when in Exam mode, we only show assessments
     // that the user can actually access.
-    if (listBeforeRelease) {
+    if (beforeReleaseListed) {
       return { action: 'deny', result: { ...UNAUTHORIZED_RESULT, showBeforeRelease: true } };
     }
 
@@ -571,29 +571,10 @@ export function resolveAccessControl(
 
   let creditResult = computeCredit(effectiveRule.dateControl, date, authzMode);
 
-  // Resolve PrairieTest access. This is separated from the main flow to keep
-  // the resolver linear: it either denies early, grants PT credit overrides,
-  // or continues with the normal date-control-based result.
-  const ptOutcome = resolvePrairieTestAccess({
-    prairieTestExams: mainRuleInput.prairietestExams,
-    prairieTestReservations,
-    authzMode,
-    listBeforeRelease: effectiveRule.listBeforeRelease ?? false,
-    assessmentClosed:
-      !!effectiveRule.dateControl?.releaseDate &&
-      !creditResult.beforeRelease &&
-      !creditResult.active,
-  });
-  if (ptOutcome.action === 'deny') return ptOutcome.result;
-
-  let examAccessEnd: Date | null = null;
-  if (ptOutcome.action === 'grant') {
-    creditResult = { ...creditResult, credit: ptOutcome.credit, active: ptOutcome.active };
-    examAccessEnd = ptOutcome.examAccessEnd;
-  }
-
-  const timeLimitMin = creditResult.timeLimitMin;
-
+  // Compute visibility up-front so deny results can still honor the course
+  // author's `afterComplete` configuration. The student gradebook displays
+  // rows even when access is denied, and relies on `showClosedAssessmentScore`
+  // to decide whether to show prior scores.
   const showClosedAssessment = resolveVisibility(
     effectiveRule.afterComplete?.questions?.hidden ?? true,
     effectiveRule.afterComplete?.questions?.visibleFromDate,
@@ -608,17 +589,42 @@ export function resolveAccessControl(
     date,
   );
 
-  // Resolve the raw `listBeforeRelease` config flag into a concrete
+  // Resolve PrairieTest access. This is separated from the main flow to keep
+  // the resolver linear: it either denies early, grants PT credit overrides,
+  // or continues with the normal date-control-based result.
+  const ptOutcome = resolvePrairieTestAccess({
+    prairieTestExams: mainRuleInput.prairietestExams,
+    prairieTestReservations,
+    authzMode,
+    beforeReleaseListed: effectiveRule.beforeRelease?.listed ?? false,
+    assessmentClosed:
+      !!effectiveRule.dateControl?.releaseDate &&
+      !creditResult.beforeRelease &&
+      !creditResult.active,
+  });
+  if (ptOutcome.action === 'deny') {
+    return { ...ptOutcome.result, showClosedAssessment, showClosedAssessmentScore };
+  }
+
+  let examAccessEnd: Date | null = null;
+  if (ptOutcome.action === 'grant') {
+    creditResult = { ...creditResult, credit: ptOutcome.credit, active: ptOutcome.active };
+    examAccessEnd = ptOutcome.examAccessEnd;
+  }
+
+  const timeLimitMin = creditResult.timeLimitMin;
+
+  // Resolve the raw `beforeRelease.listed` config flag into a concrete
   // `showBeforeRelease` boolean: true when the flag is set AND either we're
   // before the release date or there is no release date configured.
   const showBeforeRelease =
-    (effectiveRule.listBeforeRelease ?? false) &&
+    (effectiveRule.beforeRelease?.listed ?? false) &&
     (creditResult.beforeRelease || !effectiveRule.dateControl?.releaseDate);
 
   // If the assessment is before its release date and showBeforeRelease is false,
   // the student should not see or access it at all.
   if (creditResult.beforeRelease && !showBeforeRelease) {
-    return { ...UNAUTHORIZED_RESULT };
+    return { ...UNAUTHORIZED_RESULT, showClosedAssessment, showClosedAssessmentScore };
   }
 
   const creditDateString = formatCreditDateString(

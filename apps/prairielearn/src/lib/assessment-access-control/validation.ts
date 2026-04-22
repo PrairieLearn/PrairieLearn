@@ -473,7 +473,7 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
 /**
  * Validates a single access control rule. Checks duplicates, date ordering,
  * credit monotonicity, and target-type constraints (e.g. integrations and
- * listBeforeRelease are only valid on the main rule).
+ * beforeRelease are only valid on the main rule).
  *
  * @param rule The access control rule to validate.
  * @param targetType 'none' for the main rule, 'student_label' or 'enrollment' for overrides.
@@ -489,8 +489,8 @@ export function validateRule(
       errors.push('Release date is required on the defaults when dateControl is specified.');
     }
   } else {
-    if (rule.listBeforeRelease !== undefined) {
-      errors.push('listBeforeRelease can only be specified on the defaults.');
+    if (rule.beforeRelease !== undefined) {
+      errors.push('beforeRelease can only be specified on the defaults.');
     }
     if (rule.integrations != null) {
       errors.push('integrations can only be specified on the defaults.');
