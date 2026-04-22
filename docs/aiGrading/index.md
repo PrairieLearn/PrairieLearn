@@ -1,134 +1,157 @@
-# AI Grading
+# AI grading
 
-## What is AI grading
+## Overview
 
-AI grading is a fully automated grading workflow. Give it a rubric and a set of submissions, and an LLM grades them end-to-end — selecting rubric items, writing a rationale, and recording scores through PrairieLearn's [manual grading web interface](../manualGrading/index.md#manual-grading-using-the-web-user-interface). It runs on any question with `manualPoints` and a rubric, launches from the **Manual Grading** tab, and every result remains open to human override.
+AI grading uses large language models to grade manual questions in PrairieLearn. It applies your rubric to submissions, produces scores, and generates explanations instructors can review, adjust, or override.
 
-## What you can use AI grading for
+*[image]*
 
-AI grading works on any [manually-graded question](../manualGrading/index.md#manual-grading-using-the-web-user-interface). Supported submission types:
+## Use cases
 
-- **Text input.** Short answers, written reasoning, and essays via `pl-string-input` or `pl-rich-text-editor`.
-- **Code.** Source files via `pl-file-editor` or `pl-file-upload`, typically graded for approach, style, or "show your work" alongside auto-grading.
-- **Captured images.** Handwritten math, diagrams, and scratch work via [`pl-image-capture`](../elements/pl-image-capture.md) or image files uploaded through [`pl-file-upload`](../elements/pl-file-upload.md).
+AI grading works on any manually graded question.
 
-Common use cases include handwritten problem sets, code-style feedback, short free-response explanations, and "show your work" portions of auto-graded questions.
+**Supported elements:**
 
-Accuracy depends heavily on having a well-structured rubric — the model uses rubric items as both the scoring scale and the structure of its rationale. See [Creating a rubric for manual grading](../manualGrading/index.md#creating-a-rubric-for-manual-grading).
+- `pl-rich-text-editor`
+- `pl-image-capture`
+- `pl-file-upload`
+- `pl-file-editor`
+- `pl-string-input`
 
-## Writing rubrics for AI grading
+**Common use cases:**
 
-The rubric is your main lever for tuning AI grading. The model reads these fields on every submission; use them deliberately to handle edge cases:
+- Essay and free-response questions
+- Mathematical proofs and derivations
+- Diagrams and handwritten work
+- Code explanations and written reasoning
+- Short-answer justifications
 
-- **Item description.** Student-visible summary. Keep it precise — the model treats it as the item's definition.
-- **Item explanation.** Student-visible context that disambiguates similar items.
-- **Item grader note.** Staff-only instructions on when to select or skip the item. The best place for directives you don't want students to see — e.g. "select only if the student shows the derivation, not just the final answer."
-- **Rubric-level grader guidelines.** Overarching policies across items — e.g. "ignore minor notation differences" or "don't penalize missing units on intermediate steps."
+## Prerequisites
 
-When the AI grades something incorrectly, the fix is almost always a sharper grader note or guideline, not a PrairieLearn setting.
+Before you can use AI grading, you'll need:
 
-## Setting up AI grading
+- A course instance
+- A manually graded question with at least one submission
+- A rubric (strongly recommended — see Best practices)
+- Course owner permissions, required to purchase credits
+- Billing configured for your course instance (see Billing)
 
-Prerequisites:
+## Setup
 
-- The question has `manualPoints` set in its [assessment configuration](../assessment/configuration.md#question-specification).
-- A [rubric](../manualGrading/index.md#creating-a-rubric-for-manual-grading) has been created.
+1. **Navigate to manual grading** for your assessment question.
 
-Steps:
+    *[Screenshot: Manual grading page.]*
 
-1.  Open the **Manual Grading** tab and click into the question.
+2. **Open the "AI grading" dropdown.**
 
-    [Screenshot: Manual Grading tab listing questions]
+    *[Screenshot: Manual grading page with the AI grading dropdown open, showing available actions.]*
 
-2.  Turn on the **AI grading mode** toggle in the action bar at the top of the grading page.
+3. **Select a model.** Use PrairieLearn's recommended model for your question type.
 
-    [Screenshot: AI grading mode toggle in the on position]
+    *[Screenshot: Model selection options.]*
 
-3.  Set up billing for the course instance. Only **course owners** can do this. Choose **one**:
-    - **PrairieLearn-managed credits.** Open **Instance Admin → AI Grading**, click **Purchase credits**, pick a package ($10, $25, or $100) or enter a custom amount, and complete Stripe checkout.
+4. **Grade submissions.** We recommend testing on a small batch (5–10 submissions), reviewing the output, and refining your rubric before running on the full set.
 
-      [Screenshot: Purchase credits modal]
+## Best practices
 
-    - **Custom API keys.** Open **Instance Admin → AI Grading**, click **Add API key**, choose a provider, and paste the key:
+- **Use PrairieLearn's recommended model.** Model choice can significantly impact grading accuracy, particularly for image submissions — Gemini currently outperforms GPT and Claude at transcription.
+- **Use rubrics over point-based grading.** Rubrics give the model clear, discrete criteria, which significantly improves consistency.
+- **Write well-specified rubric items.** Each item should describe exactly what earns or loses credit. Ambiguous items produce ambiguous grades.
+- **Use grader guidelines.** This field is for instructions the model should follow but that shouldn't appear in the student-facing rubric — e.g., "accept equivalent algebraic forms" or "do not penalize minor notation differences."
+- **Iterate.** If you see systematic errors in the first batch, refine the rubric rather than overriding grades one by one.
 
-      | Provider      | Key type                   | Key prefix | Where to get one                                                                   |
-      | ------------- | -------------------------- | ---------- | ---------------------------------------------------------------------------------- |
-      | **OpenAI**    | Standard API key           | `sk-...`   | [platform.openai.com/api-keys](https://platform.openai.com/api-keys)               |
-      | **Anthropic** | Standard API key           | `sk-ant-…` | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) |
-      | **Google**    | Gemini API key (AI Studio) | `AIza…`    | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)           |
+## Reviewing AI grades
 
-      Keys are encrypted at rest and used only for AI grading on this course instance. Add only the provider(s) whose models you plan to use.
+For each submission, AI grading produces:
 
-      [Screenshot: Add API key modal]
+- **Explanation** — the model's reasoning for the grade it assigned, item by item.
+- **Transcription** *(image submissions only)* — the model's text rendering of what it saw in the image, useful for catching misreads.
 
-4.  Use **Grade with AI** on the question's grading page to run a pass over all submissions or a selected subset.
+    *[Screenshot: Transcription view.]*
 
-    [Screenshot: Grade with AI action]
+- **AI agreement indicator** — when a submission has also been human-graded, shows whether the AI grade matches.
 
-## How billing works
+    *[Screenshot: AI agreement indicator.]*
 
-PrairieLearn offers two billing modes, both configured **per course instance** — credits and API keys don't carry over between course instances, and only **course owners** can change them.
+Instructors can accept, adjust, or fully override any AI grade.
 
-### PrairieLearn-managed credits
+*[Screenshot: Instructor override interface.]*
 
-Buy credits via Stripe on the **AI Grading** admin page. PrairieLearn calls the provider on your behalf and deducts cost from your pool.
+## The grading process
 
-- **Packages**: $10 (testing), $25 (small courses), $100 (large courses).
-- **Minimum** $10, **maximum** $10,000.
-- **Infrastructure fee**: 20% markup on top of raw provider cost.
-- **Approximate cost**: ~$0.03 per submission, depending on model, submission format, and question content (see [What affects cost](#what-affects-cost)).
+AI grading assembles a prompt from the following inputs and sends it to the selected model.
 
-#### Rate limits
+**Inputs sent to the model:**
 
-PL-managed usage is capped at **$10 of AI grading spend per course instance per hour** by default. When the cap is hit, in-flight calls finish and remaining submissions in the batch are skipped with `"You've reached the hourly usage cap for AI grading. Please try again later."` Re-run the pass after the hour rolls over. Custom API keys are not rate-limited by PrairieLearn — the provider's own limits apply.
+- Tuned grader prompt (maintained by PrairieLearn)
+- Question prompt
+- Correct answer
+- Rubric
+- Student submission
 
-#### When credits run out
+**Outputs returned:**
 
-If a batch starts with credits and the pool is exhausted mid-run, in-flight calls still complete and are deducted, while remaining submissions are skipped with `"No credits remaining."` Balances are **clamped at $0 and never go negative** — if a completed call would cost more than the remaining balance, the deduction is capped at whatever's left, so you can't be overcharged. To grade the skipped submissions, purchase more credits on the **AI Grading** admin page and re-run the pass.
+- Graded rubric (item-by-item scoring)
+- Explanation
+- Transcription *(image submissions only)*
 
-### Custom API keys
+**Concurrency.** AI grading keeps up to 20 submissions in progress at any time. When one finishes, the next begins automatically.
 
-Bring your own OpenAI, Anthropic, or Google key on the **AI Grading** admin page. PrairieLearn calls the provider with your key; **the provider bills you directly** — no markup, no PrairieLearn rate limit. Token usage is still recorded on course usage dashboards.
+**Privacy.** Student identifying information (name, email, UIN) is not sent to LLM providers, as long as it is not embedded in the submission itself or in the question or correct answer.
 
-### What affects cost
+## Billing
 
-Cost is token-based under both modes. The main drivers:
+AI grading requires either PrairieLearn-managed credits or a custom API key. Billing is configured once per course instance.
 
-- **Model.** Per-token rates vary widely. Supported models:
-  - **OpenAI**: GPT 5-mini, GPT 5.1
-  - **Anthropic**: Claude Haiku 4.5, Sonnet 4.5, Opus 4.5
-  - **Google**: Gemini 3.1 Pro, Gemini 2.5 Flash, Gemini 3 Flash
+### Billing modes
 
-  The default is `gpt-5-mini-2025-08-07`. Smaller models (GPT 5-mini, Gemini Flash, Claude Haiku) cost substantially less than frontier models (GPT 5.1, Claude Opus 4.5, Gemini 3.1 Pro).
+- **PrairieLearn-managed credits** — simpler setup, no provider account needed. You purchase credits through PrairieLearn and pay a 20% infrastructure fee on top of provider costs.
+- **Custom API key** — bring your own provider key (OpenAI, Anthropic, Google). You're billed directly by the provider and PrairieLearn charges no infrastructure fee.
 
-- **Submission format.** Image submissions cost significantly more than text, because images consume many input tokens.
-- **Question content size.** The prompt includes the question HTML, the full rubric (descriptions, explanations, grader notes), the correct answer, and any auto-grading partial scores. Larger questions and rubrics mean larger prompts.
-- **Reasoning tokens.** Reasoning-capable models (GPT 5.1, Claude Opus 4.5) bill for invisible reasoning tokens on top of output.
-- **Cached input.** Provider prompt caching discounts the shared question/rubric portion of the prompt, so per-submission cost usually drops across a run.
+### Credit types
 
-Under **PL-managed billing**, the per-call charge is `(Σ tokens × per-model rate) × 1.20`, deducted in milli-dollars from your credit pool. Under **custom API keys**, the raw provider charge bills directly; PrairieLearn records the same token totals for transparency.
+- **Transferable credits** can be moved between course instances.
+- **Non-transferable credits** are locked to the instance they were added to.
 
-## How AI grading processes a submission
+### Billing configuration
 
-- **Inputs.** For each submission, PrairieLearn builds a prompt from the question, the submission, the rubric, the correct answer, any auto-grading partial scores, and grader notes.
-- **Concurrency.** Up to 20 submissions are graded in parallel, so a full assessment finishes in minutes.
-- **Image rotation correction** _(Gemini models)._ PrairieLearn detects handwriting orientation and rotates the image before sending it to the model, which significantly improves OCR accuracy on phone photos taken at an angle.
+1. Go to **Settings → Billing** in your course instance.
+2. Either purchase credits or add a custom API key.
 
-## Reviewing AI grading output
+*[Screenshot: Billing page, showing the "Purchase credits" and "Custom API key" options.]*
 
-After a run, the AI fills in the standard manual-grading panel with its rubric selections and score, just like a human grader. Two diagnostic outputs are visible on the grading page alongside the normal controls:
+## Cost and runtime
 
-- **Explanation.** The model's rationale for each rubric item. Use it to spot-check reasoning. If the explanation disagrees with your judgment, the right fix is usually a sharper grader note or guideline.
-- **Transcription** _(image submissions only)._ The model's interpretation of the handwriting or drawing, written out before grading. Transcription errors are the dominant source of mistakes on image submissions — if the transcription is wrong, the grading is usually wrong too. Scanning it is the fastest way to catch OCR failures.
+### Factors affecting cost and runtime
 
-Override the AI's decision from the same grading page by changing the rubric items or adjusting the score directly.
+| Factor | Increases cost | Decreases cost |
+|---|---|---|
+| Model | Larger, reasoning models | Smaller, non-reasoning models |
+| Submission type | Image submissions | Text submissions |
+| Question content size | Longer prompts and reference answers | Shorter prompts and reference answers |
+| Cached input | — | Repeated content across submissions (e.g., question text, rubric) |
 
-## Comparing AI and human grading
+PrairieLearn-managed keys carry a 20% infrastructure fee on top of provider costs.
 
-When both a human grader and the AI have graded the same submission, the question's manual-grading page adds an **AI agreement** column to the submission list:
+### Benchmarks
 
-- A green checkmark means the AI and the human selected the exact same rubric items.
-- `+N` or `-N` points (in red) means the AI's score differed from the human's by that many points.
-- Each per-item disagreement is listed inline — a plus icon for rubric items the AI selected but the human didn't (false positive), a minus icon for items the human selected but the AI didn't (false negative).
+Costs vary course-to-course depending on rubric length, submission length, and model choice. The numbers below are representative, not guarantees.
 
-Use the **Export AI grading statistics** button on the same page to download an assessment-wide report with per-rubric-item confusion matrices (TP / TN / FP / FN) along with accuracy, precision, recall, and F1. This is useful for evaluating AI grading on a pilot batch before running it at scale, or for auditing the AI's decisions against a human-graded sample.
+*Benchmarks below were run using PrairieLearn-managed keys and include the 20% infrastructure fee.*
+
+**Free-response question, text grading (200 submissions):**
+
+- *[$xx.xx — add benchmark]*
+- *[$xx.xx — add benchmark]*
+
+**Proof question, image grading (~241 submissions):**
+
+| Model | Cost / submission | Time / submission |
+|---|---|---|
+| GPT-5.4 mini | $0.0067 | 2.9s |
+| GPT-5.4 | $0.0159 | 1.4s |
+| Gemini 3.1 Pro | $0.0504 | 1.5s |
+
+*Per-submission times are measured with many submissions in flight — a single submission graded on its own will take longer.*
+
+*[Verify model names before publishing.]*
