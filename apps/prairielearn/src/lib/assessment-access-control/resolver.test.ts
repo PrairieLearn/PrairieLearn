@@ -153,7 +153,7 @@ describe('resolveAccessControl', () => {
   });
 
   describe('main rule with date control', () => {
-    it('denies access before release date when listBeforeRelease is false', () => {
+    it('denies access before release date when beforeRelease.listed is false', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -231,6 +231,35 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(false);
     });
 
+    it('handles late deadline with 0% credit', () => {
+      const rule = makeMainRule({
+        dateControl: {
+          releaseDate: '2025-03-01T00:00:00Z',
+          dueDate: '2025-03-10T00:00:00Z',
+          lateDeadlines: [{ date: '2025-03-15T00:00:00Z', credit: 0 }],
+        },
+      });
+
+      // Check during the late deadline period: should be active for no credit.
+      // This is a regression test; we used to treat 0% credit as active:false.
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        date: new Date('2025-03-12T00:00:00Z'),
+      });
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(true);
+
+      // Check again after the late deadline.
+      const resultAfter = resolveAccessControl({
+        ...baseInput,
+        rules: [rule],
+        date: new Date('2025-03-16T00:00:00Z'),
+      });
+      expect(resultAfter.credit).toBe(0);
+      expect(resultAfter.active).toBe(false);
+    });
+
     it('uses afterLastDeadline credit when specified', () => {
       const result = resolveAccessControl({
         ...baseInput,
@@ -295,7 +324,7 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            listBeforeRelease: true,
+            beforeRelease: { listed: true },
             dateControl: {
               releaseDate: '2025-04-01T00:00:00Z',
               dueDate: '2025-05-01T00:00:00Z',
@@ -315,7 +344,7 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            listBeforeRelease: true,
+            beforeRelease: { listed: true },
             dateControl: {
               releaseDate: '2025-03-01T00:00:00Z',
               dueDate: '2025-05-01T00:00:00Z',
@@ -848,6 +877,264 @@ describe('resolveAccessControl', () => {
       expect(result.credit).toBe(100);
       expect(result.active).toBe(true);
     });
+
+    describe('after-complete visibility with PrairieTest', () => {
+      const ptExam = { uuid: 'pt-exam-1', readOnly: false };
+      const ptExamReadOnly = { uuid: 'pt-exam-1', readOnly: true };
+      const validReservation: PrairieTestReservation = {
+        examUuid: 'pt-exam-1',
+        accessEnd: new Date('2025-03-15T14:00:00Z'),
+      };
+
+      const visibilityConfigs = [
+        {
+          name: 'hide both questions and score',
+          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+          showClosedAssessment: false,
+          showClosedAssessmentScore: false,
+        },
+        {
+          name: 'show both questions and score',
+          afterComplete: { questions: { hidden: false }, score: { hidden: false } },
+          showClosedAssessment: true,
+          showClosedAssessmentScore: true,
+        },
+        {
+          name: 'hide questions, show score',
+          afterComplete: { questions: { hidden: true }, score: { hidden: false } },
+          showClosedAssessment: false,
+          showClosedAssessmentScore: true,
+        },
+        {
+          name: 'show questions, hide score',
+          afterComplete: { questions: { hidden: false }, score: { hidden: true } },
+          showClosedAssessment: true,
+          showClosedAssessmentScore: false,
+        },
+      ];
+
+      it.each(visibilityConfigs)(
+        'active PT reservation: $name',
+        ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+          const result = resolveAccessControl({
+            ...baseInput,
+            authzMode: 'Exam',
+            rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExam] }],
+            prairieTestReservations: [validReservation],
+          });
+          expect(result.authorized).toBe(true);
+          expect(result.active).toBe(true);
+          expect(result.showClosedAssessment).toBe(showClosedAssessment);
+          expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
+        },
+      );
+
+      it.each(visibilityConfigs)(
+        'readOnly PT reservation: $name',
+        ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+          const result = resolveAccessControl({
+            ...baseInput,
+            authzMode: 'Exam',
+            rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExamReadOnly] }],
+            prairieTestReservations: [validReservation],
+          });
+          expect(result.authorized).toBe(true);
+          expect(result.active).toBe(false);
+          expect(result.showClosedAssessment).toBe(showClosedAssessment);
+          expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
+        },
+      );
+
+      // The gradebook displays rows even when access is denied and relies on
+      // `showClosedAssessmentScore` to decide whether to reveal prior scores, so
+      // the deny path must still honor the configured visibility flags.
+      it.each(visibilityConfigs)(
+        'Exam mode with no PT reservation: $name',
+        ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
+          const result = resolveAccessControl({
+            ...baseInput,
+            authzMode: 'Exam',
+            rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExam] }],
+            prairieTestReservations: [],
+          });
+          expect(result.authorized).toBe(false);
+          expect(result.showClosedAssessment).toBe(showClosedAssessment);
+          expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
+        },
+      );
+    });
+
+    describe('showBeforeRelease with PrairieTest', () => {
+      const ptExam = { uuid: 'pt-exam-1', readOnly: false };
+
+      it('lists but does not authorize PT assessment when beforeRelease.listed set and not in exam mode', () => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          rules: [
+            { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam] },
+          ],
+        });
+        // Not in exam mode but beforeRelease.listed → listed but not authorized
+        expect(result.authorized).toBe(false);
+        expect(result.showBeforeRelease).toBe(true);
+        expect(result.active).toBe(false);
+      });
+
+      it('hides PT assessment when beforeRelease.listed false and not in exam mode', () => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
+        });
+        expect(result.authorized).toBe(false);
+      });
+
+      it('does not list or authorize PT assessment in exam mode when no matching reservation', () => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [
+            { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam] },
+          ],
+          prairieTestReservations: [
+            { examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
+          ],
+        });
+        expect(result.authorized).toBe(false);
+        expect(result.showBeforeRelease).toBe(false);
+        expect(result.active).toBe(false);
+      });
+
+      it('hides PT assessment when beforeRelease.listed false and no matching reservation', () => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
+          prairieTestReservations: [
+            { examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
+          ],
+        });
+        expect(result.authorized).toBe(false);
+        expect(result.showBeforeRelease).toBe(false);
+        expect(result.active).toBe(false);
+      });
+
+      it('does not grant access to PT assessment via beforeRelease.listed bypass', () => {
+        // Regression test: beforeRelease.listed must not set authorized=true for
+        // PrairieTest-gated assessments, otherwise students can start instances
+        // by posting directly to the assessment URL.
+        for (const authzMode of ['Public', 'Exam'] as const) {
+          const result = resolveAccessControl({
+            ...baseInput,
+            authzMode,
+            rules: [
+              { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam] },
+            ],
+            prairieTestReservations:
+              authzMode === 'Exam'
+                ? [{ examUuid: 'wrong-exam', accessEnd: new Date('2025-04-01T00:00:00Z') }]
+                : [],
+          });
+          expect(result.authorized).toBe(false);
+          expect(result.showBeforeRelease).toBe(authzMode === 'Public');
+          expect(result.credit).toBe(0);
+        }
+      });
+
+      it('shows closed PT assessment as closed instead of "before release" when past due date', () => {
+        // When a PT-gated assessment has date controls and is past its due
+        // date, it should show as a normal closed assessment rather than "Not
+        // yet open" indefinitely.
+        for (const authzMode of ['Public', 'Exam'] as const) {
+          const result = resolveAccessControl({
+            ...baseInput,
+            authzMode,
+            rules: [
+              {
+                ...makeMainRule({
+                  beforeRelease: { listed: true },
+                  dateControl: {
+                    releaseDate: '2025-01-01T00:00:00Z',
+                    dueDate: '2025-02-01T00:00:00Z',
+                  },
+                }),
+                prairietestExams: [ptExam],
+              },
+            ],
+            prairieTestReservations:
+              authzMode === 'Exam'
+                ? [{ examUuid: 'wrong-exam', accessEnd: new Date('2025-04-01T00:00:00Z') }]
+                : [],
+          });
+          expect(result.showBeforeRelease).toBe(false);
+          expect(result.authorized).toBe(true);
+          expect(result.active).toBe(false);
+        }
+      });
+
+      it('grants access via PT reservation even when assessment is past due date', () => {
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [
+            {
+              ...makeMainRule({
+                dateControl: {
+                  releaseDate: '2025-01-01T00:00:00Z',
+                  dueDate: '2025-02-01T00:00:00Z',
+                },
+              }),
+              prairietestExams: [ptExam],
+            },
+          ],
+          prairieTestReservations: [
+            { examUuid: ptExam.uuid, accessEnd: new Date('2025-04-01T00:00:00Z') },
+          ],
+        });
+        expect(result.authorized).toBe(true);
+        expect(result.credit).toBe(100);
+        expect(result.active).toBe(true);
+        expect(result.showBeforeRelease).toBe(false);
+      });
+
+      it('denies access when Exam mode outlives the PrairieTest reservation', () => {
+        // Regression test for #12579: `ip_to_mode` can continue reporting Exam
+        // mode for a short grace period after PrairieTest has already ended the
+        // reservation.
+        const result = resolveAccessControl({
+          ...baseInput,
+          authzMode: 'Exam',
+          rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
+          prairieTestReservations: [],
+        });
+        expect(result.authorized).toBe(false);
+        expect(result.credit).toBe(0);
+        expect(result.active).toBe(false);
+        expect(result.examAccessEnd).toBeNull();
+        expect(result.showBeforeRelease).toBe(false);
+      });
+
+      it('still shows "before release" for PT assessment that is open but student lacks access', () => {
+        // When a PT-gated assessment has date controls and is within its open
+        // period, students without PT access should still see "Not yet open".
+        const result = resolveAccessControl({
+          ...baseInput,
+          rules: [
+            {
+              ...makeMainRule({
+                beforeRelease: { listed: true },
+                dateControl: {
+                  releaseDate: '2025-01-01T00:00:00Z',
+                  dueDate: '2025-06-01T00:00:00Z',
+                },
+              }),
+              prairietestExams: [ptExam],
+            },
+          ],
+        });
+        expect(result.showBeforeRelease).toBe(true);
+        expect(result.active).toBe(false);
+      });
+    });
   });
 
   describe('time limit computation', () => {
@@ -1050,92 +1337,6 @@ describe('resolveAccessControl', () => {
       });
       expect(result.showClosedAssessmentScore).toBe(true);
     });
-  });
-
-  describe('after-complete visibility with PrairieTest', () => {
-    const ptExam = { uuid: 'pt-exam-1', readOnly: false };
-    const ptExamReadOnly = { uuid: 'pt-exam-1', readOnly: true };
-    const validReservation: PrairieTestReservation = {
-      examUuid: 'pt-exam-1',
-      accessEnd: new Date('2025-03-15T14:00:00Z'),
-    };
-
-    const visibilityConfigs = [
-      {
-        name: 'hide both questions and score',
-        afterComplete: { questions: { hidden: true }, score: { hidden: true } },
-        showClosedAssessment: false,
-        showClosedAssessmentScore: false,
-      },
-      {
-        name: 'show both questions and score',
-        afterComplete: { questions: { hidden: false }, score: { hidden: false } },
-        showClosedAssessment: true,
-        showClosedAssessmentScore: true,
-      },
-      {
-        name: 'hide questions, show score',
-        afterComplete: { questions: { hidden: true }, score: { hidden: false } },
-        showClosedAssessment: false,
-        showClosedAssessmentScore: true,
-      },
-      {
-        name: 'show questions, hide score',
-        afterComplete: { questions: { hidden: false }, score: { hidden: true } },
-        showClosedAssessment: true,
-        showClosedAssessmentScore: false,
-      },
-    ];
-
-    it.each(visibilityConfigs)(
-      'active PT reservation: $name',
-      ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
-        const result = resolveAccessControl({
-          ...baseInput,
-          authzMode: 'Exam',
-          rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExam] }],
-          prairieTestReservations: [validReservation],
-        });
-        expect(result.authorized).toBe(true);
-        expect(result.active).toBe(true);
-        expect(result.showClosedAssessment).toBe(showClosedAssessment);
-        expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
-      },
-    );
-
-    it.each(visibilityConfigs)(
-      'readOnly PT reservation: $name',
-      ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
-        const result = resolveAccessControl({
-          ...baseInput,
-          authzMode: 'Exam',
-          rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExamReadOnly] }],
-          prairieTestReservations: [validReservation],
-        });
-        expect(result.authorized).toBe(true);
-        expect(result.active).toBe(false);
-        expect(result.showClosedAssessment).toBe(showClosedAssessment);
-        expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
-      },
-    );
-
-    // The gradebook displays rows even when access is denied and relies on
-    // `showClosedAssessmentScore` to decide whether to reveal prior scores, so
-    // the deny path must still honor the configured visibility flags.
-    it.each(visibilityConfigs)(
-      'Exam mode with no PT reservation: $name',
-      ({ afterComplete, showClosedAssessment, showClosedAssessmentScore }) => {
-        const result = resolveAccessControl({
-          ...baseInput,
-          authzMode: 'Exam',
-          rules: [{ ...makeMainRule({ afterComplete }), prairietestExams: [ptExam] }],
-          prairieTestReservations: [],
-        });
-        expect(result.authorized).toBe(false);
-        expect(result.showClosedAssessment).toBe(showClosedAssessment);
-        expect(result.showClosedAssessmentScore).toBe(showClosedAssessmentScore);
-      },
-    );
   });
 
   describe('credit date string formatting', () => {
@@ -1412,10 +1613,10 @@ describe('resolveAccessControl', () => {
   });
 
   describe('showBeforeRelease edge cases', () => {
-    it('shows before release when listBeforeRelease set without dateControl', () => {
+    it('shows before release when beforeRelease.listed set without dateControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [makeMainRule({ listBeforeRelease: true })],
+        rules: [makeMainRule({ beforeRelease: { listed: true } })],
       });
       // No dateControl → no release mechanism → perpetually "before release"
       expect(result.authorized).toBe(false);
@@ -1428,7 +1629,7 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            listBeforeRelease: true,
+            beforeRelease: { listed: true },
             dateControl: {
               dueDate: '2025-04-01T00:00:00Z',
             },
@@ -1441,7 +1642,7 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(false);
     });
 
-    it('does not show before release without listBeforeRelease and no dateControl', () => {
+    it('does not show before release without beforeRelease.listed and no dateControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [makeMainRule({})],
@@ -1450,177 +1651,11 @@ describe('resolveAccessControl', () => {
       expect(result.showBeforeRelease).toBe(false);
     });
   });
-
-  describe('showBeforeRelease with PrairieTest', () => {
-    const ptExam = { uuid: 'pt-exam-1', readOnly: false };
-
-    it('lists but does not authorize PT assessment when listBeforeRelease set and not in exam mode', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [{ ...makeMainRule({ listBeforeRelease: true }), prairietestExams: [ptExam] }],
-      });
-      // Not in exam mode but listBeforeRelease → listed but not authorized
-      expect(result.authorized).toBe(false);
-      expect(result.showBeforeRelease).toBe(true);
-      expect(result.active).toBe(false);
-    });
-
-    it('hides PT assessment when listBeforeRelease false and not in exam mode', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
-      });
-      expect(result.authorized).toBe(false);
-    });
-
-    it('does not list or authorize PT assessment in exam mode when no matching reservation', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        authzMode: 'Exam',
-        rules: [{ ...makeMainRule({ listBeforeRelease: true }), prairietestExams: [ptExam] }],
-        prairieTestReservations: [
-          { examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
-        ],
-      });
-      expect(result.authorized).toBe(false);
-      expect(result.showBeforeRelease).toBe(false);
-      expect(result.active).toBe(false);
-    });
-
-    it('hides PT assessment when listBeforeRelease false and no matching reservation', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        authzMode: 'Exam',
-        rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
-        prairieTestReservations: [
-          { examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
-        ],
-      });
-      expect(result.authorized).toBe(false);
-      expect(result.showBeforeRelease).toBe(false);
-      expect(result.active).toBe(false);
-    });
-
-    it('does not grant access to PT assessment via listBeforeRelease bypass', () => {
-      // Regression test: listBeforeRelease must not set authorized=true for
-      // PrairieTest-gated assessments, otherwise students can start instances
-      // by posting directly to the assessment URL.
-      for (const authzMode of ['Public', 'Exam'] as const) {
-        const result = resolveAccessControl({
-          ...baseInput,
-          authzMode,
-          rules: [{ ...makeMainRule({ listBeforeRelease: true }), prairietestExams: [ptExam] }],
-          prairieTestReservations:
-            authzMode === 'Exam'
-              ? [{ examUuid: 'wrong-exam', accessEnd: new Date('2025-04-01T00:00:00Z') }]
-              : [],
-        });
-        expect(result.authorized).toBe(false);
-        expect(result.showBeforeRelease).toBe(authzMode === 'Public');
-        expect(result.credit).toBe(0);
-      }
-    });
-
-    it('shows closed PT assessment as closed instead of "before release" when past due date', () => {
-      // When a PT-gated assessment has date controls and is past its due
-      // date, it should show as a normal closed assessment rather than "Not
-      // yet open" indefinitely.
-      for (const authzMode of ['Public', 'Exam'] as const) {
-        const result = resolveAccessControl({
-          ...baseInput,
-          authzMode,
-          rules: [
-            {
-              ...makeMainRule({
-                listBeforeRelease: true,
-                dateControl: {
-                  releaseDate: '2025-01-01T00:00:00Z',
-                  dueDate: '2025-02-01T00:00:00Z',
-                },
-              }),
-              prairietestExams: [ptExam],
-            },
-          ],
-          prairieTestReservations:
-            authzMode === 'Exam'
-              ? [{ examUuid: 'wrong-exam', accessEnd: new Date('2025-04-01T00:00:00Z') }]
-              : [],
-        });
-        expect(result.showBeforeRelease).toBe(false);
-        expect(result.authorized).toBe(true);
-        expect(result.active).toBe(false);
-      }
-    });
-
-    it('grants access via PT reservation even when assessment is past due date', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        authzMode: 'Exam',
-        rules: [
-          {
-            ...makeMainRule({
-              dateControl: {
-                releaseDate: '2025-01-01T00:00:00Z',
-                dueDate: '2025-02-01T00:00:00Z',
-              },
-            }),
-            prairietestExams: [ptExam],
-          },
-        ],
-        prairieTestReservations: [
-          { examUuid: ptExam.uuid, accessEnd: new Date('2025-04-01T00:00:00Z') },
-        ],
-      });
-      expect(result.authorized).toBe(true);
-      expect(result.credit).toBe(100);
-      expect(result.active).toBe(true);
-      expect(result.showBeforeRelease).toBe(false);
-    });
-
-    it('denies access when Exam mode outlives the PrairieTest reservation', () => {
-      // Regression test for #12579: `ip_to_mode` can continue reporting Exam
-      // mode for a short grace period after PrairieTest has already ended the
-      // reservation.
-      const result = resolveAccessControl({
-        ...baseInput,
-        authzMode: 'Exam',
-        rules: [{ ...makeMainRule(), prairietestExams: [ptExam] }],
-        prairieTestReservations: [],
-      });
-      expect(result.authorized).toBe(false);
-      expect(result.credit).toBe(0);
-      expect(result.active).toBe(false);
-      expect(result.examAccessEnd).toBeNull();
-      expect(result.showBeforeRelease).toBe(false);
-    });
-
-    it('still shows "before release" for PT assessment that is open but student lacks access', () => {
-      // When a PT-gated assessment has date controls and is within its open
-      // period, students without PT access should still see "Not yet open".
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [
-          {
-            ...makeMainRule({
-              listBeforeRelease: true,
-              dateControl: {
-                releaseDate: '2025-01-01T00:00:00Z',
-                dueDate: '2025-06-01T00:00:00Z',
-              },
-            }),
-            prairietestExams: [ptExam],
-          },
-        ],
-      });
-      expect(result.showBeforeRelease).toBe(true);
-      expect(result.active).toBe(false);
-    });
-  });
 });
 
 describe('mergeRules', () => {
   it('returns main rule when override is null', () => {
-    const main = toRuntime({ listBeforeRelease: true });
+    const main = toRuntime({ beforeRelease: { listed: true } });
     expect(mergeRules(main, null)).toEqual(main);
   });
 
@@ -1755,12 +1790,12 @@ describe('mergeRules', () => {
     });
   });
 
-  it('ignores listBeforeRelease on overrides', () => {
+  it('ignores beforeRelease on overrides', () => {
     const result = mergeRules(
-      toRuntime({ listBeforeRelease: false }),
-      toRuntime({ listBeforeRelease: true }),
+      toRuntime({ beforeRelease: { listed: false } }),
+      toRuntime({ beforeRelease: { listed: true } }),
     );
-    expect(result.listBeforeRelease).toBe(false);
+    expect(result.beforeRelease?.listed).toBe(false);
   });
 });
 
@@ -1802,9 +1837,9 @@ describe('cascadeOverrides', () => {
     expect(result.afterComplete?.score?.hidden).toBe(true);
   });
 
-  it('does not carry listBeforeRelease through cascaded overrides', () => {
-    const result = cascadeOverrides(toRuntime({ listBeforeRelease: true }), toRuntime({}));
-    expect(result.listBeforeRelease).toBeUndefined();
+  it('does not carry beforeRelease through cascaded overrides', () => {
+    const result = cascadeOverrides(toRuntime({ beforeRelease: { listed: true } }), toRuntime({}));
+    expect(result.beforeRelease).toBeUndefined();
   });
 });
 

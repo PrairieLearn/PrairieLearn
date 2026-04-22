@@ -104,14 +104,14 @@ jobs:
         # ensure that the tests fail more quickly so that people can fix them.
         timeout-minutes: 30
 
-  test-prairielearn-native:
-    name: Native (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+  test-prairielearn-vitest:
+    name: Vitest (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3, 4]
-        shardTotal: [4]
+        shardIndex: [1, 2, 3, 4, 5, 6]
+        shardTotal: [6]
 
     env:
       CAN_LOGIN_TO_DOCKERHUB: ${{ secrets.DOCKERHUB_USERNAME != '' }}
@@ -130,98 +130,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # The default Azure apt mirror on GitHub Actions runners is frequently
-      # slow or throttled, causing apt-get operations to take minutes instead
-      # of seconds. This action finds and configures a faster mirror.
-      - uses: vegardit/fast-apt-mirror.sh@v1
-        with:
-          exclude-current: true # Don't include the current APT mirror since it is unreliable.
-
-      # We uninstall `man-db` to speed up the installation of other packages
-      # by avoiding building man pages for them. As this is a non-interactive
-      # environment, we will never need man pages anyways.
-      #
-      # We don't install `texlive` since it's a huge package and the test suite
-      # doesn't require it.
-      - name: Install OS packages
-        run: |
-          sudo apt-get purge -y man-db
-          sudo apt-get install -y --no-install-recommends postgresql-common
-          # Configure Postgres repository, purge existing postgres version, and install v17
-          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y -p -i -v 17
-          sudo apt-get install -y --no-install-recommends postgresql-17-pgvector git gcc libc6-dev graphviz libgraphviz-dev redis
-
-      # The two `sed` commands are here to handle the fact that the default
-      # configuration of Postgres on Ubuntu is to use `local` and `scram-sha-256`
-      # as the authentication mechanisms. However, our config defaults to not
-      # having any password at all, and we don't have an easy way to specify
-      # config overrides, which means we can't just create a new user with a
-      # password and have our code use that instead.
-      #
-      # We also update the configuration to try to speed up Postgres itself.
-      - name: Start Postgres
-        run: |
-          sudo sed -i 's/ local/ trust/g' /etc/postgresql/17/main/pg_hba.conf
-          sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/17/main/pg_hba.conf
-
-          sudo tee -a /etc/postgresql/17/main/postgresql.conf <<EOF
-          fsync = off
-          full_page_writes = off
-          synchronous_commit = off
-          EOF
-
-          sudo systemctl restart postgresql.service
-
-      - name: Set up Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-          cache: 'yarn'
-      - name: Cache node-gyp headers
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/node-gyp
-          key: node-gyp-${{ runner.os }}
-      - name: Preinstall node-gyp headers
-        run: yarn dlx node-gyp install
-      - name: Install Node dependencies
-        run: |
-          yarn install --immutable --inline-builds
-          yarn playwright install chromium --with-deps
-        env:
-          # Disable hardened mode to eke out a little more speed.
-          YARN_ENABLE_HARDENED_MODE: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-          cache-dependency-glob: 'pyproject.toml'
-          cache-suffix: core
-      - name: Install core Python dependencies
-        env:
-          UV_LOCKED: 1
-        run: make python-deps-core
-
-      - name: Set up Turborepo cache
-        uses: actions/cache@v5
-        with:
-          path: .turbo/cache
-          key: ${{ runner.os }}-turbo-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-
-      - name: Build all code
-        run: make build
-
-      - name: Configure git
-        run: |
-          git config --global user.email "dev@example.com"
-          git config --global user.name "Dev User"
-          git config --global safe.directory '*'
+      - uses: ./.github/actions/native-test-setup
 
       - name: Vitest suite
         run: |
@@ -229,10 +138,6 @@ jobs:
           yarn test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           SHARDED_TESTS: true
-
-      - name: Playwright suite
-        run: |
-          yarn workspace @prairielearn/prairielearn run test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
 
       - name: Upload Vitest blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
@@ -242,6 +147,40 @@ jobs:
           path: .vitest-reports/*
           include-hidden-files: true
           retention-days: 1
+
+  test-prairielearn-playwright:
+    name: Playwright (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3]
+        shardTotal: [3]
+
+    env:
+      CAN_LOGIN_TO_DOCKERHUB: ${{ secrets.DOCKERHUB_USERNAME != '' }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          show-progress: false
+
+      - name: Login to DockerHub
+        if: ${{ env.CAN_LOGIN_TO_DOCKERHUB == 'true' }}
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: ./.github/actions/native-test-setup
+        with:
+          install-playwright-browsers: 'true'
+
+      - name: Playwright suite
+        run: |
+          make start-support
+          yarn workspace @prairielearn/prairielearn run test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+
       - name: Upload Playwright blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
@@ -254,7 +193,7 @@ jobs:
   merge-native-test-reports:
     name: Native (merge test reports)
     if: ${{ !cancelled() }}
-    needs: [test-prairielearn-native]
+    needs: [test-prairielearn-vitest, test-prairielearn-playwright]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -299,7 +238,7 @@ jobs:
           path: playwright-report
           retention-days: 7
       # The merge-reports command always exits with 0, so we need to check if
-      # the test job succeeded and fail this job if it didn't.
+      # the test jobs succeeded and fail this job if they didn't.
       - name: Fail if tests failed
-        if: ${{ needs.test-prairielearn-native.result != 'success' }}
+        if: ${{ needs.test-prairielearn-vitest.result != 'success' || needs.test-prairielearn-playwright.result != 'success' }}
         run: exit 1

@@ -74,9 +74,8 @@ router.get(
         planGrants,
         aiGradingEnabled,
         trpcCsrfToken,
-        maxAddDollars: config.aiGradingCreditPoolMaxAddDollars,
-        maxDeductDollars: config.aiGradingCreditPoolMaxDeductDollars,
         refundsEnabled: config.stripeAiGradingCreditsRefundsEnabled,
+        creditPoolLimits: config.aiGradingCreditPoolLimits,
         resLocals: res.locals,
       }),
     );

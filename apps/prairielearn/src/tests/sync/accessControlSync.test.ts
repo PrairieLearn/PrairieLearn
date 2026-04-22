@@ -350,17 +350,19 @@ describe('Access control syncing', () => {
       }));
   });
 
-  describe('listBeforeRelease', () => {
+  describe('beforeRelease', () => {
     it.each([
       { input: true, expected: true },
       { input: false, expected: false },
       { input: undefined, expected: false },
-    ])('syncs listBeforeRelease: $input -> $expected', ({ input, expected }) =>
+    ])('syncs beforeRelease.listed: $input -> $expected', ({ input, expected }) =>
       runInTransactionAndRollback(async () => {
-        const rule = makeAccessControlRule(input !== undefined ? { listBeforeRelease: input } : {});
+        const rule = makeAccessControlRule(
+          input !== undefined ? { beforeRelease: { listed: input } } : {},
+        );
         const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
-        assert.equal(syncedRules[0].list_before_release, expected);
+        assert.equal(syncedRules[0].before_release_listed, expected);
       }),
     );
 
@@ -383,15 +385,15 @@ describe('Access control syncing', () => {
         const rules = await selectAccessControlRulesForAssessment(assessment);
         const main = rules.find((r) => r.number === 0);
         assert.isOk(main);
-        assert.equal(main.rule.listBeforeRelease, false);
+        assert.deepEqual(main.rule.beforeRelease, { listed: false });
       }));
 
-    it('preserves inheritance for label overrides when listBeforeRelease is omitted', () =>
+    it('preserves inheritance for label overrides when beforeRelease is omitted', () =>
       runInTransactionAndRollback(async () => {
         const labelName = 'Extended time';
         const { syncedRules } = await syncRulesAndRead(
           [
-            makeAccessControlRule({ listBeforeRelease: true }),
+            makeAccessControlRule({ beforeRelease: { listed: true } }),
             makeAccessControlRule({
               labels: [labelName],
               dateControl: {
@@ -409,29 +411,29 @@ describe('Access control syncing', () => {
         const override = rules.find((rule) => rule.targetType === 'student_label');
 
         assert.isOk(override);
-        assert.isUndefined(override.rule.listBeforeRelease);
+        assert.isUndefined(override.rule.beforeRelease);
 
         const overrideRow = syncedRules.find((rule) => rule.target_type === 'student_label');
         assert.isOk(overrideRow);
-        assert.isNull(overrideRow.list_before_release);
+        assert.isNull(overrideRow.before_release_listed);
       }));
 
-    it('rejects listBeforeRelease on label-based overrides', () =>
+    it('rejects beforeRelease on label-based overrides', () =>
       runInTransactionAndRollback(async () => {
         const labelName = 'Extended time';
         const { errors } = await syncRulesAndRead(
           [
-            makeAccessControlRule({ listBeforeRelease: false }),
+            makeAccessControlRule({ beforeRelease: { listed: false } }),
             makeAccessControlRule({
               labels: [labelName],
-              listBeforeRelease: true,
+              beforeRelease: { listed: true },
               dateControl: { dueDate: '2024-03-28T23:59:00' },
             }),
           ],
           { studentLabels: [labelName] },
         );
         assert.isTrue(
-          errors.some((e) => e.includes('listBeforeRelease can only be specified on the defaults')),
+          errors.some((e) => e.includes('beforeRelease can only be specified on the defaults')),
         );
       }));
   });
@@ -1867,29 +1869,29 @@ describe('Access control syncing', () => {
 });
 
 describe('cleanAccessControlRulesForDisk', () => {
-  it('omits listBeforeRelease: false and empty objects from output', () => {
+  it('omits beforeRelease.listed: false and empty objects from output', () => {
     const rules: AccessControlJsonInput[] = [
-      { listBeforeRelease: false, dateControl: {}, afterComplete: {} },
+      { beforeRelease: { listed: false }, dateControl: {}, afterComplete: {} },
     ];
 
     const cleaned = cleanAccessControlRulesForDisk(rules);
 
     assert.equal(cleaned.length, 1);
-    assert.notProperty(cleaned[0], 'listBeforeRelease');
+    assert.notProperty(cleaned[0], 'beforeRelease');
     assert.notProperty(cleaned[0], 'dateControl');
     assert.notProperty(cleaned[0], 'afterComplete');
   });
 
-  it('preserves listBeforeRelease: true on the main rule only', () => {
+  it('preserves beforeRelease.listed: true on the main rule only', () => {
     const rules: AccessControlJsonInput[] = [
-      makeAccessControlRule({ listBeforeRelease: true }),
-      makeAccessControlRule({ listBeforeRelease: true }),
+      makeAccessControlRule({ beforeRelease: { listed: true } }),
+      makeAccessControlRule({ beforeRelease: { listed: true } }),
     ];
 
     const cleaned = cleanAccessControlRulesForDisk(rules);
 
-    assert.equal(cleaned[0].listBeforeRelease, true);
-    assert.notProperty(cleaned[1], 'listBeforeRelease');
+    assert.deepEqual(cleaned[0].beforeRelease, { listed: true });
+    assert.notProperty(cleaned[1], 'beforeRelease');
   });
 
   it('includes non-empty dateControl and afterComplete', () => {

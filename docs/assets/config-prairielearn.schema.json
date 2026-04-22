@@ -301,6 +301,10 @@
       "type": "number",
       "default": 600
     },
+    "cronIntervalFetchNewsItemsSec": {
+      "type": "number",
+      "default": 300
+    },
     "cronDailySec": {
       "type": "number",
       "default": 28800
@@ -1098,13 +1102,52 @@
       "maximum": 1,
       "default": 0.2
     },
-    "aiGradingCreditPoolMaxAddDollars": {
-      "type": "number",
-      "default": 10000
-    },
-    "aiGradingCreditPoolMaxDeductDollars": {
-      "type": "number",
-      "default": 10000
+    "aiGradingCreditPoolLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["add", "deduct", "setTransferable", "setNonTransferable"],
+      "properties": {
+        "add": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["minMilliDollars", "maxMilliDollars"],
+          "properties": {
+            "minMilliDollars": {
+              "type": "integer"
+            },
+            "maxMilliDollars": {
+              "type": "integer"
+            }
+          }
+        },
+        "deduct": {
+          "$ref": "#/properties/aiGradingCreditPoolLimits/properties/add"
+        },
+        "setTransferable": {
+          "$ref": "#/properties/aiGradingCreditPoolLimits/properties/add"
+        },
+        "setNonTransferable": {
+          "$ref": "#/properties/aiGradingCreditPoolLimits/properties/add"
+        }
+      },
+      "default": {
+        "add": {
+          "minMilliDollars": 10,
+          "maxMilliDollars": 10000000
+        },
+        "deduct": {
+          "minMilliDollars": 10,
+          "maxMilliDollars": 10000000
+        },
+        "setTransferable": {
+          "minMilliDollars": -1000000000,
+          "maxMilliDollars": 1000000000
+        },
+        "setNonTransferable": {
+          "minMilliDollars": 0,
+          "maxMilliDollars": 1000000000
+        }
+      }
     },
     "aiQuestionGenerationRateLimitDollars": {
       "type": "number",
@@ -1168,21 +1211,35 @@
       "type": ["string", "null"],
       "default": null
     },
+    "newsFeedUrl": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "newsFeedBlogUrl": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "newsFeedCategories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
     "costPerMillionTokens": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "gpt-4o-2024-11-20",
-        "gpt-5-mini-2025-08-07",
         "gpt-5-2025-08-07",
-        "gpt-5.1-2025-11-13",
         "gpt-5.2-2025-12-11",
-        "gemini-2.5-flash",
+        "gpt-5.4-mini-2026-03-17",
+        "gpt-5.4-2026-03-05",
         "gemini-3-flash-preview",
         "gemini-3.1-pro-preview",
-        "claude-opus-4-5",
         "claude-haiku-4-5",
-        "claude-sonnet-4-5"
+        "claude-sonnet-4-6",
+        "claude-opus-4-7"
       ],
       "properties": {
         "gpt-4o-2024-11-20": {
@@ -1208,19 +1265,16 @@
             }
           }
         },
-        "gpt-5-mini-2025-08-07": {
-          "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
-        },
         "gpt-5-2025-08-07": {
-          "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
-        },
-        "gpt-5.1-2025-11-13": {
           "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
         },
         "gpt-5.2-2025-12-11": {
           "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
         },
-        "gemini-2.5-flash": {
+        "gpt-5.4-mini-2026-03-17": {
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
+        },
+        "gpt-5.4-2026-03-05": {
           "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
         },
         "gemini-3-flash-preview": {
@@ -1229,13 +1283,13 @@
         "gemini-3.1-pro-preview": {
           "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
         },
-        "claude-opus-4-5": {
-          "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
-        },
         "claude-haiku-4-5": {
           "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
         },
-        "claude-sonnet-4-5": {
+        "claude-sonnet-4-6": {
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
+        },
+        "claude-opus-4-7": {
           "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
         }
       },
@@ -1246,19 +1300,7 @@
           "cacheWrite": 0,
           "output": 10
         },
-        "gpt-5-mini-2025-08-07": {
-          "input": 0.25,
-          "cachedInput": 0.025,
-          "cacheWrite": 0,
-          "output": 2
-        },
         "gpt-5-2025-08-07": {
-          "input": 1.25,
-          "cachedInput": 0.125,
-          "cacheWrite": 0,
-          "output": 10
-        },
-        "gpt-5.1-2025-11-13": {
           "input": 1.25,
           "cachedInput": 0.125,
           "cacheWrite": 0,
@@ -1270,11 +1312,17 @@
           "cacheWrite": 0,
           "output": 14
         },
-        "gemini-2.5-flash": {
-          "input": 0.3,
-          "cachedInput": 0.03,
+        "gpt-5.4-mini-2026-03-17": {
+          "input": 0.75,
+          "cachedInput": 0.075,
           "cacheWrite": 0,
-          "output": 2.5
+          "output": 4.5
+        },
+        "gpt-5.4-2026-03-05": {
+          "input": 2.5,
+          "cachedInput": 0.25,
+          "cacheWrite": 0,
+          "output": 15
         },
         "gemini-3-flash-preview": {
           "input": 0.5,
@@ -1294,13 +1342,13 @@
           "cacheWrite": 1.25,
           "output": 5
         },
-        "claude-sonnet-4-5": {
+        "claude-sonnet-4-6": {
           "input": 3,
           "cachedInput": 0.3,
           "cacheWrite": 3.75,
           "output": 15
         },
-        "claude-opus-4-5": {
+        "claude-opus-4-7": {
           "input": 5,
           "cachedInput": 0.5,
           "cacheWrite": 6.25,
