@@ -202,8 +202,9 @@ function guessLanguageHeuristic(code: string): string | undefined {
   if (/\b(console\.|=>|const |let |var |require\(|module\.exports)\b/.test(code)) return 'javascript';
   if (/\b(fn |let mut |impl |use std::|println!)\b/.test(code)) return 'rust';
   if (/\b(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE)\b/i.test(code) && !/[{}]/.test(code)) return 'sql';
-  // Generic C-style: control flow + braces + semicolons
-  if (/[{};]/.test(code) && /\b(for|while|if|else|return)\b/.test(code)) return 'c';
+  // Generic style: control flow + braces + semicolons
+  // We use Java because most of the syntax is a superset - remember this is a best-guess result.
+  if (/[{};]/.test(code) && /\b(for|while|if|else|return)\b/.test(code)) return 'java';
   return undefined;
 }
 
