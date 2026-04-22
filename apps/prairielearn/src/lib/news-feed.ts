@@ -38,6 +38,7 @@ export async function fetchAndCacheNewsItems(): Promise<void> {
 
     const feed = await parser.parseURL(feedUrl);
 
+    // Filter to only include items with matching categories
     const allowedCategories = config.newsFeedCategories;
     const items = feed.items.filter((item) =>
       hasMatchingCategory(item.categories ?? [], allowedCategories),

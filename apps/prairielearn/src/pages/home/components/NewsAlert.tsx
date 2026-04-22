@@ -48,11 +48,6 @@ function NewsAlertItem({ item, now }: { item: NewsItem; now: Date }) {
           style={{ minWidth: 0 }}
         >
           <div className="d-flex align-items-center gap-2" style={{ minWidth: 0 }}>
-            {/* <span
-              className="bg-primary rounded-circle flex-shrink-0"
-              style={{ width: 8, height: 8 }}
-              aria-label="New"
-            /> */}
             <span className="fw-semibold" style={{ minWidth: 0 }}>
               {item.title}
             </span>
