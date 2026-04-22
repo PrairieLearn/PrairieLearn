@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -20,12 +19,17 @@ import { config } from '../../lib/config.js';
 import { idsEqual } from '../../lib/id.js';
 import { isEnterprise } from '../../lib/license.js';
 import { computeStatus } from '../../lib/publishing.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import {
   ensureEnrollment,
   selectOptionalEnrollmentByUid,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
+import {
+  markNewsItemsAsReadForUser,
+  selectUnreadNewsItemsForUser,
+} from '../../models/news-items.js';
 
 import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
 
@@ -34,7 +38,7 @@ const router = Router();
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain', { navPage: 'home' }>(async (req, res) => {
     res.locals.navPage = 'home';
 
     // Potentially prompt the user to accept the terms before proceeding.
@@ -122,6 +126,12 @@ router.get(
       StaffInstitutionSchema,
     );
 
+    // Only show news alerts to instructors (users with instructor courses)
+    const unreadNewsItems =
+      config.newsFeedUrl && instructorCourses.length > 0
+        ? await selectUnreadNewsItemsForUser(res.locals.authn_user, 3)
+        : [];
+
     const { authn_provider_name, __csrf_token, urlPrefix } = extractPageContext(res.locals, {
       pageType: 'plain',
       accessType: 'student',
@@ -151,6 +161,9 @@ router.get(
             urlPrefix={urlPrefix}
             isDevMode={config.devMode}
             search={search}
+            unreadNewsItems={unreadNewsItems}
+            blogUrl={config.newsFeedBlogUrl}
+            now={res.locals.req_date}
           />
         ),
       }),
@@ -160,13 +173,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
-    const BodySchema = z.object({
-      __action: z.enum(['accept_invitation', 'reject_invitation', 'unenroll']),
-      course_instance_id: z.string().min(1),
-    });
-    const body = BodySchema.parse(req.body);
-
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const {
       authn_user: { uid },
     } = extractPageContext(res.locals, {
@@ -174,6 +181,21 @@ router.post(
       accessType: 'student',
       withAuthzData: false,
     });
+
+    const BodySchema = z.discriminatedUnion('__action', [
+      z.object({ __action: z.literal('dismiss_news_alert') }),
+      z.object({
+        __action: z.enum(['accept_invitation', 'reject_invitation', 'unenroll']),
+        course_instance_id: z.string().min(1),
+      }),
+    ]);
+    const body = BodySchema.parse(req.body);
+
+    if (body.__action === 'dismiss_news_alert') {
+      await markNewsItemsAsReadForUser(res.locals.authn_user);
+      res.redirect(req.originalUrl);
+      return;
+    }
 
     const { authzData, courseInstance, institution, course } =
       await constructCourseOrInstanceContext({
@@ -281,7 +303,7 @@ router.post(
         break;
       }
       default: {
-        assertNever(body.__action);
+        assertNever(body);
       }
     }
 
