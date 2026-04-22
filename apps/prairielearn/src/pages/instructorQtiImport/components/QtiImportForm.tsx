@@ -65,6 +65,7 @@ function detectQuestionType(html: string): string {
 }
 
 interface AssessmentOverrides {
+  title: string;
   type: 'Homework' | 'Exam';
   set: string;
   number: string;
@@ -90,6 +91,7 @@ function deduplicateAssessmentNumbers(
   results: SerializedConversionResult[],
 ): AssessmentOverrides[] {
   const overrides: AssessmentOverrides[] = results.map((r) => ({
+    title: r.assessment.infoJson.title,
     type: r.assessment.infoJson.type,
     set: r.assessment.infoJson.set,
     number: r.assessment.infoJson.number,
@@ -236,6 +238,7 @@ export function QtiImportForm({
           directoryName: result.assessment.directoryName,
           infoJson: {
             ...result.assessment.infoJson,
+            title: override.title,
             type: override.type,
             set: override.set,
             number: override.number,
@@ -363,7 +366,16 @@ export function QtiImportForm({
                 {overrides[i].included && result.questions.length > 0 && (
                   <Card.Body>
                     <div className="row g-3 mb-3">
-                      <div className="col-md-3">
+                      <div className="col-md-6">
+                        <Form.Label htmlFor={`title-${i}`}>Title</Form.Label>
+                        <Form.Control
+                          id={`title-${i}`}
+                          type="text"
+                          value={overrides[i].title}
+                          onChange={(e) => updateOverride(i, { title: e.target.value })}
+                        />
+                      </div>
+                      <div className="col-md-2">
                         <Form.Label htmlFor={`type-${i}`}>Type</Form.Label>
                         <Form.Select
                           id={`type-${i}`}
@@ -378,7 +390,7 @@ export function QtiImportForm({
                           <option value="Exam">Exam</option>
                         </Form.Select>
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-2">
                         <Form.Label htmlFor={`set-${i}`}>Set</Form.Label>
                         <Form.Select
                           id={`set-${i}`}
@@ -392,7 +404,7 @@ export function QtiImportForm({
                           ))}
                         </Form.Select>
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-2">
                         <Form.Label htmlFor={`number-${i}`}>Number</Form.Label>
                         <Form.Control
                           id={`number-${i}`}
@@ -405,26 +417,13 @@ export function QtiImportForm({
 
                     <NonRubricWarnings warnings={result.warnings} />
 
-                    <details>
-                      <summary className="small text-muted mb-2">
-                        Questions ({result.questions.length})
-                      </summary>
-                      <div className="d-flex flex-column gap-2 mt-2">
-                        {result.questions.map((q, qi) => (
-                          <QuestionReviewPanel
-                            key={q.directoryName}
-                            question={q}
-                            questionNumber={qi + 1}
-                            overrides={questionOverrides.get(q.directoryName)}
-                            isExpanded={expandedQuestions.has(q.directoryName)}
-                            onToggleExpand={() => toggleExpandedQuestion(q.directoryName)}
-                            onUpdateOverride={(updates) =>
-                              updateQuestionOverride(q.directoryName, updates)
-                            }
-                          />
-                        ))}
-                      </div>
-                    </details>
+                    <AssessmentQuestionsSection
+                      questions={result.questions}
+                      questionOverrides={questionOverrides}
+                      expandedQuestions={expandedQuestions}
+                      onToggleExpand={toggleExpandedQuestion}
+                      onUpdateOverride={updateQuestionOverride}
+                    />
                   </Card.Body>
                 )}
               </Card>
@@ -592,9 +591,9 @@ function UploadStep({
   return (
     <form encType="multipart/form-data" onSubmit={onSubmit}>
       <p>
-        Import assessments and questions from QTI 1.2, the format used by Canvas and other LMS
-        platforms. Upload a quiz export (<code>.zip</code>) or a full course export (
-        <code>.imscc</code>) to get started.
+        Import quiz and question content from Canvas or other learning management systems. Upload a
+        quiz export (<code>.zip</code>) or a full course export (<code>.imscc</code>) to get
+        started. (Supports the QTI 1.2 interchange format.)
       </p>
       <div className="mb-3">
         <Form.Label htmlFor="qti-file">Export file</Form.Label>
@@ -622,6 +621,77 @@ function UploadStep({
         )}
       </Button>
     </form>
+  );
+}
+
+function AssessmentQuestionsSection({
+  questions,
+  questionOverrides,
+  expandedQuestions,
+  onToggleExpand,
+  onUpdateOverride,
+}: {
+  questions: SerializedQuestionOutput[];
+  questionOverrides: Map<string, QuestionOverrides>;
+  expandedQuestions: Set<string>;
+  onToggleExpand: (dirName: string) => void;
+  onUpdateOverride: (dirName: string, updates: Partial<QuestionOverrides>) => void;
+}) {
+  const conflictingQuestions = questions.filter(
+    (q) => questionOverrides.get(q.directoryName)?.collides,
+  );
+  const conflictCount = conflictingQuestions.length;
+
+  const setAllConflictStrategy = (strategy: CollisionStrategy) => {
+    for (const q of conflictingQuestions) {
+      onUpdateOverride(q.directoryName, { collisionStrategy: strategy });
+    }
+  };
+
+  return (
+    <details>
+      <summary className="small text-muted mb-2">
+        Questions ({questions.length})
+      </summary>
+
+      {conflictCount > 0 && (
+        <div className="d-flex align-items-center gap-2 p-2 bg-light border rounded mb-2 mt-2 small">
+          <i className="bi bi-exclamation-circle text-warning" aria-hidden="true" />
+          <span className="flex-grow-1">
+            {conflictCount} question{conflictCount !== 1 ? 's' : ''} conflict
+            {conflictCount === 1 ? 's' : ''} with existing questions
+          </span>
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={() => setAllConflictStrategy('overwrite')}
+          >
+            Overwrite all
+          </Button>
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={() => setAllConflictStrategy('rename')}
+          >
+            Rename all
+          </Button>
+        </div>
+      )}
+
+      <div className="d-flex flex-column gap-2 mt-2">
+        {questions.map((q, qi) => (
+          <QuestionReviewPanel
+            key={q.directoryName}
+            question={q}
+            questionNumber={qi + 1}
+            overrides={questionOverrides.get(q.directoryName)}
+            isExpanded={expandedQuestions.has(q.directoryName)}
+            onToggleExpand={() => onToggleExpand(q.directoryName)}
+            onUpdateOverride={(updates) => onUpdateOverride(q.directoryName, updates)}
+          />
+        ))}
+      </div>
+    </details>
   );
 }
 
