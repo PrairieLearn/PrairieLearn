@@ -185,8 +185,8 @@ export async function resolveModernAssessmentAccessBatch({
       date: reqDate,
       displayTimezone: courseInstance.display_timezone,
       authzMode: authzData.mode,
-      courseRole: authzData.course_role ?? 'None',
-      courseInstanceRole: authzData.course_instance_role ?? 'None',
+      courseRole: authzData.course_role,
+      courseInstanceRole: authzData.course_instance_role,
       prairieTestReservations,
     });
 
