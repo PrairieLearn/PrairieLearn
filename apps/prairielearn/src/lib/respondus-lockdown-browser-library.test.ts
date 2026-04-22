@@ -1,45 +1,22 @@
-import * as crypto from 'node:crypto';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-import * as jose from 'jose';
 import tmp from 'tmp-promise';
 import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 
+import { loadLibrary } from '@prairielearn/respondus-lockdown-browser';
+
 import { config } from './config.js';
-import { loadLibrary } from './library-loader.js';
-import { getLibrary, initLibrary, requireLibrary, resetLibraryForTesting } from './library.js';
-
-const JWE_ALG = 'RSA-OAEP-256';
-const JWE_ENC = 'A256GCM';
-
-function freshKeyPair(): { publicKey: string; privateKey: string } {
-  const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-    modulusLength: 2048,
-    publicKeyEncoding: { type: 'spki', format: 'pem' },
-    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
-  });
-  return { publicKey, privateKey };
-}
+import {
+  getLibrary,
+  initLibrary,
+  requireLibrary,
+  resetLibraryForTesting,
+} from './respondus-lockdown-browser-library.js';
 
 async function writePlaintextBundle(dir: string, code: string, filename = 'bundle.js') {
   const p = path.join(dir, filename);
   await fs.writeFile(p, code);
-  return p;
-}
-
-async function writeEncryptedBundle(
-  dir: string,
-  publicKeyPem: string,
-  code: string,
-  filename = 'bundle.jwe',
-) {
-  const key = await jose.importSPKI(publicKeyPem, JWE_ALG);
-  const jwe = await new jose.CompactEncrypt(new TextEncoder().encode(code))
-    .setProtectedHeader({ alg: JWE_ALG, enc: JWE_ENC })
-    .encrypt(key);
-  const p = path.join(dir, filename);
-  await fs.writeFile(p, jwe);
   return p;
 }
 
@@ -54,27 +31,11 @@ describe('loadLibrary', () => {
     await tmp.withDir(
       async ({ path: dir }) => {
         const bundlePath = await writePlaintextBundle(dir, MINIMAL_BUNDLE);
-        const lib = (await loadLibrary({
+        const lib = await loadLibrary({
           sourcePath: bundlePath,
           anchorUrl: import.meta.url,
-        })) as { generateLaunchLink: (o: { keys: string[] }) => string };
-        assert.equal(lib.generateLaunchLink({ keys: ['a', 'b'] }), 'ldb:test:a,b');
-      },
-      { unsafeCleanup: true },
-    );
-  });
-
-  it('loads an encrypted JWE bundle via privateKey + blobPath', async () => {
-    await tmp.withDir(
-      async ({ path: dir }) => {
-        const { publicKey, privateKey } = freshKeyPair();
-        const blobPath = await writeEncryptedBundle(dir, publicKey, MINIMAL_BUNDLE);
-        const lib = (await loadLibrary({
-          privateKey,
-          blobPath,
-          anchorUrl: import.meta.url,
-        })) as { generateLaunchLink: (o: { keys: string[] }) => string };
-        assert.equal(lib.generateLaunchLink({ keys: ['k'] }), 'ldb:test:k');
+        });
+        assert.equal(lib.generateLaunchLink({ keys: ['a', 'b'], restartUrl: 'http://x' }), 'ldb:test:a,b');
       },
       { unsafeCleanup: true },
     );
@@ -90,11 +51,11 @@ describe('loadLibrary', () => {
           };
         `;
         const bundlePath = await writePlaintextBundle(dir, bundle);
-        const lib = (await loadLibrary({
+        const lib = await loadLibrary({
           sourcePath: bundlePath,
           anchorUrl: import.meta.url,
-        })) as { generateLaunchLink: (o: { keys: string[] }) => string };
-        assert.equal(lib.generateLaunchLink({ keys: ['x'] }), 'awaited:x');
+        });
+        assert.equal(lib.generateLaunchLink({ keys: ['x'], restartUrl: '' }), 'awaited:x');
       },
       { unsafeCleanup: true },
     );
@@ -110,26 +71,29 @@ describe('loadLibrary', () => {
           };
         `;
         const bundlePath = await writePlaintextBundle(dir, bundle);
-        const lib = (await loadLibrary({
+        const lib = await loadLibrary({
           sourcePath: bundlePath,
           anchorUrl: import.meta.url,
-        })) as { generateLaunchLink: (o: { keys: string[] }) => string };
-        assert.equal(lib.generateLaunchLink({ keys: ['y'] }), path.sep + 'y');
+        });
+        assert.equal(lib.generateLaunchLink({ keys: ['y'], restartUrl: '' }), path.sep + 'y');
       },
       { unsafeCleanup: true },
     );
   });
 
-  it('rejects when neither sourcePath nor privateKey is provided', async () => {
+  it('rejects when neither sourcePath nor keys is provided', async () => {
     await expect(loadLibrary({ anchorUrl: import.meta.url })).rejects.toThrow(
-      /sourcePath or privateKey is required/,
+      /sourcePath or keys/,
     );
   });
 
-  it('rejects when both sourcePath and privateKey are provided', async () => {
-    const { privateKey } = freshKeyPair();
+  it('rejects when both sourcePath and keys are provided', async () => {
     await expect(
-      loadLibrary({ sourcePath: '/nope', privateKey, anchorUrl: import.meta.url }),
+      loadLibrary({
+        sourcePath: '/nope',
+        keys: { 'kid-1': '-----BEGIN PRIVATE KEY-----\n...' },
+        anchorUrl: import.meta.url,
+      }),
     ).rejects.toThrow(/mutually exclusive/);
   });
 
@@ -146,8 +110,9 @@ describe('loadLibrary', () => {
   });
 });
 
-describe('library', () => {
-  const originalLibrary = config.library;
+describe('Respondus LockDown Browser library', () => {
+  const originalSourcePath = config.respondusLockdownBrowserSourcePath;
+  const originalKeys = config.respondusLockdownBrowserKeys;
   const originalDevMode = config.devMode;
 
   beforeEach(() => {
@@ -155,13 +120,15 @@ describe('library', () => {
   });
 
   afterEach(() => {
-    config.library = originalLibrary;
+    config.respondusLockdownBrowserSourcePath = originalSourcePath;
+    config.respondusLockdownBrowserKeys = originalKeys;
     config.devMode = originalDevMode;
     resetLibraryForTesting();
   });
 
-  it('is a no-op when library is unset', async () => {
-    config.library = null;
+  it('is a no-op when both config fields are unset', async () => {
+    config.respondusLockdownBrowserSourcePath = null;
+    config.respondusLockdownBrowserKeys = null;
     await initLibrary();
     assert.isNull(getLibrary());
   });
@@ -170,13 +137,17 @@ describe('library', () => {
     await tmp.withDir(
       async ({ path: dir }) => {
         const bundlePath = await writePlaintextBundle(dir, MINIMAL_BUNDLE);
-        config.library = { sourcePath: bundlePath };
+        config.respondusLockdownBrowserSourcePath = bundlePath;
+        config.respondusLockdownBrowserKeys = null;
         config.devMode = true;
 
         await initLibrary();
 
         assert.equal(
-          requireLibrary().generateLaunchLink({ keys: ['a'], restartUrl: 'http://x' }),
+          requireLibrary().generateLaunchLink({
+            keys: ['a'],
+            restartUrl: 'http://x',
+          }),
           'ldb:test:a',
         );
       },
@@ -189,16 +160,20 @@ describe('library', () => {
       async ({ path: dir }) => {
         const bundlePath = await writePlaintextBundle(dir, MINIMAL_BUNDLE);
         config.devMode = false;
-        config.library = { sourcePath: bundlePath };
+        config.respondusLockdownBrowserSourcePath = bundlePath;
+        config.respondusLockdownBrowserKeys = null;
 
-        await expect(initLibrary()).rejects.toThrow(/only allowed in devMode/);
+        await expect(initLibrary()).rejects.toThrow(
+          /only allowed in devMode/,
+        );
       },
       { unsafeCleanup: true },
     );
   });
 
   it('requireLibrary throws when the library is unset', () => {
-    config.library = null;
+    config.respondusLockdownBrowserSourcePath = null;
+    config.respondusLockdownBrowserKeys = null;
     resetLibraryForTesting();
     assert.throws(() => requireLibrary(), /not loaded/);
   });
