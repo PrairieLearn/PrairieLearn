@@ -1,7 +1,6 @@
+import { logger } from '@prairielearn/logger';
 import { loadLibrary } from '@prairielearn/respondus-lockdown-browser';
 import type { Library } from '@prairielearn/respondus-lockdown-browser/types';
-
-import { logger } from '@prairielearn/logger';
 
 import { config } from './config.js';
 
