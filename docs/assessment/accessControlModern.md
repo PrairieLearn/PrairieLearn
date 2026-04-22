@@ -395,7 +395,7 @@ If a student starts close enough to the due date that less than 90 minutes remai
 }
 ```
 
-Students must be checked in via PrairieTest. Time limits and scheduling are managed by PrairieTest. Once a student finishes the assessment, questions and scores remain visible for the remainder of the reservation.
+Students must be checked in via PrairieTest. Time limits and scheduling are managed by PrairieTest. Once a student finishes the assessment, questions and scores remain visible for the remainder of their reservation.
 
 ### Deferred release of feedback and scores after a PrairieTest exam
 
