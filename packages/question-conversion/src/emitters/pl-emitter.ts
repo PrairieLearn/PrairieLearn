@@ -322,9 +322,7 @@ export class PLEmitter implements OutputEmitter {
     for (const blank of blanks) {
       const lines = [`<pl-dropdown answers-name="${escapeAttr(blank.id)}">`];
       for (const choice of blank.choices) {
-        lines.push(
-          `  <pl-answer correct="${choice.correct}">${escapeHtml(choice.html)}</pl-answer>`,
-        );
+        lines.push(`  <pl-answer correct="${choice.correct}">${choice.html}</pl-answer>`);
       }
       lines.push('</pl-dropdown>');
       result = result.replaceAll(`[${blank.id}]`, lines.join('\n'));
@@ -402,9 +400,7 @@ export class PLEmitter implements OutputEmitter {
     if (display === 'dropdown') {
       const lines = ['<pl-dropdown answers-name="answer">'];
       for (const choice of deduped) {
-        lines.push(
-          `  <pl-answer correct="${choice.correct}">${escapeHtml(choice.html)}</pl-answer>`,
-        );
+        lines.push(`  <pl-answer correct="${choice.correct}">${choice.html}</pl-answer>`);
       }
       lines.push('</pl-dropdown>');
       return lines.join('\n');
@@ -415,9 +411,7 @@ export class PLEmitter implements OutputEmitter {
     for (const choice of deduped) {
       const fb = perAnswer?.[choice.html];
       const fbAttr = fb ? ` feedback="${escapeAttr(fb)}"` : '';
-      lines.push(
-        `  <pl-answer correct="${choice.correct}"${fbAttr}>${escapeHtml(choice.html)}</pl-answer>`,
-      );
+      lines.push(`  <pl-answer correct="${choice.correct}"${fbAttr}>${choice.html}</pl-answer>`);
     }
     lines.push('</pl-multiple-choice>');
     return lines.join('\n');
@@ -434,9 +428,7 @@ export class PLEmitter implements OutputEmitter {
     for (const choice of deduped) {
       const fb = perAnswer?.[choice.html];
       const fbAttr = fb ? ` feedback="${escapeAttr(fb)}"` : '';
-      lines.push(
-        `  <pl-answer correct="${choice.correct}"${fbAttr}>${escapeHtml(choice.html)}</pl-answer>`,
-      );
+      lines.push(`  <pl-answer correct="${choice.correct}"${fbAttr}>${choice.html}</pl-answer>`);
     }
     lines.push('</pl-checkbox>');
     return lines.join('\n');
@@ -446,11 +438,11 @@ export class PLEmitter implements OutputEmitter {
     const lines = ['<pl-matching answers-name="answer">'];
     for (const pair of body.pairs) {
       lines.push(
-        `  <pl-statement match="${escapeAttr(pair.optionHtml)}">${escapeHtml(pair.statementHtml)}</pl-statement>`,
+        `  <pl-statement match="${escapeAttr(pair.optionHtml)}">${pair.statementHtml}</pl-statement>`,
       );
     }
     for (const distractor of body.distractors) {
-      lines.push(`  <pl-option>${escapeHtml(distractor.optionHtml)}</pl-option>`);
+      lines.push(`  <pl-option>${distractor.optionHtml}</pl-option>`);
     }
     lines.push('</pl-matching>');
     return lines.join('\n');
@@ -459,7 +451,7 @@ export class PLEmitter implements OutputEmitter {
   private renderOrdering(body: Extract<IRQuestionBody, { type: 'ordering' }>): string {
     const lines = ['<pl-order-blocks answers-name="answer">'];
     for (const item of body.correctOrder) {
-      lines.push(`  <pl-answer correct="true">${escapeHtml(item.html)}</pl-answer>`);
+      lines.push(`  <pl-answer correct="true">${item.html}</pl-answer>`);
     }
     lines.push('</pl-order-blocks>');
     return lines.join('\n');
@@ -675,14 +667,6 @@ function deduplicateChoices(choices: IRChoice[]): IRChoice[] {
     }
   }
   return [...seen.values()];
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
 }
 
 function escapeAttr(text: string): string {

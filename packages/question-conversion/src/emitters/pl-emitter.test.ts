@@ -427,6 +427,38 @@ describe('PLEmitter', () => {
     });
   });
 
+  describe('HTML content in choices', () => {
+    it('passes HTML choice content through unescaped in multiple-choice', () => {
+      const q = makeQuestion({
+        body: {
+          type: 'multiple-choice',
+          choices: [
+            { id: 'a', html: 'O(n<sup>2</sup>)', correct: false },
+            { id: 'b', html: 'O(n log(n))', correct: true },
+          ],
+        },
+      });
+      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
+      assert.include(html, '>O(n<sup>2</sup>)<');
+      assert.include(html, '>O(n log(n))<');
+    });
+
+    it('passes HTML choice content through unescaped in checkbox', () => {
+      const q = makeQuestion({
+        body: {
+          type: 'checkbox',
+          choices: [
+            { id: 'a', html: 'x<sup>2</sup>', correct: true },
+            { id: 'b', html: 'x<sub>0</sub>', correct: false },
+          ],
+        },
+      });
+      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
+      assert.include(html, '>x<sup>2</sup><');
+      assert.include(html, '>x<sub>0</sub><');
+    });
+  });
+
   describe('duplicate choice deduplication', () => {
     it('deduplicates multiple-choice choices with the same text, keeping the correct one', () => {
       const q = makeQuestion({

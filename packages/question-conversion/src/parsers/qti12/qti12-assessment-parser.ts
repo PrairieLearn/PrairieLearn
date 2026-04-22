@@ -557,13 +557,16 @@ export class QTI12AssessmentParser implements InputParser {
     const labelEls = ensureArray(renderChoice?.['response_label'] as unknown);
     const labels: QTI12ResponseLabel[] = labelEls
       .filter((l): l is Record<string, unknown> => l != null && typeof l === 'object')
-      .map((l) => ({
-        ident: attr(l, 'ident'),
-        text: textContent(getNestedValue(l, 'material', 'mattext')),
-        textType:
-          attr(getNestedValue(l, 'material', 'mattext') as Record<string, unknown>, 'texttype') ||
-          'text/plain',
-      }));
+      .map((l) => {
+        const mattext = getNestedValue(l, 'material', 'mattext');
+        const rawText = textContent(mattext);
+        const textType =
+          attr(mattext as Record<string, unknown>, 'texttype') || 'text/plain';
+        // HTML-typed labels use XML-escaped HTML content (e.g. &lt;sup&gt;).
+        // Decode entities so IRChoice.html holds real HTML for downstream rendering.
+        const text = textType === 'text/html' ? unescapeHtml(rawText) : rawText;
+        return { ident: attr(l, 'ident'), text, textType };
+      });
 
     return { ident, rcardinality, materialText, labels };
   }
