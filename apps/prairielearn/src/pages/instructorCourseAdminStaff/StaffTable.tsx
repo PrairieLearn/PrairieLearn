@@ -1174,7 +1174,7 @@ function StaffTableInner({
   const viewPresetDropdown =
     courseInstances.length > 0 && !allInstancesAreActive ? (
       <Dropdown as={ButtonGroup}>
-        <Dropdown.Toggle variant="tanstack-table" size="sm">
+        <Dropdown.Toggle variant="tanstack-table">
           <i className="bi bi-funnel me-2" aria-hidden="true" />
           View: {selectedViewPreset ?? 'Custom'}
         </Dropdown.Toggle>
