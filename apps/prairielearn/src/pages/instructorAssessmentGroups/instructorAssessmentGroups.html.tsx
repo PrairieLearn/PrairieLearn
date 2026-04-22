@@ -38,7 +38,7 @@ function NoGroupConfigCard({
             </Alert>
           )}
           <i className="bi bi-people fs-1 mb-2" />
-          <h5>This is not a group assessment.</h5>
+          <h2 className="h5">This is not a group assessment.</h2>
           <div className="text-muted">
             Enable group work to allow students to collaborate and submit as teams.
           </div>
