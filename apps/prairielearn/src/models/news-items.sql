@@ -41,7 +41,13 @@ RETURNING
 INSERT INTO
   news_items (title, link, pub_date, guid, categories)
 VALUES
-  ($title, $link, $pub_date, $guid, $categories)
+  (
+    $title,
+    $link,
+    $pub_date,
+    $guid,
+    $categories::text[]
+  )
 ON CONFLICT (guid) DO UPDATE
 SET
   title = EXCLUDED.title,
