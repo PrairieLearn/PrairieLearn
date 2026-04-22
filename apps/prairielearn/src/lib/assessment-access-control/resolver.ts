@@ -613,10 +613,6 @@ export function resolveAccessControl(
 
   let examAccessEnd: Date | null = null;
   if (ptOutcome.action === 'grant') {
-    // An active PT reservation replaces dateControl entirely — no credit
-    // windows, no release/due gating, no beforeRelease listing. The student
-    // is physically at the CBTF with a valid reservation; that is the only
-    // gate that matters.
     creditResult = {
       credit: ptOutcome.credit,
       active: ptOutcome.active,
@@ -626,11 +622,6 @@ export function resolveAccessControl(
       timeLimitMin: null,
     };
     examAccessEnd = ptOutcome.examAccessEnd;
-
-    // Isolation rule: while a PT reservation is active, only the matched
-    // exam's PT-level config governs visibility. The top-level
-    // `afterComplete` covers behavior OUTSIDE the CBTF, which is a separate
-    // concern from "after-finish visibility inside the CBTF".
     showClosedAssessment = ptOutcome.showClosedAssessment;
     showClosedAssessmentScore = ptOutcome.showClosedAssessmentScore;
   }

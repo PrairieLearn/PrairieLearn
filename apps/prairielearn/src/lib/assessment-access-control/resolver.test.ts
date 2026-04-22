@@ -923,7 +923,7 @@ describe('resolveAccessControl', () => {
     // See https://github.com/PrairieLearn/PrairieLearn/discussions/11308.
     // The workflow has three phases: submission window (Public, pre-due),
     // review window (Public, post-due, read-only), and PT-exam (read-only
-    // via reservation). Adapted from PR #14725.
+    // via reservation).
     describe('cheat sheet hack workflow', () => {
       const cheatSheetRule: AccessControlRuleInput = {
         ...prairieTestMainRule,

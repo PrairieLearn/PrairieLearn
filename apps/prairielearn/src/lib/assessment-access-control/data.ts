@@ -5,6 +5,7 @@ import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import {
   type Assessment,
+  AssessmentAccessControlPrairietestExamSchema,
   AssessmentAccessControlRuleSchema,
   type CourseInstance,
 } from '../db-types.js';
@@ -24,11 +25,11 @@ const DeadlineJsonSchema = z.array(z.object({ date: z.string(), credit: z.number
 
 const PrairieTestExamJsonSchema = z
   .array(
-    z.object({
-      uuid: z.string(),
-      read_only: z.boolean(),
-      after_complete_questions_hidden: z.boolean().nullable(),
-      after_complete_score_hidden: z.boolean().nullable(),
+    AssessmentAccessControlPrairietestExamSchema.pick({
+      uuid: true,
+      read_only: true,
+      after_complete_questions_hidden: true,
+      after_complete_score_hidden: true,
     }),
   )
   .nullable();

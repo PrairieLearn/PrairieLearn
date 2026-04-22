@@ -879,14 +879,7 @@
                             }
                           },
                           "score": {
-                            "type": "object",
-                            "additionalProperties": false,
-                            "required": ["hidden"],
-                            "properties": {
-                              "hidden": {
-                                "type": "boolean"
-                              }
-                            }
+                            "$ref": "#/definitions/AccessControlJsonSchema/properties/integrations/properties/prairieTest/properties/exams/items/properties/afterComplete/properties/questions"
                           }
                         }
                       }
