@@ -72,9 +72,9 @@ import { features } from './lib/features/index.js';
 import { featuresMiddleware } from './lib/features/middleware.js';
 import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
-import { initLibrary } from './lib/respondus-lockdown-browser-library.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
+import { initLibrary } from './lib/respondus-lockdown-browser-library.js';
 import { isServerInitialized, isServerPending, setServerState } from './lib/server-initialized.js';
 import * as serverJobs from './lib/server-jobs.js';
 import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
@@ -1981,6 +1981,12 @@ export async function initExpress(): Promise<Express> {
     '/pl/administrator/batchedMigrations',
     (await import('./pages/administratorBatchedMigrations/administratorBatchedMigrations.js'))
       .default,
+  );
+  app.use(
+    '/pl/administrator/respondusLockdownBrowserTest',
+    (
+      await import('./pages/administratorRespondusLockdownBrowserTest/administratorRespondusLockdownBrowserTest.js')
+    ).default,
   );
 
   if (isEnterprise()) {

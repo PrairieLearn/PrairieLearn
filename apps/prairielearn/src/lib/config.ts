@@ -225,29 +225,18 @@ export const ConfigSchema = z.object({
    * Respondus LockDown Browser integration — map of `kid` (key ID) to PEM
    * PKCS#8 private key.
    *
-   * The implementation ships as the encrypted npm package
-   * `@prairielearn/respondus-lockdown-browser`. Each release's `library.jwe`
-   * blob is encrypted to a public key held by the publisher; PL holds the
-   * matching private key(s) here. The JWE's protected header stamps a
-   * `kid`; the loader reads the kid out of the blob and picks the matching
-   * PEM from this map.
-   *
    * During key rotation, keep both the outgoing and incoming kid entries
    * in this map until every deployed PL version ships with a blob signed
    * under the new kid, then drop the old entry.
    *
-   * Leave `null` to disable the integration. Mutually exclusive with
-   * `respondusLockdownBrowserSourcePath`.
+   * Do not set this in local development.
    */
-  respondusLockdownBrowserKeys: z
-    .record(z.string(), z.string())
-    .nullable()
-    .default(null),
+  respondusLockdownBrowserKeys: z.record(z.string(), z.string()).nullable().default(null),
   /**
    * Respondus LockDown Browser dev-mode source path — points at a
-   * plaintext CJS bundle on disk, loaded without decryption. Only honored
-   * when `devMode` is true. Mutually exclusive with
-   * `respondusLockdownBrowserKeys`. Use in local development and tests.
+   * plaintext CJS bundle on disk, loaded without decryption.
+   *
+   * Use in local development and tests.
    */
   respondusLockdownBrowserSourcePath: z.string().nullable().default(null),
   secretSlackOpsBotEndpoint: z.string().nullable().default(null),
