@@ -148,8 +148,8 @@ function prepareRuleRow(
       ruleNumber,
       e.examUuid,
       e.readOnly ?? false,
-      e.afterComplete?.questions?.hidden ?? null,
-      e.afterComplete?.score?.hidden ?? null,
+      e.afterComplete?.questions?.hidden ?? false,
+      e.afterComplete?.score?.hidden ?? false,
     ]),
   );
 

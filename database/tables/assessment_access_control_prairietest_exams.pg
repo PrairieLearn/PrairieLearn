@@ -1,6 +1,6 @@
 columns
-    after_complete_questions_hidden: boolean
-    after_complete_score_hidden: boolean
+    after_complete_questions_hidden: boolean not null default false
+    after_complete_score_hidden: boolean not null default false
     assessment_access_control_rule_id: bigint not null
     id: bigint not null default nextval('assessment_access_control_prairietest_exams_id_seq'::regclass)
     read_only: boolean not null default false
@@ -12,7 +12,7 @@ indexes
     aac_prairietest_exams_rule_id_idx: USING btree (assessment_access_control_rule_id)
 
 check constraints
-    aac_prairietest_exams_after_complete_check: CHECK (read_only = true AND after_complete_questions_hidden IS NULL AND after_complete_score_hidden IS NULL OR read_only = false AND NOT (after_complete_score_hidden IS TRUE AND after_complete_questions_hidden IS NOT TRUE))
+    aac_prairietest_exams_after_complete_check: CHECK (read_only = true AND after_complete_questions_hidden = false AND after_complete_score_hidden = false OR read_only = false AND NOT (after_complete_score_hidden = true AND after_complete_questions_hidden = false))
 
 foreign-key constraints
     aac_prairietest_exams_rule_id_fkey: FOREIGN KEY (assessment_access_control_rule_id) REFERENCES assessment_access_control_rules(id) ON UPDATE CASCADE ON DELETE CASCADE

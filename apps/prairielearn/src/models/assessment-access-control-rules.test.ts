@@ -40,8 +40,8 @@ function makeRow(
       | {
           uuid: string;
           read_only: boolean;
-          after_complete_questions_hidden?: boolean | null;
-          after_complete_score_hidden?: boolean | null;
+          after_complete_questions_hidden?: boolean;
+          after_complete_score_hidden?: boolean;
         }[]
       | null;
   } = {},
@@ -56,8 +56,8 @@ function makeRow(
       overrides.prairietest_exams?.map((e) => ({
         uuid: e.uuid,
         read_only: e.read_only,
-        after_complete_questions_hidden: e.after_complete_questions_hidden ?? null,
-        after_complete_score_hidden: e.after_complete_score_hidden ?? null,
+        after_complete_questions_hidden: e.after_complete_questions_hidden ?? false,
+        after_complete_score_hidden: e.after_complete_score_hidden ?? false,
       })) ?? null,
   };
 }

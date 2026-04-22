@@ -49,8 +49,8 @@ export interface AccessControlRuleInput {
   prairietestExams: {
     uuid: string;
     readOnly: boolean;
-    questionsHidden: boolean | null;
-    scoreHidden: boolean | null;
+    questionsHidden: boolean;
+    scoreHidden: boolean;
   }[];
 }
 
@@ -483,13 +483,12 @@ function resolvePrairieTestAccess({
   const matchingReservation = prairieTestReservations.find((r) => r.examUuid === matchedExam.uuid)!;
 
   // PT-level visibility. `readOnly` reservations represent review sessions,
-  // so everything is visible. Otherwise, the per-exam `afterComplete` config
-  // (stored as nullable `questionsHidden` / `scoreHidden`) decides visibility
-  // inside the testing center after the student finishes; `null` means
-  // "not configured" and defaults to visible. The schema enforces that
-  // `scoreHidden: true` + `questionsHidden !== true` cannot occur.
-  const showClosedAssessment = matchedExam.readOnly || !(matchedExam.questionsHidden ?? false);
-  const showClosedAssessmentScore = matchedExam.readOnly || !(matchedExam.scoreHidden ?? false);
+  // so everything is visible. Otherwise, the per-exam `questionsHidden` /
+  // `scoreHidden` flags decide visibility inside the testing center after
+  // the student finishes. The schema enforces that `scoreHidden: true` +
+  // `questionsHidden: false` cannot occur.
+  const showClosedAssessment = matchedExam.readOnly || !matchedExam.questionsHidden;
+  const showClosedAssessmentScore = matchedExam.readOnly || !matchedExam.scoreHidden;
 
   return {
     action: 'grant',

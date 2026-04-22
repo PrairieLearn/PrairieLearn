@@ -102,13 +102,13 @@ function buildDateControl(
 }
 
 function buildExamAfterComplete(
-  questionsHidden: boolean | null,
-  scoreHidden: boolean | null,
-): { questions?: { hidden: boolean }; score?: { hidden: boolean } } | undefined {
-  if (questionsHidden == null && scoreHidden == null) return undefined;
-  const result: { questions?: { hidden: boolean }; score?: { hidden: boolean } } = {};
-  if (questionsHidden != null) result.questions = { hidden: questionsHidden };
-  if (scoreHidden != null) result.score = { hidden: scoreHidden };
+  questionsHidden: boolean,
+  scoreHidden: boolean,
+): { questions?: { hidden: true }; score?: { hidden: true } } | undefined {
+  if (!questionsHidden && !scoreHidden) return undefined;
+  const result: { questions?: { hidden: true }; score?: { hidden: true } } = {};
+  if (questionsHidden) result.questions = { hidden: true };
+  if (scoreHidden) result.score = { hidden: true };
   return result;
 }
 

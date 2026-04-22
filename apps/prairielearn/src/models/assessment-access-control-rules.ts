@@ -211,12 +211,12 @@ export function dbRowToAccessControlJson(
   if (row.prairietest_exams && row.prairietest_exams.length > 0) {
     integrations.prairieTest = {
       exams: row.prairietest_exams.map((e) => {
-        const afterComplete: { questions?: { hidden: boolean }; score?: { hidden: boolean } } = {};
-        if (e.after_complete_questions_hidden != null) {
-          afterComplete.questions = { hidden: e.after_complete_questions_hidden };
+        const afterComplete: { questions?: { hidden: true }; score?: { hidden: true } } = {};
+        if (e.after_complete_questions_hidden) {
+          afterComplete.questions = { hidden: true };
         }
-        if (e.after_complete_score_hidden != null) {
-          afterComplete.score = { hidden: e.after_complete_score_hidden };
+        if (e.after_complete_score_hidden) {
+          afterComplete.score = { hidden: true };
         }
         return {
           examUuid: e.uuid,

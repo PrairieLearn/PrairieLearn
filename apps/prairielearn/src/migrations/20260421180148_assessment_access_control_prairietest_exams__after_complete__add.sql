@@ -1,6 +1,6 @@
 ALTER TABLE assessment_access_control_prairietest_exams
-ADD COLUMN after_complete_questions_hidden boolean,
-ADD COLUMN after_complete_score_hidden boolean;
+ADD COLUMN after_complete_questions_hidden boolean NOT NULL DEFAULT FALSE,
+ADD COLUMN after_complete_score_hidden boolean NOT NULL DEFAULT FALSE;
 
 -- `read_only` and `afterComplete` are mutually exclusive: a readOnly PT
 -- reservation represents a review environment that always shows everything,
@@ -15,14 +15,14 @@ ALTER TABLE assessment_access_control_prairietest_exams
 ADD CONSTRAINT aac_prairietest_exams_after_complete_check CHECK (
   (
     read_only = TRUE
-    AND after_complete_questions_hidden IS NULL
-    AND after_complete_score_hidden IS NULL
+    AND after_complete_questions_hidden = FALSE
+    AND after_complete_score_hidden = FALSE
   )
   OR (
     read_only = FALSE
     AND NOT (
-      after_complete_score_hidden IS TRUE
-      AND after_complete_questions_hidden IS NOT TRUE
+      after_complete_score_hidden = TRUE
+      AND after_complete_questions_hidden = FALSE
     )
   )
 );

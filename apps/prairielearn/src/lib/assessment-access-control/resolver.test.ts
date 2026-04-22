@@ -58,15 +58,15 @@ function ptExam(
   uuid: string,
   opts: {
     readOnly?: boolean;
-    questionsHidden?: boolean | null;
-    scoreHidden?: boolean | null;
+    questionsHidden?: boolean;
+    scoreHidden?: boolean;
   } = {},
 ): AccessControlRuleInput['prairietestExams'][number] {
   return {
     uuid,
     readOnly: opts.readOnly ?? false,
-    questionsHidden: opts.questionsHidden ?? null,
-    scoreHidden: opts.scoreHidden ?? null,
+    questionsHidden: opts.questionsHidden ?? false,
+    scoreHidden: opts.scoreHidden ?? false,
   };
 }
 

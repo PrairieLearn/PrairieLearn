@@ -1809,7 +1809,7 @@ describe('Access control syncing', () => {
         const main = rules.find((r) => r.number === 0);
         assert.isOk(main);
         assert.deepEqual(main.prairietestExams, [
-          { uuid: TEST_EXAM_UUID, readOnly: false, questionsHidden: null, scoreHidden: null },
+          { uuid: TEST_EXAM_UUID, readOnly: false, questionsHidden: false, scoreHidden: false },
         ]);
         assert.deepEqual(main.rule.integrations, {
           prairieTest: {
@@ -1840,7 +1840,7 @@ describe('Access control syncing', () => {
         const main = rules.find((r) => r.number === 0);
         assert.isOk(main);
         assert.deepEqual(main.prairietestExams, [
-          { uuid: TEST_EXAM_UUID, readOnly: true, questionsHidden: null, scoreHidden: null },
+          { uuid: TEST_EXAM_UUID, readOnly: true, questionsHidden: false, scoreHidden: false },
         ]);
       }));
 
