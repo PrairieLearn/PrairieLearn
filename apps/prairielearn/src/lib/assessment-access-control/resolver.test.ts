@@ -1129,8 +1129,8 @@ describe('resolveAccessControl', () => {
             afterComplete: { questions: { hidden: false }, score: { hidden: false } },
           },
           {
-            name: 'hide score only',
-            afterComplete: { questions: { hidden: false }, score: { hidden: true } },
+            name: 'hide questions only',
+            afterComplete: { questions: { hidden: true }, score: { hidden: false } },
           },
         ];
 
@@ -1741,6 +1741,30 @@ describe('resolveAccessControl', () => {
         date: new Date('2025-03-15T12:00:00Z'),
       });
       expect(result.showClosedAssessmentScore).toBe(true);
+    });
+
+    it('hides questions when a merged main + override produces visible-questions + hidden-score', () => {
+      // Per-rule validation forbids `score.hidden: true` alongside
+      // `questions.hidden: false` on a single rule, but merging is independent
+      // per sub-object: a main rule that only sets `questions` combined with
+      // an override that only sets `score` can yield the forbidden pair.
+      // The resolver must clamp to "hide questions" rather than show answers
+      // without a score.
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            afterComplete: { questions: { hidden: false } },
+          }),
+          makeOverrideRule(
+            1,
+            { afterComplete: { score: { hidden: true } } },
+            { enrollmentIds: [defaultEnrollment.enrollmentId] },
+          ),
+        ],
+      });
+      expect(result.showClosedAssessmentScore).toBe(false);
+      expect(result.showClosedAssessment).toBe(false);
     });
   });
 
