@@ -34,4 +34,17 @@ export type {
   IRFeedback,
   AssetReference,
 } from './types/ir.js';
-export type { PLQuestionInfoJson, PLQuestionOutput } from './types/pl-output.js';
+export type {
+  PLQuestionInfoJson,
+  PLQuestionOutput,
+  PLAssessmentInfoJson,
+  PLAllowAccessRule,
+  PLAssessmentZone,
+  PLAssessmentQuestion,
+  PLAssessmentOutput,
+} from './types/pl-output.js';
+
+// Course export utilities
+export { detectCourseExport, findQtiFilesFromManifest } from './utils/course-export.js';
+export type { CourseExportInfo, QtiFileEntry } from './utils/course-export.js';
+export { slugify } from './utils/slugify.js';
