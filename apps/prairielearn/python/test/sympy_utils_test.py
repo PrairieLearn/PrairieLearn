@@ -424,71 +424,6 @@ class TestSympy:
             assert result == expected
 
     @pytest.mark.parametrize(
-        "text",
-        [
-            "∪",  # noqa: RUF001
-            "∩",
-            "&",
-            "|",
-            "{}",
-            "1 ∪ 2",  # noqa: RUF001
-            "1 ∩ 2",
-            "1 & 2",
-            "1 | 2",
-            "{1, 2, 3}",
-            "(0, 1)",
-            "(0, 1]",
-            "[0, 1)",
-            "[0, 1]",
-        ],
-    )
-    def test_set_notation_specific_syntax_rejected_when_disabled(
-        self, text: str
-    ) -> None:
-        with pytest.raises(psu.HasSetNotationError):
-            psu.convert_string_to_sympy(text, allow_set_notation=False)
-
-    @pytest.mark.parametrize(
-        "text",
-        [
-            # invalid syntax
-            "[1, 2",
-            "1, 2]",
-            "(1, 2",
-            "1, 2)",
-            "[1, 2, 3]",
-            "(1, 2, 3]",
-            "[1, 2, 3)",
-            "(1, 2, 3)",
-            "[1, 2}",
-            "{1, 2]",
-            # valid syntax, invalid nesting
-            "(1, [2, 3])",
-            "(1, [2, 3))",
-            "(1, (2, 3])",
-            "(1, (2, 3))",
-            "(1, [2, 3]]",
-            "(1, [2, 3)]",
-            "(1, (2, 3]]",
-            "(1, (2, 3)]",
-            "[1, [2, 3])",
-            "[1, [2, 3))",
-            "[1, (2, 3])",
-            "[1, (2, 3))",
-            "[1, [2, 3]]",
-            "[1, [2, 3)]",
-            "[1, (2, 3]]",
-            "[1, (2, 3)]",
-            "[1, {2, 3}]",
-            "[{2, 3}, 1]",
-        ],
-    )
-    def test_set_syntax_errors_are_rejected(self, text: str) -> None:
-        out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
-        assert isinstance(out, psu.SympyParseFailure)
-        assert "syntax error" in out.error
-
-    @pytest.mark.parametrize(
         "test",
         [
             "min(-n, -m, m)",
@@ -739,6 +674,31 @@ class TestExceptions:
                 a_sub, self.VARIABLES, allow_complex=False, simplify_expression=True
             )
 
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "∪",  # noqa: RUF001
+            "∩",
+            "&",
+            "|",
+            "{}",
+            "1 ∪ 2",  # noqa: RUF001
+            "1 ∩ 2",
+            "1 & 2",
+            "1 | 2",
+            "{1, 2, 3}",
+            "(0, 1)",
+            "(0, 1]",
+            "[0, 1)",
+            "[0, 1]",
+        ],
+    )
+    def test_set_notation_specific_syntax_rejected_when_disabled(
+        self, text: str
+    ) -> None:
+        with pytest.raises(psu.HasSetNotationError):
+            psu.convert_string_to_sympy(text, allow_set_notation=False)
+
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_reserved_variables(self, a_sub: str) -> None:
         with pytest.raises(psu.HasConflictingVariableError):
@@ -747,51 +707,6 @@ class TestExceptions:
     def test_reserved_functions(self) -> None:
         with pytest.raises(psu.HasConflictingFunctionError):
             psu.convert_string_to_sympy("sin 1", custom_functions=["sin", "f"])
-
-    _SET_OPERATORS = "U", "cup", "cap", "∪", "∩"  # noqa: RUF001
-
-    @pytest.mark.parametrize("conflicting_name", _SET_OPERATORS)
-    def test_set_notation_alias_conflicts_with_variables(
-        self, conflicting_name: str
-    ) -> None:
-        with pytest.raises(psu.HasConflictingVariableError):
-            psu.convert_string_to_sympy(
-                "0", [conflicting_name], allow_set_notation=True, custom_functions=[]
-            )
-
-    @pytest.mark.parametrize("conflicting_name", _SET_OPERATORS)
-    def test_set_notation_alias_conflicts_with_custom_functions(
-        self, conflicting_name: str
-    ) -> None:
-        with pytest.raises(psu.HasConflictingFunctionError):
-            psu.convert_string_to_sympy(
-                "0", [], allow_set_notation=True, custom_functions=[conflicting_name]
-            )
-
-    _MANGLED_SET_OPERATORS = tuple(
-        f"{op}{num}" for op in _SET_OPERATORS for num in (*range(11), 765, 173209)
-    )
-
-    @pytest.mark.parametrize("conflicting_name", _MANGLED_SET_OPERATORS)
-    def test_mangled_set_notation_conflicts_with_variables(
-        self, conflicting_name: str
-    ) -> None:
-        with pytest.raises(ValueError, match=conflicting_name):
-            psu.validate_names_for_conflicts(
-                "0", [conflicting_name], allow_set_notation=True, custom_functions=[]
-            )
-
-    @pytest.mark.parametrize("conflicting_name", _MANGLED_SET_OPERATORS)
-    def test_mangled_set_notation_conflicts_with_custom_functions(
-        self, conflicting_name: str
-    ) -> None:
-        with pytest.raises(ValueError, match=conflicting_name):
-            psu.validate_names_for_conflicts(
-                "0",
-                [],
-                allow_set_notation=True,
-                custom_functions=[conflicting_name],
-            )
 
     @pytest.mark.parametrize("a_sub", NO_FLOATS_CASES)
     def test_no_floats(self, a_sub: str) -> None:
@@ -898,6 +813,46 @@ class TestExceptions:
             allow_trig_functions=True,
             simplify_expression=False,
         )
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            # invalid syntax
+            "[1, 2",
+            "1, 2]",
+            "(1, 2",
+            "1, 2)",
+            "[1, 2, 3]",
+            "(1, 2, 3]",
+            "[1, 2, 3)",
+            "(1, 2, 3)",
+            "[1, 2}",
+            "{1, 2]",
+            # valid syntax, invalid nesting
+            "(1, [2, 3])",
+            "(1, [2, 3))",
+            "(1, (2, 3])",
+            "(1, (2, 3))",
+            "(1, [2, 3]]",
+            "(1, [2, 3)]",
+            "(1, (2, 3]]",
+            "(1, (2, 3)]",
+            "[1, [2, 3])",
+            "[1, [2, 3))",
+            "[1, (2, 3])",
+            "[1, (2, 3))",
+            "[1, [2, 3]]",
+            "[1, [2, 3)]",
+            "[1, (2, 3]]",
+            "[1, (2, 3)]",
+            "[1, {2, 3}]",
+            "[{2, 3}, 1]",
+        ],
+    )
+    def test_set_syntax_errors_are_rejected(self, text: str) -> None:
+        out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
+        assert isinstance(out, psu.SympyParseFailure)
+        assert "syntax error" in out.error
 
     @pytest.mark.parametrize(
         ("caret_spec", "with_vars"),
@@ -1116,6 +1071,51 @@ class TestValidateNamesForConflicts:
             psu.validate_names_for_conflicts("test", [conflicting_name], [])
         with pytest.raises(ValueError, match=conflicting_name):
             psu.validate_names_for_conflicts("test", [], [conflicting_name])
+
+    _SET_OPERATORS = "U", "cup", "cap", "∪", "∩"  # noqa: RUF001
+
+    @pytest.mark.parametrize("conflicting_name", _SET_OPERATORS)
+    def test_set_notation_alias_conflicts_with_variables(
+        self, conflicting_name: str
+    ) -> None:
+        with pytest.raises(psu.HasConflictingVariableError):
+            psu.convert_string_to_sympy(
+                "0", [conflicting_name], allow_set_notation=True, custom_functions=[]
+            )
+
+    @pytest.mark.parametrize("conflicting_name", _SET_OPERATORS)
+    def test_set_notation_alias_conflicts_with_custom_functions(
+        self, conflicting_name: str
+    ) -> None:
+        with pytest.raises(psu.HasConflictingFunctionError):
+            psu.convert_string_to_sympy(
+                "0", [], allow_set_notation=True, custom_functions=[conflicting_name]
+            )
+
+    _MANGLED_SET_OPERATORS = tuple(
+        f"{op}{num}" for op in _SET_OPERATORS for num in (*range(11), 765, 173209)
+    )
+
+    @pytest.mark.parametrize("conflicting_name", _MANGLED_SET_OPERATORS)
+    def test_mangled_set_notation_conflicts_with_variables(
+        self, conflicting_name: str
+    ) -> None:
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "0", [conflicting_name], allow_set_notation=True, custom_functions=[]
+            )
+
+    @pytest.mark.parametrize("conflicting_name", _MANGLED_SET_OPERATORS)
+    def test_mangled_set_notation_conflicts_with_custom_functions(
+        self, conflicting_name: str
+    ) -> None:
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "0",
+                [],
+                allow_set_notation=True,
+                custom_functions=[conflicting_name],
+            )
 
 
 class TestValidateStringConfigurationErrors:
