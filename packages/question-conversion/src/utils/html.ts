@@ -54,8 +54,8 @@ const ATTR_RE = /(\w[\w-]*)=(["'])(.*?)\2/gi;
  *
  * For images already pointing into clientFilesQuestion/ the directory attribute
  * is set explicitly and the prefix is stripped from file-name. External URLs are
- * passed through as file-name without a directory attribute. The alt, width, and
- * height attributes are preserved; all others (style, class, etc.) are dropped
+ * passed through as file-name without a directory attribute. The alt and width
+ * attributes are preserved; all others (style, class, etc.) are dropped
  * since pl-figure handles its own layout.
  */
 export function rewriteImagesAsPlFigure(html: string): string {

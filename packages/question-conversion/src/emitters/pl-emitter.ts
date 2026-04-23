@@ -234,7 +234,7 @@ export class PLEmitter implements OutputEmitter {
       topic,
       tags,
       type: 'v3',
-      singleVariant: true,
+      singleVariant: question.body.type !== 'calculated',
       gradingMethod: question.gradingMethod,
     };
 
@@ -635,19 +635,7 @@ function convertFormulaToPython(formula: string): string {
   // don't collide with each other or with already-prefixed identifiers.
   py = py.replaceAll(/(?<!math\.)\blog\s*\(/g, 'math.log10(');
   py = py.replaceAll(/(?<!math\.)\bln\s*\(/g, 'math.log(');
-  for (const fn of [
-    'sqrt',
-    'sin',
-    'cos',
-    'tan',
-    'asin',
-    'acos',
-    'atan',
-    'exp',
-    'abs',
-    'ceil',
-    'floor',
-  ]) {
+  for (const fn of ['sqrt', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'exp', 'ceil', 'floor']) {
     py = py.replaceAll(new RegExp(`\\b${fn}\\s*\\(`, 'g'), `math.${fn}(`);
   }
   py = py.replaceAll('^', '**');

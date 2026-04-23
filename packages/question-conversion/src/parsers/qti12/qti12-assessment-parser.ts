@@ -550,7 +550,12 @@ export class QTI12AssessmentParser implements InputParser {
     const rcardinality = (attr(el, 'rcardinality') || 'Single') as 'Single' | 'Multiple';
 
     // Material text (used for matching/FITB left-side label)
-    const materialText = textContent(getNestedValue(el, 'material', 'mattext')) || undefined;
+    const mattext = getNestedValue(el, 'material', 'mattext');
+    const rawMaterialText = textContent(mattext);
+    const materialTextType = attr(mattext as Record<string, unknown>, 'texttype') || 'text/plain';
+    const materialText =
+      (materialTextType === 'text/html' ? unescapeHtml(rawMaterialText) : rawMaterialText) ||
+      undefined;
 
     // Parse response labels from render_choice
     const renderChoice = el['render_choice'] as Record<string, unknown> | undefined;
