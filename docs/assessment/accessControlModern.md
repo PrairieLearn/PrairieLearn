@@ -130,13 +130,19 @@ earlyDeadline (110%)    dueDate (100%)    lateDeadline (80%)
 
 #### PrairieTest
 
-| Field                          | Type    | Description                                 |
-| ------------------------------ | ------- | ------------------------------------------- |
-| `prairieTest.exams`            | array   | Array of exam objects.                      |
-| `prairieTest.exams[].examUuid` | string  | UUID of the associated PrairieTest exam.    |
-| `prairieTest.exams[].readOnly` | boolean | Whether the exam is read-only for students. |
+| Field                                                | Type    | Description                                                                                       |
+| ---------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------- |
+| `prairieTest.exams`                                  | array   | Array of exam objects.                                                                            |
+| `prairieTest.exams[].examUuid`                       | string  | UUID of the associated PrairieTest exam.                                                          |
+| `prairieTest.exams[].readOnly`                       | boolean | Whether the exam is read-only for students (review session).                                      |
+| `prairieTest.exams[].afterComplete.questions.hidden` | boolean | If `true`, questions are hidden after the student finishes while the reservation is still active. |
+| `prairieTest.exams[].afterComplete.score.hidden`     | boolean | If `true`, the score is hidden after the student finishes while the reservation is still active.  |
 
-When PrairieTest exams are configured, students must be checked in via PrairieTest to access the assessment. Students not checked in are blocked. The `durationMinutes` field has no effect when PrairieTest is active — time limits are enforced by PrairieTest.
+When PrairieTest exams are configured, an active matching PrairieTest reservation will grant access to the assessment. While a reservation is active, only the matched exam's configuration applies: top-level `dateControl`, `beforeRelease`, and `afterComplete` are ignored, and `durationMinutes` has no effect — time limits are enforced by PrairieTest.
+
+Outside an active reservation — for instance, outside a testing center or before or after the exam — top-level `dateControl`, `beforeRelease`, and `afterComplete` apply as usual. This lets `afterComplete` on the exam describe what the student sees during the reservation, and the top-level `afterComplete` describe what the student sees afterwards.
+
+`readOnly: true` cannot be combined with exam-level `afterComplete` settings that hide questions or scores (`afterComplete.questions.hidden: true` or `afterComplete.score.hidden: true`): a read-only reservation is a review environment that shows everything. Non-hiding settings, such as `afterComplete.questions.hidden: false`, are accepted as no-ops. `afterComplete.score.hidden: true` additionally requires `afterComplete.questions.hidden: true` — we don't support showing the question and submission while hiding the resulting score.
 
 ### `beforeRelease`
 
@@ -176,6 +182,10 @@ Use this to control when students can see their score after completion — for e
 | `visibleFromDate` | string  |         | ISO datetime. Date to re-reveal the score to students.      |
 
 #### Visibility logic
+
+!!! note
+
+    Top-level `afterComplete` only applies outside an active PrairieTest reservation. To control visibility after a student finishes while the reservation is still active, use `prairieTest.exams[].afterComplete` on the matching exam entry.
 
 !!! warning
 
@@ -373,18 +383,49 @@ If a student starts close enough to the due date that less than 90 minutes remai
     {
       "integrations": {
         "prairieTest": {
-          "exams": [{ "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871" }]
+          "exams": [
+            {
+              "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"
+            }
+          ]
         }
-      },
-      "afterComplete": {
-        "questions": { "hidden": true }
       }
     }
   ]
 }
 ```
 
-Students must be checked in via PrairieTest. Time limits and scheduling are managed by PrairieTest. Questions are hidden after completion.
+Students access the assessment through an active PrairieTest reservation; time limits and scheduling are managed by PrairieTest. Once a student finishes the assessment, questions and scores remain visible for the remainder of their reservation.
+
+### Deferred release of feedback and scores after a PrairieTest exam
+
+```json
+{
+  "accessControl": [
+    {
+      "integrations": {
+        "prairieTest": {
+          "exams": [
+            {
+              "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871",
+              "afterComplete": {
+                "questions": { "hidden": true },
+                "score": { "hidden": true }
+              }
+            }
+          ]
+        }
+      },
+      "afterComplete": {
+        "questions": { "hidden": true, "visibleFromDate": "2025-03-15T00:00:00" },
+        "score": { "hidden": true, "visibleFromDate": "2025-03-15T00:00:00" }
+      }
+    }
+  ]
+}
+```
+
+This is useful when real-time grading is disabled for the exam: since students never see feedback or scores during the exam, questions and scores stay hidden both during the PrairieTest reservation and immediately after, and are released to students at home on March 15.
 
 ### Override extending deadline for a student label
 

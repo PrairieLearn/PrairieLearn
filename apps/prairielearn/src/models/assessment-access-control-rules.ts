@@ -83,7 +83,14 @@ const RuleRowSchema = z.object({
   early_deadlines: DeadlineArraySchema,
   late_deadlines: DeadlineArraySchema,
   prairietest_exams: z
-    .array(AssessmentAccessControlPrairietestExamSchema.pick({ uuid: true, read_only: true }))
+    .array(
+      AssessmentAccessControlPrairietestExamSchema.pick({
+        uuid: true,
+        read_only: true,
+        after_complete_questions_hidden: true,
+        after_complete_score_hidden: true,
+      }),
+    )
     .nullable(),
 });
 
@@ -203,10 +210,20 @@ export function dbRowToAccessControlJson(
   const integrations: AccessControlJson['integrations'] = {};
   if (row.prairietest_exams && row.prairietest_exams.length > 0) {
     integrations.prairieTest = {
-      exams: row.prairietest_exams.map((e) => ({
-        examUuid: e.uuid,
-        readOnly: e.read_only,
-      })),
+      exams: row.prairietest_exams.map((e) => {
+        const afterComplete: { questions?: { hidden: true }; score?: { hidden: true } } = {};
+        if (e.after_complete_questions_hidden) {
+          afterComplete.questions = { hidden: true };
+        }
+        if (e.after_complete_score_hidden) {
+          afterComplete.score = { hidden: true };
+        }
+        return {
+          examUuid: e.uuid,
+          readOnly: e.read_only,
+          ...(Object.keys(afterComplete).length > 0 ? { afterComplete } : {}),
+        };
+      }),
     };
   }
 
