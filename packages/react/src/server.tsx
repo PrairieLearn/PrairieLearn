@@ -75,28 +75,6 @@ export function Hydrate<T>({
     throw new Error('<Hydrate> expects a React component');
   }
 
-  for (const forbiddenProp of ['resLocals', 'locals'] as const) {
-    if (props && typeof props === 'object' && forbiddenProp in props) {
-      const componentName =
-        nameOverride ?? (Component as any).displayName ?? Component.name ?? 'UnknownComponent';
-      throw new AugmentedError(
-        `<Hydrate> was passed a "${forbiddenProp}" prop on <${componentName}>.`,
-        {
-          info: html`
-            <div>
-              <p>
-                All props on a hydrated component are serialized and sent to the client. Passing
-                <code>res.locals</code> (or any similarly broad object) would leak the entire
-                server-side locals — CSRF tokens, auth data, authz objects, full DB rows, etc.
-              </p>
-              <p>Pass only the specific fields the component needs as individual props.</p>
-            </div>
-          `,
-        },
-      );
-    }
-  }
-
   // Note that we don't use `Component.name` here because it can be minified or mangled.
   const componentName = nameOverride ?? (Component as any).displayName;
   if (!componentName) {
@@ -115,6 +93,26 @@ ${componentDevName}.displayName = '${componentDevName}';</code></pre>
         `,
       },
     );
+  }
+
+  for (const forbiddenProp of ['resLocals', 'locals'] as const) {
+    if (props && typeof props === 'object' && forbiddenProp in props) {
+      throw new AugmentedError(
+        `<Hydrate> was passed a "${forbiddenProp}" prop on <${componentName}>.`,
+        {
+          info: html`
+            <div>
+              <p>
+                All props on a hydrated component are serialized and sent to the client. Passing
+                <code>res.locals</code> (or any similarly broad object) would leak the entire
+                server-side locals — CSRF tokens, auth data, authz objects, full DB rows, etc.
+              </p>
+              <p>Pass only the specific fields the component needs as individual props.</p>
+            </div>
+          `,
+        },
+      );
+    }
   }
 
   const scriptPath = `esm-bundles/hydrated-components/${componentName}.ts`;
