@@ -574,6 +574,7 @@ function GroupSettingsCard({
                 type="checkbox"
                 className="form-check-input"
                 id="studentPermissions-canCreateGroup"
+                defaultChecked={groupSettingsDefaults?.studentPermissions.canCreateGroup ?? false}
                 {...register('studentPermissions.canCreateGroup')}
               />
               <label htmlFor="studentPermissions-canCreateGroup" className="form-check-label">
@@ -587,6 +588,7 @@ function GroupSettingsCard({
                 type="checkbox"
                 className="form-check-input"
                 id="studentPermissions-canJoinGroup"
+                defaultChecked={groupSettingsDefaults?.studentPermissions.canJoinGroup ?? false}
                 {...register('studentPermissions.canJoinGroup')}
               />
               <label htmlFor="studentPermissions-canJoinGroup" className="form-check-label">
@@ -602,6 +604,7 @@ function GroupSettingsCard({
                 type="checkbox"
                 className="form-check-input"
                 id="studentPermissions-canLeaveGroup"
+                defaultChecked={groupSettingsDefaults?.studentPermissions.canLeaveGroup ?? false}
                 {...register('studentPermissions.canLeaveGroup')}
               />
               <label htmlFor="studentPermissions-canLeaveGroup" className="form-check-label">
@@ -615,7 +618,7 @@ function GroupSettingsCard({
                 type="checkbox"
                 className="form-check-input"
                 id="studentPermissions-canNameGroup"
-                defaultChecked
+                defaultChecked={groupSettingsDefaults?.studentPermissions.canNameGroup ?? true}
                 {...register('studentPermissions.canNameGroup')}
               />
               <label htmlFor="studentPermissions-canNameGroup" className="form-check-label">
@@ -931,6 +934,7 @@ function GroupSettingsCard({
                           type="checkbox"
                           className="form-check-input"
                           aria-label={`Can assign roles for ${field.name || 'this role'}`}
+                          defaultChecked={field.canAssignRoles}
                           {...register(`roles.${index}.canAssignRoles`)}
                         />
                       </div>
@@ -939,6 +943,7 @@ function GroupSettingsCard({
                           type="checkbox"
                           className="form-check-input"
                           aria-label={`Can view for ${field.name || 'this role'}`}
+                          defaultChecked={field.canView}
                           {...register(`roles.${index}.canView`, {
                             onChange: (e) => {
                               if (!e.target.checked) {
@@ -963,6 +968,7 @@ function GroupSettingsCard({
                               ? undefined
                               : "Enable 'Can view' first to allow submission"
                           }
+                          defaultChecked={field.canSubmit}
                           {...register(`roles.${index}.canSubmit`)}
                         />
                       </div>
