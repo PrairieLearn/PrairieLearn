@@ -192,7 +192,7 @@ export async function refundCreditPurchase({
     // Same lock-order rule as processCreditPurchase (course_instance first,
     // checkout_session second) to avoid the parent/child lock inversion cycle
     // with concurrent course_instance delete/cascade operations.
-    const pool = await selectCreditPoolForUpdate(session.course_instance_id);
+    await selectCreditPoolForUpdate(session.course_instance_id);
 
     const marked = await queryOptionalRow(
       sql.mark_ai_grading_credit_checkout_session_refunded,
@@ -203,22 +203,18 @@ export async function refundCreditPurchase({
       throw new Error('Failed to mark checkout session as refunded (already refunded)');
     }
 
-    // Cap the deduction at the available transferable balance so it never goes negative.
-    const deductAmount = Math.min(
-      session.amount_milli_dollars,
-      pool.credit_transferable_milli_dollars,
-    );
-
-    if (deductAmount > 0) {
-      await adjustCreditPool({
-        course_instance_id: session.course_instance_id,
-        delta_milli_dollars: -deductAmount,
-        credit_type: 'transferable',
-        user_id: admin_user_id,
-        reason: 'Credit purchase refund',
-        checkout_session_id: session.id,
-      });
-    }
+    // Deduct the full purchase amount so the refund exactly reverses the
+    // original credit. Transferable balance is allowed to go negative; the
+    // course must top up before grading can resume.
+    await adjustCreditPool({
+      course_instance_id: session.course_instance_id,
+      delta_milli_dollars: -session.amount_milli_dollars,
+      credit_type: 'transferable',
+      user_id: admin_user_id,
+      reason: 'Credit purchase refund',
+      checkout_session_id: session.id,
+      allow_negative_balance: true,
+    });
 
     await insertAuditEvent({
       tableName: 'ai_grading_credit_checkout_sessions',

@@ -260,10 +260,10 @@ describe('Main rule requirement', () => {
     assert.equal(result.errors.length, 0, 'Should have no errors with one main rule');
   });
 
-  it('should fail validation when an override specifies listBeforeRelease', () => {
+  it('should fail validation when an override specifies beforeRelease', () => {
     const rules: AccessControlJsonInput[] = [
       {
-        listBeforeRelease: false,
+        beforeRelease: { listed: false },
         dateControl: {
           releaseDate: '2024-03-14T00:01:00',
           dueDate: '2024-03-21T23:59:00',
@@ -271,7 +271,7 @@ describe('Main rule requirement', () => {
       },
       {
         labels: ['student1'],
-        listBeforeRelease: true,
+        beforeRelease: { listed: true },
         dateControl: {
           dueDate: '2024-03-22T23:59:00',
         },
@@ -284,8 +284,8 @@ describe('Main rule requirement', () => {
     });
 
     assert.isTrue(
-      result.errors.includes('listBeforeRelease can only be specified on the defaults.'),
-      `Expected listBeforeRelease validation error, but got: ${result.errors.join(', ')}`,
+      result.errors.some((err) => err.includes('beforeRelease can only be specified')),
+      `Expected beforeRelease validation error, but got: ${result.errors.join(', ')}`,
     );
   });
 });
@@ -422,6 +422,84 @@ describe('Exam UUID validation', () => {
     });
 
     assert.isTrue(result.success);
+  });
+});
+
+describe('PrairieTest exam afterComplete validation', () => {
+  const validUuid = '11e89892-3eff-4d7f-90a2-221372f14e5c';
+  const readOnlyNoHideError = `PrairieTest exam ${validUuid}: readOnly: true cannot be combined with afterComplete.questions.hidden: true or afterComplete.score.hidden: true (a readOnly reservation is a review environment).`;
+  const ptScoreRequiresQuestionsError = `PrairieTest exam ${validUuid}: afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.`;
+
+  it.each([
+    {
+      label: 'readOnly: true combined with afterComplete.questions.hidden: true',
+      exam: {
+        examUuid: validUuid,
+        readOnly: true,
+        afterComplete: { questions: { hidden: true } },
+      },
+      errorMessage: readOnlyNoHideError,
+    },
+    {
+      label: 'readOnly: true combined with afterComplete.score.hidden: true',
+      exam: {
+        examUuid: validUuid,
+        readOnly: true,
+        afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+      },
+      errorMessage: readOnlyNoHideError,
+    },
+    {
+      label: 'score.hidden: true without questions.hidden: true',
+      exam: {
+        examUuid: validUuid,
+        afterComplete: { score: { hidden: true } },
+      },
+      errorMessage: ptScoreRequiresQuestionsError,
+    },
+    {
+      label: 'score.hidden: true with questions.hidden: false',
+      exam: {
+        examUuid: validUuid,
+        afterComplete: { questions: { hidden: false }, score: { hidden: true } },
+      },
+      errorMessage: ptScoreRequiresQuestionsError,
+    },
+  ])('rejects $label', ({ exam, errorMessage }) => {
+    const errors = validateRule({ integrations: { prairieTest: { exams: [exam] } } }, 'none');
+    assert.isTrue(errors.includes(errorMessage));
+  });
+
+  it.each([
+    {
+      label: 'readOnly: true with afterComplete.questions.hidden: false (no-op)',
+      exam: {
+        examUuid: validUuid,
+        readOnly: true,
+        afterComplete: { questions: { hidden: false } },
+      },
+    },
+    {
+      label: 'readOnly: true without afterComplete',
+      exam: { examUuid: validUuid, readOnly: true },
+    },
+    {
+      label: 'non-readOnly with afterComplete.questions.hidden: true',
+      exam: {
+        examUuid: validUuid,
+        afterComplete: { questions: { hidden: true } },
+      },
+    },
+    {
+      label: 'both questions.hidden: true and score.hidden: true',
+      exam: {
+        examUuid: validUuid,
+        afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+      },
+    },
+  ])('accepts $label', ({ exam }) => {
+    const errors = validateRule({ integrations: { prairieTest: { exams: [exam] } } }, 'none');
+    assert.deepEqual(errors, []);
   });
 });
 
