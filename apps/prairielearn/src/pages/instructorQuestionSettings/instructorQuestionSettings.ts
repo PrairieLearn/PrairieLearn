@@ -229,6 +229,9 @@ router.post(
           external_grading_timeout: IntegerFromStringOrEmptySchema.optional(),
           external_grading_enable_networking: BooleanFromCheckboxSchema,
           external_grading_environment: z.string().optional(),
+          share_publicly: BooleanFromCheckboxSchema,
+          share_source_publicly: BooleanFromCheckboxSchema,
+          sharing_sets: ArrayFromStringOrArraySchema.optional(),
         })
         .parse(req.body);
 
@@ -238,6 +241,44 @@ router.post(
           400,
           `Invalid QID: ${shortNameValidation.lowercaseMessage}`,
         );
+      }
+
+      const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
+      let resolvedSharingSets: string[] | undefined;
+      if (sharingEnabled) {
+        if (res.locals.question.share_publicly && !body.share_publicly) {
+          throw new error.HttpStatusError(400, 'A publicly shared question cannot be un-shared.');
+        }
+        if (res.locals.question.share_source_publicly && !body.share_source_publicly) {
+          throw new error.HttpStatusError(
+            400,
+            'A question with publicly shared source cannot be un-shared.',
+          );
+        }
+
+        const sharingSetRows = await sqldb.queryRows(
+          sql.select_sharing_sets,
+          { question_id: res.locals.question.id, course_id: res.locals.course.id },
+          SharingSetRowSchema,
+        );
+        const validSetNames = new Set(sharingSetRows.map((r) => r.name));
+        const currentSetNames = new Set(sharingSetRows.filter((r) => r.in_set).map((r) => r.name));
+        const requestedSetNames = new Set(body.sharing_sets);
+
+        for (const name of requestedSetNames) {
+          if (!validSetNames.has(name)) {
+            throw new error.HttpStatusError(400, `Unknown sharing set: "${name}"`);
+          }
+        }
+        for (const name of currentSetNames) {
+          if (!requestedSetNames.has(name)) {
+            throw new error.HttpStatusError(
+              400,
+              `Cannot remove question from sharing set "${name}" after it has been added.`,
+            );
+          }
+        }
+        resolvedSharingSets = [...requestedSetNames];
       }
 
       const paths = getPaths(undefined, res.locals);
@@ -276,6 +317,24 @@ router.post(
         body.partial_credit,
         res.locals.question.type === 'Freeform',
       );
+
+      if (sharingEnabled) {
+        questionInfo.sharePublicly = propertyValueWithDefault(
+          questionInfo.sharePublicly,
+          body.share_publicly,
+          false,
+        );
+        questionInfo.shareSourcePublicly = propertyValueWithDefault(
+          questionInfo.shareSourcePublicly,
+          body.share_source_publicly,
+          false,
+        );
+        questionInfo.sharingSets = propertyValueWithDefault(
+          questionInfo.sharingSets,
+          resolvedSharingSets,
+          (val: any) => !val || val.length === 0,
+        );
+      }
 
       if (body.preferences.length > 0) {
         const preferencesSchema: QuestionPreferencesSchemaJson = {};
@@ -570,9 +629,9 @@ router.get(
 
     const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 
-    let sharingSetsIn: SharingSetRow[] | undefined;
+    let sharingSets: SharingSetRow[] | undefined;
     if (sharingEnabled) {
-      const result = await sqldb.queryRows(
+      sharingSets = await sqldb.queryRows(
         sql.select_sharing_sets,
         {
           question_id: res.locals.question.id,
@@ -580,7 +639,6 @@ router.get(
         },
         SharingSetRowSchema,
       );
-      sharingSetsIn = result.filter((row) => row.in_set);
     }
     const editableCourses = await selectCoursesWithEditAccess({
       user_id: res.locals.user.id,
@@ -604,7 +662,7 @@ router.get(
         qids,
         assessmentsWithQuestion,
         sharingEnabled,
-        sharingSetsIn,
+        sharingSets,
         editableCourses,
         infoPath,
         origHash,

@@ -30,6 +30,7 @@ import {
   selectAssessmentToolDefaults,
   selectAssessmentZonePointsRange,
 } from '../../models/assessment.js';
+import { selectNonPublicQuestionsInAssessment } from '../../models/sharing-validation.js';
 import { EnumAssessmentToolSchema } from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentSettings } from './instructorAssessmentSettings.html.js';
@@ -95,6 +96,10 @@ router.get(
 
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
 
+    const nonPublicQuestionsInAssessment = assessment.share_source_publicly
+      ? []
+      : await selectNonPublicQuestionsInAssessment({ assessment_id: assessment.id });
+
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
         url: getAssessmentTrpcUrl({
@@ -139,6 +144,7 @@ router.get(
               isDevMode={config.devMode}
               assessmentTools={assessmentTools}
               zonePointsRange={zonePointsRange}
+              nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}
             />
           </Hydrate>
         ),

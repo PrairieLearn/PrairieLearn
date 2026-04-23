@@ -120,6 +120,7 @@ interface SettingsFormValues {
   allow_real_time_grading: boolean;
   grade_rate_minutes: string;
   tools?: Record<string, boolean>;
+  share_source_publicly: boolean;
 }
 
 interface InstructorAssessmentSettingsProps {
@@ -139,6 +140,7 @@ interface InstructorAssessmentSettingsProps {
   isDevMode: boolean;
   assessmentTools: AssessmentToolsConfig;
   zonePointsRange: { min: number; max: number };
+  nonPublicQuestionsInAssessment: { id: string; qid: string }[];
 }
 
 export function InstructorAssessmentSettings({
@@ -158,6 +160,7 @@ export function InstructorAssessmentSettings({
   isDevMode,
   assessmentTools,
   zonePointsRange,
+  nonPublicQuestionsInAssessment,
 }: InstructorAssessmentSettingsProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -185,6 +188,7 @@ export function InstructorAssessmentSettings({
           assessmentModules={assessmentModules}
           assessmentTools={assessmentTools}
           zonePointsRange={zonePointsRange}
+          nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -207,6 +211,7 @@ function InstructorAssessmentSettingsInner({
   assessmentModules,
   assessmentTools,
   zonePointsRange,
+  nonPublicQuestionsInAssessment,
 }: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'isDevMode' | 'courseInstance'>) {
   const trpc = useTRPC();
   const [currentOrigHash, setCurrentOrigHash] = useState(origHash);
@@ -243,6 +248,7 @@ function InstructorAssessmentSettingsInner({
     grade_rate_minutes:
       assessment.json_grade_rate_minutes != null ? String(assessment.json_grade_rate_minutes) : '',
     tools: Object.fromEntries(assessmentTools.map(({ name, enabled }) => [name, enabled])),
+    share_source_publicly: assessment.share_source_publicly,
   };
 
   const {
@@ -549,14 +555,43 @@ function InstructorAssessmentSettingsInner({
               />
 
               <p className="form-label">Sharing</p>
-              {assessment.share_source_publicly ? (
+              <Form.Check
+                type="checkbox"
+                id="share_source_publicly"
+                label="Share source publicly"
+                className="mb-1"
+                disabled={
+                  !canEdit ||
+                  assessment.share_source_publicly ||
+                  nonPublicQuestionsInAssessment.length > 0
+                }
+                {...register('share_source_publicly')}
+              />
+              <small className="form-text text-muted d-block mb-2">
+                The assessment's JSON configuration and question list become available for others to
+                view and copy.
+                {assessment.share_source_publicly &&
+                  ' This assessment already has publicly shared source and cannot be un-shared.'}
+              </small>
+              {nonPublicQuestionsInAssessment.length > 0 && !assessment.share_source_publicly && (
+                <Alert variant="warning" className="small mb-2">
+                  Cannot share this assessment publicly until the following questions are also
+                  shared publicly:{' '}
+                  {nonPublicQuestionsInAssessment.map((q, i) => (
+                    <span key={q.id}>
+                      {i > 0 && ', '}
+                      <a href={`${urlPrefix}/question/${q.id}/settings`}>{q.qid}</a>
+                    </span>
+                  ))}
+                  .
+                </Alert>
+              )}
+              {assessment.share_source_publicly && (
                 <PublicLinkSharing
                   publicLink={publicLink}
                   sharingMessage="This assessment's source is publicly shared."
                   publicLinkMessage="The link that other instructors can use to view this assessment."
                 />
-              ) : (
-                <p className="form-text text-muted">This assessment is not being shared.</p>
               )}
             </div>
             <div className="card-footer d-flex flex-wrap align-items-center gap-2">

@@ -36,6 +36,7 @@ import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import { insertCourseInstancePermissions } from '../../models/course-permissions.js';
+import { selectNonPublicAssessmentsInCourseInstance } from '../../models/sharing-validation.js';
 import type { CourseInstanceJsonInput } from '../../schemas/index.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
@@ -101,6 +102,12 @@ router.get(
 
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
 
+    const nonPublicAssessmentsInCourseInstance = courseInstance.share_source_publicly
+      ? []
+      : await selectNonPublicAssessmentsInCourseInstance({
+          course_instance_id: courseInstance.id,
+        });
+
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
         url: getCourseInstanceTrpcUrl(courseInstance.id),
@@ -140,6 +147,7 @@ router.get(
                 infoCourseInstancePath={infoCourseInstancePath}
                 isDevMode={config.devMode}
                 isAdministrator={isAdministrator}
+                nonPublicAssessmentsInCourseInstance={nonPublicAssessmentsInCourseInstance}
               />
             </Hydrate>
             <Hydrate>
@@ -419,6 +427,29 @@ router.post(
       } else {
         courseInstanceInfo.selfEnrollment = undefined;
       }
+
+      if (courseInstance.share_source_publicly && !parsedBody.share_source_publicly) {
+        throw new error.HttpStatusError(
+          400,
+          'A course instance with publicly shared source cannot be un-shared.',
+        );
+      }
+      if (parsedBody.share_source_publicly && !courseInstance.share_source_publicly) {
+        const nonPublicAssessments = await selectNonPublicAssessmentsInCourseInstance({
+          course_instance_id: courseInstance.id,
+        });
+        if (nonPublicAssessments.length > 0) {
+          throw new error.HttpStatusError(
+            400,
+            `Cannot share this course instance publicly because it contains assessments that are not publicly shared: ${nonPublicAssessments.map((a) => a.tid).join(', ')}.`,
+          );
+        }
+      }
+      courseInstanceInfo.shareSourcePublicly = propertyValueWithDefault(
+        courseInstanceInfo.shareSourcePublicly,
+        parsedBody.share_source_publicly,
+        false,
+      );
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
 

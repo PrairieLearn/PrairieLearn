@@ -2,6 +2,7 @@
 SELECT
   ss.name,
   ss.id,
+  ss.description,
   COALESCE(
     jsonb_agg(
       c.short_name
@@ -12,7 +13,15 @@ SELECT
         c.short_name IS NOT NULL
     ),
     '[]'
-  ) AS shared_with
+  ) AS shared_with,
+  (
+    SELECT
+      COUNT(*)::int
+    FROM
+      sharing_set_questions AS ssq
+    WHERE
+      ssq.sharing_set_id = ss.id
+  ) AS question_count
 FROM
   sharing_sets AS ss
   LEFT JOIN sharing_set_courses AS css ON css.sharing_set_id = ss.id

@@ -20,6 +20,7 @@ import {
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { selectAssessmentByUuid } from '../../models/assessment.js';
+import { selectNonPublicQuestionsInAssessment } from '../../models/sharing-validation.js';
 import {
   type AssessmentJsonInput,
   EnumAssessmentToolSchema,
@@ -73,6 +74,7 @@ const updateAssessment = t.procedure
       ),
       origHash: z.string(),
       tools: z.record(z.string(), z.boolean()).optional(),
+      share_source_publicly: z.boolean(),
     }),
   )
   .mutation(async ({ input, ctx }) => {
@@ -217,6 +219,29 @@ const updateAssessment = t.procedure
       assessmentInfo.gradeRateMinutes,
       input.grade_rate_minutes ?? undefined,
       (v: number | null | undefined) => v == null || v === 0,
+    );
+
+    if (assessment.share_source_publicly && !input.share_source_publicly) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'An assessment with publicly shared source cannot be un-shared.',
+      });
+    }
+    if (input.share_source_publicly && !assessment.share_source_publicly) {
+      const nonPublicQuestions = await selectNonPublicQuestionsInAssessment({
+        assessment_id: assessment.id,
+      });
+      if (nonPublicQuestions.length > 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot share this assessment publicly because it contains questions that are not publicly shared: ${nonPublicQuestions.map((q) => q.qid).join(', ')}.`,
+        });
+      }
+    }
+    assessmentInfo.shareSourcePublicly = propertyValueWithDefault(
+      assessmentInfo.shareSourcePublicly,
+      input.share_source_publicly,
+      false,
     );
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));

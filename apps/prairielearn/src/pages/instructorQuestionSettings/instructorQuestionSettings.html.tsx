@@ -20,7 +20,6 @@ import { type CourseWithPermissions } from '../../models/course.js';
 
 import { QuestionSettingsCardFooter } from './components/QuestionSettingsCardFooter.js';
 import { QuestionSettingsForm } from './components/QuestionSettingsForm.js';
-import { QuestionSharing } from './components/QuestionSharing.js';
 import { QuestionTestsForm } from './components/QuestionTestsForm.js';
 import {
   EditableCourseSchema,
@@ -38,7 +37,7 @@ export function InstructorQuestionSettings({
   qids,
   assessmentsWithQuestion,
   sharingEnabled,
-  sharingSetsIn,
+  sharingSets,
   editableCourses,
   infoPath,
   origHash,
@@ -54,7 +53,7 @@ export function InstructorQuestionSettings({
   qids: string[];
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
-  sharingSetsIn: SharingSetRow[] | undefined;
+  sharingSets: SharingSetRow[] | undefined;
   editableCourses: CourseWithPermissions[];
   infoPath: string;
   origHash: string;
@@ -106,26 +105,11 @@ export function InstructorQuestionSettings({
                 canEdit={canEdit}
                 courseInstance={courseInstance}
                 assessmentsWithQuestion={assessmentsWithQuestion}
+                sharingEnabled={sharingEnabled}
+                sharingSets={sharingSets ?? []}
               />
             </Hydrate>,
           )}
-          ${sharingEnabled
-            ? html`
-                <hr />
-                <div>
-                  <h2 class="h4">Sharing</h2>
-                  <div data-testid="shared-with">
-                    ${renderHtml(
-                      <QuestionSharing
-                        sharePublicly={resLocals.question.share_publicly}
-                        shareSourcePublicly={resLocals.question.share_source_publicly}
-                        sharingSetsIn={sharingSetsIn ?? []}
-                      />,
-                    )}
-                  </div>
-                </div>
-              `
-            : ''}
           ${resLocals.question.type === 'Freeform' &&
           resLocals.question.grading_method !== 'External' &&
           resLocals.authz_data.has_course_permission_view

@@ -10,7 +10,9 @@ import type { ResLocalsForPage } from '../../lib/res-locals.js';
 export const SharingSetRowSchema = z.object({
   name: z.string(),
   id: z.string(),
+  description: z.string().nullable(),
   shared_with: z.string().array(),
+  question_count: z.number(),
 });
 type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
 
@@ -52,6 +54,137 @@ function AddCourseToSharingSetPopover({
       </div>
     </form>
   `;
+}
+
+function EditSharingSetDescriptionPopover({
+  sharing_set,
+  resLocals,
+  origHash,
+}: {
+  sharing_set: SharingSetRow;
+  resLocals: ResLocalsForPage<'course'>;
+  origHash: string;
+}) {
+  return html`
+    <form name="sharing-set-edit-description-${sharing_set.id}" method="POST">
+      <input type="hidden" name="__action" value="sharing_set_update_description" />
+      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      <input type="hidden" name="orig_hash" value="${origHash}" />
+      <input type="hidden" name="name" value="${sharing_set.name}" />
+      <div class="mb-3">
+        <label class="form-label" for="sharing_set_description_${sharing_set.id}">
+          Description for "${sharing_set.name}"
+        </label>
+        <textarea
+          class="form-control form-control-sm"
+          id="sharing_set_description_${sharing_set.id}"
+          name="description"
+          rows="3"
+        >
+${sharing_set.description ?? ''}</textarea
+        >
+        <small class="form-text text-muted">Leave blank to remove the description.</small>
+      </div>
+      <div>
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="popover">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-sm btn-primary">Save</button>
+      </div>
+    </form>
+  `;
+}
+
+function DeleteSharingSetPopover({
+  sharing_set,
+  resLocals,
+  origHash,
+}: {
+  sharing_set: SharingSetRow;
+  resLocals: ResLocalsForPage<'course'>;
+  origHash: string;
+}) {
+  return html`
+    <form name="sharing-set-delete-${sharing_set.id}" method="POST">
+      <input type="hidden" name="__action" value="sharing_set_delete" />
+      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      <input type="hidden" name="orig_hash" value="${origHash}" />
+      <input type="hidden" name="name" value="${sharing_set.name}" />
+      <div class="mb-3">
+        <div class="form-text text-wrap">
+          <p>Delete the sharing set "${sharing_set.name}"? This cannot be undone.</p>
+        </div>
+      </div>
+      <div>
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="popover">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+      </div>
+    </form>
+  `;
+}
+
+function AddSharingSetModal({ csrfToken, origHash }: { csrfToken: string; origHash: string }) {
+  return Modal({
+    title: 'Add sharing set',
+    id: 'addSharingSetModal',
+    form: true,
+    body: html`
+      <input type="hidden" name="__action" value="sharing_set_create" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="orig_hash" value="${origHash}" />
+      <p class="small text-muted">
+        A
+        <a
+          href="https://docs.prairielearn.com/contentSharing/#sharing-sets"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          sharing set
+        </a>
+        is a named set of questions which you can share to another course. This lets you share
+        different sets of your questions &mdash; for example, share some questions only with other
+        courses in your department, and other questions with anyone using PrairieLearn. See the
+        <a
+          href="https://docs.prairielearn.com/contentSharing/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          content sharing docs
+        </a>
+        for details.
+      </p>
+      <div class="mb-3">
+        <label class="form-label" for="new_sharing_set_name">Name</label>
+        <input
+          type="text"
+          class="form-control"
+          id="new_sharing_set_name"
+          name="name"
+          required
+          pattern="[^/@]+"
+          title="Sharing set names cannot contain '/' or '@'."
+        />
+        <small class="form-text text-muted">
+          A short identifier, e.g. <code>exam-questions</code>. Cannot contain "/" or "@".
+        </small>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="new_sharing_set_description">Description (optional)</label>
+        <textarea
+          class="form-control"
+          id="new_sharing_set_description"
+          name="description"
+          rows="2"
+        ></textarea>
+      </div>
+    `,
+    footer: html`
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Add sharing set</button>
+    `,
+  });
 }
 
 function ChooseSharingNameModal({
@@ -120,6 +253,8 @@ export function InstructorCourseAdminSharing({
   sharingSets,
   publicSharingLink,
   canChooseSharingName,
+  canEdit,
+  origHash,
   resLocals,
 }: {
   sharingName: string | null;
@@ -127,6 +262,8 @@ export function InstructorCourseAdminSharing({
   sharingSets: SharingSetRow[];
   publicSharingLink: string;
   canChooseSharingName: boolean;
+  canEdit: boolean;
+  origHash: string;
   resLocals: ResLocalsForPage<'course'>;
 }) {
   return PageLayout({
@@ -212,57 +349,159 @@ export function InstructorCourseAdminSharing({
       </div>
 
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
+        <div
+          class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
+        >
           <h2>Sharing Sets</h2>
+          ${canEdit
+            ? html`
+                <button
+                  type="button"
+                  class="btn btn-sm btn-light"
+                  data-bs-toggle="modal"
+                  data-bs-target="#addSharingSetModal"
+                >
+                  <i class="fas fa-plus" aria-hidden="true"></i>
+                  Add sharing set
+                </button>
+              `
+            : ''}
         </div>
         <div class="table-responsive">
           <table class="table table-sm table-hover table-striped" aria-label="Sharing sets">
             <thead>
               <tr>
                 <th>Sharing Set Name</th>
+                <th>Description</th>
                 <th>Shared With</th>
+                ${canEdit ? html`<th class="text-end">Actions</th>` : ''}
               </tr>
             </thead>
             <tbody>
-              ${sharingSets.map(
-                (sharing_set) => html`
-                  <tr>
-                    <td class="align-middle">${sharing_set.name}</td>
-                    <td class="align-middle" data-testid="shared-with">
-                      ${sharing_set.shared_with.map(
-                        (course_shared_with) => html`
-                          <span class="badge color-gray1"> ${course_shared_with} </span>
-                        `,
-                      )}
-                      <div class="btn-group btn-group-sm" role="group">
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-outline-dark"
-                          aria-label="Add course to sharing set"
-                          data-bs-toggle="popover"
-                          data-bs-container="body"
-                          data-bs-html="true"
-                          data-bs-placement="auto"
-                          data-bs-title="Add Course to Sharing Set"
-                          data-bs-content="${escapeHtml(
-                            AddCourseToSharingSetPopover({
-                              resLocals,
-                              sharing_set,
-                            }),
-                          )}"
-                        >
-                          Add...
-                          <i class="fas fa-plus" aria-hidden="true"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                `,
-              )}
+              ${sharingSets.length === 0
+                ? html`
+                    <tr>
+                      <td
+                        colspan="${canEdit ? 4 : 3}"
+                        class="text-center text-muted align-middle py-3"
+                      >
+                        No sharing sets defined yet.
+                      </td>
+                    </tr>
+                  `
+                : sharingSets.map((sharing_set) => {
+                    const inUse =
+                      sharing_set.question_count > 0 || sharing_set.shared_with.length > 0;
+                    return html`
+                      <tr>
+                        <td class="align-middle">${sharing_set.name}</td>
+                        <td class="align-middle text-muted">${sharing_set.description ?? ''}</td>
+                        <td class="align-middle" data-testid="shared-with">
+                          ${sharing_set.shared_with.map(
+                            (course_shared_with) => html`
+                              <span class="badge color-gray1"> ${course_shared_with} </span>
+                            `,
+                          )}
+                          <div class="btn-group btn-group-sm" role="group">
+                            <button
+                              type="button"
+                              class="btn btn-sm btn-outline-dark"
+                              aria-label="Add course to sharing set"
+                              data-bs-toggle="popover"
+                              data-bs-container="body"
+                              data-bs-html="true"
+                              data-bs-placement="auto"
+                              data-bs-title="Add Course to Sharing Set"
+                              data-bs-content="${escapeHtml(
+                                AddCourseToSharingSetPopover({
+                                  resLocals,
+                                  sharing_set,
+                                }),
+                              )}"
+                            >
+                              Add...
+                              <i class="fas fa-plus" aria-hidden="true"></i>
+                            </button>
+                          </div>
+                        </td>
+                        ${canEdit
+                          ? html`
+                              <td class="align-middle">
+                                <div class="d-flex justify-content-end gap-2">
+                                  <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    aria-label="Edit description for ${sharing_set.name}"
+                                    data-bs-toggle="popover"
+                                    data-bs-container="body"
+                                    data-bs-html="true"
+                                    data-bs-placement="auto"
+                                    data-bs-title="Edit description"
+                                    data-bs-content="${escapeHtml(
+                                      EditSharingSetDescriptionPopover({
+                                        sharing_set,
+                                        resLocals,
+                                        origHash,
+                                      }),
+                                    )}"
+                                  >
+                                    <i class="fas fa-pen" aria-hidden="true"></i>
+                                    Edit
+                                  </button>
+                                  ${inUse
+                                    ? html`
+                                        <span
+                                          class="d-inline-block"
+                                          tabindex="0"
+                                          data-bs-toggle="tooltip"
+                                          data-bs-placement="auto"
+                                          data-bs-title="Cannot delete: sharing set contains questions or has been shared with other courses."
+                                        >
+                                          <button
+                                            type="button"
+                                            class="btn btn-sm btn-outline-danger"
+                                            aria-label="Delete sharing set ${sharing_set.name}"
+                                            disabled
+                                          >
+                                            <i class="fas fa-trash" aria-hidden="true"></i>
+                                            Delete
+                                          </button>
+                                        </span>
+                                      `
+                                    : html`
+                                        <button
+                                          type="button"
+                                          class="btn btn-sm btn-outline-danger"
+                                          aria-label="Delete sharing set ${sharing_set.name}"
+                                          data-bs-toggle="popover"
+                                          data-bs-container="body"
+                                          data-bs-html="true"
+                                          data-bs-placement="auto"
+                                          data-bs-title="Delete sharing set"
+                                          data-bs-content="${escapeHtml(
+                                            DeleteSharingSetPopover({
+                                              sharing_set,
+                                              resLocals,
+                                              origHash,
+                                            }),
+                                          )}"
+                                        >
+                                          <i class="fas fa-trash" aria-hidden="true"></i>
+                                          Delete
+                                        </button>
+                                      `}
+                                </div>
+                              </td>
+                            `
+                          : ''}
+                      </tr>
+                    `;
+                  })}
             </tbody>
           </table>
         </div>
       </div>
+      ${canEdit ? AddSharingSetModal({ csrfToken: resLocals.__csrf_token, origHash }) : ''}
     `,
   });
 }

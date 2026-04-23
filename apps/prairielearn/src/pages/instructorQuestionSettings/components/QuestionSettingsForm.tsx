@@ -22,6 +22,7 @@ import type {
   PreferenceField,
   QuestionSettingsFormValues,
   SelectedAssessments,
+  SharingSetRow,
 } from '../instructorQuestionSettings.types.js';
 
 import { PreferencesTable } from './PreferencesTable.js';
@@ -88,6 +89,8 @@ export const QuestionSettingsForm = ({
   origHash,
   csrfToken,
   canEdit,
+  sharingEnabled,
+  sharingSets,
 }: {
   question: StaffQuestion;
   courseInstance?: StaffCourseInstance | null;
@@ -100,6 +103,8 @@ export const QuestionSettingsForm = ({
   origHash: string;
   csrfToken: string;
   canEdit: boolean;
+  sharingEnabled: boolean;
+  sharingSets: SharingSetRow[];
 }) => {
   // `handleSubmit` runs after react-hook-form processes the submit event, so use a
   // stable ref rather than depending on `event.currentTarget` here.
@@ -148,6 +153,9 @@ export const QuestionSettingsForm = ({
       Object.keys(question.external_grading_environment).length > 0
         ? JSON.stringify(question.external_grading_environment, null, 2)
         : '{}',
+    share_publicly: question.share_publicly,
+    share_source_publicly: question.share_source_publicly,
+    sharing_sets: sharingSets.filter((s) => s.in_set).map((s) => s.name),
   };
 
   const {
@@ -168,6 +176,11 @@ export const QuestionSettingsForm = ({
   const selectedGradingMethod = watch('grading_method');
   const workspaceEnabled = watch('workspace_enabled');
   const externalGradingEnabled = watch('external_grading_enabled');
+  const watchedSharingSets = watch('sharing_sets');
+  const lockedSharingSetNames = sharingSets.filter((s) => s.in_set).map((s) => s.name);
+  const lockedSharingSetNamesSet = new Set(lockedSharingSetNames);
+  const addableSharingSets = sharingSets.filter((s) => !s.in_set);
+  const addedSharingSetNames = watchedSharingSets.filter((n) => !lockedSharingSetNamesSet.has(n));
 
   const isExternalGrading = selectedGradingMethod === 'External';
 
@@ -854,6 +867,110 @@ export const QuestionSettingsForm = ({
           </div>
         )}
       </div>
+
+      {sharingEnabled && (
+        <div className="mb-3">
+          <h4>Sharing</h4>
+          <small className="text-muted d-block mb-3">
+            Share this question publicly or with specific courses via sharing sets. Once shared,
+            these settings cannot be undone.
+          </small>
+
+          <div className="form-check mb-2">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              id="share_publicly"
+              disabled={!canEdit || question.share_publicly}
+              defaultChecked={defaultValues.share_publicly}
+              {...register('share_publicly')}
+            />
+            <label className="form-check-label" htmlFor="share_publicly">
+              Share publicly
+            </label>
+            <div className="small text-muted">
+              Any course may import this question.
+              {question.share_publicly && ' This question is already publicly shared.'}
+            </div>
+          </div>
+
+          <div className="form-check mb-3">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              id="share_source_publicly"
+              disabled={!canEdit || question.share_source_publicly}
+              defaultChecked={defaultValues.share_source_publicly}
+              {...register('share_source_publicly')}
+            />
+            <label className="form-check-label" htmlFor="share_source_publicly">
+              Share source publicly
+            </label>
+            <div className="small text-muted">
+              The question's source is publicly shared.
+              {question.share_source_publicly &&
+                ' This question already has publicly shared source.'}
+            </div>
+          </div>
+
+          <div className="mb-3">
+            <label id="sharing-sets-label" className="form-label" htmlFor="sharing_sets">
+              Sharing sets
+            </label>
+            {sharingSets.length === 0 ? (
+              <div className="small text-muted">
+                No sharing sets are defined in this course. Create them on the{' '}
+                <a href="../../course_admin/sharing">Course sharing</a> page.
+              </div>
+            ) : (
+              <>
+                {lockedSharingSetNames.length > 0 && (
+                  <div className="d-flex flex-wrap gap-1 mb-2">
+                    {lockedSharingSetNames.map((name) => (
+                      <span key={name} className="badge color-gray1">
+                        {name}
+                      </span>
+                    ))}
+                    {lockedSharingSetNames.map((name) => (
+                      <input key={name} type="hidden" name="sharing_sets" value={name} />
+                    ))}
+                  </div>
+                )}
+                {addableSharingSets.length > 0 ? (
+                  <TagPicker
+                    id="sharing_sets"
+                    name="sharing_sets"
+                    items={addableSharingSets.map((s) => ({
+                      id: s.name,
+                      data: s,
+                      label: s.name,
+                      searchableText: s.name,
+                    }))}
+                    value={addedSharingSetNames}
+                    placeholder="Add sharing sets"
+                    aria-labelledby="sharing-sets-label"
+                    disabled={!canEdit}
+                    renderTagContent={(data) => data.name}
+                    tagClassName={() => 'badge color-gray1'}
+                    onChange={(value) => {
+                      setValue('sharing_sets', [...lockedSharingSetNames, ...value], {
+                        shouldDirty: true,
+                      });
+                    }}
+                  />
+                ) : (
+                  <div className="small text-muted">
+                    This question is in every sharing set defined for this course.
+                  </div>
+                )}
+                <small className="form-text text-muted">
+                  Questions cannot be removed from a sharing set after being added.
+                </small>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {canEdit && (
         <>

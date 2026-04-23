@@ -71,4 +71,7 @@ export interface QuestionSettingsFormValues {
   external_grading_timeout: number | undefined;
   external_grading_enable_networking: boolean;
   external_grading_environment: string;
+  share_publicly: boolean;
+  share_source_publicly: boolean;
+  sharing_sets: string[];
 }

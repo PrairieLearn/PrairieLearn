@@ -14,6 +14,7 @@ export const SettingsFormBodySchema = z.object({
   // type is used to drive the form state on the frontend.
   self_enrollment_enabled_before_date_enabled: BooleanFromCheckboxSchema,
   self_enrollment_enabled_before_date: z.string().optional(),
+  share_source_publicly: BooleanFromCheckboxSchema,
 });
 
 export type SettingsFormValues = z.infer<typeof SettingsFormBodySchema>;

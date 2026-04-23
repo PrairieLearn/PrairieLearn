@@ -40,6 +40,7 @@ export function InstructorInstanceAdminSettings({
   infoCourseInstancePath,
   isDevMode,
   isAdministrator,
+  nonPublicAssessmentsInCourseInstance,
 }: {
   csrfToken: string;
   trpcCsrfToken: string;
@@ -59,6 +60,7 @@ export function InstructorInstanceAdminSettings({
   infoCourseInstancePath: string;
   isDevMode: boolean;
   isAdministrator: boolean;
+  nonPublicAssessmentsInCourseInstance: { id: string; tid: string }[];
 }) {
   const [queryClient] = useState(() => new QueryClient());
 
@@ -91,6 +93,7 @@ export function InstructorInstanceAdminSettings({
           .toPlainDateTime()
           .toString()
       : '',
+    share_source_publicly: courseInstance.share_source_publicly,
   };
 
   const {
@@ -239,14 +242,48 @@ export function InstructorInstanceAdminSettings({
             />
 
             <h2 className="h4">Sharing</h2>
-            {courseInstance.share_source_publicly ? (
+            <div className="form-check mb-2">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="share_source_publicly"
+                disabled={
+                  !canEdit ||
+                  courseInstance.share_source_publicly ||
+                  nonPublicAssessmentsInCourseInstance.length > 0
+                }
+                defaultChecked={defaultValues.share_source_publicly}
+                {...register('share_source_publicly')}
+              />
+              <label className="form-check-label" htmlFor="share_source_publicly">
+                Share source publicly
+              </label>
+              <div className="small text-muted">
+                The course instance's source becomes available for others to view and copy.
+                {courseInstance.share_source_publicly &&
+                  ' This course instance already has publicly shared source and cannot be un-shared.'}
+              </div>
+            </div>
+            {nonPublicAssessmentsInCourseInstance.length > 0 &&
+              !courseInstance.share_source_publicly && (
+                <div className="alert alert-warning small mb-2" role="alert">
+                  Cannot share this course instance publicly until the following assessments are
+                  also shared publicly:{' '}
+                  {nonPublicAssessmentsInCourseInstance.map((a, i) => (
+                    <span key={a.id}>
+                      {i > 0 && ', '}
+                      <a href={`${urlPrefix}/assessment/${a.id}/settings`}>{a.tid}</a>
+                    </span>
+                  ))}
+                  .
+                </div>
+              )}
+            {courseInstance.share_source_publicly && (
               <PublicLinkSharing
                 publicLink={publicLink}
                 sharingMessage={"This course instance's source is publicly shared."}
                 publicLinkMessage="The link that other instructors can use to view this course instance."
               />
-            ) : (
-              <p>This course instance is not being shared.</p>
             )}
 
             {canEdit ? (
