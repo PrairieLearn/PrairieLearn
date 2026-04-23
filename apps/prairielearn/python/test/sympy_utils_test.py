@@ -748,28 +748,47 @@ class TestExceptions:
         with pytest.raises(psu.HasConflictingFunctionError):
             psu.convert_string_to_sympy("sin 1", custom_functions=["sin", "f"])
 
-    @pytest.mark.parametrize("conflicting_name", ["U", "cup", "cap", "∪", "∩"])  # noqa: RUF001
+    _SET_OPERATORS = "U", "cup", "cap", "∪", "∩"  # noqa: RUF001
+
+    @pytest.mark.parametrize("conflicting_name", _SET_OPERATORS)
     def test_set_notation_alias_conflicts_with_variables(
         self, conflicting_name: str
     ) -> None:
         with pytest.raises(psu.HasConflictingVariableError):
             psu.convert_string_to_sympy(
-                f"x {conflicting_name} y",
-                ["x", conflicting_name, "y"],
-                allow_set_notation=True,
+                "0", [conflicting_name], allow_set_notation=True, custom_functions=[]
             )
 
-    @pytest.mark.parametrize(
-        "conflicting_name",
-        ["U", "U2", "U348347", "cup", "cap", "∪", "∩"],  # noqa: RUF001
-    )
+    @pytest.mark.parametrize("conflicting_name", _SET_OPERATORS)
     def test_set_notation_alias_conflicts_with_custom_functions(
         self, conflicting_name: str
     ) -> None:
         with pytest.raises(psu.HasConflictingFunctionError):
             psu.convert_string_to_sympy(
-                f"x {conflicting_name} y",
-                ["x", "y"],
+                "0", [], allow_set_notation=True, custom_functions=[conflicting_name]
+            )
+
+    _MANGLED_SET_OPERATORS = tuple(
+        f"{op}{num}" for op in _SET_OPERATORS for num in (*range(11), 765, 173209)
+    )
+
+    @pytest.mark.parametrize("conflicting_name", _MANGLED_SET_OPERATORS)
+    def test_mangled_set_notation_conflicts_with_variables(
+        self, conflicting_name: str
+    ) -> None:
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "0", [conflicting_name], allow_set_notation=True, custom_functions=[]
+            )
+
+    @pytest.mark.parametrize("conflicting_name", _MANGLED_SET_OPERATORS)
+    def test_mangled_set_notation_conflicts_with_custom_functions(
+        self, conflicting_name: str
+    ) -> None:
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "0",
+                [],
                 allow_set_notation=True,
                 custom_functions=[conflicting_name],
             )

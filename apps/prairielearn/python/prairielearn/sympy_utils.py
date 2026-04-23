@@ -11,7 +11,7 @@ import html
 import re
 import string
 from collections import deque
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from functools import wraps
@@ -1598,6 +1598,15 @@ def interval_transformation(
     return result
 
 
+def _split_mangled_binop(binops: Sequence[str], text: str) -> tuple[str, str] | None:
+    r"""Returns (op, num_text) if text is <op>\d+"""
+    if text not in binops:
+        stripped = text.rstrip(string.digits)
+        if stripped in binops:
+            return stripped, text[len(stripped) :]
+    return None
+
+
 def unmangle_infix_binops_transformation(binop_literals: Iterable[str]) -> TRANS:
     """Return a token transform that splits infix operator names from suffix digits.
 
@@ -1614,10 +1623,11 @@ def unmangle_infix_binops_transformation(binop_literals: Iterable[str]) -> TRANS
     ) -> list[TOKEN]:
         out = []
         for typ, text in tokens:
-            if typ == NAME and text not in bin_lit_set:
-                stripped = text.rstrip(string.digits)
-                if stripped in bin_lit_set:
-                    out.extend(((OP, stripped), (NUMBER, text[len(stripped) :])))
+            if typ == NAME:
+                split = _split_mangled_binop(bin_lit_set, text)
+                if split is not None:
+                    op, num = split
+                    out.extend(((OP, op), (NUMBER, num)))
                     continue
             out.append((typ, text))
         return out
@@ -1718,13 +1728,14 @@ def _build_name_conflict_data(
     )
 
     seen = {}
+    set_ops = tuple(_SET_OPS.keys())
 
     def _collision(name: str, *, is_variable: bool) -> bool:
         sanitized = greek_unicode_transform(name)
         if sanitized in seen:
             return True
         seen[sanitized] = (is_variable, name)
-        if allow_set_notation and sanitized.strip(string.digits) == "U":
+        if allow_set_notation and _split_mangled_binop(set_ops, sanitized):
             return True
         return sanitized in builtins
 
