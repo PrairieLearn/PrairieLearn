@@ -34,6 +34,15 @@ ruleTester.run('no-hydrate-reslocals', rule, {
     {
       code: '<Hydrate resLocals={foo}><Child /></Hydrate>',
     },
+    {
+      code: 'hydrateHtml(<Child foo={1} bar="baz" />)',
+    },
+    {
+      code: 'hydrateHtml(<Child {...otherProps} />)',
+    },
+    {
+      code: 'otherFunction(<Child resLocals={res.locals} />)',
+    },
   ],
   invalid: [
     {
@@ -59,6 +68,22 @@ ruleTester.run('no-hydrate-reslocals', rule, {
     {
       code: '<Hydrate fullHeight><Child foo={1} resLocals={res.locals} /></Hydrate>',
       errors: [{ messageId: 'forbiddenProp', data: { name: 'resLocals' } }],
+    },
+    {
+      code: 'hydrateHtml(<Child resLocals={res.locals} />)',
+      errors: [{ messageId: 'forbiddenProp', data: { name: 'resLocals' } }],
+    },
+    {
+      code: 'hydrateHtml(<Child locals={res.locals} />)',
+      errors: [{ messageId: 'forbiddenProp', data: { name: 'locals' } }],
+    },
+    {
+      code: 'hydrateHtml(<Child {...res.locals} />)',
+      errors: [{ messageId: 'forbiddenSpread' }],
+    },
+    {
+      code: 'hydrateHtml(<Child {...resLocals} />, { fullHeight: true })',
+      errors: [{ messageId: 'forbiddenSpread' }],
     },
   ],
 });

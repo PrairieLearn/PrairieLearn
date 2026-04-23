@@ -1,31 +1,30 @@
 import { ESLintUtils, type TSESTree } from '@typescript-eslint/utils';
 
 /**
- * All props on the child of a `<Hydrate>` element are serialized with
- * superjson and shipped to the browser. Passing `resLocals` or `locals`
- * (or spreading them) would leak the entire server-side `res.locals`
- * object — CSRF tokens, auth data, authz objects, full DB rows, etc.
+ * All props on a hydrated component are serialized with superjson and shipped
+ * to the browser. Passing `resLocals` or `locals` (or spreading them) would
+ * leak the entire server-side `res.locals` object — CSRF tokens, auth data,
+ * authz objects, full DB rows, etc.
  *
- * This rule forbids those specific prop names, and forbids spreads on a
- * `<Hydrate>` child whose spread argument is `res.locals`, `resLocals`,
- * or `locals`. Extract the specific fields you need (e.g. via
+ * This rule forbids those prop names (and `{...res.locals}` / `{...resLocals}`
+ * / `{...locals}` spreads) on the child of `<Hydrate>` and on the JSX argument
+ * to `hydrateHtml(...)`. Extract the specific fields you need (e.g. via
  * `extractPageContext`) and pass them as individual props instead.
  */
 
+const HYDRATE_COMPONENT_NAME = 'Hydrate';
+const HYDRATE_FUNCTION_NAME = 'hydrateHtml';
 const FORBIDDEN_NAMES = new Set(['resLocals', 'locals']);
 
-function isHydrateElement(node: TSESTree.JSXElement): boolean {
-  const opening = node.openingElement;
-  return opening.name.type === 'JSXIdentifier' && opening.name.name === 'Hydrate';
-}
-
-function getHydrateChildElement(node: TSESTree.JSXElement): TSESTree.JSXElement | null {
-  for (const child of node.children) {
-    if (child.type === 'JSXElement') {
-      return child;
-    }
+function extractSingleJsxChild(children: TSESTree.JSXChild[]): TSESTree.JSXElement | null {
+  const nonWhitespace = children.filter((child) => {
+    if (child.type === 'JSXText') return child.value.trim().length > 0;
+    return true;
+  });
+  if (nonWhitespace.length !== 1 || nonWhitespace[0].type !== 'JSXElement') {
+    return null;
   }
-  return null;
+  return nonWhitespace[0];
 }
 
 function spreadArgumentDescribesResLocals(argument: TSESTree.Expression): boolean {
@@ -48,43 +47,55 @@ export default ESLintUtils.RuleCreator.withoutDocs({
     type: 'problem',
     messages: {
       forbiddenProp:
-        'Do not pass "{{name}}" to a component rendered inside <Hydrate>; props are serialized and sent to the client, so this would leak the full server-side res.locals. Pass the specific fields the component needs instead.',
+        'Do not pass "{{name}}" to a hydrated component; props are serialized and sent to the client, so this would leak the full server-side res.locals. Pass the specific fields the component needs instead.',
       forbiddenSpread:
-        'Do not spread res.locals onto a component rendered inside <Hydrate>; props are serialized and sent to the client. Pass the specific fields the component needs instead.',
+        'Do not spread res.locals onto a hydrated component; props are serialized and sent to the client. Pass the specific fields the component needs instead.',
     },
     schema: [],
   },
   defaultOptions: [],
 
   create(context) {
-    return {
-      JSXElement(node) {
-        if (!isHydrateElement(node)) return;
-
-        const child = getHydrateChildElement(node);
-        if (!child) return;
-
-        for (const attribute of child.openingElement.attributes) {
-          if (attribute.type === 'JSXAttribute') {
-            if (
-              attribute.name.type === 'JSXIdentifier' &&
-              FORBIDDEN_NAMES.has(attribute.name.name)
-            ) {
-              context.report({
-                node: attribute,
-                messageId: 'forbiddenProp',
-                data: { name: attribute.name.name },
-              });
-            }
-          } else if (attribute.type === 'JSXSpreadAttribute') {
-            if (spreadArgumentDescribesResLocals(attribute.argument)) {
-              context.report({
-                node: attribute,
-                messageId: 'forbiddenSpread',
-              });
-            }
+    function checkHydratedElement(element: TSESTree.JSXElement) {
+      for (const attribute of element.openingElement.attributes) {
+        if (attribute.type === 'JSXAttribute') {
+          if (attribute.name.type === 'JSXIdentifier' && FORBIDDEN_NAMES.has(attribute.name.name)) {
+            context.report({
+              node: attribute,
+              messageId: 'forbiddenProp',
+              data: { name: attribute.name.name },
+            });
+          }
+        } else if (attribute.type === 'JSXSpreadAttribute') {
+          if (spreadArgumentDescribesResLocals(attribute.argument)) {
+            context.report({
+              node: attribute,
+              messageId: 'forbiddenSpread',
+            });
           }
         }
+      }
+    }
+
+    return {
+      JSXElement(node) {
+        const opening = node.openingElement.name;
+        if (opening.type !== 'JSXIdentifier' || opening.name !== HYDRATE_COMPONENT_NAME) return;
+
+        const child = extractSingleJsxChild(node.children);
+        if (!child) return;
+
+        checkHydratedElement(child);
+      },
+
+      CallExpression(node) {
+        if (node.callee.type !== 'Identifier' || node.callee.name !== HYDRATE_FUNCTION_NAME) return;
+        if (node.arguments.length === 0) return;
+
+        const arg = node.arguments[0];
+        if (arg.type !== 'JSXElement') return;
+
+        checkHydratedElement(arg);
       },
     };
   },
