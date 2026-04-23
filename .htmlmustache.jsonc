@@ -104,13 +104,6 @@
       "message": "Rendering submitted answers with triple-brace mustache emits unescaped user content and is an XSS risk. See https://docs.prairielearn.com/elements/pl-xss-safe/."
     },
     {
-      "id": "pl-inline-script",
-      "selector": "script:not([src])",
-      "message": "Prefer external script files over inline <script> tags. See https://docs.prairielearn.com/question/overview/#question-dependencies.",
-      "severity": "warning",
-      "exclude": ["apps/prairielearn/elements/**/*.mustache"]
-    },
-    {
       "id": "pl-prefer-pl-file-download",
       "selector": "a[href*=\"client_files_course_url\"], a[href*=\"client_files_question_url\"]",
       "message": "Prefer pl-file-download over a plain <a> link for downloadable files. See https://docs.prairielearn.com/elements/pl-file-download/.",
