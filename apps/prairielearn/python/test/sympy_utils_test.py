@@ -306,7 +306,7 @@ class TestSympy:
         )
 
     @pytest.mark.parametrize(("a_sub", "sympy_ref"), SET_EXPR_PAIRS)
-    def test_string_conversion_on_sets(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
+    def test_sets_string_conversion(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
         assert sympy_ref == psu.convert_string_to_sympy(
             a_sub,
             self.SYMBOL_NAMES,
@@ -323,7 +323,7 @@ class TestSympy:
         )
 
     @pytest.mark.parametrize("a_pair", SET_EXPR_PAIRS)
-    def test_valid_format_on_sets(self, a_pair: tuple[str, sympy.Expr]) -> None:
+    def test_sets_valid_format(self, a_pair: tuple[str, sympy.Expr]) -> None:
         a_sub, _ = a_pair
         assert (
             psu.validate_string_as_sympy(
@@ -344,7 +344,7 @@ class TestSympy:
         )
 
     @pytest.mark.parametrize(("text", "expected"), SET_EXPR_PAIRS)
-    def test_try_parse_string_as_sympy_on_sets(
+    def test_sets_try_parse_string_as_sympy(
         self, text: str, expected: sympy.Expr
     ) -> None:
         assert psu.SympyParseSuccess(expected) == psu.try_parse_string_as_sympy(
@@ -358,7 +358,7 @@ class TestSympy:
         ("text", "expected"),
         [(text.replace(" ", ""), expected) for text, expected in SET_EXPR_PAIRS],
     )
-    def test_try_parse_string_as_sympy_on_sets_is_ws_insensitive(
+    def test_sets_try_parse_string_as_sympy_is_ws_insensitive(
         self, text: str, expected: sympy.Expr
     ) -> None:
         assert psu.SympyParseSuccess(expected) == psu.try_parse_string_as_sympy(
@@ -436,9 +436,7 @@ class TestSympy:
             "Interval(m, m)",
         ],
     )
-    def test_disabled_set_notation_does_not_break_function_calls(
-        self, test: str
-    ) -> None:
+    def test_sets_disabled_does_not_break_function_calls(self, test: str) -> None:
         # technically this is redundant with some
         out = psu.try_parse_string_as_sympy(
             test,
@@ -479,6 +477,8 @@ class TestSympy:
 
         assert ref_expr == psu.json_to_sympy(psu.sympy_to_json(ref_expr))
 
+    # TODO: bug in jsonification
+    # @pytest.mark.parametrize("sympy_expr", [out for _, out in SET_EXPR_PAIRS])
     @pytest.mark.parametrize(
         "sympy_expr",
         [
@@ -488,7 +488,7 @@ class TestSympy:
             sympy.Intersection(sympy.FiniteSet(1, 2), sympy.Interval(3 / 2, 4)),
         ],
     )
-    def test_json_conversion_handles_sets(self, sympy_expr: sympy.Expr) -> None:
+    def test_sets_json_conversion(self, sympy_expr: sympy.Expr) -> None:
         assert sympy_expr == psu.json_to_sympy(
             psu.sympy_to_json(sympy_expr), allow_set_notation=True
         )
@@ -502,7 +502,7 @@ class TestSympy:
             ("Intersection", (sympy.EmptySet, sympy.EmptySet)),
         ],
     )
-    def test_json_conversion_respects_set_notation_reservations(
+    def test_sets_reserveds_respected_by_json_conversion(
         self,
         fn_name: str,
         fn_args: tuple[Any, ...],
@@ -526,7 +526,7 @@ class TestSympy:
             sympy.symbols("Intersection"),
         ],
     )
-    def test_json_conversion_no_sets_has_no_collisions(
+    def test_sets_disabled_reserveds_pass_json_conversion(
         self, sympy_expr: sympy.Expr
     ) -> None:
         assert sympy_expr == psu.json_to_sympy(
@@ -693,7 +693,7 @@ class TestExceptions:
             "[0, 1]",
         ],
     )
-    def test_set_notation_specific_syntax_rejected_when_disabled(
+    def test_sets_notation_specific_syntax_rejected_when_disabled(
         self, text: str
     ) -> None:
         with pytest.raises(psu.HasSetNotationError):
@@ -849,7 +849,7 @@ class TestExceptions:
             "[{2, 3}, 1]",
         ],
     )
-    def test_set_syntax_errors_are_rejected(self, text: str) -> None:
+    def test_sets_syntax_errors_are_rejected(self, text: str) -> None:
         out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
         assert isinstance(out, psu.SympyParseFailure)
         assert "syntax error" in out.error
@@ -924,7 +924,7 @@ class TestExceptions:
     )
 
     @pytest.mark.parametrize("caret_spec", SET_TYPE_ERROR_CARET_TEMPLATES)
-    def test_set_operation_type_error_caret_output(self, caret_spec: str) -> None:
+    def test_sets_operation_type_error_caret_output(self, caret_spec: str) -> None:
         expr, expected_caret = _caret_template(caret_spec)
         error_msg = psu.validate_string_as_sympy(expr, None, allow_set_notation=True)
         assert error_msg is not None
@@ -938,7 +938,7 @@ class TestExceptions:
     @pytest.mark.parametrize(
         "caret_spec", [t.replace(" ", "") for t in SET_TYPE_ERROR_CARET_TEMPLATES]
     )
-    def test_set_operation_type_error_caret_output_is_ws_insensitive(
+    def test_sets_operation_type_error_caret_output_is_ws_insensitive(
         self, caret_spec: str
     ) -> None:
         expr, expected_caret = _caret_template(caret_spec)
@@ -1037,7 +1037,7 @@ class TestValidateNamesForConflicts:
             )
 
     @pytest.mark.parametrize("conflicting_name", ["U", "cap", "cup"])
-    def test_set_notation_only_conflict_when_enabled(
+    def test_sets_notation_only_conflict_when_enabled(
         self, conflicting_name: str
     ) -> None:
         psu.validate_names_for_conflicts(
@@ -1075,7 +1075,7 @@ class TestValidateNamesForConflicts:
     _SET_OPERATORS = "U", "cup", "cap", "∪", "∩"  # noqa: RUF001
 
     @pytest.mark.parametrize("conflicting_name", _SET_OPERATORS)
-    def test_set_notation_alias_conflicts_with_variables(
+    def test_sets_notation_alias_conflicts_with_variables(
         self, conflicting_name: str
     ) -> None:
         with pytest.raises(psu.HasConflictingVariableError):
@@ -1084,7 +1084,7 @@ class TestValidateNamesForConflicts:
             )
 
     @pytest.mark.parametrize("conflicting_name", _SET_OPERATORS)
-    def test_set_notation_alias_conflicts_with_custom_functions(
+    def test_sets_notation_alias_conflicts_with_custom_functions(
         self, conflicting_name: str
     ) -> None:
         with pytest.raises(psu.HasConflictingFunctionError):
@@ -1097,7 +1097,7 @@ class TestValidateNamesForConflicts:
     )
 
     @pytest.mark.parametrize("conflicting_name", _MANGLED_SET_OPERATORS)
-    def test_mangled_set_notation_conflicts_with_variables(
+    def test_sets_mangled_notation_conflicts_with_variables(
         self, conflicting_name: str
     ) -> None:
         with pytest.raises(ValueError, match=conflicting_name):
@@ -1106,7 +1106,7 @@ class TestValidateNamesForConflicts:
             )
 
     @pytest.mark.parametrize("conflicting_name", _MANGLED_SET_OPERATORS)
-    def test_mangled_set_notation_conflicts_with_custom_functions(
+    def test_sets_mangled_notation_conflicts_with_custom_functions(
         self, conflicting_name: str
     ) -> None:
         with pytest.raises(ValueError, match=conflicting_name):
