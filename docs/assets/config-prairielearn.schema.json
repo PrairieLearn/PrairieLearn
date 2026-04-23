@@ -334,6 +334,24 @@
       "pattern": "^[0-9a-f]{64}$",
       "default": "0000000000000000000000000000000000000000000000000000000000000000"
     },
+    "respondusLockdownBrowserKeys": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "respondusLockdownBrowserSourcePath": {
+      "type": ["string", "null"],
+      "default": null
+    },
     "secretSlackOpsBotEndpoint": {
       "type": ["string", "null"],
       "default": null
