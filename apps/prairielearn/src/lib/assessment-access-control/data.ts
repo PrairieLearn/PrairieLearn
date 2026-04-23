@@ -5,6 +5,7 @@ import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import {
   type Assessment,
+  AssessmentAccessControlPrairietestExamSchema,
   AssessmentAccessControlRuleSchema,
   type CourseInstance,
 } from '../db-types.js';
@@ -23,7 +24,14 @@ const sql = loadSqlEquiv(import.meta.url);
 const DeadlineJsonSchema = z.array(z.object({ date: z.string(), credit: z.number() })).nullable();
 
 const PrairieTestExamJsonSchema = z
-  .array(z.object({ uuid: z.string(), read_only: z.boolean() }))
+  .array(
+    AssessmentAccessControlPrairietestExamSchema.pick({
+      uuid: true,
+      read_only: true,
+      after_complete_questions_hidden: true,
+      after_complete_score_hidden: true,
+    }),
+  )
   .nullable();
 
 const AccessControlRuleRowSchema = z.object({
@@ -93,6 +101,17 @@ function buildDateControl(
   return Object.keys(dateControl).length > 0 ? dateControl : undefined;
 }
 
+function buildExamAfterComplete(
+  questionsHidden: boolean,
+  scoreHidden: boolean,
+): { questions?: { hidden: true }; score?: { hidden: true } } | undefined {
+  if (!questionsHidden && !scoreHidden) return undefined;
+  const result: { questions?: { hidden: true }; score?: { hidden: true } } = {};
+  if (questionsHidden) result.questions = { hidden: true };
+  if (scoreHidden) result.score = { hidden: true };
+  return result;
+}
+
 function buildAfterComplete(rule: AssessmentAccessControlRule): RuntimeAfterComplete | undefined {
   const afterComplete: RuntimeAfterComplete = {};
 
@@ -133,11 +152,20 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
   const prairietestExams = prairietestExamsRaw.map((e) => ({
     uuid: e.uuid,
     readOnly: e.read_only,
+    questionsHidden: e.after_complete_questions_hidden,
+    scoreHidden: e.after_complete_score_hidden,
   }));
   if (prairietestExams.length > 0) {
     runtimeRule.integrations = {
       prairieTest: {
-        exams: prairietestExams.map((e) => ({ examUuid: e.uuid, readOnly: e.readOnly })),
+        exams: prairietestExams.map((e) => {
+          const afterComplete = buildExamAfterComplete(e.questionsHidden, e.scoreHidden);
+          return {
+            examUuid: e.uuid,
+            readOnly: e.readOnly,
+            ...(afterComplete !== undefined ? { afterComplete } : {}),
+          };
+        }),
       },
     };
   }

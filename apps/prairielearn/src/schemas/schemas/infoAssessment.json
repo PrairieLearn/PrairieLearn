@@ -862,6 +862,33 @@
                       "readOnly": {
                         "description": "Whether the exam is read-only for students",
                         "type": "boolean"
+                      },
+                      "afterComplete": {
+                        "description": "Controls visibility after the student finishes the assessment during an active PrairieTest reservation. Only applies while a matching reservation is active; ignored otherwise.",
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "questions": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["hidden"],
+                            "properties": {
+                              "hidden": {
+                                "type": "boolean"
+                              }
+                            }
+                          },
+                          "score": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["hidden"],
+                            "properties": {
+                              "hidden": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
                       }
                     }
                   }

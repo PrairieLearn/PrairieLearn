@@ -104,7 +104,10 @@ function SelectAllCheckbox({ table }: { table: Table<CourseUsersRow> }) {
 
 const columnHelper = createColumnHelper<CourseUsersRow>();
 
-const DEFAULT_SORT: SortingState = [{ id: 'uid', desc: false }];
+const DEFAULT_SORT: SortingState = [
+  { id: 'course_role', desc: true },
+  { id: 'uid', desc: false },
+];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['select', 'uid'], right: [] };
 
 interface StaffTableInnerProps {
@@ -994,6 +997,15 @@ function StaffTableInner({
         filterFn: (row, _columnId, filterValues: CourseRole[]) => {
           if (filterValues.length === 0) return true;
           return filterValues.includes(row.original.course_permission.course_role ?? 'None');
+        },
+        sortingFn: (rowA, rowB) => {
+          const indexA = COURSE_ROLE_VALUES.indexOf(
+            rowA.original.course_permission.course_role ?? 'None',
+          );
+          const indexB = COURSE_ROLE_VALUES.indexOf(
+            rowB.original.course_permission.course_role ?? 'None',
+          );
+          return indexA - indexB;
         },
         cell: (info) => (
           <div className="text-center">

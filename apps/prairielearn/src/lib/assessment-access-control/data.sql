@@ -18,7 +18,16 @@ SELECT
   (
     SELECT
       jsonb_agg(
-        jsonb_build_object('uuid', acpe.uuid, 'read_only', acpe.read_only)
+        jsonb_build_object(
+          'uuid',
+          acpe.uuid,
+          'read_only',
+          acpe.read_only,
+          'after_complete_questions_hidden',
+          acpe.after_complete_questions_hidden,
+          'after_complete_score_hidden',
+          acpe.after_complete_score_hidden
+        )
         ORDER BY
           acpe.uuid
       )
