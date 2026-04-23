@@ -26,15 +26,12 @@ ruleTester.run('no-hydrate-reslocals', rule, {
       code: '<Hydrate><Child course={course} assessment={assessment} /></Hydrate>',
     },
     {
-      // Non-Hydrate components are not affected
       code: '<SomeOther resLocals={res.locals}><Child /></SomeOther>',
     },
     {
-      // Spread of unrelated object is fine
       code: '<Hydrate><Child {...otherProps} /></Hydrate>',
     },
     {
-      // resLocals on the Hydrate wrapper itself (not on the child) is not this rule's concern
       code: '<Hydrate resLocals={foo}><Child /></Hydrate>',
     },
   ],

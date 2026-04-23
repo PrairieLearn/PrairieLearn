@@ -12,8 +12,7 @@ import { ESLintUtils, type TSESTree } from '@typescript-eslint/utils';
  * `extractPageContext`) and pass them as individual props instead.
  */
 
-const FORBIDDEN_PROP_NAMES = new Set(['resLocals', 'locals']);
-const FORBIDDEN_SPREAD_IDENTIFIERS = new Set(['resLocals', 'locals']);
+const FORBIDDEN_NAMES = new Set(['resLocals', 'locals']);
 
 function isHydrateElement(node: TSESTree.JSXElement): boolean {
   const opening = node.openingElement;
@@ -31,7 +30,7 @@ function getHydrateChildElement(node: TSESTree.JSXElement): TSESTree.JSXElement 
 
 function spreadArgumentDescribesResLocals(argument: TSESTree.Expression): boolean {
   if (argument.type === 'Identifier') {
-    return FORBIDDEN_SPREAD_IDENTIFIERS.has(argument.name);
+    return FORBIDDEN_NAMES.has(argument.name);
   }
   if (
     argument.type === 'MemberExpression' &&
@@ -49,9 +48,9 @@ export default ESLintUtils.RuleCreator.withoutDocs({
     type: 'problem',
     messages: {
       forbiddenProp:
-        'Do not pass "{{name}}" as a prop to a component rendered inside <Hydrate>. All props are serialized and sent to the client, so this would leak the full server-side res.locals. Extract the specific fields you need (e.g. via extractPageContext) and pass them as individual props.',
+        'Do not pass "{{name}}" to a component rendered inside <Hydrate>; props are serialized and sent to the client, so this would leak the full server-side res.locals. Pass the specific fields the component needs instead.',
       forbiddenSpread:
-        'Do not spread res.locals (or a variable named resLocals/locals) onto a component rendered inside <Hydrate>. All props are serialized and sent to the client. Extract the specific fields you need and pass them explicitly.',
+        'Do not spread res.locals onto a component rendered inside <Hydrate>; props are serialized and sent to the client. Pass the specific fields the component needs instead.',
     },
     schema: [],
   },
@@ -69,7 +68,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
           if (attribute.type === 'JSXAttribute') {
             if (
               attribute.name.type === 'JSXIdentifier' &&
-              FORBIDDEN_PROP_NAMES.has(attribute.name.name)
+              FORBIDDEN_NAMES.has(attribute.name.name)
             ) {
               context.report({
                 node: attribute,
