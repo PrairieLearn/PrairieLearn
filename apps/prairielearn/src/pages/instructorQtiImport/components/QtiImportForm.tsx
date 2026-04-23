@@ -305,6 +305,22 @@ export function QtiImportForm({
     });
   };
 
+  const expandAllQuestions = (dirNames: string[]) => {
+    setExpandedQuestions((prev) => {
+      const next = new Set(prev);
+      for (const d of dirNames) next.add(d);
+      return next;
+    });
+  };
+
+  const collapseAllQuestions = (dirNames: string[]) => {
+    setExpandedQuestions((prev) => {
+      const next = new Set(prev);
+      for (const d of dirNames) next.delete(d);
+      return next;
+    });
+  };
+
   const includedCount = overrides.filter((o) => o.included).length;
 
   const resetAll = () => {
@@ -422,6 +438,8 @@ export function QtiImportForm({
                       questionOverrides={questionOverrides}
                       expandedQuestions={expandedQuestions}
                       onToggleExpand={toggleExpandedQuestion}
+                      onExpandAll={expandAllQuestions}
+                      onCollapseAll={collapseAllQuestions}
                       onUpdateOverride={updateQuestionOverride}
                     />
                   </Card.Body>
@@ -629,12 +647,16 @@ function AssessmentQuestionsSection({
   questionOverrides,
   expandedQuestions,
   onToggleExpand,
+  onExpandAll,
+  onCollapseAll,
   onUpdateOverride,
 }: {
   questions: SerializedQuestionOutput[];
   questionOverrides: Map<string, QuestionOverrides>;
   expandedQuestions: Set<string>;
   onToggleExpand: (dirName: string) => void;
+  onExpandAll: (dirNames: string[]) => void;
+  onCollapseAll: (dirNames: string[]) => void;
   onUpdateOverride: (dirName: string, updates: Partial<QuestionOverrides>) => void;
 }) {
   const conflictingQuestions = questions.filter(
@@ -648,9 +670,20 @@ function AssessmentQuestionsSection({
     }
   };
 
+  const allDirNames = questions.map((q) => q.directoryName);
+
   return (
     <details>
       <summary className="small text-muted mb-2">Questions ({questions.length})</summary>
+
+      <div className="d-flex gap-2 mb-2 mt-1 small">
+        <a href="#" role="button" onClick={(e) => { e.preventDefault(); onExpandAll(allDirNames); }}>
+          Expand all
+        </a>
+        <a href="#" role="button" onClick={(e) => { e.preventDefault(); onCollapseAll(allDirNames); }}>
+          Collapse all
+        </a>
+      </div>
 
       {conflictCount > 0 && (
         <div className="d-flex align-items-center gap-2 p-2 bg-light border rounded mb-2 mt-2 small">
