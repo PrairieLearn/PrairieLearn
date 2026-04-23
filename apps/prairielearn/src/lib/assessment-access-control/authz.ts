@@ -25,7 +25,7 @@ import { type AccessTimelineEntry } from './timeline.js';
 export type AuthzAssessmentAugmented = SprocAuthzAssessment & {
   access_timeline: AccessTimelineEntry[];
 };
-export type AuthzAssessmentInstanceAugmented = SprocAuthzAssessmentInstance & {
+type AuthzAssessmentInstanceAugmented = SprocAuthzAssessmentInstance & {
   access_timeline: AccessTimelineEntry[];
 };
 

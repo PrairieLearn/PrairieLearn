@@ -23,7 +23,7 @@ export const AccessTimelineEntrySchema = z.object({
 });
 export type AccessTimelineEntry = z.infer<typeof AccessTimelineEntrySchema>;
 
-export interface Deadline {
+interface Deadline {
   date: Date;
   credit: number;
 }
