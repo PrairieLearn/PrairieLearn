@@ -22,16 +22,8 @@ from types import MappingProxyType as FrozenDict
 from typing import Any, Final, Literal, TypeAlias, TypedDict, TypeGuard, cast
 
 import sympy
-from sympy.parsing.sympy_parser import (
-    DICT,
-    TOKEN,
-    TRANS,
-    eval_expr,
-    evaluateFalse,
-    implicit_multiplication_application,
-    standard_transformations,
-    stringify_expr,
-)
+from sympy.parsing import sympy_parser
+from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
 from typing_extensions import NotRequired
 
@@ -707,19 +699,14 @@ def evaluate(
     )[0]
 
 
-def _normalize_expr(expr: str) -> str:
-    """Normalize a symbolic expression while preserving set operators for later parsing."""
-    if expr in _Constants.set_operators:
-        return expr
-    return full_unidecode(greek_unicode_transform(expr))
-
-
-def _normalize_expr_and_map_offsets(expr: str) -> tuple[str, list[int]]:
+def _normalize_expr(expr: str) -> tuple[str, list[int]]:
     """Normalize expr and build a mapping from normalized indices to original indices."""
     parts: list[str] = []
     offsets: list[int] = []
     for ind, char in enumerate(expr):
-        normalized_char = _normalize_expr(char)
+        normalized_char = char
+        if char not in _Constants.set_operators:
+            normalized_char = full_unidecode(greek_unicode_transform(char))
         parts.append(normalized_char)
         offsets.extend([ind] * len(normalized_char))
     return "".join(parts), offsets
@@ -783,19 +770,17 @@ def evaluate_with_source(
         HasParseError: If the expression cannot be parsed.
         BaseSympyError: If the expression cannot be evaluated.
     """
-    normalized_expr, normalized_offsets = _normalize_expr_and_map_offsets(
-        normalized_expr
-    )
+    normalized_expr, char_offsets = _normalize_expr(normalized_expr)
 
     # Check for escape and comment characters after normalization, since some
     # unicode characters normalize to "#" or "\\". The offset map translates
     # back to the original string position in all cases.
     ind = normalized_expr.find("\\")
     if ind != -1:
-        raise HasEscapeError(normalized_offsets[ind])
+        raise HasEscapeError(char_offsets[ind])
     ind = normalized_expr.find("#")
     if ind != -1:
-        raise HasCommentError(normalized_offsets[ind])
+        raise HasCommentError(char_offsets[ind])
 
     # the only thing this can't catch is open intervals `(-, -)`, checked later
     if not allow_set_notation and any(
@@ -806,16 +791,16 @@ def evaluate_with_source(
 
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
-    normalized_expr, normalized_offsets = _regex_sub_expr_and_map_offsets(
-        normalized_expr, normalized_offsets, re.compile(r"\^"), r"**"
+    normalized_expr, char_offsets = _regex_sub_expr_and_map_offsets(
+        normalized_expr, char_offsets, re.compile(r"\^"), r"**"
     )
 
     # Prevent Python from interpreting patterns like "2e+3" or "2e-3" as scientific
     # notation floats. When users write "2e+3", they likely mean "2*e + 3" (2 times
     # Euler's number plus 3), not 2000.0.
-    normalized_expr, normalized_offsets = _regex_sub_expr_and_map_offsets(
+    normalized_expr, char_offsets = _regex_sub_expr_and_map_offsets(
         normalized_expr,
-        normalized_offsets,
+        char_offsets,
         re.compile(r"(\d)([eE])([+-])"),
         r"\1*\2\3",
     )
@@ -828,9 +813,9 @@ def evaluate_with_source(
     # Patterns like "3jn" are NOT transformed because Python tokenizes "3jn" as "3j"
     # (complex) + "n" regardless - they will still fail with HasComplexError.
     if not allow_complex:
-        normalized_expr, normalized_offsets = _regex_sub_expr_and_map_offsets(
+        normalized_expr, char_offsets = _regex_sub_expr_and_map_offsets(
             normalized_expr,
-            normalized_offsets,
+            char_offsets,
             re.compile(r"(\d)([jJ])(?![a-zA-Z0-9])"),
             r"\1*\2",
         )
@@ -851,8 +836,8 @@ def evaluate_with_source(
     exec("from sympy import *", global_dict)
 
     transformations = (
-        *standard_transformations,
-        implicit_multiplication_application,
+        *sympy_parser.standard_transformations,
+        sympy_parser.implicit_multiplication_application,
     )
     if allow_set_notation:
         transformations = (
@@ -870,7 +855,9 @@ def evaluate_with_source(
         )
 
     try:
-        code = stringify_expr(normalized_expr, local_dict, global_dict, transformations)
+        code = sympy_parser.stringify_expr(
+            normalized_expr, local_dict, global_dict, transformations
+        )
     except (TokenError, IndexError) as exc:
         # SymPy can raise IndexError on malformed token streams for some invalid
         # inputs instead of a cleaner TokenError. Treat those the same way so the
@@ -904,8 +891,8 @@ def evaluate_with_source(
         if not allow_set_notation:
             raise HasSetNotationError from exc
 
-        index = find_type_error_offset(
-            normalized_expr, normalized_offsets, TypeError(exc.format_err_msg())
+        index = _find_type_error_offset(
+            normalized_expr, char_offsets, TypeError(exc.format_err_msg())
         )
         if index != -1:
             exc.offset = index
@@ -913,17 +900,17 @@ def evaluate_with_source(
         raise
 
     if not simplify_expression:
-        code = compile(evaluateFalse(code), "<string>", "eval")
+        code = compile(sympy_parser.evaluateFalse(code), "<string>", "eval")
 
     # Now that it's safe, get sympy expression
     try:
-        res = eval_expr(code, local_dict, global_dict)
+        res = sympy_parser.eval_expr(code, local_dict, global_dict)
     except TypeError as exc:
         # SymPy raises TypeError for semantically invalid set operations that are
         # nonetheless syntactically valid (e.g. `{1, 2} / {3, 4}`, `sin((1, 3])`).
         # Because the AST check above already ran, TypeErrors here are expected to
         # come from SymPy's own type system, not from Python infrastructure bugs.
-        index = find_type_error_offset(normalized_expr, normalized_offsets, exc)
+        index = _find_type_error_offset(normalized_expr, char_offsets, exc)
         if index != -1:
             raise HasParseError(index) from exc
         # if we can't localize the type error, report to staff.
@@ -1119,7 +1106,7 @@ _TYPE_ERROR_OPERATOR_PATTERN = re.compile(
 )
 
 
-def find_type_error_offset(expr: str, offsets: list[int], exc: TypeError) -> int:
+def _find_type_error_offset(expr: str, offsets: list[int], exc: TypeError) -> int:
     """Return an approximate offset for a SymPy TypeError in expr."""
     match = _TYPE_ERROR_OPERATOR_PATTERN.search(str(exc))
     if match is None:
