@@ -32,9 +32,15 @@
       "severity": "warning"
     },
     {
-      "id": "pl-no-relative-client-files",
+      "id": "pl-no-relative-client-files-question",
       "selector": "[src^=\"clientFilesQuestion/\"], [href^=\"clientFilesQuestion/\"]",
       "message": "Use {{options.client_files_question_url}} instead of a relative clientFilesQuestion path.",
+      "severity": "warning"
+    },
+    {
+      "id": "pl-no-relative-client-files-course",
+      "selector": "[src^=\"clientFilesCourse/\"], [href^=\"clientFilesCourse/\"]",
+      "message": "Use {{options.client_files_course_url}} instead of a relative clientFilesCourse path.",
       "severity": "warning"
     },
     {
@@ -53,15 +59,16 @@
       "message": "pl-variable-score is deprecated. v3 submission elements have built-in score display options."
     },
     {
-      "id": "pl-input-in-mustache-section",
-      "selector": ":is({{#*}}, {{^*}}):not({{#params.*}}):not({{^params.*}}):has(pl-big-o-input, pl-excalidraw:not([gradable=\"false\"]), pl-file-upload, pl-image-capture, pl-integer-input, pl-matching, pl-matrix-component-input, pl-matrix-input, pl-checkbox, pl-multiple-choice, pl-order-blocks, pl-number-input, pl-string-input, pl-symbolic-input, pl-units-input)",
-      "message": "Input elements must not be rendered conditionally inside a mustache section. Grading expects these elements to be present on every render.",
-      "severity": "warning"
-    },
-    {
       "id": "pl-prefer-pl-inputs",
       "selector": "input, textarea, select",
-      "message": "Prefer PrairieLearn input elements (pl-number-input, pl-string-input, pl-checkbox, etc.) over plain HTML form inputs so the answer is graded and persisted correctly.",
+      "message": "Prefer PrairieLearn input elements over raw HTML form inputs.",
+      "severity": "warning",
+      "exclude": ["apps/prairielearn/elements/**/*.mustache"]
+    },
+    {
+      "id": "pl-prefer-pl-figure",
+      "selector": "img:not([style]):not([class]):not(pl-overlay img)",
+      "message": "Prefer pl-figure over raw <img> tags. See https://docs.prairielearn.com/elements/pl-figure/.",
       "severity": "warning",
       "exclude": ["apps/prairielearn/elements/**/*.mustache"]
     },
