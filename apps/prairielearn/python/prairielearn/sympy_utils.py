@@ -8,6 +8,7 @@ from prairielearn.sympy_utils import ...
 import ast
 import copy
 import html
+import operator
 import re
 import string
 from collections import deque
@@ -17,7 +18,8 @@ from enum import Enum
 from functools import wraps
 from tokenize import NAME, NUMBER, OP, TokenError
 from types import CodeType
-from typing import Any, Literal, TypeAlias, TypedDict, TypeGuard, cast
+from types import MappingProxyType as FrozenDict
+from typing import Any, Final, Literal, TypeAlias, TypedDict, TypeGuard, cast
 
 import sympy
 from sympy.parsing.sympy_parser import (
@@ -33,15 +35,19 @@ from sympy.parsing.sympy_parser import (
 from sympy.printing.str import StrPrinter
 from typing_extensions import NotRequired
 
-from prairielearn.misc_utils import full_unidecode
+from prairielearn.misc_utils import FrozenClass, full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
 
 SympyMapT = dict[str, sympy.Basic | complex]
+FrozenSympyMapT = FrozenDict[str, sympy.Basic | complex]
+FrozenSympyFunctionMapT = FrozenDict[str, Callable[..., Any]]
 SympyFunctionMapT = dict[str, Callable[..., Any]]
-ASTWhiteListT = tuple[type[ast.AST], ...]
+FrozenAssumptionsDictT = FrozenDict[str, dict[str, Any]]
 AssumptionsDictT = dict[str, dict[str, Any]]
+
+ASTWhiteListT = tuple[type[ast.AST], ...]
 
 
 class ASTSympyType(Enum):
@@ -54,26 +60,10 @@ class ASTSympyType(Enum):
         return self.value
 
 
-_OP_SYMBOLS: dict[type[ast.AST], str] = {
-    ast.Add: "+",
-    ast.BitAnd: "&",
-    ast.BitOr: "|",
-    ast.Div: "/",
-    ast.Mod: "%",
-    ast.Mult: "*",
-    ast.Pow: "**",
-    ast.Sub: "-",
-    ast.USub: "-",
-    ast.UAdd: "-",
-}
-
-
 # A dictionary of assumptions for variables in the expression.
 #
 # Examples:
 #     >>> {"x": {"positive": True}, "y": {"real": True}}
-
-
 class SympyJson(TypedDict):
     """A class with type signatures for the SymPy JSON dict"""
 
@@ -121,86 +111,96 @@ class LocalsForEval(TypedDict):
     helpers: SympyFunctionMapT
 
 
-# Create a new instance of this class to access the member dictionaries. This
-# is to avoid accidentally modifying these dictionaries.
-class _Constants:
-    helpers: SympyFunctionMapT
-    variables: SympyMapT
-    hidden_variables: SympyMapT
-    complex_variables: SympyMapT
-    hidden_complex_variables: SympyMapT
-    functions: SympyFunctionMapT
-    trig_functions: SympyFunctionMapT
-    set_functions: SympyFunctionMapT
+class _Constants(metaclass=FrozenClass):
+    helpers: Final[FrozenSympyFunctionMapT] = FrozenDict({
+        "Number": sympy.Number,
+        "_Integer": sympy.Integer,
+    })
 
-    def __init__(self) -> None:
-        self.helpers = {
-            "Number": sympy.Number,
-            "_Integer": sympy.Integer,
-        }
+    variables: Final[FrozenSympyMapT] = FrozenDict({
+        "pi": sympy.pi,
+        "e": sympy.E,
+        "infty": sympy.oo,
+    })
 
-        self.variables = {"pi": sympy.pi, "e": sympy.E, "infty": sympy.oo}
+    hidden_variables: Final[FrozenSympyMapT] = FrozenDict({
+        "_Exp1": sympy.E,
+    })
 
-        self.hidden_variables = {
-            "_Exp1": sympy.E,
-        }
+    complex_variables: Final[FrozenSympyMapT] = FrozenDict({
+        "i": sympy.I,
+        "j": sympy.I,
+    })
 
-        self.complex_variables = {
-            "i": sympy.I,
-            "j": sympy.I,
-        }
+    hidden_complex_variables: Final[FrozenSympyMapT] = FrozenDict({
+        "_ImaginaryUnit": sympy.I,
+    })
 
-        self.hidden_complex_variables = {
-            "_ImaginaryUnit": sympy.I,
-        }
+    functions: Final[FrozenSympyFunctionMapT] = FrozenDict({
+        "exp": sympy.exp,
+        "log": sympy.log,
+        "ln": sympy.log,
+        "sqrt": sympy.sqrt,
+        "factorial": sympy.factorial,
+        "abs": sympy.Abs,
+        "sgn": sympy.sign,
+        "max": sympy.Max,
+        "min": sympy.Min,
+        # Extra aliases to make parsing works correctly
+        "sign": sympy.sign,
+        "Abs": sympy.Abs,
+        "Max": sympy.Max,
+        "Min": sympy.Min,
+    })
 
-        self.functions = {
-            "exp": sympy.exp,
-            "log": sympy.log,
-            "ln": sympy.log,
-            "sqrt": sympy.sqrt,
-            "factorial": sympy.factorial,
-            "abs": sympy.Abs,
-            "sgn": sympy.sign,
-            "max": sympy.Max,
-            "min": sympy.Min,
-            # Extra aliases to make parsing work correctly
-            "sign": sympy.sign,
-            "Abs": sympy.Abs,
-            "Max": sympy.Max,
-            "Min": sympy.Min,
-        }
+    trig_functions: Final[FrozenSympyFunctionMapT] = FrozenDict({
+        "cos": sympy.cos,
+        "sin": sympy.sin,
+        "tan": sympy.tan,
+        "sec": sympy.sec,
+        "cot": sympy.cot,
+        "csc": sympy.csc,
+        "cosh": sympy.cosh,
+        "sinh": sympy.sinh,
+        "tanh": sympy.tanh,
+        "arccos": sympy.acos,
+        "arcsin": sympy.asin,
+        "arctan": sympy.atan,
+        "acos": sympy.acos,
+        "asin": sympy.asin,
+        "atan": sympy.atan,
+        "arctan2": sympy.atan2,
+        "atan2": sympy.atan2,
+        "atanh": sympy.atanh,
+        "acosh": sympy.acosh,
+        "asinh": sympy.asinh,
+    })
 
-        self.trig_functions = {
-            "cos": sympy.cos,
-            "sin": sympy.sin,
-            "tan": sympy.tan,
-            "sec": sympy.sec,
-            "cot": sympy.cot,
-            "csc": sympy.csc,
-            "cosh": sympy.cosh,
-            "sinh": sympy.sinh,
-            "tanh": sympy.tanh,
-            "arccos": sympy.acos,
-            "arcsin": sympy.asin,
-            "arctan": sympy.atan,
-            "acos": sympy.acos,
-            "asin": sympy.asin,
-            "atan": sympy.atan,
-            "arctan2": sympy.atan2,
-            "atan2": sympy.atan2,
-            "atanh": sympy.atanh,
-            "acosh": sympy.acosh,
-            "asinh": sympy.asinh,
-        }
+    set_functions: Final[FrozenSympyFunctionMapT] = FrozenDict({
+        "Interval": sympy.Interval,
+        "FiniteSet": sympy.FiniteSet,
+        "Union": sympy.Union,
+        "Intersection": sympy.Intersection,
+        "ProductSet": sympy.ProductSet,
+    })
 
-        self.set_functions = {
-            "Interval": sympy.Interval,
-            "FiniteSet": sympy.FiniteSet,
-            "Union": sympy.Union,
-            "Intersection": sympy.Intersection,
-            "ProductSet": sympy.ProductSet,
-        }
+    set_operators: Final[FrozenSympyFunctionMapT] = FrozenDict({
+        "U": operator.or_,
+        "cup": operator.or_,
+        "∪": operator.or_,  # noqa: RUF001
+        "cap": operator.and_,
+        "∩": operator.and_,
+        "**": operator.pow,
+    })
+
+    set_operator_desugars: Final[FrozenDict[str, str]] = FrozenDict({
+        "U": "|",
+        "cup": "|",
+        "∪": "|",  # noqa: RUF001
+        "cap": "&",
+        "∩": "&",
+        "**": "**",
+    })
 
 
 class _SympyJsonStrPrinter(StrPrinter):
@@ -374,6 +374,19 @@ class CheckAST(ast.NodeVisitor):
     __parents: dict[int, ast.AST]
     __type_cache: dict[int, ASTSympyType | None]
 
+    __unparsed_opstr: FrozenDict[type[ast.AST], str] = FrozenDict({
+        ast.Add: "+",
+        ast.BitAnd: "&",
+        ast.BitOr: "|",
+        ast.Div: "/",
+        ast.Mod: "%",
+        ast.Mult: "*",
+        ast.Pow: "**",
+        ast.Sub: "-",
+        ast.USub: "-",
+        ast.UAdd: "-",
+    })
+
     def __init__(
         self,
         whitelist: ASTWhiteListT,
@@ -486,7 +499,7 @@ class CheckAST(ast.NodeVisitor):
                     return self._set_type(node, None)
                 case "Integer" | "Float":
                     return self._set_type(node, ASTSympyType.SCALAR)
-                case fn if self.allow_set_notation and fn in _Constants().set_functions:
+                case fn if self.allow_set_notation and fn in _Constants.set_functions:
                     inferred = self._infer_set_function_type(fn, node.args)  # type: ignore
                     return self._set_type(node, inferred)
                 case _:
@@ -497,7 +510,7 @@ class CheckAST(ast.NodeVisitor):
     def visit_UnaryOp(self, node: ast.UnaryOp) -> ASTSympyType | None:
         operand_type = self._get_type(node.operand)
         if operand_type == ASTSympyType.SET:
-            operator = _OP_SYMBOLS.get(type(node.op))
+            operator = self.__unparsed_opstr.get(type(node.op))
             if operator is None:
                 err_node = self.get_parent_with_location(node)
                 raise HasInvalidExpressionError(err_node.col_offset)
@@ -505,8 +518,7 @@ class CheckAST(ast.NodeVisitor):
         return self._set_type(node, operand_type)
 
     def visit_BinOp(self, node: ast.BinOp) -> ASTSympyType | None:
-        # NOTE: unfortunately, ast.unparse(node.op) doesn't yield a str 🙄
-        op_str = _OP_SYMBOLS.get(type(node.op))
+        op_str = self.__unparsed_opstr.get(type(node.op))
         if op_str is None:
             return self._set_type(node, None)
         inferred_type = self._infer_bin_op_type(op_str, node.left, node.right)
@@ -697,7 +709,7 @@ def evaluate(
 
 def _normalize_expr(expr: str) -> str:
     """Normalize a symbolic expression while preserving set operators for later parsing."""
-    if expr in _SET_OPS:
+    if expr in _Constants.set_operators:
         return expr
     return full_unidecode(greek_unicode_transform(expr))
 
@@ -844,7 +856,7 @@ def evaluate_with_source(
     )
     if allow_set_notation:
         transformations = (
-            unmangle_infix_binops_transformation(_SET_OPS.keys()),
+            unmangle_infix_binops_transformation(_Constants.set_operators.keys()),
             set_literal_transformation,
             set_operation_transformation,
             interval_transformation,
@@ -1036,12 +1048,12 @@ def convert_string_to_sympy_with_source(
 
     # Create a whitelist of valid functions and variables (and a special flag
     # for numbers that are converted to sympy integers).
-    const = _Constants()
+    const = _Constants
 
     locals_for_eval: LocalsForEval = {
-        "functions": const.functions,
-        "variables": const.variables,
-        "helpers": const.helpers,
+        "functions": dict(const.functions),
+        "variables": dict(const.variables),
+        "helpers": dict(const.helpers),
     }
 
     if allow_hidden:
@@ -1120,7 +1132,7 @@ def find_type_error_offset(expr: str, offsets: list[int], exc: TypeError) -> int
     # account for de-sugaring
     candidate_operators.extend(
         alias
-        for alias, transformed_operator in _SET_OPS.items()
+        for alias, transformed_operator in _Constants.set_operator_desugars.items()
         if transformed_operator in candidate_operators
     )
 
@@ -1144,7 +1156,7 @@ def sympy_to_json(
     Returns:
         A JSON-serializable representation of the SymPy expression.
     """
-    const = _Constants()
+    const = _Constants
 
     # Get list of variables in the sympy expression
     variables = list(map(str, a.free_symbols))
@@ -1446,19 +1458,6 @@ def get_items_list(items_string: str | None) -> list[str]:
     return list(map(str.strip, items_string.split(",")))
 
 
-_INTERVAL_OPEN = {"(", "["}
-_SET_LITERAL_NESTED_OPEN = {"(", "[", "{"}
-_SET_LITERAL_NESTED_CLOSE = {")", "]", "}"}
-_SET_NOTATION_ONLY_TOKENS = {"[", "]", "{", "}", "|", "&"}
-_SET_OPS = {
-    "U": "|",
-    "cup": "|",
-    "∪": "|",  # noqa: RUF001
-    "cap": "&",
-    "∩": "&",
-}
-
-
 def set_literal_transformation(
     tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
 ) -> list[TOKEN]:
@@ -1494,16 +1493,19 @@ def _try_rewrite_interval_literal(
     tokens: list[TOKEN], start_index: int
 ) -> tuple[tuple[TOKEN, ...] | None, int]:
     _, start_text = tokens[start_index]
-    if start_text not in _INTERVAL_OPEN:
+    if start_text not in ("(", "["):
         return None, start_index
+
+    set_literal_openers = {"(", "[", "{"}
+    set_literal_closers = {")", "]", "}"}
 
     def _seek_comma_or_closer(start_index: int) -> tuple[bool, list[TOKEN], int, TOKEN]:
         operand, depth = [], 0
         for i, token in enumerate(tokens[start_index:], start=start_index):
             _, text = token
-            if text in _SET_LITERAL_NESTED_OPEN:
+            if text in set_literal_openers:
                 depth += 1
-            elif text in _SET_LITERAL_NESTED_CLOSE:
+            elif text in set_literal_closers:
                 if depth == 0:
                     return True, operand, i, token
                 depth -= 1
@@ -1512,7 +1514,8 @@ def _try_rewrite_interval_literal(
             operand.append(token)
         raise TokenError("interval notation is incomplete")
 
-    set_fn_names = _Constants().set_functions.keys() | _SET_NOTATION_ONLY_TOKENS
+    set_notation_only_tokens = {"[", "]", "{", "}", "|", "&"}
+    set_fn_names = _Constants.set_functions.keys() | set_notation_only_tokens
 
     def _contains_set_notation(tokens: list[TOKEN]) -> bool:
         return any((typ == NAME and text in set_fn_names) for typ, text in tokens)
@@ -1572,7 +1575,7 @@ def interval_transformation(
     i = 0
     while i < len(tokens):
         token = tokens[i]
-        if (not prev or prev[0] != NAME) and token[1] in _INTERVAL_OPEN:
+        if not prev or prev[0] != NAME:
             rewritten_tokens, end_index = _try_rewrite_interval_literal(tokens, i)
             if rewritten_tokens is not None:
                 result.extend(rewritten_tokens)
@@ -1631,9 +1634,9 @@ def set_operation_transformation(
     Returns:
         A transformed sequence of SymPy tokens.
     """
+    set_ops = _Constants.set_operator_desugars
     return [
-        (OP, _SET_OPS[text]) if text in _SET_OPS else (typ, text)
-        for typ, text in tokens
+        (OP, set_ops[text]) if text in set_ops else (typ, text) for typ, text in tokens
     ]
 
 
@@ -1649,7 +1652,7 @@ def get_builtin_constants(
     Returns:
         A set of built-in constant names.
     """
-    const = _Constants()
+    const = _Constants
     names = set(const.variables.keys())
     if allow_complex:
         names |= const.complex_variables.keys()
@@ -1672,13 +1675,13 @@ def get_builtin_functions(
     Returns:
         A set of built-in function names.
     """
-    const = _Constants()
+    const = _Constants
     names = const.functions.keys() | const.helpers.keys()
     if allow_trig_functions:
         names |= const.trig_functions.keys()
     if allow_set_notation:
         names |= const.set_functions.keys()
-        names |= _SET_OPS.keys()
+        names |= const.set_operators.keys()
     return names
 
 
@@ -1716,7 +1719,7 @@ def _build_name_conflict_data(
     )
 
     seen = {}
-    set_ops = tuple(_SET_OPS.keys())
+    set_ops = tuple(_Constants.set_operators.keys())
 
     def _collision(name: str, *, is_variable: bool) -> bool:
         sanitized = greek_unicode_transform(name)

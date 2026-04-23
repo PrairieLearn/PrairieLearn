@@ -12,7 +12,7 @@ import string
 import unicodedata
 import uuid
 from collections.abc import Callable, Generator, Iterable
-from typing import TypeVar
+from typing import Any, NoReturn, TypeVar
 
 from pint import UnitRegistry
 from text_unidecode import unidecode
@@ -132,3 +132,16 @@ def partition(
         else:
             no.append(d)
     return (yes, no)
+
+
+class FrozenClass(type):
+    """
+    A metaclass that freezes all class/instance attributes after declaration.
+    *Does not make attribute values immutable!*
+    """
+
+    def __setattr__(cls, _name: str, _value: Any) -> NoReturn:  # noqa: D105
+        raise TypeError(f"{cls.__name__} is immutable")
+
+    def __delattr__(cls, _name: str) -> NoReturn:  # noqa: D105
+        raise TypeError(f"{cls.__name__} is immutable")
