@@ -142,7 +142,7 @@ When PrairieTest exams are configured, students must be checked in via PrairieTe
 
 While a PrairieTest reservation is active, only the matched exam's configuration applies: top-level `dateControl`, `beforeRelease`, and `afterComplete` are ignored until the reservation ends. This lets `afterComplete` on the exam describe what the student sees during the reservation, and the top-level `afterComplete` describe what the student sees afterwards.
 
-`readOnly: true` and `afterComplete` are mutually exclusive on an exam entry: a read-only reservation is a review environment that shows everything. `afterComplete.score.hidden: true` additionally requires `afterComplete.questions.hidden: true` — showing the question and submission but hiding the resulting score is nonsensical.
+`readOnly: true` cannot be combined with exam-level `afterComplete` settings that hide questions or scores (`afterComplete.questions.hidden: true` or `afterComplete.score.hidden: true`): a read-only reservation is a review environment that shows everything. Non-hiding settings, such as `afterComplete.questions.hidden: false`, are accepted as no-ops. `afterComplete.score.hidden: true` additionally requires `afterComplete.questions.hidden: true` — showing the question and submission but hiding the resulting score is nonsensical.
 
 ### `beforeRelease`
 

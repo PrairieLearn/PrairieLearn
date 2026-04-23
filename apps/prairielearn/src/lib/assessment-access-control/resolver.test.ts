@@ -1112,9 +1112,10 @@ describe('resolveAccessControl', () => {
             rules: [ruleWithDeferredRelease],
             prairieTestReservations: [],
           });
-          // PT-gated rule with no DC has no at-home access path, so access is
-          // denied; `afterComplete` still propagates the release-based visibility.
-          expect(result.authorized).toBe(false);
+          // Top-level afterComplete visibility has unlocked, so the resolver
+          // grants a review-only path: `authorized: true` lets the middleware
+          // serve the assessment page, `active: false` prevents submissions.
+          expect(result.authorized).toBe(true);
           expect(result.active).toBe(false);
           expect(result.credit).toBe(0);
           expect(result.showClosedAssessment).toBe(true);

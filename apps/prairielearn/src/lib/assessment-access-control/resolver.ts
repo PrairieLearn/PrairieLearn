@@ -667,21 +667,37 @@ export function resolveAccessControl(
     };
   }
 
-  // A PT-gated rule has no at-home access path unless dateControl provides
-  // one. When PT continue'd (Public mode) and there is no dateControl
-  // releaseDate, the student has no legitimate way to reach the assessment
-  // at home, so refuse authorization. `showBeforeRelease` has already been
-  // handled above, so if we reach here `beforeRelease.listed` is false and
-  // the assessment is fully hidden.
+  // A PT-gated rule has no at-home submission path unless dateControl
+  // provides one. When PT continue'd (Public mode) and there is no
+  // dateControl releaseDate, the student can't take the assessment at home,
+  // but they may still have a legitimate review-only path if top-level
+  // `afterComplete` visibility has been unlocked (e.g., a scheduled at-home
+  // release via `questions.visibleFromDate`). In that case, grant
+  // `authorized: true, active: false` so the middleware can serve the
+  // review-only page. Otherwise deny outright.
   if (
     ptOutcome.action === 'continue' &&
     mainRuleInput.prairietestExams.length > 0 &&
     !effectiveRule.dateControl?.releaseDate
   ) {
+    if (!showClosedAssessment) {
+      return {
+        ...UNAUTHORIZED_RESULT,
+        showClosedAssessment,
+        showClosedAssessmentScore,
+      };
+    }
     return {
-      ...UNAUTHORIZED_RESULT,
+      authorized: true,
+      credit: 0,
+      creditDateString: 'None',
+      timeLimitMin: null,
+      password: null,
+      active: false,
       showClosedAssessment,
       showClosedAssessmentScore,
+      examAccessEnd: null,
+      showBeforeRelease: false,
     };
   }
 
