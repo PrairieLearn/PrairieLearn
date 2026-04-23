@@ -7596,9 +7596,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@reteps/tree-sitter-htmlmustache@npm:^0.7.3":
-  version: 0.7.3
-  resolution: "@reteps/tree-sitter-htmlmustache@npm:0.7.3"
+"@reteps/tree-sitter-htmlmustache@npm:^0.9.0":
+  version: 0.9.0
+  resolution: "@reteps/tree-sitter-htmlmustache@npm:0.9.0"
   dependencies:
     chalk: "npm:^5.6.2"
     editorconfig: "npm:^3.0.1"
@@ -7608,17 +7608,20 @@ __metadata:
   peerDependencies:
     node-addon-api: ^8.2.2
     node-gyp-build: ^4.8.2
+    prettier: ^3.0.0
     tree-sitter: ^0.25.0
   peerDependenciesMeta:
     node-addon-api:
       optional: true
     node-gyp-build:
       optional: true
+    prettier:
+      optional: true
     tree-sitter:
       optional: true
   bin:
     htmlmustache: cli/out/main.js
-  checksum: 10c0/049ea83dde7335fcf026a7b731685edfb8bb3758f37548fdbcb6fb47ea4ecda8b4262e628a3fd7c309f8026066e4ee23910af3749fb4dc2ddb38c436a7b88c0a
+  checksum: 10c0/9d0bde95a331b977f5754061a689cb678ae75ae4a96e9c91c39b27d8c1ad42590bc5b0790f2dbf9f62c35b4ef036b7e071fe4ee09bdbbcfccb74748249511c95
   languageName: node
   linkType: hard
 
@@ -19038,7 +19041,7 @@ __metadata:
     "@prairielearn/eslint-config": "workspace:^"
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@reteps/tree-sitter-htmlmustache": "npm:^0.7.3"
+    "@reteps/tree-sitter-htmlmustache": "npm:^0.9.0"
     "@types/tar-stream": "npm:^3.1.4"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260305.1"
     "@vitest/coverage-v8": "npm:^4.1.2"

@@ -12,12 +12,65 @@
   "rules": {
     "preferMustacheComments": "warning"
   },
+  "customRules": [
+    {
+      "id": "pl-bs4-data-attrs",
+      "selector": "[data-toggle], [data-dismiss], [data-target], [data-ride], [data-parent], [data-spy], [data-slide], [data-slide-to]",
+      "message": "Deprecated Bootstrap 4 data-* attribute. Consider migrating to Bootstrap 5 data-bs-* attributes. See https://getbootstrap.com/docs/5.0/migration/.",
+      "severity": "warning"
+    },
+    {
+      "id": "pl-bs4-removed-classes",
+      "selector": ".card-deck, .card-columns, .jumbotron, .jumbotron-fluid, .media, .media-body, .form-row, .no-gutters, .custom-control, .custom-control-input, .custom-control-label, .custom-checkbox, .custom-radio, .custom-switch, .custom-select, .custom-select-sm, .custom-select-lg, .custom-file, .custom-file-input, .custom-file-label, .custom-range, .embed-responsive, .embed-responsive-item, .embed-responsive-16by9, .embed-responsive-4by3, .embed-responsive-1by1, .embed-responsive-21by9, button.close",
+      "message": "Deprecated Bootstrap 4 class. Consider migrating to Bootstrap 5 classes. See https://getbootstrap.com/docs/5.0/migration/.",
+      "severity": "warning"
+    },
+    {
+      "id": "pl-bs4-renamed-utilities",
+      "selector": ".sr-only, .sr-only-focusable, .font-weight-bold, .font-weight-bolder, .font-weight-normal, .font-weight-light, .font-weight-lighter, .font-italic, .text-monospace, .text-left, .text-right, .float-left, .float-right, .rounded-left, .rounded-right, .rounded-sm, .rounded-lg, .border-left, .border-right, .dropdown-menu-left, .dropdown-menu-right, .badge-primary, .badge-secondary, .badge-success, .badge-danger, .badge-warning, .badge-info, .badge-light, .badge-dark, .badge-pill, .ml-0, .ml-1, .ml-2, .ml-3, .ml-4, .ml-5, .ml-auto, .ml-n1, .ml-n2, .ml-n3, .ml-n4, .ml-n5, .mr-0, .mr-1, .mr-2, .mr-3, .mr-4, .mr-5, .mr-auto, .mr-n1, .mr-n2, .mr-n3, .mr-n4, .mr-n5, .pl-0, .pl-1, .pl-2, .pl-3, .pl-4, .pl-5, .pl-auto, .pr-0, .pr-1, .pr-2, .pr-3, .pr-4, .pr-5, .pr-auto",
+      "message": "Deprecated Bootstrap 4 utility class. Consider migrating to Bootstrap 5 classes. See https://getbootstrap.com/docs/5.0/migration/.",
+      "severity": "warning"
+    },
+    {
+      "id": "pl-no-relative-client-files",
+      "selector": "[src^=\"clientFilesQuestion/\"], [href^=\"clientFilesQuestion/\"]",
+      "message": "Use {{options.client_files_question_url}} instead of a relative clientFilesQuestion path.",
+      "severity": "warning"
+    },
+    {
+      "id": "pl-deprecated-dropdown",
+      "selector": "pl-dropdown",
+      "message": "pl-dropdown is deprecated. Migrate to pl-multiple-choice with display=\"dropdown\" or pl-matching. See https://docs.prairielearn.com/elements/pl-multiple-choice/."
+    },
+    {
+      "id": "pl-deprecated-prairiedraw-figure",
+      "selector": "pl-prairiedraw-figure",
+      "message": "pl-prairiedraw-figure is deprecated. Migrate to pl-drawing or server-rendered figures. See https://docs.prairielearn.com/elements/pl-drawing/."
+    },
+    {
+      "id": "pl-deprecated-variable-score",
+      "selector": "pl-variable-score",
+      "message": "pl-variable-score is deprecated. v3 submission elements have built-in score display options."
+    }
+    // These rules make sense for instructors, but not for our example / test course questions.
+    // {
+    //   "id": "pl-checkbox-requires-edc",
+    //   "selector": "pl-checkbox:not([partial-credit-method=EDC]):not([partial-credit=each-answer])",
+    //   "message": "Multiple-choice with >1 correct answer should use partial-credit=\"each-answer\".",
+    //   "severity": "warning"
+    // },
+    // {
+    //   "id": "pl-question-needs-answer-panel",
+    //   "selector": ":root:has(pl-question-panel):not(:has(pl-answer-panel))",
+    //   "message": "Questions should include a pl-answer-panel explaining the correct answer."
+    // },
+  ],
   "printWidth": 100,
   "noBreakDelimiters": [
-    {"start": "$", "end": "$"},
-    {"start": "$$", "end": "$$"},
-    {"start": "\\(", "end": "\\)"},
-    {"start": "\\[", "end": "\\]"}
+    { "start": "$", "end": "$" },
+    { "start": "$$", "end": "$$" },
+    { "start": "\\(", "end": "\\)" },
+    { "start": "\\[", "end": "\\]" }
   ],
   "customTags": [
     {
