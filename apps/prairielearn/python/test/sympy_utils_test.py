@@ -12,25 +12,24 @@ import sympy
 def _caret_template(template_expr: str) -> tuple[str, str]:
     """Build a caret assertion from a single-string template.
 
-    The template should contain exactly one ``^`` placeholder marking the
-    caret position, such as ``"1 ^bad 2"`` or ``"1 ^** {2}"``. Use ``\\^`` to
-    include a literal caret in the base text without splitting on it. The
-    returned tuple is ``(expr, caret_output)`` where ``expr`` is the template
-    with the placeholder removed and ``caret_output`` is the two-line
-    ``_caret`` format with a shortened snippet around the caret location.
+    The template should contain exactly one ``!`` placeholder marking the
+    caret position, such as ``"1 + !bad_name"`` or ``"1 !** {2}"``. The returned tuple
+    is ``(expr, caret_output)`` where ``expr`` is the template with the placeholder
+    removed and ``caret_output`` is `psu.point_to_error(expr, expr.index(!))`
 
     Raises:
-        ValueError: if the template does not contain exactly one caret symbol
+        UsageError: if the template does not contain exactly one marker symbol
 
     Returns:
         A tuple that consists of (sympy_expr_text, _caret(text, ))
     """
-    parts = [p.replace(r"\^", "^") for p in re.split(r"(?<!\\)\^", template_expr)]
-    if len(parts) != 2:
-        raise ValueError("Test Error: caret template must have exactly one unescaped ^")
-    left, right = parts
-    base = left + right
-    return base, psu.point_to_error(base, len(left))
+    # NOTE: the marker was originally ^ itself, but it's used by our syntax...
+    match template_expr.split("!", maxsplit=2):
+        case [left, right]:
+            base = left + right
+            return base, psu.point_to_error(base, len(left))
+        case _:
+            raise pytest.UsageError("caret template must have exactly one unescaped !")
 
 
 def test_evaluate() -> None:
@@ -838,27 +837,27 @@ class TestExceptions:
         [
             # #14141: '#' after large integer — stringify_expr wraps it as Integer(1234567890),
             # shifting the '#' offset. Caret must still point at '#' in the original input.
-            ("1234567890 ^# abcdefghij", ()),
+            ("1234567890 !# abcdefghij", ()),
             # '#' at the very start of the expression
-            ("^# x + 1", ()),
+            ("!# x + 1", ()),
             # '#' after '^' which becomes '**' (offset shift from replacement)
-            ("n\\^2 ^# comment", ()),
+            ("n^2 !# comment", ()),
             # #14141: '\\' at the start — previously misreported as generic "syntax error"
             # because stringify_expr raised TokenError before ast_check_str ran
-            ("^\\n + 2", ()),
+            ("!\\n + 2", ()),
             # '\\' after a large integer
-            ("1234567890 ^\\", ()),
+            ("1234567890 !\\", ()),
             # #14142: invalid symbol — previously showed an empty caret pointing at nothing
             # because point_to_error received ind=-1
-            ("nl^ogn", ()),
+            ("nl!ogn", ()),
             # Invalid symbol in the middle of a valid expression
-            ("n + ab^c", ()),
+            ("n + ab!c", ()),
             # bad uses of ambiguous set infix ops resolve to unknown symbols
-            ("1^U2", ()),
+            ("1!U2", ()),
             # Invalid symbol at the start
-            ("xy^z * n", ()),
+            ("xy!z * n", ()),
             # Invalid symbol after a valid symbol containing the same character
-            ("ab + ^a", ("ab",)),
+            ("ab + !a", ("ab",)),
         ],
     )
     def test_error_caret_output(
@@ -877,30 +876,30 @@ class TestExceptions:
         assert match.group(1) == expected_caret
 
     SET_TYPE_ERROR_CARET_TEMPLATES = (
-        "{1, 2} ^/ {2, 3}",
-        "{1, 2} ^U 3",
-        "^Interval({}, 2)",
-        "^Interval(1, {})",
-        "^Interval(1)",
-        "^Interval(1, 2, 3)",
-        "^Union(1, 2)",
-        "^Intersection(1, 2)",
-        "^Intersection({}, 2)",
-        "^Intersection( )",
-        "^ProductSet( )",
-        "1 ^U 2",
-        "1 ^| 2",
-        "1 ^cup 2",
-        "1 ^∪ 2",  # noqa: RUF001
-        "1 ^& 2",
-        "1 ^cap 2",
-        "1 ^∩ 2",
-        "10/2 ^U 2/10",
-        "10/2 ^| 2/10",
-        "{1, 2} ^** {3}",
-        "1 ^** {3}",
-        "x\\^2 ^/ {1,2}",
-        "x\\^2 ^U {1,2}",
+        "{1, 2} !/ {2, 3}",
+        "{1, 2} !U 3",
+        "!Interval({}, 2)",
+        "!Interval(1, {})",
+        "!Interval(1)",
+        "!Interval(1, 2, 3)",
+        "!Union(1, 2)",
+        "!Intersection(1, 2)",
+        "!Intersection({}, 2)",
+        "!Intersection( )",
+        "!ProductSet( )",
+        "1 !U 2",
+        "1 !| 2",
+        "1 !cup 2",
+        "1 !∪ 2",  # noqa: RUF001
+        "1 !& 2",
+        "1 !cap 2",
+        "1 !∩ 2",
+        "10/2 !U 2/10",
+        "10/2 !| 2/10",
+        "{1, 2} !** {3}",
+        "1 !** {3}",
+        "x^2 !/ {1,2}",
+        "x^2 !U {1,2}",
     )
 
     @pytest.mark.parametrize("caret_spec", SET_TYPE_ERROR_CARET_TEMPLATES)
