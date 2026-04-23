@@ -18,10 +18,10 @@ const blanks = [
 
 describe('multipleDropdownsHandler.transformPrompt', () => {
   it('replaces blank placeholders with pl-multiple-choice dropdown elements', () => {
-    const prompt = multipleDropdownsHandler.transformPrompt!(
-      'Color: [blank1], Shape: [blank2]',
-      { type: 'multiple-dropdowns', blanks },
-    );
+    const prompt = multipleDropdownsHandler.transformPrompt!('Color: [blank1], Shape: [blank2]', {
+      type: 'multiple-dropdowns',
+      blanks,
+    });
     assert.include(prompt, '<pl-multiple-choice answers-name="blank1" display="dropdown">');
     assert.include(prompt, '<pl-multiple-choice answers-name="blank2" display="dropdown">');
     assert.notInclude(prompt, '[blank1]');
@@ -29,10 +29,10 @@ describe('multipleDropdownsHandler.transformPrompt', () => {
   });
 
   it('renders correct and incorrect answers inside each dropdown', () => {
-    const prompt = multipleDropdownsHandler.transformPrompt!(
-      '[blank1]',
-      { type: 'multiple-dropdowns', blanks },
-    );
+    const prompt = multipleDropdownsHandler.transformPrompt!('[blank1]', {
+      type: 'multiple-dropdowns',
+      blanks,
+    });
     assert.include(prompt, '<pl-answer correct="true">Red</pl-answer>');
     assert.include(prompt, '<pl-answer correct="false">Blue</pl-answer>');
   });
@@ -44,10 +44,10 @@ describe('multipleDropdownsHandler.transformPrompt', () => {
         choices: [{ id: 'x', html: 'X', correct: true }],
       },
     ];
-    const prompt = multipleDropdownsHandler.transformPrompt!(
-      '[a"b]',
-      { type: 'multiple-dropdowns', blanks: specialBlanks },
-    );
+    const prompt = multipleDropdownsHandler.transformPrompt!('[a"b]', {
+      type: 'multiple-dropdowns',
+      blanks: specialBlanks,
+    });
     assert.include(prompt, 'answers-name="a&quot;b"');
   });
 });

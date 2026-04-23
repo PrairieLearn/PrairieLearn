@@ -28,11 +28,9 @@ describe('checkboxHandler.renderHtml', () => {
   });
 
   it('does not include feedback attributes in HTML (per-answer handled in grade())', () => {
-    const html = checkboxHandler.renderHtml(
-      { type: 'checkbox', choices },
-      undefined,
-      { Apple: 'Correct!' },
-    );
+    const html = checkboxHandler.renderHtml({ type: 'checkbox', choices }, undefined, {
+      Apple: 'Correct!',
+    });
     assert.notInclude(html, 'feedback=');
   });
 });
@@ -44,10 +42,7 @@ describe('checkboxHandler.renderGradePy', () => {
   });
 
   it('returns empty string when perAnswer is empty', () => {
-    const py = checkboxHandler.renderGradePy!(
-      { type: 'checkbox', choices },
-      { perAnswer: {} },
-    );
+    const py = checkboxHandler.renderGradePy!({ type: 'checkbox', choices }, { perAnswer: {} });
     assert.equal(py, '');
   });
 

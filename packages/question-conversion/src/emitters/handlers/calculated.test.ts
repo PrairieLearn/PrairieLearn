@@ -15,27 +15,18 @@ const baseBody = {
 
 describe('calculatedHandler.transformPrompt', () => {
   it('replaces [varname] references with {{params.varname}}', () => {
-    const prompt = calculatedHandler.transformPrompt!(
-      'Find [x] plus [y]',
-      baseBody,
-    );
+    const prompt = calculatedHandler.transformPrompt!('Find [x] plus [y]', baseBody);
     assert.equal(prompt, 'Find {{params.x}} plus {{params.y}}');
   });
 
   it('leaves unrelated brackets untouched', () => {
-    const prompt = calculatedHandler.transformPrompt!(
-      'Find [x] and [z]',
-      baseBody,
-    );
+    const prompt = calculatedHandler.transformPrompt!('Find [x] and [z]', baseBody);
     assert.include(prompt, '{{params.x}}');
     assert.include(prompt, '[z]');
   });
 
   it('handles repeated variable references', () => {
-    const prompt = calculatedHandler.transformPrompt!(
-      '[x] times [x]',
-      baseBody,
-    );
+    const prompt = calculatedHandler.transformPrompt!('[x] times [x]', baseBody);
     assert.equal(prompt, '{{params.x}} times {{params.x}}');
   });
 });
