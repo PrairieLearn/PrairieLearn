@@ -33,13 +33,13 @@
     },
     {
       "id": "pl-no-relative-client-files-question",
-      "selector": "[src^=\"clientFilesQuestion/\"], [href^=\"clientFilesQuestion/\"]",
+      "selector": "[src*=\"clientFilesQuestion/\"], [href*=\"clientFilesQuestion/\"], [srcset*=\"clientFilesQuestion/\"], [poster*=\"clientFilesQuestion/\"], [data*=\"clientFilesQuestion/\"], [style*=\"clientFilesQuestion/\"]",
       "message": "Use {{options.client_files_question_url}} instead of a relative clientFilesQuestion path.",
       "severity": "warning"
     },
     {
       "id": "pl-no-relative-client-files-course",
-      "selector": "[src^=\"clientFilesCourse/\"], [href^=\"clientFilesCourse/\"]",
+      "selector": "[src*=\"clientFilesCourse/\"], [href*=\"clientFilesCourse/\"], [srcset*=\"clientFilesCourse/\"], [poster*=\"clientFilesCourse/\"], [data*=\"clientFilesCourse/\"], [style*=\"clientFilesCourse/\"]",
       "message": "Use {{options.client_files_course_url}} instead of a relative clientFilesCourse path.",
       "severity": "warning"
     },
@@ -77,12 +77,6 @@
       "selector": ":is(pl-question-panel, pl-answer-panel):has(pl-external-grader-results, pl-file-preview)",
       "message": "pl-external-grader-results and pl-file-preview should only appear inside pl-submission-panel."
     },
-    // TODO: Requires more work to implement.
-    {
-      "id": "pl-input-in-panel",
-      "selector": ":is(pl-question-panel, pl-answer-panel, pl-submission-panel):has(pl-big-o-input, pl-excalidraw:not([gradable=\"false\"]), pl-image-capture, pl-integer-input, pl-matching, pl-matrix-component-input, pl-matrix-input, pl-checkbox, pl-multiple-choice, pl-order-blocks, pl-number-input, pl-string-input, pl-symbolic-input, pl-units-input)",
-      "message": "Input elements must not be nested inside pl-question-panel, pl-answer-panel, or pl-submission-panel. Place them as siblings of the panel instead."
-    },
     {
       "id": "pl-nested-panels",
       "selector": ":is(pl-question-panel, pl-answer-panel, pl-submission-panel) :is(pl-question-panel, pl-answer-panel, pl-submission-panel)",
@@ -103,6 +97,86 @@
       "id": "pl-input-missing-answers-name",
       "selector": "pl-big-o-input:not([answers-name]), pl-checkbox:not([answers-name]), pl-excalidraw:not([gradable=\"false\"]):not([answers-name]), pl-integer-input:not([answers-name]), pl-matching:not([answers-name]), pl-matrix-component-input:not([answers-name]), pl-matrix-input:not([answers-name]), pl-multiple-choice:not([answers-name]), pl-number-input:not([answers-name]), pl-order-blocks:not([answers-name]), pl-string-input:not([answers-name]), pl-symbolic-input:not([answers-name]), pl-units-input:not([answers-name])",
       "message": "Input element is missing the required `answers-name` attribute."
+    },
+    {
+      "id": "pl-raw-submitted-answer",
+      "selector": "{{{submitted_answers.*}}}, {{{raw_submitted_answers.*}}}",
+      "message": "Rendering submitted answers with triple-brace mustache emits unescaped user content and is an XSS risk. See https://docs.prairielearn.com/elements/pl-xss-safe/."
+    },
+    {
+      "id": "pl-inline-script",
+      "selector": "script:not([src])",
+      "message": "Prefer external script files over inline <script> tags. See https://docs.prairielearn.com/question/overview/#question-dependencies.",
+      "severity": "warning",
+      "exclude": ["apps/prairielearn/elements/**/*.mustache"]
+    },
+    {
+      "id": "pl-prefer-pl-file-download",
+      "selector": "a[href*=\"client_files_course_url\"], a[href*=\"client_files_question_url\"]",
+      "message": "Prefer pl-file-download over a plain <a> link for downloadable files. See https://docs.prairielearn.com/elements/pl-file-download/.",
+      "severity": "warning"
+    },
+    // Improper nesting of elements
+    {
+      "id": "pl-stray-answer",
+      "selector": "pl-answer:not(pl-multiple-choice pl-answer):not(pl-checkbox pl-answer):not(pl-order-blocks pl-answer):not(pl-block-group pl-answer):not(pl-dropdown pl-answer)",
+      "message": "pl-answer must be nested inside pl-multiple-choice, pl-checkbox, pl-order-blocks, pl-block-group, or pl-dropdown."
+    },
+    {
+      "id": "pl-stray-hint",
+      "selector": "pl-hint:not(pl-hidden-hints pl-hint)",
+      "message": "pl-hint must be nested inside pl-hidden-hints."
+    },
+    {
+      "id": "pl-stray-statement",
+      "selector": "pl-statement:not(pl-matching pl-statement)",
+      "message": "pl-statement must be nested inside pl-matching."
+    },
+    {
+      "id": "pl-stray-option",
+      "selector": "pl-option:not(pl-matching pl-option)",
+      "message": "pl-option must be nested inside pl-matching."
+    },
+    {
+      "id": "pl-stray-block-group",
+      "selector": "pl-block-group:not(pl-order-blocks pl-block-group)",
+      "message": "pl-block-group must be nested inside pl-order-blocks."
+    },
+    {
+      "id": "pl-stray-background",
+      "selector": "pl-background:not(pl-overlay pl-background)",
+      "message": "pl-background must be nested inside pl-overlay."
+    },
+    {
+      "id": "pl-stray-location",
+      "selector": "pl-location:not(pl-overlay pl-location)",
+      "message": "pl-location must be nested inside pl-overlay."
+    },
+    {
+      "id": "pl-stray-variable",
+      "selector": "pl-variable:not(pl-template pl-variable):not(pl-variable-output pl-variable):not(pl-external-grader-variables pl-variable)",
+      "message": "pl-variable must be nested inside pl-template, pl-variable-output, or pl-external-grader-variables."
+    },
+    {
+      "id": "pl-stray-drawing-section",
+      "selector": "pl-drawing-initial:not(pl-drawing pl-drawing-initial), pl-drawing-answer:not(pl-drawing pl-drawing-answer), pl-drawing-group:not(pl-drawing pl-drawing-group), pl-controls:not(pl-drawing pl-controls)",
+      "message": "pl-drawing-initial, pl-drawing-answer, pl-drawing-group, and pl-controls must be nested inside pl-drawing."
+    },
+    {
+      "id": "pl-stray-control-child",
+      "selector": "pl-controls-group:not(pl-controls pl-controls-group), pl-drawing-button:not(pl-controls pl-drawing-button)",
+      "message": "pl-controls-group and pl-drawing-button must be nested inside pl-controls."
+    },
+    {
+      "id": "pl-stray-drawing-object",
+      "selector": ":is(pl-3pointrod, pl-4pointrod, pl-arc, pl-arc-dimensions, pl-arc-vector, pl-axes, pl-battery, pl-capacitor, pl-circle, pl-clamped, pl-coil, pl-collar-rod, pl-controlled-curved-line, pl-controlled-line, pl-coordinates, pl-dimensions, pl-distributed-load, pl-double-headed-vector, pl-fixed-pin, pl-graph-line, pl-inductor, pl-line, pl-paired-vector, pl-point, pl-polygon, pl-pulley, pl-rectangle, pl-resistor, pl-rod, pl-roller, pl-spring, pl-switch, pl-text, pl-triangle, pl-vector):not(pl-drawing pl-3pointrod):not(pl-drawing pl-4pointrod):not(pl-drawing pl-arc):not(pl-drawing pl-arc-dimensions):not(pl-drawing pl-arc-vector):not(pl-drawing pl-axes):not(pl-drawing pl-battery):not(pl-drawing pl-capacitor):not(pl-drawing pl-circle):not(pl-drawing pl-clamped):not(pl-drawing pl-coil):not(pl-drawing pl-collar-rod):not(pl-drawing pl-controlled-curved-line):not(pl-drawing pl-controlled-line):not(pl-drawing pl-coordinates):not(pl-drawing pl-dimensions):not(pl-drawing pl-distributed-load):not(pl-drawing pl-double-headed-vector):not(pl-drawing pl-fixed-pin):not(pl-drawing pl-graph-line):not(pl-drawing pl-inductor):not(pl-drawing pl-line):not(pl-drawing pl-paired-vector):not(pl-drawing pl-point):not(pl-drawing pl-polygon):not(pl-drawing pl-pulley):not(pl-drawing pl-rectangle):not(pl-drawing pl-resistor):not(pl-drawing pl-rod):not(pl-drawing pl-roller):not(pl-drawing pl-spring):not(pl-drawing pl-switch):not(pl-drawing pl-text):not(pl-drawing pl-triangle):not(pl-drawing pl-vector)",
+      "message": "pl-drawing shape element must be nested inside pl-drawing."
+    },
+    // TODO: Requires more work to implement.
+    {
+      "id": "pl-input-in-panel",
+      "selector": ":is(pl-question-panel, pl-answer-panel, pl-submission-panel):has(pl-big-o-input, pl-excalidraw:not([gradable=\"false\"]), pl-image-capture, pl-integer-input, pl-matching, pl-matrix-component-input, pl-matrix-input, pl-checkbox, pl-multiple-choice, pl-order-blocks, pl-number-input, pl-string-input, pl-symbolic-input, pl-units-input)",
+      "message": "Input elements must not be nested inside pl-question-panel, pl-answer-panel, or pl-submission-panel. Place them as siblings of the panel instead."
     }
     // These rules make sense for instructors, but not for our example / test course questions.
     // {
