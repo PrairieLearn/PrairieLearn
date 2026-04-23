@@ -486,12 +486,8 @@ class CheckAST(ast.NodeVisitor):
                     return self._set_type(node, None)
                 case "Integer" | "Float":
                     return self._set_type(node, ASTSympyType.SCALAR)
-                case "Union" | "Intersection" | "Interval" | "FiniteSet" if (
-                    self.allow_set_notation
-                ):
-                    inferred = self._infer_sympy_set_function_type(
-                        node.func.id, node.args
-                    )
+                case fn if self.allow_set_notation and fn in _Constants().set_functions:
+                    inferred = self._infer_set_function_type(fn, node.args)  # type: ignore
                     return self._set_type(node, inferred)
                 case _:
                     pass
@@ -539,7 +535,7 @@ class CheckAST(ast.NodeVisitor):
                 if typ and typ not in es:
                     raise HasSetOperationTypeError(fn_name, None, typ, for_argument=i)
 
-    def _infer_sympy_set_function_type(
+    def _infer_set_function_type(
         self,
         name: Literal["Union", "Intersection", "Interval", "FiniteSet", "ProductSet"],
         args: list[ast.expr],
@@ -554,13 +550,10 @@ class CheckAST(ast.NodeVisitor):
                 )
                 self._enforce_signature(name, args, *overloads)
                 return None
-            case "Union" | "Intersection":
+            case "Union" | "Intersection" | "ProductSet":
                 if not args:
                     raise HasSetFunctionArityError(name, len(args), "1+")
                 self._enforce_signature(name, args, len(args) * [ASTSympyType.SET])
-                return ASTSympyType.SET
-            case "ProductSet":
-                self._enforce_signature(name, args, 2 * [ASTSympyType.SET])
                 return ASTSympyType.SET
 
     def _infer_bin_op_type(
@@ -622,14 +615,8 @@ def ast_check_str(
         ast.Div,
         ast.Mod,
         ast.Pow,
-        *(
-            (
-                ast.BitOr,
-                ast.BitAnd,
-            )
-            if allow_set_notation
-            else ()
-        ),
+        ast.BitAnd,
+        ast.BitOr,
     )
 
     CheckAST(
@@ -1462,7 +1449,6 @@ def get_items_list(items_string: str | None) -> list[str]:
 _INTERVAL_OPEN = {"(", "["}
 _SET_LITERAL_NESTED_OPEN = {"(", "[", "{"}
 _SET_LITERAL_NESTED_CLOSE = {")", "]", "}"}
-_SET_FUNCTION_NAMES = _Constants().set_functions.keys()
 _SET_NOTATION_ONLY_TOKENS = {"[", "]", "{", "}", "|", "&"}
 _SET_OPS = {
     "U": "|",
@@ -1526,12 +1512,10 @@ def _try_rewrite_interval_literal(
             operand.append(token)
         raise TokenError("interval notation is incomplete")
 
+    set_fn_names = _Constants().set_functions.keys() | _SET_NOTATION_ONLY_TOKENS
+
     def _contains_set_notation(tokens: list[TOKEN]) -> bool:
-        return any(
-            (typ == NAME and text in _SET_FUNCTION_NAMES)
-            or text in _SET_NOTATION_ONLY_TOKENS
-            for typ, text in tokens
-        )
+        return any((typ == NAME and text in set_fn_names) for typ, text in tokens)
 
     # consume until the first top-level comma or closing bracket.
     closed, left_side, mid_index, _comma = _seek_comma_or_closer(start_index + 1)
