@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { useFieldArray, useForm } from 'react-hook-form';
 
@@ -421,320 +421,344 @@ export function GroupSettingsCard({
               </div>
 
               <div className="card overflow-x-auto">
-                <div className="roles-grid-header">
-                  <div>Name</div>
-                  <div>
-                    Min assignees{' '}
-                    <OverlayTrigger
-                      placement="top"
-                      tooltip={{
-                        body: 'Minimum number of students that must be assigned to this role.',
-                        props: { id: 'role-min-assignees-tooltip' },
-                      }}
-                    >
-                      <button
-                        type="button"
-                        className="btn btn-xs btn-ghost p-0 align-baseline"
-                        aria-label="Min assignees help"
-                      >
-                        <i className="bi bi-question-circle text-muted" aria-hidden="true" />
-                      </button>
-                    </OverlayTrigger>
-                  </div>
-                  <div>
-                    Max assignees{' '}
-                    <OverlayTrigger
-                      placement="top"
-                      tooltip={{
-                        body: 'Maximum number of students that can be assigned to this role. Leave blank for unlimited.',
-                        props: { id: 'role-max-assignees-tooltip' },
-                      }}
-                    >
-                      <button
-                        type="button"
-                        className="btn btn-xs btn-ghost p-0 align-baseline"
-                        aria-label="Max assignees help"
-                      >
-                        <i className="bi bi-question-circle text-muted" aria-hidden="true" />
-                      </button>
-                    </OverlayTrigger>
-                  </div>
-                  <div className="text-center">
-                    Can assign{' '}
-                    <OverlayTrigger
-                      placement="top"
-                      tooltip={{
-                        body: 'Students with this role can assign roles to other students in the group.',
-                        props: { id: 'role-can-assign-tooltip' },
-                      }}
-                    >
-                      <button
-                        type="button"
-                        className="btn btn-xs btn-ghost p-0 align-baseline"
-                        aria-label="Can assign roles help"
-                      >
-                        <i className="bi bi-question-circle text-muted" aria-hidden="true" />
-                      </button>
-                    </OverlayTrigger>
-                  </div>
-                  <div className="text-center">
-                    Can view{' '}
-                    <OverlayTrigger
-                      placement="top"
-                      tooltip={{
-                        body: 'Students with this role can view assessment questions by default.',
-                        props: { id: 'role-can-view-tooltip' },
-                      }}
-                    >
-                      <button
-                        type="button"
-                        className="btn btn-xs btn-ghost p-0 align-baseline"
-                        aria-label="Can view help"
-                      >
-                        <i className="bi bi-question-circle text-muted" aria-hidden="true" />
-                      </button>
-                    </OverlayTrigger>
-                  </div>
-                  <div className="text-center">
-                    Can submit{' '}
-                    <OverlayTrigger
-                      placement="top"
-                      tooltip={{
-                        body: 'Students with this role can submit answers to assessment questions by default.',
-                        props: { id: 'role-can-submit-tooltip' },
-                      }}
-                    >
-                      <button
-                        type="button"
-                        className="btn btn-xs btn-ghost p-0 align-baseline"
-                        aria-label="Can submit help"
-                      >
-                        <i className="bi bi-question-circle text-muted" aria-hidden="true" />
-                      </button>
-                    </OverlayTrigger>
-                  </div>
-                  <div />
-                </div>
-
-                {fields.length === 0 ? (
-                  <div className="roles-grid-row text-center text-muted">
-                    <div className="roles-grid-row__span-all">
-                      <div>
-                        <i className="bi bi-person-badge me-2" aria-hidden="true" />
-                        No roles configured
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn-link btn-sm p-0 mt-2"
-                        onClick={() => setShowRecommendedRolesModal(true)}
-                      >
-                        Use recommended configuration
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  fields.map((field, index) => {
-                    const rowErrors = errors.roles?.[index];
-                    const minError = rowErrors?.minAssignees;
-                    const maxError = rowErrors?.maxAssignees;
-                    const sizeValidateError =
-                      minError?.type === 'validate' || maxError?.type === 'validate';
-                    const rowNumber = index + 1;
-                    const nameErrorId = `role-${index}-nameError`;
-                    const minErrorId = `role-${index}-minError`;
-                    const maxErrorId = `role-${index}-maxError`;
-                    const sizeErrorId = `role-${index}-sizeError`;
-                    return (
-                      <div key={field.id} className="roles-grid-row">
-                        <input
-                          type="hidden"
-                          defaultValue={field.origName ?? ''}
-                          {...register(`roles.${index}.origName`)}
-                        />
-                        <div>
-                          <input
-                            type="text"
-                            className={clsx(
-                              'form-control form-control-sm',
-                              rowErrors?.name && 'is-invalid',
-                            )}
-                            placeholder="e.g. Manager"
-                            defaultValue={field.name}
-                            aria-label={`Role ${rowNumber} name`}
-                            aria-invalid={rowErrors?.name ? 'true' : undefined}
-                            aria-errormessage={rowErrors?.name ? nameErrorId : undefined}
-                            {...register(`roles.${index}.name`, {
-                              required: 'Name is required.',
-                              validate: (value) => {
-                                const allNames = watchedRoles.map((r) => r.name);
-                                const dupes = allNames.filter((n) => n === value);
-                                return dupes.length <= 1 || 'Duplicate role name.';
-                              },
-                            })}
-                          />
-                        </div>
-                        <div>
-                          <input
-                            type="number"
-                            className={clsx(
-                              'form-control form-control-sm',
-                              (!!minError || sizeValidateError) && 'is-invalid',
-                            )}
-                            placeholder="0"
-                            defaultValue={field.minAssignees ?? ''}
-                            aria-label={`Min assignees for role ${rowNumber}`}
-                            aria-invalid={!!minError || sizeValidateError ? 'true' : undefined}
-                            aria-errormessage={
-                              sizeValidateError ? sizeErrorId : minError ? minErrorId : undefined
-                            }
-                            {...register(`roles.${index}.minAssignees`, {
-                              valueAsNumber: true,
-                              deps: [`roles.${index}.maxAssignees`],
-                              min: { value: 0, message: 'Must be ≥ 0.' },
-                              validate: (value) => {
-                                const max = watchedRoles[index]?.maxAssignees;
-                                if (value != null && max != null && value > max) {
-                                  return 'Must be ≤ max assignees.';
-                                }
-                                return true;
-                              },
-                              onChange: (e) => {
-                                const newMin = e.target.valueAsNumber;
-                                const currentMax = getValues(`roles.${index}.maxAssignees`);
-                                if (
-                                  !Number.isNaN(newMin) &&
-                                  currentMax != null &&
-                                  newMin > currentMax
-                                ) {
-                                  setValue(`roles.${index}.maxAssignees`, newMin, {
-                                    shouldDirty: true,
-                                    shouldValidate: true,
-                                  });
-                                }
-                              },
-                            })}
-                          />
-                        </div>
-                        <div>
-                          <input
-                            type="number"
-                            className={clsx(
-                              'form-control form-control-sm',
-                              (!!maxError || sizeValidateError) && 'is-invalid',
-                            )}
-                            placeholder="0"
-                            defaultValue={field.maxAssignees ?? ''}
-                            aria-label={`Max assignees for role ${rowNumber}`}
-                            aria-invalid={!!maxError || sizeValidateError ? 'true' : undefined}
-                            aria-errormessage={
-                              sizeValidateError ? sizeErrorId : maxError ? maxErrorId : undefined
-                            }
-                            {...register(`roles.${index}.maxAssignees`, {
-                              valueAsNumber: true,
-                              deps: [`roles.${index}.minAssignees`],
-                              min: { value: 1, message: 'Must be ≥ 1.' },
-                              validate: (value) => {
-                                const min = watchedRoles[index]?.minAssignees;
-                                if (value != null && min != null && min > value) {
-                                  return 'Must be ≥ min assignees.';
-                                }
-                                return true;
-                              },
-                            })}
-                          />
-                        </div>
-                        <div className="text-center">
-                          <input
-                            type="checkbox"
-                            className="form-check-input"
-                            aria-label={`Can assign roles for ${field.name || 'this role'}`}
-                            defaultChecked={field.canAssignRoles}
-                            {...register(`roles.${index}.canAssignRoles`)}
-                          />
-                        </div>
-                        <div className="text-center">
-                          <input
-                            type="checkbox"
-                            className="form-check-input"
-                            aria-label={`Can view for ${field.name || 'this role'}`}
-                            defaultChecked={field.canView}
-                            {...register(`roles.${index}.canView`, {
-                              onChange: (e) => {
-                                if (!e.target.checked) {
-                                  setValue(`roles.${index}.canSubmit`, false, {
-                                    shouldDirty: true,
-                                  });
-                                }
-                              },
-                            })}
-                          />
-                        </div>
-                        <div className="text-center">
-                          <input
-                            type="checkbox"
-                            className="form-check-input"
-                            disabled={!watchedRoles[index]?.canView}
-                            aria-label={
-                              watchedRoles[index]?.canView
-                                ? `Can submit for ${field.name || 'this role'}`
-                                : `Can submit for ${field.name || 'this role'} (requires can view)`
-                            }
-                            title={
-                              watchedRoles[index]?.canView
-                                ? undefined
-                                : "Enable 'Can view' first to allow submission"
-                            }
-                            defaultChecked={field.canSubmit}
-                            {...register(`roles.${index}.canSubmit`)}
-                          />
-                        </div>
-                        <div className="text-end">
+                <table className="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th scope="col">Name</th>
+                      <th scope="col">
+                        Min assignees{' '}
+                        <OverlayTrigger
+                          placement="top"
+                          tooltip={{
+                            body: 'Minimum number of students that must be assigned to this role.',
+                            props: { id: 'role-min-assignees-tooltip' },
+                          }}
+                        >
                           <button
                             type="button"
-                            className="btn btn-sm btn-outline-danger"
-                            aria-label={`Remove role ${index + 1}`}
-                            onClick={() => remove(index)}
+                            className="btn btn-xs btn-ghost p-0 align-baseline"
+                            aria-label="Min assignees help"
                           >
-                            <i className="bi bi-trash" aria-hidden="true" />
+                            <i className="bi bi-question-circle text-muted" aria-hidden="true" />
                           </button>
-                        </div>
-
-                        {rowErrors?.name && (
-                          <div
-                            id={nameErrorId}
-                            className="text-danger small roles-grid-row__error-name"
+                        </OverlayTrigger>
+                      </th>
+                      <th scope="col">
+                        Max assignees{' '}
+                        <OverlayTrigger
+                          placement="top"
+                          tooltip={{
+                            body: 'Maximum number of students that can be assigned to this role. Leave blank for unlimited.',
+                            props: { id: 'role-max-assignees-tooltip' },
+                          }}
+                        >
+                          <button
+                            type="button"
+                            className="btn btn-xs btn-ghost p-0 align-baseline"
+                            aria-label="Max assignees help"
                           >
-                            {rowErrors.name.message}
-                          </div>
-                        )}
-                        {sizeValidateError && (
-                          <div
-                            id={sizeErrorId}
-                            className="text-danger small roles-grid-row__error-size-both"
+                            <i className="bi bi-question-circle text-muted" aria-hidden="true" />
+                          </button>
+                        </OverlayTrigger>
+                      </th>
+                      <th scope="col" className="text-center">
+                        Can assign{' '}
+                        <OverlayTrigger
+                          placement="top"
+                          tooltip={{
+                            body: 'Students with this role can assign roles to other students in the group.',
+                            props: { id: 'role-can-assign-tooltip' },
+                          }}
+                        >
+                          <button
+                            type="button"
+                            className="btn btn-xs btn-ghost p-0 align-baseline"
+                            aria-label="Can assign roles help"
                           >
-                            Min assignees must be less than or equal to max assignees.
-                          </div>
-                        )}
-                        {!sizeValidateError && minError && (
-                          <div
-                            id={minErrorId}
-                            className="text-danger small roles-grid-row__error-min"
+                            <i className="bi bi-question-circle text-muted" aria-hidden="true" />
+                          </button>
+                        </OverlayTrigger>
+                      </th>
+                      <th scope="col" className="text-center">
+                        Can view{' '}
+                        <OverlayTrigger
+                          placement="top"
+                          tooltip={{
+                            body: 'Students with this role can view assessment questions by default.',
+                            props: { id: 'role-can-view-tooltip' },
+                          }}
+                        >
+                          <button
+                            type="button"
+                            className="btn btn-xs btn-ghost p-0 align-baseline"
+                            aria-label="Can view help"
                           >
-                            {minError.message}
-                          </div>
-                        )}
-                        {!sizeValidateError && maxError && (
-                          <div
-                            id={maxErrorId}
-                            className="text-danger small roles-grid-row__error-max"
+                            <i className="bi bi-question-circle text-muted" aria-hidden="true" />
+                          </button>
+                        </OverlayTrigger>
+                      </th>
+                      <th scope="col" className="text-center">
+                        Can submit{' '}
+                        <OverlayTrigger
+                          placement="top"
+                          tooltip={{
+                            body: 'Students with this role can submit answers to assessment questions by default.',
+                            props: { id: 'role-can-submit-tooltip' },
+                          }}
+                        >
+                          <button
+                            type="button"
+                            className="btn btn-xs btn-ghost p-0 align-baseline"
+                            aria-label="Can submit help"
                           >
-                            {maxError.message}
+                            <i className="bi bi-question-circle text-muted" aria-hidden="true" />
+                          </button>
+                        </OverlayTrigger>
+                      </th>
+                      <th scope="col" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fields.length === 0 ? (
+                      <tr className="text-center text-muted">
+                        <td colSpan={7}>
+                          <div>
+                            <i className="bi bi-person-badge me-2" aria-hidden="true" />
+                            No roles configured
                           </div>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
+                          <button
+                            type="button"
+                            className="btn btn-link btn-sm p-0 mt-2"
+                            onClick={() => setShowRecommendedRolesModal(true)}
+                          >
+                            Use recommended configuration
+                          </button>
+                        </td>
+                      </tr>
+                    ) : (
+                      fields.map((field, index) => {
+                        const rowErrors = errors.roles?.[index];
+                        const minError = rowErrors?.minAssignees;
+                        const maxError = rowErrors?.maxAssignees;
+                        const sizeValidateError =
+                          minError?.type === 'validate' || maxError?.type === 'validate';
+                        const rowNumber = index + 1;
+                        const nameErrorId = `role-${index}-nameError`;
+                        const minErrorId = `role-${index}-minError`;
+                        const maxErrorId = `role-${index}-maxError`;
+                        const sizeErrorId = `role-${index}-sizeError`;
+                        return (
+                          <Fragment key={field.id}>
+                            <tr>
+                              <td>
+                                <input
+                                  type="hidden"
+                                  defaultValue={field.origName ?? ''}
+                                  {...register(`roles.${index}.origName`)}
+                                />
+                                <input
+                                  type="text"
+                                  className={clsx(
+                                    'form-control form-control-sm',
+                                    rowErrors?.name && 'is-invalid',
+                                  )}
+                                  placeholder="e.g. Manager"
+                                  defaultValue={field.name}
+                                  aria-label={`Role ${rowNumber} name`}
+                                  aria-invalid={rowErrors?.name ? 'true' : undefined}
+                                  aria-errormessage={rowErrors?.name ? nameErrorId : undefined}
+                                  {...register(`roles.${index}.name`, {
+                                    required: 'Name is required.',
+                                    validate: (value) => {
+                                      const allNames = watchedRoles.map((r) => r.name);
+                                      const dupes = allNames.filter((n) => n === value);
+                                      return dupes.length <= 1 || 'Duplicate role name.';
+                                    },
+                                  })}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  className={clsx(
+                                    'form-control form-control-sm',
+                                    (!!minError || sizeValidateError) && 'is-invalid',
+                                  )}
+                                  placeholder="0"
+                                  defaultValue={field.minAssignees ?? ''}
+                                  aria-label={`Min assignees for role ${rowNumber}`}
+                                  aria-invalid={
+                                    !!minError || sizeValidateError ? 'true' : undefined
+                                  }
+                                  aria-errormessage={
+                                    sizeValidateError
+                                      ? sizeErrorId
+                                      : minError
+                                        ? minErrorId
+                                        : undefined
+                                  }
+                                  {...register(`roles.${index}.minAssignees`, {
+                                    valueAsNumber: true,
+                                    deps: [`roles.${index}.maxAssignees`],
+                                    min: { value: 0, message: 'Must be ≥ 0.' },
+                                    validate: (value) => {
+                                      const max = watchedRoles[index]?.maxAssignees;
+                                      if (value != null && max != null && value > max) {
+                                        return 'Must be ≤ max assignees.';
+                                      }
+                                      return true;
+                                    },
+                                    onChange: (e) => {
+                                      const newMin = e.target.valueAsNumber;
+                                      const currentMax = getValues(`roles.${index}.maxAssignees`);
+                                      if (
+                                        !Number.isNaN(newMin) &&
+                                        currentMax != null &&
+                                        newMin > currentMax
+                                      ) {
+                                        setValue(`roles.${index}.maxAssignees`, newMin, {
+                                          shouldDirty: true,
+                                          shouldValidate: true,
+                                        });
+                                      }
+                                    },
+                                  })}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  className={clsx(
+                                    'form-control form-control-sm',
+                                    (!!maxError || sizeValidateError) && 'is-invalid',
+                                  )}
+                                  placeholder="0"
+                                  defaultValue={field.maxAssignees ?? ''}
+                                  aria-label={`Max assignees for role ${rowNumber}`}
+                                  aria-invalid={
+                                    !!maxError || sizeValidateError ? 'true' : undefined
+                                  }
+                                  aria-errormessage={
+                                    sizeValidateError
+                                      ? sizeErrorId
+                                      : maxError
+                                        ? maxErrorId
+                                        : undefined
+                                  }
+                                  {...register(`roles.${index}.maxAssignees`, {
+                                    valueAsNumber: true,
+                                    deps: [`roles.${index}.minAssignees`],
+                                    min: { value: 1, message: 'Must be ≥ 1.' },
+                                    validate: (value) => {
+                                      const min = watchedRoles[index]?.minAssignees;
+                                      if (value != null && min != null && min > value) {
+                                        return 'Must be ≥ min assignees.';
+                                      }
+                                      return true;
+                                    },
+                                  })}
+                                />
+                              </td>
+                              <td className="text-center">
+                                <input
+                                  type="checkbox"
+                                  className="form-check-input"
+                                  aria-label={`Can assign roles for ${field.name || 'this role'}`}
+                                  defaultChecked={field.canAssignRoles}
+                                  {...register(`roles.${index}.canAssignRoles`)}
+                                />
+                              </td>
+                              <td className="text-center">
+                                <input
+                                  type="checkbox"
+                                  className="form-check-input"
+                                  aria-label={`Can view for ${field.name || 'this role'}`}
+                                  defaultChecked={field.canView}
+                                  {...register(`roles.${index}.canView`, {
+                                    onChange: (e) => {
+                                      if (!e.target.checked) {
+                                        setValue(`roles.${index}.canSubmit`, false, {
+                                          shouldDirty: true,
+                                        });
+                                      }
+                                    },
+                                  })}
+                                />
+                              </td>
+                              <td className="text-center">
+                                <input
+                                  type="checkbox"
+                                  className="form-check-input"
+                                  disabled={!watchedRoles[index]?.canView}
+                                  aria-label={
+                                    watchedRoles[index]?.canView
+                                      ? `Can submit for ${field.name || 'this role'}`
+                                      : `Can submit for ${field.name || 'this role'} (requires can view)`
+                                  }
+                                  title={
+                                    watchedRoles[index]?.canView
+                                      ? undefined
+                                      : "Enable 'Can view' first to allow submission"
+                                  }
+                                  defaultChecked={field.canSubmit}
+                                  {...register(`roles.${index}.canSubmit`)}
+                                />
+                              </td>
+                              <td className="text-end">
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-outline-danger"
+                                  aria-label={`Remove role ${index + 1}`}
+                                  onClick={() => remove(index)}
+                                >
+                                  <i className="bi bi-trash" aria-hidden="true" />
+                                </button>
+                              </td>
+                            </tr>
+                            {(rowErrors?.name || sizeValidateError || minError || maxError) && (
+                              <tr>
+                                {rowErrors?.name ? (
+                                  <td id={nameErrorId} className="text-danger small pt-0">
+                                    {rowErrors.name.message}
+                                  </td>
+                                ) : (
+                                  <td className="pt-0" />
+                                )}
+                                {sizeValidateError ? (
+                                  <td
+                                    id={sizeErrorId}
+                                    colSpan={2}
+                                    className="text-danger small pt-0"
+                                  >
+                                    Min assignees must be less than or equal to max assignees.
+                                  </td>
+                                ) : (
+                                  <>
+                                    {minError ? (
+                                      <td id={minErrorId} className="text-danger small pt-0">
+                                        {minError.message}
+                                      </td>
+                                    ) : (
+                                      <td className="pt-0" />
+                                    )}
+                                    {maxError ? (
+                                      <td id={maxErrorId} className="text-danger small pt-0">
+                                        {maxError.message}
+                                      </td>
+                                    ) : (
+                                      <td className="pt-0" />
+                                    )}
+                                  </>
+                                )}
+                                <td colSpan={4} className="pt-0" />
+                              </tr>
+                            )}
+                          </Fragment>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
               </div>
 
               {roleErrors.length > 0 && (

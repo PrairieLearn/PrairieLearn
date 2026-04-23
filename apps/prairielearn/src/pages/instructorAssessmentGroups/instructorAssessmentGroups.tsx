@@ -8,7 +8,6 @@ import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { compiledStylesheetTag } from '../../lib/assets.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import {
   StaffAssessmentSchema,
@@ -108,7 +107,6 @@ router.get(
           page: 'assessment',
           subPage: 'groups',
         },
-        headContent: [compiledStylesheetTag('instructorAssessmentGroups.css')],
         options: {
           fullWidth: true,
         },
