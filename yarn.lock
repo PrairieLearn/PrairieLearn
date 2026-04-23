@@ -5497,7 +5497,6 @@ __metadata:
   dependencies:
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/mime-types": "npm:^3"
     "@types/node": "npm:^24.12.2"
     "@types/uuid": "npm:^11.0.0"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260305.1"
@@ -9792,13 +9791,6 @@ __metadata:
   dependencies:
     "@types/node": "npm:*"
   checksum: 10c0/cffe4fa28571dd8ca32f4ef5ce09d0b2cd27ecf72b1185b47077a5a5f4b98a71821230f26ccc05ded24c9c81df91a6c04e65921cd959c48c9bce78865cd0b606
-  languageName: node
-  linkType: hard
-
-"@types/mime-types@npm:^3":
-  version: 3.0.1
-  resolution: "@types/mime-types@npm:3.0.1"
-  checksum: 10c0/61c2056529dc5bc73c25b2a053e21f063fd547c21e12a2be94ca78b89b0f83c9a75afed9a8bda3c78592ee880acc82778302651527f7882cf5ba8e58ab320e29
   languageName: node
   linkType: hard
 
