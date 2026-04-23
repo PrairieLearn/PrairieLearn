@@ -1,4 +1,55 @@
-import type { AssessmentJsonInput } from '../schemas/infoAssessment.js';
+import type { AssessmentJsonInput, GroupsJsonInput } from '../schemas/infoAssessment.js';
+
+const LEGACY_GROUP_KEYS = [
+  'groupWork',
+  'groupMaxSize',
+  'groupMinSize',
+  'groupRoles',
+  'studentGroupCreate',
+  'studentGroupJoin',
+  'studentGroupLeave',
+  'studentGroupChooseName',
+  'canView',
+  'canSubmit',
+] as const satisfies readonly (keyof AssessmentJsonInput)[];
+
+export function stripLegacyGroupKeys(json: AssessmentJsonInput): void {
+  for (const key of LEGACY_GROUP_KEYS) {
+    delete json[key];
+  }
+}
+
+export function serializeGroupSettings(
+  settings: GroupSettingsFormValues,
+  { enabled }: { enabled: boolean },
+): GroupsJsonInput {
+  const roles = settings.roles;
+  const canAssignRoles = roles.filter((r) => r.canAssignRoles).map((r) => r.name);
+  const canView = roles.filter((r) => r.canView).map((r) => r.name);
+  const canSubmit = roles.filter((r) => r.canSubmit).map((r) => r.name);
+
+  return {
+    enabled,
+    minMembers: settings.minMembers ?? undefined,
+    maxMembers: settings.maxMembers ?? undefined,
+    studentPermissions: {
+      canCreateGroup: settings.studentPermissions.canCreateGroup,
+      canJoinGroup: settings.studentPermissions.canJoinGroup,
+      canLeaveGroup: settings.studentPermissions.canLeaveGroup,
+      canNameGroup: settings.studentPermissions.canNameGroup,
+    },
+    roles: roles.map(({ name, maxAssignees, minAssignees }) => ({
+      name,
+      minMembers: minAssignees ?? undefined,
+      maxMembers: maxAssignees ?? undefined,
+    })),
+    rolePermissions: {
+      ...(canAssignRoles.length > 0 ? { canAssignRoles } : {}),
+      ...(canView.length < roles.length ? { canView } : {}),
+      ...(canSubmit.length < roles.length ? { canSubmit } : {}),
+    },
+  };
+}
 
 export interface GroupSettingsFormValues {
   studentPermissions: {

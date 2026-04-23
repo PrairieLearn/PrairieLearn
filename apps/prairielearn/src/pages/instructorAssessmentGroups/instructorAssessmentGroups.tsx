@@ -10,7 +10,11 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { StaffGroupConfigSchema } from '../../lib/client/safe-db-types.js';
+import {
+  StaffAssessmentSchema,
+  StaffAssessmentSetSchema,
+  StaffGroupConfigSchema,
+} from '../../lib/client/safe-db-types.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { type GroupSettingsFormValues, normalizeGroupSettings } from '../../lib/group-config.js';
@@ -111,7 +115,6 @@ router.get(
         content: (
           <Hydrate>
             <InstructorAssessmentGroups
-              resLocals={res.locals}
               groupsCsvFilename={groupsCsvFilename}
               groupConfigInfo={staffGroupConfigInfo}
               groups={groups}
@@ -120,6 +123,15 @@ router.get(
               isDevMode={config.devMode}
               origHash={origHash}
               groupSettingsDefaults={groupSettingsDefaults}
+              courseInstanceId={course_instance.id}
+              assessment={StaffAssessmentSchema.parse(assessment)}
+              assessmentSet={StaffAssessmentSetSchema.parse(assessment_set)}
+              urlPrefix={res.locals.urlPrefix}
+              csrfToken={res.locals.__csrf_token}
+              canEditCourse={
+                res.locals.authz_data.has_course_permission_edit && !course.example_course
+              }
+              canEditCourseInstance={res.locals.authz_data.has_course_instance_permission_edit}
             />
           </Hydrate>
         ),

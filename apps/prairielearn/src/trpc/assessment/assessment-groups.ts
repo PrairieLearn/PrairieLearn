@@ -1,14 +1,21 @@
 import * as path from 'path';
 
 import { TRPCError } from '@trpc/server';
+import fs from 'fs-extra';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { StaffGroupConfigSchema } from '../../lib/client/safe-db-types.js';
 import { saveJsonFile } from '../../lib/editorUtil.js';
-import { cascadeRoleRenamesToZones } from '../../lib/group-config.js';
+import {
+  cascadeRoleRenamesToZones,
+  normalizeGroupSettings,
+  serializeGroupSettings,
+  stripLegacyGroupKeys,
+} from '../../lib/group-config.js';
 import {
   GroupOperationError,
   addUserToGroup,
@@ -18,7 +25,11 @@ import {
   leaveGroup,
 } from '../../lib/groups.js';
 import { parseUniqueValuesFromString } from '../../lib/string-util.js';
-import { selectGroupById, selectNotAssignedForAssessment } from '../../models/group.js';
+import {
+  selectGroupById,
+  selectGroupConfigForAssessment,
+  selectNotAssignedForAssessment,
+} from '../../models/group.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { throwAppError } from '../app-errors.js';
 
@@ -201,7 +212,11 @@ const enableGroupWork = t.procedure
 
     const saveResult = await saveJsonFile<AssessmentJsonInput>({
       applyChanges: (json) => {
-        json.groups = {};
+        const existing = normalizeGroupSettings(json);
+        json.groups = existing
+          ? serializeGroupSettings(existing, { enabled: true })
+          : { enabled: true };
+        stripLegacyGroupKeys(json);
         return json;
       },
       jsonPath: assessmentPath,
@@ -235,7 +250,20 @@ const enableGroupWork = t.procedure
       });
     }
 
-    return { origHash: saveResult.newHash };
+    const groupConfig = await selectGroupConfigForAssessment(ctx.assessment.id);
+    if (!groupConfig) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Group configuration was not created after enabling group work.',
+      });
+    }
+
+    const savedJson = (await fs.readJson(assessmentPath)) as AssessmentJsonInput;
+    return {
+      origHash: saveResult.newHash,
+      groupConfig: StaffGroupConfigSchema.parse(groupConfig),
+      groupSettingsDefaults: normalizeGroupSettings(savedJson),
+    };
   });
 
 const updateGroupConfig = t.procedure
@@ -318,46 +346,22 @@ const updateGroupConfig = t.procedure
 
     const saveResult = await saveJsonFile<AssessmentJsonInput>({
       applyChanges: (json) => {
-        const canAssignRoles = roles.filter((r) => r.canAssignRoles).map((r) => r.name);
-        const canView = roles.filter((r) => r.canView).map((r) => r.name);
-        const canSubmit = roles.filter((r) => r.canSubmit).map((r) => r.name);
-
         cascadeRoleRenamesToZones(json, roles);
-
-        json.groups = {
-          enabled: true,
-          minMembers: input.minMembers ?? undefined,
-          maxMembers: input.maxMembers ?? undefined,
-          studentPermissions: {
-            canCreateGroup: input.canCreateGroup,
-            canJoinGroup: input.canJoinGroup,
-            canLeaveGroup: input.canLeaveGroup,
-            canNameGroup: input.canNameGroup,
+        json.groups = serializeGroupSettings(
+          {
+            studentPermissions: {
+              canCreateGroup: input.canCreateGroup,
+              canJoinGroup: input.canJoinGroup,
+              canLeaveGroup: input.canLeaveGroup,
+              canNameGroup: input.canNameGroup,
+            },
+            minMembers: input.minMembers,
+            maxMembers: input.maxMembers,
+            roles,
           },
-          roles: roles.map(({ name, maxAssignees, minAssignees }) => ({
-            name,
-            minMembers: minAssignees ?? undefined,
-            maxMembers: maxAssignees ?? undefined,
-          })),
-          rolePermissions: {
-            ...(canAssignRoles.length > 0 ? { canAssignRoles } : {}),
-            ...(canView.length < roles.length ? { canView } : {}),
-            ...(canSubmit.length < roles.length ? { canSubmit } : {}),
-          },
-        };
-
-        // Passive migration: delete all legacy keys
-        delete json.groupWork;
-        delete json.groupMaxSize;
-        delete json.groupMinSize;
-        delete json.groupRoles;
-        delete json.studentGroupCreate;
-        delete json.studentGroupJoin;
-        delete json.studentGroupLeave;
-        delete json.studentGroupChooseName;
-        delete json.canView;
-        delete json.canSubmit;
-
+          { enabled: true },
+        );
+        stripLegacyGroupKeys(json);
         return json;
       },
       jsonPath: assessmentPath,
