@@ -596,13 +596,14 @@ export function resolveAccessControl(
     date,
   );
 
-  // Enforce the cross-field invariant after merging: showing questions (with
-  // their submitted answers) while hiding the score is nonsensical. Per-rule
-  // validation catches this within a single rule, but `mergeAfterComplete`
-  // picks `questions` and `score` sub-objects independently, so a main rule
-  // with `questions.hidden: false` merged with an override that sets
-  // `score.hidden: true` can produce the invalid combination. Clamp here so
-  // every downstream return carries a consistent state.
+  // Enforce the cross-field invariant after merging: we don't support
+  // showing questions (with their submitted answers) while hiding the
+  // score. Per-rule validation catches this within a single rule, but
+  // `mergeAfterComplete` picks `questions` and `score` sub-objects
+  // independently, so a main rule with `questions.hidden: false` merged
+  // with an override that sets `score.hidden: true` can produce the
+  // invalid combination. Clamp here so every downstream return carries a
+  // consistent state.
   if (!showClosedAssessmentScore) {
     showClosedAssessment = false;
   }

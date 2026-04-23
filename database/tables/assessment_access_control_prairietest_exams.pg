@@ -12,7 +12,8 @@ indexes
     aac_prairietest_exams_rule_id_idx: USING btree (assessment_access_control_rule_id)
 
 check constraints
-    aac_prairietest_exams_after_complete_check: CHECK (read_only = true AND after_complete_questions_hidden = false AND after_complete_score_hidden = false OR read_only = false AND NOT (after_complete_score_hidden = true AND after_complete_questions_hidden = false))
+    aac_prairietest_exams_readonly_no_hide_check: CHECK (NOT read_only OR NOT after_complete_questions_hidden AND NOT after_complete_score_hidden)
+    aac_prairietest_exams_score_requires_questions_hide_check: CHECK (after_complete_questions_hidden OR NOT after_complete_score_hidden)
 
 foreign-key constraints
     aac_prairietest_exams_rule_id_fkey: FOREIGN KEY (assessment_access_control_rule_id) REFERENCES assessment_access_control_rules(id) ON UPDATE CASCADE ON DELETE CASCADE

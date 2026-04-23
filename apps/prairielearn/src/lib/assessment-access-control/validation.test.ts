@@ -427,154 +427,78 @@ describe('Exam UUID validation', () => {
 
 describe('PrairieTest exam afterComplete validation', () => {
   const validUuid = '11e89892-3eff-4d7f-90a2-221372f14e5c';
+  const readOnlyNoHideError = `PrairieTest exam ${validUuid}: readOnly: true cannot be combined with afterComplete.questions.hidden: true or afterComplete.score.hidden: true (a readOnly reservation is a review environment).`;
+  const ptScoreRequiresQuestionsError = `PrairieTest exam ${validUuid}: afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.`;
 
-  it('rejects readOnly: true combined with afterComplete.questions.hidden: true', () => {
-    const errors = validateRule(
-      {
-        integrations: {
-          prairieTest: {
-            exams: [
-              {
-                examUuid: validUuid,
-                readOnly: true,
-                afterComplete: { questions: { hidden: true } },
-              },
-            ],
-          },
-        },
+  it.each([
+    {
+      label: 'readOnly: true combined with afterComplete.questions.hidden: true',
+      exam: {
+        examUuid: validUuid,
+        readOnly: true,
+        afterComplete: { questions: { hidden: true } },
       },
-      'none',
-    );
-    assert.isTrue(errors.some((e) => e.includes('cannot be combined')));
+      errorMessage: readOnlyNoHideError,
+    },
+    {
+      label: 'readOnly: true combined with afterComplete.score.hidden: true',
+      exam: {
+        examUuid: validUuid,
+        readOnly: true,
+        afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+      },
+      errorMessage: readOnlyNoHideError,
+    },
+    {
+      label: 'score.hidden: true without questions.hidden: true',
+      exam: {
+        examUuid: validUuid,
+        afterComplete: { score: { hidden: true } },
+      },
+      errorMessage: ptScoreRequiresQuestionsError,
+    },
+    {
+      label: 'score.hidden: true with questions.hidden: false',
+      exam: {
+        examUuid: validUuid,
+        afterComplete: { questions: { hidden: false }, score: { hidden: true } },
+      },
+      errorMessage: ptScoreRequiresQuestionsError,
+    },
+  ])('rejects $label', ({ exam, errorMessage }) => {
+    const errors = validateRule({ integrations: { prairieTest: { exams: [exam] } } }, 'none');
+    assert.isTrue(errors.includes(errorMessage));
   });
 
-  it('rejects readOnly: true combined with afterComplete.score.hidden: true', () => {
-    const errors = validateRule(
-      {
-        integrations: {
-          prairieTest: {
-            exams: [
-              {
-                examUuid: validUuid,
-                readOnly: true,
-                afterComplete: { questions: { hidden: true }, score: { hidden: true } },
-              },
-            ],
-          },
-        },
+  it.each([
+    {
+      label: 'readOnly: true with afterComplete.questions.hidden: false (no-op)',
+      exam: {
+        examUuid: validUuid,
+        readOnly: true,
+        afterComplete: { questions: { hidden: false } },
       },
-      'none',
-    );
-    assert.isTrue(errors.some((e) => e.includes('cannot be combined')));
-  });
-
-  it('accepts readOnly: true with a non-hiding afterComplete (explicit hidden: false)', () => {
-    const errors = validateRule(
-      {
-        integrations: {
-          prairieTest: {
-            exams: [
-              {
-                examUuid: validUuid,
-                readOnly: true,
-                afterComplete: { questions: { hidden: false } },
-              },
-            ],
-          },
-        },
+    },
+    {
+      label: 'readOnly: true without afterComplete',
+      exam: { examUuid: validUuid, readOnly: true },
+    },
+    {
+      label: 'non-readOnly with afterComplete.questions.hidden: true',
+      exam: {
+        examUuid: validUuid,
+        afterComplete: { questions: { hidden: true } },
       },
-      'none',
-    );
-    assert.deepEqual(errors, []);
-  });
-
-  it('rejects score.hidden: true without questions.hidden: true', () => {
-    const errors = validateRule(
-      {
-        integrations: {
-          prairieTest: {
-            exams: [
-              {
-                examUuid: validUuid,
-                afterComplete: { score: { hidden: true } },
-              },
-            ],
-          },
-        },
+    },
+    {
+      label: 'both questions.hidden: true and score.hidden: true',
+      exam: {
+        examUuid: validUuid,
+        afterComplete: { questions: { hidden: true }, score: { hidden: true } },
       },
-      'none',
-    );
-    assert.isTrue(errors.some((e) => e.includes('requires afterComplete.questions.hidden: true')));
-  });
-
-  it('rejects score.hidden: true with questions.hidden: false', () => {
-    const errors = validateRule(
-      {
-        integrations: {
-          prairieTest: {
-            exams: [
-              {
-                examUuid: validUuid,
-                afterComplete: { questions: { hidden: false }, score: { hidden: true } },
-              },
-            ],
-          },
-        },
-      },
-      'none',
-    );
-    assert.isTrue(errors.some((e) => e.includes('requires afterComplete.questions.hidden: true')));
-  });
-
-  it('accepts readOnly: true without afterComplete', () => {
-    const errors = validateRule(
-      {
-        integrations: {
-          prairieTest: {
-            exams: [{ examUuid: validUuid, readOnly: true }],
-          },
-        },
-      },
-      'none',
-    );
-    assert.deepEqual(errors, []);
-  });
-
-  it('accepts non-readOnly with afterComplete.questions.hidden: true', () => {
-    const errors = validateRule(
-      {
-        integrations: {
-          prairieTest: {
-            exams: [
-              {
-                examUuid: validUuid,
-                afterComplete: { questions: { hidden: true } },
-              },
-            ],
-          },
-        },
-      },
-      'none',
-    );
-    assert.deepEqual(errors, []);
-  });
-
-  it('accepts both questions.hidden and score.hidden: true', () => {
-    const errors = validateRule(
-      {
-        integrations: {
-          prairieTest: {
-            exams: [
-              {
-                examUuid: validUuid,
-                afterComplete: { questions: { hidden: true }, score: { hidden: true } },
-              },
-            ],
-          },
-        },
-      },
-      'none',
-    );
+    },
+  ])('accepts $label', ({ exam }) => {
+    const errors = validateRule({ integrations: { prairieTest: { exams: [exam] } } }, 'none');
     assert.deepEqual(errors, []);
   });
 });

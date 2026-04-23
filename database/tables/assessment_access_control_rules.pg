@@ -27,6 +27,7 @@ indexes
     assessment_access_control_rules_id_target_type_idx: UNIQUE USING btree (id, target_type)
 
 check constraints
+    aac_rules_score_requires_questions_hide_check: CHECK (after_complete_questions_hidden IS NOT FALSE OR after_complete_score_hidden IS NOT TRUE)
     assessment_access_control_ru_date_control_after_last_dead_check: CHECK (date_control_after_last_deadline_credit >= 0)
     assessment_access_control_ru_date_control_duration_minute_check: CHECK (date_control_duration_minutes > 0)
     check_first_rule_is_none: CHECK ((number = 0) = (target_type = 'none'::enum_assessment_access_control_target_type))

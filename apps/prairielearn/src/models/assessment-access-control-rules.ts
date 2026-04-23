@@ -82,16 +82,7 @@ const RuleRowSchema = z.object({
     .nullable(),
   early_deadlines: DeadlineArraySchema,
   late_deadlines: DeadlineArraySchema,
-  prairietest_exams: z
-    .array(
-      AssessmentAccessControlPrairietestExamSchema.pick({
-        uuid: true,
-        read_only: true,
-        after_complete_questions_hidden: true,
-        after_complete_score_hidden: true,
-      }),
-    )
-    .nullable(),
+  prairietest_exams: z.array(AssessmentAccessControlPrairietestExamSchema).nullable(),
 });
 
 function dbBaseRowToAccessControlJson(

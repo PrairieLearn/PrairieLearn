@@ -515,7 +515,7 @@ export function validateRule(
     }
     if (e.afterComplete?.score?.hidden === true && e.afterComplete.questions?.hidden !== true) {
       errors.push(
-        `PrairieTest exam ${e.examUuid}: afterComplete.score.hidden: true requires afterComplete.questions.hidden: true (hiding the score while showing questions is nonsensical).`,
+        `PrairieTest exam ${e.examUuid}: afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.`,
       );
     }
   }
@@ -564,9 +564,7 @@ export function validateRule(
     rule.afterComplete?.score?.hidden === true &&
     rule.afterComplete.questions?.hidden === false
   ) {
-    errors.push(
-      'afterComplete.score.hidden: true requires afterComplete.questions.hidden: true (hiding the score while showing questions is nonsensical).',
-    );
+    errors.push('afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.');
   }
 
   errors.push(

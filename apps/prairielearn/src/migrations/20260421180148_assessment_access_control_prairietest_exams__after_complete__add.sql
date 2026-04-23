@@ -2,26 +2,36 @@ ALTER TABLE assessment_access_control_prairietest_exams
 ADD COLUMN after_complete_questions_hidden boolean NOT NULL DEFAULT FALSE,
 ADD COLUMN after_complete_score_hidden boolean NOT NULL DEFAULT FALSE;
 
--- `read_only` and `afterComplete` are mutually exclusive: a readOnly PT
--- reservation represents a review environment that always shows everything,
--- so configuring hiding makes no sense. Additionally, hiding the score while
--- showing the questions is nonsensical (the student would see their
--- submission but not the corresponding grade).
+-- A readOnly PT reservation is a review environment that always shows
+-- everything, so we don't support combining it with afterComplete settings
+-- that hide questions or the score.
 ALTER TABLE assessment_access_control_prairietest_exams
 -- Modern access control is not yet in general use, so this table is
 -- effectively empty; skipping NOT VALID is safe here.
 -- squawk-ignore constraint-missing-not-valid
-ADD CONSTRAINT aac_prairietest_exams_after_complete_check CHECK (
-  (
-    read_only = TRUE
-    AND after_complete_questions_hidden = FALSE
-    AND after_complete_score_hidden = FALSE
-  )
+ADD CONSTRAINT aac_prairietest_exams_readonly_no_hide_check CHECK (
+  NOT read_only
   OR (
-    read_only = FALSE
-    AND NOT (
-      after_complete_score_hidden = TRUE
-      AND after_complete_questions_hidden = FALSE
-    )
+    NOT after_complete_questions_hidden
+    AND NOT after_complete_score_hidden
   )
+);
+
+-- Hiding the score while showing questions isn't supported — we would have
+-- to render submissions without their score badges.
+ALTER TABLE assessment_access_control_prairietest_exams
+-- squawk-ignore constraint-missing-not-valid
+ADD CONSTRAINT aac_prairietest_exams_score_requires_questions_hide_check CHECK (
+  after_complete_questions_hidden
+  OR NOT after_complete_score_hidden
+);
+
+-- Mirror the same score-requires-questions invariant on the top-level rules
+-- table. Columns there are nullable: NULL means "inherit default" at
+-- runtime, so IS NOT FALSE / IS NOT TRUE treats NULL as un-violated.
+ALTER TABLE assessment_access_control_rules
+-- squawk-ignore constraint-missing-not-valid
+ADD CONSTRAINT aac_rules_score_requires_questions_hide_check CHECK (
+  after_complete_questions_hidden IS NOT FALSE
+  OR after_complete_score_hidden IS NOT TRUE
 );
