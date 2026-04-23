@@ -110,7 +110,14 @@ router.get(
 
     const instance_question = res.locals.instance_question;
 
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    const aiSubmissionGroupingEnabled = await features.enabledFromLocals(
+      'ai-submission-grouping',
+      res.locals,
+    );
+
     const instanceQuestionGroup = await run(async () => {
+      if (!aiSubmissionGroupingEnabled) return null;
       if (instance_question.manual_instance_question_group_id) {
         return await selectInstanceQuestionGroup(
           instance_question.manual_instance_question_group_id,
@@ -121,11 +128,11 @@ router.get(
       return null;
     });
 
-    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-
-    const instanceQuestionGroups = await selectInstanceQuestionGroups({
-      assessmentQuestionId: res.locals.assessment_question.id,
-    });
+    const instanceQuestionGroups = aiSubmissionGroupingEnabled
+      ? await selectInstanceQuestionGroups({
+          assessmentQuestionId: res.locals.assessment_question.id,
+        })
+      : [];
 
     /**
      * Contains the prompt and selected rubric items of the AI grader.
@@ -292,8 +299,11 @@ router.get(
 router.put(
   '/manual_instance_question_group',
   asyncHandler(async (req, res) => {
-    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    if (!aiGradingEnabled) {
+    const aiSubmissionGroupingEnabled = await features.enabledFromLocals(
+      'ai-submission-grouping',
+      res.locals,
+    );
+    if (!aiSubmissionGroupingEnabled) {
       throw new error.HttpStatusError(403, 'Access denied (feature not available)');
     }
 
@@ -513,10 +523,10 @@ router.post(
       }
 
       const use_instance_question_groups = await run(async () => {
-        const aiGradingMode =
-          (await features.enabledFromLocals('ai-grading', res.locals)) &&
+        const groupingAvailable =
+          (await features.enabledFromLocals('ai-submission-grouping', res.locals)) &&
           res.locals.assessment_question.ai_grading_mode;
-        if (!aiGradingMode) {
+        if (!groupingAvailable) {
           return false;
         }
         return await selectAssessmentQuestionHasInstanceQuestionGroups({
@@ -541,10 +551,10 @@ router.post(
       req.session.show_submissions_assigned_to_me_only = body.show_submissions_assigned_to_me_only;
 
       const use_instance_question_groups = await run(async () => {
-        const aiGradingMode =
-          (await features.enabledFromLocals('ai-grading', res.locals)) &&
+        const groupingAvailable =
+          (await features.enabledFromLocals('ai-submission-grouping', res.locals)) &&
           res.locals.assessment_question.ai_grading_mode;
-        if (!aiGradingMode) {
+        if (!groupingAvailable) {
           return false;
         }
         return await selectAssessmentQuestionHasInstanceQuestionGroups({
@@ -571,17 +581,17 @@ router.post(
       req.session.skip_graded_submissions = body.skip_graded_submissions;
       req.session.show_submissions_assigned_to_me_only = body.show_submissions_assigned_to_me_only;
 
-      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      const aiSubmissionGroupingEnabled = await features.enabledFromLocals(
+        'ai-submission-grouping',
+        res.locals,
+      );
 
-      if (!aiGradingEnabled) {
+      if (!aiSubmissionGroupingEnabled) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
       const useInstanceQuestionGroups = await run(async () => {
-        const aiGradingMode =
-          (await features.enabledFromLocals('ai-grading', res.locals)) &&
-          res.locals.assessment_question.ai_grading_mode;
-        if (!aiGradingMode) {
+        if (!res.locals.assessment_question.ai_grading_mode) {
           return false;
         }
         return await selectAssessmentQuestionHasInstanceQuestionGroups({
@@ -737,10 +747,10 @@ router.post(
         req.session.show_submissions_assigned_to_me_only ?? true;
 
       const use_instance_question_groups = await run(async () => {
-        const aiGradingMode =
-          (await features.enabledFromLocals('ai-grading', res.locals)) &&
+        const groupingAvailable =
+          (await features.enabledFromLocals('ai-submission-grouping', res.locals)) &&
           res.locals.assessment_question.ai_grading_mode;
-        if (!aiGradingMode) {
+        if (!groupingAvailable) {
           return false;
         }
         return await selectAssessmentQuestionHasInstanceQuestionGroups({

@@ -284,3 +284,10 @@ SET
   ai_grading_mode = $ai_grading_mode
 WHERE
   id = $assessment_question_id;
+
+-- BLOCK set_ai_grading_last_selected_model
+UPDATE assessment_questions
+SET
+  ai_grading_last_selected_model = $model_id
+WHERE
+  id = $assessment_question_id;

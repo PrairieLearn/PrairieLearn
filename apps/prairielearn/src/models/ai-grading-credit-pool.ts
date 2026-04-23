@@ -36,7 +36,7 @@ export async function selectCreditPool(course_instance_id: string): Promise<Cred
  * row). We call this immediately before ai_grading_jobs insert so FOR UPDATE is
  * taken first and no lock upgrade cycle is created.
  */
-async function selectCreditPoolForUpdate(course_instance_id: string): Promise<CreditPool> {
+export async function selectCreditPoolForUpdate(course_instance_id: string): Promise<CreditPool> {
   return await queryRow(
     sql.select_credit_pool_for_update,
     { course_instance_id },
@@ -65,6 +65,18 @@ interface DeductCreditsForAiGradingParams {
   reason: string;
 }
 
+/**
+ * Deducts `cost_milli_dollars` from the pool, charging non-transferable credits
+ * first and then transferable. Non-transferable is clamped at 0 (it cannot go
+ * negative); transferable absorbs any remaining cost and is allowed to go
+ * negative. Returns the full `cost_milli_dollars`.
+ *
+ * Callers must still gate *new* work on `total_milli_dollars <= 0` before
+ * making API calls (see the batch-level and per-submission checks in
+ * ai-grading.ts) so users can't AI grade with a zero or negative balance. By
+ * the time this runs, the API cost has already been incurred, so the full
+ * cost is always recorded.
+ */
 async function deductCreditsForAiGradingWithLockedPool(
   before: CreditPool,
   {
@@ -75,11 +87,7 @@ async function deductCreditsForAiGradingWithLockedPool(
     assessment_question_id,
     reason,
   }: DeductCreditsForAiGradingParams,
-): Promise<void> {
-  if (before.total_milli_dollars < cost_milli_dollars) {
-    throw new Error('Insufficient AI grading credits');
-  }
-
+): Promise<number> {
   const { nonTransferableDeduction, transferableDeduction } = splitDeduction(
     cost_milli_dollars,
     before.credit_non_transferable_milli_dollars,
@@ -107,6 +115,7 @@ async function deductCreditsForAiGradingWithLockedPool(
       user_id,
       ai_grading_job_id,
       assessment_question_id,
+      checkout_session_id: null,
     });
   }
 
@@ -121,8 +130,11 @@ async function deductCreditsForAiGradingWithLockedPool(
       user_id,
       ai_grading_job_id,
       assessment_question_id,
+      checkout_session_id: null,
     });
   }
+
+  return cost_milli_dollars;
 }
 
 /**
@@ -135,6 +147,16 @@ async function deductCreditsForAiGradingWithLockedPool(
  * existing `runInTransactionAsync` — the nested call reuses the outer
  * transaction. In that case, the FOR UPDATE lock is held for the lifetime of
  * the *outer* transaction, not just this function.
+ *
+ * This function always deducts the full cost. Transferable credits are
+ * allowed to go negative so the credit pool reflects the true cost of
+ * work already done; non-transferable is clamped at 0. Callers must still
+ * gate new work on `total_milli_dollars <= 0` before making API calls
+ * (see the batch-level and per-submission credit checks in ai-grading.ts),
+ * so users are prompted to buy credits before the balance drifts further.
+ *
+ * @returns `{ ai_grading_job_id, deducted_milli_dollars }` where
+ * `deducted_milli_dollars` always equals `cost_milli_dollars`.
  */
 export async function insertAiGradingJobAndDeductCreditsIfNeeded({
   trackRateLimitAndCost,
@@ -147,7 +169,7 @@ export async function insertAiGradingJobAndDeductCreditsIfNeeded({
 }: Omit<DeductCreditsForAiGradingParams, 'ai_grading_job_id'> & {
   trackRateLimitAndCost: boolean;
   createAiGradingJob: () => Promise<string>;
-}): Promise<string> {
+}): Promise<{ ai_grading_job_id: string; deducted_milli_dollars: number }> {
   return await runInTransactionAsync(async () => {
     const creditPool = trackRateLimitAndCost
       ? await selectCreditPoolForUpdate(course_instance_id)
@@ -155,8 +177,9 @@ export async function insertAiGradingJobAndDeductCreditsIfNeeded({
 
     const ai_grading_job_id = await createAiGradingJob();
 
+    let deducted_milli_dollars = 0;
     if (creditPool) {
-      await deductCreditsForAiGradingWithLockedPool(creditPool, {
+      deducted_milli_dollars = await deductCreditsForAiGradingWithLockedPool(creditPool, {
         course_instance_id,
         cost_milli_dollars,
         user_id,
@@ -166,32 +189,95 @@ export async function insertAiGradingJobAndDeductCreditsIfNeeded({
       });
     }
 
-    return ai_grading_job_id;
+    return { ai_grading_job_id, deducted_milli_dollars };
   });
 }
 
 /**
- * Atomically deduct credits from the pool for AI grading.
- * Deducts from non-transferable credits first, then transferable.
- * Throws if the pool has insufficient credits.
+ * Atomically deduct credits from the pool for AI grading. Deducts from
+ * non-transferable credits first, then transferable. Transferable is allowed
+ * to go negative; non-transferable is clamped at 0.
  *
  * Exported for testing. Production callers should use
  * {@link insertAiGradingJobAndDeductCreditsIfNeeded} instead to ensure
  * correct lock ordering and avoid deadlocks.
+ *
+ * @returns The full `cost_milli_dollars` that was deducted.
  */
 export async function deductCreditsForAiGrading(
   params: DeductCreditsForAiGradingParams,
-): Promise<void> {
-  await runInTransactionAsync(async () => {
+): Promise<number> {
+  return await runInTransactionAsync(async () => {
     const before = await selectCreditPoolForUpdate(params.course_instance_id);
-    await deductCreditsForAiGradingWithLockedPool(before, params);
+    return await deductCreditsForAiGradingWithLockedPool(before, params);
+  });
+}
+
+/**
+ * Lock the credit pool, compute a delta from the current balance, and write
+ * the balance update + credit pool change row in a single transaction. A `0`
+ * delta is a no-op.
+ */
+async function applyCreditPoolMutation({
+  course_instance_id,
+  credit_type,
+  user_id,
+  reason,
+  checkout_session_id,
+  computeDelta,
+}: {
+  course_instance_id: string;
+  credit_type: 'transferable' | 'non_transferable';
+  user_id: string;
+  reason: string;
+  checkout_session_id?: string | null;
+  computeDelta: (currentBalance: number) => number;
+}): Promise<void> {
+  await runInTransactionAsync(async () => {
+    const before = await selectCreditPoolForUpdate(course_instance_id);
+
+    const currentBalance =
+      credit_type === 'transferable'
+        ? before.credit_transferable_milli_dollars
+        : before.credit_non_transferable_milli_dollars;
+
+    const delta = computeDelta(currentBalance);
+    if (delta === 0) return;
+
+    await execute(sql.update_credit_balances, {
+      course_instance_id,
+      credit_transferable_milli_dollars:
+        before.credit_transferable_milli_dollars + (credit_type === 'transferable' ? delta : 0),
+      credit_non_transferable_milli_dollars:
+        before.credit_non_transferable_milli_dollars +
+        (credit_type === 'non_transferable' ? delta : 0),
+    });
+
+    await execute(sql.insert_credit_pool_change, {
+      course_instance_id,
+      credit_before_milli_dollars: before.total_milli_dollars,
+      credit_after_milli_dollars: before.total_milli_dollars + delta,
+      delta_milli_dollars: delta,
+      credit_type,
+      reason,
+      user_id,
+      ai_grading_job_id: null,
+      assessment_question_id: null,
+      checkout_session_id: checkout_session_id ?? null,
+    });
   });
 }
 
 /**
  * Adjust the credit pool for a course instance by a delta amount (admin operation).
  * Positive delta adds credits, negative delta removes credits.
- * Throws if the resulting balance would be negative.
+ *
+ * By default a deduction is capped at the selected pool's current balance
+ * (deductions never take a balance below 0) and is refused entirely when the
+ * balance is already non-positive. Pass `allow_negative_balance: true` to
+ * apply the full deduction unconditionally; this is intended for refunds that
+ * reverse a specific prior purchase and must match that purchase amount
+ * regardless of the current balance.
  */
 export async function adjustCreditPool({
   course_instance_id,
@@ -199,54 +285,74 @@ export async function adjustCreditPool({
   credit_type,
   user_id,
   reason,
+  checkout_session_id,
+  allow_negative_balance,
 }: {
   course_instance_id: string;
   delta_milli_dollars: number;
+  user_id: string;
+  reason: string;
+  checkout_session_id?: string | null;
+} & (
+  | { credit_type: 'transferable'; allow_negative_balance?: boolean }
+  | { credit_type: 'non_transferable'; allow_negative_balance?: never }
+)): Promise<void> {
+  if (delta_milli_dollars === 0) return;
+
+  await applyCreditPoolMutation({
+    course_instance_id,
+    credit_type,
+    user_id,
+    reason,
+    checkout_session_id,
+    computeDelta: (currentBalance) => {
+      // Adds pass through unchanged so they can bring a negative balance
+      // back up by the full amount entered.
+      if (delta_milli_dollars > 0) return delta_milli_dollars;
+      // Refund-style deductions apply the full delta even if it drives the
+      // balance negative, so the pool correctly reverses the prior purchase.
+      if (allow_negative_balance) return delta_milli_dollars;
+      // Once transferable can go negative, a fresh deduct here would silently
+      // drive it further; block it and require an explicit `setCreditPoolBalance`.
+      if (currentBalance <= 0) return 0;
+      // Cap deducts at the current balance so they stop at 0.
+      return Math.max(delta_milli_dollars, -currentBalance);
+    },
+  });
+}
+
+/**
+ * Set the credit pool balance for a specific credit type to an exact value
+ * (admin operation). The change is recorded as a delta in the credit pool
+ * changes table so the transaction history remains consistent with
+ * add/deduct operations.
+ *
+ * Non-transferable balances cannot be set below 0; the caller must validate
+ * this before calling.
+ */
+export async function setCreditPoolBalance({
+  course_instance_id,
+  target_milli_dollars,
+  credit_type,
+  user_id,
+  reason,
+}: {
+  course_instance_id: string;
+  target_milli_dollars: number;
   credit_type: 'transferable' | 'non_transferable';
   user_id: string;
   reason: string;
 }): Promise<void> {
-  if (delta_milli_dollars === 0) return;
+  if (credit_type === 'non_transferable' && target_milli_dollars < 0) {
+    throw new Error('Non-transferable credit balance cannot be set below 0');
+  }
 
-  await runInTransactionAsync(async () => {
-    const before = await queryRow(
-      sql.select_credit_pool_for_update,
-      { course_instance_id },
-      CreditPoolSchema,
-    );
-
-    const currentBalance =
-      credit_type === 'transferable'
-        ? before.credit_transferable_milli_dollars
-        : before.credit_non_transferable_milli_dollars;
-
-    if (currentBalance + delta_milli_dollars < 0) {
-      throw new Error(
-        `Cannot deduct more than the current ${credit_type.replace('_', '-')} balance of $${(currentBalance / 1000).toFixed(2)}.`,
-      );
-    }
-
-    await execute(sql.update_credit_balances, {
-      course_instance_id,
-      credit_transferable_milli_dollars:
-        before.credit_transferable_milli_dollars +
-        (credit_type === 'transferable' ? delta_milli_dollars : 0),
-      credit_non_transferable_milli_dollars:
-        before.credit_non_transferable_milli_dollars +
-        (credit_type === 'non_transferable' ? delta_milli_dollars : 0),
-    });
-
-    await execute(sql.insert_credit_pool_change, {
-      course_instance_id,
-      credit_before_milli_dollars: before.total_milli_dollars,
-      credit_after_milli_dollars: before.total_milli_dollars + delta_milli_dollars,
-      delta_milli_dollars,
-      credit_type,
-      reason,
-      user_id,
-      ai_grading_job_id: null,
-      assessment_question_id: null,
-    });
+  await applyCreditPoolMutation({
+    course_instance_id,
+    credit_type,
+    user_id,
+    reason,
+    computeDelta: (currentBalance) => target_milli_dollars - currentBalance,
   });
 }
 
@@ -260,6 +366,9 @@ const BatchedCreditPoolChangeRowSchema = z.object({
   reason: z.string(),
   user_name: z.string().nullable(),
   user_uid: z.string().nullable(),
+  checkout_session_id: z.coerce.string().nullable(),
+  checkout_session_refunded_at: z.coerce.date().nullable(),
+  checkout_session_amount_milli_dollars: z.coerce.number().nullable(),
   total_count: z.coerce.number(),
 });
 

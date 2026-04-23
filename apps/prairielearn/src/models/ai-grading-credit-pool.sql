@@ -42,7 +42,8 @@ INSERT INTO
     reason,
     user_id,
     ai_grading_job_id,
-    assessment_question_id
+    assessment_question_id,
+    checkout_session_id
   )
 VALUES
   (
@@ -54,7 +55,8 @@ VALUES
     $reason,
     $user_id,
     $ai_grading_job_id,
-    $assessment_question_id
+    $assessment_question_id,
+    $checkout_session_id
   )
 RETURNING
   *;
@@ -85,7 +87,10 @@ WITH
       COUNT(DISTINCT c.ai_grading_job_id)::int AS submission_count,
       'AI grading' AS reason,
       MAX(u.name) AS user_name,
-      MAX(u.uid) AS user_uid
+      MAX(u.uid) AS user_uid,
+      NULL::bigint AS checkout_session_id,
+      NULL::timestamptz AS checkout_session_refunded_at,
+      NULL::bigint AS checkout_session_amount_milli_dollars
     FROM
       ai_grading_credit_pool_changes AS c
       JOIN ai_grading_jobs AS j ON j.id = c.ai_grading_job_id
@@ -108,7 +113,10 @@ WITH
       1 AS submission_count,
       'AI grading' AS reason,
       u.name AS user_name,
-      u.uid AS user_uid
+      u.uid AS user_uid,
+      NULL::bigint AS checkout_session_id,
+      NULL::timestamptz AS checkout_session_refunded_at,
+      NULL::bigint AS checkout_session_amount_milli_dollars
     FROM
       ai_grading_credit_pool_changes AS c
       JOIN ai_grading_jobs AS j ON j.id = c.ai_grading_job_id
@@ -127,10 +135,14 @@ WITH
       1 AS submission_count,
       c.reason,
       u.name AS user_name,
-      u.uid AS user_uid
+      u.uid AS user_uid,
+      cs.id AS checkout_session_id,
+      cs.refunded_at AS checkout_session_refunded_at,
+      cs.amount_milli_dollars AS checkout_session_amount_milli_dollars
     FROM
       ai_grading_credit_pool_changes AS c
       LEFT JOIN users AS u ON u.id = c.user_id
+      LEFT JOIN ai_grading_credit_checkout_sessions AS cs ON cs.id = c.checkout_session_id
     WHERE
       c.course_instance_id = $course_instance_id
       AND c.ai_grading_job_id IS NULL

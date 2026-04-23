@@ -84,20 +84,15 @@ function prepareRuleRow(
   const afterLastDeadline = dateControl.afterLastDeadline;
   const isMainRule = ruleNumber === JSON_RULE_START;
 
-  const listBeforeRelease = mapField(rule.listBeforeRelease);
+  const beforeReleaseListed = mapField(rule.beforeRelease?.listed);
   const dueDateField = mapField(dateControl.dueDate);
   const earlyDeadlinesField = mapField(dateControl.earlyDeadlines);
   const lateDeadlinesField = mapField(dateControl.lateDeadlines);
   const durationMinutesField = mapField(dateControl.durationMinutes);
   const passwordField = mapField(dateControl.password);
   const afterLastDeadlineAllowSubmissionsField = mapField(afterLastDeadline?.allowSubmissions);
-  const afterLastDeadlineCreditField =
-    afterLastDeadline === null ? mapField<null>(null) : mapField(afterLastDeadline?.credit);
-  const hideQuestionsField = mapField(afterComplete.hideQuestions);
-  const showQuestionsAgainDateField = mapField(afterComplete.showQuestionsAgainDate);
-  const hideQuestionsAgainDateField = mapField(afterComplete.hideQuestionsAgainDate);
-  const hideScoreField = mapField(afterComplete.hideScore);
-  const showScoreAgainDateField = mapField(afterComplete.showScoreAgainDate);
+  const questionsHiddenField = mapField(afterComplete.questions?.hidden);
+  const scoreHiddenField = mapField(afterComplete.score?.hidden);
 
   const ruleLabels = rule.labels ?? [];
   const studentLabelIds = ruleLabels
@@ -109,8 +104,8 @@ function prepareRuleRow(
   const ruleRow = JSON.stringify({
     assessment_id: assessmentId,
     number: ruleNumber,
-    // listBeforeRelease is only configurable on the main rule.
-    list_before_release: isMainRule ? (listBeforeRelease.value ?? false) : null,
+    // beforeRelease.listed is only configurable on the main rule.
+    before_release_listed: isMainRule ? (beforeReleaseListed.value ?? false) : null,
     target_type: targetType,
     date_control_release_date: dateControl.releaseDate ?? null,
     date_control_due_date_overridden: dueDateField.overridden,
@@ -119,20 +114,17 @@ function prepareRuleRow(
     date_control_late_deadlines_overridden: lateDeadlinesField.overridden,
     date_control_after_last_deadline_allow_submissions:
       afterLastDeadlineAllowSubmissionsField.value,
-    date_control_after_last_deadline_credit_overridden: afterLastDeadlineCreditField.overridden,
-    date_control_after_last_deadline_credit: afterLastDeadlineCreditField.value,
+    date_control_after_last_deadline_credit:
+      afterLastDeadline?.allowSubmissions === true ? (afterLastDeadline.credit ?? null) : null,
     date_control_duration_minutes_overridden: durationMinutesField.overridden,
     date_control_duration_minutes: durationMinutesField.value,
     date_control_password_overridden: passwordField.overridden,
     date_control_password: passwordField.value,
-    after_complete_hide_questions: hideQuestionsField.value,
-    after_complete_show_questions_again_date_overridden: showQuestionsAgainDateField.overridden,
-    after_complete_show_questions_again_date: showQuestionsAgainDateField.value,
-    after_complete_hide_questions_again_date_overridden: hideQuestionsAgainDateField.overridden,
-    after_complete_hide_questions_again_date: hideQuestionsAgainDateField.value,
-    after_complete_hide_score: hideScoreField.value,
-    after_complete_show_score_again_date_overridden: showScoreAgainDateField.overridden,
-    after_complete_show_score_again_date: showScoreAgainDateField.value,
+    after_complete_questions_hidden: questionsHiddenField.value,
+    after_complete_questions_visible_from_date: afterComplete.questions?.visibleFromDate ?? null,
+    after_complete_questions_visible_until_date: afterComplete.questions?.visibleUntilDate ?? null,
+    after_complete_score_hidden: scoreHiddenField.value,
+    after_complete_score_visible_from_date: afterComplete.score?.visibleFromDate ?? null,
   });
 
   // Child data arrays use [assessment_id, rule_number, ...data] format.
@@ -151,7 +143,14 @@ function prepareRuleRow(
 
   const exams = rule.integrations?.prairieTest?.exams ?? [];
   const prairietestExams = exams.map((e) =>
-    JSON.stringify([assessmentId, ruleNumber, e.examUuid, e.readOnly ?? false]),
+    JSON.stringify([
+      assessmentId,
+      ruleNumber,
+      e.examUuid,
+      e.readOnly ?? false,
+      e.afterComplete?.questions?.hidden ?? false,
+      e.afterComplete?.score?.hidden ?? false,
+    ]),
   );
 
   return { ruleRow, studentLabels, earlyDeadlines, lateDeadlines, prairietestExams };

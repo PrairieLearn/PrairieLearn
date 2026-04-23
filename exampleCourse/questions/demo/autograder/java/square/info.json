@@ -7,7 +7,6 @@
   "singleVariant": true,
   "gradingMethod": "External",
   "externalGradingOptions": {
-    "enabled": true,
     "image": "prairielearn/grader-java",
     "timeout": 20
   }

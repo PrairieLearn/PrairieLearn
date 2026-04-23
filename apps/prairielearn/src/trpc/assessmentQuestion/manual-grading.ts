@@ -6,16 +6,24 @@ import { run } from '@prairielearn/run';
 import {
   AI_GRADING_MODEL_IDS,
   type AiGradingModelId,
-  DEFAULT_AI_GRADING_MODEL,
 } from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { fillInstanceQuestionColumnEntries } from '../../ee/lib/ai-grading/ai-grading-stats.js';
-import { deleteAiGradingJobs, setAiGradingMode } from '../../ee/lib/ai-grading/ai-grading-util.js';
-import { aiGrade } from '../../ee/lib/ai-grading/ai-grading.js';
+import {
+  deleteAiGradingJobs,
+  setAiGradingLastSelectedModel,
+  setAiGradingMode,
+} from '../../ee/lib/ai-grading/ai-grading-util.js';
+import {
+  MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE,
+  aiGrade,
+  getRunningAiGradingJobCountForCourseInstance,
+} from '../../ee/lib/ai-grading/ai-grading.js';
 import { deleteAiInstanceQuestionGroups } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
 import { features } from '../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../lib/id.js';
+import { selectCreditPool } from '../../models/ai-grading-credit-pool.js';
 import { selectCourseInstanceGraderStaff } from '../../models/course-instances.js';
 import { InstanceQuestionRowWithAIGradingStatsSchema } from '../../pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
 import {
@@ -137,20 +145,7 @@ const aiGradeInstanceQuestionsMutation = t.procedure
   )
   .output(z.object({ job_sequence_id: z.string(), job_sequence_token: z.string() }))
   .mutation(async (opts) => {
-    const aiGradingModelSelectionEnabled = await features.enabled('ai-grading-model-selection', {
-      institution_id: opts.ctx.course.institution_id,
-      course_id: opts.ctx.course.id,
-      course_instance_id: opts.ctx.course_instance.id,
-      user_id: opts.ctx.authn_user.id,
-    });
-
-    if (!aiGradingModelSelectionEnabled && opts.input.model_id !== DEFAULT_AI_GRADING_MODEL) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'AI grading model selection is not available. The default model must be used.',
-      });
-    }
-
+    await setAiGradingLastSelectedModel(opts.ctx.assessment_question.id, opts.input.model_id);
     const job_sequence_id = await aiGrade({
       question: opts.ctx.question,
       course: opts.ctx.course,
@@ -224,8 +219,31 @@ const setRequiresManualGradingMutation = t.procedure
     });
   });
 
+const aiGradingAvailabilityInfo = t.procedure
+  .use(requireCourseInstancePermissionView)
+  .use(requireAiGradingFeature)
+  .output(
+    z.object({
+      running_job_count: z.number(),
+      max_concurrent_jobs: z.number(),
+      credit_balance_milli_dollars: z.number(),
+    }),
+  )
+  .query(async (opts) => {
+    const [running_job_count, creditPool] = await Promise.all([
+      getRunningAiGradingJobCountForCourseInstance(opts.ctx.course_instance.id),
+      selectCreditPool(opts.ctx.course_instance.id),
+    ]);
+    return {
+      running_job_count,
+      max_concurrent_jobs: MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE,
+      credit_balance_milli_dollars: creditPool.total_milli_dollars,
+    };
+  });
+
 export const manualGradingRouter = t.router({
   instances,
+  aiGradingAvailabilityInfo,
   setAiGradingMode: setAiGradingModeMutation,
   deleteAiGradingJobs: deleteAiGradingJobsMutation,
   deleteAiInstanceQuestionGroupings: deleteAiInstanceQuestionGroupingsMutation,

@@ -113,27 +113,26 @@ function formJsonToEnrollmentRuleData(
   const ac = rule.afterComplete;
   return {
     id: rule.id,
-    listBeforeRelease: rule.listBeforeRelease ?? null,
+    beforeReleaseListed: rule.beforeRelease?.listed ?? null,
     releaseDate: dc?.releaseDate ?? null,
     dueDateOverridden: dc?.dueDate !== undefined,
     dueDate: dc?.dueDate ?? null,
     earlyDeadlinesOverridden: dc?.earlyDeadlines !== undefined,
     lateDeadlinesOverridden: dc?.lateDeadlines !== undefined,
     afterLastDeadlineAllowSubmissions: dc?.afterLastDeadline?.allowSubmissions ?? null,
-    afterLastDeadlineCreditOverridden: dc?.afterLastDeadline?.credit !== undefined,
-    afterLastDeadlineCredit: dc?.afterLastDeadline?.credit ?? null,
+    afterLastDeadlineCredit:
+      dc?.afterLastDeadline?.allowSubmissions === true
+        ? (dc.afterLastDeadline.credit ?? null)
+        : null,
     durationMinutesOverridden: dc?.durationMinutes !== undefined,
     durationMinutes: dc?.durationMinutes ?? null,
     passwordOverridden: dc?.password !== undefined,
     password: dc?.password ?? null,
-    hideQuestions: ac?.hideQuestions ?? null,
-    showQuestionsAgainDateOverridden: ac?.showQuestionsAgainDate !== undefined,
-    showQuestionsAgainDate: ac?.showQuestionsAgainDate ?? null,
-    hideQuestionsAgainDateOverridden: ac?.hideQuestionsAgainDate !== undefined,
-    hideQuestionsAgainDate: ac?.hideQuestionsAgainDate ?? null,
-    hideScore: ac?.hideScore ?? null,
-    showScoreAgainDateOverridden: ac?.showScoreAgainDate !== undefined,
-    showScoreAgainDate: ac?.showScoreAgainDate ?? null,
+    questionsHidden: ac?.questions?.hidden ?? null,
+    questionsVisibleFromDate: ac?.questions?.visibleFromDate ?? null,
+    questionsVisibleUntilDate: ac?.questions?.visibleUntilDate ?? null,
+    scoreHidden: ac?.score?.hidden ?? null,
+    scoreVisibleFromDate: ac?.score?.visibleFromDate ?? null,
     earlyDeadlines: dc?.earlyDeadlines ?? [],
     lateDeadlines: dc?.lateDeadlines ?? [],
   };
@@ -160,7 +159,7 @@ function isNonEmptyObject(value: unknown): boolean {
 
 /**
  * Cleans access control rules for writing to infoAssessment.json on disk.
- * Removes empty objects/arrays and omits listBeforeRelease: false on the main rule.
+ * Removes empty objects/arrays and omits beforeRelease: { listed: false } on the main rule.
  */
 export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): AccessControlJson[] {
   return rules.map((rule, index) => {
@@ -170,8 +169,8 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
       clean.labels = rule.labels;
     }
 
-    if (index === 0 && rule.listBeforeRelease === true) {
-      clean.listBeforeRelease = true;
+    if (index === 0 && rule.beforeRelease?.listed === true) {
+      clean.beforeRelease = { listed: true };
     }
 
     if (isNonEmptyObject(rule.dateControl)) {

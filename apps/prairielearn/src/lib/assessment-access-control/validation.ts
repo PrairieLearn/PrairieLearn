@@ -25,9 +25,9 @@ export type AccessControlIssuePath =
   | ['dateControl', 'dueDate']
   | ['dateControl', 'earlyDeadlines', number, 'date']
   | ['dateControl', 'lateDeadlines', number, 'date']
-  | ['afterComplete', 'showQuestionsAgainDate']
-  | ['afterComplete', 'hideQuestionsAgainDate']
-  | ['afterComplete', 'showScoreAgainDate'];
+  | ['afterComplete', 'questions', 'visibleFromDate']
+  | ['afterComplete', 'questions', 'visibleUntilDate']
+  | ['afterComplete', 'score', 'visibleFromDate'];
 
 export interface AccessControlValidationIssue {
   ruleIndex: number;
@@ -121,9 +121,8 @@ export function validateRuleStructuralDependencyIssues(
   }
 
   // Constraint 2: After-complete date fields require at least one deadline.
-  // The date fields (showQuestionsAgainDate, hideQuestionsAgainDate,
-  // showScoreAgainDate) are meant to fire relative to the last deadline.
-  // Boolean fields (hideQuestions, hideScore) are fine without deadlines.
+  // The date fields (visibleFromDate, visibleUntilDate) are meant to fire relative
+  // to the last deadline. Boolean fields (hidden) are fine without deadlines.
   // PrairieTest and timed assessments manage completion independently,
   // so after-complete dates are valid without deadlines in those cases.
   // Only enforced on the main rule — overrides may inherit deadlines.
@@ -137,27 +136,28 @@ export function validateRuleStructuralDependencyIssues(
     !hasPrairieTest &&
     !hasDuration
   ) {
-    if (ac.showQuestionsAgainDate) {
+    const q = ac.questions;
+    if (q?.visibleFromDate) {
       pushIssue(
         issues,
         validationRule,
-        ['afterComplete', 'showQuestionsAgainDate'],
+        ['afterComplete', 'questions', 'visibleFromDate'],
         'After-complete dates require at least one deadline (due date or late deadline).',
       );
     }
-    if (ac.hideQuestionsAgainDate) {
+    if (q?.visibleUntilDate) {
       pushIssue(
         issues,
         validationRule,
-        ['afterComplete', 'hideQuestionsAgainDate'],
+        ['afterComplete', 'questions', 'visibleUntilDate'],
         'After-complete dates require at least one deadline (due date or late deadline).',
       );
     }
-    if (ac.showScoreAgainDate) {
+    if (ac.score?.visibleFromDate) {
       pushIssue(
         issues,
         validationRule,
-        ['afterComplete', 'showScoreAgainDate'],
+        ['afterComplete', 'score', 'visibleFromDate'],
         'After-complete dates require at least one deadline (due date or late deadline).',
       );
     }
@@ -214,12 +214,12 @@ export function validateRuleDateOrderingIssues(
 
     if (dueMs != null && dc.earlyDeadlines) {
       for (const [index, deadline] of dc.earlyDeadlines.entries()) {
-        if (new Date(deadline.date).getTime() >= dueMs) {
+        if (new Date(deadline.date).getTime() > dueMs) {
           pushIssue(
             issues,
             validationRule,
             ['dateControl', 'earlyDeadlines', index, 'date'],
-            `Early deadline date ${deadline.date} must be before the due date.`,
+            `Early deadline date ${deadline.date} must be on or before the due date.`,
           );
         }
       }
@@ -227,12 +227,12 @@ export function validateRuleDateOrderingIssues(
 
     if (dueMs != null && dc.lateDeadlines) {
       for (const [index, deadline] of dc.lateDeadlines.entries()) {
-        if (new Date(deadline.date).getTime() <= dueMs) {
+        if (new Date(deadline.date).getTime() < dueMs) {
           pushIssue(
             issues,
             validationRule,
             ['dateControl', 'lateDeadlines', index, 'date'],
-            `Late deadline date ${deadline.date} must be after the due date.`,
+            `Late deadline date ${deadline.date} must be on or after the due date.`,
           );
         }
       }
@@ -273,38 +273,39 @@ export function validateRuleDateOrderingIssues(
     }
   }
 
-  const ac = rule.afterComplete;
-  if (ac?.showQuestionsAgainDate && ac.hideQuestionsAgainDate) {
-    if (
-      new Date(ac.showQuestionsAgainDate).getTime() >= new Date(ac.hideQuestionsAgainDate).getTime()
-    ) {
+  const questions = rule.afterComplete?.questions;
+  const qVisibleFrom = questions?.visibleFromDate;
+  const qVisibleUntil = questions?.visibleUntilDate;
+  if (qVisibleFrom && qVisibleUntil) {
+    if (new Date(qVisibleFrom).getTime() >= new Date(qVisibleUntil).getTime()) {
       pushIssue(
         issues,
         validationRule,
-        ['afterComplete', 'hideQuestionsAgainDate'],
-        'showQuestionsAgainDate must be before hideQuestionsAgainDate.',
+        ['afterComplete', 'questions', 'visibleUntilDate'],
+        'visibleFromDate must be before visibleUntilDate.',
       );
     }
   }
 
   const lastDeadlineMs = findLastDeadlineMs(rule);
   if (lastDeadlineMs != null) {
-    if (ac?.showQuestionsAgainDate) {
-      if (new Date(ac.showQuestionsAgainDate).getTime() <= lastDeadlineMs) {
+    if (qVisibleFrom) {
+      if (new Date(qVisibleFrom).getTime() <= lastDeadlineMs) {
         pushIssue(
           issues,
           validationRule,
-          ['afterComplete', 'showQuestionsAgainDate'],
+          ['afterComplete', 'questions', 'visibleFromDate'],
           'Show questions again date must be after the last deadline.',
         );
       }
     }
-    if (ac?.showScoreAgainDate) {
-      if (new Date(ac.showScoreAgainDate).getTime() <= lastDeadlineMs) {
+    const score = rule.afterComplete?.score;
+    if (score?.visibleFromDate) {
+      if (new Date(score.visibleFromDate).getTime() <= lastDeadlineMs) {
         pushIssue(
           issues,
           validationRule,
-          ['afterComplete', 'showScoreAgainDate'],
+          ['afterComplete', 'score', 'visibleFromDate'],
           'Show score again date must be after the last deadline.',
         );
       }
@@ -366,12 +367,12 @@ export function validateGlobalDateConsistencyIssues(
         );
       }
 
-      if (!dueCanBeUnset && maxDueMs != null && deadlineMs >= maxDueMs) {
+      if (!dueCanBeUnset && maxDueMs != null && deadlineMs > maxDueMs) {
         pushIssue(
           issues,
           validationRule,
           ['dateControl', 'earlyDeadlines', index, 'date'],
-          'Early deadline must be before the latest possible due date.',
+          'Early deadline must be on or before the latest possible due date.',
         );
       }
     }
@@ -381,12 +382,12 @@ export function validateGlobalDateConsistencyIssues(
     ).entries()) {
       const deadlineMs = new Date(deadline.date).getTime();
 
-      if (!dueCanBeUnset && minDueMs != null && deadlineMs <= minDueMs) {
+      if (!dueCanBeUnset && minDueMs != null && deadlineMs < minDueMs) {
         pushIssue(
           issues,
           validationRule,
           ['dateControl', 'lateDeadlines', index, 'date'],
-          'Late deadline must be after the earliest possible due date.',
+          'Late deadline must be on or after the earliest possible due date.',
         );
       }
     }
@@ -452,7 +453,8 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
     }
   }
 
-  const afterCredit = dc.afterLastDeadline?.credit;
+  const afterCredit =
+    dc.afterLastDeadline?.allowSubmissions === true ? dc.afterLastDeadline.credit : undefined;
   if (afterCredit != null) {
     // Determine the preceding credit in the timeline.
     const precedingCredit =
@@ -471,7 +473,7 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
 /**
  * Validates a single access control rule. Checks duplicates, date ordering,
  * credit monotonicity, and target-type constraints (e.g. integrations and
- * listBeforeRelease are only valid on the main rule).
+ * beforeRelease are only valid on the main rule).
  *
  * @param rule The access control rule to validate.
  * @param targetType 'none' for the main rule, 'student_label' or 'enrollment' for overrides.
@@ -487,8 +489,8 @@ export function validateRule(
       errors.push('Release date is required on the defaults when dateControl is specified.');
     }
   } else {
-    if (rule.listBeforeRelease !== undefined) {
-      errors.push('listBeforeRelease can only be specified on the defaults.');
+    if (rule.beforeRelease !== undefined) {
+      errors.push('beforeRelease can only be specified on the defaults.');
     }
     if (rule.integrations != null) {
       errors.push('integrations can only be specified on the defaults.');
@@ -502,6 +504,20 @@ export function validateRule(
       errors.push(`Duplicate PrairieTest exam UUID: ${e.examUuid}.`);
     }
     seenUuids.add(e.examUuid);
+
+    if (
+      e.readOnly === true &&
+      (e.afterComplete?.questions?.hidden === true || e.afterComplete?.score?.hidden === true)
+    ) {
+      errors.push(
+        `PrairieTest exam ${e.examUuid}: readOnly: true cannot be combined with afterComplete.questions.hidden: true or afterComplete.score.hidden: true (a readOnly reservation is a review environment).`,
+      );
+    }
+    if (e.afterComplete?.score?.hidden === true && e.afterComplete.questions?.hidden !== true) {
+      errors.push(
+        `PrairieTest exam ${e.examUuid}: afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.`,
+      );
+    }
   }
 
   const earlyDates = new Set<string>();
@@ -518,6 +534,37 @@ export function validateRule(
       errors.push(`Duplicate late deadline date: ${d.date}.`);
     }
     lateDates.add(d.date);
+  }
+
+  if (
+    rule.dateControl?.afterLastDeadline?.allowSubmissions === false &&
+    rule.dateControl.afterLastDeadline.credit !== undefined
+  ) {
+    errors.push('afterLastDeadline.credit cannot be set when allowSubmissions is false.');
+  }
+
+  if (
+    rule.afterComplete?.questions?.hidden === false &&
+    (rule.afterComplete.questions.visibleFromDate !== undefined ||
+      rule.afterComplete.questions.visibleUntilDate !== undefined)
+  ) {
+    errors.push(
+      'afterComplete.questions cannot have visibleFromDate or visibleUntilDate when hidden is false.',
+    );
+  }
+
+  if (
+    rule.afterComplete?.score?.hidden === false &&
+    rule.afterComplete.score.visibleFromDate !== undefined
+  ) {
+    errors.push('afterComplete.score cannot have visibleFromDate when hidden is false.');
+  }
+
+  if (
+    rule.afterComplete?.score?.hidden === true &&
+    rule.afterComplete.questions?.hidden === false
+  ) {
+    errors.push('afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.');
   }
 
   errors.push(
