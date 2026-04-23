@@ -1,15 +1,15 @@
 import { logger } from '@prairielearn/logger';
 import { type Library, loadLibrary } from '@prairielearn/respondus-lockdown-browser';
 
-import { config } from './config.js';
+import { config } from '../../lib/config.js';
 
 let library: Library | null = null;
 
-export function getLibrary(): Library | null {
+export function getRespondusLockdownBrowser(): Library | null {
   return library;
 }
 
-export function requireLibrary(): Library {
+export function requireRespondusLockdownBrowser(): Library {
   if (!library) {
     throw new Error(
       'Respondus LockDown Browser library is not loaded. Configure `respondusLockdownBrowserKeys` (or `respondusLockdownBrowserSourcePath` in devMode).',
@@ -18,7 +18,7 @@ export function requireLibrary(): Library {
   return library;
 }
 
-export async function initLibrary(): Promise<void> {
+export async function initRespondusLockdownBrowser(): Promise<void> {
   library = null;
   const sourcePath = config.respondusLockdownBrowserSourcePath;
   const keys = config.respondusLockdownBrowserKeys;
@@ -36,6 +36,6 @@ export async function initLibrary(): Promise<void> {
   logger.info('Loaded Respondus LockDown Browser library');
 }
 
-export function resetLibraryForTesting(): void {
+export function resetRespondusLockdownBrowserForTesting(): void {
   library = null;
 }
