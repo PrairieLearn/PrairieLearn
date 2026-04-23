@@ -25,13 +25,3 @@ ADD CONSTRAINT aac_prairietest_exams_score_requires_questions_hide_check CHECK (
   after_complete_questions_hidden
   OR NOT after_complete_score_hidden
 );
-
--- Mirror the same score-requires-questions invariant on the top-level rules
--- table. Columns there are nullable: NULL means "inherit default" at
--- runtime, so IS NOT FALSE / IS NOT TRUE treats NULL as un-violated.
-ALTER TABLE assessment_access_control_rules
--- squawk-ignore constraint-missing-not-valid
-ADD CONSTRAINT aac_rules_score_requires_questions_hide_check CHECK (
-  after_complete_questions_hidden IS NOT FALSE
-  OR after_complete_score_hidden IS NOT TRUE
-);

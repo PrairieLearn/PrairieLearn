@@ -69,7 +69,16 @@ SELECT
   (
     SELECT
       jsonb_agg(
-        to_jsonb(pte.*)
+        jsonb_build_object(
+          'uuid',
+          pte.uuid,
+          'read_only',
+          pte.read_only,
+          'after_complete_questions_hidden',
+          pte.after_complete_questions_hidden,
+          'after_complete_score_hidden',
+          pte.after_complete_score_hidden
+        )
         ORDER BY
           pte.uuid
       )
