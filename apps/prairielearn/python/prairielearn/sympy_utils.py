@@ -199,6 +199,7 @@ class _Constants:
             "FiniteSet": sympy.FiniteSet,
             "Union": sympy.Union,
             "Intersection": sympy.Intersection,
+            "ProductSet": sympy.ProductSet,
         }
 
 
@@ -515,40 +516,51 @@ class CheckAST(ast.NodeVisitor):
         inferred_type = self._infer_bin_op_type(op_str, node.left, node.right)
         return self._set_type(node, inferred_type)
 
+    def _enforce_signature(
+        self,
+        fn_name: str,
+        args: Sequence[ast.AST | ASTSympyType | None],
+        *overloads: Sequence[tuple[ASTSympyType, ...] | ASTSympyType | None],
+    ) -> None:
+        if not overloads or len(set(map(len, overloads))) != len(overloads):
+            raise ValueError("fn overload selected by length, must be unique")
+
+        signature = next((s for s in overloads if len(s) == len(args)), None)
+        if signature is None:
+            # NOTE: build arities msg: (s0, s1,..., sn) -> len(s0), len(s1),... or len(sn)
+            arities = tuple(map(str, sorted(map(len, overloads))))
+            msg = " or ".join(filter(bool, (", ".join(arities[:-1]), arities[-1])))
+            raise HasSetFunctionArityError(fn_name, len(args), msg)
+
+        for i, (expected, arg) in enumerate(zip(signature, args, strict=True)):
+            if expected is not None and arg is not None:
+                es = expected if isinstance(expected, tuple) else (expected,)
+                typ = arg if isinstance(arg, ASTSympyType) else self._get_type(arg)
+                if typ and typ not in es:
+                    raise HasSetOperationTypeError(fn_name, None, typ, for_argument=i)
+
     def _infer_sympy_set_function_type(
         self,
-        name: Literal["Union", "Intersection", "Interval", "FiniteSet"],
+        name: Literal["Union", "Intersection", "Interval", "FiniteSet", "ProductSet"],
         args: list[ast.expr],
     ) -> ASTSympyType | None:
         match name:
             case "FiniteSet":
                 return ASTSympyType.SET
-            case "Interval" if len(args) not in (2, 4):
-                raise HasSetFunctionArityError(name, len(args), "2 or 4")
             case "Interval":
-                for i, a in enumerate(args):
-                    inferred = self._get_type(a)
-                    expected = ASTSympyType.SCALAR if i < 2 else ASTSympyType.BOOL
-                    if inferred and inferred != expected:
-                        raise HasSetOperationTypeError(
-                            name, None, inferred, for_argument=i
-                        )
+                overloads = (
+                    (2 * [ASTSympyType.SCALAR]),
+                    (2 * [ASTSympyType.SCALAR] + 2 * [ASTSympyType.BOOL]),
+                )
+                self._enforce_signature(name, args, *overloads)
                 return None
-            case "Union" if not args:
-                # NOTE: allows sympy to return sympy.EmptySet
-                return ASTSympyType.SET
-            case "Intersection" if not args:
-                # NOTE: does not allow sympy to return sympy.UniversalSet
-                raise HasSetFunctionArityError(name, len(args), "1+")
             case "Union" | "Intersection":
-                prev = None
-                for i, arg in enumerate(args):
-                    inferred = self._infer_bin_op_type(name, prev, arg)
-                    if inferred and inferred != ASTSympyType.SET:
-                        raise HasSetOperationTypeError(
-                            name, None, inferred, for_argument=i
-                        )
-
+                if not args:
+                    raise HasSetFunctionArityError(name, len(args), "1+")
+                self._enforce_signature(name, args, len(args) * [ASTSympyType.SET])
+                return ASTSympyType.SET
+            case "ProductSet":
+                self._enforce_signature(name, args, 2 * [ASTSympyType.SET])
                 return ASTSympyType.SET
 
     def _infer_bin_op_type(
@@ -557,26 +569,18 @@ class CheckAST(ast.NodeVisitor):
         left_type = left and self._get_type(left)
         right_type = self._get_type(right)
 
-        if op_str in ("|", "&", "Union", "Intersection"):
-            match (left_type, right_type):
-                case (ASTSympyType.SET, ASTSympyType.SET):
-                    return ASTSympyType.SET
-                case (None, other) | (other, None) if other in {None, ASTSympyType.SET}:
-                    return ASTSympyType.SET
-                case (l, r):
-                    raise HasSetOperationTypeError(op_str, l, r or ASTSympyType.SET)
-
-        if op_str == "**":
-            match (left_type, right_type):
-                case (l, ASTSympyType.SCALAR) | (l, None) if l != ASTSympyType.BOOL:
-                    return l
-                case (l, r):
-                    raise HasSetOperationTypeError(op_str, l, r or ASTSympyType.SET)
-
-        if left_type == right_type:
-            return left_type
-
-        return None
+        match (op_str, left_type, right_type):
+            case ("|", l, r) | ("&", l, r):
+                self._enforce_signature(op_str, (l, r), 2 * [ASTSympyType.SET])
+                return ASTSympyType.SET
+            case ("**", l, r):
+                sig = (ASTSympyType.SCALAR, ASTSympyType.SET), ASTSympyType.SCALAR
+                self._enforce_signature(op_str, (l, r), sig)
+                return l
+            case (_, l, r) if l == r:
+                return l
+            case _:
+                return None
 
 
 def _format_ast_sympy_type(type_: ASTSympyType | None) -> str:

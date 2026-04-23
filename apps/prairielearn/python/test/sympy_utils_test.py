@@ -477,17 +477,7 @@ class TestSympy:
 
         assert ref_expr == psu.json_to_sympy(psu.sympy_to_json(ref_expr))
 
-    # TODO: bug in jsonification
-    # @pytest.mark.parametrize("sympy_expr", [out for _, out in SET_EXPR_PAIRS])
-    @pytest.mark.parametrize(
-        "sympy_expr",
-        [
-            sympy.Interval.open(3, 4),
-            sympy.Interval.Lopen(sympy.Symbol("x"), sympy.Symbol("y")),
-            sympy.Union(sympy.Interval(1, 2), sympy.Interval.Ropen(3, 4)),
-            sympy.Intersection(sympy.FiniteSet(1, 2), sympy.Interval(3 / 2, 4)),
-        ],
-    )
+    @pytest.mark.parametrize("sympy_expr", [out for _, out in SET_EXPR_PAIRS])
     def test_sets_json_conversion(self, sympy_expr: sympy.Expr) -> None:
         assert sympy_expr == psu.json_to_sympy(
             psu.sympy_to_json(sympy_expr), allow_set_notation=True
