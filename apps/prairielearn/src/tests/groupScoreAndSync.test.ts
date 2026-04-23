@@ -4,11 +4,14 @@ import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
+import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema, SubmissionSchema, VariantSchema } from '../lib/db-types.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
+import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import * as helperServer from './helperServer.js';
 
@@ -62,13 +65,6 @@ describe('assessment instance group synchronization test', function () {
     it('should parse', function () {
       locals.$ = cheerio.load(page);
     });
-    it('should have a CSRF token', function () {
-      elemList = locals.$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 4);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
-    });
   });
   describe('3. user and group initialization', function () {
     it('create 3 users', async () => {
@@ -77,21 +73,25 @@ describe('assessment instance group synchronization test', function () {
       locals.groupCreator = locals.studentUsers[0];
     });
     it('put 3 users in a group', async () => {
-      const res = await fetch(locals.instructorAssessmentsUrlGroupTab, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'add_group',
-          __csrf_token: locals.__csrf_token,
-          group_name: 'testgroup',
-          uids:
-            locals.studentUsers[0].uid +
-            ',' +
-            locals.studentUsers[1].uid +
-            ',' +
-            locals.studentUsers[2].uid,
-        }),
+      const trpcClient = createAssessmentTrpcClient({
+        csrfToken: generatePrefixCsrfToken(
+          {
+            url: getAssessmentTrpcUrl({
+              courseInstanceId: '1',
+              assessmentId: locals.assessment_id,
+            }),
+            authn_user_id: '1',
+          },
+          config.secretKey,
+        ),
+        courseInstanceId: '1',
+        assessmentId: locals.assessment_id,
+        urlBase: locals.siteUrl,
       });
-      assert.equal(res.status, 200);
+      await trpcClient.assessmentGroups.addGroup.mutate({
+        group_name: 'testgroup',
+        uids: locals.studentUsers.map((u: { uid: string }) => u.uid).join(','),
+      });
     });
     it('should create the correct group configuration', async () => {
       const rowCount = await sqldb.execute(sql.select_group_users, {
