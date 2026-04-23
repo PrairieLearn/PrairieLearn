@@ -74,7 +74,7 @@
     },
     {
       "id": "pl-submission-only-in-wrong-panel",
-      "selector": ":is(pl-question-panel, pl-answer-panel):has(pl-external-grader-results, pl-file-preview)",
+      "selector": ":is(pl-question-panel, pl-answer-panel) :is(pl-external-grader-results, pl-file-preview)",
       "message": "pl-external-grader-results and pl-file-preview should only appear inside pl-submission-panel."
     },
     {
@@ -84,7 +84,7 @@
     },
     {
       "id": "pl-multiple-file-upload",
-      "selector": ":root:has(pl-file-upload ~ pl-file-upload)",
+      "selector": "*:has(pl-file-upload) ~ * pl-file-upload, pl-file-upload ~ pl-file-upload",
       "message": "Prefer a single pl-file-upload per question; collecting all files in one place is clearer for students than splitting them across multiple upload boxes.",
       "severity": "warning"
     },
@@ -164,7 +164,7 @@
     // pl-file-upload is omitted: its render() returns ""; nesting it inside any panel is harmless.
     {
       "id": "pl-input-in-panel",
-      "selector": ":is(pl-question-panel, pl-answer-panel, pl-submission-panel):has(pl-big-o-input, pl-excalidraw:not([gradable=\"false\"]), pl-image-capture, pl-integer-input, pl-matching, pl-matrix-component-input, pl-matrix-input, pl-checkbox, pl-multiple-choice, pl-order-blocks, pl-number-input, pl-rich-text-editor, pl-string-input, pl-symbolic-input, pl-units-input)",
+      "selector": ":is(pl-question-panel, pl-answer-panel, pl-submission-panel) :is(pl-big-o-input, pl-excalidraw:not([gradable=\"false\"]), pl-image-capture, pl-integer-input, pl-matching, pl-matrix-component-input, pl-matrix-input, pl-checkbox, pl-multiple-choice, pl-order-blocks, pl-number-input, pl-rich-text-editor, pl-string-input, pl-symbolic-input, pl-units-input)",
       "message": "Input elements must not be nested inside pl-question-panel, pl-answer-panel, or pl-submission-panel. Place them as siblings of the panel instead."
     }
   ],
