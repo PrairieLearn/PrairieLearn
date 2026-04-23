@@ -12,8 +12,8 @@ AI grading works on any manually graded question.
 
 **Supported elements:**
 
-- `pl-rich-text-editor`
 - `pl-image-capture`
+- `pl-rich-text-editor`
 - `pl-file-upload`
 - `pl-file-editor`
 - `pl-string-input`
