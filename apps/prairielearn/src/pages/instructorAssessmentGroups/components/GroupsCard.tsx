@@ -95,7 +95,7 @@ function EditGroupModal({
               className="form-control"
               id={`editGroupName-${row.group_id}`}
               value={row.name}
-              disabled
+              readOnly
             />
           </div>
           <div className="mb-3">

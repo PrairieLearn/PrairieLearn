@@ -570,7 +570,7 @@ export function GroupSettingsCard({
                                   {...register(`roles.${index}.name`, {
                                     required: 'Name is required.',
                                     validate: (value) => {
-                                      const allNames = watchedRoles.map((r) => r.name);
+                                      const allNames = getValues('roles').map((r) => r.name);
                                       const dupes = allNames.filter((n) => n === value);
                                       return dupes.length <= 1 || 'Duplicate role name.';
                                     },
