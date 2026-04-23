@@ -650,9 +650,7 @@ function AssessmentQuestionsSection({
 
   return (
     <details>
-      <summary className="small text-muted mb-2">
-        Questions ({questions.length})
-      </summary>
+      <summary className="small text-muted mb-2">Questions ({questions.length})</summary>
 
       {conflictCount > 0 && (
         <div className="d-flex align-items-center gap-2 p-2 bg-light border rounded mb-2 mt-2 small">
@@ -1115,4 +1113,3 @@ function TreeNodes({
     </>
   );
 }
-

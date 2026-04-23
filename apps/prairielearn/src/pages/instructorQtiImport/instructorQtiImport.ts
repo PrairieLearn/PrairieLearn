@@ -16,7 +16,6 @@ import {
 } from '@prairielearn/question-conversion';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
-
 import { getCourseInstanceTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { discoverInfoDirs } from '../../lib/discover-info-dirs.js';
@@ -119,9 +118,7 @@ router.post(
               }));
 
         if (entries.length === 0) {
-          res
-            .status(400)
-            .json({ error: 'No QTI assessment files found in the uploaded archive' });
+          res.status(400).json({ error: 'No QTI assessment files found in the uploaded archive' });
           return;
         }
 
