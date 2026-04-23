@@ -14,13 +14,6 @@ export interface QTI12ResponseLid {
   labels: QTI12ResponseLabel[];
 }
 
-/** A response_str element from QTI 1.2 (text-based response). */
-export interface QTI12ResponseStr {
-  ident: string;
-  rcardinality: 'Single' | 'Multiple';
-  labels: QTI12ResponseLabel[];
-}
-
 /** A condition identifying a correct answer. */
 export interface QTI12CorrectCondition {
   responseIdent: string;
@@ -36,12 +29,13 @@ export interface QTI12ParsedItem {
   pointsPossible?: number;
   promptHtml: string;
   responseLids: QTI12ResponseLid[];
-  responseStrs: QTI12ResponseStr[];
   correctConditions: QTI12CorrectCondition[];
   feedbacks: Map<string, string>;
   metadata: Record<string, string>;
-  /** Raw parsed XML element — available for handlers that need data beyond standard fields. */
-  rawItemEl?: Record<string, unknown>;
+  /** Parsed <calculated> block from <itemproc_extension> — populated for calculated_question items. */
+  calculatedBlock?: Record<string, unknown>;
+  /** Parsed <resprocessing> element — populated for numerical_question items and others that need it. */
+  resprocessing?: Record<string, unknown>;
 }
 
 /** A parsed QTI 1.2 assessment or object bank. */

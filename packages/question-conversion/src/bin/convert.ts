@@ -8,7 +8,9 @@ import { Command } from 'commander';
 import { logger } from '@prairielearn/logger';
 
 import type { ConversionResult } from '../emitters/emitter.js';
-import { convert } from '../pipeline.js';
+import { PLEmitter } from '../emitters/pl-emitter.js';
+import { QTI12AssessmentParser } from '../parsers/qti12/index.js';
+import { parseAssessment } from '../pipeline.js';
 import {
   type CourseExportInfo,
   type QtiFileEntry,
@@ -192,6 +194,9 @@ interface ParsedAssessment {
   webResourcesDir: string;
 }
 
+const PARSERS = [new QTI12AssessmentParser()];
+const EMITTER = new PLEmitter();
+
 async function parseFile(
   entry: QtiFileEntry,
   timezone: string,
@@ -209,15 +214,13 @@ async function parseFile(
     // Not present — that's fine
   }
 
-  const baseOptions = { basePath: entry.assessmentDir, assessmentMetaXml, timezone, rubricsXml };
+  const parseOptions = { basePath: entry.assessmentDir, assessmentMetaXml, timezone, rubricsXml };
 
-  // First pass to get the assessment title for building paths
-  const preview = await convert(xmlContent, baseOptions);
-  const assessmentSlug = slugify(preview.assessmentTitle);
-
-  // Second pass with the correct question ID prefix
-  const result = await convert(xmlContent, {
-    ...baseOptions,
+  // Parse once, then emit with the slug-derived question ID prefix.
+  const ir = await parseAssessment(xmlContent, PARSERS, parseOptions);
+  const assessmentSlug = slugify(ir.title);
+  const result = EMITTER.emit(ir, {
+    ...parseOptions,
     topic: options.topic,
     tags: options.tags,
     questionIdPrefix: `imported/${assessmentSlug}`,
@@ -335,6 +338,8 @@ async function ensureCourseFiles(
   const infoCIFile = path.join(ciDir, 'infoCourseInstance.json');
   if (!(await fileExists(infoCIFile))) {
     await mkdir(ciDir, { recursive: true });
+    // Wide-open access window so the course instance is immediately usable after import.
+    // The course owner should narrow these dates (and set institution/uids) before going live.
     const infoCourseInstance = {
       uuid: stableUuid(courseDir, `ci-${courseInstance}`),
       longName: courseInstance,

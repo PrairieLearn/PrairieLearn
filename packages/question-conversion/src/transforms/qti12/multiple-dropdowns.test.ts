@@ -31,7 +31,6 @@ function makeItem(overrides: Partial<QTI12ParsedItem> = {}): QTI12ParsedItem {
         ],
       },
     ],
-    responseStrs: [],
     correctConditions: [
       { responseIdent: 'response_color', correctLabelIdent: 'c1' },
       { responseIdent: 'response_direction', correctLabelIdent: 'd2' },

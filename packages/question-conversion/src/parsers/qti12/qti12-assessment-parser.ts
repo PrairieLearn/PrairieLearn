@@ -337,7 +337,15 @@ export class QTI12AssessmentParser implements InputParser {
               selectionNumber != null && selectionNumber < questions.length
                 ? selectionNumber
                 : undefined;
-            zones.push({ title: zoneTitle || 'Questions', questions, numberChoose });
+            zones.push({
+              title: zoneTitle || 'Questions',
+              questions: questions.map((q) => ({
+                sourceId: q.sourceId,
+                points: q.points,
+                gradingMethod: q.gradingMethod,
+              })),
+              numberChoose,
+            });
             allQuestions.push(...questions);
           }
         }
@@ -353,7 +361,14 @@ export class QTI12AssessmentParser implements InputParser {
             parseWarnings,
           );
           if (questions.length > 0) {
-            zones.unshift({ title: 'Questions', questions });
+            zones.unshift({
+              title: 'Questions',
+              questions: questions.map((q) => ({
+                sourceId: q.sourceId,
+                points: q.points,
+                gradingMethod: q.gradingMethod,
+              })),
+            });
             allQuestions.unshift(...questions);
           }
         }
@@ -530,6 +545,11 @@ export class QTI12AssessmentParser implements InputParser {
     // Parse feedbacks
     const feedbacks = this.parseFeedbacks(itemEl);
 
+    const resprocessing = itemEl['resprocessing'] as Record<string, unknown> | undefined;
+    const calcBlock = getNestedValue(itemEl, 'itemproc_extension', 'calculated') as
+      | Record<string, unknown>
+      | undefined;
+
     return {
       ident,
       title,
@@ -537,11 +557,11 @@ export class QTI12AssessmentParser implements InputParser {
       pointsPossible,
       promptHtml,
       responseLids,
-      responseStrs: [],
       correctConditions,
       feedbacks,
       metadata,
-      rawItemEl: itemEl,
+      ...(calcBlock != null ? { calculatedBlock: calcBlock } : {}),
+      ...(resprocessing != null ? { resprocessing } : {}),
     };
   }
 

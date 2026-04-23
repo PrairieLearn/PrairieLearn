@@ -23,14 +23,10 @@ export const calculatedHandler: TransformHandler<QTI12ParsedItem> = {
   questionType: 'calculated_question',
 
   transform(item: QTI12ParsedItem): TransformResult {
-    const calcEl = getNestedValue(item.rawItemEl ?? {}, 'itemproc_extension', 'calculated') as
-      | Record<string, unknown>
-      | undefined;
+    const calcEl = item.calculatedBlock;
 
     if (!calcEl) {
-      throw new Error(
-        `calculated_question "${item.ident}": missing <itemproc_extension><calculated> block`,
-      );
+      throw new Error(`calculated_question "${item.ident}": missing <calculated> block`);
     }
 
     // Canvas exports formula in one of two structures:

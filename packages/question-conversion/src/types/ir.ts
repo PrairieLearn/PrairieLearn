@@ -137,10 +137,18 @@ export interface IRQuestion {
   gradingMethod: IRQuestionGradingMethod;
 }
 
+/** A lightweight reference to a question within a zone. */
+export interface IRZoneQuestion {
+  sourceId: string;
+  points?: number;
+  gradingMethod?: IRQuestionGradingMethod;
+}
+
 /** A group of questions within an assessment (maps to a PL zone). */
 export interface IRZone {
   title: string;
-  questions: IRQuestion[];
+  /** Question references; full question data lives in IRAssessment.questions. */
+  questions: IRZoneQuestion[];
   /** If set, only this many questions are randomly chosen from the zone. */
   numberChoose?: number;
 }

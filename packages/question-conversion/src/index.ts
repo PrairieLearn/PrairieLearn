@@ -1,5 +1,5 @@
 // Public API
-export { convert, convertWith } from './pipeline.js';
+export { convert, convertWith, parseAssessment } from './pipeline.js';
 export type { ConvertOptions } from './pipeline.js';
 
 // Parsers
@@ -14,6 +14,9 @@ export type {
   ConversionWarning,
   EmitOptions,
 } from './emitters/emitter.js';
+export type { BodyEmitHandler } from './emitters/body-emit-handler.js';
+export { BodyEmitRegistry } from './emitters/body-emit-handler.js';
+export { createPLBodyRegistry } from './emitters/handlers/index.js';
 
 // Transform registry (for extensibility)
 export { TransformRegistry } from './transforms/transform-registry.js';
@@ -25,6 +28,8 @@ export type {
   IRAssessment,
   IRQuestion,
   IRQuestionBody,
+  IRZone,
+  IRZoneQuestion,
   IRChoice,
   IRMatchPair,
   IRMatchDistractor,

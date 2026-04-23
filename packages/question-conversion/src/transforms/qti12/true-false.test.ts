@@ -20,7 +20,6 @@ function makeItem(correctIdent: string): QTI12ParsedItem {
         ],
       },
     ],
-    responseStrs: [],
     correctConditions: [{ responseIdent: 'response1', correctLabelIdent: correctIdent }],
     feedbacks: new Map(),
     metadata: {},

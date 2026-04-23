@@ -509,7 +509,7 @@ describe('PLEmitter', () => {
       const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
       assert.equal(
         html,
-        '<pl-question-panel>\n<p>What is 2+2?</p>\n</pl-question-panel>\n\n<pl-dropdown answers-name="answer">\n  <pl-answer correct="false">Option A</pl-answer>\n  <pl-answer correct="true">Option B</pl-answer>\n</pl-dropdown>',
+        '<pl-question-panel>\n<p>What is 2+2?</p>\n</pl-question-panel>\n\n<pl-multiple-choice answers-name="answer" display="dropdown">\n  <pl-answer correct="false">Option A</pl-answer>\n  <pl-answer correct="true">Option B</pl-answer>\n</pl-multiple-choice>',
       );
     });
   });

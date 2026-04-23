@@ -11,7 +11,6 @@ function makeItem(overrides: Partial<QTI12ParsedItem> = {}): QTI12ParsedItem {
     questionType: 'calculated_question',
     promptHtml: '<p>What is [a] + [b]?</p>',
     responseLids: [],
-    responseStrs: [],
     correctConditions: [],
     feedbacks: new Map(),
     metadata: {},
@@ -19,31 +18,27 @@ function makeItem(overrides: Partial<QTI12ParsedItem> = {}): QTI12ParsedItem {
   };
 }
 
-function makeCalcItemEl() {
+function makeCalcBlock() {
   return {
-    itemproc_extension: {
-      calculated: {
-        answer_tolerance: '0.01',
-        formula: '[a]+[b]',
-        vars: {
-          var: [
-            { '@_name': 'a', '@_scale': '2', min: '1.0', max: '10.0' },
-            { '@_name': 'b', '@_scale': '2', min: '2.0', max: '5.0' },
-          ],
-        },
-      },
+    answer_tolerance: '0.01',
+    formula: '[a]+[b]',
+    vars: {
+      var: [
+        { '@_name': 'a', '@_scale': '2', min: '1.0', max: '10.0' },
+        { '@_name': 'b', '@_scale': '2', min: '2.0', max: '5.0' },
+      ],
     },
   };
 }
 
 describe('calculatedHandler', () => {
   it('produces calculated body', () => {
-    const result = calculatedHandler.transform(makeItem({ rawItemEl: makeCalcItemEl() }));
+    const result = calculatedHandler.transform(makeItem({ calculatedBlock: makeCalcBlock() }));
     assert.equal(result.body.type, 'calculated');
   });
 
   it('extracts the formula', () => {
-    const result = calculatedHandler.transform(makeItem({ rawItemEl: makeCalcItemEl() }));
+    const result = calculatedHandler.transform(makeItem({ calculatedBlock: makeCalcBlock() }));
     if (result.body.type !== 'calculated') {
       assert.fail(`Expected calculated body, got ${result.body.type}`);
     }
@@ -51,7 +46,7 @@ describe('calculatedHandler', () => {
   });
 
   it('parses variables with min, max, and decimalPlaces', () => {
-    const result = calculatedHandler.transform(makeItem({ rawItemEl: makeCalcItemEl() }));
+    const result = calculatedHandler.transform(makeItem({ calculatedBlock: makeCalcBlock() }));
     if (result.body.type !== 'calculated') {
       assert.fail(`Expected calculated body, got ${result.body.type}`);
     }
@@ -64,7 +59,7 @@ describe('calculatedHandler', () => {
   });
 
   it('parses absolute tolerance', () => {
-    const result = calculatedHandler.transform(makeItem({ rawItemEl: makeCalcItemEl() }));
+    const result = calculatedHandler.transform(makeItem({ calculatedBlock: makeCalcBlock() }));
     if (result.body.type !== 'calculated') {
       assert.fail(`Expected calculated body, got ${result.body.type}`);
     }
@@ -73,9 +68,8 @@ describe('calculatedHandler', () => {
   });
 
   it('parses relative tolerance with % suffix', () => {
-    const itemEl = makeCalcItemEl();
-    itemEl.itemproc_extension.calculated.answer_tolerance = '5%';
-    const result = calculatedHandler.transform(makeItem({ rawItemEl: itemEl }));
+    const block = { ...makeCalcBlock(), answer_tolerance: '5%' };
+    const result = calculatedHandler.transform(makeItem({ calculatedBlock: block }));
     if (result.body.type !== 'calculated') {
       assert.fail(`Expected calculated body, got ${result.body.type}`);
     }
@@ -84,18 +78,14 @@ describe('calculatedHandler', () => {
   });
 
   it('reads formula from <formulas><formula> wrapper (Canvas quiz export format)', () => {
-    const itemEl = {
-      itemproc_extension: {
-        calculated: {
-          answer_tolerance: '0',
-          formulas: { formula: 'x * 16' },
-          vars: {
-            var: [{ '@_name': 'x', '@_scale': '0', min: '1.0', max: '20.0' }],
-          },
-        },
+    const block = {
+      answer_tolerance: '0',
+      formulas: { formula: 'x * 16' },
+      vars: {
+        var: [{ '@_name': 'x', '@_scale': '0', min: '1.0', max: '20.0' }],
       },
     };
-    const result = calculatedHandler.transform(makeItem({ rawItemEl: itemEl }));
+    const result = calculatedHandler.transform(makeItem({ calculatedBlock: block }));
     assert.equal(result.body.type, 'calculated');
     if (result.body.type === 'calculated') {
       assert.equal(result.body.formula, 'x * 16');
@@ -103,24 +93,13 @@ describe('calculatedHandler', () => {
   });
 
   it('throws when itemproc_extension/calculated block is missing', () => {
-    assert.throws(
-      () => calculatedHandler.transform(makeItem()),
-      /missing.*itemproc_extension.*calculated/i,
-    );
+    assert.throws(() => calculatedHandler.transform(makeItem()), /missing.*calculated/i);
   });
 
   it('throws when no variables are found', () => {
-    const itemEl = {
-      itemproc_extension: {
-        calculated: {
-          answer_tolerance: '0.01',
-          formula: '[a]+1',
-          vars: {},
-        },
-      },
-    };
+    const block = { answer_tolerance: '0.01', formula: '[a]+1', vars: {} };
     assert.throws(
-      () => calculatedHandler.transform(makeItem({ rawItemEl: itemEl })),
+      () => calculatedHandler.transform(makeItem({ calculatedBlock: block })),
       /no variables found/,
     );
   });

@@ -12,7 +12,6 @@ describe('essayHandler', () => {
       questionType: 'essay_question',
       promptHtml: '<p>Write an essay</p>',
       responseLids: [],
-      responseStrs: [],
       correctConditions: [],
       feedbacks: new Map(),
       metadata: {},

@@ -21,7 +21,6 @@ function makeItem(): QTI12ParsedItem {
         ],
       },
     ],
-    responseStrs: [],
     correctConditions: [
       { responseIdent: 'response1', correctLabelIdent: 'a1' },
       { responseIdent: 'response1', correctLabelIdent: 'a2' },
