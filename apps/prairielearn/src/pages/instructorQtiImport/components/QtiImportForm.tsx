@@ -168,6 +168,7 @@ export function QtiImportForm({
   const [overrides, setOverrides] = useState<AssessmentOverrides[]>([]);
   const [existingDirs, setExistingDirs] = useState<Set<string>>(new Set());
   const [strippedRules, setStrippedRules] = useState<StrippedAccessRules | null>(null);
+  const [skippedVideos, setSkippedVideos] = useState<string[]>([]);
   const [questionOverrides, setQuestionOverrides] = useState<Map<string, QuestionOverrides>>(
     new Map(),
   );
@@ -213,6 +214,7 @@ export function QtiImportForm({
       const dirs = new Set(data.existingQuestionDirs);
       setExistingDirs(dirs);
       setStrippedRules(data.strippedAccessRules);
+      setSkippedVideos(data.skippedVideos);
       setResults(data.results);
       setOverrides(deduplicateAssessmentNumbers(data.results));
       setQuestionOverrides(buildInitialQuestionOverrides(data.results, dirs));
@@ -350,7 +352,16 @@ export function QtiImportForm({
 
         {step === 'review' && (
           <>
-            <ImportSummary results={results} strippedAccessRules={strippedRules} />
+            <ImportSummary
+              results={results}
+              strippedAccessRules={strippedRules}
+              skippedVideos={skippedVideos}
+            />
+
+            <p className="text-muted">
+              Review the assessments and questions below, then confirm to create them in your
+              PrairieLearn course.
+            </p>
 
             {results.map((result, i) => (
               <Card key={result.assessment.directoryName} className="mb-3">
@@ -524,9 +535,11 @@ function NonRubricWarnings({ warnings }: { warnings: SerializedConversionResult[
 function ImportSummary({
   results,
   strippedAccessRules,
+  skippedVideos,
 }: {
   results: SerializedConversionResult[];
   strippedAccessRules: StrippedAccessRules | null;
+  skippedVideos: string[];
 }) {
   const totalQuestions = results.reduce((sum, r) => sum + r.questions.length, 0);
   const totalAssets = results.reduce(
@@ -550,16 +563,18 @@ function ImportSummary({
   if (strippedAccessRules?.hasDates) notImportedItems.push('Access dates (start/end dates)');
   notImportedItems.push(...uniqueUnsupported);
 
-  const hasNotImported = notImportedItems.length > 0;
+  const uniqueSkippedVideos = [...new Set(skippedVideos)];
+
+  const hasNotImported = notImportedItems.length > 0 || uniqueSkippedVideos.length > 0;
 
   return (
     <div className="row g-3 mb-4">
       <div className={hasNotImported ? 'col-md-6' : 'col-12'}>
         <Card className="h-100">
           <Card.Body>
-            <h2 className="h6 mb-3">
+            <h2 className="h6 mb-2">
               <i className="bi bi-check-circle text-success me-2" aria-hidden="true" />
-              What was imported
+              What can be imported
             </h2>
             <ul className="mb-0">
               <li>
@@ -582,14 +597,27 @@ function ImportSummary({
         <div className="col-md-6">
           <Card className="h-100">
             <Card.Body>
-              <h2 className="h6 mb-3">
+              <h2 className="h6 mb-2">
                 <i className="bi bi-info-circle text-muted me-2" aria-hidden="true" />
-                What was not imported
+                What won't be imported
               </h2>
               <ul className="mb-0">
                 {notImportedItems.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
+                {uniqueSkippedVideos.length > 0 && (
+                  <li>
+                    <strong>{uniqueSkippedVideos.length}</strong> video file
+                    {uniqueSkippedVideos.length !== 1 ? 's' : ''} (too large to import)
+                    <ul className="mt-1 mb-0">
+                      {uniqueSkippedVideos.map((name) => (
+                        <li key={name} className="text-muted">
+                          {name}
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                )}
               </ul>
             </Card.Body>
           </Card>
@@ -1088,6 +1116,9 @@ function FileTree({
         {rootLabel}
       </div>
       <TreeNodes nodes={tree} depth={0} selectedFile={selectedFile} onSelectFile={onSelectFile} />
+      <div className="text-muted small mt-3 px-2">
+        You'll be able to edit question files once imported.
+      </div>
     </>
   );
 }
