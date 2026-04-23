@@ -5223,7 +5223,7 @@ __metadata:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/postgres-tools": "workspace:^"
     "@prairielearn/react": "workspace:^"
-    "@prairielearn/respondus-lockdown-browser": "npm:^0.1.1"
+    "@prairielearn/respondus-lockdown-browser": "npm:^0.1.2"
     "@prairielearn/run": "workspace:^"
     "@prairielearn/sanitize": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
@@ -5515,12 +5515,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/respondus-lockdown-browser@npm:^0.1.1":
-  version: 0.1.1
-  resolution: "@prairielearn/respondus-lockdown-browser@npm:0.1.1"
+"@prairielearn/respondus-lockdown-browser@npm:^0.1.2":
+  version: 0.1.2
+  resolution: "@prairielearn/respondus-lockdown-browser@npm:0.1.2"
   dependencies:
     jose: "npm:^6.2.2"
-  checksum: 10c0/6fca444e3f5b8980fcf7676c5adca471332cc1eebf522b72875c24715c1464e5a81a1dc3e1cfb5b5d680e2a31dc91c825a016234815acf77c14f9cec95871b4f
+  checksum: 10c0/ec7a3d58b7d6e54a5df58f74e0213c7aad28a2df8d09a807ceddcea2143984c7d957f02653fb7d90d8df1990561d6810af8aee4c5257aaeedd67fe29eafd1957
   languageName: node
   linkType: hard
 
