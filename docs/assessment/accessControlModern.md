@@ -138,9 +138,9 @@ earlyDeadline (110%)    dueDate (100%)    lateDeadline (80%)
 | `prairieTest.exams[].afterComplete.questions.hidden` | boolean | If `true`, questions are hidden after the student finishes while the reservation is still active. |
 | `prairieTest.exams[].afterComplete.score.hidden`     | boolean | If `true`, the score is hidden after the student finishes while the reservation is still active.  |
 
-When PrairieTest exams are configured, students must be checked in via PrairieTest to access the assessment. Students not checked in are blocked. The `durationMinutes` field has no effect when PrairieTest is active — time limits are enforced by PrairieTest.
+When PrairieTest exams are configured, an active matching PrairieTest reservation will grant access to the assessment. While a reservation is active, only the matched exam's configuration applies: top-level `dateControl`, `beforeRelease`, and `afterComplete` are ignored, and `durationMinutes` has no effect — time limits are enforced by PrairieTest.
 
-While a PrairieTest reservation is active, only the matched exam's configuration applies: top-level `dateControl`, `beforeRelease`, and `afterComplete` are ignored until the reservation ends. This lets `afterComplete` on the exam describe what the student sees during the reservation, and the top-level `afterComplete` describe what the student sees afterwards.
+Outside an active reservation — for instance, outside a testing center or before or after the exam — top-level `dateControl`, `beforeRelease`, and `afterComplete` apply as usual. This lets `afterComplete` on the exam describe what the student sees during the reservation, and the top-level `afterComplete` describe what the student sees afterwards.
 
 `readOnly: true` cannot be combined with exam-level `afterComplete` settings that hide questions or scores (`afterComplete.questions.hidden: true` or `afterComplete.score.hidden: true`): a read-only reservation is a review environment that shows everything. Non-hiding settings, such as `afterComplete.questions.hidden: false`, are accepted as no-ops. `afterComplete.score.hidden: true` additionally requires `afterComplete.questions.hidden: true` — we don't support showing the question and submission while hiding the resulting score.
 
@@ -395,7 +395,7 @@ If a student starts close enough to the due date that less than 90 minutes remai
 }
 ```
 
-Students must be checked in via PrairieTest. Time limits and scheduling are managed by PrairieTest. Once a student finishes the assessment, questions and scores remain visible for the remainder of their reservation.
+Students access the assessment through an active PrairieTest reservation; time limits and scheduling are managed by PrairieTest. Once a student finishes the assessment, questions and scores remain visible for the remainder of their reservation.
 
 ### Deferred release of feedback and scores after a PrairieTest exam
 
