@@ -1,9 +1,11 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
-import { Alert, Button, Form, Modal } from 'react-bootstrap';
+import { Alert, Button, Form, Modal, Spinner } from 'react-bootstrap';
 
+import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
+import { assertNever } from '@prairielearn/utils';
 
 import {
   AI_GRADING_MODELS,
@@ -13,6 +15,15 @@ import {
 import { formatMilliDollars } from '../../../../lib/ai-grading-credits.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
 import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
+
+type AiGradingAvailabilityState =
+  | { kind: 'loading' }
+  | { kind: 'error' }
+  | { kind: 'concurrency_limit'; maxConcurrentJobs: number }
+  | { kind: 'no_keys' }
+  | { kind: 'ready_with_keys' }
+  | { kind: 'no_credits' }
+  | { kind: 'ready_with_credits'; creditBalanceMilliDollars: number };
 
 export type AiGradingModelSelectionModalState =
   | { type: 'all'; numToGrade: number }
@@ -52,25 +63,28 @@ function ModelOption({
   model,
   isSelected,
   isAvailable,
+  aiGradingEnabled,
   relativeCost,
   onSelect,
 }: {
   model: (typeof AI_GRADING_MODELS)[number];
   isSelected: boolean;
   isAvailable: boolean;
+  aiGradingEnabled: boolean;
   relativeCost: string;
   onSelect: () => void;
 }) {
+  const isInteractive = isAvailable && aiGradingEnabled;
   const option = (
     <label
       key={model.modelId}
       htmlFor={`model-${model.modelId}`}
       className={clsx('rounded-2 px-3 py-2 mb-0 border', {
         'border-primary bg-primary bg-opacity-10': isSelected,
-        'border-transparent': !isSelected && isAvailable,
-        'opacity-75 border-transparent': !isAvailable,
+        'border-transparent': !isSelected && isInteractive,
+        'opacity-75 border-transparent': !isInteractive,
       })}
-      style={{ cursor: isAvailable ? 'pointer' : 'default' }}
+      style={{ cursor: isInteractive ? 'pointer' : 'default' }}
     >
       <div className="d-flex align-items-center justify-content-between">
         <Form.Check
@@ -78,7 +92,7 @@ function ModelOption({
           id={`model-${model.modelId}`}
           name="ai-grading-model"
           className="mb-0"
-          disabled={!isAvailable}
+          disabled={!isInteractive}
           checked={isSelected}
           label={
             <div>
@@ -115,11 +129,13 @@ function ModelOption({
 function ModelList({
   selectedModel,
   availableProviders,
+  aiGradingEnabled,
   relativeCosts,
   onSelect,
 }: {
   selectedModel: AiGradingModelId;
   availableProviders: EnumAiGradingProvider[];
+  aiGradingEnabled: boolean;
   relativeCosts: Record<string, string>;
   onSelect: (modelId: AiGradingModelId) => void;
 }) {
@@ -153,6 +169,7 @@ function ModelList({
               model={model}
               isSelected={selectedModel === model.modelId}
               isAvailable={availableProviders.includes(model.provider)}
+              aiGradingEnabled={aiGradingEnabled}
               relativeCost={relativeCosts[model.modelId]}
               onSelect={() => onSelect(model.modelId)}
             />
@@ -179,6 +196,7 @@ function ModelList({
                 model={model}
                 isSelected={selectedModel === model.modelId}
                 isAvailable={availableProviders.includes(model.provider)}
+                aiGradingEnabled={aiGradingEnabled}
                 relativeCost={relativeCosts[model.modelId]}
                 onSelect={() => onSelect(model.modelId)}
               />
@@ -190,60 +208,114 @@ function ModelList({
   );
 }
 
-function BillingAlert({
-  useCustomApiKeys,
-  hasKeys,
-  hasCredits,
-  creditBalanceMilliDollars,
+function SettingsLink({ url, text }: { url: string; text: string }) {
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer">
+      {text}
+    </a>
+  );
+}
+
+function AiGradingAvailabilityAlert({
+  state,
   aiGradingSettingsUrl,
+  onRetryAvailability,
 }: {
-  useCustomApiKeys: boolean;
-  hasKeys: boolean;
-  hasCredits: boolean;
-  creditBalanceMilliDollars: number;
+  state: AiGradingAvailabilityState;
   aiGradingSettingsUrl: string;
+  onRetryAvailability: () => void;
 }) {
-  if (useCustomApiKeys) {
-    return (
-      <Alert variant={hasKeys ? 'info' : 'danger'} className="mb-3 py-2 small">
-        {hasKeys ? (
-          <>
-            Billing to custom API key &middot;{' '}
-            <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
-              Manage keys
-            </a>
-          </>
-        ) : (
-          <>
-            No custom API keys configured &middot;{' '}
-            <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
-              Manage keys
-            </a>
-          </>
-        )}
-      </Alert>
-    );
-  }
+  const { variant, content } = run<{
+    variant: 'info' | 'warning' | 'danger';
+    content: React.ReactNode;
+  }>(() => {
+    switch (state.kind) {
+      case 'loading':
+        return {
+          variant: 'info',
+          content: (
+            <span className="d-flex align-items-center gap-2">
+              <Spinner animation="border" size="sm" />
+              Loading AI grading status...
+            </span>
+          ),
+        };
+      case 'error':
+        return {
+          variant: 'danger',
+          content: (
+            <>
+              Unable to load AI grading status.{' '}
+              <Button
+                type="button"
+                variant="link"
+                className="p-0 align-baseline"
+                style={{ fontSize: 'inherit' }}
+                onClick={onRetryAvailability}
+              >
+                Try again.
+              </Button>
+            </>
+          ),
+        };
+      case 'concurrency_limit':
+        return {
+          variant: 'warning',
+          content: (
+            <>
+              You've reached the limit of {state.maxConcurrentJobs} concurrent AI grading jobs.
+              Please wait for running jobs to finish.
+            </>
+          ),
+        };
+      case 'ready_with_keys':
+        return {
+          variant: 'info',
+          content: (
+            <>
+              Billing to custom API key &middot;{' '}
+              <SettingsLink url={aiGradingSettingsUrl} text="Manage keys" />
+            </>
+          ),
+        };
+      case 'no_keys':
+        return {
+          variant: 'danger',
+          content: (
+            <>
+              No custom API keys configured &middot;{' '}
+              <SettingsLink url={aiGradingSettingsUrl} text="Manage keys" />
+            </>
+          ),
+        };
+      case 'ready_with_credits':
+        return {
+          variant: 'info',
+          content: (
+            <>
+              Billing to credit pool &middot; {formatMilliDollars(state.creditBalanceMilliDollars)}{' '}
+              available &middot; <SettingsLink url={aiGradingSettingsUrl} text="Manage credits" />
+            </>
+          ),
+        };
+      case 'no_credits':
+        return {
+          variant: 'danger',
+          content: (
+            <>
+              No credits remaining. Purchase credits on the{' '}
+              <SettingsLink url={aiGradingSettingsUrl} text="AI grading settings" /> page.
+            </>
+          ),
+        };
+      default:
+        return assertNever(state);
+    }
+  });
 
   return (
-    <Alert variant={hasCredits ? 'info' : 'danger'} className="mb-3 py-2 small">
-      {hasCredits ? (
-        <>
-          Billing to credit pool &middot; {formatMilliDollars(creditBalanceMilliDollars)} available
-          &middot;{' '}
-          <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
-            Manage credits
-          </a>
-        </>
-      ) : (
-        <>
-          No credits remaining. Purchase credits on the{' '}
-          <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
-            AI grading settings
-          </a>{' '}
-          page.
-        </>
-      )}
+    <Alert variant={variant} className="mb-3 py-2 small">
+      {content}
     </Alert>
   );
 }
@@ -254,7 +326,6 @@ export function AiGradingModelSelectionModal({
   aiGradingLastSelectedModel,
   relativeCosts,
   useCustomApiKeys,
-  creditBalanceMilliDollars,
   aiGradingSettingsUrl,
   onSuccess,
   onHide,
@@ -264,7 +335,6 @@ export function AiGradingModelSelectionModal({
   aiGradingLastSelectedModel: string | null;
   relativeCosts: Record<string, string>;
   useCustomApiKeys: boolean;
-  creditBalanceMilliDollars: number;
   aiGradingSettingsUrl: string;
   onSuccess: (
     data: { job_sequence_id: string; job_sequence_token: string },
@@ -276,6 +346,17 @@ export function AiGradingModelSelectionModal({
   const { mutate, reset, isPending, isError, error } = useMutation(
     trpc.manualGrading.aiGradeInstanceQuestions.mutationOptions(),
   );
+  const isModalOpen = modalState != null;
+  const {
+    data: aiGradingAvailabilityInfo,
+    isFetching: isAvailabilityFetching,
+    isError: isAvailabilityError,
+    refetch: refetchAvailabilityInfo,
+  } = useQuery({
+    ...trpc.manualGrading.aiGradingAvailabilityInfo.queryOptions(),
+    enabled: isModalOpen,
+    refetchOnMount: 'always',
+  });
   const defaultModel = getDefaultModel(aiGradingLastSelectedModel, availableProviders);
   const [selectedModel, setSelectedModel] = useState<AiGradingModelId>(defaultModel);
 
@@ -313,34 +394,53 @@ export function AiGradingModelSelectionModal({
   const isSelectedModelAvailable = selectedModelProvider
     ? availableProviders.includes(selectedModelProvider)
     : false;
-  const hasCredits = creditBalanceMilliDollars > 0;
-  const hasKeys = availableProviders.length > 0;
-  const isGradingEnabled = useCustomApiKeys ? hasKeys : hasCredits;
+
+  const aiGradingAvailabilityState = run<AiGradingAvailabilityState>(() => {
+    // Show the spinner while a refetch is in flight so the error UI doesn't
+    // persist after the user clicks "Try again".
+    if (isAvailabilityFetching || aiGradingAvailabilityInfo == null) return { kind: 'loading' };
+    if (isAvailabilityError) return { kind: 'error' };
+
+    const { running_job_count, max_concurrent_jobs, credit_balance_milli_dollars } =
+      aiGradingAvailabilityInfo;
+
+    if (running_job_count >= max_concurrent_jobs) {
+      return { kind: 'concurrency_limit', maxConcurrentJobs: max_concurrent_jobs };
+    }
+    if (useCustomApiKeys) {
+      if (availableProviders.length === 0) return { kind: 'no_keys' };
+      return { kind: 'ready_with_keys' };
+    }
+    if (credit_balance_milli_dollars <= 0) return { kind: 'no_credits' };
+    return {
+      kind: 'ready_with_credits',
+      creditBalanceMilliDollars: credit_balance_milli_dollars,
+    };
+  });
+
+  const aiGradingEnabled =
+    aiGradingAvailabilityState.kind === 'ready_with_keys' ||
+    aiGradingAvailabilityState.kind === 'ready_with_credits';
 
   return (
-    <Modal
-      show={modalState != null}
-      size="lg"
-      backdrop="static"
-      keyboard={false}
-      onHide={handleClose}
-    >
+    <Modal show={isModalOpen} size="lg" backdrop="static" keyboard={false} onHide={handleClose}>
       <form onSubmit={handleSubmit}>
         <Modal.Header closeButton>
           <Modal.Title>Select grading model</Modal.Title>
         </Modal.Header>
 
         <Modal.Body>
-          <BillingAlert
-            useCustomApiKeys={useCustomApiKeys}
-            hasKeys={hasKeys}
-            hasCredits={hasCredits}
-            creditBalanceMilliDollars={creditBalanceMilliDollars}
+          <AiGradingAvailabilityAlert
+            state={aiGradingAvailabilityState}
             aiGradingSettingsUrl={aiGradingSettingsUrl}
+            onRetryAvailability={() => {
+              void refetchAvailabilityInfo();
+            }}
           />
           <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}
+            aiGradingEnabled={aiGradingEnabled}
             relativeCosts={relativeCosts}
             onSelect={setSelectedModel}
           />
@@ -359,7 +459,7 @@ export function AiGradingModelSelectionModal({
               </Button>
               <Button
                 variant="primary"
-                disabled={isPending || !isSelectedModelAvailable || !isGradingEnabled}
+                disabled={isPending || !isSelectedModelAvailable || !aiGradingEnabled}
                 type="submit"
               >
                 {isPending

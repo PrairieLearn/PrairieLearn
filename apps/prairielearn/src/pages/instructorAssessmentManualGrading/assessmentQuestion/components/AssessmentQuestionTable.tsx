@@ -956,10 +956,6 @@ export function AssessmentQuestionTable({
         aiGradingLastSelectedModel={lastSelectedModel}
         relativeCosts={aiGradingRelativeCosts}
         useCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
-        creditBalanceMilliDollars={
-          courseInstance.credit_transferable_milli_dollars +
-          courseInstance.credit_non_transferable_milli_dollars
-        }
         aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
         onSuccess={(data, modelId) => {
           serverJobProgress.handleAddOngoingJobSequence(

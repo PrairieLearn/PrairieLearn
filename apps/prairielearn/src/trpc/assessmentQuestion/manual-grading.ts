@@ -13,12 +13,17 @@ import {
   setAiGradingLastSelectedModel,
   setAiGradingMode,
 } from '../../ee/lib/ai-grading/ai-grading-util.js';
-import { aiGrade } from '../../ee/lib/ai-grading/ai-grading.js';
+import {
+  MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE,
+  aiGrade,
+  getRunningAiGradingJobCountForCourseInstance,
+} from '../../ee/lib/ai-grading/ai-grading.js';
 import { deleteAiInstanceQuestionGroups } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
 import { features } from '../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../lib/id.js';
+import { selectCreditPool } from '../../models/ai-grading-credit-pool.js';
 import { selectCourseInstanceGraderStaff } from '../../models/course-instances.js';
 import { InstanceQuestionRowWithAIGradingStatsSchema } from '../../pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
 import {
@@ -214,8 +219,31 @@ const setRequiresManualGradingMutation = t.procedure
     });
   });
 
+const aiGradingAvailabilityInfo = t.procedure
+  .use(requireCourseInstancePermissionView)
+  .use(requireAiGradingFeature)
+  .output(
+    z.object({
+      running_job_count: z.number(),
+      max_concurrent_jobs: z.number(),
+      credit_balance_milli_dollars: z.number(),
+    }),
+  )
+  .query(async (opts) => {
+    const [running_job_count, creditPool] = await Promise.all([
+      getRunningAiGradingJobCountForCourseInstance(opts.ctx.course_instance.id),
+      selectCreditPool(opts.ctx.course_instance.id),
+    ]);
+    return {
+      running_job_count,
+      max_concurrent_jobs: MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE,
+      credit_balance_milli_dollars: creditPool.total_milli_dollars,
+    };
+  });
+
 export const manualGradingRouter = t.router({
   instances,
+  aiGradingAvailabilityInfo,
   setAiGradingMode: setAiGradingModeMutation,
   deleteAiGradingJobs: deleteAiGradingJobsMutation,
   deleteAiInstanceQuestionGroupings: deleteAiInstanceQuestionGroupingsMutation,
