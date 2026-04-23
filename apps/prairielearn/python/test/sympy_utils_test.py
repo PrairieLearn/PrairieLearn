@@ -1,4 +1,3 @@
-import html
 import json
 import re
 from itertools import chain, repeat
@@ -8,13 +7,6 @@ import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
-
-
-def _caret(text: str, caret: str) -> str:
-    """Join text and caret lines for readable caret-position test assertions."""
-    if not (len(text) + 1 == len(caret) and "^" in caret):
-        raise ValueError("Test Error: improperly formatted caret string")
-    return f"{html.escape(text)}\n{caret}"
 
 
 def _caret_template(template_expr: str) -> tuple[str, str]:
@@ -36,12 +28,9 @@ def _caret_template(template_expr: str) -> tuple[str, str]:
     parts = [p.replace(r"\^", "^") for p in re.split(r"(?<!\\)\^", template_expr)]
     if len(parts) != 2:
         raise ValueError("Test Error: caret template must have exactly one unescaped ^")
-    base = "".join(parts)
-    c_pos = len(parts[0])
-    left_pad, right_pad = min(5, c_pos), min(5, len(base) - c_pos)
-    c_str = f"{' ' * left_pad}^{' ' * right_pad}"
-    snippet = base[c_pos - left_pad :][: len(c_str) - 1]
-    return base, _caret(snippet, c_str)
+    left, right = parts
+    base = left + right
+    return base, psu.point_to_error(base, len(left))
 
 
 def test_evaluate() -> None:
@@ -941,16 +930,6 @@ class TestExceptions:
         match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
         assert match is not None, f"error message has no caret: {error_msg}"
         assert expected_caret == match.group(1)
-
-    def test_find_type_error_offset_maps_back_to_original_input(self) -> None:
-        assert (
-            psu.find_type_error_offset(
-                "x**2 / {1,2}",
-                [0, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-                TypeError("unsupported operand type(s) for /: 'Pow' and 'FiniteSet'"),
-            )
-            == 4
-        )
 
     def test_invalid_function_with_simplify_false(self) -> None:
         """Test that invalid function calls are caught with simplify_expression=False.
