@@ -135,8 +135,9 @@ router.post(
 
         // Convert each assessment.
         const results: SerializedConversionResult[] = [];
+        const skippedVideos: string[] = [];
         for (const entry of entries) {
-          const result = await convertEntry(entry, rubricsXml);
+          const result = await convertEntry(entry, rubricsXml, skippedVideos);
           if (result) {
             results.push(result);
           }
@@ -177,6 +178,7 @@ router.post(
           courseExportInfo: courseExportInfo ?? undefined,
           existingQuestionDirs,
           strippedAccessRules: stripped,
+          skippedVideos,
         };
 
         res.json(response);
@@ -241,6 +243,7 @@ async function serializeConversionResult(
   result: ConversionResult,
   questionPrefix: string,
   webResourcesDir: string,
+  skippedVideos: string[],
 ): Promise<SerializedConversionResult> {
   return {
     assessmentTitle: result.assessmentTitle,
@@ -258,20 +261,42 @@ async function serializeConversionResult(
         infoJson: q.infoJson,
         questionHtml: q.questionHtml,
         serverPy: q.serverPy,
-        clientFiles: await serializeClientFiles(q.clientFiles, webResourcesDir),
+        clientFiles: await serializeClientFiles(q.clientFiles, webResourcesDir, skippedVideos),
       })),
     ),
     warnings: result.warnings,
   };
 }
 
+const VIDEO_EXTENSIONS = new Set([
+  '.mp4',
+  '.webm',
+  '.mov',
+  '.avi',
+  '.mkv',
+  '.m4v',
+  '.ogv',
+  '.wmv',
+  '.flv',
+]);
+
+function isVideoFile(filename: string): boolean {
+  const ext = path.extname(filename).toLowerCase();
+  return VIDEO_EXTENSIONS.has(ext);
+}
+
 /** Convert a Map<string, Buffer|string> to Record<string, string> (base64-encoded). */
 async function serializeClientFiles(
   clientFiles: Map<string, Buffer | string>,
   webResourcesDir: string,
+  skippedVideos: string[],
 ): Promise<Record<string, string>> {
   const serialized: Record<string, string> = {};
   for (const [name, content] of clientFiles) {
+    if (isVideoFile(name)) {
+      skippedVideos.push(name);
+      continue;
+    }
     if (Buffer.isBuffer(content)) {
       serialized[name] = content.toString('base64');
     } else {
