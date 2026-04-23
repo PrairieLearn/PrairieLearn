@@ -184,6 +184,10 @@ export function getAdministratorTrpcUrl(): string {
   return '/pl/administrator/trpc';
 }
 
+export function getCourseTrpcUrl(courseId: string): string {
+  return `/pl/course/${courseId}/trpc`;
+}
+
 export function getCourseInstanceTrpcUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/trpc`;
 }
