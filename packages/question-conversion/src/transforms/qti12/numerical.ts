@@ -76,7 +76,7 @@ export const numericalHandler: TransformHandler<QTI12ParsedItem> = {
   questionType: 'numerical_question',
 
   transform(item: QTI12ParsedItem): TransformResult {
-    const range = findNumericRange(item.rawItemEl?.['resprocessing']);
+    const range = findNumericRange(item.resprocessing);
 
     if (range.exact !== undefined && !Number.isNaN(range.exact)) {
       if (Number.isInteger(range.exact)) {

@@ -10,7 +10,6 @@ const baseItem: QTI12ParsedItem = {
   questionType: 'file_upload_question',
   promptHtml: '<p>Upload your work.</p>',
   responseLids: [],
-  responseStrs: [],
   correctConditions: [],
   feedbacks: new Map(),
   metadata: {},

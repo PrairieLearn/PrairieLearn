@@ -11,7 +11,6 @@ function makeItem(overrides: Partial<QTI12ParsedItem> = {}): QTI12ParsedItem {
     questionType: 'numerical_question',
     promptHtml: '<p>What is the answer?</p>',
     responseLids: [],
-    responseStrs: [],
     correctConditions: [],
     feedbacks: new Map(),
     metadata: {},
@@ -23,15 +22,13 @@ describe('numericalHandler', () => {
   it('parses an exact integer match from varequal as integer type', () => {
     const result = numericalHandler.transform(
       makeItem({
-        rawItemEl: {
-          resprocessing: {
-            respcondition: [
-              {
-                conditionvar: { varequal: [{ '@_respident': 'response1', '#text': '42' }] },
-                setvar: '100',
-              },
-            ],
-          },
+        resprocessing: {
+          respcondition: [
+            {
+              conditionvar: { varequal: [{ '@_respident': 'response1', '#text': '42' }] },
+              setvar: '100',
+            },
+          ],
         },
       }),
     );
@@ -44,15 +41,13 @@ describe('numericalHandler', () => {
   it('parses an exact float match from varequal as numeric type', () => {
     const result = numericalHandler.transform(
       makeItem({
-        rawItemEl: {
-          resprocessing: {
-            respcondition: [
-              {
-                conditionvar: { varequal: [{ '@_respident': 'response1', '#text': '3.14' }] },
-                setvar: '100',
-              },
-            ],
-          },
+        resprocessing: {
+          respcondition: [
+            {
+              conditionvar: { varequal: [{ '@_respident': 'response1', '#text': '3.14' }] },
+              setvar: '100',
+            },
+          ],
         },
       }),
     );
@@ -65,17 +60,15 @@ describe('numericalHandler', () => {
   it('parses a zero-width integer range (Canvas pattern for whole numbers) as integer type', () => {
     const result = numericalHandler.transform(
       makeItem({
-        rawItemEl: {
-          resprocessing: {
-            respcondition: [
-              {
-                conditionvar: {
-                  or: { and: { vargte: '435.0', varlte: '435.0' } },
-                },
-                setvar: '100',
+        resprocessing: {
+          respcondition: [
+            {
+              conditionvar: {
+                or: { and: { vargte: '435.0', varlte: '435.0' } },
               },
-            ],
-          },
+              setvar: '100',
+            },
+          ],
         },
       }),
     );
@@ -88,17 +81,15 @@ describe('numericalHandler', () => {
   it('parses a range from vargte/varlte and computes midpoint + tolerance', () => {
     const result = numericalHandler.transform(
       makeItem({
-        rawItemEl: {
-          resprocessing: {
-            respcondition: [
-              {
-                conditionvar: {
-                  or: { and: { vargte: '9.5', varlte: '10.5' } },
-                },
-                setvar: '100',
+        resprocessing: {
+          respcondition: [
+            {
+              conditionvar: {
+                or: { and: { vargte: '9.5', varlte: '10.5' } },
               },
-            ],
-          },
+              setvar: '100',
+            },
+          ],
         },
       }),
     );
@@ -126,19 +117,17 @@ describe('numericalHandler', () => {
     // Only the second condition (score=100) should produce a result
     const result = numericalHandler.transform(
       makeItem({
-        rawItemEl: {
-          resprocessing: {
-            respcondition: [
-              {
-                conditionvar: { varequal: [{ '@_respident': 'r1', '#text': '999' }] },
-                setvar: '0',
-              },
-              {
-                conditionvar: { varequal: [{ '@_respident': 'r1', '#text': '7' }] },
-                setvar: '100',
-              },
-            ],
-          },
+        resprocessing: {
+          respcondition: [
+            {
+              conditionvar: { varequal: [{ '@_respident': 'r1', '#text': '999' }] },
+              setvar: '0',
+            },
+            {
+              conditionvar: { varequal: [{ '@_respident': 'r1', '#text': '7' }] },
+              setvar: '100',
+            },
+          ],
         },
       }),
     );

@@ -24,7 +24,6 @@ function makeItem(): QTI12ParsedItem {
         labels: [{ ident: '2344', text: 'riyadh', textType: 'text/plain' }],
       },
     ],
-    responseStrs: [],
     correctConditions: [
       { responseIdent: 'response_capital1', correctLabelIdent: '7591' },
       { responseIdent: 'response_capital2', correctLabelIdent: '2344' },

@@ -12,7 +12,6 @@ describe('textOnlyHandler', () => {
       questionType: 'text_only_question',
       promptHtml: '<p>Some instructions</p>',
       responseLids: [],
-      responseStrs: [],
       correctConditions: [],
       feedbacks: new Map(),
       metadata: {},

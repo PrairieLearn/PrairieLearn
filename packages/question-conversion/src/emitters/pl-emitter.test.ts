@@ -427,6 +427,73 @@ describe('PLEmitter', () => {
     });
   });
 
+  describe('HTML content in choices', () => {
+    it('passes HTML choice content through unescaped in multiple-choice', () => {
+      const q = makeQuestion({
+        body: {
+          type: 'multiple-choice',
+          choices: [
+            { id: 'a', html: 'O(n<sup>2</sup>)', correct: false },
+            { id: 'b', html: 'O(n log(n))', correct: true },
+          ],
+        },
+      });
+      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
+      assert.include(html, '>O(n<sup>2</sup>)<');
+      assert.include(html, '>O(n log(n))<');
+    });
+
+    it('passes HTML choice content through unescaped in checkbox', () => {
+      const q = makeQuestion({
+        body: {
+          type: 'checkbox',
+          choices: [
+            { id: 'a', html: 'x<sup>2</sup>', correct: true },
+            { id: 'b', html: 'x<sub>0</sub>', correct: false },
+          ],
+        },
+      });
+      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
+      assert.include(html, '>x<sup>2</sup><');
+      assert.include(html, '>x<sub>0</sub><');
+    });
+  });
+
+  describe('duplicate choice deduplication', () => {
+    it('deduplicates multiple-choice choices with the same text, keeping the correct one', () => {
+      const q = makeQuestion({
+        body: {
+          type: 'multiple-choice',
+          choices: [
+            { id: 'a', html: '5', correct: false },
+            { id: 'b', html: '5', correct: true },
+            { id: 'c', html: '10', correct: false },
+          ],
+        },
+      });
+      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
+      const matches = [...html.matchAll(/>5</g)];
+      assert.equal(matches.length, 1, 'duplicate "5" should appear exactly once');
+      assert.include(html, 'correct="true">5<');
+    });
+
+    it('deduplicates checkbox choices with the same text, keeping the correct one', () => {
+      const q = makeQuestion({
+        body: {
+          type: 'checkbox',
+          choices: [
+            { id: 'a', html: '5', correct: false },
+            { id: 'b', html: '5', correct: true },
+          ],
+        },
+      });
+      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
+      const matches = [...html.matchAll(/>5</g)];
+      assert.equal(matches.length, 1);
+      assert.include(html, 'correct="true">5<');
+    });
+  });
+
   describe('renderMultipleChoice dropdown', () => {
     it('renders dropdown when display is dropdown', () => {
       const q = makeQuestion({
@@ -442,7 +509,7 @@ describe('PLEmitter', () => {
       const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
       assert.equal(
         html,
-        '<pl-question-panel>\n<p>What is 2+2?</p>\n</pl-question-panel>\n\n<pl-dropdown answers-name="answer">\n  <pl-answer correct="false">Option A</pl-answer>\n  <pl-answer correct="true">Option B</pl-answer>\n</pl-dropdown>',
+        '<pl-question-panel>\n<p>What is 2+2?</p>\n</pl-question-panel>\n\n<pl-multiple-choice answers-name="answer" display="dropdown">\n  <pl-answer correct="false">Option A</pl-answer>\n  <pl-answer correct="true">Option B</pl-answer>\n</pl-multiple-choice>',
       );
     });
   });

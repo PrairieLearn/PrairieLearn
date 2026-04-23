@@ -21,7 +21,6 @@ function makeItem(overrides: Partial<QTI12ParsedItem> = {}): QTI12ParsedItem {
         ],
       },
     ],
-    responseStrs: [],
     correctConditions: [{ responseIdent: 'response1', correctLabelIdent: 'a2' }],
     feedbacks: new Map(),
     metadata: {},

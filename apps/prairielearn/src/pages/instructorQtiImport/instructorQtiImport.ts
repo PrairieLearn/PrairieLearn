@@ -196,6 +196,7 @@ router.post(
 async function convertEntry(
   entry: QtiFileEntry,
   rubricsXml?: string,
+  skippedVideos: string[] = [],
 ): Promise<SerializedConversionResult | null> {
   const xmlContent = await readFile(entry.qtiPath, 'utf-8');
   const webResourcesDir = path.join(entry.assessmentDir, '..', 'web_resources');
@@ -235,7 +236,7 @@ async function convertEntry(
     questionIdPrefix: questionPrefix,
   });
 
-  return serializeConversionResult(result, questionPrefix, webResourcesDir);
+  return serializeConversionResult(result, questionPrefix, webResourcesDir, skippedVideos);
 }
 
 /** Serialize a ConversionResult for JSON transport. */

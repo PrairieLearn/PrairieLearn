@@ -337,7 +337,15 @@ export class QTI12AssessmentParser implements InputParser {
               selectionNumber != null && selectionNumber < questions.length
                 ? selectionNumber
                 : undefined;
-            zones.push({ title: zoneTitle || 'Questions', questions, numberChoose });
+            zones.push({
+              title: zoneTitle || 'Questions',
+              questions: questions.map((q) => ({
+                sourceId: q.sourceId,
+                points: q.points,
+                gradingMethod: q.gradingMethod,
+              })),
+              numberChoose,
+            });
             allQuestions.push(...questions);
           }
         }
@@ -353,7 +361,14 @@ export class QTI12AssessmentParser implements InputParser {
             parseWarnings,
           );
           if (questions.length > 0) {
-            zones.unshift({ title: 'Questions', questions });
+            zones.unshift({
+              title: 'Questions',
+              questions: questions.map((q) => ({
+                sourceId: q.sourceId,
+                points: q.points,
+                gradingMethod: q.gradingMethod,
+              })),
+            });
             allQuestions.unshift(...questions);
           }
         }
@@ -530,6 +545,11 @@ export class QTI12AssessmentParser implements InputParser {
     // Parse feedbacks
     const feedbacks = this.parseFeedbacks(itemEl);
 
+    const resprocessing = itemEl['resprocessing'] as Record<string, unknown> | undefined;
+    const calcBlock = getNestedValue(itemEl, 'itemproc_extension', 'calculated') as
+      | Record<string, unknown>
+      | undefined;
+
     return {
       ident,
       title,
@@ -537,11 +557,11 @@ export class QTI12AssessmentParser implements InputParser {
       pointsPossible,
       promptHtml,
       responseLids,
-      responseStrs: [],
       correctConditions,
       feedbacks,
       metadata,
-      rawItemEl: itemEl,
+      ...(calcBlock != null ? { calculatedBlock: calcBlock } : {}),
+      ...(resprocessing != null ? { resprocessing } : {}),
     };
   }
 
@@ -550,20 +570,27 @@ export class QTI12AssessmentParser implements InputParser {
     const rcardinality = (attr(el, 'rcardinality') || 'Single') as 'Single' | 'Multiple';
 
     // Material text (used for matching/FITB left-side label)
-    const materialText = textContent(getNestedValue(el, 'material', 'mattext')) || undefined;
+    const mattext = getNestedValue(el, 'material', 'mattext');
+    const rawMaterialText = textContent(mattext);
+    const materialTextType = attr(mattext as Record<string, unknown>, 'texttype') || 'text/plain';
+    const materialText =
+      (materialTextType === 'text/html' ? unescapeHtml(rawMaterialText) : rawMaterialText) ||
+      undefined;
 
     // Parse response labels from render_choice
     const renderChoice = el['render_choice'] as Record<string, unknown> | undefined;
     const labelEls = ensureArray(renderChoice?.['response_label'] as unknown);
     const labels: QTI12ResponseLabel[] = labelEls
       .filter((l): l is Record<string, unknown> => l != null && typeof l === 'object')
-      .map((l) => ({
-        ident: attr(l, 'ident'),
-        text: textContent(getNestedValue(l, 'material', 'mattext')),
-        textType:
-          attr(getNestedValue(l, 'material', 'mattext') as Record<string, unknown>, 'texttype') ||
-          'text/plain',
-      }));
+      .map((l) => {
+        const mattext = getNestedValue(l, 'material', 'mattext');
+        const rawText = textContent(mattext);
+        const textType = attr(mattext as Record<string, unknown>, 'texttype') || 'text/plain';
+        // HTML-typed labels use XML-escaped HTML content (e.g. &lt;sup&gt;).
+        // Decode entities so IRChoice.html holds real HTML for downstream rendering.
+        const text = textType === 'text/html' ? unescapeHtml(rawText) : rawText;
+        return { ident: attr(l, 'ident'), text, textType };
+      });
 
     return { ident, rcardinality, materialText, labels };
   }

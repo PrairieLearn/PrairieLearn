@@ -54,8 +54,8 @@ const ATTR_RE = /(\w[\w-]*)=(["'])(.*?)\2/gi;
  *
  * For images already pointing into clientFilesQuestion/ the directory attribute
  * is set explicitly and the prefix is stripped from file-name. External URLs are
- * passed through as file-name without a directory attribute. The alt, width, and
- * height attributes are preserved; all others (style, class, etc.) are dropped
+ * passed through as file-name without a directory attribute. The alt and width
+ * attributes are preserved; all others (style, class, etc.) are dropped
  * since pl-figure handles its own layout.
  */
 export function rewriteImagesAsPlFigure(html: string): string {
@@ -182,7 +182,7 @@ function getModelOps(): ModelOperationsType {
  * Falls back to simple heuristics when the model isn't confident enough.
  * Returns `undefined` only if neither approach produces a result.
  */
-export async function detectCodeLanguage(code: string): Promise<string | undefined> {
+async function detectCodeLanguage(code: string): Promise<string | undefined> {
   const results = await getModelOps().runModel(code);
   const best = results[0];
   if (best && best.confidence >= LANGUAGE_DETECTION_CONFIDENCE_THRESHOLD) {
@@ -193,15 +193,19 @@ export async function detectCodeLanguage(code: string): Promise<string | undefin
 
 /**
  * Rule-based language guess for when the ML model isn't confident.
- * Checks for unambiguous keywords/patterns before falling back to "c" for
- * any generic C-style snippet (braces + semicolons + control flow).
+ * Checks for unambiguous keywords/patterns before falling back to "java" for
+ * any generic code snippet (braces + semicolons + control flow).
  */
 function guessLanguageHeuristic(code: string): string | undefined {
   if (/^\s*(def |class \w+:|import \w|from \w+ import|print\()/m.test(code)) return 'python';
   if (/\b(System\.out|public\s+class|@Override)\b/.test(code)) return 'java';
-  if (/\b(console\.|=>|const |let |var |require\(|module\.exports)\b/.test(code)) return 'javascript';
+  if (/\b(console\.|=>|const |let |var |require\(|module\.exports)\b/.test(code)) {
+    return 'javascript';
+  }
   if (/\b(fn |let mut |impl |use std::|println!)\b/.test(code)) return 'rust';
-  if (/\b(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE)\b/i.test(code) && !/[{}]/.test(code)) return 'sql';
+  if (/\b(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE)\b/i.test(code) && !/[{}]/.test(code)) {
+    return 'sql';
+  }
   // Generic style: control flow + braces + semicolons
   // We use Java because most of the syntax is a superset - remember this is a best-guess result.
   if (/[{};]/.test(code) && /\b(for|while|if|else|return)\b/.test(code)) return 'java';
@@ -258,7 +262,11 @@ export async function rewritePreAsPlCode(html: string): Promise<string> {
           language = await detectCodeLanguage(unescapeHtml(codeContent));
         }
         const langAttr = language ? ` language="${language}"` : '';
-        return { start, end, replacement: `<pl-code${langAttr}>\n${unescapeHtml(codeContent)}</pl-code>` };
+        return {
+          start,
+          end,
+          replacement: `<pl-code${langAttr}>\n${unescapeHtml(codeContent)}</pl-code>`,
+        };
       })(),
     );
   }

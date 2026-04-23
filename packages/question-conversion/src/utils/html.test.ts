@@ -146,35 +146,35 @@ describe('rewritePreAsPlCode', () => {
   it('converts a plain pre block to pl-code', async () => {
     assert.equal(
       await rewritePreAsPlCode('<pre>hello world</pre>'),
-      '<pl-code>hello world</pl-code>',
+      '<pl-code>\nhello world</pl-code>',
     );
   });
 
   it('extracts language from class="language-X" on pre', async () => {
     assert.equal(
       await rewritePreAsPlCode('<pre class="language-python">x = 1</pre>'),
-      '<pl-code language="python">x = 1</pl-code>',
+      '<pl-code language="python">\nx = 1</pl-code>',
     );
   });
 
   it('extracts language from class="lang-X" on pre', async () => {
     assert.equal(
       await rewritePreAsPlCode('<pre class="lang-javascript">const x = 1;</pre>'),
-      '<pl-code language="javascript">const x = 1;</pl-code>',
+      '<pl-code language="javascript">\nconst x = 1;</pl-code>',
     );
   });
 
   it('extracts language from brush: X class on pre', async () => {
     assert.equal(
       await rewritePreAsPlCode('<pre class="brush: python;">x = 1</pre>'),
-      '<pl-code language="python">x = 1</pl-code>',
+      '<pl-code language="python">\nx = 1</pl-code>',
     );
   });
 
   it('strips inner <code> wrapper and reads its class', async () => {
     assert.equal(
       await rewritePreAsPlCode('<pre><code class="language-java">int x = 0;</code></pre>'),
-      '<pl-code language="java">int x = 0;</pl-code>',
+      '<pl-code language="java">\nint x = 0;</pl-code>',
     );
   });
 
@@ -183,22 +183,19 @@ describe('rewritePreAsPlCode', () => {
       await rewritePreAsPlCode(
         '<pre class="language-python"><code class="language-java">x = 1</code></pre>',
       ),
-      '<pl-code language="python">x = 1</pl-code>',
+      '<pl-code language="python">\nx = 1</pl-code>',
     );
   });
 
   it('strips inner <code> with no class', async () => {
     assert.equal(
       await rewritePreAsPlCode('<pre><code>print("hi")</code></pre>'),
-      '<pl-code language="python">print("hi")</pl-code>',
+      '<pl-code language="python">\nprint("hi")</pl-code>',
     );
   });
 
   it('unwraps pl-code from a surrounding <p>', async () => {
-    assert.equal(
-      await rewritePreAsPlCode('<p><pre>x = 1</pre></p>'),
-      '<pl-code>x = 1</pl-code>',
-    );
+    assert.equal(await rewritePreAsPlCode('<p><pre>x = 1</pre></p>'), '<pl-code>\nx = 1</pl-code>');
   });
 
   it('leaves <p> intact when it contains more than just pl-code', async () => {

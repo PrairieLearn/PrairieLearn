@@ -298,6 +298,47 @@ describe('QTI12AssessmentParser', async () => {
     });
   });
 
+  describe('text/html choice label decoding', async () => {
+    it('decodes HTML entities in text/html choice labels', async () => {
+      const xml = `<?xml version="1.0"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <assessment ident="a1" title="Quiz">
+    <section ident="root_section">
+      <item ident="q1" title="Big-O">
+        <itemmetadata><qtimetadata>
+          <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield>
+        </qtimetadata></itemmetadata>
+        <presentation>
+          <material><mattext texttype="text/html">&lt;p&gt;Which is faster?&lt;/p&gt;</mattext></material>
+          <response_lid ident="response1" rcardinality="Single">
+            <render_choice>
+              <response_label ident="a"><material><mattext texttype="text/html">O(n&lt;sup&gt;2&lt;/sup&gt;)</mattext></material></response_label>
+              <response_label ident="b"><material><mattext texttype="text/html">O(n log(n))</mattext></material></response_label>
+            </render_choice>
+          </response_lid>
+        </presentation>
+        <resprocessing>
+          <respcondition continue="No">
+            <conditionvar><varequal respident="response1">b</varequal></conditionvar>
+            <setvar varname="SCORE">100</setvar>
+          </respcondition>
+        </resprocessing>
+      </item>
+    </section>
+  </assessment>
+</questestinterop>`;
+      const result = await parser.parse(xml);
+      const q = result.questions[0];
+      assert.equal(q.body.type, 'multiple-choice');
+      if (q.body.type === 'multiple-choice') {
+        assert.equal(q.body.choices[0].html, 'O(n<sup>2</sup>)');
+        assert.equal(q.body.choices[1].html, 'O(n log(n))');
+        assert.isFalse(q.body.choices[0].correct);
+        assert.isTrue(q.body.choices[1].correct);
+      }
+    });
+  });
+
   describe('multiple choice', async () => {
     it('parses a multiple choice question', async () => {
       const result = await parser.parse(readFixture('canvas-mc.xml'));
