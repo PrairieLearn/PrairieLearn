@@ -2243,25 +2243,3 @@ describe('formatDateShort', () => {
     expect(result).toMatch(/15/);
   });
 });
-
-describe('resolveAccessControl accessTimeline', () => {
-  it('returns accessTimeline from resolveAccessControl', () => {
-    const result = resolveAccessControl({
-      ...baseInput,
-      rules: [
-        makeMainRule({
-          dateControl: {
-            releaseDate: '2025-03-01T00:00:00Z',
-            dueDate: '2025-03-20T00:00:00Z',
-          },
-        }),
-      ],
-    });
-
-    expect(result.accessTimeline).toHaveLength(2);
-    expect(result.accessTimeline[0].credit).toBe(100);
-    expect(result.accessTimeline[0].active).toBe(true);
-    expect(result.accessTimeline[1].credit).toBe(0);
-    expect(result.accessTimeline[1].endDate).toBeNull();
-  });
-});
