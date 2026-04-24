@@ -9,8 +9,10 @@ import { logger } from '@prairielearn/logger';
 
 import type { ConversionResult } from '../emitters/emitter.js';
 import { PLEmitter } from '../emitters/pl-emitter.js';
+import type { ParseOptions } from '../parsers/parser.js';
 import { QTI12AssessmentParser } from '../parsers/qti12/index.js';
 import { parseAssessment } from '../pipeline.js';
+import type { IRAssessment } from '../types/ir.js';
 import {
   type CourseExportInfo,
   type QtiFileEntry,
@@ -91,34 +93,76 @@ program
         }
 
         // Try to read rubrics from course_settings/rubrics.xml (only present in full course exports).
+        const rubricsPath = path.join(resolvedInput, 'course_settings', 'rubrics.xml');
         let rubricsXml: string | undefined;
         try {
-          rubricsXml = await readFile(
-            path.join(resolvedInput, 'course_settings', 'rubrics.xml'),
-            'utf-8',
-          );
-        } catch {
-          // Not present in quiz-only exports — that's fine; parser will warn per-assessment.
-          logger.debug('Could not find rubrics.xml for course.');
+          rubricsXml = await readFile(rubricsPath, 'utf-8');
+        } catch (err) {
+          if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+            // Not present in quiz-only exports — that's fine; parser will warn per-assessment.
+            logger.debug('Could not find rubrics.xml for course.');
+          } else {
+            logger.warn(`Failed to read ${rubricsPath}: ${(err as Error).message}`);
+          }
         }
 
         // Parse all assessments in parallel (language detection benefits from concurrency).
-        // Write files sequentially to avoid races when two assessments share the same slug.
-        const converted = await Promise.all(
-          entries.map((entry) => parseFile(entry, timezone, options, rubricsXml)),
+        // Emit/write sequentially so slug disambiguation happens before the question-id
+        // prefix is baked into the assessment's infoJson.
+        const parsed = await Promise.all(
+          entries.map((entry) => parseFile(entry, timezone, rubricsXml)),
         );
-        for (const c of converted) {
-          await writeFiles(c, courseDir, options);
+        const usedSlugs = new Set<string>();
+        for (const p of parsed) {
+          const slug = uniqueSlug(slugify(p.ir.title), usedSlugs);
+          const converted = emitWithSlug(p, slug, options);
+          await writeFiles(converted, courseDir, options);
         }
       } else {
         const entry = { qtiPath: resolvedInput, assessmentDir: path.dirname(resolvedInput) };
-        const parsed = await parseFile(entry, timezone, options);
-        await writeFiles(parsed, courseDir, options);
+        const p = await parseFile(entry, timezone);
+        const converted = emitWithSlug(p, slugify(p.ir.title), options);
+        await writeFiles(converted, courseDir, options);
       }
     },
   );
 
 program.parse();
+
+/**
+ * Resolve `child` against `base` and return the absolute path only if it stays
+ * inside `base`. Returns undefined for paths that would escape (e.g. "../../etc/passwd",
+ * absolute paths, symlink-style traversal). Keeps clientFile writes confined to
+ * the target question directory so a malformed QTI can't overwrite files outside it.
+ */
+function safeJoin(base: string, child: string): string | undefined {
+  const resolvedBase = path.resolve(base);
+  const resolved = path.resolve(resolvedBase, child);
+  if (resolved !== resolvedBase && !resolved.startsWith(resolvedBase + path.sep)) {
+    return undefined;
+  }
+  return resolved;
+}
+
+/**
+ * Return a slug that is not in `used`. Appends "-2", "-3", ... as needed so that
+ * two assessments whose titles normalize to the same slug don't silently overwrite
+ * each other's output. Mutates `used` with the chosen slug.
+ */
+function uniqueSlug(slug: string, used: Set<string>): string {
+  if (!used.has(slug)) {
+    used.add(slug);
+    return slug;
+  }
+  let i = 2;
+  while (used.has(`${slug}-${i}`)) i++;
+  const result = `${slug}-${i}`;
+  used.add(result);
+  logger.warn(
+    `Assessment slug "${slug}" collides with a previously converted assessment; using "${result}" instead.`,
+  );
+  return result;
+}
 
 /**
  * Determine the course timezone.
@@ -188,6 +232,12 @@ async function findQtiXmlFiles(dir: string): Promise<string[]> {
   return xmlFiles;
 }
 
+interface ParsedInput {
+  ir: IRAssessment;
+  parseOptions: ParseOptions;
+  webResourcesDir: string;
+}
+
 interface ParsedAssessment {
   result: ConversionResult;
   assessmentSlug: string;
@@ -200,9 +250,8 @@ const EMITTER = new PLEmitter();
 async function parseFile(
   entry: QtiFileEntry,
   timezone: string,
-  options: { topic?: string; tags: string[] },
   rubricsXml?: string,
-): Promise<ParsedAssessment> {
+): Promise<ParsedInput> {
   const xmlContent = await readFile(entry.qtiPath, 'utf-8');
   const webResourcesDir = path.join(entry.assessmentDir, '..', 'web_resources');
 
@@ -210,23 +259,35 @@ async function parseFile(
   let assessmentMetaXml: string | undefined;
   try {
     assessmentMetaXml = await readFile(metaXmlPath, 'utf-8');
-  } catch {
-    // Not present — that's fine
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+      logger.warn(`Failed to read ${metaXmlPath}: ${(err as Error).message}`);
+    }
+    // Otherwise the file is legitimately absent — proceed without it.
   }
 
-  const parseOptions = { basePath: entry.assessmentDir, assessmentMetaXml, timezone, rubricsXml };
-
-  // Parse once, then emit with the slug-derived question ID prefix.
+  const parseOptions: ParseOptions = {
+    basePath: entry.assessmentDir,
+    assessmentMetaXml,
+    timezone,
+    rubricsXml,
+  };
   const ir = await parseAssessment(xmlContent, PARSERS, parseOptions);
-  const assessmentSlug = slugify(ir.title);
-  const result = EMITTER.emit(ir, {
-    ...parseOptions,
+  return { ir, parseOptions, webResourcesDir };
+}
+
+function emitWithSlug(
+  parsed: ParsedInput,
+  assessmentSlug: string,
+  options: { topic?: string; tags: string[] },
+): ParsedAssessment {
+  const result = EMITTER.emit(parsed.ir, {
+    ...parsed.parseOptions,
     topic: options.topic,
     tags: options.tags,
     questionIdPrefix: `imported/${assessmentSlug}`,
   });
-
-  return { result, assessmentSlug, webResourcesDir };
+  return { result, assessmentSlug, webResourcesDir: parsed.webResourcesDir };
 }
 
 async function writeFiles(
@@ -246,6 +307,19 @@ async function writeFiles(
   if (options.overwrite) {
     await rm(questionsDir, { recursive: true, force: true });
     await rm(assessmentsDir, { recursive: true, force: true });
+  } else {
+    const conflicts = (
+      await Promise.all(
+        [questionsDir, assessmentsDir].map(async (d) => ((await fileExists(d)) ? d : null)),
+      )
+    ).filter((d): d is string => d !== null);
+    if (conflicts.length > 0) {
+      logger.error(
+        'Error: output directory already exists (pass --overwrite to replace):\n' +
+          conflicts.map((d) => `  ${d}`).join('\n'),
+      );
+      process.exit(1);
+    }
   }
 
   await Promise.all(
@@ -267,14 +341,31 @@ async function writeFiles(
         await mkdir(cfDir, { recursive: true });
         await Promise.all(
           [...q.clientFiles].map(async ([name, content]) => {
+            const destFile = safeJoin(cfDir, name);
+            if (!destFile) {
+              logger.warn(`Skipping clientFile with unsafe path "${name}" (would escape ${cfDir})`);
+              return;
+            }
             if (Buffer.isBuffer(content)) {
-              await writeFile(path.join(cfDir, name), content);
+              await writeFile(destFile, content);
             } else {
-              const srcFile = path.join(webResourcesDir, content);
+              const srcFile = safeJoin(webResourcesDir, content);
+              if (!srcFile) {
+                logger.warn(
+                  `Skipping clientFile "${name}": source path "${content}" escapes ${webResourcesDir}`,
+                );
+                return;
+              }
               try {
-                await copyFile(srcFile, path.join(cfDir, name));
-              } catch {
-                logger.warn(`Warning: could not find image file: ${srcFile}`);
+                await copyFile(srcFile, destFile);
+              } catch (err) {
+                if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+                  logger.warn(`Warning: could not find image file: ${srcFile}`);
+                } else {
+                  logger.error(
+                    `Failed to copy image ${srcFile} → ${destFile}: ${(err as Error).message}`,
+                  );
+                }
               }
             }
           }),

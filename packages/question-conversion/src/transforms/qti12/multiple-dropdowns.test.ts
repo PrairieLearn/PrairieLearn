@@ -87,4 +87,22 @@ describe('multipleDropdownsHandler', () => {
     }
     assert.equal(result.body.blanks[0].id, 'response_color');
   });
+
+  it('marks the question Manual-graded when no blank has any correct answer', () => {
+    const item = makeItem({ correctConditions: [] });
+    const result = multipleDropdownsHandler.transform(item);
+    assert.equal(result.gradingMethod, 'Manual');
+    assert.isArray(result.warnings);
+    assert.isTrue(result.warnings!.some((w) => /manually-graded/.test(w)));
+  });
+
+  it('warns for individual blanks missing a correct answer', () => {
+    const item = makeItem();
+    const uncoveredBlank = item.responseLids[1].materialText!;
+    item.correctConditions = [{ responseIdent: 'response_color', correctLabelIdent: 'c1' }];
+    const result = multipleDropdownsHandler.transform(item);
+    assert.lengthOf(result.warnings!, 1);
+    assert.include(result.warnings![0], uncoveredBlank);
+    assert.match(result.warnings![0], /has no correct answer/);
+  });
 });

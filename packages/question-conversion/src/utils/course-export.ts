@@ -1,7 +1,13 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { logger } from '@prairielearn/logger';
+
 import { attr, ensureArray, parseXml, textContent } from '../parsers/qti12/xml-helpers.js';
+
+function isEnoent(err: unknown): boolean {
+  return (err as NodeJS.ErrnoException | null)?.code === 'ENOENT';
+}
 
 export interface CourseExportInfo {
   /** Full course title (e.g. "CS 101: Introduction to Computing"). */
@@ -28,7 +34,9 @@ export async function detectCourseExport(dir: string): Promise<CourseExportInfo 
   let manifestXml: string;
   try {
     manifestXml = await readFile(manifestPath, 'utf-8');
-  } catch {
+  } catch (err) {
+    if (isEnoent(err)) return null;
+    logger.warn(`Failed to read ${manifestPath}: ${(err as Error).message}`);
     return null;
   }
 
@@ -36,10 +44,13 @@ export async function detectCourseExport(dir: string): Promise<CourseExportInfo 
   const settingsPath = path.join(dir, 'course_settings', 'course_settings.xml');
   try {
     const settingsXml = await readFile(settingsPath, 'utf-8');
-    const info = parseCourseSettings(settingsXml);
+    const info = parseCourseSettings(settingsXml, settingsPath);
     if (info) return info;
-  } catch {
-    // File not present — fall through to manifest
+  } catch (err) {
+    if (!isEnoent(err)) {
+      logger.warn(`Failed to read ${settingsPath}: ${(err as Error).message}`);
+    }
+    // Fall through to manifest
   }
 
   return parseManifestTitle(manifestXml);
@@ -81,14 +92,17 @@ export async function findQtiFilesFromManifest(dir: string): Promise<QtiFileEntr
   let manifestXml: string;
   try {
     manifestXml = await readFile(manifestPath, 'utf-8');
-  } catch {
+  } catch (err) {
+    if (isEnoent(err)) return [];
+    logger.warn(`Failed to read ${manifestPath}: ${(err as Error).message}`);
     return [];
   }
 
   let parsed: Record<string, unknown>;
   try {
     parsed = parseXml(manifestXml);
-  } catch {
+  } catch (err) {
+    logger.warn(`Failed to parse ${manifestPath}: ${(err as Error).message}`);
     return [];
   }
 
@@ -161,11 +175,12 @@ export async function findQtiFilesFromManifest(dir: string): Promise<QtiFileEntr
  * Parse Canvas `course_settings.xml` for title, course code, and timezone.
  * Canvas uses simple (non-namespaced) element names in this file.
  */
-function parseCourseSettings(xml: string): CourseExportInfo | null {
+function parseCourseSettings(xml: string, sourcePath: string): CourseExportInfo | null {
   let parsed: Record<string, unknown>;
   try {
     parsed = parseXml(xml);
-  } catch {
+  } catch (err) {
+    logger.warn(`Failed to parse ${sourcePath}: ${(err as Error).message}`);
     return null;
   }
 

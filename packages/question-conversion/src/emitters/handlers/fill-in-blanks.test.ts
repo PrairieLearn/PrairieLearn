@@ -95,4 +95,15 @@ describe('fillInBlanksHandler.renderGradePy', () => {
     assert.include(py, 'def grade(data):');
     assert.include(py, '"Great job!"');
   });
+
+  it('emits feedback as a JSON-encoded string literal so special characters are safe', () => {
+    // Feedback that would explode inside an f-string: {braces} would get evaluated,
+    // backslashes would misbehave, unescaped quotes and newlines would break syntax.
+    const feedback = 'has "quotes", {braces}, \\back\\slash, and\nnewline';
+    const py = fillInBlanksHandler.renderGradePy!(
+      { type: 'fill-in-blanks', blanks },
+      { perAnswer: { hello: feedback } },
+    );
+    assert.include(py, JSON.stringify(`<strong>hello</strong>: ${feedback}`));
+  });
 });

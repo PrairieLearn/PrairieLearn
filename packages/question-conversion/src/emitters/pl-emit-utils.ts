@@ -1,11 +1,3 @@
-export function escapeAttr(text: string): string {
-  return text
-    .replaceAll('&', '&amp;')
-    .replaceAll('"', '&quot;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;');
-}
-
 /** Remove duplicate choices by HTML text, preferring the correct one when duplicates exist. */
 export function deduplicateChoices<T extends { html: string; correct: boolean }>(
   choices: T[],

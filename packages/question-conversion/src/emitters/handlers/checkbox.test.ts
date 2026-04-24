@@ -60,6 +60,16 @@ describe('checkboxHandler.renderGradePy', () => {
     assert.include(py, 'data["feedback"]["general"]');
   });
 
+  it('looks up submitted keys via params["answer"] before checking feedback_map', () => {
+    const py = checkboxHandler.renderGradePy!(
+      { type: 'checkbox', choices },
+      { perAnswer: { Apple: 'Good choice' } },
+    );
+    assert.include(py, '_key_to_html = {a["key"]: a["html"] for a in data["params"].get("answer")');
+    assert.include(py, '_html = _key_to_html.get(_key)');
+    assert.include(py, 'if _html in _feedback_map:');
+  });
+
   it('appends global correct feedback', () => {
     const py = checkboxHandler.renderGradePy!(
       { type: 'checkbox', choices },

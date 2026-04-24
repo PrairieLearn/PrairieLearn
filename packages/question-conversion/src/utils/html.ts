@@ -2,23 +2,13 @@ import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 
 import type { ModelOperations as ModelOperationsType } from '@vscode/vscode-languagedetection';
+import he from 'he';
 
 // The package ships as a UMD CJS bundle; named ESM imports don't work.
 const _require = createRequire(import.meta.url);
 const { ModelOperations } = _require('@vscode/vscode-languagedetection') as {
   ModelOperations: typeof ModelOperationsType;
 };
-
-/** Unescape HTML entities (Canvas exports HTML-escaped content). */
-export function unescapeHtml(text: string): string {
-  return text
-    .replaceAll('&lt;', '<')
-    .replaceAll('&gt;', '>')
-    .replaceAll('&quot;', '"')
-    .replaceAll('&#39;', "'")
-    .replaceAll('&nbsp;', '\u00A0')
-    .replaceAll('&amp;', '&');
-}
 
 const DATA_URI_RE = /src=(["'])data:(?<mime>image\/[a-zA-Z0-9.+-]+);base64,(?<data>[^"']+)\1/g;
 
@@ -48,15 +38,19 @@ export function extractInlineImages(html: string): {
 
 const IMG_TAG_RE = /<img\b[^>]*>/gi;
 const ATTR_RE = /(\w[\w-]*)=(["'])(.*?)\2/gi;
+const ABSOLUTE_URL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
 
 /**
- * Rewrite all <img> tags in HTML to <pl-figure> elements.
+ * Rewrite local <img> tags in HTML to <pl-figure> elements.
  *
  * For images already pointing into clientFilesQuestion/ the directory attribute
- * is set explicitly and the prefix is stripped from file-name. External URLs are
- * passed through as file-name without a directory attribute. The alt and width
- * attributes are preserved; all others (style, class, etc.) are dropped
- * since pl-figure handles its own layout.
+ * is set explicitly and the prefix is stripped from file-name. Other relative
+ * paths are passed through as file-name without a directory attribute. Images
+ * with absolute URLs (http://, https://, protocol-relative, data:, etc.) are
+ * left as <img> since pl-figure resolves file-name against a local course
+ * directory and cannot host remote resources. The alt and width attributes are
+ * preserved; all others (style, class, etc.) are dropped since pl-figure
+ * handles its own layout.
  */
 export function rewriteImagesAsPlFigure(html: string): string {
   return html.replaceAll(IMG_TAG_RE, (tag) => {
@@ -66,19 +60,21 @@ export function rewriteImagesAsPlFigure(html: string): string {
     }
 
     const src = attrs['src'] ?? '';
+    if (ABSOLUTE_URL_RE.test(src)) return tag;
+
     const parts: string[] = [];
 
     if (src.startsWith('clientFilesQuestion/')) {
       parts.push(
-        `file-name="${src.slice('clientFilesQuestion/'.length)}"`,
+        `file-name="${he.escape(src.slice('clientFilesQuestion/'.length))}"`,
         'directory="clientFilesQuestion"',
       );
     } else {
-      parts.push(`file-name="${src}"`);
+      parts.push(`file-name="${he.escape(src)}"`);
     }
 
-    if (attrs['alt']) parts.push(`alt="${attrs['alt']}"`);
-    if (attrs['width']) parts.push(`width="${attrs['width']}"`);
+    if (attrs['alt']) parts.push(`alt="${he.escape(attrs['alt'])}"`);
+    if (attrs['width']) parts.push(`width="${he.escape(attrs['width'])}"`);
 
     return `<pl-figure ${parts.join(' ')}></pl-figure>`;
   });
@@ -259,13 +255,13 @@ export async function rewritePreAsPlCode(html: string): Promise<string> {
         }
 
         if (!language) {
-          language = await detectCodeLanguage(unescapeHtml(codeContent));
+          language = await detectCodeLanguage(he.decode(codeContent));
         }
         const langAttr = language ? ` language="${language}"` : '';
         return {
           start,
           end,
-          replacement: `<pl-code${langAttr}>\n${unescapeHtml(codeContent)}</pl-code>`,
+          replacement: `<pl-code${langAttr}>\n${he.decode(codeContent)}</pl-code>`,
         };
       })(),
     );

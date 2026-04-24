@@ -22,16 +22,35 @@ export const multipleDropdownsHandler: TransformHandler<QTI12ParsedItem> = {
         .map((c) => [c.responseIdent, c.correctLabelIdent]),
     );
 
+    const warnings: string[] = [];
     const blanks = item.responseLids.map((lid) => {
       const correctLabelIdent = correctMap.get(lid.ident);
+      const blankId = lid.materialText ?? lid.ident;
+      if (!correctLabelIdent) {
+        warnings.push(
+          `multiple_dropdowns_question "${item.ident}": blank "${blankId}" has no correct answer marked. Review and edit info.json.`,
+        );
+      }
       const choices = lid.labels.map((label) => ({
         id: label.ident,
         html: label.text,
         correct: label.ident === correctLabelIdent,
       }));
-      return { id: lid.materialText ?? lid.ident, choices };
+      return { id: blankId, choices };
     });
 
-    return { body: { type: 'multiple-dropdowns', blanks } };
+    // If no blank has a correct answer, the question can't be auto-graded.
+    const gradingMethod = correctMap.size === 0 ? ('Manual' as const) : undefined;
+    if (gradingMethod === 'Manual') {
+      warnings.push(
+        `multiple_dropdowns_question "${item.ident}" has no correct answers for any blank; emitting as a manually-graded question.`,
+      );
+    }
+
+    return {
+      body: { type: 'multiple-dropdowns', blanks },
+      ...(warnings.length > 0 ? { warnings } : {}),
+      ...(gradingMethod ? { gradingMethod } : {}),
+    };
   },
 };

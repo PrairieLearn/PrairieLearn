@@ -20,6 +20,16 @@ export const multipleChoiceHandler: TransformHandler<QTI12ParsedItem> = {
       correct: correctIdents.has(label.ident),
     }));
 
+    if (correctIdents.size === 0) {
+      return {
+        body: { type: 'multiple-choice', choices },
+        gradingMethod: 'Manual',
+        warnings: [
+          `multiple_choice_question "${item.ident}" has no correct answer marked; emitting as a manually-graded question. Review the source QTI or grade by hand.`,
+        ],
+      };
+    }
+
     return { body: { type: 'multiple-choice', choices } };
   },
 };

@@ -23,6 +23,7 @@ export const matchingHandler: TransformHandler<QTI12ParsedItem> = {
     }
 
     // Build match pairs
+    const warnings: string[] = [];
     const matchedOptionIdents = new Set<string>();
     const pairs = item.responseLids.map((lid) => {
       const correctLabelIdent = correctMap.get(lid.ident);
@@ -30,17 +31,37 @@ export const matchingHandler: TransformHandler<QTI12ParsedItem> = {
       if (correctLabelIdent) {
         matchedOptionIdents.add(correctLabelIdent);
       }
-      return {
-        statementHtml: lid.materialText ?? lid.ident,
-        optionHtml,
-      };
+      const statementHtml = lid.materialText ?? '';
+      if (!statementHtml) {
+        warnings.push(
+          `matching_question "${item.ident}": statement "${lid.ident}" has no display text. Review the source QTI.`,
+        );
+      }
+      if (!optionHtml) {
+        warnings.push(
+          `matching_question "${item.ident}": statement "${statementHtml || lid.ident}" has no correct match. Review and edit info.json.`,
+        );
+      }
+      return { statementHtml, optionHtml };
     });
+
+    // If no pair has a correct match, the question can't be auto-graded.
+    const allMissing = pairs.length > 0 && pairs.every((p) => !p.optionHtml);
+    if (allMissing) {
+      warnings.push(
+        `matching_question "${item.ident}" has no correct matches for any statement; emitting as a manually-graded question.`,
+      );
+    }
 
     // Options not used as correct answers become distractors
     const distractors = [...optionMap.entries()]
       .filter(([ident]) => !matchedOptionIdents.has(ident))
       .map(([, text]) => ({ optionHtml: text }));
 
-    return { body: { type: 'matching', pairs, distractors } };
+    return {
+      body: { type: 'matching', pairs, distractors },
+      ...(warnings.length > 0 ? { warnings } : {}),
+      ...(allMissing ? { gradingMethod: 'Manual' as const } : {}),
+    };
   },
 };

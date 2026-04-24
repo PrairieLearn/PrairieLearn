@@ -72,4 +72,13 @@ describe('fillInBlanksHandler', () => {
     }
     assert.isTrue(result.body.blanks[0].ignoreCase);
   });
+
+  it('marks the question Manual-graded when every blank lacks a correct answer', () => {
+    const item = makeItem();
+    item.correctConditions = [];
+    const result = fillInBlanksHandler.transform(item);
+    assert.equal(result.gradingMethod, 'Manual');
+    assert.isArray(result.warnings);
+    assert.isTrue(result.warnings!.some((w) => /manually-graded/.test(w)));
+  });
 });

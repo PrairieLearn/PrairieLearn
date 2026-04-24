@@ -41,6 +41,24 @@ describe('shortAnswerHandler', () => {
     }
   });
 
+  it('treats "3.0" as numeric, not integer (pl-integer-input rejects decimals)', () => {
+    const item: QTI12ParsedItem = {
+      ident: 'q1',
+      title: 'Short Answer',
+      questionType: 'short_answer_question',
+      promptHtml: '<p>How many seconds in a millisecond? (decimal)</p>',
+      responseLids: [],
+      correctConditions: [{ responseIdent: 'response1', correctLabelIdent: '3.0' }],
+      feedbacks: new Map(),
+      metadata: {},
+    };
+    const result = shortAnswerHandler.transform(item);
+    assert.equal(result.body.type, 'numeric');
+    if (result.body.type === 'numeric') {
+      assert.equal(result.body.answer.correctValue, 3);
+    }
+  });
+
   it('produces string-input body when correct answer is text', () => {
     const item: QTI12ParsedItem = {
       ident: 'q1',
@@ -60,7 +78,7 @@ describe('shortAnswerHandler', () => {
     }
   });
 
-  it('falls back to general_fb when no correct condition', () => {
+  it('falls back to general_fb when no correct condition (and warns)', () => {
     const item: QTI12ParsedItem = {
       ident: 'q1',
       title: 'Short Answer',
@@ -78,5 +96,25 @@ describe('shortAnswerHandler', () => {
     }
     assert.equal(result.body.correctAnswer, 'expected answer');
     assert.isTrue(result.body.ignoreCase);
+    assert.isArray(result.warnings);
+    assert.match(result.warnings![0], /general_fb/);
+  });
+
+  it('marks the question Manual-graded when neither condition nor general_fb is set', () => {
+    const item: QTI12ParsedItem = {
+      ident: 'q1',
+      title: 'Short Answer',
+      questionType: 'short_answer_question',
+      promptHtml: '<p>Name something</p>',
+      responseLids: [],
+      correctConditions: [],
+      feedbacks: new Map(),
+      metadata: {},
+    };
+    const result = shortAnswerHandler.transform(item);
+    assert.equal(result.gradingMethod, 'Manual');
+    assert.equal(result.body.type, 'string-input');
+    assert.isArray(result.warnings);
+    assert.match(result.warnings![0], /manually-graded/);
   });
 });

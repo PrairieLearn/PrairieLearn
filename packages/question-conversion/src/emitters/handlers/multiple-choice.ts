@@ -1,6 +1,8 @@
+import he from 'he';
+
 import type { IRQuestionBody } from '../../types/ir.js';
 import type { BodyEmitHandler } from '../body-emit-handler.js';
-import { deduplicateChoices, escapeAttr } from '../pl-emit-utils.js';
+import { deduplicateChoices } from '../pl-emit-utils.js';
 
 type MCBody = Extract<IRQuestionBody, { type: 'multiple-choice' }>;
 
@@ -24,7 +26,7 @@ export const multipleChoiceHandler: BodyEmitHandler = {
     const lines = [`<pl-multiple-choice answers-name="answer"${orderAttr}>`];
     for (const choice of deduped) {
       const fb = perAnswer?.[choice.html];
-      const fbAttr = fb ? ` feedback="${escapeAttr(fb)}"` : '';
+      const fbAttr = fb ? ` feedback="${he.escape(fb)}"` : '';
       lines.push(`  <pl-answer correct="${choice.correct}"${fbAttr}>${choice.html}</pl-answer>`);
     }
     lines.push('</pl-multiple-choice>');

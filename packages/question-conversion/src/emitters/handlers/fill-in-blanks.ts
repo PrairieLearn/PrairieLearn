@@ -1,6 +1,8 @@
+import he from 'he';
+
 import type { IRFeedback, IRQuestionBody } from '../../types/ir.js';
 import type { BodyEmitHandler } from '../body-emit-handler.js';
-import { appendGlobalFeedback, escapeAttr } from '../pl-emit-utils.js';
+import { appendGlobalFeedback } from '../pl-emit-utils.js';
 
 type FIBBody = Extract<IRQuestionBody, { type: 'fill-in-blanks' }>;
 
@@ -11,7 +13,7 @@ export const fillInBlanksHandler: BodyEmitHandler = {
     const fib = body as FIBBody;
     let result = promptHtml;
     for (const blank of fib.blanks) {
-      const input = `<pl-string-input answers-name="${escapeAttr(blank.id)}" correct-answer="${escapeAttr(blank.correctText)}" remove-leading-trailing="true"${blank.ignoreCase ? ' ignore-case="true"' : ''}></pl-string-input>`;
+      const input = `<pl-string-input answers-name="${he.escape(blank.id)}" correct-answer="${he.escape(blank.correctText)}" remove-leading-trailing="true"${blank.ignoreCase ? ' ignore-case="true"' : ''}></pl-string-input>`;
       result = result.replaceAll(`[${blank.id}]`, input);
     }
     return result;
@@ -34,9 +36,10 @@ export const fillInBlanksHandler: BodyEmitHandler = {
     const lines = ['def grade(data):', '    _messages = []'];
     for (const blank of blanksWithFeedback) {
       const fb = perAnswer![blank.correctText];
+      const prefix = `<strong>${he.escape(blank.correctText)}</strong>: `;
       lines.push(
         `    if data["partial_scores"].get(${JSON.stringify(blank.id)}, {}).get("score", 0) >= 1:`,
-        `        _messages.append(f"<strong>${escapeAttr(blank.correctText)}</strong>: ${fb}")`,
+        `        _messages.append(${JSON.stringify(prefix + fb)})`,
       );
     }
     appendGlobalFeedback(lines, correct, incorrect);

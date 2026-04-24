@@ -1,6 +1,7 @@
+import he from 'he';
+
 import type { IRQuestionBody } from '../../types/ir.js';
 import type { BodyEmitHandler } from '../body-emit-handler.js';
-import { escapeAttr } from '../pl-emit-utils.js';
 
 type MatchingBody = Extract<IRQuestionBody, { type: 'matching' }>;
 
@@ -12,7 +13,7 @@ export const matchingHandler: BodyEmitHandler = {
     const lines = ['<pl-matching answers-name="answer">'];
     for (const pair of m.pairs) {
       lines.push(
-        `  <pl-statement match="${escapeAttr(pair.optionHtml)}">${pair.statementHtml}</pl-statement>`,
+        `  <pl-statement match="${he.escape(pair.optionHtml)}">${pair.statementHtml}</pl-statement>`,
       );
     }
     for (const distractor of m.distractors) {

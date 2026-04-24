@@ -68,4 +68,11 @@ describe('trueFalseHandler', () => {
     assert.equal(result.body.choices[0].html, 'True');
     assert.equal(result.body.choices[1].html, 'False');
   });
+
+  it('marks the question Manual-graded when neither True nor False is marked correct', () => {
+    const result = trueFalseHandler.transform(makeItem('nope'));
+    assert.equal(result.gradingMethod, 'Manual');
+    assert.isArray(result.warnings);
+    assert.match(result.warnings![0], /manually-graded/);
+  });
 });

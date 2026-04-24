@@ -1,4 +1,7 @@
+import he from 'he';
 import mime from 'mime';
+
+import { logger } from '@prairielearn/logger';
 
 import { createQTI12Registry } from '../../transforms/qti12/index.js';
 import type { TransformRegistry } from '../../transforms/transform-registry.js';
@@ -28,7 +31,6 @@ import {
   resolveImsFileRefs,
   rewriteImagesAsPlFigure,
   rewritePreAsPlCode,
-  unescapeHtml,
 } from '../../utils/html.js';
 import type { InputParser, ParseOptions } from '../parser.js';
 
@@ -116,7 +118,7 @@ export class QTI12AssessmentParser implements InputParser {
 
   private buildParsedAssessment(assessment: Record<string, unknown>): QTI12ParsedAssessment {
     const ident = attr(assessment, 'ident');
-    const title = unescapeHtml(attr(assessment, 'title'));
+    const title = he.decode(attr(assessment, 'title'));
     const qtimetadata = assessment['qtimetadata'];
     const metadata = parseMetadata(qtimetadata);
     const items = this.collectItems(assessment).map((item) => this.parseItem(item));
@@ -168,7 +170,8 @@ export class QTI12AssessmentParser implements InputParser {
     let parsed: Record<string, unknown>;
     try {
       parsed = parseXml(xml);
-    } catch {
+    } catch (err) {
+      logger.warn(`Failed to parse Canvas assessment_meta.xml: ${(err as Error).message}`);
       return;
     }
 
@@ -202,7 +205,7 @@ export class QTI12AssessmentParser implements InputParser {
 
     const description = textContent(quiz['description']);
     if (description) {
-      meta.descriptionHtml = unescapeHtml(description);
+      meta.descriptionHtml = he.decode(description);
     }
 
     // quiz_type: "assignment" → Homework, "practice_quiz" → Homework, "graded_survey" → Exam
@@ -274,7 +277,10 @@ export class QTI12AssessmentParser implements InputParser {
     let parsed: Record<string, unknown>;
     try {
       parsed = parseXml(assessmentMetaXml);
-    } catch {
+    } catch (err) {
+      logger.warn(
+        `Failed to parse assessment_meta.xml for allowed_extensions: ${(err as Error).message}`,
+      );
       return undefined;
     }
     const quiz = (parsed['quiz'] ?? parsed) as Record<string, unknown>;
@@ -478,7 +484,7 @@ export class QTI12AssessmentParser implements InputParser {
     for (const itemEl of items) {
       const item = this.parseItem(itemEl);
       try {
-        const q = await this.transformItem(item, opts);
+        const q = await this.transformItem(item, opts, warnings);
         if (q !== null) questions.push(q);
       } catch (err) {
         warnings.push({
@@ -515,7 +521,7 @@ export class QTI12AssessmentParser implements InputParser {
 
   private parseItem(itemEl: Record<string, unknown>): QTI12ParsedItem {
     const ident = attr(itemEl, 'ident');
-    const title = unescapeHtml(attr(itemEl, 'title'));
+    const title = he.decode(attr(itemEl, 'title'));
 
     // Parse metadata
     const itemMetadata = getNestedValue(itemEl, 'itemmetadata', 'qtimetadata');
@@ -531,7 +537,7 @@ export class QTI12AssessmentParser implements InputParser {
     // Parse prompt HTML
     const presentation = itemEl['presentation'] as Record<string, unknown> | undefined;
     const rawPrompt = textContent(getNestedValue(presentation, 'material', 'mattext'));
-    const promptHtml = convertLatexItemizeToMarkdown(cleanQuestionHtml(unescapeHtml(rawPrompt)));
+    const promptHtml = convertLatexItemizeToMarkdown(cleanQuestionHtml(he.decode(rawPrompt)));
 
     // Parse response_lid elements
     const responseLidEls = ensureArray(presentation?.['response_lid'] as unknown);
@@ -574,7 +580,7 @@ export class QTI12AssessmentParser implements InputParser {
     const rawMaterialText = textContent(mattext);
     const materialTextType = attr(mattext as Record<string, unknown>, 'texttype') || 'text/plain';
     const materialText =
-      (materialTextType === 'text/html' ? unescapeHtml(rawMaterialText) : rawMaterialText) ||
+      (materialTextType === 'text/html' ? he.decode(rawMaterialText) : rawMaterialText) ||
       undefined;
 
     // Parse response labels from render_choice
@@ -588,7 +594,7 @@ export class QTI12AssessmentParser implements InputParser {
         const textType = attr(mattext as Record<string, unknown>, 'texttype') || 'text/plain';
         // HTML-typed labels use XML-escaped HTML content (e.g. &lt;sup&gt;).
         // Decode entities so IRChoice.html holds real HTML for downstream rendering.
-        const text = textType === 'text/html' ? unescapeHtml(rawText) : rawText;
+        const text = textType === 'text/html' ? he.decode(rawText) : rawText;
         return { ident: attr(l, 'ident'), text, textType };
       });
 
@@ -640,18 +646,12 @@ export class QTI12AssessmentParser implements InputParser {
       }
     }
 
-    // Handle <and> grouping
+    // Handle <and> grouping. The recursive call also walks any <not>
+    // children of <and> via the top-level <not> path below, so we don't
+    // process them here.
     const andEl = conditionvar['and'] as Record<string, unknown> | undefined;
     if (andEl) {
       this.extractVarEquals(andEl, conditions, negate);
-
-      // Handle <not><varequal> inside <and>
-      const notEls = ensureArray(andEl['not'] as unknown);
-      for (const notEl of notEls) {
-        if (notEl != null && typeof notEl === 'object') {
-          this.extractVarEquals(notEl as Record<string, unknown>, conditions, true);
-        }
-      }
     }
 
     // Handle <not> at top level
@@ -677,7 +677,7 @@ export class QTI12AssessmentParser implements InputParser {
         textContent(getNestedValue(fbRec, 'flow_mat', 'material', 'mattext')) ||
         textContent(getNestedValue(fbRec, 'material', 'mattext'));
 
-      feedbacks.set(ident, unescapeHtml(text));
+      feedbacks.set(ident, he.decode(text));
     }
     return feedbacks;
   }
@@ -715,7 +715,8 @@ export class QTI12AssessmentParser implements InputParser {
     let parsed: Record<string, unknown>;
     try {
       parsed = parseXml(assessmentMetaXml);
-    } catch {
+    } catch (err) {
+      logger.warn(`Failed to parse assessment_meta.xml for rubric_ref: ${(err as Error).message}`);
       return undefined;
     }
     const quiz = (parsed['quiz'] ?? parsed) as Record<string, unknown>;
@@ -730,7 +731,8 @@ export class QTI12AssessmentParser implements InputParser {
     let parsed: Record<string, unknown>;
     try {
       parsed = parseXml(rubricsXml);
-    } catch {
+    } catch (err) {
+      logger.warn(`Failed to parse rubrics.xml: ${(err as Error).message}`);
       return undefined;
     }
     const root = (parsed['rubrics'] ?? parsed) as Record<string, unknown>;
@@ -792,6 +794,7 @@ export class QTI12AssessmentParser implements InputParser {
       allowedExtensions?: string[];
       sectionPoints?: number;
     },
+    warnings?: IRParseWarning[],
   ): Promise<IRQuestion | null> {
     const handler = this.registry.get(item.questionType);
     if (!handler) {
@@ -802,6 +805,11 @@ export class QTI12AssessmentParser implements InputParser {
     }
 
     const result = handler.transform(item);
+    if (warnings && result.warnings) {
+      for (const message of result.warnings) {
+        warnings.push({ questionId: item.ident, message });
+      }
+    }
     const body =
       result.body.type === 'file-upload' && allowedExtensions?.length
         ? { type: 'file-upload' as const, allowedExtensions }
@@ -882,7 +890,9 @@ export class QTI12AssessmentParser implements InputParser {
         ...(parseOptions?.defaultTopic ? { topic: parseOptions.defaultTopic } : {}),
       },
       shuffleAnswers,
-      gradingMethod: MANUAL_GRADING_QUESTION_TYPES.has(body.type) ? 'Manual' : 'Internal',
+      gradingMethod:
+        result.gradingMethod ??
+        (MANUAL_GRADING_QUESTION_TYPES.has(body.type) ? 'Manual' : 'Internal'),
     };
   }
 }

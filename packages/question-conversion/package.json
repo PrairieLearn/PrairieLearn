@@ -25,11 +25,13 @@
     "@vscode/vscode-languagedetection": "^1.0.23",
     "commander": "^14.0.3",
     "fast-xml-parser": "^5.2.0",
+    "he": "^1.2.0",
     "mime": "^4.1.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
+    "@types/he": "^1.2.3",
     "@types/node": "^24.12.2",
     "@types/uuid": "^11.0.0",
     "@typescript/native-preview": "^7.0.0-dev.20260305.1",

@@ -22,6 +22,16 @@ export const multipleAnswersHandler: TransformHandler<QTI12ParsedItem> = {
       correct: correctIdents.has(label.ident),
     }));
 
+    if (correctIdents.size === 0) {
+      return {
+        body: { type: 'checkbox', choices },
+        gradingMethod: 'Manual',
+        warnings: [
+          `multiple_answers_question "${item.ident}" has no correct answers marked; emitting as a manually-graded question. Review the source QTI or grade by hand.`,
+        ],
+      };
+    }
+
     return { body: { type: 'checkbox', choices } };
   },
 };

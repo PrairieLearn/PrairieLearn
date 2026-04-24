@@ -663,7 +663,7 @@ describe('PLEmitter', () => {
       assert.include(serverPy, '"Alpha"');
       assert.include(serverPy, '"Beta"');
       assert.include(serverPy, 'data["submitted_answers"].get("answer")');
-      assert.include(serverPy, '<strong>{a}</strong>');
+      assert.include(serverPy, '<strong>{_html}</strong>');
       assert.include(serverPy, '"<br>".join(_messages)');
     });
 

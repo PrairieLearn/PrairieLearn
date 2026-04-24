@@ -26,6 +26,15 @@ export const trueFalseHandler: TransformHandler<QTI12ParsedItem> = {
       { id: trueLabel.ident, html: 'True', correct: correctIdents.has(trueLabel.ident) },
       { id: falseLabel.ident, html: 'False', correct: correctIdents.has(falseLabel.ident) },
     ];
+    if (!choices.some((c) => c.correct)) {
+      return {
+        body: { type: 'multiple-choice', choices },
+        gradingMethod: 'Manual',
+        warnings: [
+          `true_false_question "${item.ident}" has no correct answer marked; emitting as a manually-graded question. Review the source QTI or grade by hand.`,
+        ],
+      };
+    }
 
     return { body: { type: 'multiple-choice', choices } };
   },

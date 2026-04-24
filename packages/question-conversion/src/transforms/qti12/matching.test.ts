@@ -56,15 +56,28 @@ describe('matchingHandler', () => {
     assert.equal(result.body.pairs[1].optionHtml, 'Tight Bound');
   });
 
-  it('uses empty optionHtml when a statement has no matching correct condition', () => {
+  it('uses empty optionHtml and warns when a statement has no matching correct condition', () => {
     const item = makeItem();
-    // Remove the correct condition for the first statement
+    const unmatchedStatement = item.responseLids[0].materialText!;
+    // Keep only the second statement's correct condition
     item.correctConditions = [{ responseIdent: 'response_2', correctLabelIdent: 'opt3' }];
     const result = matchingHandler.transform(item);
     if (result.body.type !== 'matching') {
       assert.fail(`Expected matching body, got ${result.body.type}`);
     }
     assert.equal(result.body.pairs[0].optionHtml, '');
+    assert.lengthOf(result.warnings!, 1);
+    assert.include(result.warnings![0], unmatchedStatement);
+    assert.match(result.warnings![0], /has no correct match/);
+  });
+
+  it('marks the question Manual-graded when no statement has a correct match', () => {
+    const item = makeItem();
+    item.correctConditions = [];
+    const result = matchingHandler.transform(item);
+    assert.equal(result.gradingMethod, 'Manual');
+    assert.isArray(result.warnings);
+    assert.isTrue(result.warnings!.some((w) => /manually-graded/.test(w)));
   });
 
   it('identifies distractors', () => {

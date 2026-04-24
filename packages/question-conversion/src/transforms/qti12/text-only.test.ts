@@ -18,5 +18,6 @@ describe('textOnlyHandler', () => {
     };
     const result = textOnlyHandler.transform(item);
     assert.equal(result.body.type, 'text-only');
+    assert.equal(result.gradingMethod, 'Manual');
   });
 });

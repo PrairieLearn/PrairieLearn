@@ -1,9 +1,23 @@
-import type { AssetReference, IRQuestionBody } from '../types/ir.js';
+import type { AssetReference, IRQuestionBody, IRQuestionGradingMethod } from '../types/ir.js';
 
 /** Result of transforming a parsed item into IR. */
 export interface TransformResult {
   body: IRQuestionBody;
   assets?: Map<string, AssetReference>;
+  /**
+   * Transform-level warnings to surface to the user. Use this for situations
+   * where the question can still be emitted but the conversion is ambiguous
+   * (e.g. a missing tolerance, a half-bounded range, or an un-gradable blank).
+   * Throw an Error instead when the transform cannot produce any output.
+   */
+  warnings?: string[];
+  /**
+   * Override the question's grading method. Use 'Manual' when the source QTI
+   * lacks the data needed to auto-grade (e.g. no correct answer marked) but
+   * the question itself is still presentable. When omitted, the parser picks
+   * a default based on the body type.
+   */
+  gradingMethod?: IRQuestionGradingMethod;
 }
 
 /**
@@ -17,7 +31,7 @@ export interface TransformHandler<TParsedItem> {
 
 /**
  * Registry mapping question type strings to their transform handlers.
- * Generic over the parsed item type so QTI 1.2 and QTI 2.1 can each
+ * Generic over the parsed item type so future input formats can each
  * have their own registry with their own item shape.
  */
 export class TransformRegistry<TParsedItem> {

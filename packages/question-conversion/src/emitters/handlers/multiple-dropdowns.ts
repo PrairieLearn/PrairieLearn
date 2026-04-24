@@ -1,6 +1,7 @@
+import he from 'he';
+
 import type { IRQuestionBody } from '../../types/ir.js';
 import type { BodyEmitHandler } from '../body-emit-handler.js';
-import { escapeAttr } from '../pl-emit-utils.js';
 
 type MDBody = Extract<IRQuestionBody, { type: 'multiple-dropdowns' }>;
 
@@ -12,7 +13,7 @@ export const multipleDropdownsHandler: BodyEmitHandler = {
     let result = promptHtml;
     for (const blank of md.blanks) {
       const lines = [
-        `<pl-multiple-choice answers-name="${escapeAttr(blank.id)}" display="dropdown">`,
+        `<pl-multiple-choice answers-name="${he.escape(blank.id)}" display="dropdown">`,
       ];
       for (const choice of blank.choices) {
         lines.push(`  <pl-answer correct="${choice.correct}">${choice.html}</pl-answer>`);

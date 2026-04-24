@@ -39,10 +39,20 @@ export const calculatedHandler: TransformHandler<QTI12ParsedItem> = {
       throw new Error(`calculated_question "${item.ident}": formula is empty`);
     }
 
-    // Tolerance may be absolute ("0.01") or relative ("1%")
+    // Tolerance may be absolute ("0.01") or relative ("1%"). A missing or empty
+    // element is ambiguous — Canvas itself falls back to its grading UI default,
+    // but we can't reproduce that here, so warn the author rather than silently
+    // emitting tolerance=0 (which would reject every non-exact student answer).
     const toleranceRaw = textContent(calcEl['answer_tolerance']).trim();
     const isRelative = toleranceRaw.endsWith('%');
-    const tolerance = Number.parseFloat(toleranceRaw) || 0;
+    const parsedTolerance = Number.parseFloat(toleranceRaw);
+    const tolerance = Number.isNaN(parsedTolerance) ? 0 : parsedTolerance;
+    const warnings: string[] = [];
+    if (toleranceRaw === '' || tolerance === 0) {
+      warnings.push(
+        `calculated_question "${item.ident}": answer_tolerance is ${toleranceRaw === '' ? 'missing' : 'zero'}; non-exact answers will be marked wrong. Review tolerance in info.json.`,
+      );
+    }
 
     // Parse variable definitions
     const varsContainer = calcEl['vars'];
@@ -53,23 +63,35 @@ export const calculatedHandler: TransformHandler<QTI12ParsedItem> = {
     );
 
     const vars: IRCalculatedVar[] = [];
-    for (const varEl of varEls) {
-      if (varEl == null || typeof varEl !== 'object') continue;
+    varEls.forEach((varEl, index) => {
+      if (varEl == null || typeof varEl !== 'object') {
+        throw new Error(
+          `calculated_question "${item.ident}": <var> at index ${index} is not an element`,
+        );
+      }
       const rec = varEl as Record<string, unknown>;
       const name = attr(rec, 'name');
       const scaleStr = attr(rec, 'scale');
       const decimalPlaces = scaleStr ? Number.parseInt(scaleStr, 10) : 2;
       const min = Number.parseFloat(textContent(rec['min']));
       const max = Number.parseFloat(textContent(rec['max']));
-      if (name && !Number.isNaN(min) && !Number.isNaN(max)) {
-        vars.push({
-          name,
-          min,
-          max,
-          decimalPlaces: Number.isNaN(decimalPlaces) ? 2 : decimalPlaces,
-        });
+      if (!name) {
+        throw new Error(
+          `calculated_question "${item.ident}": <var> at index ${index} is missing a name attribute`,
+        );
       }
-    }
+      if (Number.isNaN(min) || Number.isNaN(max)) {
+        throw new Error(
+          `calculated_question "${item.ident}": <var name="${name}"> has non-numeric min/max`,
+        );
+      }
+      vars.push({
+        name,
+        min,
+        max,
+        decimalPlaces: Number.isNaN(decimalPlaces) ? 2 : decimalPlaces,
+      });
+    });
 
     if (vars.length === 0) {
       throw new Error(`calculated_question "${item.ident}": no variables found`);
@@ -83,6 +105,7 @@ export const calculatedHandler: TransformHandler<QTI12ParsedItem> = {
         tolerance,
         toleranceType: isRelative ? 'relative' : 'absolute',
       },
+      ...(warnings.length > 0 ? { warnings } : {}),
     };
   },
 };

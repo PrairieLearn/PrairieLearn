@@ -32,7 +32,7 @@ export interface ParseOptions {
 
 /** Interface for format-specific input parsers. */
 export interface InputParser {
-  /** Format identifier, e.g., 'qti12-assessment', 'qti21'. */
+  /** Format identifier, e.g., 'qti12-assessment'. */
   readonly formatId: string;
   /** Returns true if this parser can handle the given input. */
   canParse(xmlContent: string): boolean;

@@ -1,4 +1,5 @@
 import { XMLParser } from 'fast-xml-parser';
+import he from 'he';
 
 const PARSER_OPTIONS = {
   ignoreAttributes: false,
@@ -6,6 +7,10 @@ const PARSER_OPTIONS = {
   textNodeName: '#text',
   isArray: (name: string) => ARRAY_TAGS.has(name),
   trimValues: true,
+  // Canvas mattext content arrives HTML-escaped (e.g. "&lt;p&gt;...&lt;/p&gt;"); we
+  // want the parser to leave the inner `&lt;` alone so that callers can decide
+  // whether to run unescapeHtml themselves. The attr() helper below handles
+  // the subset of entities that appear in attribute values (titles, etc.).
   processEntities: false,
 };
 
@@ -50,10 +55,15 @@ export function textContent(value: unknown): string {
   return '';
 }
 
-/** Get an attribute from a parsed element. */
+/**
+ * Get an attribute from a parsed element. The XML parser is configured with
+ * processEntities: false so mattext #text nodes keep their escaped HTML; we
+ * decode attribute values explicitly here via `he.decode`.
+ */
 export function attr(element: unknown, name: string): string {
   if (element == null || typeof element !== 'object') return '';
-  return String((element as Record<string, unknown>)[`@_${name}`] ?? '').trim();
+  const raw = String((element as Record<string, unknown>)[`@_${name}`] ?? '').trim();
+  return raw.includes('&') ? he.decode(raw) : raw;
 }
 
 /** Ensure a value is an array. */

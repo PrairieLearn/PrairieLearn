@@ -85,19 +85,33 @@ export const numericalHandler: TransformHandler<QTI12ParsedItem> = {
       return { body: { type: 'numeric', answer: { correctValue: range.exact } } };
     }
 
-    if (
-      range.lower !== undefined &&
-      range.upper !== undefined &&
-      !Number.isNaN(range.lower) &&
-      !Number.isNaN(range.upper)
-    ) {
-      const correctValue = (range.lower + range.upper) / 2;
-      const tolerance = (range.upper - range.lower) / 2;
+    const hasLower = range.lower !== undefined && !Number.isNaN(range.lower);
+    const hasUpper = range.upper !== undefined && !Number.isNaN(range.upper);
+
+    if (hasLower && hasUpper) {
+      const correctValue = (range.lower! + range.upper!) / 2;
+      const tolerance = (range.upper! - range.lower!) / 2;
       if (tolerance === 0 && Number.isInteger(correctValue)) {
         return { body: { type: 'integer', answer: { correctValue } } };
       }
       return {
         body: { type: 'numeric', answer: { correctValue, tolerance, toleranceType: 'absolute' } },
+      };
+    }
+
+    // One-sided range (only <vargte> or only <varlte>). pl-number-input can only
+    // express a symmetric tolerance around a single correct value, so we can't
+    // auto-grade "accept any value ≥ N". Emit the bound as a placeholder correct
+    // value and mark the question Manual so students aren't silently penalised
+    // for correct answers that happen to differ from the bound.
+    if (hasLower || hasUpper) {
+      const correctValue = hasLower ? range.lower! : range.upper!;
+      return {
+        body: { type: 'numeric', answer: { correctValue } },
+        gradingMethod: 'Manual',
+        warnings: [
+          `Numerical question "${item.ident}" has a one-sided range (only ${hasLower ? 'vargte' : 'varlte'}); pl-number-input cannot express an inequality, so the question is emitted Manual-graded with ${correctValue} as a placeholder. Review and grade by hand, or convert to a custom server.py.`,
+        ],
       };
     }
 

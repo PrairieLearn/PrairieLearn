@@ -5,6 +5,8 @@ export const textOnlyHandler: TransformHandler<QTI12ParsedItem> = {
   questionType: 'text_only_question',
 
   transform(_item: QTI12ParsedItem): TransformResult {
-    return { body: { type: 'text-only' } };
+    // text_only_question renders only a prompt with no input; PL has nothing
+    // to auto-grade. Mark as Manual so it isn't shown as scored 0.
+    return { body: { type: 'text-only' }, gradingMethod: 'Manual' };
   },
 };

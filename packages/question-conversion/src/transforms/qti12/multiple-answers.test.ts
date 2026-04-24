@@ -52,4 +52,13 @@ describe('multipleAnswersHandler', () => {
     assert.isTrue(result.body.choices[1].correct);
     assert.isFalse(result.body.choices[2].correct);
   });
+
+  it('marks the question Manual-graded when no choice is marked correct', () => {
+    const item = makeItem();
+    item.correctConditions = item.correctConditions.filter((c) => c.negate);
+    const result = multipleAnswersHandler.transform(item);
+    assert.equal(result.gradingMethod, 'Manual');
+    assert.isArray(result.warnings);
+    assert.match(result.warnings![0], /manually-graded/);
+  });
 });

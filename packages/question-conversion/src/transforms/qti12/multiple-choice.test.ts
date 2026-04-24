@@ -55,4 +55,16 @@ describe('multipleChoiceHandler', () => {
       /no response_lid/,
     );
   });
+
+  it('marks the question Manual-graded when no choice is marked correct', () => {
+    const result = multipleChoiceHandler.transform(makeItem({ correctConditions: [] }));
+    assert.equal(result.gradingMethod, 'Manual');
+    assert.isArray(result.warnings);
+    assert.match(result.warnings![0], /manually-graded/);
+    if (result.body.type !== 'multiple-choice') {
+      assert.fail(`Expected multiple-choice body, got ${result.body.type}`);
+    }
+    assert.equal(result.body.choices.length, 3);
+    assert.isFalse(result.body.choices.some((c) => c.correct));
+  });
 });

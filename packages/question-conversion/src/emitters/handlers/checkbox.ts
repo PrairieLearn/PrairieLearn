@@ -25,14 +25,23 @@ export const checkboxHandler: BodyEmitHandler = {
     // (matching Canvas behaviour). Without perAnswer there's nothing per-type to add.
     if (!perAnswer || Object.keys(perAnswer).length === 0) return '';
 
+    // pl-checkbox stores submitted answers as auto-assigned keys ("a", "b", ...),
+    // not as the choice html. Resolve each submitted key back to its html via
+    // data["params"]["answer"] (a list of {"key", "html"} dicts), then look up
+    // the feedback by html.
     const lines = ['def grade(data):', '    _feedback_map = {'];
     for (const [answer, fb] of Object.entries(perAnswer)) {
       lines.push(`        ${JSON.stringify(answer)}: ${JSON.stringify(fb)},`);
     }
     lines.push(
       '    }',
+      '    _key_to_html = {a["key"]: a["html"] for a in data["params"].get("answer") or []}',
       '    _submitted = data["submitted_answers"].get("answer") or []',
-      '    _messages = [f"<strong>{a}</strong>: {_feedback_map[a]}" for a in _submitted if a in _feedback_map]',
+      '    _messages = []',
+      '    for _key in _submitted:',
+      '        _html = _key_to_html.get(_key)',
+      '        if _html in _feedback_map:',
+      '            _messages.append(f"<strong>{_html}</strong>: {_feedback_map[_html]}")',
     );
     appendGlobalFeedback(lines, correct, incorrect);
     lines.push(

@@ -7,22 +7,7 @@ import {
   resolveImsFileRefs,
   rewriteImagesAsPlFigure,
   rewritePreAsPlCode,
-  unescapeHtml,
 } from './html.js';
-
-describe('unescapeHtml', () => {
-  it('unescapes common HTML entities', () => {
-    assert.equal(unescapeHtml('&lt;p&gt;hello &amp; world&lt;/p&gt;'), '<p>hello & world</p>');
-  });
-
-  it('unescapes quotes', () => {
-    assert.equal(unescapeHtml('&quot;test&#39;s&quot;'), '"test\'s"');
-  });
-
-  it('unescapes nbsp', () => {
-    assert.equal(unescapeHtml('foo&nbsp;bar'), 'foo\u00A0bar');
-  });
-});
 
 describe('extractInlineImages', () => {
   it('replaces data URI with file reference', () => {
@@ -87,11 +72,19 @@ describe('rewriteImagesAsPlFigure', () => {
     assert.include(result, '<pl-figure');
   });
 
-  it('handles external URLs without directory attribute', () => {
-    assert.equal(
-      rewriteImagesAsPlFigure('<img src="https://example.com/img.png" alt="external">'),
-      '<pl-figure file-name="https://example.com/img.png" alt="external"></pl-figure>',
-    );
+  it('leaves absolute http(s) URLs as <img>', () => {
+    const html = '<img src="https://example.com/img.png" alt="external">';
+    assert.equal(rewriteImagesAsPlFigure(html), html);
+  });
+
+  it('leaves protocol-relative URLs as <img>', () => {
+    const html = '<img src="//cdn.example.com/img.png">';
+    assert.equal(rewriteImagesAsPlFigure(html), html);
+  });
+
+  it('leaves data: URLs as <img>', () => {
+    const html = '<img src="data:image/png;base64,AAAA">';
+    assert.equal(rewriteImagesAsPlFigure(html), html);
   });
 
   it('passes through HTML with no img tags unchanged', () => {
