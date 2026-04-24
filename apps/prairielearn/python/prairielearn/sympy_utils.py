@@ -22,12 +22,11 @@ from types import MappingProxyType as FrozenDict
 from typing import Any, Final, Literal, TypeAlias, TypedDict, TypeGuard, cast
 
 import sympy
+from prairielearn.misc_utils import FrozenClass, full_unidecode
 from sympy.parsing import sympy_parser
 from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
 from typing_extensions import NotRequired
-
-from prairielearn.misc_utils import FrozenClass, full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
@@ -523,14 +522,14 @@ class CheckAST(ast.NodeVisitor):
         for signature in arity_matches:
             for i, (expected, got) in enumerate(zip(signature, arg_types, strict=True)):
                 if got is not None and expected is not None and got != expected:
-                    fails.append((got, i))
+                    fails.append((expected, i))
                     break
             else:
                 return arg_types
 
-        failed_type, fail_index = max(fails, key=lambda f: f[1])
+        expected_type, fail_index = max(fails, key=lambda f: f[1])
         raise HasSetOperationTypeError(
-            fn_name, None, failed_type, for_argument=fail_index
+            fn_name, None, expected_type, for_argument=fail_index
         )
 
     def _infer_set_function_type(
