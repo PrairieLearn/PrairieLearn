@@ -384,7 +384,7 @@ def test_wrap_inline_validation(options: dict) -> None:
                 "inline": False,
                 "wrap-inline": True,
             },
-            "The wrap inline attribute may only be used when inline is true.",
+            "The wrap-inline attribute may only be used when inline is true.",
         ),
     ],
 )

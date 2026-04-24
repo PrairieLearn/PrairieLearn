@@ -446,7 +446,7 @@ class OrderBlocksOptions:
 
         if not self.inline and self.wrap_inline:
             raise ValueError(
-                "The wrap inline attribute may only be used when inline is true."
+                "The wrap-inline attribute may only be used when inline is true."
             )
 
         if (
