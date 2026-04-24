@@ -324,33 +324,27 @@ class HasInvalidSymbolError(BaseSympyError):
 @dataclass
 class HasSetOperationTypeError(BaseSympyError):
     operator: str
-    left_type: ASTSympyType | None
-    right_type: ASTSympyType
-    for_argument: int = -1
+    expecteds: Sequence[ASTSympyType]
+    for_argument: int
     offset: int = -1
 
     def format_err_msg(self) -> str:
-        err_msg = f"unsupported operand type(s) for {self.operator}: "
-        if self.for_argument >= 0:
-            err_msg += f"argument #{self.for_argument + 1} requires {self.right_type}"
+        if len(self.expecteds) == 1:
+            es_msg = f"a {self.expecteds[0]}"
         else:
-            err_msg += " and ".join(
-                _format_ast_sympy_type(v)
-                for v in (self.left_type, self.right_type)
-                if v
-            )
-        return err_msg
+            es_msg = f"either {_format_comma_seperated(set(self.expecteds))}"
+        return f"unsupported operand type(s) for {self.operator}: argument #{self.for_argument + 1} requires {es_msg}"
 
 
 @dataclass
 class HasSetFunctionArityError(BaseSympyError):
-    operator: str
+    fn: str
     provided: int
     expected: str
     offset: int = -1
 
     def format_err_msg(self) -> str:
-        return f"wrong number of arguments for {self.operator}: got {self.provided} but expected {self.expected}"
+        return f"wrong number of arguments for {self.fn}: got {self.provided} but expected {self.expected}"
 
 
 class CheckAST(ast.NodeVisitor):
@@ -514,8 +508,8 @@ class CheckAST(ast.NodeVisitor):
     ) -> tuple[ASTSympyType | None, ...]:
         arity_matches = [s for s in overloads if len(s) == len(args)]
         if not arity_matches:
-            msg = ", ".join(map(str, sorted(map(len, overloads))))
-            msg = " or ".join(msg.rsplit(", ", maxsplit=1))
+            sorted_arities = sorted(set(map(len, overloads)))
+            msg = _format_comma_seperated(sorted_arities)
             raise HasSetFunctionArityError(fn_name, len(args), msg)
 
         arg_types = tuple(map(self._get_type, args))
@@ -529,10 +523,9 @@ class CheckAST(ast.NodeVisitor):
             else:
                 return arg_types
 
-        expected_type, fail_index = max(fails, key=lambda f: f[1])
-        raise HasSetOperationTypeError(
-            fn_name, None, expected_type, for_argument=fail_index
-        )
+        _, fail_index = max(fails, key=lambda f: f[1])
+        expecteds = [t for t, i in fails if i == fail_index]
+        raise HasSetOperationTypeError(fn_name, expecteds, for_argument=fail_index)
 
     def _infer_set_function_type(
         self,
@@ -574,11 +567,6 @@ class CheckAST(ast.NodeVisitor):
                 if lt is None or rt is None or lt == rt:
                     return lt or rt
                 return None
-
-
-def _format_ast_sympy_type(type_: ASTSympyType | None) -> str:
-    """Return a readable type name for user-facing error messages."""
-    return "any" if type_ is None else type_.value
 
 
 def ast_check_str(
@@ -693,6 +681,11 @@ def evaluate(
         allow_complex=allow_complex,
         allow_set_notation=allow_set_notation,
     )[0]
+
+
+def _format_comma_seperated(items: Iterable[Any], last_conjunction: str = "or") -> str:
+    comma_sep = ", ".join(map(str, items))
+    return f" {last_conjunction} ".join(comma_sep.rsplit(", ", maxsplit=1))
 
 
 def _normalize_expr(expr: str) -> tuple[str, list[int]]:
@@ -1322,7 +1315,7 @@ def try_parse_string_as_sympy(
             )
         return SympyParseFailure(error_text)
     except HasSetFunctionArityError as exc:
-        error_text = f"Your answer provides the wrong number of arguments to '{exc.operator}', expected {exc.expected}."
+        error_text = f"Your answer provides the wrong number of arguments to '{exc.fn}', expected {exc.expected}."
         if exc.offset != -1:
             return SympyParseFailure(
                 f"{error_text} <br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
