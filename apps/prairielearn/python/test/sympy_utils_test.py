@@ -878,6 +878,10 @@ class TestExceptions:
     SET_TYPE_ERROR_CARET_TEMPLATES = (
         "{1, 2} !/ {2, 3}",
         "{1, 2} !U 3",
+        "{1, 2} !+ 3",
+        "{1, 2} !- 3",
+        "1 !+ {2, 3}",
+        "1 !- {2, 3}",
         "!Interval({}, 2)",
         "!Interval(1, {})",
         "!Interval(1)",
