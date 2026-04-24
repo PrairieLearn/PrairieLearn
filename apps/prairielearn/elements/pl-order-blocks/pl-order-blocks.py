@@ -330,6 +330,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     order_blocks_options = OrderBlocksOptions(element)
     answer_name = order_blocks_options.answers_name
     inline = order_blocks_options.inline
+    wrap_inline = order_blocks_options.wrap_inline
     dropzone_layout = order_blocks_options.solution_placement
     correct_answers = data["correct_answers"][answer_name]
     has_optional_blocks = order_blocks_options.has_optional_blocks
@@ -410,6 +411,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "block_formatting": block_formatting,
             "editable": editable,
             "block_layout": "pl-order-blocks-horizontal" if inline else "",
+            "block_scroll": "pl-order-blocks-scroll"
+            if inline and not wrap_inline
+            else "",
         }
 
         with open("pl-order-blocks.mustache", encoding="utf-8") as f:
@@ -455,6 +459,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 block.get("badge_type", "") == "" for block in student_submission
             ),
             "block_layout": "pl-order-blocks-horizontal" if inline else "",
+            "block_scroll": "pl-order-blocks-scroll"
+            if inline and not wrap_inline
+            else "",
             "dropzone_layout": (
                 "pl-order-blocks-bottom"
                 if dropzone_layout is SolutionPlacementType.BOTTOM
@@ -534,6 +541,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "distractors": distractors,
             "show_distractors": (len(distractors) > 0),
             "block_layout": "pl-order-blocks-horizontal" if inline else "",
+            "block_scroll": "pl-order-blocks-scroll"
+            if inline and not wrap_inline
+            else "",
             "dropzone_layout": (
                 "pl-order-blocks-bottom"
                 if dropzone_layout is SolutionPlacementType.BOTTOM

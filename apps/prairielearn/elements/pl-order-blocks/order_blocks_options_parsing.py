@@ -70,6 +70,7 @@ ANSWER_INDENT_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
 INDENTATION_DEFAULT = False
 INLINE_DEFAULT = False
+WRAP_INLINE_DEFAULT = False
 FILE_NAME_DEFAULT = "user_code.py"
 ORDERING_FEEDBACK_DEFAULT = None
 PARTIAL_CREDIT_DEFAULT = PartialCreditType.NONE
@@ -264,6 +265,7 @@ class OrderBlocksOptions:
     format: FormatType
     code_language: str | None
     inline: bool
+    wrap_inline: bool
     answer_options: list[AnswerOptions]
     correct_answers: list[AnswerOptions]
     incorrect_answers: list[AnswerOptions]
@@ -324,6 +326,9 @@ class OrderBlocksOptions:
         )
         self.code_language = pl.get_string_attrib(html_element, "code-language", None)
         self.inline = pl.get_boolean_attrib(html_element, "inline", INLINE_DEFAULT)
+        self.wrap_inline = pl.get_boolean_attrib(
+            html_element, "wrap-inline", WRAP_INLINE_DEFAULT
+        )
         self.has_optional_blocks = is_multigraph(html_element)
 
         # All necessary properties are initialized for collect_answer_options
@@ -360,6 +365,7 @@ class OrderBlocksOptions:
             "min-incorrect",
             "weight",
             "inline",
+            "wrap-inline",
             "max-indent",
             "feedback",
             "partial-credit",
@@ -436,6 +442,11 @@ class OrderBlocksOptions:
         if self.inline and self.indentation:
             raise ValueError(
                 "The indentation attribute may not be used when inline is true."
+            )
+
+        if not self.inline and self.wrap_inline:
+            raise ValueError(
+                "The wrap inline attribute may only be used when inline is true."
             )
 
         if (
