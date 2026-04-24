@@ -34,7 +34,7 @@ import {
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { throwAppError } from '../app-errors.js';
 
-import { requireCourseInstancePermissionEdit, t } from './init.js';
+import { requireCourseInstancePermissionEdit, requireCoursePermissionEdit, t } from './init.js';
 
 const MAX_UIDS = 50;
 
@@ -198,7 +198,7 @@ const deleteAll = t.procedure.use(requireCourseInstancePermissionEdit).mutation(
 });
 
 const enableGroupWork = t.procedure
-  .use(requireCourseInstancePermissionEdit)
+  .use(requireCoursePermissionEdit)
   .input(z.object({ origHash: z.string().nullable() }))
   .mutation(async ({ input, ctx }) => {
     const { origHash } = input;
@@ -268,7 +268,7 @@ const enableGroupWork = t.procedure
   });
 
 const updateGroupConfig = t.procedure
-  .use(requireCourseInstancePermissionEdit)
+  .use(requireCoursePermissionEdit)
   .input(
     z.object({
       origHash: z.string().nullable(),

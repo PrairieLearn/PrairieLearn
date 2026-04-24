@@ -125,7 +125,8 @@ function InstructorAssessmentGroupsInner({
   groupSettingsDefaults: initialGroupSettingsDefaults,
 }: Omit<InstructorAssessmentGroupsProps, 'trpcCsrfToken' | 'isDevMode'>) {
   const { assessment, assessment_set: assessmentSet, course, authz_data } = pageContext;
-  const canEdit =
+  const canEditCourse = authz_data.has_course_permission_edit && !course.example_course;
+  const canEditCourseInstance =
     (authz_data.has_course_instance_permission_edit ?? false) && !course.example_course;
   const [groupConfigInfo, setGroupConfigInfo] = useState(initialGroupConfigInfo);
   const [groupSettingsDefaults, setGroupSettingsDefaults] = useState(initialGroupSettingsDefaults);
@@ -141,7 +142,7 @@ function InstructorAssessmentGroupsInner({
     return (
       <NoGroupConfigCard
         origHash={origHash}
-        canEdit={canEdit}
+        canEdit={canEditCourse}
         onEnable={({ origHash: newHash, groupConfig, groupSettingsDefaults: newDefaults }) => {
           setOrigHash(newHash);
           setGroupConfigInfo(groupConfig);
@@ -157,7 +158,7 @@ function InstructorAssessmentGroupsInner({
         groupConfigInfo={groupConfigInfo}
         groupSettingsDefaults={groupSettingsDefaults}
         origHash={origHash}
-        canEdit={canEdit}
+        canEdit={canEditCourse}
         onOrigHashChange={setOrigHash}
         onGroupSizeSaved={(min, max) => {
           setGroupMin(min ?? 2);
@@ -172,7 +173,7 @@ function InstructorAssessmentGroupsInner({
         assessmentSet={assessmentSet}
         courseInstanceId={pageContext.course_instance.id}
         csrfToken={pageContext.__csrf_token}
-        canEdit={canEdit}
+        canEdit={canEditCourseInstance}
         groupMin={groupMin}
         groupMax={groupMax}
       />
