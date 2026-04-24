@@ -1,11 +1,12 @@
-import { QueryClient, useMutation } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Form, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { useModalState } from '@prairielearn/ui';
 
+import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 import { CreditPoolDashboard } from '../../components/ai-grading-credits/CreditPoolDashboard.js';
@@ -14,6 +15,7 @@ import {
   AI_GRADING_PROVIDER_OPTIONS,
 } from '../../lib/ai-grading/ai-grading-models.shared.js';
 
+import { PurchaseCreditsModal } from './PurchaseCreditsModal.js';
 import type { AiGradingApiKeyCredential } from './utils/format.js';
 import { createAiGradingSettingsTrpcClient } from './utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
@@ -208,12 +210,18 @@ export function InstructorInstanceAdminAiGrading({
   initialApiKeyCredentials,
   canEdit,
   isDevMode,
+  stripePurchasingEnabled,
+  initialCheckoutStatus,
+  initialCheckoutAmountMilliDollars,
 }: {
   trpcCsrfToken: string;
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
   canEdit: boolean;
   isDevMode: boolean;
+  stripePurchasingEnabled: boolean;
+  initialCheckoutStatus: 'success' | 'cancelled' | null;
+  initialCheckoutAmountMilliDollars: number | null;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -227,6 +235,9 @@ export function InstructorInstanceAdminAiGrading({
           initialUseCustomApiKeys={initialUseCustomApiKeys}
           initialApiKeyCredentials={initialApiKeyCredentials}
           canEdit={canEdit}
+          stripePurchasingEnabled={stripePurchasingEnabled}
+          initialCheckoutStatus={initialCheckoutStatus}
+          initialCheckoutAmountMilliDollars={initialCheckoutAmountMilliDollars}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -239,10 +250,16 @@ function AiGradingSettingsContent({
   initialUseCustomApiKeys,
   initialApiKeyCredentials,
   canEdit,
+  stripePurchasingEnabled,
+  initialCheckoutStatus,
+  initialCheckoutAmountMilliDollars,
 }: {
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
   canEdit: boolean;
+  stripePurchasingEnabled: boolean;
+  initialCheckoutStatus: 'success' | 'cancelled' | null;
+  initialCheckoutAmountMilliDollars: number | null;
 }) {
   const trpc = useTRPC();
 
@@ -360,7 +377,13 @@ function AiGradingSettingsContent({
           </div>
         )}
 
-        <CreditPoolSection useCustomApiKeys={useCustomApiKeys} />
+        <CreditPoolSection
+          useCustomApiKeys={useCustomApiKeys}
+          canEdit={canEdit}
+          stripePurchasingEnabled={stripePurchasingEnabled}
+          initialCheckoutStatus={initialCheckoutStatus}
+          initialCheckoutAmountMilliDollars={initialCheckoutAmountMilliDollars}
+        />
       </div>
 
       <AddApiKeyModal
@@ -393,34 +416,90 @@ function AiGradingSettingsContent({
   );
 }
 
-function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) {
+function CreditPoolSection({
+  useCustomApiKeys,
+  canEdit,
+  stripePurchasingEnabled,
+  initialCheckoutStatus,
+  initialCheckoutAmountMilliDollars,
+}: {
+  useCustomApiKeys: boolean;
+  canEdit: boolean;
+  stripePurchasingEnabled: boolean;
+  initialCheckoutStatus: 'success' | 'cancelled' | null;
+  initialCheckoutAmountMilliDollars: number | null;
+}) {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const purchaseModalState = useModalState();
+  const [checkoutStatus, setCheckoutStatus] = useState(initialCheckoutStatus);
+
+  useEffect(() => {
+    if (initialCheckoutStatus === 'success') {
+      // Refetch credit pool data after a successful purchase.
+      void queryClient.invalidateQueries({ queryKey: trpc.creditPool.queryKey() });
+      void queryClient.invalidateQueries({
+        queryKey: trpc.creditPoolChanges.queryKey({ page: 1 }),
+      });
+    }
+  }, [initialCheckoutStatus, queryClient, trpc]);
 
   return (
     <div className="border-top pt-3 mt-3">
+      {checkoutStatus === 'success' && (
+        <Alert variant="success" dismissible onClose={() => setCheckoutStatus(null)}>
+          <i className="bi bi-check-circle-fill me-2" aria-hidden="true" />
+          {initialCheckoutAmountMilliDollars != null
+            ? `${formatMilliDollars(initialCheckoutAmountMilliDollars)} in credits were`
+            : 'Credits have been'}{' '}
+          added to your course instance.
+        </Alert>
+      )}
+      {checkoutStatus === 'cancelled' && (
+        <Alert variant="info" dismissible onClose={() => setCheckoutStatus(null)}>
+          Payment cancelled. No credits were added.
+        </Alert>
+      )}
+      <div
+        className={clsx(
+          'd-flex justify-content-between align-items-center',
+          useCustomApiKeys ? 'mb-1' : 'mb-3',
+        )}
+      >
+        <div className="d-flex align-items-center gap-2">
+          <h2 className="h5 mb-0">AI grading credits</h2>
+          {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
+        </div>
+        {stripePurchasingEnabled && (
+          <button
+            type="button"
+            className="btn btn-sm btn-primary d-flex align-items-center gap-2"
+            disabled={!canEdit}
+            title={!canEdit ? 'You must be a course owner to purchase credits' : undefined}
+            style={!canEdit ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+            onClick={() => purchaseModalState.showWithData(null)}
+          >
+            <i className="bi bi-cart-plus" aria-hidden="true" />
+            Purchase credits
+          </button>
+        )}
+      </div>
+      {useCustomApiKeys && (
+        <p className="text-muted small mb-3">
+          While custom API keys are active, PrairieLearn AI grading credits are not deducted.
+        </p>
+      )}
       <CreditPoolDashboard
         trpc={trpc}
         balanceContext="instructor"
         dimmed={useCustomApiKeys}
-        header={
-          <>
-            <div
-              className={clsx(
-                'd-flex align-items-center gap-2',
-                useCustomApiKeys ? 'mb-1' : 'mb-3',
-              )}
-            >
-              <h2 className="h5 mb-0">AI grading credits</h2>
-              {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
-            </div>
-            {useCustomApiKeys && (
-              <p className="text-muted small mb-3">
-                While custom API keys are active, PrairieLearn AI grading credits are not deducted.
-              </p>
-            )}
-          </>
+        onPurchaseClick={
+          stripePurchasingEnabled && canEdit
+            ? () => purchaseModalState.showWithData(null)
+            : undefined
         }
       />
+      <PurchaseCreditsModal {...purchaseModalState} />
     </div>
   );
 }

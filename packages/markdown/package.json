@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@prairielearn/marked-mathjax": "workspace:^",
-    "dompurify": "^3.3.3",
+    "dompurify": "^3.4.0",
     "jsdom": "^29.0.1",
     "marked": "^17.0.5",
     "mathjax": "^4.1.1"

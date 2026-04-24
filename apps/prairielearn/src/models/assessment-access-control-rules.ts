@@ -35,7 +35,7 @@ type AccessControlJsonWithRequiredId = Required<Pick<AccessControlJsonWithId, 'i
 
 export interface EnrollmentAccessControlRuleData {
   id?: string;
-  listBeforeRelease: boolean | null;
+  beforeReleaseListed: boolean | null;
   releaseDate: string | null;
   dueDateOverridden: boolean;
   dueDate: string | null;
@@ -83,7 +83,14 @@ const RuleRowSchema = z.object({
   early_deadlines: DeadlineArraySchema,
   late_deadlines: DeadlineArraySchema,
   prairietest_exams: z
-    .array(AssessmentAccessControlPrairietestExamSchema.pick({ uuid: true, read_only: true }))
+    .array(
+      AssessmentAccessControlPrairietestExamSchema.pick({
+        uuid: true,
+        read_only: true,
+        after_complete_questions_hidden: true,
+        after_complete_score_hidden: true,
+      }),
+    )
     .nullable(),
 });
 
@@ -169,13 +176,13 @@ function dbBaseRowToAccessControlJson(
   }
 
   const isMainRule = rule.number === 0 && rule.target_type === 'none';
-  const listBeforeRelease = isMainRule
-    ? (rule.list_before_release ?? false)
-    : rule.list_before_release;
+  const beforeReleaseListed = isMainRule
+    ? (rule.before_release_listed ?? false)
+    : rule.before_release_listed;
 
   return {
     id: rule.id,
-    ...(listBeforeRelease != null ? { listBeforeRelease } : {}),
+    ...(beforeReleaseListed != null ? { beforeRelease: { listed: beforeReleaseListed } } : {}),
     dateControl: Object.keys(dateControl).length > 0 ? dateControl : undefined,
     afterComplete: Object.keys(afterComplete).length > 0 ? afterComplete : undefined,
   };
@@ -203,10 +210,20 @@ export function dbRowToAccessControlJson(
   const integrations: AccessControlJson['integrations'] = {};
   if (row.prairietest_exams && row.prairietest_exams.length > 0) {
     integrations.prairieTest = {
-      exams: row.prairietest_exams.map((e) => ({
-        examUuid: e.uuid,
-        readOnly: e.read_only,
-      })),
+      exams: row.prairietest_exams.map((e) => {
+        const afterComplete: { questions?: { hidden: true }; score?: { hidden: true } } = {};
+        if (e.after_complete_questions_hidden) {
+          afterComplete.questions = { hidden: true };
+        }
+        if (e.after_complete_score_hidden) {
+          afterComplete.score = { hidden: true };
+        }
+        return {
+          examUuid: e.uuid,
+          readOnly: e.read_only,
+          ...(Object.keys(afterComplete).length > 0 ? { afterComplete } : {}),
+        };
+      }),
     };
   }
 
@@ -241,7 +258,7 @@ export async function syncEnrollmentAccessControl(
 ): Promise<string> {
   const ruleJson = JSON.stringify({
     id: ruleData.id ?? null,
-    list_before_release: ruleData.listBeforeRelease,
+    before_release_listed: ruleData.beforeReleaseListed,
     date_control_release_date: ruleData.releaseDate,
     date_control_due_date_overridden: ruleData.dueDateOverridden,
     date_control_due_date: ruleData.dueDate,

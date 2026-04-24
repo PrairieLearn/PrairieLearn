@@ -50,6 +50,14 @@ const DateControlJsonSchema = z
   .strict()
   .optional();
 
+const ExamAfterCompleteJsonSchema = z
+  .object({
+    questions: z.object({ hidden: z.boolean() }).strict().optional(),
+    score: z.object({ hidden: z.boolean() }).strict().optional(),
+  })
+  .strict()
+  .optional();
+
 const ExamJsonSchema = z
   .object({
     examUuid: z
@@ -60,6 +68,9 @@ const ExamJsonSchema = z
       )
       .describe('UUID of associated PrairieTest exam'),
     readOnly: z.boolean().optional().describe('Whether the exam is read-only for students'),
+    afterComplete: ExamAfterCompleteJsonSchema.describe(
+      'Controls visibility after the student finishes the assessment during an active PrairieTest reservation. Only applies while a matching reservation is active; ignored otherwise.',
+    ),
   })
   .strict();
 
@@ -105,18 +116,26 @@ const AfterCompleteJsonSchema = z
   .strict()
   .optional();
 
+const BeforeReleaseJsonSchema = z
+  .object({
+    listed: z
+      .boolean()
+      .describe(
+        'Whether to list the assessment title before the release date. Students can see the title but cannot open the assessment.',
+      ),
+  })
+  .strict()
+  .optional();
+
 export const AccessControlJsonSchema = z
   .object({
     labels: z
       .array(z.string())
       .optional()
       .describe('Array of student label names this set targets'),
-    listBeforeRelease: z
-      .boolean()
-      .optional()
-      .describe(
-        'Only valid on the first entry (defaults). Whether to list the assessment title before the release date. Students can see the title but cannot open the assessment. Defaults to false.',
-      ),
+    beforeRelease: BeforeReleaseJsonSchema.describe(
+      'Only valid on the first entry (defaults). Controls assessment visibility before the release date.',
+    ),
 
     dateControl: DateControlJsonSchema,
     integrations: IntegrationsJsonSchema,

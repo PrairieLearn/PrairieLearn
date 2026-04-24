@@ -12,7 +12,6 @@ import {
 } from '../../lib/assessment-access-control/validation.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { saveJsonFile } from '../../lib/editorUtil.js';
-import { features } from '../../lib/features/index.js';
 import {
   type EnrollmentAccessControlRuleData,
   deleteEnrollmentAccessControlsByIds,
@@ -33,27 +32,13 @@ import { throwAppError } from '../app-errors.js';
 import {
   requireCourseInstancePermissionEdit,
   requireCourseInstancePermissionView,
+  requireEnhancedAccessControl,
   t,
 } from './init.js';
 
 export interface AccessControlError {
   SaveAllRules: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
-
-const requireEnhancedAccessControl = t.middleware(async (opts) => {
-  const enabled = await features.enabled('enhanced-access-control', {
-    institution_id: opts.ctx.course.institution_id,
-    course_id: opts.ctx.course.id,
-    course_instance_id: opts.ctx.course_instance.id,
-  });
-  if (!enabled) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Enhanced access control is not enabled for this course.',
-    });
-  }
-  return opts.next();
-});
 
 const students = t.procedure
   .use(requireEnhancedAccessControl)
@@ -113,7 +98,7 @@ function formJsonToEnrollmentRuleData(
   const ac = rule.afterComplete;
   return {
     id: rule.id,
-    listBeforeRelease: rule.listBeforeRelease ?? null,
+    beforeReleaseListed: rule.beforeRelease?.listed ?? null,
     releaseDate: dc?.releaseDate ?? null,
     dueDateOverridden: dc?.dueDate !== undefined,
     dueDate: dc?.dueDate ?? null,
@@ -159,7 +144,7 @@ function isNonEmptyObject(value: unknown): boolean {
 
 /**
  * Cleans access control rules for writing to infoAssessment.json on disk.
- * Removes empty objects/arrays and omits listBeforeRelease: false on the main rule.
+ * Removes empty objects/arrays and omits beforeRelease: { listed: false } on the main rule.
  */
 export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): AccessControlJson[] {
   return rules.map((rule, index) => {
@@ -169,8 +154,8 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
       clean.labels = rule.labels;
     }
 
-    if (index === 0 && rule.listBeforeRelease === true) {
-      clean.listBeforeRelease = true;
+    if (index === 0 && rule.beforeRelease?.listed === true) {
+      clean.beforeRelease = { listed: true };
     }
 
     if (isNonEmptyObject(rule.dateControl)) {

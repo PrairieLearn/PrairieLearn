@@ -1,0 +1,1 @@
+ALTER TABLE ai_grading_credit_pool_changes VALIDATE CONSTRAINT ai_grading_credit_pool_changes_checkout_session_id_fkey;

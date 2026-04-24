@@ -12,12 +12,31 @@ import { BaseSequencer, type TestSpecification } from 'vitest/node';
 // are slowest. However, this depends on cached data from previous runs, which
 // isn't available in CI. So, we manually specify the slowest tests here and
 // use a custom sequencer to always run them first.
+// Recent per-test timings (from master CI) were used to balance these shards.
+// Each of the first five shards is anchored around one of the longest-running
+// tests, so that no single shard is dramatically longer than the others.
 const SLOW_TESTS_SHARDS: Record<number, string[]> = {
   1: ['src/tests/exampleCourseQuestionsComplete.test.ts'],
   2: ['src/tests/exampleCourseQuestions.test.ts'],
-  3: ['src/tests/homework.test.ts', 'src/tests/fileEditor.test.ts'],
-  4: ['src/tests/accessibility/index.test.ts', 'src/tests/cron.test.ts', 'src/tests/exam.test.ts'],
+  3: ['src/tests/accessibility/index.test.ts'],
+  4: ['src/tests/homework.test.ts', 'src/tests/cron.test.ts'],
+  5: ['src/tests/fileEditor.test.ts', 'src/tests/exam.test.ts'],
+  6: [],
 };
+
+// Each shard gets a contiguous range of the tests outside of SLOW_TESTS, sized
+// inversely to how much slow-test work the shard already has.
+const NUM_SLICES = 13;
+const SHARD_SLICES: Record<number, { start: number; end: number }> = {
+  1: { start: 0, end: 0 },
+  2: { start: 0, end: 0 },
+  3: { start: 0, end: 1 },
+  4: { start: 1, end: 4 },
+  5: { start: 4, end: 8 },
+  6: { start: 8, end: NUM_SLICES },
+};
+
+const SHARD_COUNT = Object.keys(SLOW_TESTS_SHARDS).length;
 
 const SLOW_TESTS = Object.values(SLOW_TESTS_SHARDS).flat();
 
@@ -32,17 +51,6 @@ const gitignorePath = resolve(repoRoot, '.gitignore');
 if (existsSync(gitignorePath)) {
   gitignore.add(readFileSync(gitignorePath, 'utf8'));
 }
-
-// Each shard will get a certain slice of the tests outside of SLOW_TESTS.
-// This is a rough heuristic to try to balance the runtime of each shard.
-// For example, shard 3 will get 2/7 of these other tests.
-const NUM_SLICES = 7;
-const SHARD_SLICES: Record<number, { start: number; end: number }> = {
-  1: { start: 0, end: 0 },
-  2: { start: 0, end: 1 },
-  3: { start: 1, end: 3 },
-  4: { start: 3, end: NUM_SLICES },
-};
 
 class CustomSequencer extends BaseSequencer {
   async sort(files: TestSpecification[]) {
@@ -69,8 +77,8 @@ class CustomSequencer extends BaseSequencer {
     const { config } = this.ctx;
 
     const { index, count } = config.shard!;
-    if (count !== 4) {
-      throw new Error('Expected 4 shards');
+    if (count !== SHARD_COUNT) {
+      throw new Error(`Expected ${SHARD_COUNT} shards`);
     }
 
     // Some shards run slower tests, so other shards should take more 'slices'
