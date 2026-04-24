@@ -274,6 +274,8 @@ export const AssessmentAccessControlLateDeadlineSchema = z.object({
 });
 
 export const AssessmentAccessControlPrairietestExamSchema = z.object({
+  after_complete_questions_hidden: z.boolean(),
+  after_complete_score_hidden: z.boolean(),
   assessment_access_control_rule_id: IdSchema,
   id: IdSchema,
   read_only: z.boolean(),

@@ -755,6 +755,10 @@ export function migrateAllowAccess(rules: AssessmentAccessRuleJson[]): Migration
   // Second pass: merge PrairieTest integration info into the result.
   if (archetype.modifiers.includes('prairietest')) {
     const examRules = rules.filter((r) => r.examUuid);
+    // TODO: map legacy per-PT-exam `showClosedAssessment` / `showClosedAssessmentScore`
+    // flags to the new PT-level `afterComplete` config. Currently legacy rules with
+    // those flags set are migrated to a bare `{ examUuid, readOnly? }` entry, losing
+    // the in-session hiding behavior. Requires separate follow-up.
     const exams = examRules.map((r) => ({ examUuid: r.examUuid! }));
     migration.result.integrations = {
       prairieTest: { exams },
