@@ -448,7 +448,10 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { release: { date: '2025-01-01T00:00:00Z' }, dueDate: '2025-04-01T00:00:00Z' },
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              dueDate: '2025-04-01T00:00:00Z',
+            },
           }),
           makeOverrideRule(
             1,
@@ -511,7 +514,10 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { release: { date: '2025-01-01T00:00:00Z' }, dueDate: '2025-04-01T00:00:00Z' },
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              dueDate: '2025-04-01T00:00:00Z',
+            },
           }),
           makeOverrideRule(
             1,
@@ -550,7 +556,10 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { release: { date: '2025-01-01T00:00:00Z' }, dueDate: '2025-04-01T00:00:00Z' },
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              dueDate: '2025-04-01T00:00:00Z',
+            },
           }),
           makeOverrideRule(
             1,
@@ -574,7 +583,10 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { release: { date: '2025-01-01T00:00:00Z' }, dueDate: '2025-04-01T00:00:00Z' },
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              dueDate: '2025-04-01T00:00:00Z',
+            },
           }),
           makeOverrideRule(
             1,
@@ -598,7 +610,10 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { release: { date: '2025-01-01T00:00:00Z' }, dueDate: '2025-04-01T00:00:00Z' },
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              dueDate: '2025-04-01T00:00:00Z',
+            },
           }),
           makeOverrideRule(
             1,
@@ -622,7 +637,10 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { release: { date: '2025-01-01T00:00:00Z' }, dueDate: '2025-04-01T00:00:00Z' },
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              dueDate: '2025-04-01T00:00:00Z',
+            },
           }),
           makeOverrideRule(
             1,
@@ -648,7 +666,10 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { release: { date: '2025-01-01T00:00:00Z' }, dueDate: '2025-04-01T00:00:00Z' },
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              dueDate: '2025-04-01T00:00:00Z',
+            },
           }),
           makeOverrideRule(
             1,
