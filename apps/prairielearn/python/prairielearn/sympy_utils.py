@@ -562,6 +562,9 @@ class CheckAST(ast.NodeVisitor):
                 )
                 left_type, _ = self._enforce_signature(op, (left, right), *overloads)
                 return left_type
+            case "*":
+                self._enforce_signature(op, (left, right), 2 * [ASTSympyType.SCALAR])
+                return ASTSympyType.SCALAR
             case _:
                 lt, rt = self._get_type(left), self._get_type(right)
                 if lt is None or rt is None or lt == rt:

@@ -194,7 +194,7 @@ class TestSympy:
         ("{1, 2} ∩ {2, 3}", sympy.FiniteSet(2)),
         ("{1, 2} - {2, 3}", sympy.FiniteSet(1)),
         ("{1, 2} + {2, 3}", sympy.FiniteSet(1, 2, 3)),
-        ("{1, 2} * {}", sympy.EmptySet),
+        ("ProductSet({1, 2}, {})", sympy.EmptySet),
         (
             "({m, 3} U (m + 1, 4])",
             sympy.Union(sympy.FiniteSet(3, M), sympy.Interval.Lopen(M + 1, 4)),
@@ -902,6 +902,7 @@ class TestExceptions:
         "10/2 !| 2/10",
         "{1, 2} !** {3}",
         "1 !** {3}",
+        "{1, 2} !* {3, 4}",
         "x^2 !/ {1,2}",
         "x^2 !U {1,2}",
     )
