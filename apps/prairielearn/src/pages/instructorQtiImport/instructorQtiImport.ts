@@ -108,19 +108,13 @@ router.post(
             }));
 
       if (entries.length === 0) {
-        throw new HttpStatusError(
-          400,
-          'No QTI assessment files found in the uploaded archive',
-        );
+        throw new HttpStatusError(400, 'No QTI assessment files found in the uploaded archive');
       }
 
       // Try to read rubrics from course_settings/rubrics.xml.
       let rubricsXml: string | undefined;
       try {
-        rubricsXml = await readFile(
-          path.join(tempDir, 'course_settings', 'rubrics.xml'),
-          'utf-8',
-        );
+        rubricsXml = await readFile(path.join(tempDir, 'course_settings', 'rubrics.xml'), 'utf-8');
       } catch {
         // Not present in quiz-only exports.
       }
