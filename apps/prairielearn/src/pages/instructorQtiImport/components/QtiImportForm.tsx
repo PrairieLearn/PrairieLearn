@@ -235,6 +235,10 @@ export function QtiImportForm({
         .map((result, i) => ({ result, override: overrides[i] }))
         .filter(({ override }) => override.included);
 
+      // Track all allocated directory names so that multiple renames within
+      // the same import don't collide with each other.
+      const allocatedDirs = new Set(existingDirs);
+
       const payload = {
         assessments: includedAssessments.map(({ result, override }) => ({
           directoryName: result.assessment.directoryName,
@@ -251,8 +255,9 @@ export function QtiImportForm({
               const qOverride = questionOverrides.get(q.directoryName);
               let dirName = q.directoryName;
               if (qOverride?.collides && qOverride.collisionStrategy === 'rename') {
-                dirName = resolveRenamedDir(qOverride.originalDirName, existingDirs);
+                dirName = resolveRenamedDir(qOverride.originalDirName, allocatedDirs);
               }
+              allocatedDirs.add(dirName);
               return {
                 directoryName: dirName,
                 infoJson: {
@@ -787,48 +792,45 @@ function QuestionReviewPanel({
   const questionType = detectQuestionType(q.questionHtml);
   const included = qo?.included ?? true;
 
-  const fileEntries = useMemo(() => {
-    const mergedInfoJson = {
-      ...q.infoJson,
-      ...(qo && {
-        title: qo.title,
-        topic: qo.topic,
-        tags: qo.tags,
-      }),
-    };
+  const mergedInfoJson = {
+    ...q.infoJson,
+    ...(qo && {
+      title: qo.title,
+      topic: qo.topic,
+      tags: qo.tags,
+    }),
+  };
 
-    const entries: { name: string; path: string; content: string; icon: string }[] = [
-      {
-        name: 'info.json',
-        path: 'info.json',
-        content: JSON.stringify(mergedInfoJson, null, 2),
-        icon: 'bi-file-earmark-code',
-      },
-      {
-        name: 'question.html',
-        path: 'question.html',
-        content: q.questionHtml,
-        icon: 'bi-filetype-html',
-      },
-    ];
-    if (q.serverPy) {
-      entries.push({
-        name: 'server.py',
-        path: 'server.py',
-        content: q.serverPy,
-        icon: 'bi-filetype-py',
-      });
-    }
-    for (const name of Object.keys(q.clientFiles)) {
-      entries.push({
-        name,
-        path: `clientFilesQuestion/${name}`,
-        content: `(binary file — ${Math.ceil((q.clientFiles[name].length * 3) / 4)} bytes)`,
-        icon: 'bi-file-earmark-image',
-      });
-    }
-    return entries;
-  }, [q, qo]);
+  const fileEntries: { name: string; path: string; content: string; icon: string }[] = [
+    {
+      name: 'info.json',
+      path: 'info.json',
+      content: JSON.stringify(mergedInfoJson, null, 2),
+      icon: 'bi-file-earmark-code',
+    },
+    {
+      name: 'question.html',
+      path: 'question.html',
+      content: q.questionHtml,
+      icon: 'bi-filetype-html',
+    },
+  ];
+  if (q.serverPy) {
+    fileEntries.push({
+      name: 'server.py',
+      path: 'server.py',
+      content: q.serverPy,
+      icon: 'bi-filetype-py',
+    });
+  }
+  for (const name of Object.keys(q.clientFiles)) {
+    fileEntries.push({
+      name,
+      path: `clientFilesQuestion/${name}`,
+      content: `(binary file — ${Math.ceil((q.clientFiles[name].length * 3) / 4)} bytes)`,
+      icon: 'bi-file-earmark-image',
+    });
+  }
 
   const selectedContent = fileEntries.find((f) => f.path === selectedFile)?.content ?? null;
 
