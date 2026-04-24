@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
+import { formatDateISO } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 
@@ -25,6 +26,7 @@ import {
   type AssessmentSet,
   type Course,
   type CourseInstance,
+  CourseSchema,
   GroupRoleSchema,
   GroupSchema,
   InstanceQuestionSchema,
@@ -39,6 +41,7 @@ import {
   VariantSchema,
 } from '../../lib/db-types.js';
 import { getGroupConfig } from '../../lib/groups.js';
+import { idsEqual } from '../../lib/id.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 
@@ -166,6 +169,8 @@ const InstanceQuestionRowSchema = z.object({
   assessment_instance_number: AssessmentInstanceSchema.shape.number,
   zone_number: z.number(),
   zone_title: z.string().nullable(),
+  question_course_id: QuestionSchema.shape.course_id,
+  course_sharing_name: CourseSchema.shape.sharing_name,
   qid: QuestionSchema.shape.qid,
   instance_question_number: InstanceQuestionSchema.shape.number,
   points: InstanceQuestionSchema.shape.points,
@@ -175,11 +180,11 @@ const InstanceQuestionRowSchema = z.object({
   max_points: AssessmentQuestionSchema.shape.max_points,
   max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
   max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
-  date_formatted: z.string(),
+  instance_question_created_at: InstanceQuestionSchema.shape.created_at,
   highest_submission_score: z.number().nullable(),
   last_submission_score: z.number().nullable(),
   number_attempts: z.number(),
-  duration_seconds: z.number().nullable(),
+  duration: InstanceQuestionSchema.shape.duration,
   group_name: GroupSchema.shape.name.nullable(),
   uid_list: z.array(z.string()).nullable(),
   assigned_grader: UserSchema.shape.uid.nullable(),
@@ -566,7 +571,22 @@ router.get(
       ]);
 
       res.attachment(req.params.filename);
-      await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
+      await pipeline(
+        cursor.stream(100),
+        stringifyWithColumns(columns, (row) => ({
+          ...row,
+          assessment_label: `${res.locals.assessment_set.name} ${res.locals.assessment.number}`,
+          date_formatted: formatDateISO(
+            row.instance_question_created_at,
+            res.locals.course_instance.display_timezone,
+          ),
+          duration_seconds: row.duration == null ? null : Math.round(row.duration * 1000),
+          qid: idsEqual(res.locals.course.id, row.question_course_id)
+            ? row.qid
+            : `@${row.course_sharing_name}/${row.qid}`,
+        })),
+        res,
+      );
     } else if (req.params.filename === filenames.submissionsForManualGradingCsvFilename) {
       const cursor = await sqldb.queryCursor(
         sql.submissions_for_manual_grading,
