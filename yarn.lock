@@ -5491,6 +5491,32 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/question-conversion@workspace:packages/question-conversion":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/question-conversion@workspace:packages/question-conversion"
+  dependencies:
+    "@prairielearn/logger": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/he": "npm:^1.2.3"
+    "@types/node": "npm:^24.12.2"
+    "@types/uuid": "npm:^11.0.0"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260305.1"
+    "@vitest/coverage-v8": "npm:^4.1.2"
+    "@vscode/vscode-languagedetection": "npm:^1.0.23"
+    commander: "npm:^14.0.3"
+    fast-xml-parser: "npm:^5.2.0"
+    he: "npm:^1.2.0"
+    mime: "npm:^4.1.0"
+    source-map-support: "npm:^0.5.21"
+    tsx: "npm:^4.21.0"
+    typescript: "npm:^5.9.3"
+    uuid: "npm:^13.0.0"
+    vitest: "npm:^4.1.2"
+  bin:
+    question-convert: ./dist/bin/convert.js
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/react@workspace:^, @prairielearn/react@workspace:packages/react":
   version: 0.0.0-use.local
   resolution: "@prairielearn/react@workspace:packages/react"
@@ -10213,6 +10239,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/uuid@npm:^11.0.0":
+  version: 11.0.0
+  resolution: "@types/uuid@npm:11.0.0"
+  dependencies:
+    uuid: "npm:*"
+  checksum: 10c0/6ebf1448d8fdc78d348a8a84389b74083f2f58bed75a5a6cf3be8419d33dcf757735c8b2de746b066ff8ef07f4384d02549774dc84195ffa46b24745471e9d8e
+  languageName: node
+  linkType: hard
+
 "@types/warning@npm:^3.0.3":
   version: 3.0.3
   resolution: "@types/warning@npm:3.0.3"
@@ -10759,6 +10794,15 @@ __metadata:
   version: 0.0.18
   resolution: "@vscode/l10n@npm:0.0.18"
   checksum: 10c0/d1fc797001f7d508ab3fa91175f7a50ea98516c4e47830ff2be79163cde9279279514a167a3bad15b7ab7fc243e7808d8f32d3eb41f4a7d6721d9dfdbb38d89e
+  languageName: node
+  linkType: hard
+
+"@vscode/vscode-languagedetection@npm:^1.0.23":
+  version: 1.0.23
+  resolution: "@vscode/vscode-languagedetection@npm:1.0.23"
+  bin:
+    vscode-languagedetection: cli/index.js
+  checksum: 10c0/f305ce99eddbe74f90f45f0fabe0122e6269cf277d80a5fd07c3cfaedb3903c3073c4f5ecb04d2017f40a33aed8a86b6327d0ee7d54d4e1150b295e15b1c077f
   languageName: node
   linkType: hard
 
@@ -14408,6 +14452,19 @@ __metadata:
   bin:
     xml2js: cli.js
   checksum: 10c0/26ed57fd3cb86434959cffa6852ab63231850ff5be6836aef7744b1abc8013fa5696c05179e422965677e116606611242d91ceebf246d91a5247e262d8b59996
+  languageName: node
+  linkType: hard
+
+"fast-xml-parser@npm:^5.2.0":
+  version: 5.5.11
+  resolution: "fast-xml-parser@npm:5.5.11"
+  dependencies:
+    fast-xml-builder: "npm:^1.1.4"
+    path-expression-matcher: "npm:^1.4.0"
+    strnum: "npm:^2.2.3"
+  bin:
+    fxparser: src/cli/cli.js
+  checksum: 10c0/979f84d3ef0f979cdbee610a6bed88bb24555b8e4df6fe683644f937bb2e89ce39ed05ca07538da3d6fd7c05b8fe17c5f589dcafb470bca363de30fd37094c23
   languageName: node
   linkType: hard
 
@@ -18706,10 +18763,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"path-expression-matcher@npm:^1.1.3, path-expression-matcher@npm:^1.2.0":
-  version: 1.2.0
-  resolution: "path-expression-matcher@npm:1.2.0"
-  checksum: 10c0/86c661dfb265ed5dd1ddd9188f0dfbecf4ec4dc3ea6cabab081d3a2ba285054d9767a641a233bd6fd694fd89f7d0ef94913032feddf5365252700b02db4bf4e1
+"path-expression-matcher@npm:^1.1.3, path-expression-matcher@npm:^1.2.0, path-expression-matcher@npm:^1.4.0":
+  version: 1.4.0
+  resolution: "path-expression-matcher@npm:1.4.0"
+  checksum: 10c0/b6cf6aef88a29396ce0b459a8817a2a8d14f15dc6e059c8b5e04cf1d852789949dac6de059a7f574441e9bf71627b9beaa07bed1f21040209bda69aece26b21a
   languageName: node
   linkType: hard
 
@@ -21155,10 +21212,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"strnum@npm:^2.2.0":
-  version: 2.2.2
-  resolution: "strnum@npm:2.2.2"
-  checksum: 10c0/89c456de32b9495ae34cd6e3b59cb9ef3406b66d1429bbc931afd70be87485dcd355200c42fd638a132adb3121762542346813098ab0c43e44aac303bf17965d
+"strnum@npm:^2.2.0, strnum@npm:^2.2.3":
+  version: 2.2.3
+  resolution: "strnum@npm:2.2.3"
+  checksum: 10c0/1ee78101f1cd73a5b32f63cfd0be501bd246801a002f5987efef903a49e9297d1b63574e302ab3c06ee5e715c524d6cbdfef010e372ec1ea848e0179836cc208
   languageName: node
   linkType: hard
 
@@ -22109,6 +22166,15 @@ __metadata:
   version: 1.0.1
   resolution: "utils-merge@npm:1.0.1"
   checksum: 10c0/02ba649de1b7ca8854bfe20a82f1dfbdda3fb57a22ab4a8972a63a34553cf7aa51bc9081cf7e001b035b88186d23689d69e71b510e610a09a4c66f68aa95b672
+  languageName: node
+  linkType: hard
+
+"uuid@npm:*, uuid@npm:^13.0.0":
+  version: 13.0.0
+  resolution: "uuid@npm:13.0.0"
+  bin:
+    uuid: dist-node/bin/uuid
+  checksum: 10c0/950e4c18d57fef6c69675344f5700a08af21e26b9eff2bf2180427564297368c538ea11ac9fb2e6528b17fc3966a9fd2c5049361b0b63c7d654f3c550c9b3d67
   languageName: node
   linkType: hard
 
