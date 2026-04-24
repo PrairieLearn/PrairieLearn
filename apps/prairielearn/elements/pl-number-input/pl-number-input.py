@@ -267,6 +267,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "rtol": f"{rtol:g}",
                 "rtol_pct": f"{(rtol * 100):g}",
                 "atol": f"{atol:g}",
+				"tol_exact": max(0.0, 00) == 0,
             }
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
