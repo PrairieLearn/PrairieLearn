@@ -439,9 +439,14 @@ router.post(
           course_instance_id: courseInstance.id,
         });
         if (nonPublicAssessments.length > 0) {
+          const maxListed = 5;
+          const tids = nonPublicAssessments.slice(0, maxListed).map((a) => a.tid);
+          const remaining = nonPublicAssessments.length - tids.length;
+          const listed =
+            remaining > 0 ? `${tids.join(', ')}, and ${remaining} more` : tids.join(', ');
           throw new error.HttpStatusError(
             400,
-            `Cannot share this course instance publicly because it contains assessments that are not publicly shared: ${nonPublicAssessments.map((a) => a.tid).join(', ')}.`,
+            `Cannot share this course instance publicly because it contains assessments that are not publicly shared: ${listed}.`,
           );
         }
       }

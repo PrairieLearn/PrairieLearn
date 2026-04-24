@@ -1,5 +1,5 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
@@ -162,11 +162,11 @@ function InstructorCourseAdminSharingInner({
                   <button
                     type="button"
                     className="btn btn-xs btn-secondary mx-2"
-                    aria-label="Choose Sharing Name"
+                    aria-label="Choose sharing name"
                     onClick={() => chooseSharingNameModal.showWithData(null)}
                   >
-                    <i className="fas fa-share-nodes" aria-hidden="true" />
-                    <span className="d-none d-sm-inline"> Choose Sharing Name</span>
+                    <i className="bi bi-share-fill" aria-hidden="true" />
+                    <span className="d-none d-sm-inline"> Choose sharing name</span>
                   </button>
                 </td>
               </tr>
@@ -194,14 +194,14 @@ function InstructorCourseAdminSharingInner({
 
       <div className="card mb-4">
         <div className="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-          <h2>Sharing Sets</h2>
+          <h2>Sharing sets</h2>
           {canEdit && (
             <button
               type="button"
               className="btn btn-sm btn-light"
               onClick={() => addSharingSetModal.showWithData(null)}
             >
-              <i className="fas fa-plus" aria-hidden="true" /> Add sharing set
+              <i className="bi bi-plus-lg" aria-hidden="true" /> Add sharing set
             </button>
           )}
         </div>
@@ -246,7 +246,7 @@ function InstructorCourseAdminSharingInner({
                             onClick={() => addCourseModal.showWithData(sharingSet)}
                           >
                             Add...
-                            <i className="fas fa-plus" aria-hidden="true" />
+                            <i className="bi bi-plus-lg" aria-hidden="true" />
                           </button>
                         </div>
                       </td>
@@ -259,7 +259,7 @@ function InstructorCourseAdminSharingInner({
                               aria-label={`Edit description for ${sharingSet.name}`}
                               onClick={() => editDescriptionModal.showWithData(sharingSet)}
                             >
-                              <i className="fas fa-pen" aria-hidden="true" /> Edit
+                              <i className="bi bi-pencil" aria-hidden="true" /> Edit
                             </button>
                             {inUse ? (
                               <span
@@ -272,7 +272,7 @@ function InstructorCourseAdminSharingInner({
                                   aria-label={`Delete sharing set ${sharingSet.name}`}
                                   disabled
                                 >
-                                  <i className="fas fa-trash" aria-hidden="true" /> Delete
+                                  <i className="bi bi-trash" aria-hidden="true" /> Delete
                                 </button>
                               </span>
                             ) : (
@@ -282,7 +282,7 @@ function InstructorCourseAdminSharingInner({
                                 aria-label={`Delete sharing set ${sharingSet.name}`}
                                 onClick={() => deleteModal.showWithData(sharingSet)}
                               >
-                                <i className="fas fa-trash" aria-hidden="true" /> Delete
+                                <i className="bi bi-trash" aria-hidden="true" /> Delete
                               </button>
                             )}
                           </div>
@@ -302,6 +302,14 @@ function InstructorCourseAdminSharingInner({
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current !== null) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
   return (
     <button
       type="button"
@@ -311,13 +319,15 @@ function CopyButton({ text }: { text: string }) {
         try {
           await navigator.clipboard.writeText(text);
           setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
+          if (timeoutRef.current !== null) clearTimeout(timeoutRef.current);
+          timeoutRef.current = setTimeout(() => setCopied(false), 1500);
         } catch {
           // Clipboard API unavailable; silently ignore.
         }
       }}
     >
-      <i className="fa fa-copy" aria-hidden="true" /> <span>{copied ? 'Copied' : 'Copy'}</span>
+      <i className={copied ? 'bi bi-clipboard-check' : 'bi bi-clipboard'} aria-hidden="true" />{' '}
+      <span>{copied ? 'Copied' : 'Copy'}</span>
     </button>
   );
 }
@@ -330,18 +340,25 @@ function RegenerateSharingTokenButton({
   const trpc = useTRPC();
   const mutation = useMutation(trpc.sharing.regenerateSharingToken.mutationOptions());
   return (
-    <button
-      type="button"
-      className="btn btn-xs btn-secondary"
-      disabled={mutation.isPending}
-      onClick={() =>
-        mutation.mutate(undefined, {
-          onSuccess: ({ sharingToken }) => onRegenerated(sharingToken),
-        })
-      }
-    >
-      <i className="fa fa-rotate" aria-hidden="true" /> <span>Regenerate</span>
-    </button>
+    <>
+      <button
+        type="button"
+        className="btn btn-xs btn-secondary"
+        disabled={mutation.isPending}
+        onClick={() =>
+          mutation.mutate(undefined, {
+            onSuccess: ({ sharingToken }) => onRegenerated(sharingToken),
+          })
+        }
+      >
+        <i className="bi bi-arrow-clockwise" aria-hidden="true" /> <span>Regenerate</span>
+      </button>
+      {mutation.isError && (
+        <Alert variant="danger" className="mt-2" dismissible onClose={() => mutation.reset()}>
+          {mutation.error.message}
+        </Alert>
+      )}
+    </>
   );
 }
 
@@ -395,7 +412,7 @@ function ChooseSharingNameModal({
     return (
       <Modal show={show} onHide={handleHide} onExited={handleExited}>
         <Modal.Header closeButton>
-          <Modal.Title>Choose Sharing Name</Modal.Title>
+          <Modal.Title>Choose sharing name</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <strong>Unable to change your course's sharing name.</strong>
@@ -418,7 +435,7 @@ function ChooseSharingNameModal({
     <Modal show={show} onHide={handleHide} onExited={handleExited}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Modal.Header closeButton>
-          <Modal.Title>Choose Sharing Name</Modal.Title>
+          <Modal.Title>Choose sharing name</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {mutation.isError && (
@@ -477,7 +494,7 @@ function ChooseSharingNameModal({
             className="btn btn-primary"
             disabled={isSubmitting || mutation.isPending}
           >
-            Choose Sharing Name
+            Choose sharing name
           </button>
         </Modal.Footer>
       </form>
@@ -678,7 +695,6 @@ function AddCourseToSharingSetModal({
   const handleHide = () => {
     if (isSubmitting || mutation.isPending) return;
     mutation.reset();
-    reset({ courseSharingToken: '' });
     onHide();
   };
 
@@ -742,7 +758,7 @@ function AddCourseToSharingSetModal({
             className="btn btn-primary"
             disabled={isSubmitting || mutation.isPending}
           >
-            Add Course
+            Add course
           </button>
         </Modal.Footer>
       </form>
@@ -774,7 +790,6 @@ function EditSharingSetDescriptionModal({
     register,
     handleSubmit,
     formState: { isSubmitting },
-    reset,
   } = useForm<{ description: string }>({
     mode: 'onSubmit',
     values: { description: defaultDescription },
@@ -805,7 +820,6 @@ function EditSharingSetDescriptionModal({
   };
 
   const handleExited = () => {
-    reset({ description: '' });
     mutation.reset();
     onExited();
   };

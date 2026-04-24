@@ -307,8 +307,6 @@ const deleteSharingSet = t.procedure
     }
     sharingSets.splice(0, sharingSets.length, ...filtered);
 
-    await deleteSharingSetModel({ course_id: ctx.course.id, name: input.name });
-
     const result = await writeCourseInfo({
       locals: ctx.locals,
       coursePath: ctx.course.path,
@@ -325,6 +323,8 @@ const deleteSharingSet = t.procedure
         jobSequenceId: result.jobSequenceId,
       });
     }
+
+    await deleteSharingSetModel({ course_id: ctx.course.id, name: input.name });
 
     return { origHash: result.newHash };
   });

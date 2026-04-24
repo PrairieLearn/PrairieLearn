@@ -345,7 +345,10 @@ SELECT
     FROM
       questions AS q
     WHERE
-      q.share_publicly
+      (
+        q.share_publicly
+        OR q.share_source_publicly
+      )
       AND course_id = $course_id
     UNION
     SELECT

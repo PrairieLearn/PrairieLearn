@@ -560,12 +560,19 @@ function InstructorAssessmentSettingsInner({
                 id="share_source_publicly"
                 label="Share source publicly"
                 className="mb-1"
-                disabled={
-                  !canEdit ||
-                  assessment.share_source_publicly ||
-                  nonPublicQuestionsInAssessment.length > 0
+                disabled={!canEdit}
+                readOnly={
+                  assessment.share_source_publicly || nonPublicQuestionsInAssessment.length > 0
                 }
                 defaultChecked={defaultValues.share_source_publicly}
+                onClick={(e) => {
+                  if (
+                    assessment.share_source_publicly ||
+                    nonPublicQuestionsInAssessment.length > 0
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
                 {...register('share_source_publicly')}
               />
               <small className="form-text text-muted d-block mb-2">
