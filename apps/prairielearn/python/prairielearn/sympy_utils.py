@@ -375,8 +375,6 @@ class CheckAST(ast.NodeVisitor):
         ast.Mult: "*",
         ast.Pow: "**",
         ast.Sub: "-",
-        ast.USub: "-",
-        ast.UAdd: "-",
     })
 
     def __init__(
@@ -502,11 +500,8 @@ class CheckAST(ast.NodeVisitor):
     def visit_UnaryOp(self, node: ast.UnaryOp) -> ASTSympyType | None:
         operand_type = self._get_type(node.operand)
         if operand_type == ASTSympyType.SET:
-            operator = self.__unparsed_opstr.get(type(node.op))
-            if operator is None:
-                err_node = self.get_parent_with_location(node)
-                raise HasInvalidExpressionError(err_node.col_offset)
-            raise HasSetOperationTypeError(operator, None, operand_type)
+            err_node = self.get_parent_with_location(node)
+            raise HasInvalidExpressionError(err_node.col_offset)
         return self._set_type(node, operand_type)
 
     def visit_BinOp(self, node: ast.BinOp) -> ASTSympyType | None:
