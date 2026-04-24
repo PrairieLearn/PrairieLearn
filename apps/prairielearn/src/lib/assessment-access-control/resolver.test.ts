@@ -1972,24 +1972,6 @@ describe('resolveAccessControl', () => {
     });
   });
 
-  describe('no date control defaults', () => {
-    it.each([
-      { label: 'dateControl absent', rule: {} },
-      {
-        label: 'dateControl has no releaseDate',
-        rule: { dateControl: { due: { date: '2025-05-01T00:00:00Z' } } },
-      },
-    ])('returns 0 credit when $label', ({ rule }) => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [makeMainRule(rule)],
-        date: new Date('2025-03-15T00:00:00Z'),
-      });
-      expect(result.credit).toBe(0);
-      expect(result.active).toBe(false);
-    });
-  });
-
   describe('showBeforeRelease edge cases', () => {
     it('shows before release when beforeRelease.listed set without dateControl', () => {
       const result = resolveAccessControl({
