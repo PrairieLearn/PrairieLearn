@@ -710,26 +710,20 @@ function AssessmentQuestionsSection({
       <summary className="small text-muted mb-2">Questions ({questions.length})</summary>
 
       <div className="d-flex gap-2 mb-2 mt-1 small">
-        <a
-          href="#"
-          role="button"
-          onClick={(e) => {
-            e.preventDefault();
-            onExpandAll(allDirNames);
-          }}
+        <button
+          type="button"
+          className="btn btn-link btn-sm p-0"
+          onClick={() => onExpandAll(allDirNames)}
         >
           Expand all
-        </a>
-        <a
-          href="#"
-          role="button"
-          onClick={(e) => {
-            e.preventDefault();
-            onCollapseAll(allDirNames);
-          }}
+        </button>
+        <button
+          type="button"
+          className="btn btn-link btn-sm p-0"
+          onClick={() => onCollapseAll(allDirNames)}
         >
           Collapse all
-        </a>
+        </button>
       </div>
 
       {conflictCount > 0 && (
@@ -965,7 +959,7 @@ function QuestionReviewPanel({
               <div className="d-flex flex-grow-1" style={{ minWidth: '0', flex: '2 1 400px' }}>
                 {/* Column 2: File tree */}
                 <div
-                  className="p-3 border-end font-monospace small"
+                  className="p-3 border-end small d-flex flex-column"
                   style={{ width: '300px', flexShrink: 0 }}
                 >
                   <FileTree
@@ -1127,13 +1121,15 @@ function FileTree({
 
   return (
     <>
-      <div className="text-muted mb-2">
+      <div className="text-muted mb-2 font-monospace">
         <i className="bi bi-folder-fill me-1" aria-hidden="true" />
         {rootLabel}
       </div>
-      <TreeNodes nodes={tree} depth={0} selectedFile={selectedFile} onSelectFile={onSelectFile} />
-      <div className="text-muted small mt-3 px-2">
-        You'll be able to edit question files once imported.
+      <div className="font-monospace">
+        <TreeNodes nodes={tree} depth={0} selectedFile={selectedFile} onSelectFile={onSelectFile} />
+      </div>
+      <div className="text-muted small px-2 mt-auto">
+        You'll be able to edit question files once they've been imported.
       </div>
     </>
   );
