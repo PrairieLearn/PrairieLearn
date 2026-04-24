@@ -164,7 +164,7 @@ export function StudentAssessmentInstance({
   );
 
   const accessTimeline = resLocals.assessment.modern_access_control
-    ? (resLocals.authz_result.access_timeline ?? null)
+    ? resLocals.authz_result.access_timeline
     : null;
 
   return PageLayout({

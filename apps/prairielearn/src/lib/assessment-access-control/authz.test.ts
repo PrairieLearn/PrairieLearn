@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { type AuthzAssessmentAugmented, applyInstanceAccess } from './authz.js';
+import type { SprocAuthzAssessment } from '../db-types.js';
 
-const baseAssessmentResult: AuthzAssessmentAugmented = {
+import { applyInstanceAccess } from './authz.js';
+
+const baseAssessmentResult: SprocAuthzAssessment = {
   authorized: true,
   credit: 100,
   credit_date_string: '2025-03-15T12:00:00Z',
@@ -19,7 +21,7 @@ const baseAssessmentResult: AuthzAssessmentAugmented = {
   access_timeline: [],
 };
 
-const unauthorizedResult: AuthzAssessmentAugmented = {
+const unauthorizedResult: SprocAuthzAssessment = {
   ...baseAssessmentResult,
   authorized: false,
 };
