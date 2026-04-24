@@ -296,12 +296,6 @@ class HasInvalidFunctionError(BaseSympyError):
 
 
 @dataclass
-class HasInvalidVariableError(BaseSympyError):
-    offset: int
-    text: str
-
-
-@dataclass
 class FunctionNameWithoutArgumentsError(BaseSympyError):
     offset: int
     text: str
@@ -1291,12 +1285,6 @@ def try_parse_string_as_sympy(
     except HasInvalidFunctionError as exc:
         return SympyParseFailure(
             f'Your answer calls an invalid function "{exc.text}". '
-            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
-    except HasInvalidVariableError as exc:
-        return SympyParseFailure(
-            f'Your answer refers to an invalid variable "{exc.text}". '
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )

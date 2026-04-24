@@ -703,7 +703,7 @@ class TestExceptions:
 
     @pytest.mark.parametrize("a_sub", INVALID_VARIABLE_CASES)
     def test_invalid_variable(self, a_sub: str) -> None:
-        with pytest.raises((psu.HasInvalidSymbolError, psu.HasInvalidVariableError)):
+        with pytest.raises(psu.HasInvalidSymbolError):
             psu.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", FUNCTION_NOT_CALLED_CASES)

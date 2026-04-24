@@ -86,7 +86,6 @@ def test_external_exports():
             HasInvalidExpressionError,
             HasInvalidFunctionError,
             HasInvalidSymbolError,
-            HasInvalidVariableError,
             HasParseError,
             LocalsForEval,
             SympyJson,
