@@ -379,4 +379,20 @@ describe('cascadeRoleRenamesToZones', () => {
     cascadeRoleRenamesToZones(json, [{ name: 'Manager', origName: 'Manager' }]);
     assert.isUndefined(json.zones);
   });
+
+  it('keeps references when a rename recycles the old name for a new role', () => {
+    const json = makeJson([
+      {
+        canView: ['Manager', 'Recorder'],
+        questions: [{ canSubmit: ['Manager'] }],
+      },
+    ]);
+    cascadeRoleRenamesToZones(json, [
+      { name: 'Lead', origName: 'Manager' },
+      { name: 'Manager', origName: null },
+      { name: 'Recorder', origName: 'Recorder' },
+    ]);
+    assert.deepEqual(json.zones![0].canView, ['Manager', 'Recorder']);
+    assert.deepEqual(json.zones![0].questions[0].canSubmit, ['Manager']);
+  });
 });

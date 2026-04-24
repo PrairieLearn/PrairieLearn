@@ -105,13 +105,17 @@ export function cascadeRoleRenamesToZones(
   json: AssessmentJsonInput,
   roles: { name: string; origName: string | null }[],
 ): void {
+  const currentNames = new Set(roles.map((r) => r.name));
   const renameMap = new Map<string, string>();
   for (const role of roles) {
-    if (role.origName && role.origName !== role.name) {
+    // If the old name is reused by another role in the same submission (e.g.
+    // renaming "Manager" → "Lead" while adding a new "Manager"), leave existing
+    // references pointing to that name alone so they resolve to the new role.
+    if (role.origName && role.origName !== role.name && !currentNames.has(role.origName)) {
       renameMap.set(role.origName, role.name);
     }
   }
-  const validNames = new Set(roles.map((r) => r.name));
+  const validNames = currentNames;
   const rewrite = (names: string[] | undefined): string[] | undefined => {
     if (!names) return names;
     return names.map((n) => renameMap.get(n) ?? n).filter((n) => validNames.has(n));
