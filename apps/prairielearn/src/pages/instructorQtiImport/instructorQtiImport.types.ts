@@ -1,6 +1,5 @@
 import type {
   ConversionWarning,
-  CourseExportInfo,
   PLAssessmentInfoJson,
   PLQuestionInfoJson,
 } from '@prairielearn/question-conversion';
@@ -36,7 +35,6 @@ export interface StrippedAccessRules {
 /** Response shape of the upload endpoint. */
 export interface UploadResponse {
   results: SerializedConversionResult[];
-  courseExportInfo?: CourseExportInfo;
   /** Directory names of questions that already exist in the course. */
   existingQuestionDirs: string[];
   /** Access rule properties that were stripped from the imported assessments. */
