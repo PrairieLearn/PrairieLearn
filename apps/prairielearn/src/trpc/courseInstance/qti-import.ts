@@ -9,10 +9,6 @@ import { requireCoursePermissionEdit, t } from './init.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export interface QtiImportError {
-  Create: { code: 'IMPORT_JOB_FAILED'; jobSequenceId: string };
-}
-
 const QuestionDataSchema = z.object({
   directoryName: z.string().min(1),
   infoJson: z.record(z.unknown()),
