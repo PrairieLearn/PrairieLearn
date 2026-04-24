@@ -36,7 +36,14 @@ function makeRow(
     enrollments?: { enrollment_id: string; uid: string; name: string | null }[] | null;
     early_deadlines?: { date: string; credit: number }[] | null;
     late_deadlines?: { date: string; credit: number }[] | null;
-    prairietest_exams?: { uuid: string; read_only: boolean }[] | null;
+    prairietest_exams?:
+      | {
+          uuid: string;
+          read_only: boolean;
+          after_complete_questions_hidden?: boolean;
+          after_complete_score_hidden?: boolean;
+        }[]
+      | null;
   } = {},
 ) {
   return {
@@ -45,7 +52,13 @@ function makeRow(
     enrollments: overrides.enrollments ?? null,
     early_deadlines: overrides.early_deadlines ?? null,
     late_deadlines: overrides.late_deadlines ?? null,
-    prairietest_exams: overrides.prairietest_exams ?? null,
+    prairietest_exams:
+      overrides.prairietest_exams?.map((e) => ({
+        uuid: e.uuid,
+        read_only: e.read_only,
+        after_complete_questions_hidden: e.after_complete_questions_hidden ?? false,
+        after_complete_score_hidden: e.after_complete_score_hidden ?? false,
+      })) ?? null,
   };
 }
 

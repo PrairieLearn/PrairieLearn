@@ -147,8 +147,19 @@ BEGIN
         credit = EXCLUDED.credit;
 
     -- Upsert PrairieTest exams (main rules only).
-    INSERT INTO assessment_access_control_prairietest_exams (assessment_access_control_rule_id, uuid, read_only)
-    SELECT aacr.id, (e ->> 2)::uuid, (e ->> 3)::boolean
+    INSERT INTO assessment_access_control_prairietest_exams (
+        assessment_access_control_rule_id,
+        uuid,
+        read_only,
+        after_complete_questions_hidden,
+        after_complete_score_hidden
+    )
+    SELECT
+        aacr.id,
+        (e ->> 2)::uuid,
+        (e ->> 3)::boolean,
+        (e ->> 4)::boolean,
+        (e ->> 5)::boolean
     FROM UNNEST(prairietest_exams_data) AS e
     JOIN assessment_access_control_rules aacr ON
         aacr.assessment_id = (e ->> 0)::bigint
@@ -156,7 +167,9 @@ BEGIN
         AND aacr.target_type = 'none'
     JOIN assessments a ON a.id = aacr.assessment_id AND a.course_instance_id = syncing_course_instance_id
     ON CONFLICT (assessment_access_control_rule_id, uuid) DO UPDATE SET
-        read_only = EXCLUDED.read_only;
+        read_only = EXCLUDED.read_only,
+        after_complete_questions_hidden = EXCLUDED.after_complete_questions_hidden,
+        after_complete_score_hidden = EXCLUDED.after_complete_score_hidden;
 
     -- Delete excess rules: rules with number > max incoming number per assessment.
     -- Child rows are cascade-deleted via FK constraints.

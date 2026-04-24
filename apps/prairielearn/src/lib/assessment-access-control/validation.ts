@@ -504,6 +504,20 @@ export function validateRule(
       errors.push(`Duplicate PrairieTest exam UUID: ${e.examUuid}.`);
     }
     seenUuids.add(e.examUuid);
+
+    if (
+      e.readOnly === true &&
+      (e.afterComplete?.questions?.hidden === true || e.afterComplete?.score?.hidden === true)
+    ) {
+      errors.push(
+        `PrairieTest exam ${e.examUuid}: readOnly: true cannot be combined with afterComplete.questions.hidden: true or afterComplete.score.hidden: true (a readOnly reservation is a review environment).`,
+      );
+    }
+    if (e.afterComplete?.score?.hidden === true && e.afterComplete.questions?.hidden !== true) {
+      errors.push(
+        `PrairieTest exam ${e.examUuid}: afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.`,
+      );
+    }
   }
 
   const earlyDates = new Set<string>();
@@ -544,6 +558,13 @@ export function validateRule(
     rule.afterComplete.score.visibleFromDate !== undefined
   ) {
     errors.push('afterComplete.score cannot have visibleFromDate when hidden is false.');
+  }
+
+  if (
+    rule.afterComplete?.score?.hidden === true &&
+    rule.afterComplete.questions?.hidden === false
+  ) {
+    errors.push('afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.');
   }
 
   errors.push(
