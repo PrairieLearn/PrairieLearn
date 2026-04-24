@@ -22,11 +22,12 @@ from types import MappingProxyType as FrozenDict
 from typing import Any, Final, Literal, TypeAlias, TypedDict, TypeGuard, cast
 
 import sympy
-from prairielearn.misc_utils import FrozenClass, full_unidecode
 from sympy.parsing import sympy_parser
 from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
 from typing_extensions import NotRequired
+
+from prairielearn.misc_utils import FrozenClass, full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
@@ -513,7 +514,7 @@ class CheckAST(ast.NodeVisitor):
         arity_matches = [s for s in overloads if len(s) == len(args)]
         if not arity_matches:
             msg = ", ".join(map(str, sorted(map(len, overloads))))
-            msg = " or ".join(msg.rsplit(",", maxsplit=1))
+            msg = " or ".join(msg.rsplit(", ", maxsplit=1))
             raise HasSetFunctionArityError(fn_name, len(args), msg)
 
         arg_types = tuple(map(self._get_type, args))
