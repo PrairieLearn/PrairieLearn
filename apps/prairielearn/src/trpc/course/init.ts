@@ -36,3 +36,13 @@ export const requireCoursePermissionOwn = t.middleware(async (opts) => {
   }
   return opts.next();
 });
+
+export const requireNotExampleCourse = t.middleware(async (opts) => {
+  if (opts.ctx.course.example_course) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Access denied. Cannot make changes to example course.',
+    });
+  }
+  return opts.next();
+});

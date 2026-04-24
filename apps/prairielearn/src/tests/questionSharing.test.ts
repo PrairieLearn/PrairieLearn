@@ -3,12 +3,13 @@ import * as path from 'node:path';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
+import { getCourseTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { pullAndUpdateCourse } from '../lib/course.js';
 import { type Course } from '../lib/db-types.js';
@@ -18,6 +19,7 @@ import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import { selectQuestionByQid } from '../models/question.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
+import { createCourseTrpcClient } from '../trpc/course/client.js';
 
 import { fetchCheerio } from './helperClient.js';
 import {
@@ -29,7 +31,6 @@ import * as helperServer from './helperServer.js';
 import { makeMockLogger } from './mockLogger.js';
 import * as syncUtil from './sync/util.js';
 import { withConfig } from './utils/config.js';
-import { getCsrfToken } from './utils/csrf.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const { logger } = makeMockLogger();
@@ -50,18 +51,30 @@ function sharingPageUrl(courseId: string) {
   return `${baseUrl}/course/${courseId}/course_admin/sharing`;
 }
 
-async function setSharingName(courseId: string, name: string) {
-  const sharingUrl = sharingPageUrl(courseId);
-  const token = await getCsrfToken(sharingUrl);
+let devUserId: string;
 
-  return await fetch(sharingUrl, {
-    method: 'POST',
-    body: new URLSearchParams({
-      __action: 'choose_sharing_name',
-      __csrf_token: token,
-      course_sharing_name: name,
-    }),
-  });
+async function getDevUserId() {
+  if (devUserId) return devUserId;
+  devUserId = await sqldb.queryScalar(
+    "SELECT id FROM users WHERE uid = 'dev@example.com'",
+    {},
+    IdSchema,
+  );
+  return devUserId;
+}
+
+async function sharingTrpcClient(courseId: string) {
+  const authnUserId = await getDevUserId();
+  const csrfToken = generatePrefixCsrfToken(
+    { url: getCourseTrpcUrl(courseId), authn_user_id: authnUserId },
+    config.secretKey,
+  );
+  return createCourseTrpcClient({ csrfToken, courseId, urlBase: siteUrl });
+}
+
+async function setSharingName(courseId: string, name: string) {
+  const client = await sharingTrpcClient(courseId);
+  await client.sharing.chooseSharingName.mutate({ courseSharingName: name });
 }
 
 async function accessSharedQuestionAssessment(course_instance_id: string) {
@@ -266,14 +279,9 @@ describe('Question Sharing', function () {
     );
 
     test.sequential('Fail if trying to set an invalid sharing name', async () => {
-      let res = await setSharingName(sharingCourse.id, 'invalid@sharingname');
-      assert.equal(res.status, 400);
-
-      res = await setSharingName(sharingCourse.id, 'invalid / sharingname');
-      assert.equal(res.status, 400);
-
-      res = await setSharingName(sharingCourse.id, '');
-      assert.equal(res.status, 400);
+      await expect(setSharingName(sharingCourse.id, 'invalid@sharingname')).rejects.toThrow();
+      await expect(setSharingName(sharingCourse.id, 'invalid / sharingname')).rejects.toThrow();
+      await expect(setSharingName(sharingCourse.id, '')).rejects.toThrow();
     });
 
     test.sequential('Set consuming course sharing name', async () => {
@@ -299,27 +307,16 @@ describe('Question Sharing', function () {
     test.sequential(
       'Successfully change the sharing name when no questions have been shared',
       async () => {
-        let res = await setSharingName(sharingCourse.id, 'Nothing shared yet');
-        assert.equal(res.status, 200);
-
-        res = await setSharingName(sharingCourse.id, SHARING_COURSE_SHARING_NAME);
-        assert.equal(res.status, 200);
+        await setSharingName(sharingCourse.id, 'Nothing shared yet');
+        await setSharingName(sharingCourse.id, SHARING_COURSE_SHARING_NAME);
       },
     );
 
     test.sequential('Generate and get sharing token for sharing course', async () => {
-      const sharingUrl = sharingPageUrl(sharingCourse.id);
-      let response = await fetchCheerio(sharingUrl);
-      const token = response.$('#test_csrf_token').text();
-      await fetch(sharingUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'sharing_token_regenerate',
-          __csrf_token: token,
-        }),
-      });
+      const client = await sharingTrpcClient(sharingCourse.id);
+      await client.sharing.regenerateSharingToken.mutate();
 
-      response = await fetchCheerio(sharingUrl);
+      const response = await fetchCheerio(sharingPageUrl(sharingCourse.id));
       const result = UUID_REGEXP.exec(await response.text());
       exampleCourseSharingToken = result ? result[0] : null;
       assert(exampleCourseSharingToken != null);
@@ -350,24 +347,16 @@ describe('Question Sharing', function () {
     });
 
     test.sequential('Share sharing set with test course', async () => {
-      const sharingUrl = sharingPageUrl(sharingCourse.id);
-      const response = await fetchCheerio(sharingUrl);
-      const token = response.$('#test_csrf_token').text();
       const sharingSetId = await sqldb.queryScalar(
         sql.select_sharing_set,
         { sharing_set_name: SHARING_SET_NAME },
         IdSchema,
       );
-      const res = await fetch(sharingUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'course_sharing_set_add',
-          __csrf_token: token,
-          unsafe_sharing_set_id: sharingSetId,
-          unsafe_course_sharing_token: testCourseSharingToken!,
-        }),
+      const client = await sharingTrpcClient(sharingCourse.id);
+      await client.sharing.addCourseToSharingSet.mutate({
+        sharingSetId,
+        courseSharingToken: testCourseSharingToken!,
       });
-      assert(res.ok);
 
       const sharingPage = await fetchCheerio(sharingPageUrl(sharingCourse.id));
       assert(sharingPage.ok);
@@ -375,56 +364,37 @@ describe('Question Sharing', function () {
     });
 
     test.sequential('Attempt to share sharing set with invalid course token', async () => {
-      const sharingUrl = sharingPageUrl(sharingCourse.id);
-      const response = await fetchCheerio(sharingUrl);
-      const token = response.$('#test_csrf_token').text();
-      const res = await fetch(sharingUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'course_sharing_set_add',
-          __csrf_token: token,
-          unsafe_sharing_set_id: '1',
-          unsafe_course_sharing_token: 'invalid sharing token',
+      const client = await sharingTrpcClient(sharingCourse.id);
+      await expect(
+        client.sharing.addCourseToSharingSet.mutate({
+          sharingSetId: '1',
+          courseSharingToken: 'invalid sharing token',
         }),
-      });
-      assert.equal(res.status, 400);
+      ).rejects.toThrow();
     });
 
     test.sequential('Attempt to share sharing set with own course', async () => {
-      const sharingUrl = sharingPageUrl(sharingCourse.id);
-      const response = await fetchCheerio(sharingUrl);
-      const token = response.$('#test_csrf_token').text();
-      const res = await fetch(sharingUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'course_sharing_set_add',
-          __csrf_token: token,
-          unsafe_sharing_set_id: '1',
-          unsafe_course_sharing_token: exampleCourseSharingToken!,
+      const client = await sharingTrpcClient(sharingCourse.id);
+      await expect(
+        client.sharing.addCourseToSharingSet.mutate({
+          sharingSetId: '1',
+          courseSharingToken: exampleCourseSharingToken!,
         }),
-      });
-      assert.equal(res.status, 400);
+      ).rejects.toThrow();
     });
 
     test.sequential('Attempt to share sharing set that does not belong to the course', async () => {
-      const sharingUrl = sharingPageUrl(consumingCourse.id);
-      const response = await fetchCheerio(sharingUrl);
-      const token = response.$('#test_csrf_token').text();
-      const res = await fetch(sharingUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'course_sharing_set_add',
-          __csrf_token: token,
-          unsafe_sharing_set_id: '1',
-          unsafe_course_sharing_token: exampleCourseSharingToken!,
+      const client = await sharingTrpcClient(consumingCourse.id);
+      await expect(
+        client.sharing.addCourseToSharingSet.mutate({
+          sharingSetId: '1',
+          courseSharingToken: exampleCourseSharingToken!,
         }),
-      });
-      assert.equal(res.status, 400);
+      ).rejects.toThrow();
     });
 
     test.sequential('Fail to change the sharing name when a question has been shared', async () => {
-      const res = await setSharingName(sharingCourse.id, 'Question shared');
-      assert.equal(res.status, 400);
+      await expect(setSharingName(sharingCourse.id, 'Question shared')).rejects.toThrow();
     });
   });
 

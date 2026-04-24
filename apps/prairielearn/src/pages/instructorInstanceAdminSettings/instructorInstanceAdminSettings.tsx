@@ -31,12 +31,12 @@ import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { selectNonPublicAssessmentsInCourseInstance } from '../../lib/sharing-validation.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import { insertCourseInstancePermissions } from '../../models/course-permissions.js';
-import { selectNonPublicAssessmentsInCourseInstance } from '../../models/sharing-validation.js';
 import type { CourseInstanceJsonInput } from '../../schemas/index.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 

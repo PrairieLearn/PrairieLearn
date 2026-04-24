@@ -26,3 +26,38 @@ DELETE FROM sharing_sets
 WHERE
   course_id = $course_id
   AND name = $name;
+
+-- BLOCK select_sharing_sets_for_course
+SELECT
+  ss.name,
+  ss.id,
+  ss.description,
+  COALESCE(
+    jsonb_agg(
+      c.short_name
+      ORDER BY
+        c.short_name
+    ) FILTER (
+      WHERE
+        c.short_name IS NOT NULL
+    ),
+    '[]'
+  ) AS shared_with,
+  (
+    SELECT
+      COUNT(*)::int
+    FROM
+      sharing_set_questions AS ssq
+    WHERE
+      ssq.sharing_set_id = ss.id
+  ) AS question_count
+FROM
+  sharing_sets AS ss
+  LEFT JOIN sharing_set_courses AS css ON css.sharing_set_id = ss.id
+  LEFT JOIN courses AS c ON c.id = css.course_id
+WHERE
+  ss.course_id = $course_id
+GROUP BY
+  ss.id
+ORDER BY
+  ss.name;

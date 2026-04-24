@@ -565,6 +565,7 @@ function InstructorAssessmentSettingsInner({
                   assessment.share_source_publicly ||
                   nonPublicQuestionsInAssessment.length > 0
                 }
+                defaultChecked={defaultValues.share_source_publicly}
                 {...register('share_source_publicly')}
               />
               <small className="form-text text-muted d-block mb-2">

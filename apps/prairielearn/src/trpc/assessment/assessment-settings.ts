@@ -18,9 +18,9 @@ import {
   getOriginalHash,
 } from '../../lib/editors.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { selectNonPublicQuestionsInAssessment } from '../../lib/sharing-validation.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { selectAssessmentByUuid } from '../../models/assessment.js';
-import { selectNonPublicQuestionsInAssessment } from '../../models/sharing-validation.js';
 import {
   type AssessmentJsonInput,
   EnumAssessmentToolSchema,

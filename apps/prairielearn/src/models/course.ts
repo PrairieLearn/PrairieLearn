@@ -8,6 +8,7 @@ import {
   execute,
   loadSqlEquiv,
   queryOptionalRow,
+  queryOptionalScalar,
   queryRow,
   queryRows,
   runInTransactionAsync,
@@ -409,6 +410,26 @@ export async function updateCourseShowGettingStarted({
     course_id,
     show_getting_started,
   });
+}
+
+/**
+ * Returns `true` if the course can still pick/change its sharing name — i.e.
+ * no sharing name has been set yet, or no questions have been shared publicly
+ * or through a sharing set. Changing the sharing name after questions have
+ * been shared would break consuming courses that imported those questions.
+ */
+export async function selectCanChooseSharingName(course: {
+  id: string;
+  sharing_name: string | null;
+}): Promise<boolean> {
+  return (
+    course.sharing_name === null ||
+    !(await queryOptionalScalar(
+      sql.select_shared_question_exists,
+      { course_id: course.id },
+      z.boolean().nullable(),
+    ))
+  );
 }
 
 /**

@@ -22,6 +22,7 @@ import { config } from '../../lib/config.js';
 import { type AssessmentToolsConfig, getOriginalHash } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { selectNonPublicQuestionsInAssessment } from '../../lib/sharing-validation.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectAssessmentModulesForCourse } from '../../models/assessment-module.js';
@@ -30,7 +31,6 @@ import {
   selectAssessmentToolDefaults,
   selectAssessmentZonePointsRange,
 } from '../../models/assessment.js';
-import { selectNonPublicQuestionsInAssessment } from '../../models/sharing-validation.js';
 import { EnumAssessmentToolSchema } from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentSettings } from './instructorAssessmentSettings.html.js';
