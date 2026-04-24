@@ -7,9 +7,9 @@ import { useForm } from 'react-hook-form';
 import { run } from '@prairielearn/run';
 
 import { getAppError } from '../../lib/client/errors.js';
+import type { PageContext } from '../../lib/client/page-context.js';
 import { type StaffGroupConfig } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import type { GroupUsersRow } from '../../models/group.js';
 import type { AssessmentGroupsError } from '../../trpc/assessment/assessment-groups.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
@@ -67,7 +67,7 @@ interface InstructorAssessmentGroupsProps {
   groupConfigInfo?: StaffGroupConfig;
   groups?: GroupUsersRow[];
   notAssigned?: string[];
-  resLocals: ResLocalsForPage<'assessment'>;
+  pageContext: PageContext<'assessment', 'instructor'>;
   trpcCsrfToken: string;
   isDevMode: boolean;
 }
@@ -77,7 +77,7 @@ export function InstructorAssessmentGroups({
   groupConfigInfo,
   groups,
   notAssigned,
-  resLocals,
+  pageContext,
   trpcCsrfToken,
   isDevMode,
 }: InstructorAssessmentGroupsProps) {
@@ -85,8 +85,8 @@ export function InstructorAssessmentGroups({
   const [trpcClient] = useState(() =>
     createAssessmentTrpcClient({
       csrfToken: trpcCsrfToken,
-      courseInstanceId: resLocals.course_instance.id,
-      assessmentId: resLocals.assessment.id,
+      courseInstanceId: pageContext.course_instance.id,
+      assessmentId: pageContext.assessment.id,
     }),
   );
 
@@ -98,7 +98,7 @@ export function InstructorAssessmentGroups({
           groupConfigInfo={groupConfigInfo}
           groups={groups}
           notAssigned={notAssigned}
-          resLocals={resLocals}
+          pageContext={pageContext}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -112,7 +112,7 @@ function InstructorAssessmentGroupsInner({
   groupConfigInfo,
   groups: initialGroups,
   notAssigned: initialNotAssigned,
-  resLocals,
+  pageContext,
 }: Omit<InstructorAssessmentGroupsProps, 'trpcCsrfToken' | 'isDevMode'>) {
   const [showUploadAssessmentGroupsModal, setShowUploadAssessmentGroupsModal] = useState(false);
   const [showRandomAssessmentGroupsModal, setShowRandomAssessmentGroupsModal] = useState(false);
@@ -163,7 +163,7 @@ function InstructorAssessmentGroupsInner({
       <div className="card mb-4">
         <div className="card-header bg-primary text-white d-flex align-items-center">
           <h1>
-            {resLocals.assessment_set.name} {resLocals.assessment.number}: Groups
+            {pageContext.assessment_set.name} {pageContext.assessment.number}: Groups
           </h1>
         </div>
         <div className="card-body">
@@ -176,17 +176,17 @@ function InstructorAssessmentGroupsInner({
 
   return (
     <>
-      {resLocals.authz_data.has_course_instance_permission_edit && (
+      {pageContext.authz_data.has_course_instance_permission_edit && (
         <>
           <UploadAssessmentGroupsModal
-            csrfToken={resLocals.__csrf_token}
+            csrfToken={pageContext.__csrf_token}
             show={showUploadAssessmentGroupsModal}
             onHide={() => setShowUploadAssessmentGroupsModal(false)}
           />
           <RandomAssessmentGroupsModal
             groupMin={groupConfigInfo.minimum ?? 2}
             groupMax={groupConfigInfo.maximum ?? 5}
-            csrfToken={resLocals.__csrf_token}
+            csrfToken={pageContext.__csrf_token}
             show={showRandomAssessmentGroupsModal}
             onHide={() => setShowRandomAssessmentGroupsModal(false)}
           />
@@ -199,8 +199,8 @@ function InstructorAssessmentGroupsInner({
             }}
           />
           <DeleteAllGroupsModal
-            assessmentSetName={resLocals.assessment_set.name}
-            assessmentNumber={resLocals.assessment.number}
+            assessmentSetName={pageContext.assessment_set.name}
+            assessmentNumber={pageContext.assessment.number}
             show={showDeleteAllGroupsModal}
             onHide={() => setShowDeleteAllGroupsModal(false)}
             onAllGroupsDeleted={(notAssigned) => {
@@ -234,9 +234,9 @@ function InstructorAssessmentGroupsInner({
       <div className="card mb-4">
         <div className="card-header bg-primary text-white d-flex align-items-center gap-2">
           <h1>
-            {resLocals.assessment_set.name} {resLocals.assessment.number}: Groups
+            {pageContext.assessment_set.name} {pageContext.assessment.number}: Groups
           </h1>
-          {resLocals.authz_data.has_course_instance_permission_edit && (
+          {pageContext.authz_data.has_course_instance_permission_edit && (
             <div className="ms-auto d-flex gap-2">
               <button
                 type="button"
@@ -255,7 +255,7 @@ function InstructorAssessmentGroupsInner({
             </div>
           )}
         </div>
-        {resLocals.authz_data.has_course_instance_permission_edit && (
+        {pageContext.authz_data.has_course_instance_permission_edit && (
           <div className="container-fluid">
             <div className="row">
               <div className="col-sm bg-light py-4 border text-center">
@@ -294,7 +294,7 @@ function InstructorAssessmentGroupsInner({
                   className="text-center"
                   onSort={handleSort}
                 />
-                {resLocals.authz_data.has_course_instance_permission_edit && <th />}
+                {pageContext.authz_data.has_course_instance_permission_edit && <th />}
               </tr>
             </thead>
             <tbody>
@@ -302,7 +302,7 @@ function InstructorAssessmentGroupsInner({
                 <GroupRow
                   key={row.group_id}
                   row={row}
-                  canEdit={resLocals.authz_data.has_course_instance_permission_edit}
+                  canEdit={pageContext.authz_data.has_course_instance_permission_edit ?? false}
                   onEdit={setEditingGroup}
                   onDelete={setDeletingGroup}
                 />
@@ -313,7 +313,7 @@ function InstructorAssessmentGroupsInner({
             <p>
               Download{' '}
               <a
-                href={`${resLocals.urlPrefix}/assessment/${resLocals.assessment.id}/downloads/${groupsCsvFilename}`}
+                href={`${pageContext.urlPrefix}/assessment/${pageContext.assessment.id}/downloads/${groupsCsvFilename}`}
               >
                 {groupsCsvFilename}
               </a>
