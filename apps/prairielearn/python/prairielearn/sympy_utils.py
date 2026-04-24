@@ -431,6 +431,7 @@ class CheckAST(ast.NodeVisitor):
             self.visit(root)
         finally:
             self.__parents = {}
+            self.__type_cache = {}
 
     def _set_type(
         self, node: ast.AST, inferred_type: ASTSympyType | None
