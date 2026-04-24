@@ -290,9 +290,9 @@
     "brotli": 298751
   },
   "scripts/esm-bundles/hydrated-components/RichTextEditor.ts": {
-    "raw": 1503085,
-    "gzip": 463058,
-    "brotli": 393721
+    "raw": 1503165,
+    "gzip": 463182,
+    "brotli": 393818
   },
   "scripts/esm-bundles/hydrated-components/HomeCards.ts": {
     "raw": 975772,
@@ -400,9 +400,9 @@
     "brotli": 279077
   },
   "scripts/esm-bundles/hydrated-components/AiQuestionGenerationEditor.ts": {
-    "raw": 2605743,
-    "gzip": 752046,
-    "brotli": 639100
+    "raw": 2605838,
+    "gzip": 752174,
+    "brotli": 639216
   },
   "scripts/esm-bundles/hydrated-components/AssessmentAccessControl.ts": {
     "raw": 1173006,
