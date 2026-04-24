@@ -26,7 +26,7 @@ The import tool supports both individual quiz exports (`.zip` files) and full co
 | Ordering                      | `pl-order-blocks`                  |
 | Text-only (no response)       | Prompt only                        |
 
-Embedded images and other media files referenced by questions are also imported.
+Embedded images and other non-video media files referenced by questions are also imported.
 
 ## What isn't imported
 
@@ -34,6 +34,7 @@ Some content doesn't carry over from QTI exports, either because the format does
 
 - **Access rules** — Time limits, passwords, and start/end dates are not imported. These should be configured in PrairieLearn's [access control](assessment/accessControl.md) system.
 - **Rubrics** — QTI quiz-only exports don't include rubric definitions. Even in full course exports, rubric data isn't carried into PrairieLearn.
+- **Video files** — Video content (`.mp4`, `.webm`, `.mov`, etc.) is excluded from the import due to file size. The import review screen will list any skipped video files so you can re-host them separately.
 - **Question banks / pools** — In quiz-only exports, Canvas question banks referenced by a quiz are not included. Only questions that appear directly in the quiz are exported. Full course exports (`.imscc`) may include question bank content.
 - **Student data** — Submissions, grades, and enrollment data are not part of QTI exports.
 
@@ -57,7 +58,7 @@ Other LMS platforms have similar export features — look for "QTI export" or "I
 3. Upload your `.zip` or `.imscc` file.
 4. Review the import summary. You'll see:
    - How many assessments and questions were found
-   - Any content that wasn't imported (rubrics, access rules, etc.)
+   - Any content that wasn't imported (rubrics, access rules, video files, etc.)
 5. For each assessment, you can edit the **title**, **type** (Homework or Exam), **set**, and **number** before creating it.
 6. Expand the **Questions** section on any assessment to review individual questions. For each question, you can:
    - Edit the **title**, **topic**, and **tags**
