@@ -404,6 +404,24 @@ describe('resolveAccessControl', () => {
       expect(result.credit).toBe(100);
       expect(result.active).toBe(true);
     });
+
+    it('propagates password and time limit when after release date and no deadlines', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-01T00:00:00Z',
+              password: 'secret',
+              durationMinutes: 60,
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(result.password).toBe('secret');
+      expect(result.timeLimitMin).toBe(60);
+    });
   });
 
   describe('early deadline bonus credit', () => {
