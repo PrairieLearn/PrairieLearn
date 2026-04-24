@@ -311,9 +311,9 @@ class HasInvalidSymbolError(BaseSympyError):
 
 
 class ASTSympyType(Enum):
-    SCALAR = "scalar"
+    SCALAR = "number"
     SET = "set"
-    BOOL = "boolean"
+    BOOL = "true/false"
     STRING = "text"
 
     def __str__(self) -> str:
