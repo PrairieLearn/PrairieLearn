@@ -375,7 +375,6 @@ def test_wrap_inline_validation(options: dict) -> None:
     order_blocks_options._validate_order_blocks_options()
 
 
-
 @pytest.mark.parametrize(
     ("options", "error"),
     [
