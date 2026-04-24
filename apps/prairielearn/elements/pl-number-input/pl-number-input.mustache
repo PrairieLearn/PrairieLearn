@@ -176,7 +176,7 @@ double-precision floating-point number.)
 {{/allow_complex}}
 Do not include variables, units, or symbolic expressions such as <code>pi</code>, <code>sqrt(2)</code>, or <code>3*x</code>.
 </p>
-{{#relabs}}<p>For credit, your answer must be within {{rtol_percent}}% of the correct answer (relative tolerance {{rtol}}) and within &#x00b1;{{atol}} of the correct answer (absolute tolerance).</p>{{/relabs}}
+{{#relabs}}<p>For credit, your answer must be within {{rtol_pct}}% of the correct answer (relative tolerance {{rtol}}) and within &#x00b1;{{atol}} of the correct answer (absolute tolerance).</p>{{/relabs}}
 {{#sigfig}}<p>Your answer must match the correct value to {{digits}} significant figure{{#digits_plural}}s{{/digits_plural}}. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.</p>{{/sigfig}}
 {{#decdig}}<p>Your answer must match the correct value to {{digits}} digit{{#digits_plural}}s{{/digits_plural}} after the decimal point. For instance, if the correct answer is 1.234, any submission between 1.234 &#x2212; {{comparison_eps}} and 1.234 + {{comparison_eps}} is counted correct.</p>{{/decdig}}
 {{/show_info}}
