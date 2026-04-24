@@ -194,7 +194,6 @@ class TestSympy:
         ("{1, 2} ∩ {2, 3}", sympy.FiniteSet(2)),
         ("{1, 2} - {2, 3}", sympy.FiniteSet(1)),
         ("{1, 2} + {2, 3}", sympy.FiniteSet(1, 2, 3)),
-        ("ProductSet({1, 2}, {})", sympy.EmptySet),
         (
             "({m, 3} U (m + 1, 4])",
             sympy.Union(sympy.FiniteSet(3, M), sympy.Interval.Lopen(M + 1, 4)),
@@ -220,14 +219,6 @@ class TestSympy:
         (
             "[f(m + 1), g(f(m) + 1)]",
             sympy.Interval(F(M + 1), G(F(M) + 1)),
-        ),
-        (
-            "{1, 2} ** 3",
-            sympy.ProductSet(
-                sympy.FiniteSet(1, 2),
-                sympy.FiniteSet(1, 2),
-                sympy.FiniteSet(1, 2),
-            ),
         ),
         # nested sets
         ("{1, 1}", sympy.FiniteSet(1)),
@@ -882,6 +873,11 @@ class TestExceptions:
         "{1, 2} !- 3",
         "1 !+ {2, 3}",
         "1 !- {2, 3}",
+        "!factorial({})",
+        "!sin({ {}, {} })",
+        "!cos({a, b})",
+        "!Integer({1, 2})",
+        "!exp({2, 3})",
         "!Interval({}, 2)",
         "!Interval(1, {})",
         "!Interval(1)",
@@ -890,7 +886,6 @@ class TestExceptions:
         "!Intersection(1, 2)",
         "!Intersection({}, 2)",
         "!Intersection( )",
-        "!ProductSet( )",
         "1 !U 2",
         "1 !| 2",
         "1 !cup 2",
@@ -900,8 +895,6 @@ class TestExceptions:
         "1 !∩ 2",
         "10/2 !U 2/10",
         "10/2 !| 2/10",
-        "{1, 2} !** {3}",
-        "1 !** {3}",
         "{1, 2} !* {3, 4}",
         "x^2 !/ {1,2}",
         "x^2 !U {1,2}",
@@ -934,6 +927,33 @@ class TestExceptions:
         match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
         assert match is not None, f"error message has no caret: {error_msg}"
         assert expected_caret == match.group(1)
+
+    @pytest.mark.parametrize(
+        "caret_spec",
+        [
+            "{1, 2} {1, 2}",  # implicit mult results in caret-less type error
+            "{1, 2} !* {1, 2}",
+            "{1, 2} !** 3",
+            "{1, 2} !/ 3",
+            "{1, 2} !/ {2}",
+        ],
+    )
+    def test_sets_unsupported_product_features_are_rejected(
+        self, caret_spec: str
+    ) -> None:
+        if "!" in caret_spec:
+            expr, expected_caret = _caret_template(caret_spec)
+        else:
+            expr, expected_caret = caret_spec, None
+        error_msg = psu.validate_string_as_sympy(expr, None, allow_set_notation=True)
+        assert error_msg is not None
+        assert re.search(r"\bset\b", error_msg, re.IGNORECASE), (
+            f"error message is not descriptive: {error_msg}"
+        )
+        if expected_caret:
+            match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
+            assert match is not None, f"error message has no caret: {error_msg}"
+            assert expected_caret == match.group(1)
 
     def test_invalid_function_with_simplify_false(self) -> None:
         """Test that invalid function calls are caught with simplify_expression=False.

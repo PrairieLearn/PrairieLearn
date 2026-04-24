@@ -42,16 +42,6 @@ AssumptionsDictT = dict[str, dict[str, Any]]
 ASTWhiteListT = tuple[type[ast.AST], ...]
 
 
-class ASTSympyType(Enum):
-    SCALAR = "scalar"
-    SET = "set"
-    BOOL = "boolean"
-
-    def __str__(self) -> str:
-        """Returns `self.value`"""
-        return self.value
-
-
 # A dictionary of assumptions for variables in the expression.
 #
 # Examples:
@@ -173,7 +163,6 @@ class _Constants(metaclass=FrozenClass):
         "FiniteSet": sympy.FiniteSet,
         "Union": sympy.Union,
         "Intersection": sympy.Intersection,
-        "ProductSet": sympy.ProductSet,
     })
 
     set_operators: Final[FrozenSympyFunctionMapT] = FrozenDict({
@@ -321,30 +310,51 @@ class HasInvalidSymbolError(BaseSympyError):
     symbol: str
 
 
+class ASTSympyType(Enum):
+    SCALAR = "scalar"
+    SET = "set"
+    BOOL = "boolean"
+    STRING = "text"
+
+    def __str__(self) -> str:
+        """Returns `self.value`"""
+        return self.value
+
+
 @dataclass
-class HasSetOperationTypeError(BaseSympyError):
-    operator: str
-    expecteds: Sequence[ASTSympyType]
-    for_argument: int
+class HasArgumentTypeError(BaseSympyError):
+    fn: str
+    got: ASTSympyType
+    allowable_types: Sequence[ASTSympyType]
+    arg_idx: int
     offset: int = -1
 
-    def format_err_msg(self) -> str:
-        if len(self.expecteds) == 1:
-            es_msg = f"a {self.expecteds[0]}"
-        else:
-            es_msg = f"either {_format_comma_seperated(set(self.expecteds))}"
-        return f"unsupported operand type(s) for {self.operator}: argument #{self.for_argument + 1} requires {es_msg}"
+    def format_allowable_types(self) -> str:
+        if len(self.allowable_types) == 1:
+            return f"a {self.allowable_types[0]}"
+        return f"either {_format_comma_seperated(set(self.allowable_types))}"
+
+    def as_type_error(self) -> TypeError:
+        # NOTE: must match format of `_TYPE_ERROR_OPERATOR_PATTERN`
+        return TypeError(
+            f"unsupported operand type(s) for {self.fn}: "
+            f"argument #{self.arg_idx + 1} requires {self.format_allowable_types()}, not {self.got}"
+        )
 
 
 @dataclass
-class HasSetFunctionArityError(BaseSympyError):
+class HasFunctionArityError(BaseSympyError):
     fn: str
     provided: int
     expected: str
     offset: int = -1
 
-    def format_err_msg(self) -> str:
-        return f"wrong number of arguments for {self.fn}: got {self.provided} but expected {self.expected}"
+    def as_type_error(self) -> TypeError:
+        # NOTE: must match format of `_TYPE_ERROR_OPERATOR_PATTERN`
+        return TypeError(
+            f"wrong number of arguments for {self.fn}: "
+            f"got {self.provided} but expected {self.expected}"
+        )
 
 
 class CheckAST(ast.NodeVisitor):
@@ -444,6 +454,8 @@ class CheckAST(ast.NodeVisitor):
     def visit_Constant(self, node: ast.Constant) -> ASTSympyType | None:
         if node.value is True or node.value is False:
             return self._set_type(node, ASTSympyType.BOOL)
+        if node.kind is not None:
+            return self._set_type(node, ASTSympyType.STRING)
         return self._set_type(node, ASTSympyType.SCALAR)
 
     def visit_Name(self, node: ast.Name) -> ASTSympyType | None:
@@ -472,19 +484,24 @@ class CheckAST(ast.NodeVisitor):
 
         self.generic_visit(node)
 
-        if isinstance(node.func, ast.Name):
-            match node.func.id:
-                case "Symbol":
-                    return self._set_type(node, None)
-                case "Integer" | "Float":
-                    return self._set_type(node, ASTSympyType.SCALAR)
-                case fn if self.allow_set_notation and fn in _Constants.set_functions:
-                    inferred = self._infer_set_function_type(fn, node.args)  # type: ignore
-                    return self._set_type(node, inferred)
-                case _:
-                    pass
+        if not isinstance(node.func, ast.Name):
+            return self._set_type(node, None)
 
-        return self._set_type(node, None)
+        name, args = node.func.id, node.args
+        match name:
+            case "Symbol":
+                return self._set_type(node, None)
+            case "Integer" | "Float":
+                overloads = [ASTSympyType.SCALAR], [ASTSympyType.STRING]
+                self._enforce_signature(name, args, *overloads)
+                return self._set_type(node, ASTSympyType.SCALAR)
+            case fn if self.allow_set_notation and fn in _Constants.set_functions:
+                return self._set_type(node, self._infer_set_function_type(name, args))
+            case fn if fn in _Constants.functions or fn in _Constants.trig_functions:
+                self._enforce_signature(fn, args, len(args) * [ASTSympyType.SCALAR])
+                return self._set_type(node, ASTSympyType.SCALAR)
+            case _:
+                return self._set_type(node, None)
 
     def visit_UnaryOp(self, node: ast.UnaryOp) -> ASTSympyType | None:
         operand_type = self._get_type(node.operand)
@@ -508,45 +525,45 @@ class CheckAST(ast.NodeVisitor):
     ) -> tuple[ASTSympyType | None, ...]:
         arity_matches = [s for s in overloads if len(s) == len(args)]
         if not arity_matches:
-            sorted_arities = sorted(set(map(len, overloads)))
-            msg = _format_comma_seperated(sorted_arities)
-            raise HasSetFunctionArityError(fn_name, len(args), msg)
+            msg = _format_comma_seperated(sorted(set(map(len, overloads))))
+            raise HasFunctionArityError(fn_name, len(args), msg)
 
         arg_types = tuple(map(self._get_type, args))
 
-        fails: list[tuple[ASTSympyType, int]] = []
+        fails: list[tuple[int, ASTSympyType, ASTSympyType]] = []
         for signature in arity_matches:
             for i, (expected, got) in enumerate(zip(signature, arg_types, strict=True)):
                 if got is not None and expected is not None and got != expected:
-                    fails.append((expected, i))
+                    fails.append((i, expected, got))
                     break
             else:
                 return arg_types
 
-        _, fail_index = max(fails, key=lambda f: f[1])
-        expecteds = [t for t, i in fails if i == fail_index]
-        raise HasSetOperationTypeError(fn_name, expecteds, for_argument=fail_index)
+        arg_index, _, got = max(fails, key=lambda f: f[0])
+        expecteds = [e for i, e, _ in fails if i == arg_index]
+        raise HasArgumentTypeError(fn_name, got, expecteds, arg_idx=arg_index)
 
     def _infer_set_function_type(
-        self,
-        name: Literal["Union", "Intersection", "Interval", "FiniteSet", "ProductSet"],
-        args: list[ast.expr],
+        self, name: str, args: list[ast.expr]
     ) -> ASTSympyType | None:
         match name:
             case "FiniteSet":
                 return ASTSympyType.SET
             case "Interval":
-                overloads = (
+                self._enforce_signature(
+                    name,
+                    args,
                     (ASTSympyType.SCALAR, ASTSympyType.SCALAR),
                     (2 * [ASTSympyType.SCALAR] + 2 * [ASTSympyType.BOOL]),
                 )
-                self._enforce_signature(name, args, *overloads)
                 return ASTSympyType.SET
-            case "Union" | "Intersection" | "ProductSet":
+            case "Union" | "Intersection":
                 if not args:
-                    raise HasSetFunctionArityError(name, len(args), "1+")
+                    raise HasFunctionArityError(name, len(args), "1+")
                 self._enforce_signature(name, args, len(args) * [ASTSympyType.SET])
                 return ASTSympyType.SET
+            case _:
+                return None
 
     def _infer_bin_op_type(
         self, op: str, left: ast.expr, right: ast.expr
@@ -555,14 +572,11 @@ class CheckAST(ast.NodeVisitor):
             case "|" | "&":
                 self._enforce_signature(op, (left, right), 2 * [ASTSympyType.SET])
                 return ASTSympyType.SET
-            case "**":
-                overloads = (
-                    (ASTSympyType.SCALAR, ASTSympyType.SCALAR),
-                    (ASTSympyType.SET, ASTSympyType.SCALAR),
-                )
+            case "-" | "+":
+                overloads = (2 * [ASTSympyType.SET]), (2 * [ASTSympyType.SCALAR])
                 left_type, _ = self._enforce_signature(op, (left, right), *overloads)
                 return left_type
-            case "*":
+            case "**" | "*" | "/" | "%":
                 self._enforce_signature(op, (left, right), 2 * [ASTSympyType.SCALAR])
                 return ASTSympyType.SCALAR
             case _:
@@ -756,8 +770,8 @@ def evaluate_with_source(
         HasEscapeError: If the expression contains an escape character.
         HasCommentError: If the expression contains a comment character.
         HasSetNotationError: If the expression contains interval or set characters.
-        HasSetOperationTypeError: If the expression uses an operator improperly.
-        HasSetFunctionArityError: If the expression uses a set function improperly.
+        HasArgumentTypeError: If an expression is given the wrong types.
+        HasFunctionArityError: If a function is given the wrong number of args.
         HasSetNotationError: If the expression contains interval or set characters.
         HasParseError: If the expression cannot be parsed.
         BaseSympyError: If the expression cannot be evaluated.
@@ -879,12 +893,9 @@ def evaluate_with_source(
         ast_check_str(
             code, parsed_locals_to_eval, allow_set_notation=allow_set_notation
         )
-    except (HasSetOperationTypeError, HasSetFunctionArityError) as exc:
-        if not allow_set_notation:
-            raise HasSetNotationError from exc
-
+    except (HasArgumentTypeError, HasFunctionArityError) as exc:
         index = _find_type_error_offset(
-            normalized_expr, char_offsets, TypeError(exc.format_err_msg())
+            normalized_expr, char_offsets, exc.as_type_error()
         )
         if index != -1:
             exc.offset = index
@@ -1298,26 +1309,19 @@ def try_parse_string_as_sympy(
             f"<br><br><pre>{point_to_error(expr, find_symbol_offset(expr, exc.symbol))}</pre>"
             "Note that the location of the syntax error is approximate."
         )
-    except HasSetOperationTypeError as exc:
-        if exc.operator == "**":
-            error_text = "A set can only be raised to a natural number exponent."
-        elif exc.operator in {"|", "&", "Union", "Intersection"}:
-            error_text = (
-                "Your answer uses a set operation with a non-set value. "
-                "Set union and intersection only work on sets."
-            )
-        else:
-            error_text = (
-                "Your answer uses an arithmetic operation with a set value. "
-                "Arithmetic operators only work on numbers."
-            )
+    except HasArgumentTypeError as exc:
+        error_text = (
+            f"Your answer provides the wrong types to {exc.fn}. "
+            f"It was expecting {exc.format_allowable_types()}, but got a {exc.got} "
+            f"for argument #{exc.arg_idx + 1} instead."
+        )
         if exc.offset != -1:
             return SympyParseFailure(
                 f"{error_text} <br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
                 "Note that the location of the syntax error is approximate."
             )
         return SympyParseFailure(error_text)
-    except HasSetFunctionArityError as exc:
+    except HasFunctionArityError as exc:
         error_text = f"Your answer provides the wrong number of arguments to '{exc.fn}', expected {exc.expected}."
         if exc.offset != -1:
             return SympyParseFailure(
