@@ -3,11 +3,8 @@ import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
 import { getAppError } from '../../lib/client/errors.js';
-import type {
-  StaffAssessment,
-  StaffAssessmentSet,
-  StaffGroupConfig,
-} from '../../lib/client/safe-db-types.js';
+import type { PageContext } from '../../lib/client/page-context.js';
+import type { StaffGroupConfig } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { type GroupSettingsFormValues } from '../../lib/group-config.js';
 import type { GroupUsersRow } from '../../models/group.js';
@@ -68,6 +65,7 @@ function NoGroupConfigCard({
 }
 
 interface InstructorAssessmentGroupsProps {
+  pageContext: PageContext<'assessment', 'instructor'>;
   groupsCsvFilename?: string;
   groupConfigInfo?: StaffGroupConfig;
   groups?: GroupUsersRow[];
@@ -76,16 +74,10 @@ interface InstructorAssessmentGroupsProps {
   isDevMode: boolean;
   origHash: string | null;
   groupSettingsDefaults: GroupSettingsFormValues | null;
-  courseInstanceId: string;
-  assessment: StaffAssessment;
-  assessmentSet: StaffAssessmentSet;
-  urlPrefix: string;
-  csrfToken: string;
-  canEditCourse: boolean;
-  canEditCourseInstance: boolean;
 }
 
 export function InstructorAssessmentGroups({
+  pageContext,
   groupsCsvFilename,
   groupConfigInfo,
   groups,
@@ -94,20 +86,13 @@ export function InstructorAssessmentGroups({
   isDevMode,
   origHash,
   groupSettingsDefaults,
-  courseInstanceId,
-  assessment,
-  assessmentSet,
-  urlPrefix,
-  csrfToken,
-  canEditCourse,
-  canEditCourseInstance,
 }: InstructorAssessmentGroupsProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
     createAssessmentTrpcClient({
       csrfToken: trpcCsrfToken,
-      courseInstanceId,
-      assessmentId: assessment.id,
+      courseInstanceId: pageContext.course_instance.id,
+      assessmentId: pageContext.assessment.id,
     }),
   );
 
@@ -115,18 +100,13 @@ export function InstructorAssessmentGroups({
     <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <InstructorAssessmentGroupsInner
+          pageContext={pageContext}
           groupsCsvFilename={groupsCsvFilename}
           groupConfigInfo={groupConfigInfo}
           groups={groups}
           notAssigned={notAssigned}
           origHash={origHash}
           groupSettingsDefaults={groupSettingsDefaults}
-          assessment={assessment}
-          assessmentSet={assessmentSet}
-          urlPrefix={urlPrefix}
-          csrfToken={csrfToken}
-          canEditCourse={canEditCourse}
-          canEditCourseInstance={canEditCourseInstance}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -136,19 +116,17 @@ export function InstructorAssessmentGroups({
 InstructorAssessmentGroups.displayName = 'InstructorAssessmentGroups';
 
 function InstructorAssessmentGroupsInner({
+  pageContext,
   groupsCsvFilename,
   groupConfigInfo: initialGroupConfigInfo,
   groups,
   notAssigned,
   origHash: initialOrigHash,
   groupSettingsDefaults: initialGroupSettingsDefaults,
-  assessment,
-  assessmentSet,
-  urlPrefix,
-  csrfToken,
-  canEditCourse,
-  canEditCourseInstance,
-}: Omit<InstructorAssessmentGroupsProps, 'trpcCsrfToken' | 'isDevMode' | 'courseInstanceId'>) {
+}: Omit<InstructorAssessmentGroupsProps, 'trpcCsrfToken' | 'isDevMode'>) {
+  const { assessment, assessment_set: assessmentSet, course, authz_data } = pageContext;
+  const canEditCourse = authz_data.has_course_permission_edit && !course.example_course;
+  const canEditCourseInstance = authz_data.has_course_instance_permission_edit ?? false;
   const [groupConfigInfo, setGroupConfigInfo] = useState(initialGroupConfigInfo);
   const [groupSettingsDefaults, setGroupSettingsDefaults] = useState(initialGroupSettingsDefaults);
   const [origHash, setOrigHash] = useState(initialOrigHash);
@@ -192,8 +170,8 @@ function InstructorAssessmentGroupsInner({
         initialNotAssigned={notAssigned}
         assessment={assessment}
         assessmentSet={assessmentSet}
-        urlPrefix={urlPrefix}
-        csrfToken={csrfToken}
+        urlPrefix={pageContext.urlPrefix}
+        csrfToken={pageContext.__csrf_token}
         canEdit={canEditCourseInstance}
         groupMin={groupMin}
         groupMax={groupMax}

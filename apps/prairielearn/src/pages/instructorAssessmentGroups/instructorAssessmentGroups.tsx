@@ -9,11 +9,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import {
-  StaffAssessmentSchema,
-  StaffAssessmentSetSchema,
-  StaffGroupConfigSchema,
-} from '../../lib/client/safe-db-types.js';
+import { StaffGroupConfigSchema } from '../../lib/client/safe-db-types.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { type GroupSettingsFormValues, normalizeGroupSettings } from '../../lib/group-config.js';
@@ -53,10 +49,11 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'assessment'>(async (_req, res) => {
-    const { assessment, assessment_set, course, course_instance } = extractPageContext(res.locals, {
+    const pageContext = extractPageContext(res.locals, {
       pageType: 'assessment',
       accessType: 'instructor',
     });
+    const { assessment, assessment_set, course, course_instance } = pageContext;
 
     const groupsCsvFilename =
       assessmentFilenamePrefix(assessment, assessment_set, course_instance, course) + 'groups.csv';
@@ -113,6 +110,7 @@ router.get(
         content: (
           <Hydrate>
             <InstructorAssessmentGroups
+              pageContext={pageContext}
               groupsCsvFilename={groupsCsvFilename}
               groupConfigInfo={staffGroupConfigInfo}
               groups={groups}
@@ -121,15 +119,6 @@ router.get(
               isDevMode={config.devMode}
               origHash={origHash}
               groupSettingsDefaults={groupSettingsDefaults}
-              courseInstanceId={course_instance.id}
-              assessment={StaffAssessmentSchema.parse(assessment)}
-              assessmentSet={StaffAssessmentSetSchema.parse(assessment_set)}
-              urlPrefix={res.locals.urlPrefix}
-              csrfToken={res.locals.__csrf_token}
-              canEditCourse={
-                res.locals.authz_data.has_course_permission_edit && !course.example_course
-              }
-              canEditCourseInstance={res.locals.authz_data.has_course_instance_permission_edit}
             />
           </Hydrate>
         ),
