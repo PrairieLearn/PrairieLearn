@@ -519,25 +519,30 @@ class CheckAST(ast.NodeVisitor):
     def _enforce_signature(
         self,
         fn_name: str,
-        args: Sequence[ast.AST | ASTSympyType | None],
-        *overloads: Sequence[tuple[ASTSympyType, ...] | ASTSympyType | None],
-    ) -> None:
-        if not overloads or len(set(map(len, overloads))) != len(overloads):
-            raise ValueError("fn overload selected by length, must be unique")
-
-        signature = next((s for s in overloads if len(s) == len(args)), None)
-        if signature is None:
-            # NOTE: build arities msg: (s0, s1,..., sn) -> len(s0), len(s1),... or len(sn)
-            arities = tuple(map(str, sorted(map(len, overloads))))
-            msg = " or ".join(filter(bool, (", ".join(arities[:-1]), arities[-1])))
+        args: Sequence[ast.expr],
+        *overloads: Sequence[ASTSympyType | None],
+    ) -> tuple[ASTSympyType | None, ...]:
+        arity_matches = [s for s in overloads if len(s) == len(args)]
+        if not arity_matches:
+            msg = ", ".join(map(str, sorted(map(len, overloads))))
+            msg = " or ".join(msg.rsplit(",", maxsplit=1))
             raise HasSetFunctionArityError(fn_name, len(args), msg)
 
-        for i, (expected, arg) in enumerate(zip(signature, args, strict=True)):
-            if expected is not None and arg is not None:
-                es = expected if isinstance(expected, tuple) else (expected,)
-                typ = arg if isinstance(arg, ASTSympyType) else self._get_type(arg)
-                if typ and typ not in es:
-                    raise HasSetOperationTypeError(fn_name, None, typ, for_argument=i)
+        arg_types = tuple(map(self._get_type, args))
+
+        fails: list[tuple[ASTSympyType, int]] = []
+        for signature in arity_matches:
+            for i, (expected, got) in enumerate(zip(signature, arg_types, strict=True)):
+                if got is not None and expected is not None and got != expected:
+                    fails.append((got, i))
+                    break
+            else:
+                return arg_types
+
+        failed_type, fail_index = max(fails, key=lambda f: f[1])
+        raise HasSetOperationTypeError(
+            fn_name, None, failed_type, for_argument=fail_index
+        )
 
     def _infer_set_function_type(
         self,
@@ -549,11 +554,11 @@ class CheckAST(ast.NodeVisitor):
                 return ASTSympyType.SET
             case "Interval":
                 overloads = (
-                    (2 * [ASTSympyType.SCALAR]),
+                    (ASTSympyType.SCALAR, ASTSympyType.SCALAR),
                     (2 * [ASTSympyType.SCALAR] + 2 * [ASTSympyType.BOOL]),
                 )
                 self._enforce_signature(name, args, *overloads)
-                return None
+                return ASTSympyType.SET
             case "Union" | "Intersection" | "ProductSet":
                 if not args:
                     raise HasSetFunctionArityError(name, len(args), "1+")
@@ -561,22 +566,23 @@ class CheckAST(ast.NodeVisitor):
                 return ASTSympyType.SET
 
     def _infer_bin_op_type(
-        self, op_str: str, left: ast.expr | None, right: ast.expr
+        self, op: str, left: ast.expr, right: ast.expr
     ) -> ASTSympyType | None:
-        left_type = left and self._get_type(left)
-        right_type = self._get_type(right)
-
-        match (op_str, left_type, right_type):
-            case ("|", l, r) | ("&", l, r):
-                self._enforce_signature(op_str, (l, r), 2 * [ASTSympyType.SET])
+        match op:
+            case "|" | "&":
+                self._enforce_signature(op, (left, right), 2 * [ASTSympyType.SET])
                 return ASTSympyType.SET
-            case ("**", l, r):
-                sig = (ASTSympyType.SCALAR, ASTSympyType.SET), ASTSympyType.SCALAR
-                self._enforce_signature(op_str, (l, r), sig)
-                return l
-            case (_, l, r) if l == r:
-                return l
+            case "**":
+                overloads = (
+                    (ASTSympyType.SCALAR, ASTSympyType.SCALAR),
+                    (ASTSympyType.SET, ASTSympyType.SCALAR),
+                )
+                left_type, _ = self._enforce_signature(op, (left, right), *overloads)
+                return left_type
             case _:
+                lt, rt = self._get_type(left), self._get_type(right)
+                if lt is None or rt is None or lt == rt:
+                    return lt or rt
                 return None
 
 
