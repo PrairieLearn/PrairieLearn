@@ -282,7 +282,7 @@ function InstructorAssessmentSettingsInner({
     saveMutation.mutate(
       {
         ...data,
-        share_source_publicly: data.share_source_publicly ?? assessment.share_source_publicly,
+        share_source_publicly: data.share_source_publicly,
         max_points: useCustomMaxPoints ? toNullableNumber(data.max_points) : null,
         max_bonus_points: toNullableNumber(data.max_bonus_points),
         advance_score_perc: toNullableNumber(data.advance_score_perc),
