@@ -282,6 +282,7 @@ function InstructorAssessmentSettingsInner({
     saveMutation.mutate(
       {
         ...data,
+        share_source_publicly: data.share_source_publicly ?? assessment.share_source_publicly,
         max_points: useCustomMaxPoints ? toNullableNumber(data.max_points) : null,
         max_bonus_points: toNullableNumber(data.max_bonus_points),
         advance_score_perc: toNullableNumber(data.advance_score_perc),
@@ -560,19 +561,12 @@ function InstructorAssessmentSettingsInner({
                 id="share_source_publicly"
                 label="Share source publicly"
                 className="mb-1"
-                disabled={!canEdit}
-                readOnly={
-                  assessment.share_source_publicly || nonPublicQuestionsInAssessment.length > 0
+                disabled={
+                  !canEdit ||
+                  assessment.share_source_publicly ||
+                  nonPublicQuestionsInAssessment.length > 0
                 }
                 defaultChecked={defaultValues.share_source_publicly}
-                onClick={(e) => {
-                  if (
-                    assessment.share_source_publicly ||
-                    nonPublicQuestionsInAssessment.length > 0
-                  ) {
-                    e.preventDefault();
-                  }
-                }}
                 {...register('share_source_publicly')}
               />
               <small className="form-text text-muted d-block mb-2">
