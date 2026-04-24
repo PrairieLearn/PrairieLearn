@@ -168,7 +168,6 @@ export function QtiImportForm({
   const [overrides, setOverrides] = useState<AssessmentOverrides[]>([]);
   const [existingDirs, setExistingDirs] = useState<Set<string>>(new Set());
   const [strippedRules, setStrippedRules] = useState<StrippedAccessRules | null>(null);
-  const [skippedVideos, setSkippedVideos] = useState<string[]>([]);
   const [questionOverrides, setQuestionOverrides] = useState<Map<string, QuestionOverrides>>(
     new Map(),
   );
@@ -214,7 +213,6 @@ export function QtiImportForm({
       const dirs = new Set(data.existingQuestionDirs);
       setExistingDirs(dirs);
       setStrippedRules(data.strippedAccessRules);
-      setSkippedVideos(data.skippedVideos);
       setResults(data.results);
       setOverrides(deduplicateAssessmentNumbers(data.results));
       setQuestionOverrides(buildInitialQuestionOverrides(data.results, dirs));
@@ -357,11 +355,7 @@ export function QtiImportForm({
 
         {step === 'review' && (
           <>
-            <ImportSummary
-              results={results}
-              strippedAccessRules={strippedRules}
-              skippedVideos={skippedVideos}
-            />
+            <ImportSummary results={results} strippedAccessRules={strippedRules} />
 
             <p className="text-muted">
               Review the assessments and questions below, then confirm to create them in your
@@ -540,11 +534,9 @@ function NonRubricWarnings({ warnings }: { warnings: SerializedConversionResult[
 function ImportSummary({
   results,
   strippedAccessRules,
-  skippedVideos,
 }: {
   results: SerializedConversionResult[];
   strippedAccessRules: StrippedAccessRules | null;
-  skippedVideos: string[];
 }) {
   const totalQuestions = results.reduce((sum, r) => sum + r.questions.length, 0);
   const totalAssets = results.reduce(
@@ -561,16 +553,24 @@ function ImportSummary({
     .map((w) => w.message);
   const uniqueUnsupported = [...new Set(unsupportedTypes)];
 
+  const totalSkippedVideos = results.reduce(
+    (sum, r) => sum + r.questions.reduce((qSum, q) => qSum + q.skippedVideos.length, 0),
+    0,
+  );
+
   const notImportedItems: string[] = [];
   if (hasRubricIssues) notImportedItems.push('Rubrics (not supported in QTI quiz exports)');
   if (strippedAccessRules?.hasTimeLimits) notImportedItems.push('Time limits');
   if (strippedAccessRules?.hasPasswords) notImportedItems.push('Access passwords');
   if (strippedAccessRules?.hasDates) notImportedItems.push('Access dates (start/end dates)');
+  if (totalSkippedVideos > 0) {
+    notImportedItems.push(
+      `${totalSkippedVideos} video file${totalSkippedVideos !== 1 ? 's' : ''} (see individual questions for details)`,
+    );
+  }
   notImportedItems.push(...uniqueUnsupported);
 
-  const uniqueSkippedVideos = [...new Set(skippedVideos)];
-
-  const hasNotImported = notImportedItems.length > 0 || uniqueSkippedVideos.length > 0;
+  const hasNotImported = notImportedItems.length > 0;
 
   return (
     <div className="row g-3 mb-4">
@@ -590,8 +590,8 @@ function ImportSummary({
               </li>
               {totalAssets > 0 && (
                 <li>
-                  <strong>{totalAssets}</strong> image{totalAssets !== 1 ? 's' : ''} and other
-                  asset{totalAssets !== 1 ? 's' : ''}
+                  <strong>{totalAssets}</strong> image{totalAssets !== 1 ? 's' : ''} and other asset
+                  {totalAssets !== 1 ? 's' : ''}
                 </li>
               )}
             </ul>
@@ -610,19 +610,6 @@ function ImportSummary({
                 {notImportedItems.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
-                {uniqueSkippedVideos.length > 0 && (
-                  <li>
-                    <strong>{uniqueSkippedVideos.length}</strong> video file
-                    {uniqueSkippedVideos.length !== 1 ? 's' : ''} (too large to import)
-                    <ul className="mt-1 mb-0">
-                      {uniqueSkippedVideos.map((name) => (
-                        <li key={name} className="text-muted">
-                          {name}
-                        </li>
-                      ))}
-                    </ul>
-                  </li>
-                )}
               </ul>
             </Card.Body>
           </Card>
@@ -866,6 +853,13 @@ function QuestionReviewPanel({
             {tag}
           </Badge>
         ))}
+        {q.skippedVideos.length > 0 && (
+          <i
+            className="bi bi-exclamation-triangle-fill text-danger"
+            aria-label={`${q.skippedVideos.length} video file${q.skippedVideos.length !== 1 ? 's' : ''} excluded`}
+            title={`${q.skippedVideos.length} video file${q.skippedVideos.length !== 1 ? 's' : ''} excluded`}
+          />
+        )}
       </Card.Header>
       {qo?.collides && included && (
         <div className="px-3 py-2 bg-light border-bottom d-flex align-items-center gap-2 small">
@@ -982,6 +976,27 @@ function QuestionReviewPanel({
                 </div>
               </div>
             </div>
+            {q.skippedVideos.length > 0 && (
+              <div className="px-3 py-2 border-top bg-light d-flex align-items-start gap-2 small">
+                <i
+                  className="bi bi-exclamation-triangle-fill text-danger mt-1"
+                  aria-hidden="true"
+                />
+                <div>
+                  <strong>
+                    {q.skippedVideos.length} video file
+                    {q.skippedVideos.length !== 1 ? 's' : ''} excluded:
+                  </strong>
+                  <ul className="mb-0 mt-1">
+                    {q.skippedVideos.map((name) => (
+                      <li key={name} className="text-muted">
+                        {name}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
           </Card.Body>
         </div>
       </Collapse>
@@ -1153,7 +1168,7 @@ function TreeNodes({
           {node.path ? (
             <div
               className={`px-2 py-1 rounded d-flex align-items-center gap-1 ${selectedFile === node.path ? 'bg-primary text-white' : 'text-body'}`}
-              style={{ cursor: 'pointer', paddingLeft: `${depth * 12 + 8}px` }}
+              style={{ cursor: 'pointer', marginLeft: `${depth * 16}px` }}
               role="button"
               tabIndex={0}
               onClick={() => onSelectFile(node.path!)}
@@ -1170,7 +1185,7 @@ function TreeNodes({
           ) : (
             <div
               className="px-2 py-1 text-muted d-flex align-items-center gap-1"
-              style={{ paddingLeft: `${depth * 12 + 8}px` }}
+              style={{ marginLeft: `${depth * 16}px` }}
             >
               <i className={`bi ${node.icon ?? 'bi-folder'}`} aria-hidden="true" />
               {node.name}

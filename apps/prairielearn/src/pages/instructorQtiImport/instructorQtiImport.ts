@@ -121,9 +121,8 @@ router.post(
 
       // Convert each assessment.
       const results: SerializedConversionResult[] = [];
-      const skippedVideos: string[] = [];
       for (const entry of entries) {
-        const result = await convertEntry(entry, rubricsXml, skippedVideos);
+        const result = await convertEntry(entry, rubricsXml);
         if (result) {
           results.push(result);
         }
@@ -165,7 +164,6 @@ router.post(
         results,
         existingQuestionDirs,
         strippedAccessRules: stripped,
-        skippedVideos,
       };
 
       res.json(response);
@@ -179,7 +177,6 @@ router.post(
 async function convertEntry(
   entry: QtiFileEntry,
   rubricsXml?: string,
-  skippedVideos: string[] = [],
 ): Promise<SerializedConversionResult | null> {
   const xmlContent = await readFile(entry.qtiPath, 'utf-8');
   const webResourcesDir = path.join(entry.assessmentDir, '..', 'web_resources');
@@ -219,7 +216,7 @@ async function convertEntry(
     questionIdPrefix: questionPrefix,
   });
 
-  return serializeConversionResult(result, questionPrefix, webResourcesDir, skippedVideos);
+  return serializeConversionResult(result, questionPrefix, webResourcesDir);
 }
 
 /** Serialize a ConversionResult for JSON transport. */
@@ -227,7 +224,6 @@ async function serializeConversionResult(
   result: ConversionResult,
   questionPrefix: string,
   webResourcesDir: string,
-  skippedVideos: string[],
 ): Promise<SerializedConversionResult> {
   return {
     assessmentTitle: result.assessmentTitle,
@@ -236,17 +232,21 @@ async function serializeConversionResult(
       infoJson: result.assessment.infoJson,
     },
     questions: await Promise.all(
-      result.questions.map(async (q) => ({
+      result.questions.map(async (q) => {
         // The converter emits local directory names (e.g. "q1"), but on disk
         // questions live under the prefix path (e.g. "imported/quiz-slug/q1").
         // This must match the IDs used in the assessment zones.
-        directoryName: `${questionPrefix}/${q.directoryName}`,
-        sourceId: q.sourceId,
-        infoJson: q.infoJson,
-        questionHtml: q.questionHtml,
-        serverPy: q.serverPy,
-        clientFiles: await serializeClientFiles(q.clientFiles, webResourcesDir, skippedVideos),
-      })),
+        const { files, skippedVideos } = await serializeClientFiles(q.clientFiles, webResourcesDir);
+        return {
+          directoryName: `${questionPrefix}/${q.directoryName}`,
+          sourceId: q.sourceId,
+          infoJson: q.infoJson,
+          questionHtml: q.questionHtml,
+          serverPy: q.serverPy,
+          clientFiles: files,
+          skippedVideos,
+        };
+      }),
     ),
     warnings: result.warnings,
   };
@@ -273,27 +273,27 @@ function isVideoFile(filename: string): boolean {
 async function serializeClientFiles(
   clientFiles: Map<string, Buffer | string>,
   webResourcesDir: string,
-  skippedVideos: string[],
-): Promise<Record<string, string>> {
-  const serialized: Record<string, string> = {};
+): Promise<{ files: Record<string, string>; skippedVideos: string[] }> {
+  const files: Record<string, string> = {};
+  const skippedVideos: string[] = [];
   for (const [name, content] of clientFiles) {
     if (isVideoFile(name)) {
       skippedVideos.push(name);
       continue;
     }
     if (Buffer.isBuffer(content)) {
-      serialized[name] = content.toString('base64');
+      files[name] = content.toString('base64');
     } else {
       // Content is a relative path to a file in web_resources.
       try {
         const fileContent = await readFile(path.join(webResourcesDir, content));
-        serialized[name] = fileContent.toString('base64');
+        files[name] = fileContent.toString('base64');
       } catch {
         // File not found; skip.
       }
     }
   }
-  return serialized;
+  return { files, skippedVideos };
 }
 
 const NON_QTI_XML_FILES = new Set(['assessment_meta.xml', 'imsmanifest.xml']);

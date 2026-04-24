@@ -12,6 +12,8 @@ export interface SerializedQuestionOutput {
   questionHtml: string;
   serverPy?: string;
   clientFiles: Record<string, string>;
+  /** Video files that were excluded from this question's assets. */
+  skippedVideos: string[];
 }
 
 /** Serialized version of ConversionResult. */
@@ -39,6 +41,4 @@ export interface UploadResponse {
   existingQuestionDirs: string[];
   /** Access rule properties that were stripped from the imported assessments. */
   strippedAccessRules: StrippedAccessRules;
-  /** Video files that were excluded from the import. */
-  skippedVideos: string[];
 }
