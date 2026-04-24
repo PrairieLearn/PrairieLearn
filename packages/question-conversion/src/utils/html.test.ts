@@ -63,6 +63,13 @@ describe('rewriteImagesAsPlFigure', () => {
     );
   });
 
+  it('decodes attribute entities before re-escaping pl-figure attributes', () => {
+    assert.equal(
+      rewriteImagesAsPlFigure('<img src="clientFilesQuestion/foo&amp;bar.png" alt="A &amp; B">'),
+      '<pl-figure file-name="foo&amp;bar.png" directory="clientFilesQuestion" alt="A &amp; B"></pl-figure>',
+    );
+  });
+
   it('drops style and class attributes', () => {
     const result = rewriteImagesAsPlFigure(
       '<img src="test.png" style="max-width:100%" class="foo">',

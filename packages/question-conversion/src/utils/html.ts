@@ -56,7 +56,7 @@ export function rewriteImagesAsPlFigure(html: string): string {
   return html.replaceAll(IMG_TAG_RE, (tag) => {
     const attrs: Record<string, string> = {};
     for (const m of tag.matchAll(ATTR_RE)) {
-      attrs[m[1].toLowerCase()] = m[3];
+      attrs[m[1].toLowerCase()] = he.decode(m[3]);
     }
 
     const src = attrs['src'] ?? '';

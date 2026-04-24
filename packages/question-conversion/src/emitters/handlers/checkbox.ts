@@ -37,6 +37,8 @@ export const checkboxHandler: BodyEmitHandler = {
       '    }',
       '    _key_to_html = {a["key"]: a["html"] for a in data["params"].get("answer") or []}',
       '    _submitted = data["submitted_answers"].get("answer") or []',
+      '    if isinstance(_submitted, str):',
+      '        _submitted = [_submitted]',
       '    _messages = []',
       '    for _key in _submitted:',
       '        _html = _key_to_html.get(_key)',

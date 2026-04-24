@@ -46,28 +46,31 @@ describe('checkboxHandler.renderGradePy', () => {
     assert.equal(py, '');
   });
 
-  it('generates grade function with feedback map', () => {
+  it('generates grade function with feedback map and key-to-html lookup', () => {
     const py = checkboxHandler.renderGradePy!(
       { type: 'checkbox', choices },
       { perAnswer: { Apple: 'Good choice', Banana: 'Not a fruit salad item' } },
     );
-    assert.include(py, 'def grade(data):');
-    assert.include(py, '_feedback_map = {');
-    assert.include(py, '"Apple": "Good choice"');
-    assert.include(py, '"Banana": "Not a fruit salad item"');
-    assert.include(py, '_submitted = data["submitted_answers"].get("answer") or []');
-    assert.include(py, '_messages');
-    assert.include(py, 'data["feedback"]["general"]');
-  });
-
-  it('looks up submitted keys via params["answer"] before checking feedback_map', () => {
-    const py = checkboxHandler.renderGradePy!(
-      { type: 'checkbox', choices },
-      { perAnswer: { Apple: 'Good choice' } },
+    assert.equal(
+      py,
+      `def grade(data):
+    _feedback_map = {
+        "Apple": "Good choice",
+        "Banana": "Not a fruit salad item",
+    }
+    _key_to_html = {a["key"]: a["html"] for a in data["params"].get("answer") or []}
+    _submitted = data["submitted_answers"].get("answer") or []
+    if isinstance(_submitted, str):
+        _submitted = [_submitted]
+    _messages = []
+    for _key in _submitted:
+        _html = _key_to_html.get(_key)
+        if _html in _feedback_map:
+            _messages.append(f"<strong>{_html}</strong>: {_feedback_map[_html]}")
+    if _messages:
+        data["feedback"]["general"] = "<br>".join(_messages)
+`,
     );
-    assert.include(py, '_key_to_html = {a["key"]: a["html"] for a in data["params"].get("answer")');
-    assert.include(py, '_html = _key_to_html.get(_key)');
-    assert.include(py, 'if _html in _feedback_map:');
   });
 
   it('appends global correct feedback', () => {
@@ -75,8 +78,27 @@ describe('checkboxHandler.renderGradePy', () => {
       { type: 'checkbox', choices },
       { correct: 'Well done!', perAnswer: { Apple: 'Yes' } },
     );
-    assert.include(py, 'data["score"] >= 1.0');
-    assert.include(py, '"Well done!"');
+    assert.equal(
+      py,
+      `def grade(data):
+    _feedback_map = {
+        "Apple": "Yes",
+    }
+    _key_to_html = {a["key"]: a["html"] for a in data["params"].get("answer") or []}
+    _submitted = data["submitted_answers"].get("answer") or []
+    if isinstance(_submitted, str):
+        _submitted = [_submitted]
+    _messages = []
+    for _key in _submitted:
+        _html = _key_to_html.get(_key)
+        if _html in _feedback_map:
+            _messages.append(f"<strong>{_html}</strong>: {_feedback_map[_html]}")
+    if data["score"] >= 1.0:
+        _messages.append("Well done!")
+    if _messages:
+        data["feedback"]["general"] = "<br>".join(_messages)
+`,
+    );
   });
 
   it('appends global incorrect feedback', () => {
@@ -84,7 +106,26 @@ describe('checkboxHandler.renderGradePy', () => {
       { type: 'checkbox', choices },
       { incorrect: 'Try again', perAnswer: { Apple: 'Yes' } },
     );
-    assert.include(py, 'data["score"] < 1.0');
-    assert.include(py, '"Try again"');
+    assert.equal(
+      py,
+      `def grade(data):
+    _feedback_map = {
+        "Apple": "Yes",
+    }
+    _key_to_html = {a["key"]: a["html"] for a in data["params"].get("answer") or []}
+    _submitted = data["submitted_answers"].get("answer") or []
+    if isinstance(_submitted, str):
+        _submitted = [_submitted]
+    _messages = []
+    for _key in _submitted:
+        _html = _key_to_html.get(_key)
+        if _html in _feedback_map:
+            _messages.append(f"<strong>{_html}</strong>: {_feedback_map[_html]}")
+    if data["score"] < 1.0:
+        _messages.append("Try again")
+    if _messages:
+        data["feedback"]["general"] = "<br>".join(_messages)
+`,
+    );
   });
 });
