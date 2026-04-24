@@ -6,7 +6,7 @@ import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { getAppError } from '../lib/client/errors.js';
@@ -374,4 +374,74 @@ describe('Editing assessment settings', () => {
       }
     },
   );
+
+  test.sequential(
+    'cannot share assessment source publicly while it contains non-public questions',
+    async () => {
+      // Force every question on this course to be non-public, so the gate in the mutation
+      // can detect them before reaching the file editor.
+      await execute(
+        'UPDATE questions SET share_publicly = FALSE, share_source_publicly = FALSE WHERE course_id = $course_id',
+        { course_id: 1 },
+      );
+
+      const trpcClient = await createTrpcClient('1');
+      const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+      try {
+        await trpcClient.assessmentSettings.updateAssessment.mutate({
+          title: assessmentInfo.title,
+          set: assessmentInfo.set,
+          number: assessmentInfo.number,
+          module: assessmentInfo.module ?? 'Default',
+          aid: 'A1',
+          ...defaultMutationFields,
+          share_source_publicly: true,
+          origHash: await getOrigHash(assessmentLiveInfoPath),
+        });
+        assert.fail('Expected mutation to throw');
+      } catch (err: unknown) {
+        assert.instanceOf(err, TRPCClientError);
+        assert.equal(
+          (err as TRPCClientError<typeof assessmentSettingsRouter>).data?.code,
+          'BAD_REQUEST',
+        );
+      }
+    },
+  );
+
+  test.sequential('cannot un-share an assessment whose source is already public', async () => {
+    // Force the assessment to look as if it has already been shared. The gate in the mutation
+    // fires before any file edit, so this does not need the info file to reflect the flag.
+    await execute('UPDATE assessments SET share_source_publicly = TRUE WHERE tid = $tid', {
+      tid: 'A1',
+    });
+
+    try {
+      const trpcClient = await createTrpcClient('1');
+      const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+      try {
+        await trpcClient.assessmentSettings.updateAssessment.mutate({
+          title: assessmentInfo.title,
+          set: assessmentInfo.set,
+          number: assessmentInfo.number,
+          module: assessmentInfo.module ?? 'Default',
+          aid: 'A1',
+          ...defaultMutationFields,
+          share_source_publicly: false,
+          origHash: await getOrigHash(assessmentLiveInfoPath),
+        });
+        assert.fail('Expected mutation to throw');
+      } catch (err: unknown) {
+        assert.instanceOf(err, TRPCClientError);
+        assert.equal(
+          (err as TRPCClientError<typeof assessmentSettingsRouter>).data?.code,
+          'BAD_REQUEST',
+        );
+      }
+    } finally {
+      await execute('UPDATE assessments SET share_source_publicly = FALSE WHERE tid = $tid', {
+        tid: 'A1',
+      });
+    }
+  });
 });

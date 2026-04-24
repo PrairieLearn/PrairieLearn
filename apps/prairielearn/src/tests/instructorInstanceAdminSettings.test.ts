@@ -2,6 +2,8 @@ import * as path from 'path';
 
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
+import { execute } from '@prairielearn/postgres';
+
 import { config } from '../lib/config.js';
 
 import { fetchCheerio } from './helperClient.js';
@@ -56,4 +58,67 @@ describe('Updating a course instance ID', () => {
       );
     },
   );
+
+  async function buildUpdateConfigurationBody({
+    shareSourcePublicly,
+  }: {
+    shareSourcePublicly: boolean;
+  }) {
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
+    );
+    assert.equal(settingsPageResponse.status, 200);
+
+    const body: Record<string, string> = {
+      __action: 'update_configuration',
+      __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+      orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+      ciid: 'Fa18',
+      long_name: 'Fall 2018',
+      display_timezone: '',
+      group_assessments_by: 'Set',
+    };
+    if (shareSourcePublicly) body.share_source_publicly = 'on';
+    return body;
+  }
+
+  test.sequential(
+    'cannot share course instance source publicly while it contains non-public assessments',
+    async () => {
+      const response = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
+        {
+          method: 'POST',
+          body: new URLSearchParams(
+            await buildUpdateConfigurationBody({ shareSourcePublicly: true }),
+          ),
+        },
+      );
+      assert.equal(response.status, 400);
+    },
+  );
+
+  test.sequential('cannot un-share a course instance whose source is already public', async () => {
+    await execute(
+      'UPDATE course_instances SET share_source_publicly = TRUE WHERE short_name = $short_name',
+      { short_name: 'Fa18' },
+    );
+    try {
+      const response = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
+        {
+          method: 'POST',
+          body: new URLSearchParams(
+            await buildUpdateConfigurationBody({ shareSourcePublicly: false }),
+          ),
+        },
+      );
+      assert.equal(response.status, 400);
+    } finally {
+      await execute(
+        'UPDATE course_instances SET share_source_publicly = FALSE WHERE short_name = $short_name',
+        { short_name: 'Fa18' },
+      );
+    }
+  });
 });

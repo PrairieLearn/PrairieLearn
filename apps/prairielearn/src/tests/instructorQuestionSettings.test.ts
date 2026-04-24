@@ -5,7 +5,10 @@ import fs from 'fs-extra';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
+import { execute } from '@prairielearn/postgres';
+
 import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 import { selectQuestionById } from '../models/question.js';
 
@@ -572,4 +575,106 @@ describe('Editing question settings', () => {
       await assertEditError(response, 'would be a parent directory of the existing question');
     },
   );
+
+  describe('Sharing gates on the update_question action', () => {
+    beforeAll(async () => {
+      await features.enable('question-sharing');
+    });
+
+    async function buildUpdateQuestionBody(overrides: Record<string, string> = {}) {
+      const settingsPageResponse = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+      );
+      assert.equal(settingsPageResponse.status, 200);
+      const qid = settingsPageResponse.$('input[name=qid]').val() as string;
+      assert.isString(qid);
+
+      return new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+        title: 'Sharing gate test',
+        qid,
+        topic: 'Test',
+        grading_method: 'Internal',
+        ...overrides,
+      });
+    }
+
+    test.sequential('cannot un-share a publicly shared question', async () => {
+      await execute('UPDATE questions SET share_publicly = TRUE WHERE id = $id', { id: 1 });
+      try {
+        const response = await fetch(
+          `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+          {
+            method: 'POST',
+            // No `share_publicly` checkbox -> submit tries to un-share.
+            body: await buildUpdateQuestionBody(),
+          },
+        );
+        assert.equal(response.status, 400);
+      } finally {
+        await execute('UPDATE questions SET share_publicly = FALSE WHERE id = $id', { id: 1 });
+      }
+    });
+
+    test.sequential('cannot un-share a question whose source is publicly shared', async () => {
+      await execute('UPDATE questions SET share_source_publicly = TRUE WHERE id = $id', { id: 1 });
+      try {
+        const response = await fetch(
+          `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+          {
+            method: 'POST',
+            body: await buildUpdateQuestionBody(),
+          },
+        );
+        assert.equal(response.status, 400);
+      } finally {
+        await execute('UPDATE questions SET share_source_publicly = FALSE WHERE id = $id', {
+          id: 1,
+        });
+      }
+    });
+
+    test.sequential(
+      'cannot remove a question from a sharing set it already belongs to',
+      async () => {
+        await execute('INSERT INTO sharing_sets (course_id, name) VALUES ($course_id, $name)', {
+          course_id: '1',
+          name: 'locked-set',
+        });
+        await execute(
+          `INSERT INTO sharing_set_questions (sharing_set_id, question_id)
+         SELECT id, $question_id FROM sharing_sets
+         WHERE course_id = $course_id AND name = $name`,
+          { course_id: '1', name: 'locked-set', question_id: 1 },
+        );
+
+        try {
+          const response = await fetch(
+            `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+            {
+              method: 'POST',
+              // Omit `sharing_sets`, which means "remove from all sets" and must be rejected.
+              body: await buildUpdateQuestionBody(),
+            },
+          );
+          assert.equal(response.status, 400);
+        } finally {
+          await execute(
+            `DELETE FROM sharing_set_questions
+           WHERE question_id = $question_id
+             AND sharing_set_id IN (
+               SELECT id FROM sharing_sets WHERE course_id = $course_id AND name = $name
+             )`,
+            { course_id: '1', name: 'locked-set', question_id: 1 },
+          );
+          await execute('DELETE FROM sharing_sets WHERE course_id = $course_id AND name = $name', {
+            course_id: '1',
+            name: 'locked-set',
+          });
+        }
+      },
+    );
+  });
 });

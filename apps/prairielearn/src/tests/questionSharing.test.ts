@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'node:path';
 
+import { TRPCClientError } from '@trpc/client';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
@@ -9,17 +10,21 @@ import * as sqldb from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
+import { getAppError } from '../lib/client/errors.js';
 import { getCourseTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { pullAndUpdateCourse } from '../lib/course.js';
 import { type Course } from '../lib/db-types.js';
+import { getOriginalHash } from '../lib/editors.js';
 import { features } from '../lib/features/index.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
+import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import { selectQuestionByQid } from '../models/question.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
+import type { SharingError } from '../trpc/course/sharing.js';
 
 import { fetchCheerio } from './helperClient.js';
 import {
@@ -30,6 +35,7 @@ import {
 import * as helperServer from './helperServer.js';
 import { makeMockLogger } from './mockLogger.js';
 import * as syncUtil from './sync/util.js';
+import { getOrCreateUser, withUser } from './utils/auth.js';
 import { withConfig } from './utils/config.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -877,5 +883,193 @@ describe('Question Sharing', function () {
         });
       },
     );
+  });
+
+  describe('Sharing admin gates and CRUD via tRPC', function () {
+    const CRUD_SET_NAME = 'crud-tmp-set';
+
+    async function getInfoCourseOrigHash() {
+      const infoCoursePath = path.join(sharingCourse.path, 'infoCourse.json');
+      return (await getOriginalHash(infoCoursePath)) ?? '';
+    }
+
+    test.sequential('non-owner users cannot mutate sharing state', async () => {
+      const viewer = await getOrCreateUser({
+        uid: 'sharing-viewer@example.com',
+        name: 'Sharing Viewer',
+        uin: 'sharing-viewer',
+        email: 'sharing-viewer@example.com',
+      });
+      const owner = await getDevUserId();
+      await insertCoursePermissionsByUserUid({
+        course_id: sharingCourse.id,
+        uid: 'sharing-viewer@example.com',
+        course_role: 'Viewer',
+        authn_user_id: owner,
+      });
+
+      await withUser(viewer, async () => {
+        const csrfToken = generatePrefixCsrfToken(
+          { url: getCourseTrpcUrl(sharingCourse.id), authn_user_id: viewer.id },
+          config.secretKey,
+        );
+        const client = createCourseTrpcClient({
+          csrfToken,
+          courseId: sharingCourse.id,
+          urlBase: siteUrl,
+        });
+        try {
+          await client.sharing.regenerateSharingToken.mutate();
+          assert.fail('Expected mutation to throw');
+        } catch (err: unknown) {
+          assert.instanceOf(err, TRPCClientError);
+          assert.equal((err as TRPCClientError<any>).data?.code, 'FORBIDDEN');
+        }
+      });
+    });
+
+    test.sequential('sharing mutations fail when question sharing is disabled', async () => {
+      await features.disable('question-sharing', {
+        institution_id: sharingCourse.institution_id,
+        course_id: sharingCourse.id,
+      });
+      try {
+        const client = await sharingTrpcClient(sharingCourse.id);
+        try {
+          await client.sharing.regenerateSharingToken.mutate();
+          assert.fail('Expected mutation to throw');
+        } catch (err: unknown) {
+          assert.instanceOf(err, TRPCClientError);
+          assert.equal((err as TRPCClientError<any>).data?.code, 'FORBIDDEN');
+        }
+      } finally {
+        await features.enable('question-sharing', {
+          institution_id: sharingCourse.institution_id,
+          course_id: sharingCourse.id,
+        });
+      }
+    });
+
+    test.sequential('file-editing mutations fail on example courses', async () => {
+      await sqldb.execute('UPDATE courses SET example_course = TRUE WHERE id = $course_id', {
+        course_id: sharingCourse.id,
+      });
+      try {
+        const client = await sharingTrpcClient(sharingCourse.id);
+        try {
+          await client.sharing.createSharingSet.mutate({
+            name: 'example-attempted',
+            origHash: await getInfoCourseOrigHash(),
+          });
+          assert.fail('Expected mutation to throw');
+        } catch (err: unknown) {
+          assert.instanceOf(err, TRPCClientError);
+          assert.equal((err as TRPCClientError<any>).data?.code, 'FORBIDDEN');
+        }
+      } finally {
+        await sqldb.execute('UPDATE courses SET example_course = FALSE WHERE id = $course_id', {
+          course_id: sharingCourse.id,
+        });
+      }
+    });
+
+    test.sequential('createSharingSet writes the set to infoCourse.json', async () => {
+      const client = await sharingTrpcClient(sharingCourse.id);
+      const result = await client.sharing.createSharingSet.mutate({
+        name: CRUD_SET_NAME,
+        description: 'CRUD test set',
+        origHash: await getInfoCourseOrigHash(),
+      });
+      assert.ok(result.origHash);
+
+      const courseInfo = JSON.parse(
+        await fs.readFile(path.join(sharingCourse.path, 'infoCourse.json'), 'utf8'),
+      );
+      const createdSet = courseInfo.sharingSets.find(
+        (s: { name: string }) => s.name === CRUD_SET_NAME,
+      );
+      assert.ok(createdSet);
+      assert.equal(createdSet.description, 'CRUD test set');
+    });
+
+    test.sequential('createSharingSet rejects duplicate names with DUPLICATE_NAME', async () => {
+      const client = await sharingTrpcClient(sharingCourse.id);
+      try {
+        await client.sharing.createSharingSet.mutate({
+          name: CRUD_SET_NAME,
+          origHash: await getInfoCourseOrigHash(),
+        });
+        assert.fail('Expected mutation to throw');
+      } catch (err: unknown) {
+        const appError = getAppError<SharingError['CreateSharingSet']>(err);
+        assert.isNotNull(appError);
+        assert.equal(appError.code, 'DUPLICATE_NAME');
+      }
+    });
+
+    test.sequential(
+      'updateSharingSetDescription rewrites the description and rejects NOT_FOUND',
+      async () => {
+        const client = await sharingTrpcClient(sharingCourse.id);
+
+        const result = await client.sharing.updateSharingSetDescription.mutate({
+          name: CRUD_SET_NAME,
+          description: 'Updated description',
+          origHash: await getInfoCourseOrigHash(),
+        });
+        assert.ok(result.origHash);
+
+        const courseInfo = JSON.parse(
+          await fs.readFile(path.join(sharingCourse.path, 'infoCourse.json'), 'utf8'),
+        );
+        const updatedSet = courseInfo.sharingSets.find(
+          (s: { name: string }) => s.name === CRUD_SET_NAME,
+        );
+        assert.equal(updatedSet.description, 'Updated description');
+
+        try {
+          await client.sharing.updateSharingSetDescription.mutate({
+            name: 'does-not-exist',
+            description: 'anything',
+            origHash: await getInfoCourseOrigHash(),
+          });
+          assert.fail('Expected mutation to throw');
+        } catch (err: unknown) {
+          const appError = getAppError<SharingError['UpdateSharingSetDescription']>(err);
+          assert.isNotNull(appError);
+          assert.equal(appError.code, 'NOT_FOUND');
+        }
+      },
+    );
+
+    test.sequential('deleteSharingSet rejects an in-use set with IN_USE', async () => {
+      const client = await sharingTrpcClient(sharingCourse.id);
+      try {
+        await client.sharing.deleteSharingSet.mutate({
+          name: SHARING_SET_NAME,
+          origHash: await getInfoCourseOrigHash(),
+        });
+        assert.fail('Expected mutation to throw');
+      } catch (err: unknown) {
+        const appError = getAppError<SharingError['DeleteSharingSet']>(err);
+        assert.isNotNull(appError);
+        assert.equal(appError.code, 'IN_USE');
+      }
+    });
+
+    test.sequential('deleteSharingSet removes an unused set from infoCourse.json', async () => {
+      const client = await sharingTrpcClient(sharingCourse.id);
+      const result = await client.sharing.deleteSharingSet.mutate({
+        name: CRUD_SET_NAME,
+        origHash: await getInfoCourseOrigHash(),
+      });
+      assert.ok(result.origHash);
+
+      const courseInfo = JSON.parse(
+        await fs.readFile(path.join(sharingCourse.path, 'infoCourse.json'), 'utf8'),
+      );
+      const sharingSets: { name: string }[] = courseInfo.sharingSets ?? [];
+      assert.isUndefined(sharingSets.find((s) => s.name === CRUD_SET_NAME));
+    });
   });
 });
