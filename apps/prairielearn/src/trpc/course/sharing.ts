@@ -14,7 +14,6 @@ import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { selectCanChooseSharingName, updateCourseSharingName } from '../../models/course.js';
 import {
   type SharingSetRow,
-  SharingSetRowSchema,
   deleteSharingSet as deleteSharingSetModel,
   selectSharingSetUsage,
   selectSharingSetsForCourse,
@@ -38,7 +37,7 @@ export interface SharingError {
     | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
 
-export { SharingSetRowSchema, type SharingSetRow };
+export type { SharingSetRow };
 
 const SharingSetNameSchema = z
   .string()

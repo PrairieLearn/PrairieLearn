@@ -4,7 +4,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export const SharingSetRowSchema = z.object({
+const SharingSetRowSchema = z.object({
   name: z.string(),
   id: z.string(),
   description: z.string().nullable(),
@@ -25,7 +25,7 @@ export async function selectSharingSetsForCourse({
   );
 }
 
-export interface SharingSetUsage {
+interface SharingSetUsage {
   question_count: number;
   consumer_count: number;
 }

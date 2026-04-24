@@ -469,6 +469,7 @@ export const QuestionSettingsForm = ({
       />
 
       <div className="mb-3">
+        <h2 className="h4 mb-2">Workspace</h2>
         <div className="form-check">
           <input
             className="form-check-input"
@@ -488,8 +489,8 @@ export const QuestionSettingsForm = ({
               setValue('workspace_enabled', !workspaceEnabled, { shouldDirty: true });
             }}
           />
-          <label className="form-check-label h4 mb-0" htmlFor="workspaceEnabled">
-            Workspace
+          <label className="form-check-label" htmlFor="workspaceEnabled">
+            Enable workspace
           </label>
         </div>
         <small className="text-muted ps-4">
@@ -687,10 +688,9 @@ export const QuestionSettingsForm = ({
       </div>
 
       <div className="mb-3">
+        <h2 className="h4 mb-2">External grading</h2>
         {/* If the grading method is external, you must specify external grading options */}
-        {isExternalGrading ? (
-          <h4 className="mb-0">External grading</h4>
-        ) : (
+        {!isExternalGrading && (
           <div className="form-check">
             <input
               className="form-check-input"
@@ -700,8 +700,8 @@ export const QuestionSettingsForm = ({
               defaultChecked={defaultValues.external_grading_enabled}
               {...register('external_grading_enabled')}
             />
-            <label className="form-check-label h4 mb-0" htmlFor="externalGradingEnabled">
-              External grading
+            <label className="form-check-label" htmlFor="externalGradingEnabled">
+              Enable external grading
             </label>
           </div>
         )}
@@ -870,7 +870,7 @@ export const QuestionSettingsForm = ({
 
       {sharingEnabled && (
         <div className="mb-3">
-          <h4>Sharing</h4>
+          <h2 className="h4">Sharing</h2>
           <small className="text-muted d-block mb-3">
             Share this question publicly or with specific courses via sharing sets. Once shared,
             these settings cannot be undone.

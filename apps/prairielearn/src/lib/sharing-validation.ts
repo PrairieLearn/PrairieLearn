@@ -6,10 +6,10 @@ import { IdSchema } from '@prairielearn/zod';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const NonPublicQuestionSchema = z.object({ id: IdSchema, qid: z.string() });
-export type NonPublicQuestion = z.infer<typeof NonPublicQuestionSchema>;
+type NonPublicQuestion = z.infer<typeof NonPublicQuestionSchema>;
 
 const NonPublicAssessmentSchema = z.object({ id: IdSchema, tid: z.string() });
-export type NonPublicAssessment = z.infer<typeof NonPublicAssessmentSchema>;
+type NonPublicAssessment = z.infer<typeof NonPublicAssessmentSchema>;
 
 export async function selectNonPublicQuestionsInAssessment({
   assessment_id,
