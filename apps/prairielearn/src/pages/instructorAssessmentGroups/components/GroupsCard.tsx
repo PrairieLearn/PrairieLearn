@@ -5,9 +5,14 @@ import { Alert, ButtonGroup, Dropdown, DropdownButton, Modal } from 'react-boots
 import { useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
+import { useModalState } from '@prairielearn/ui';
 
 import { getAppError } from '../../../lib/client/errors.js';
 import type { StaffAssessment, StaffAssessmentSet } from '../../../lib/client/safe-db-types.js';
+import {
+  getAssessmentDownloadUrl,
+  getCourseInstanceJobSequenceUrl,
+} from '../../../lib/client/url.js';
 import type { GroupUsersRow } from '../../../models/group.js';
 import type { AssessmentGroupsError } from '../../../trpc/assessment/assessment-groups.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
@@ -264,32 +269,54 @@ function UploadAssessmentGroupsModal({
 function RandomAssessmentGroupsModal({
   groupMin,
   groupMax,
-  csrfToken,
+  courseInstanceId,
   show,
   onHide,
 }: {
   groupMin: number;
   groupMax: number;
-  csrfToken: string;
+  courseInstanceId: string;
   show: boolean;
   onHide: () => void;
 }) {
-  const { register, reset } = useForm<{ min_group_size: number; max_group_size: number }>({
+  const trpc = useTRPC();
+  const mutation = useMutation(trpc.assessmentGroups.randomizeGroups.mutationOptions());
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm<{ min_group_size: number; max_group_size: number }>({
     values: { min_group_size: groupMin, max_group_size: groupMax },
   });
 
+  const onSubmit = (data: { min_group_size: number; max_group_size: number }) => {
+    mutation.mutate(data, {
+      onSuccess: ({ jobSequenceId }) => {
+        window.location.href = getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId);
+      },
+    });
+  };
+
   const handleHide = () => {
     reset({ min_group_size: groupMin, max_group_size: groupMax });
+    mutation.reset();
     onHide();
   };
 
   return (
     <Modal show={show} onHide={handleHide}>
-      <form method="POST">
+      <form onSubmit={handleSubmit(onSubmit)}>
         <Modal.Header>
           <Modal.Title>Assign students randomly</Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          {mutation.error && (
+            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+              {mutation.error.message}
+            </Alert>
+          )}
           <p className="text-muted small">
             Unassigned students will be randomly distributed into new groups based on the size
             constraints below. Students already in a group will not be affected.
@@ -326,12 +353,14 @@ function RandomAssessmentGroupsModal({
           </div>
         </Modal.Body>
         <Modal.Footer>
-          <input type="hidden" name="__action" value="random_assessment_groups" />
-          <input type="hidden" name="__csrf_token" value={csrfToken} />
           <button type="button" className="btn btn-secondary" onClick={handleHide}>
             Cancel
           </button>
-          <button type="submit" className="btn btn-primary">
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={isSubmitting || mutation.isPending}
+          >
             Assign
           </button>
         </Modal.Footer>
@@ -592,7 +621,7 @@ export function GroupsCard({
   initialNotAssigned,
   assessment,
   assessmentSet,
-  urlPrefix,
+  courseInstanceId,
   csrfToken,
   canEdit,
   groupMin,
@@ -603,7 +632,7 @@ export function GroupsCard({
   initialNotAssigned?: string[];
   assessment: StaffAssessment;
   assessmentSet: StaffAssessmentSet;
-  urlPrefix: string;
+  courseInstanceId: string;
   csrfToken: string;
   canEdit: boolean;
   groupMin: number;
@@ -611,12 +640,12 @@ export function GroupsCard({
 }) {
   const [groups, setGroups] = useState(initialGroups);
   const [notAssigned, setNotAssigned] = useState(initialNotAssigned);
-  const [showUploadAssessmentGroupsModal, setShowUploadAssessmentGroupsModal] = useState(false);
-  const [showRandomAssessmentGroupsModal, setShowRandomAssessmentGroupsModal] = useState(false);
-  const [showAddGroupModal, setShowAddGroupModal] = useState(false);
-  const [showDeleteAllGroupsModal, setShowDeleteAllGroupsModal] = useState(false);
-  const [editingGroup, setEditingGroup] = useState<GroupUsersRow | null>(null);
-  const [deletingGroup, setDeletingGroup] = useState<GroupUsersRow | null>(null);
+  const uploadModal = useModalState<null>();
+  const randomModal = useModalState<null>();
+  const addModal = useModalState<null>();
+  const deleteAllModal = useModalState<null>();
+  const editModal = useModalState<GroupUsersRow>();
+  const deleteModal = useModalState<GroupUsersRow>();
 
   const handleGroupAdded = (group: GroupUsersRow, newNotAssigned: string[]) => {
     setGroups((prev) => [...(prev ?? []), group]);
@@ -644,52 +673,52 @@ export function GroupsCard({
         <>
           <UploadAssessmentGroupsModal
             csrfToken={csrfToken}
-            show={showUploadAssessmentGroupsModal}
-            onHide={() => setShowUploadAssessmentGroupsModal(false)}
+            show={uploadModal.show}
+            onHide={uploadModal.hide}
           />
           <RandomAssessmentGroupsModal
             groupMin={groupMin}
             groupMax={groupMax}
-            csrfToken={csrfToken}
-            show={showRandomAssessmentGroupsModal}
-            onHide={() => setShowRandomAssessmentGroupsModal(false)}
+            courseInstanceId={courseInstanceId}
+            show={randomModal.show}
+            onHide={randomModal.hide}
           />
           <AddGroupModal
-            show={showAddGroupModal}
-            onHide={() => setShowAddGroupModal(false)}
+            show={addModal.show}
+            onHide={addModal.hide}
             onGroupAdded={(group, notAssigned) => {
               handleGroupAdded(group, notAssigned);
-              setShowAddGroupModal(false);
+              addModal.hide();
             }}
           />
           <DeleteAllGroupsModal
             assessmentSetName={assessmentSet.name}
             assessmentNumber={assessment.number}
-            show={showDeleteAllGroupsModal}
-            onHide={() => setShowDeleteAllGroupsModal(false)}
+            show={deleteAllModal.show}
+            onHide={deleteAllModal.hide}
             onAllGroupsDeleted={(notAssigned) => {
               handleAllGroupsDeleted(notAssigned);
-              setShowDeleteAllGroupsModal(false);
+              deleteAllModal.hide();
             }}
           />
-          {editingGroup && (
+          {editModal.data && (
             <EditGroupModal
-              key={editingGroup.group_id}
-              row={editingGroup}
-              show
-              onHide={() => setEditingGroup(null)}
+              key={editModal.data.group_id}
+              row={editModal.data}
+              show={editModal.show}
+              onHide={editModal.hide}
               onGroupEdited={handleGroupUpdated}
             />
           )}
-          {deletingGroup && (
+          {deleteModal.data && (
             <DeleteGroupModal
-              key={deletingGroup.group_id}
-              row={deletingGroup}
-              show
-              onHide={() => setDeletingGroup(null)}
+              key={deleteModal.data.group_id}
+              row={deleteModal.data}
+              show={deleteModal.show}
+              onHide={deleteModal.hide}
               onGroupDeleted={(groupId, newNotAssigned) => {
                 handleGroupDeleted(groupId, newNotAssigned);
-                setDeletingGroup(null);
+                deleteModal.hide();
               }}
             />
           )}
@@ -719,7 +748,7 @@ export function GroupsCard({
                 <button
                   type="button"
                   className="btn btn-outline-primary"
-                  onClick={() => setShowAddGroupModal(true)}
+                  onClick={() => addModal.showWithData(null)}
                 >
                   <i className="bi bi-plus-lg" aria-hidden="true" /> Add group
                 </button>
@@ -729,14 +758,18 @@ export function GroupsCard({
                   as="button"
                   type="button"
                   disabled={!canEdit}
-                  onClick={() => setShowUploadAssessmentGroupsModal(true)}
+                  onClick={() => uploadModal.showWithData(null)}
                 >
                   <i className="bi bi-upload me-2" aria-hidden="true" />
                   Import CSV
                 </Dropdown.Item>
                 <Dropdown.Item
                   as="a"
-                  href={`${urlPrefix}/assessment/${assessment.id}/downloads/${groupsCsvFilename}`}
+                  href={getAssessmentDownloadUrl({
+                    courseInstanceId,
+                    assessmentId: assessment.id,
+                    filename: groupsCsvFilename ?? '',
+                  })}
                 >
                   <i className="bi bi-download me-2" aria-hidden="true" />
                   Export CSV
@@ -747,7 +780,7 @@ export function GroupsCard({
                   type="button"
                   disabled={!canEdit}
                   className="text-danger"
-                  onClick={() => setShowDeleteAllGroupsModal(true)}
+                  onClick={() => deleteAllModal.showWithData(null)}
                 >
                   <i className="bi bi-trash me-2" aria-hidden="true" />
                   Delete all
@@ -778,7 +811,7 @@ export function GroupsCard({
                 <button
                   type="button"
                   className="btn btn-outline-secondary text-nowrap"
-                  onClick={() => setShowRandomAssessmentGroupsModal(true)}
+                  onClick={() => randomModal.showWithData(null)}
                 >
                   <i className="bi bi-shuffle" aria-hidden="true" /> Assign randomly
                 </button>
@@ -802,8 +835,8 @@ export function GroupsCard({
                     key={row.group_id}
                     row={row}
                     canEdit={canEdit}
-                    onEdit={setEditingGroup}
-                    onDelete={setDeletingGroup}
+                    onEdit={editModal.showWithData}
+                    onDelete={deleteModal.showWithData}
                   />
                 ))}
               </tbody>

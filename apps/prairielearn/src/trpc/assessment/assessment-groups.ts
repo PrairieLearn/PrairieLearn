@@ -16,6 +16,7 @@ import {
   serializeGroupSettings,
   stripLegacyGroupKeys,
 } from '../../lib/group-config.js';
+import { randomGroups } from '../../lib/group-update.js';
 import {
   GroupOperationError,
   addUserToGroup,
@@ -33,7 +34,7 @@ import {
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { throwAppError } from '../app-errors.js';
 
-import { requireCourseInstancePermissionEdit, requireCoursePermissionEdit, t } from './init.js';
+import { requireCourseInstancePermissionEdit, t } from './init.js';
 
 const MAX_UIDS = 50;
 
@@ -197,7 +198,7 @@ const deleteAll = t.procedure.use(requireCourseInstancePermissionEdit).mutation(
 });
 
 const enableGroupWork = t.procedure
-  .use(requireCoursePermissionEdit)
+  .use(requireCourseInstancePermissionEdit)
   .input(z.object({ origHash: z.string().nullable() }))
   .mutation(async ({ input, ctx }) => {
     const { origHash } = input;
@@ -267,7 +268,7 @@ const enableGroupWork = t.procedure
   });
 
 const updateGroupConfig = t.procedure
-  .use(requireCoursePermissionEdit)
+  .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
       origHash: z.string().nullable(),
@@ -398,6 +399,34 @@ const updateGroupConfig = t.procedure
     return { origHash: saveResult.newHash };
   });
 
+const randomizeGroups = t.procedure
+  .use(requireCourseInstancePermissionEdit)
+  .input(
+    z.object({
+      min_group_size: z.number().int().min(1),
+      max_group_size: z.number().int().min(2),
+    }),
+  )
+  .mutation(async ({ input, ctx }) => {
+    if (input.min_group_size > input.max_group_size) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Minimum group size cannot be greater than maximum group size.',
+      });
+    }
+
+    const jobSequenceId = await randomGroups({
+      course_instance: ctx.course_instance,
+      assessment: ctx.assessment,
+      user_id: ctx.authn_user.id,
+      authn_user_id: ctx.authn_user.id,
+      min_group_size: input.min_group_size,
+      max_group_size: input.max_group_size,
+      authzData: ctx.authz_data,
+    });
+    return { jobSequenceId };
+  });
+
 export const assessmentGroupsRouter = t.router({
   addGroup,
   editGroup,
@@ -405,4 +434,5 @@ export const assessmentGroupsRouter = t.router({
   deleteAll,
   enableGroupWork,
   updateGroupConfig,
+  randomizeGroups,
 });

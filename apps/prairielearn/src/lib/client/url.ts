@@ -27,6 +27,18 @@ export function getStudentAssessmentUrl(courseInstanceId: string, assessmentId: 
   return `${getStudentCourseInstanceUrl(courseInstanceId)}/assessment/${assessmentId}`;
 }
 
+export function getAssessmentDownloadUrl({
+  courseInstanceId,
+  assessmentId,
+  filename,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  filename: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/downloads/${filename}`;
+}
+
 export function getPublicAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
   return `/pl/public/course_instance/${courseInstanceId}/assessment/${assessmentId}`;
 }

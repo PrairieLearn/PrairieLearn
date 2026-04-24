@@ -20,6 +20,20 @@ const RECOMMENDED_ROLES: GroupSettingsFormValues['roles'] = [
   makeRole({ name: 'Contributor' }),
 ];
 
+function HelpTooltip({ body, id, ariaLabel }: { body: string; id: string; ariaLabel: string }) {
+  return (
+    <OverlayTrigger placement="top" tooltip={{ body, props: { id } }}>
+      <button
+        type="button"
+        className="btn btn-xs btn-ghost p-0 align-baseline"
+        aria-label={ariaLabel}
+      >
+        <i className="bi bi-question-circle text-muted" aria-hidden="true" />
+      </button>
+    </OverlayTrigger>
+  );
+}
+
 function ApplyRecommendedRolesModal({
   show,
   onHide,
@@ -100,32 +114,25 @@ export function GroupSettingsCard({
     formState: { isDirty, isValid, errors },
   } = useForm<GroupSettingsFormValues>({
     mode: 'onChange',
-    defaultValues: groupSettingsDefaults ?? {
-      studentPermissions: {
+    defaultValues: {
+      studentPermissions: groupSettingsDefaults?.studentPermissions ?? {
         canCreateGroup: false,
         canJoinGroup: false,
         canLeaveGroup: false,
         canNameGroup: true,
       },
-      minMembers: groupConfigInfo.minimum ?? null,
-      maxMembers: groupConfigInfo.maximum ?? null,
-      roles: [],
+      minMembers: groupSettingsDefaults?.minMembers ?? groupConfigInfo.minimum ?? null,
+      maxMembers: groupSettingsDefaults?.maxMembers ?? groupConfigInfo.maximum ?? null,
+      roles: groupSettingsDefaults?.roles ?? [],
     },
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'roles' });
 
   const watchedMin = watch('minMembers');
-  const watchedMax = watch('maxMembers');
   const watchedRoles = watch('roles');
 
-  const groupSizeError = run(() => {
-    if (watchedMin != null && watchedMax != null && watchedMin > watchedMax) {
-      return 'Minimum members cannot be greater than maximum members.';
-    }
-    return null;
-  });
-  const roleErrors = run(() => {
+  const formLevelRoleErrors = run(() => {
     if (watchedRoles.length === 0) return [];
     const errors: string[] = [];
     const hasAssigner = watchedRoles.some(
@@ -149,16 +156,6 @@ export function GroupSettingsCard({
           `"${name}" has no permissions — students with this role won't be able to view, submit, or assign roles.`,
         );
       }
-      if (watchedMax != null && r.minAssignees != null && r.minAssignees > watchedMax) {
-        errors.push(
-          `Role "${name}" has a minimum (${r.minAssignees}) greater than the group's maximum (${watchedMax}).`,
-        );
-      }
-      if (watchedMax != null && r.maxAssignees != null && r.maxAssignees > watchedMax) {
-        errors.push(
-          `Role "${name}" has a maximum (${r.maxAssignees}) greater than the group's maximum (${watchedMax}).`,
-        );
-      }
     }
     return errors;
   });
@@ -170,11 +167,6 @@ export function GroupSettingsCard({
       if (watchedMin != null && r.minAssignees != null && r.minAssignees > watchedMin) {
         warnings.push(
           `Role "${name}" has a minimum (${r.minAssignees}) greater than the group's minimum (${watchedMin}).`,
-        );
-      }
-      if (r.origName != null && r.name.trim() !== '' && r.origName !== r.name) {
-        warnings.push(
-          `Role "${r.origName}" will be renamed to "${r.name}". All zone and question permission references will be updated automatically.`,
         );
       }
     }
@@ -317,19 +309,12 @@ export function GroupSettingsCard({
                   </label>
                   <input
                     type="number"
-                    className={clsx(
-                      'form-control',
-                      (groupSizeError || errors.minMembers) && 'is-invalid',
-                    )}
+                    className={clsx('form-control', errors.minMembers && 'is-invalid')}
                     id="groupSettings-minMembers"
                     placeholder="0"
-                    aria-invalid={groupSizeError || errors.minMembers ? 'true' : undefined}
+                    aria-invalid={errors.minMembers ? 'true' : undefined}
                     aria-errormessage={
-                      errors.minMembers
-                        ? 'groupSettings-minMembersError'
-                        : groupSizeError
-                          ? 'groupSettings-sizeError'
-                          : undefined
+                      errors.minMembers ? 'groupSettings-minMembersError' : undefined
                     }
                     defaultValue={
                       groupSettingsDefaults?.minMembers ?? groupConfigInfo.minimum ?? ''
@@ -362,19 +347,12 @@ export function GroupSettingsCard({
                   </label>
                   <input
                     type="number"
-                    className={clsx(
-                      'form-control',
-                      (groupSizeError || errors.maxMembers) && 'is-invalid',
-                    )}
+                    className={clsx('form-control', errors.maxMembers && 'is-invalid')}
                     id="groupSettings-maxMembers"
                     placeholder="0"
-                    aria-invalid={groupSizeError || errors.maxMembers ? 'true' : undefined}
+                    aria-invalid={errors.maxMembers ? 'true' : undefined}
                     aria-errormessage={
-                      errors.maxMembers
-                        ? 'groupSettings-maxMembersError'
-                        : groupSizeError
-                          ? 'groupSettings-sizeError'
-                          : undefined
+                      errors.maxMembers ? 'groupSettings-maxMembersError' : undefined
                     }
                     defaultValue={
                       groupSettingsDefaults?.maxMembers ?? groupConfigInfo.maximum ?? ''
@@ -382,6 +360,13 @@ export function GroupSettingsCard({
                     {...register('maxMembers', {
                       valueAsNumber: true,
                       min: { value: 1, message: 'Must be at least 1.' },
+                      validate: (value) => {
+                        const min = getValues('minMembers');
+                        if (value != null && min != null && value < min) {
+                          return 'Maximum members cannot be less than minimum members.';
+                        }
+                        return true;
+                      },
                     })}
                   />
                   {errors.maxMembers && (
@@ -392,12 +377,6 @@ export function GroupSettingsCard({
                   <div className="text-muted small">The maximum number of students in a group.</div>
                 </div>
               </div>
-              {groupSizeError && (
-                <div id="groupSettings-sizeError" className="text-danger small mt-2">
-                  <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
-                  {groupSizeError}
-                </div>
-              )}
             </div>
 
             <div className="mb-4">
@@ -427,93 +406,43 @@ export function GroupSettingsCard({
                       <th scope="col">Name</th>
                       <th scope="col">
                         Min assignees{' '}
-                        <OverlayTrigger
-                          placement="top"
-                          tooltip={{
-                            body: 'Minimum number of students that must be assigned to this role.',
-                            props: { id: 'role-min-assignees-tooltip' },
-                          }}
-                        >
-                          <button
-                            type="button"
-                            className="btn btn-xs btn-ghost p-0 align-baseline"
-                            aria-label="Min assignees help"
-                          >
-                            <i className="bi bi-question-circle text-muted" aria-hidden="true" />
-                          </button>
-                        </OverlayTrigger>
+                        <HelpTooltip
+                          body="Minimum number of students that must be assigned to this role."
+                          id="role-min-assignees-tooltip"
+                          ariaLabel="Min assignees help"
+                        />
                       </th>
                       <th scope="col">
                         Max assignees{' '}
-                        <OverlayTrigger
-                          placement="top"
-                          tooltip={{
-                            body: 'Maximum number of students that can be assigned to this role. Leave blank for unlimited.',
-                            props: { id: 'role-max-assignees-tooltip' },
-                          }}
-                        >
-                          <button
-                            type="button"
-                            className="btn btn-xs btn-ghost p-0 align-baseline"
-                            aria-label="Max assignees help"
-                          >
-                            <i className="bi bi-question-circle text-muted" aria-hidden="true" />
-                          </button>
-                        </OverlayTrigger>
+                        <HelpTooltip
+                          body="Maximum number of students that can be assigned to this role. Leave blank for unlimited."
+                          id="role-max-assignees-tooltip"
+                          ariaLabel="Max assignees help"
+                        />
                       </th>
                       <th scope="col" className="text-center">
                         Can assign{' '}
-                        <OverlayTrigger
-                          placement="top"
-                          tooltip={{
-                            body: 'Students with this role can assign roles to other students in the group.',
-                            props: { id: 'role-can-assign-tooltip' },
-                          }}
-                        >
-                          <button
-                            type="button"
-                            className="btn btn-xs btn-ghost p-0 align-baseline"
-                            aria-label="Can assign roles help"
-                          >
-                            <i className="bi bi-question-circle text-muted" aria-hidden="true" />
-                          </button>
-                        </OverlayTrigger>
+                        <HelpTooltip
+                          body="Students with this role can assign roles to other students in the group."
+                          id="role-can-assign-tooltip"
+                          ariaLabel="Can assign roles help"
+                        />
                       </th>
                       <th scope="col" className="text-center">
                         Can view{' '}
-                        <OverlayTrigger
-                          placement="top"
-                          tooltip={{
-                            body: 'Students with this role can view assessment questions by default.',
-                            props: { id: 'role-can-view-tooltip' },
-                          }}
-                        >
-                          <button
-                            type="button"
-                            className="btn btn-xs btn-ghost p-0 align-baseline"
-                            aria-label="Can view help"
-                          >
-                            <i className="bi bi-question-circle text-muted" aria-hidden="true" />
-                          </button>
-                        </OverlayTrigger>
+                        <HelpTooltip
+                          body="Students with this role can view assessment questions by default."
+                          id="role-can-view-tooltip"
+                          ariaLabel="Can view help"
+                        />
                       </th>
                       <th scope="col" className="text-center">
                         Can submit{' '}
-                        <OverlayTrigger
-                          placement="top"
-                          tooltip={{
-                            body: 'Students with this role can submit answers to assessment questions by default.',
-                            props: { id: 'role-can-submit-tooltip' },
-                          }}
-                        >
-                          <button
-                            type="button"
-                            className="btn btn-xs btn-ghost p-0 align-baseline"
-                            aria-label="Can submit help"
-                          >
-                            <i className="bi bi-question-circle text-muted" aria-hidden="true" />
-                          </button>
-                        </OverlayTrigger>
+                        <HelpTooltip
+                          body="Students with this role can submit answers to assessment questions by default."
+                          id="role-can-submit-tooltip"
+                          ariaLabel="Can submit help"
+                        />
                       </th>
                       <th scope="col" />
                     </tr>
@@ -540,13 +469,10 @@ export function GroupSettingsCard({
                         const rowErrors = errors.roles?.[index];
                         const minError = rowErrors?.minAssignees;
                         const maxError = rowErrors?.maxAssignees;
-                        const sizeValidateError =
-                          minError?.type === 'validate' || maxError?.type === 'validate';
                         const rowNumber = index + 1;
                         const nameErrorId = `role-${index}-nameError`;
                         const minErrorId = `role-${index}-minError`;
                         const maxErrorId = `role-${index}-maxError`;
-                        const sizeErrorId = `role-${index}-sizeError`;
                         return (
                           <Fragment key={field.id}>
                             <tr>
@@ -569,6 +495,7 @@ export function GroupSettingsCard({
                                   aria-errormessage={rowErrors?.name ? nameErrorId : undefined}
                                   {...register(`roles.${index}.name`, {
                                     required: 'Name is required.',
+                                    deps: watchedRoles.map((_, i) => `roles.${i}.name` as const),
                                     validate: (value) => {
                                       const allNames = getValues('roles').map((r) => r.name);
                                       const dupes = allNames.filter((n) => n === value);
@@ -582,29 +509,25 @@ export function GroupSettingsCard({
                                   type="number"
                                   className={clsx(
                                     'form-control form-control-sm',
-                                    (!!minError || sizeValidateError) && 'is-invalid',
+                                    !!minError && 'is-invalid',
                                   )}
                                   placeholder="0"
                                   defaultValue={field.minAssignees ?? ''}
                                   aria-label={`Min assignees for role ${rowNumber}`}
-                                  aria-invalid={
-                                    !!minError || sizeValidateError ? 'true' : undefined
-                                  }
-                                  aria-errormessage={
-                                    sizeValidateError
-                                      ? sizeErrorId
-                                      : minError
-                                        ? minErrorId
-                                        : undefined
-                                  }
+                                  aria-invalid={minError ? 'true' : undefined}
+                                  aria-errormessage={minError ? minErrorId : undefined}
                                   {...register(`roles.${index}.minAssignees`, {
                                     valueAsNumber: true,
-                                    deps: [`roles.${index}.maxAssignees`],
+                                    deps: [`roles.${index}.maxAssignees`, 'maxMembers'],
                                     min: { value: 0, message: 'Must be ≥ 0.' },
                                     validate: (value) => {
-                                      const max = watchedRoles[index]?.maxAssignees;
+                                      const max = getValues(`roles.${index}.maxAssignees`);
                                       if (value != null && max != null && value > max) {
                                         return 'Must be ≤ max assignees.';
+                                      }
+                                      const groupMax = getValues('maxMembers');
+                                      if (value != null && groupMax != null && value > groupMax) {
+                                        return `Must be ≤ group maximum (${groupMax}).`;
                                       }
                                       return true;
                                     },
@@ -630,29 +553,25 @@ export function GroupSettingsCard({
                                   type="number"
                                   className={clsx(
                                     'form-control form-control-sm',
-                                    (!!maxError || sizeValidateError) && 'is-invalid',
+                                    !!maxError && 'is-invalid',
                                   )}
                                   placeholder="0"
                                   defaultValue={field.maxAssignees ?? ''}
                                   aria-label={`Max assignees for role ${rowNumber}`}
-                                  aria-invalid={
-                                    !!maxError || sizeValidateError ? 'true' : undefined
-                                  }
-                                  aria-errormessage={
-                                    sizeValidateError
-                                      ? sizeErrorId
-                                      : maxError
-                                        ? maxErrorId
-                                        : undefined
-                                  }
+                                  aria-invalid={maxError ? 'true' : undefined}
+                                  aria-errormessage={maxError ? maxErrorId : undefined}
                                   {...register(`roles.${index}.maxAssignees`, {
                                     valueAsNumber: true,
-                                    deps: [`roles.${index}.minAssignees`],
+                                    deps: [`roles.${index}.minAssignees`, 'maxMembers'],
                                     min: { value: 1, message: 'Must be ≥ 1.' },
                                     validate: (value) => {
-                                      const min = watchedRoles[index]?.minAssignees;
+                                      const min = getValues(`roles.${index}.minAssignees`);
                                       if (value != null && min != null && min > value) {
                                         return 'Must be ≥ min assignees.';
+                                      }
+                                      const groupMax = getValues('maxMembers');
+                                      if (value != null && groupMax != null && value > groupMax) {
+                                        return `Must be ≤ group maximum (${groupMax}).`;
                                       }
                                       return true;
                                     },
@@ -663,7 +582,7 @@ export function GroupSettingsCard({
                                 <input
                                   type="checkbox"
                                   className="form-check-input"
-                                  aria-label={`Can assign roles for ${field.name || 'this role'}`}
+                                  aria-label={`Can assign roles for ${watchedRoles[index]?.name || 'this role'}`}
                                   defaultChecked={field.canAssignRoles}
                                   {...register(`roles.${index}.canAssignRoles`)}
                                 />
@@ -672,7 +591,7 @@ export function GroupSettingsCard({
                                 <input
                                   type="checkbox"
                                   className="form-check-input"
-                                  aria-label={`Can view for ${field.name || 'this role'}`}
+                                  aria-label={`Can view for ${watchedRoles[index]?.name || 'this role'}`}
                                   defaultChecked={field.canView}
                                   {...register(`roles.${index}.canView`, {
                                     onChange: (e) => {
@@ -692,8 +611,8 @@ export function GroupSettingsCard({
                                   disabled={!watchedRoles[index]?.canView}
                                   aria-label={
                                     watchedRoles[index]?.canView
-                                      ? `Can submit for ${field.name || 'this role'}`
-                                      : `Can submit for ${field.name || 'this role'} (requires can view)`
+                                      ? `Can submit for ${watchedRoles[index]?.name || 'this role'}`
+                                      : `Can submit for ${watchedRoles[index]?.name || 'this role'} (requires can view)`
                                   }
                                   title={
                                     watchedRoles[index]?.canView
@@ -715,40 +634,28 @@ export function GroupSettingsCard({
                                 </button>
                               </td>
                             </tr>
-                            {(rowErrors?.name || sizeValidateError || minError || maxError) && (
+                            {(rowErrors?.name || minError || maxError) && (
                               <tr>
-                                {rowErrors?.name ? (
+                                {rowErrors.name ? (
                                   <td id={nameErrorId} className="text-danger small pt-0">
                                     {rowErrors.name.message}
                                   </td>
                                 ) : (
                                   <td className="pt-0" />
                                 )}
-                                {sizeValidateError ? (
-                                  <td
-                                    id={sizeErrorId}
-                                    colSpan={2}
-                                    className="text-danger small pt-0"
-                                  >
-                                    Min assignees must be less than or equal to max assignees.
+                                {minError ? (
+                                  <td id={minErrorId} className="text-danger small pt-0">
+                                    {minError.message}
                                   </td>
                                 ) : (
-                                  <>
-                                    {minError ? (
-                                      <td id={minErrorId} className="text-danger small pt-0">
-                                        {minError.message}
-                                      </td>
-                                    ) : (
-                                      <td className="pt-0" />
-                                    )}
-                                    {maxError ? (
-                                      <td id={maxErrorId} className="text-danger small pt-0">
-                                        {maxError.message}
-                                      </td>
-                                    ) : (
-                                      <td className="pt-0" />
-                                    )}
-                                  </>
+                                  <td className="pt-0" />
+                                )}
+                                {maxError ? (
+                                  <td id={maxErrorId} className="text-danger small pt-0">
+                                    {maxError.message}
+                                  </td>
+                                ) : (
+                                  <td className="pt-0" />
                                 )}
                                 <td colSpan={4} className="pt-0" />
                               </tr>
@@ -761,9 +668,9 @@ export function GroupSettingsCard({
                 </table>
               </div>
 
-              {roleErrors.length > 0 && (
+              {formLevelRoleErrors.length > 0 && (
                 <div className="mt-3">
-                  {roleErrors.map((error) => (
+                  {formLevelRoleErrors.map((error) => (
                     <Alert key={error} variant="danger" className="mb-2 small">
                       <i className="bi bi-exclamation-circle me-2" aria-hidden="true" />
                       {error}
@@ -798,11 +705,7 @@ export function GroupSettingsCard({
                 type="submit"
                 className="btn btn-primary"
                 disabled={
-                  !isDirty ||
-                  !isValid ||
-                  !!groupSizeError ||
-                  roleErrors.length > 0 ||
-                  mutation.isPending
+                  !isDirty || !isValid || formLevelRoleErrors.length > 0 || mutation.isPending
                 }
               >
                 Save and sync

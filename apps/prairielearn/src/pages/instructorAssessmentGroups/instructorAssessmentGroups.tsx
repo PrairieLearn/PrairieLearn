@@ -10,10 +10,10 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffGroupConfigSchema } from '../../lib/client/safe-db-types.js';
-import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
+import { getAssessmentTrpcUrl, getCourseInstanceJobSequenceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { type GroupSettingsFormValues, normalizeGroupSettings } from '../../lib/group-config.js';
-import { randomGroups, uploadInstanceGroups } from '../../lib/group-update.js';
+import { uploadInstanceGroups } from '../../lib/group-update.js';
 import { computeStableHash } from '../../lib/json.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
@@ -130,13 +130,10 @@ router.get(
 router.post(
   '/',
   typedAsyncHandler<'assessment'>(async (req, res) => {
-    const { assessment, course_instance, authn_user, authz_data, urlPrefix } = extractPageContext(
-      res.locals,
-      {
-        pageType: 'assessment',
-        accessType: 'instructor',
-      },
-    );
+    const { assessment, course_instance, authn_user, authz_data } = extractPageContext(res.locals, {
+      pageType: 'assessment',
+      accessType: 'instructor',
+    });
 
     if (!authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
@@ -151,18 +148,7 @@ router.post(
         authn_user_id: authn_user.id,
         authzData: authz_data,
       });
-      res.redirect(urlPrefix + '/jobSequence/' + job_sequence_id);
-    } else if (req.body.__action === 'random_assessment_groups') {
-      const job_sequence_id = await randomGroups({
-        course_instance,
-        assessment,
-        user_id: res.locals.user.id,
-        authn_user_id: authn_user.id,
-        max_group_size: Number(req.body.max_group_size),
-        min_group_size: Number(req.body.min_group_size),
-        authzData: authz_data,
-      });
-      res.redirect(urlPrefix + '/jobSequence/' + job_sequence_id);
+      res.redirect(getCourseInstanceJobSequenceUrl(course_instance.id, job_sequence_id));
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
