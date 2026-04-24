@@ -590,8 +590,8 @@ function ImportSummary({
               </li>
               {totalAssets > 0 && (
                 <li>
-                  <strong>{totalAssets}</strong> asset file{totalAssets !== 1 ? 's' : ''} (images,
-                  media)
+                  <strong>{totalAssets}</strong> image{totalAssets !== 1 ? 's' : ''} and other
+                  asset{totalAssets !== 1 ? 's' : ''}
                 </li>
               )}
             </ul>
