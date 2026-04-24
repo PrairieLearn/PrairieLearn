@@ -705,10 +705,24 @@ function AssessmentQuestionsSection({
       <summary className="small text-muted mb-2">Questions ({questions.length})</summary>
 
       <div className="d-flex gap-2 mb-2 mt-1 small">
-        <a href="#" role="button" onClick={(e) => { e.preventDefault(); onExpandAll(allDirNames); }}>
+        <a
+          href="#"
+          role="button"
+          onClick={(e) => {
+            e.preventDefault();
+            onExpandAll(allDirNames);
+          }}
+        >
           Expand all
         </a>
-        <a href="#" role="button" onClick={(e) => { e.preventDefault(); onCollapseAll(allDirNames); }}>
+        <a
+          href="#"
+          role="button"
+          onClick={(e) => {
+            e.preventDefault();
+            onCollapseAll(allDirNames);
+          }}
+        >
           Collapse all
         </a>
       </div>
