@@ -100,8 +100,8 @@ describe('Updating a course instance ID', () => {
 
   test.sequential('cannot un-share a course instance whose source is already public', async () => {
     await execute(
-      'UPDATE course_instances SET share_source_publicly = TRUE WHERE short_name = $short_name',
-      { short_name: 'Fa18' },
+      'UPDATE course_instances SET share_source_publicly = TRUE WHERE id = $course_instance_id',
+      { course_instance_id: '1' },
     );
     try {
       const response = await fetchCheerio(
@@ -116,8 +116,8 @@ describe('Updating a course instance ID', () => {
       assert.equal(response.status, 400);
     } finally {
       await execute(
-        'UPDATE course_instances SET share_source_publicly = FALSE WHERE short_name = $short_name',
-        { short_name: 'Fa18' },
+        'UPDATE course_instances SET share_source_publicly = FALSE WHERE id = $course_instance_id',
+        { course_instance_id: '1' },
       );
     }
   });

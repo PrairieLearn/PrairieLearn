@@ -132,6 +132,7 @@ async function writeCourseInfo({
 const regenerateSharingToken = t.procedure
   .use(requireCoursePermissionOwn)
   .use(requireQuestionSharingEnabled)
+  .use(requireNotExampleCourse)
   .mutation(async ({ ctx }) => {
     const sharingToken = await sqldb.queryOptionalScalar(
       sql.update_sharing_token,
@@ -150,6 +151,7 @@ const regenerateSharingToken = t.procedure
 const addCourseToSharingSet = t.procedure
   .use(requireCoursePermissionOwn)
   .use(requireQuestionSharingEnabled)
+  .use(requireNotExampleCourse)
   .input(
     z.object({
       sharingSetId: IdSchema,
@@ -332,6 +334,7 @@ const deleteSharingSet = t.procedure
 const chooseSharingName = t.procedure
   .use(requireCoursePermissionOwn)
   .use(requireQuestionSharingEnabled)
+  .use(requireNotExampleCourse)
   .input(z.object({ courseSharingName: SharingNameSchema }))
   .mutation(async ({ input, ctx }) => {
     const canChoose = await selectCanChooseSharingName(ctx.course);
