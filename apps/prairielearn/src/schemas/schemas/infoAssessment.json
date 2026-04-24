@@ -727,6 +727,10 @@
         }
       ]
     },
+    "DatetimeLocalStringSchema": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2})?$"
+    },
     "AccessControlJsonSchema": {
       "type": "object",
       "additionalProperties": false,
@@ -762,8 +766,7 @@
               "properties": {
                 "date": {
                   "description": "Release date as ISO String",
-                  "type": "string",
-                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2})?$"
+                  "$ref": "#/definitions/DatetimeLocalStringSchema"
                 }
               }
             },
@@ -943,9 +946,6 @@
         }
       }
     },
-    "DatetimeLocalStringSchema": {
-      "$ref": "#/definitions/AccessControlJsonSchema/properties/dateControl/properties/release/properties/date"
-    },
     "DeadlineEntryJsonSchema": {
       "type": "object",
       "additionalProperties": false,
@@ -953,7 +953,7 @@
       "properties": {
         "date": {
           "description": "Date as ISO String for additional deadline",
-          "$ref": "#/definitions/AccessControlJsonSchema/properties/dateControl/properties/release/properties/date"
+          "$ref": "#/definitions/DatetimeLocalStringSchema"
         },
         "credit": {
           "description": "Amount of credit as a percent to allow",
