@@ -86,6 +86,7 @@ const defaultMutationFields = {
   advance_score_perc: null,
   allow_real_time_grading: true,
   grade_rate_minutes: null,
+  share_source_publicly: false,
 };
 
 describe('Editing assessment settings', () => {
