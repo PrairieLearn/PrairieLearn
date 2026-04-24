@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { DateFromISOString } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
@@ -10,7 +9,6 @@ import {
   StudentAccessRulesPopover,
   StudentAccessTimelinePopover,
 } from '../../components/StudentAccessRulesPopover.js';
-import { formatDateShort } from '../../lib/assessment-access-control/resolver.js';
 import { AccessTimelineEntrySchema } from '../../lib/assessment-access-control/timeline.js';
 import {
   AssessmentAccessRuleSchema,
@@ -43,7 +41,7 @@ export const StudentAssessmentsRowSchema = z.object({
   start_new_assessment_group: z.boolean(),
   assessment_group_heading: z.string(),
   show_before_release: z.boolean().optional(),
-  will_release_at: DateFromISOString.nullable().optional(),
+  will_release_at: z.string().nullable().optional(),
 });
 export type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowSchema>;
 
@@ -170,11 +168,7 @@ function AvailableCredit({
 }) {
   if (row.modern_access_control && row.assessment_instance_id == null && !row.authorized) {
     if (row.will_release_at) {
-      return html`
-        <span class="text-muted">
-          Available ${formatDateShort(row.will_release_at, displayTimezone)}
-        </span>
-      `;
+      return html`<span class="text-muted">Available ${row.will_release_at}</span>`;
     }
     return html`<span class="text-muted">Not yet available</span>`;
   }
