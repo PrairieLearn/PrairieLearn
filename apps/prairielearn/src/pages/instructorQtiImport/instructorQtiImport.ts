@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 import { Router } from 'express';
@@ -10,7 +10,6 @@ import {
   type ConversionResult,
   type QtiFileEntry,
   convert,
-  detectCourseExport,
   findQtiFilesFromManifest,
   slugify,
 } from '@prairielearn/question-conversion';
@@ -31,12 +30,18 @@ import type {
 
 const router = Router();
 
-// Gate all routes behind the feature flag.
+// Gate all routes behind the feature flag and require edit permissions.
 router.use(
   typedAsyncHandler<'course-instance'>(async (req, res, next) => {
     const enabled = await features.enabledFromLocals('qti-content-import', res.locals);
     if (!enabled) {
       throw new HttpStatusError(403, 'QTI content import is not enabled for this course');
+    }
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      throw new HttpStatusError(403, 'Access denied (must be course editor)');
+    }
+    if (res.locals.course.example_course) {
+      throw new HttpStatusError(403, 'Cannot import into the example course');
     }
     next();
   }),
@@ -76,118 +81,102 @@ router.get(
 router.post(
   '/upload',
   typedAsyncHandler<'course-instance'>(async (req, res) => {
+    const file = req.file;
+    if (!file) {
+      throw new HttpStatusError(400, 'No file uploaded');
+    }
+
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ext !== '.zip' && ext !== '.imscc') {
+      throw new HttpStatusError(400, 'File must be a .zip or .imscc file');
+    }
+
+    const { path: tempDir, cleanup } = await tmp.dir({ unsafeCleanup: true });
     try {
-      if (!res.locals.authz_data.has_course_permission_edit) {
-        res.status(403).json({ error: 'Access denied (must be course editor)' });
-        return;
-      }
-      if (res.locals.course.example_course) {
-        res.status(403).json({ error: 'Cannot import into the example course' });
-        return;
+      // Extract the archive to the temp directory.
+      const directory = await unzipper.Open.buffer(file.buffer);
+      await directory.extract({ path: tempDir });
+
+      // Find QTI assessment files.
+      const manifestEntries = await findQtiFilesFromManifest(tempDir);
+      const entries: QtiFileEntry[] =
+        manifestEntries.length > 0
+          ? manifestEntries
+          : (await findQtiXmlFiles(tempDir)).map((p) => ({
+              qtiPath: p,
+              assessmentDir: path.dirname(p),
+            }));
+
+      if (entries.length === 0) {
+        throw new HttpStatusError(
+          400,
+          'No QTI assessment files found in the uploaded archive',
+        );
       }
 
-      const file = req.file;
-      if (!file) {
-        res.status(400).json({ error: 'No file uploaded' });
-        return;
-      }
-
-      const ext = path.extname(file.originalname).toLowerCase();
-      if (ext !== '.zip' && ext !== '.imscc') {
-        res.status(400).json({ error: 'File must be a .zip or .imscc file' });
-        return;
-      }
-
-      const { path: tempDir, cleanup } = await tmp.dir({ unsafeCleanup: true });
+      // Try to read rubrics from course_settings/rubrics.xml.
+      let rubricsXml: string | undefined;
       try {
-        // Extract the archive to the temp directory.
-        const directory = await unzipper.Open.buffer(file.buffer);
-        await directory.extract({ path: tempDir });
-
-        // Detect if this is a course export.
-        const courseExportInfo = (await detectCourseExport(tempDir)) ?? undefined;
-
-        // Find QTI assessment files.
-        const manifestEntries = await findQtiFilesFromManifest(tempDir);
-        const entries: QtiFileEntry[] =
-          manifestEntries.length > 0
-            ? manifestEntries
-            : (await findQtiXmlFiles(tempDir)).map((p) => ({
-                qtiPath: p,
-                assessmentDir: path.dirname(p),
-              }));
-
-        if (entries.length === 0) {
-          res.status(400).json({ error: 'No QTI assessment files found in the uploaded archive' });
-          return;
-        }
-
-        // Try to read rubrics from course_settings/rubrics.xml.
-        let rubricsXml: string | undefined;
-        try {
-          rubricsXml = await readFile(
-            path.join(tempDir, 'course_settings', 'rubrics.xml'),
-            'utf-8',
-          );
-        } catch {
-          // Not present in quiz-only exports.
-        }
-
-        // Convert each assessment.
-        const results: SerializedConversionResult[] = [];
-        const skippedVideos: string[] = [];
-        for (const entry of entries) {
-          const result = await convertEntry(entry, rubricsXml, skippedVideos);
-          if (result) {
-            results.push(result);
-          }
-        }
-
-        // Strip access rules (time limits, passwords, dates) from imported assessments
-        // and track what was removed so the UI can inform the user.
-        const stripped: StrippedAccessRules = {
-          hasTimeLimits: false,
-          hasPasswords: false,
-          hasDates: false,
-        };
-
-        for (const result of results) {
-          const rules = result.assessment.infoJson.allowAccess;
-          if (rules) {
-            for (const rule of rules) {
-              if (rule.timeLimitMin) stripped.hasTimeLimits = true;
-              if (rule.password) stripped.hasPasswords = true;
-              if (rule.startDate ?? rule.endDate) stripped.hasDates = true;
-            }
-          }
-          // Replace with an empty access rule set.
-          result.assessment.infoJson.allowAccess = [];
-        }
-
-        // Scan existing question directories to detect collisions.
-        const questionsDir = path.join(res.locals.course.path, 'questions');
-        let existingQuestionDirs: string[] = [];
-        try {
-          existingQuestionDirs = await discoverInfoDirs(questionsDir, 'info.json');
-        } catch {
-          // Questions directory may not exist yet.
-        }
-
-        const response: UploadResponse = {
-          results,
-          courseExportInfo: courseExportInfo ?? undefined,
-          existingQuestionDirs,
-          strippedAccessRules: stripped,
-          skippedVideos,
-        };
-
-        res.json(response);
-      } finally {
-        await cleanup();
+        rubricsXml = await readFile(
+          path.join(tempDir, 'course_settings', 'rubrics.xml'),
+          'utf-8',
+        );
+      } catch {
+        // Not present in quiz-only exports.
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'An unexpected error occurred';
-      res.status(500).json({ error: message });
+
+      // Convert each assessment.
+      const results: SerializedConversionResult[] = [];
+      const skippedVideos: string[] = [];
+      for (const entry of entries) {
+        const result = await convertEntry(entry, rubricsXml, skippedVideos);
+        if (result) {
+          results.push(result);
+        }
+      }
+
+      // Strip access rules (time limits, passwords, dates) from imported assessments
+      // and track what was removed so the UI can inform the user.
+      const stripped: StrippedAccessRules = {
+        hasTimeLimits: false,
+        hasPasswords: false,
+        hasDates: false,
+      };
+
+      for (const result of results) {
+        const rules = result.assessment.infoJson.allowAccess;
+        if (rules) {
+          for (const rule of rules) {
+            if (rule.timeLimitMin) stripped.hasTimeLimits = true;
+            if (rule.password) stripped.hasPasswords = true;
+            if (rule.startDate ?? rule.endDate) stripped.hasDates = true;
+          }
+        }
+        // Replace with an empty access rule set.
+        result.assessment.infoJson.allowAccess = [];
+      }
+
+      // Both discoverInfoDirs and the converter emit relative paths (e.g.
+      // "imported/quiz-slug/q1"), so the collision check on the client works
+      // by simple string equality.
+      const questionsDir = path.join(res.locals.course.path, 'questions');
+      let existingQuestionDirs: string[] = [];
+      try {
+        existingQuestionDirs = await discoverInfoDirs(questionsDir, 'info.json');
+      } catch {
+        // Questions directory may not exist yet.
+      }
+
+      const response: UploadResponse = {
+        results,
+        existingQuestionDirs,
+        strippedAccessRules: stripped,
+        skippedVideos,
+      };
+
+      res.json(response);
+    } finally {
+      await cleanup();
     }
   }),
 );
@@ -317,7 +306,6 @@ const NON_QTI_XML_FILES = new Set(['assessment_meta.xml', 'imsmanifest.xml']);
 
 /** Heuristic fallback: find QTI XML files by scanning directories. */
 async function findQtiXmlFiles(dir: string): Promise<string[]> {
-  const { readdir, stat } = await import('node:fs/promises');
   const entries = await readdir(dir);
 
   const directXml = entries.find((f) => f.endsWith('.xml') && !NON_QTI_XML_FILES.has(f));
