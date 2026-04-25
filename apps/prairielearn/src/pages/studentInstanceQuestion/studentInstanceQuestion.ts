@@ -296,6 +296,7 @@ router.get(
       instance_question: res.locals.instance_question,
       variant,
       user: res.locals.user,
+      authn_user: res.locals.authn_user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: res.locals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
       authorizedEdit: res.locals.authz_result.authorized_edit,

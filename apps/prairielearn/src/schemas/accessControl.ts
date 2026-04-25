@@ -16,9 +16,17 @@ const AfterLastDeadlineJsonSchema = z
   })
   .strict();
 
+const ReleaseJsonSchema = z
+  .object({
+    date: DatetimeLocalStringSchema.describe('Release date as ISO String'),
+  })
+  .strict();
+
 const DateControlJsonSchema = z
   .object({
-    releaseDate: DatetimeLocalStringSchema.optional().describe('Release date as ISO String'),
+    release: ReleaseJsonSchema.optional().describe(
+      'Controls when the assessment becomes available to students',
+    ),
     dueDate: DatetimeLocalStringSchema.nullable().optional().describe('Due date as ISO String'),
     earlyDeadlines: z
       .array(DeadlineEntryJsonSchema)
@@ -50,6 +58,14 @@ const DateControlJsonSchema = z
   .strict()
   .optional();
 
+const ExamAfterCompleteJsonSchema = z
+  .object({
+    questions: z.object({ hidden: z.boolean() }).strict().optional(),
+    score: z.object({ hidden: z.boolean() }).strict().optional(),
+  })
+  .strict()
+  .optional();
+
 const ExamJsonSchema = z
   .object({
     examUuid: z
@@ -60,6 +76,9 @@ const ExamJsonSchema = z
       )
       .describe('UUID of associated PrairieTest exam'),
     readOnly: z.boolean().optional().describe('Whether the exam is read-only for students'),
+    afterComplete: ExamAfterCompleteJsonSchema.describe(
+      'Controls visibility after the student finishes the assessment during an active PrairieTest reservation. Only applies while a matching reservation is active; ignored otherwise.',
+    ),
   })
   .strict();
 

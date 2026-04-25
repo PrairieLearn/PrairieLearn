@@ -95,8 +95,8 @@ export function MainReleaseDateField({ displayTimezone }: { displayTimezone: str
   const {
     field,
     fieldState: { error },
-  } = useController<AccessControlFormData, 'mainRule.releaseDate'>({
-    name: 'mainRule.releaseDate',
+  } = useController<AccessControlFormData, 'mainRule.release.date'>({
+    name: 'mainRule.release.date',
     rules: {
       validate: (value) => {
         if (!dateControlEnabled) return true;
@@ -127,15 +127,15 @@ export function OverrideReleaseDateField({
   index: number;
   displayTimezone: string;
 }) {
-  const mainValue = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
-    name: 'mainRule.releaseDate',
+  const mainValue = useWatch<AccessControlFormData, 'mainRule.release.date'>({
+    name: 'mainRule.release.date',
   });
 
-  const { field } = useController<AccessControlFormData, `overrides.${number}.releaseDate`>({
-    name: `overrides.${index}.releaseDate`,
+  const { field } = useController<AccessControlFormData, `overrides.${number}.release.date`>({
+    name: `overrides.${index}.release.date`,
   });
 
-  const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'releaseDate');
+  const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'release');
 
   return (
     <FieldWrapper

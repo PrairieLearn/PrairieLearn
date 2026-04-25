@@ -1,4 +1,4 @@
---BLOCK config_info
+-- BLOCK select_group_config_for_assessment
 SELECT
   *
 FROM
@@ -7,7 +7,7 @@ WHERE
   assessment_id = $assessment_id
   AND deleted_at IS NULL;
 
--- BLOCK select_group_users
+-- BLOCK select_groups_for_config
 WITH
   assessment_groups AS (
     SELECT
@@ -42,7 +42,34 @@ FROM
 ORDER BY
   ag.id;
 
--- BLOCK select_not_in_group
+-- BLOCK select_group_by_id
+WITH
+  group_users AS (
+    SELECT
+      jsonb_agg(jsonb_build_object('uid', u.uid, 'id', u.id)) AS users,
+      COUNT(u.uid)::integer AS size
+    FROM
+      team_users AS gu
+      JOIN users AS u ON (u.id = gu.user_id)
+    WHERE
+      gu.team_id = $group_id
+  )
+SELECT
+  g.id AS group_id,
+  g.name,
+  COALESCE(gu.size, 0) AS size,
+  COALESCE(gu.users, '[]'::jsonb) AS users
+FROM
+  teams AS g
+  JOIN team_configs AS tc ON (tc.id = g.team_config_id)
+  LEFT JOIN group_users AS gu ON TRUE
+WHERE
+  g.id = $group_id
+  AND g.deleted_at IS NULL
+  AND tc.assessment_id = $assessment_id
+  AND tc.deleted_at IS NULL;
+
+-- BLOCK select_uids_not_in_group
 SELECT
   u.uid
 FROM
