@@ -24,10 +24,10 @@ type SprocAuthzAssessmentInstance = z.infer<typeof SprocAuthzAssessmentInstanceS
 
 export interface AuthzDataForAccessControl {
   user: { id: string };
-  mode?: EnumMode;
-  course_role?: EnumCourseRole;
-  course_instance_role?: EnumCourseInstanceRole;
-  has_course_instance_permission_view?: boolean;
+  mode: EnumMode;
+  course_role: EnumCourseRole;
+  course_instance_role: EnumCourseInstanceRole;
+  has_course_instance_permission_view: boolean;
 }
 
 interface ModernAssessmentAccessInput {
@@ -40,7 +40,7 @@ interface ModernAssessmentAccessInput {
 
 function resolverResultToSprocAuthzAssessment(
   result: AccessControlResolverResult,
-  authzMode: EnumMode | undefined,
+  authzMode: EnumMode,
 ): SprocAuthzAssessment {
   return {
     authorized: result.authorized,
@@ -78,9 +78,9 @@ export async function resolveModernAssessmentAccess({
     enrollment,
     date: reqDate,
     displayTimezone: courseInstance.display_timezone,
-    authzMode: authzData.mode ?? null,
-    courseRole: authzData.course_role ?? 'None',
-    courseInstanceRole: authzData.course_instance_role ?? 'None',
+    authzMode: authzData.mode,
+    courseRole: authzData.course_role,
+    courseInstanceRole: authzData.course_instance_role,
     prairieTestReservations,
   });
 
@@ -154,7 +154,7 @@ export async function resolveModernAssessmentInstanceAccess({
     assessmentResult,
     ownsInstance,
     timeLimitExpired,
-    hasCourseInstancePermissionView: authzData.has_course_instance_permission_view ?? false,
+    hasCourseInstancePermissionView: authzData.has_course_instance_permission_view,
   });
 }
 
@@ -184,9 +184,9 @@ export async function resolveModernAssessmentAccessBatch({
       enrollment,
       date: reqDate,
       displayTimezone: courseInstance.display_timezone,
-      authzMode: authzData.mode ?? null,
-      courseRole: authzData.course_role ?? 'None',
-      courseInstanceRole: authzData.course_instance_role ?? 'None',
+      authzMode: authzData.mode,
+      courseRole: authzData.course_role,
+      courseInstanceRole: authzData.course_instance_role,
       prairieTestReservations,
     });
 
