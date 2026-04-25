@@ -609,6 +609,12 @@ export function AssessmentQuestionTable({
             question_qid: questionQid,
           }}
         />
+        {aiGradingMode && (rubricData == null || rubricData.rubric_items.length === 0) && (
+          <Alert variant="warning" className="mt-3 mb-0 py-2 small">
+            No rubric is configured for this question. AI grading is significantly more accurate
+            with a rubric. You can still proceed without one.
+          </Alert>
+        )}
       </div>
       {aiGradingMode && (
         <ServerJobsProgressInfo
@@ -964,7 +970,6 @@ export function AssessmentQuestionTable({
         relativeCosts={aiGradingRelativeCosts}
         useCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
         aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
-        hasRubric={rubricData != null && rubricData.rubric_items.length > 0}
         onSuccess={(data, modelId) => {
           serverJobProgress.handleAddOngoingJobSequence(
             data.job_sequence_id,
