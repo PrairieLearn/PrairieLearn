@@ -21,10 +21,13 @@ export interface AccessControlValidationRule {
 }
 
 export type AccessControlIssuePath =
-  | ['dateControl', 'releaseDate']
-  | ['dateControl', 'dueDate']
+  | ['dateControl', 'release', 'date']
+  | ['dateControl', 'due', 'date']
+  | ['dateControl', 'due', 'credit']
   | ['dateControl', 'earlyDeadlines', number, 'date']
   | ['dateControl', 'lateDeadlines', number, 'date']
+  | ['dateControl', 'lateDeadlines', number, 'credit']
+  | ['dateControl', 'afterLastDeadline', 'credit']
   | ['afterComplete', 'questions', 'visibleFromDate']
   | ['afterComplete', 'questions', 'visibleUntilDate']
   | ['afterComplete', 'score', 'visibleFromDate'];
@@ -51,24 +54,29 @@ function pushIssue(
 }
 
 function findReleaseMs(rule: AccessControlJson): number | null {
-  return rule.dateControl?.releaseDate ? new Date(rule.dateControl.releaseDate).getTime() : null;
+  const releaseDate = rule.dateControl?.release?.date;
+  return releaseDate ? new Date(releaseDate).getTime() : null;
 }
 
 function findDueMs(rule: AccessControlJson): number | null {
-  return rule.dateControl?.dueDate ? new Date(rule.dateControl.dueDate).getTime() : null;
+  return rule.dateControl?.due?.date ? new Date(rule.dateControl.due.date).getTime() : null;
 }
 
 function findDueState(rule: AccessControlJson): {
   hasConfiguredDue: boolean;
   dueMs: number | null;
+  dueCredit: number;
+  hasCustomCredit: boolean;
 } {
   const dateControl = rule.dateControl;
-  if (dateControl?.dueDate === undefined) {
-    return { hasConfiguredDue: false, dueMs: null };
+  if (dateControl?.due === undefined) {
+    return { hasConfiguredDue: false, dueMs: null, dueCredit: 100, hasCustomCredit: false };
   }
   return {
     hasConfiguredDue: true,
-    dueMs: dateControl.dueDate ? new Date(dateControl.dueDate).getTime() : null,
+    dueMs: dateControl.due.date ? new Date(dateControl.due.date).getTime() : null,
+    dueCredit: dateControl.due.credit ?? 100,
+    hasCustomCredit: dateControl.due.credit !== undefined,
   };
 }
 
@@ -85,7 +93,7 @@ function findLastDeadlineMs(rule: AccessControlJson): number | null {
 function hasAnyDeadline(rule: AccessControlJson): boolean {
   const dc = rule.dateControl;
   if (!dc) return false;
-  if (dc.dueDate) return true;
+  if (dc.due?.date) return true;
   if (dc.lateDeadlines && dc.lateDeadlines.length > 0) return true;
   return false;
 }
@@ -105,10 +113,11 @@ export function validateRuleStructuralDependencyIssues(
   // Constraint 1: Late deadlines require a due date.
   // Late deadlines define credit after the due date, so they need one as an anchor.
   // Early deadlines are standalone bonus-credit windows and don't need a due date.
-  // On overrides, dueDate === undefined means "inherit from main rule" (valid),
-  // while dueDate === null means "explicitly no due date" (invalid with late deadlines).
+  // On overrides, due === undefined means "inherit from main rule" (valid),
+  // while due.date === null means "explicitly no due date" (invalid with late deadlines).
   if (dc) {
-    const dueDateMissing = validationRule.targetType === 'none' ? !dc.dueDate : dc.dueDate === null;
+    const dueDateMissing =
+      validationRule.targetType === 'none' ? !dc.due?.date : dc.due?.date === null;
 
     if (dc.lateDeadlines && dc.lateDeadlines.length > 0 && dueDateMissing) {
       pushIssue(
@@ -118,6 +127,31 @@ export function validateRuleStructuralDependencyIssues(
         'Late deadlines require a due date.',
       );
     }
+  }
+
+  // Constraint 3: Early deadlines are not allowed when a custom due credit is set.
+  // Early deadlines are standalone bonus-credit windows above the due-date credit,
+  // but when the due-date credit is customized we require a single coherent credit
+  // shape around the due date rather than layering bonuses on top.
+  if (dc?.due?.credit !== undefined && dc.earlyDeadlines && dc.earlyDeadlines.length > 0) {
+    pushIssue(
+      issues,
+      validationRule,
+      ['dateControl', 'earlyDeadlines', 0, 'date'],
+      'Early deadlines are not allowed when custom due credit is set.',
+    );
+  }
+
+  // Constraint 4: Late deadlines are not allowed when due credit is 0%.
+  // Late deadline credit must be strictly less than the due credit, so a
+  // 0% due credit leaves no valid range.
+  if (dc?.due?.credit === 0 && dc.lateDeadlines && dc.lateDeadlines.length > 0) {
+    pushIssue(
+      issues,
+      validationRule,
+      ['dateControl', 'lateDeadlines', 0, 'date'],
+      'Late deadlines are not allowed when due credit is 0%.',
+    );
   }
 
   // Constraint 2: After-complete date fields require at least one deadline.
@@ -181,7 +215,7 @@ export function validateRuleDateOrderingIssues(
       pushIssue(
         issues,
         validationRule,
-        ['dateControl', 'dueDate'],
+        ['dateControl', 'due', 'date'],
         'Release date must be before due date.',
       );
     }
@@ -214,12 +248,12 @@ export function validateRuleDateOrderingIssues(
 
     if (dueMs != null && dc.earlyDeadlines) {
       for (const [index, deadline] of dc.earlyDeadlines.entries()) {
-        if (new Date(deadline.date).getTime() >= dueMs) {
+        if (new Date(deadline.date).getTime() > dueMs) {
           pushIssue(
             issues,
             validationRule,
             ['dateControl', 'earlyDeadlines', index, 'date'],
-            `Early deadline date ${deadline.date} must be before the due date.`,
+            `Early deadline date ${deadline.date} must be on or before the due date.`,
           );
         }
       }
@@ -227,12 +261,12 @@ export function validateRuleDateOrderingIssues(
 
     if (dueMs != null && dc.lateDeadlines) {
       for (const [index, deadline] of dc.lateDeadlines.entries()) {
-        if (new Date(deadline.date).getTime() <= dueMs) {
+        if (new Date(deadline.date).getTime() < dueMs) {
           pushIssue(
             issues,
             validationRule,
             ['dateControl', 'lateDeadlines', index, 'date'],
-            `Late deadline date ${deadline.date} must be after the due date.`,
+            `Late deadline date ${deadline.date} must be on or after the due date.`,
           );
         }
       }
@@ -348,7 +382,7 @@ export function validateGlobalDateConsistencyIssues(
       pushIssue(
         issues,
         validationRule,
-        ['dateControl', 'dueDate'],
+        ['dateControl', 'due', 'date'],
         'Due date must be after the earliest possible release date.',
       );
     }
@@ -367,12 +401,12 @@ export function validateGlobalDateConsistencyIssues(
         );
       }
 
-      if (!dueCanBeUnset && maxDueMs != null && deadlineMs >= maxDueMs) {
+      if (!dueCanBeUnset && maxDueMs != null && deadlineMs > maxDueMs) {
         pushIssue(
           issues,
           validationRule,
           ['dateControl', 'earlyDeadlines', index, 'date'],
-          'Early deadline must be before the latest possible due date.',
+          'Early deadline must be on or before the latest possible due date.',
         );
       }
     }
@@ -390,6 +424,111 @@ export function validateGlobalDateConsistencyIssues(
           'Late deadline must be on or after the earliest possible due date.',
         );
       }
+    }
+  }
+
+  return issues;
+}
+
+/**
+ * Cross-rule credit consistency checks.
+ *
+ * 1. Early deadlines on overrides are forbidden when the defaults have a
+ *    custom due credit AND no override "clears" it. An override "clears" by
+ *    supplying its own `due` with no `credit` field (default 100%). If some
+ *    override clears, we allow early deadlines on overrides: the cascaded
+ *    timeline may still reach default credit for some student configuration.
+ *    Per-rule Constraint 3 handles the defaults and overrides that set
+ *    their own custom credit.
+ *
+ * 2. Late deadline credit must be strictly less than the maximum possible
+ *    due-date credit across the config. If it's >=, it's clamped to its
+ *    rule's effective due credit in every timeline — a likely-unintended
+ *    no-op.
+ *
+ * 3. afterLastDeadline.credit must not exceed the maximum possible due
+ *    credit, by the same monotonicity argument.
+ */
+export function validateGlobalCreditConsistencyIssues(
+  validationRules: AccessControlValidationRule[],
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  if (validationRules.length === 0) return issues;
+
+  const mainRule = validationRules.find((vr) => vr.targetType === 'none');
+  const baseHasCustomCredit = mainRule?.rule.dateControl?.due?.credit !== undefined;
+
+  // "Clears custom credit" = an override supplies its own `due` with no credit
+  // field (explicit default 100%). A non-overridden `due` inherits instead.
+  const anyOverrideClearsCustomCredit = validationRules.some(
+    (vr) =>
+      vr.targetType !== 'none' &&
+      vr.rule.dateControl?.due !== undefined &&
+      vr.rule.dateControl.due.credit === undefined,
+  );
+
+  if (baseHasCustomCredit && !anyOverrideClearsCustomCredit) {
+    for (const validationRule of validationRules) {
+      if (validationRule.targetType === 'none') continue;
+      const dc = validationRule.rule.dateControl;
+      // Skip overrides that set their own `due.credit` — per-rule Constraint 3
+      // reports those with a more accurate message ("custom due credit is set").
+      if (dc?.due?.credit !== undefined) continue;
+      if (dc?.earlyDeadlines && dc.earlyDeadlines.length > 0) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'earlyDeadlines', 0, 'date'],
+          'Early deadlines are not allowed when custom due credit is inherited.',
+        );
+      }
+    }
+  }
+
+  const possibleDueCredits = new Set<number>();
+  for (const { rule } of validationRules) {
+    const due = rule.dateControl?.due;
+    if (due !== undefined) {
+      possibleDueCredits.add(due.credit ?? 100);
+    }
+  }
+  if (possibleDueCredits.size === 0) return issues;
+  const maxDueCredit = Math.max(...possibleDueCredits);
+
+  for (const validationRule of validationRules) {
+    const dc = validationRule.rule.dateControl;
+    if (!dc) continue;
+
+    // Skip the late-deadline-credit check on the defaults — the per-rule
+    // monotonicity check (and the form's per-field validator) already flag
+    // the same issue against the rule's own due credit. Targeting the
+    // `credit` field on overrides lets the form's per-field error take
+    // priority when both apply to the same deadline.
+    if (validationRule.targetType !== 'none') {
+      for (const [index, deadline] of (dc.lateDeadlines ?? []).entries()) {
+        if (deadline.credit >= maxDueCredit) {
+          pushIssue(
+            issues,
+            validationRule,
+            ['dateControl', 'lateDeadlines', index, 'credit'],
+            `Late deadline credit (${deadline.credit}%) must be strictly less than the maximum possible due-date credit (${maxDueCredit}%).`,
+          );
+        }
+      }
+    }
+
+    const afterLastDeadline = dc.afterLastDeadline;
+    if (
+      afterLastDeadline?.allowSubmissions === true &&
+      afterLastDeadline.credit !== undefined &&
+      afterLastDeadline.credit > maxDueCredit
+    ) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['dateControl', 'afterLastDeadline', 'credit'],
+        `After-last-deadline credit (${afterLastDeadline.credit}%) must not exceed the maximum possible due-date credit (${maxDueCredit}%).`,
+      );
     }
   }
 
@@ -417,6 +556,20 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
   const dc = rule.dateControl;
   if (!dc) return errors;
 
+  const dueCredit = dc.due?.credit ?? 100;
+  // Late credit must satisfy both `< 100` (legacy ceiling) and `< dueCredit`.
+  // When dueCredit < 100, the custom credit is the tighter bound.
+  //
+  // Note: this per-rule validator is intentionally stricter than the resolver
+  // for the dueCredit > 100 case. The resolver computes late credit as
+  // min(late, due), so a 105% late under a 120% due would resolve to 105%.
+  // We still cap at 100 here because late deadlines conceptually represent a
+  // penalty relative to on-time submission, and overrides may still lower the
+  // effective due credit to 100 in some timelines. Validating against the
+  // 100-cap keeps authored configs unambiguous regardless of which override
+  // chain applies.
+  const lateCreditCap = Math.min(100, dueCredit);
+
   if (dc.earlyDeadlines) {
     for (const d of dc.earlyDeadlines) {
       if (d.credit < 101 || d.credit > 200) {
@@ -437,8 +590,12 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
 
   if (dc.lateDeadlines) {
     for (const d of dc.lateDeadlines) {
-      if (d.credit < 0 || d.credit > 99) {
-        errors.push(`Late deadline credit must be between 0% and 99%, got ${d.credit}%.`);
+      if (d.credit < 0 || d.credit >= lateCreditCap) {
+        errors.push(
+          `Late deadline credit must be between 0% and ${lateCreditCap - 1}% (strictly less than ${lateCreditCap}%${
+            dueCredit < 100 ? ' due credit' : ''
+          }), got ${d.credit}%.`,
+        );
         break;
       }
     }
@@ -457,10 +614,10 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
     dc.afterLastDeadline?.allowSubmissions === true ? dc.afterLastDeadline.credit : undefined;
   if (afterCredit != null) {
     // Determine the preceding credit in the timeline: last late deadline,
-    // then due date (100%), then last early deadline.
+    // then due date (dueCredit), then last early deadline.
     const precedingCredit =
       dc.lateDeadlines?.at(-1)?.credit ??
-      (dc.dueDate != null ? 100 : undefined) ??
+      (dc.due?.date != null ? dueCredit : undefined) ??
       dc.earlyDeadlines?.at(-1)?.credit;
 
     if (precedingCredit != null && afterCredit > precedingCredit) {
@@ -476,7 +633,7 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
 /**
  * Validates a single access control rule. Checks duplicates, date ordering,
  * credit monotonicity, and target-type constraints (e.g. integrations and
- * listBeforeRelease are only valid on the main rule).
+ * beforeRelease are only valid on the main rule).
  *
  * @param rule The access control rule to validate.
  * @param targetType 'none' for the main rule, 'student_label' or 'enrollment' for overrides.
@@ -488,12 +645,12 @@ export function validateRule(
   const errors: string[] = [];
 
   if (targetType === 'none') {
-    if (rule.dateControl && !rule.dateControl.releaseDate) {
+    if (rule.dateControl && !rule.dateControl.release) {
       errors.push('Release date is required on the defaults when dateControl is specified.');
     }
   } else {
-    if (rule.listBeforeRelease !== undefined) {
-      errors.push('listBeforeRelease can only be specified on the defaults.');
+    if (rule.beforeRelease !== undefined) {
+      errors.push('beforeRelease can only be specified on the defaults.');
     }
     if (rule.integrations != null) {
       errors.push('integrations can only be specified on the defaults.');
@@ -507,6 +664,20 @@ export function validateRule(
       errors.push(`Duplicate PrairieTest exam UUID: ${e.examUuid}.`);
     }
     seenUuids.add(e.examUuid);
+
+    if (
+      e.readOnly === true &&
+      (e.afterComplete?.questions?.hidden === true || e.afterComplete?.score?.hidden === true)
+    ) {
+      errors.push(
+        `PrairieTest exam ${e.examUuid}: readOnly: true cannot be combined with afterComplete.questions.hidden: true or afterComplete.score.hidden: true (a readOnly reservation is a review environment).`,
+      );
+    }
+    if (e.afterComplete?.score?.hidden === true && e.afterComplete.questions?.hidden !== true) {
+      errors.push(
+        `PrairieTest exam ${e.examUuid}: afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.`,
+      );
+    }
   }
 
   const earlyDates = new Set<string>();
@@ -547,6 +718,13 @@ export function validateRule(
     rule.afterComplete.score.visibleFromDate !== undefined
   ) {
     errors.push('afterComplete.score cannot have visibleFromDate when hidden is false.');
+  }
+
+  if (
+    rule.afterComplete?.score?.hidden === true &&
+    rule.afterComplete.questions?.hidden === false
+  ) {
+    errors.push('afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.');
   }
 
   errors.push(
@@ -680,6 +858,7 @@ export function validateAccessControlRules({
 
   errors.push(
     ...validateGlobalDateConsistencyIssues(validationRules).map((issue) => issue.message),
+    ...validateGlobalCreditConsistencyIssues(validationRules).map((issue) => issue.message),
   );
 
   return { errors, warnings };

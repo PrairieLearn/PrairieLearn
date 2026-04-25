@@ -17,10 +17,14 @@ export function MainDateControlForm({
   title = 'Date control',
   description = 'Control access and credit to your assessment based on a schedule',
   displayTimezone,
+  assessmentId,
+  courseInstanceId,
 }: {
   title?: string;
   description?: string;
   displayTimezone: string;
+  assessmentId: string;
+  courseInstanceId: string;
 }) {
   const { register, setValue, getValues } = useFormContext<AccessControlFormData>();
 
@@ -37,8 +41,8 @@ export function MainDateControlForm({
           label={<strong>{title}</strong>}
           {...register('mainRule.dateControlEnabled', {
             onChange: (e) => {
-              if (e.target.checked && !getValues('mainRule.releaseDate')) {
-                setValue('mainRule.releaseDate', startOfDayDatetime(todayDate(displayTimezone)), {
+              if (e.target.checked && !getValues('mainRule.release.date')) {
+                setValue('mainRule.release.date', startOfDayDatetime(todayDate(displayTimezone)), {
                   shouldDirty: true,
                   shouldValidate: true,
                 });
@@ -55,7 +59,11 @@ export function MainDateControlForm({
         <div className="d-flex flex-column gap-3">
           <MainReleaseDateField displayTimezone={displayTimezone} />
           <MainDeadlineArrayField type="early" displayTimezone={displayTimezone} />
-          <MainDueDateField displayTimezone={displayTimezone} />
+          <MainDueDateField
+            displayTimezone={displayTimezone}
+            assessmentId={assessmentId}
+            courseInstanceId={courseInstanceId}
+          />
           <MainDeadlineArrayField type="late" displayTimezone={displayTimezone} />
           <MainAfterLastDeadlineField displayTimezone={displayTimezone} />
           <Row className="gy-3">
@@ -81,11 +89,15 @@ export function OverrideDateControlForm({
   title = 'Date control',
   description = 'Override date settings from the defaults by clicking "Override" on individual fields',
   displayTimezone,
+  assessmentId,
+  courseInstanceId,
 }: {
   index: number;
   title?: string;
   description?: string;
   displayTimezone: string;
+  assessmentId: string;
+  courseInstanceId: string;
 }) {
   return (
     <div>
@@ -98,7 +110,12 @@ export function OverrideDateControlForm({
       <div className="d-flex flex-column gap-3">
         <OverrideReleaseDateField index={index} displayTimezone={displayTimezone} />
         <OverrideDeadlineArrayField index={index} type="early" displayTimezone={displayTimezone} />
-        <OverrideDueDateField index={index} displayTimezone={displayTimezone} />
+        <OverrideDueDateField
+          index={index}
+          displayTimezone={displayTimezone}
+          assessmentId={assessmentId}
+          courseInstanceId={courseInstanceId}
+        />
         <OverrideDeadlineArrayField index={index} type="late" displayTimezone={displayTimezone} />
         <OverrideAfterLastDeadlineField index={index} displayTimezone={displayTimezone} />
         <Row className="gy-3">

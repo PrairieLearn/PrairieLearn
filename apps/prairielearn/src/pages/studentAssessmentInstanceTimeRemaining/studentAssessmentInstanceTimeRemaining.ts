@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
 import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
 
@@ -11,7 +11,7 @@ router.use(studentAssessmentAccess);
 
 router.get(
   '/',
-  asyncHandler(async (req, res, next) => {
+  typedAsyncHandler<'assessment-instance'>(async (req, res, next) => {
     if (res.locals.assessment.type !== 'Exam') return next();
 
     res.send(

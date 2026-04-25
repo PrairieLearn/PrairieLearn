@@ -105,7 +105,7 @@ function findReleaseDate(rules: AssessmentAccessRuleJson[]): string | undefined 
  * - Removes rules with a `role` that is neither absent nor 'Student'.
  * - Strips `mode: 'Public'` (effectively a no-op for students).
  */
-function normalizeRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
+export function normalizeRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
   return rules
     .filter((r) => !r.uids)
     .filter((r) => r.role == null || r.role === 'Student')
@@ -213,7 +213,7 @@ function applyVisibilityMigration(
 ): void {
   const afterComplete = buildAfterComplete(rules);
   if (afterComplete) result.afterComplete = afterComplete;
-  if (shouldListBeforeRelease(rules)) result.listBeforeRelease = true;
+  if (shouldListBeforeRelease(rules)) result.beforeRelease = { listed: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -268,7 +268,7 @@ function normalizeCreditDeadlines(
 /**
  * If afterLastDeadline grants credit >= dueDateCredit, the dueDate is
  * meaningless — credit continues at the same or higher level forever.
- * Collapse to dueDate: null (always open from release).
+ * Collapse to due.date: null (always open from release).
  */
 function simplifyTimeline(
   dateControl: NonNullable<AccessControlJsonInput['dateControl']>,
@@ -278,11 +278,10 @@ function simplifyTimeline(
     dateControl.afterLastDeadline &&
     (dateControl.afterLastDeadline.credit ?? 0) >= dueDateCredit
   ) {
-    dateControl.dueDate = null;
+    dateControl.due = { date: null };
     delete dateControl.afterLastDeadline;
     delete dateControl.earlyDeadlines;
     delete dateControl.lateDeadlines;
-    delete dateControl.dueDateCredit;
   }
 }
 
@@ -313,8 +312,10 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
       return { dateControl: undefined, errors, notes };
     }
     const releaseDate = findReleaseDate(rules);
-    const dateControl: NonNullable<AccessControlJsonInput['dateControl']> = { dueDate: null };
-    if (releaseDate) dateControl.releaseDate = releaseDate;
+    const dateControl: NonNullable<AccessControlJsonInput['dateControl']> = {
+      due: { date: null },
+    };
+    if (releaseDate) dateControl.release = { date: releaseDate };
     return { dateControl, errors, notes };
   }
 
@@ -355,9 +356,11 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
   // --- Build dateControl ---
   const releaseDate = findReleaseDate(rules);
   const dateControl: NonNullable<AccessControlJsonInput['dateControl']> = {};
-  if (releaseDate) dateControl.releaseDate = releaseDate;
-  if (dueDate) dateControl.dueDate = dueDate;
-  if (dueDateCredit !== 100) dateControl.dueDateCredit = dueDateCredit;
+  if (releaseDate) dateControl.release = { date: releaseDate };
+  if (dueDate) {
+    dateControl.due =
+      dueDateCredit !== 100 ? { date: dueDate, credit: dueDateCredit } : { date: dueDate };
+  }
 
   // --- Place other closed credit rules as early/late deadlines ---
   const otherClosedRules = closedCreditRules.filter((r) => (r.credit ?? 0) !== dueDateCredit);
@@ -548,7 +551,7 @@ export function migrateAllowAccess(
     const viewOnlyRules = getVisibilityRules(schedulingRules).filter((r) => r.startDate);
     if (viewOnlyRules.length > 0) {
       const releaseDate = viewOnlyRules.map((r) => r.startDate!).sort()[0];
-      result.dateControl = { releaseDate, dueDate: null };
+      result.dateControl = { release: { date: releaseDate }, due: { date: null } };
     }
   }
 
@@ -581,9 +584,9 @@ export function migrateAllowAccess(
   }
 
   // Apply fallback release date when the migration produced a dateControl
-  // without a releaseDate (e.g. password-only or always-open rules).
-  if (result.dateControl && !result.dateControl.releaseDate && fallbackReleaseDate) {
-    result.dateControl.releaseDate = fallbackReleaseDate;
+  // without a release date (e.g. password-only or always-open rules).
+  if (result.dateControl && !result.dateControl.release && fallbackReleaseDate) {
+    result.dateControl.release = { date: fallbackReleaseDate };
   }
 
   return { result, errors, notes, hasUidRules };

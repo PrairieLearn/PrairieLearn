@@ -84,8 +84,8 @@ function prepareRuleRow(
   const afterLastDeadline = dateControl.afterLastDeadline;
   const isMainRule = ruleNumber === JSON_RULE_START;
 
-  const listBeforeRelease = mapField(rule.listBeforeRelease);
-  const dueDateField = mapField(dateControl.dueDate);
+  const beforeReleaseListed = mapField(rule.beforeRelease?.listed);
+  const dueField = mapField(dateControl.due);
   const earlyDeadlinesField = mapField(dateControl.earlyDeadlines);
   const lateDeadlinesField = mapField(dateControl.lateDeadlines);
   const durationMinutesField = mapField(dateControl.durationMinutes);
@@ -104,12 +104,13 @@ function prepareRuleRow(
   const ruleRow = JSON.stringify({
     assessment_id: assessmentId,
     number: ruleNumber,
-    // listBeforeRelease is only configurable on the main rule.
-    list_before_release: isMainRule ? (listBeforeRelease.value ?? false) : null,
+    // beforeRelease.listed is only configurable on the main rule.
+    before_release_listed: isMainRule ? (beforeReleaseListed.value ?? false) : null,
     target_type: targetType,
-    date_control_release_date: dateControl.releaseDate ?? null,
-    date_control_due_date_overridden: dueDateField.overridden,
-    date_control_due_date: dueDateField.value,
+    date_control_release_date: dateControl.release?.date ?? null,
+    date_control_due_overridden: dueField.overridden,
+    date_control_due_date: dueField.value?.date ?? null,
+    date_control_due_credit: dueField.value?.credit ?? null,
     date_control_early_deadlines_overridden: earlyDeadlinesField.overridden,
     date_control_late_deadlines_overridden: lateDeadlinesField.overridden,
     date_control_after_last_deadline_allow_submissions:
@@ -143,7 +144,14 @@ function prepareRuleRow(
 
   const exams = rule.integrations?.prairieTest?.exams ?? [];
   const prairietestExams = exams.map((e) =>
-    JSON.stringify([assessmentId, ruleNumber, e.examUuid, e.readOnly ?? false]),
+    JSON.stringify([
+      assessmentId,
+      ruleNumber,
+      e.examUuid,
+      e.readOnly ?? false,
+      e.afterComplete?.questions?.hidden ?? false,
+      e.afterComplete?.score?.hidden ?? false,
+    ]),
   );
 
   return { ruleRow, studentLabels, earlyDeadlines, lateDeadlines, prairietestExams };

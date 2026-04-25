@@ -5,6 +5,7 @@ import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import {
   type Assessment,
+  AssessmentAccessControlPrairietestExamSchema,
   AssessmentAccessControlRuleSchema,
   type CourseInstance,
 } from '../db-types.js';
@@ -23,7 +24,14 @@ const sql = loadSqlEquiv(import.meta.url);
 const DeadlineJsonSchema = z.array(z.object({ date: z.string(), credit: z.number() })).nullable();
 
 const PrairieTestExamJsonSchema = z
-  .array(z.object({ uuid: z.string(), read_only: z.boolean() }))
+  .array(
+    AssessmentAccessControlPrairietestExamSchema.pick({
+      uuid: true,
+      read_only: true,
+      after_complete_questions_hidden: true,
+      after_complete_score_hidden: true,
+    }),
+  )
   .nullable();
 
 const AccessControlRuleRowSchema = z.object({
@@ -52,11 +60,14 @@ function buildDateControl(
   const dateControl: RuntimeDateControl = {};
 
   if (rule.date_control_release_date != null) {
-    dateControl.releaseDate = rule.date_control_release_date;
+    dateControl.release = { date: rule.date_control_release_date };
   }
 
-  if (rule.date_control_due_date_overridden) {
-    dateControl.dueDate = rule.date_control_due_date;
+  if (rule.date_control_due_overridden) {
+    dateControl.due = {
+      date: rule.date_control_due_date,
+      ...(rule.date_control_due_credit != null ? { credit: rule.date_control_due_credit } : {}),
+    };
   }
 
   if (rule.date_control_duration_minutes_overridden) {
@@ -93,6 +104,17 @@ function buildDateControl(
   return Object.keys(dateControl).length > 0 ? dateControl : undefined;
 }
 
+function buildExamAfterComplete(
+  questionsHidden: boolean,
+  scoreHidden: boolean,
+): { questions?: { hidden: true }; score?: { hidden: true } } | undefined {
+  if (!questionsHidden && !scoreHidden) return undefined;
+  const result: { questions?: { hidden: true }; score?: { hidden: true } } = {};
+  if (questionsHidden) result.questions = { hidden: true };
+  if (scoreHidden) result.score = { hidden: true };
+  return result;
+}
+
 function buildAfterComplete(rule: AssessmentAccessControlRule): RuntimeAfterComplete | undefined {
   const afterComplete: RuntimeAfterComplete = {};
 
@@ -119,7 +141,7 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
   const rule = row.access_control_rule;
 
   if (!isOverride(rule)) {
-    runtimeRule.listBeforeRelease = rule.list_before_release ?? false;
+    runtimeRule.beforeRelease = { listed: rule.before_release_listed ?? false };
   }
 
   const dateControl = buildDateControl(rule, row.early_deadlines, row.late_deadlines);
@@ -130,10 +152,23 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
 
   // Integrations are only on main rules (number 0)
   const prairietestExamsRaw = (!isOverride(rule) && row.prairietest_exams) || [];
-  if (prairietestExamsRaw.length > 0) {
+  const prairietestExams = prairietestExamsRaw.map((e) => ({
+    uuid: e.uuid,
+    readOnly: e.read_only,
+    questionsHidden: e.after_complete_questions_hidden,
+    scoreHidden: e.after_complete_score_hidden,
+  }));
+  if (prairietestExams.length > 0) {
     runtimeRule.integrations = {
       prairieTest: {
-        exams: prairietestExamsRaw.map((e) => ({ examUuid: e.uuid, readOnly: e.read_only })),
+        exams: prairietestExams.map((e) => {
+          const afterComplete = buildExamAfterComplete(e.questionsHidden, e.scoreHidden);
+          return {
+            examUuid: e.uuid,
+            readOnly: e.readOnly,
+            ...(afterComplete !== undefined ? { afterComplete } : {}),
+          };
+        }),
       },
     };
   }
@@ -144,6 +179,7 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
     targetType: rule.target_type,
     enrollmentIds: row.enrollment_ids,
     studentLabelIds: row.student_label_ids,
+    prairietestExams,
   };
 }
 

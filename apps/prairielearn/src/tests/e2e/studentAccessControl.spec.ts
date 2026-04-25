@@ -91,7 +91,7 @@ test.describe.serial('Student access control', () => {
     await syncCourse(testCoursePath);
   });
 
-  test('rule with no releaseDate shows assessment as inactive (not clickable)', async ({
+  test('rule with no release shows assessment as inactive (not clickable)', async ({
     page,
     baseURL,
     courseInstance,
@@ -112,7 +112,7 @@ test.describe.serial('Student access control', () => {
     await expect(assessmentLink).not.toBeVisible();
   });
 
-  test('listBeforeRelease: true with future release shows grayed-out assessment', async ({
+  test('beforeRelease.listed: true with future release shows grayed-out assessment', async ({
     page,
     baseURL,
     courseInstance,
@@ -122,10 +122,10 @@ test.describe.serial('Student access control', () => {
     await enableFeatureFlag('enhanced-access-control');
     await writeAssessmentConfig(testCoursePath, [
       {
-        listBeforeRelease: true,
+        beforeRelease: { listed: true },
         dateControl: {
-          releaseDate: '2099-06-01T00:00:00',
-          dueDate: '2099-12-01T00:00:00',
+          release: { date: '2099-06-01T00:00:00' },
+          due: { date: '2099-12-01T00:00:00' },
         },
       },
     ]);
@@ -155,8 +155,8 @@ test.describe.serial('Student access control', () => {
     await writeAssessmentConfig(testCoursePath, [
       {
         dateControl: {
-          releaseDate: '2020-01-01T00:00:00',
-          dueDate: '2099-01-01T00:00:00',
+          release: { date: '2020-01-01T00:00:00' },
+          due: { date: '2099-01-01T00:00:00' },
         },
       },
     ]);
@@ -171,7 +171,7 @@ test.describe.serial('Student access control', () => {
     await expect(assessmentLink).toHaveAttribute('href', /\/assessment\/\d+/);
   });
 
-  test('listBeforeRelease: false with future release hides assessment entirely', async ({
+  test('beforeRelease.listed: false with future release hides assessment entirely', async ({
     page,
     baseURL,
     courseInstance,
@@ -181,10 +181,10 @@ test.describe.serial('Student access control', () => {
     await enableFeatureFlag('enhanced-access-control');
     await writeAssessmentConfig(testCoursePath, [
       {
-        listBeforeRelease: false,
+        beforeRelease: { listed: false },
         dateControl: {
-          releaseDate: '2099-06-01T00:00:00',
-          dueDate: '2099-12-01T00:00:00',
+          release: { date: '2099-06-01T00:00:00' },
+          due: { date: '2099-12-01T00:00:00' },
         },
       },
     ]);
@@ -194,7 +194,7 @@ test.describe.serial('Student access control', () => {
 
     await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
 
-    // Assessment should not be visible at all when listBeforeRelease is false
+    // Assessment should not be visible at all when beforeRelease.listed is false
     await expect(page.getByText(ASSESSMENT_TITLE, { exact: true })).not.toBeVisible();
   });
 });
