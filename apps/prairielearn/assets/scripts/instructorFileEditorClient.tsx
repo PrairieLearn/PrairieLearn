@@ -179,7 +179,11 @@ class InstructorFileEditor {
     }
 
     if (element.dataset.lintHtmlMustache === 'true') {
-      void this.setupHtmlMustacheLinter();
+      document.dispatchEvent(
+        new CustomEvent('pl:html-mustache-linter-attach', {
+          detail: { editor: this.editor },
+        }),
+      );
     }
 
     // Override the save button click to show confirmation modal if needed
@@ -377,15 +381,6 @@ class InstructorFileEditor {
     this.editor.setReadOnly(false);
     this.checkDiff();
     this.editor.resize();
-  }
-
-  async setupHtmlMustacheLinter() {
-    // Dynamically imported so the module is only evaluated on v3 question.html files.
-    const { attachHtmlMustacheLinter } = await import('./lib/htmlMustacheLinter.js');
-    attachHtmlMustacheLinter({
-      editor: this.editor,
-      beautifyButton: document.querySelector<HTMLButtonElement>('.js-beautify-html-mustache'),
-    });
   }
 
   async reformatJSONFile() {

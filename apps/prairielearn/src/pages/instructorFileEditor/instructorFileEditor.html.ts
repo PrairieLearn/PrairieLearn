@@ -73,6 +73,7 @@ export function InstructorFileEditor({
                 '@reteps/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm',
               )}"
             />
+            ${compiledScriptTag('instructorFileEditorHtmlMustacheLinterClient.ts')}
           `
         : ''}
       ${compiledScriptTag('instructorFileEditorClient.tsx')}

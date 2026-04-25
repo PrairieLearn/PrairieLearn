@@ -61,8 +61,21 @@ export function attachHtmlMustacheLinter({
   async function runLint() {
     try {
       const linter = await getLinter();
-      const diagnostics = linter.lint(editor.getValue(), htmlMustacheConfig);
+      const value = editor.getValue();
+      const diagnostics = linter.lint(value, htmlMustacheConfig);
       editor.getSession().setAnnotations(diagnosticsToAnnotations(diagnostics));
+      if (beautifyButton) {
+        const hasErrors = diagnostics.some((d) => d.severity === 'error');
+        let alreadyFormatted = false;
+        if (!hasErrors) {
+          try {
+            alreadyFormatted = (await linter.format(value, htmlMustacheConfig)) === value;
+          } catch {
+            // If format fails, fall through and let the button stay enabled.
+          }
+        }
+        beautifyButton.disabled = hasErrors || alreadyFormatted;
+      }
     } catch (err) {
       console.error('htmlmustache lint failed', err);
     }
