@@ -70,6 +70,38 @@ VALUES
 RETURNING
   id;
 
+-- BLOCK has_prior_ai_grading_jobs
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      ai_grading_jobs AS agj
+      JOIN grading_jobs AS gj ON gj.id = agj.grading_job_id
+      JOIN submissions AS s ON s.id = gj.submission_id
+      JOIN variants AS v ON v.id = s.variant_id
+      JOIN instance_questions AS iq ON iq.id = v.instance_question_id
+    WHERE
+      iq.assessment_question_id = $assessment_question_id
+  ) AS has_prior_ai_grading_jobs;
+
+-- BLOCK select_first_ai_graded_instance_question
+SELECT
+  iq.id AS instance_question_id
+FROM
+  ai_grading_jobs AS agj
+  JOIN grading_jobs AS gj ON gj.id = agj.grading_job_id
+  JOIN submissions AS s ON s.id = gj.submission_id
+  JOIN variants AS v ON v.id = s.variant_id
+  JOIN instance_questions AS iq ON iq.id = v.instance_question_id
+WHERE
+  agj.job_sequence_id = $job_sequence_id
+  AND iq.assessment_question_id = $assessment_question_id
+ORDER BY
+  agj.id ASC
+LIMIT
+  1;
+
 -- BLOCK select_last_variant_and_submission
 SELECT
   to_jsonb(v.*) AS variant,

@@ -28,6 +28,7 @@ import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
  * @param params.statusText.failed Default text for failed jobs. If a job has a specific failure message, it will be displayed instead.
  *
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
+ * @param params.completionCta Optional render slot. When a job reaches the complete state, the returned content is shown after "View logs" inside that job's alert.
  */
 export function ServerJobsProgressInfo({
   itemNames,
@@ -36,6 +37,7 @@ export function ServerJobsProgressInfo({
   statusIcons = {},
   statusText = {},
   onDismissCompleteJobSequence,
+  completionCta,
 }: {
   itemNames: string;
   jobsProgress: JobProgress[];
@@ -51,6 +53,7 @@ export function ServerJobsProgressInfo({
     failed?: string;
   };
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
+  completionCta?: (jobSequenceId: string) => React.ReactNode;
 }) {
   const statusIconsSafe = {
     inProgress: statusIcons.inProgress ?? 'bi-hourglass-split',
@@ -84,6 +87,7 @@ export function ServerJobsProgressInfo({
           itemNames={itemNames}
           totalCostMilliDollars={jobProgress.total_cost_milli_dollars}
           numItemsIncurredCost={jobProgress.num_items_incurred_cost}
+          completionCta={completionCta}
           onDismissCompleteJobSequence={onDismissCompleteJobSequence}
         />
       ))}
@@ -118,6 +122,7 @@ export function ServerJobsProgressInfo({
  * @param params.numItemsIncurredCost Optional number of items that incurred cost.
  *
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
+ * @param params.completionCta Optional render slot. When the job reaches the complete state, the returned content is shown after "View logs".
  */
 function ServerJobProgressInfo({
   jobSequenceId,
@@ -129,6 +134,7 @@ function ServerJobProgressInfo({
   totalCostMilliDollars,
   numItemsIncurredCost,
   onDismissCompleteJobSequence,
+  completionCta,
 }: {
   jobSequenceId: string;
   courseInstanceId: string;
@@ -151,6 +157,7 @@ function ServerJobProgressInfo({
   totalCostMilliDollars?: number;
   numItemsIncurredCost?: number;
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
+  completionCta?: (jobSequenceId: string) => React.ReactNode;
 }) {
   const jobStatus = useMemo(() => {
     if (nums.total > 0 && nums.complete >= nums.total) {
@@ -272,6 +279,15 @@ function ServerJobProgressInfo({
           >
             View logs <i className="bi bi-box-arrow-up-right" style={{ fontSize: '0.7em' }} />
           </a>
+
+          {jobStatus === 'complete' && completionCta != null && (
+            <>
+              <span className="text-body-secondary opacity-50" aria-hidden="true">
+                &middot;
+              </span>
+              {completionCta(jobSequenceId)}
+            </>
+          )}
         </div>
       </div>
     </Alert>

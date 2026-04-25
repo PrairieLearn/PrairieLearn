@@ -1,4 +1,4 @@
-import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 import { Alert, Form, Modal } from 'react-bootstrap';
@@ -434,6 +434,23 @@ function CreditPoolSection({
   const purchaseModalState = useModalState();
   const [checkoutStatus, setCheckoutStatus] = useState(initialCheckoutStatus);
 
+  // Mirror the empty-state detection in `CreditPoolDashboard`. These reads share
+  // a TanStack cache with the dashboard, so they don't trigger extra fetches.
+  const poolQuery = useQuery(trpc.creditPool.queryOptions());
+  const changesQuery = useQuery({
+    ...trpc.creditPoolChanges.queryOptions({ page: 1 }),
+    enabled: poolQuery.data != null,
+  });
+  const hasNoBalance =
+    poolQuery.data?.credit_transferable_milli_dollars === 0 &&
+    poolQuery.data.credit_non_transferable_milli_dollars === 0;
+  const isCreditPoolEmpty =
+    hasNoBalance &&
+    !useCustomApiKeys &&
+    changesQuery.isFetched &&
+    !changesQuery.isError &&
+    (changesQuery.data?.totalCount ?? 0) === 0;
+
   useEffect(() => {
     if (initialCheckoutStatus === 'success') {
       // Refetch credit pool data after a successful purchase.
@@ -470,7 +487,7 @@ function CreditPoolSection({
           <h2 className="h5 mb-0">AI grading credits</h2>
           {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
         </div>
-        {stripePurchasingEnabled && (
+        {stripePurchasingEnabled && !isCreditPoolEmpty && (
           <button
             type="button"
             className="btn btn-sm btn-primary d-flex align-items-center gap-2"

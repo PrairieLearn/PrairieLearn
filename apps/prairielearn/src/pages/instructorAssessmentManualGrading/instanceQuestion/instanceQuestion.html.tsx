@@ -69,6 +69,13 @@ export function InstanceQuestion({
     : false;
   const { __csrf_token, rubric_data } = resLocals;
 
+  const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? null;
+  const gradedByParts: string[] = [];
+  if (aiGradingInfo) gradedByParts.push('AI');
+  if (lastGraderName) gradedByParts.push(lastGraderName);
+  const gradedByLabel = gradedByParts.length > 0 ? gradedByParts.join(' + ') : 'Not yet graded';
+  const gradedByHasBoth = aiGradingInfo != null && lastGraderName != null;
+
   return PageLayout({
     resLocals: {
       ...resLocals,
@@ -221,7 +228,13 @@ export function InstanceQuestion({
 
         <div class="col-lg-4 col-12">
           <div class="card mb-4 border-info">
-            <div class="card-header bg-info">Grading</div>
+            <div class="card-header bg-info">
+              <div>Grading</div>
+              <div class="small fw-normal">
+                Graded by:
+                ${gradedByLabel}${gradedByHasBoth ? ' (human grading always takes priority)' : ''}
+              </div>
+            </div>
             <div class="js-main-grading-panel">
               ${GradingPanel({
                 resLocals,

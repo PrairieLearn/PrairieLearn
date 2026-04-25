@@ -55,6 +55,7 @@ import {
   AiGradingModelSelectionModal,
   type AiGradingModelSelectionModalState,
 } from './AiGradingModelSelectionModal.js';
+import { FirstGradedSubmissionLink } from './FirstGradedSubmissionLink.js';
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
 import { QueryErrors } from './QueryErrors.js';
@@ -622,6 +623,12 @@ export function AssessmentQuestionTable({
             complete: 'AI grading complete',
             failed: 'AI grading failed',
           }}
+          completionCta={(jobSequenceId) => (
+            <FirstGradedSubmissionLink
+              jobSequenceId={jobSequenceId}
+              manualGradingUrlPrefix={`${urlPrefix}/assessment/${assessment.id}/manual_grading`}
+            />
+          )}
           onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
         />
       )}
@@ -957,6 +964,7 @@ export function AssessmentQuestionTable({
         relativeCosts={aiGradingRelativeCosts}
         useCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
         aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
+        hasRubric={rubricData != null && rubricData.rubric_items.length > 0}
         onSuccess={(data, modelId) => {
           serverJobProgress.handleAddOngoingJobSequence(
             data.job_sequence_id,
