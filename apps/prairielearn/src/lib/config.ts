@@ -27,6 +27,15 @@ const TokenPricingSchema = z.object({
   output: z.number().nonnegative(),
 });
 
+const CreditPoolLimitRangeSchema = z
+  .object({
+    minMilliDollars: z.number().int(),
+    maxMilliDollars: z.number().int(),
+  })
+  .refine(({ minMilliDollars, maxMilliDollars }) => minMilliDollars <= maxMilliDollars, {
+    message: 'minMilliDollars must be less than or equal to maxMilliDollars',
+  });
+
 export const STANDARD_COURSE_DIRS = [
   '/course',
   '/course2',
@@ -193,6 +202,7 @@ export const ConfigSchema = z.object({
   cronIntervalWorkspaceHostTransitionsSec: z.number().default(10),
   cronIntervalChunksHostAutoScalingSec: z.number().default(10),
   cronIntervalCleanTimeSeriesSec: z.number().default(10 * 60),
+  cronIntervalFetchNewsItemsSec: z.number().default(5 * 60),
   cronDailySec: z.number().default(8 * 60 * 60),
   /**
    * Controls how much history is retained when removing old rows
@@ -608,13 +618,26 @@ export const ConfigSchema = z.object({
    */
   aiGradingInfrastructureFeePercent: z.number().min(0).max(1).default(0.2),
   /**
-   * Maximum dollar amount an admin can add to a credit pool in a single adjustment.
+   * Minimum and maximum milli-dollar amounts enforced for admin credit pool
+   * adjustments. Applied on both the client (input validation) and server
+   * (trpc handler). Stored in milli-dollars to match the DB and display helpers.
    */
-  aiGradingCreditPoolMaxAddDollars: z.number().default(10_000),
-  /**
-   * Maximum dollar amount an admin can deduct from a credit pool in a single adjustment.
-   */
-  aiGradingCreditPoolMaxDeductDollars: z.number().default(10_000),
+  aiGradingCreditPoolLimits: z
+    .object({
+      add: CreditPoolLimitRangeSchema,
+      deduct: CreditPoolLimitRangeSchema,
+      setTransferable: CreditPoolLimitRangeSchema,
+      setNonTransferable: CreditPoolLimitRangeSchema.refine(
+        ({ minMilliDollars }) => minMilliDollars >= 0,
+        { message: 'setNonTransferable.minMilliDollars must be non-negative' },
+      ),
+    })
+    .default({
+      add: { minMilliDollars: 10, maxMilliDollars: 10_000_000 },
+      deduct: { minMilliDollars: 10, maxMilliDollars: 10_000_000 },
+      setTransferable: { minMilliDollars: -1_000_000_000, maxMilliDollars: 1_000_000_000 },
+      setNonTransferable: { minMilliDollars: 0, maxMilliDollars: 1_000_000_000 },
+    }),
   /**
    * The hourly spending rate limit for AI question generation, in US dollars.
    * Accounts for both input and output tokens.
@@ -640,43 +663,50 @@ export const ConfigSchema = z.object({
   courseFilesApiTransport: z.enum(['process', 'network']).default('process'),
   /** Should be something like `https://hostname/pl/api/trpc/course_files`. */
   courseFilesApiUrl: z.string().nullable().default(null),
+  /** URL of an RSS feed to display news alerts on the homepage. Set to null to disable. */
+  newsFeedUrl: z.string().nullable().default(null),
+  /** URL of the blog to link to from the news alert. If not set, no "View all posts" link is shown. */
+  newsFeedBlogUrl: z.string().nullable().default(null),
+  /**
+   * List of RSS category tags to filter news items by. Only items with at least one matching category will be shown to users.
+   * If no categories are specified, all items will be shown.
+   */
+  newsFeedCategories: z.array(z.string()).default([]),
   costPerMillionTokens: z
     .object({
       'gpt-4o-2024-11-20': TokenPricingSchema,
-      'gpt-5-mini-2025-08-07': TokenPricingSchema,
       'gpt-5-2025-08-07': TokenPricingSchema,
-      'gpt-5.1-2025-11-13': TokenPricingSchema,
       'gpt-5.2-2025-12-11': TokenPricingSchema,
-      'gemini-2.5-flash': TokenPricingSchema,
+      'gpt-5.4-mini-2026-03-17': TokenPricingSchema,
+      'gpt-5.4-2026-03-05': TokenPricingSchema,
       'gemini-3-flash-preview': TokenPricingSchema,
       'gemini-3.1-pro-preview': TokenPricingSchema,
-      'claude-opus-4-5': TokenPricingSchema,
       'claude-haiku-4-5': TokenPricingSchema,
-      'claude-sonnet-4-5': TokenPricingSchema,
+      'claude-sonnet-4-6': TokenPricingSchema,
+      'claude-opus-4-7': TokenPricingSchema,
     })
     .default({
-      // Prices current as of 2025-11-26. Values obtained from
+      // Prices current as of 2026-04-16. Values obtained from
       // https://developers.openai.com/api/docs/pricing
       // OpenAI does not charge for cache writes.
       'gpt-4o-2024-11-20': { input: 2.5, cachedInput: 1.25, cacheWrite: 0, output: 10 },
-      'gpt-5-mini-2025-08-07': { input: 0.25, cachedInput: 0.025, cacheWrite: 0, output: 2 },
       'gpt-5-2025-08-07': { input: 1.25, cachedInput: 0.125, cacheWrite: 0, output: 10 },
-      'gpt-5.1-2025-11-13': { input: 1.25, cachedInput: 0.125, cacheWrite: 0, output: 10 },
       'gpt-5.2-2025-12-11': { input: 1.75, cachedInput: 0.175, cacheWrite: 0, output: 14 },
+      'gpt-5.4-mini-2026-03-17': { input: 0.75, cachedInput: 0.075, cacheWrite: 0, output: 4.5 },
+      'gpt-5.4-2026-03-05': { input: 2.5, cachedInput: 0.25, cacheWrite: 0, output: 15 },
 
-      // Prices current as of 2025-11-25. Values obtained from
+      // Prices current as of 2026-04-16. Values obtained from
       // https://ai.google.dev/gemini-api/docs/pricing
       // Google does not charge for cache writes.
-      'gemini-2.5-flash': { input: 0.3, cachedInput: 0.03, cacheWrite: 0, output: 2.5 },
       'gemini-3-flash-preview': { input: 0.5, cachedInput: 0.05, cacheWrite: 0, output: 3 },
       'gemini-3.1-pro-preview': { input: 2, cachedInput: 0.2, cacheWrite: 0, output: 12 },
 
-      // Prices current as of 2025-11-25. Values obtained from
-      // https://www.anthropic.com/pricing#api
+      // Prices current as of 2026-04-16. Values obtained from
+      // https://claude.com/pricing#api
       // Anthropic charges 1.25x the input price for cache writes.
       'claude-haiku-4-5': { input: 1, cachedInput: 0.1, cacheWrite: 1.25, output: 5 },
-      'claude-sonnet-4-5': { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 },
-      'claude-opus-4-5': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
+      'claude-sonnet-4-6': { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 },
+      'claude-opus-4-7': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
     }),
   exampleCoursePath: z.string().default('./exampleCourse'),
 });
