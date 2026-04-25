@@ -327,6 +327,7 @@ export function AiGradingModelSelectionModal({
   relativeCosts,
   useCustomApiKeys,
   aiGradingSettingsUrl,
+  hasRubric,
   onSuccess,
   onHide,
 }: {
@@ -336,6 +337,7 @@ export function AiGradingModelSelectionModal({
   relativeCosts: Record<string, string>;
   useCustomApiKeys: boolean;
   aiGradingSettingsUrl: string;
+  hasRubric: boolean;
   onSuccess: (
     data: { job_sequence_id: string; job_sequence_token: string },
     modelId: AiGradingModelId,
@@ -422,6 +424,11 @@ export function AiGradingModelSelectionModal({
     aiGradingAvailabilityState.kind === 'ready_with_keys' ||
     aiGradingAvailabilityState.kind === 'ready_with_credits';
 
+  const showFirstJobLargeBatchWarning =
+    aiGradingAvailabilityInfo != null &&
+    !aiGradingAvailabilityInfo.has_prior_jobs &&
+    (modalState?.numToGrade ?? 0) > 10;
+
   return (
     <Modal show={isModalOpen} size="lg" backdrop="static" keyboard={false} onHide={handleClose}>
       <form onSubmit={handleSubmit}>
@@ -437,6 +444,18 @@ export function AiGradingModelSelectionModal({
               void refetchAvailabilityInfo();
             }}
           />
+          {!hasRubric && (
+            <Alert variant="warning" className="mb-3 py-2 small">
+              No rubric is configured for this question. AI grading is significantly more accurate
+              with a rubric. You can still proceed without one.
+            </Alert>
+          )}
+          {showFirstJobLargeBatchWarning && (
+            <Alert variant="warning" className="mb-3 py-2 small">
+              This is your first AI grading job for this question. Consider running a smaller batch
+              (10 or fewer) first to validate the rubric and cost before scaling up.
+            </Alert>
+          )}
           <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}
