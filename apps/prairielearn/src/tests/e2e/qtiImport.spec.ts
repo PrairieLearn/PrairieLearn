@@ -154,15 +154,11 @@ test.describe('QTI Import', () => {
     // Review step — verify assessment is listed and included
     await expect(page.getByText('E2E Import Quiz')).toBeVisible();
 
-    // Create
+    // Create — should redirect to assessments page with flash message
     await page.getByRole('button', { name: /Create 1 assessment/ }).click();
+    await page.waitForURL(/\/instance_admin\/assessments/, { timeout: 30000 });
 
-    // Wait for completion
-    await expect(page.getByText('Import complete')).toBeVisible({ timeout: 30000 });
-    await expect(page.getByText('1 assessment created successfully')).toBeVisible();
-
-    // Navigate to assessments and verify the new assessment exists
-    await page.getByRole('link', { name: 'View all assessments' }).click();
+    await expect(page.getByText('1 assessment imported successfully')).toBeVisible();
     await expect(page.getByText('E2E Import Quiz')).toBeVisible();
   });
 
