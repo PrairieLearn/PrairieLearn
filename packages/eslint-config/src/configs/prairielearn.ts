@@ -29,6 +29,7 @@ export function prairieLearnConfig(
         '@prairielearn/aws-client-shared-config': 'error',
         '@prairielearn/jsx-no-dollar-interpolation': 'error',
         '@prairielearn/no-current-target-in-callback': 'error',
+        '@prairielearn/no-hydrate-reslocals': 'error',
         '@prairielearn/no-unused-sql-blocks': 'error',
         '@prairielearn/safe-db-types': [
           'error',

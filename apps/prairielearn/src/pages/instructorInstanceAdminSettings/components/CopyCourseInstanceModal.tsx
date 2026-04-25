@@ -18,7 +18,7 @@ import {
   type SelfEnrollmentFormValues,
 } from '../../../components/CourseInstanceSelfEnrollmentForm.js';
 import { CourseInstanceShortNameDescription } from '../../../components/ShortNameDescriptions.js';
-import { getAppError } from '../../../lib/client/errors.js';
+import { type AppError, getAppError } from '../../../lib/client/errors.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import {
   getCourseInstanceEditErrorUrl,
@@ -49,6 +49,7 @@ export function CopyCourseInstanceModal({
   courseInstance,
   courseShortName,
   isAdministrator,
+  enhancedAccessControlEnabled,
 }: {
   show: boolean;
   onHide: () => void;
@@ -56,11 +57,16 @@ export function CopyCourseInstanceModal({
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   courseShortName: string;
   isAdministrator: boolean;
+  enhancedAccessControlEnabled: boolean;
 }) {
   const [step, setStep] = useState<Step>('settings');
 
   const trpc = useTRPC();
-  const analysisQuery = useQuery(trpc.instanceAdminSettings.analyzeAccessControl.queryOptions());
+  const analysisQuery = useQuery(
+    trpc.instanceAdminSettings.analyzeAccessControl.queryOptions(undefined, {
+      enabled: enhancedAccessControlEnabled,
+    }),
+  );
 
   const methods = useForm<CopyFormValues>({
     defaultValues: {
@@ -71,7 +77,7 @@ export function CopyCourseInstanceModal({
       self_enrollment_enabled: courseInstance.self_enrollment_enabled,
       self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
       course_instance_permission: isAdministrator ? 'None' : 'Student Data Editor',
-      access_control_strategy: 'migrate',
+      access_control_strategy: enhancedAccessControlEnabled ? 'migrate' : 'keep',
       clear_incompatible: true,
     },
     mode: 'onSubmit',
@@ -87,6 +93,10 @@ export function CopyCourseInstanceModal({
   } = methods;
 
   const accessControlStrategy = useWatch({ control, name: 'access_control_strategy' });
+
+  const analysisAppError = analysisQuery.isError
+    ? getAppError<InstanceAdminSettingsError>(analysisQuery.error)
+    : null;
 
   const copyMutation = useMutation({
     mutationFn: async (data: CopyFormValues) => {
@@ -143,7 +153,7 @@ export function CopyCourseInstanceModal({
     const valid = await trigger(['short_name', 'long_name']);
     if (!valid) return;
 
-    if (analysisQuery.isError || analysisQuery.data?.hasLegacyRules) {
+    if (enhancedAccessControlEnabled && (analysisAppError || analysisQuery.data?.hasLegacyRules)) {
       setStep('access-control');
     } else {
       void handleSubmit((data) => copyMutation.mutate(data))();
@@ -185,6 +195,7 @@ export function CopyCourseInstanceModal({
           {step === 'access-control' && (
             <AccessControlStep
               analysisQuery={analysisQuery}
+              appError={analysisAppError}
               accessControlStrategy={accessControlStrategy}
               register={register}
             />
@@ -212,12 +223,16 @@ export function CopyCourseInstanceModal({
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={isPending || (step === 'settings' && analysisQuery.isLoading)}
+              disabled={
+                isPending ||
+                (enhancedAccessControlEnabled && step === 'settings' && analysisQuery.isLoading)
+              }
             >
               {isPending
                 ? 'Copying...'
-                : step === 'settings' &&
-                    (analysisQuery.isError || analysisQuery.data?.hasLegacyRules)
+                : enhancedAccessControlEnabled &&
+                    step === 'settings' &&
+                    (analysisAppError || analysisQuery.data?.hasLegacyRules)
                   ? 'Next'
                   : 'Copy course instance'}
             </button>
@@ -341,10 +356,12 @@ function SettingsStep({
 
 function AccessControlStep({
   analysisQuery,
+  appError,
   accessControlStrategy,
   register,
 }: {
   analysisQuery: UseQueryResult<AnalysisResult, unknown>;
+  appError: AppError<InstanceAdminSettingsError> | null;
   accessControlStrategy: string;
   register: ReturnType<typeof useForm<CopyFormValues>>['register'];
 }) {
@@ -363,22 +380,18 @@ function AccessControlStep({
 
   const assessments = analysis?.assessments ?? [];
   const allCanMigrate = analysis?.assessments.every((a) => a.errors.length === 0) ?? false;
-  const appError = analysisQuery.isError
-    ? getAppError<InstanceAdminSettingsError>(analysisQuery.error)
-    : null;
   const assessmentsWithNotes = assessments.filter(
     (a) => a.errors.length === 0 && a.notes.length > 0,
   );
   const blockedAssessments = assessments.filter((a) => a.errors.length > 0);
-  const showPreserveOption =
-    accessControlStrategy === 'migrate' && (analysisQuery.isError || !allCanMigrate);
+  const showPreserveOption = accessControlStrategy === 'migrate' && (appError || !allCanMigrate);
 
   return (
     <Modal.Body>
-      {analysisQuery.isError && (
+      {appError && (
         <Alert variant="danger">
-          {appError?.message ?? 'Failed to analyze access control rules.'} You can still choose how
-          copied assessments should handle any legacy access control rules that are encountered.
+          {appError.message} You can still choose how copied assessments should handle any legacy
+          access control rules that are encountered.
         </Alert>
       )}
 

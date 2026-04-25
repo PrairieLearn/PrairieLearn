@@ -113,8 +113,8 @@ const MAX_RECENT_SUBMISSIONS = 3;
  * @param params.submissions The full list of submissions to the variant.
  * @param params.question_course The course for the question.
  * @param params.locals The current locals for the page response.
- * @param params.user_id The effective user id to attribute errors to.
- * @param params.authn_user_id The authenticated user id to attribute errors to.
+ * @param params.user The effective user to attribute errors to.
+ * @param params.authn_user The authenticated user to attribute errors to.
  */
 async function render({
   variant_course,
@@ -125,8 +125,8 @@ async function render({
   submissions,
   question_course,
   locals,
-  user_id,
-  authn_user_id,
+  user,
+  authn_user,
 }: {
   variant_course: Course;
   renderSelection: questionServers.RenderSelection;
@@ -136,10 +136,10 @@ async function render({
   submissions: Submission[];
   question_course: Course;
   locals: questionServers.QuestionRenderRequiredLocals;
-  /** The effective user id to attribute errors to. */
-  user_id: string | null;
-  /** The authenticated user id to attribute errors to. */
-  authn_user_id: string | null;
+  /** The effective user to attribute errors to. */
+  user: User;
+  /** The authenticated user to attribute errors to. */
+  authn_user: User;
 }): Promise<questionServers.RenderResultData> {
   const questionModule = questionServers.getModule(question.type);
 
@@ -158,8 +158,8 @@ async function render({
   await writeCourseIssues(
     courseIssues,
     variant,
-    user_id,
-    authn_user_id,
+    user.id,
+    authn_user.id,
     studentMessage,
     courseData,
   );
@@ -650,8 +650,8 @@ export async function getAndRenderVariant(
       allowAnswerEditing: newLocals.allowAnswerEditing,
       questionRenderContext,
     },
-    user_id: locals.user.id,
-    authn_user_id: locals.authn_user.id,
+    user: locals.user,
+    authn_user: locals.authn_user,
   });
 
   // Load issues last in case rendering produced any new ones.
@@ -841,8 +841,8 @@ export async function renderPanelsForSubmission({
         submissions,
         question_course,
         locals,
-        user_id: user.id,
-        authn_user_id: authn_user.id,
+        user,
+        authn_user,
       });
 
       panels.answerPanel = locals.showCorrectAnswer ? htmls.answerHtml : null;
