@@ -509,7 +509,10 @@ describe('Date ordering validation', () => {
     {
       label: 'release date after due date',
       config: {
-        dateControl: { release: { date: '2024-03-25T00:00:00' }, due: { date: '2024-03-20T00:00:00' } },
+        dateControl: {
+          release: { date: '2024-03-25T00:00:00' },
+          due: { date: '2024-03-20T00:00:00' },
+        },
       },
       errorMatch: 'Release date must be before due date.',
     },

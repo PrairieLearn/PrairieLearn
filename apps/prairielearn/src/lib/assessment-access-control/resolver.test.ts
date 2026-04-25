@@ -2111,7 +2111,10 @@ describe('mergeRules', () => {
   it('inherits release from main when override does not set it', () => {
     const result = mergeRules(
       toRuntime({
-        dateControl: { release: { date: '2025-03-01T00:00:00Z' }, due: { date: '2025-04-01T00:00:00Z' } },
+        dateControl: {
+          release: { date: '2025-03-01T00:00:00Z' },
+          due: { date: '2025-04-01T00:00:00Z' },
+        },
       }),
       toRuntime({ dateControl: { due: { date: '2025-05-01T00:00:00Z' } } }),
     );
