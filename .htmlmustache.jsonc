@@ -1,3 +1,4 @@
+// This config should be kept in sync with `apps/prairielearn/assets/scripts/lib/htmlMustacheConfig.ts`
 {
   "include": [
     "apps/prairielearn/elements/**/*.mustache",
@@ -11,6 +12,7 @@
   ],
   "rules": {
     "preferMustacheComments": "warning",
+    "unrecognizedHtmlTags": "warning",
   },
   "printWidth": 100,
   "noBreakDelimiters": [

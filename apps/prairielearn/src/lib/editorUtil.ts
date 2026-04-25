@@ -15,6 +15,26 @@ import { formatJsonWithPrettier } from './prettier.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+/**
+ * Returns true if `relPath` (relative to the course root) is a `question.html`
+ * file inside a v3 question's directory, as determined by reading the sibling
+ * `info.json`.
+ */
+export async function isV3QuestionHtmlFile(coursePath: string, relPath: string): Promise<boolean> {
+  const components = path.normalize(relPath).split(path.posix.sep);
+  if (components.length < 3) return false;
+  if (components[0] !== 'questions') return false;
+  if (components.at(-1) !== 'question.html') return false;
+
+  const infoPath = path.join(coursePath, ...components.slice(0, -1), 'info.json');
+  try {
+    const info = await fs.readJson(infoPath);
+    return info?.type === 'v3';
+  } catch {
+    return false;
+  }
+}
+
 export function getDetailsForFile(filePath: string): FileDetails {
   const normalizedPath = path.normalize(filePath);
   const pathComponents = normalizedPath.split(path.posix.sep);
