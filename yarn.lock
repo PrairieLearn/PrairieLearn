@@ -5395,6 +5395,7 @@ __metadata:
     "@prairielearn/workspace-utils": "workspace:^"
     "@prairielearn/zod": "workspace:^"
     "@pyroscope/nodejs": "npm:^0.4.11"
+    "@reteps/tree-sitter-htmlmustache": "npm:^0.9.3"
     "@sa11y/format": "npm:^8.0.27"
     "@smithy/types": "npm:^4.13.1"
     "@socket.io/redis-adapter": "npm:^8.3.0"
