@@ -46,7 +46,7 @@ export function generateMainRuleDateTableRows(
 
   const rows: DateTableRow[] = [];
 
-  const releaseDate = rule.releaseDate;
+  const releaseDate = rule.release.date;
   const dueDate = rule.due.date;
   const dueCredit = rule.due.credit ?? 100;
   const earlyDeadlines = rule.earlyDeadlines;
@@ -179,8 +179,8 @@ export function generateRuleSummary(
   const items: SummaryItem[] = [];
 
   // Show "before release" chip when release date is in the future.
-  if (isMainRuleData(rule) && rule.dateControlEnabled && rule.releaseDate) {
-    const releasePlainDateTime = Temporal.PlainDateTime.from(rule.releaseDate);
+  if (isMainRuleData(rule) && rule.dateControlEnabled && rule.release.date) {
+    const releasePlainDateTime = Temporal.PlainDateTime.from(rule.release.date);
     const nowInTimezone = Temporal.Now.plainDateTimeISO(displayTimezone);
 
     if (Temporal.PlainDateTime.compare(releasePlainDateTime, nowInTimezone) > 0) {
@@ -400,14 +400,14 @@ function generateOverrideFieldItems(
   const items: OverrideFieldItem[] = [];
   const overriddenFields = new Set(rule.overriddenFields);
 
-  if (overriddenFields.has('releaseDate')) {
+  if (overriddenFields.has('release')) {
     // A null/empty release date means "not released" (resolver returns active: false).
     // TODO: enforce non-null release dates on overrides so this case goes away.
     items.push({
       label: 'Release date',
-      value: rule.releaseDate ? (
+      value: rule.release.date ? (
         <FriendlyDate
-          date={Temporal.PlainDateTime.from(rule.releaseDate)}
+          date={Temporal.PlainDateTime.from(rule.release.date)}
           timezone={displayTimezone}
           options={{ includeTz: false }}
           tooltip

@@ -267,8 +267,8 @@ export function MainDueDateField({
   assessmentId: string;
   courseInstanceId: string;
 }) {
-  const releaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
-    name: 'mainRule.releaseDate',
+  const releaseDate = useWatch<AccessControlFormData, 'mainRule.release.date'>({
+    name: 'mainRule.release.date',
   });
 
   const earlyDeadlines = useWatch<AccessControlFormData, 'mainRule.earlyDeadlines'>({
@@ -342,12 +342,12 @@ export function OverrideDueDateField({
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'due');
 
-  const { isOverridden: releaseDateOverridden } = useOverrideField(index, 'releaseDate');
-  const releaseDate = useWatch<AccessControlFormData, `overrides.${number}.releaseDate`>({
-    name: `overrides.${index}.releaseDate`,
+  const { isOverridden: releaseDateOverridden } = useOverrideField(index, 'release');
+  const releaseDate = useWatch<AccessControlFormData, `overrides.${number}.release.date`>({
+    name: `overrides.${index}.release.date`,
   });
-  const mainReleaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
-    name: 'mainRule.releaseDate',
+  const mainReleaseDate = useWatch<AccessControlFormData, 'mainRule.release.date'>({
+    name: 'mainRule.release.date',
   });
 
   const { isOverridden: earlyDeadlinesOverridden } = useOverrideField(index, 'earlyDeadlines');

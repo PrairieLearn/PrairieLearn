@@ -4,7 +4,7 @@ import type { AccessControlJsonWithId } from '../../../models/assessment-access-
 
 /** Field names that belong to the date control section of an access control rule. */
 export const DATE_CONTROL_FIELD_NAMES = [
-  'releaseDate',
+  'release',
   'due',
   'earlyDeadlines',
   'lateDeadlines',
@@ -94,7 +94,7 @@ export interface MainRuleData {
   trackingId: string;
   beforeReleaseListed: boolean;
   dateControlEnabled: boolean;
-  releaseDate: string | null;
+  release: { date: string | null };
   due: DueValue;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
@@ -115,7 +115,7 @@ export interface OverrideData {
   trackingId: string;
   appliesTo: AppliesTo;
   overriddenFields: OverridableFieldName[];
-  releaseDate: string | null;
+  release: { date: string | null };
   due: DueValue;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
@@ -163,14 +163,14 @@ export function jsonToMainRuleFormData(
     trackingId: json.id ?? crypto.randomUUID(),
     beforeReleaseListed: json.beforeRelease?.listed ?? false,
     dateControlEnabled:
-      dc?.releaseDate != null ||
+      dc?.release != null ||
       dc?.due != null ||
       (dc?.earlyDeadlines?.length ?? 0) > 0 ||
       (dc?.lateDeadlines?.length ?? 0) > 0 ||
       dc?.afterLastDeadline != null ||
       dc?.durationMinutes != null ||
       dc?.password != null,
-    releaseDate: toLocalDatetimeValue(dc?.releaseDate, displayTimezone) ?? null,
+    release: { date: toLocalDatetimeValue(dc?.release?.date, displayTimezone) ?? null },
     due: {
       date: toLocalDatetimeValue(dc?.due?.date ?? null, displayTimezone),
       credit: dc?.due?.credit ?? null,
@@ -233,10 +233,10 @@ export function jsonToOverrideFormData(
 
   const overriddenFields: OverridableFieldName[] = [];
 
-  let releaseDate: string | null = null;
-  if (dc?.releaseDate !== undefined) {
-    releaseDate = toLocalDatetimeValue(dc.releaseDate, displayTimezone);
-    overriddenFields.push('releaseDate');
+  let release: { date: string | null } = { date: null };
+  if (dc?.release !== undefined) {
+    release = { date: toLocalDatetimeValue(dc.release.date, displayTimezone) };
+    overriddenFields.push('release');
   }
 
   let due: DueValue = { date: null, credit: null, customCredit: false };
@@ -310,7 +310,7 @@ export function jsonToOverrideFormData(
     trackingId: json.id ?? crypto.randomUUID(),
     appliesTo,
     overriddenFields,
-    releaseDate,
+    release,
     due,
     earlyDeadlines,
     lateDeadlines,
@@ -347,7 +347,7 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
 
   if (rule.dateControlEnabled) {
     output.dateControl = {};
-    if (rule.releaseDate) output.dateControl.releaseDate = rule.releaseDate;
+    if (rule.release.date) output.dateControl.release = { date: rule.release.date };
     // Emit `due` when either a date is set or credit is explicitly set.
     if (rule.due.date || rule.due.customCredit) {
       output.dateControl.due = buildDueJson(rule.due);
@@ -421,8 +421,8 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
 
   if (hasDateControl) {
     output.dateControl = {};
-    if (of.has('releaseDate') && rule.releaseDate) {
-      output.dateControl.releaseDate = rule.releaseDate;
+    if (of.has('release') && rule.release.date) {
+      output.dateControl.release = { date: rule.release.date };
     }
     if (of.has('due')) {
       output.dateControl.due = buildDueJson(rule.due);
@@ -484,7 +484,7 @@ export function createDefaultOverrideFormData(mainRule?: MainRuleData): Override
       studentLabels: [],
     },
     overriddenFields: [],
-    releaseDate: mainRule?.releaseDate ?? null,
+    release: { date: mainRule?.release.date ?? null },
     due: mainRule?.due ? { ...mainRule.due } : { date: null, credit: null, customCredit: false },
     earlyDeadlines: (mainRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
     lateDeadlines: (mainRule?.lateDeadlines ?? []).map((d) => ({ ...d })),

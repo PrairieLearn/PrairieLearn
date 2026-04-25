@@ -16,6 +16,12 @@ const AfterLastDeadlineJsonSchema = z
   })
   .strict();
 
+const ReleaseJsonSchema = z
+  .object({
+    date: DatetimeLocalStringSchema.describe('Release date as ISO String'),
+  })
+  .strict();
+
 const DueJsonSchema = z
   .object({
     date: DatetimeLocalStringSchema.nullable().describe(
@@ -35,7 +41,9 @@ const DueJsonSchema = z
 
 const DateControlJsonSchema = z
   .object({
-    releaseDate: DatetimeLocalStringSchema.optional().describe('Release date as ISO String'),
+    release: ReleaseJsonSchema.optional().describe(
+      'Controls when the assessment becomes available to students',
+    ),
     due: DueJsonSchema.optional().describe(
       'Due date configuration. Overrides replace the entire due object atomically.',
     ),
