@@ -30,10 +30,11 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'assessment'>(async (_req, res) => {
-    const { assessment, assessment_set, course, course_instance } = extractPageContext(res.locals, {
+    const pageContext = extractPageContext(res.locals, {
       pageType: 'assessment',
       accessType: 'instructor',
     });
+    const { assessment, assessment_set, course, course_instance } = pageContext;
 
     const groupsCsvFilename =
       assessmentFilenamePrefix(assessment, assessment_set, course_instance, course) + 'groups.csv';
@@ -79,7 +80,7 @@ router.get(
         content: (
           <Hydrate>
             <InstructorAssessmentGroups
-              resLocals={res.locals}
+              pageContext={pageContext}
               groupsCsvFilename={groupsCsvFilename}
               groupConfigInfo={staffGroupConfigInfo}
               groups={groups}
