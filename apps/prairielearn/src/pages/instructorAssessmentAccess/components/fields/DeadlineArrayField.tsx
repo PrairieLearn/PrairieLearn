@@ -427,7 +427,6 @@ export function OverrideDeadlineArrayField({
   const fieldArrayName = `overrides.${index}.${fieldPath}` as const;
   const idPrefix = `overrides-${index}`;
 
-  const { setValue } = useFormContext<AccessControlFormData>();
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, fieldPath);
 
   const mainDeadlines = useWatch<AccessControlFormData, `mainRule.${typeof fieldPath}`>({
@@ -459,7 +458,10 @@ export function OverrideDeadlineArrayField({
   const validationReleaseDate = releaseDateOverridden ? overrideReleaseDate : undefined;
   const validationDueDate = dueDateOverridden ? overrideDueDate : undefined;
 
-  const { fields, append, remove } = useFieldArray<AccessControlFormData, typeof fieldArrayName>({
+  const { fields, append, remove, replace } = useFieldArray<
+    AccessControlFormData,
+    typeof fieldArrayName
+  >({
     name: fieldArrayName,
   });
 
@@ -492,7 +494,7 @@ export function OverrideDeadlineArrayField({
       }
       onOverride={() => {
         const copied = mainDeadlines.map((d) => ({ ...d }));
-        setValue(fieldArrayName, copied, { shouldDirty: true });
+        replace(copied);
         addOverride();
       }}
       onRemoveOverride={removeOverride}
