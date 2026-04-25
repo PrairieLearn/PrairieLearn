@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -64,6 +65,11 @@ const create = t.procedure
           // Assessment may not have synced correctly; skip it.
         }
       }
+    }
+
+    const count = assessmentIds.length;
+    if (count > 0) {
+      flash('success', `${count} assessment${count !== 1 ? 's' : ''} imported successfully.`);
     }
 
     return { jobSequenceId: serverJob.jobSequenceId, assessmentIds };

@@ -17,7 +17,7 @@ import type {
   UploadResponse,
 } from '../instructorQtiImport.types.js';
 
-type ImportStep = 'upload' | 'review' | 'creating' | 'done';
+type ImportStep = 'upload' | 'review' | 'creating';
 
 const PL_ELEMENT_TYPE_MAP: Record<string, string> = {
   'pl-multiple-choice': 'Multiple choice',
@@ -173,7 +173,6 @@ export function QtiImportForm({
   );
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [createdIds, setCreatedIds] = useState<string[]>([]);
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
 
   const handleUpload = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -274,9 +273,8 @@ export function QtiImportForm({
         })),
       };
 
-      const response = await trpcClient.qtiImport.create.mutate(payload);
-      setCreatedIds(response.assessmentIds);
-      setStep('done');
+      await trpcClient.qtiImport.create.mutate(payload);
+      window.location.href = `${urlPrefix}/instance_admin/assessments`;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create assessments');
       setStep('review');
@@ -335,7 +333,6 @@ export function QtiImportForm({
     setExistingDirs(new Set());
     setStrippedRules(null);
     setQuestionOverrides(new Map());
-    setCreatedIds([]);
     setExpandedQuestions(new Set());
   };
 
@@ -478,29 +475,6 @@ export function QtiImportForm({
           <div className="text-center py-4">
             <Spinner className="mb-3" />
             <p>Creating assessments and questions...</p>
-          </div>
-        )}
-
-        {step === 'done' && (
-          <div className="text-center py-4">
-            <i
-              className="bi bi-check-circle-fill text-success d-block mb-3"
-              style={{ fontSize: '3rem' }}
-              aria-hidden="true"
-            />
-            <p className="h5 mb-3">Import complete</p>
-            <p className="text-muted mb-3">
-              {createdIds.length} assessment{createdIds.length !== 1 ? 's' : ''} created
-              successfully.
-            </p>
-            <div className="d-flex justify-content-center gap-2">
-              <Button variant="outline-secondary" href={`${urlPrefix}/instance_admin/assessments`}>
-                View all assessments
-              </Button>
-              <Button variant="primary" onClick={resetAll}>
-                Import more
-              </Button>
-            </div>
           </div>
         )}
       </Card.Body>
@@ -843,7 +817,14 @@ function QuestionReviewPanel({
         >
           <i className={`bi bi-chevron-${isExpanded ? 'down' : 'right'}`} aria-hidden="true" />
           <span className="text-muted">{questionNumber}.</span>
-          <span className="fw-medium flex-grow-1">{qo?.title ?? q.infoJson.title}</span>
+          <span className="fw-medium">{qo?.title ?? q.infoJson.title}</span>
+          {q.skippedVideos.length > 0 && (
+            <i
+              className="bi bi-exclamation-triangle-fill text-danger flex-grow-1"
+              aria-label={`${q.skippedVideos.length} video file${q.skippedVideos.length !== 1 ? 's' : ''} excluded`}
+              title={`${q.skippedVideos.length} video file${q.skippedVideos.length !== 1 ? 's' : ''} excluded`}
+            />
+          )}
         </div>
         <Badge bg="primary" className="fw-normal">
           {questionType}
@@ -853,13 +834,6 @@ function QuestionReviewPanel({
             {tag}
           </Badge>
         ))}
-        {q.skippedVideos.length > 0 && (
-          <i
-            className="bi bi-exclamation-triangle-fill text-danger"
-            aria-label={`${q.skippedVideos.length} video file${q.skippedVideos.length !== 1 ? 's' : ''} excluded`}
-            title={`${q.skippedVideos.length} video file${q.skippedVideos.length !== 1 ? 's' : ''} excluded`}
-          />
-        )}
       </Card.Header>
       {qo?.collides && included && (
         <div className="px-3 py-2 bg-light border-bottom d-flex align-items-center gap-2 small">

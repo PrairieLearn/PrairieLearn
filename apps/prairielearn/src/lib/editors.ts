@@ -2544,6 +2544,22 @@ export class QtiImportEditor extends Editor {
   async write() {
     assert(this.course_instance.short_name, 'course_instance.short_name is required');
 
+    // If the course instance is publicly shared, imported assessments and
+    // questions must also be marked as shared to avoid a sync error.
+    const ciConfigPath = path.join(
+      this.course.path,
+      'courseInstances',
+      this.course_instance.short_name,
+      'infoCourseInstance.json',
+    );
+    let shareSourcePublicly = false;
+    try {
+      const ciConfig = JSON.parse(await fs.readFile(ciConfigPath, 'utf-8'));
+      shareSourcePublicly = ciConfig.shareSourcePublicly === true;
+    } catch {
+      // Config may not exist yet or may be malformed; default to not sharing.
+    }
+
     const pathsToAdd: string[] = [];
 
     for (const assessment of this.assessments) {
@@ -2574,7 +2590,12 @@ export class QtiImportEditor extends Editor {
           });
         }
 
-        const formattedInfoJson = await formatJsonWithPrettier(JSON.stringify(question.infoJson));
+        const qInfoJson = { ...question.infoJson };
+        if (shareSourcePublicly) {
+          qInfoJson.sharePublicly = true;
+          qInfoJson.shareSourcePublicly = true;
+        }
+        const formattedInfoJson = await formatJsonWithPrettier(JSON.stringify(qInfoJson));
         await fs.outputFile(path.join(qDir, 'info.json'), formattedInfoJson);
         await fs.outputFile(path.join(qDir, 'question.html'), question.questionHtml);
 
@@ -2612,9 +2633,11 @@ export class QtiImportEditor extends Editor {
         });
       }
 
-      const formattedAssessmentJson = await formatJsonWithPrettier(
-        JSON.stringify(assessment.infoJson),
-      );
+      const aInfoJson = { ...assessment.infoJson };
+      if (shareSourcePublicly) {
+        aInfoJson.shareSourcePublicly = true;
+      }
+      const formattedAssessmentJson = await formatJsonWithPrettier(JSON.stringify(aInfoJson));
       await fs.outputFile(path.join(assessmentDir, 'infoAssessment.json'), formattedAssessmentJson);
 
       pathsToAdd.push(assessmentDir);

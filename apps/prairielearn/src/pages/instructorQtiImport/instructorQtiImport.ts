@@ -237,11 +237,15 @@ async function serializeConversionResult(
         // questions live under the prefix path (e.g. "imported/quiz-slug/q1").
         // This must match the IDs used in the assessment zones.
         const { files, skippedVideos } = await serializeClientFiles(q.clientFiles, webResourcesDir);
+        const questionHtml =
+          skippedVideos.length > 0
+            ? commentOutVideoReferences(q.questionHtml, skippedVideos)
+            : q.questionHtml;
         return {
           directoryName: `${questionPrefix}/${q.directoryName}`,
           sourceId: q.sourceId,
           infoJson: q.infoJson,
-          questionHtml: q.questionHtml,
+          questionHtml,
           serverPy: q.serverPy,
           clientFiles: files,
           skippedVideos,
@@ -250,6 +254,37 @@ async function serializeConversionResult(
     ),
     warnings: result.warnings,
   };
+}
+
+/**
+ * Replace HTML tags that reference skipped video files with commented-out
+ * versions so the question doesn't contain broken links.
+ */
+/**
+ * Comment out any HTML tag that references a skipped video file via
+ * `clientFilesQuestion/<filename>`. Matches self-closing tags and
+ * open/close pairs regardless of tag name.
+ */
+function commentOutVideoReferences(html: string, skippedVideos: string[]): string {
+  let result = html;
+  for (const videoFile of skippedVideos) {
+    const escaped = videoFile.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const ref = `clientFilesQuestion/${escaped}`;
+    // Match open+close tag pairs (e.g. <a ...>...</a>, <pl-figure ...>...</pl-figure>)
+    // then self-closing or void tags (e.g. <img .../>).
+    const patterns = [
+      new RegExp(`<(\\w[\\w-]*)\\b[^>]*${ref}[^>]*>[\\s\\S]*?</\\1>`, 'gi'),
+      new RegExp(`<\\w[\\w-]*\\b[^>]*${ref}[^>]*/?>`, 'gi'),
+    ];
+    for (const pattern of patterns) {
+      result = result.replace(
+        pattern,
+        (match) =>
+          `<!-- TODO: Update the video URL below and uncomment to restore this video.\n${match}\n-->`,
+      );
+    }
+  }
+  return result;
 }
 
 const VIDEO_EXTENSIONS = new Set([
