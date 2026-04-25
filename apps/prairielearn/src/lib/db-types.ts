@@ -76,6 +76,9 @@ export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 export const EnumModeSchema = z.enum(['Public', 'Exam', 'SEB']);
 export type EnumMode = z.infer<typeof EnumModeSchema>;
 
+export const EnumNewsItemManagedBySchema = z.enum(['admin', 'sync']);
+export type EnumNewsItemManagedBy = z.infer<typeof EnumNewsItemManagedBySchema>;
+
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
@@ -222,6 +225,9 @@ export const AssessmentAccessControlRuleSchema = z.object({
 
   assessment_id: IdSchema,
 
+  // Before release fields
+  before_release_listed: z.boolean().nullable(),
+
   // Date control fields
   date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
   date_control_after_last_deadline_credit: z.number().nullable(),
@@ -236,7 +242,6 @@ export const AssessmentAccessControlRuleSchema = z.object({
   date_control_release_date: DateFromISOString.nullable(),
 
   id: IdSchema,
-  list_before_release: z.boolean().nullable(),
   number: z.number(),
 
   // Target type: 'none' for main rule (applies to all), 'student_label' for labels, 'enrollment' for individual students
@@ -269,6 +274,8 @@ export const AssessmentAccessControlLateDeadlineSchema = z.object({
 });
 
 export const AssessmentAccessControlPrairietestExamSchema = z.object({
+  after_complete_questions_hidden: z.boolean(),
+  after_complete_score_hidden: z.boolean(),
   assessment_access_control_rule_id: IdSchema,
   id: IdSchema,
   read_only: z.boolean(),
@@ -1339,6 +1346,26 @@ export const LtiOutcomeSchema = z.object({
 export const MigrationSchema = null;
 export const NamedLockSchema = null;
 
+export const NewsItemReadStateSchema = z.object({
+  id: IdSchema,
+  last_read_news_item_id: IdSchema,
+  user_id: IdSchema,
+});
+export type NewsItemReadState = z.infer<typeof NewsItemReadStateSchema>;
+
+export const NewsItemSchema = z.object({
+  categories: z.array(z.string()),
+  fetched_at: DateFromISOString,
+  guid: z.string(),
+  hidden_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  link: z.string(),
+  managed_by: EnumNewsItemManagedBySchema.nullable(),
+  pub_date: DateFromISOString,
+  title: z.string(),
+});
+export type NewsItem = z.infer<typeof NewsItemSchema>;
+
 export const PageViewLogSchema = null;
 
 export const PlanGrantSchema = z.object({
@@ -1811,6 +1838,8 @@ export const TableNames = [
   'lti_outcomes',
   'migrations',
   'named_locks',
+  'news_item_read_states',
+  'news_items',
   'page_view_logs',
   'courses',
   'plan_grants',

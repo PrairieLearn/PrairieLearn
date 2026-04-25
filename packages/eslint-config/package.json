@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@eslint-react/eslint-plugin": "^4.2.3",
+    "@eslint/config-helpers": "^0.5.4",
     "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^10.0.1",
     "@prairielearn/eslint-plugin": "workspace:^",

@@ -45,7 +45,7 @@
 # Their site has more documentation.
 
 FROM rocker/rstudio:4.5.3
-ARG CACHEBUST=2026-03-15-14-27-00
+ARG CACHEBUST=2026-04-15-14-34-07
 
 # On PL, we need to use 1001:1001 for the default user account. We adjust the
 # pre-existing rstudio user which is typically uid 1000 otherwise.

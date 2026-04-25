@@ -69,7 +69,6 @@ import {
   type SubmissionPanels,
 } from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
-import type { UntypedResLocals } from './res-locals.types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -114,6 +113,8 @@ const MAX_RECENT_SUBMISSIONS = 3;
  * @param params.submissions The full list of submissions to the variant.
  * @param params.question_course The course for the question.
  * @param params.locals The current locals for the page response.
+ * @param params.user The effective user to attribute errors to.
+ * @param params.authn_user The authenticated user to attribute errors to.
  */
 async function render({
   variant_course,
@@ -124,6 +125,8 @@ async function render({
   submissions,
   question_course,
   locals,
+  user,
+  authn_user,
 }: {
   variant_course: Course;
   renderSelection: questionServers.RenderSelection;
@@ -132,7 +135,11 @@ async function render({
   submission: Submission | null;
   submissions: Submission[];
   question_course: Course;
-  locals: UntypedResLocals;
+  locals: questionServers.QuestionRenderRequiredLocals;
+  /** The effective user to attribute errors to. */
+  user: User;
+  /** The authenticated user to attribute errors to. */
+  authn_user: User;
 }): Promise<questionServers.RenderResultData> {
   const questionModule = questionServers.getModule(question.type);
 
@@ -148,14 +155,11 @@ async function render({
 
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
-  // user information may not be populated when rendering a panel.
-  const user_id = locals.user?.id ?? null;
-  const authn_user_id = locals.authn_user?.id ?? null;
   await writeCourseIssues(
     courseIssues,
     variant,
-    user_id,
-    authn_user_id,
+    user.id,
+    authn_user.id,
     studentMessage,
     courseData,
   );
@@ -432,7 +436,6 @@ type GetAndRenderVariantInputLocals = {
   authz_data?: Record<string, any>;
   authz_result?: Record<string, any>;
   client_fingerprint_id?: string | null;
-  questionRenderContext?: QuestionRenderContext;
 } & Partial<ResLocalsInstanceQuestionRenderAdded> &
   Partial<ResLocalsQuestionRenderAdded>;
 
@@ -454,6 +457,7 @@ export async function getAndRenderVariant(
     urlOverrides = {},
     publicQuestionPreview = false,
     issuesLoadExtraData = config.devMode || locals.authz_data?.has_course_permission_view,
+    questionRenderContext,
   }: {
     urlOverrides?: Partial<QuestionUrls>;
     publicQuestionPreview?: boolean;
@@ -468,6 +472,11 @@ export async function getAndRenderVariant(
      * The default conditions should match those in `components/QuestionContainer.html.ts`.
      */
     issuesLoadExtraData?: boolean;
+    /**
+     * The rendering context for special views (manual grading, AI grading).
+     * Leave undefined for normal student/instructor rendering.
+     */
+    questionRenderContext?: QuestionRenderContext;
   } = {},
 ): Promise<ResLocalsInstanceQuestionRender> {
   const question_course = await getQuestionCourse(locals.question, locals.course);
@@ -554,8 +563,7 @@ export async function getAndRenderVariant(
     question_access_mode: locals.instance_question_info?.question_access_mode,
   });
   if (
-    (locals.questionRenderContext === 'manual_grading' ||
-      locals.questionRenderContext === 'ai_grading') &&
+    (questionRenderContext === 'manual_grading' || questionRenderContext === 'ai_grading') &&
     question.show_correct_answer
   ) {
     newLocals.showCorrectAnswer = true;
@@ -635,7 +643,15 @@ export async function getAndRenderVariant(
     submission: submission as Submission,
     submissions: submissions.slice(0, MAX_RECENT_SUBMISSIONS) as Submission[],
     question_course,
-    locals,
+    locals: {
+      ...urls,
+      urlPrefix,
+      showCorrectAnswer,
+      allowAnswerEditing: newLocals.allowAnswerEditing,
+      questionRenderContext,
+    },
+    user: locals.user,
+    authn_user: locals.authn_user,
   });
 
   // Load issues last in case rendering produced any new ones.
@@ -717,6 +733,7 @@ export async function renderPanelsForSubmission({
   instance_question,
   variant,
   user,
+  authn_user,
   urlPrefix,
   questionContext,
   questionRenderContext,
@@ -730,6 +747,7 @@ export async function renderPanelsForSubmission({
   instance_question: InstanceQuestion | null;
   variant: Variant;
   user: User;
+  authn_user: User;
   urlPrefix: string;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
@@ -823,6 +841,8 @@ export async function renderPanelsForSubmission({
         submissions,
         question_course,
         locals,
+        user,
+        authn_user,
       });
 
       panels.answerPanel = locals.showCorrectAnswer ? htmls.answerHtml : null;
