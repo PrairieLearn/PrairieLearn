@@ -91,7 +91,7 @@ test.describe.serial('Student access control', () => {
     await syncCourse(testCoursePath);
   });
 
-  test('rule with no releaseDate shows assessment as inactive (not clickable)', async ({
+  test('rule with no release shows assessment as inactive (not clickable)', async ({
     page,
     baseURL,
     courseInstance,
@@ -124,7 +124,7 @@ test.describe.serial('Student access control', () => {
       {
         beforeRelease: { listed: true },
         dateControl: {
-          releaseDate: '2099-06-01T00:00:00',
+          release: { date: '2099-06-01T00:00:00' },
           dueDate: '2099-12-01T00:00:00',
         },
       },
@@ -155,7 +155,7 @@ test.describe.serial('Student access control', () => {
     await writeAssessmentConfig(testCoursePath, [
       {
         dateControl: {
-          releaseDate: '2020-01-01T00:00:00',
+          release: { date: '2020-01-01T00:00:00' },
           dueDate: '2099-01-01T00:00:00',
         },
       },
@@ -183,7 +183,7 @@ test.describe.serial('Student access control', () => {
       {
         beforeRelease: { listed: false },
         dateControl: {
-          releaseDate: '2099-06-01T00:00:00',
+          release: { date: '2099-06-01T00:00:00' },
           dueDate: '2099-12-01T00:00:00',
         },
       },
