@@ -245,9 +245,9 @@
     "brotli": 225460
   },
   "scripts/esm-bundles/hydrated-components/TagsTopicsTable.ts": {
-    "raw": 723200,
-    "gzip": 216818,
-    "brotli": 171073
+    "raw": 723299,
+    "gzip": 216838,
+    "brotli": 171080
   },
   "scripts/esm-bundles/hydrated-components/UserSettingsPage.ts": {
     "raw": 525468,
@@ -265,19 +265,19 @@
     "brotli": 303953
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudentDetail.ts": {
-    "raw": 1329855,
-    "gzip": 392647,
-    "brotli": 321329
+    "raw": 1329954,
+    "gzip": 392665,
+    "brotli": 321349
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudents.ts": {
-    "raw": 1225168,
-    "gzip": 362838,
-    "brotli": 314316
+    "raw": 1225267,
+    "gzip": 362856,
+    "brotli": 314340
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudentsLabels.ts": {
-    "raw": 1053506,
-    "gzip": 312650,
-    "brotli": 271098
+    "raw": 1053605,
+    "gzip": 312670,
+    "brotli": 271129
   },
   "scripts/esm-bundles/hydrated-components/QuestionSettingsCardFooter.ts": {
     "raw": 951921,
@@ -285,9 +285,9 @@
     "brotli": 232702
   },
   "scripts/esm-bundles/hydrated-components/QuestionSettingsForm.ts": {
-    "raw": 1230615,
-    "gzip": 365268,
-    "brotli": 298751
+    "raw": 1230714,
+    "gzip": 365289,
+    "brotli": 298766
   },
   "scripts/esm-bundles/hydrated-components/RichTextEditor.ts": {
     "raw": 1503165,
@@ -295,9 +295,9 @@
     "brotli": 393818
   },
   "scripts/esm-bundles/hydrated-components/HomeCards.ts": {
-    "raw": 975772,
-    "gzip": 287226,
-    "brotli": 248291
+    "raw": 975871,
+    "gzip": 287242,
+    "brotli": 248305
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentDownloads.ts": {
     "raw": 364404,
@@ -305,9 +305,9 @@
     "brotli": 98749
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentGroups.ts": {
-    "raw": 654628,
-    "gzip": 196694,
-    "brotli": 172648
+    "raw": 654727,
+    "gzip": 196711,
+    "brotli": 172667
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentQuestionsTableLegacy.ts": {
     "raw": 632743,
@@ -325,9 +325,9 @@
     "brotli": 306477
   },
   "scripts/esm-bundles/hydrated-components/InstructorGradebookTable.ts": {
-    "raw": 1047639,
-    "gzip": 306692,
-    "brotli": 265768
+    "raw": 1047738,
+    "gzip": 306710,
+    "brotli": 265779
   },
   "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminAiGrading.ts": {
     "raw": 2085284,
@@ -335,14 +335,14 @@
     "brotli": 555448
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionsEditor.ts": {
-    "raw": 1437328,
-    "gzip": 425366,
-    "brotli": 350591
+    "raw": 1437427,
+    "gzip": 425385,
+    "brotli": 350607
   },
   "scripts/esm-bundles/hydrated-components/AssessmentSetsPage.ts": {
-    "raw": 949892,
-    "gzip": 282978,
-    "brotli": 244708
+    "raw": 949991,
+    "gzip": 282998,
+    "brotli": 244712
   },
   "scripts/esm-bundles/hydrated-components/AuthzAccessMismatch.ts": {
     "raw": 260148,
@@ -350,14 +350,14 @@
     "brotli": 70799
   },
   "scripts/esm-bundles/hydrated-components/CopyCourseInstanceModal.ts": {
-    "raw": 740061,
-    "gzip": 221128,
-    "brotli": 192765
+    "raw": 740160,
+    "gzip": 221142,
+    "brotli": 192777
   },
   "scripts/esm-bundles/hydrated-components/CourseInstancePublishing.ts": {
-    "raw": 1193939,
-    "gzip": 351762,
-    "brotli": 304445
+    "raw": 1194038,
+    "gzip": 351779,
+    "brotli": 304458
   },
   "scripts/esm-bundles/hydrated-components/CreateQuestionForm.ts": {
     "raw": 396504,
@@ -405,13 +405,13 @@
     "brotli": 639216
   },
   "scripts/esm-bundles/hydrated-components/AssessmentAccessControl.ts": {
-    "raw": 1173006,
-    "gzip": 355632,
-    "brotli": 308596
+    "raw": 1173049,
+    "gzip": 355655,
+    "brotli": 308653
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionManualGrading.ts": {
-    "raw": 1324037,
-    "gzip": 390255,
-    "brotli": 320715
+    "raw": 1324136,
+    "gzip": 390275,
+    "brotli": 320755
   }
 }
