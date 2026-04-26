@@ -111,15 +111,15 @@ For wrapping, templating, or sanitizing content rather than rendering a specific
 
 ## Panels & visibility
 
-These elements control where and when other content appears — for example, restricting a hint to the question panel, or hiding instructor-only feedback during manual grading.
+These elements control where and when content appears — for example, showing feedback only in the submission panel, hiding instructor-only feedback during manual grading.
 
 ### Standard question panels
 
-The three primary content panels of a graded question. Most questions use all three.
+The three primary content panels shown to students throughout the question lifecycle.
 
-- [`pl-question-panel`](pl-question-panel.md): Display the text of a question.
-- [`pl-submission-panel`](pl-submission-panel.md): Display the answer given by the student.
-- [`pl-answer-panel`](pl-answer-panel.md): Display the correct answer to a question.
+- [`pl-question-panel`](pl-question-panel.md): Content to only show in the question panel. The actual question prompt should be placed here.
+- [`pl-submission-panel`](pl-submission-panel.md): Content to only show in the submission panel. Additional feedback should be placed here.
+- [`pl-answer-panel`](pl-answer-panel.md): Content to only show in the answer panel. Additional details about the correct answer should be placed here.
 
 ??? note "What the panels look like"
 
@@ -135,14 +135,10 @@ For making content appear in only some panels, or only during specific grading w
 
 ### Hints & external feedback
 
-For progressively revealing hints or surfacing external grader output.
-
 - [`pl-hidden-hints`](pl-hidden-hints.md): Display hints as a student submits more on the current variant.
 - [`pl-external-grader-results`](pl-external-grader-results.md): Display results from questions that are externally graded.
 
 ## Reference
-
-Every element, alphabetically. The **Type** column matches the sections above; deprecated elements link to migration guidance below.
 
 | Element                                                           | Type           | Purpose                                    |
 | ----------------------------------------------------------------- | -------------- | ------------------------------------------ |
