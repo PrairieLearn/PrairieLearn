@@ -15,6 +15,7 @@ import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
 import {
   execute,
   loadSqlEquiv,
@@ -24,6 +25,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import * as Sentry from '@prairielearn/sentry';
 import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -340,7 +342,15 @@ export async function requestStopAiGradingJob({
     IdSchema,
   );
   if (updatedId == null) return false;
-  await patchServerJobProgress(job_sequence_id, { is_stopping: true });
+  // Best-effort: the DB transition is the source of truth. A Redis blip or
+  // socket failure here would otherwise turn a successful Stop into a
+  // CONFLICT on retry, even though the request actually succeeded.
+  try {
+    await patchServerJobProgress(job_sequence_id, { is_stopping: true });
+  } catch (err) {
+    Sentry.captureException(err);
+    logger.error('requestStopAiGradingJob: failed to patch progress cache', err);
+  }
   return true;
 }
 
@@ -452,6 +462,20 @@ export async function aiGrade({
       courseInstanceId: course_instance.id,
       assessmentId: assessment.id,
       assessmentQuestionId: assessment_question.id,
+      onTerminalStatus: async (status, jobSequenceId) => {
+        // Race window: Stop was clicked after our final poll, the loop
+        // exited Successfully, then update_job_on_finish flipped Stopping
+        // to Stopped. Without this hook the manual grading alert would
+        // sit on "Stopping AI grading…" until refresh.
+        if (status === 'Stopped') {
+          try {
+            await patchServerJobProgress(jobSequenceId, { is_stopped: true });
+          } catch (err) {
+            Sentry.captureException(err);
+            logger.error('aiGrade onTerminalStatus: failed to patch progress', err);
+          }
+        }
+      },
     });
   });
 

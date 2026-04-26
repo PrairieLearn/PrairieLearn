@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   AI_GRADING_MODEL_IDS,
@@ -173,7 +174,7 @@ const aiGradeInstanceQuestionsMutation = t.procedure
 const stopAiGradingJobMutation = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .use(requireAiGradingFeature)
-  .input(z.object({ job_sequence_id: z.string() }))
+  .input(z.object({ job_sequence_id: IdSchema }))
   .mutation(async (opts) => {
     const stopped = await requestStopAiGradingJob({
       job_sequence_id: opts.input.job_sequence_id,

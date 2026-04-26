@@ -23,7 +23,13 @@ import type { JobSequenceResultsData } from '../components/JobSequenceResults.js
 
 import { ansiToHtml, chalk } from './chalk.js';
 import { config } from './config.js';
-import { EnumJobStatusSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
+import {
+  type EnumJobStatus,
+  EnumJobStatusSchema,
+  type Job,
+  JobSchema,
+  JobSequenceSchema,
+} from './db-types.js';
 import { JobSequenceWithJobsSchema, type JobSequenceWithTokens } from './server-jobs.types.js';
 import { patchServerJobProgress } from './serverJobProgressSocket.js';
 import * as socketServer from './socket-server.js';
@@ -47,6 +53,16 @@ interface CreateServerJobOptionsBase {
    * `job.fail()`) will be captured and sent to Sentry with job context.
    */
   reportErrorsToSentry?: boolean;
+  /**
+   * Optional best-effort hook invoked after the job sequence reaches a
+   * terminal status. Called with the actual status the sequence landed in
+   * (which may differ from the inner job's status — e.g. a Stopping
+   * sequence with a Successful inner job lands in Stopped) and the
+   * sequence id. Throwing here does NOT fail the job; the error is
+   * logged. Useful for callers that need to update an external cache/UI
+   * when the sequence finishes.
+   */
+  onTerminalStatus?: (status: EnumJobStatus, jobSequenceId: string) => Promise<void> | void;
 }
 
 type CreateServerJobOptions =
@@ -148,17 +164,24 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
   private reportErrorsToSentry: boolean;
   private jobType: string;
   private jobDescription: string;
+  private onTerminalStatus?: (status: EnumJobStatus, jobSequenceId: string) => Promise<void> | void;
 
   constructor(
     jobSequenceId: string,
     jobId: string,
-    options: { reportErrorsToSentry: boolean; type: string; description: string },
+    options: {
+      reportErrorsToSentry: boolean;
+      type: string;
+      description: string;
+      onTerminalStatus?: (status: EnumJobStatus, jobSequenceId: string) => Promise<void> | void;
+    },
   ) {
     this.jobSequenceId = jobSequenceId;
     this.jobId = jobId;
     this.reportErrorsToSentry = options.reportErrorsToSentry;
     this.jobType = options.type;
     this.jobDescription = options.description;
+    this.onTerminalStatus = options.onTerminalStatus;
   }
 
   fail(msg: string): never {
@@ -373,17 +396,22 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       z.object({ new_status: EnumJobStatusSchema }),
     );
 
-    // If the sequence transitioned Stopping → Stopped because Stop was clicked
-    // after the job's own cancellation poll(s), the AI grading progress alert
-    // would otherwise stay on "Stopping..." until refresh — patch the cache
-    // so observing clients flip to the terminal Stopped state immediately.
-    if (finishResult?.new_status === 'Stopped') {
-      await patchServerJobProgress(this.jobSequenceId, { is_stopped: true });
-    }
-
-    // Notify sockets.
+    // Notify sockets first so clients are unblocked even if the optional
+    // terminal-status hook below throws.
     socketServer.io?.to('job-' + this.jobId).emit('update');
     socketServer.io?.to('jobSequence-' + this.jobSequenceId).emit('update');
+
+    if (finishResult && this.onTerminalStatus) {
+      try {
+        await this.onTerminalStatus(finishResult.new_status, this.jobSequenceId);
+      } catch (hookErr) {
+        // Best-effort: terminal-status hooks are advisory (e.g. patching a UI
+        // cache). They must not be able to fail the authoritative DB
+        // transition or the socket notifications above.
+        Sentry.captureException(hookErr);
+        logger.error('onTerminalStatus hook threw; ignoring', hookErr);
+      }
+    }
   }
 }
 
@@ -421,6 +449,7 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
     reportErrorsToSentry: options.reportErrorsToSentry ?? false,
     type: options.type,
     description: options.description,
+    onTerminalStatus: options.onTerminalStatus,
   });
   liveJobs[job_id] = serverJob;
   return serverJob;
@@ -605,7 +634,7 @@ export async function errorAbandonedJobs() {
       }
     }
     if (abandonResult?.new_status === 'Stopped') {
-      await patchServerJobProgress(abandonResult.sequence_id, { is_stopped: true });
+      await tryPatchProgressIsStopped(abandonResult.sequence_id);
     }
   }
 
@@ -616,8 +645,24 @@ export async function errorAbandonedJobs() {
   for (const row of abandonedJobSequences) {
     socketServer.io!.to('jobSequence-' + row.id).emit('update');
     if (row.new_status === 'Stopped') {
-      await patchServerJobProgress(row.id, { is_stopped: true });
+      await tryPatchProgressIsStopped(row.id);
     }
+  }
+}
+
+/**
+ * Best-effort: a Redis blip or socket failure must not stop us from continuing
+ * to sweep the rest of the abandoned-job batch.
+ */
+async function tryPatchProgressIsStopped(job_sequence_id: string): Promise<void> {
+  try {
+    await patchServerJobProgress(job_sequence_id, { is_stopped: true });
+  } catch (err) {
+    Sentry.captureException(err);
+    logger.error(
+      `tryPatchProgressIsStopped: failed to patch progress for job_sequence_id=${job_sequence_id}`,
+      err,
+    );
   }
 }
 
