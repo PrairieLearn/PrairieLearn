@@ -252,6 +252,8 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - For each variant of a question that a student sees they will have submitted zero or more `submissions` with a `variant_id` to show what it belongs to. The submissions row also contains information the submitted answer and whether it was correct.
 
+- The `assessment_tools` table stores tool configuration (e.g., calculator) for assessments. Each row references either a `zone_id` or an `assessment_id`, allowing tools to be configured at the assessment level or overridden per zone.
+
 ??? tip "Schema and data exploration"
 
     The [`ms-ossdata.vscode-pgsql` VSCode extension](https://marketplace.visualstudio.com/items?itemName=ms-ossdata.vscode-pgsql) can help you explore the database schema and data in your editor.

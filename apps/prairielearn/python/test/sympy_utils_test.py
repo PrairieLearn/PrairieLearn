@@ -189,6 +189,22 @@ class TestSympy:
             is None
         )
 
+    @pytest.mark.parametrize(("a_sub", "sympy_ref"), EXPR_PAIRS)
+    def test_try_parse_string_as_sympy(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
+        assert psu.SympyParseSuccess(sympy_ref) == psu.try_parse_string_as_sympy(
+            a_sub,
+            self.SYMBOL_NAMES,
+            allow_complex=True,
+        )
+
+    def test_try_parse_string_as_sympy_returns_failure(self) -> None:
+        result = psu.try_parse_string_as_sympy("0.1", self.SYMBOL_NAMES)
+        assert isinstance(result, psu.SympyParseFailure)
+        assert (
+            result.error == "Your answer contains the floating-point number 0.1. "
+            "All numbers must be expressed as integers (or ratios of integers)."
+        )
+
     @pytest.mark.parametrize(
         ("a_sub", "sympy_ref"),
         [("i", sympy.I), ("j", sympy.I), ("i*i", -1), ("j*j", -1)],
@@ -372,6 +388,10 @@ class TestExceptions:
     VARIABLES: tuple[str] = ("n",)
 
     COMPLEX_CASES = ("i", "5 * i", "j", "I")
+    # Expressions that evaluate to complex numbers without containing an explicit
+    # imaginary unit. These are important to test with simplify_expression=False,
+    # where evaluateFalse keeps expressions like sqrt(-2) unevaluated.
+    IMPLICIT_COMPLEX_CASES = ("sqrt(-2)", "sqrt(-1)", "(-2)^(1/2)", "sqrt(-2) + 3")
     NO_FLOATS_CASES = ("3.5", "4.2n", "3.5*n", "3.14159*n**2", "sin(2.3)")
     INVALID_EXPRESSION_CASES = ("5==5", "5!=5", "5>5", "5<5", "5>=5", "5<=5")
     INVALID_FUNCTION_CASES = ("eval(n)", "f(n)", "g(n)+cos(n)", "dir(n)", "sin(f(n))")
@@ -387,6 +407,21 @@ class TestExceptions:
     def test_not_allowed_complex(self, a_sub: str) -> None:
         with pytest.raises((psu.HasComplexError, psu.HasInvalidSymbolError)):
             psu.convert_string_to_sympy(a_sub, self.VARIABLES, allow_complex=False)
+
+    @pytest.mark.parametrize("a_sub", IMPLICIT_COMPLEX_CASES)
+    def test_not_allowed_implicit_complex_no_simplify(self, a_sub: str) -> None:
+        """Expressions like sqrt(-2) must raise HasComplexError even with simplify_expression=False."""
+        with pytest.raises(psu.HasComplexError):
+            psu.convert_string_to_sympy(
+                a_sub, self.VARIABLES, allow_complex=False, simplify_expression=False
+            )
+
+    @pytest.mark.parametrize("a_sub", IMPLICIT_COMPLEX_CASES)
+    def test_not_allowed_implicit_complex_with_simplify(self, a_sub: str) -> None:
+        with pytest.raises(psu.HasComplexError):
+            psu.convert_string_to_sympy(
+                a_sub, self.VARIABLES, allow_complex=False, simplify_expression=True
+            )
 
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_reserved_variables(self, a_sub: str) -> None:
@@ -465,6 +500,43 @@ class TestExceptions:
             )
             assert format_error is not None
             assert target_string in format_error
+
+    @pytest.mark.parametrize("a_sub", IMPLICIT_COMPLEX_CASES)
+    def test_implicit_complex_format_error_no_simplify(self, a_sub: str) -> None:
+        """validate_string_as_sympy must return a format error for implicitly complex
+        expressions like sqrt(-2) even with simplify_expression=False.
+        """
+        format_error = psu.validate_string_as_sympy(
+            a_sub,
+            self.VARIABLES,
+            allow_complex=False,
+            allow_trig_functions=True,
+            simplify_expression=False,
+        )
+        assert format_error is not None
+        assert "complex number" in format_error
+
+    @pytest.mark.parametrize(
+        "a_sub",
+        [
+            "sec(0)",
+            "(16-9*(sec(0)^2))/3",
+            "csc(1)",
+            "sec(n)",
+        ],
+    )
+    def test_trig_no_crash_with_no_simplify(self, a_sub: str) -> None:
+        """Expressions with sec/csc must not crash sympy_check when
+        simplify_expression=False. Regression test for a sympy bug where
+        checking is_extended_real on unevaluated sec(0) raises AttributeError.
+        """
+        psu.convert_string_to_sympy(
+            a_sub,
+            self.VARIABLES,
+            allow_complex=False,
+            allow_trig_functions=True,
+            simplify_expression=False,
+        )
 
     @pytest.mark.parametrize(
         ("expr", "expected_caret", "with_vars"),

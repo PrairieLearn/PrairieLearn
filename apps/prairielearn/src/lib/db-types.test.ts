@@ -15,9 +15,13 @@ const schemaNameOverrides: Record<string, string | null> = {
   time_series: 'TimeSeriesSchema',
 };
 
-const customSchemas = new Set(['IdSchema', 'IntervalSchema']);
+// Schemas not associated with a table.
+const customSchemas = new Set(['IdSchema', 'IntervalSchema', 'QuestionPreferenceValuesSchema']);
 const unusedSchemas = new Set([
   'JsonCommentSchema',
+  // TODO: Make this the primary schema after renaming "alternative_groups" to
+  // "alternative_pools" in the database.
+  'AlternativePoolSchema',
   // TODO: Make these the primary schemas after renaming "teams" back to "groups"
   // in the database.
   'GroupSchema',
