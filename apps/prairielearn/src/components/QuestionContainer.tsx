@@ -449,8 +449,8 @@ export function QuestionTitle({
     return showQuestionTitles && hasTitle ? `${questionNumber}. ${question.title}` : questionNumber;
   }
 
-  // During exams, questions titles are hidden by default.
-  // They are only shown when explicitly enabled on the assessment and the question has a title
+  // Questions titles are controlled by an assessment setting.
+  // The default depends on the assessment type.
   if (questionContext === 'student_exam') {
     return showQuestionTitles && hasTitle
       ? `Question ${questionNumber}: ${question.title}`

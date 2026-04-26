@@ -117,7 +117,9 @@ export function QuestionTableBody({
               hasStatusColumn: assessmentType === 'Exam',
               rowLabelText:
                 assessmentType === 'Exam'
-                  ? `Question ${row.question_number}`
+                  ? showQuestionTitles && row.question.title?.trim()
+                    ? `Question ${row.question_number}: ${row.question.title}`
+                    : `Question ${row.question_number}`
                   : showQuestionTitles && row.question.title?.trim()
                     ? `${row.question_number}. ${row.question.title}`
                     : row.question_number,
