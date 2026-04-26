@@ -4,61 +4,71 @@ When writing questions, there exists a core pool of elements that provides commo
 
 ## Submission elements
 
-Submission elements act as a way to receive a response or input from the student. These elements are traditionally referred to as form input fields. They're grouped below by the kind of response they collect; if you're unsure which element fits, expand the decision flowchart at the top of each section.
+Submission elements act as a way to receive a response or input from the student. These elements are traditionally referred to as form input fields. PrairieLearn presently provides the following templated **input field** elements:
 
-### Choosing from a fixed set of options
+- [`pl-big-o-input`](pl-big-o-input.md): Fill in a **symbolic** value representing asymptotic input.
+- [`pl-checkbox`](pl-checkbox.md): Select **multiple options** from a list.
+- [`pl-drawing`](../pl-drawing/index.md): Create an auto-gradable canvas from a pre-defined collection of graphic objects.
+- [`pl-excalidraw`](pl-excalidraw.md): Draw a **vector diagram** using [excalidraw](https://github.com/excalidraw/excalidraw).
+- [`pl-file-editor`](pl-file-editor.md): Provide an in-browser code editor for writing and submitting code.
+- [`pl-file-upload`](pl-file-upload.md): Provide a submission area to obtain a file with a specific naming scheme.
+- [`pl-image-capture`](pl-image-capture.md): Capture images of handwritten work from a local camera or external device such as a phone or tablet.
+- [`pl-integer-input`](pl-integer-input.md): Fill in an **integer** value such as -71, 0, 5, 21, and so on.
+- [`pl-matching`](pl-matching.md): Select a matching option for each entry in a group.
+- [`pl-matrix-component-input`](pl-matrix-component-input.md): Fill in a **matrix** using grid that has an input area for each element.
+- [`pl-matrix-input`](pl-matrix-input.md): Supply a matrix in a supported programming language format.
+- [`pl-multiple-choice`](pl-multiple-choice.md): Select only **one option** from a list.
+- [`pl-number-input`](pl-number-input.md): Fill in a **numerical** value within a specific tolerance level such as 3.14, -1.921, and so on.
+- [`pl-order-blocks`](pl-order-blocks.md): Select and arrange given blocks of code or text.
+- [`pl-rich-text-editor`](pl-rich-text-editor.md): Provide an in-browser formattable text editor for open-ended responses and essays.
+- [`pl-sketch`](pl-sketch.md): Sketch curves and other mathematical objects (e.g., points, asymptotes, polygons).
+- [`pl-string-input`](pl-string-input.md): Fill in a **string** value such as `"Illinois"`, `"GATTACA"`, `"computer"`, and so on.
+- [`pl-symbolic-input`](pl-symbolic-input.md): Fill in a **symbolic** value such as `x^2`, `sin(z)`, `mc^2`, and so on.
+- [`pl-units-input`](pl-units-input.md): Fill in a **number** and a **unit** such as "1.5 m", "14 ms", "6.3 ft", and so on.
+
+### Choosing an input element
+
+If you're unsure which element fits, the flowcharts below walk through the main questions to ask. Pick the section matching the kind of response you want to collect, then expand the flowchart to follow the branches to a recommended `pl-*` element.
+
+#### Choosing from a fixed set of options
+
+When students pick one or more items from a fixed set, e.g. multiple choice, checkboxes, matching, or ordering.
 
 ??? note "Decision flowchart: selection-style elements"
 
     ![Decision flowchart for selection-style input elements](./element-decision-selection.d2){layout="elk" pad="0" scale="1"}
 
-- [`pl-checkbox`](pl-checkbox.md): Select **multiple options** from a list.
-- [`pl-matching`](pl-matching.md): Select a matching option for each entry in a group.
-- [`pl-multiple-choice`](pl-multiple-choice.md): Select only **one option** from a list.
-- [`pl-order-blocks`](pl-order-blocks.md): Select and arrange given blocks of code or text.
+#### Numeric answers
 
-### Numeric answers
+When the response is a number — integer, decimal, value with units, or a matrix.
 
 ??? note "Decision flowchart: numeric elements"
 
     ![Decision flowchart for numeric input elements](./element-decision-number.d2){layout="elk" pad="0" scale="1"}
 
-- [`pl-integer-input`](pl-integer-input.md): Fill in an **integer** value such as -71, 0, 5, 21, and so on.
-- [`pl-matrix-component-input`](pl-matrix-component-input.md): Fill in a **matrix** using grid that has an input area for each element.
-- [`pl-matrix-input`](pl-matrix-input.md): Supply a matrix in a supported programming language format.
-- [`pl-number-input`](pl-number-input.md): Fill in a **numerical** value within a specific tolerance level such as 3.14, -1.921, and so on.
-- [`pl-units-input`](pl-units-input.md): Fill in a **number** and a **unit** such as "1.5 m", "14 ms", "6.3 ft", and so on.
+#### Free text or symbolic math
 
-### Free text or symbolic math
+When the response is a string, an essay, or a math expression.
 
 ??? note "Decision flowchart: text and symbolic elements"
 
     ![Decision flowchart for text and symbolic input elements](./element-decision-text.d2){layout="elk" pad="0" scale="1"}
 
-- [`pl-big-o-input`](pl-big-o-input.md): Fill in a **symbolic** value representing asymptotic input.
-- [`pl-rich-text-editor`](pl-rich-text-editor.md): Provide an in-browser formattable text editor for open-ended responses and essays.
-- [`pl-string-input`](pl-string-input.md): Fill in a **string** value such as `"Illinois"`, `"GATTACA"`, `"computer"`, and so on.
-- [`pl-symbolic-input`](pl-symbolic-input.md): Fill in a **symbolic** value such as `x^2`, `sin(z)`, `mc^2`, and so on.
+#### Drawings and images
 
-### Drawings and images
+When the response is a drawing, diagram, or photo of handwritten work.
 
 ??? note "Decision flowchart: drawing elements"
 
     ![Decision flowchart for drawing input elements](./element-decision-drawing.d2){layout="elk" pad="0" scale="1"}
 
-- [`pl-drawing`](../pl-drawing/index.md): Create an auto-gradable canvas from a pre-defined collection of graphic objects.
-- [`pl-excalidraw`](pl-excalidraw.md): Draw a **vector diagram** using [excalidraw](https://github.com/excalidraw/excalidraw).
-- [`pl-image-capture`](pl-image-capture.md): Capture images of handwritten work from a local camera or external device such as a phone or tablet.
-- [`pl-sketch`](pl-sketch.md): Sketch curves and other mathematical objects (e.g., points, asymptotes, polygons).
+#### Code and file submissions
 
-### Code and file submissions
+When the response is code or a file, written in the browser or uploaded from disk.
 
 ??? note "Decision flowchart: code and file elements"
 
     ![Decision flowchart for code and file input elements](./element-decision-code.d2){layout="elk" pad="0" scale="1"}
-
-- [`pl-file-editor`](pl-file-editor.md): Provide an in-browser code editor for writing and submitting code.
-- [`pl-file-upload`](pl-file-upload.md): Provide a submission area to obtain a file with a specific naming scheme.
 
 ## Decorative elements
 
