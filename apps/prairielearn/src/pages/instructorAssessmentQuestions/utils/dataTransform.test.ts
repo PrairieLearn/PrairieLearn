@@ -12,7 +12,7 @@ import * as courseDB from '../../../sync/course-db.js';
 import type { ZoneAssessmentForm } from '../types.js';
 
 import {
-  createAltGroupWithTrackingId,
+  createAltPoolWithTrackingId,
   getDefaultPointFieldsForNewQuestion,
   prepareZonesForEditor,
   serializeZonesForJson,
@@ -77,7 +77,7 @@ describe('serializeZonesForJson', () => {
               assert.equal(filteredQ.id, originalQ.id, `Question ID mismatch at zone ${i}, q ${j}`);
             }
 
-            // Verify alternatives are preserved for alternative groups
+            // Verify alternatives are preserved for alternative pools
             if (originalQ.alternatives) {
               assert.ok(filteredQ.alternatives, `Missing alternatives at zone ${i}, q ${j}`);
               assert.equal(
@@ -211,8 +211,8 @@ describe('new question defaults', () => {
     });
   });
 
-  it('starts empty alt groups without inherited point defaults or numberChoose', () => {
-    const result = createAltGroupWithTrackingId();
+  it('starts empty alt pools without inherited point defaults or numberChoose', () => {
+    const result = createAltPoolWithTrackingId();
 
     expect(result.autoPoints).toBeUndefined();
     expect(result.manualPoints).toBeUndefined();
@@ -438,7 +438,7 @@ describe('prepareZonesForEditor normalization', () => {
     expect(result[0].questions[0].points).toBeUndefined();
   });
 
-  it('normalizes alt group points to manualPoints when all alternatives are Manual', () => {
+  it('normalizes alt pool points to manualPoints when all alternatives are Manual', () => {
     const zones: ZoneAssessmentJson[] = [
       {
         lockpoint: false,
@@ -468,7 +468,7 @@ describe('prepareZonesForEditor normalization', () => {
     expect(result[0].questions[0].points).toBeUndefined();
   });
 
-  it('normalizes alt group points to autoPoints when all alternatives are auto-graded', () => {
+  it('normalizes alt pool points to autoPoints when all alternatives are auto-graded', () => {
     const zones: ZoneAssessmentJson[] = [
       {
         lockpoint: false,
@@ -498,7 +498,7 @@ describe('prepareZonesForEditor normalization', () => {
     expect(result[0].questions[0].points).toBeUndefined();
   });
 
-  it('pushes alt group points to alternatives when grading methods are mixed', () => {
+  it('pushes alt pool points to alternatives when grading methods are mixed', () => {
     const zones: ZoneAssessmentJson[] = [
       {
         lockpoint: false,
@@ -522,24 +522,24 @@ describe('prepareZonesForEditor normalization', () => {
     } as any;
 
     const result = prepareZonesForEditor(zones, metadata);
-    const group = result[0].questions[0];
+    const pool = result[0].questions[0];
 
-    // Group-level points should be cleared
-    expect(group.points).toBeUndefined();
-    expect(group.autoPoints).toBeUndefined();
-    expect(group.manualPoints).toBeUndefined();
+    // Pool-level points should be cleared
+    expect(pool.points).toBeUndefined();
+    expect(pool.autoPoints).toBeUndefined();
+    expect(pool.manualPoints).toBeUndefined();
 
     // Each alternative gets points based on its grading method
-    expect(group.alternatives![0].manualPoints).toBe(10);
-    expect(group.alternatives![0].autoPoints).toBeUndefined();
-    expect(group.alternatives![1].autoPoints).toBe(10);
-    expect(group.alternatives![1].manualPoints).toBeUndefined();
+    expect(pool.alternatives![0].manualPoints).toBe(10);
+    expect(pool.alternatives![0].autoPoints).toBeUndefined();
+    expect(pool.alternatives![1].autoPoints).toBe(10);
+    expect(pool.alternatives![1].manualPoints).toBeUndefined();
 
-    // Info banner flag should be set for mixed alt groups
-    expect(group.pointsDistributedInfoBanner).toBe(true);
+    // Info banner flag should be set for mixed alt pools
+    expect(pool.pointsDistributedInfoBanner).toBe(true);
   });
 
-  it('falls through to autoPoints when alt group has no metadata', () => {
+  it('falls through to autoPoints when alt pool has no metadata', () => {
     const zones: ZoneAssessmentJson[] = [
       {
         lockpoint: false,
@@ -564,7 +564,7 @@ describe('prepareZonesForEditor normalization', () => {
     expect(result[0].questions[0].points).toBeUndefined();
   });
 
-  it('does not override alternative-level points when pushing group points in mixed mode', () => {
+  it('does not override alternative-level points when pushing pool points in mixed mode', () => {
     const zones: ZoneAssessmentJson[] = [
       {
         lockpoint: false,
@@ -588,15 +588,15 @@ describe('prepareZonesForEditor normalization', () => {
     } as any;
 
     const result = prepareZonesForEditor(zones, metadata);
-    const group = result[0].questions[0];
+    const pool = result[0].questions[0];
 
-    // alt1 inherits group points → manualPoints
-    expect(group.alternatives![0].manualPoints).toBe(10);
-    // alt2 already has autoPoints, so group points are NOT pushed
-    expect(group.alternatives![1].autoPoints).toBe(7);
+    // alt1 inherits pool points → manualPoints
+    expect(pool.alternatives![0].manualPoints).toBe(10);
+    // alt2 already has autoPoints, so pool points are NOT pushed
+    expect(pool.alternatives![1].autoPoints).toBe(7);
   });
 
-  it('preserves inherited maxPoints for legacy mixed-group alternatives with their own points', () => {
+  it('preserves inherited maxPoints for legacy mixed-pool alternatives with their own points', () => {
     const zones: ZoneAssessmentJson[] = [
       {
         lockpoint: false,
@@ -626,7 +626,7 @@ describe('prepareZonesForEditor normalization', () => {
     const saved = serializeZonesForJson(stripTrackingIds(prepared));
 
     // Both alternatives keep their own legacy `points`, but they also inherit
-    // the group's `maxPoints: 5`. Sync resolves that inherited max differently
+    // the pool's `maxPoints: 5`. Sync resolves that inherited max differently
     // by grading method: Manual uses it as `manualPoints`, while auto-graded
     // questions keep their own points and receive it as `maxAutoPoints`.
     expect(saved).toEqual([
@@ -644,7 +644,7 @@ describe('prepareZonesForEditor normalization', () => {
     ]);
   });
 
-  it('normalizes alt group maxPoints to manualPoints when all alternatives are Manual', () => {
+  it('normalizes alt pool maxPoints to manualPoints when all alternatives are Manual', () => {
     const zones: ZoneAssessmentJson[] = [
       {
         lockpoint: false,
@@ -697,14 +697,14 @@ describe('prepareZonesForEditor normalization', () => {
     } as any;
 
     const result = prepareZonesForEditor(zones, metadata);
-    const group = result[0].questions[0];
+    const pool = result[0].questions[0];
 
     // Should be treated as mixed: points pushed to alternatives
-    expect(group.points).toBeUndefined();
-    expect(group.autoPoints).toBeUndefined();
-    expect(group.manualPoints).toBeUndefined();
-    expect(group.alternatives![0].manualPoints).toBe(10);
-    expect(group.alternatives![1].autoPoints).toBe(10);
+    expect(pool.points).toBeUndefined();
+    expect(pool.autoPoints).toBeUndefined();
+    expect(pool.manualPoints).toBeUndefined();
+    expect(pool.alternatives![0].manualPoints).toBe(10);
+    expect(pool.alternatives![1].autoPoints).toBe(10);
   });
 });
 

@@ -393,6 +393,7 @@ export function PageLayout({
                 'd-flex flex-column',
                 resolvedOptions.contentContainerClassName,
               )}"
+              data-split-pane-scroll-parent
             >
               ${renderHtml(
                 <LegacyPublishingBannerComponent navContext={navContext} resLocals={resLocals} />,

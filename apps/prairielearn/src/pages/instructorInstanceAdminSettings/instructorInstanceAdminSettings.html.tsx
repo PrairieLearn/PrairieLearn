@@ -14,6 +14,8 @@ import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
+import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
+import { TRPCProvider } from '../../trpc/courseInstance/context.js';
 
 import { CopyCourseInstanceModal } from './components/CopyCourseInstanceModal.js';
 import { SelfEnrollmentSettings } from './components/SelfEnrollmentSettings.js';
@@ -21,6 +23,7 @@ import type { SettingsFormValues } from './instructorInstanceAdminSettings.types
 
 export function InstructorInstanceAdminSettings({
   csrfToken,
+  trpcCsrfToken,
   urlPrefix,
   navPage,
   canEdit,
@@ -37,8 +40,10 @@ export function InstructorInstanceAdminSettings({
   infoCourseInstancePath,
   isDevMode,
   isAdministrator,
+  enhancedAccessControlEnabled,
 }: {
   csrfToken: string;
+  trpcCsrfToken: string;
   urlPrefix: string;
   navPage: NavPage;
   canEdit: boolean;
@@ -55,10 +60,18 @@ export function InstructorInstanceAdminSettings({
   infoCourseInstancePath: string;
   isDevMode: boolean;
   isAdministrator: boolean;
+  enhancedAccessControlEnabled: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
 
   const [showCopyModal, setShowCopyModal] = useState(false);
+
+  const [trpcClient] = useState(() =>
+    createCourseInstanceTrpcClient({
+      csrfToken: trpcCsrfToken,
+      courseInstanceId: courseInstance.id,
+    }),
+  );
 
   const shortNames = new Set(names.map((name) => name.short_name));
 
@@ -125,6 +138,7 @@ export function InstructorInstanceAdminSettings({
                 id="ciid"
                 aria-invalid={errors.ciid ? 'true' : 'false'}
                 disabled={!canEdit}
+                defaultValue={defaultValues.ciid}
                 required
                 {...register('ciid', {
                   required: 'Short name is required',
@@ -157,6 +171,7 @@ export function InstructorInstanceAdminSettings({
                 id="long_name"
                 disabled={!canEdit}
                 aria-describedby="long_name-help"
+                defaultValue={defaultValues.long_name}
                 required
                 {...register('long_name')}
                 name="long_name"
@@ -172,6 +187,7 @@ export function InstructorInstanceAdminSettings({
               <Form.Select
                 id="display_timezone"
                 disabled={!canEdit}
+                defaultValue={defaultValues.display_timezone}
                 {...register('display_timezone')}
                 name="display_timezone"
               >
@@ -200,6 +216,7 @@ export function InstructorInstanceAdminSettings({
               <Form.Select
                 id="group_assessments_by"
                 disabled={!canEdit}
+                defaultValue={defaultValues.group_assessments_by}
                 {...register('group_assessments_by')}
                 name="group_assessments_by"
               >
@@ -296,14 +313,17 @@ export function InstructorInstanceAdminSettings({
           </div>
         )}
 
-        <CopyCourseInstanceModal
-          show={showCopyModal}
-          csrfToken={csrfToken}
-          courseShortName={course.short_name}
-          courseInstance={courseInstance}
-          isAdministrator={isAdministrator}
-          onHide={() => setShowCopyModal(false)}
-        />
+        <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+          <CopyCourseInstanceModal
+            show={showCopyModal}
+            csrfToken={csrfToken}
+            courseShortName={course.short_name}
+            courseInstance={courseInstance}
+            isAdministrator={isAdministrator}
+            enhancedAccessControlEnabled={enhancedAccessControlEnabled}
+            onHide={() => setShowCopyModal(false)}
+          />
+        </TRPCProvider>
       </div>
     </QueryClientProviderDebug>
   );

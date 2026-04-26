@@ -72,7 +72,6 @@ export function QuestionDetailPanel({
   idPrefix,
   state,
   onUpdate,
-  onDelete,
   onPickQuestion,
   onResetButtonClick,
   onFormValidChange,
@@ -86,11 +85,6 @@ export function QuestionDetailPanel({
   onUpdate: (
     questionTrackingId: string,
     question: Partial<ZoneQuestionBlockForm> | Partial<QuestionAlternativeForm>,
-    alternativeTrackingId?: string,
-  ) => void;
-  onDelete: (
-    questionTrackingId: string,
-    questionId: string,
     alternativeTrackingId?: string,
   ) => void;
   onPickQuestion: (currentSelection: SelectedItem) => void;
@@ -121,12 +115,12 @@ export function QuestionDetailPanel({
   const maxAutoPointsValue = question.maxAutoPoints ?? zoneQuestionBlock?.maxAutoPoints;
   const manualPointsValue = question.manualPoints ?? zoneQuestionBlock?.manualPoints;
 
-  // Alternative's own values (may be undefined = inheriting from group)
+  // Alternative's own values (may be undefined = inheriting from pool)
   const ownAutoPoints = question.autoPoints ?? undefined;
   const ownMaxAutoPoints = question.maxAutoPoints ?? undefined;
   const ownManualPoints = question.manualPoints ?? undefined;
 
-  // Group's values (what would be inherited)
+  // Pool's values (what would be inherited)
   const inheritedAutoPoints = zoneQuestionBlock?.autoPoints ?? undefined;
   const inheritedMaxAutoPoints = zoneQuestionBlock?.maxAutoPoints ?? undefined;
   const inheritedManualPoints = zoneQuestionBlock?.manualPoints ?? undefined;
@@ -228,7 +222,6 @@ export function QuestionDetailPanel({
   // not update until user interaction with mode: 'onChange'.
   useEffect(() => {
     void trigger().then((valid) => {
-      // TODO: you can easily click off the item and save the form to bypass this validation.
       onFormValidChange(valid);
     });
   }, [trigger, onFormValidChange]);
@@ -240,7 +233,7 @@ export function QuestionDetailPanel({
 
   const advancedInheritance: AdvancedFieldsInheritance = run(() => {
     if (isAlternative) {
-      // Alternatives inherit from alt group -> zone -> assessment
+      // Alternatives inherit from alt pool -> zone -> assessment
       const parentAdvanceScorePerc =
         zoneQuestionBlock.advanceScorePerc ??
         zone?.advanceScorePerc ??
@@ -261,24 +254,24 @@ export function QuestionDetailPanel({
         parentForceMaxPoints,
         advanceScorePercFromLabel:
           zoneQuestionBlock.advanceScorePerc != null
-            ? 'group'
+            ? 'pool'
             : zone?.advanceScorePerc != null
               ? 'zone'
               : 'assessment',
         gradeRateMinutesFromLabel:
           zoneQuestionBlock.gradeRateMinutes != null
-            ? 'group'
+            ? 'pool'
             : zone?.gradeRateMinutes != null
               ? 'zone'
               : 'assessment',
         allowRealTimeGradingFromLabel:
           zoneQuestionBlock.allowRealTimeGrading != null
-            ? 'group'
+            ? 'pool'
             : zone?.allowRealTimeGrading != null
               ? 'zone'
               : 'assessment',
-        // Only alt groups define forceMaxPoints; fallback is never displayed
-        forceMaxPointsFromLabel: zoneQuestionBlock.forceMaxPoints != null ? 'group' : 'assessment',
+        // Only alt pools define forceMaxPoints; fallback is never displayed
+        forceMaxPointsFromLabel: zoneQuestionBlock.forceMaxPoints != null ? 'pool' : 'assessment',
         watch,
         setValue,
         resetAndSave,
@@ -297,7 +290,7 @@ export function QuestionDetailPanel({
       advanceScorePercFromLabel: zone?.advanceScorePerc != null ? 'zone' : 'assessment',
       gradeRateMinutesFromLabel: zone?.gradeRateMinutes != null ? 'zone' : 'assessment',
       allowRealTimeGradingFromLabel: zone?.allowRealTimeGrading != null ? 'zone' : 'assessment',
-      // Only alt groups define forceMaxPoints; fallback is never displayed
+      // Only alt pools define forceMaxPoints; fallback is never displayed
       forceMaxPointsFromLabel: 'assessment',
       watch,
       setValue,
@@ -548,6 +541,28 @@ export function QuestionDetailPanel({
         </FormField>
       </Wrapper>
 
+      {questionData?.question.preferences_schema &&
+        Object.keys(questionData.question.preferences_schema).length > 0 && (
+          <>
+            <DetailSectionHeader>Preferences</DetailSectionHeader>
+            <Wrapper className={clsx(!editMode && 'mb-0')}>
+              {Object.entries(questionData.question.preferences_schema).map(([name, schema]) => (
+                <PreferenceField
+                  key={name}
+                  name={name}
+                  schema={schema}
+                  idPrefix={idPrefix}
+                  editMode={editMode}
+                  preferences={question.preferences}
+                  questionTrackingId={questionTrackingId}
+                  alternativeTrackingId={alternativeTrackingId}
+                  onUpdate={onUpdate}
+                />
+              ))}
+            </Wrapper>
+          </>
+        )}
+
       {/* Advanced fields */}
       <AdvancedFields
         register={register}
@@ -556,6 +571,7 @@ export function QuestionDetailPanel({
         variant="question"
         editMode={editMode}
         inheritance={advancedInheritance}
+        assessmentType={assessmentType}
       />
 
       {/* Action buttons */}
@@ -579,23 +595,6 @@ export function QuestionDetailPanel({
               </button>
             </OverlayTrigger>
           )}
-        {editMode && (
-          <OverlayTrigger
-            placement="top"
-            tooltip={{
-              props: { id: 'delete-question-tooltip' },
-              body: 'Remove this question from the assessment',
-            }}
-          >
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-danger"
-              onClick={() => onDelete(questionTrackingId, question.id, alternativeTrackingId)}
-            >
-              Delete
-            </button>
-          </OverlayTrigger>
-        )}
       </div>
     </div>
   );
@@ -943,5 +942,182 @@ function PointsFields({
         ))}
       {!isManualGrading && manualPointsField}
     </>
+  );
+}
+
+function PreferenceField({
+  name,
+  schema,
+  idPrefix,
+  editMode,
+  preferences,
+  questionTrackingId,
+  alternativeTrackingId,
+  onUpdate,
+}: {
+  name: string;
+  schema: { type: string; default: string | number | boolean; enum?: (string | number)[] };
+  idPrefix: string;
+  editMode: boolean;
+  preferences: Record<string, string | number | boolean> | undefined;
+  questionTrackingId: string;
+  alternativeTrackingId: string | undefined;
+  onUpdate: (
+    questionTrackingId: string,
+    question: Partial<ZoneQuestionBlockForm> | Partial<QuestionAlternativeForm>,
+    alternativeTrackingId?: string,
+  ) => void;
+}) {
+  const id = `${idPrefix}-pref-${name}`;
+  const defaultDisplay = String(schema.default);
+  const currentValue = preferences?.[name];
+  const hasOverride = currentValue != null;
+
+  function setOverride(value: string | number | boolean) {
+    onUpdate(
+      questionTrackingId,
+      { preferences: { ...preferences, [name]: value } },
+      alternativeTrackingId,
+    );
+  }
+
+  function clearOverride() {
+    const newPreferences = { ...preferences };
+    delete newPreferences[name];
+    onUpdate(
+      questionTrackingId,
+      {
+        preferences: Object.keys(newPreferences).length > 0 ? newPreferences : undefined,
+      },
+      alternativeTrackingId,
+    );
+  }
+
+  if (!editMode) {
+    return (
+      <FormField
+        editMode={false}
+        id={id}
+        label={<span className="font-monospace">{name}</span>}
+        viewValue={hasOverride ? String(currentValue) : `${defaultDisplay} (default)`}
+      >
+        {() => null}
+      </FormField>
+    );
+  }
+
+  if (!hasOverride) {
+    return (
+      <div className="mb-3">
+        <label htmlFor={id} className="form-label">
+          <span className="font-monospace">{name}</span>
+        </label>
+        <input
+          type="text"
+          className="form-control form-control-sm bg-light"
+          id={id}
+          value={defaultDisplay}
+          aria-describedby={`${id}-help`}
+          disabled
+        />
+        <small id={`${id}-help`} className="form-text text-muted">
+          Using question default.{' '}
+          <button
+            type="button"
+            className="btn btn-link btn-sm p-0 align-baseline"
+            onClick={() => setOverride(schema.default)}
+          >
+            Override
+          </button>
+        </small>
+      </div>
+    );
+  }
+
+  const resetHelpText = (
+    <small id={`${id}-help`} className="form-text text-muted">
+      Overrides question default ({defaultDisplay}).{' '}
+      <button
+        type="button"
+        className="btn btn-link btn-sm p-0 align-baseline"
+        title="Reset to question default"
+        onClick={clearOverride}
+      >
+        Reset
+      </button>
+    </small>
+  );
+
+  if (schema.type === 'boolean') {
+    return (
+      <div className="mb-3">
+        <label htmlFor={id} className="form-label">
+          <span className="font-monospace">{name}</span>
+        </label>
+        <select
+          className="form-select form-select-sm"
+          id={id}
+          value={String(currentValue)}
+          aria-describedby={`${id}-help`}
+          onChange={(e) => setOverride(e.target.value === 'true')}
+        >
+          <option value="true">true</option>
+          <option value="false">false</option>
+        </select>
+        {resetHelpText}
+      </div>
+    );
+  }
+
+  if (schema.enum && schema.enum.length > 0) {
+    return (
+      <div className="mb-3">
+        <label htmlFor={id} className="form-label">
+          <span className="font-monospace">{name}</span>
+        </label>
+        <select
+          className="form-select form-select-sm"
+          id={id}
+          value={String(currentValue)}
+          aria-describedby={`${id}-help`}
+          onChange={(e) => {
+            const val = e.target.value;
+            setOverride(schema.type === 'number' ? Number(val) : val);
+          }}
+        >
+          {schema.enum.map((v) => (
+            <option key={String(v)} value={String(v)}>
+              {String(v)}
+            </option>
+          ))}
+        </select>
+        {resetHelpText}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-3">
+      <label htmlFor={id} className="form-label">
+        <span className="font-monospace">{name}</span>
+      </label>
+      <input
+        type={schema.type === 'number' ? 'number' : 'text'}
+        step={schema.type === 'number' ? 'any' : undefined}
+        className="form-control form-control-sm"
+        id={id}
+        aria-describedby={`${id}-help`}
+        defaultValue={String(currentValue)}
+        onBlur={(e) => {
+          const val = e.target.value.trim();
+          if (val === '') {
+            clearOverride();
+          } else {
+            setOverride(schema.type === 'number' ? Number(val) : val);
+          }
+        }}
+      />
+      {resetHelpText}
+    </div>
   );
 }

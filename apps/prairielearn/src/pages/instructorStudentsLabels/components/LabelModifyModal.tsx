@@ -13,6 +13,7 @@ import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
 import { useTRPC } from '../../../trpc/courseInstance/context.js';
+import type { StudentLabelError } from '../../../trpc/courseInstance/student-labels.js';
 import { MAX_LABEL_UIDS } from '../instructorStudentsLabels.types.js';
 
 export type LabelModifyModalData =
@@ -64,6 +65,7 @@ export function LabelModifyModal({
     register,
     handleSubmit,
     setError,
+    reset,
     formState: { errors },
     watch,
   } = useForm<LabelFormValues>({
@@ -125,18 +127,12 @@ export function LabelModifyModal({
     });
   };
 
-  const appError = getAppError<'studentLabels.upsert'>(saveMutation.error);
+  const appError = getAppError<StudentLabelError['Upsert']>(saveMutation.error);
 
   function renderMutationError() {
     if (!appError) return null;
 
     switch (appError.code) {
-      case 'LABEL_NAME_TAKEN':
-        return (
-          <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
-            A label named &ldquo;{appError.name}&rdquo; already exists.
-          </Alert>
-        );
       case 'SYNC_JOB_FAILED':
         return (
           <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
@@ -205,6 +201,7 @@ export function LabelModifyModal({
       onExited={() => {
         setStage({ type: 'editing' });
         saveMutation.reset();
+        reset();
         onExited?.();
       }}
     >

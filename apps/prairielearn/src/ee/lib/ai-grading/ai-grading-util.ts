@@ -58,14 +58,14 @@ const SubmissionVariantSchema = z.object({
 
 /**
  * Models supporting system messages after the first user message.
- * As of November 2025,
- * - OpenAI GPT 5-mini and GPT 5.1 support this.
- * - Google Gemini 2.5-flash and Gemini 3.1 Pro Preview do not support this.
- * - Anthropic Claude Haiku 4.5, Claude Sonnet 4.5, and Claude Opus 4.5 do not support this.
+ * As of April 2026,
+ * - OpenAI GPT 5.4-mini and GPT 5.4 support this.
+ * - Google Gemini 3 Flash Preview and Gemini 3.1 Pro Preview do not support this.
+ * - Anthropic Claude Haiku 4.5, Claude Sonnet 4.6, and Claude Opus 4.7 do not support this.
  */
 const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>([
-  'gpt-5-mini-2025-08-07',
-  'gpt-5.1-2025-11-13',
+  'gpt-5.4-mini-2026-03-17',
+  'gpt-5.4-2026-03-05',
 ]);
 
 export async function generatePrompt({
@@ -677,6 +677,13 @@ export async function toggleAiGradingMode(assessment_question_id: string): Promi
 
 export async function setAiGradingMode(assessment_question_id: string, ai_grading_mode: boolean) {
   await execute(sql.set_ai_grading_mode, { assessment_question_id, ai_grading_mode });
+}
+
+export async function setAiGradingLastSelectedModel(
+  assessment_question_id: string,
+  model_id: AiGradingModelId,
+) {
+  await execute(sql.set_ai_grading_last_selected_model, { assessment_question_id, model_id });
 }
 
 const rateLimiter = new RedisRateLimiter({

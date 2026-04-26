@@ -136,10 +136,10 @@ const sideNavPagesTabs = {
     },
     {
       activePages: ['instance_admin'],
-      activeSubPages: ['integrations'],
+      activeSubPages: ['lms_connections'],
       urlSuffix: '/instance_admin/lti13_instance',
       iconClasses: 'fas fa-school-flag',
-      tabLabel: 'Integrations',
+      tabLabel: 'LMS connections',
       renderCondition: () => isEnterprise(),
     },
     {

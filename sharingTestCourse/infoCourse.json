@@ -1,9 +1,0 @@
-{
-  "name": "SHARING 101",
-  "title": "Sharing Test Course",
-  "assessmentSets": [
-    { "abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1" }
-  ],
-  "topics": [{ "name": "Sharing", "color": "blue3", "description": "Shared question testing." }],
-  "tags": []
-}

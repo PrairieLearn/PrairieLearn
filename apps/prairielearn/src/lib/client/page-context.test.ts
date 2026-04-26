@@ -25,7 +25,6 @@ const TEST_INSTITUTION = {
 
 const createBaseContext = (overrides: Record<string, any> = {}) => ({
   __csrf_token: '123',
-  plainUrlPrefix: '/pl',
   urlPrefix: '/pl/course/1/course_instance/1',
   authn_institution: TEST_INSTITUTION,
   authn_provider_name: 'local',
@@ -248,6 +247,7 @@ const mockAssessmentData = {
 
 const STAFF_ASSESSMENT_QUESTION = {
   advance_score_perc: null,
+  ai_grading_last_selected_model: null,
   ai_grading_mode: false,
   allow_real_time_grading: true,
   alternative_group_id: null,
@@ -379,7 +379,7 @@ describe('extractPageContext', () => {
         authn_user: { ...TEST_USER, foo: 'bar' },
         user: { ...TEST_USER, foo: 'bar' },
       }),
-      ...createBaseContext({ plainUrlPrefix: undefined }),
+      ...createBaseContext(),
       authn_user: { ...TEST_USER, foo: 'bar' },
       extraField: 'this should be stripped',
       anotherExtraField: 123,
@@ -390,7 +390,7 @@ describe('extractPageContext', () => {
         authn_user: TEST_USER as StaffUser,
         user: TEST_USER as StaffUser,
       }) as PageAuthzData,
-      ...createBaseContext({ plainUrlPrefix: undefined }),
+      ...createBaseContext(),
       authn_user: TEST_USER as StaffUser,
       authn_institution: TEST_INSTITUTION as StaffInstitution,
     };

@@ -38,6 +38,31 @@ function getGithubClient() {
 }
 
 /**
+ * Checks whether a repository already exists on GitHub.
+ */
+export async function checkGithubRepositoryExists(repoName: string): Promise<boolean> {
+  const client = getGithubClient();
+  if (client === null) return false;
+
+  try {
+    const response = await client.repos.get({
+      owner: config.githubCourseOwner,
+      repo: repoName,
+    });
+    // If the repository was renamed, GitHub returns a 301 redirect which
+    // Octokit follows automatically, yielding the renamed repository's data.
+    // GitHub allows the old name to be reused in that case, so we treat a
+    // mismatch between the requested name and the returned name as the
+    // repository not existing at the requested name. Repository names are
+    // case-insensitive, so we compare case-insensitively.
+    return response.data.name.toLowerCase() === repoName.toLowerCase();
+  } catch (err: any) {
+    if (err.status === 404) return false;
+    throw err;
+  }
+}
+
+/**
  * Creates a new, empty repository.
  * @param client Octokit client
  * @param repo Name of the new repository to create
@@ -59,14 +84,28 @@ async function createEmptyRepository(client: Octokit, repo: string) {
  * @param contents Raw contents of the file, stored as a string.
  */
 async function addFileToRepo(client: Octokit, repo: string, path: string, contents: string) {
-  await client.repos.createOrUpdateFileContents({
-    owner: config.githubCourseOwner,
-    repo,
-    path,
-    message: `Update ${path}`,
-    // Add a trailing newline to the contents.
-    content: Buffer.from(contents + '\n', 'ascii').toString('base64'),
-  });
+  const maxRetries = 5;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await client.repos.createOrUpdateFileContents({
+        owner: config.githubCourseOwner,
+        repo,
+        path,
+        message: `Update ${path}`,
+        // Add a trailing newline to the contents.
+        content: Buffer.from(contents + '\n', 'ascii').toString('base64'),
+      });
+      return;
+    } catch (err: any) {
+      // GitHub may return 404 briefly after repository creation due to
+      // eventual consistency. Retry with exponential backoff.
+      if (err.status === 404 && attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
 }
 
 /**
@@ -256,7 +295,7 @@ export async function createCourseRepoJob(
     });
 
     job.info('Sync git repository to database');
-    const syncResult = await syncDiskToSql(inserted_course.id, inserted_course.path, job);
+    const syncResult = await syncDiskToSql(inserted_course, job);
     if (syncResult.status !== 'complete') {
       // Sync should never fail when creating a brand new repository, if we hit this
       // then we have a problem.

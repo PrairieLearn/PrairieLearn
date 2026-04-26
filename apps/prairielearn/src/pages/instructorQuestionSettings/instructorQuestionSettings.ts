@@ -33,6 +33,7 @@ import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { validatePreferencesSchema } from '../../lib/question-settings/validation.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { validateShortName } from '../../lib/short-name.js';
@@ -42,6 +43,7 @@ import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
+import { type QuestionPreferencesSchemaJson } from '../../schemas/infoQuestion.js';
 
 import { InstructorQuestionSettings } from './instructorQuestionSettings.html.js';
 import {
@@ -142,6 +144,25 @@ router.post(
         throw new error.HttpStatusError(400, 'Question info file does not exist');
       }
 
+      // The preferences editor is a hydrated React component embedded in an
+      // otherwise server-rendered form, so its values arrive here as flat
+      // `preferences.<index>.<field>` keys via a native form POST. We
+      // reconstruct the nested array here before Zod validation. Once the
+      // question settings page is fully migrated to React + tRPC, the client
+      // will post the preferences as JSON directly and this block can go away.
+      // See https://github.com/PrairieLearn/PrairieLearn/issues/14656.
+      const preferencesArray: Record<string, string>[] = [];
+      for (const [key, value] of Object.entries(req.body)) {
+        const match = key.match(/^preferences\.(\d+)\.(\w+)$/);
+        if (match) {
+          const index = Number(match[1]);
+          const field = match[2];
+          if (!preferencesArray[index]) preferencesArray[index] = {};
+          preferencesArray[index][field] = value as string;
+        }
+      }
+      req.body.preferences = preferencesArray.filter(Boolean);
+
       const body = z
         .object({
           orig_hash: z.string(),
@@ -152,6 +173,7 @@ router.post(
           grading_method: EnumGradingMethodSchema.optional(),
           single_variant: BooleanFromCheckboxSchema,
           show_correct_answer: BooleanFromCheckboxSchema,
+          partial_credit: BooleanFromCheckboxSchema,
           workspace_image: z.string().optional(),
           workspace_port: IntegerFromStringOrEmptySchema.nullable().optional(),
           workspace_home: z.string().optional(),
@@ -160,6 +182,47 @@ router.post(
           workspace_graded_files: GradedFilesSchema,
           workspace_enable_networking: BooleanFromCheckboxSchema,
           workspace_environment: z.string().optional(),
+          preferences: z
+            .array(
+              z.object({
+                name: z.string().min(1, 'Preference name is required'),
+                type: z.enum(['string', 'number', 'boolean']),
+                default: z.string().min(1, 'Default value is required'),
+                enum: z
+                  .string()
+                  .optional()
+                  .transform((val, ctx): string[] => {
+                    if (!val || val === '[]') return [];
+                    try {
+                      const parsed: unknown = JSON.parse(val);
+                      if (Array.isArray(parsed) && parsed.every((v) => typeof v === 'string')) {
+                        return parsed;
+                      }
+                    } catch {
+                      // Fall through to error
+                    }
+                    ctx.addIssue({
+                      code: z.ZodIssueCode.custom,
+                      message: 'Invalid enum format',
+                    });
+                    return z.NEVER;
+                  }),
+              }),
+            )
+            .superRefine((prefs, ctx) => {
+              const names = new Set<string>();
+              prefs.forEach((pref, i) => {
+                if (names.has(pref.name)) {
+                  ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: `Duplicate preference name: "${pref.name}"`,
+                    path: [i, 'name'],
+                  });
+                }
+                names.add(pref.name);
+              });
+            })
+            .default([]),
           external_grading_image: z.string().optional(),
           external_grading_files: GradedFilesSchema,
           external_grading_entrypoint: ArgumentsSchema,
@@ -207,6 +270,44 @@ router.post(
         body.show_correct_answer,
         true,
       );
+
+      questionInfo.partialCredit = propertyValueWithDefault(
+        questionInfo.partialCredit,
+        body.partial_credit,
+        res.locals.question.type === 'Freeform',
+      );
+
+      if (body.preferences.length > 0) {
+        const preferencesSchema: QuestionPreferencesSchemaJson = {};
+        for (const pref of body.preferences) {
+          const parsedDefault =
+            pref.type === 'number'
+              ? Number(pref.default)
+              : pref.type === 'boolean'
+                ? pref.default === 'true'
+                : pref.default;
+
+          const parsedEnum =
+            pref.enum.length > 0
+              ? pref.type === 'number'
+                ? pref.enum.map(Number)
+                : pref.enum
+              : undefined;
+
+          preferencesSchema[pref.name] = {
+            type: pref.type,
+            default: parsedDefault,
+            ...(parsedEnum && { enum: parsedEnum }),
+          };
+        }
+        const preferenceErrors = validatePreferencesSchema(preferencesSchema);
+        if (preferenceErrors.length > 0) {
+          throw new error.HttpStatusError(400, preferenceErrors.join('; '));
+        }
+        questionInfo.preferences = preferencesSchema;
+      } else {
+        delete questionInfo.preferences;
+      }
 
       const workspaceOptions = {
         comment: questionInfo.workspaceOptions?.comment ?? undefined,

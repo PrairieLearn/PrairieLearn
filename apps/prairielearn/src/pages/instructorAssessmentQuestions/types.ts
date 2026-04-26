@@ -10,6 +10,7 @@ import type {
   Topic,
 } from '../../lib/db-types.js';
 import type {
+  EnumAssessmentTool,
   QuestionAlternativeJsonInput,
   ZoneAssessmentJsonInput,
   ZoneQuestionBlockJsonInput,
@@ -58,32 +59,32 @@ export type StandaloneQuestionBlockForm = ZoneQuestionBlockFormBase & {
 };
 
 /**
- * An alternative group — has alternatives, no direct QID.
+ * An alternative pool — has alternatives, no direct QID.
  */
-export type AltGroupBlockForm = ZoneQuestionBlockFormBase & {
+export type AltPoolBlockForm = ZoneQuestionBlockFormBase & {
   id?: undefined;
   alternatives: QuestionAlternativeForm[];
 };
 
 /**
- * A question block is either a standalone question or an alternative group.
- * Discriminate via `q.alternatives != null` (alt group) or `q.id != null` (single question).
+ * A question block is either a standalone question or an alternative pool.
+ * Discriminate via `q.alternatives != null` (alt pool) or `q.id != null` (single question).
  */
-export type ZoneQuestionBlockForm = StandaloneQuestionBlockForm | AltGroupBlockForm;
+export type ZoneQuestionBlockForm = StandaloneQuestionBlockForm | AltPoolBlockForm;
 
 /**
  * A question (standalone or alternative) that is known to have a QID.
- * Used by components that only render individual questions, never alt groups.
+ * Used by components that only render individual questions, never alt pools.
  */
 export type QuestionWithId = StandaloneQuestionBlockForm | QuestionAlternativeForm;
 
 /**
- * Asserts that a question block is a standalone question (not an alternative group).
+ * Asserts that a question block is a standalone question (not an alternative pool).
  */
 export function assertStandaloneQuestion(
   q: ZoneQuestionBlockForm,
 ): asserts q is StandaloneQuestionBlockForm {
-  if (!q.id) throw new Error('Expected a standalone question block, not an alternative group');
+  if (!q.id) throw new Error('Expected a standalone question block, not an alternative pool');
 }
 
 /**
@@ -128,8 +129,8 @@ export interface CourseQuestionForPicker {
 export interface EditorState {
   zones: ZoneAssessmentForm[];
   questionMetadata: Partial<Record<string, EditorQuestionMetadata>>;
-  /** Tracks which alternative groups are collapsed by their trackingId */
-  collapsedGroups: Set<string>;
+  /** Tracks which alternative pools are collapsed by their trackingId */
+  collapsedPools: Set<string>;
   /** Tracks which zones are collapsed by their trackingId */
   collapsedZones: Set<string>;
   /** Tracks which points-distributed info banners have been dismissed by trackingId */
@@ -153,7 +154,7 @@ export type EditorAction =
   | {
       type: 'ADD_QUESTION';
       zoneTrackingId: string;
-      question: AltGroupBlockForm;
+      question: AltPoolBlockForm;
       questionData?: undefined;
     }
   | {
@@ -172,7 +173,7 @@ export type EditorAction =
       type: 'DELETE_QUESTION';
       questionTrackingId: string;
       questionId: string;
-      /** Only set when deleting an alternative from an alternative group */
+      /** Only set when deleting an alternative from an alternative pool */
       alternativeTrackingId?: string;
     }
   | {
@@ -208,27 +209,27 @@ export type EditorAction =
       questionData: EditorQuestionMetadata;
     }
   | {
-      type: 'TOGGLE_GROUP_COLLAPSE';
+      type: 'TOGGLE_POOL_COLLAPSE';
       trackingId: string;
     }
   | {
       type: 'TOGGLE_ZONE_COLLAPSE';
       trackingId: string;
     }
-  | { type: 'EXPAND_ALL_GROUPS' }
-  | { type: 'COLLAPSE_ALL_GROUPS' }
+  | { type: 'EXPAND_ALL_POOLS' }
+  | { type: 'COLLAPSE_ALL_POOLS' }
   | { type: 'DISMISS_BANNER'; trackingId: string }
   | { type: 'RESET' }
   | {
       type: 'ADD_ALTERNATIVE';
-      altGroupTrackingId: string;
+      altPoolTrackingId: string;
       alternative: QuestionAlternativeForm;
       questionData?: EditorQuestionMetadata;
     }
   | {
       type: 'REORDER_ALTERNATIVE';
       alternativeTrackingId: string;
-      toAltGroupTrackingId: string;
+      toAltPoolTrackingId: string;
       /** trackingId of the alternative to insert before, or null to append at end */
       beforeAlternativeTrackingId: string | null;
     }
@@ -240,9 +241,9 @@ export type EditorAction =
       beforeQuestionTrackingId: string | null;
     }
   | {
-      type: 'MERGE_QUESTION_INTO_ALT_GROUP';
+      type: 'MERGE_QUESTION_INTO_ALT_POOL';
       questionTrackingId: string;
-      toAltGroupTrackingId: string;
+      toAltPoolTrackingId: string;
       /** trackingId of the alternative to insert before, or null to append at end */
       beforeAlternativeTrackingId: string | null;
     }
@@ -273,9 +274,9 @@ export type SelectedItem =
   | { type: 'zone'; zoneTrackingId: string }
   | { type: 'question'; questionTrackingId: string }
   | { type: 'alternative'; questionTrackingId: string; alternativeTrackingId: string }
-  | { type: 'altGroup'; questionTrackingId: string }
+  | { type: 'altPool'; questionTrackingId: string }
   | { type: 'picker'; zoneTrackingId: string; returnToSelection?: SelectedItem }
-  | { type: 'altGroupPicker'; zoneTrackingId: string; altGroupTrackingId?: string }
+  | { type: 'altPoolPicker'; zoneTrackingId: string; altPoolTrackingId?: string }
   | null;
 
 export type ViewType = 'simple' | 'detailed';
@@ -283,15 +284,15 @@ export type ViewType = 'simple' | 'detailed';
 /**
  * Describes the parent values from which advanced fields can be inherited.
  */
-export type InheritanceSource = 'zone' | 'group' | 'assessment';
+export type InheritanceSource = 'zone' | 'pool' | 'assessment';
 
 /**
  * Bundles all callbacks passed through the assessment tree hierarchy.
  */
 export interface TreeActions {
   onAddQuestion: (zoneTrackingId: string) => void;
-  onAddAltGroup: (zoneTrackingId: string) => void;
-  onAddToAltGroup: (altGroupTrackingId: string) => void;
+  onAddAltPool: (zoneTrackingId: string) => void;
+  onAddToAltPool: (altPoolTrackingId: string) => void;
   onDeleteQuestion: (
     questionTrackingId: string,
     questionId: string,
@@ -310,7 +311,7 @@ export interface TreeState {
   viewType: ViewType;
   selectedItem: SelectedItem;
   questionMetadata: Partial<Record<string, EditorQuestionMetadata>>;
-  collapsedGroups: Set<string>;
+  collapsedPools: Set<string>;
   collapsedZones: Set<string>;
   changeTracking: ChangeTrackingResult;
   courseInstanceId: string;
@@ -327,6 +328,7 @@ export interface DetailState {
   assessmentType: EnumAssessmentType;
   constantQuestionValue: boolean;
   assessmentDefaults: AssessmentAdvancedDefaults;
+  assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
   courseInstanceId: string;
   courseId: string;
   hasCoursePermissionPreview: boolean;
@@ -349,7 +351,7 @@ export interface DetailActions {
     alternativeTrackingId?: string,
   ) => void;
   onDeleteZone: (zoneTrackingId: string) => void;
-  onAddToAltGroup: (altGroupTrackingId: string) => void;
+  onAddToAltPool: (altPoolTrackingId: string) => void;
   onQuestionPicked: (qid: string) => void;
   onPickQuestion: (currentSelection: SelectedItem) => void;
   onRemoveQuestionByQid: (qid: string) => void;

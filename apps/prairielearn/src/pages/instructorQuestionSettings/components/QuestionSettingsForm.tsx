@@ -18,7 +18,13 @@ import type {
 import { idsEqual } from '../../../lib/id.js';
 import { validateShortName } from '../../../lib/short-name.js';
 import { coerceToNumber } from '../../instructorAssessmentQuestions/utils/formHelpers.js';
-import type { SelectedAssessments } from '../instructorQuestionSettings.types.js';
+import type {
+  PreferenceField,
+  QuestionSettingsFormValues,
+  SelectedAssessments,
+} from '../instructorQuestionSettings.types.js';
+
+import { PreferencesTable } from './PreferencesTable.js';
 
 function AssessmentBadges({
   assessmentsWithQuestion,
@@ -55,33 +61,6 @@ function AssessmentBadges({
       ))}
     </div>
   );
-}
-
-interface QuestionSettingsFormValues {
-  qid: string;
-  title: string;
-  topic: string;
-  tags: string[];
-  grading_method: 'Internal' | 'External' | 'Manual';
-  single_variant: boolean;
-  show_correct_answer: boolean;
-  workspace_enabled: boolean;
-  workspace_image: string;
-  workspace_port: string;
-  workspace_home: string;
-  workspace_graded_files: string;
-  workspace_args: string;
-  workspace_environment: string;
-  workspace_enable_networking: boolean;
-  workspace_rewrite_url: boolean;
-  /** Tracks the state of the checkbox */
-  external_grading_enabled: boolean;
-  external_grading_image: string;
-  external_grading_entrypoint: string;
-  external_grading_files: string;
-  external_grading_timeout: number | undefined;
-  external_grading_enable_networking: boolean;
-  external_grading_environment: string;
 }
 
 function validateJsonObject(value: string): string | true {
@@ -127,6 +106,15 @@ export const QuestionSettingsForm = ({
   // If we didn't wrap in `handleSubmit`, we could use `event.currentTarget`.
   const formRef = useRef<HTMLFormElement>(null);
 
+  const preferences = Object.entries(question.preferences_schema ?? {}).map(
+    ([name, schema]): PreferenceField => ({
+      name,
+      type: schema.type,
+      default: String(schema.default),
+      enum: schema.enum?.map(String) ?? [],
+    }),
+  );
+
   const defaultValues: QuestionSettingsFormValues = {
     qid: question.qid ?? '',
     title: question.title ?? '',
@@ -135,6 +123,7 @@ export const QuestionSettingsForm = ({
     grading_method: question.grading_method,
     single_variant: question.single_variant ?? false,
     show_correct_answer: question.show_correct_answer ?? true,
+    partial_credit: question.partial_credit ?? question.type === 'Freeform',
     workspace_enabled: !!question.workspace_image,
     workspace_image: question.workspace_image ?? '',
     workspace_port: question.workspace_port?.toString() ?? '',
@@ -147,6 +136,7 @@ export const QuestionSettingsForm = ({
         : '{}',
     workspace_enable_networking: question.workspace_enable_networking ?? false,
     workspace_rewrite_url: question.workspace_url_rewrite ?? true,
+    preferences,
     // The state of the checkbox, defaulting to the presence of an external grading image
     external_grading_enabled: !!question.external_grading_image,
     external_grading_image: question.external_grading_image ?? '',
@@ -166,6 +156,7 @@ export const QuestionSettingsForm = ({
     watch,
     setValue,
     clearErrors,
+    control,
     formState: { errors, isDirty },
   } = useForm<QuestionSettingsFormValues>({
     mode: 'onChange',
@@ -308,7 +299,7 @@ export const QuestionSettingsForm = ({
                     placeholder="Select a topic"
                     aria-labelledby="topic-label"
                     renderItem={(item) => (
-                      <div style={{ whiteSpace: 'normal' }}>
+                      <div className="preferences-combobox-item">
                         <TopicBadge topic={item.data!} />
                         {item.data!.description && (
                           <div>
@@ -342,7 +333,7 @@ export const QuestionSettingsForm = ({
                     placeholder="Select tags"
                     aria-labelledby="tags-label"
                     renderItem={(item) => (
-                      <div style={{ whiteSpace: 'normal' }}>
+                      <div className="preferences-combobox-item">
                         <TagBadge tag={item.data!} />
                         {!item.data!.implicit && item.data!.description && (
                           <div>
@@ -434,6 +425,35 @@ export const QuestionSettingsForm = ({
           exhausted.
         </div>
       </div>
+
+      <div className="mb-3 form-check">
+        <input
+          className="form-check-input"
+          type="checkbox"
+          id="partial_credit"
+          disabled={!canEdit}
+          defaultChecked={defaultValues.partial_credit}
+          {...register('partial_credit')}
+        />
+        <label className="form-check-label" htmlFor="partial_credit">
+          Partial credit
+        </label>
+        <div className="small text-muted">
+          If enabled, the question will award partial points for fractional scores. For example, if
+          only some elements on the page are correct, the student receives a proportional score.
+          When disabled, the question awards only 0% or 100%.
+        </div>
+      </div>
+
+      <PreferencesTable
+        control={control}
+        canEdit={canEdit}
+        register={register}
+        watch={watch}
+        setValue={setValue}
+        clearErrors={clearErrors}
+        errors={errors.preferences}
+      />
 
       <div className="mb-3">
         <div className="form-check">

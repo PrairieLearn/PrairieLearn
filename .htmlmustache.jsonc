@@ -3,21 +3,21 @@
     "apps/prairielearn/elements/**/*.mustache",
     "exampleCourse/**/question.html",
     "testCourse/**/question.html",
-    "apps/prairielearn/src/tests/**/question.html"
+    "apps/prairielearn/src/tests/**/question.html",
   ],
   "exclude": [
     // Uses legacy v2 EJS syntax (<% %>) which cannot be parsed as mustache.
-    "testCourse/questions/addVectors/question.html"
+    "testCourse/questions/addVectors/question.html",
   ],
   "rules": {
-    "preferMustacheComments": "warning"
+    "preferMustacheComments": "warning",
   },
   "printWidth": 100,
   "noBreakDelimiters": [
-    {"start": "$", "end": "$"},
-    {"start": "$$", "end": "$$"},
-    {"start": "\\(", "end": "\\)"},
-    {"start": "\\[", "end": "\\]"}
+    { "start": "$", "end": "$" },
+    { "start": "$$", "end": "$$" },
+    { "start": "\\(", "end": "\\)" },
+    { "start": "\\[", "end": "\\]" },
   ],
   "customTags": [
     {
@@ -25,7 +25,7 @@
       "display": "block",
       "languageAttribute": "language",
       "indent": "attribute",
-      "indentAttribute": "normalize-whitespace"
+      "indentAttribute": "normalize-whitespace",
     },
     {
       "name": "pl-file-editor",
@@ -46,35 +46,35 @@
         "ace/mode/xml": "xml",
         "ace/mode/yaml": "yaml",
         "ace/mode/css": "css",
-        "ace/mode/sh": "bash"
-      }
+        "ace/mode/sh": "bash",
+      },
     },
     {
       "name": "pl-rich-text-editor",
       "display": "block",
-      "languageAttribute": "format"
+      "languageAttribute": "format",
     },
     {
       "name": "markdown",
       "display": "block",
-      "languageDefault": "markdown"
+      "languageDefault": "markdown",
     },
     {
       "name": "pl-graph",
       "display": "block",
-      "languageDefault": "dot"
+      "languageDefault": "dot",
     },
     {
       "name": "pl-question-panel",
-      "display": "block"
+      "display": "block",
     },
     {
       "name": "pl-submission-panel",
-      "display": "block"
+      "display": "block",
     },
     {
       "name": "pl-answer-panel",
-      "display": "block"
+      "display": "block",
     },
     // Submission
     { "name": "pl-big-o-input" },
@@ -169,10 +169,16 @@
     { "name": "pl-text" },
     { "name": "pl-triangle" },
     { "name": "pl-vector" },
+    // pl-sketch
+    { "name": "pl-sketch" },
+    { "name": "pl-sketch-grade" },
+    { "name": "pl-sketch-initial" },
+    { "name": "pl-sketch-solution" },
+    { "name": "pl-sketch-tool" },
     // Non-PL custom elements
     { "name": "clickable-image" },
     { "name": "course-element" },
     { "name": "extendable-element" },
-    { "name": "math-field" }
-  ]
+    { "name": "math-field" },
+  ],
 }
