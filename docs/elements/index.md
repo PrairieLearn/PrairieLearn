@@ -135,7 +135,7 @@ For making content appear in only some panels, or only during specific grading w
 
 ### Hints & external feedback
 
-- [`pl-hidden-hints`](pl-hidden-hints.md): Display hints as a student submits more on the current variant.
+- [`pl-hidden-hints`](pl-hidden-hints.md): Reveal hints progressively as a student submits more on the current variant.
 - [`pl-external-grader-results`](pl-external-grader-results.md): Display results from questions that are externally graded.
 
 ## Reference
