@@ -140,52 +140,52 @@ For making content appear in only some panels, or only during specific grading w
 
 ## Reference
 
-| Element                                                           | Type           | Purpose                                    |
-| ----------------------------------------------------------------- | -------------- | ------------------------------------------ |
-| [`pl-answer-panel`](pl-answer-panel.md)                           | Panel          | Display the correct answer.                |
-| [`pl-big-o-input`](pl-big-o-input.md)                             | Submission     | Asymptotic complexity expression.          |
-| [`pl-card`](pl-card.md)                                           | Display        | Card-styled content wrapper.               |
-| [`pl-checkbox`](pl-checkbox.md)                                   | Submission     | Select multiple options from a list.       |
-| [`pl-code`](pl-code.md)                                           | Display        | Syntax-highlighted code.                   |
-| [`pl-dataframe`](pl-dataframe.md)                                 | Display        | Render a DataFrame.                        |
-| [`pl-drawing`](../pl-drawing/index.md)                            | Submission     | Auto-gradable graphic canvas.              |
-| [`pl-dropdown`](pl-dropdown.md)                                   | **Deprecated** | See [migration](#deprecated-elements).     |
-| [`pl-excalidraw`](pl-excalidraw.md)                               | Submission     | Vector diagram via Excalidraw.             |
-| [`pl-external-grader-results`](pl-external-grader-results.md)     | Panel          | External grader output.                    |
-| [`pl-external-grader-variables`](pl-external-grader-variables.md) | Display        | Expected/given vars for external grading.  |
-| [`pl-figure`](pl-figure.md)                                       | Display        | Embed an image file.                       |
-| [`pl-file-download`](pl-file-download.md)                         | Display        | Provide downloadable files.                |
-| [`pl-file-editor`](pl-file-editor.md)                             | Submission     | In-browser code editor.                    |
-| [`pl-file-preview`](pl-file-preview.md)                           | Display        | Preview submitted files.                   |
-| [`pl-file-upload`](pl-file-upload.md)                             | Submission     | Upload files by name.                      |
-| [`pl-graph`](pl-graph.md)                                         | Display        | Render a graph (DOT, networkx, adjacency). |
-| [`pl-hidden-hints`](pl-hidden-hints.md)                           | Panel          | Reveal hints progressively.                |
-| [`pl-hide-in-manual-grading`](pl-hide-in-manual-grading.md)       | Panel          | Hide content during manual grading.        |
-| [`pl-hide-in-panel`](pl-hide-in-panel.md)                         | Panel          | Hide content in selected panels.           |
-| [`pl-image-capture`](pl-image-capture.md)                         | Submission     | Capture image from camera or device.       |
-| [`pl-integer-input`](pl-integer-input.md)                         | Submission     | Integer value.                             |
-| [`pl-manual-grading-only`](pl-manual-grading-only.md)             | Panel          | Show only during manual grading.           |
-| [`pl-matching`](pl-matching.md)                                   | Submission     | Match each entry to an option.             |
-| [`pl-matrix-component-input`](pl-matrix-component-input.md)       | Submission     | Matrix entered cell-by-cell.               |
-| [`pl-matrix-input`](pl-matrix-input.md)                           | Submission     | Matrix in programming language syntax.     |
-| [`pl-matrix-latex`](pl-matrix-latex.md)                           | Display        | Matrix as LaTeX.                           |
-| [`pl-multiple-choice`](pl-multiple-choice.md)                     | Submission     | Select one option from a list.             |
-| [`pl-number-input`](pl-number-input.md)                           | Submission     | Numeric value with tolerance.              |
-| [`pl-order-blocks`](pl-order-blocks.md)                           | Submission     | Arrange blocks of code or text.            |
-| [`pl-overlay`](pl-overlay.md)                                     | Display        | Layer elements at specified positions.     |
-| [`pl-prairiedraw-figure`](pl-prairiedraw-figure.md)               | **Deprecated** | See [migration](#deprecated-elements).     |
-| [`pl-python-variable`](pl-python-variable.md)                     | Display        | Format a Python variable.                  |
-| [`pl-question-panel`](pl-question-panel.md)                       | Panel          | Display the question prompt.               |
-| [`pl-rich-text-editor`](pl-rich-text-editor.md)                   | Submission     | Formattable text editor for essays.        |
-| [`pl-sketch`](pl-sketch.md)                                       | Submission     | Sketch curves and math objects.            |
-| [`pl-string-input`](pl-string-input.md)                           | Submission     | String value.                              |
-| [`pl-submission-panel`](pl-submission-panel.md)                   | Panel          | Display the student's answer.              |
-| [`pl-symbolic-input`](pl-symbolic-input.md)                       | Submission     | Symbolic math expression.                  |
-| [`pl-template`](pl-template.md)                                   | Display        | Render a mustache template.                |
-| [`pl-units-input`](pl-units-input.md)                             | Submission     | Number with units.                         |
-| [`pl-variable-output`](pl-variable-output.md)                     | Display        | Matrix as code in supported languages.     |
-| [`pl-variable-score`](pl-variable-score.md)                       | **Deprecated** | See [migration](#deprecated-elements).     |
-| [`pl-xss-safe`](pl-xss-safe.md)                                   | Display        | Sanitize HTML content.                     |
+| Element                                                           | Type           | Purpose                                       |
+| ----------------------------------------------------------------- | -------------- | --------------------------------------------- |
+| [`pl-answer-panel`](pl-answer-panel.md)                           | Panel          | Show only in the answer panel.                |
+| [`pl-big-o-input`](pl-big-o-input.md)                             | Submission     | Asymptotic complexity expression.             |
+| [`pl-card`](pl-card.md)                                           | Display        | Card-styled content wrapper.                  |
+| [`pl-checkbox`](pl-checkbox.md)                                   | Submission     | Select multiple options from a list/dropdown. |
+| [`pl-code`](pl-code.md)                                           | Display        | Syntax-highlighted code.                      |
+| [`pl-dataframe`](pl-dataframe.md)                                 | Display        | Render a DataFrame.                           |
+| [`pl-drawing`](../pl-drawing/index.md)                            | Submission     | Auto-gradable graphical canvas.               |
+| [`pl-dropdown`](pl-dropdown.md)                                   | **Deprecated** | See [migration](#deprecated-elements).        |
+| [`pl-excalidraw`](pl-excalidraw.md)                               | Submission     | Draw a free-form diagram via Excalidraw.      |
+| [`pl-external-grader-results`](pl-external-grader-results.md)     | Panel          | External grader output.                       |
+| [`pl-external-grader-variables`](pl-external-grader-variables.md) | Display        | Expected/given vars for external grading.     |
+| [`pl-figure`](pl-figure.md)                                       | Display        | Display an image.                             |
+| [`pl-file-download`](pl-file-download.md)                         | Display        | Provide downloadable files.                   |
+| [`pl-file-editor`](pl-file-editor.md)                             | Submission     | In-browser code editor.                       |
+| [`pl-file-preview`](pl-file-preview.md)                           | Display        | Preview submitted files.                      |
+| [`pl-file-upload`](pl-file-upload.md)                             | Submission     | Upload files by name.                         |
+| [`pl-graph`](pl-graph.md)                                         | Display        | Render a graph (DOT, networkx, adjacency).    |
+| [`pl-hidden-hints`](pl-hidden-hints.md)                           | Panel          | Reveal hints progressively.                   |
+| [`pl-hide-in-manual-grading`](pl-hide-in-manual-grading.md)       | Panel          | Hide content during manual grading.           |
+| [`pl-hide-in-panel`](pl-hide-in-panel.md)                         | Panel          | Hide content in selected panels.              |
+| [`pl-image-capture`](pl-image-capture.md)                         | Submission     | Capture image from camera or device.          |
+| [`pl-integer-input`](pl-integer-input.md)                         | Submission     | Integer value.                                |
+| [`pl-manual-grading-only`](pl-manual-grading-only.md)             | Panel          | Show only during manual grading.              |
+| [`pl-matching`](pl-matching.md)                                   | Submission     | Match each entry to an option.                |
+| [`pl-matrix-component-input`](pl-matrix-component-input.md)       | Submission     | Matrix entered cell-by-cell.                  |
+| [`pl-matrix-input`](pl-matrix-input.md)                           | Submission     | Matrix in programming language syntax.        |
+| [`pl-matrix-latex`](pl-matrix-latex.md)                           | Display        | Matrix as LaTeX.                              |
+| [`pl-multiple-choice`](pl-multiple-choice.md)                     | Submission     | Select one option from a list.                |
+| [`pl-number-input`](pl-number-input.md)                           | Submission     | Numeric value with tolerance.                 |
+| [`pl-order-blocks`](pl-order-blocks.md)                           | Submission     | Arrange blocks of code or text.               |
+| [`pl-overlay`](pl-overlay.md)                                     | Display        | Layer elements at specified positions.        |
+| [`pl-prairiedraw-figure`](pl-prairiedraw-figure.md)               | **Deprecated** | See [migration](#deprecated-elements).        |
+| [`pl-python-variable`](pl-python-variable.md)                     | Display        | Format a Python variable.                     |
+| [`pl-question-panel`](pl-question-panel.md)                       | Panel          | Show only in the question panel.              |
+| [`pl-rich-text-editor`](pl-rich-text-editor.md)                   | Submission     | Formattable text editor for essays.           |
+| [`pl-sketch`](pl-sketch.md)                                       | Submission     | Sketch curves and math objects.               |
+| [`pl-string-input`](pl-string-input.md)                           | Submission     | String value.                                 |
+| [`pl-submission-panel`](pl-submission-panel.md)                   | Panel          | Show only in the submission panel.            |
+| [`pl-symbolic-input`](pl-symbolic-input.md)                       | Submission     | Symbolic math expression.                     |
+| [`pl-template`](pl-template.md)                                   | Display        | Render a mustache template.                   |
+| [`pl-units-input`](pl-units-input.md)                             | Submission     | Number with units.                            |
+| [`pl-variable-output`](pl-variable-output.md)                     | Display        | Matrix as code in supported languages.        |
+| [`pl-variable-score`](pl-variable-score.md)                       | **Deprecated** | See [migration](#deprecated-elements).        |
+| [`pl-xss-safe`](pl-xss-safe.md)                                   | Display        | Sanitize HTML content.                        |
 
 ## Deprecated elements
 
