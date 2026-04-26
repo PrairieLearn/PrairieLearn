@@ -49,20 +49,34 @@ _signal_state = _SignalTimeoutState()
 
 
 def _schedule_next_signal_alarm(now: float | None = None) -> None:
-    if not _signal_state.active_timeouts:
+    executable_timeouts = [
+        timeout
+        for timeout in _signal_state.active_timeouts
+        if timeout.state == TimeoutState.EXECUTING
+    ]
+    if not executable_timeouts:
         signal.setitimer(signal.ITIMER_REAL, 0)
         return
 
     if now is None:
         now = time.monotonic()
 
-    next_timeout = min(_signal_state.active_timeouts, key=lambda t: t._deadline)
+    next_timeout = min(executable_timeouts, key=lambda t: t._deadline)
     signal.setitimer(signal.ITIMER_REAL, max(next_timeout._deadline - now, 1e-6))
 
 
 def _signal_timeout_handler(_signum: int, _frame: FrameType | None) -> None:
     now = time.monotonic()
-    timed_out = min(_signal_state.active_timeouts, key=lambda t: t._deadline)
+    executable_timeouts = [
+        timeout
+        for timeout in _signal_state.active_timeouts
+        if timeout.state == TimeoutState.EXECUTING
+    ]
+    if not executable_timeouts:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        return
+
+    timed_out = min(executable_timeouts, key=lambda t: t._deadline)
     if timed_out._deadline > now:
         _schedule_next_signal_alarm(now)
         return

@@ -59,6 +59,18 @@ def test_nested_timeout_preserves_outer_deadline():
     assert inner.state == TimeoutState.INTERRUPTED
 
 
+def test_nested_timeout_teardown_tolerates_expired_outer():
+    for _ in range(100):
+        outer = ThreadingTimeout(0.0005)
+        inner = ThreadingTimeout(1.0)
+
+        with outer, inner:
+            time.sleep(0.002)
+
+        assert outer.state == TimeoutState.TIMED_OUT
+        assert inner.state == TimeoutState.INTERRUPTED
+
+
 def test_timeout_rejects_preexisting_signal_alarm_without_canceling_it():
     class PreexistingAlarmError(Exception):
         pass
