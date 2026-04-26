@@ -46,3 +46,10 @@ SELECT
 FROM
   enabled
 ON CONFLICT (assessment_id) DO NOTHING;
+
+-- BLOCK disable_group_work
+UPDATE assessments
+SET
+  team_work = FALSE
+WHERE
+  id = $assessment_id;
