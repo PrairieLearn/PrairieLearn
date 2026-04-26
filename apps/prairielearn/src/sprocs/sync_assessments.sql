@@ -16,7 +16,7 @@ DECLARE
     valid_group_role record;
     access_rule JSONB;
     zone JSONB;
-    alternative_group JSONB;
+    alternative_pool JSONB;
     assessment_question JSONB;
     new_assessment_id bigint;
     new_assessment_ids bigint[];
@@ -39,6 +39,7 @@ BEGIN
 
     -- Move all our data into a temporary table so it's easier to work with
 
+    DROP TABLE IF EXISTS disk_assessments;
     CREATE TEMPORARY TABLE disk_assessments (
         tid TEXT NOT NULL,
         uuid uuid,
@@ -373,8 +374,8 @@ BEGIN
                 json_comment = EXCLUDED.json_comment
             RETURNING id INTO new_zone_id;
 
-            -- Insert each alternative group in this zone
-            FOR alternative_group IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'alternativeGroups'->zone_index) LOOP
+            -- Insert each alternative pool in this zone
+            FOR alternative_pool IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'alternativePools'->zone_index) LOOP
                 INSERT INTO alternative_groups (
                     advance_score_perc,
                     assessment_id,
@@ -395,23 +396,23 @@ BEGIN
                     number_choose,
                     zone_id
                 ) VALUES (
-                    (alternative_group->>'advance_score_perc')::double precision,
+                    (alternative_pool->>'advance_score_perc')::double precision,
                     new_assessment_id,
-                    (alternative_group->>'json_allow_real_time_grading')::boolean,
-                    alternative_group->'json_auto_points',
-                    ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_group->'json_can_submit')),
-                    ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_group->'json_can_view')),
-                    (alternative_group->'comment'),
-                    (alternative_group->>'json_force_max_points')::boolean,
-                    (alternative_group->>'json_grade_rate_minutes')::double precision,
-                    (alternative_group->>'json_has_alternatives')::boolean,
-                    (alternative_group->>'json_manual_points')::double precision,
-                    (alternative_group->>'json_max_auto_points')::double precision,
-                    (alternative_group->>'json_max_points')::double precision,
-                    alternative_group->'json_points',
-                    (alternative_group->>'json_tries_per_variant')::integer,
-                    (alternative_group->>'number')::integer,
-                    (alternative_group->>'number_choose')::integer,
+                    (alternative_pool->>'json_allow_real_time_grading')::boolean,
+                    alternative_pool->'json_auto_points',
+                    ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_pool->'json_can_submit')),
+                    ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_pool->'json_can_view')),
+                    (alternative_pool->'comment'),
+                    (alternative_pool->>'json_force_max_points')::boolean,
+                    (alternative_pool->>'json_grade_rate_minutes')::double precision,
+                    (alternative_pool->>'json_has_alternatives')::boolean,
+                    (alternative_pool->>'json_manual_points')::double precision,
+                    (alternative_pool->>'json_max_auto_points')::double precision,
+                    (alternative_pool->>'json_max_points')::double precision,
+                    alternative_pool->'json_points',
+                    (alternative_pool->>'json_tries_per_variant')::integer,
+                    (alternative_pool->>'number')::integer,
+                    (alternative_pool->>'number_choose')::integer,
                     new_zone_id
                 )                 ON CONFLICT (number, assessment_id) DO UPDATE
                 SET
@@ -433,8 +434,8 @@ BEGIN
                     zone_id = EXCLUDED.zone_id
                 RETURNING id INTO new_alternative_group_id;
 
-                -- Insert an assessment question for each question in this alternative group
-                FOR assessment_question IN SELECT * FROM JSONB_ARRAY_ELEMENTS(alternative_group->'questions') LOOP
+                -- Insert an assessment question for each question in this alternative pool
+                FOR assessment_question IN SELECT * FROM JSONB_ARRAY_ELEMENTS(alternative_pool->'questions') LOOP
                     IF (assessment_question->>'has_split_points')::boolean THEN
                         computed_manual_points := (assessment_question->>'manual_points')::double precision;
                         computed_max_auto_points := (assessment_question->>'max_points')::double precision;
@@ -587,11 +588,11 @@ BEGIN
             assessment_id = new_assessment_id
             AND number > jsonb_array_length(valid_assessment.data->'zones');
 
-        -- Delete excess alternative groups for this assessment
+        -- Delete excess alternative pools for this assessment
         DELETE FROM alternative_groups
         WHERE
             assessment_id = new_assessment_id
-            AND ((number < 1) OR (number > (valid_assessment.data->>'lastAlternativeGroupNumber')::integer));
+            AND ((number < 1) OR (number > (valid_assessment.data->>'lastAlternativePoolNumber')::integer));
 
         -- Soft-delete unused assessment questions
         UPDATE assessment_questions AS aq
@@ -689,6 +690,18 @@ BEGIN
         aar.assessment_id = a.id
         AND a.deleted_at IS NOT NULL
         AND a.course_instance_id = syncing_course_instance_id;
+
+    -- Delete JSON-synced access control rules for soft-deleted assessments.
+    -- Enrollment rules (target_type = 'enrollment') are deliberately kept so
+    -- that if an instructor restores a soft-deleted assessment, the enrollment-
+    -- specific rules (which are not persisted in JSON) come back automatically.
+    DELETE FROM assessment_access_control_rules AS aacr
+    USING assessments AS a
+    WHERE
+        aacr.assessment_id = a.id
+        AND a.deleted_at IS NOT NULL
+        AND a.course_instance_id = syncing_course_instance_id
+        AND aacr.target_type IN ('none', 'student_label');
 
     -- Delete unused zones
     DELETE FROM zones AS z

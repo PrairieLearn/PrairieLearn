@@ -1,25 +1,33 @@
 import * as path from 'path';
 
+import { TRPCClientError } from '@trpc/client';
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { getAppError } from '../lib/client/errors.js';
+import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { AssessmentSchema } from '../lib/db-types.js';
+import { getOriginalHash } from '../lib/editors.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
+import {
+  type AssessmentSettingsError,
+  type assessmentSettingsRouter,
+} from '../trpc/assessment/assessment-settings.js';
+import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
-import { fetchCheerio } from './helperClient.js';
 import {
   type CourseRepoFixture,
   createCourseRepoFixture,
   updateCourseRepository,
 } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
-import { getOrCreateUser, withUser } from './utils/auth.js';
+import { getConfiguredUser, getOrCreateUser, withUser } from './utils/auth.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -38,6 +46,48 @@ function assessmentDevDir() {
   return path.join(courseRepo.courseDevDir, 'courseInstances', 'Fa18', 'assessments');
 }
 
+async function getOrigHash(infoPath: string) {
+  return (await getOriginalHash(infoPath)) ?? '';
+}
+
+async function createTrpcClient(assessmentId: string) {
+  const user = await getConfiguredUser();
+  const trpcPath = getAssessmentTrpcUrl({
+    courseInstanceId: '1',
+    assessmentId,
+  });
+  const csrfToken = generatePrefixCsrfToken(
+    {
+      url: trpcPath,
+      authn_user_id: user.id,
+    },
+    config.secretKey,
+  );
+  return createAssessmentTrpcClient({
+    csrfToken,
+    courseInstanceId: '1',
+    assessmentId,
+    urlBase: siteUrl,
+  });
+}
+
+const defaultMutationFields = {
+  text: '',
+  allow_issue_reporting: true,
+  allow_personal_notes: true,
+  multiple_instance: false,
+  auto_close: true,
+  require_honor_code: true,
+  honor_code: '',
+  max_points: null,
+  max_bonus_points: null,
+  constant_question_value: false,
+  shuffle_questions: false,
+  advance_score_perc: null,
+  allow_real_time_grading: true,
+  grade_rate_minutes: null,
+};
+
 describe('Editing assessment settings', () => {
   beforeAll(async () => {
     courseRepo = await createCourseRepoFixture(courseTemplateDir);
@@ -55,31 +105,17 @@ describe('Editing assessment settings', () => {
   });
 
   test.sequential('change assessment info', async () => {
-    const settingsPageResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-    );
-    assert.equal(settingsPageResponse.status, 200);
-
-    const response = await fetch(
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'update_assessment',
-          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
-          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
-          title: 'Test Title',
-          type: 'Homework',
-          set: 'Practice Quiz',
-          number: '1',
-          module: 'Module2',
-          aid: 'HW2',
-        }),
-      },
-    );
-
-    assert.equal(response.status, 200);
-    assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`);
+    const trpcClient = await createTrpcClient('1');
+    const result = await trpcClient.assessmentSettings.updateAssessment.mutate({
+      title: 'Test Title',
+      set: 'Practice Quiz',
+      number: '1',
+      module: 'Module2',
+      aid: 'HW2',
+      ...defaultMutationFields,
+      origHash: await getOrigHash(assessmentLiveInfoPath),
+    });
+    assert.ok(result.origHash);
   });
 
   test.sequential('verify assessment info change', async () => {
@@ -93,64 +129,43 @@ describe('Editing assessment settings', () => {
   });
 
   test.sequential('verify nesting an assessment id', async () => {
-    const settingsPageResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-    );
-    assert.equal(settingsPageResponse.status, 200);
-
-    const response = await fetch(
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'update_assessment',
-          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
-          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
-          title: 'Test Title',
-          type: 'Homework',
-          set: 'Practice Quiz',
-          number: '1',
-          module: 'Module2',
-          aid: 'nestedPath/HW2',
-        }),
-      },
-    );
-
-    assert.equal(response.status, 200);
-    assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`);
+    const trpcClient = await createTrpcClient('1');
+    const result = await trpcClient.assessmentSettings.updateAssessment.mutate({
+      title: 'Test Title',
+      set: 'Practice Quiz',
+      number: '1',
+      module: 'Module2',
+      aid: 'nestedPath/HW2',
+      ...defaultMutationFields,
+      origHash: await getOrigHash(assessmentLiveInfoPath),
+    });
+    assert.ok(result.origHash);
   });
 
   test.sequential('verify changing aid did not leave empty directories', async () => {
     const assessmentDir = path.join(assessmentLiveDir(), 'HW2');
     assert.notOk(await fs.pathExists(assessmentDir));
+    assessmentLiveInfoPath = path.join(
+      assessmentLiveDir(),
+      'nestedPath',
+      'HW2',
+      'infoAssessment.json',
+    );
   });
 
   test.sequential('verify reverting a nested assessment id works correctly', async () => {
-    const settingsPageResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-    );
-    assert.equal(settingsPageResponse.status, 200);
-
-    const response = await fetch(
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'update_assessment',
-          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
-          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
-          title: 'Test Title',
-          type: 'Homework',
-          set: 'Practice Quiz',
-          number: '1',
-          module: 'Module2',
-          aid: 'HW2',
-        }),
-      },
-    );
-
-    assert.equal(response.status, 200);
-    assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`);
+    const trpcClient = await createTrpcClient('1');
+    const result = await trpcClient.assessmentSettings.updateAssessment.mutate({
+      title: 'Test Title',
+      set: 'Practice Quiz',
+      number: '1',
+      module: 'Module2',
+      aid: 'HW2',
+      ...defaultMutationFields,
+      origHash: await getOrigHash(assessmentLiveInfoPath),
+    });
+    assert.ok(result.origHash);
+    assessmentLiveInfoPath = path.join(assessmentLiveDir(), 'HW2', 'infoAssessment.json');
   });
 
   test.sequential('pull and verify changes', async () => {
@@ -195,58 +210,69 @@ describe('Editing assessment settings', () => {
       authn_user_id: '1',
     });
     await withUser(user, async () => {
-      const settingsPageResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-      );
-      assert.equal(settingsPageResponse.status, 200);
-
-      const response = await fetch(
-        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
+      // Viewer user creates their own tRPC client
+      const trpcPath = getAssessmentTrpcUrl({
+        courseInstanceId: '1',
+        assessmentId: '1',
+      });
+      const csrfToken = generatePrefixCsrfToken(
         {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'update_assessment',
-            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
-            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
-            title: 'Test Title - Unauthorized',
-            type: 'Homework',
-            set: 'Homework',
-            number: '1',
-            module: 'Module1',
-            aid: 'HW1',
-          }),
+          url: trpcPath,
+          authn_user_id: user.id,
         },
+        config.secretKey,
       );
-      assert.equal(response.status, 403);
+      const trpcClient = createAssessmentTrpcClient({
+        csrfToken,
+        courseInstanceId: '1',
+        assessmentId: '1',
+        urlBase: siteUrl,
+      });
+
+      try {
+        await trpcClient.assessmentSettings.updateAssessment.mutate({
+          title: 'Test Title - Unauthorized',
+          set: 'Homework',
+          number: '1',
+          module: 'Module1',
+          aid: 'HW1',
+          ...defaultMutationFields,
+          origHash: await getOrigHash(assessmentLiveInfoPath),
+        });
+        assert.fail('Expected mutation to throw');
+      } catch (err: unknown) {
+        assert.instanceOf(err, TRPCClientError);
+        assert.equal(
+          (err as TRPCClientError<typeof assessmentSettingsRouter>).data?.code,
+          'FORBIDDEN',
+        );
+      }
     });
   });
 
   test.sequential('should not be able to submit without assessment info file', async () => {
+    const origHash = await getOrigHash(assessmentLiveInfoPath);
     await fs.move(assessmentLiveInfoPath, `${assessmentLiveInfoPath}.bak`);
     try {
-      const settingsPageResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-      );
-      assert.equal(settingsPageResponse.status, 200);
-
-      const response = await fetch(
-        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'update_assessment',
-            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
-            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
-            title: 'Test Title - No Course Info',
-            type: 'Homework',
-            set: 'Homework',
-            number: '1',
-            module: 'Module1',
-            aid: 'HW1',
-          }),
-        },
-      );
-      assert.equal(response.status, 400);
+      const trpcClient = await createTrpcClient('1');
+      try {
+        await trpcClient.assessmentSettings.updateAssessment.mutate({
+          title: 'Test Title - No Course Info',
+          set: 'Homework',
+          number: '1',
+          module: 'Module1',
+          aid: 'HW1',
+          ...defaultMutationFields,
+          origHash,
+        });
+        assert.fail('Expected mutation to throw');
+      } catch (err: unknown) {
+        assert.instanceOf(err, TRPCClientError);
+        assert.equal(
+          (err as TRPCClientError<typeof assessmentSettingsRouter>).data?.code,
+          'BAD_REQUEST',
+        );
+      }
     } finally {
       await fs.move(`${assessmentLiveInfoPath}.bak`, assessmentLiveInfoPath);
     }
@@ -254,36 +280,23 @@ describe('Editing assessment settings', () => {
 
   test.sequential('should be able to submit without any changes', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
-    const settingsPageResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-    );
-    const response = await fetch(
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'update_assessment',
-          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
-          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
-          title: assessmentInfo.title,
-          type: assessmentInfo.type,
-          set: assessmentInfo.set,
-          number: assessmentInfo.number,
-          module: assessmentInfo.module,
-          aid: 'HW2',
-        }),
-      },
-    );
-    assert.equal(response.status, 200);
-    assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/assessment\/1\/settings$/);
+    const trpcClient = await createTrpcClient('1');
+    const result = await trpcClient.assessmentSettings.updateAssessment.mutate({
+      title: assessmentInfo.title,
+      set: assessmentInfo.set,
+      number: assessmentInfo.number,
+      module: assessmentInfo.module,
+      aid: 'HW2',
+      ...defaultMutationFields,
+      origHash: await getOrigHash(assessmentLiveInfoPath),
+    });
+    assert.ok(result.origHash);
   });
 
   test.sequential(
     'should not be able to submit if repo course info file has been changed',
     async () => {
-      const settingsPageResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-      );
+      const staleOrigHash = await getOrigHash(assessmentLiveInfoPath);
 
       const assessmentInfo = JSON.parse(await fs.readFile(assessmentDevInfoPath, 'utf8'));
       const newAssessmentInfo = { ...assessmentInfo, title: 'Test Title - Changed' };
@@ -298,88 +311,66 @@ describe('Editing assessment settings', () => {
         env: process.env,
       });
 
-      const response = await fetch(
-        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'update_assessment',
-            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
-            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
-            title: 'Test Title2',
-            type: 'Homework',
-            set: 'Homework',
-            number: '1',
-            module: 'Module1',
-            aid: 'HW1',
-          }),
-        },
-      );
-      assert.equal(response.status, 200);
-      assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/);
+      const trpcClient = await createTrpcClient('1');
+      try {
+        await trpcClient.assessmentSettings.updateAssessment.mutate({
+          title: 'Test Title2',
+          set: 'Homework',
+          number: '1',
+          module: 'Module1',
+          aid: 'HW1',
+          ...defaultMutationFields,
+          origHash: staleOrigHash,
+        });
+        assert.fail('Expected mutation to throw');
+      } catch (err: unknown) {
+        const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
+        assert.isNotNull(appError);
+        assert.equal(appError.code, 'SYNC_JOB_FAILED');
+      }
     },
   );
 
   test.sequential('change assessment id', async () => {
-    const settingsPageResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-    );
-
-    // Change the assessment id to a valid, new id
-    const response = await fetch(
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'update_assessment',
-          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
-          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
-          title: 'Test Title',
-          type: 'Homework',
-          set: 'Homework',
-          number: '1',
-          module: 'Module1',
-          aid: 'A1',
-        }),
-      },
-    );
-
-    assert.equal(response.status, 200);
-    assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/assessment\/1\/settings$/);
+    const trpcClient = await createTrpcClient('1');
+    const result = await trpcClient.assessmentSettings.updateAssessment.mutate({
+      title: 'Test Title',
+      set: 'Homework',
+      number: '1',
+      module: 'Module1',
+      aid: 'A1',
+      ...defaultMutationFields,
+      origHash: await getOrigHash(assessmentLiveInfoPath),
+    });
+    assert.ok(result.origHash);
   });
 
   test.sequential('verify change assessment id', async () => {
     const assessmentDir = path.join(assessmentLiveDir(), 'A1');
     assert.ok(await fs.pathExists(assessmentDir));
+    assessmentLiveInfoPath = path.join(assessmentDir, 'infoAssessment.json');
   });
 
   test.sequential(
     'should not be able to submit if provided assessment id falls outside the correct root directory',
     async () => {
-      const settingsPageResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-      );
-
-      // Change the assessment id to one that falls outside the correct root directory
-      const response = await fetch(
-        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'update_assessment',
-            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
-            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
-            title: 'Test Title',
-            type: 'Homework',
-            set: 'Homework',
-            number: '1',
-            module: 'Module1',
-            aid: '../A2',
-          }),
-        },
-      );
-
-      assert.equal(response.status, 400);
+      const trpcClient = await createTrpcClient('1');
+      try {
+        await trpcClient.assessmentSettings.updateAssessment.mutate({
+          title: 'Test Title',
+          set: 'Homework',
+          number: '1',
+          module: 'Module1',
+          aid: '../A2',
+          ...defaultMutationFields,
+          origHash: await getOrigHash(assessmentLiveInfoPath),
+        });
+        assert.fail('Expected mutation to throw');
+      } catch (err: unknown) {
+        const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
+        assert.isNotNull(appError);
+        assert.equal(appError.code, 'INVALID_SHORT_NAME');
+      }
     },
   );
 });

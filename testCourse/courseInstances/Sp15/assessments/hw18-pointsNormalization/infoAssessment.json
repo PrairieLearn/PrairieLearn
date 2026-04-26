@@ -1,0 +1,24 @@
+{
+  "uuid": "b9f4e8d2-5c3d-4f0b-a6e7-2d4f9b3e0c18",
+  "type": "Homework",
+  "set": "Homework",
+  "number": "18",
+  "title": "Points normalization",
+  "allowAccess": [{ "credit": 100 }],
+  "zones": [
+    {
+      "comment": "Points format translations",
+      "questions": [
+        { "id": "demo/imageCapture", "points": 2 },
+        { "alternatives": [{ "id": "manualGrade/shortAnswer" }], "points": 2 },
+        {
+          "alternatives": [
+            { "id": "manualGrade/codeUpload" },
+            { "id": "internalGrade/addingNumbers2" }
+          ],
+          "points": 1
+        }
+      ]
+    }
+  ]
+}

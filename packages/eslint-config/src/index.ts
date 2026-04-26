@@ -1,5 +1,5 @@
+import { globalIgnores } from '@eslint/config-helpers';
 import type { TSESLint } from '@typescript-eslint/utils';
-import { globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
 import { baseConfig } from './configs/base.js';
