@@ -443,6 +443,11 @@ export function AiGradingModelSelectionModal({
     aiGradingAvailabilityState.kind === 'ready_with_keys' ||
     aiGradingAvailabilityState.kind === 'ready_with_credits';
 
+  const showFirstJobLargeBatchWarning =
+    aiGradingAvailabilityInfo != null &&
+    !aiGradingAvailabilityInfo.has_prior_jobs &&
+    (modalState?.numToGrade ?? 0) > 10;
+
   return (
     <Modal show={isModalOpen} size="lg" backdrop="static" keyboard={false} onHide={handleClose}>
       <form onSubmit={handleSubmit}>
@@ -458,6 +463,12 @@ export function AiGradingModelSelectionModal({
               void refetchAvailabilityInfo();
             }}
           />
+          {showFirstJobLargeBatchWarning && (
+            <Alert variant="warning" className="mb-3 py-2 small">
+              This is your first AI grading job for this question. Consider running a smaller batch
+              (10 or fewer) first to validate the rubric and cost before scaling up.
+            </Alert>
+          )}
           <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}

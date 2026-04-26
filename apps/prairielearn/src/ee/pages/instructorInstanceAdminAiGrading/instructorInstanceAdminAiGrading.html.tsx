@@ -446,8 +446,23 @@ function CreditPoolSection({
   const [redeemSuccessAmount, setRedeemSuccessAmount] = useState<number | null>(null);
 
   const freeCreditStatusQuery = useQuery(trpc.freeCreditStatus.queryOptions());
-  const creditPoolQuery = useQuery(trpc.creditPool.queryOptions());
-  const creditPoolChangesQuery = useQuery(trpc.creditPoolChanges.queryOptions({ page: 1 }));
+
+  // Mirror the empty-state detection in `CreditPoolDashboard`. These reads share
+  // a TanStack cache with the dashboard, so they don't trigger extra fetches.
+  const poolQuery = useQuery(trpc.creditPool.queryOptions());
+  const changesQuery = useQuery({
+    ...trpc.creditPoolChanges.queryOptions({ page: 1 }),
+    enabled: poolQuery.data != null,
+  });
+  const hasNoBalance =
+    poolQuery.data?.credit_transferable_milli_dollars === 0 &&
+    poolQuery.data.credit_non_transferable_milli_dollars === 0;
+  const isCreditPoolEmpty =
+    hasNoBalance &&
+    !useCustomApiKeys &&
+    changesQuery.isFetched &&
+    !changesQuery.isError &&
+    (changesQuery.data?.totalCount ?? 0) === 0;
 
   useEffect(() => {
     if (initialCheckoutStatus === 'success') {
@@ -463,14 +478,6 @@ function CreditPoolSection({
   const freeCreditStatusLoaded = freeCreditStatus != null;
   const hasFreeCreditAvailable =
     freeCreditStatusLoaded && freeCreditStatus.redemptions_remaining > 0;
-
-  const pool = creditPoolQuery.data;
-  const hasNoBalance =
-    pool != null &&
-    pool.credit_transferable_milli_dollars === 0 &&
-    pool.credit_non_transferable_milli_dollars === 0;
-  const hasNoTransactions = (creditPoolChangesQuery.data?.totalCount ?? 0) === 0;
-  const isEmptyState = !useCustomApiKeys && hasNoBalance && hasNoTransactions;
 
   return (
     <div className="border-top pt-3 mt-3">
@@ -504,7 +511,7 @@ function CreditPoolSection({
           <h2 className="h5 mb-0">AI grading credits</h2>
           {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
         </div>
-        {!isEmptyState && (
+        {!isCreditPoolEmpty && (
           <div className="d-flex align-items-center gap-2 flex-wrap">
             {hasFreeCreditAvailable && (
               <button

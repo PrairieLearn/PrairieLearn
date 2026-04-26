@@ -10,6 +10,8 @@ import {
 import { fillInstanceQuestionColumnEntries } from '../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   deleteAiGradingJobs,
+  hasPriorAiGradingJobs,
+  selectFirstAiGradedInstanceQuestion,
   setAiGradingLastSelectedModel,
   setAiGradingMode,
 } from '../../ee/lib/ai-grading/ai-grading-util.js';
@@ -230,14 +232,17 @@ const aiGradingAvailabilityInfo = t.procedure
       max_concurrent_jobs: z.number(),
       credit_balance_milli_dollars: z.number(),
       free_credit_redemptions_remaining: z.number(),
+      has_prior_jobs: z.boolean(),
     }),
   )
   .query(async (opts) => {
-    const [running_job_count, creditPool, freeCreditRedemptionsUsed] = await Promise.all([
-      getRunningAiGradingJobCountForCourseInstance(opts.ctx.course_instance.id),
-      selectCreditPool(opts.ctx.course_instance.id),
-      selectCourseFreeCreditRedemptionsUsed(opts.ctx.course.id),
-    ]);
+    const [running_job_count, creditPool, freeCreditRedemptionsUsed, has_prior_jobs] =
+      await Promise.all([
+        getRunningAiGradingJobCountForCourseInstance(opts.ctx.course_instance.id),
+        selectCreditPool(opts.ctx.course_instance.id),
+        selectCourseFreeCreditRedemptionsUsed(opts.ctx.course.id),
+        hasPriorAiGradingJobs(opts.ctx.assessment_question.id),
+      ]);
     return {
       running_job_count,
       max_concurrent_jobs: MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE,
@@ -246,12 +251,27 @@ const aiGradingAvailabilityInfo = t.procedure
         0,
         MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE - freeCreditRedemptionsUsed,
       ),
+      has_prior_jobs,
     };
+  });
+
+const firstAiGradedInstanceQuestion = t.procedure
+  .use(requireCourseInstancePermissionView)
+  .use(requireAiGradingFeature)
+  .input(z.object({ job_sequence_id: z.string() }))
+  .output(z.object({ instance_question_id: z.string().nullable() }))
+  .query(async (opts) => {
+    const instance_question_id = await selectFirstAiGradedInstanceQuestion({
+      job_sequence_id: opts.input.job_sequence_id,
+      assessment_question_id: opts.ctx.assessment_question.id,
+    });
+    return { instance_question_id };
   });
 
 export const manualGradingRouter = t.router({
   instances,
   aiGradingAvailabilityInfo,
+  firstAiGradedInstanceQuestion,
   setAiGradingMode: setAiGradingModeMutation,
   deleteAiGradingJobs: deleteAiGradingJobsMutation,
   deleteAiInstanceQuestionGroupings: deleteAiInstanceQuestionGroupingsMutation,

@@ -55,6 +55,7 @@ import {
   AiGradingModelSelectionModal,
   type AiGradingModelSelectionModalState,
 } from './AiGradingModelSelectionModal.js';
+import { FirstGradedSubmissionLink } from './FirstGradedSubmissionLink.js';
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
 import { QueryErrors } from './QueryErrors.js';
@@ -608,6 +609,12 @@ export function AssessmentQuestionTable({
             question_qid: questionQid,
           }}
         />
+        {aiGradingMode && (rubricData == null || rubricData.rubric_items.length === 0) && (
+          <Alert variant="warning" className="mt-3 mb-0 py-2 small">
+            No rubric is configured for this question. AI grading is significantly more accurate
+            with a rubric. You can still proceed without one.
+          </Alert>
+        )}
       </div>
       {aiGradingMode && (
         <ServerJobsProgressInfo
@@ -622,6 +629,12 @@ export function AssessmentQuestionTable({
             complete: 'AI grading complete',
             failed: 'AI grading failed',
           }}
+          completionCta={(jobSequenceId) => (
+            <FirstGradedSubmissionLink
+              jobSequenceId={jobSequenceId}
+              manualGradingUrlPrefix={`${urlPrefix}/assessment/${assessment.id}/manual_grading`}
+            />
+          )}
           onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
         />
       )}
