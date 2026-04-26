@@ -122,21 +122,27 @@ function RubricItems({
     : null;
 
   return html`
-    ${aiGradingInfo
-      ? html`
-          <div
-            class="d-flex align-items-center gap-2 text-secondary mb-1"
-            style="padding-left: 3px;"
-          >
-            <div data-bs-toggle="tooltip" data-bs-title="AI grading">
-              <i class="bi bi-stars"></i>
-            </div>
-            <div data-bs-toggle="tooltip" data-bs-title="Manual grading">
-              <i class="bi bi-person-fill"></i>
-            </div>
-          </div>
-        `
-      : ''}
+    <div class="d-flex align-items-center justify-content-between mb-1">
+      <div class="d-flex align-items-center gap-2 text-secondary" style="padding-left: 3px;">
+        ${aiGradingInfo
+          ? html`
+              <div data-bs-toggle="tooltip" data-bs-title="AI grading">
+                <i class="bi bi-stars"></i>
+              </div>
+              <div data-bs-toggle="tooltip" data-bs-title="Human grading">
+                <i class="bi bi-person-fill"></i>
+              </div>
+            `
+          : ''}
+      </div>
+      ${!disable
+        ? html`
+            <button type="button" class="btn btn-sm btn-link p-0 js-show-rubric-settings-button">
+              Edit rubric
+            </button>
+          `
+        : ''}
+    </div>
     ${rubric_items
       ? rubric_items.map((item) =>
           RubricItem({

@@ -272,6 +272,16 @@ router.get(
       z.number(),
     );
 
+    const manualGradingIndex = await sqldb.queryOptionalRow(
+      sql.select_manual_grading_index,
+      {
+        assessment_id: res.locals.assessment.id,
+        assessment_question_id: res.locals.assessment_question.id,
+        instance_question_id: res.locals.instance_question.id,
+      },
+      z.object({ position: z.coerce.number() }),
+    );
+
     res.send(
       InstanceQuestionPage({
         ...localsForRender,
@@ -289,6 +299,7 @@ router.get(
         skipGradedSubmissions: req.session.skip_graded_submissions,
         showSubmissionsAssignedToMeOnly: req.session.show_submissions_assigned_to_me_only,
         submissionCredits,
+        manualGradingIndex: manualGradingIndex?.position ?? null,
       }),
     );
   }),

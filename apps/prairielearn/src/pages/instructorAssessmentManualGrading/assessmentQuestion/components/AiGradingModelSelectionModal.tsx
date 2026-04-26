@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
 import { Alert, Button, Form, Modal, Spinner } from 'react-bootstrap';
@@ -12,6 +12,7 @@ import {
   type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
 } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
+import { FREE_AI_GRADING_CREDIT_MILLI_DOLLARS_PER_REDEMPTION } from '../../../../ee/lib/ai-grading-free-credit-constants.js';
 import { formatMilliDollars } from '../../../../lib/ai-grading-credits.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
 import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
@@ -23,10 +24,7 @@ type AiGradingAvailabilityState =
   | { kind: 'no_keys' }
   | { kind: 'ready_with_keys' }
   | { kind: 'no_credits'; freeCreditRedemptionsRemaining: number }
-  | {
-      kind: 'ready_with_credits';
-      creditBalanceMilliDollars: number;
-    };
+  | { kind: 'ready_with_credits'; creditBalanceMilliDollars: number };
 
 export type AiGradingModelSelectionModalState =
   | { type: 'all'; numToGrade: number }
@@ -219,34 +217,218 @@ function SettingsLink({ url, text }: { url: string; text: string }) {
   );
 }
 
-function AiGradingAvailabilityAlert({
+function expandRubricSettings() {
+  const panel = document.getElementById('rubric-setting');
+  if (!panel) return;
+  if (!panel.classList.contains('show')) {
+    const toggle = document.querySelector<HTMLElement>('[data-bs-target="#rubric-setting"]');
+    toggle?.click();
+  }
+  // Scroll to the rubric-editor card so the "Rubric settings" header is
+  // visible at the top, instead of just the collapsible body.
+  const target = document.getElementById('rubric-editor') ?? panel;
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function NoCreditsAlert({
+  freeCreditRedemptionsRemaining,
+  aiGradingSettingsUrl,
+  isRedeeming,
+  redeemErrorMessage,
+  onRedeem,
+  onDismissError,
+}: {
+  freeCreditRedemptionsRemaining: number;
+  aiGradingSettingsUrl: string;
+  isRedeeming: boolean;
+  redeemErrorMessage: string | null;
+  onRedeem: () => void;
+  onDismissError: () => void;
+}) {
+  const canRedeem = freeCreditRedemptionsRemaining > 0;
+  return (
+    <>
+      <div>No AI grading credits added.</div>
+      <div className="d-flex flex-wrap gap-2 mt-2">
+        {canRedeem && (
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            disabled={isRedeeming}
+            onClick={onRedeem}
+          >
+            {isRedeeming
+              ? 'Redeeming...'
+              : `Redeem ${formatMilliDollars(FREE_AI_GRADING_CREDIT_MILLI_DOLLARS_PER_REDEMPTION)} in free credit`}
+          </Button>
+        )}
+        <Button
+          type="button"
+          variant="outline-secondary"
+          size="sm"
+          href={aiGradingSettingsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {canRedeem ? 'Purchase more' : 'Purchase credits'}
+        </Button>
+      </div>
+      {redeemErrorMessage && (
+        <Alert variant="danger" className="mt-2 mb-0 py-2" dismissible onClose={onDismissError}>
+          {redeemErrorMessage}
+        </Alert>
+      )}
+    </>
+  );
+}
+
+interface BeforeYouGradeItem {
+  key: string;
+  title: React.ReactNode;
+  description: React.ReactNode;
+  onClick?: () => void;
+}
+
+function buildBeforeYouGradeItems({
+  hasRubric,
+  hasPriorJobs,
+  numToGrade,
+  onCreateRubric,
+}: {
+  hasRubric: boolean;
+  hasPriorJobs: boolean;
+  numToGrade: number;
+  onCreateRubric: () => void;
+}): BeforeYouGradeItem[] {
+  const items: BeforeYouGradeItem[] = [];
+  if (!hasRubric) {
+    items.push({
+      key: 'no_rubric',
+      title: 'Create a rubric',
+      description: 'Rubrics significantly improve accuracy and consistency.',
+      onClick: onCreateRubric,
+    });
+  }
+  if (!hasPriorJobs && numToGrade > 5) {
+    items.push({
+      key: 'test_first',
+      title: 'Test on 5 submissions first',
+      description: `Confirm your rubric works well before running it on all ${numToGrade} selected.`,
+    });
+  }
+  return items;
+}
+
+function buildCompletedSetupItems({ hasRubric }: { hasRubric: boolean }): string[] {
+  const completed: string[] = [];
+  if (hasRubric) completed.push('Rubric attached and tested');
+  return completed;
+}
+
+function BeforeYouGradeCard({ item }: { item: BeforeYouGradeItem }) {
+  const titleNode = item.onClick ? (
+    <div>
+      <Button
+        type="button"
+        variant="link"
+        className="p-0 align-baseline fw-medium text-decoration-none"
+        style={{ fontSize: 'inherit' }}
+        onClick={item.onClick}
+      >
+        {item.title}
+      </Button>
+    </div>
+  ) : (
+    <div className="fw-medium">{item.title}</div>
+  );
+  return (
+    <div className="rounded-2 border px-3 py-2">
+      {titleNode}
+      <div className="text-muted small">{item.description}</div>
+    </div>
+  );
+}
+
+function BeforeYouGradeSection({
+  items,
+  completedItems,
+}: {
+  items: BeforeYouGradeItem[];
+  completedItems: string[];
+}) {
+  if (items.length === 0) {
+    if (completedItems.length === 0) return null;
+    return (
+      <div className="mb-4 d-flex align-items-center gap-2 small">
+        <i className="bi bi-check-circle-fill text-success" aria-hidden="true" />
+        <span>
+          Ready for AI grading
+          <span className="text-muted"> &middot; {completedItems.join(' · ')}</span>
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className="mb-4">
+      <div className="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
+        <span className="fw-semibold">Before you grade</span>
+      </div>
+      <div className="d-flex flex-column gap-2">
+        {items.map((item) => (
+          <BeforeYouGradeCard key={item.key} item={item} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+interface ModalAlert {
+  key: string;
+  variant: 'info' | 'warning' | 'danger' | 'success';
+  body: React.ReactNode;
+  small?: boolean;
+}
+
+function buildModalAlerts({
   state,
+  isRedeemSuccess,
+  isRedeeming,
+  redeemErrorMessage,
   aiGradingSettingsUrl,
   onRetryAvailability,
+  onRedeem,
+  onDismissRedeemError,
 }: {
   state: AiGradingAvailabilityState;
+  isRedeemSuccess: boolean;
+  isRedeeming: boolean;
+  redeemErrorMessage: string | null;
   aiGradingSettingsUrl: string;
   onRetryAvailability: () => void;
-}) {
-  const { variant, content } = run<{
-    variant: 'info' | 'warning' | 'danger';
-    content: React.ReactNode;
-  }>(() => {
-    switch (state.kind) {
-      case 'loading':
-        return {
+  onRedeem: () => void;
+  onDismissRedeemError: () => void;
+}): ModalAlert[] {
+  switch (state.kind) {
+    case 'loading':
+      return [
+        {
+          key: 'loading',
           variant: 'info',
-          content: (
+          body: (
             <span className="d-flex align-items-center gap-2">
               <Spinner animation="border" size="sm" />
               Loading AI grading status...
             </span>
           ),
-        };
-      case 'error':
-        return {
+        },
+      ];
+    case 'error':
+      return [
+        {
+          key: 'error',
           variant: 'danger',
-          content: (
+          body: (
             <>
               Unable to load AI grading status.{' '}
               <Button
@@ -260,76 +442,94 @@ function AiGradingAvailabilityAlert({
               </Button>
             </>
           ),
-        };
-      case 'concurrency_limit':
-        return {
+        },
+      ];
+    case 'concurrency_limit':
+      return [
+        {
+          key: 'concurrency_limit',
           variant: 'warning',
-          content: (
+          body: (
             <>
               You've reached the limit of {state.maxConcurrentJobs} concurrent AI grading jobs.
               Please wait for running jobs to finish.
             </>
           ),
-        };
-      case 'ready_with_keys':
-        return {
+        },
+      ];
+    case 'ready_with_keys':
+      return [
+        {
+          key: 'billing_keys',
           variant: 'info',
-          content: (
+          body: (
             <>
               Billing to custom API key &middot;{' '}
               <SettingsLink url={aiGradingSettingsUrl} text="Manage keys" />
             </>
           ),
-        };
-      case 'no_keys':
-        return {
+        },
+      ];
+    case 'no_keys':
+      return [
+        {
+          key: 'no_keys',
           variant: 'danger',
-          content: (
+          body: (
             <>
               No custom API keys configured &middot;{' '}
               <SettingsLink url={aiGradingSettingsUrl} text="Manage keys" />
             </>
           ),
-        };
-      case 'ready_with_credits':
-        return {
+        },
+      ];
+    case 'no_credits':
+      return [
+        {
+          key: 'no_credits',
           variant: 'info',
-          content: (
+          body: (
+            <NoCreditsAlert
+              freeCreditRedemptionsRemaining={state.freeCreditRedemptionsRemaining}
+              aiGradingSettingsUrl={aiGradingSettingsUrl}
+              isRedeeming={isRedeeming}
+              redeemErrorMessage={redeemErrorMessage}
+              onRedeem={onRedeem}
+              onDismissError={onDismissRedeemError}
+            />
+          ),
+        },
+      ];
+    case 'ready_with_credits': {
+      const alerts: ModalAlert[] = [];
+      if (isRedeemSuccess) {
+        alerts.push({
+          key: 'redeem_success',
+          variant: 'success',
+          body: (
             <>
-              Billing to credit pool &middot; {formatMilliDollars(state.creditBalanceMilliDollars)}{' '}
-              available &middot; <SettingsLink url={aiGradingSettingsUrl} text="Manage credits" />
+              {formatMilliDollars(FREE_AI_GRADING_CREDIT_MILLI_DOLLARS_PER_REDEMPTION)} in credit
+              added!
             </>
           ),
-        };
-      case 'no_credits':
-        return {
-          variant: 'info',
-          content: (
-            <>
-              No credits added.{' '}
-              {state.freeCreditRedemptionsRemaining > 0 ? (
-                <>
-                  Redeem <strong>free credit</strong> or purchase credits{' '}
-                  <SettingsLink url={aiGradingSettingsUrl} text="here" />.
-                </>
-              ) : (
-                <>
-                  Purchase credits <SettingsLink url={aiGradingSettingsUrl} text="here" />.
-                </>
-              )}
-            </>
-          ),
-        };
-      default:
-        return assertNever(state);
+        });
+      }
+      alerts.push({
+        key: 'billing_credits',
+        variant: 'info',
+        small: true,
+        body: (
+          <>
+            Billing to credit pool &middot; {formatMilliDollars(state.creditBalanceMilliDollars)}{' '}
+            available &middot; <SettingsLink url={aiGradingSettingsUrl} text="Manage credits" />
+          </>
+        ),
+      });
+      return alerts;
     }
-  });
-
-  return (
-    <Alert variant={variant} className="mb-3 py-2">
-      {content}
-    </Alert>
-  );
+    default:
+      return assertNever(state);
+  }
 }
 
 export function AiGradingModelSelectionModal({
@@ -339,6 +539,7 @@ export function AiGradingModelSelectionModal({
   relativeCosts,
   useCustomApiKeys,
   aiGradingSettingsUrl,
+  hasRubric,
   onSuccess,
   onHide,
 }: {
@@ -348,6 +549,7 @@ export function AiGradingModelSelectionModal({
   relativeCosts: Record<string, string>;
   useCustomApiKeys: boolean;
   aiGradingSettingsUrl: string;
+  hasRubric: boolean;
   onSuccess: (
     data: { job_sequence_id: string; job_sequence_token: string },
     modelId: AiGradingModelId,
@@ -355,9 +557,25 @@ export function AiGradingModelSelectionModal({
   onHide: () => void;
 }) {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const { mutate, reset, isPending, isError, error } = useMutation(
     trpc.manualGrading.aiGradeInstanceQuestions.mutationOptions(),
   );
+  const {
+    mutate: redeemFreeCredit,
+    reset: resetRedeem,
+    isPending: isRedeeming,
+    isSuccess: isRedeemSuccess,
+    isError: isRedeemError,
+    error: redeemError,
+  } = useMutation({
+    ...trpc.manualGrading.redeemFreeCredit.mutationOptions(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: trpc.manualGrading.aiGradingAvailabilityInfo.queryKey(),
+      });
+    },
+  });
   const isModalOpen = modalState != null;
   const {
     data: aiGradingAvailabilityInfo,
@@ -375,8 +593,14 @@ export function AiGradingModelSelectionModal({
   const handleClose = useCallback(() => {
     setSelectedModel(defaultModel);
     reset();
+    resetRedeem();
     onHide();
-  }, [onHide, reset, defaultModel]);
+  }, [onHide, reset, resetRedeem, defaultModel]);
+
+  const handleCreateRubric = useCallback(() => {
+    onHide();
+    setTimeout(expandRubricSettings, 250);
+  }, [onHide]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -433,20 +657,35 @@ export function AiGradingModelSelectionModal({
         freeCreditRedemptionsRemaining: free_credit_redemptions_remaining,
       };
     }
-    return {
-      kind: 'ready_with_credits',
-      creditBalanceMilliDollars: credit_balance_milli_dollars,
-    };
+    return { kind: 'ready_with_credits', creditBalanceMilliDollars: credit_balance_milli_dollars };
   });
 
   const aiGradingEnabled =
     aiGradingAvailabilityState.kind === 'ready_with_keys' ||
     aiGradingAvailabilityState.kind === 'ready_with_credits';
 
-  const showFirstJobLargeBatchWarning =
-    aiGradingAvailabilityInfo != null &&
-    !aiGradingAvailabilityInfo.has_prior_jobs &&
-    (modalState?.numToGrade ?? 0) > 10;
+  const modalAlerts = buildModalAlerts({
+    state: aiGradingAvailabilityState,
+    isRedeemSuccess,
+    isRedeeming,
+    redeemErrorMessage: isRedeemError ? redeemError.message : null,
+    aiGradingSettingsUrl,
+    onRetryAvailability: () => {
+      void refetchAvailabilityInfo();
+    },
+    onRedeem: () => redeemFreeCredit(),
+    onDismissRedeemError: () => resetRedeem(),
+  });
+
+  const beforeYouGradeItems = aiGradingEnabled
+    ? buildBeforeYouGradeItems({
+        hasRubric,
+        hasPriorJobs: aiGradingAvailabilityInfo?.has_prior_jobs ?? true,
+        numToGrade: modalState?.numToGrade ?? 0,
+        onCreateRubric: handleCreateRubric,
+      })
+    : [];
+  const completedSetupItems = aiGradingEnabled ? buildCompletedSetupItems({ hasRubric }) : [];
 
   return (
     <Modal show={isModalOpen} size="lg" backdrop="static" keyboard={false} onHide={handleClose}>
@@ -456,19 +695,16 @@ export function AiGradingModelSelectionModal({
         </Modal.Header>
 
         <Modal.Body>
-          <AiGradingAvailabilityAlert
-            state={aiGradingAvailabilityState}
-            aiGradingSettingsUrl={aiGradingSettingsUrl}
-            onRetryAvailability={() => {
-              void refetchAvailabilityInfo();
-            }}
-          />
-          {showFirstJobLargeBatchWarning && (
-            <Alert variant="warning" className="mb-3 py-2 small">
-              This is your first AI grading job for this question. Consider running a smaller batch
-              (10 or fewer) first to validate the rubric and cost before scaling up.
+          {modalAlerts.map((alert) => (
+            <Alert
+              key={alert.key}
+              variant={alert.variant}
+              className={clsx('mb-3 py-2', alert.small && 'small')}
+            >
+              {alert.body}
             </Alert>
-          )}
+          ))}
+          <BeforeYouGradeSection items={beforeYouGradeItems} completedItems={completedSetupItems} />
           <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}

@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
+import { Alert } from 'react-bootstrap';
 
 import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
 
-export function FirstGradedSubmissionLink({
+export function ReviewSubmissionsAlert({
   jobSequenceId,
   manualGradingUrlPrefix,
 }: {
@@ -19,14 +20,16 @@ export function FirstGradedSubmissionLink({
   if (!data?.instance_question_id) return null;
 
   return (
-    <a
-      href={`${manualGradingUrlPrefix}/instance_question/${data.instance_question_id}`}
-      className="text-decoration-none"
-      target="_blank"
-      rel="noreferrer"
-    >
-      View first AI graded submission{' '}
-      <i className="bi bi-box-arrow-up-right" style={{ fontSize: '0.7em' }} />
-    </a>
+    <Alert variant="info" className="mb-3">
+      <i className="bi bi-info-circle-fill me-2" aria-hidden="true" />
+      <a
+        href={`${manualGradingUrlPrefix}/instance_question/${data.instance_question_id}`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        Review your submissions
+      </a>
+      .
+    </Alert>
   );
 }

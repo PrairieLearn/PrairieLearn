@@ -55,7 +55,7 @@ import {
   AiGradingModelSelectionModal,
   type AiGradingModelSelectionModalState,
 } from './AiGradingModelSelectionModal.js';
-import { FirstGradedSubmissionLink } from './FirstGradedSubmissionLink.js';
+import { ReviewSubmissionsAlert } from './FirstGradedSubmissionLink.js';
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
 import { QueryErrors } from './QueryErrors.js';
@@ -609,34 +609,33 @@ export function AssessmentQuestionTable({
             question_qid: questionQid,
           }}
         />
-        {aiGradingMode && (rubricData == null || rubricData.rubric_items.length === 0) && (
-          <Alert variant="warning" className="mt-3 mb-0 py-2 small">
-            No rubric is configured for this question. AI grading is significantly more accurate
-            with a rubric. You can still proceed without one.
-          </Alert>
-        )}
       </div>
       {aiGradingMode && (
-        <ServerJobsProgressInfo
-          itemNames="submissions graded"
-          jobsProgress={Object.values(serverJobProgress.jobsProgress)}
-          courseInstanceId={courseInstance.id}
-          statusIcons={{
-            inProgress: 'bi-stars',
-          }}
-          statusText={{
-            inProgress: 'AI grading in progress',
-            complete: 'AI grading complete',
-            failed: 'AI grading failed',
-          }}
-          completionCta={(jobSequenceId) => (
-            <FirstGradedSubmissionLink
-              jobSequenceId={jobSequenceId}
-              manualGradingUrlPrefix={`${urlPrefix}/assessment/${assessment.id}/manual_grading`}
-            />
-          )}
-          onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
-        />
+        <>
+          <ServerJobsProgressInfo
+            itemNames="submissions graded"
+            jobsProgress={Object.values(serverJobProgress.jobsProgress)}
+            courseInstanceId={courseInstance.id}
+            statusIcons={{
+              inProgress: 'bi-stars',
+            }}
+            statusText={{
+              inProgress: 'AI grading in progress',
+              complete: 'AI grading complete',
+              failed: 'AI grading failed',
+            }}
+            onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
+          />
+          {Object.values(serverJobProgress.jobsProgress)
+            .filter((j) => j.num_total > 0 && j.num_complete >= j.num_total && j.num_failed === 0)
+            .map((j) => (
+              <ReviewSubmissionsAlert
+                key={j.job_sequence_id}
+                jobSequenceId={j.job_sequence_id}
+                manualGradingUrlPrefix={`${urlPrefix}/assessment/${assessment.id}/manual_grading`}
+              />
+            ))}
+        </>
       )}
       <QueryErrors<ManualGradingError>
         queries={[
@@ -970,6 +969,7 @@ export function AssessmentQuestionTable({
         relativeCosts={aiGradingRelativeCosts}
         useCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
         aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
+        hasRubric={rubricData != null && rubricData.rubric_items.length > 0}
         onSuccess={(data, modelId) => {
           serverJobProgress.handleAddOngoingJobSequence(
             data.job_sequence_id,

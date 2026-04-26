@@ -38,6 +38,8 @@ export function GradingPanel({
   instanceQuestionGroups,
   skip_graded_submissions,
   show_submissions_assigned_to_me_only,
+  gradedByAi = false,
+  gradedByHumanName = null,
 }: {
   resLocals: ResLocalsForPage<'instance-question'>;
   context: 'main' | 'existing' | 'conflicting';
@@ -54,6 +56,8 @@ export function GradingPanel({
   instanceQuestionGroups?: InstanceQuestionGroup[];
   skip_graded_submissions?: boolean;
   show_submissions_assigned_to_me_only?: boolean;
+  gradedByAi?: boolean;
+  gradedByHumanName?: string | null;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
@@ -224,6 +228,20 @@ export function GradingPanel({
             `
           : ''}
         <li class="list-group-item">
+          <div class="mb-2">
+            <div class="d-flex align-items-center flex-wrap gap-1">
+              <span>Graded by:</span>
+              ${gradedByAi
+                ? html`<span class="badge text-bg-light border fw-medium">AI</span>`
+                : ''}
+              ${gradedByAi && gradedByHumanName ? html`<span>+</span>` : ''}
+              ${gradedByHumanName ? html`<span>${gradedByHumanName}</span>` : ''}
+              ${!gradedByAi && !gradedByHumanName ? html`<span>Not yet graded</span>` : ''}
+            </div>
+            ${gradedByAi && gradedByHumanName
+              ? html`<div class="text-muted small">Human grading always takes priority</div>`
+              : ''}
+          </div>
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
           ${!resLocals.rubric_data?.rubric.replace_auto_points ||
           (!resLocals.assessment_question.max_auto_points && !auto_points)
@@ -244,7 +262,7 @@ export function GradingPanel({
             `
           : ''}
         <li class="list-group-item">
-          <label>
+          <label class="w-100 mb-0">
             Feedback:
             <textarea
               name="submission_note"
@@ -256,8 +274,7 @@ export function GradingPanel({
 ${submission.feedback?.manual}</textarea
             >
             <small id="submission-feedback-help-${context}" class="form-text text-muted">
-              Markdown formatting, such as *<em>emphasis</em>* or &#96;<code>code</code>&#96;, is
-              permitted and will be used to format the feedback when presented to the student.
+              Markdown supported (e.g. *<em>emphasis</em>*, &#96;<code>code</code>&#96;).
             </small>
           </label>
         </li>

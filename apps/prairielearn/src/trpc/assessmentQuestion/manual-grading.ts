@@ -23,7 +23,10 @@ import {
 import { MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE } from '../../ee/lib/ai-grading-free-credit-constants.js';
 import { deleteAiInstanceQuestionGroups } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
-import { selectCourseFreeCreditRedemptionsUsed } from '../../ee/models/ai-grading-free-credit-redemption.js';
+import {
+  redeemFreeAiGradingCredit,
+  selectCourseFreeCreditRedemptionsUsed,
+} from '../../ee/models/ai-grading-free-credit-redemption.js';
 import { features } from '../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../lib/id.js';
@@ -268,6 +271,31 @@ const firstAiGradedInstanceQuestion = t.procedure
     return { instance_question_id };
   });
 
+const redeemFreeCreditMutation = t.procedure
+  .use(requireCourseInstancePermissionEdit)
+  .use(requireAiGradingFeature)
+  .output(
+    z.object({
+      redemptions_used: z.number(),
+      redemptions_remaining: z.number(),
+      amount_milli_dollars: z.number(),
+    }),
+  )
+  .mutation(async (opts) => {
+    const redemptionsUsed = await selectCourseFreeCreditRedemptionsUsed(opts.ctx.course.id);
+    if (redemptionsUsed >= MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE) {
+      throw new TRPCError({
+        code: 'PRECONDITION_FAILED',
+        message: `This course has already used all ${MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE} free AI grading credit redemptions.`,
+      });
+    }
+    return await redeemFreeAiGradingCredit({
+      course_id: opts.ctx.course.id,
+      course_instance_id: opts.ctx.course_instance.id,
+      user_id: opts.ctx.authn_user.id,
+    });
+  });
+
 export const manualGradingRouter = t.router({
   instances,
   aiGradingAvailabilityInfo,
@@ -279,4 +307,5 @@ export const manualGradingRouter = t.router({
   aiGradeInstanceQuestions: aiGradeInstanceQuestionsMutation,
   setAssignedGrader: setAssignedGraderMutation,
   setRequiresManualGrading: setRequiresManualGradingMutation,
+  redeemFreeCredit: redeemFreeCreditMutation,
 });

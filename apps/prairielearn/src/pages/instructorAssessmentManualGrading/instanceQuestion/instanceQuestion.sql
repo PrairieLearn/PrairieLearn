@@ -141,3 +141,29 @@ FROM
 WHERE
   ai.id = $assessment_instance_id
   AND s.credit IS NOT NULL;
+
+-- BLOCK select_manual_grading_index
+-- Returns the 1-based position of the given instance question in the same
+-- stable order used by the manual grading list (see
+-- assessmentQuestion/queries.sql:select_instance_questions_manual_grading).
+SELECT
+  position
+FROM
+  (
+    SELECT
+      iq.id,
+      ROW_NUMBER() OVER (
+        ORDER BY
+          ((iq.id % 21317) * 45989) % 3767,
+          iq.id
+      ) AS position
+    FROM
+      instance_questions AS iq
+      JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+    WHERE
+      ai.assessment_id = $assessment_id
+      AND iq.assessment_question_id = $assessment_question_id
+      AND iq.status != 'unanswered'
+  ) AS ranked
+WHERE
+  id = $instance_question_id;

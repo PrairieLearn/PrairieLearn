@@ -42,6 +42,7 @@ export function InstanceQuestion({
   skipGradedSubmissions,
   showSubmissionsAssignedToMeOnly,
   submissionCredits,
+  manualGradingIndex,
 }: {
   resLocals: ResLocalsForPage<'instance-question'>;
   conflict_grading_job: GradingJobData | null;
@@ -62,6 +63,7 @@ export function InstanceQuestion({
   skipGradedSubmissions: boolean;
   showSubmissionsAssignedToMeOnly: boolean;
   submissionCredits: number[];
+  manualGradingIndex: number | null;
 }) {
   const instanceQuestionGroupsExist = instanceQuestionGroups
     ? instanceQuestionGroups.length > 0
@@ -69,11 +71,7 @@ export function InstanceQuestion({
   const { __csrf_token, rubric_data } = resLocals;
 
   const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? null;
-  const gradedByParts: string[] = [];
-  if (aiGradingInfo) gradedByParts.push('AI');
-  if (lastGraderName) gradedByParts.push(lastGraderName);
-  const gradedByLabel = gradedByParts.length > 0 ? gradedByParts.join(' + ') : 'Not yet graded';
-  const gradedByHasBoth = aiGradingInfo != null && lastGraderName != null;
+  const gradedByAi = aiGradingInfo != null;
 
   return PageLayout({
     resLocals: {
@@ -155,7 +153,11 @@ export function InstanceQuestion({
                 ${resLocals.question.title}
               </a>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">Student submission</li>
+            <li class="breadcrumb-item active" aria-current="page">
+              ${manualGradingIndex != null
+                ? `Instance ${manualGradingIndex}`
+                : 'Student submission'}
+            </li>
           </ol>
         </nav>
 
@@ -229,10 +231,6 @@ export function InstanceQuestion({
           <div class="card mb-4 border-info">
             <div class="card-header bg-info">
               <div>Grading</div>
-              <div class="small fw-normal">
-                Graded by:
-                ${gradedByLabel}${gradedByHasBoth ? ' (human grading always takes priority)' : ''}
-              </div>
             </div>
             <div class="js-main-grading-panel">
               ${GradingPanel({
@@ -245,6 +243,8 @@ export function InstanceQuestion({
                 instanceQuestionGroups,
                 skip_graded_submissions: skipGradedSubmissions,
                 show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
+                gradedByAi,
+                gradedByHumanName: lastGraderName,
               })}
             </div>
           </div>
