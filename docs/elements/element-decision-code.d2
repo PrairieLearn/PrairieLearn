@@ -4,12 +4,8 @@ source: "Where does the file come from?" {
   shape: diamond
 }
 
-pl_file_editor: "pl-file-editor" {
-  tooltip: "Edit code directly in the browser"
-}
-pl_file_upload: "pl-file-upload" {
-  tooltip: "Student uploads a file from their computer"
-}
+pl_file_editor: "pl-file-editor"
+pl_file_upload: "pl-file-upload"
 
 source -> pl_file_editor: "Written in the browser"
 source -> pl_file_upload: "Uploaded from disk"

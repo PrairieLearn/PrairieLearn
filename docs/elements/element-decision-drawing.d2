@@ -4,26 +4,18 @@ source: "Where does the drawing come from?" {
   shape: diamond
 }
 
-pl_image_capture: "pl-image-capture" {
-  tooltip: "Photo of handwritten work from a phone or webcam (manual grading)"
-}
+pl_image_capture: "pl-image-capture"
 
 grading: "How should the drawing be graded?" {
   shape: diamond
 }
-pl_excalidraw: "pl-excalidraw" {
-  tooltip: "Free-form vector diagram via Excalidraw (manual grading only)"
-}
+pl_excalidraw: "pl-excalidraw"
 
 auto_kind: "What is being drawn?" {
   shape: diamond
 }
-pl_sketch: "pl-sketch" {
-  tooltip: "Curves and mathematical objects: points, asymptotes, polygons"
-}
-pl_drawing: "pl-drawing" {
-  tooltip: "Pre-defined geometric/physics objects on a canvas (no freehand curves)"
-}
+pl_sketch: "pl-sketch"
+pl_drawing: "pl-drawing"
 
 source -> pl_image_capture: "Photo of handwritten work"
 source -> grading: "Drawn in the browser"

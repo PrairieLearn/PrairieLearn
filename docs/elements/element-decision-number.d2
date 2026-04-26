@@ -4,25 +4,15 @@ kind: "What kind of number?" {
   shape: diamond
 }
 
-pl_integer_input: "pl-integer-input" {
-  tooltip: "Whole-number answer"
-}
-pl_units_input: "pl-units-input" {
-  tooltip: "Numeric value with a physical unit, e.g. '1.5 m'"
-}
-pl_number_input: "pl-number-input" {
-  tooltip: "Decimal answer with absolute or relative tolerance"
-}
+pl_integer_input: "pl-integer-input"
+pl_units_input: "pl-units-input"
+pl_number_input: "pl-number-input"
 
 matrix_format: "How should the matrix be entered?" {
   shape: diamond
 }
-pl_matrix_component_input: "pl-matrix-component-input" {
-  tooltip: "Entry-by-entry grid of inputs"
-}
-pl_matrix_input: "pl-matrix-input" {
-  tooltip: "Whole matrix as a single string in MATLAB/Python syntax"
-}
+pl_matrix_component_input: "pl-matrix-component-input"
+pl_matrix_input: "pl-matrix-input"
 
 kind -> pl_integer_input: "Integer"
 kind -> pl_units_input: "Number with a unit"

@@ -4,18 +4,10 @@ count: "How many items can be picked?" {
   shape: diamond
 }
 
-pl_multiple_choice: "pl-multiple-choice" {
-  tooltip: "Pick exactly one option from a list"
-}
-pl_checkbox: "pl-checkbox" {
-  tooltip: "Pick any subset of options"
-}
-pl_matching: "pl-matching" {
-  tooltip: "Pair each prompt with an option from a shared list"
-}
-pl_order_blocks: "pl-order-blocks" {
-  tooltip: "Arrange code/text blocks into the correct order"
-}
+pl_multiple_choice: "pl-multiple-choice"
+pl_checkbox: "pl-checkbox"
+pl_matching: "pl-matching"
+pl_order_blocks: "pl-order-blocks"
 
 count -> pl_multiple_choice: "One"
 count -> pl_checkbox: "Several\nfrom a list"

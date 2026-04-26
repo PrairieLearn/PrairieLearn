@@ -4,22 +4,14 @@ kind: "What kind of text?" {
   shape: diamond
 }
 
-pl_string_input: "pl-string-input" {
-  tooltip: "Short string answer"
-}
-pl_rich_text_editor: "pl-rich-text-editor" {
-  tooltip: "Long-form / formatted text (manual grading)"
-}
+pl_string_input: "pl-string-input"
+pl_rich_text_editor: "pl-rich-text-editor"
 
 symbolic: "What kind of expression?" {
   shape: diamond
 }
-pl_big_o_input: "pl-big-o-input" {
-  tooltip: "Asymptotic notation, e.g. O(n log n)"
-}
-pl_symbolic_input: "pl-symbolic-input" {
-  tooltip: "Algebraic expression, e.g. x^2 + sin(z)"
-}
+pl_big_o_input: "pl-big-o-input"
+pl_symbolic_input: "pl-symbolic-input"
 
 kind -> pl_string_input: "Short string\n(one line)"
 kind -> pl_rich_text_editor: "Long-form\nessay / explanation"
