@@ -1,3 +1,4 @@
+import threading
 import time
 
 import pytest
@@ -41,3 +42,34 @@ def test_sympy_timeout():
         eq = Eq(expr1, expr2)
         simplify(eq.lhs - eq.rhs)  # type: ignore
     assert ctx.state == TimeoutState.TIMED_OUT
+
+
+def test_nested_timeout_preserves_outer_deadline():
+    outer = ThreadingTimeout(0.2)
+    inner = ThreadingTimeout(1.0)
+
+    with outer:
+        time.sleep(0.05)
+        with inner:
+            time.sleep(0.4)
+
+    assert outer.state == TimeoutState.TIMED_OUT
+    assert inner.state == TimeoutState.INTERRUPTED
+
+
+def test_timeout_requires_main_thread():
+    result: list[BaseException] = []
+
+    def create_timeout():
+        try:
+            ThreadingTimeout(0.1)
+        except BaseException as exc:
+            result.append(exc)
+
+    thread = threading.Thread(target=create_timeout)
+    thread.start()
+    thread.join()
+
+    assert len(result) == 1
+    assert isinstance(result[0], RuntimeError)
+    assert "ThreadingTimeout requires the main thread." in str(result[0])
