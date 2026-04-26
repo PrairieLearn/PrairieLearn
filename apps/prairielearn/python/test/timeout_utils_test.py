@@ -1,5 +1,7 @@
+import signal
 import threading
 import time
+from types import FrameType
 
 import pytest
 from prairielearn.timeout_utils import (
@@ -55,6 +57,30 @@ def test_nested_timeout_preserves_outer_deadline():
 
     assert outer.state == TimeoutState.TIMED_OUT
     assert inner.state == TimeoutState.INTERRUPTED
+
+
+def test_timeout_rejects_preexisting_signal_alarm_without_canceling_it():
+    class PreexistingAlarmError(Exception):
+        pass
+
+    def alarm_handler(_signum: int, _frame: FrameType | None) -> None:
+        raise PreexistingAlarmError
+
+    previous_handler = signal.signal(signal.SIGALRM, alarm_handler)
+    previous_timer = signal.setitimer(signal.ITIMER_REAL, 0.1)
+    try:
+        with (
+            pytest.raises(RuntimeError, match="ITIMER_REAL timer is active"),
+            ThreadingTimeout(1.0),
+        ):
+            pass
+        with pytest.raises(PreexistingAlarmError):
+            time.sleep(0.2)
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous_handler)
+        if previous_timer[0] > 0:
+            signal.setitimer(signal.ITIMER_REAL, *previous_timer)
 
 
 def test_timeout_requires_main_thread():

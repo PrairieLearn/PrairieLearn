@@ -43,7 +43,6 @@ class _SignalTimeoutState:
     def __init__(self) -> None:
         self.active_timeouts: list[ThreadingTimeout] = []
         self.prev_handler: signal._HANDLER | None = None
-        self.prev_timer: tuple[float, float] | None = None
 
 
 _signal_state = _SignalTimeoutState()
@@ -57,38 +56,19 @@ def _schedule_next_signal_alarm(now: float | None = None) -> None:
     if now is None:
         now = time.monotonic()
 
-    next_timeout = min(
-        _signal_state.active_timeouts,
-        key=lambda timeout: (
-            timeout._deadline if timeout._deadline is not None else float("inf")
-        ),
-    )
-    if next_timeout._deadline is None:
-        return
-
+    next_timeout = min(_signal_state.active_timeouts, key=lambda t: t._deadline)
     signal.setitimer(signal.ITIMER_REAL, max(next_timeout._deadline - now, 1e-6))
 
 
 def _signal_timeout_handler(_signum: int, _frame: FrameType | None) -> None:
     now = time.monotonic()
-    expired_timeouts = [
-        timeout
-        for timeout in _signal_state.active_timeouts
-        if timeout._deadline is not None and timeout._deadline <= now
-    ]
-
-    if not expired_timeouts:
+    timed_out = min(_signal_state.active_timeouts, key=lambda t: t._deadline)
+    if timed_out._deadline > now:
         _schedule_next_signal_alarm(now)
         return
 
-    timed_out = min(
-        expired_timeouts,
-        key=lambda timeout: (
-            timeout._deadline if timeout._deadline is not None else float("inf")
-        ),
-    )
-    for timeout in expired_timeouts:
-        timeout.state = TimeoutState.TIMED_OUT
+    timed_out.state = TimeoutState.TIMED_OUT
+    signal.setitimer(signal.ITIMER_REAL, 0)
     raise TimeoutExceptionError(timed_out)
 
 
@@ -109,13 +89,9 @@ class ThreadingTimeout:
         self.state = TimeoutState.EXECUTED
         if threading.current_thread() is not threading.main_thread():
             raise RuntimeError("ThreadingTimeout requires the main thread.")
-        if (
-            not hasattr(signal, "SIGALRM")
-            or not hasattr(signal, "ITIMER_REAL")
-            or not hasattr(signal, "setitimer")
-        ):
+        if not hasattr(signal, "SIGALRM"):
             raise RuntimeError("ThreadingTimeout requires SIGALRM support.")
-        self._deadline: float | None = None
+        self._deadline: float = 0.0
 
     def __bool__(self) -> bool:
         """Return whether the context is not TIMED_OUT or INTERRUPTED"""
@@ -142,22 +118,24 @@ class ThreadingTimeout:
         traceback: TracebackType | None,
     ) -> bool:
         """Manages exceptions & timeout."""
-        if exc_type is TimeoutExceptionError:
-            timeout = (
-                exc_value.timeout
-                if isinstance(exc_value, TimeoutExceptionError)
-                else None
-            )
-            if timeout is not None and timeout is not self:
-                self.state = TimeoutState.INTERRUPTED
+        if exc_type is None:
+            self.state = TimeoutState.EXECUTED
             self.suppress_interrupt()
-            if timeout is not None and timeout is not self:
-                return False
+            return False
+        if exc_type is not TimeoutExceptionError:
+            self.suppress_interrupt()
+            return False
+        timeout = (
+            exc_value.timeout if isinstance(exc_value, TimeoutExceptionError) else None
+        )
+        # Set state before suppress_interrupt: rescheduling the next alarm can
+        # fire immediately if an outer deadline has already passed, and the
+        # handler must not preempt this assignment.
+        if timeout is not None and timeout is not self:
+            self.state = TimeoutState.INTERRUPTED
+        self.suppress_interrupt()
+        if timeout is None or timeout is self:
             return self.swallow_exc
-        else:
-            if exc_type is None:
-                self.state = TimeoutState.EXECUTED
-            self.suppress_interrupt()
         return False
 
     def cancel(self) -> None:
@@ -171,10 +149,15 @@ class ThreadingTimeout:
         """Setting up the resource that interrupts the block"""
         self._deadline = time.monotonic() + self.seconds
         if not _signal_state.active_timeouts:
-            _signal_state.prev_handler = signal.signal(
-                signal.SIGALRM, _signal_timeout_handler
-            )
-            _signal_state.prev_timer = signal.setitimer(signal.ITIMER_REAL, 0)
+            previous_handler = signal.getsignal(signal.SIGALRM)
+            prev_timer = signal.setitimer(signal.ITIMER_REAL, 0)
+            if prev_timer[0] > 0:
+                signal.setitimer(signal.ITIMER_REAL, *prev_timer)
+                raise RuntimeError(
+                    "ThreadingTimeout cannot run while an ITIMER_REAL timer is active."
+                )
+            _signal_state.prev_handler = previous_handler
+            signal.signal(signal.SIGALRM, _signal_timeout_handler)
         _signal_state.active_timeouts.append(self)
         _schedule_next_signal_alarm()
 
@@ -184,7 +167,6 @@ class ThreadingTimeout:
             return
 
         _signal_state.active_timeouts.remove(self)
-        self._deadline = None
 
         if _signal_state.active_timeouts:
             _schedule_next_signal_alarm()
@@ -192,7 +174,4 @@ class ThreadingTimeout:
             signal.setitimer(signal.ITIMER_REAL, 0)
             if _signal_state.prev_handler is not None:
                 signal.signal(signal.SIGALRM, _signal_state.prev_handler)
-            if _signal_state.prev_timer is not None and _signal_state.prev_timer[0] > 0:
-                signal.setitimer(signal.ITIMER_REAL, *_signal_state.prev_timer)
             _signal_state.prev_handler = None
-            _signal_state.prev_timer = None
