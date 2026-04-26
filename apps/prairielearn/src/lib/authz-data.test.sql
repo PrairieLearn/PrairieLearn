@@ -6,21 +6,9 @@ VALUES
 
 -- BLOCK insert_course
 INSERT INTO
-  courses (
-    id,
-    institution_id,
-    short_name,
-    display_timezone,
-    path
-  )
+  courses (id, institution_id, display_timezone, path)
 VALUES
-  (
-    $id,
-    $institution_id,
-    $short_name,
-    $display_timezone,
-    $path
-  );
+  ($id, $institution_id, $display_timezone, $path);
 
 -- BLOCK insert_course_instance
 INSERT INTO

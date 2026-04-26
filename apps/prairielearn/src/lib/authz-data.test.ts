@@ -28,13 +28,7 @@ const institutions = [
 ];
 
 const courses = [
-  {
-    id: 10,
-    institution_id: 1,
-    short_name: 'TEST 101',
-    display_timezone: 'UTC',
-    path: '/path/to/course/10',
-  },
+  { id: 10, institution_id: 1, display_timezone: 'UTC', path: '/path/to/course/10' },
 ];
 
 const courseInstances = [

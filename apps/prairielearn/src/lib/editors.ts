@@ -1820,7 +1820,8 @@ export class QuestionCopyEditor extends Editor {
   ) {
     const { from_qid, from_course, from_path, is_transfer } = params;
 
-    const from_course_label = `course ${from_course.short_name}`;
+    const from_course_label =
+      from_course.short_name == null ? 'unknown course' : `course ${from_course.short_name}`;
 
     super({
       ...params,

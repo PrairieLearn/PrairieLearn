@@ -52,7 +52,7 @@ const minimalStaffCourse: z.input<typeof StaffCourseSchema> = {
   path: 'path',
   repository: null,
   sharing_name: null,
-  short_name: 'CS 101',
+  short_name: null,
   show_getting_started: false,
   sync_errors: null,
   sync_job_sequence_id: null,
@@ -69,7 +69,7 @@ const minimalStudentCourse: z.input<typeof StudentCourseSchema> = {
   example_course: false,
   id: '1',
   institution_id: '2',
-  short_name: 'CS 101',
+  short_name: null,
   template_course: false,
   title: null,
 };

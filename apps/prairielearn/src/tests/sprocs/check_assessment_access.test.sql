@@ -37,9 +37,9 @@ WITH
   ),
   setup_pl_course AS (
     INSERT INTO
-      courses (id, short_name, display_timezone, path)
+      courses (id, display_timezone, path)
     VALUES
-      (1, 'TEST 101', 'UC', '/path/to/course/1')
+      (1, 'UC', '/path/to/course/1')
   ),
   setup_ci AS (
     INSERT INTO

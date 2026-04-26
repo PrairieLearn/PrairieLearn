@@ -59,7 +59,7 @@ export function InstructorCourseAdminSettings({
               className="form-control"
               id="short_name"
               name="short_name"
-              defaultValue={course.short_name}
+              defaultValue={course.short_name ?? ''}
               disabled={
                 !(
                   courseInfoExists &&

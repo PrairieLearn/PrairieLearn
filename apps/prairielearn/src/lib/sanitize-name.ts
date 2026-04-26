@@ -18,7 +18,8 @@ export function sanitizeString(s: string): string {
  * @returns The sanitized prefix string.
  */
 function courseFilenamePrefix(course: Pick<Course, 'short_name'>): string {
-  const prefix = sanitizeString(course.short_name) + '_';
+  // In practice, course.short_name should never be null.
+  const prefix = sanitizeString(course.short_name!) + '_';
   return prefix;
 }
 

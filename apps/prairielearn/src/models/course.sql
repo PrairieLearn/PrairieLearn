@@ -178,16 +178,14 @@ WITH
         branch,
         repository,
         display_timezone,
-        institution_id,
-        short_name
+        institution_id
       )
     SELECT
       $path,
       $branch,
       $repository,
       i.display_timezone,
-      i.id,
-      '' -- Placeholder: overwritten immediately by syncCourseInfo
+      i.id
     FROM
       institutions i
     WHERE
