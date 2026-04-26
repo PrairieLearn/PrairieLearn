@@ -125,18 +125,15 @@ class ThreadingTimeout:
         if exc_type is not TimeoutExceptionError:
             self.suppress_interrupt()
             return False
-        timeout = (
-            exc_value.timeout if isinstance(exc_value, TimeoutExceptionError) else None
-        )
+        assert isinstance(exc_value, TimeoutExceptionError)
+        is_own_timeout = exc_value.timeout is None or exc_value.timeout is self
         # Set state before suppress_interrupt: rescheduling the next alarm can
         # fire immediately if an outer deadline has already passed, and the
         # handler must not preempt this assignment.
-        if timeout is not None and timeout is not self:
+        if not is_own_timeout:
             self.state = TimeoutState.INTERRUPTED
         self.suppress_interrupt()
-        if timeout is None or timeout is self:
-            return self.swallow_exc
-        return False
+        return self.swallow_exc if is_own_timeout else False
 
     def cancel(self) -> None:
         """In case in the block you realize you don't need anymore
