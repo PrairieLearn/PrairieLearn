@@ -22,8 +22,11 @@ type AiGradingAvailabilityState =
   | { kind: 'concurrency_limit'; maxConcurrentJobs: number }
   | { kind: 'no_keys' }
   | { kind: 'ready_with_keys' }
-  | { kind: 'no_credits' }
-  | { kind: 'ready_with_credits'; creditBalanceMilliDollars: number };
+  | { kind: 'no_credits'; freeCreditRedemptionsRemaining: number }
+  | {
+      kind: 'ready_with_credits';
+      creditBalanceMilliDollars: number;
+    };
 
 export type AiGradingModelSelectionModalState =
   | { type: 'all'; numToGrade: number }
@@ -300,11 +303,20 @@ function AiGradingAvailabilityAlert({
         };
       case 'no_credits':
         return {
-          variant: 'danger',
+          variant: 'info',
           content: (
             <>
-              No credits remaining. Purchase credits on the{' '}
-              <SettingsLink url={aiGradingSettingsUrl} text="AI grading settings" /> page.
+              No credits added.{' '}
+              {state.freeCreditRedemptionsRemaining > 0 ? (
+                <>
+                  Redeem <strong>free credit</strong> or purchase credits{' '}
+                  <SettingsLink url={aiGradingSettingsUrl} text="here" />.
+                </>
+              ) : (
+                <>
+                  Purchase credits <SettingsLink url={aiGradingSettingsUrl} text="here" />.
+                </>
+              )}
             </>
           ),
         };
@@ -314,7 +326,7 @@ function AiGradingAvailabilityAlert({
   });
 
   return (
-    <Alert variant={variant} className="mb-3 py-2 small">
+    <Alert variant={variant} className="mb-3 py-2">
       {content}
     </Alert>
   );
@@ -401,8 +413,12 @@ export function AiGradingModelSelectionModal({
     if (isAvailabilityFetching || aiGradingAvailabilityInfo == null) return { kind: 'loading' };
     if (isAvailabilityError) return { kind: 'error' };
 
-    const { running_job_count, max_concurrent_jobs, credit_balance_milli_dollars } =
-      aiGradingAvailabilityInfo;
+    const {
+      running_job_count,
+      max_concurrent_jobs,
+      credit_balance_milli_dollars,
+      free_credit_redemptions_remaining,
+    } = aiGradingAvailabilityInfo;
 
     if (running_job_count >= max_concurrent_jobs) {
       return { kind: 'concurrency_limit', maxConcurrentJobs: max_concurrent_jobs };
@@ -411,7 +427,12 @@ export function AiGradingModelSelectionModal({
       if (availableProviders.length === 0) return { kind: 'no_keys' };
       return { kind: 'ready_with_keys' };
     }
-    if (credit_balance_milli_dollars <= 0) return { kind: 'no_credits' };
+    if (credit_balance_milli_dollars <= 0) {
+      return {
+        kind: 'no_credits',
+        freeCreditRedemptionsRemaining: free_credit_redemptions_remaining,
+      };
+    }
     return {
       kind: 'ready_with_credits',
       creditBalanceMilliDollars: credit_balance_milli_dollars,

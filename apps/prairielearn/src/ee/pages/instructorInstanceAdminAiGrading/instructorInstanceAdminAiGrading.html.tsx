@@ -16,6 +16,7 @@ import {
 } from '../../lib/ai-grading/ai-grading-models.shared.js';
 
 import { PurchaseCreditsModal } from './PurchaseCreditsModal.js';
+import { RedeemFreeCreditModal } from './RedeemFreeCreditModal.js';
 import type { AiGradingApiKeyCredential } from './utils/format.js';
 import { createAiGradingSettingsTrpcClient } from './utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
@@ -213,6 +214,7 @@ export function InstructorInstanceAdminAiGrading({
   stripePurchasingEnabled,
   initialCheckoutStatus,
   initialCheckoutAmountMilliDollars,
+  courseLabel,
 }: {
   trpcCsrfToken: string;
   initialUseCustomApiKeys: boolean;
@@ -222,6 +224,7 @@ export function InstructorInstanceAdminAiGrading({
   stripePurchasingEnabled: boolean;
   initialCheckoutStatus: 'success' | 'cancelled' | null;
   initialCheckoutAmountMilliDollars: number | null;
+  courseLabel: string;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -238,6 +241,7 @@ export function InstructorInstanceAdminAiGrading({
           stripePurchasingEnabled={stripePurchasingEnabled}
           initialCheckoutStatus={initialCheckoutStatus}
           initialCheckoutAmountMilliDollars={initialCheckoutAmountMilliDollars}
+          courseLabel={courseLabel}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -253,6 +257,7 @@ function AiGradingSettingsContent({
   stripePurchasingEnabled,
   initialCheckoutStatus,
   initialCheckoutAmountMilliDollars,
+  courseLabel,
 }: {
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
@@ -260,6 +265,7 @@ function AiGradingSettingsContent({
   stripePurchasingEnabled: boolean;
   initialCheckoutStatus: 'success' | 'cancelled' | null;
   initialCheckoutAmountMilliDollars: number | null;
+  courseLabel: string;
 }) {
   const trpc = useTRPC();
 
@@ -383,6 +389,7 @@ function AiGradingSettingsContent({
           stripePurchasingEnabled={stripePurchasingEnabled}
           initialCheckoutStatus={initialCheckoutStatus}
           initialCheckoutAmountMilliDollars={initialCheckoutAmountMilliDollars}
+          courseLabel={courseLabel}
         />
       </div>
 
@@ -422,17 +429,23 @@ function CreditPoolSection({
   stripePurchasingEnabled,
   initialCheckoutStatus,
   initialCheckoutAmountMilliDollars,
+  courseLabel,
 }: {
   useCustomApiKeys: boolean;
   canEdit: boolean;
   stripePurchasingEnabled: boolean;
   initialCheckoutStatus: 'success' | 'cancelled' | null;
   initialCheckoutAmountMilliDollars: number | null;
+  courseLabel: string;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const purchaseModalState = useModalState();
+  const redeemModalState = useModalState();
   const [checkoutStatus, setCheckoutStatus] = useState(initialCheckoutStatus);
+  const [redeemSuccessAmount, setRedeemSuccessAmount] = useState<number | null>(null);
+
+  const freeCreditStatusQuery = useQuery(trpc.freeCreditStatus.queryOptions());
 
   // Mirror the empty-state detection in `CreditPoolDashboard`. These reads share
   // a TanStack cache with the dashboard, so they don't trigger extra fetches.
@@ -461,6 +474,11 @@ function CreditPoolSection({
     }
   }, [initialCheckoutStatus, queryClient, trpc]);
 
+  const freeCreditStatus = freeCreditStatusQuery.data;
+  const freeCreditStatusLoaded = freeCreditStatus != null;
+  const hasFreeCreditAvailable =
+    freeCreditStatusLoaded && freeCreditStatus.redemptions_remaining > 0;
+
   return (
     <div className="border-top pt-3 mt-3">
       {checkoutStatus === 'success' && (
@@ -472,6 +490,12 @@ function CreditPoolSection({
           added to your course instance.
         </Alert>
       )}
+      {redeemSuccessAmount != null && (
+        <Alert variant="success" dismissible onClose={() => setRedeemSuccessAmount(null)}>
+          <i className="bi bi-check-circle-fill me-2" aria-hidden="true" />
+          {formatMilliDollars(redeemSuccessAmount)} in credits were added to your course instance.
+        </Alert>
+      )}
       {checkoutStatus === 'cancelled' && (
         <Alert variant="info" dismissible onClose={() => setCheckoutStatus(null)}>
           Payment cancelled. No credits were added.
@@ -479,7 +503,7 @@ function CreditPoolSection({
       )}
       <div
         className={clsx(
-          'd-flex justify-content-between align-items-center',
+          'd-flex justify-content-between align-items-center flex-wrap gap-2',
           useCustomApiKeys ? 'mb-1' : 'mb-3',
         )}
       >
@@ -487,18 +511,35 @@ function CreditPoolSection({
           <h2 className="h5 mb-0">AI grading credits</h2>
           {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
         </div>
-        {stripePurchasingEnabled && !isCreditPoolEmpty && (
-          <button
-            type="button"
-            className="btn btn-sm btn-primary d-flex align-items-center gap-2"
-            disabled={!canEdit}
-            title={!canEdit ? 'You must be a course owner to purchase credits' : undefined}
-            style={!canEdit ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-            onClick={() => purchaseModalState.showWithData(null)}
-          >
-            <i className="bi bi-cart-plus" aria-hidden="true" />
-            Purchase credits
-          </button>
+        {!isCreditPoolEmpty && (
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            {hasFreeCreditAvailable && (
+              <button
+                type="button"
+                className="btn btn-sm btn-success d-flex align-items-center gap-2"
+                disabled={!canEdit}
+                title={!canEdit ? 'You must be a course owner to redeem free credit' : undefined}
+                style={!canEdit ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                onClick={() => redeemModalState.showWithData(null)}
+              >
+                <i className="bi bi-gift" aria-hidden="true" />
+                Redeem free credit
+              </button>
+            )}
+            {stripePurchasingEnabled && freeCreditStatusLoaded && (
+              <button
+                type="button"
+                className="btn btn-sm btn-primary d-flex align-items-center gap-2"
+                disabled={!canEdit}
+                title={!canEdit ? 'You must be a course owner to purchase credits' : undefined}
+                style={!canEdit ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                onClick={() => purchaseModalState.showWithData(null)}
+              >
+                <i className="bi bi-cart-plus" aria-hidden="true" />
+                Purchase credits
+              </button>
+            )}
+          </div>
         )}
       </div>
       {useCustomApiKeys && (
@@ -515,8 +556,18 @@ function CreditPoolSection({
             ? () => purchaseModalState.showWithData(null)
             : undefined
         }
+        onRedeemFreeCreditClick={
+          hasFreeCreditAvailable && canEdit ? () => redeemModalState.showWithData(null) : undefined
+        }
       />
       <PurchaseCreditsModal {...purchaseModalState} />
+      <RedeemFreeCreditModal
+        {...redeemModalState}
+        redemptionsRemaining={freeCreditStatus?.redemptions_remaining ?? 0}
+        maxRedemptions={freeCreditStatus?.max_redemptions ?? 0}
+        courseLabel={courseLabel}
+        onSuccess={setRedeemSuccessAmount}
+      />
     </div>
   );
 }
