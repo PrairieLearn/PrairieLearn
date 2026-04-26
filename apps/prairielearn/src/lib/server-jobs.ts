@@ -10,9 +10,9 @@ import { logger } from '@prairielearn/logger';
 import {
   execute,
   loadSqlEquiv,
+  queryOptionalRow,
   queryRow,
   queryRows,
-  queryScalars,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
@@ -23,8 +23,9 @@ import type { JobSequenceResultsData } from '../components/JobSequenceResults.js
 
 import { ansiToHtml, chalk } from './chalk.js';
 import { config } from './config.js';
-import { type Job, JobSchema, JobSequenceSchema } from './db-types.js';
+import { EnumJobStatusSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
 import { JobSequenceWithJobsSchema, type JobSequenceWithTokens } from './server-jobs.types.js';
+import { patchServerJobProgress } from './serverJobProgressSocket.js';
 import * as socketServer from './socket-server.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -360,13 +361,25 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
     delete liveJobs[this.jobId];
 
-    await execute(sql.update_job_on_finish, {
-      job_sequence_id: this.jobSequenceId,
-      job_id: this.jobId,
-      output: this.output,
-      data: this.data,
-      status: err ? 'Error' : 'Success',
-    });
+    const finishResult = await queryOptionalRow(
+      sql.update_job_on_finish,
+      {
+        job_sequence_id: this.jobSequenceId,
+        job_id: this.jobId,
+        output: this.output,
+        data: this.data,
+        status: err ? 'Error' : 'Success',
+      },
+      z.object({ new_status: EnumJobStatusSchema }),
+    );
+
+    // If the sequence transitioned Stopping → Stopped because Stop was clicked
+    // after the job's own cancellation poll(s), the AI grading progress alert
+    // would otherwise stay on "Stopping..." until refresh — patch the cache
+    // so observing clients flip to the terminal Stopped state immediately.
+    if (finishResult?.new_status === 'Stopped') {
+      await patchServerJobProgress(this.jobSequenceId, { is_stopped: true });
+    }
 
     // Notify sockets.
     socketServer.io?.to('job-' + this.jobId).emit('update');
@@ -571,12 +584,17 @@ export async function errorAbandonedJobs() {
 
   for (const row of abandonedJobs) {
     logger.debug('Job abandoned by server, id: ' + row.id);
+    let abandonResult: { sequence_id: string; new_status: string } | null = null;
     try {
-      await execute(sql.update_job_on_error, {
-        job_id: row.id,
-        output: null,
-        error_message: 'Job abandoned by server',
-      });
+      abandonResult = await queryOptionalRow(
+        sql.update_job_on_error,
+        {
+          job_id: row.id,
+          output: null,
+          error_message: 'Job abandoned by server',
+        },
+        z.object({ sequence_id: IdSchema, new_status: EnumJobStatusSchema }),
+      );
     } catch (err) {
       Sentry.captureException(err);
       logger.error('errorAbandonedJobs: error updating job on error', err);
@@ -586,12 +604,21 @@ export async function errorAbandonedJobs() {
         socketServer.io!.to('jobSequence-' + row.job_sequence_id).emit('update');
       }
     }
+    if (abandonResult?.new_status === 'Stopped') {
+      await patchServerJobProgress(abandonResult.sequence_id, { is_stopped: true });
+    }
   }
 
-  const abandonedJobSequences = await queryScalars(sql.error_abandoned_job_sequences, IdSchema);
-  abandonedJobSequences.forEach(function (job_sequence_id) {
-    socketServer.io!.to('jobSequence-' + job_sequence_id).emit('update');
-  });
+  const abandonedJobSequences = await queryRows(
+    sql.error_abandoned_job_sequences,
+    z.object({ id: IdSchema, new_status: EnumJobStatusSchema }),
+  );
+  for (const row of abandonedJobSequences) {
+    socketServer.io!.to('jobSequence-' + row.id).emit('update');
+    if (row.new_status === 'Stopped') {
+      await patchServerJobProgress(row.id, { is_stopped: true });
+    }
+  }
 }
 
 export async function getJobSequence(

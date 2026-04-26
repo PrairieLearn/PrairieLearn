@@ -30,7 +30,7 @@ import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
  *
  * @param params.onStopJobSequence Optional callback to request graceful cancellation of an in-progress job. When provided, a "Stop" button is rendered on running jobs.
- * @param params.isStopPending Optional predicate returning true while a stop request for the given job sequence is in flight. Used to drive the spinner state on the Stop button.
+ * @param params.isStopPending Optional predicate returning true while a stop request for the given job sequence is in flight. The Stop button is hidden in that interval so the user doesn't double-click before the server-side state flips to Stopping.
  */
 export function ServerJobsProgressInfo({
   itemNames,
@@ -133,7 +133,7 @@ export function ServerJobsProgressInfo({
  *
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
  * @param params.onStopJobSequence Optional callback to request cancellation. When provided, a "Stop" button is rendered.
- * @param params.isStopPending Whether a stop request for this job is currently in flight (drives the button spinner).
+ * @param params.isStopPending Whether a stop request for this job is currently in flight. The Stop button is hidden in that interval to prevent double-clicks before the server flips the job to Stopping.
  */
 function ServerJobProgressInfo({
   jobSequenceId,

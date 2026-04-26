@@ -105,16 +105,20 @@ WITH
 UPDATE job_sequences AS js
 SET
   finish_date = CURRENT_TIMESTAMP,
-  -- A sequence in Stopping always lands in Stopped regardless of how the
-  -- inner job finished, so an AI grading run that completes naturally after
-  -- Stop was clicked still reaches a terminal state.
+  -- Only mask Stopping when the inner job finished successfully (i.e. the
+  -- job took the explicit cancellation path). If the inner job errored,
+  -- preserve the Error status so real failures aren't hidden by a racing
+  -- Stop click.
   status = CASE
-    WHEN js.status = 'Stopping' THEN 'Stopped'::enum_job_status
+    WHEN js.status = 'Stopping'
+    AND $status::enum_job_status = 'Success'::enum_job_status THEN 'Stopped'::enum_job_status
     ELSE $status::enum_job_status
   END
 WHERE
   js.id = $job_sequence_id
-  AND js.status IN ('Running', 'Stopping');
+  AND js.status IN ('Running', 'Stopping')
+RETURNING
+  js.status AS new_status;
 
 -- BLOCK select_job_output
 SELECT
@@ -177,8 +181,10 @@ WITH
 UPDATE job_sequences AS js
 SET
   finish_date = j.finish_date,
-  -- A sequence already in Stopping should land in Stopped, not Error,
-  -- since the user-initiated cancel is what put it in this state.
+  -- A sequence already in Stopping should land in Stopped, not Error, when
+  -- the inner job is just being abandoned by the cron sweeper. The user
+  -- explicitly requested cancellation; an unrelated host crash shouldn't
+  -- override that intent.
   status = CASE
     WHEN js.status = 'Stopping' THEN 'Stopped'::enum_job_status
     ELSE j.status
@@ -187,7 +193,10 @@ FROM
   job_sequence_updates AS j
 WHERE
   js.id = j.job_sequence_id
-  AND j.update_job_sequence;
+  AND j.update_job_sequence
+RETURNING
+  js.id AS sequence_id,
+  js.status AS new_status;
 
 -- BLOCK select_abandoned_jobs
 SELECT
@@ -236,7 +245,8 @@ WHERE
     ) -- no running jobs and no recently finished jobs
   )
 RETURNING
-  js.id;
+  js.id,
+  js.status AS new_status;
 
 -- BLOCK select_job_sequence_with_course_id_as_json
 WITH
