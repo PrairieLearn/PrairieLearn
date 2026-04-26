@@ -135,7 +135,7 @@ class ThreadingTimeout:
         """Setting up the resource that interrupts the block"""
         if self._use_signal:
             self._prev_handler = signal.signal(signal.SIGALRM, self._alarm_handler)
-            # setitimer returns (previous_interval, previous_remaining); we save remaining
+            # setitimer returns (previous_remaining, previous_interval); we save remaining
             prev = signal.setitimer(signal.ITIMER_REAL, self.seconds)
             self._prev_timer = prev[0]
         else:
