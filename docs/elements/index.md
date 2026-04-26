@@ -1,6 +1,6 @@
 # Elements for `question.html`
 
-PrairieLearn [questions](../question/overview.md) are built from `pl-*` tags inside [`question.html`](../question/template.md). This page lists every element grouped by what you're trying to do. If you don't find the element / behavior you are looking for, consider using a [custom grade function](../question/server.md#step-5-grade) (recommended) or [building a custom element](../devElements.md).
+PrairieLearn [questions](../question/overview.md) are built from `pl-*` tags inside [`question.html`](../question/template.md) ("elements"). These elements define the behavior of the question: what the student sees, what they input, and how it is graded. This page lists every element grouped by what you're trying to do. If you don't find the element / behavior you are looking for, consider using a [custom grade function](../question/server.md#step-5-grade) (recommended) or [building a custom element](../devElements.md).
 
 !!! tip
 
