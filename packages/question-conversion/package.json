@@ -1,0 +1,44 @@
+{
+  "name": "@prairielearn/question-conversion",
+  "version": "0.1.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/question-conversion"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "bin": {
+    "question-convert": "./dist/bin/convert.js"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@prairielearn/logger": "workspace:^",
+    "@vscode/vscode-languagedetection": "^1.0.23",
+    "commander": "^14.0.3",
+    "fast-xml-parser": "^5.2.0",
+    "he": "^1.2.0",
+    "mime": "^4.1.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/he": "^1.2.3",
+    "@types/node": "^24.12.2",
+    "@types/uuid": "^11.0.0",
+    "@typescript/native-preview": "^7.0.0-dev.20260305.1",
+    "@vitest/coverage-v8": "^4.1.2",
+    "source-map-support": "^0.5.21",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.2"
+  }
+}

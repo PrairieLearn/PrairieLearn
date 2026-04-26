@@ -43,6 +43,7 @@ class OrderBlocksAnswerData(TypedDict):
     ranking: int
     index: int
     tag: str
+    initially_placed: bool
     distractor_for: str | None
     depends: Edges | ColoredEdges  # only used with DAG grader
     group_info: GroupInfo  # only used with DAG grader
@@ -59,7 +60,6 @@ FIRST_WRONG_TYPES = frozenset([
 ])
 
 
-TAB_SIZE_PX = 50
 FIRST_WRONG_FEEDBACK = {
     "incomplete": "Your answer is correct so far, but it is incomplete.",
     "wrong-at-block": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
@@ -124,6 +124,28 @@ def build_grading_dag(
         return depends_graph, {}
     else:
         raise ValueError(f"Unsupported grading method: {grading_method}")
+
+
+def separate_distractor_groups(
+    all_blocks: list[OrderBlocksAnswerData],
+) -> list[OrderBlocksAnswerData]:
+    """Shuffle blocks, putting distractor groups after all individual blocks."""
+    random.shuffle(all_blocks)
+    distractor_tags = [
+        tag for block in all_blocks if (tag := block.get("distractor_for"))
+    ]
+    distractor_group_blocks = [
+        block
+        for block in all_blocks
+        if block.get("distractor_for") or block.get("tag") in distractor_tags
+    ]
+    individual_blocks = [
+        block
+        for block in all_blocks
+        if not block.get("distractor_for") and block.get("tag") not in distractor_tags
+    ]
+
+    return individual_blocks + distractor_group_blocks
 
 
 def shuffle_distractor_groups(
@@ -199,6 +221,7 @@ def prepare(html: str, data: pl.QuestionData) -> None:
             "ranking": answer_options.ranking,
             "index": i,
             "tag": answer_options.tag,
+            "initially_placed": answer_options.initially_placed,
             "distractor_for": answer_options.distractor_for,
             "depends": answer_options.depends,  # only used with DAG grader
             "group_info": answer_options.group_info,  # only used with DAG grader
@@ -229,6 +252,11 @@ def prepare(html: str, data: pl.QuestionData) -> None:
         all_blocks.sort(key=lambda a: a["index"])
     elif order_blocks_options.source_blocks_order == SourceBlocksOrderType.ALPHABETIZED:
         all_blocks.sort(key=lambda a: a["inner_html"])
+    elif (
+        order_blocks_options.source_blocks_order
+        == SourceBlocksOrderType.RANDOM_SECTIONS
+    ):
+        all_blocks = separate_distractor_groups(all_blocks)
     else:
         assert_never(order_blocks_options.source_blocks_order)
 
@@ -316,25 +344,34 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "question":
         editable = data["editable"]
 
+        all_blocks = data["params"][answer_name]
+        initially_placed_blocks = sorted(
+            [block for block in all_blocks if block.get("initially_placed")],
+            key=lambda x: x["index"],
+        )
+
         # We aren't allowed to mutate the `data` object during render, so we'll
-        # make a deep copy of the submitted answer so we can update the `indent`
-        # to a value suitable for rendering.
+        # make a deep copy of the submitted answer so we can update indentation
+        # fields to values suitable for rendering.
         student_previous_submission = deepcopy(
-            data["submitted_answers"].get(answer_name, [])
+            data["submitted_answers"].get(answer_name, initially_placed_blocks)
         )
         submitted_block_ids = {block["uuid"] for block in student_previous_submission}
 
-        all_blocks = data["params"][answer_name]
         source_blocks = [
-            block for block in all_blocks if block["uuid"] not in submitted_block_ids
+            {**block, "indent_depth": 0}
+            for block in all_blocks
+            if block["uuid"] not in submitted_block_ids
         ]
 
         for option in student_previous_submission:
             submission_indent = option.get("indent", None)
 
             if submission_indent is not None:
-                submission_indent = int(submission_indent) * TAB_SIZE_PX
-            option["indent"] = submission_indent
+                submission_indent = int(submission_indent)
+            option["indent_depth"] = (
+                max(0, submission_indent) if submission_indent is not None else 0
+            )
 
         help_text = (
             f"Move answer blocks from the options area to the {dropzone_layout.value}."
@@ -393,7 +430,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         student_submission = [
             {
                 "inner_html": attempt["inner_html"],
-                "indent": (attempt["indent"] or 0) * TAB_SIZE_PX,
+                "indent_depth": max(0, int(attempt.get("indent") or 0)),
                 "badge_type": attempt.get("badge_type", ""),
                 "icon": attempt.get("icon", ""),
                 # We intentionally don't include distractor_feedback and ordering_feedback here when
@@ -479,7 +516,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         question_solution = [
             {
                 "inner_html": solution["inner_html"],
-                "indent": max(0, (solution["indent"] or 0) * TAB_SIZE_PX),
+                "indent_depth": max(0, int(solution["indent"] or 0)),
             }
             for solution in (
                 solve_problem(correct_answers, grading_method, has_optional_blocks)
@@ -523,6 +560,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if (not order_block_options.allow_blank) and (
         student_answer is None or student_answer == []
     ):
+        data["submitted_answers"][answer_name] = []
+        data["submitted_answers"].pop(answer_raw_name, None)
         data["format_errors"][answer_name] = (
             "Your submitted answer was blank; you did not drag any answer blocks into the answer area."
         )

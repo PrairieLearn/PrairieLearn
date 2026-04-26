@@ -60,6 +60,11 @@ const templateQuestionQids: string[] = fg
   .map((p) => path.dirname(p));
 
 describe('Auto-test questions in exampleCourse', () => {
+  // TODO: Add a test that validates template question HTML with validateHTML()
+  // and asserts zero errors and warnings. This would catch issues like input
+  // elements nested inside panel elements. Blocked on adding more elements to
+  // SUPPORTED_ELEMENTS so that templates using e.g. pl-figure don't fail.
+
   it('has correct topic for all template questions', async () => {
     const questionsWithIncorrectTopics: string[] = [];
     for (const qid of templateQuestionQids) {

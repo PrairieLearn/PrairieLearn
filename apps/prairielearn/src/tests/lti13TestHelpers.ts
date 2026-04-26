@@ -3,7 +3,7 @@ import * as jose from 'jose';
 import type nodeJose from 'node-jose';
 import { assert } from 'vitest';
 
-import { execute, queryRow } from '@prairielearn/postgres';
+import { execute, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
@@ -373,7 +373,7 @@ export async function grantCoursePermissions({
  * Used for testing cross-institution authorization checks.
  */
 export async function createCrossInstitutionFixture() {
-  const institutionId = await queryRow(
+  const institutionId = await queryScalar(
     `INSERT INTO institutions (short_name, long_name, uid_regexp)
      VALUES ('Other', 'Other Institution', '@other\\.edu$')
      RETURNING id`,
@@ -381,7 +381,7 @@ export async function createCrossInstitutionFixture() {
     IdSchema,
   );
 
-  const courseId = await queryRow(
+  const courseId = await queryScalar(
     `INSERT INTO courses (short_name, title, institution_id, path, branch, display_timezone, options)
      VALUES ('OTHER 101', 'Other Course', $institution_id, '/course2', 'main', 'America/Chicago', '{}')
      RETURNING id`,
@@ -389,7 +389,7 @@ export async function createCrossInstitutionFixture() {
     IdSchema,
   );
 
-  const courseInstanceId = await queryRow(
+  const courseInstanceId = await queryScalar(
     `INSERT INTO course_instances (course_id, short_name, long_name, display_timezone, enrollment_code)
      VALUES ($course_id, 'Other CI', 'Other Course Instance', 'America/Chicago', 'OTHER101-001')
      RETURNING id`,

@@ -8,8 +8,8 @@ import { fetchInstanceHostname, fetchInstanceIdentity } from '@prairielearn/aws-
 
 type AbstractConfig = Record<string, unknown>;
 
-export interface ConfigSource {
-  load: (existingConfig: AbstractConfig) => Promise<AbstractConfig>;
+export interface ConfigSource<T extends AbstractConfig = AbstractConfig> {
+  load: (existingConfig: T) => Promise<Partial<T>>;
 }
 
 export function makeLiteralConfigSource(config: AbstractConfig) {
@@ -126,7 +126,7 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
     this.resolvedConfig = schema.parse({});
   }
 
-  async loadAndValidate(sources: ConfigSource[] = []) {
+  async loadAndValidate(sources: ConfigSource<any>[] = []) {
     let config = this.schema.parse({});
     // If the config setting is an array, override instead of merge
     const mergeRule = (_obj: any, src: any) => (Array.isArray(src) ? src : undefined);

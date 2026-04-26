@@ -103,7 +103,7 @@ async function closeSql(): Promise<void> {
   await sqldb.closeAsync();
 }
 
-async function databaseExists(dbName: string): Promise<boolean> {
+export async function databaseExists(dbName: string): Promise<boolean> {
   const client = new pg.Client(POSTGRES_INIT_CONNECTION_STRING);
   await client.connect();
   const result = await client.query(
@@ -219,7 +219,6 @@ export async function dropTemplate(): Promise<void> {
 /**
  * Helper function for testing migrations.
  *
- * @knipignore
  * @param params
  * @param params.name The name of the migration to test.
  * @param params.beforeMigration A function to run before the migration.

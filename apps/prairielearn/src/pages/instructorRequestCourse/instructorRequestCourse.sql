@@ -1,7 +1,7 @@
 -- BLOCK get_requests
 SELECT
-  to_json(r.*) AS course_request,
-  to_json(u.*) AS approved_by_user
+  to_jsonb(r.*) AS course_request,
+  to_jsonb(u.*) AS approved_by_user
 FROM
   course_requests AS r
   LEFT JOIN users AS u ON u.id = r.approved_by

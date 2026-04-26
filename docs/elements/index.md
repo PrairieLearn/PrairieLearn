@@ -18,6 +18,7 @@ When writing questions, there exists a core pool of elements that provides commo
 - [`pl-number-input`](pl-number-input.md): Fill in a **numerical** value within a specific tolerance level such as 3.14, -1.921, and so on.
 - [`pl-order-blocks`](pl-order-blocks.md): Select and arrange given blocks of code or text.
 - [`pl-rich-text-editor`](pl-rich-text-editor.md): Provide an in-browser formattable text editor for open-ended responses and essays.
+- [`pl-sketch`](pl-sketch.md): Sketch curves and other mathematical objects (e.g., points, asymptotes, polygons).
 - [`pl-string-input`](pl-string-input.md): Fill in a **string** value such as `"Illinois"`, `"GATTACA"`, `"computer"`, and so on.
 - [`pl-symbolic-input`](pl-symbolic-input.md): Fill in a **symbolic** value such as `x^2`, `sin(z)`, `mc^2`, and so on.
 - [`pl-units-input`](pl-units-input.md): Fill in a **number** and a **unit** such as "1.5 m", "14 ms", "6.3 ft", and so on.
@@ -59,8 +60,6 @@ When writing questions, there exists a core pool of elements that provides commo
   - **Deprecated**: use [`pl-multiple-choice`](pl-multiple-choice.md) with `display="dropdown"` for individual elements, or [`pl-matching`](pl-matching.md) for multiple dropdowns with the same set of options.
 - [`pl-prairiedraw-figure`](pl-prairiedraw-figure.md): Show a PrairieDraw figure.
   - **Deprecated**: use [`pl-drawing`](../pl-drawing/index.md) instead.
-- [`pl-threejs`](pl-threejs.md): Enables 3D scene display and problem submission.
-  - **Deprecated**: the features of required libraries are no longer maintained.
 - [`pl-variable-score`](pl-variable-score.md): Displays a partial score for a submitted element.
   - **Deprecated** as submission elements in `v3` all have score display options.
 
@@ -107,7 +106,6 @@ When writing questions, there exists a core pool of elements that provides commo
     'pl-submission-panel-element': 'pl-submission-panel/',
     'pl-symbolic-input-element': 'pl-symbolic-input/',
     'pl-template-element': 'pl-template/',
-    'pl-threejs-element': 'pl-threejs/',
     'pl-units-input-element': 'pl-units-input/',
     'pl-variable-output-element': 'pl-variable-output/',
     'pl-variable-score-element': 'pl-variable-score/',

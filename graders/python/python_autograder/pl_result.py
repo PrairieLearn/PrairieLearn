@@ -130,11 +130,11 @@ class PLTestResult(unittest.TestResult):
 
     def addFailure(self, test: unittest.TestCase, err: Any) -> None:  # noqa: N802
         unittest.TestResult.addFailure(self, test, err)
-        # # We can't easily import PLTestCase to type these fields
-        if test.points is None:  # type: ignore
+        points = getattr(test, "points", None)
+        if points is None:
             self.results[-1]["points"] = 0
         else:
-            self.results[-1]["points"] = test.points * self.results[-1]["max_points"]  # type: ignore
+            self.results[-1]["points"] = points * self.results[-1]["max_points"]
 
     def stopTest(self, test: unittest.TestCase) -> None:  # noqa: N802
         # Never write output back to the console

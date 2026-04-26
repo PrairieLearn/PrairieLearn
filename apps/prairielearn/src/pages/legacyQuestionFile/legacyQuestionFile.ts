@@ -17,7 +17,7 @@ router.get(
     const question = res.locals.question;
     const course = res.locals.course;
     const filename = req.params.filename;
-    const access_allowed = await sqldb.queryRow(
+    const access_allowed = await sqldb.queryScalar(
       sql.check_client_files,
       {
         question_id: question.id,

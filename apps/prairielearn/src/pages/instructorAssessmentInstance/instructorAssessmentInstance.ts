@@ -184,19 +184,19 @@ router.post(
       await ltiOutcomes.updateScore(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_question_points') {
-      const { modified_at_conflict, grading_job_id } = await updateInstanceQuestionScore(
-        res.locals.assessment,
-        req.body.instance_question_id,
-        null, // submission_id
-        req.body.modified_at ? new Date(req.body.modified_at) : null, // check_modified_at
-        {
+      const { modified_at_conflict, grading_job_id } = await updateInstanceQuestionScore({
+        assessment: res.locals.assessment,
+        instance_question_id: req.body.instance_question_id,
+        submission_id: null,
+        check_modified_at: req.body.modified_at ? new Date(req.body.modified_at) : null,
+        score: {
           points: req.body.points,
           manual_points: req.body.manual_points,
           auto_points: req.body.auto_points,
           score_perc: req.body.score_perc,
         },
-        res.locals.authn_user.id,
-      );
+        authn_user_id: res.locals.authn_user.id,
+      });
       if (modified_at_conflict) {
         return res.redirect(
           `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${grading_job_id}`,

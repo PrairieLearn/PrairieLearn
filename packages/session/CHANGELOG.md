@@ -1,5 +1,12 @@
 # @prairielearn/session
 
+## 4.0.2
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+- 373afc1: Pin Express 4-era dependencies to current major versions
+
 ## 4.0.1
 
 ### Patch Changes

@@ -10,7 +10,6 @@ import { config } from '../lib/config.js';
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
 import * as filePaths from '../lib/file-paths.js';
 import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
-import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import {
   type GenerateResultData,
@@ -19,6 +18,7 @@ import {
   type ParseSubmission,
   type PrepareResultData,
   type PrepareVariant,
+  type QuestionRenderRequiredLocals,
   type QuestionServerReturnValue,
   type RenderResultData,
   type RenderSelection,
@@ -146,15 +146,17 @@ export async function grade(
 // The following functions don't do anything for v2 questions; they're just
 // here to satisfy the question server interface.
 
-export async function render(
-  _renderSelection: RenderSelection,
-  _variant: Variant,
-  _question: Question,
-  _submission: Submission | null,
-  submissions: Submission[],
-  _course: Course,
-  _locals: UntypedResLocals,
-): QuestionServerReturnValue<RenderResultData> {
+export async function render({
+  submissions,
+}: {
+  renderSelection: RenderSelection;
+  variant: Variant;
+  question: Question;
+  submission: Submission | null;
+  submissions: Submission[];
+  course: Course;
+  locals: QuestionRenderRequiredLocals;
+}): QuestionServerReturnValue<RenderResultData> {
   const data = {
     extraHeadersHtml: '',
     questionHtml: '',

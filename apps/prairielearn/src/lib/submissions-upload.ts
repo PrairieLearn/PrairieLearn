@@ -235,7 +235,7 @@ export async function uploadSubmissions(
         const assessment_instance_id = await getOrInsertAssessmentInstance(
           [entityKey, row['Assessment instance'].toString()],
           async () =>
-            await sqldb.queryRow(
+            await sqldb.queryScalar(
               sql.insert_assessment_instance,
               {
                 assessment_id: assessment.id,
@@ -250,7 +250,7 @@ export async function uploadSubmissions(
         const instance_question_id = await getOrInsertInstanceQuestion(
           [assessment_instance_id, question.id],
           async () =>
-            await sqldb.queryRow(
+            await sqldb.queryScalar(
               sql.insert_instance_question,
               {
                 assessment_instance_id,
@@ -264,7 +264,7 @@ export async function uploadSubmissions(
         const variant_id = await getOrInsertVariant(
           [assessment_instance_id, question.id, row.Variant.toString()],
           async () =>
-            await sqldb.queryRow(
+            await sqldb.queryScalar(
               sql.insert_variant,
               {
                 course_id,
@@ -289,7 +289,7 @@ export async function uploadSubmissions(
             ),
         );
 
-        const submission_id = await sqldb.queryRow(
+        const submission_id = await sqldb.queryScalar(
           sql.insert_submission,
           {
             variant_id,
@@ -339,12 +339,12 @@ export async function uploadSubmissions(
           };
         }
 
-        await updateInstanceQuestionScore(
+        await updateInstanceQuestionScore({
           assessment,
           instance_question_id,
           submission_id,
-          null,
-          {
+          check_modified_at: null,
+          score: {
             manual_score_perc: null,
             manual_points: run(() => {
               if (assessmentQuestion.manual_rubric_id) {
@@ -359,7 +359,7 @@ export async function uploadSubmissions(
             manual_rubric_data,
           },
           authn_user_id,
-        );
+        });
 
         successCount++;
       } catch (err) {

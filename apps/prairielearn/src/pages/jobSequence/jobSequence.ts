@@ -2,6 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { run } from '@prairielearn/run';
 
 import { getJobSequence } from '../../lib/server-jobs.js';
 
@@ -53,7 +54,32 @@ router.get(
       }
     }
 
-    res.send(JobSequence({ resLocals: res.locals, job_sequence }));
+    const referrer = run(() => {
+      // Only accept a referrer query parameter if it's parseable and is a
+      // relative path, to prevent open redirect vulnerabilities.
+      if (typeof req.query.referrer === 'string') {
+        const base = 'https://placeholder.invalid';
+        const resolved = URL.parse(req.query.referrer, base);
+        if (resolved?.origin === base) {
+          return resolved.pathname + resolved.search;
+        }
+        return null;
+      }
+      // If the referrer query parameter is not present, fall back to the
+      // Referrer header.
+      const referrerHeader = req.get('Referrer');
+      if (!referrerHeader) return null;
+      const referrerUrl = URL.parse(referrerHeader);
+      // Block referrers using non-http(s) protocols for security reasons. To
+      // avoid problems with reverse proxy setups, we only check the protocol of
+      // the referrer URL and not the origin. If the URL is null (i.e., it
+      // couldn't be parsed), then we ignore it and return null.
+      if (referrerUrl?.protocol === 'http:' || referrerUrl?.protocol === 'https:') {
+        return referrerHeader;
+      }
+      return null;
+    });
+    res.send(JobSequence({ resLocals: res.locals, job_sequence, referrer }));
   }),
 );
 

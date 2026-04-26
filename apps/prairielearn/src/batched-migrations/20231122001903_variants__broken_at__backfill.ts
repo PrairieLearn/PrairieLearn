@@ -1,13 +1,13 @@
 import z from 'zod';
 
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 export default makeBatchedMigration({
   async getParameters() {
-    const max = await queryRow(
+    const max = await queryScalar(
       'SELECT MAX(id) as max from variants;',
       z.bigint({ coerce: true }).nullable(),
     );

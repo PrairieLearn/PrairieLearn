@@ -26,7 +26,7 @@ SELECT
   a.tid AS assessment_name,
   ci.short_name AS course_instance_name
 FROM
-  JSON_ARRAY_ELEMENTS($chunks_arr::json) AS chunks_arr
+  JSONB_ARRAY_ELEMENTS($chunks_arr::jsonb) AS chunks_arr
   -- Note that we specifically use a LEFT JOIN here - this is what allows the
   -- caller to differentiate between a chunk that exists and one that does not.
   -- Chunks that don't exist will have a NULL id, but they'll still contain
@@ -130,7 +130,7 @@ SELECT
   a.id AS assessment_id,
   (chunk ->> 'uuid')::uuid
 FROM
-  JSON_ARRAY_ELEMENTS($chunks) AS chunk (json)
+  JSONB_ARRAY_ELEMENTS($chunks::jsonb) AS chunk
   LEFT JOIN questions AS q ON (
     q.qid = (chunk ->> 'questionName')
     AND q.deleted_at IS NULL
@@ -170,7 +170,7 @@ WITH
       a.id AS assessment_id,
       (cm ->> 'uuid')::uuid AS uuid
     FROM
-      JSON_ARRAY_ELEMENTS($chunks) AS cm
+      JSONB_ARRAY_ELEMENTS($chunks::jsonb) AS cm
       LEFT JOIN questions AS q ON (
         q.qid = (cm ->> 'questionName')
         AND q.course_id = $course_id

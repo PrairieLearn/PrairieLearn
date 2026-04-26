@@ -1,14 +1,14 @@
 import assert from 'assert';
-import url from 'node:url';
 
 import { type Request, type Response, Router } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
-import { canDeleteAssessmentInstance, gradeAssessmentInstance } from '../../lib/assessment.js';
+import { gradeAssessmentInstance } from '../../lib/assessment.js';
+import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
@@ -18,9 +18,11 @@ import { reportIssueFromForm } from '../../lib/issues.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { getCanonicalHost } from '../../lib/url.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
+import { selectEnabledToolsForInstanceQuestion } from '../../models/assessment.js';
 import { selectUserById } from '../../models/user.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
@@ -34,7 +36,7 @@ router.use(enterpriseOnly(() => checkPlanGrantsForQuestion));
 router.use((req, res, next) => {
   // We deliberately use `url` instead of `originalUrl`. The former is relative to
   // where this router is mounted, while the latter is absolute to the app.
-  const pathname = url.parse(req.url).pathname ?? '/';
+  const { pathname } = new URL(req.url, getCanonicalHost(req));
 
   // Because this router is mounted a general path, its middleware will also
   // be run for sub-routes like `submissions/:submission_id/file/:filename`
@@ -179,6 +181,9 @@ async function validateAndProcessSubmission(req: Request, res: Response) {
   if (!res.locals.authz_result.active) {
     throw new HttpStatusError(400, 'This assessment is not accepting submissions at this time.');
   }
+  if (res.locals.instance_question_info.question_access_mode === 'read_only_lockpoint') {
+    throw new HttpStatusError(403, 'This question is read-only after crossing a lockpoint');
+  }
   if (res.locals.group_config?.has_roles && !res.locals.group_role_permissions.can_submit) {
     throw new HttpStatusError(
       403,
@@ -291,6 +296,7 @@ router.get(
       instance_question: res.locals.instance_question,
       variant,
       user: res.locals.user,
+      authn_user: res.locals.authn_user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: res.locals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
       authorizedEdit: res.locals.authz_result.authorized_edit,
@@ -313,12 +319,17 @@ router.get(
     const isAssessmentAvailable =
       res.locals.assessment_instance.open && res.locals.authz_result.active;
 
+    const enabledTools = await selectEnabledToolsForInstanceQuestion({
+      instance_question_id: res.locals.instance_question.id,
+      assessment_id: res.locals.assessment.id,
+    });
+
     if (variant_id === null && !isAssessmentAvailable) {
       // We can't generate a new variant in this case, so we
       // fetch and display the most recent non-broken variant.
       // If no such variant exists, we tell the user that a new variant
       // cannot be generated.
-      const last_variant_id = await queryOptionalRow(
+      const last_variant_id = await queryOptionalScalar(
         sql.select_last_variant_id,
         { instance_question_id: res.locals.instance_question.id },
         IdSchema,
@@ -328,6 +339,7 @@ router.get(
           StudentInstanceQuestion({
             resLocals: res.locals,
             userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
+            enabledTools,
           }),
         );
         return;
@@ -390,6 +402,7 @@ router.get(
         assignedGrader,
         lastGrader,
         questionCopyTargets,
+        enabledTools,
       }),
     );
   }),
