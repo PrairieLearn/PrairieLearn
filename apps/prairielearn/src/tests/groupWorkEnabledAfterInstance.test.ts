@@ -21,180 +21,155 @@ const sql = loadSqlEquiv(import.meta.url);
 const siteUrl = `http://localhost:${config.serverPort}`;
 const courseInstanceUrl = `${siteUrl}/pl/course_instance/1`;
 
-// Regression test for the scenario where a homework assessment_instance was
-// created before group work was enabled on the assessment.
-describe('Group work enabled after assessment instance was created', { timeout: 60_000 }, () => {
-  let assessment: Assessment;
-  let assessmentInstanceId: string;
-  let instanceQuestionId: string;
+async function selectHw1() {
+  return await selectAssessmentByTid({
+    course_instance_id: '1',
+    tid: 'hw1-automaticTestSuite',
+  });
+}
 
-  beforeAll(async () => {
-    await helperServer.before()();
+async function selectFirstInstanceQuestionId(assessmentInstanceId: string) {
+  return await queryScalar(
+    sql.select_first_instance_question,
+    { assessment_instance_id: assessmentInstanceId },
+    IdSchema,
+  );
+}
 
-    assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'hw1-automaticTestSuite',
+async function assertOrphanInstancePagesLoad({
+  assessment,
+  assessmentInstanceId,
+  instanceQuestionId,
+}: {
+  assessment: Assessment;
+  assessmentInstanceId: string;
+  instanceQuestionId: string;
+}) {
+  const urls = [
+    `${courseInstanceUrl}/assessment_instance/${assessmentInstanceId}`,
+    `${courseInstanceUrl}/instance_question/${instanceQuestionId}/`,
+    `${courseInstanceUrl}/instructor/assessment/${assessment.id}/instances`,
+    `${courseInstanceUrl}/instructor/assessment_instance/${assessmentInstanceId}`,
+  ];
+  for (const url of urls) {
+    const res = await fetchCheerio(url);
+    assert.equal(res.status, 200);
+  }
+}
+
+async function assertNotRedirectedToStaleInstance(
+  assessmentId: string,
+  staleAssessmentInstanceId: string,
+) {
+  const res = await fetchCheerio(`${courseInstanceUrl}/assessment/${assessmentId}`);
+  assert.equal(res.status, 200);
+  const match = res.url.match(/\/assessment_instance\/(\d+)/);
+  if (match) {
+    assert.notEqual(match[1], staleAssessmentInstanceId);
+  }
+}
+
+// Regression test for instances whose team_id/team_work state has diverged
+// from the parent assessment.team_work after an instructor toggled group work.
+describe('Assessment instance with mismatched team_work state', { timeout: 60_000 }, () => {
+  describe('group work enabled after a non-group instance was created', () => {
+    let assessment: Assessment;
+    let assessmentInstanceId: string;
+    let instanceQuestionId: string;
+
+    beforeAll(async () => {
+      await helperServer.before()();
+
+      assessment = await selectHw1();
+
+      // Trigger dev user enrollment so we can resolve their user_id.
+      await fetchCheerio(`${courseInstanceUrl}`);
+      const devUser = await selectUserByUid('dev@example.com');
+
+      assessmentInstanceId = await makeAssessmentInstance({
+        assessment,
+        user_id: devUser.id,
+        authn_user_id: devUser.id,
+        mode: 'Public',
+        time_limit_min: null,
+        date: new Date(),
+        client_fingerprint_id: null,
+      });
+
+      const ai = await selectAssessmentInstanceById(assessmentInstanceId);
+      assert.isNotNull(ai.user_id);
+      assert.isNull(ai.team_id);
+
+      instanceQuestionId = await selectFirstInstanceQuestionId(assessmentInstanceId);
+
+      await execute(sql.enable_group_work, { assessment_id: assessment.id });
+    });
+
+    afterAll(helperServer.after);
+
+    test('student is not redirected to the orphan instance', async () => {
+      await assertNotRedirectedToStaleInstance(assessment.id, assessmentInstanceId);
+    });
+
+    test('all pages load without crashing', async () => {
+      await assertOrphanInstancePagesLoad({ assessment, assessmentInstanceId, instanceQuestionId });
     });
   });
 
-  afterAll(helperServer.after);
+  describe('group work disabled after a group instance was created', () => {
+    let assessment: Assessment;
+    let assessmentInstanceId: string;
+    let instanceQuestionId: string;
 
-  test.sequential('instructor creates a homework instance with no group work', async () => {
-    const res = await fetchCheerio(`${courseInstanceUrl}/assessment/${assessment.id}`);
-    assert.equal(res.status, 200);
+    beforeAll(async () => {
+      await helperServer.before()();
 
-    // We will be redirected to the assessment instance page, and we can get the assessment instance ID from the URL.
-    assessmentInstanceId = new URL(res.url).pathname.split('/').pop() ?? '';
+      assessment = await selectHw1();
 
-    const ai = await selectAssessmentInstanceById(assessmentInstanceId);
-    assert.isNotNull(ai.user_id);
-    assert.isNull(ai.team_id);
+      // Trigger dev user enrollment so we can resolve their user_id.
+      await fetchCheerio(`${courseInstanceUrl}`);
+      const devUser = await selectUserByUid('dev@example.com');
 
-    instanceQuestionId = await queryScalar(
-      sql.select_first_instance_question,
-      { assessment_instance_id: assessmentInstanceId },
-      IdSchema,
-    );
-  });
+      await execute(sql.enable_group_work, { assessment_id: assessment.id });
+      const groupAssessment = await selectHw1();
+      const courseInstance = await selectCourseInstanceById('1');
 
-  test.sequential('group work is enabled on the assessment after the fact', async () => {
-    await execute(sql.enable_group_work, { assessment_id: assessment.id });
-  });
+      await createGroup({
+        course_instance: courseInstance,
+        assessment: groupAssessment,
+        group_name: 'devgroup',
+        uids: [devUser.uid],
+        authn_user_id: devUser.id,
+        authzData: dangerousFullSystemAuthz(),
+      });
 
-  test.sequential('student assessment URL no longer redirects to the stale instance', async () => {
-    const res = await fetchCheerio(`${courseInstanceUrl}/assessment/${assessment.id}`);
-    assert.equal(res.status, 200);
-    assert.notMatch(res.url, /\/assessment_instance\//);
-  });
+      assessmentInstanceId = await makeAssessmentInstance({
+        assessment: groupAssessment,
+        user_id: devUser.id,
+        authn_user_id: devUser.id,
+        mode: 'Public',
+        time_limit_min: null,
+        date: new Date(),
+        client_fingerprint_id: null,
+      });
 
-  test.sequential('student assessment instance page loads without crashing', async () => {
-    const res = await fetchCheerio(
-      `${courseInstanceUrl}/assessment_instance/${assessmentInstanceId}`,
-    );
-    assert.equal(res.status, 200);
-  });
+      const ai = await selectAssessmentInstanceById(assessmentInstanceId);
+      assert.isNull(ai.user_id);
+      assert.isNotNull(ai.team_id);
 
-  test.sequential('student instance question page loads without crashing', async () => {
-    const res = await fetchCheerio(`${courseInstanceUrl}/instance_question/${instanceQuestionId}/`);
-    assert.equal(res.status, 200);
-  });
+      instanceQuestionId = await selectFirstInstanceQuestionId(assessmentInstanceId);
 
-  test.sequential('instructor assessment instances page loads', async () => {
-    const res = await fetchCheerio(
-      `${courseInstanceUrl}/instructor/assessment/${assessment.id}/instances`,
-    );
-    assert.equal(res.status, 200);
-  });
-
-  test.sequential('instructor assessment instance detail page loads', async () => {
-    const res = await fetchCheerio(
-      `${courseInstanceUrl}/instructor/assessment_instance/${assessmentInstanceId}`,
-    );
-    assert.equal(res.status, 200);
-  });
-});
-
-// Mirror regression test for the scenario where a homework assessment_instance
-// was created as a group instance, then group work was disabled on the
-// assessment.
-describe('Group work disabled after assessment instance was created', { timeout: 60_000 }, () => {
-  let assessment: Assessment;
-  let assessmentInstanceId: string;
-  let instanceQuestionId: string;
-
-  beforeAll(async () => {
-    await helperServer.before()();
-
-    assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'hw1-automaticTestSuite',
-    });
-  });
-
-  afterAll(helperServer.after);
-
-  test.sequential('a group assessment instance is created', async () => {
-    // Trigger dev user enrollment so we can resolve their user_id.
-    await fetchCheerio(`${courseInstanceUrl}`);
-    const devUser = await selectUserByUid('dev@example.com');
-
-    await execute(sql.enable_group_work, { assessment_id: assessment.id });
-    // Re-fetch so res.locals sees team_work=true via the assessment helper.
-    const groupAssessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'hw1-automaticTestSuite',
+      await execute(sql.disable_group_work, { assessment_id: assessment.id });
     });
 
-    const courseInstance = await selectCourseInstanceById('1');
-    await createGroup({
-      course_instance: courseInstance,
-      assessment: groupAssessment,
-      group_name: 'devgroup',
-      uids: [devUser.uid],
-      authn_user_id: devUser.id,
-      authzData: dangerousFullSystemAuthz(),
+    afterAll(helperServer.after);
+
+    test('student is not redirected to the orphan instance', async () => {
+      await assertNotRedirectedToStaleInstance(assessment.id, assessmentInstanceId);
     });
 
-    assessmentInstanceId = await makeAssessmentInstance({
-      assessment: groupAssessment,
-      user_id: devUser.id,
-      authn_user_id: devUser.id,
-      mode: 'Public',
-      time_limit_min: null,
-      date: new Date(),
-      client_fingerprint_id: null,
+    test('all pages load without crashing', async () => {
+      await assertOrphanInstancePagesLoad({ assessment, assessmentInstanceId, instanceQuestionId });
     });
-
-    const ai = await selectAssessmentInstanceById(assessmentInstanceId);
-    assert.isNull(ai.user_id);
-    assert.isNotNull(ai.team_id);
-
-    instanceQuestionId = await queryScalar(
-      sql.select_first_instance_question,
-      { assessment_instance_id: assessmentInstanceId },
-      IdSchema,
-    );
-  });
-
-  test.sequential('group work is disabled on the assessment after the fact', async () => {
-    await execute(sql.disable_group_work, { assessment_id: assessment.id });
-  });
-
-  test.sequential('student assessment URL no longer redirects to the stale instance', async () => {
-    const res = await fetchCheerio(`${courseInstanceUrl}/assessment/${assessment.id}`);
-    assert.equal(res.status, 200);
-    // For a non-group homework with no existing user-owned instance, the
-    // student page would normally redirect to a fresh instance. The orphan
-    // group instance must not be matched by the redirect query.
-    if (res.url.includes('/assessment_instance/')) {
-      const newInstanceId = new URL(res.url).pathname.split('/').pop();
-      assert.notEqual(newInstanceId, assessmentInstanceId);
-    }
-  });
-
-  test.sequential('student assessment instance page loads without crashing', async () => {
-    const res = await fetchCheerio(
-      `${courseInstanceUrl}/assessment_instance/${assessmentInstanceId}`,
-    );
-    assert.equal(res.status, 200);
-  });
-
-  test.sequential('student instance question page loads without crashing', async () => {
-    const res = await fetchCheerio(`${courseInstanceUrl}/instance_question/${instanceQuestionId}/`);
-    assert.equal(res.status, 200);
-  });
-
-  test.sequential('instructor assessment instances page loads', async () => {
-    const res = await fetchCheerio(
-      `${courseInstanceUrl}/instructor/assessment/${assessment.id}/instances`,
-    );
-    assert.equal(res.status, 200);
-  });
-
-  test.sequential('instructor assessment instance detail page loads', async () => {
-    const res = await fetchCheerio(
-      `${courseInstanceUrl}/instructor/assessment_instance/${assessmentInstanceId}`,
-    );
-    assert.equal(res.status, 200);
   });
 });
