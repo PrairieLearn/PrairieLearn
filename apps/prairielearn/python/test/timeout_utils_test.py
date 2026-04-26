@@ -5,7 +5,7 @@ from types import FrameType
 
 import pytest
 from prairielearn.timeout_utils import (
-    ThreadingTimeout,
+    SignalTimeout,
     TimeoutExceptionError,
     TimeoutState,
 )
@@ -13,7 +13,7 @@ from sympy import Eq, exp, simplify, sin, symbols
 
 
 def busy_loop(timeout: float, busy_duration: float, *, swallow_exc: bool = True):
-    with ThreadingTimeout(timeout, swallow_exc=swallow_exc) as ctx:
+    with SignalTimeout(timeout, swallow_exc=swallow_exc) as ctx:
         time.sleep(busy_duration)
     return ctx
 
@@ -40,15 +40,15 @@ def test_sympy_timeout():
     # inconsistent timing, so we want a large margin of safety.
     expr1 = exp(sin(x)) * (1 + sin(x) ** 10) ** 50
     expr2 = exp(sin(x)) * (1 + sin(x) ** 2) ** 500
-    with ThreadingTimeout(0.1) as ctx:
+    with SignalTimeout(0.1) as ctx:
         eq = Eq(expr1, expr2)
         simplify(eq.lhs - eq.rhs)  # type: ignore
     assert ctx.state == TimeoutState.TIMED_OUT
 
 
 def test_nested_timeout_preserves_outer_deadline():
-    outer = ThreadingTimeout(0.2)
-    inner = ThreadingTimeout(1.0)
+    outer = SignalTimeout(0.2)
+    inner = SignalTimeout(1.0)
 
     with outer:
         time.sleep(0.05)
@@ -61,8 +61,8 @@ def test_nested_timeout_preserves_outer_deadline():
 
 def test_nested_timeout_teardown_tolerates_expired_outer():
     for _ in range(100):
-        outer = ThreadingTimeout(0.0005)
-        inner = ThreadingTimeout(1.0)
+        outer = SignalTimeout(0.0005)
+        inner = SignalTimeout(1.0)
 
         with outer, inner:
             time.sleep(0.002)
@@ -83,7 +83,7 @@ def test_timeout_rejects_preexisting_signal_alarm_without_canceling_it():
     try:
         with (
             pytest.raises(RuntimeError, match="ITIMER_REAL timer is active"),
-            ThreadingTimeout(1.0),
+            SignalTimeout(1.0),
         ):
             pass
         with pytest.raises(PreexistingAlarmError):
@@ -100,7 +100,7 @@ def test_timeout_requires_main_thread():
 
     def create_timeout():
         try:
-            ThreadingTimeout(0.1)
+            SignalTimeout(0.1)
         except BaseException as exc:
             result.append(exc)
 
@@ -110,4 +110,4 @@ def test_timeout_requires_main_thread():
 
     assert len(result) == 1
     assert isinstance(result[0], RuntimeError)
-    assert "ThreadingTimeout requires the main thread." in str(result[0])
+    assert "SignalTimeout requires the main thread." in str(result[0])

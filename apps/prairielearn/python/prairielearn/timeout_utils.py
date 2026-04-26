@@ -1,4 +1,4 @@
-"""Utilities for performing local, threaded timeouts.
+"""Utilities for performing local, signal-based timeouts.
 Implementation from https://github.com/glenfant/stopit under the MIT license.
 
 ```python
@@ -34,14 +34,14 @@ class TimeoutExceptionError(Exception):
     than the allowed maximum timeout value.
     """
 
-    def __init__(self, timeout: ThreadingTimeout | None = None) -> None:
+    def __init__(self, timeout: SignalTimeout | None = None) -> None:
         super().__init__()
         self.timeout = timeout
 
 
 class _SignalTimeoutState:
     def __init__(self) -> None:
-        self.active_timeouts: list[ThreadingTimeout] = []
+        self.active_timeouts: list[SignalTimeout] = []
         self.prev_handler: signal._HANDLER | None = None
 
 
@@ -86,8 +86,8 @@ def _signal_timeout_handler(_signum: int, _frame: FrameType | None) -> None:
     raise TimeoutExceptionError(timed_out)
 
 
-class ThreadingTimeout:
-    """Context manager for limiting in the time the execution of a block
+class SignalTimeout:
+    """Context manager for limiting the execution time of a block.
 
     Parameters:
         seconds (float | int): duration to run the context manager block
@@ -102,9 +102,9 @@ class ThreadingTimeout:
         self.swallow_exc = swallow_exc
         self.state = TimeoutState.EXECUTED
         if threading.current_thread() is not threading.main_thread():
-            raise RuntimeError("ThreadingTimeout requires the main thread.")
+            raise RuntimeError("SignalTimeout requires the main thread.")
         if not hasattr(signal, "SIGALRM"):
-            raise RuntimeError("ThreadingTimeout requires SIGALRM support.")
+            raise RuntimeError("SignalTimeout requires SIGALRM support.")
         self._deadline: float = 0.0
 
     def __bool__(self) -> bool:
@@ -165,7 +165,7 @@ class ThreadingTimeout:
             if prev_timer[0] > 0:
                 signal.setitimer(signal.ITIMER_REAL, *prev_timer)
                 raise RuntimeError(
-                    "ThreadingTimeout cannot run while an ITIMER_REAL timer is active."
+                    "SignalTimeout cannot run while an ITIMER_REAL timer is active."
                 )
             _signal_state.prev_handler = previous_handler
             signal.signal(signal.SIGALRM, _signal_timeout_handler)
@@ -186,3 +186,9 @@ class ThreadingTimeout:
             if _signal_state.prev_handler is not None:
                 signal.signal(signal.SIGALRM, _signal_state.prev_handler)
             _signal_state.prev_handler = None
+
+
+# The previous implementation was based on threading.Timer,
+# which had asynchronous behavior. See https://github.com/PrairieLearn/PrairieLearn/pull/14417
+class ThreadingTimeout(SignalTimeout):
+    """Deprecated alias for SignalTimeout."""
