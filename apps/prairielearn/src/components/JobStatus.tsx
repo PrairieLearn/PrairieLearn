@@ -5,6 +5,10 @@ import type { Job } from '../lib/db-types.js';
 export function JobStatus({ status }: { status: Job['status'] }) {
   if (status === 'Running') {
     return <span className="badge text-bg-primary">Running</span>;
+  } else if (status === 'Stopping') {
+    return <span className="badge text-bg-warning">Stopping</span>;
+  } else if (status === 'Stopped') {
+    return <span className="badge text-bg-secondary">Stopped</span>;
   } else if (status === 'Success') {
     return <span className="badge text-bg-success">Success</span>;
   } else if (status === 'Error') {
@@ -23,6 +27,10 @@ export function JobStatus({ status }: { status: Job['status'] }) {
 export function JobStatusHtml({ status }: { status: Job['status'] }): HtmlSafeString {
   if (status === 'Running') {
     return html`<span class="badge text-bg-primary">Running</span>`;
+  } else if (status === 'Stopping') {
+    return html`<span class="badge text-bg-warning">Stopping</span>`;
+  } else if (status === 'Stopped') {
+    return html`<span class="badge text-bg-secondary">Stopped</span>`;
   } else if (status === 'Success') {
     return html`<span class="badge text-bg-success">Success</span>`;
   } else if (status === 'Error') {

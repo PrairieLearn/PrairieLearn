@@ -17,6 +17,7 @@ import {
   MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE,
   aiGrade,
   getRunningAiGradingJobCountForCourseInstance,
+  requestStopAiGradingJob,
 } from '../../ee/lib/ai-grading/ai-grading.js';
 import { deleteAiInstanceQuestionGroups } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
@@ -169,6 +170,24 @@ const aiGradeInstanceQuestionsMutation = t.procedure
     return { job_sequence_id, job_sequence_token };
   });
 
+const stopAiGradingJobMutation = t.procedure
+  .use(requireCourseInstancePermissionEdit)
+  .use(requireAiGradingFeature)
+  .input(z.object({ job_sequence_id: z.string() }))
+  .mutation(async (opts) => {
+    const stopped = await requestStopAiGradingJob({
+      job_sequence_id: opts.input.job_sequence_id,
+      assessment_question_id: opts.ctx.assessment_question.id,
+      authn_user_id: opts.ctx.authn_user.id,
+    });
+    if (!stopped) {
+      throw new TRPCError({
+        code: 'CONFLICT',
+        message: 'AI grading job is no longer running.',
+      });
+    }
+  });
+
 const setAssignedGraderMutation = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
@@ -249,6 +268,7 @@ export const manualGradingRouter = t.router({
   deleteAiInstanceQuestionGroupings: deleteAiInstanceQuestionGroupingsMutation,
   aiGroupInstanceQuestions: aiGroupInstanceQuestionsMutation,
   aiGradeInstanceQuestions: aiGradeInstanceQuestionsMutation,
+  stopAiGradingJob: stopAiGradingJobMutation,
   setAssignedGrader: setAssignedGraderMutation,
   setRequiresManualGrading: setRequiresManualGradingMutation,
 });

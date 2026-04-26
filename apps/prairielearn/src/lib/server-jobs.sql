@@ -193,10 +193,15 @@ WHERE
 -- BLOCK error_abandoned_job_sequences
 UPDATE job_sequences AS js
 SET
-  status = 'Error',
+  -- A sequence stuck in Stopping after its host crashed should land in Stopped
+  -- (not Error), since the user-initiated cancel is what put it in this state.
+  status = CASE
+    WHEN js.status = 'Stopping' THEN 'Stopped'::enum_job_status
+    ELSE 'Error'::enum_job_status
+  END,
   finish_date = CURRENT_TIMESTAMP
 WHERE
-  js.status = 'Running'
+  js.status IN ('Running', 'Stopping')
   AND age (js.start_date) > interval '1 hours'
   AND (
     (

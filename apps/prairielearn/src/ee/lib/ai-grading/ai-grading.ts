@@ -15,7 +15,14 @@ import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { execute, loadSqlEquiv, queryScalar, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalScalar,
+  queryScalar,
+  queryScalars,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
@@ -43,7 +50,10 @@ import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
-import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
+import {
+  emitServerJobProgressUpdate,
+  patchServerJobProgress,
+} from '../../../lib/serverJobProgressSocket.js';
 import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
 import {
   insertAiGradingJobAndDeductCreditsIfNeeded,
@@ -291,6 +301,46 @@ export async function getRunningAiGradingJobCountForCourseInstance(
     { course_instance_id },
     z.number(),
   );
+}
+
+/**
+ * Returns IDs of AI grading job sequences the page should reattach to on
+ * initial load: anything Running or Stopping, plus Stopped jobs that finished
+ * within the last hour so the terminal alert survives a refresh.
+ */
+export async function getResumableAiGradingJobSequenceIds(
+  assessment_question_id: string,
+): Promise<string[]> {
+  return await queryScalars(
+    sql.select_resumable_ai_grading_job_sequences,
+    { assessment_question_id },
+    IdSchema,
+  );
+}
+
+/**
+ * Atomically transitions a Running AI grading job sequence into 'Stopping'.
+ * Returns true if this call was the one that flipped the state — useful for
+ * surfacing a "no longer running" error on a redundant click. The grading
+ * loop polls `stop_requested_at` and short-circuits remaining items.
+ */
+export async function requestStopAiGradingJob({
+  job_sequence_id,
+  assessment_question_id,
+  authn_user_id,
+}: {
+  job_sequence_id: string;
+  assessment_question_id: string;
+  authn_user_id: string;
+}): Promise<boolean> {
+  const updatedId = await queryOptionalScalar(
+    sql.request_stop_ai_grading_job,
+    { job_sequence_id, assessment_question_id, authn_user_id },
+    IdSchema,
+  );
+  if (updatedId == null) return false;
+  await patchServerJobProgress(job_sequence_id, { is_stopping: true });
+  return true;
 }
 
 const HOURLY_USAGE_CAP_REACHED_MESSAGE = 'Hourly usage cap reached. Try again later.';
@@ -1142,6 +1192,20 @@ export async function aiGrade({
     let num_failed = 0;
     let total_cost_milli_dollars = 0;
     let num_items_incurred_cost = 0;
+    // Polled at the top of every per-item task so a click on "Stop" stops
+    // new dispatches with no further LLM calls, and so every progress emit
+    // carries the correct `is_stopping` flag (avoiding flicker between
+    // Stopping and In-progress when the cache patch races the loop emits).
+    const stopState = { requested: false };
+    const refreshStopRequested = async () => {
+      if (stopState.requested) return;
+      const flag = await queryScalar(
+        sql.select_stop_requested,
+        { job_sequence_id: serverJob.jobSequenceId },
+        z.boolean(),
+      );
+      if (flag) stopState.requested = true;
+    };
 
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
     const instance_question_grading_successes = await async.mapLimit(
@@ -1175,6 +1239,16 @@ export async function aiGrade({
           return undefined;
         };
 
+        await refreshStopRequested();
+        if (stopState.requested) {
+          // The instructor clicked Stop before this worker picked up the item.
+          // Drop it from item_statuses entirely — no LLM call, no charge, and
+          // no "queued" contribution that could pollute the UI of any other
+          // job concurrently grading the same instance question.
+          delete item_statuses[instance_question.id];
+          return false;
+        }
+
         try {
           item_statuses[instance_question.id] = JobItemStatus.in_progress;
           await emitServerJobProgressUpdate({
@@ -1205,6 +1279,9 @@ export async function aiGrade({
           return false;
         } finally {
           num_complete += 1;
+          // Re-poll so this emit can't overwrite the cache's is_stopping flag
+          // with a stale value if Stop was clicked during the LLM call.
+          await refreshStopRequested();
           await emitServerJobProgressUpdate({
             job_sequence_id: serverJob.jobSequenceId,
             num_complete,
@@ -1212,6 +1289,7 @@ export async function aiGrade({
             num_total: instance_questions.length,
             item_statuses,
             job_failure_message: getJobFailureMessage(),
+            is_stopping: stopState.requested,
             ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
           });
           for (const log of logs) {
@@ -1229,6 +1307,30 @@ export async function aiGrade({
         }
       },
     );
+
+    // One final poll in case Stop was clicked during the last batch.
+    await refreshStopRequested();
+
+    if (stopState.requested) {
+      const num_skipped = instance_questions.length - num_complete;
+      job.info(
+        `\nAI grading stopped by instructor. ${num_complete} graded, ${num_skipped} skipped.`,
+      );
+      await execute(sql.finalize_stopped_job_sequence, {
+        job_sequence_id: serverJob.jobSequenceId,
+      });
+      await emitServerJobProgressUpdate({
+        job_sequence_id: serverJob.jobSequenceId,
+        num_complete,
+        num_failed,
+        num_total: instance_questions.length,
+        item_statuses,
+        is_stopping: true,
+        is_stopped: true,
+        ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
+      });
+      return;
+    }
 
     const error_count = instance_question_grading_successes.filter((success) => !success).length;
 

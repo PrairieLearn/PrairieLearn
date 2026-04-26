@@ -1,10 +1,10 @@
 import { type SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 import { io } from 'socket.io-client';
 
-import type {
+import {
   JobItemStatus,
-  JobProgress,
-  ProgressUpdateMessage,
+  type JobProgress,
+  type ProgressUpdateMessage,
 } from '../../lib/serverJobProgressSocket.shared.js';
 
 /**
@@ -54,6 +54,10 @@ export function useServerJobProgress({
    *
    * If multiple jobs are processing the same item, the least progressed status is shown --
    * from highest to lowest precedence: queued, in_progress, failed, complete.
+   *
+   * A stopping/stopped job no longer owns its remaining queued items — another
+   * concurrent job may still be grading them. Skip queued contributions from
+   * stopping/stopped jobs so live jobs' in_progress wins for shared items.
    */
   const displayedStatuses = useMemo(() => {
     const merged: Record<string, JobItemStatus> = {};
@@ -64,7 +68,9 @@ export function useServerJobProgress({
       if (!job.item_statuses) {
         continue;
       }
+      const dropQueued = job.is_stopping || job.is_stopped;
       for (const [itemId, status] of Object.entries(job.item_statuses)) {
+        if (dropQueued && status === JobItemStatus.queued) continue;
         // show least progressed status
         if (!(itemId in merged) || status < merged[itemId]) {
           merged[itemId] = status;
@@ -139,8 +145,10 @@ export function useServerJobProgress({
 
     const jobProgress = jobsProgress[jobSequenceId];
 
-    // Only dismiss if the job is complete.
-    if (jobProgress.num_complete < jobProgress.num_total) {
+    // Only dismiss if the job is in a terminal state — either it ran to
+    // completion, or it was stopped early by the instructor.
+    const isTerminal = jobProgress.num_complete >= jobProgress.num_total || jobProgress.is_stopped;
+    if (!isTerminal) {
       return;
     }
 

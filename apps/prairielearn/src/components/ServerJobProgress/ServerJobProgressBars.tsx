@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Alert, ProgressBar } from 'react-bootstrap';
+import { useMemo, useState } from 'react';
+import { Alert, Button, Modal, ProgressBar, Spinner } from 'react-bootstrap';
 
 import { formatMilliDollars } from '../../lib/ai-grading-credits.js';
 import { getCourseInstanceJobSequenceUrl } from '../../lib/client/url.js';
@@ -28,6 +28,9 @@ import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
  * @param params.statusText.failed Default text for failed jobs. If a job has a specific failure message, it will be displayed instead.
  *
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
+ *
+ * @param params.onStopJobSequence Optional callback to request graceful cancellation of an in-progress job. When provided, a "Stop" button is rendered on running jobs.
+ * @param params.isStopPending Optional predicate returning true while a stop request for the given job sequence is in flight. Used to drive the spinner state on the Stop button.
  */
 export function ServerJobsProgressInfo({
   itemNames,
@@ -36,6 +39,8 @@ export function ServerJobsProgressInfo({
   statusIcons = {},
   statusText = {},
   onDismissCompleteJobSequence,
+  onStopJobSequence,
+  isStopPending,
 }: {
   itemNames: string;
   jobsProgress: JobProgress[];
@@ -51,6 +56,8 @@ export function ServerJobsProgressInfo({
     failed?: string;
   };
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
+  onStopJobSequence?: (jobSequenceId: string) => void;
+  isStopPending?: (jobSequenceId: string) => boolean;
 }) {
   const statusIconsSafe = {
     inProgress: statusIcons.inProgress ?? 'bi-hourglass-split',
@@ -84,7 +91,11 @@ export function ServerJobsProgressInfo({
           itemNames={itemNames}
           totalCostMilliDollars={jobProgress.total_cost_milli_dollars}
           numItemsIncurredCost={jobProgress.num_items_incurred_cost}
+          isStopping={jobProgress.is_stopping ?? false}
+          isStopped={jobProgress.is_stopped ?? false}
+          isStopPending={isStopPending?.(jobProgress.job_sequence_id) ?? false}
           onDismissCompleteJobSequence={onDismissCompleteJobSequence}
+          onStopJobSequence={onStopJobSequence}
         />
       ))}
     </div>
@@ -117,7 +128,12 @@ export function ServerJobsProgressInfo({
  * @param params.totalCostMilliDollars Optional running total cost in milli-dollars for the job.
  * @param params.numItemsIncurredCost Optional number of items that incurred cost.
  *
+ * @param params.isStopping Whether an instructor has requested cancellation but the job hasn't fully settled yet.
+ * @param params.isStopped Whether the job has reached its terminal stopped state.
+ *
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
+ * @param params.onStopJobSequence Optional callback to request cancellation. When provided, a "Stop" button is rendered.
+ * @param params.isStopPending Whether a stop request for this job is currently in flight (drives the button spinner).
  */
 function ServerJobProgressInfo({
   jobSequenceId,
@@ -128,7 +144,11 @@ function ServerJobProgressInfo({
   statusText,
   totalCostMilliDollars,
   numItemsIncurredCost,
+  isStopping,
+  isStopped,
   onDismissCompleteJobSequence,
+  onStopJobSequence,
+  isStopPending,
 }: {
   jobSequenceId: string;
   courseInstanceId: string;
@@ -150,19 +170,49 @@ function ServerJobProgressInfo({
   };
   totalCostMilliDollars?: number;
   numItemsIncurredCost?: number;
+  isStopping: boolean;
+  isStopped: boolean;
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
+  onStopJobSequence?: (jobSequenceId: string) => void;
+  isStopPending: boolean;
 }) {
+  const [showStopConfirm, setShowStopConfirm] = useState(false);
+
   const jobStatus = useMemo(() => {
+    if (isStopped) return 'stopped';
     if (nums.total > 0 && nums.complete >= nums.total) {
       return nums.failed > 0 ? 'failed' : 'complete';
     }
+    if (isStopping) return 'stopping';
     return 'inProgress';
-  }, [nums]);
+  }, [nums, isStopping, isStopped]);
 
-  const { text, icon, variant } = useMemo(() => {
+  const { text, subtext, icon, variant } = useMemo<{
+    text: string;
+    subtext: string | undefined;
+    icon: string;
+    variant: string;
+  }>(() => {
+    if (jobStatus === 'stopped') {
+      return {
+        text: 'AI grading stopped',
+        subtext: undefined,
+        icon: 'bi-stop-circle-fill',
+        variant: 'secondary',
+      };
+    }
+    if (jobStatus === 'stopping') {
+      return {
+        text: 'Stopping AI grading…',
+        subtext: undefined,
+        icon: 'bi-stop-circle-fill',
+        variant: 'secondary',
+      };
+    }
     if (jobStatus === 'complete') {
       return {
         text: statusText.complete,
+        subtext: undefined,
         icon: statusIcons.complete,
         variant: 'success',
       };
@@ -170,12 +220,14 @@ function ServerJobProgressInfo({
     if (jobStatus === 'failed') {
       return {
         text: statusText.failed,
+        subtext: undefined,
         icon: statusIcons.failed,
         variant: 'danger',
       };
     }
     return {
       text: statusText.inProgress,
+      subtext: undefined,
       icon: statusIcons.inProgress,
       variant: 'info',
     };
@@ -198,7 +250,8 @@ function ServerJobProgressInfo({
 
   const progressLabel = useMemo(() => {
     switch (jobStatus) {
-      case 'inProgress': {
+      case 'inProgress':
+      case 'stopping': {
         const failedSuffix = nums.failed > 0 ? ` (${nums.failed} failed)` : '';
         return `${nums.complete}/${nums.total} ${itemNames}${failedSuffix}`;
       }
@@ -206,74 +259,141 @@ function ServerJobProgressInfo({
         return `${successCount}/${nums.total} ${itemNames} (${nums.failed} failed)`;
       case 'complete':
         return `${nums.total} ${itemNames}`;
+      case 'stopped': {
+        const failedSuffix = nums.failed > 0 ? `, ${nums.failed} failed` : '';
+        return `${successCount} ${itemNames}${failedSuffix}`;
+      }
     }
   }, [jobStatus, nums, itemNames, successCount]);
 
+  const isDismissible =
+    jobStatus === 'complete' || jobStatus === 'failed' || jobStatus === 'stopped';
+  const showStopButton =
+    onStopJobSequence != null && (jobStatus === 'inProgress' || jobStatus === 'stopping');
+
   return (
-    <Alert
-      variant={variant}
-      className="mb-0"
-      dismissible={jobStatus === 'complete' || jobStatus === 'failed'}
-      onClose={() => onDismissCompleteJobSequence(jobSequenceId)}
-    >
-      <div className="d-flex flex-wrap align-items-center gap-2 gap-lg-3">
-        <div className="d-flex align-items-center gap-2 flex-shrink-0">
-          <i className={`bi ${icon} fs-5`} aria-hidden="true" />
-          <strong>{text}</strong>
-        </div>
-
-        {jobStatus === 'inProgress' && (
-          <div className="flex-grow-1" style={{ flexBasis: '6rem' }}>
-            <ProgressBar>
-              <ProgressBar
-                key="success"
-                now={progressPercent - (nums.total !== 0 ? (nums.failed / nums.total) * 100 : 0)}
-                variant="primary"
-                animated
+    <>
+      <Alert
+        variant={variant}
+        className="mb-0"
+        dismissible={isDismissible}
+        onClose={() => onDismissCompleteJobSequence(jobSequenceId)}
+      >
+        <div className="d-flex flex-wrap align-items-center gap-2 gap-lg-3">
+          <div className="d-flex align-items-center gap-2 flex-shrink-0">
+            {jobStatus === 'stopping' ? (
+              <Spinner
+                animation="border"
+                role="status"
+                aria-hidden="true"
+                style={{ width: '1.25rem', height: '1.25rem', borderWidth: '0.18em' }}
               />
-              {nums.failed > 0 && (
-                <ProgressBar key="failed" now={(nums.failed / nums.total) * 100} variant="danger" />
-              )}
-            </ProgressBar>
+            ) : (
+              <i className={`bi ${icon} fs-5`} aria-hidden="true" />
+            )}
+            <div className="d-flex flex-column">
+              <strong>{text}</strong>
+              {subtext && <span className="small text-body-secondary">{subtext}</span>}
+            </div>
           </div>
-        )}
 
-        <div className="d-flex flex-wrap align-items-center gap-2 small">
-          <span className="text-body-secondary">{progressLabel}</span>
-
-          {totalCostMilliDollars != null && (
-            <>
-              <span className="text-body-secondary opacity-50" aria-hidden="true">
-                &middot;
-              </span>
-              {perSubmissionLabel && (
-                <>
-                  <span className="text-body-secondary">{perSubmissionLabel}</span>
-                  <span className="text-body-secondary opacity-50" aria-hidden="true">
-                    &middot;
-                  </span>
-                </>
-              )}
-              <span className="text-body-secondary fw-medium">
-                Total: {formatMilliDollars(totalCostMilliDollars)}
-              </span>
-            </>
+          {(jobStatus === 'inProgress' || jobStatus === 'stopping') && (
+            <div className="flex-grow-1" style={{ flexBasis: '6rem' }}>
+              <ProgressBar>
+                <ProgressBar
+                  key="success"
+                  now={progressPercent - (nums.total !== 0 ? (nums.failed / nums.total) * 100 : 0)}
+                  variant={jobStatus === 'stopping' ? 'secondary' : 'primary'}
+                  animated={jobStatus === 'inProgress'}
+                />
+                {nums.failed > 0 && (
+                  <ProgressBar
+                    key="failed"
+                    now={(nums.failed / nums.total) * 100}
+                    variant="danger"
+                  />
+                )}
+              </ProgressBar>
+            </div>
           )}
 
-          <span className="text-body-secondary opacity-50" aria-hidden="true">
-            &middot;
-          </span>
-          <a
-            href={getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId)}
-            className="text-decoration-none"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="View job logs"
-          >
-            View logs <i className="bi bi-box-arrow-up-right" style={{ fontSize: '0.7em' }} />
-          </a>
+          <div className="d-flex flex-wrap align-items-center gap-2 small">
+            <span className="text-body-secondary">{progressLabel}</span>
+
+            {totalCostMilliDollars != null && (
+              <>
+                <span className="text-body-secondary opacity-50" aria-hidden="true">
+                  &middot;
+                </span>
+                {perSubmissionLabel && (
+                  <>
+                    <span className="text-body-secondary">{perSubmissionLabel}</span>
+                    <span className="text-body-secondary opacity-50" aria-hidden="true">
+                      &middot;
+                    </span>
+                  </>
+                )}
+                <span className="text-body-secondary fw-medium">
+                  Total: {formatMilliDollars(totalCostMilliDollars)}
+                </span>
+              </>
+            )}
+
+            <span className="text-body-secondary opacity-50" aria-hidden="true">
+              &middot;
+            </span>
+            <a
+              href={getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId)}
+              className="text-decoration-none"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="View job logs"
+            >
+              View logs <i className="bi bi-box-arrow-up-right" style={{ fontSize: '0.7em' }} />
+            </a>
+
+            {showStopButton && jobStatus === 'inProgress' && !isStopPending && (
+              <>
+                <span className="text-body-secondary opacity-50" aria-hidden="true">
+                  &middot;
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-link p-0 align-baseline border-0 text-decoration-none link-danger"
+                  style={{ fontSize: 'inherit' }}
+                  aria-label="Stop job"
+                  onClick={() => setShowStopConfirm(true)}
+                >
+                  Stop
+                </button>
+              </>
+            )}
+          </div>
         </div>
-      </div>
-    </Alert>
+      </Alert>
+
+      {onStopJobSequence != null && (
+        <Modal show={showStopConfirm} onHide={() => setShowStopConfirm(false)}>
+          <Modal.Header closeButton>
+            <Modal.Title>Stop AI grading</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>In-progress submissions will finish. The rest will be skipped.</Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowStopConfirm(false)}>
+              Keep grading
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => {
+                onStopJobSequence(jobSequenceId);
+                setShowStopConfirm(false);
+              }}
+            >
+              Stop grading
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      )}
+    </>
   );
 }

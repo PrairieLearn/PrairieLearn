@@ -70,7 +70,7 @@ export type EnumEnrollmentStatus = z.infer<typeof EnumEnrollmentStatusSchema>;
 export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
 export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
 
-export const EnumJobStatusSchema = z.enum(['Running', 'Success', 'Error']);
+export const EnumJobStatusSchema = z.enum(['Running', 'Stopping', 'Stopped', 'Success', 'Error']);
 export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 
 export const EnumModeSchema = z.enum(['Public', 'Exam', 'SEB']);
@@ -1226,6 +1226,8 @@ export const JobSequenceSchema = z.object({
   number: z.number(),
   start_date: DateFromISOString.nullable(),
   status: EnumJobStatusSchema.nullable(),
+  stop_requested_at: DateFromISOString.nullable(),
+  stop_requested_by_user_id: IdSchema.nullable(),
   type: z.string().nullable(),
   user_id: IdSchema.nullable(),
 });

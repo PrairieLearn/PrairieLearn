@@ -14,6 +14,7 @@ import {
   calculateAiGradingStats,
   fillInstanceQuestionColumnEntries,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import { getResumableAiGradingJobSequenceIds } from '../../../ee/lib/ai-grading/ai-grading.js';
 import {
   selectAssessmentQuestionHasInstanceQuestionGroups,
   selectInstanceQuestionGroups,
@@ -29,7 +30,6 @@ import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import { getJobSequenceIds } from '../../../lib/server-jobs.js';
 import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
@@ -86,13 +86,11 @@ router.get(
         return null;
       }
 
-      const ongoingJobSequenceIds = await getJobSequenceIds({
-        assessment_question_id: res.locals.assessment_question.id,
-        status: 'Running',
-        type: 'ai_grading',
-      });
+      const resumableJobSequenceIds = await getResumableAiGradingJobSequenceIds(
+        res.locals.assessment_question.id,
+      );
 
-      const jobSequenceTokens = ongoingJobSequenceIds.reduce(
+      const jobSequenceTokens = resumableJobSequenceIds.reduce(
         (acc, jobSequenceId) => {
           acc[jobSequenceId] = generateJobSequenceToken(jobSequenceId);
           return acc;

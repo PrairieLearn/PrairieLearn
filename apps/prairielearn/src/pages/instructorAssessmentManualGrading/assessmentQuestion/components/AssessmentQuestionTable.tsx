@@ -584,6 +584,7 @@ export function AssessmentQuestionTable({
     setRequiresManualGradingMutation,
     setAssignedGraderMutation,
     groupSubmissionMutation,
+    stopAiGradingJobMutation,
   } = mutations;
 
   const columnFiltersComponents = createColumnFilters({
@@ -622,7 +623,14 @@ export function AssessmentQuestionTable({
             complete: 'AI grading complete',
             failed: 'AI grading failed',
           }}
+          isStopPending={(id) =>
+            stopAiGradingJobMutation.isPending &&
+            stopAiGradingJobMutation.variables.job_sequence_id === id
+          }
           onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
+          onStopJobSequence={(jobSequenceId) =>
+            stopAiGradingJobMutation.mutate({ job_sequence_id: jobSequenceId })
+          }
         />
       )}
       <QueryErrors<ManualGradingError>
@@ -632,6 +640,7 @@ export function AssessmentQuestionTable({
           groupSubmissionMutation,
           setAssignedGraderMutation,
           setRequiresManualGradingMutation,
+          stopAiGradingJobMutation,
         ]}
       />
       {deleteAiGradingJobsMutation.isSuccess && (
