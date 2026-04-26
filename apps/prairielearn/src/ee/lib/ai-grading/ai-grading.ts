@@ -305,8 +305,9 @@ export async function getRunningAiGradingJobCountForCourseInstance(
 
 /**
  * Returns IDs of AI grading job sequences the page should reattach to on
- * initial load: anything Running or Stopping, plus Stopped jobs that finished
- * within the last hour so the terminal alert survives a refresh.
+ * initial load: only still-active states (Running or Stopping). Terminal
+ * Stopped jobs match how Complete and Failed alerts already behave and are
+ * not resumed across page reloads.
  */
 export async function getResumableAiGradingJobSequenceIds(
   assessment_question_id: string,

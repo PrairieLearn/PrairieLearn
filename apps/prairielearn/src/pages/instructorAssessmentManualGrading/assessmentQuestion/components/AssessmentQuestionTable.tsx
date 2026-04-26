@@ -628,8 +628,11 @@ export function AssessmentQuestionTable({
             stopAiGradingJobMutation.variables.job_sequence_id === id
           }
           onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
-          onStopJobSequence={(jobSequenceId) =>
-            stopAiGradingJobMutation.mutate({ job_sequence_id: jobSequenceId })
+          onStopJobSequence={
+            hasCourseInstancePermissionEdit
+              ? (jobSequenceId) =>
+                  stopAiGradingJobMutation.mutate({ job_sequence_id: jobSequenceId })
+              : undefined
           }
         />
       )}

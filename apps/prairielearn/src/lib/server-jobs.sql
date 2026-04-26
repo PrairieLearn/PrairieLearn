@@ -105,10 +105,16 @@ WITH
 UPDATE job_sequences AS js
 SET
   finish_date = CURRENT_TIMESTAMP,
-  status = $status::enum_job_status
+  -- A sequence in Stopping always lands in Stopped regardless of how the
+  -- inner job finished, so an AI grading run that completes naturally after
+  -- Stop was clicked still reaches a terminal state.
+  status = CASE
+    WHEN js.status = 'Stopping' THEN 'Stopped'::enum_job_status
+    ELSE $status::enum_job_status
+  END
 WHERE
   js.id = $job_sequence_id
-  AND js.status = 'Running'::enum_job_status;
+  AND js.status IN ('Running', 'Stopping');
 
 -- BLOCK select_job_output
 SELECT
@@ -171,7 +177,12 @@ WITH
 UPDATE job_sequences AS js
 SET
   finish_date = j.finish_date,
-  status = j.status
+  -- A sequence already in Stopping should land in Stopped, not Error,
+  -- since the user-initiated cancel is what put it in this state.
+  status = CASE
+    WHEN js.status = 'Stopping' THEN 'Stopped'::enum_job_status
+    ELSE j.status
+  END
 FROM
   job_sequence_updates AS j
 WHERE
