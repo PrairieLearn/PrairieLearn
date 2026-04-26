@@ -11,6 +11,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { config } from '../lib/config.js';
 import type { Course, Question, Submission, Variant } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
+import { extractDefaultPreferences } from '../lib/question-preferences.js';
 import { buildQuestionUrls } from '../lib/question-render.js';
 import { makeVariant } from '../lib/question-variant.js';
 import * as questionServers from '../question-servers/index.js';
@@ -62,11 +63,11 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
         }
       },
     })
-    .on('.pl-drawing-button img', {
+    .on('.pl-drawing-button img, .js-cropper-base-image', {
       element(el) {
         const src = el.getAttribute('src');
-        if (src === '') {
-          el.setAttribute('src', 'pl-drawing-dummy-img.png');
+        if (src == null || src === '') {
+          el.setAttribute('src', 'pl-dummy-img.png');
         }
       },
     })
@@ -83,6 +84,13 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
         // Our blank option has no text by default.
         // html-validate claims that it's not recommended to set aria-label on an option.
         el.removeAttribute('aria-label');
+      },
+    })
+    .on('ul.dropdown-menu[aria-labelledby]', {
+      element(el) {
+        // Bootstrap's canonical dropdown pattern uses aria-labelledby on <ul class="dropdown-menu">.
+        // html-validate flags this as "strictly allowed but not recommended" on <ul>.
+        el.removeAttribute('aria-labelledby');
       },
     });
   await rewriter.write(encoder.encode(html));
@@ -290,20 +298,22 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         context.skip();
       }
       const question = {
-        options: info.options ?? {}, // Use options from info.json if available
+        options: info.options ?? {},
+        preferences_schema: info.preferences ?? null,
         directory: relativePath,
         type: 'Freeform',
       } as unknown as Question;
 
+      // Extract default preferences from info.json preferences schema
+      const preferences = info.preferences ? extractDefaultPreferences(info.preferences) : {};
+
       // Prepare and generate
-      const { courseIssues: prepareGenerateIssues, variant: rawVariant } = await makeVariant(
+      const { courseIssues: prepareGenerateIssues, variant: rawVariant } = await makeVariant({
         question,
         course,
-        {
-          variant_seed: null,
-        },
-      );
-
+        variant_seed: null,
+        preferences,
+      });
       assert.isEmpty(prepareGenerateIssues, 'Prepare/Generate should not produce any issues');
 
       const variant = rawVariant as Variant;
@@ -312,8 +322,9 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
       // Render
       const locals = {
         urlPrefix: '/prefix1',
-        plainUrlPrefix: '/pl',
         questionRenderContext: undefined,
+        showCorrectAnswer: false,
+        allowAnswerEditing: true,
         ...buildQuestionUrls(
           '/prefix2',
           { id: 'vid', workspace_id: 'wid' } as unknown as Variant,
