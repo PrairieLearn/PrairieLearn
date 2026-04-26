@@ -1,12 +1,12 @@
 # Elements for `question.html`
 
-PrairieLearn questions are built from `pl-*` tags inside `question.html`. This page lists every element grouped by what you're trying to do. To build your own custom element, see [Question Element Writing](../devElements.md).
+PrairieLearn [questions](../question/overview.md) are built from `pl-*` tags inside [`question.html`](../question/template.md). This page lists every element grouped by what you're trying to do. If you don't find the element / behavior you are looking for, consider using a [custom grade function](../question/server.md#step-5-grade) (recommended) or [building a custom element](../devElements.md).
 
 !!! tip
 
     Already know which element you want? Jump to the [alphabetical reference](#reference) below.
 
-New to PrairieLearn? See [Questions](../question/overview.md) for how `question.html` fits together. Most questions only need a handful of elements: [`pl-question-panel`](pl-question-panel.md), [`pl-multiple-choice`](pl-multiple-choice.md), [`pl-number-input`](pl-number-input.md), [`pl-string-input`](pl-string-input.md), [`pl-code`](pl-code.md), [`pl-figure`](pl-figure.md), and [`pl-answer-panel`](pl-answer-panel.md).
+Most questions only need a handful of elements: [`pl-question-panel`](pl-question-panel.md), [`pl-multiple-choice`](pl-multiple-choice.md), [`pl-number-input`](pl-number-input.md), [`pl-string-input`](pl-string-input.md), [`pl-code`](pl-code.md), [`pl-figure`](pl-figure.md), and [`pl-answer-panel`](pl-answer-panel.md).
 
 ## Submission elements
 
