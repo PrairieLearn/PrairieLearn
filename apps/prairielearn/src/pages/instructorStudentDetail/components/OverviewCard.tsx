@@ -1,13 +1,21 @@
+import { useState } from 'react';
 import { z } from 'zod';
 
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
+import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
+import { StudentLabelDropdown } from '../../../components/StudentLabelDropdown.js';
 import { setCookieClient } from '../../../lib/client/cookie.js';
 import {
   StaffCourseInstanceSchema,
   StaffEnrollmentSchema,
+  type StaffStudentLabel,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
+import { getCourseInstanceStudentLabelsUrl } from '../../../lib/client/url.js';
+import type { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/client.js';
+
+type StudentLabelsTrpcClient = ReturnType<typeof createCourseInstanceTrpcClient>;
 
 export const UserDetailSchema = z.object({
   user: StaffUserSchema.nullable(),
@@ -20,18 +28,30 @@ export type UserDetail = z.infer<typeof UserDetailSchema>;
 
 export function OverviewCard({
   student,
+  initialStudentLabels,
+  initialAvailableStudentLabels,
   courseInstanceUrl,
   csrfToken,
+  trpcClient,
   hasCourseInstancePermissionEdit,
+  hasCoursePermissionEdit,
   hasModernPublishing,
 }: {
   student: UserDetail;
+  initialStudentLabels: StaffStudentLabel[];
+  initialAvailableStudentLabels: StaffStudentLabel[];
   courseInstanceUrl: string;
   csrfToken: string;
+  trpcClient: StudentLabelsTrpcClient;
   hasCourseInstancePermissionEdit: boolean;
+  hasCoursePermissionEdit: boolean;
   hasModernPublishing: boolean;
 }) {
   const { user, enrollment, role } = student;
+  const [studentLabels, setStudentLabels] = useState(initialStudentLabels);
+  const availableStudentLabels = initialAvailableStudentLabels;
+  const [isLabelMutating, setIsLabelMutating] = useState(false);
+  const canManageLabels = hasCoursePermissionEdit && hasCourseInstancePermissionEdit;
   const handleViewAsStudent = () => {
     if (!user) throw new Error('User is required');
     setCookieClient(['pl_requested_uid', 'pl2_requested_uid'], user.uid);
@@ -149,7 +169,7 @@ export function OverviewCard({
           <>
             <div className="d-flex">
               <div className="me-1">
-                <i className="bi bi-warning" aria-hidden="true" />
+                <i className="bi bi-exclamation-triangle" aria-hidden="true" />
                 User information not available if the student has not accepted the invitation.
               </div>
             </div>
@@ -161,6 +181,88 @@ export function OverviewCard({
             <FriendlyDate date={enrollment.first_joined_at} />
           </div>
         )}
+
+        <div className="mt-3">
+          <div className="fw-bold mb-2">Student labels</div>
+          <div className="d-flex flex-wrap align-items-center gap-2">
+            {studentLabels.map((label) => (
+              <StudentLabelBadge key={label.id} label={label}>
+                {hasCourseInstancePermissionEdit && (
+                  <button
+                    type="button"
+                    className="btn p-0 lh-1"
+                    disabled={isLabelMutating}
+                    aria-label={`Remove label "${label.name}"`}
+                    onClick={async () => {
+                      setIsLabelMutating(true);
+                      try {
+                        await trpcClient.studentLabels.batchRemove.mutate({
+                          enrollmentIds: [enrollment.id],
+                          labelId: label.id,
+                        });
+                        setStudentLabels((prev) => prev.filter((l) => l.id !== label.id));
+                      } finally {
+                        setIsLabelMutating(false);
+                      }
+                    }}
+                  >
+                    <i className="bi bi-x text-danger" aria-hidden="true" />
+                  </button>
+                )}
+              </StudentLabelBadge>
+            ))}
+            {studentLabels.length === 0 && availableStudentLabels.length === 0 && (
+              <span className="text-muted fst-italic">
+                No labels configured.{' '}
+                {canManageLabels && (
+                  <a href={getCourseInstanceStudentLabelsUrl(student.course_instance.id)}>
+                    Manage labels
+                  </a>
+                )}
+              </span>
+            )}
+            {studentLabels.length === 0 && availableStudentLabels.length > 0 && (
+              <span className="text-muted fst-italic">No labels</span>
+            )}
+            {hasCourseInstancePermissionEdit && availableStudentLabels.length > 0 && (
+              <StudentLabelDropdown
+                labels={availableStudentLabels}
+                selectedIds={new Set(studentLabels.map((sl) => sl.id))}
+                disabled={isLabelMutating}
+                footer={
+                  <a
+                    className="dropdown-item"
+                    href={getCourseInstanceStudentLabelsUrl(student.course_instance.id)}
+                  >
+                    <i className="bi bi-gear me-1" aria-hidden="true" />
+                    {canManageLabels ? 'Manage labels' : 'View labels'}
+                  </a>
+                }
+                onToggle={async (label) => {
+                  const isSelected = studentLabels.some((sl) => sl.id === label.id);
+                  setIsLabelMutating(true);
+                  try {
+                    if (isSelected) {
+                      await trpcClient.studentLabels.batchRemove.mutate({
+                        enrollmentIds: [enrollment.id],
+                        labelId: label.id,
+                      });
+                      setStudentLabels((prev) => prev.filter((l) => l.id !== label.id));
+                    } else {
+                      await trpcClient.studentLabels.batchAdd.mutate({
+                        enrollmentIds: [enrollment.id],
+                        labelId: label.id,
+                      });
+                      setStudentLabels((prev) => [...prev, label]);
+                    }
+                  } finally {
+                    setIsLabelMutating(false);
+                  }
+                }}
+              />
+            )}
+          </div>
+        </div>
       </div>
 
       <div

@@ -25,7 +25,7 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
   afterAll(helperServer.after);
 
   test.sequential('get group-based homework assessment', async () => {
-    const assessmentIds = await sqldb.queryRows(sql.select_group_work_assessment, IdSchema);
+    const assessmentIds = await sqldb.queryScalars(sql.select_group_work_assessment, IdSchema);
     assert.equal(assessmentIds.length, 2);
     locals.assessment_id = assessmentIds[0];
   });
@@ -83,7 +83,7 @@ describe('deleting a group closes its assessment instances', { timeout: 20_000 }
   let userUids: string[];
 
   test.sequential('setup', async () => {
-    const assessmentIds = await sqldb.queryRows(sql.select_group_work_assessment, IdSchema);
+    const assessmentIds = await sqldb.queryScalars(sql.select_group_work_assessment, IdSchema);
     assessmentId = assessmentIds[0];
     assessment = await selectAssessmentById(assessmentId);
     courseInstance = await selectCourseInstanceById(assessment.course_instance_id);

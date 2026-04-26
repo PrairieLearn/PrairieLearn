@@ -66,7 +66,9 @@ VALUES
     $cost,
     $course_id,
     $course_instance_id
-  );
+  )
+RETURNING
+  id;
 
 -- BLOCK select_last_variant_and_submission
 SELECT
@@ -280,5 +282,12 @@ WHERE
 UPDATE assessment_questions
 SET
   ai_grading_mode = $ai_grading_mode
+WHERE
+  id = $assessment_question_id;
+
+-- BLOCK set_ai_grading_last_selected_model
+UPDATE assessment_questions
+SET
+  ai_grading_last_selected_model = $model_id
 WHERE
   id = $assessment_question_id;

@@ -11,6 +11,7 @@ process.env.NODE_ENV = 'test';
  * we run CI in a different environment than local development.
  */
 export default defineConfig({
+  globalSetup: './src/tests/e2e/global-setup.ts',
   testDir: './src/tests/e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,

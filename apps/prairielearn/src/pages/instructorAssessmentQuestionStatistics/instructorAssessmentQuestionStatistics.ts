@@ -54,7 +54,7 @@ router.get(
     // different to assessments.statistics_last_updated_at (the time we last
     // updated the assessment instance statistics stored in the assessments
     // row itself).
-    const statsLastUpdated = await sqldb.queryRow(
+    const statsLastUpdated = await sqldb.queryScalar(
       sql.assessment_stats_last_updated,
       { assessment_id: res.locals.assessment.id },
       z.string(),

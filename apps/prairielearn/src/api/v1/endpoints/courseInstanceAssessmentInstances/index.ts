@@ -170,7 +170,7 @@ router.get(
 router.get(
   '/:unsafe_assessment_instance_id(\\d+)/log',
   asyncHandler(async (req, res) => {
-    const assessmentInstanceId = await sqldb.queryOptionalRow(
+    const assessmentInstanceId = await sqldb.queryOptionalScalar(
       sql.select_assessment_instance,
       {
         course_instance_id: res.locals.course_instance.id,

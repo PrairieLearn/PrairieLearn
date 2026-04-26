@@ -18,6 +18,7 @@ import {
 } from '../../models/course-permissions.js';
 import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import * as helperClient from '../helperClient.js';
+import { withPTReservation } from '../helperExam.js';
 import * as helperServer from '../helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -27,7 +28,7 @@ describe('student data access', { timeout: 60_000 }, function () {
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
   context.userIdInstructor = 2;
-  context.userIdStudent = 2;
+  context.userIdStudent = 3;
 
   beforeAll(async function () {
     await helperServer.before()();
@@ -100,23 +101,38 @@ describe('student data access', { timeout: 60_000 }, function () {
   });
 
   test.sequential('student can access E1 in exam mode', async () => {
-    const headers = { cookie: 'pl_test_user=test_student; pl_test_mode=Exam' };
-    const response = await helperClient.fetchCheerio(context.examAssessmentUrl, { headers });
+    const headers = { cookie: 'pl_test_user=test_student' };
+    const response = await withPTReservation(
+      {
+        userId: context.userIdStudent,
+        accessStart: new Date(Date.now() - 60 * 60 * 1000),
+        accessEnd: new Date(Date.now() + 60 * 60 * 1000),
+      },
+      async () => await helperClient.fetchCheerio(context.examAssessmentUrl, { headers }),
+    );
     assert.isTrue(response.ok);
     assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
     helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
   });
 
   test.sequential('student can start E1 in exam mode', async () => {
-    const headers = { cookie: 'pl_test_user=test_student; pl_test_mode=Exam' };
-    const response = await helperClient.fetchCheerio(context.examAssessmentUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'new_instance',
-        __csrf_token: context.__csrf_token,
-      }),
-      headers,
-    });
+    const headers = { cookie: 'pl_test_user=test_student' };
+    const response = await withPTReservation(
+      {
+        userId: context.userIdStudent,
+        accessStart: new Date(Date.now() - 60 * 60 * 1000),
+        accessEnd: new Date(Date.now() + 60 * 60 * 1000),
+      },
+      async () =>
+        await helperClient.fetchCheerio(context.examAssessmentUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'new_instance',
+            __csrf_token: context.__csrf_token,
+          }),
+          headers,
+        }),
+    );
     assert.isTrue(response.ok);
     const assessmentInstanceUrl = response.url;
     assert.include(assessmentInstanceUrl, '/assessment_instance/');
@@ -133,8 +149,15 @@ describe('student data access', { timeout: 60_000 }, function () {
   });
 
   test.sequential('student can access E1/Q* in exam mode', async () => {
-    const headers = { cookie: 'pl_test_user=test_student; pl_test_mode=Exam' };
-    const response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, { headers });
+    const headers = { cookie: 'pl_test_user=test_student' };
+    const response = await withPTReservation(
+      {
+        userId: context.userIdStudent,
+        accessStart: new Date(Date.now() - 60 * 60 * 1000),
+        accessEnd: new Date(Date.now() + 60 * 60 * 1000),
+      },
+      async () => await helperClient.fetchCheerio(context.examQuestionInstanceUrl, { headers }),
+    );
     assert.isTrue(response.ok);
     context.examQuestionVariant = await sqldb.queryRow(
       sql.select_variant,
@@ -490,25 +513,33 @@ describe('student data access', { timeout: 60_000 }, function () {
     'instructor (student data editor) can attach file to E1 instance of emulated student',
     async () => {
       const headers = {
-        cookie:
-          'pl_test_user=test_instructor; pl2_requested_uid=student@example.com; pl_test_mode=Exam',
+        cookie: 'pl_test_user=test_instructor; pl2_requested_uid=student@example.com',
       };
-      let response = await helperClient.fetchCheerio(context.examAssessmentInstanceUrl, {
-        headers,
-      });
-      assert.isTrue(response.ok);
-      helperClient.extractAndSaveCSRFToken(context, response.$, 'form[class=attach-text-form]');
-      response = await helperClient.fetchCheerio(context.examAssessmentInstanceUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'attach_text',
-          __csrf_token: context.__csrf_token,
-          filename: 'notes.txt',
-          contents: 'This is a test.',
-        }),
-        headers,
-      });
-      assert.isTrue(response.ok);
+      await withPTReservation(
+        {
+          userId: context.userIdStudent,
+          accessStart: new Date(Date.now() - 60 * 60 * 1000),
+          accessEnd: new Date(Date.now() + 60 * 60 * 1000),
+        },
+        async () => {
+          let response = await helperClient.fetchCheerio(context.examAssessmentInstanceUrl, {
+            headers,
+          });
+          assert.isTrue(response.ok);
+          helperClient.extractAndSaveCSRFToken(context, response.$, 'form[class=attach-text-form]');
+          response = await helperClient.fetchCheerio(context.examAssessmentInstanceUrl, {
+            method: 'POST',
+            body: new URLSearchParams({
+              __action: 'attach_text',
+              __csrf_token: context.__csrf_token,
+              filename: 'notes.txt',
+              contents: 'This is a test.',
+            }),
+            headers,
+          });
+          assert.isTrue(response.ok);
+        },
+      );
     },
   );
 
@@ -516,24 +547,34 @@ describe('student data access', { timeout: 60_000 }, function () {
     'instructor (student data editor) can submit answer to E1/Q* instance of emulated student',
     async () => {
       const headers = {
-        cookie:
-          'pl_test_user=test_instructor; pl2_requested_uid=student@example.com; pl_test_mode=Exam',
+        cookie: 'pl_test_user=test_instructor; pl2_requested_uid=student@example.com',
       };
-      let response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, { headers });
-      assert.isTrue(response.ok);
-      helperClient.extractAndSaveCSRFToken(context, response.$, 'form[name=question-form]');
-      assert.lengthOf(response.$('button[name=__action][value=grade]'), 1);
-      response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'grade',
-          __csrf_token: context.__csrf_token,
-          __variant_id: context.examQuestionVariant.id,
-          c: context.examQuestionVariant.true_answer.c,
-        }),
-        headers,
-      });
-      assert.isTrue(response.ok);
+      await withPTReservation(
+        {
+          userId: context.userIdStudent,
+          accessStart: new Date(Date.now() - 60 * 60 * 1000),
+          accessEnd: new Date(Date.now() + 60 * 60 * 1000),
+        },
+        async () => {
+          let response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, {
+            headers,
+          });
+          assert.isTrue(response.ok);
+          helperClient.extractAndSaveCSRFToken(context, response.$, 'form[name=question-form]');
+          assert.lengthOf(response.$('button[name=__action][value=grade]'), 1);
+          response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, {
+            method: 'POST',
+            body: new URLSearchParams({
+              __action: 'grade',
+              __csrf_token: context.__csrf_token,
+              __variant_id: context.examQuestionVariant.id,
+              c: context.examQuestionVariant.true_answer.c,
+            }),
+            headers,
+          });
+          assert.isTrue(response.ok);
+        },
+      );
     },
   );
 

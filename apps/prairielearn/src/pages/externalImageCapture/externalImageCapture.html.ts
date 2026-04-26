@@ -24,6 +24,7 @@ export function ExternalImageCapture({
     content: html`
       <form
         id="external-image-capture-form"
+        method="POST"
         hx-post
         hx-trigger="submit"
         hx-swap="none"

@@ -40,7 +40,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
 
   describe('1. the database', function () {
     it('should contain a group-based homework assessment', async () => {
-      const assessment_ids = await sqldb.queryRows(sql.select_group_work_assessment, IdSchema);
+      const assessment_ids = await sqldb.queryScalars(sql.select_group_work_assessment, IdSchema);
       assert.lengthOf(assessment_ids, 2);
       assert.isDefined(assessment_ids[0]);
       assert.isDefined(assessment_ids[1]);
@@ -63,14 +63,6 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       assert.equal(response.status, 200);
       const page = await response.text();
       locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
-      const elemList = locals.$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 4);
-      // there are 6 occurrences of the same csrf, we will pick the first one
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
     });
   });
 
@@ -97,13 +89,6 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       assert.equal(response.status, 200);
       const page = await response.text();
       locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
-      const elemList = locals.$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 4);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
     });
   });
 
