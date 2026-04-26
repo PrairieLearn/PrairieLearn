@@ -133,7 +133,7 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
       row.assessment_set,
     ),
   });
-  // team_id can be null when an assessmet instance was created before
+  // team_id can be null when an assessment instance was created before
   // team_work was enabled on the assessment.
   if (res.locals.assessment.team_work && res.locals.assessment_instance.team_id != null) {
     res.locals.group_config = await getGroupConfig(res.locals.assessment.id);
