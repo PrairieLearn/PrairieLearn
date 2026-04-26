@@ -2,33 +2,71 @@
 
 When writing questions, there exists a core pool of elements that provides common structures associated with assessment items. These elements can be split into three distinct groups: **submission**, **decorative**, and **conditional**. Within this document, all of PrairieLearn's elements are displayed alongside links to sample elements within the example course. To build your own PrairieLearn element, please see [Question Element Writing](../devElements.md) documentation.
 
-**Submission** elements act as a way to receive a response or input from the student. These elements are traditionally referred to as form input fields. PrairieLearn presently provides the following templated **input field** elements:
+## Submission elements
 
-- [`pl-big-o-input`](pl-big-o-input.md): Fill in a **symbolic** value representing asymptotic input.
+Submission elements act as a way to receive a response or input from the student. These elements are traditionally referred to as form input fields. They're grouped below by the kind of response they collect; if you're unsure which element fits, expand the decision flowchart at the top of each section.
+
+### Choosing from a fixed set of options
+
+??? note "Decision flowchart: selection-style elements"
+
+    ![Decision flowchart for selection-style input elements](./element-decision-selection.d2){layout="elk" pad="0" scale="1"}
+
 - [`pl-checkbox`](pl-checkbox.md): Select **multiple options** from a list.
-- [`pl-excalidraw`](pl-excalidraw.md): Draw a **vector diagram** using [excalidraw](https://github.com/excalidraw/excalidraw).
-- [`pl-file-editor`](pl-file-editor.md): Provide an in-browser code editor for writing and submitting code.
-- [`pl-file-upload`](pl-file-upload.md): Provide a submission area to obtain a file with a specific naming scheme.
-- [`pl-image-capture`](pl-image-capture.md): Capture images of handwritten work from a local camera or external device such as a phone or tablet.
-- [`pl-integer-input`](pl-integer-input.md): Fill in an **integer** value such as -71, 0, 5, 21, and so on.
 - [`pl-matching`](pl-matching.md): Select a matching option for each entry in a group.
+- [`pl-multiple-choice`](pl-multiple-choice.md): Select only **one option** from a list.
+- [`pl-order-blocks`](pl-order-blocks.md): Select and arrange given blocks of code or text.
+
+### Numeric answers
+
+??? note "Decision flowchart: numeric elements"
+
+    ![Decision flowchart for numeric input elements](./element-decision-number.d2){layout="elk" pad="0" scale="1"}
+
+- [`pl-integer-input`](pl-integer-input.md): Fill in an **integer** value such as -71, 0, 5, 21, and so on.
 - [`pl-matrix-component-input`](pl-matrix-component-input.md): Fill in a **matrix** using grid that has an input area for each element.
 - [`pl-matrix-input`](pl-matrix-input.md): Supply a matrix in a supported programming language format.
-- [`pl-multiple-choice`](pl-multiple-choice.md): Select only **one option** from a list.
 - [`pl-number-input`](pl-number-input.md): Fill in a **numerical** value within a specific tolerance level such as 3.14, -1.921, and so on.
-- [`pl-order-blocks`](pl-order-blocks.md): Select and arrange given blocks of code or text.
-- [`pl-rich-text-editor`](pl-rich-text-editor.md): Provide an in-browser formattable text editor for open-ended responses and essays.
-- [`pl-sketch`](pl-sketch.md): Sketch curves and other mathematical objects (e.g., points, asymptotes, polygons).
-- [`pl-string-input`](pl-string-input.md): Fill in a **string** value such as `"Illinois"`, `"GATTACA"`, `"computer"`, and so on.
-- [`pl-symbolic-input`](pl-symbolic-input.md): Fill in a **symbolic** value such as `x^2`, `sin(z)`, `mc^2`, and so on.
 - [`pl-units-input`](pl-units-input.md): Fill in a **number** and a **unit** such as "1.5 m", "14 ms", "6.3 ft", and so on.
 
-**Decorative** elements are meant to improve how the question is displayed to students. Elements under this category include ways to specify question markup, images, files, and code display. The following **decorative** elements are available:
+### Free text or symbolic math
+
+??? note "Decision flowchart: text and symbolic elements"
+
+    ![Decision flowchart for text and symbolic input elements](./element-decision-text.d2){layout="elk" pad="0" scale="1"}
+
+- [`pl-big-o-input`](pl-big-o-input.md): Fill in a **symbolic** value representing asymptotic input.
+- [`pl-rich-text-editor`](pl-rich-text-editor.md): Provide an in-browser formattable text editor for open-ended responses and essays.
+- [`pl-string-input`](pl-string-input.md): Fill in a **string** value such as `"Illinois"`, `"GATTACA"`, `"computer"`, and so on.
+- [`pl-symbolic-input`](pl-symbolic-input.md): Fill in a **symbolic** value such as `x^2`, `sin(z)`, `mc^2`, and so on.
+
+### Drawings and images
+
+??? note "Decision flowchart: drawing elements"
+
+    ![Decision flowchart for drawing input elements](./element-decision-drawing.d2){layout="elk" pad="0" scale="1"}
+
+- [`pl-drawing`](../pl-drawing/index.md): Create an auto-gradable canvas from a pre-defined collection of graphic objects.
+- [`pl-excalidraw`](pl-excalidraw.md): Draw a **vector diagram** using [excalidraw](https://github.com/excalidraw/excalidraw).
+- [`pl-image-capture`](pl-image-capture.md): Capture images of handwritten work from a local camera or external device such as a phone or tablet.
+- [`pl-sketch`](pl-sketch.md): Sketch curves and other mathematical objects (e.g., points, asymptotes, polygons).
+
+### Code and file submissions
+
+??? note "Decision flowchart: code and file elements"
+
+    ![Decision flowchart for code and file input elements](./element-decision-code.d2){layout="elk" pad="0" scale="1"}
+
+- [`pl-file-editor`](pl-file-editor.md): Provide an in-browser code editor for writing and submitting code.
+- [`pl-file-upload`](pl-file-upload.md): Provide a submission area to obtain a file with a specific naming scheme.
+
+## Decorative elements
+
+Decorative elements are meant to improve how the question is displayed to students. Elements under this category include ways to specify question markup, images, files, and code display. The following decorative elements are available:
 
 - [`pl-card`](pl-card.md): Display content within a card-styled component.
 - [`pl-code`](pl-code.md): Display code rendered with the appropriate syntax highlighting.
 - [`pl-dataframe`](pl-dataframe.md): Display DataFrames with various options.
-- [`pl-drawing`](../pl-drawing/index.md): Create an image from pre-defined collection of graphic objects.
 - [`pl-external-grader-variables`](pl-external-grader-variables.md): Display expected and given variables for externally graded questions.
 - [`pl-figure`](pl-figure.md): Embed an image file in the question.
 - [`pl-file-download`](pl-file-download.md): Enable file downloads for data-centric questions.
@@ -41,7 +79,9 @@ When writing questions, there exists a core pool of elements that provides commo
 - [`pl-template`](pl-template.md): Display content from mustache templates.
 - [`pl-xss-safe`](pl-xss-safe.md): Remove potentially unsafe content from HTML code.
 
-**Conditional** elements are meant to improve the feedback and question structure. These elements conditionally render their content depending on the question state. The following **Conditional** elements are available:
+## Conditional elements
+
+Conditional elements are meant to improve the feedback and question structure. These elements conditionally render their content depending on the question state. The following conditional elements are available:
 
 - [`pl-answer-panel`](pl-answer-panel.md): Displays the correct answer to a given question.
 - [`pl-external-grader-results`](pl-external-grader-results.md): Displays results from questions that are externally graded.

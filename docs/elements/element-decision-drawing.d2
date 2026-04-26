@@ -1,0 +1,33 @@
+# Picking an input element when the answer is a drawing or image.
+
+source: "Where does the drawing come from?" {
+  shape: diamond
+}
+
+pl_image_capture: "pl-image-capture" {
+  tooltip: "Photo of handwritten work from a phone or webcam (manual grading)"
+}
+
+grading: "How should the drawing be graded?" {
+  shape: diamond
+}
+pl_excalidraw: "pl-excalidraw" {
+  tooltip: "Free-form vector diagram via Excalidraw (manual grading only)"
+}
+
+auto_kind: "What is being drawn?" {
+  shape: diamond
+}
+pl_sketch: "pl-sketch" {
+  tooltip: "Curves and mathematical objects: points, asymptotes, polygons"
+}
+pl_drawing: "pl-drawing" {
+  tooltip: "Pre-defined geometric/physics objects on a canvas (no freehand curves)"
+}
+
+source -> pl_image_capture: "Photo of handwritten work"
+source -> grading: "Drawn in the browser"
+grading -> pl_excalidraw: "Manually graded"
+grading -> auto_kind: "Auto-graded"
+auto_kind -> pl_sketch: "Mathematical curves\n/ sketches"
+auto_kind -> pl_drawing: "Geometric shapes /\nFBD-style objects"

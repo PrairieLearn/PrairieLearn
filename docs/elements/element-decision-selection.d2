@@ -1,0 +1,23 @@
+# Picking an input element when students choose from a fixed set of options.
+
+count: "How many items can be picked?" {
+  shape: diamond
+}
+
+pl_multiple_choice: "pl-multiple-choice" {
+  tooltip: "Pick exactly one option from a list"
+}
+pl_checkbox: "pl-checkbox" {
+  tooltip: "Pick any subset of options"
+}
+pl_matching: "pl-matching" {
+  tooltip: "Pair each prompt with an option from a shared list"
+}
+pl_order_blocks: "pl-order-blocks" {
+  tooltip: "Arrange code/text blocks into the correct order"
+}
+
+count -> pl_multiple_choice: "One"
+count -> pl_checkbox: "Several\nfrom a list"
+count -> pl_matching: "One per prompt,\nfrom a shared list"
+count -> pl_order_blocks: "All of them,\nin a particular order"
