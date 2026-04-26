@@ -1,8 +1,144 @@
 # PrairieLearn Elements for use in `question.html`
 
-When writing questions, there exists a core pool of elements that provides common structures associated with assessment items. These elements can be split into three distinct groups: **submission**, **decorative**, and **conditional**. Within this document, all of PrairieLearn's elements are displayed alongside links to sample elements within the example course. To build your own PrairieLearn element, please see [Question Element Writing](../devElements.md) documentation.
+When writing questions, there exists a core pool of elements that provides common structures associated with assessment items. Within this document, all of PrairieLearn's elements are displayed alongside links to sample elements within the example course. To build your own PrairieLearn element, please see [Question Element Writing](../devElements.md) documentation.
+
+!!! tip
+
+    Already know which element you want? Jump to the [full element reference](#reference) below for an alphabetical list grouped by element type.
 
 ## Submission elements
+
+Submission elements capture a response from a student — text, numbers, drawings, files, and so on. The sections below group them by the kind of response you want to collect; pick the section that matches, then expand the flowchart for a recommended `pl-*` element.
+
+### Choosing from a fixed set of options
+
+When students pick one or more items from a fixed set, e.g. multiple choice, checkboxes, matching, or ordering.
+
+- [`pl-checkbox`](pl-checkbox.md): Select **multiple options** from a list.
+- [`pl-matching`](pl-matching.md): Select a matching option for each entry in a group.
+- [`pl-multiple-choice`](pl-multiple-choice.md): Select only **one option** from a list.
+- [`pl-order-blocks`](pl-order-blocks.md): Select and arrange given blocks of code or text.
+
+??? note "Decision flowchart: selection-style elements"
+
+    ![Decision flowchart for selection-style input elements](./element-decision-selection.d2){layout="elk" pad="0" scale="1"}
+
+### Numeric answers
+
+When the response is a number — integer, decimal, value with units, or a matrix.
+
+- [`pl-integer-input`](pl-integer-input.md): Fill in an **integer** value such as -71, 0, 5, 21, and so on.
+- [`pl-matrix-component-input`](pl-matrix-component-input.md): Fill in a **matrix** using grid that has an input area for each element.
+- [`pl-matrix-input`](pl-matrix-input.md): Supply a matrix in a supported programming language format.
+- [`pl-number-input`](pl-number-input.md): Fill in a **numerical** value within a specific tolerance level such as 3.14, -1.921, and so on.
+- [`pl-units-input`](pl-units-input.md): Fill in a **number** and a **unit** such as "1.5 m", "14 ms", "6.3 ft", and so on.
+
+??? note "Decision flowchart: numeric elements"
+
+    ![Decision flowchart for numeric input elements](./element-decision-number.d2){layout="elk" pad="0" scale="1"}
+
+### Free text or symbolic math
+
+When the response is a string, an essay, or a math expression.
+
+- [`pl-big-o-input`](pl-big-o-input.md): Fill in a **symbolic** value representing asymptotic input.
+- [`pl-rich-text-editor`](pl-rich-text-editor.md): Provide an in-browser formattable text editor for open-ended responses and essays.
+- [`pl-string-input`](pl-string-input.md): Fill in a **string** value such as `"Illinois"`, `"GATTACA"`, `"computer"`, and so on.
+- [`pl-symbolic-input`](pl-symbolic-input.md): Fill in a **symbolic** value such as `x^2`, `sin(z)`, `mc^2`, and so on.
+
+??? note "Decision flowchart: text and symbolic elements"
+
+    ![Decision flowchart for text and symbolic input elements](./element-decision-text.d2){layout="elk" pad="0" scale="1"}
+
+### Drawings and images
+
+When the response is a drawing, diagram, or photo of handwritten work.
+
+- [`pl-drawing`](../pl-drawing/index.md): Create an auto-gradable canvas from a pre-defined collection of graphic objects.
+- [`pl-excalidraw`](pl-excalidraw.md): Draw a **vector diagram** using [excalidraw](https://github.com/excalidraw/excalidraw).
+- [`pl-image-capture`](pl-image-capture.md): Capture images of handwritten work from a local camera or external device such as a phone or tablet.
+- [`pl-sketch`](pl-sketch.md): Sketch curves and other mathematical objects (e.g., points, asymptotes, polygons).
+
+??? note "Decision flowchart: drawing elements"
+
+    ![Decision flowchart for drawing input elements](./element-decision-drawing.d2){layout="elk" pad="0" scale="1"}
+
+### Code and file submissions
+
+When the response is code or a file, written in the browser or uploaded from disk.
+
+- [`pl-file-editor`](pl-file-editor.md): Provide an in-browser code editor for writing and submitting code.
+- [`pl-file-upload`](pl-file-upload.md): Provide a submission area to obtain a file with a specific naming scheme.
+
+??? note "Decision flowchart: code and file elements"
+
+    ![Decision flowchart for code and file input elements](./element-decision-code.d2){layout="elk" pad="0" scale="1"}
+
+## Decorative elements
+
+Decorative elements display content to students — figures, code, data, files, and layout wrappers — without capturing any submission. The sections below group them by what you want to render.
+
+### Embedding media and figures
+
+For showing images, plots, graphs, or downloadable/previewable files alongside the question.
+
+- [`pl-figure`](pl-figure.md): Embed an image file in the question.
+- [`pl-file-download`](pl-file-download.md): Enable file downloads for data-centric questions.
+- [`pl-file-preview`](pl-file-preview.md): Display a preview of submitted files.
+- [`pl-graph`](pl-graph.md): Display graphs using [GraphViz DOT notation](https://graphviz.org/doc/info/lang.html), an adjacency matrix, or a [`networkx`](https://networkx.org/) graph.
+
+### Displaying code, data, and variables
+
+For showing pre-formatted code snippets, data frames, matrices, or Python variable values.
+
+- [`pl-code`](pl-code.md): Display code rendered with the appropriate syntax highlighting.
+- [`pl-dataframe`](pl-dataframe.md): Display DataFrames with various options.
+- [`pl-external-grader-variables`](pl-external-grader-variables.md): Display expected and given variables for externally graded questions.
+- [`pl-matrix-latex`](pl-matrix-latex.md): Display matrices using appropriate LaTeX commands for use in a mathematical expression.
+- [`pl-python-variable`](pl-python-variable.md): Display formatted output of Python variables.
+- [`pl-variable-output`](pl-variable-output.md): Display matrices in code form for supported programming languages.
+
+### Layout and safety
+
+For wrapping, templating, or sanitizing content rather than rendering a specific data type.
+
+- [`pl-card`](pl-card.md): Display content within a card-styled component.
+- [`pl-overlay`](pl-overlay.md): Layer existing elements on top of one another in specified positions.
+- [`pl-template`](pl-template.md): Display content from mustache templates.
+- [`pl-xss-safe`](pl-xss-safe.md): Remove potentially unsafe content from HTML code.
+
+## Conditional elements
+
+Conditional elements control where and when content appears — for example, restricting a hint to the question panel, or hiding instructor-only feedback during manual grading. The sections below group them by what you're trying to control.
+
+### Standard question panels
+
+The three primary content panels of a graded question.
+
+- [`pl-answer-panel`](pl-answer-panel.md): Displays the correct answer to a given question.
+- [`pl-question-panel`](pl-question-panel.md): Displays the text of a question.
+- [`pl-submission-panel`](pl-submission-panel.md): Displays the answer given by the student.
+
+### Showing or hiding content by context
+
+For making content appear in only some panels, or only during specific grading workflows.
+
+- [`pl-hide-in-manual-grading`](pl-hide-in-manual-grading.md): Hides content in the manual grading page.
+- [`pl-hide-in-panel`](pl-hide-in-panel.md): Hides content in one or more display panels.
+- [`pl-manual-grading-only`](pl-manual-grading-only.md): Shows content only in manual grading.
+
+### Hints and grading feedback
+
+For progressively revealing hints or surfacing external grader output.
+
+- [`pl-external-grader-results`](pl-external-grader-results.md): Displays results from questions that are externally graded.
+- [`pl-hidden-hints`](pl-hidden-hints.md): Displays hints as a student submits more on the current variant.
+
+## Reference
+
+PrairieLearn's elements are split into three groups: **submission**, **decorative**, and **conditional**, listed alphabetically below.
+
+### Submission elements
 
 Submission elements act as a way to receive a response or input from the student. These elements are traditionally referred to as form input fields. PrairieLearn presently provides the following templated **input field** elements:
 
@@ -26,51 +162,7 @@ Submission elements act as a way to receive a response or input from the student
 - [`pl-symbolic-input`](pl-symbolic-input.md): Fill in a **symbolic** value such as `x^2`, `sin(z)`, `mc^2`, and so on.
 - [`pl-units-input`](pl-units-input.md): Fill in a **number** and a **unit** such as "1.5 m", "14 ms", "6.3 ft", and so on.
 
-### Choosing an input element
-
-If you're unsure which element fits, the flowcharts below walk through the main questions to ask. Pick the section matching the kind of response you want to collect, then expand the flowchart to follow the branches to a recommended `pl-*` element.
-
-#### Choosing from a fixed set of options
-
-When students pick one or more items from a fixed set, e.g. multiple choice, checkboxes, matching, or ordering.
-
-??? note "Decision flowchart: selection-style elements"
-
-    ![Decision flowchart for selection-style input elements](./element-decision-selection.d2){layout="elk" pad="0" scale="1"}
-
-#### Numeric answers
-
-When the response is a number — integer, decimal, value with units, or a matrix.
-
-??? note "Decision flowchart: numeric elements"
-
-    ![Decision flowchart for numeric input elements](./element-decision-number.d2){layout="elk" pad="0" scale="1"}
-
-#### Free text or symbolic math
-
-When the response is a string, an essay, or a math expression.
-
-??? note "Decision flowchart: text and symbolic elements"
-
-    ![Decision flowchart for text and symbolic input elements](./element-decision-text.d2){layout="elk" pad="0" scale="1"}
-
-#### Drawings and images
-
-When the response is a drawing, diagram, or photo of handwritten work.
-
-??? note "Decision flowchart: drawing elements"
-
-    ![Decision flowchart for drawing input elements](./element-decision-drawing.d2){layout="elk" pad="0" scale="1"}
-
-#### Code and file submissions
-
-When the response is code or a file, written in the browser or uploaded from disk.
-
-??? note "Decision flowchart: code and file elements"
-
-    ![Decision flowchart for code and file input elements](./element-decision-code.d2){layout="elk" pad="0" scale="1"}
-
-## Decorative elements
+### Decorative elements
 
 Decorative elements are meant to improve how the question is displayed to students. Elements under this category include ways to specify question markup, images, files, and code display. The following decorative elements are available:
 
@@ -89,7 +181,7 @@ Decorative elements are meant to improve how the question is displayed to studen
 - [`pl-template`](pl-template.md): Display content from mustache templates.
 - [`pl-xss-safe`](pl-xss-safe.md): Remove potentially unsafe content from HTML code.
 
-## Conditional elements
+### Conditional elements
 
 Conditional elements are meant to improve the feedback and question structure. These elements conditionally render their content depending on the question state. The following conditional elements are available:
 
@@ -101,6 +193,8 @@ Conditional elements are meant to improve the feedback and question structure. T
 - [`pl-manual-grading-only`](pl-manual-grading-only.md): Shows content only in manual grading.
 - [`pl-question-panel`](pl-question-panel.md): Displays the text of a question.
 - [`pl-submission-panel`](pl-submission-panel.md): Displays the answer given by the student.
+
+### Deprecated elements
 
 !!! warning
 
