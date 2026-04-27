@@ -8,7 +8,7 @@ import {
   AuthzAccessRuleSchema,
   StudentAccessRulesPopover,
   StudentAccessTimelinePopover,
-} from '../../components/StudentAccessRulesPopover.js';
+} from '../../components/StudentAccessPopovers.js';
 import { AccessTimelineEntrySchema } from '../../lib/assessment-access-control/timeline.js';
 import {
   AssessmentAccessRuleSchema,
