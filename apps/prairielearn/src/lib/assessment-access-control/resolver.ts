@@ -342,7 +342,7 @@ function computeCredit(
   if (dateControl.due && dueDate === null) {
     return {
       credit: dueCredit,
-      active: dueCredit > 0,
+      active: true,
       beforeRelease: false,
       nextDeadlineDate: null,
       password: dateControl.password ?? null,
