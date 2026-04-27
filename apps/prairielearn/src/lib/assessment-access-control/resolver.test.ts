@@ -2453,6 +2453,7 @@ describe('custom due credit', () => {
   });
 
   it('treats 0 credit with null due date as active (submissions allowed for 0% credit)', () => {
+    // E.g., Practice assessment: students can submit but receive 0% credit indefinitely
     const result = resolveAccessControl({
       ...baseInput,
       rules: [

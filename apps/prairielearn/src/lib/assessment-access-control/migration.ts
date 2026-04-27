@@ -415,8 +415,10 @@ function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
       // The late deadline is the sole timeline entry.
       result.dateControl.lateDeadlines = [{ date: creditRule.endDate, credit }];
     } else if (credit > 100 && creditRule.endDate) {
-      // Bonus credit: no full-credit period exists, so omit due.
-      // The early deadline is the sole timeline entry.
+      // Bonus credit: no full-credit period exists. Emit an explicit null
+      // due date to satisfy the "defaults must configure due" requirement;
+      // the early deadline is the sole timeline entry.
+      result.dateControl.due = { date: null };
       result.dateControl.earlyDeadlines = [{ date: creditRule.endDate, credit }];
     } else if (creditRule.endDate) {
       // Full credit (100%): set due normally.
