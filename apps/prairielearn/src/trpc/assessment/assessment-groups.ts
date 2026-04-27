@@ -43,6 +43,7 @@ export interface AssessmentGroupsError {
   EditGroup: { code: 'GROUP_OPERATION_FAILED' };
   DeleteGroup: { code: 'GROUP_OPERATION_FAILED' };
   EnableGroupWork: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  DisableGroupWork: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   UpdateGroupConfig: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
 
@@ -399,6 +400,67 @@ const updateGroupConfig = t.procedure
     return { origHash: saveResult.newHash };
   });
 
+const disableGroupWork = t.procedure
+  .use(requireCoursePermissionEdit)
+  .input(z.object({ origHash: z.string().nullable() }))
+  .mutation(async ({ input, ctx }) => {
+    const { origHash } = input;
+    const assessmentDir = path.join(
+      ctx.course.path,
+      'courseInstances',
+      ctx.course_instance.short_name!,
+      'assessments',
+      ctx.assessment.tid!,
+    );
+    const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
+
+    const saveResult = await saveJsonFile<AssessmentJsonInput>({
+      applyChanges: (json) => {
+        const existing = normalizeGroupSettings(json);
+        json.groups = existing
+          ? serializeGroupSettings(existing, { enabled: false })
+          : { enabled: false };
+        stripLegacyGroupKeys(json);
+        return json;
+      },
+      jsonPath: assessmentPath,
+      conflictCheck: {
+        origHash,
+        scope: (json) => json.groups ?? null,
+      },
+      locals: {
+        authz_data: ctx.authz_data,
+        course: ctx.course,
+        user: ctx.authn_user,
+      },
+      container: {
+        rootPath: assessmentDir,
+        invalidRootPaths: [],
+      },
+    });
+
+    if (!saveResult.success) {
+      if (saveResult.reason === 'conflict') {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message:
+            'The group configuration has been modified since you loaded this page. Please refresh and try again.',
+        });
+      }
+      throwAppError<AssessmentGroupsError['DisableGroupWork']>({
+        code: 'SYNC_JOB_FAILED',
+        message: 'Failed to disable group work.',
+        jobSequenceId: saveResult.jobSequenceId,
+      });
+    }
+
+    const savedJson = (await fs.readJson(assessmentPath)) as AssessmentJsonInput;
+    return {
+      origHash: saveResult.newHash,
+      groupSettingsDefaults: normalizeGroupSettings(savedJson),
+    };
+  });
+
 const randomizeGroups = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
@@ -433,6 +495,7 @@ export const assessmentGroupsRouter = t.router({
   deleteGroup: deleteGroupProcedure,
   deleteAll,
   enableGroupWork,
+  disableGroupWork,
   updateGroupConfig,
   randomizeGroups,
 });

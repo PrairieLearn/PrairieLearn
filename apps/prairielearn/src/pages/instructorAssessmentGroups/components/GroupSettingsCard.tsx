@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Fragment, useState } from 'react';
-import { Alert, Modal } from 'react-bootstrap';
+import { Alert, Button, Modal } from 'react-bootstrap';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
@@ -31,6 +31,44 @@ function HelpTooltip({ body, id, ariaLabel }: { body: string; id: string; ariaLa
         <i className="bi bi-question-circle text-muted" aria-hidden="true" />
       </button>
     </OverlayTrigger>
+  );
+}
+
+function DisableGroupWorkModal({
+  show,
+  onHide,
+  onConfirm,
+  isPending,
+}: {
+  show: boolean;
+  onHide: () => void;
+  onConfirm: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <Modal show={show} onHide={onHide}>
+      <Modal.Header closeButton>
+        <Modal.Title>Disable group work</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <p className="mb-2">
+          Students will no longer be able to access this assessment as a group. Existing groups will
+          stop receiving credit until group work is re-enabled.
+        </p>
+        <p className="mb-0 text-muted small">
+          The current group configuration will be preserved and restored if you re-enable group work
+          later.
+        </p>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" disabled={isPending} onClick={onHide}>
+          Cancel
+        </Button>
+        <Button variant="danger" disabled={isPending} onClick={onConfirm}>
+          Disable group work
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 }
 
@@ -90,6 +128,7 @@ export function GroupSettingsCard({
   canEdit,
   onOrigHashChange,
   onGroupSizeSaved,
+  onDisable,
 }: {
   groupConfigInfo: StaffGroupConfig;
   groupSettingsDefaults: GroupSettingsFormValues | null;
@@ -97,11 +136,20 @@ export function GroupSettingsCard({
   canEdit: boolean;
   onOrigHashChange: (hash: string | null) => void;
   onGroupSizeSaved: (min: number | null, max: number | null) => void;
+  onDisable: (result: {
+    origHash: string;
+    groupSettingsDefaults: GroupSettingsFormValues | null;
+  }) => void;
 }) {
   const [showRecommendedRolesModal, setShowRecommendedRolesModal] = useState(false);
+  const [showDisableModal, setShowDisableModal] = useState(false);
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.updateGroupConfig.mutationOptions());
   const appError = getAppError<AssessmentGroupsError['UpdateGroupConfig']>(mutation.error);
+  const disableMutation = useMutation(trpc.assessmentGroups.disableGroupWork.mutationOptions());
+  const disableAppError = getAppError<AssessmentGroupsError['DisableGroupWork']>(
+    disableMutation.error,
+  );
 
   const {
     register,
@@ -219,14 +267,36 @@ export function GroupSettingsCard({
           setShowRecommendedRolesModal(false);
         }}
       />
-      <div className="card-body">
-        <h5 className="mb-1">Group settings</h5>
-        <div className="text-muted small mb-4">Configure how groups work for this assessment.</div>
-
-        <form onSubmit={handleSubmit(onSubmit)}>
+      <DisableGroupWorkModal
+        show={showDisableModal}
+        isPending={disableMutation.isPending}
+        onHide={() => setShowDisableModal(false)}
+        onConfirm={() =>
+          disableMutation.mutate(
+            { origHash },
+            {
+              onSuccess: (result) => {
+                setShowDisableModal(false);
+                onDisable(result);
+              },
+            },
+          )
+        }
+      />
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="card-body">
+          <h5 className="mb-1">Group settings</h5>
+          <div className="text-muted small mb-4">
+            Configure how groups work for this assessment.
+          </div>
           {appError && (
             <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
               {appError.message}
+            </Alert>
+          )}
+          {disableAppError && (
+            <Alert variant="danger" dismissible onClose={() => disableMutation.reset()}>
+              {disableAppError.message}
             </Alert>
           )}
           {mutation.isSuccess && !isDirty && (
@@ -691,8 +761,18 @@ export function GroupSettingsCard({
               )}
             </div>
           </fieldset>
-          {canEdit && (
-            <div className="d-flex justify-content-end gap-2">
+        </div>
+        {canEdit && (
+          <div className="card-footer d-flex flex-wrap align-items-center gap-2">
+            <Button
+              variant="outline-danger"
+              size="sm"
+              disabled={disableMutation.isPending}
+              onClick={() => setShowDisableModal(true)}
+            >
+              Disable group work
+            </Button>
+            <div className="ms-auto d-flex gap-2">
               <button
                 type="button"
                 className="btn btn-outline-secondary"
@@ -711,9 +791,9 @@ export function GroupSettingsCard({
                 Save and sync
               </button>
             </div>
-          )}
-        </form>
-      </div>
+          </div>
+        )}
+      </form>
     </div>
   );
 }
