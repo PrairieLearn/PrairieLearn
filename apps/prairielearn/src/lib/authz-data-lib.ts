@@ -75,13 +75,17 @@ export const CourseInstancePageAuthzDataSchema = RawCourseInstancePageAuthzDataS
 }).brand<'CourseInstancePageAuthzData'>();
 export type CourseInstancePageAuthzData = z.infer<typeof CourseInstancePageAuthzDataSchema>;
 
-// We don't define an Zod schema for `PageAuthzData` to parse with --
-// use CoursePageAuthzDataSchema or CourseInstancePageAuthzDataSchema directly
+// `PageAuthzData` is a union type only; there is no Zod schema for it. To
+// validate raw `res.locals.authz_data`, parse with `CoursePageAuthzDataSchema`
+// or `CourseInstancePageAuthzDataSchema` directly.
 export type PageAuthzData = CoursePageAuthzData | CourseInstancePageAuthzData;
 
 export function isCourseInstancePageAuthzData(
   data: PageAuthzData,
 ): data is CourseInstancePageAuthzData {
+  // This relies on `CoursePageAuthzDataSchema.parse()` stripping unknown keys
+
+  // TODO: We could consider using an explicit discriminator value instead of checking for the presence of a key.
   return 'has_course_instance_permission_view' in data;
 }
 

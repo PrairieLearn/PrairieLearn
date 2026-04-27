@@ -182,7 +182,6 @@ interface PageTypeReturnMap {
 }
 
 interface AuthzDataForPageType {
-  plain: object;
   course: CourseAuthzDataPageContext;
   courseInstance: CourseInstanceAuthzDataPageContext;
   assessment: CourseInstanceAuthzDataPageContext;
@@ -193,9 +192,11 @@ export type PageContext<
   PageType extends 'plain' | 'course' | 'courseInstance' | 'assessment' | 'assessmentQuestion',
   AccessType extends 'student' | 'instructor',
   WithAuthz extends boolean = true,
-> = WithAuthz extends true
-  ? PageTypeReturnMap[AccessType][PageType] & AuthzDataForPageType[PageType]
-  : PageTypeReturnMap[AccessType][PageType];
+> = PageType extends 'plain'
+  ? PageTypeReturnMap[AccessType][PageType]
+  : WithAuthz extends true
+    ? PageTypeReturnMap[AccessType][PageType] & AuthzDataForPageType[Exclude<PageType, 'plain'>]
+    : PageTypeReturnMap[AccessType][PageType];
 
 /**
  * Extract page context from res.locals with hierarchical inclusion.
@@ -214,8 +215,7 @@ export function extractPageContext<
   options: {
     pageType: PageType;
     accessType: AccessType;
-    withAuthzData?: WithAuthz;
-  },
+  } & (PageType extends 'plain' ? { withAuthzData?: false } : { withAuthzData?: WithAuthz }),
 ): PageContext<PageType, AccessType, WithAuthz> {
   type ReturnType = PageContext<PageType, AccessType, WithAuthz>;
 

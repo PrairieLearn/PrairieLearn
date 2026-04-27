@@ -52,6 +52,11 @@ export async function authzHasCoursePreviewOrInstanceView(
       accessType: 'instructor',
       withAuthzData: false,
     });
+
+    // This middleware runs on both course-only and course-instance routes.
+    // The upstream `authzCourseOrInstance` middleware only populates CI authz
+    // fields on `res.locals.authz_data` when `course_instance_id` is in the
+    // route params, so we use that param to pick the matching schema.
     const authzSchema = req.params.course_instance_id
       ? CourseInstancePageAuthzDataSchema
       : CoursePageAuthzDataSchema;
