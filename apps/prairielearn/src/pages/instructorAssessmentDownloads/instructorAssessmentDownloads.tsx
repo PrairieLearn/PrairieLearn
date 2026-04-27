@@ -35,9 +35,11 @@ import {
   GroupRoleSchema,
   GroupSchema,
   InstanceQuestionSchema,
+  type Question,
   QuestionSchema,
   RubricGradingItemSchema,
   RubricGradingSchema,
+  RubricItemSchema,
   SprocUsersGetDisplayedRoleSchema,
   type Submission,
   SubmissionSchema,
@@ -65,8 +67,9 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   uin: UserSchema.shape.uin.nullable(),
   name: UserSchema.shape.name.nullable(),
   role: SprocUsersGetDisplayedRoleSchema.nullable(),
-  assessment_label: z.string(),
   assessment_instance_number: AssessmentInstanceSchema.shape.number,
+  question_course_id: QuestionSchema.shape.course_id,
+  course_sharing_name: CourseSchema.shape.sharing_name,
   qid: QuestionSchema.shape.qid,
   instance_question_number: InstanceQuestionSchema.shape.number,
   points: InstanceQuestionSchema.shape.points,
@@ -83,19 +86,25 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   options: VariantSchema.shape.options,
   date: SubmissionSchema.shape.date,
   submission_id: SubmissionSchema.shape.id,
-  submission_date_formatted: z.string(),
+  submission_date: SubmissionSchema.shape.date,
   submitted_answer: SubmissionSchema.shape.submitted_answer,
   partial_scores: SubmissionSchema.shape.partial_scores,
   override_score: SubmissionSchema.shape.override_score,
   credit: SubmissionSchema.shape.credit,
   mode: SubmissionSchema.shape.mode,
-  grading_requested_at_formatted: z.string().nullable(),
-  graded_at_formatted: z.string().nullable(),
+  grading_requested_at: SubmissionSchema.shape.grading_requested_at,
+  graded_at: SubmissionSchema.shape.graded_at,
   score: SubmissionSchema.shape.score,
-  correct: z.enum(['TRUE', 'FALSE']).nullable(),
+  correct: SubmissionSchema.shape.correct,
   feedback: SubmissionSchema.shape.feedback,
-  rubric_grading: RubricGradingSchema.pick({ computed_points: true, adjust_points: true })
-    .extend({ items: RubricGradingItemSchema.pick({ description: true, points: true }).array() })
+  manual_rubric_grading_id: SubmissionSchema.shape.manual_rubric_grading_id,
+  rubric_grading: RubricGradingSchema.nullable(),
+  rubric_grading_items: z
+    .object({
+      description: RubricItemSchema.shape.description,
+      points: RubricGradingItemSchema.shape.points,
+    })
+    .array()
     .nullable(),
   submission_number: z.number(),
   final_submission_per_variant: z.boolean(),
@@ -115,6 +124,8 @@ const ManualGradingSubmissionRowSchema = z.object({
   uin: UserSchema.shape.uin.nullable(),
   zone_number: z.number(),
   zone_title: z.string().nullable(),
+  question_course_id: QuestionSchema.shape.course_id,
+  course_sharing_name: CourseSchema.shape.sharing_name,
   qid: QuestionSchema.shape.qid,
   old_score_perc: InstanceQuestionSchema.shape.score_perc,
   old_auto_points: InstanceQuestionSchema.shape.auto_points,
@@ -152,6 +163,7 @@ const AssessmentInstanceRowSchema = z.object({
   group_name: GroupSchema.shape.name.nullable(),
   uid_list: z.array(z.string()).nullable(),
 });
+type AssessmentInstanceRow = z.infer<typeof AssessmentInstanceRowSchema>;
 
 const CanvasAssessmentInstanceRowSchema = AssessmentInstanceRowSchema.pick({
   uid: true,
@@ -190,6 +202,7 @@ const InstanceQuestionRowSchema = z.object({
   assigned_grader: UserSchema.shape.uid.nullable(),
   last_grader: UserSchema.shape.uid.nullable(),
 });
+type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
 export function getFilenames(locals: ResLocalsForPage<'assessment'>) {
   return buildFilenames({
@@ -255,6 +268,18 @@ function parseFileContents(contents: any): Buffer | null {
     // Ignore any errors in reading the contents and treat as a blank file.
     return Buffer.from('');
   }
+}
+
+function qidWithSharingName(
+  locals: { course: { id: string } },
+  record: {
+    qid: Question['qid'];
+    question_course_id: Question['course_id'];
+    course_sharing_name: Course['sharing_name'];
+  },
+) {
+  if (idsEqual(locals.course.id, record.question_course_id)) return record.qid;
+  return `@${record.course_sharing_name}/${record.qid}`;
 }
 
 interface RowForFiles {
@@ -459,7 +484,7 @@ async function sendInstancesCsv(
   res.attachment(req.params.filename);
   await pipeline(
     result.stream(100),
-    stringifyWithColumns(columns, (row: z.infer<typeof AssessmentInstanceRowSchema>) => ({
+    stringifyWithColumns(columns, (row: AssessmentInstanceRow) => ({
       ...row,
       assessment_label: `${res.locals.assessment_set.name} ${res.locals.assessment.number}`,
       username: row.uid?.split('@')[0] ?? null,
@@ -470,7 +495,7 @@ async function sendInstancesCsv(
       time_remaining: row.open
         ? row.date_limit == null
           ? 'Open'
-          : formatIntervalMinutes(row.date_limit.getTime() - new Date().getTime())
+          : formatIntervalMinutes(row.date_limit.getTime() - Date.now())
         : 'Closed',
       duration_mins:
         row.duration == null ? null : Math.round(row.duration / MINUTE_IN_MILLISECONDS),
@@ -592,18 +617,16 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(
         cursor.stream(100),
-        stringifyWithColumns(columns, (row) => ({
+        stringifyWithColumns(columns, (row: InstanceQuestionRow) => ({
           ...row,
           assessment_label: `${res.locals.assessment_set.name} ${res.locals.assessment.number}`,
           date_formatted: formatDateISO(
-            row.instance_question_created_at,
+            row.instance_question_created_at!,
             res.locals.course_instance.display_timezone,
           ),
           duration_seconds:
             row.duration == null ? null : Math.round(row.duration / SECOND_IN_MILLISECONDS),
-          qid: idsEqual(res.locals.course.id, row.question_course_id)
-            ? row.qid
-            : `@${row.course_sharing_name}/${row.qid}`,
+          qid: qidWithSharingName(res.locals, row),
         })),
         res,
       );
@@ -637,9 +660,10 @@ router.get(
       ]);
 
       res.attachment(req.params.filename);
-      const stringifier = stringifyWithColumns(columns, (record) => {
+      const stringifier = stringifyWithColumns(columns, (record: ManualGradingSubmissionRow) => {
         return {
           ...record,
+          qid: qidWithSharingName(res.locals, record),
           // Add empty columns for the user to put data in.
           partial_scores: '',
           score_perc: '',
@@ -703,7 +727,39 @@ router.get(
       ]);
 
       res.attachment(req.params.filename);
-      await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
+      await pipeline(
+        cursor.stream(100),
+        stringifyWithColumns(columns, (row: AssessmentInstanceSubmissionRow) => ({
+          ...row,
+          assessment_label: `${res.locals.assessment_set.name} ${res.locals.assessment.number}`,
+          qid: qidWithSharingName(res.locals, row),
+          submission_date_formatted: formatDateISO(
+            row.submission_date!,
+            res.locals.course_instance.display_timezone,
+          ),
+          grading_requested_at_formatted:
+            row.grading_requested_at == null
+              ? null
+              : formatDateISO(
+                  row.grading_requested_at,
+                  res.locals.course_instance.display_timezone,
+                ),
+          graded_at_formatted:
+            row.graded_at == null
+              ? null
+              : formatDateISO(row.graded_at, res.locals.course_instance.display_timezone),
+          correct: row.correct == null ? null : row.correct ? 'TRUE' : 'FALSE',
+          rubric_grading:
+            row.manual_rubric_grading_id == null
+              ? null
+              : {
+                  computed_points: row.rubric_grading?.computed_points,
+                  adjust_points: row.rubric_grading?.adjust_points,
+                  items: row.rubric_grading_items ?? [],
+                },
+        })),
+        res,
+      );
     } else if (req.params.filename === filenames.filesForManualGradingZipFilename) {
       const cursor = await sqldb.queryCursor(
         sql.submissions_for_manual_grading,

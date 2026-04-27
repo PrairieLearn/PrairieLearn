@@ -154,10 +154,9 @@ WITH
       u.uin,
       z.number AS zone_number,
       z.title AS zone_title,
-      CASE
-        WHEN v.course_id = q.course_id THEN q.qid
-        ELSE '@' || c.sharing_name || '/' || q.qid
-      END AS qid,
+      q.course_id AS question_course_id,
+      c.sharing_name AS course_sharing_name,
+      q.qid,
       iq.score_perc AS old_score_perc,
       iq.auto_points AS old_auto_points,
       iq.manual_points AS old_manual_points,
@@ -209,14 +208,12 @@ WITH
       u.uin,
       u.name,
       users_get_displayed_role (u.id, ci.id) AS role,
-      (aset.name || ' ' || a.number) AS assessment_label,
       ai.number AS assessment_instance_number,
       z.number AS zone_number,
       z.title AS zone_title,
-      CASE
-        WHEN v.course_id = q.course_id THEN q.qid
-        ELSE '@' || c.sharing_name || '/' || q.qid
-      END AS qid,
+      q.course_id AS question_course_id,
+      c.sharing_name AS course_sharing_name,
+      q.qid,
       iq.number AS instance_question_number,
       iq.points,
       iq.score_perc,
@@ -232,49 +229,35 @@ WITH
       v.options,
       s.date,
       s.id AS submission_id,
-      format_date_iso8601 (s.date, ci.display_timezone) AS submission_date_formatted,
+      s.date AS submission_date,
       s.submitted_answer,
       s.partial_scores,
       s.override_score,
       s.credit,
       s.mode,
-      format_date_iso8601 (s.grading_requested_at, ci.display_timezone) AS grading_requested_at_formatted,
-      format_date_iso8601 (s.graded_at, ci.display_timezone) AS graded_at_formatted,
+      s.grading_requested_at,
+      s.graded_at,
       s.score,
-      CASE
-        WHEN s.correct THEN 'TRUE'
-        WHEN NOT s.correct THEN 'FALSE'
-        ELSE NULL
-      END AS correct,
+      s.correct,
       s.feedback,
-      CASE
-        WHEN rg.id IS NOT NULL THEN (
-          SELECT
+      s.manual_rubric_grading_id,
+      TO_JSONB(rg) AS rubric_grading,
+      (
+        SELECT
+          JSONB_AGG(
             JSONB_BUILD_OBJECT(
-              'computed_points',
-              rg.computed_points,
-              'adjust_points',
-              rg.adjust_points,
-              'items',
-              COALESCE(
-                JSONB_AGG(
-                  JSONB_BUILD_OBJECT(
-                    'description',
-                    ri.description,
-                    'points',
-                    rgi.points
-                  )
-                ),
-                '[]'::jsonb
-              )
+              'description',
+              ri.description,
+              'points',
+              rgi.points
             )
-          FROM
-            rubric_grading_items rgi
-            JOIN rubric_items ri ON (ri.id = rgi.rubric_item_id)
-          WHERE
-            rgi.rubric_grading_id = rg.id
-        )
-      END AS rubric_grading,
+          )
+        FROM
+          rubric_grading_items rgi
+          JOIN rubric_items ri ON (ri.id = rgi.rubric_item_id)
+        WHERE
+          rgi.rubric_grading_id = rg.id
+      ) AS rubric_grading_items,
       row_number() OVER (
         PARTITION BY
           v.id
