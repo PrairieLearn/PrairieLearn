@@ -191,13 +191,17 @@ export function AuthzAccessMismatch({
 }) {
   // TODO: We could consider using an explicit discriminator value instead of checking for the presence of a key.
   const isCourseInstance = 'has_course_instance_permission_view' in authzData;
-  const meta = isCourseInstance ? ALL_PERMISSIONS_META : COURSE_PERMISSIONS_META;
-  const permissions: PermissionData[] = meta.map((permission) => ({
-    ...permission,
-    // `meta` only iterates CI keys when present, so this cast is safe.
-    value: (authzData as CourseInstancePageAuthzData)[permission.key],
-    authnValue: (authzData as CourseInstancePageAuthzData)[`authn_${permission.key}`],
-  }));
+  const permissions: PermissionData[] = isCourseInstance
+    ? ALL_PERMISSIONS_META.map((permission) => ({
+        ...permission,
+        value: authzData[permission.key],
+        authnValue: authzData[`authn_${permission.key}`],
+      }))
+    : COURSE_PERMISSIONS_META.map((permission) => ({
+        ...permission,
+        value: authzData[permission.key],
+        authnValue: authzData[`authn_${permission.key}`],
+      }));
 
   const [oneOfPermissions, allOtherPermissions] = partition(permissions, (permission) =>
     (oneOfPermissionKeys as string[]).includes(permission.key),
