@@ -374,14 +374,14 @@ describe('extractPageContext', () => {
   it('strips extra fields from the data for plain pageType', () => {
     const mockData = {
       authz_data: createInstructorAuthzData(),
-      ...createBaseContext({ plainUrlPrefix: undefined }),
+      ...createBaseContext(),
       authn_user: { ...TEST_USER, foo: 'bar' },
       extraField: 'this should be stripped',
       anotherExtraField: 123,
     };
 
     const expected = {
-      ...createBaseContext({ plainUrlPrefix: undefined }),
+      ...createBaseContext(),
       authn_user: TEST_USER as StaffUser,
       authn_institution: TEST_INSTITUTION as StaffInstitution,
     };

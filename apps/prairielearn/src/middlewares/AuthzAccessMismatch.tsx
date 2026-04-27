@@ -1,10 +1,6 @@
 import { partition } from 'es-toolkit';
 
-import {
-  type CourseInstancePageAuthzData,
-  type PageAuthzData,
-  isCourseInstancePageAuthzData,
-} from '../lib/authz-data-lib.js';
+import type { CourseInstancePageAuthzData, PageAuthzData } from '../lib/authz-data-lib.js';
 import { removeCookieClient, setCookieClient } from '../lib/client/cookie.js';
 import type { StaffUser, StudentUser } from '../lib/client/safe-db-types.js';
 
@@ -193,63 +189,13 @@ export function AuthzAccessMismatch({
   authnUser: StudentUser | StaffUser;
   authzUser: StudentUser | StaffUser | null;
 }) {
-  const isCourseInstance = isCourseInstancePageAuthzData(authzData);
-  const applicableMeta = isCourseInstance ? ALL_PERMISSIONS_META : COURSE_PERMISSIONS_META;
-
-  const permissionValues = {
-    is_administrator: {
-      value: authzData.is_administrator,
-      authnValue: authzData.authn_is_administrator,
-    },
-    course_role: {
-      value: authzData.course_role,
-      authnValue: authzData.authn_course_role,
-    },
-    has_course_permission_preview: {
-      value: authzData.has_course_permission_preview,
-      authnValue: authzData.authn_has_course_permission_preview,
-    },
-    has_course_permission_view: {
-      value: authzData.has_course_permission_view,
-      authnValue: authzData.authn_has_course_permission_view,
-    },
-    has_course_permission_edit: {
-      value: authzData.has_course_permission_edit,
-      authnValue: authzData.authn_has_course_permission_edit,
-    },
-    has_course_permission_own: {
-      value: authzData.has_course_permission_own,
-      authnValue: authzData.authn_has_course_permission_own,
-    },
-    ...(isCourseInstance && {
-      course_instance_role: {
-        value: authzData.course_instance_role,
-        authnValue: authzData.authn_course_instance_role,
-      },
-      has_course_instance_permission_view: {
-        value: authzData.has_course_instance_permission_view,
-        authnValue: authzData.authn_has_course_instance_permission_view,
-      },
-      has_course_instance_permission_edit: {
-        value: authzData.has_course_instance_permission_edit,
-        authnValue: authzData.authn_has_course_instance_permission_edit,
-      },
-      has_student_access: {
-        value: authzData.has_student_access,
-        authnValue: authzData.authn_has_student_access,
-      },
-      has_student_access_with_enrollment: {
-        value: authzData.has_student_access_with_enrollment,
-        authnValue: authzData.authn_has_student_access_with_enrollment,
-      },
-    }),
-  } satisfies Partial<
-    Record<DiagnosticPermissionKeys, { value: boolean | string; authnValue: boolean | string }>
-  >;
-
-  const permissions: PermissionData[] = applicableMeta.map((permission) => ({
+  // TODO: We could consider using an explicit discriminator value instead of checking for the presence of a key.
+  const isCourseInstance = 'has_course_instance_permission_view' in authzData;
+  const meta = isCourseInstance ? ALL_PERMISSIONS_META : COURSE_PERMISSIONS_META;
+  const permissions: PermissionData[] = meta.map((permission) => ({
     ...permission,
-    ...permissionValues[permission.key]!,
+    value: authzData[permission.key],
+    authnValue: authzData[`authn_${permission.key}`],
   }));
 
   const [oneOfPermissions, allOtherPermissions] = partition(permissions, (permission) =>

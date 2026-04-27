@@ -80,15 +80,6 @@ export type CourseInstancePageAuthzData = z.infer<typeof CourseInstancePageAuthz
 // or `CourseInstancePageAuthzDataSchema` directly.
 export type PageAuthzData = CoursePageAuthzData | CourseInstancePageAuthzData;
 
-export function isCourseInstancePageAuthzData(
-  data: PageAuthzData,
-): data is CourseInstancePageAuthzData {
-  // This relies on `CoursePageAuthzDataSchema.parse()` stripping unknown keys
-
-  // TODO: We could consider using an explicit discriminator value instead of checking for the presence of a key.
-  return 'has_course_instance_permission_view' in data;
-}
-
 export interface DangerousSystemAuthzData {
   authn_user: {
     id: null;
