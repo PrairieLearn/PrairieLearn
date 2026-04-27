@@ -230,6 +230,7 @@ export function extractPageContext<
   });
 
   const authzData = run(() => {
+    // Plain pages never include authz_data in the result, even when withAuthzData is true.
     if (!withAuthzData || pageType === 'plain') return null;
     if (pageType === 'course') {
       return CourseAuthzDataPageContextSchema.parse(resLocals);

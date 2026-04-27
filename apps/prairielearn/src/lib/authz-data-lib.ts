@@ -59,20 +59,15 @@ const RawCourseInstancePageAuthzDataSchema = RawCoursePageAuthzDataSchema.extend
   has_student_access_with_enrollment: z.boolean(),
 });
 
-/**
- * Generic page authz data with all CI properties optional. Used in
- * `AuthzDataWithEffectiveUser` to represent unvalidated authz data that may
- * or may not have course instance context.
- */
-type RawCourseInstancePageAuthzData = z.infer<typeof RawCourseInstancePageAuthzDataSchema>;
 export type RawPageAuthzData =
   | z.infer<typeof RawCoursePageAuthzDataSchema>
-  | RawCourseInstancePageAuthzData;
+  | z.infer<typeof RawCourseInstancePageAuthzDataSchema>;
 
 export const CoursePageAuthzDataSchema = RawCoursePageAuthzDataSchema.extend({
   user: StaffUserSchema,
   authn_user: StaffUserSchema,
 }).brand<'CoursePageAuthzData'>();
+export type CoursePageAuthzData = z.infer<typeof CoursePageAuthzDataSchema>;
 
 export const CourseInstancePageAuthzDataSchema = RawCourseInstancePageAuthzDataSchema.extend({
   user: StaffUserSchema,
@@ -80,11 +75,9 @@ export const CourseInstancePageAuthzDataSchema = RawCourseInstancePageAuthzDataS
 }).brand<'CourseInstancePageAuthzData'>();
 export type CourseInstancePageAuthzData = z.infer<typeof CourseInstancePageAuthzDataSchema>;
 
-export const PageAuthzDataSchema = z.union([
-  CourseInstancePageAuthzDataSchema,
-  CoursePageAuthzDataSchema,
-]);
-export type PageAuthzData = z.infer<typeof PageAuthzDataSchema>;
+// We don't define an Zod schema for `PageAuthzData` to parse with --
+// use CoursePageAuthzDataSchema or CourseInstancePageAuthzDataSchema directly
+export type PageAuthzData = CoursePageAuthzData | CourseInstancePageAuthzData;
 
 export function isCourseInstancePageAuthzData(
   data: PageAuthzData,
@@ -194,7 +187,7 @@ export function hasRole(authzData: AuthzData, requiredRole: Role[]): boolean {
   }
 
   /* Course instance roles (student + instructor) */
-  if ('has_student_access' in authzData) {
+  if ('has_course_instance_permission_view' in authzData) {
     if (
       requiredRole.includes('Student') &&
       authzData.has_student_access &&
