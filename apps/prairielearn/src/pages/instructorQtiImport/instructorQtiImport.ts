@@ -276,11 +276,16 @@ function commentOutVideoReferences(html: string, skippedVideos: string[]): strin
       new RegExp(`<\\w[\\w-]*\\b[^>]*${ref}[^>]*/?>`, 'gi'),
     ];
     for (const pattern of patterns) {
-      result = result.replace(
-        pattern,
-        (match) =>
-          `<!-- TODO: Update the video URL below and uncomment to restore this video.\n${match}\n-->`,
-      );
+      result = result.replace(pattern, (...args) => {
+        const offset = args[args.length - 2] as number;
+        // Skip if this match is already inside an HTML comment.
+        const before = result.slice(0, offset);
+        const lastCommentOpen = before.lastIndexOf('<!--');
+        const lastCommentClose = before.lastIndexOf('-->');
+        if (lastCommentOpen > lastCommentClose) return args[0];
+
+        return `<!-- TODO: Update the video URL below and uncomment to restore this video.\n${args[0]}\n-->`;
+      });
     }
   }
   return result;
