@@ -152,10 +152,5 @@ export const htmlMustacheConfig: Config = {
     { name: 'pl-sketch-initial' },
     { name: 'pl-sketch-solution' },
     { name: 'pl-sketch-tool' },
-    // Non-PL custom elements
-    { name: 'clickable-image' },
-    { name: 'course-element' },
-    { name: 'extendable-element' },
-    { name: 'math-field' },
   ],
 };
