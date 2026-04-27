@@ -69,6 +69,41 @@ def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> 
 
 
 @pytest.mark.parametrize(
+    ("sub", "expected"),
+    [
+        ("{1} | {2}", "{1} | {2}"),
+        ("{1, 2} | {3}", "{1, 2} | {3}"),
+        ("[1, 2] | [3, 4]", "[1, 2] | [3, 4]"),
+        ("|x| | {1}", "abs(x) | {1}"),
+    ],
+)
+def test_format_submission_for_sympy_preserves_set_union(
+    sub: str, expected: str
+) -> None:
+    out, error_msg = symbolic_input.format_submission_for_sympy(
+        sub, allow_set_notation=True
+    )
+    assert (out, error_msg) == (expected, None)
+
+
+def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
+    element_html = build_element_html(
+        'allow-set-notation="true"',
+        'correct-answer="{1} | {2}"',
+    )
+    data = make_question_data(submitted_answers={"test": "{1} | {2}"})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert isinstance(data["submitted_answers"]["test"], dict)
+    assert psu.json_to_sympy(
+        data["submitted_answers"]["test"], allow_set_notation=True
+    ) == sympy.FiniteSet(1, 2)
+
+
+@pytest.mark.parametrize(
     ("sub", "allow_trig", "variables", "custom_functions", "expected"),
     [
         # Greek letters
@@ -308,7 +343,12 @@ def test_interval_endpoints_support_trig_and_arithmetic_expressions(
     assert "test" not in data["format_errors"]
     assert isinstance(data["submitted_answers"]["test"], dict)
     assert data["submitted_answers"]["test"]["_type"] == "sympy"
-    assert sympy.sympify(data["submitted_answers"]["test"]["_value"]) == expected_expr
+    assert (
+        psu.json_to_sympy(
+            data["submitted_answers"]["test"], allow_set_notation=True
+        )
+        == expected_expr
+    )
 
     symbolic_input.grade(element_html, data)
     assert data["partial_scores"]["test"]["score"] == 1
@@ -342,7 +382,12 @@ def test_empty_set_submission_round_trips_when_set_notation_is_enabled() -> None
 
     assert "test" not in data["format_errors"]
     assert isinstance(data["submitted_answers"]["test"], dict)
-    assert data["submitted_answers"]["test"]["_value"] == "FiniteSet()"
+    assert (
+        psu.json_to_sympy(
+            data["submitted_answers"]["test"], allow_set_notation=True
+        )
+        == sympy.EmptySet
+    )
 
     symbolic_input.grade(element_html, data)
     assert data["partial_scores"]["test"]["score"] == 1

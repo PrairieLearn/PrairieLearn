@@ -322,22 +322,19 @@ class TestSympy:
             allow_complex=True,
         )
 
-    @pytest.mark.parametrize(("text", "expected"), SET_EXPR_PAIRS)
-    def test_sets_try_parse_string_as_sympy(
-        self, text: str, expected: sympy.Expr
-    ) -> None:
-        assert psu.SympyParseSuccess(expected) == psu.try_parse_string_as_sympy(
-            text,
-            self.SYMBOL_NAMES,
-            allow_set_notation=True,
-            custom_functions=list(self.FUNCTION_NAMES),
-        )
-
     @pytest.mark.parametrize(
         ("text", "expected"),
-        [(text.replace(" ", ""), expected) for text, expected in SET_EXPR_PAIRS],
+        list(
+            dict(
+                [(text, expected) for text, expected in SET_EXPR_PAIRS]
+                + [
+                    (text.replace(" ", ""), expected)
+                    for text, expected in SET_EXPR_PAIRS
+                ]
+            ).items()
+        ),
     )
-    def test_sets_try_parse_string_as_sympy_is_ws_insensitive(
+    def test_sets_try_parse_string_as_sympy(
         self, text: str, expected: sympy.Expr
     ) -> None:
         assert psu.SympyParseSuccess(expected) == psu.try_parse_string_as_sympy(
@@ -900,24 +897,16 @@ class TestExceptions:
         "x^2 !U {1,2}",
     )
 
-    @pytest.mark.parametrize("caret_spec", SET_TYPE_ERROR_CARET_TEMPLATES)
-    def test_sets_operation_type_error_caret_output(self, caret_spec: str) -> None:
-        expr, expected_caret = _caret_template(caret_spec)
-        error_msg = psu.validate_string_as_sympy(expr, None, allow_set_notation=True)
-        assert error_msg is not None
-        assert re.search(r"\b(set|arguments?|syntax)\b", error_msg) is not None, (
-            f"error message is not descriptive: {error_msg}"
-        )
-        match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
-        assert match is not None, f"error message has no caret: {error_msg}"
-        assert expected_caret == match.group(1)
-
     @pytest.mark.parametrize(
-        "caret_spec", [t.replace(" ", "") for t in SET_TYPE_ERROR_CARET_TEMPLATES]
+        "caret_spec",
+        list(
+            dict.fromkeys(
+                list(SET_TYPE_ERROR_CARET_TEMPLATES)
+                + [t.replace(" ", "") for t in SET_TYPE_ERROR_CARET_TEMPLATES]
+            )
+        ),
     )
-    def test_sets_operation_type_error_caret_output_is_ws_insensitive(
-        self, caret_spec: str
-    ) -> None:
+    def test_sets_operation_type_error_caret_output(self, caret_spec: str) -> None:
         expr, expected_caret = _caret_template(caret_spec)
         error_msg = psu.validate_string_as_sympy(expr, None, allow_set_notation=True)
         assert error_msg is not None

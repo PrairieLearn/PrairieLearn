@@ -409,6 +409,9 @@
 
     const elementKeyboardLayout = {
       label: 'math',
+      // When allowSets is enabled, set/interval keys take the place of e, x, y, and
+      // sign across these rows; affected keys are reshuffled so the most useful keys
+      // stay reachable in the same general region of the keyboard.
       rows: [
         [
           ...onlyIfSets('[separator]'),
@@ -433,7 +436,7 @@
           '9',
           '+',
           '[separator]',
-          allowSets ? makeShortcutProxy({ latex: '\\{ #? \\}', insert: '\\{{#@}\\}' }, mf) : 'e', // e removed
+          allowSets ? makeShortcutProxy({ latex: '\\{ #? \\}', insert: '\\{{#@}\\}' }, mf) : 'e',
           ...onlyIfSets(','),
           '\\infty',
           '\\pi',
@@ -459,8 +462,8 @@
           '6',
           '-',
           '[separator]',
-          allowSets ? '[' : 'x', // x shifted down
-          allowSets ? ']' : 'y', // y removed
+          allowSets ? '[' : 'x',
+          allowSets ? ']' : 'y',
           ...onlyIfSets(makeShortcutProxy({ latex: '\\cup', insert: '{#?} \\cup {#?}' }, mf)),
           imaginaryUnit,
         ],
@@ -484,9 +487,7 @@
           '(',
           ')',
           ...onlyIfSets(makeShortcutProxy({ latex: '\\cap', insert: '{#?} \\cap {#?}' }, mf)),
-          allowSets
-            ? 'x' // x shifted from above
-            : signKey, // sign shifted down
+          allowSets ? 'x' : signKey,
         ],
         [
           ...onlyIfSets('[separator]'),

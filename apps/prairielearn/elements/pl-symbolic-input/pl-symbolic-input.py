@@ -256,7 +256,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
     show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
-    constants_class = psu._Constants()
+    constants_class = psu._Constants
 
     operators: list[str] = list(psu.STANDARD_OPERATORS)
     if allow_sets:
@@ -517,7 +517,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         )
 
     # Pre-processing to make submission parseable by SymPy
-    a_sub, error_msg = format_submission_for_sympy(submitted_answer)
+    a_sub, error_msg = format_submission_for_sympy(
+        submitted_answer, allow_set_notation=allow_sets
+    )
     if error_msg is not None:
         data["format_errors"][name] = error_msg
         data["submitted_answers"][name] = None
@@ -590,7 +592,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
 
 
-def format_submission_for_sympy(sub: str | None) -> tuple[str | None, str | None]:
+def format_submission_for_sympy(
+    sub: str | None, *, allow_set_notation: bool = False
+) -> tuple[str | None, str | None]:
     """
     Format submission to be compatible with SymPy.
 
@@ -602,6 +606,8 @@ def format_submission_for_sympy(sub: str | None) -> tuple[str | None, str | None
 
     Args:
         sub: The text submission to format
+        allow_set_notation: If true, leave any residual ``|`` characters in place
+            so the SymPy parser can interpret them as set-union operators.
 
     Returns:
         A tuple of (Formatted text with absolute value bars replaced by abs() calls, or None if input is None, and an error message if there is an error)
@@ -625,7 +631,7 @@ def format_submission_for_sympy(sub: str | None) -> tuple[str | None, str | None
         content = match.group(0)[1:-1]  # Strip the bars
         sub = sub[: match.start()] + f"abs({content})" + sub[match.end() :]
 
-    if "|" in sub:
+    if not allow_set_notation and "|" in sub:
         return (
             None,
             f"The absolute value bars in your answer are mismatched or ambiguous: <code>{original_sub}</code>.",
@@ -690,7 +696,7 @@ def _build_known_tokens(
     Returns:
         List of all multi-character tokens that should be recognized as single units.
     """
-    constants_class = psu._Constants()
+    constants_class = psu._Constants
 
     # Include 1-letter tokens here since Greek letters might become multi-letter tokens when transformed
     tokens = (

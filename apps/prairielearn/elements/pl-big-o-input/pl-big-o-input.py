@@ -123,7 +123,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     parse_error = data["format_errors"].get(name)
 
-    constants_class = psu._Constants()
+    constants_class = psu._Constants
 
     operators: list[str] = list(psu.STANDARD_OPERATORS)
     operators.extend(constants_class.functions.keys())

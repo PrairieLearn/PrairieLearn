@@ -27,7 +27,7 @@ from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
 from typing_extensions import NotRequired
 
-from prairielearn.misc_utils import FrozenClass, full_unidecode
+from prairielearn.misc_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
@@ -38,14 +38,16 @@ FrozenSympyFunctionMapT = FrozenDict[str, Callable[..., Any]]
 SympyFunctionMapT = dict[str, Callable[..., Any]]
 FrozenAssumptionsDictT = FrozenDict[str, dict[str, Any]]
 AssumptionsDictT = dict[str, dict[str, Any]]
+"""
+A dictionary of assumptions for variables in the expression.
+
+Examples:
+    >>> {"x": {"positive": True}, "y": {"real": True}}
+"""
 
 ASTWhiteListT = tuple[type[ast.AST], ...]
 
 
-# A dictionary of assumptions for variables in the expression.
-#
-# Examples:
-#     >>> {"x": {"positive": True}, "y": {"real": True}}
 class SympyJson(TypedDict):
     """A class with type signatures for the SymPy JSON dict"""
 
@@ -93,7 +95,7 @@ class LocalsForEval(TypedDict):
     helpers: SympyFunctionMapT
 
 
-class _Constants(metaclass=FrozenClass):
+class _Constants:
     helpers: Final[FrozenSympyFunctionMapT] = FrozenDict({
         "Number": sympy.Number,
         "_Integer": sympy.Integer,
@@ -171,7 +173,6 @@ class _Constants(metaclass=FrozenClass):
         "∪": operator.or_,  # noqa: RUF001
         "cap": operator.and_,
         "∩": operator.and_,
-        "**": operator.pow,
     })
 
     set_operator_desugars: Final[FrozenDict[str, str]] = FrozenDict({
@@ -180,7 +181,6 @@ class _Constants(metaclass=FrozenClass):
         "∪": "|",  # noqa: RUF001
         "cap": "&",
         "∩": "&",
-        "**": "**",
     })
 
 
@@ -188,14 +188,12 @@ class _SympyJsonStrPrinter(StrPrinter):
     """String printer that keeps set notation parseable by avoiding banned ast nodes."""
 
     def _print_EmptySet(self, _expr: sympy.Set) -> str:  # noqa: N802
-        return "FiniteSet()"
+        return "{}"
 
     def _print_Interval(self, expr: sympy.Interval) -> str:  # noqa: N802
-        # by default, it prefers `Interval.open` or `Interval.Lopen` which the ast blocker bans
         start, end = self.doprint(expr.start), self.doprint(expr.end)
-        if not expr.left_open and not expr.right_open:
-            return f"Interval({start}, {end})"
-        return f"Interval({start}, {end}, {expr.left_open}, {expr.right_open})"
+        left, right = "([" [not expr.left_open], ")]" [not expr.right_open]
+        return f"{left}{start}, {end}{right}"
 
 
 # Safe evaluation of user input to convert from string to sympy expression.
@@ -310,6 +308,15 @@ class HasInvalidSymbolError(BaseSympyError):
     symbol: str
 
 
+# Deprecated / unused, kept for backwards compatibility.
+@dataclass
+class HasInvalidVariableError(BaseSympyError):
+    """Deprecated / unused."""
+
+    offset: int
+    text: str
+
+
 class ASTSympyType(Enum):
     SCALAR = "number"
     SET = "set"
@@ -332,7 +339,7 @@ class HasArgumentTypeError(BaseSympyError):
     def format_allowable_types(self) -> str:
         if len(self.allowable_types) == 1:
             return f"a {self.allowable_types[0]}"
-        return f"either {_format_comma_seperated(set(self.allowable_types))}"
+        return f"either {_format_comma_separated(list(dict.fromkeys(self.allowable_types)))}"
 
     def as_type_error(self) -> TypeError:
         # NOTE: must match format of `_TYPE_ERROR_OPERATOR_PATTERN`
@@ -525,7 +532,7 @@ class CheckAST(ast.NodeVisitor):
     ) -> tuple[ASTSympyType | None, ...]:
         arity_matches = [s for s in overloads if len(s) == len(args)]
         if not arity_matches:
-            msg = _format_comma_seperated(sorted(set(map(len, overloads))))
+            msg = _format_comma_separated(sorted(set(map(len, overloads))))
             raise HasFunctionArityError(fn_name, len(args), msg)
 
         arg_types = tuple(map(self._get_type, args))
@@ -700,7 +707,7 @@ def evaluate(
     )[0]
 
 
-def _format_comma_seperated(items: Iterable[Any], last_conjunction: str = "or") -> str:
+def _format_comma_separated(items: Iterable[Any], last_conjunction: str = "or") -> str:
     comma_sep = ", ".join(map(str, items))
     return f" {last_conjunction} ".join(comma_sep.rsplit(", ", maxsplit=1))
 
@@ -711,6 +718,7 @@ def _normalize_expr(expr: str) -> tuple[str, list[int]]:
     offsets: list[int] = []
     for ind, char in enumerate(expr):
         normalized_char = char
+        # Single-char codepoints only; multi-char keys like "cup" are unidecoded char-by-char (no-op for ASCII).
         if char not in _Constants.set_operators:
             normalized_char = full_unidecode(greek_unicode_transform(char))
         parts.append(normalized_char)
@@ -754,7 +762,7 @@ def _regex_sub_expr_and_map_offsets(
 
 
 def evaluate_with_source(
-    normalized_expr: str,
+    expr: str,
     locals_for_eval: LocalsForEval,
     *,
     allow_complex: bool = False,
@@ -772,11 +780,10 @@ def evaluate_with_source(
         HasSetNotationError: If the expression contains interval or set characters.
         HasArgumentTypeError: If an expression is given the wrong types.
         HasFunctionArityError: If a function is given the wrong number of args.
-        HasSetNotationError: If the expression contains interval or set characters.
         HasParseError: If the expression cannot be parsed.
         BaseSympyError: If the expression cannot be evaluated.
     """
-    normalized_expr, char_offsets = _normalize_expr(normalized_expr)
+    normalized_expr, char_offsets = _normalize_expr(expr)
 
     # Check for escape and comment characters after normalization, since some
     # unicode characters normalize to "#" or "\\". The offset map translates
@@ -1694,24 +1701,32 @@ def _build_name_conflict_data(
         allow_complex=allow_complex,
         allow_hidden=allow_hidden,
     )
-
-    seen = {}
     set_ops = tuple(_Constants.set_operators.keys())
 
-    def _collision(name: str, *, is_variable: bool) -> bool:
-        sanitized = greek_unicode_transform(name)
-        if sanitized in seen:
+    def _conflicts(name: str) -> bool:
+        if name in builtins:
             return True
-        seen[sanitized] = (is_variable, name)
-        if allow_set_notation and _split_mangled_binop(set_ops, sanitized):
-            return True
-        return sanitized in builtins
+        return allow_set_notation and _split_mangled_binop(set_ops, name) is not None
 
-    return (
-        [v for v in variables if _collision(v, is_variable=True)],
-        [f for f in custom_functions if _collision(f, is_variable=False)],
-        seen,
-    )
+    valid_names: dict[str, tuple[bool, str]] = {}
+    conflict_vars: list[str] = []
+    conflict_fns: list[str] = []
+
+    for raw in variables:
+        sanitized = greek_unicode_transform(raw)
+        if sanitized in valid_names or _conflicts(sanitized):
+            conflict_vars.append(raw)
+        else:
+            valid_names[sanitized] = (True, raw)
+
+    for raw in custom_functions:
+        sanitized = greek_unicode_transform(raw)
+        if sanitized in valid_names or _conflicts(sanitized):
+            conflict_fns.append(raw)
+        else:
+            valid_names[sanitized] = (False, raw)
+
+    return conflict_vars, conflict_fns, valid_names
 
 
 def validate_names_for_conflicts(
