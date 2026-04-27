@@ -300,10 +300,10 @@ export function MainDueDateField({
   };
   const handleChange = (next: DueValue) => {
     if (next.date !== value.date) dateCtrl.field.onChange(next.date);
-    if (next.credit !== value.credit) creditCtrl.field.onChange(next.credit);
     if (next.customCredit !== value.customCredit) {
       customCreditCtrl.field.onChange(next.customCredit);
     }
+    if (next.credit !== value.credit) creditCtrl.field.onChange(next.credit);
   };
 
   return (
@@ -389,10 +389,10 @@ export function OverrideDueDateField({
   };
   const handleChange = (next: DueValue) => {
     if (next.date !== value.date) dateCtrl.field.onChange(next.date);
-    if (next.credit !== value.credit) creditCtrl.field.onChange(next.credit);
     if (next.customCredit !== value.customCredit) {
       customCreditCtrl.field.onChange(next.customCredit);
     }
+    if (next.credit !== value.credit) creditCtrl.field.onChange(next.credit);
   };
 
   return (
