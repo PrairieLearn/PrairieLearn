@@ -1,5 +1,3 @@
-import assert from 'node:assert';
-
 import { Temporal } from '@js-temporal/polyfill';
 
 import type { AccessControlJsonWithId } from '../../../models/assessment-access-control-rules.js';
@@ -338,7 +336,9 @@ export function jsonToOverrideFormData(
  */
 function buildDueJson(due: DueValue): { date: string | null; credit?: number } {
   if (due.customCredit) {
-    assert(due.credit !== null, 'customCredit is true but credit is null');
+    if (due.credit === null) {
+      throw new Error('customCredit is true but credit is null');
+    }
     return { date: due.date, credit: due.credit };
   }
   return { date: due.date };
