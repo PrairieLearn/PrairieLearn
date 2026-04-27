@@ -456,8 +456,12 @@ class TestSympy:
     @pytest.mark.parametrize("sympy_expr", [out for _, out in SET_EXPR_PAIRS])
     def test_sets_json_conversion(self, sympy_expr: sympy.Set) -> None:
         assert sympy_expr == psu.json_to_sympy(
-            psu.sympy_to_json(sympy_expr), allow_sets=True
+            psu.sympy_to_json(sympy_expr, allow_sets=True), allow_sets=True
         )
+
+    def test_sets_json_conversion_requires_sets_enabled(self) -> None:
+        with pytest.raises(psu.HasSetNotationError):
+            psu.sympy_to_json(sympy.Interval(0, 1))
 
     @pytest.mark.parametrize(
         ("fn_name", "fn_args"),
@@ -481,6 +485,13 @@ class TestSympy:
 
         assert without_sets["_custom_functions"] == [fn_name]  # type: ignore
         assert with_sets["_custom_functions"] == []  # type: ignore
+
+    def test_sets_reserveds_are_custom_functions_by_default(self) -> None:
+        x = sympy.Symbol("x")
+        union = sympy.Function("Union")
+        expr = union(x)
+
+        assert psu.json_to_sympy(psu.sympy_to_json(expr)) == expr
 
     @pytest.mark.parametrize(
         "sympy_expr",

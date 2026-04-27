@@ -1147,13 +1147,19 @@ def sympy_to_json(
     *,
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
-    allow_sets: bool = True,
+    allow_sets: bool = False,
 ) -> SympyJson:
     """Convert a SymPy expression to a JSON-seralizable dictionary.
 
     Returns:
         A JSON-serializable representation of the SymPy expression.
+
+    Raises:
+        HasSetNotationError: If the expression is a set and `allow_sets` is `False`.
     """
+    if isinstance(a, sympy.Set) and not allow_sets:
+        raise HasSetNotationError
+
     const = _Constants
 
     # Get list of variables in the sympy expression

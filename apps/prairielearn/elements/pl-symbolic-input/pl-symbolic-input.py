@@ -627,7 +627,8 @@ def format_submission_for_sympy(
         # When set notation is allowed, a comma inside the match means the
         # pipes are a union operator pair around an interval or finite set
         # (e.g. the middle pipes in ``[0,1] | (2,3) | [4,5]``), not an
-        # absolute value. Skip past the leading pipe and keep looking.
+        # absolute value.
+        # TODO: This can skip min/max operators or other functions that contain commas.
         if allow_sets and "," in content:
             search_from = match.start() + 1
             continue
