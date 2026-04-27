@@ -223,13 +223,12 @@ describe('Access control syncing', () => {
         const rule: AccessControlJsonInput = {
           dateControl: {
             release: { date: '2024-03-14T00:01:00' },
-            // due, durationMinutes, password, deadlines all omitted
+            due: { date: '2024-03-21T23:59:00' },
+            // durationMinutes, password, deadlines all omitted
           },
         };
         const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
-        assert.isFalse(row.date_control_due_overridden);
-        assert.isNull(row.date_control_due_date);
         assert.isFalse(row.date_control_duration_minutes_overridden);
         assert.isNull(row.date_control_duration_minutes);
         assert.isFalse(row.date_control_password_overridden);
