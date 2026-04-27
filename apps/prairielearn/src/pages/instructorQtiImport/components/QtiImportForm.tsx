@@ -186,6 +186,7 @@ export function QtiImportForm({
         method: 'POST',
         headers: {
           'X-CSRF-Token': csrfToken,
+          Accept: 'application/json',
         },
         body: formData,
       });
