@@ -73,7 +73,7 @@ If `allow-set-notation="true"`, the following additional layer of syntax is enab
 - Set literals with explicitly listed members (e.g. `{1, 2, 3}`, `{0, 2pi/3, 4pi/3}`, `{ {}, { {} } }`)
 - Interval set notation, including $\infty$ (e.g `(-sin(x), +sin(x))`, `(-infty, 5]`, `[2, oo]`)
 - Common set operators: union (`U`, `cup`, `+`, or `|`),
-  intersection (`cap` or `&`), difference (`-`), and exponentiation (`**`)
+  intersection (`cap` or `&`), and difference (`-`)
 
 ## Example implementations
 
