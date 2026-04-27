@@ -239,7 +239,7 @@ async function controlContainer(
   throw new Error(`Error from workspace host: ${json.message}`);
 }
 
-export type StartupAction = 'bail' | 'initialize-then-launch' | 'launch-only' | 'noop';
+type StartupAction = 'bail' | 'initialize-then-launch' | 'launch-only' | 'noop';
 
 /**
  * Resolves what `startup()` should do once it has locked the workspace row.
