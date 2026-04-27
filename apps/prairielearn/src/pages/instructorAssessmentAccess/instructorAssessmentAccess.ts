@@ -45,7 +45,7 @@ function getAssessmentPath(
   return path.join(
     resLocals.course.path,
     'courseInstances',
-    resLocals.course_instance.short_name!,
+    resLocals.course_instance.short_name,
     'assessments',
     resLocals.assessment.tid!,
     'infoAssessment.json',

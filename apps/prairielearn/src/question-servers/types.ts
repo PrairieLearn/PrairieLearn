@@ -1,8 +1,29 @@
+import type { QuestionRenderContext } from '../components/QuestionContainer.types.js';
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
-import type { UntypedResLocals } from '../lib/res-locals.types.js';
+import type { ResLocalsQuestionRender } from '../lib/question-render.types.js';
 import type { ElementExtensionJson } from '../schemas/index.js';
 
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';
+
+/**
+ * The narrow set of `res.locals` fields that {@link QuestionServer.render} actually reads.
+ * Callers should construct this object explicitly rather than passing a full `res.locals`.
+ */
+export type QuestionRenderRequiredLocals = Pick<
+  ResLocalsQuestionRender,
+  | 'questionUrl'
+  | 'baseUrl'
+  | 'clientFilesQuestionUrl'
+  | 'clientFilesCourseUrl'
+  | 'clientFilesQuestionGeneratedFileUrl'
+  | 'externalImageCaptureUrl'
+  | 'workspaceUrl'
+  | 'showCorrectAnswer'
+  | 'allowAnswerEditing'
+> & {
+  urlPrefix: string;
+  questionRenderContext?: QuestionRenderContext;
+};
 
 export interface RenderSelection {
   question?: boolean;
@@ -92,7 +113,7 @@ export interface QuestionServer {
     submission: Submission | null;
     submissions: Submission[];
     course: Course;
-    locals: UntypedResLocals;
+    locals: QuestionRenderRequiredLocals;
   }) => QuestionServerReturnValue<RenderResultData>;
   parse: (
     submission: ParseSubmission,

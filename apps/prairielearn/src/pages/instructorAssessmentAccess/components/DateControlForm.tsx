@@ -37,8 +37,8 @@ export function MainDateControlForm({
           label={<strong>{title}</strong>}
           {...register('mainRule.dateControlEnabled', {
             onChange: (e) => {
-              if (e.target.checked && !getValues('mainRule.releaseDate')) {
-                setValue('mainRule.releaseDate', startOfDayDatetime(todayDate(displayTimezone)), {
+              if (e.target.checked && !getValues('mainRule.release.date')) {
+                setValue('mainRule.release.date', startOfDayDatetime(todayDate(displayTimezone)), {
                   shouldDirty: true,
                   shouldValidate: true,
                 });

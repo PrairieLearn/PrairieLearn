@@ -65,7 +65,7 @@ const list = t.procedure
     const courseInstanceJsonPath = path.join(
       course.path,
       'courseInstances',
-      course_instance.short_name!,
+      course_instance.short_name,
       'infoCourseInstance.json',
     );
     const origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
@@ -91,7 +91,7 @@ const listDefinitions = t.procedure
     const courseInstanceJsonPath = path.join(
       course.path,
       'courseInstances',
-      course_instance.short_name!,
+      course_instance.short_name,
       'infoCourseInstance.json',
     );
     const origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
@@ -182,10 +182,10 @@ const upsert = t.procedure
       jsonPath: path.join(
         course.path,
         'courseInstances',
-        course_instance.short_name!,
+        course_instance.short_name,
         'infoCourseInstance.json',
       ),
-      container: getCourseInstanceContainer(course.path, course_instance.short_name!),
+      container: getCourseInstanceContainer(course.path, course_instance.short_name),
       conflictCheck: {
         origHash,
         scope: (json) => json.studentLabels ?? [],
@@ -310,10 +310,10 @@ const destroy = t.procedure
       jsonPath: path.join(
         course.path,
         'courseInstances',
-        course_instance.short_name!,
+        course_instance.short_name,
         'infoCourseInstance.json',
       ),
-      container: getCourseInstanceContainer(course.path, course_instance.short_name!),
+      container: getCourseInstanceContainer(course.path, course_instance.short_name),
       conflictCheck: {
         origHash,
         scope: (json) => json.studentLabels ?? [],

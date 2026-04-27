@@ -14,7 +14,7 @@ const defaultMainRule: MainRuleData = {
   trackingId: 'main-1',
   beforeReleaseListed: true,
   dateControlEnabled: true,
-  releaseDate: '2025-03-01T00:00:00Z',
+  release: { date: '2025-03-01T00:00:00Z' },
   dueDate: '2025-04-01T00:00:00Z',
   earlyDeadlines: [{ date: '2025-03-15T00:00:00Z', credit: 110 }],
   lateDeadlines: [{ date: '2025-04-15T00:00:00Z', credit: 50 }],
@@ -34,7 +34,7 @@ const baseOverride: OverrideData = {
     studentLabels: [],
   },
   overriddenFields: [],
-  releaseDate: null,
+  release: { date: null },
   dueDate: null,
   earlyDeadlines: [],
   lateDeadlines: [],
@@ -50,9 +50,9 @@ function buildFormData(override: OverrideData): AccessControlFormData {
 }
 
 describe('jsonToMainRuleFormData', () => {
-  it('defaults releaseDate to null when dateControl is not configured', () => {
+  it('defaults release.date to null when dateControl is not configured', () => {
     const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
-    expect(mainRule.releaseDate).toBeNull();
+    expect(mainRule.release.date).toBeNull();
   });
 
   it('defaults hidden to true for questions when afterComplete is not configured', () => {
@@ -127,7 +127,7 @@ describe('formDataToJson', () => {
     const dc = result[1].dateControl!;
     expect(dc.dueDate).toBe('2025-05-01T00:00:00Z');
     expect(dc.password).toBe('pw');
-    expect('releaseDate' in dc).toBe(false);
+    expect('release' in dc).toBe(false);
     expect('earlyDeadlines' in dc).toBe(false);
     expect('lateDeadlines' in dc).toBe(false);
     expect('afterLastDeadline' in dc).toBe(false);
