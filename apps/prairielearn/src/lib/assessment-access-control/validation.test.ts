@@ -1238,6 +1238,7 @@ describe('Duplicate detection', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         release: { date: '2024-03-14T00:01:00' },
+        due: { date: null },
       },
       integrations: {
         prairieTest: {
@@ -1258,6 +1259,7 @@ describe('Duplicate detection', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         release: { date: '2024-03-14T00:01:00' },
+        due: { date: null },
       },
       integrations: {
         prairieTest: {
@@ -1402,9 +1404,10 @@ describe('afterComplete override validation', () => {
 });
 
 describe('Structural field dependency validation', () => {
-  it('should accept early deadlines without a due date', () => {
+  it('should accept early deadlines with an explicit null due date', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
+        due: { date: null },
         earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 120 }],
       },
     });
@@ -1416,9 +1419,10 @@ describe('Structural field dependency validation', () => {
     assert.deepEqual(issues, []);
   });
 
-  it('should reject late deadlines without a due date', () => {
+  it('should reject late deadlines with an explicit null due date', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
+        due: { date: null },
         lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
       },
     });
@@ -1428,6 +1432,21 @@ describe('Structural field dependency validation', () => {
       ruleIndex: 0,
     });
     assert.isTrue(issues.some((i) => i.message === 'Late deadlines require a due date.'));
+  });
+
+  it('should reject main-rule dateControl without due configuration', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+        earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 120 }],
+      },
+    });
+    const errors = validateRule(rule, 'none');
+    assert.isTrue(
+      errors.includes(
+        'Due date configuration is required on the defaults when dateControl is specified.',
+      ),
+    );
   });
 
   it('should reject after-complete dates without any deadline', () => {

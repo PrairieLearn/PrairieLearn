@@ -104,6 +104,18 @@ describe('formDataToJson', () => {
     });
   });
 
+  it('emits an explicit null due date for main rules when date control is enabled', () => {
+    const result = formDataToJson({
+      mainRule: {
+        ...defaultMainRule,
+        due: { date: null, credit: null, customCredit: false },
+      },
+      overrides: [],
+    });
+
+    expect(result[0].dateControl?.due).toEqual({ date: null });
+  });
+
   it('omits dateControl when no date fields are overridden', () => {
     const override: OverrideData = {
       ...baseOverride,

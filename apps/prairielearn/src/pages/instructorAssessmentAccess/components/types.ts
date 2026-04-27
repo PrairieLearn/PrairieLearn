@@ -356,10 +356,7 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   if (rule.dateControlEnabled) {
     output.dateControl = {};
     if (rule.release.date) output.dateControl.release = { date: rule.release.date };
-    // Emit `due` when either a date is set or credit is explicitly set.
-    if (rule.due.date || rule.due.customCredit) {
-      output.dateControl.due = buildDueJson(rule.due);
-    }
+    output.dateControl.due = buildDueJson(rule.due);
     if (rule.earlyDeadlines.length > 0) {
       output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     }
