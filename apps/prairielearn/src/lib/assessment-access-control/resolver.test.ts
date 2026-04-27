@@ -2297,19 +2297,17 @@ describe('formatDateShort', () => {
 });
 
 describe('custom due credit', () => {
-  const baseRule = (overrides: AccessControlJson['dateControl'] = {}) =>
-    makeMainRule({
-      dateControl: {
-        release: { date: '2025-03-01T00:00:00Z' },
-        due: { date: '2025-04-01T00:00:00Z', credit: 80 },
-        ...overrides,
-      },
-    });
-
   it('applies custom due credit before the due date', () => {
     const result = resolveAccessControl({
       ...baseInput,
-      rules: [baseRule()],
+      rules: [
+        makeMainRule({
+          dateControl: {
+            release: { date: '2025-03-01T00:00:00Z' },
+            due: { date: '2025-04-01T00:00:00Z', credit: 80 },
+          },
+        }),
+      ],
       date: new Date('2025-03-15T12:00:00Z'),
     });
     expect(result.credit).toBe(80);
@@ -2321,13 +2319,15 @@ describe('custom due credit', () => {
     const result = resolveAccessControl({
       ...baseInput,
       rules: [
-        baseRule({
-          release: { date: '2025-03-01T00:00:00Z' },
-          due: { date: '2025-04-01T00:00:00Z', credit: 80 },
-          lateDeadlines: [
-            { date: '2025-04-15T00:00:00Z', credit: 90 },
-            { date: '2025-04-30T00:00:00Z', credit: 70 },
-          ],
+        makeMainRule({
+          dateControl: {
+            release: { date: '2025-03-01T00:00:00Z' },
+            due: { date: '2025-04-01T00:00:00Z', credit: 80 },
+            lateDeadlines: [
+              { date: '2025-04-15T00:00:00Z', credit: 90 },
+              { date: '2025-04-30T00:00:00Z', credit: 70 },
+            ],
+          },
         }),
       ],
       date: new Date('2025-04-10T00:00:00Z'),
@@ -2340,13 +2340,15 @@ describe('custom due credit', () => {
     const result = resolveAccessControl({
       ...baseInput,
       rules: [
-        baseRule({
-          release: { date: '2025-03-01T00:00:00Z' },
-          due: { date: '2025-04-01T00:00:00Z', credit: 80 },
-          lateDeadlines: [
-            { date: '2025-04-15T00:00:00Z', credit: 90 },
-            { date: '2025-04-30T00:00:00Z', credit: 70 },
-          ],
+        makeMainRule({
+          dateControl: {
+            release: { date: '2025-03-01T00:00:00Z' },
+            due: { date: '2025-04-01T00:00:00Z', credit: 80 },
+            lateDeadlines: [
+              { date: '2025-04-15T00:00:00Z', credit: 90 },
+              { date: '2025-04-30T00:00:00Z', credit: 70 },
+            ],
+          },
         }),
       ],
       date: new Date('2025-04-20T00:00:00Z'),
@@ -2380,7 +2382,14 @@ describe('custom due credit', () => {
   it('gives 0 credit after the due date with no late deadlines', () => {
     const result = resolveAccessControl({
       ...baseInput,
-      rules: [baseRule()],
+      rules: [
+        makeMainRule({
+          dateControl: {
+            release: { date: '2025-03-01T00:00:00Z' },
+            due: { date: '2025-04-01T00:00:00Z', credit: 80 },
+          },
+        }),
+      ],
       date: new Date('2025-04-05T00:00:00Z'),
     });
     // No afterLastDeadline configured → defaults to 0 credit.
