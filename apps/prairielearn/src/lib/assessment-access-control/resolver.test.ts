@@ -147,15 +147,15 @@ describe('resolveAccessControl', () => {
 
     it('does not grant staff override for None/None roles', () => {
       const result = resolveAccessControl(baseInput);
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.creditDateString).not.toBe('100% (Staff override)');
     });
   });
 
   describe('main rule only, no date control', () => {
-    it('returns 0 credit when no dateControl configured', () => {
+    it('returns unauthorized when no dateControl configured', () => {
       const result = resolveAccessControl(baseInput);
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
     });
@@ -354,6 +354,7 @@ describe('resolveAccessControl', () => {
       expect(result.authorized).toBe(false);
       expect(result.showBeforeRelease).toBe(true);
       expect(result.active).toBe(false);
+      expect(result.nextActiveDate).toEqual(new Date('2025-04-01T00:00:00Z'));
     });
 
     it('does not set showBeforeRelease after release', () => {
@@ -373,7 +374,7 @@ describe('resolveAccessControl', () => {
       expect(result.showBeforeRelease).toBe(false);
     });
 
-    it('handles dateControl without release as no date-based access (0 credit)', () => {
+    it('denies access when dateControl has no release', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -385,6 +386,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T12:00:00Z'),
       });
+      expect(result.authorized).toBe(false);
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
     });
@@ -401,6 +403,24 @@ describe('resolveAccessControl', () => {
       });
       expect(result.credit).toBe(100);
       expect(result.active).toBe(true);
+    });
+
+    it('propagates password and time limit when after release date and no deadlines', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              password: 'secret',
+              durationMinutes: 60,
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(result.password).toBe('secret');
+      expect(result.timeLimitMin).toBe(60);
     });
   });
 
@@ -2005,7 +2025,7 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [makeMainRule({})],
       });
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.showBeforeRelease).toBe(false);
     });
   });

@@ -91,7 +91,7 @@ test.describe.serial('Student access control', () => {
     await syncCourse(testCoursePath);
   });
 
-  test('rule with no release shows assessment as inactive (not clickable)', async ({
+  test('rule with no release hides assessment entirely', async ({
     page,
     baseURL,
     courseInstance,
@@ -106,10 +106,7 @@ test.describe.serial('Student access control', () => {
 
     await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
 
-    // The assessment title should be visible but not as a clickable link
-    await expect(page.getByText(ASSESSMENT_TITLE, { exact: true })).toBeVisible();
-    const assessmentLink = page.getByRole('link', { name: ASSESSMENT_TITLE, exact: true });
-    await expect(assessmentLink).not.toBeVisible();
+    await expect(page.getByText(ASSESSMENT_TITLE, { exact: true })).not.toBeVisible();
   });
 
   test('beforeRelease.listed: true with future release shows grayed-out assessment', async ({
@@ -140,8 +137,8 @@ test.describe.serial('Student access control', () => {
     const assessmentLink = page.getByRole('link', { name: ASSESSMENT_TITLE, exact: true });
     await expect(assessmentLink).not.toBeVisible();
 
-    // "Not yet open" text should be visible
-    await expect(page.getByText('Not yet open')).toBeVisible();
+    // Availability message should reference the future release date (2099-06-01).
+    await expect(page.getByText('Available 00:00, Mon, Jun 1', { exact: true })).toBeVisible();
   });
 
   test('normal access shows clickable assessment link', async ({
