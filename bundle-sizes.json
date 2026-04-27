@@ -272,7 +272,7 @@
   "scripts/esm-bundles/hydrated-components/InstructorStudents.ts": {
     "raw": 1225256,
     "gzip": 362854,
-    "brotli": 314327
+    "brotli": 314336
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudentsLabels.ts": {
     "raw": 1053594,
@@ -305,9 +305,9 @@
     "brotli": 98749
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentGroups.ts": {
-    "raw": 654716,
-    "gzip": 196710,
-    "brotli": 172666
+    "raw": 654687,
+    "gzip": 196695,
+    "brotli": 172651
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentQuestionsTableLegacy.ts": {
     "raw": 632743,
@@ -345,9 +345,9 @@
     "brotli": 244712
   },
   "scripts/esm-bundles/hydrated-components/AuthzAccessMismatch.ts": {
-    "raw": 260148,
-    "gzip": 82003,
-    "brotli": 70799
+    "raw": 260210,
+    "gzip": 82013,
+    "brotli": 70804
   },
   "scripts/esm-bundles/hydrated-components/CopyCourseInstanceModal.ts": {
     "raw": 740149,
