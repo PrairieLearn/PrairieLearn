@@ -7,6 +7,8 @@ import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
 
+import { AccessTimelineEntrySchema } from './assessment-access-control/timeline.js';
+
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
@@ -141,6 +143,7 @@ export type SprocTeamInfo = z.infer<typeof SprocTeamInfoSchema>;
 // Result of authz_assessment sproc
 export const SprocAuthzAssessmentSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
+  access_timeline: z.array(AccessTimelineEntrySchema),
   active: z.boolean(),
   authorized: z.boolean(),
   credit: z.number().nullable(),
@@ -154,10 +157,12 @@ export const SprocAuthzAssessmentSchema = z.object({
   show_closed_assessment_score: z.boolean(),
   time_limit_min: z.number().nullable(),
 });
+export type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 
 // Result of authz_assessment_instance sproc
 export const SprocAuthzAssessmentInstanceSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
+  access_timeline: z.array(AccessTimelineEntrySchema),
   active: z.boolean(),
   authorized: z.boolean(),
   authorized_edit: z.boolean(),
@@ -173,6 +178,7 @@ export const SprocAuthzAssessmentInstanceSchema = z.object({
   time_limit_expired: z.boolean(),
   time_limit_min: z.number().nullable(),
 });
+export type SprocAuthzAssessmentInstance = z.infer<typeof SprocAuthzAssessmentInstanceSchema>;
 
 // Result of users_is_instructor_in_course_instance sproc
 export const SprocUsersIsInstructorInCourseInstanceSchema = z.object({

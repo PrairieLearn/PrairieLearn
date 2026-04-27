@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-types.js';
 
+<<<<<<< HEAD
 /**
  * Runtime version of date control fields. Top-level date columns use `Date`
  * objects (they come from the database as Date). Deadline entry dates remain
@@ -17,6 +18,14 @@ export interface RuntimeDateControl {
   durationMinutes?: number | null;
   password?: string | null;
 }
+=======
+import {
+  type AccessTimelineEntry,
+  type RuntimeDateControl,
+  buildAccessTimeline,
+  buildDeadlines,
+} from './timeline.js';
+>>>>>>> c1fb124b0 (Show students modern access control dates and credit (#14729))
 
 export interface RuntimeAfterComplete {
   questions?: {
@@ -101,6 +110,17 @@ export interface AccessControlResolverResult {
    * raw `beforeRelease.listed` config input.
    */
   showBeforeRelease: boolean;
+  /**
+   * Timeline of credit segments for display. Each entry represents a
+   * contiguous period where a specific credit percentage applies.
+   * Raw data — formatting is a UI concern.
+   */
+  accessTimeline: AccessTimelineEntry[];
+  /**
+   * The next date when the assessment becomes active (e.g. the release date
+   * when before release). Null when already active or no future open date.
+   */
+  nextActiveDate: Date | null;
 }
 
 const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
@@ -114,6 +134,8 @@ const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
   showClosedAssessmentScore: true,
   examAccessEnd: null,
   showBeforeRelease: false,
+  accessTimeline: [],
+  nextActiveDate: null,
 };
 
 const COURSE_ROLE_RANK: Record<EnumCourseRole, number> = {
@@ -548,6 +570,8 @@ export function resolveAccessControl(
       showClosedAssessmentScore: true,
       examAccessEnd: null,
       showBeforeRelease: false,
+      accessTimeline: [],
+      nextActiveDate: null,
     };
   }
 
@@ -686,6 +710,7 @@ export function resolveAccessControl(
       showClosedAssessment,
       showClosedAssessmentScore,
       showBeforeRelease: true,
+      nextActiveDate: creditResult.nextDeadlineDate,
     };
   }
 
@@ -720,7 +745,17 @@ export function resolveAccessControl(
       showClosedAssessmentScore,
       examAccessEnd: null,
       showBeforeRelease: false,
+      accessTimeline: [],
+      nextActiveDate: null,
     };
+  }
+
+  // No access path: no release date and no PT exams configured. The
+  // listed-only and PT review-only paths above have already returned for the
+  // cases where they apply, so reaching here means the rule has no way to
+  // grant access.
+  if (!effectiveRule.dateControl?.release && mainRuleInput.prairietestExams.length === 0) {
+    return { ...UNAUTHORIZED_RESULT, showClosedAssessment, showClosedAssessmentScore };
   }
 
   const creditDateString = formatCreditDateString(
@@ -729,6 +764,8 @@ export function resolveAccessControl(
     creditResult.nextDeadlineDate,
     displayTimezone,
   );
+
+  const accessTimeline = buildAccessTimeline(effectiveRule.dateControl, date);
 
   return {
     authorized: true,
@@ -741,5 +778,7 @@ export function resolveAccessControl(
     showClosedAssessmentScore,
     examAccessEnd,
     showBeforeRelease,
+    accessTimeline,
+    nextActiveDate: null,
   };
 }
