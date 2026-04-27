@@ -98,7 +98,7 @@ For showing pre-formatted code snippets, data frames, matrices, or Python variab
 - [`pl-dataframe`](pl-dataframe.md): Display DataFrames with various options.
 - [`pl-matrix-latex`](pl-matrix-latex.md): Display matrices using appropriate LaTeX commands for use in a mathematical expression.
 - [`pl-variable-output`](pl-variable-output.md): Display matrices in code form for supported programming languages.
-- [`pl-external-grader-variables`](pl-external-grader-variables.md): Display expected and given variables for [externally graded questions](../externalGrading.md).
+- [`pl-external-grader-variables`](pl-external-grader-variables.md): Display expected and given variables for [questions using the Python grader](../python-grader/index.md).
 
 ### Layout & content wrappers
 
