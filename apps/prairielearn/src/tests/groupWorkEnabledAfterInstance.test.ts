@@ -36,6 +36,8 @@ async function selectFirstInstanceQuestionId(assessmentInstanceId: string) {
   );
 }
 
+const UNAUTHORIZED_EDIT_WARNING = 'You are viewing the assessment of a different user';
+
 async function assertOrphanInstancePagesLoad({
   assessment,
   assessmentInstanceId,
@@ -67,6 +69,23 @@ async function assertNotRedirectedToStaleInstance(
   if (match) {
     assert.notEqual(match[1], staleAssessmentInstanceId);
   }
+}
+
+async function assertOriginalOwnerStillOwnsInstance(assessmentInstanceId: string) {
+  const res = await fetchCheerio(
+    `${courseInstanceUrl}/assessment_instance/${assessmentInstanceId}`,
+  );
+  assert.equal(res.status, 200);
+  assert.notInclude(res.$('body').text(), UNAUTHORIZED_EDIT_WARNING);
+}
+
+async function assertAssessmentsListingDoesNotLinkToStaleInstance(
+  staleAssessmentInstanceId: string,
+) {
+  const res = await fetchCheerio(`${courseInstanceUrl}/assessments`);
+  assert.equal(res.status, 200);
+  const links = res.$(`a[href*="/assessment_instance/${staleAssessmentInstanceId}"]`).toArray();
+  assert.lengthOf(links, 0);
 }
 
 // Regression test for instances whose team_id/team_work state has diverged
@@ -113,6 +132,14 @@ describe('Assessment instance with mismatched team_work state', { timeout: 60_00
 
     test('all pages load without crashing', async () => {
       await assertOrphanInstancePagesLoad({ assessment, assessmentInstanceId, instanceQuestionId });
+    });
+
+    test('original owner is still recognized as owning the instance', async () => {
+      await assertOriginalOwnerStillOwnsInstance(assessmentInstanceId);
+    });
+
+    test('assessments listing does not link to the stale instance', async () => {
+      await assertAssessmentsListingDoesNotLinkToStaleInstance(assessmentInstanceId);
     });
   });
 
@@ -170,6 +197,14 @@ describe('Assessment instance with mismatched team_work state', { timeout: 60_00
 
     test('all pages load without crashing', async () => {
       await assertOrphanInstancePagesLoad({ assessment, assessmentInstanceId, instanceQuestionId });
+    });
+
+    test('original owner is still recognized as owning the instance', async () => {
+      await assertOriginalOwnerStillOwnsInstance(assessmentInstanceId);
+    });
+
+    test('assessments listing does not link to the stale instance', async () => {
+      await assertAssessmentsListingDoesNotLinkToStaleInstance(assessmentInstanceId);
     });
   });
 });

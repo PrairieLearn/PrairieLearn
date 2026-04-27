@@ -74,6 +74,7 @@ WITH
       LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
     WHERE
       ai.user_id = $user_id
+      AND NOT mia.team_work
   ),
   single_instance_assessments AS (
     SELECT
@@ -123,6 +124,10 @@ WITH
       -- some course instances. Having separate SELECTs for user_id and team_id
       -- allows the query planner to utilize the two separate indexes we have
       -- for user_id and team_id.
+      --
+      -- We restrict each branch to instances that match the assessment's
+      -- current team_work setting so that stale instances created before
+      -- team_work was toggled do not appear as links from this page.
       LEFT JOIN LATERAL (
         SELECT
           *
@@ -131,6 +136,7 @@ WITH
         WHERE
           ai1.assessment_id = a.id
           AND ai1.user_id = $user_id
+          AND NOT a.team_work
         UNION
         SELECT
           *
@@ -139,6 +145,7 @@ WITH
         WHERE
           ai2.assessment_id = a.id
           AND ai2.team_id = gu.team_id
+          AND a.team_work
       ) AS ai ON (TRUE)
       LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
       LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
