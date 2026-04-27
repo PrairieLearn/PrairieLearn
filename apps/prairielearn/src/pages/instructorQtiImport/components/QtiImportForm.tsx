@@ -717,17 +717,17 @@ function AssessmentQuestionsSection({
         </div>
 
         <div className="d-flex flex-column gap-2 mt-2">
-        {questions.map((q, qi) => (
-          <QuestionReviewPanel
-            key={q.directoryName}
-            question={q}
-            questionNumber={qi + 1}
-            overrides={questionOverrides.get(q.directoryName)}
-            isExpanded={expandedQuestions.has(q.directoryName)}
-            onToggleExpand={() => onToggleExpand(q.directoryName)}
-            onUpdateOverride={(updates) => onUpdateOverride(q.directoryName, updates)}
-          />
-        ))}
+          {questions.map((q, qi) => (
+            <QuestionReviewPanel
+              key={q.directoryName}
+              question={q}
+              questionNumber={qi + 1}
+              overrides={questionOverrides.get(q.directoryName)}
+              isExpanded={expandedQuestions.has(q.directoryName)}
+              onToggleExpand={() => onToggleExpand(q.directoryName)}
+              onUpdateOverride={(updates) => onUpdateOverride(q.directoryName, updates)}
+            />
+          ))}
         </div>
       </details>
     </>
