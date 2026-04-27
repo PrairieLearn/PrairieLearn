@@ -6,7 +6,7 @@ import { z } from 'zod';
  * as strings since they are stored as JSON strings in JSONB columns.
  */
 export interface RuntimeDateControl {
-  releaseDate?: Date | null;
+  release?: { date: Date };
   dueDate?: Date | null;
   earlyDeadlines?: { date: string; credit: number }[] | null;
   lateDeadlines?: { date: string; credit: number }[] | null;
@@ -89,9 +89,9 @@ export function buildAccessTimeline(
   dateControl: RuntimeDateControl | undefined,
   date: Date,
 ): AccessTimelineEntry[] {
-  if (!dateControl?.releaseDate) return [];
+  if (!dateControl?.release) return [];
 
-  const releaseDate = dateControl.releaseDate;
+  const releaseDate = dateControl.release.date;
   const dueDate = dateControl.dueDate ?? null;
 
   if (dueDate && dueDate <= releaseDate) return [];

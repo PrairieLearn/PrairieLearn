@@ -526,7 +526,7 @@ class Feedback:
         """
         Check that a student scalar has correct value with respect to a reference scalar. This will mark a value as correct if it passes any of the following checks:
 
-        - `abs(ref - data) < ref(ref) * rtol`
+        - `abs(ref - data) < abs(ref) * rtol`
         - `abs(ref - data) < atol`
 
         One of rtol or atol can be omitted (set to None) if that check is unwanted.

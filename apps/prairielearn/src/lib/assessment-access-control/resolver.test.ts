@@ -23,10 +23,10 @@ function toRuntime(json: AccessControlJson): RuntimeAccessControl {
   const { dateControl, afterComplete, ...rest } = json;
   const result: RuntimeAccessControl = { ...rest };
   if (dateControl) {
-    const { releaseDate, dueDate, ...dcRest } = dateControl;
+    const { release, dueDate, ...dcRest } = dateControl;
     result.dateControl = {
       ...dcRest,
-      releaseDate: releaseDate !== undefined ? new Date(releaseDate) : undefined,
+      release: release !== undefined ? { date: new Date(release.date) } : undefined,
       dueDate: dueDate !== undefined ? (dueDate !== null ? new Date(dueDate) : null) : undefined,
     };
   }
@@ -175,7 +175,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-04-01T00:00:00Z',
+              release: { date: '2025-04-01T00:00:00Z' },
               dueDate: '2025-05-01T00:00:00Z',
             },
           }),
@@ -193,7 +193,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-03-01T00:00:00Z',
+              release: { date: '2025-03-01T00:00:00Z' },
               dueDate: '2025-05-01T00:00:00Z',
             },
           }),
@@ -214,7 +214,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-03-01T00:00:00Z',
+              release: { date: '2025-03-01T00:00:00Z' },
               dueDate: '2025-03-10T00:00:00Z',
               lateDeadlines: [
                 { date: '2025-03-15T00:00:00Z', credit: 80 },
@@ -236,7 +236,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-03-01T00:00:00Z',
+              release: { date: '2025-03-01T00:00:00Z' },
               dueDate: '2025-03-10T00:00:00Z',
             },
           }),
@@ -250,7 +250,7 @@ describe('resolveAccessControl', () => {
     it('handles late deadline with 0% credit', () => {
       const rule = makeMainRule({
         dateControl: {
-          releaseDate: '2025-03-01T00:00:00Z',
+          release: { date: '2025-03-01T00:00:00Z' },
           dueDate: '2025-03-10T00:00:00Z',
           lateDeadlines: [{ date: '2025-03-15T00:00:00Z', credit: 0 }],
         },
@@ -282,7 +282,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-03-01T00:00:00Z',
+              release: { date: '2025-03-01T00:00:00Z' },
               dueDate: '2025-03-10T00:00:00Z',
               afterLastDeadline: { credit: 25, allowSubmissions: true },
             },
@@ -300,7 +300,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-01-01T00:00:00Z',
+              release: { date: '2025-01-01T00:00:00Z' },
               dueDate: '2025-03-10T00:00:00Z',
               afterLastDeadline: { allowSubmissions: false },
             },
@@ -318,7 +318,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-01-01T00:00:00Z',
+              release: { date: '2025-01-01T00:00:00Z' },
               dueDate: '2025-03-10T00:00:00Z',
               afterLastDeadline: { credit: 25, allowSubmissions: true },
             },
@@ -342,7 +342,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             beforeRelease: { listed: true },
             dateControl: {
-              releaseDate: '2025-04-01T00:00:00Z',
+              release: { date: '2025-04-01T00:00:00Z' },
               dueDate: '2025-05-01T00:00:00Z',
             },
           }),
@@ -364,7 +364,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             beforeRelease: { listed: true },
             dateControl: {
-              releaseDate: '2025-03-01T00:00:00Z',
+              release: { date: '2025-03-01T00:00:00Z' },
               dueDate: '2025-05-01T00:00:00Z',
             },
           }),
@@ -374,7 +374,7 @@ describe('resolveAccessControl', () => {
       expect(result.showBeforeRelease).toBe(false);
     });
 
-    it('denies access when dateControl has no releaseDate', () => {
+    it('denies access when dateControl has no release', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -396,7 +396,7 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { releaseDate: '2025-03-01T00:00:00Z' },
+            dateControl: { release: { date: '2025-03-01T00:00:00Z' } },
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
@@ -411,7 +411,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-03-01T00:00:00Z',
+              release: { date: '2025-03-01T00:00:00Z' },
               password: 'secret',
               durationMinutes: 60,
             },
@@ -450,7 +450,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-03-01T00:00:00Z',
+              release: { date: '2025-03-01T00:00:00Z' },
               earlyDeadlines: [{ date: earlyDate, credit: 110 }],
               dueDate: '2025-03-20T00:00:00Z',
             },
@@ -468,7 +468,10 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { releaseDate: '2025-01-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' },
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              dueDate: '2025-04-01T00:00:00Z',
+            },
           }),
           makeOverrideRule(
             1,
@@ -531,7 +534,10 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { releaseDate: '2025-01-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' },
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              dueDate: '2025-04-01T00:00:00Z',
+            },
           }),
           makeOverrideRule(
             1,
@@ -570,7 +576,10 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { releaseDate: '2025-01-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' },
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              dueDate: '2025-04-01T00:00:00Z',
+            },
           }),
           makeOverrideRule(
             1,
@@ -594,7 +603,10 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { releaseDate: '2025-01-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' },
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              dueDate: '2025-04-01T00:00:00Z',
+            },
           }),
           makeOverrideRule(
             1,
@@ -618,7 +630,10 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { releaseDate: '2025-01-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' },
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              dueDate: '2025-04-01T00:00:00Z',
+            },
           }),
           makeOverrideRule(
             1,
@@ -636,6 +651,33 @@ describe('resolveAccessControl', () => {
       // Only student label override matches (due July 1 UTC = Jun 30 CDT)
       expect(result.creditDateString).toContain('Jun 30');
     });
+
+    it('both enrollment overrides apply, later number wins', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              dueDate: '2025-04-01T00:00:00Z',
+            },
+          }),
+          makeOverrideRule(
+            1,
+            { dateControl: { dueDate: '2025-06-01T00:00:00Z' } },
+            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
+          ),
+          makeOverrideRule(
+            2,
+            { dateControl: { dueDate: '2025-08-01T00:00:00Z' } },
+            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
+          ),
+        ],
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+      });
+      // Both apply via cascading, second (number=2, due Aug 1 UTC = Jul 31 CDT) wins
+      expect(result.creditDateString).toContain('Jul 31');
+    });
   });
 
   describe('cascading overrides', () => {
@@ -644,7 +686,10 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { releaseDate: '2025-01-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' },
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              dueDate: '2025-04-01T00:00:00Z',
+            },
           }),
           makeOverrideRule(
             1,
@@ -673,7 +718,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-03-01T00:00:00Z',
+              release: { date: '2025-03-01T00:00:00Z' },
               dueDate: '2025-04-01T00:00:00Z',
               password: 'secret123',
             },
@@ -697,7 +742,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-01-01T00:00:00Z',
+              release: { date: '2025-01-01T00:00:00Z' },
               dueDate: '2025-04-01T00:00:00Z',
               password: 'main-pass',
             },
@@ -848,7 +893,7 @@ describe('resolveAccessControl', () => {
         ...prairieTestMainRule,
         rule: toRuntime({
           dateControl: {
-            releaseDate: '2025-01-01T00:00:00Z',
+            release: { date: '2025-01-01T00:00:00Z' },
             dueDate: '2025-02-01T00:00:00Z',
             afterLastDeadline: { credit: 50, allowSubmissions: true },
           },
@@ -874,7 +919,7 @@ describe('resolveAccessControl', () => {
         ...prairieTestMainRule,
         rule: toRuntime({
           dateControl: {
-            releaseDate: '2025-02-01T00:00:00Z',
+            release: { date: '2025-02-01T00:00:00Z' },
             dueDate: '2025-03-01T00:00:00Z',
             afterLastDeadline: { credit: 0, allowSubmissions: false },
           },
@@ -1280,7 +1325,7 @@ describe('resolveAccessControl', () => {
               ...makeMainRule({
                 beforeRelease: { listed: true },
                 dateControl: {
-                  releaseDate: '2025-01-01T00:00:00Z',
+                  release: { date: '2025-01-01T00:00:00Z' },
                   dueDate: '2025-02-01T00:00:00Z',
                 },
               }),
@@ -1300,7 +1345,7 @@ describe('resolveAccessControl', () => {
               ...makeMainRule({
                 beforeRelease: { listed: true },
                 dateControl: {
-                  releaseDate: '2025-01-01T00:00:00Z',
+                  release: { date: '2025-01-01T00:00:00Z' },
                   dueDate: '2025-02-01T00:00:00Z',
                 },
               }),
@@ -1324,7 +1369,7 @@ describe('resolveAccessControl', () => {
             {
               ...makeMainRule({
                 dateControl: {
-                  releaseDate: '2025-01-01T00:00:00Z',
+                  release: { date: '2025-01-01T00:00:00Z' },
                   dueDate: '2025-02-01T00:00:00Z',
                 },
               }),
@@ -1349,7 +1394,7 @@ describe('resolveAccessControl', () => {
             {
               ...makeMainRule({
                 dateControl: {
-                  releaseDate: '2025-06-01T00:00:00Z',
+                  release: { date: '2025-06-01T00:00:00Z' },
                   dueDate: '2025-07-01T00:00:00Z',
                 },
               }),
@@ -1366,8 +1411,8 @@ describe('resolveAccessControl', () => {
         expect(result.showBeforeRelease).toBe(false);
       });
 
-      it('lists PT-gated assessment as coming soon in Public mode before a future releaseDate', () => {
-        // Public mode with a future releaseDate and beforeRelease.listed: the
+      it('lists PT-gated assessment as coming soon in Public mode before a future release', () => {
+        // Public mode with a future release and beforeRelease.listed: the
         // DC path treats this like the non-PT pre-release listing. The
         // student sees the assessment in the "coming soon" list but is not
         // authorized to open it — PT gating is irrelevant here because PT
@@ -1379,7 +1424,7 @@ describe('resolveAccessControl', () => {
             {
               ...makeMainRule({
                 beforeRelease: { listed: true },
-                dateControl: { releaseDate: '2025-04-01T00:00:00Z' },
+                dateControl: { release: { date: '2025-04-01T00:00:00Z' } },
               }),
               prairietestExams: [ptExam1],
             },
@@ -1394,7 +1439,7 @@ describe('resolveAccessControl', () => {
       it('suppresses showBeforeRelease during an active PT grant even when beforeRelease.listed is true', () => {
         // A granted student has real access and shouldn't also be shown the
         // "coming soon" listing. This matters specifically when no
-        // releaseDate is configured - otherwise the grant branch zeroing
+        // release is configured - otherwise the grant branch zeroing
         // `creditResult.beforeRelease` would already make showBeforeRelease
         // false via the release-date clause.
         const result = resolveAccessControl({
@@ -1427,7 +1472,7 @@ describe('resolveAccessControl', () => {
               ...makeMainRule({
                 beforeRelease: { listed: true },
                 dateControl: {
-                  releaseDate: '2025-01-01T00:00:00Z',
+                  release: { date: '2025-01-01T00:00:00Z' },
                   dueDate: '2025-06-01T00:00:00Z',
                 },
               }),
@@ -1449,7 +1494,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-01-01T00:00:00Z',
+              release: { date: '2025-01-01T00:00:00Z' },
               dueDate: '2025-04-01T00:00:00Z',
               durationMinutes: 60,
             },
@@ -1466,7 +1511,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-01-01T00:00:00Z',
+              release: { date: '2025-01-01T00:00:00Z' },
               dueDate: '2025-03-15T12:30:00Z',
               durationMinutes: 60,
             },
@@ -1510,7 +1555,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-01-01T00:00:00Z',
+              release: { date: '2025-01-01T00:00:00Z' },
               dueDate: '2025-03-15T12:00:20Z',
               durationMinutes: 60,
             },
@@ -1675,7 +1720,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-03-01T00:00:00Z',
+              release: { date: '2025-03-01T00:00:00Z' },
               dueDate: '2025-04-01T00:00:00Z',
             },
           }),
@@ -1713,7 +1758,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-03-15T00:00:00Z',
+              release: { date: '2025-03-15T00:00:00Z' },
               dueDate: '2025-04-01T00:00:00Z',
             },
           }),
@@ -1735,7 +1780,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-03-03T00:00:00Z',
+              release: { date: '2025-03-03T00:00:00Z' },
               earlyDeadlines: [
                 { date: '2025-03-01T00:00:00Z', credit: 120 },
                 { date: '2025-03-10T00:00:00Z', credit: 110 },
@@ -1755,7 +1800,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-03-15T00:00:00Z',
+              release: { date: '2025-03-15T00:00:00Z' },
               dueDate: '2025-03-20T00:00:00Z',
               lateDeadlines: [
                 { date: '2025-03-10T00:00:00Z', credit: 80 },
@@ -1775,7 +1820,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-01-01T00:00:00Z',
+              release: { date: '2025-01-01T00:00:00Z' },
               earlyDeadlines: [
                 { date: '2025-03-01T00:00:00Z', credit: 120 },
                 { date: '2025-03-02T00:00:00Z', credit: 110 },
@@ -1801,7 +1846,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-03-01T00:00:00Z',
+              release: { date: '2025-03-01T00:00:00Z' },
               dueDate: '2025-03-20T00:00:00Z',
               lateDeadlines: [{ date: '2025-03-25T00:00:00Z', credit: 80 }],
             },
@@ -1824,7 +1869,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-03-01T00:00:00Z',
+              release: { date: '2025-03-01T00:00:00Z' },
               afterLastDeadline: { credit: 50, allowSubmissions: true },
             },
           }),
@@ -1845,7 +1890,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-03-01T00:00:00Z',
+              release: { date: '2025-03-01T00:00:00Z' },
               lateDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 50 }],
             },
           }),
@@ -1862,7 +1907,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-03-01T00:00:00Z',
+              release: { date: '2025-03-01T00:00:00Z' },
               lateDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 50 }],
             },
           }),
@@ -1880,7 +1925,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-03-01T00:00:00Z',
+              release: { date: '2025-03-01T00:00:00Z' },
               earlyDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 120 }],
             },
           }),
@@ -1897,7 +1942,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              releaseDate: '2025-03-01T00:00:00Z',
+              release: { date: '2025-03-01T00:00:00Z' },
               earlyDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 120 }],
             },
           }),
@@ -1912,7 +1957,7 @@ describe('resolveAccessControl', () => {
       // Migrated from: [{ credit: 120, endDate: '2025-03-10' }, { credit: 50, endDate: '2025-04-01' }]
       const rule = makeMainRule({
         dateControl: {
-          releaseDate: '2025-03-01T00:00:00Z',
+          release: { date: '2025-03-01T00:00:00Z' },
           earlyDeadlines: [{ date: '2025-03-10T00:00:00Z', credit: 120 }],
           lateDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 50 }],
         },
@@ -1957,7 +2002,7 @@ describe('resolveAccessControl', () => {
       expect(result.showClosedAssessment).toBe(false);
     });
 
-    it('shows before release when dateControl has no releaseDate', () => {
+    it('shows before release when dateControl has no release', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -1969,7 +2014,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
       });
-      // dateControl exists but no releaseDate → perpetually "before release"
+      // dateControl exists but no release → perpetually "before release"
       expect(result.authorized).toBe(false);
       expect(result.showBeforeRelease).toBe(true);
       expect(result.active).toBe(false);
@@ -2077,14 +2122,14 @@ describe('mergeRules', () => {
     expect(result[field]).toBeUndefined();
   });
 
-  it('inherits releaseDate from main when override does not set it', () => {
+  it('inherits release from main when override does not set it', () => {
     const result = mergeRules(
       toRuntime({
-        dateControl: { releaseDate: '2025-03-01T00:00:00Z', dueDate: '2025-04-01T00:00:00Z' },
+        dateControl: { release: { date: '2025-03-01T00:00:00Z' }, dueDate: '2025-04-01T00:00:00Z' },
       }),
       toRuntime({ dateControl: { dueDate: '2025-05-01T00:00:00Z' } }),
     );
-    expect(result.dateControl?.releaseDate).toEqual(new Date('2025-03-01T00:00:00Z'));
+    expect(result.dateControl?.release?.date).toEqual(new Date('2025-03-01T00:00:00Z'));
     expect(result.dateControl?.dueDate).toEqual(new Date('2025-05-01T00:00:00Z'));
   });
 

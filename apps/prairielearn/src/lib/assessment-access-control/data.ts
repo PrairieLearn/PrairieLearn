@@ -60,7 +60,7 @@ function buildDateControl(
   const dateControl: RuntimeDateControl = {};
 
   if (rule.date_control_release_date != null) {
-    dateControl.releaseDate = rule.date_control_release_date;
+    dateControl.release = { date: rule.date_control_release_date };
   }
 
   if (rule.date_control_due_date_overridden) {
