@@ -444,7 +444,7 @@ const createCourseOnlyAuthzData = (overrides: Record<string, any> = {}) => ({
 });
 
 describe('extractPageContext with course pageType', () => {
-  it('parses course authz data without CI properties', () => {
+  it('parses course-only authz data on a course-only mount', () => {
     const mockData = {
       ...createBaseContext({ navbarType: 'instructor' }),
       ...mockInstructorData,
@@ -459,7 +459,6 @@ describe('extractPageContext with course pageType', () => {
     expect(result).toHaveProperty('authz_data');
     expect(result).toHaveProperty('course');
     expect(result.authz_data.has_course_permission_edit).toBe(true);
-    expect(result.authz_data).not.toHaveProperty('has_course_instance_permission_edit');
   });
 
   it('returns authz_data with required course_role for course pages', () => {
@@ -475,6 +474,22 @@ describe('extractPageContext with course pageType', () => {
     });
 
     expect(result.authz_data.course_role).toBe('Owner');
+  });
+
+  it('preserves CI authz fields when course pageType is used on a course-instance route', () => {
+    const mockData = {
+      ...createBaseContext({ navbarType: 'instructor' }),
+      ...mockInstructorData,
+      authz_data: createInstructorAuthzData(),
+    };
+
+    const result = extractPageContext(mockData, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
+    expect(result.authz_data).toHaveProperty('has_course_instance_permission_view', true);
+    expect(result.authz_data).toHaveProperty('has_course_instance_permission_edit', true);
   });
 });
 

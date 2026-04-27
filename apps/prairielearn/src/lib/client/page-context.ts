@@ -182,7 +182,12 @@ interface PageTypeReturnMap {
 }
 
 interface AuthzDataForPageType {
-  course: CourseAuthzDataPageContext;
+  /**
+   * A `pageType: 'course'` page may be reached from
+   * `/pl/course_instance/:course_instance_id/instructor`, and we
+   * want to preserve CI authz fields
+   */
+  course: CourseAuthzDataPageContext | CourseInstanceAuthzDataPageContext;
   courseInstance: CourseInstanceAuthzDataPageContext;
   assessment: CourseInstanceAuthzDataPageContext;
   assessmentQuestion: CourseInstanceAuthzDataPageContext;
@@ -232,7 +237,12 @@ export function extractPageContext<
   const authzData = run(() => {
     // Plain pages never include authz_data in the result, even when withAuthzData is true.
     if (!withAuthzData || pageType === 'plain') return null;
-    if (pageType === 'course') {
+    if (
+      pageType === 'course' &&
+      // We don't want to strip course instance authz fields when we're on a course page
+      // mounted from a course-instance route -- we need them for role checks.
+      !('has_course_instance_permission_view' in (resLocals.authz_data ?? {}))
+    ) {
       return CourseAuthzDataPageContextSchema.parse(resLocals);
     }
     return CourseInstanceAuthzDataPageContextSchema.parse(resLocals);
