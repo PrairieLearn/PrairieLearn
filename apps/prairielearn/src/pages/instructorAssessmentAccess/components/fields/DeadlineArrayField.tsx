@@ -17,6 +17,7 @@ function DeadlineArrayInput({
   releaseDate,
   dueDate,
   dueCredit,
+  customDueCreditSet,
   validationReleaseDate,
   validationDueDate,
   deadlines,
@@ -33,6 +34,8 @@ function DeadlineArrayInput({
   dueDate: string | null | undefined;
   /** Effective due-date credit (with default 100). Caps late-deadline credits. */
   dueCredit: number;
+  /** Effective `customCredit` flag on the due date. Used to block adding early deadlines. */
+  customDueCreditSet: boolean;
   validationReleaseDate?: string | null | undefined;
   validationDueDate?: string | null | undefined;
   deadlines: DeadlineEntry[];
@@ -40,6 +43,10 @@ function DeadlineArrayInput({
 }) {
   const { register, trigger } = useFormContext<AccessControlFormData>();
   const isEarly = type === 'early';
+  const addEarlyDisabled = isEarly && customDueCreditSet;
+  const addEarlyDisabledTitle = addEarlyDisabled
+    ? 'Early deadlines are not allowed when custom due credit is set.'
+    : undefined;
 
   const {
     fields: deadlineFields,
@@ -269,6 +276,10 @@ function DeadlineArrayInput({
           id={`${idPrefix}-${type}-deadlines-enabled`}
           label={<strong>{label}</strong>}
           checked={deadlineFields.length > 0}
+          disabled={addEarlyDisabled && deadlineFields.length === 0}
+          title={
+            addEarlyDisabled && deadlineFields.length === 0 ? addEarlyDisabledTitle : undefined
+          }
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
               addDeadline();
@@ -277,7 +288,13 @@ function DeadlineArrayInput({
             }
           }}
         />
-        <Button size="sm" variant="outline-primary" onClick={addDeadline}>
+        <Button
+          size="sm"
+          variant="outline-primary"
+          onClick={addDeadline}
+          disabled={addEarlyDisabled}
+          title={addEarlyDisabledTitle}
+        >
           Add {isEarly ? 'early' : 'late'}
         </Button>
       </div>
@@ -406,6 +423,7 @@ export function MainDeadlineArrayField({
       releaseDate={releaseDate}
       dueDate={dueDate}
       dueCredit={dueCredit}
+      customDueCreditSet={due.customCredit}
       validationReleaseDate={releaseDate}
       validationDueDate={dueDate}
       deadlines={deadlines}
@@ -482,6 +500,7 @@ export function OverrideDeadlineArrayField({
         releaseDate={effectiveReleaseDate}
         dueDate={effectiveDueDate}
         dueCredit={effectiveDueCredit}
+        customDueCreditSet={effectiveDue.customCredit}
         validationReleaseDate={validationReleaseDate}
         validationDueDate={validationDueDate}
         deadlines={deadlines}
